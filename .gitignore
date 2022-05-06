@@ -76,6 +76,5 @@ lark_parser.pickle
 
 _a.out.*
 _a.out_*.*
-
 # KCLVM cache
 .kclvm
