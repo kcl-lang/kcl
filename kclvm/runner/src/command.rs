@@ -405,7 +405,7 @@ impl Command {
         if Self::is_macos() {
             return ".dylib".to_string();
         }
-        if Self::is_windows() {
+        if Self::is_linux() {
             return ".so".to_string();
         }
         panic!("unsuport os")
