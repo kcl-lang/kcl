@@ -19,6 +19,13 @@ RUN_IN_DOCKER+=-v ${PWD}:/root/kclvm
 RUN_IN_DOCKER+=-w /root/kclvm ${BUILD_IMAGE}
 
 # ----------------
+# KCLVM build
+# ----------------
+
+build:
+	${PWD}/run.sh -a build
+
+# ----------------
 # Docker
 # ----------------
 

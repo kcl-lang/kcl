@@ -4,11 +4,11 @@ A high-performance implementation of KCL written in Rust that uses LLVM as the c
 
 ## Building and Testing
 
-Firstly, see [KCLVM CONTRIBUTING](../CONTRIBUTING.md) to build KCLVM. Secondly, we need to download the [Rust](https://www.rust-lang.org/), [SWIG](http://www.swig.org/), [LLVM 7](https://releases.llvm.org/download.html), and add the LLVM installation location to `LLVM_SYS_70_PREFIX` and the `$PATH`.
+Firstly, see [KCLVM CONTRIBUTING](../CONTRIBUTING.md) to build KCLVM. Secondly, we need to download the [Rust](https://www.rust-lang.org/), [SWIG](http://www.swig.org/), [LLVM 12](https://releases.llvm.org/download.html), and add the LLVM installation location to `LLVM_SYS_120_PREFIX` and the `$PATH`.
 
 ```
-export LLVM_SYS_70_PREFIX=<your LLVM 7 install location>
-export PATH=<your LLVM 7 install location>/bin:$PATH
+export LLVM_SYS_120_PREFIX=<your LLVM 12 install location>
+export PATH=<your LLVM 12 install location>/bin:$PATH
 ```
 
 Thirdly, install wasm target dependencies.
@@ -52,7 +52,7 @@ You can choose any IDE you like for development, but we recommend a combination 
 
 ## Notes
 
-1. If you encounter problems compiling KCLVM and using LLVM 7 on Apple M1, you can refer to the [documentation](./docs/m1-mac-setup.md)
+1. If you encounter problems compiling KCLVM and using LLVM 12 on Apple M1, you can refer to the [documentation](./docs/m1-mac-setup.md)
 2. If you wanna start over, you `MUST` clean up all cached building files, such as `LLVM build files`, `kclvm/target`, etc.
 3. If your updating-cargo-index is extremely slow, setup `~/.cargo/config` file.
 

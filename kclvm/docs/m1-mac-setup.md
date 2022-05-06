@@ -18,9 +18,9 @@
 ## Build LLVM from Source
 
 1. Go to the folder where you want to build the LLVM source
-2. Download LLVM 7.0.0 source from [http://releases.llvm.org/download.html](http://releases.llvm.org/download.html) and unpack source .tar.xz with tar -xJf [archive]
-3. Create a directory where you want to build LLVM files ➡ mkdir build-llvm-7.0.0
-4. Move into the build folder ➡ cd build-llvm-7.0.0; that's where you create `build.sh`.
+2. Download LLVM 12.0.0 source from [http://releases.llvm.org/download.html](http://releases.llvm.org/download.html) and unpack source .tar.xz with tar -xJf [archive]
+3. Create a directory where you want to build LLVM files ➡ mkdir build-llvm-12.0.0
+4. Move into the build folder ➡ cd build-llvm-12.0.0; that's where you create `build.sh`.
 
 ```
 #!usr/bin/env sh
