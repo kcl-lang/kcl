@@ -42,17 +42,16 @@ RUN apt-get install -y clang-12 lld-12
 RUN ln -sf /usr/bin/clang-12   /usr/bin/clang
 RUN ln -sf /usr/bin/wasm-ld-12 /usr/bin/wasm-ld
 
-# golang 1.16+
+# golang 1.17+
 RUN mkdir -p /root/download && cd /root/download \
-  && wget https://dl.google.com/go/go1.16.3.linux-amd64.tar.gz \
-  && tar -zxvf go1.16.3.linux-amd64.tar.gz \
-  && mv ./go /usr/local/go1.16.3
-RUN ln -sf /usr/local/go1.16.3/bin/go /usr/bin/go
+  && wget https://dl.google.com/go/go1.17.3.linux-amd64.tar.gz \
+  && tar -zxvf go1.17.3.linux-amd64.tar.gz \
+  && mv ./go /usr/local/go1.17.3
+RUN ln -sf /usr/local/go1.17.3/bin/go /usr/bin/go
 RUN rm -rf /root/download
 
 ENV GOPATH=/go
-ENV GOLANG_VERSION=1.16.3
-#ENV GOPROXY=https://goproxy.cn
+ENV GOLANG_VERSION=1.17.3
 
 RUN go get golang.org/x/lint/golint
 RUN go get golang.org/x/tools/cmd/goimports
@@ -64,18 +63,8 @@ RUN go get github.com/jstemmer/go-junit-report
 RUN rm -rf /go/pkg/mod
 RUN rm -rf /go/pkg/sumdb
 
-# OSS
-RUN python3.9 -m pip install oss2 
-
 RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 RUN echo 'Asia/Shanghai' >/etc/timezone
-
-# local cargo mirror
-
-COPY ./crates.io-index /root/crates.io-index
-
-RUN  mkdir -p /root/.cargo
-COPY ./_cargo_config-kclvm.toml /root/.cargo/config
 
 WORKDIR /root
 
