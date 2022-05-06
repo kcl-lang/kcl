@@ -57,7 +57,7 @@ mv $kclvm_install_dir/lib/${py_lib_basename}/kclvm_py $kclvm_install_dir/lib/${p
 chmod +x $topdir/scripts/kcllib-install.sh
 $topdir/scripts/kcllib-install.sh
 
-Install plugins
+# Install plugins
 cp -rf $topdir/plugins $kclvm_install_dir/
 
 set +x
