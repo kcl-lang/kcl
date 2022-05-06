@@ -1,31 +1,17 @@
-name: actions
+name: KCLVM-actions
 on:
   push:
     branches:
       - master
   pull_request:
 jobs:
-  code-lint:
-    name: Code Lint
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v3
   test-unit:
     name: Test
     runs-on: ubuntu-latest
+    container: 
+      image: kusionstack/kclvm-builder
     steps:
       - name: Check out code
         uses: actions/checkout@v3
-
-      - name: Run units tests.
-        run: make test
-  test-grammar:
-    name: Test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v3
-
-      - name: Run grammar tests.
-        run: make test-grammar
+      - name: Build KCLVM
+        run: make build && make
