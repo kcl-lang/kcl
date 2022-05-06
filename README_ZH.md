@@ -27,7 +27,7 @@ Kusion 配置语言（KCL）是一种开源配置语言，主要用于 [Kusion S
   + 代码组织：模块和包
   + [插件系统](https://github.com/KusionStack/kcl-plugin)：复用通用编程语言生态。
   + [OpenAPI 模型支持](https://github.com/KusionStack/kcl-openapi)：Swagger 与 Schema 双向转换，Kubernetes CRD 转换为 Schema
-+ **性能**
++ **高性能**
   + 配合 LLVM 优化器、支持编译到本地代码和 WASM 等格式并高效执行
 
 ## 安装 & 文档
