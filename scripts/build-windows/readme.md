@@ -8,8 +8,8 @@
   - https://jmeubank.github.io/tdm-gcc/download/
 1. install LLVM-12.0.1-win64
   - https://github.com/PLC-lang/llvm-package-windows/releases/tag/v12.0.1
-  - set `LLVM_SYS_120_PREFIX` and `LLVM_SYS_70_PREFIX` to root path
-1. install NSIS
+  - set `LLVM_SYS_120_PREFIX` to root path
+2. install NSIS
   - https://nsis.sourceforge.io/Download
   - set `$PATH`
 1. open VS2019-x64 command line

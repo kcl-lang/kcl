@@ -62,7 +62,7 @@ go run .\copy-file.go --src=..\..\kclvm\target\release\kclvm.exe --dst=.\_output
 
 :: install clang
 go run .\copy-file.go ^
-    --src=%LLVM_SYS_70_PREFIX%\bin\clang.exe ^
+    --src=%LLVM_SYS_120_PREFIX%\bin\clang.exe ^
     --dst=.\_output\kclvm-windows\tools\clang\bin\clang.exe
 
 :: install hello.k
