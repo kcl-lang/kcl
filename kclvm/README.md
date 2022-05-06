@@ -4,7 +4,7 @@ A high-performance implementation of KCL written in Rust that uses LLVM as the c
 
 ## Building and Testing
 
-Firstly, see [KCLVM README](../README.md) to build KCLVM. Secondly, we need to download the [Rust](https://www.rust-lang.org/), [SWIG](http://www.swig.org/), [LLVM 7](https://releases.llvm.org/download.html), and add the LLVM installation location to `LLVM_SYS_70_PREFIX` and the `$PATH`.
+Firstly, see [KCLVM CONTRIBUTING](../CONTRIBUTING.md) to build KCLVM. Secondly, we need to download the [Rust](https://www.rust-lang.org/), [SWIG](http://www.swig.org/), [LLVM 7](https://releases.llvm.org/download.html), and add the LLVM installation location to `LLVM_SYS_70_PREFIX` and the `$PATH`.
 
 ```
 export LLVM_SYS_70_PREFIX=<your LLVM 7 install location>

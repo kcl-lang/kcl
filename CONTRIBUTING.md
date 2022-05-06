@@ -117,6 +117,8 @@ To build a tar file, run:
 ./run.sh -a release
 ```
 
+Next, we can refer to [KCLVM README](./kclvm/README.md) for the next step of environment configuration.
+
 ## Using KCL
 
 The specific user manual is as follows: [KCLVM User Manual](docs/cmd/README_KCLVM_USE.md)
