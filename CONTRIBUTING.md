@@ -105,6 +105,8 @@ To update kclvm python libraries (./scripts/requirements.txt), run:
 ./run.sh -a build-kclvm
 ```
 
+Next, we can refer to [KCLVM README](./kclvm/README.md) for the next step of environment configuration.
+
 To update kclvm python code, run:
 
 ```
@@ -116,8 +118,6 @@ To build a tar file, run:
 ```
 ./run.sh -a release
 ```
-
-Next, we can refer to [KCLVM README](./kclvm/README.md) for the next step of environment configuration.
 
 ## Using KCL
 
