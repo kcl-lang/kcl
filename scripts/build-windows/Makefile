@@ -1,0 +1,60 @@
+# Copyright 2021 The KCL Authors. All rights reserved.
+
+# Only on windows platform: use mingw32-make to run.
+
+default:
+	go run download-file.go
+	go run unzip.go
+
+	go run gen_pth.go
+
+	# install pip
+	_output/kclvm-windows/python.exe get-pip.py
+
+	# pip install -r ../requirements.txt
+	_output/kclvm-windows/python.exe -m pip install -r ../requirements.release.txt  --target=_output/kclvm-windows/Lib/site-packages 
+
+	# install kclvm
+	go run gen-kclvm-py.go
+
+	# renname
+	go run rename.go -old="_output/kclvm-windows/python.exe" -new="_output/kclvm-windows/kclvm.exe"
+
+	# install python39 include and libs
+	go run ./copy-dir.go ./py39-libs ./_output/kclvm-windows
+
+	# install kclvm-runtime
+	cd ../../kclvm/runtime && cargo build --release
+	go run ./copy-file.go -src=../../kclvm/runtime/target/release/kclvm.dll     -dst=./_output/kclvm-windows/libs/kclvm.dll
+	go run ./copy-file.go -src=../../kclvm/runtime/target/release/kclvm.dll.lib -dst=./_output/kclvm-windows/libs/kclvm.dll.lib
+	go run ./copy-file.go -src=../../kclvm/runtime/src/_kclvm.ll                -dst=./_output/kclvm-windows/libs/_kclvm.ll
+	go run ./copy-file.go -src=../../kclvm/runtime/src/_kclvm.bc                -dst=./_output/kclvm-windows/libs/_kclvm.bc
+	go run ./copy-file.go -src=../../kclvm/runtime/src/_kclvm.h                 -dst=./_output/kclvm-windows/libs/_kclvm.h
+	go run ./copy-file.go -src=../../kclvm/runtime/src/_kclvm_main_win.c        -dst=./_output/kclvm-windows/libs/_kclvm_main_win.c
+
+	# install kclvm-plugin
+	./_output/kclvm-windows/kclvm.exe ../../kclvm/plugin/setup.py install_lib
+
+	# install kclvm-cli
+	cd ../../kclvm/runtime && cargo build --release
+
+	# install hello.k
+	go run ./copy-file.go -src=../../hello.k -dst=./_output/kclvm-windows/hello.k
+
+	# install tools
+	go build -o ./_output/kclvm-windows/kcl.exe        kcl.go
+	go build -o ./_output/kclvm-windows/kcl-doc.exe    kcl-doc.go
+	go build -o ./_output/kclvm-windows/kcl-lint.exe   kcl-lint.go
+	go build -o ./_output/kclvm-windows/kcl-fmt.exe   kcl-fmt.go
+	go build -o ./_output/kclvm-windows/kcl-plugin.exe kcl-plugin.go
+	go build -o ./_output/kclvm-windows/kcl-vet.exe    kcl-vet.go
+	go build -o ./_output/kclvm-windows/kcl-fmt.exe    kcl-fmt.go
+
+	# run hello.k
+	_output/kclvm-windows/kclvm.exe -m kclvm ../../hello.k
+	_output/kclvm-windows/kcl-go.exe run     ../../hello.k
+	_output/kclvm-windows/kcl.exe            ../../hello.k
+
+
+clean:
+

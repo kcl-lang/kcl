@@ -1,0 +1,32 @@
+name: simple
+relative_path: ./simple.k
+schemas:
+- name: Person
+  doc: |
+    Person 是一个简单的模型示例
+  attributes:
+  - name: name
+    doc: |
+      普通属性，名为 "name"，表示人的名称
+    type:
+      type_str: str
+      type_category: BUILTIN
+      builtin_type: STRING
+    default_value: '"Default"'
+    is_optional: false
+  - name: age
+    doc: |
+      普通属性，名为 "age"，表示人的年龄
+    type:
+      type_str: int
+      type_category: BUILTIN
+      builtin_type: INT
+    is_optional: true
+    default_value: '18'
+  examples: |
+    person = Person {
+        name: "Alice"
+        age: 18
+    }
+doc: '模块文档，当前模块中定义了一个名为 "Person" 的模型'
+source_code_url: 'https://url/to/source_code'

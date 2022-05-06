@@ -1,0 +1,18 @@
+input:
+  k0:
+    value: v0
+  k1:
+    value: v1
+output:
+- metadata:
+    name: k0
+  spec:
+    data:
+      type: mock_resource
+      value: v0
+- metadata:
+    name: k1
+  spec:
+    data:
+      type: mock_resource
+      value: v1

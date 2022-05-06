@@ -1,0 +1,24 @@
+[
+    {
+        "type": "schema",
+        "schemaName": "Data",
+        "properties": {
+            "name": {
+                "type": "str",
+                "line": 2
+            },
+            "id": {
+                "type": "int",
+                "line": 1
+            },
+            "cpu": {
+                "line": 3,
+                "type": "number_multiplier"
+            }
+        },
+        "required": [
+            "cpu",
+            "name"
+        ]
+    }
+]

@@ -1,0 +1,7 @@
+labels:
+  key: value
+config:
+  spec:
+    replicas: 1
+    labels:
+      key: value

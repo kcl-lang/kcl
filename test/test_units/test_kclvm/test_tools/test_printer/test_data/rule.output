@@ -1,0 +1,16 @@
+age = 1
+protocol MainProtocol:
+    """Protocol doc"""
+    var: int
+
+mixin MainMixin for MainProtocol:
+    var: int
+
+@deprecated
+rule Base:
+    """Rule doc"""
+    age > 0
+    age < 10
+rule Main[var](Base) for MainProtocol:
+    var
+Main(1)

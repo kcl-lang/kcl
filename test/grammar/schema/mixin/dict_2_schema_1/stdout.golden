@@ -1,0 +1,19 @@
+alice:
+  rule:
+    name: alice
+    relatives:
+    - relation: father
+      name: Reese
+    access:
+    - read
+    - write
+---
+kind: Rule
+access:
+- read
+- write
+entity:
+  name: alice
+  relatives:
+  - relation: father
+    name: Reese

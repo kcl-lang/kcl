@@ -1,0 +1,76 @@
+// Copyright 2021 The KCL Authors. All rights reserved.
+
+/// New a mutable raw pointer.
+pub fn new_mut_ptr<T>(x: T) -> *mut T {
+    Box::into_raw(Box::new(x))
+}
+
+/// Free a mutable raw pointer.
+pub fn free_mut_ptr<T>(p: *mut T) {
+    if !p.is_null() {
+        unsafe {
+            Box::from_raw(p);
+        }
+    }
+}
+
+/// Convert a const raw pointer to a immutable borrow.
+pub fn ptr_as_ref<'a, T>(p: *const T) -> &'a T {
+    assert!(!p.is_null());
+    unsafe { &*p }
+}
+
+/// Convert a mutable raw pointer to a mutable borrow.
+pub fn mut_ptr_as_ref<'a, T>(p: *mut T) -> &'a mut T {
+    assert!(!p.is_null());
+    unsafe { &mut *p }
+}
+
+/// Convert a C str pointer to a Rust &str.
+pub fn c2str<'a>(s: *const i8) -> &'a str {
+    let s = unsafe { std::ffi::CStr::from_ptr(s) }.to_str().unwrap();
+    s
+}
+
+/// Convert a immutable borrow to a mutable borrow unsafely to enable rapid data changes.
+/// Please use it with caution.
+#[inline]
+pub fn get_ref_mut<T>(val: &T) -> &mut T {
+    unsafe { &mut *(val as *const T as *mut T) }
+}
+
+/// Convert a raw double pinter to a Rust Vec.
+pub fn convert_double_pointer_to_vec(data: &mut &mut i8, len: usize) -> Vec<String> {
+    unsafe {
+        match std::slice::from_raw_parts(data, len)
+            .iter()
+            .map(|arg| {
+                std::ffi::CStr::from_ptr(*arg)
+                    .to_str()
+                    .map(ToString::to_string)
+            })
+            .collect()
+        {
+            Err(_error) => Vec::<String>::new(),
+            Ok(x) => x,
+        }
+    }
+}
+
+pub fn assert_panic<F: FnOnce() -> () + std::panic::UnwindSafe>(msg: &str, func: F) {
+    match std::panic::catch_unwind(func) {
+        Ok(_v) => {
+            panic!("not panic, expect={}", msg);
+        }
+        Err(e) => match e.downcast::<String>() {
+            Ok(_v) => panic!("unreachable"),
+            Err(e) => match e.downcast::<&str>() {
+                Ok(v) => {
+                    let got = v.to_string();
+                    assert!(got.contains(msg), "expect={}, got={}", msg, got);
+                }
+                _ => unreachable!(),
+            },
+        },
+    };
+}

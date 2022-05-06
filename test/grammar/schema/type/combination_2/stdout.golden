@@ -1,0 +1,10 @@
+alice:
+  name:
+    firstName: alice
+    lastName: Green
+  age: 10
+  personModel:
+    name:
+      firstName: alice
+      lastName: Green
+    age: 10

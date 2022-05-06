@@ -1,0 +1,10 @@
+John:
+  age: 10
+  name: John
+  info:
+    address: abc
+    old: false
+  family:
+  - mom
+  - dad
+  adult: false

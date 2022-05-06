@@ -1,0 +1,11 @@
+import main
+
+
+
+
+
+
+
+
+
+print('main')

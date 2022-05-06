@@ -1,0 +1,5 @@
+#!/bin/sh
+
+kclvm_path=$(cd `dirname $0`; pwd)/kclvm
+export PATHONPATH=''
+$kclvm_path -m kclvm.tools.format "$@"

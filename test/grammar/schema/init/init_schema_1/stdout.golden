@@ -1,0 +1,6 @@
+JohnDoe:
+  inner: null
+  innerModel:
+    data:
+      key: value
+  name: Joe

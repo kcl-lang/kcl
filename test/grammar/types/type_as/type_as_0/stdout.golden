@@ -1,0 +1,10 @@
+a: 1
+b: 2.0
+c: true
+d: s
+e:
+- 1
+f:
+  key: value
+g:
+  id: 1

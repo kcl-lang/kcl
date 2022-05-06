@@ -1,0 +1,14 @@
+name: @root
+is_unique: False
+adjs: 
+    name: alice
+    is_unique: False
+    config_name: Person
+    adjs: 
+        name: None
+        is_unique: False
+        value: <ConfigIfEntryExpr, (6, 5)>
+        
+        name: None
+        is_unique: False
+        value: <ConfigIfEntryExpr, (11, 5)>

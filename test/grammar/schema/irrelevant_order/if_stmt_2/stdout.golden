@@ -1,0 +1,34 @@
+result:
+  data:
+    envMandatory: true
+    overQuota: true
+    appLogicPool: true
+  deployment:
+    affinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: app-env
+            operator: In
+            values: $env_type
+          - key: cluster.k8s/is-over-quota
+            operator: In
+            values:
+            - 'true'
+          - key: mandatory.k8s/app-logic-pool
+            operator: In
+            values:
+            - true
+    tolerations:
+    - key: app-env
+      operator: Equal
+      value: $env_type
+      effect: NoSchedule
+    - key: cluster.k8s/is-over-quota
+      operator: Equal
+      value: 'true'
+      effect: NoSchedule
+    - key: mandatory.k8s/app-logic-pool
+      operator: Equal
+      value: true
+      effect: NoSchedule

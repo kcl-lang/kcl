@@ -1,0 +1,138 @@
+name: compact_type
+relative_path: ./compact_type.k
+schemas:
+- name: Metadata
+  doc: |
+    Metadata is the base schema of all models, which contains data
+    that helps uniquely identify the object.
+  attributes:
+  - name: name
+    doc: |
+      The name of the resource.
+      Name must be unique within a namespace. It's required when creating
+      resources, although some resources may allow a client to request the
+      generation of an appropriate name automatically.
+      Name is primarily intended for creation idempotence and configuration
+      definition. Cannot be updated. More info:
+      http://kubernetes.io/docs/user-guide/identifiers#names
+    type:
+      type_str: str
+      type_category: BUILTIN
+      builtin_type: STRING
+    is_optional: false
+    default_value: ''
+  - name: labels
+    doc: |
+      Labels is a map of string keys and values that can be used to
+      organize and categorize (scope and select) objects.
+      May match selectors of replication controllers and services.
+      More info: http://kubernetes.io/docs/user-guide/labels
+    type:
+      type_str: '{str: str}'
+      type_category: DICT
+      dict_type:
+        key_type:
+          type_str: str
+          type_category: BUILTIN
+          builtin_type: STRING
+        value_type:
+          type_str: str
+          type_category: BUILTIN
+          builtin_type: STRING
+    is_optional: true
+    default_value: ''
+  - name: annotations
+    doc: |
+      Annotations is an unstructured key value map stored with a
+      resource that may be set by external tools to store and retrieve
+      arbitrary metadata. They are not queryable and should be preserved
+      when modifying objects.
+      More info: http://kubernetes.io/docs/user-guide/annotations
+    type:
+      type_str: '{str: str}'
+      type_category: DICT
+      dict_type:
+        key_type:
+          type_str: str
+          type_category: BUILTIN
+          builtin_type: STRING
+        value_type:
+          type_str: str
+          type_category: BUILTIN
+          builtin_type: STRING
+    is_optional: true
+    default_value: ''
+  - name: namespace
+    doc: |
+      Namespaces are intended for use in environments with many users spread
+      across multiple teams, or projects.
+      For clusters with a few to tens of users, you should not need to create
+      or think about namespaces at all. Start using namespaces when you need the features they provide.
+      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
+    type:
+      type_str: str
+      type_category: BUILTIN
+      builtin_type: STRING
+    is_optional: true
+    default_value: default
+  examples: ''
+- name: AppConfiguration
+  doc: |
+    AppConfiguration is the common user interface for long-running
+    services adopting the best practice of Kubernetes.
+  attributes:
+  - name: workloadType
+    doc: |
+      Use this attribute to specify which kind of long-running service you want.
+      Valid values: Deployment, CafeDeployment.
+      Default to Deployment.
+      See also: kusion_models/core/v1/workload_metadata.k
+    type:
+      type_str: str
+      type_category: BUILTIN
+      builtin_type: STRING
+    default_value: Deployment
+    is_optional: false
+  - name: name
+    doc: |
+      Required.
+      A Server-level attribute.
+      The name of the long-running service.
+      See also: kusion_models/core/v1/metadata.k
+    type:
+      type_str: str
+      type_category: BUILTIN
+      builtin_type: STRING
+    is_optional: false
+    default_value: ''
+  - name: namespace
+    doc: |
+      Required.
+      A Server-level attribute.
+      The namespace of the long-running service.
+      See also: kusion_models/core/v1/metadata.k
+    type:
+      type_str: str
+      type_category: BUILTIN
+      builtin_type: STRING
+    default_value: default
+    is_optional: false
+  - name: app
+    doc: |
+      A Server-level attribute.
+      The name of the application.
+      If specified, it will be used as the value of the default label "app".
+      If not specified, the value of the attribute name will be used.
+      See also: kusion_models/core/v1/workload_metadata.k
+    type:
+      type_str: str
+      type_category: BUILTIN
+      builtin_type: STRING
+    is_optional: false
+    default_value: ''
+  examples: |
+    myCustomApp = AppConfiguration {
+        name: "componentName"
+    }
+doc: ''
+source_code_url: ''

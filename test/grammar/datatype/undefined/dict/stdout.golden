@@ -1,0 +1,4 @@
+data:
+  key: value
+errDataUndefined: true
+errDataNone: false

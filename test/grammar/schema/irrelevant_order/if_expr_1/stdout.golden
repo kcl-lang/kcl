@@ -1,0 +1,8 @@
+JohnDoe:
+  firstName: John
+  lastName: Doe
+  fullName: John Doe
+  mapping:
+    firstName: John
+    lastName: Doe
+    fullName: John Doe

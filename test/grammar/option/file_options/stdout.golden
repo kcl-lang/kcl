@@ -1,0 +1,9 @@
+a: value0
+b: value1
+c: 1
+d:
+  innerDictKey: innerDictValue
+e:
+- 1
+- 2
+- 3

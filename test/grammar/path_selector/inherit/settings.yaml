@@ -1,0 +1,1 @@
+kcl_options: -S inherit:JohnDoe.firstName -S inherit:JohnDoe.lastName

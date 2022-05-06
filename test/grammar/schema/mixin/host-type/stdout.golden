@@ -1,0 +1,6 @@
+x0:
+  name: PersonMixin-name
+  age: 1
+x1:
+  name: PersonMixin-name
+  age: 101

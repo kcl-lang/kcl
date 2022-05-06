@@ -1,0 +1,11 @@
+person1:
+  name: Alice
+  age: 18
+person2:
+  name: Bob
+  age: 16
+instances:
+- name: Alice
+  age: 18
+- name: Bob
+  age: 16

@@ -1,0 +1,240 @@
+// Copyright 2021 The KCL Authors. All rights reserved.
+
+use crate::*;
+
+/// Adjust ValueRef when the value is used with Rust option.
+/// If the value is KCL None or Undefined, mapping it to Rust None,
+/// else mapping it to Some(value).
+#[inline]
+pub fn adjust_parameter(value: Option<&ValueRef>) -> Option<&ValueRef> {
+    value.and_then(|v| {
+        if v.is_none_or_undefined() {
+            None
+        } else {
+            Some(v)
+        }
+    })
+}
+
+impl ValueRef {
+    pub fn arg_0(&self) -> Option<&Self> {
+        self.arg_i(0)
+    }
+
+    pub fn arg_last(&self) -> Option<&Self> {
+        match *self.rc {
+            Value::list_value(ref list) => Some(&list.values[list.values.len() - 1]),
+            _ => None,
+        }
+    }
+
+    pub fn pop_arg_last(&self) -> Option<Self> {
+        match *self.rc {
+            Value::list_value(ref list) => {
+                let list = get_ref_mut(list);
+                list.values.pop()
+            }
+            _ => None,
+        }
+    }
+
+    pub fn pop_arg_first(&self) -> Option<Self> {
+        match *self.rc {
+            Value::list_value(ref list) => {
+                let list = get_ref_mut(list);
+                if !list.values.is_empty() {
+                    Some(list.values.remove(0))
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        }
+    }
+
+    pub fn args_len(&self) -> usize {
+        match *self.rc {
+            Value::list_value(ref list) => list.values.len(),
+            _ => 1,
+        }
+    }
+
+    pub fn arg_i(&self, i: usize) -> Option<&Self> {
+        match *self.rc {
+            Value::list_value(ref list) => {
+                if i < list.values.len() {
+                    return Some(&list.values[i]);
+                }
+                None
+            }
+            _ => None,
+        }
+    }
+
+    pub fn arg_i_bool(&self, i: usize, default: Option<bool>) -> Option<bool> {
+        if let Some(x) = self.arg_i(i) {
+            match *x.rc {
+                Value::bool_value(v) => return Some(v),
+                Value::none => return default,
+                _ => return None,
+            }
+        }
+        default
+    }
+
+    pub fn arg_i_int(&self, i: usize, default: Option<i64>) -> Option<i64> {
+        if let Some(x) = self.arg_i(i) {
+            match *x.rc {
+                Value::int_value(v) => return Some(v),
+                Value::none => return default,
+                _ => return None,
+            }
+        }
+        default
+    }
+
+    pub fn arg_i_float(&self, i: usize, default: Option<f64>) -> Option<f64> {
+        if let Some(x) = self.arg_i(i) {
+            match *x.rc {
+                Value::float_value(v) => return Some(v),
+                Value::none => return default,
+                _ => return None,
+            }
+        }
+        default
+    }
+
+    pub fn arg_i_str(&self, i: usize, default: Option<String>) -> Option<String> {
+        if let Some(x) = self.arg_i(i) {
+            match &*x.rc {
+                Value::str_value(s) => return Some(s.to_string()),
+                Value::none => return default,
+                _ => return None,
+            }
+        }
+        default
+    }
+
+    pub fn arg_i_list(&self, i: usize) -> Option<&Self> {
+        if let Some(x) = self.arg_i(i) {
+            match *x.rc {
+                Value::list_value(_) => return Some(x),
+                _ => return None,
+            }
+        }
+        None
+    }
+
+    pub fn arg_i_dict(&self, i: usize) -> Option<&Self> {
+        if let Some(x) = self.arg_i(i) {
+            match *x.rc {
+                Value::dict_value(_) => return Some(x),
+                _ => return None,
+            }
+        }
+        None
+    }
+
+    pub fn kwarg(&self, name: &str) -> Option<&Self> {
+        match *self.rc {
+            Value::dict_value(ref dict) => dict.values.get(&name.to_string()),
+            _ => None,
+        }
+    }
+
+    pub fn kwarg_bool(&self, name: &str, default: Option<bool>) -> Option<bool> {
+        if let Some(x) = self.kwarg(name) {
+            match *x.rc {
+                Value::bool_value(v) => return Some(v),
+                Value::none => return default,
+                _ => return None,
+            }
+        }
+        default
+    }
+
+    pub fn kwarg_int(&self, name: &str, default: Option<i64>) -> Option<i64> {
+        if let Some(x) = self.kwarg(name) {
+            match *x.rc {
+                Value::int_value(v) => return Some(v),
+                Value::none => return default,
+                _ => return None,
+            }
+        }
+        default
+    }
+
+    pub fn kwarg_float(&self, name: &str, default: Option<f64>) -> Option<f64> {
+        if let Some(x) = self.kwarg(name) {
+            match *x.rc {
+                Value::float_value(v) => return Some(v),
+                Value::none => return default,
+                _ => return None,
+            }
+        }
+        default
+    }
+
+    pub fn kwarg_str(&self, name: &str, default: Option<String>) -> Option<String> {
+        if let Some(x) = self.kwarg(name) {
+            match &*x.rc {
+                Value::str_value(s) => return Some(s.to_string()),
+                Value::none => return default,
+                _ => return None,
+            }
+        }
+        default
+    }
+
+    pub fn kwarg_list(&self, name: &str) -> Option<&Self> {
+        if let Some(x) = self.kwarg(name) {
+            match *x.rc {
+                Value::list_value(_) => return Some(x),
+                _ => return None,
+            }
+        }
+        None
+    }
+
+    pub fn kwarg_dict(&self, name: &str) -> Option<&Self> {
+        if let Some(x) = self.kwarg(name) {
+            match *x.rc {
+                Value::dict_value(_) => return Some(x),
+                _ => return None,
+            }
+        }
+        None
+    }
+}
+
+#[cfg(test)]
+mod test_value_args {
+    use crate::*;
+
+    #[test]
+    fn test_value_args() {
+        let args = ValueRef::list(Some(&[
+            &ValueRef::int(0),
+            &ValueRef::float(1.0),
+            &ValueRef::str("ss"),
+        ]));
+        let arg_first = args.pop_arg_first().unwrap();
+        let arg_last = args.pop_arg_last().unwrap();
+        assert_eq!(arg_first, ValueRef::int(0));
+        assert_eq!(arg_last, ValueRef::str("ss"));
+        assert_eq!(args.arg_0().unwrap().clone(), ValueRef::float(1.0));
+        assert_eq!(args.arg_i_float(0, Some(2.0)).unwrap(), 1.0);
+    }
+
+    #[test]
+    fn test_value_kwargs() {
+        let mut kwargs = ValueRef::dict(None);
+        kwargs.dict_update_key_value("key1", ValueRef::int(1));
+        kwargs.dict_update_key_value("key2", ValueRef::str("2"));
+        assert_eq!(kwargs.kwarg_int("key1", Some(2)).unwrap(), 1);
+        assert_eq!(
+            kwargs.kwarg_str("key2", Some("ss".to_string())).unwrap(),
+            "2"
+        );
+    }
+}

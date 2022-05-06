@@ -1,0 +1,61 @@
+name: server
+relative_path: ./frontend/server.k
+schemas:
+- name: Server
+  doc: |
+    Server 定义了经典的长连接服务
+  attributes:
+  - name: name
+    doc: |
+      server 的名称
+    type:
+      type_str: str
+      type_category: BUILTIN
+      builtin_type: STRING
+    default_value: Undefined
+    is_optional: false
+  - name: workloadType
+    doc: |
+      工作负载的类型
+    type:
+      type_str: '"Deployment" | "StatefulSet" | "DaemonSet"'
+      union_type:
+        types:
+        - type_str: '"Deployment"'
+          type_category: LIT
+          lit_type:
+            string_lit: Deployment
+        - type_str: '"StatefulSet"'
+          type_category: LIT
+          lit_type:
+            string_lit: StatefulSet
+        - type_str: '"DaemonSet"'
+          type_category: LIT
+          lit_type:
+            string_lit: DaemonSet
+      type_category: UNION
+    default_value: '"Deployment"'
+    is_optional: false
+  - name: replica
+    doc: |
+      目标副本数
+    type:
+      type_str: int
+      type_category: BUILTIN
+      builtin_type: INT
+    default_value: '1'
+    is_optional: false
+  - name: mainContainer
+    doc: |
+      主容器
+    type:
+      type_str: Container
+      type_category: SCHEMA
+      schema_type:
+        name: Container
+        relative_path: ./frontend/container.k
+    default_value: Undefined
+    is_optional: false
+  examples: ''
+doc: ''
+source_code_url: ''

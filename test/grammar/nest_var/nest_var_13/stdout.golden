@@ -1,0 +1,12 @@
+base:
+  data:
+    key:
+    - 1
+    - 2
+    - 3
+data:
+  data:
+    key:
+    - 4
+    - 5
+    - 6

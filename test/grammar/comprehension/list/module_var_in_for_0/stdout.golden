@@ -1,0 +1,6 @@
+list:
+- name: hello1
+- name: hello2
+result:
+- hello1
+- hello2

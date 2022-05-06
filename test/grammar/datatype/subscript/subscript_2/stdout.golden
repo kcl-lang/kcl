@@ -1,0 +1,8 @@
+main:
+  args:
+  - abc
+  - bcd
+  - cde
+  - def
+args1: a
+args2: ALICE

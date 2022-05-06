@@ -1,0 +1,19 @@
+a1: |-
+  {
+      "name": "Alice",
+      "age": 18,
+      "data": [
+          1,
+          2,
+          null
+      ]
+  }
+a2: |-
+  {
+      "name": "Alice",
+      "age": 18,
+      "data": [
+          1,
+          2
+      ]
+  }

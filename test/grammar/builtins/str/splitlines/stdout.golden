@@ -1,0 +1,15 @@
+a:
+- Hel
+- ''
+- lo W
+- or
+- ld
+b:
+- |
+  Hel
+- |2+
+
+- "lo W\r"
+- |
+  or
+- ld

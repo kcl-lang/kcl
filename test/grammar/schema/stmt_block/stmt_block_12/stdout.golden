@@ -1,0 +1,6 @@
+alice:
+  name: alice
+  age: 10
+  gender: female
+  info_with_type: alice, female, 10 years old
+  info_without_type: alice, female, 10 years old

@@ -1,0 +1,21 @@
+name: @root
+is_unique: False
+adjs: 
+    name: config
+    is_unique: False
+    config_name: Config
+    adjs: 
+        name: labels
+        is_unique: False
+        adjs: 
+            name: env1
+            is_unique: False
+            value: <StringLit, (7, 19) value: v1>
+            
+            name: env2
+            is_unique: False
+            value: <StringLit, (8, 19) value: v2>
+            
+            name: env3
+            is_unique: False
+            value: <StringLit, (10, 16) value: v3>

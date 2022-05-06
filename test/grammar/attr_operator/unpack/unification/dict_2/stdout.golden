@@ -1,0 +1,7 @@
+base:
+  val:
+  - key1: value1
+config:
+  val:
+  - key1: value1
+    key2: value2

@@ -1,0 +1,21 @@
+[package]
+name = "kclvm-config"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_yaml = "0.8.7"
+indexmap = "1.0"
+ahash = "0.7.2"
+toml = "0.5.8"
+ron = "0.6.4"
+chrono = "0.4.19"
+rust-crypto = "^0.2"
+glob = "0.3.0"
+fslock = "0.2.1"
+pathdiff = "0.2.1"
+
+kclvm-version = {path = "../version", version = "0.1.0"}

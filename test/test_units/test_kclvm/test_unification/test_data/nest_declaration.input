@@ -1,0 +1,11 @@
+schema Config:
+    name?: str
+    args: [str]
+    labels: {str:}
+
+config = Config {
+    args: ["kcl", "main.k"]
+    labels.key1: "value1"
+}
+
+config.name = "config"

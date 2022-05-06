@@ -1,0 +1,14 @@
+kcl_cli_configs:
+  files:
+    - ../main.k
+    - ./before/base.k
+    - ./main.k
+    - ./sub/sub.k
+  disable_none: false
+  strict_range_check: false
+  debug: false
+kcl_options:
+  - key: app-name
+    value: kclvm
+  - key: image
+    value: kclvm:v0.0.1

@@ -1,0 +1,17 @@
+name: @root
+is_unique: False
+adjs: 
+    name: person
+    is_unique: False
+    config_name: Person
+    adjs: 
+        name: info
+        is_unique: False
+        adjs: 
+            name: key2
+            is_unique: False
+            value: <StringLit, (6, 21) value: value2>
+        
+        name: <Subscript, (10, 5)>
+        is_unique: False
+        value: <NumberLit, (10, 14) value: 4>

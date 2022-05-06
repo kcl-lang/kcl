@@ -1,0 +1,12 @@
+dataWithInfo:
+  appendInfo: true
+  person:
+    name: Alice
+    age: 1
+    info:
+      key1: value1
+      key2: value2
+      key3: value3
+dataWithoutInfo:
+  appendInfo: false
+  person: {}

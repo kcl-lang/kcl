@@ -1,0 +1,5 @@
+alice:
+  name: alice
+  age: 10
+  gender: female
+  info: alice, female, 10 years old

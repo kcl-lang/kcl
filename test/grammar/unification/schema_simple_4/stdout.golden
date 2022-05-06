@@ -1,0 +1,5 @@
+data:
+  person:
+    name: Alice
+    age: 1
+    info: 'name: Alice, age: 1'

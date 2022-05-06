@@ -1,0 +1,4 @@
+key: age
+alice:
+  name: Alice
+  age: 18

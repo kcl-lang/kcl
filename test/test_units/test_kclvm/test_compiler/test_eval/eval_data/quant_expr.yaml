@@ -1,0 +1,17 @@
+x0:
+- 3
+- 4
+x1:
+- 1
+x2: false
+x3: true
+x4:
+- name: '2'
+  value: 2
+x5:
+- name: '1'
+  value: 1
+x6:
+  a: foo
+x7:
+  a: foo

@@ -1,0 +1,9 @@
+data:
+  key1: value1
+  key2: value2
+dataKeys:
+- key1
+- key2
+dataValues:
+- value1
+- value2

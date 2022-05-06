@@ -1,0 +1,3 @@
+JohnDoe = Person {
+    "lastName": "Doe"
+}

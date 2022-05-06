@@ -1,0 +1,21 @@
+son1:
+  metadata:
+    labels:
+      key: 123
+  name: Bob
+  key: '123'
+son2:
+  metadata:
+    labels:
+      key: 456
+  name: Alice
+  key: '123'
+son3:
+  metadata: {}
+  name: Green
+  key: key
+son4:
+  metadata:
+    key: val
+  name: null
+  key: null

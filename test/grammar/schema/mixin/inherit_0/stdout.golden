@@ -1,0 +1,6 @@
+JohnDoe:
+  firstName: John
+  lastName: Doe
+  nameUpper: JOHN
+  school: cs
+  schoolUpper: CS

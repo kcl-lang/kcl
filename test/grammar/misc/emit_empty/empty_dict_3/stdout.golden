@@ -1,0 +1,24 @@
+server:
+  name: productPage
+  workloadType: Deployment
+  replicas: 1
+  pod:
+    volumes:
+    - name: tmp
+      emptyDir: {}
+    activeDeadlineSeconds: 600
+  deploymentModel:
+    apiVersion: apps/v1
+    kind: Deployment
+    spec:
+      template:
+        metadata:
+          name: productPage
+        spec:
+          volumes:
+          - name: tmp
+            emptyDir: {}
+          activeDeadlineSeconds: 600
+      replicas: 1
+    metadata:
+      name: productPage

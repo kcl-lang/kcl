@@ -1,0 +1,5 @@
+config:
+  name: config
+  data:
+    output: default_output
+  output: default_output

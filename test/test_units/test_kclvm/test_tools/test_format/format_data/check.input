@@ -1,0 +1,12 @@
+
+schema Person:
+    firstName: str = "John"
+    lastName: str
+    times: int
+    check:
+        len(lastName)    > 0 if          times >     5
+
+JohnDoe = Person {
+    "lastName": "Doe"
+    "times":10
+}

@@ -1,0 +1,9 @@
+baseInstance:
+- hc: 3
+- hc: null
+  name: Alice
+  age: 18
+- hc: null
+  name: Bob
+  age: 16
+personInstanceLen: 2

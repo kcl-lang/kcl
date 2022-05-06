@@ -1,0 +1,27 @@
+name: @root
+is_unique: False
+adjs: 
+    name: group
+    is_unique: False
+    config_name: Group
+    adjs: 
+        name: persons
+        is_unique: False
+        adjs: 
+            name: 1
+            is_unique: False
+            adjs: 
+                name: name
+                is_unique: False
+                adjs: 
+                    name: firstName
+                    is_unique: False
+                    value: <StringLit, (16, 30) value: Alice>
+                    
+                    name: lastName
+                    is_unique: False
+                    value: <StringLit, (26, 29) value: Terry>
+                
+                name: age
+                is_unique: False
+                value: <NumberLit, (18, 20) value: 12>

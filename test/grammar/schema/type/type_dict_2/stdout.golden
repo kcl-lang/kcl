@@ -1,0 +1,7 @@
+alice:
+  person:
+    name:
+      firstName: Alice
+      lastName: Terry
+    age: 12
+  phone: 123

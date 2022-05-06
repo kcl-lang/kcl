@@ -1,0 +1,15 @@
+config:
+  name: appName
+  globalAppName: appName
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+            - key: cluster.k8s/app-name
+              operator: In
+              values:
+              - appName
+          topologyKey: kubernetes.io/hostname

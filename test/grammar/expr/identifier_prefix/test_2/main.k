@@ -1,0 +1,52 @@
+schema Data:
+    $all: int
+    $any: int
+    $map: int
+    $filter: int
+    $schema: int
+    $mixin: int
+    $import: int
+    $pass: int
+    $in: int
+    $and: int
+    $or: int
+    $is: int
+    $not: int
+    $return: int
+    $check: int
+    $assert: int
+    $if: int
+    $else: int
+    $elif: int
+    $for: int
+    $final: int
+    $relaxed: int
+    $rule: int
+    $def: int
+
+data = Data {
+    $all: 1
+    $any: 2
+    $map: 3
+    $filter: 4
+    $schema: 5
+    $mixin: 6
+    $import: 7
+    $pass: 8
+    $in: 9
+    $and: 10
+    $or: 11
+    $is: 12
+    $not: 13
+    $return: 14
+    $check: 15
+    $assert: 16
+    $if: 17
+    $else: 18
+    $elif: 19
+    $for: 20
+    $final: 21
+    $relaxed: 22
+    $rule: 23
+    $def: 24
+}

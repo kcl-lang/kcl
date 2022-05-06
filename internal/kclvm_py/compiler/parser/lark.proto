@@ -1,0 +1,18 @@
+// Copyright 2020 The KCL Authors. All rights reserved.
+
+syntax = "proto3";
+
+package kclvm.compiler.parser.lark;
+
+// https://github.com/lark-parser/lark/blob/master/docs/_static/lark_cheatsheet.pdf
+
+message Tree {
+    string type = 1;
+    string token_value = 2;
+    repeated Tree children = 3;
+
+    int32 line = 101;
+    int32 column = 102;
+    int32 end_line = 103;
+    int32 end_column = 104;
+}

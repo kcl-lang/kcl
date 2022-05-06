@@ -1,0 +1,5 @@
+data:
+  a: 1
+  aStr: '1'
+  config:
+    '1': '1'

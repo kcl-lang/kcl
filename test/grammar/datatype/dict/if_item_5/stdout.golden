@@ -1,0 +1,16 @@
+data1:
+  key1: value1
+  key11: 1
+  key12: true
+data2:
+  key2: value2
+  key21: 2
+  key22: true
+data3:
+  key3: value3
+  key31: 3
+  key32: true
+data4:
+  key4: value4
+  key41: 4
+  key42: true

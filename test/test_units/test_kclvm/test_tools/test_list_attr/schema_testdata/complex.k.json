@@ -1,0 +1,166 @@
+[
+    {
+        "type": "schema",
+        "schemaName": "User",
+        "properties": {
+            "name": {
+                "type": "str",
+                "default": "default_name",
+                "line": 1,
+                "decorators": [
+                    {
+                        "name": "info",
+                        "keywords": {
+                            "message": "name"
+                        }
+                    }
+                ]
+            },
+            "homeTown": {
+                "type": "schema",
+                "schemaName": "HomeTown",
+                "properties": {
+                    "province": {
+                        "type": "str",
+                        "line": 1
+                    },
+                    "city": {
+                        "type": "schema",
+                        "schemaName": "Custom",
+                        "properties": {
+                            "left": {
+                                "type": "int",
+                                "line": 1
+                            },
+                            "right": {
+                                "type": "int",
+                                "line": 2
+                            }
+                        },
+                        "required": [
+                            "left",
+                            "right"
+                        ],
+                        "line": 2
+                    }
+                },
+                "required": [
+                    "city",
+                    "province"
+                ],
+                "line": 3
+            },
+            "age": {
+                "type": "int",
+                "default": "1",
+                "line": 2
+            }
+        },
+        "required": [
+            "age",
+            "name"
+        ],
+        "decorators": [
+            {
+                "name": "info",
+                "keywords": {
+                    "version": "v1"
+                }
+            }
+        ]
+    },
+    {
+        "type": "schema",
+        "schemaName": "HomeTown",
+        "properties": {
+            "province": {
+                "type": "str",
+                "line": 1
+            },
+            "city": {
+                "type": "schema",
+                "schemaName": "Custom",
+                "properties": {
+                    "right": {
+                        "type": "int",
+                        "line": 2
+                    },
+                    "left": {
+                        "type": "int",
+                        "line": 1
+                    }
+                },
+                "required": [
+                    "left",
+                    "right"
+                ],
+                "line": 2
+            }
+        },
+        "required": [
+            "city",
+            "province"
+        ]
+    },
+    {
+        "type": "schema",
+        "schemaName": "Custom",
+        "properties": {
+            "left": {
+                "type": "int",
+                "line": 1
+            },
+            "right": {
+                "type": "int",
+                "line": 2
+            }
+        },
+        "required": [
+            "left",
+            "right"
+        ]
+    },
+    {
+        "type": "schema",
+        "schemaName": "Color",
+        "properties": {
+            "dictAttr": {
+                "type": "dict",
+                "key": {
+                    "type": "str"
+                },
+                "item": {
+                    "type": "any"
+                },
+                "line": 3
+            },
+            "listAttr": {
+                "type": "list",
+                "item": {
+                    "type": "int"
+                },
+                "line": 2
+            },
+            "color": {
+                "type": "union",
+                "unionTypes": [
+                    {
+                        "type": "str(Yellow)"
+                    },
+                    {
+                        "type": "str(Blue)"
+                    },
+                    {
+                        "type": "str(Green)"
+                    }
+                ],
+                "line": 1
+            }
+        },
+        "required": [
+            "color",
+            "dictAttr",
+            "listAttr"
+        ]
+    }
+]

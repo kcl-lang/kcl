@@ -1,0 +1,7 @@
+data:
+  labels:
+    key: value
+config:
+  data:
+    labels:
+      key: value

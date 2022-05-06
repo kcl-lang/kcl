@@ -1,0 +1,16 @@
+back:
+  ok: '123'
+  dataOn:
+    name: str
+    image: null
+  kubeResource:
+    metadata:
+      name: front
+      spec: str
+      key: front
+    spec:
+      podSpec:
+        template:
+          containers:
+          - image: '123'
+    key: null

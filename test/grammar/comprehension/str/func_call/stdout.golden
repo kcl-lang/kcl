@@ -1,0 +1,8 @@
+dataString: abc
+dataList:
+- A
+- B
+- C
+dataMap:
+  '0': a
+  '1': b

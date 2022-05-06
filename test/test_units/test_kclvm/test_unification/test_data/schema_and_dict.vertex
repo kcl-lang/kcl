@@ -1,0 +1,18 @@
+name: @root
+is_unique: False
+adjs: 
+    name: config
+    is_unique: False
+    config_name: Config
+    adjs: 
+        name: name
+        is_unique: False
+        value: <StringLit, (7, 11) value: Alice>
+        
+        name: age
+        is_unique: False
+        value: <NumberLit, (11, 12) value: 18>
+        
+        name: hc
+        is_unique: False
+        value: <ListExpr, (15, 9) values: [<NumberLit, (15, 10) value: 1>]>

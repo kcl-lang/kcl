@@ -1,0 +1,9 @@
+lists:
+- Alice
+- Bob
+- Green
+name: ALI
+dicts:
+  key: value + {}
+val: value + 1
+val_temp: BOB

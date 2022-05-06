@@ -1,0 +1,4 @@
+strA='123'
+strB= '''
+long string
+'''

@@ -1,0 +1,7 @@
+env1: envVar1
+env2: ''
+data:
+- key: ENV_1
+  value: envVar1
+- key: ENV_2
+  value: envVar2

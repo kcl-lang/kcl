@@ -1,0 +1,17 @@
+dataDict:
+  key: value
+dataList:
+- 1
+- 2
+- 3
+dataInt: 1
+dataFloat: 1.1
+dataNone: null
+dataBool: true
+jsonStr:
+- '{"key": "value"}'
+- '[1, 2, 3]'
+- '1'
+- '1.1'
+- 'null'
+- 'true'

@@ -1,0 +1,1 @@
+assert typeof(value) == "int"

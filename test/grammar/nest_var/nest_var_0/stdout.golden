@@ -1,0 +1,8 @@
+son:
+  metadata:
+    labels:
+      key1: 123
+      key2:
+        key1: value
+        key2: 2
+  name: name

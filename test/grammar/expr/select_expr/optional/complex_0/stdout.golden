@@ -1,0 +1,13 @@
+person:
+  name: Alice
+data:
+  name:
+    key: value
+name1: alice
+name2: value
+datalist:
+- - 1
+- 2
+- 3
+item: 1
+name3: name3_value

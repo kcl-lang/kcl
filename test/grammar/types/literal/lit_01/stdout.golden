@@ -1,0 +1,22 @@
+all_lit_types:
+  bool_0: true
+  bool_1: false
+  bool_2_1: true
+  bool_2_2: false
+  bool_3_1: true
+  bool_3_2: false
+  bool_3_3: null
+  int_0: 0
+  int_1: 123
+  int_2_1: 80
+  int_2_2: 8080
+  float_p: 3.14
+  float_e: 2.71
+  float_e_p_1: 3.14
+  float_e_p_2: 2.71
+  float_e_p_3: null
+  str_TCP: TCP
+  str_UDP: UDP
+  str_TCP_UCP_1: TCP
+  str_TCP_UCP_2: UDP
+  str_TCP_UCP_3: null

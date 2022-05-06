@@ -1,0 +1,14 @@
+_main = Main {
+    env: ["123", "456"]
+    args: ["1"]
+}
+
+config = Config {
+    name: "Alice"
+    main: _main
+    main: Main {
+        env: ["123"]
+        args: []
+    }
+    age: 18
+}

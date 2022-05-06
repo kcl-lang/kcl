@@ -1,0 +1,7 @@
+data:
+  all: 1
+  any: 2
+  and: 3
+  filter: 5
+  schema: 6
+  check: 7

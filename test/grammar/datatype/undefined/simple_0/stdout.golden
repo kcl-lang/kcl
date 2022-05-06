@@ -1,0 +1,8 @@
+a: null
+c:
+- 1
+- null
+- 2
+d:
+  key1: 1
+  key2: null

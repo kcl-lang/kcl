@@ -1,0 +1,16 @@
+regex_source: Apple,Google,Baidu,Xiaomi
+regex_split:
+- Apple
+- Google
+- Baidu
+- Xiaomi
+regex_replace: Apple|Google|Baidu|Xiaomi
+regex_compile: true
+regex_search: true
+regex_find_all:
+- a
+- a
+- a
+- a
+regex_result: true
+regex_result_false: false

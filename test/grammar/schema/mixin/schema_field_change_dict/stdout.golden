@@ -1,0 +1,8 @@
+JohnDoe:
+  firstName: John
+  lastName: Doe
+  fullName: Doe Jon
+  info:
+    id: '123'
+    phone: '321'
+  school: null

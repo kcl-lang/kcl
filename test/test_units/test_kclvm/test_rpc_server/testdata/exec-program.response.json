@@ -1,0 +1,8 @@
+{
+    "result": {
+        "json_result": "[\n    {\n        \"a\": 1\n    }\n]",
+        "yaml_result": "a: 1\n",
+        "escaped_time": "0.002061128616333008"
+    },
+    "error": ""
+}

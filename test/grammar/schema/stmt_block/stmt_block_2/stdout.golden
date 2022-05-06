@@ -1,0 +1,8 @@
+JohnDoe:
+  firstName: John
+  lastName: Doe
+  names:
+  - John
+  - Doe
+  namePair:
+    John: Doe

@@ -1,0 +1,5 @@
+alice:
+  firstName: Alice
+  lastName: Smith
+  fullName: Alice Smith
+  gender: female

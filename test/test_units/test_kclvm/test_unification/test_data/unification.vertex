@@ -1,0 +1,33 @@
+name: @root
+is_unique: False
+adjs: 
+    name: config
+    is_unique: False
+    config_name: Config
+    adjs: 
+        name: name
+        is_unique: False
+        value: <StringLit, (8, 11) value: config1>
+        
+        name: name
+        is_unique: False
+        value: <StringLit, (14, 12) value: config2>
+        
+        name: args
+        is_unique: False
+        value: <ListExpr, (9, 11) values: [<StringLit, (9, 12) value: kcl>, <StringLit, (9, 19) value: main.k>]>
+        
+        name: args
+        is_unique: False
+        value: <ListExpr, (15, 11) values: [<StringLit, (15, 12) value: kcl2>]>
+        
+        name: labels
+        is_unique: False
+        adjs: 
+            name: key1
+            is_unique: False
+            value: <StringLit, (10, 18) value: value1>
+            
+            name: key2
+            is_unique: False
+            value: <StringLit, (16, 20) value: value2>

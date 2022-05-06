@@ -1,0 +1,28 @@
+{
+    "result": {
+        "schema_type_list": [
+            {
+                "type": "schema",
+                "schema_name": "Person",
+                "properties": {
+                    "key": {
+                        "type": "str",
+                        "line": 1,
+                        "union_types": [],
+                        "default": "",
+                        "schema_name": "",
+                        "schema_doc": "",
+                        "properties": {},
+                        "required": []
+                    }
+                },
+                "union_types": [],
+                "default": "",
+                "schema_doc": "",
+                "required": [],
+                "line": 0
+            }
+        ]
+    },
+    "error": ""
+}

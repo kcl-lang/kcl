@@ -1,0 +1,5 @@
+JohnDoe:
+  firstName: John
+  lastName: Doe
+  school: null
+  fullName: John Doe

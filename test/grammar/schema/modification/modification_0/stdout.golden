@@ -1,0 +1,6 @@
+configOrigin:
+  id: 1
+  name: origin config name
+configNew:
+  id: 1
+  name: override config name

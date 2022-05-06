@@ -1,0 +1,42 @@
+name: @root
+is_unique: False
+adjs: 
+    name: _main
+    is_unique: False
+    config_name: Main
+    adjs: 
+        name: env
+        is_unique: False
+        value: <ListExpr, (12, 10) values: [<StringLit, (12, 11) value: 123>, <StringLit, (12, 18) value: 456>]>
+        
+        name: args
+        is_unique: False
+        value: <ListExpr, (13, 11) values: [<StringLit, (13, 12) value: 1>]>
+    
+    name: config
+    is_unique: False
+    config_name: Config
+    adjs: 
+        name: name
+        is_unique: False
+        value: <StringLit, (17, 11) value: Alice>
+        
+        name: main
+        is_unique: False
+        value: <Identifier, (18, 11) name: _main>
+        
+        name: main
+        is_unique: False
+        config_name: Main
+        adjs: 
+            name: env
+            is_unique: False
+            value: <ListExpr, (24, 14) values: [<StringLit, (24, 15) value: 123>]>
+            
+            name: args
+            is_unique: False
+            value: <ListExpr, (25, 15) values: []>
+        
+        name: age
+        is_unique: False
+        value: <NumberLit, (22, 10) value: 18>

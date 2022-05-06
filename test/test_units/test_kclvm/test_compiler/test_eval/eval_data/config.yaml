@@ -1,0 +1,16 @@
+data:
+  key1:
+  - 0
+  - 1
+  key2:
+  - 1
+  key3:
+  - 1
+config:
+  data:
+  - 1
+  - 2
+  env:
+  - key1: 1
+    key2: 2
+  - key2: 2

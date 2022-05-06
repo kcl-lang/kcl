@@ -1,0 +1,7 @@
+:1:1: E0401 Unable to import abc.
+import abc as abc
+^
+
+Check total 1 files:
+1       E0401: Unable to import
+KCL Lint: 1 problems

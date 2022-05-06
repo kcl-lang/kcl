@@ -1,0 +1,2 @@
+schema Data:
+    id?: int

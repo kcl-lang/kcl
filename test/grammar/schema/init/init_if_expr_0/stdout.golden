@@ -1,0 +1,8 @@
+alice:
+  firstName: Alice
+  lastName: Mrs.Doe
+  prefix: Mrs
+John:
+  firstName: null
+  lastName: Green
+  prefix: null

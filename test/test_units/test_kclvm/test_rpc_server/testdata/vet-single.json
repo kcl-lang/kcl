@@ -1,0 +1,4 @@
+{
+    "code": "assert mname==\"100\"",
+    "data": "{\"mname\": \"100\"}"
+}

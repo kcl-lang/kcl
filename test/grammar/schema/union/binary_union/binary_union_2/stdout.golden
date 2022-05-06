@@ -1,0 +1,7 @@
+person:
+  name1:
+    key1: value1
+    key2: null
+  name2:
+    key1: value1
+    key2: value2

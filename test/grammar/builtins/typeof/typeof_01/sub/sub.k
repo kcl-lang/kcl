@@ -1,0 +1,3 @@
+
+schema Person:
+    name?: any

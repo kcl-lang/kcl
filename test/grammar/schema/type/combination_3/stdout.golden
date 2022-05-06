@@ -1,0 +1,18 @@
+alice:
+  access:
+  - read
+  - write
+  user:
+    name:
+      firstName: alice
+      lastName: Green
+    age: 10
+  rule:
+    entity:
+      name:
+        firstName: alice
+        lastName: Green
+      age: 10
+    access:
+    - read
+    - write

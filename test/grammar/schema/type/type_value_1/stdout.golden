@@ -1,0 +1,7 @@
+configs: {}
+configA:
+  id: 1
+  idStr: 'id: 1'
+configB:
+  id: 2
+  idStr: 'idStr: 2'

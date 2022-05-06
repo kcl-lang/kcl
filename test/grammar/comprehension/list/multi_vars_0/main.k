@@ -1,0 +1,5 @@
+data = [1, 2, 3]
+dataLoop1 = [i for i, v in data]  # [0, 1, 2]
+dataLoop2 = [i * 2 for i in data]  # [2, 4, 6]
+dataLoop3 = [i for i in data if i == 2]  # [2]
+dataLoop4 = [i if i > 2 else i + 1 for i in data]  # [2, 3, 3]

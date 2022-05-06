@@ -1,0 +1,6 @@
+config:
+  nodes:
+  - name: node1
+  - name: node2
+  advancedConfig:
+    id: 1

@@ -1,0 +1,5 @@
+config:
+  data: 2
+data:
+  config:
+    data: 1

@@ -1,0 +1,70 @@
+name: container
+relative_path: ./frontend/container.k
+schemas:
+- name: Container
+  doc: |
+    在 pod 中运行的单应用容器
+  attributes:
+  - name: image
+    doc: |
+      Docker 镜像名称
+    type:
+      type_str: str
+      type_category: BUILTIN
+      builtin_type: STRING
+    default_value: Undefined
+    is_optional: false
+  - name: ports
+    doc: |
+      容器对外暴露的端口列表
+    type:
+      type_str: '[frontend.ContainerPort]'
+      type_category: LIST
+      list_type:
+        item_type:
+          type_str: frontend.ContainerPort
+          type_category: SCHEMA
+          schema_type:
+            name: ContainerPort
+            relative_path: ./frontend/container.k
+    is_optional: true
+    default_value: Undefined
+  examples: ''
+- name: ContainerPort
+  doc: |
+    ContainerPort 表示单个容器中的一个网络端口
+  attributes:
+  - name: port
+    doc: |
+      在 pod IP 地址上暴露的端口号。必须是合法的端口号：介于 0 和 65536 之间（不包含）
+    type:
+      type_str: int
+      type_category: BUILTIN
+      builtin_type: INT
+    default_value: Undefined
+    is_optional: false
+  - name: protocol
+    doc: |
+      端口协议，合法取值有："UDP"，"TCP"，"SCTP"
+    type:
+      type_str: '"TCP" | "UDP" | "SCTP"'
+      union_type:
+        types:
+        - type_str: '"TCP"'
+          type_category: LIT
+          lit_type:
+            string_lit: TCP
+        - type_str: '"UDP"'
+          type_category: LIT
+          lit_type:
+            string_lit: UDP
+        - type_str: '"SCTP"'
+          type_category: LIT
+          lit_type:
+            string_lit: SCTP
+      type_category: UNION
+    default_value: '"TCP"'
+    is_optional: false
+  examples: ''
+doc: ''
+source_code_url: ''

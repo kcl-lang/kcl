@@ -1,0 +1,7 @@
+person:
+  metadata:
+    name: person
+    labels:
+      default: 0
+      key1: value1
+      key2: value2

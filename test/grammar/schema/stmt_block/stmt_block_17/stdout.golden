@@ -1,0 +1,9 @@
+instance:
+  app: override_app
+  meta:
+    name: value
+    test: override_app
+  labels:
+    otherLabels: value
+    name: value
+    test: override_app

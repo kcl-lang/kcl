@@ -1,0 +1,9 @@
+a: 1
+b: 1.2
+c: true
+d:
+- 1
+e:
+  key: value
+data: 2 1.2 4 1 value
+raw: 2 1.2 4 1 value 11

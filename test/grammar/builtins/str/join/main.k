@@ -1,0 +1,1 @@
+a = ".".join(["hello", "world"])

@@ -1,0 +1,6 @@
+kcl_cli_configs:
+  file:
+    - main.k
+  debug: false
+  disable_none: true
+  strict_range_check: true

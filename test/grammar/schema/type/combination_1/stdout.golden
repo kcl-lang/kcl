@@ -1,0 +1,14 @@
+alice:
+  name: myModel
+  persons:
+  - name:
+      firstName: Alice
+      lastName: Green
+    age: 10
+  groupModel:
+    name: myModel
+    persons:
+    - name:
+        firstName: Alice
+        lastName: Green
+      age: 10
