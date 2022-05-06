@@ -1073,7 +1073,6 @@ fn test_parse_joined_string() {
     // );
 }
 
-// TODO: enable file tests after pos & error added.
 #[test]
 fn test_parse_file() {
     let filenames = vec![

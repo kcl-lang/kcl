@@ -6,7 +6,6 @@ use super::{SchemaType, Type, TypeKind};
 ///
 /// For security and performance considerations, dynamic dispatch of
 /// types is not supported at this stage.
-/// TODO: improve type partial-order relation query performance with union-find sets.
 pub fn subsume(ty_lhs: Rc<Type>, ty_rhs: Rc<Type>, check_left_any: bool) -> bool {
     if (check_left_any && ty_lhs.is_any()) || (ty_rhs.is_any() || ty_lhs.is_none()) {
         true

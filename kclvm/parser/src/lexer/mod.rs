@@ -14,11 +14,6 @@
 //! 1. AST Affinity, based on unary, binary and other operations.
 //! 2. Has Indent and dedent.
 //! 3. Don't have some tokens(such as ';', '..', '..=', '<-')
-//!
-//! TODO:
-//! 1. Error handling, error reporting, including source mapping...,
-//!    will be done based on the [`kclvm_error`] crate in another thread.
-//! 2. Go through E2E tests(it, konfig) and fix bugs.
 
 mod indent;
 mod string;
@@ -222,7 +217,7 @@ impl<'a> Lexer<'a> {
             | kclvm_lexer::TokenKind::Space
             | kclvm_lexer::TokenKind::CarriageReturn
             | kclvm_lexer::TokenKind::Whitespace => return None,
-            // Identifier todo: calculate identifier value.
+            // Identifier
             kclvm_lexer::TokenKind::Ident => {
                 let s = self.str_from(start);
                 token::Ident(Symbol::intern(s))

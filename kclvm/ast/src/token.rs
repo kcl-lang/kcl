@@ -3,8 +3,6 @@
 //! Tokens are designed based on the KCL AST.
 //! Including indent and dedent tokens.
 //! Not Include some tokens of low level tokens, such as ';', '..', '..=', '<-'.
-
-// TODO: replace use * with match *
 pub use BinCmpToken::*;
 pub use BinCmpToken::*;
 pub use BinOpToken::*;

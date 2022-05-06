@@ -10,11 +10,6 @@
 //! KCL syntax elements can be simply divided into statements, expressions and tokens,
 //! in which statement consists of expressions and tokens. In expression, operand is the most
 //! complex part to enable all kinds of ident, constant, list, dict, config exprs.
-//!
-//! TODO:
-//! 1. Error report, error recover
-//! 2. Stmts and Exprs todo
-//! 3. E2E test
 
 #![macro_use]
 
@@ -212,7 +207,7 @@ impl<'a> Parser<'a> {
             // split comments
             if matches!(tok.kind, TokenKind::DocComment(_x)) {
                 comments.push(NodeRef::new(kclvm_ast::ast::Node::dummy_node(Comment {
-                    text: "".to_string(), // TODO: add symbol
+                    text: "".to_string(),
                 })));
                 continue;
             }

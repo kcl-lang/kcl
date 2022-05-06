@@ -145,7 +145,6 @@ impl Emitter for EmitterWriter {
     }
 
     fn emit_diagnostic(&mut self, diag: &Diagnostic) {
-        // TODO: Diagnostic theme.
         let mut buffer: Vec<String> = vec![];
         let mut diag_str = "KCL ".to_string();
         diag_str += diag.level.to_str();

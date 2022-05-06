@@ -2,9 +2,6 @@
 //! This module contains the code for creating and emitting diagnostics.
 //!
 //! We can use `Handler` to create and emit diagnostics.
-//!
-//! TODO: error theme and style with color.
-//! TODO: backtrace.
 #[macro_use]
 pub mod bug;
 mod diagnostic;

@@ -765,7 +765,6 @@ impl<'a> Parser<'a> {
     /// Syntax:
     /// list_expr: LEFT_BRACKETS [list_items | NEWLINE _INDENT list_items _DEDENT] RIGHT_BRACKETS
     /// list_comp: LEFT_BRACKETS (expr comp_clause+ | NEWLINE _INDENT expr comp_clause+ _DEDENT) RIGHT_BRACKETS
-    /// TODO: make a macro for list_expr and config_expr?
     fn parse_list_expr(&mut self) -> NodeRef<Expr> {
         let token = self.token;
         // LEFT_BRACKETS

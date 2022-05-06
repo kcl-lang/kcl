@@ -5,10 +5,6 @@
 //! - the *span*, represented by [`Span`] and related types;
 //! - interned strings, represented by [`Symbol`]s, with some common symbols available statically in the [`sym`] module.
 //!
-//! TODO: Manage symbol memory with arena.
-//! TODO: Storage for extra long spans.
-//! TODO: Using more fast HashMap data structure.
-//!
 //! Reference: https://github.com/rust-lang/rust/blob/master/compiler/rustc_span/src/lib.rs
 
 mod session_globals;

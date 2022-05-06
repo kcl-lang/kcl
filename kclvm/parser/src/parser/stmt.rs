@@ -1373,7 +1373,7 @@ impl<'a> Parser<'_> {
 
             let start_pos = start_pos + rustc_span::BytePos(2);
 
-            let stream = parse_token_streams(this.sess, src, start_pos); // todo: fix panic: a='${123+200}'
+            let stream = parse_token_streams(this.sess, src, start_pos);
 
             let mut parser = Parser {
                 token: Token::dummy(),
