@@ -1,5 +1,7 @@
 # KCL
 
+![license](https://img.shields.io/badge/license-Apache--2.0-green.svg)
+
 [中文](./README_ZH.md)
 
 Kusion Configuration Language (KCL) is an open source configuration language mainly used in [Kusion Stack](https://kusionstack.io). KCL is a statically typed language for configuration and policy scenarios, based on concepts such as declarative and Object-Oriented Programming (OOP) paradigms.

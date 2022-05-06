@@ -1,5 +1,7 @@
 # KCL
 
+![license](https://img.shields.io/badge/license-Apache--2.0-green.svg)
+
 [English](./README.md)
 
 Kusion 配置语言（KCL）是一种开源配置语言，主要用于 [Kusion Stack](https://kusionstack.io) 开放协同技术栈。并且 KCL 是一种基于声明性和面向对象编程 (OOP) 范式等概念，用于配置和策略场景的静态类型语言。
