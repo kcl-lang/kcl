@@ -1,15 +1,31 @@
-name: KCLVM GitHub Actions
-on: [push]
+name: actions
+on:
+  push:
+    branches:
+      - master
+  pull_request:
 jobs:
-  compile:
+  code-lint:
+    name: Code Lint
     runs-on: ubuntu-latest
     steps:
-      - name: install Rust
-        run: |
-          apt-get update
-          apt-get install -y git wget curl
-          apt-get install -y make gcc patch g++ swig
-          apt-get install -y python-dev libffi-dev
-          apt-get install -y zlib1g-dev ncurses-dev
-          curl https://sh.rustup.rs -sSf | bash -s -- -y
-          cargo version
+      - name: Check out code
+        uses: actions/checkout@v3
+  test-unit:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Run units tests.
+        run: make test
+  test-grammar:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Run grammar tests.
+        run: make test-grammar

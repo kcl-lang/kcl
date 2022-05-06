@@ -49,7 +49,7 @@ apt-get install -y zlib1g-dev ncurses-dev
 
 ### Docker
 
-Use the image `reg.docker.inc.com/kusionstack/kclvm-builder-ubuntu`, run:
+Use the image `kusionstack/kclvm-builder`, run:
 
 ```
 make sh-in-docker
