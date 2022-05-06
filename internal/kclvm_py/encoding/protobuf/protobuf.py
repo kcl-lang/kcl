@@ -52,7 +52,7 @@ def protobuf_to_kcl(proto_code: str) -> str:
 
 
 def kcl_to_protobuf(kcl_code: str) -> str:
-    """Covert a protobuf code string to a KCL code string.
+    """Covert a a KCL code string to a protobuf code string.
 
     Parameters
     ----------
