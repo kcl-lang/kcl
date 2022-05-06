@@ -5,7 +5,7 @@ PROJECT_NAME = KCLVM
 PWD:=$(shell pwd)
 
 KCLVM_VERSION := $(shell cat VERSION)
-BUILD_IMAGE:=reg.docker.inc.com/kusionstack/kclvm-builder-ubuntu
+BUILD_IMAGE:=kusionstack/kclvm-builder
 
 # export DOCKER_DEFAULT_PLATFORM=linux/amd64
 # or
@@ -51,10 +51,6 @@ test-in-docker:
 # ----------------
 # Docker
 # ----------------
-
-kclvm-builder:
-	docker build --platform linux/amd64 -t kusion/kclvm-builder .
-	@echo "ok"
 
 sh-in-docker:
 	${RUN_IN_DOCKER} bash
