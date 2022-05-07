@@ -29,10 +29,6 @@ help_message=$(cat <<-END
             Quickly update KCLVM without packaging CPython and site-packages
         test
             Perform testing
-        format
-            Format codes
-        lint-check
-            Perform lint check
         release
             Create a package for releasing
         release-arm64
@@ -59,7 +55,7 @@ done
 
 if [ "$action" == "" ]; then
     PS3='Please select the action: '
-    options=("build" "build-cpython" "build-kclvm" "update-kclvm" "test" "format" "lint-check" "release" "release-arm64")
+    options=("build" "build-cpython" "build-kclvm" "update-kclvm" "test" "release" "release-arm64")
     select action in "${options[@]}"
     do
         case $action in
@@ -73,12 +69,6 @@ if [ "$action" == "" ]; then
                 break
                 ;;
             "update-kclvm")
-                break
-                ;;
-            "test")
-                break
-                ;;
-            "format")
                 break
                 ;;
             "lint-check")
