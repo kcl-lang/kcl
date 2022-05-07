@@ -77,8 +77,8 @@ cd $cpython_build_dir
 eval $config_envs $cpython_source_dir/configure $prefix_option $config_options
 # The make -j command may fail on some OS.
 # make -j "$(nproc)"
-make
-make install
+make -j8 build_all
+make -j8 altinstall
 set +x
 
 # Print the summary.
