@@ -24,7 +24,7 @@ py_ver_micro="6"
 for config in "$config_option"
 do
     case $config in
-        "Default" | "centos" | "alios")
+        "Default" | "centos")
             config_envs="LANG=C.UTF-8"
             config_options="--enable-optimizations --with-ssl"
             echo "$REPLY: The configuration is $config: config_envs=$config_envs config_options=$config_options"
@@ -77,8 +77,8 @@ cd $cpython_build_dir
 eval $config_envs $cpython_source_dir/configure $prefix_option $config_options
 # The make -j command may fail on some OS.
 # make -j "$(nproc)"
-make
-make install
+make -j8 build_all
+make -j8 altinstall
 set +x
 
 # Print the summary.
