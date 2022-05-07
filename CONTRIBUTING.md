@@ -19,9 +19,9 @@ brew install openssl@1.1
 
 ### Linux
 
-- `Go 1.16+`
-- `Rust 2021 edition`
-- `Python3 Building Dependencies`
++ `Go 1.16+`
++ `Rust 2021 edition`
++ `Python3 Building Dependencies`
 
 For UNIX based systems, you can run:
 
@@ -83,7 +83,7 @@ Building KCL requires local ssl module. Use -s $yourLocalSSL to specify custom s
 
 If -s option unset, default ssl path will be used:
 Darwin: `$(brew --prefix openssl@1.1)`
-Linux: /usr/lib64
+Linux: `/usr/lib64`
 
 To use KCL, add the path `_build/dist/{os}/kclvm/bin` to the `PATH` environment variable. Here, `{os}` stands for the operating system, which can be `Darwin`, `centos`, `ubuntu` or other types.
 
@@ -132,6 +132,8 @@ KCL has added the following files and directories:
 + `scripts` -  The directory where additional scripts to build and test KCL resist.
 + `run.sh` - The script to perform operations such as building and testing.
 + `internal/kclvm_py` - KCLVM Python implementation, will be abandoned soon, please do not submit any code to it, it will be reorganized in the way of KCLVM Python SDK in the future.
++ `docs` - KCL command line Documentation.
++ `spec` - KCL model and API Specification.
 
 During building and testing, the following directories can be generated:
 
