@@ -14,6 +14,12 @@ prepare_dirs () {
 prepare_dirs
 kclvm_source_dir="$topdir/internal/kclvm_py"
 
+# python exe name
+py_exe_name="python3.7"
+if [ -d "${cpython_build_dir}/lib/python3.9" ]; then
+    py_exe_name="python3.9"
+fi
+
 # py_lib_basename: python3.x
 py_lib_basename="python3.7"
 if [ -d "${cpython_build_dir}/lib/python3.9" ]; then
@@ -27,7 +33,7 @@ set -x
 cd $kclvm_install_dir
 mkdir -p bin
 mkdir -p lib
-cp $cpython_build_dir/bin/python3 $kclvm_install_dir/bin/kclvm
+cp $cpython_build_dir/bin/${py_exe_name} $kclvm_install_dir/bin/kclvm
 cp -r $cpython_build_dir/lib/${py_lib_basename} $kclvm_install_dir/lib/
 cp -r $cpython_build_dir/include $kclvm_install_dir/
 
