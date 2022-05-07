@@ -15,16 +15,3 @@ fn test_bug_macro() {
     });
     assert!(result.is_err());
 }
-
-#[test]
-fn test_handler_parse_error() {
-    let result = std::panic::catch_unwind(|| {
-        let mut handler = Handler::default();
-        handler.add_parse_error(
-            ParseError::unexpected_token(&["+", "-", "*", "/"], "//"),
-            Position::dummy_pos(),
-        );
-        handler.abort_if_errors();
-    });
-    assert!(result.is_err());
-}

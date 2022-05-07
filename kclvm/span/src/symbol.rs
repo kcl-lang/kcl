@@ -59,6 +59,7 @@ symbols! {
 ///
 /// ```
 /// use kclvm_span::*;
+/// use rustc_span::BytePos;
 ///
 /// create_session_globals_then(||{
 ///     let ident = Ident::new(
