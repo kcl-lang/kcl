@@ -11,9 +11,12 @@ jobs:
         uses: actions/checkout@v3
       - name: Build KCLVM
         run: make build
+      - name: Set KCLVM PATH
+        run: |
+          echo PATH=$PATH:./_build/dist/ubuntu/kclvm/bin >> ~/.bash_profile
+          source ~/.bash_profile
       - name: Grammar test
         run: |
-          export PATH=$PATH:./_build/dist/ubuntu/kclvm/bin
           chmod +x ./scripts/test_grammar.sh
           topdir=$(realpath $(dirname $0)) ./scripts/test_grammar.sh
       - name: Internal python unit test
