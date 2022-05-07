@@ -14,5 +14,5 @@ jobs:
       - name: Grammar test
         run: |
           export PATH=$PATH:./_build/dist/ubuntu/kclvm/bin
-          chmod +x ./Scripts/test_grammar.sh
-          topdir=$(realpath $(dirname $0)) ./Scripts/test_grammar.sh
+          chmod +x ./scripts/test_grammar.sh
+          topdir=$(realpath $(dirname $0)) ./scripts/test_grammar.sh
