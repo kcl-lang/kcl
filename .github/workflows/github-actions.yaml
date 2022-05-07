@@ -14,28 +14,25 @@ jobs:
         shell: bash
       - name: Grammar test
         run: |
-          echo PATH=$PATH:./_build/dist/ubuntu/kclvm/bin >> ~/.bash_profile
+          TOP_DIR = $(realpath $(dirname $0)/../)
+          echo PATH=$PATH:$TOP_DIR/_build/dist/ubuntu/kclvm/bin >> ~/.bash_profile
           source ~/.bash_profile
-          kcl -V
-          kclvm --version
           chmod +x ./scripts/test_grammar.sh
           topdir=$(realpath $(dirname $0)) ./scripts/test_grammar.sh
         shell: bash
       - name: Internal python unit test
         run: |
-          echo PATH=$PATH:./_build/dist/ubuntu/kclvm/bin >> ~/.bash_profile
+          TOP_DIR = $(realpath $(dirname $0)/../)
+          echo PATH=$PATH:$TOP_DIR/_build/dist/ubuntu/kclvm/bin >> ~/.bash_profile
           source ~/.bash_profile
-          kcl -V
-          kclvm --version
           chmod +x ./scripts/unittest_coverage.sh
           ./scripts/unittest_coverage.sh
         shell: bash
       - name: Rust unit test
         run: |
-          echo PATH=$PATH:./_build/dist/ubuntu/kclvm/bin >> ~/.bash_profile
+          TOP_DIR = $(realpath $(dirname $0)/../)
+          echo PATH=$PATH:$TOP_DIR/_build/dist/ubuntu/kclvm/bin >> ~/.bash_profile
           source ~/.bash_profile
-          kcl -V
-          kclvm --version
           cd ./kclvm/tests/test_units
           python3 -m pip install pytest
           PYTHONPATH=./kclvm/plugin python3 -m pytest -vv || { echo 'kclvmx/tests/test_units failed' ; exit 1; }
