@@ -88,7 +88,10 @@ pub struct KclvmRunner {
 
 impl KclvmRunner {
     pub fn new(dylib_path: &str, opts: Option<KclvmRunnerOptions>) -> Self {
-        let lib = unsafe { libloading::Library::new(dylib_path).unwrap() };
+        let lib = unsafe {
+            libloading::Library::new(std::path::PathBuf::from(dylib_path).canonicalize().unwrap())
+                .unwrap()
+        };
         Self {
             dylib_path: dylib_path.to_string(),
             opts: opts.unwrap_or_default(),
