@@ -16,3 +16,22 @@ jobs:
           export PATH=$PATH:./_build/dist/ubuntu/kclvm/bin
           chmod +x ./scripts/test_grammar.sh
           topdir=$(realpath $(dirname $0)) ./scripts/test_grammar.sh
+      - name: Internal python unit test
+        run: |
+          chmod +x ./scripts/unittest_coverage.sh
+          ./scripts/unittest_coverage.sh
+      - name: Rust unit test
+        run: |
+          cd ./kclvm/tests/test_units
+          python3 -m pip install pytest
+          PYTHONPATH=./kclvm/plugin python3 -m pytest -vv || { echo 'kclvmx/tests/test_units failed' ; exit 1; }
+          cd ./kclvm/ast
+          cargo test || { echo 'kclvmx/ast test failed' ; exit 1; }
+          cd ./kclvm/lexer
+          cargo test || { echo 'kclvmx/lexer test failed' ; exit 1; }
+          cd ./kclvm/parser
+          cargo test || { echo 'kclvmx/parser test failed' ; exit 1; }
+          cd ./kclvm/compiler
+          cargo test || { echo 'kclvmx/compiler test failed' ; exit 1; }
+          cd ./kclvm/config
+          cargo test || { echo 'kclvmx/config test failed' ; exit 1; }
