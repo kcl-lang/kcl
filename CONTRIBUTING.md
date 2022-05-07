@@ -105,9 +105,9 @@ To update kclvm python libraries (./scripts/requirements.txt), run:
 ./run.sh -a build-kclvm
 ```
 
-Next, we can refer to [KCLVM README](./kclvm/README.md) for the next step of environment configuration.
+Next, we can refer to [KCLVM README](./kclvm/README.md) for the next step of environment configuration and build the KCLVM rust code.
 
-To update kclvm python code, run:
+If we have changed any codes in the program, we can update kclvm binaries, run:
 
 ```
 ./run.sh -a update-kclvm
