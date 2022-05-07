@@ -11,18 +11,22 @@ jobs:
         uses: actions/checkout@v3
       - name: Build KCLVM
         run: make build
+        shell: bash
       - name: Set KCLVM PATH
         run: |
           echo PATH=$PATH:./_build/dist/ubuntu/kclvm/bin >> ~/.bash_profile
           source ~/.bash_profile
+        shell: bash
       - name: Grammar test
         run: |
           chmod +x ./scripts/test_grammar.sh
           topdir=$(realpath $(dirname $0)) ./scripts/test_grammar.sh
+        shell: bash
       - name: Internal python unit test
         run: |
           chmod +x ./scripts/unittest_coverage.sh
           ./scripts/unittest_coverage.sh
+        shell: bash
       - name: Rust unit test
         run: |
           cd ./kclvm/tests/test_units
@@ -38,3 +42,4 @@ jobs:
           cargo test || { echo 'kclvmx/compiler test failed' ; exit 1; }
           cd ./kclvm/config
           cargo test || { echo 'kclvmx/config test failed' ; exit 1; }
+        shell: bash
