@@ -10,7 +10,8 @@ RUN apt-get update
 RUN apt-get install -y git wget curl
 RUN apt-get install -y make gcc patch g++ swig
 RUN apt-get install -y python-dev libffi-dev
-RUN apt-get install -y zlib1g-dev ncurses-dev
+# SSL module deps sed by python3
+RUN apt-get install -y zlib1g-dev ncurses-dev build-essential libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev
 
 # python-3.9
 RUN mkdir -p /root/download && cd /root/download \

@@ -44,7 +44,7 @@ apt-get update
 apt-get install -y git wget curl
 apt-get install -y make gcc patch 
 apt-get install -y python-dev libffi-dev
-apt-get install -y zlib1g-dev ncurses-dev
+apt-get install -y zlib1g-dev ncurses-dev build-essential libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev
 ```
 
 ### Docker
