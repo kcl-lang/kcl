@@ -10,4 +10,9 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v3
       - name: Build KCLVM
-        run: make build && make
+        run: make build
+      - name: Grammar test
+        run: |
+          export PATH=$PATH:./_build/dist/ubuntu/kclvm/bin
+          chmod +x ./Scripts/test_grammar.sh
+          topdir=$(realpath $(dirname $0)) ./Scripts/test_grammar.sh
