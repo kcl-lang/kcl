@@ -38,7 +38,7 @@ do
             if [ x"$(uname -m)" == x"arm64" ]; then
                 py_ver_major="3"
                 py_ver_minor="9"
-                py_ver_micro="6"
+                py_ver_micro="12"
             fi
 
             config_envs="LANG=C.UTF-8"
