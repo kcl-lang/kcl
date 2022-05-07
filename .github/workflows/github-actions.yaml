@@ -1,9 +1,5 @@
 name: KCLVM-actions
-on:
-  push:
-    branches:
-      - master
-  pull_request:
+on: [push]
 jobs:
   test-unit:
     name: Test
