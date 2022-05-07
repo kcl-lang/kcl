@@ -31,8 +31,6 @@ help_message=$(cat <<-END
             Perform testing
         release
             Create a package for releasing
-        release-arm64
-            Create a package for releasing ARM64
 END
 )
 action=
@@ -55,7 +53,7 @@ done
 
 if [ "$action" == "" ]; then
     PS3='Please select the action: '
-    options=("build" "build-cpython" "build-kclvm" "update-kclvm" "test" "release" "release-arm64")
+    options=("build" "build-cpython" "build-kclvm" "update-kclvm" "test" "release")
     select action in "${options[@]}"
     do
         case $action in
@@ -75,9 +73,6 @@ if [ "$action" == "" ]; then
                 break
                 ;;
             "release")
-                break
-                ;;
-            "release-arm64")
                 break
                 ;;
             *) echo "Invalid action $REPLY:$action"
