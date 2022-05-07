@@ -1,0 +1,5 @@
+[antflake8]
+max-line-length = 120
+select = C,E,F,W,B,B950
+extend-ignore = F403, F405, E203, E501, W503
+exclude = *_pb2.py, lark_token.py
