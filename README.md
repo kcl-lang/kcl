@@ -1,6 +1,4 @@
-<p>
-<img src="https://raw.githubusercontent.com/KusionStack/KCLVM/master/icons/KCL40x40.png" width="350" title="KCLVM Icon" alt="KCLVM Icon">
-</p>
+# KCL
 
 ![license](https://img.shields.io/badge/license-Apache--2.0-green.svg)
 
