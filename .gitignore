@@ -73,7 +73,7 @@ lark_parser.pickle
 /scripts/docker/kclvm-builder/crates.io-index
 /scripts/docker/kclvm-builder-centos7/crates.io-index
 /scripts/docker/kclvm-builder-ubuntu/crates.io-index
-
+*.tar.gz
 _a.out.*
 _a.out_*.*
 # KCLVM cache
