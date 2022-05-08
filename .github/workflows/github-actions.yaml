@@ -24,9 +24,6 @@ jobs:
           chmod +x ./scripts/test_unit.sh
           ./scripts/test_unit.sh
         shell: bash
-      - name: Rust runtime test
-        run: cd kclvm && make test-runtime
-        shell: bash
       - name: Rust unit test
         run: cd kclvm && make test
         shell: bash
