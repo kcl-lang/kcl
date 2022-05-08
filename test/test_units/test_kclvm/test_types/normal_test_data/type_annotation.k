@@ -1,6 +1,6 @@
 """Type annotation test"""
 
-import kcl_plugin.hello
+import pkg
 import math
 import pkg
 
