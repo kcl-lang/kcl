@@ -19,12 +19,12 @@ jobs:
         shell: bash
       - name: Internal python unit test
         run: |
-          chmod +x ./scripts/unittest_coverage.sh
-          ./scripts/unittest_coverage.sh
-        shell: bash
-      - name: Rust unit test
-        run: cd kclvm && make test
+          chmod +x ./scripts/test_unit.sh
+          ./scripts/test_unit.sh
         shell: bash
       - name: Rust runtime test
         run: cd kclvm && make test-runtime
+        shell: bash
+      - name: Rust unit test
+        run: cd kclvm && make test
         shell: bash
