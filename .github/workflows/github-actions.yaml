@@ -25,5 +25,8 @@ jobs:
           ./scripts/test_unit.sh
         shell: bash
       - name: Rust unit test
-        run: cd kclvm && make test
+        run: |
+          rustup install stable
+          rustup default stable
+          cd kclvm && make test
         shell: bash
