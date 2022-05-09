@@ -24,11 +24,11 @@ jobs:
           chmod +x ./scripts/test_unit.sh
           ./scripts/test_unit.sh
         shell: bash
-      - name: Rust unit test
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-          components: rustfmt, clippy
-        run: cd kclvm && make test
-        shell: bash
+      # - name: Rust unit test
+      #   uses: actions-rs/toolchain@v1
+      #   with:
+      #     toolchain: stable
+      #     override: true
+      #     components: rustfmt, clippy
+      #   run: cd kclvm && make test
+      #   shell: bash
