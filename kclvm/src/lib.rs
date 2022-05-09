@@ -80,16 +80,14 @@ pub extern "C" fn kclvm_cli_run(args: *const i8, plugin_agent: *const i8) -> *co
             let root = &compile_prog.root;
             let is_main_pkg = pkgpath == kclvm_ast::MAIN_PKG;
             let file = if is_main_pkg {
-                let main_file = format!("{}{}", pkgpath, chrono::Local::now().timestamp_nanos());
-                cache_dir.join(&main_file)
+                PathBuf::from(&pkgpath)
             } else {
                 cache_dir.join(&pkgpath)
             };
-            let lock_file = format!("{}.lock", cache_dir.join(&pkgpath).to_str().unwrap());
             let ll_file = file.to_str().unwrap();
             let ll_path = format!("{}.ll", ll_file);
             let dylib_path = format!("{}{}", ll_file, Command::get_lib_suffix());
-            let mut ll_path_lock = fslock::LockFile::open(&lock_file).unwrap();
+            let mut ll_path_lock = fslock::LockFile::open(&format!("{}.lock", ll_path)).unwrap();
             ll_path_lock.lock().unwrap();
             if Path::new(&ll_path).exists() {
                 std::fs::remove_file(&ll_path).unwrap();
@@ -139,9 +137,6 @@ pub extern "C" fn kclvm_cli_run(args: *const i8, plugin_agent: *const i8) -> *co
                     }
                 }
             };
-            if Path::new(&ll_path).exists() {
-                std::fs::remove_file(&ll_path).unwrap();
-            }
             ll_path_lock.unlock().unwrap();
             dylib_path
         });
@@ -165,11 +160,6 @@ pub extern "C" fn kclvm_cli_run(args: *const i8, plugin_agent: *const i8) -> *co
             plugin_agent_ptr: plugin_agent,
         }),
     );
-    for dylib_path in dylib_paths {
-        if dylib_path.contains(kclvm_ast::MAIN_PKG) && Path::new(&dylib_path).exists() {
-            std::fs::remove_file(&dylib_path).unwrap();
-        }
-    }
     match runner.run(&args) {
         Ok(result) => {
             let c_string = std::ffi::CString::new(result.as_str()).expect("CString::new failed");
