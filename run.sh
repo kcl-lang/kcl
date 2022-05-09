@@ -69,7 +69,7 @@ if [ "$action" == "" ]; then
             "update-kclvm")
                 break
                 ;;
-            "lint-check")
+            "test")
                 break
                 ;;
             "release")

@@ -20,6 +20,7 @@ _TEST_CASES = [
     "collection_if",
     "comment",
     "index_sign",
+    "joined_str",
     "lambda",
     "quant",
     "rule",
