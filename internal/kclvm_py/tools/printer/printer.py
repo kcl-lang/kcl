@@ -1101,11 +1101,11 @@ class Printer(BasePrinter):
         """
         assert isinstance(t, ast.JoinedString)
         assert t.values
+        self.print('"')
         for value in t.values:
-            if isinstance(value, ast.Expr):
-                self.expr(value)
-            elif isinstance(value, ast.FormattedValue):
+            if isinstance(value, ast.FormattedValue):
                 self.print(
+                    "$",
                     ast.TokenValue.LEFT_BRACE,
                     value.value,
                 )
@@ -1119,9 +1119,12 @@ class Printer(BasePrinter):
                     ast.TokenValue.RIGHT_BRACE,
                 )
             elif isinstance(value, ast.StringLit):
+                self.write(value.raw_value or '{}'.format(value.value.replace('"', '\\"')))
+            elif isinstance(value, ast.Expr):
                 self.expr(value)
             else:
                 raise Exception("Invalid AST JoinedString children")
+        self.print('"')
 
     def walk_TypeAliasStmt(self, t: ast.TypeAliasStmt):
         """ast.AST: TypeAliasStmt
