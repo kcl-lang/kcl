@@ -1,8 +1,5 @@
 use std::str::Chars;
 
-#[cfg(test)]
-mod tests;
-
 /// Eval a string starts with a quote ' or " to a Rust string.
 pub fn str_literal_eval(string_lit: &str, is_bytes: bool, is_raw: bool) -> Option<String> {
     let mut chars: std::iter::Peekable<Chars> = string_lit.chars().peekable();

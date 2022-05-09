@@ -9,32 +9,24 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v3
+        # with:
+        #  submodules: 'true'
       - name: Build KCLVM
         run: make build
-      - name: Set KCLVM PATH
-        run: |
-          echo PATH=$PATH:./_build/dist/ubuntu/kclvm/bin >> ~/.bash_profile
-          source ~/.bash_profile
+        shell: bash
       - name: Grammar test
         run: |
           chmod +x ./scripts/test_grammar.sh
           topdir=$(realpath $(dirname $0)) ./scripts/test_grammar.sh
+        shell: bash
       - name: Internal python unit test
         run: |
-          chmod +x ./scripts/unittest_coverage.sh
-          ./scripts/unittest_coverage.sh
+          chmod +x ./scripts/test_unit.sh
+          ./scripts/test_unit.sh
+        shell: bash
       - name: Rust unit test
         run: |
-          cd ./kclvm/tests/test_units
-          python3 -m pip install pytest
-          PYTHONPATH=./kclvm/plugin python3 -m pytest -vv || { echo 'kclvmx/tests/test_units failed' ; exit 1; }
-          cd ./kclvm/ast
-          cargo test || { echo 'kclvmx/ast test failed' ; exit 1; }
-          cd ./kclvm/lexer
-          cargo test || { echo 'kclvmx/lexer test failed' ; exit 1; }
-          cd ./kclvm/parser
-          cargo test || { echo 'kclvmx/parser test failed' ; exit 1; }
-          cd ./kclvm/compiler
-          cargo test || { echo 'kclvmx/compiler test failed' ; exit 1; }
-          cd ./kclvm/config
-          cargo test || { echo 'kclvmx/config test failed' ; exit 1; }
+          rustup install stable
+          rustup default stable
+          cd kclvm && make test
+        shell: bash

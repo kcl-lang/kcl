@@ -104,6 +104,18 @@ impl ValueRef {
         default
     }
 
+    pub fn arg_i_num(&self, i: usize, default: Option<f64>) -> Option<f64> {
+        if let Some(x) = self.arg_i(i) {
+            match *x.rc {
+                Value::float_value(v) => return Some(v),
+                Value::int_value(v) => return Some(v as f64),
+                Value::none => return default,
+                _ => return None,
+            }
+        }
+        default
+    }
+
     pub fn arg_i_str(&self, i: usize, default: Option<String>) -> Option<String> {
         if let Some(x) = self.arg_i(i) {
             match &*x.rc {

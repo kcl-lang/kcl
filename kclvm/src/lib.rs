@@ -79,7 +79,11 @@ pub extern "C" fn kclvm_cli_run(args: *const i8, plugin_agent: *const i8) -> *co
         let t = thread::spawn(move || {
             let root = &compile_prog.root;
             let is_main_pkg = pkgpath == kclvm_ast::MAIN_PKG;
-            let file = cache_dir.join(&pkgpath);
+            let file = if is_main_pkg {
+                PathBuf::from(&pkgpath)
+            } else {
+                cache_dir.join(&pkgpath)
+            };
             let ll_file = file.to_str().unwrap();
             let ll_path = format!("{}.ll", ll_file);
             let dylib_path = format!("{}{}", ll_file, Command::get_lib_suffix());

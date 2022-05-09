@@ -99,12 +99,19 @@ fn main() {
                     let t = thread::spawn(move || {
                         let root = &compile_prog.root;
                         let is_main_pkg = pkgpath == kclvm_ast::MAIN_PKG;
-                        let file = cache_dir.join(&pkgpath);
+                        let file = if is_main_pkg {
+                            let main_file =
+                                format!("{}{}", pkgpath, chrono::Local::now().timestamp_nanos());
+                            cache_dir.join(&main_file)
+                        } else {
+                            cache_dir.join(&pkgpath)
+                        };
+                        let lock_file =
+                            format!("{}.lock", cache_dir.join(&pkgpath).to_str().unwrap());
                         let ll_file = file.to_str().unwrap();
                         let ll_path = format!("{}.ll", ll_file);
                         let dylib_path = format!("{}{}", ll_file, Command::get_lib_suffix());
-                        let mut ll_path_lock =
-                            fslock::LockFile::open(&format!("{}.lock", ll_path)).unwrap();
+                        let mut ll_path_lock = fslock::LockFile::open(&lock_file).unwrap();
                         ll_path_lock.lock().unwrap();
                         if Path::new(&ll_path).exists() {
                             std::fs::remove_file(&ll_path).unwrap();
@@ -159,6 +166,9 @@ fn main() {
                                 }
                             }
                         };
+                        if Path::new(&ll_path).exists() {
+                            std::fs::remove_file(&ll_path).unwrap();
+                        }
                         ll_path_lock.unlock().unwrap();
                         dylib_path
                     });
@@ -175,6 +185,11 @@ fn main() {
                 // Config build
                 let settings = build_settings(&matches);
                 cmd.run_dylib_with_settings(&dylib_path, settings).unwrap();
+                for dylib_path in dylib_paths {
+                    if dylib_path.contains(kclvm_ast::MAIN_PKG) && Path::new(&dylib_path).exists() {
+                        std::fs::remove_file(&dylib_path).unwrap();
+                    }
+                }
             }
         } else {
             println!("{}", matches.usage());

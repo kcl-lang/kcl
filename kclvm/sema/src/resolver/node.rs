@@ -948,7 +948,10 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             )
         }
         if let Some(stmt) = lambda_expr.body.last() {
-            if !matches!(stmt.node, ast::Stmt::Expr(_) | ast::Stmt::Assign(_) | ast::Stmt::AugAssign(_)) {
+            if !matches!(
+                stmt.node,
+                ast::Stmt::Expr(_) | ast::Stmt::Assign(_) | ast::Stmt::AugAssign(_)
+            ) {
                 self.handler.add_compile_error(
                     "The last statement of the lambda body must be a expression e.g., x, 1, etc.",
                     stmt.get_pos(),

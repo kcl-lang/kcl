@@ -109,8 +109,8 @@ pub extern "C" fn kclvm_units_to_K(
     let args = ptr_as_ref(args);
     let _kwargs = ptr_as_ref(kwargs);
 
-    if let Some(num) = args.arg_i_int(0, None) {
-        let s = to_unit(num as f64, to_unit_suffix::K);
+    if let Some(num) = args.arg_i_num(0, None) {
+        let s = to_unit(num, to_unit_suffix::K);
         return ValueRef::str(s.as_ref()).into_raw();
     }
     panic!("to_K() missing 1 required positional argument: 'num'");
@@ -129,8 +129,8 @@ pub extern "C" fn kclvm_units_to_M(
     let args = ptr_as_ref(args);
     let _kwargs = ptr_as_ref(kwargs);
 
-    if let Some(num) = args.arg_i_int(0, None) {
-        let s = to_unit(num as f64, to_unit_suffix::M);
+    if let Some(num) = args.arg_i_num(0, None) {
+        let s = to_unit(num, to_unit_suffix::M);
         return ValueRef::str(s.as_ref()).into_raw();
     }
     panic!("to_M() missing 1 required positional argument: 'num'");
@@ -149,8 +149,8 @@ pub extern "C" fn kclvm_units_to_G(
     let args = ptr_as_ref(args);
     let _kwargs = ptr_as_ref(kwargs);
 
-    if let Some(num) = args.arg_i_int(0, None) {
-        let s = to_unit(num as f64, to_unit_suffix::G);
+    if let Some(num) = args.arg_i_num(0, None) {
+        let s = to_unit(num, to_unit_suffix::G);
         return ValueRef::str(s.as_ref()).into_raw();
     }
     panic!("to_G() missing 1 required positional argument: 'num'");
@@ -169,8 +169,8 @@ pub extern "C" fn kclvm_units_to_T(
     let args = ptr_as_ref(args);
     let _kwargs = ptr_as_ref(kwargs);
 
-    if let Some(num) = args.arg_i_int(0, None) {
-        let s = to_unit(num as f64, to_unit_suffix::T);
+    if let Some(num) = args.arg_i_num(0, None) {
+        let s = to_unit(num, to_unit_suffix::T);
         return ValueRef::str(s.as_ref()).into_raw();
     }
     panic!("to_T() missing 1 required positional argument: 'num'");
@@ -189,8 +189,8 @@ pub extern "C" fn kclvm_units_to_P(
     let args = ptr_as_ref(args);
     let _kwargs = ptr_as_ref(kwargs);
 
-    if let Some(num) = args.arg_i_int(0, None) {
-        let s = to_unit(num as f64, to_unit_suffix::P);
+    if let Some(num) = args.arg_i_num(0, None) {
+        let s = to_unit(num, to_unit_suffix::P);
         return ValueRef::str(s.as_ref()).into_raw();
     }
     panic!("to_P() missing 1 required positional argument: 'num'");
@@ -209,8 +209,8 @@ pub extern "C" fn kclvm_units_to_Ki(
     let args = ptr_as_ref(args);
     let _kwargs = ptr_as_ref(kwargs);
 
-    if let Some(num) = args.arg_i_int(0, None) {
-        let s = to_unit(num as f64, to_unit_suffix::Ki);
+    if let Some(num) = args.arg_i_num(0, None) {
+        let s = to_unit(num, to_unit_suffix::Ki);
         return ValueRef::str(s.as_ref()).into_raw();
     }
     panic!("to_Ki() missing 1 required positional argument: 'num'");
@@ -229,8 +229,8 @@ pub extern "C" fn kclvm_units_to_Mi(
     let args = ptr_as_ref(args);
     let _kwargs = ptr_as_ref(kwargs);
 
-    if let Some(num) = args.arg_i_int(0, None) {
-        let s = to_unit(num as f64, to_unit_suffix::Mi);
+    if let Some(num) = args.arg_i_num(0, None) {
+        let s = to_unit(num, to_unit_suffix::Mi);
         return ValueRef::str(s.as_ref()).into_raw();
     }
     panic!("to_Mi() missing 1 required positional argument: 'num'");
@@ -249,8 +249,8 @@ pub extern "C" fn kclvm_units_to_Gi(
     let args = ptr_as_ref(args);
     let _kwargs = ptr_as_ref(kwargs);
 
-    if let Some(num) = args.arg_i_int(0, None) {
-        let s = to_unit(num as f64, to_unit_suffix::Gi);
+    if let Some(num) = args.arg_i_num(0, None) {
+        let s = to_unit(num, to_unit_suffix::Gi);
         return ValueRef::str(s.as_ref()).into_raw();
     }
     panic!("to_Gi() missing 1 required positional argument: 'num'");
@@ -269,8 +269,8 @@ pub extern "C" fn kclvm_units_to_Ti(
     let args = ptr_as_ref(args);
     let _kwargs = ptr_as_ref(kwargs);
 
-    if let Some(num) = args.arg_i_int(0, None) {
-        let s = to_unit(num as f64, to_unit_suffix::Ti);
+    if let Some(num) = args.arg_i_num(0, None) {
+        let s = to_unit(num, to_unit_suffix::Ti);
         return ValueRef::str(s.as_ref()).into_raw();
     }
     panic!("to_Ti() missing 1 required positional argument: 'num'");
@@ -289,8 +289,8 @@ pub extern "C" fn kclvm_units_to_Pi(
     let args = ptr_as_ref(args);
     let _kwargs = ptr_as_ref(kwargs);
 
-    if let Some(num) = args.arg_i_int(0, None) {
-        let s = to_unit(num as f64, to_unit_suffix::Pi);
+    if let Some(num) = args.arg_i_num(0, None) {
+        let s = to_unit(num, to_unit_suffix::Pi);
         return ValueRef::str(s.as_ref()).into_raw();
     }
     panic!("to_Pi() missing 1 required positional argument: 'num'");

@@ -10,30 +10,23 @@ run:
 	cd .. && ./run.sh -a update-kclvm && cd kclvm
 	kcl ../samples/hello.k --target native
 
-gen-runtime-api:
-	make -C ./runtime gen-api-spec
-
-install-rustc-wasm:
-	rustup target add wasm32-unknown-unknown
-
 check:
 	cargo check --release
 
 fmt:
-	cargo fmt
+	cargo fmt --all
+
+lint:
+	@for i in $(CARGO_LIBS); do cd $(PWD)/$$i && cargo clippy && cd ..; done
 
 test:
-	cargo test
+	@for i in $(CARGO_LIBS); do cd $(PWD)/$$i && cargo test || { echo 'test kclvm/' $$i 'crate failed' ; exit 1; } && cd ..; done
+
+test-runtime:
+	cd ./tests/test_units && python3 -m pip install pytest && PYTHONPATH=./../../plugin python3 -m pytest -vv || { echo 'kclvm/tests/test_units failed' ; exit 1; }
 
 test-grammar: install-pytest
 	cd tests/integration/grammar && kclvm -m pytest -v -n 5 --junitxml $(COVER_TEST_FILE_PATH) --html=$(COVER_REPORT_FILE_PATH)
-
-open-test-report:
-	open $(COVER_REPORT_FILE_PATH)
-
-test_units:
-	cd ./runtime && cargo build --release
-	kclvm -m pytest tests/test_units -vv
 
 install-pytest:
 	kclvm -mpip install pytest-html 
@@ -41,6 +34,9 @@ install-pytest:
 release:
 	cargo build --release
 
-lint:
-	@for i in $(CARGO_LIBS); do cd $(PWD)/$$i && cargo clippy && cd ..; done  
-	@echo lint finished!
+
+gen-runtime-api:
+	make -C ./runtime gen-api-spec
+
+install-rustc-wasm:
+	rustup target add wasm32-unknown-unknown

@@ -29,10 +29,10 @@ After building, we can add the following command line parameters to use the KCL 
 kcl --target native main.k
 ```
 
-To test grammar, run:
+To test, run:
 
 ```
-make test-grammar
+make test
 ```
 
 ## Building and Testing in Docker
