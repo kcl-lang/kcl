@@ -19,7 +19,7 @@ kclvm-builder:
 
 publish-builder:
 	# https://docker.inc.com/
-	# docker login --username= reg.docker.inc.com
+	# docker login --username=
 
 	# make kclvm-builder
 	docker push ${BUILDER_IMAGE}
