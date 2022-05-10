@@ -435,6 +435,7 @@ dependencies = [
  "kclvm-runner",
  "kclvm-runtime",
  "kclvm-sema",
+ "kclvm-tools",
  "kclvm-version",
  "libc",
  "libloading",
@@ -623,6 +624,10 @@ dependencies = [
  "rustc_span",
  "scoped-tls",
 ]
+
+[[package]]
+name = "kclvm-tools"
+version = "0.1.0"
 
 [[package]]
 name = "kclvm-version"
