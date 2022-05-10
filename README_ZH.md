@@ -1,6 +1,7 @@
 # KCL
 
 ![license](https://img.shields.io/badge/license-Apache--2.0-green.svg)
+[![Continuous Integration](https://github.com/KusionStack/KCLVM/actions/workflows/github-actions.yaml/badge.svg)](https://github.com/KusionStack/KCLVM/actions?query=branch%3Amain)
 
 [English](./README.md)
 
