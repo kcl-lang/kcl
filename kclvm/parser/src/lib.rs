@@ -11,7 +11,9 @@ extern crate kclvm_error;
 
 use crate::session::ParseSession;
 use kclvm_ast::ast;
-use kclvm_span::{self, FilePathMapping};
+use kclvm_span::{self, FilePathMapping, SourceMap};
+use lexer::parse_token_streams;
+use rustc_span::BytePos;
 
 use std::error::Error;
 use std::fs::File;
@@ -80,6 +82,18 @@ pub fn parse_file(filename: &str, code: Option<String>) -> ast::Module {
         m.name = kclvm_ast::MAIN_PKG.to_string();
 
         m
+    })
+}
+
+pub fn parse_expr(src: &str) -> ast::NodeRef<ast::Expr> {
+    let sm = SourceMap::new(FilePathMapping::empty());
+    sm.new_source_file(PathBuf::from("").into(), src.to_string());
+    let sess = &ParseSession::with_source_map(Arc::new(sm));
+
+    create_session_globals_then(|| {
+        let stream = parse_token_streams(sess, src, BytePos::from_u32(0));
+        let mut parser = Parser::new(sess, stream);
+        parser.parse_expr()
     })
 }
 

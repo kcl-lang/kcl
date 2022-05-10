@@ -628,6 +628,10 @@ dependencies = [
 [[package]]
 name = "kclvm-tools"
 version = "0.1.0"
+dependencies = [
+ "kclvm-ast",
+ "kclvm-parser",
+]
 
 [[package]]
 name = "kclvm-version"
