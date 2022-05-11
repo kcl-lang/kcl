@@ -8,7 +8,7 @@ use serde::{de::DeserializeOwned, Serialize};
 use std::collections::HashMap;
 use std::error;
 use std::fs::{create_dir_all, File};
-use std::io::Read;
+use std::io::{Read, Write};
 use std::path::Path;
 
 use kclvm_version as version;
@@ -131,8 +131,10 @@ pub fn read_info_cache(root: &str, cache_dir: Option<&str>) -> Cache {
         return Cache::default();
     }
     let file = File::open(cache_file).unwrap();
-    let cache: Cache = ron::de::from_reader(file).unwrap();
-    cache
+    match ron::de::from_reader(file) {
+        Ok(cache) => cache,
+        Err(_) => HashMap::new(),
+    }
 }
 
 /// Update the cache info file.
@@ -152,8 +154,8 @@ pub fn write_info_cache(
     lock_file.lock().unwrap();
     let mut cache = read_info_cache(root, cache_name);
     cache.insert(relative_path, cache_info);
-    let file = File::create(&tmp_filename).unwrap();
-    ron::ser::to_writer(file, &cache).unwrap();
+    let mut file = File::create(&tmp_filename).unwrap();
+    file.write_all(&ron::ser::to_string(&cache).unwrap().as_bytes()).unwrap();
     std::fs::rename(&tmp_filename, &dst_filename).unwrap();
     lock_file.unlock().unwrap();
     Ok(())

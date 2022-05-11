@@ -1,5 +1,5 @@
 use kclvm_ast::walker::MutSelfMutWalker;
-use kclvm_ast::{ast, walk_if_mut, walk_list_mut};
+use kclvm_ast::{ast, walk_if_mut};
 use kclvm_parser::parse_expr;
 
 pub struct OverrideInfo {
@@ -11,7 +11,6 @@ pub struct OverrideInfo {
 pub fn apply_overrides(
     prog: &mut ast::Program,
     overrides: &[ast::CmdOverrideSpec],
-    // TODO: import paths.
     _import_paths: &[String],
 ) {
     for o in overrides {
@@ -23,9 +22,7 @@ pub fn apply_overrides(
         match prog.pkgs.get_mut(pkgpath) {
             Some(modules) => {
                 for m in modules.iter_mut() {
-                    if fix_module_override(m, o) {
-                        // TODO: print ast
-                    }
+                    if fix_module_override(m, o) {}
                     // module_add_import_paths(m, import_paths)
                 }
             }
@@ -64,7 +61,6 @@ pub fn fix_module_override(m: &mut ast::Module, o: &ast::CmdOverrideSpec) -> boo
 
 pub fn build_node_from_string(value: &str) -> ast::NodeRef<ast::Expr> {
     let expr = parse_expr(value);
-    // TODO: identifier to string lit
     expr
 }
 
@@ -94,8 +90,6 @@ impl<'ctx> MutSelfMutWalker<'ctx> for OverrideTransformer {
 
     fn walk_assign_stmt(&mut self, assign_stmt: &'ctx mut ast::AssignStmt) {
         if let ast::Expr::Schema(_) = &assign_stmt.value.node {
-
-            println!("sa:{:?}", self.target_id);
             self.override_target_count = 0;
             for target in &assign_stmt.targets {
                 if target.node.names.len() != 1 {
@@ -110,9 +104,7 @@ impl<'ctx> MutSelfMutWalker<'ctx> for OverrideTransformer {
                 return;
             }
             self.has_override = true;
-            println!("yes");
             self.walk_expr(&mut assign_stmt.value.node);
-            // TODO: fix multiple assign
         }
     }
 
@@ -149,40 +141,40 @@ impl<'ctx> MutSelfMutWalker<'ctx> for OverrideTransformer {
 }
 
 impl OverrideTransformer {
-    pub(crate) fn get_schema_config_field_paths(
+    pub(crate) fn _get_schema_config_field_paths(
         &mut self,
         schema_expr: &mut ast::SchemaExpr,
     ) -> (Vec<String>, Vec<String>) {
         if let ast::Expr::Config(config_expr) = &mut schema_expr.config.node {
-            self.get_config_field_paths(config_expr)
+            self._get_config_field_paths(config_expr)
         } else {
             (vec![], vec![])
         }
     }
-    pub(crate) fn get_config_field_paths(
+    pub(crate) fn _get_config_field_paths(
         &mut self,
         config: &mut ast::ConfigExpr,
     ) -> (Vec<String>, Vec<String>) {
         let mut paths = vec![];
         let mut paths_with_id = vec![];
         for entry in config.items.iter_mut() {
-            let (mut _paths, mut _paths_with_id) = self.get_key_value_paths(&mut entry.node);
+            let (mut _paths, mut _paths_with_id) = self._get_key_value_paths(&mut entry.node);
             paths.append(&mut _paths);
             paths_with_id.append(&mut &mut _paths_with_id);
         }
         (paths, paths_with_id)
     }
-    pub(crate) fn get_key_value_paths(
+    pub(crate) fn _get_key_value_paths(
         &mut self,
-        entry: &mut ast::ConfigEntry,
+        _entry: &mut ast::ConfigEntry,
     ) -> (Vec<String>, Vec<String>) {
         (vec![], vec![])
     }
-    pub(crate) fn find_schema_config_and_repalce(
+    pub(crate) fn _find_schema_config_and_repalce(
         &mut self,
-        schema_config: &mut ast::SchemaExpr,
-        field_path: &str,
-        value: &ast::NodeRef<ast::Expr>,
+        _schema_config: &mut ast::SchemaExpr,
+        _field_path: &str,
+        _value: &ast::NodeRef<ast::Expr>,
     ) -> bool {
         false
     }
