@@ -19,7 +19,7 @@ fn ty_str_to_pkgpath(ty_str: &str) -> &str {
 pub fn ty_str_replace_pkgpath(ty_str: &str, pkgpath: &str) -> String {
     let pkgpath = format!("@{}", pkgpath);
     if ty_str.contains('.') && ty_str_to_pkgpath(ty_str) == pkgpath {
-        ty_str.replacen(&pkgpath, "", 1)
+        ty_str.replacen(&format!("{}.", pkgpath), "", 1)
     } else {
         ty_str.to_string()
     }
