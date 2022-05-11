@@ -13,13 +13,15 @@ use crate::session::ParseSession;
 use kclvm_ast::ast;
 use kclvm_span::{self, FilePathMapping, SourceMap};
 use lexer::parse_token_streams;
+use parser::Parser;
 use rustc_span::BytePos;
+use rustc_span::Pos;
 
 use std::error::Error;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;
-use std::process::Command;
+use std::sync::Arc;
 
 use kclvm_span::create_session_globals_then;
 

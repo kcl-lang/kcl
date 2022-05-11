@@ -13,6 +13,7 @@ use kclvm_sema::resolver::resolve_program;
 
 use kclvm_runner::command::Command;
 use kclvm_runner::runner::*;
+use kclvm_tools::query::apply_overrides;
 
 #[no_mangle]
 pub extern "C" fn kclvm_cli_run(args: *const i8, plugin_agent: *const i8) -> *const i8 {
@@ -24,7 +25,7 @@ pub extern "C" fn kclvm_cli_run(args: *const i8, plugin_agent: *const i8) -> *co
 
     // load ast
     let mut program = load_program(&files, Some(opts));
-
+    apply_overrides(&mut program, &args.overrides, &[]);
     let scope = resolve_program(&mut program);
 
     // gen bc or ll file

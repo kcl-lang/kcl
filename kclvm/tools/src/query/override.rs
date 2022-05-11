@@ -1,5 +1,5 @@
-use kclvm_ast::{ast, walk_if_mut, walk_list_mut};
 use kclvm_ast::walker::MutSelfMutWalker;
+use kclvm_ast::{ast, walk_if_mut, walk_list_mut};
 use kclvm_parser::parse_expr;
 
 pub struct OverrideInfo {
@@ -15,8 +15,12 @@ pub fn apply_overrides(
     _import_paths: &[String],
 ) {
     for o in overrides {
-        let pkgpath = if o.pkgpath.is_empty() {prog.main} else {o.pkgpath};
-        match prog.pkgs.get_mut(&pkgpath) {
+        let pkgpath = if o.pkgpath.is_empty() {
+            &prog.main
+        } else {
+            &o.pkgpath
+        };
+        match prog.pkgs.get_mut(pkgpath) {
             Some(modules) => {
                 for m in modules.iter_mut() {
                     if fix_module_override(m, o) {
@@ -24,8 +28,8 @@ pub fn apply_overrides(
                     }
                     // module_add_import_paths(m, import_paths)
                 }
-            },
-            None => {},
+            }
+            None => {}
         }
     }
 }
@@ -39,7 +43,7 @@ pub fn fix_module_override(m: &mut ast::Module, o: &ast::CmdOverrideSpec) -> boo
         let field = ss[1..].join(".");
         let value = &o.field_value;
         let key = ast::Identifier {
-            names: field.split(".").map(|s|s.to_string()).collect(),
+            names: field.split(".").map(|s| s.to_string()).collect(),
             ctx: ast::ExprContext::Store,
             pkgpath: "".to_string(),
         };
@@ -58,7 +62,7 @@ pub fn fix_module_override(m: &mut ast::Module, o: &ast::CmdOverrideSpec) -> boo
     }
 }
 
-pub fn build_node_from_string(value: &str) -> ast::Expr {
+pub fn build_node_from_string(value: &str) -> ast::NodeRef<ast::Expr> {
     let expr = parse_expr(value);
     // TODO: identifier to string lit
     expr
@@ -89,7 +93,9 @@ impl<'ctx> MutSelfMutWalker<'ctx> for OverrideTransformer {
     }
 
     fn walk_assign_stmt(&mut self, assign_stmt: &'ctx mut ast::AssignStmt) {
-        if let ast::Expr::Schema(schema_expr) = &assign_stmt.value.node {
+        if let ast::Expr::Schema(_) = &assign_stmt.value.node {
+
+            println!("sa:{:?}", self.target_id);
             self.override_target_count = 0;
             for target in &assign_stmt.targets {
                 if target.node.names.len() != 1 {
@@ -104,6 +110,7 @@ impl<'ctx> MutSelfMutWalker<'ctx> for OverrideTransformer {
                 return;
             }
             self.has_override = true;
+            println!("yes");
             self.walk_expr(&mut assign_stmt.value.node);
             // TODO: fix multiple assign
         }
@@ -113,16 +120,20 @@ impl<'ctx> MutSelfMutWalker<'ctx> for OverrideTransformer {
         if self.override_target_count == 0 {
             return;
         }
-        if !self.find_schema_config_and_repalce(schema_expr, &self.field_path, &self.override_value) {
+        if true {
             // Not exist and append an override value when the action is CREATE_OR_UPDATE
             if let ast::OverrideAction::CreateOrUpdate = self.action {
                 if let ast::Expr::Config(config_expr) = &mut schema_expr.config.node {
-                    config_expr.items.push(Box::new(ast::Node::dummy_node(ast::ConfigEntry {
-                        key: Some(Box::new(ast::Node::dummy_node(ast::Expr::Identifier(self.override_key.clone())))),
-                        value: Box::new(ast::Node::dummy_node(self.override_value.clone())),
-                        operation: ast::ConfigEntryOperation::Override,
-                        insert_index: -1,
-                    })));
+                    config_expr
+                        .items
+                        .push(Box::new(ast::Node::dummy_node(ast::ConfigEntry {
+                            key: Some(Box::new(ast::Node::dummy_node(ast::Expr::Identifier(
+                                self.override_key.clone(),
+                            )))),
+                            value: self.override_value.clone(),
+                            operation: ast::ConfigEntryOperation::Override,
+                            insert_index: -1,
+                        })));
                 }
             }
         }
@@ -138,27 +149,41 @@ impl<'ctx> MutSelfMutWalker<'ctx> for OverrideTransformer {
 }
 
 impl OverrideTransformer {
-    pub(crate) fn get_schema_config_field_paths(&mut self, schema_expr: &mut ast::SchemaExpr) -> (Vec<String>, Vec<String>) {
+    pub(crate) fn get_schema_config_field_paths(
+        &mut self,
+        schema_expr: &mut ast::SchemaExpr,
+    ) -> (Vec<String>, Vec<String>) {
         if let ast::Expr::Config(config_expr) = &mut schema_expr.config.node {
             self.get_config_field_paths(config_expr)
         } else {
             (vec![], vec![])
         }
     }
-    pub(crate) fn get_config_field_paths(&mut self, config: &mut ast::ConfigExpr) -> (Vec<String>, Vec<String>) {
+    pub(crate) fn get_config_field_paths(
+        &mut self,
+        config: &mut ast::ConfigExpr,
+    ) -> (Vec<String>, Vec<String>) {
         let mut paths = vec![];
         let mut paths_with_id = vec![];
         for entry in config.items.iter_mut() {
-            let (mut _paths, mut _paths_with_id) = self.get_key_value_paths(&entry.node);
+            let (mut _paths, mut _paths_with_id) = self.get_key_value_paths(&mut entry.node);
             paths.append(&mut _paths);
             paths_with_id.append(&mut &mut _paths_with_id);
         }
         (paths, paths_with_id)
     }
-    pub(crate) fn get_key_value_paths(&mut self, entry: &mut ast::ConfigEntry) -> (Vec<String>, Vec<String>) {
+    pub(crate) fn get_key_value_paths(
+        &mut self,
+        entry: &mut ast::ConfigEntry,
+    ) -> (Vec<String>, Vec<String>) {
         (vec![], vec![])
     }
-    pub(crate) fn find_schema_config_and_repalce(&mut self, schema_config: &mut ast::SchemaExpr, field_path: &str, value: &ast::Expr) -> bool {
+    pub(crate) fn find_schema_config_and_repalce(
+        &mut self,
+        schema_config: &mut ast::SchemaExpr,
+        field_path: &str,
+        value: &ast::NodeRef<ast::Expr>,
+    ) -> bool {
         false
     }
 }
