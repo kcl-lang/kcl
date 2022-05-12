@@ -1,5 +1,4 @@
 use super::*;
-use indexmap::IndexMap;
 use kclvm_parser::parse_file;
 use pretty_assertions::assert_eq;
 
@@ -40,6 +39,6 @@ fn read_data(data_name: &str) -> (String, String) {
 fn test_ast_printer() {
     for case in TEST_CASES {
         let (data_input, data_output) = read_data(case);
-        let actual = assert_eq!(data_input, data_output, "Test failed on {}", case);
+        assert_eq!(data_input, data_output, "Test failed on {}", case);
     }
 }

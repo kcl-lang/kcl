@@ -132,7 +132,7 @@ class KclvmServiceImpl(pbrpc.KclvmService):
         for x in args.overrides:
             cmd_overrides.append(
                 ast.CmdOverrideSpec(
-                    pkgpath=x.pkgpath,
+                    pkgpath=x.pkgpath or "__main__",
                     field_path=x.field_path,
                     field_value=x.field_value,
                     action=ast.OverrideAction(x.action)

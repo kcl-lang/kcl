@@ -109,14 +109,12 @@ def Run(
             )
 
         for x in cmd_overrides or []:
-            cmd_overrides.append(
+            args.overrides.append(
                 pb2.CmdOverrideSpec(
                     pkgpath=x.pkgpath,
                     field_path=x.field_path,
                     field_value=x.field_value,
-                    action=ast.OverrideAction(x.action)
-                    if x.action
-                    else ast.OverrideAction.CREATE_OR_UPDATE,
+                    action=x.action.value,
                 )
             )
 

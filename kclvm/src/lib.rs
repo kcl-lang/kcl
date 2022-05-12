@@ -2,7 +2,8 @@ extern crate serde;
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::thread;
+use std::sync::mpsc::channel;
+use threadpool::ThreadPool;
 
 use indexmap::IndexMap;
 use kclvm_ast::ast;
@@ -13,6 +14,7 @@ use kclvm_sema::resolver::resolve_program;
 
 use kclvm_runner::command::Command;
 use kclvm_runner::runner::*;
+use kclvm_tools::query::apply_overrides;
 
 #[no_mangle]
 pub extern "C" fn kclvm_cli_run(args: *const i8, plugin_agent: *const i8) -> *const i8 {
@@ -24,7 +26,7 @@ pub extern "C" fn kclvm_cli_run(args: *const i8, plugin_agent: *const i8) -> *co
 
     // load ast
     let mut program = load_program(&files, Some(opts));
-
+    apply_overrides(&mut program, &args.overrides, &[]);
     let scope = resolve_program(&mut program);
 
     // gen bc or ll file
@@ -74,9 +76,12 @@ pub extern "C" fn kclvm_cli_run(args: *const i8, plugin_agent: *const i8) -> *co
             (compile_prog, scope.import_names.clone(), cache_dir.clone()),
         );
     }
-    let mut theads = vec![];
+    let pool = ThreadPool::new(4);
+    let (tx, rx) = channel();
+    let prog_count = compile_progs.len();
     for (pkgpath, (compile_prog, import_names, cache_dir)) in compile_progs {
-        let t = thread::spawn(move || {
+        let tx = tx.clone();
+        pool.execute(move || {
             let root = &compile_prog.root;
             let is_main_pkg = pkgpath == kclvm_ast::MAIN_PKG;
             let file = if is_main_pkg {
@@ -137,17 +142,14 @@ pub extern "C" fn kclvm_cli_run(args: *const i8, plugin_agent: *const i8) -> *co
                     }
                 }
             };
+            if Path::new(&ll_path).exists() {
+                std::fs::remove_file(&ll_path).unwrap();
+            }
             ll_path_lock.unlock().unwrap();
-            dylib_path
+            tx.send(dylib_path).expect("channel will be there waiting for the pool");
         });
-        theads.push(t);
     }
-    let mut dylib_paths = vec![];
-    for t in theads {
-        let dylib_path = t.join().unwrap();
-        dylib_paths.push(dylib_path);
-    }
-
+    let dylib_paths = rx.iter().take(prog_count).collect::<Vec<String>>();
     let mut cmd = Command::new(plugin_agent);
     // link all dylibs
     let dylib_path = cmd.link_dylibs(&dylib_paths, "");
