@@ -17,7 +17,7 @@ use kclvm_span::{Span, DUMMY_SP};
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum CommentKind {
     /// "#"
-    Line,
+    Line(Symbol),
 }
 
 #[derive(Clone, PartialEq, Hash, Debug, Copy)]
@@ -278,7 +278,7 @@ impl Into<String> for TokenKind {
             },
             TokenKind::Ident(_) => "identifier",
             DocComment(kind) => match kind {
-                CommentKind::Line => "inline_comment",
+                CommentKind::Line(_) => "inline_comment",
             },
             Indent => "indent",
             Dedent => "dedent",

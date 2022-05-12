@@ -779,6 +779,14 @@ impl ConfigEntryOperation {
             ConfigEntryOperation::Insert => 2,
         }
     }
+
+    pub fn symbol(&self) -> &'static str {
+        match self {
+            ConfigEntryOperation::Union => ":",
+            ConfigEntryOperation::Override => "=",
+            ConfigEntryOperation::Insert => "+=",
+        }
+    }
 }
 
 /// ConfigEntry, e.g.
@@ -1005,6 +1013,17 @@ pub enum NameConstant {
     Undefined,
 }
 
+impl NameConstant {
+    pub fn symbol(&self) -> &'static str {
+        match self {
+            NameConstant::True => "True",
+            NameConstant::False => "False",
+            NameConstant::None => "None",
+            NameConstant::Undefined => "Undefined",
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct NameConstantLit {
     pub value: NameConstant,
@@ -1125,6 +1144,26 @@ pub enum AugOp {
     BitAnd,
     /// The `|=` operator (bitwise or)
     BitOr,
+}
+
+impl AugOp {
+    pub fn symbol(&self) -> &'static str {
+        match self {
+            AugOp::Assign => "=",
+            AugOp::Add => "+=",
+            AugOp::Sub => "-=",
+            AugOp::Mul => "*=",
+            AugOp::Div => "/=",
+            AugOp::Mod => "%=",
+            AugOp::Pow => "**=",
+            AugOp::FloorDiv => "//=",
+            AugOp::LShift => "<<=",
+            AugOp::RShift => ">>=",
+            AugOp::BitXor => "^=",
+            AugOp::BitAnd => "&=",
+            AugOp::BitOr => "|=",
+        }
+    }
 }
 
 impl TryInto<BinOp> for AugOp {

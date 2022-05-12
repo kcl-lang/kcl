@@ -2189,11 +2189,6 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         self.walk_identifier_with_ctx(identifier, &identifier.ctx, None)
     }
 
-    fn walk_literal(&self, _literal: &'ctx ast::Literal) -> Self::Result {
-        // Nothing to do
-        self.ok_result()
-    }
-
     fn walk_number_lit(&self, number_lit: &'ctx ast::NumberLit) -> Self::Result {
         check_backtrack_stop!(self);
         match number_lit.value {

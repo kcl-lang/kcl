@@ -142,6 +142,9 @@ pub extern "C" fn kclvm_cli_run(args: *const i8, plugin_agent: *const i8) -> *co
                     }
                 }
             };
+            if Path::new(&ll_path).exists() {
+                std::fs::remove_file(&ll_path).unwrap();
+            }
             ll_path_lock.unlock().unwrap();
             tx.send(dylib_path).expect("channel will be there waiting for the pool");
         });

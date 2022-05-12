@@ -75,7 +75,7 @@ fn comment_flavors() {
 ",
         expect![[r#"
         Token { kind: Newline, span: Span { base_or_index: 0, len_or_tag: 1 } }
-        Token { kind: DocComment(Line), span: Span { base_or_index: 1, len_or_tag: 6 } }
+        Token { kind: DocComment(Line(Symbol(SymbolIndex { idx: 42 }))), span: Span { base_or_index: 1, len_or_tag: 6 } }
         Token { kind: Newline, span: Span { base_or_index: 7, len_or_tag: 1 } }
         Token { kind: Eof, span: Span { base_or_index: 8, len_or_tag: 0 } }
 "#]],
@@ -155,7 +155,7 @@ $
             Token { kind: Newline, span: Span { base_or_index: 16, len_or_tag: 1 } }
             Token { kind: At, span: Span { base_or_index: 17, len_or_tag: 1 } }
             Token { kind: Newline, span: Span { base_or_index: 18, len_or_tag: 1 } }
-            Token { kind: DocComment(Line), span: Span { base_or_index: 19, len_or_tag: 1 } }
+            Token { kind: DocComment(Line(Symbol(SymbolIndex { idx: 42 }))), span: Span { base_or_index: 19, len_or_tag: 1 } }
             Token { kind: Newline, span: Span { base_or_index: 20, len_or_tag: 1 } }
             Token { kind: UnaryOp(UTilde), span: Span { base_or_index: 21, len_or_tag: 1 } }
             Token { kind: Newline, span: Span { base_or_index: 22, len_or_tag: 1 } }
