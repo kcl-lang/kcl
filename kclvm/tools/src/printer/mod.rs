@@ -1,7 +1,7 @@
 use indexmap::IndexMap;
 use std::collections::VecDeque;
 
-use kclvm_ast::{ast, walker::MutSelfTypedResultWalker};
+use kclvm_ast::{ast, token::TokenKind, walker::MutSelfTypedResultWalker};
 
 mod node;
 
@@ -28,7 +28,7 @@ pub struct Config {
     pub tab_len: usize,
     pub indent_len: usize,
     pub use_spaces: bool,
-    pub print_comments: bool,
+    pub write_comments: bool,
 }
 
 impl Default for Config {
@@ -37,7 +37,7 @@ impl Default for Config {
             tab_len: 4,
             indent_len: 4,
             use_spaces: true,
-            print_comments: true,
+            write_comments: true,
         }
     }
 }
@@ -103,14 +103,21 @@ impl<'p> Printer<'p> {
     /// Write a string
     #[inline]
     pub fn write(&mut self, text: &str) {
-        self.print_string(text);
+        self.write_string(text);
     }
 
-    /// Print a word
+    /// Write a string with newline.
     #[inline]
     pub fn writeln(&mut self, text: &str) {
-        self.print_string(text);
-        self.print_string(NEWLINE);
+        self.write_string(text);
+        self.write_string(NEWLINE);
+        self.fill("");
+    }
+
+    /// Write a space.
+    #[inline]
+    pub fn write_space(&mut self) {
+        self.write_string(WHITESPACE);
     }
 
     /// Fill a indent
@@ -128,11 +135,11 @@ impl<'p> Printer<'p> {
 
     /// Print string
     #[inline]
-    pub fn print_string(&mut self, string: &str) {
+    pub fn write_string(&mut self, string: &str) {
         self.out.push_str(string);
     }
 
-    pub fn print_indentation(&mut self, indentation: Indentation) {
+    pub fn write_indentation(&mut self, indentation: Indentation) {
         match indentation {
             Indentation::Indent => self.enter(),
             Indentation::Dedent => self.leave(),
@@ -149,38 +156,46 @@ impl<'p> Printer<'p> {
         }
     }
 
-    /// Print string
     #[inline]
-    pub fn print_value<T: std::fmt::Display>(&mut self, value: T) {
+    pub fn write_newline(&mut self) {
+        self.writeln("")
+    }
+
+    /// Print value
+    #[inline]
+    pub fn write_value<T: std::fmt::Display>(&mut self, value: T) {
         self.write(&format!("{}", value));
     }
 
-    /// Print string
+    /// Print ast token
     #[inline]
-    pub fn print_node(&mut self, node: ASTNode<'_>) {
+    pub fn write_token(&mut self, tok: TokenKind) {
+        let tok_str: String = tok.into();
+        self.write_string(&tok_str);
+    }
+
+    /// Print ast node
+    #[inline]
+    pub fn write_node(&mut self, node: ASTNode<'_>) {
         match node {
             ASTNode::Stmt(stmt) => self.stmt(stmt),
             ASTNode::Expr(expr) => self.expr(expr),
         }
     }
 
-    /// Print string
+    /// Print ast module.
     #[inline]
-    pub fn print_module(&mut self, module: &ast::Module) {
+    pub fn write_module(&mut self, module: &ast::Module) {
         self.walk_module(module);
-        loop {
-            match self.comments.pop_front() {
-                Some(comment) => {
-                    self.writeln(&comment.node.text);
-                    self.fill("");
-                }
-                None => break,
-            }
+        while let Some(comment) = self.comments.pop_front() {
+            self.writeln(&comment.node.text);
+            self.fill("");
         }
     }
 
-    pub fn print_ast_comments<T>(&mut self, node: &ast::NodeRef<T>) {
-        if !self.cfg.print_comments {
+    /// Print ast comments.
+    pub fn write_ast_comments<T>(&mut self, node: &ast::NodeRef<T>) {
+        if !self.cfg.write_comments {
             return;
         }
         if node.line > self.last_ast_line {

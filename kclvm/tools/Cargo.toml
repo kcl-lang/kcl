@@ -10,3 +10,4 @@ indexmap = "1.0"
 fancy-regex = "0.7.1"
 
 kclvm-ast = {path = "../ast", version = "0.1.0"}
+kclvm-error = {path = "../error", version = "0.1.0"}

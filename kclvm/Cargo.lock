@@ -632,6 +632,7 @@ dependencies = [
  "fancy-regex",
  "indexmap",
  "kclvm-ast",
+ "kclvm-error",
 ]
 
 [[package]]

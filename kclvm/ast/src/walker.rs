@@ -110,7 +110,6 @@ pub trait TypedResultWalker<'ctx>: Sized {
     fn walk_arguments(&self, arguments: &'ctx ast::Arguments) -> Self::Result;
     fn walk_compare(&self, compare: &'ctx ast::Compare) -> Self::Result;
     fn walk_identifier(&self, identifier: &'ctx ast::Identifier) -> Self::Result;
-    fn walk_literal(&self, literal: &'ctx ast::Literal) -> Self::Result;
     fn walk_number_lit(&self, number_lit: &'ctx ast::NumberLit) -> Self::Result;
     fn walk_string_lit(&self, string_lit: &'ctx ast::StringLit) -> Self::Result;
     fn walk_name_constant_lit(&self, name_constant_lit: &'ctx ast::NameConstantLit)
@@ -242,7 +241,6 @@ pub trait MutSelfTypedResultWalker<'ctx>: Sized {
     fn walk_arguments(&mut self, arguments: &'ctx ast::Arguments) -> Self::Result;
     fn walk_compare(&mut self, compare: &'ctx ast::Compare) -> Self::Result;
     fn walk_identifier(&mut self, identifier: &'ctx ast::Identifier) -> Self::Result;
-    fn walk_literal(&mut self, literal: &'ctx ast::Literal) -> Self::Result;
     fn walk_number_lit(&mut self, number_lit: &'ctx ast::NumberLit) -> Self::Result;
     fn walk_string_lit(&mut self, string_lit: &'ctx ast::StringLit) -> Self::Result;
     fn walk_name_constant_lit(
@@ -434,13 +432,6 @@ pub trait MutSelfMutWalker<'ctx> {
     fn walk_identifier(&mut self, identifier: &'ctx mut ast::Identifier) {
         // Nothing to do.
         let _ = identifier;
-    }
-    fn walk_literal(&mut self, literal: &'ctx mut ast::Literal) {
-        match literal {
-            ast::Literal::Number(number_lit) => self.walk_number_lit(number_lit),
-            ast::Literal::String(string_lit) => self.walk_string_lit(string_lit),
-            ast::Literal::NameConstant(name_constant) => self.walk_name_constant_lit(name_constant),
-        }
     }
     fn walk_number_lit(&mut self, number_lit: &'ctx mut ast::NumberLit) {
         let _ = number_lit;
@@ -636,9 +627,6 @@ pub trait Walker<'ctx>: TypedResultWalker<'ctx> {
     }
     fn walk_identifier(&mut self, identifier: &'ctx ast::Identifier) {
         walk_identifier(self, identifier);
-    }
-    fn walk_literal(&mut self, literal: &'ctx ast::Literal) {
-        walk_literal(self, literal)
     }
     fn walk_number_lit(&mut self, number_lit: &'ctx ast::NumberLit) {
         walk_number_lit(self, number_lit);
@@ -956,14 +944,6 @@ pub fn walk_identifier<'ctx, V: Walker<'ctx>>(walker: &mut V, identifier: &'ctx 
     // Nothing to do.
     let _ = walker;
     let _ = identifier;
-}
-
-pub fn walk_literal<'ctx, V: Walker<'ctx>>(walker: &mut V, literal: &'ctx ast::Literal) {
-    match literal {
-        ast::Literal::Number(number_lit) => walker.walk_number_lit(number_lit),
-        ast::Literal::String(string_lit) => walker.walk_string_lit(string_lit),
-        ast::Literal::NameConstant(name_constant) => walker.walk_name_constant_lit(name_constant),
-    }
 }
 
 pub fn walk_number_lit<'ctx, V: Walker<'ctx>>(walker: &mut V, number_lit: &'ctx ast::NumberLit) {
