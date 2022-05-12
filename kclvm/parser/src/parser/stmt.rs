@@ -761,7 +761,8 @@ impl<'a> Parser<'_> {
             {
                 self.bump_token(TokenKind::Colon);
                 let typ = self.parse_type_annotation();
-                (Some(node_ref!(typ.node.to_string())), Some(typ))
+
+                (Some(node_ref!(typ.node.to_string(), typ.pos())), Some(typ))
             } else {
                 (None, None)
             };
@@ -953,7 +954,14 @@ impl<'a> Parser<'_> {
             checks: body_checks,
             index_signature: body_index_signature,
 
-            name: node_ref!("".to_string()),
+            name: Box::new(Node {
+                node: "".to_string(),
+                filename: "".to_string(),
+                line: 0,
+                column: 0,
+                end_line: 0,
+                end_column: 0,
+            }),
             parent_name: None,
             for_host_name: None,
             is_mixin: false,

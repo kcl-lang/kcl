@@ -77,7 +77,7 @@ pub struct Parser<'a> {
 
 impl<'a> Parser<'a> {
     pub fn new(sess: &'a ParseSession, stream: TokenStream) -> Self {
-        let (non_comment_tokens, comments) = Parser::split_token_stream(stream);
+        let (non_comment_tokens, comments) = Parser::split_token_stream(&sess, stream);
 
         let mut parser = Parser {
             token: Token::dummy(),
@@ -175,7 +175,10 @@ impl<'a> Parser<'a> {
 }
 
 impl<'a> Parser<'a> {
-    fn split_token_stream(stream: TokenStream) -> (Vec<Token>, Vec<NodeRef<Comment>>) {
+    fn split_token_stream(
+        sess: &'a ParseSession,
+        stream: TokenStream,
+    ) -> (Vec<Token>, Vec<NodeRef<Comment>>) {
         use rustc_span::BytePos;
 
         let mut comments = Vec::new();
@@ -207,13 +210,25 @@ impl<'a> Parser<'a> {
             // split comments
             if matches!(tok.kind, TokenKind::DocComment(_)) {
                 match tok.kind {
-                    TokenKind::DocComment(comment) => match comment {
+                    TokenKind::DocComment(comment_kind) => match comment_kind {
                         CommentKind::Line(x) => {
-                            comments.push(NodeRef::new(kclvm_ast::ast::Node::dummy_node(
-                                Comment {
+                            use rustc_span::Pos;
+                            let lo = sess.source_map.lookup_char_pos(tok.span.lo());
+                            let hi = sess.source_map.lookup_char_pos(tok.span.hi());
+                            let filename: String = format!("{}", lo.file.name.prefer_remapped());
+
+                            let node = kclvm_ast::ast::Node {
+                                node: Comment {
                                     text: x.as_str().to_string(),
                                 },
-                            )));
+                                filename: filename,
+                                line: lo.line as u64,
+                                column: lo.col.to_usize() as u64,
+                                end_line: hi.line as u64,
+                                end_column: hi.col.to_usize() as u64,
+                            };
+
+                            comments.push(NodeRef::new(node));
                         }
                     },
                     _ => (),
