@@ -1017,15 +1017,16 @@ impl<'a> Parser<'a> {
         while let Some(mut x) = elif_list.pop() {
             x.node.orelse = if_item.orelse;
 
-            let mut t = Box::new(Node::dummy_node(Expr::ListIfItem(x.node)));
+            let t = Node {
+                node: Expr::ListIfItem(x.node),
+                filename: x.filename,
+                line: x.line,
+                column: x.column,
+                end_line: x.end_line,
+                end_column: x.end_column,
+            };
 
-            t.filename = x.filename;
-            t.line = x.line;
-            t.column = x.column;
-            t.end_line = x.end_line;
-            t.end_column = x.end_column;
-
-            if_item.orelse = Some(t);
+            if_item.orelse = Some(Box::new(t));
         }
 
         Box::new(Node::node(
@@ -1415,15 +1416,16 @@ impl<'a> Parser<'a> {
         while let Some(mut x) = elif_list.pop() {
             x.node.orelse = if_entry.node.orelse;
 
-            let mut t = Box::new(Node::dummy_node(Expr::ConfigIfEntry(x.node)));
+            let t = Node {
+                node: Expr::ConfigIfEntry(x.node),
+                filename: x.filename,
+                line: x.line,
+                column: x.column,
+                end_line: x.end_line,
+                end_column: x.end_column,
+            };
 
-            t.filename = x.filename;
-            t.line = x.line;
-            t.column = x.column;
-            t.end_line = x.end_line;
-            t.end_column = x.end_column;
-
-            if_entry.node.orelse = Some(t);
+            if_entry.node.orelse = Some(Box::new(t));
         }
         Box::new(Node::new(
             Expr::ConfigIfEntry(if_entry.node),
@@ -1455,12 +1457,22 @@ impl<'a> Parser<'a> {
 
         let token = self.token;
 
-        let mut body = ConfigIfEntryExpr {
-            if_cond: Box::new(Node::dummy_node(Expr::NameConstantLit(NameConstantLit {
-                value: NameConstant::None, // ignore
-            }))),
-            items: vec![],
-            orelse: None,
+        let mut body = {
+            let node = Node {
+                node: Expr::NameConstantLit(NameConstantLit {
+                    value: NameConstant::None, // ignore
+                }),
+                filename: "".to_string(),
+                line: 0,
+                column: 0,
+                end_line: 0,
+                end_column: 0,
+            };
+            ConfigIfEntryExpr {
+                if_cond: Box::new(node),
+                items: vec![],
+                orelse: None,
+            }
         };
 
         fn parse_body_item(
