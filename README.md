@@ -35,11 +35,56 @@ Kusion Configuration Language (KCL) is an open source configuration language mai
 
 ## Installing & Documentation
 
-+ [Website](https://kusionstack.io)
+### How to install
+
+[Download](https://github.com/KusionStack/KCLVM/releases) the latest release from GitHub and add `{install-location}/kclvm/bin` to environment PATH.
+
+### Quick Showcase
+
+`./samples/fib.k` is an example of calculating the Fibonacci sequence.
+
+```kcl
+schema Fib:
+    n1: int = n - 1
+    n2: int = n1 - 1
+    n: int
+    value: int
+
+    if n <= 1:
+        value = 1
+    elif n == 2:
+        value = 1
+    else:
+        value = Fib {n: n1}.value + Fib {n: n2}.value
+
+fib8 = Fib {n: 8}.value
+```
+
+We can execute the following command to get a YAML output.
+
+```
+kcl ./samples/fib.k
+```
+
+YAML output
+
+```yaml
+fib8: 21
+```
+
+### Documentation
+
+Detailed documentation is available at https://kusionstack.io
 
 ## Developing & Contributing
 
-See our [developing guide](./CONTRIBUTING.md).
+### Developing
+
+See [Developing Guide](./CONTRIBUTING.md).
+
+### Roadmap
+
+See [KCLVM Roadmap](https://kusionstack.io/docs/governance/intro/roadmap#kclvm-%E8%B7%AF%E7%BA%BF%E8%A7%84%E5%88%92)
 
 ## License
 

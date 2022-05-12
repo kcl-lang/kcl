@@ -9,16 +9,16 @@ default:
 	protoc -I. --python_out=./_output ./modfile/modfile.proto
 
 	cp ./_output/modfile/modfile_pb2.py \
-		../internal/kclvm_py/config/modfile_pb2.py
+		../config/modfile_pb2.py
 
 	# gpyrpc
 	protoc -I. --python_out=./_output ./gpyrpc/gpyrpc.proto ./gpyrpc/protorpc_wire.proto
 
-	mkdir -p ../internal/kclvm_py/internal/gpyrpc
+	mkdir -p ../internal/gpyrpc
 	cp ./_output/gpyrpc/gpyrpc_pb2.py \
-		../internal/kclvm_py/internal/gpyrpc/gpyrpc_pb2.py
+		../internal/gpyrpc/gpyrpc_pb2.py
 	cp ./_output/gpyrpc/protorpc_wire_pb2.py \
-		../internal/kclvm_py/internal/gpyrpc/protorpc_wire_pb2.py
+		../internal/gpyrpc/protorpc_wire_pb2.py
 
 	# protorpc
 	protoc -I. --python_out=./_output ./gpyrpc/protorpc_wire.proto
@@ -33,7 +33,7 @@ protorpc-stub:
 
 	cd gpyrpc && protoc --protorpc-py_out=. gpyrpc.proto
 	cp ./gpyrpc/kusionstack.io/kclvm-go/pkg/spec/gpyrpc/gpyrpc.pb.protorpc.py \
-		../internal/kclvm_py/internal/gpyrpc/gpyrpc_pb_protorpc.py
+		../internal/gpyrpc/gpyrpc_pb_protorpc.py
 
 	-rm -rf ./gpyrpc/kusionstack.io
 
