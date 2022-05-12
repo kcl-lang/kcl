@@ -633,6 +633,7 @@ dependencies = [
  "indexmap",
  "kclvm-ast",
  "kclvm-error",
+ "kclvm-parser",
 ]
 
 [[package]]

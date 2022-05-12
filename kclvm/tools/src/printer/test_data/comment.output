@@ -1,0 +1,40 @@
+# Comment One
+schema Main:
+    name?: str
+    env?: [{str:}]
+
+# Comment Two
+schema AppConfiguration:
+    appName: str
+    image: str
+    overQuota: bool = False
+    resource: {str:}
+    mainContainer?: Main
+    labels: {str:}
+
+# Comment Three
+appConfiguration = AppConfiguration {
+    # Comment Four
+    appName: "kusion"
+    # Comment Five
+    image: "test-image:v1"
+    resource: {
+        cpu: "4"
+        disk: "50Gi"
+        memory: "12Gi"
+    }
+    labels: {
+        key: {
+            key: 12
+        }
+    }
+    # Comment Six
+    mainContainer: Main {
+        name: "kusion_override"
+    }
+    # Comment Seven
+    # Comment Eight
+    overQuota: True
+}
+
+# Comment Nine

@@ -143,14 +143,14 @@ impl<'p> Printer<'p> {
         match indentation {
             Indentation::Indent => self.enter(),
             Indentation::Dedent => self.leave(),
-            Indentation::Newline => self.writeln(""),
+            Indentation::Newline => self.write_newline(),
             Indentation::IndentWithNewline => {
                 self.enter();
-                self.writeln("")
+                self.write_newline()
             }
             Indentation::DedentWithNewline => {
                 self.leave();
-                self.writeln("");
+                self.write_newline();
             }
             Indentation::Fill => self.fill(""),
         }
@@ -159,6 +159,11 @@ impl<'p> Printer<'p> {
     #[inline]
     pub fn write_newline(&mut self) {
         self.writeln("")
+    }
+
+    #[inline]
+    pub fn write_newline_without_fill(&mut self) {
+        self.write_string(NEWLINE);
     }
 
     /// Print value
@@ -236,4 +241,18 @@ impl<'p> Printer<'p> {
     pub fn leave(&mut self) {
         self.indent -= 1;
     }
+}
+
+/// Print AST to string
+pub fn print_ast_module(module: &ast::Module) -> String {
+    let mut printer = Printer::default();
+    printer.walk_module(module);
+    printer.out
+}
+
+/// Print AST to string
+pub fn print_ast_node(node: ASTNode) -> String {
+    let mut printer = Printer::default();
+    printer.write_node(node);
+    printer.out
 }

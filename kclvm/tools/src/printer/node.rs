@@ -19,13 +19,12 @@ const IDENTIFIER_REGEX: &str = r#"^\$?[a-zA-Z_]\w*$"#;
 
 macro_rules! interleave {
     ($inter: expr, $f: expr, $seq: expr) => {
-        if $seq.is_empty() {
-            return;
-        }
-        $f(&$seq[0]);
-        for s in &$seq[1..] {
-            $inter();
-            $f(s);
+        if !$seq.is_empty() {
+            $f(&$seq[0]);
+            for s in &$seq[1..] {
+                $inter();
+                $f(s);
+            }
         }
     };
 }
@@ -46,7 +45,7 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
             |expr| self.expr(expr),
             expr_stmt.exprs
         );
-        self.write_newline();
+        self.write_newline_without_fill();
     }
 
     fn walk_unification_stmt(
@@ -56,7 +55,7 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
         self.walk_identifier(&unification_stmt.target.node);
         self.write(": ");
         self.walk_schema_expr(&unification_stmt.value.node);
-        self.write_newline();
+        self.write_newline_without_fill();
     }
 
     fn walk_type_alias_stmt(&mut self, type_alias_stmt: &'ctx ast::TypeAliasStmt) -> Self::Result {
@@ -65,7 +64,7 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
         self.walk_identifier(&type_alias_stmt.type_name.node);
         self.write(" = ");
         self.write(&type_alias_stmt.type_value.node);
-        self.write_newline();
+        self.write_newline_without_fill();
     }
 
     fn walk_assign_stmt(&mut self, assign_stmt: &'ctx ast::AssignStmt) -> Self::Result {
@@ -80,9 +79,9 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
             self.write(" = ");
         }
         self.expr(&assign_stmt.value);
-        self.write_newline();
+        self.write_newline_without_fill();
         if matches!(assign_stmt.value.node, ast::Expr::Schema(_)) {
-            self.write_newline();
+            self.write_newline_without_fill();
         }
     }
 
@@ -91,6 +90,8 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
         self.write_space();
         self.write(aug_assign_stmt.op.symbol());
         self.write_space();
+        self.expr(&aug_assign_stmt.value);
+        self.write_newline_without_fill();
     }
 
     fn walk_assert_stmt(&mut self, assert_stmt: &'ctx ast::AssertStmt) -> Self::Result {
@@ -104,14 +105,14 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
             self.write(COMMA_WHITESPACE);
             self.expr(msg);
         }
-        self.write_newline();
+        self.write_newline_without_fill();
     }
 
     fn walk_if_stmt(&mut self, if_stmt: &'ctx ast::IfStmt) -> Self::Result {
         self.write("if ");
         self.expr(&if_stmt.cond);
         self.write_token(TokenKind::Colon);
-        self.write_newline();
+        self.write_newline_without_fill();
         self.write_indentation(Indentation::Indent);
         self.stmts(&if_stmt.body);
         self.write_indentation(Indentation::Dedent);
@@ -125,7 +126,10 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
                 self.write_indentation(Indentation::Indent);
                 self.stmts(&if_stmt.orelse);
                 self.write_indentation(Indentation::Dedent);
+                self.write_newline_without_fill();
             }
+        } else {
+            self.write_newline_without_fill();
         }
     }
 
@@ -136,15 +140,18 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
             self.write(" as ");
             self.write(as_name);
         }
-        self.write_newline();
+        self.write_newline_without_fill();
     }
 
     fn walk_schema_stmt(&mut self, schema_stmt: &'ctx ast::SchemaStmt) -> Self::Result {
         interleave!(
             || self.write_newline(),
-            |expr: &ast::NodeRef<CallExpr>| self.walk_call_expr(&expr.node),
+            |expr: &ast::NodeRef<CallExpr>| {self.write("@"); self.walk_call_expr(&expr.node);},
             schema_stmt.decorators
         );
+        if !schema_stmt.decorators.is_empty() {
+            self.write_newline();
+        }
         if schema_stmt.is_mixin {
             self.write("mixin ");
         } else if schema_stmt.is_protocol {
@@ -168,16 +175,79 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
             self.walk_identifier(&host_name.node);
         }
         self.write_token(TokenKind::Colon);
-        self.write_newline();
+        self.write_newline_without_fill();
         self.write_indentation(Indentation::Indent);
+        if !schema_stmt.doc.is_empty() {
+            self.fill("");
+            self.write(&schema_stmt.doc);
+            self.write_newline_without_fill();
+        }
+        if !schema_stmt.mixins.is_empty() {
+            self.fill("");
+            self.write("mixin [");
+            self.write_indentation(Indentation::IndentWithNewline);
+            interleave!(
+                || {
+                    self.write(",");
+                    self.write_newline();
+                },
+                |mixin_name: &ast::NodeRef<ast::Identifier>| self.walk_identifier(&mixin_name.node),
+                schema_stmt.mixins
+            );
+            self.write_indentation(Indentation::Dedent);
+            self.write_newline();
+            self.write("]");
+            self.write_newline_without_fill();
+        }
+        if let Some(index_signature) = &schema_stmt.index_signature {
+            self.fill("");
+            self.write_token(TokenKind::OpenDelim(DelimToken::Bracket));
+            if index_signature.node.any_other {
+                self.write_token(TokenKind::DotDotDot);
+            }
+            if let Some(key_name) = &index_signature.node.key_name {
+                self.write(&format!("{}: ", key_name));
+            }
+            self.write(&index_signature.node.key_type.node);
+            self.write_token(TokenKind::CloseDelim(DelimToken::Bracket));
+            self.write_token(TokenKind::Colon);
+            self.write_space();
+            self.write(&index_signature.node.value_type.node);
+            if let Some(value) = &index_signature.node.value {
+                self.write(" = ");
+                self.expr(value);
+            }
+            self.write_newline_without_fill();
+        }
+        self.stmts(&schema_stmt.body);
+        self.write_newline_without_fill();
+        if !schema_stmt.checks.is_empty() {
+            self.fill("check:");
+            // Schema check indent
+            self.write_indentation(Indentation::IndentWithNewline);
+            interleave!(
+                || self.write_newline(),
+                |check_expr: &ast::NodeRef<ast::CheckExpr>| self.walk_check_expr(&check_expr.node),
+                schema_stmt.checks
+            );
+            self.write_newline_without_fill();
+            // Schema check dedent
+            self.write_indentation(Indentation::Dedent);
+            self.write_newline_without_fill();
+        }
+        // Schema Stmt dedent
+        self.write_indentation(Indentation::Dedent);
     }
 
     fn walk_rule_stmt(&mut self, rule_stmt: &'ctx ast::RuleStmt) -> Self::Result {
         interleave!(
             || self.write_newline(),
-            |expr: &ast::NodeRef<CallExpr>| self.walk_call_expr(&expr.node),
+            |expr: &ast::NodeRef<CallExpr>| {self.write("@"); self.walk_call_expr(&expr.node);},
             rule_stmt.decorators
         );
+        if !rule_stmt.decorators.is_empty() {
+            self.write_newline();
+        }
         self.write("rule ");
         self.write(&rule_stmt.name.node);
         if let Some(args) = &rule_stmt.args {
@@ -199,7 +269,22 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
             self.walk_identifier(&host_name.node);
         }
         self.write_token(TokenKind::Colon);
+        // Rule Stmt indent
         self.write_indentation(Indentation::IndentWithNewline);
+        if !rule_stmt.doc.is_empty() {
+            self.write(&rule_stmt.doc);
+            self.write_newline();
+        }
+        if !rule_stmt.checks.is_empty() {
+            interleave!(
+                || self.write_newline(),
+                |check_expr: &ast::NodeRef<ast::CheckExpr>| self.walk_check_expr(&check_expr.node),
+                rule_stmt.checks
+            );
+            self.write_newline_without_fill();
+        }
+        // Rule Stmt dedent
+        self.write_indentation(Indentation::Dedent);
     }
 
     fn walk_quant_expr(&mut self, quant_expr: &'ctx ast::QuantExpr) -> Self::Result {
@@ -214,8 +299,8 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
         );
         self.write(" in ");
         self.expr(&quant_expr.target);
-        self.write("{");
-        if in_one_line {
+        self.write(" {");
+        if !in_one_line {
             self.write_indentation(Indentation::IndentWithNewline);
         }
         self.expr(&quant_expr.test);
@@ -223,7 +308,7 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
             self.write(" if ");
             self.expr(if_cond);
         }
-        if in_one_line {
+        if !in_one_line {
             self.write_indentation(Indentation::DedentWithNewline)
         }
         self.write("}")
@@ -232,9 +317,12 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
     fn walk_schema_attr(&mut self, schema_attr: &'ctx ast::SchemaAttr) -> Self::Result {
         interleave!(
             || self.write_newline(),
-            |expr: &ast::NodeRef<CallExpr>| self.walk_call_expr(&expr.node),
+            |expr: &ast::NodeRef<CallExpr>| {self.write("@"); self.walk_call_expr(&expr.node)},
             schema_attr.decorators
         );
+        if !schema_attr.decorators.is_empty() {
+            self.write_newline();
+        }
         self.write(&schema_attr.name.node);
         if schema_attr.is_optional {
             self.write("?");
@@ -250,7 +338,10 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
             self.write(symbol);
             self.write_space();
         }
-        self.write_newline();
+        if let Some(value) = &schema_attr.value {
+            self.expr(&value);
+        }
+        self.write_newline_without_fill();
     }
 
     fn walk_if_expr(&mut self, if_expr: &'ctx ast::IfExpr) -> Self::Result {
@@ -308,6 +399,13 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
                 self.expr(lower);
             }
             self.write_token(TokenKind::Colon);
+            if let Some(upper) = &subscript.upper {
+                self.expr(upper);
+            }
+            self.write_token(TokenKind::Colon);
+            if let Some(step) = &subscript.step {
+                self.expr(step);
+            }
         }
         self.write("]");
     }
@@ -324,7 +422,12 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
             .iter()
             .map(|e| e.line)
             .collect::<HashSet<u64>>();
-        let in_one_line = line_set.len() <= 1;
+        let mut in_one_line = line_set.len() <= 1;
+        if let Some(elt) = list_expr.elts.first() {
+            if let ast::Expr::ListIfItem(_) = &elt.node {
+                in_one_line = false;
+            }
+        }
         self.write_token(TokenKind::OpenDelim(DelimToken::Bracket));
         if !in_one_line {
             self.write_indentation(Indentation::IndentWithNewline);
@@ -347,6 +450,9 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
     fn walk_list_comp(&mut self, list_comp: &'ctx ast::ListComp) -> Self::Result {
         self.write_token(TokenKind::OpenDelim(DelimToken::Bracket));
         self.expr(&list_comp.elt);
+        for gen in &list_comp.generators {
+            self.walk_comp_clause(&gen.node);
+        }
         self.write_token(TokenKind::CloseDelim(DelimToken::Bracket));
     }
 
@@ -356,7 +462,7 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
     ) -> Self::Result {
         self.write("if ");
         self.expr(&list_if_item_expr.if_cond);
-        self.write(": ");
+        self.write(":");
         self.write_indentation(Indentation::IndentWithNewline);
         interleave!(
             || self.write_newline(),
@@ -470,18 +576,27 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
 
     fn walk_config_expr(&mut self, config_expr: &'ctx ast::ConfigExpr) -> Self::Result {
         let line_set: HashSet<u64> = config_expr.items.iter().map(|item| item.line).collect();
-        let in_one_line = line_set.len() <= 1;
+        let mut in_one_line = line_set.len() <= 1;
+        if let Some(item) = config_expr.items.first() {
+            if let ast::Expr::ConfigIfEntry(_) = &item.node.value.node {
+                in_one_line = false;
+            }
+        }
         self.write_token(TokenKind::OpenDelim(DelimToken::Brace));
         if !config_expr.items.is_empty() {
-            if in_one_line {
+            if !in_one_line {
                 self.write_indentation(Indentation::IndentWithNewline);
             }
             interleave!(
-                || self.write_newline(),
+                || if in_one_line {
+                    self.write(COMMA_WHITESPACE);
+                } else {
+                    self.write_newline();
+                },
                 |entry: &ast::NodeRef<ast::ConfigEntry>| self.write_entry(entry),
                 config_expr.items
             );
-            if in_one_line {
+            if !in_one_line {
                 self.write_indentation(Indentation::DedentWithNewline);
             }
         }
@@ -600,7 +715,7 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
         for value in &joined_string.values {
             match &value.node {
                 ast::Expr::StringLit(string_lit) => {
-                    self.write(&format!("\"{}\"", string_lit.value.replace('\"', "\\\"")));
+                    self.write(&string_lit.value.replace('\"', "\\\""));
                 }
                 _ => self.expr(value),
             }

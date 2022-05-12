@@ -11,3 +11,7 @@ fancy-regex = "0.7.1"
 
 kclvm-ast = {path = "../ast", version = "0.1.0"}
 kclvm-error = {path = "../error", version = "0.1.0"}
+kclvm-parser = {path = "../parser", version = "0.1.0"}
+
+[dev-dependencies]
+pretty_assertions = "1.2.1"

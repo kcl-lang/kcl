@@ -1,0 +1,6 @@
+schema Config[nameVar, textVar: str, idVar: int = 1]:
+    name: str = nameVar
+    text: str = textVar
+    id?: int = idVar
+
+config = Config("test", "text")

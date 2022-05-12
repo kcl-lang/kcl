@@ -1,0 +1,55 @@
+schema Config:
+    name: str
+    env: str
+    data: [int]
+
+env = "env"
+data1 = Config {
+    if env == "env":
+        name: env
+        env: env
+        data += [0]
+    else:
+        name = "name"
+        env = "name"
+        data += [1]
+}
+
+data1 = Config {
+    if env == "env":
+        name: env
+        env: env
+    else:
+        name: "name"
+        env: "name"
+}
+
+data2 = Config {
+    if env != "env":
+        name: env
+        env: env
+    else:
+        name: "name"
+        env: "name"
+}
+
+data3 = {
+    if True:
+        key1: "value1"
+    elif True:
+        key2: "value2"
+    elif True:
+        key3: "value3"
+    else:
+        key4: "value4"
+}
+data4 = [
+    if True:
+        "value1"
+    elif True:
+        "value2"
+    elif True:
+        "value3"
+    else:
+        "value4"
+]
