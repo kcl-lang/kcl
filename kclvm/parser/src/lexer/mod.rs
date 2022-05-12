@@ -206,7 +206,8 @@ impl<'a> Lexer<'a> {
     fn lex_token(&mut self, token: kclvm_lexer::Token, start: BytePos) -> Option<TokenKind> {
         Some(match token.kind {
             kclvm_lexer::TokenKind::LineComment { doc_style: _ } => {
-                token::DocComment(CommentKind::Line)
+                let s = self.str_from(start);
+                token::DocComment(CommentKind::Line(Symbol::intern(s)))
             }
             // Whitespace
             kclvm_lexer::TokenKind::Newline => {

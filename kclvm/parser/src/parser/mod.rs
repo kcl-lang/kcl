@@ -26,7 +26,7 @@ mod ty;
 use crate::session::ParseSession;
 
 use kclvm_ast::ast::{Comment, NodeRef};
-use kclvm_ast::token::{Token, TokenKind};
+use kclvm_ast::token::{CommentKind, Token, TokenKind};
 use kclvm_ast::token_stream::{Cursor, TokenStream};
 use kclvm_span::symbol::Symbol;
 
@@ -205,10 +205,19 @@ impl<'a> Parser<'a> {
             }
 
             // split comments
-            if matches!(tok.kind, TokenKind::DocComment(_x)) {
-                comments.push(NodeRef::new(kclvm_ast::ast::Node::dummy_node(Comment {
-                    text: "".to_string(),
-                })));
+            if matches!(tok.kind, TokenKind::DocComment(_)) {
+                match tok.kind {
+                    TokenKind::DocComment(comment) => match comment {
+                        CommentKind::Line(x) => {
+                            comments.push(NodeRef::new(kclvm_ast::ast::Node::dummy_node(
+                                Comment {
+                                    text: x.as_str().to_string(),
+                                },
+                            )));
+                        }
+                    },
+                    _ => (),
+                }
                 continue;
             }
 
