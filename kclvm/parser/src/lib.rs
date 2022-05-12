@@ -17,7 +17,6 @@ use std::error::Error;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;
-use std::process::Command;
 
 use kclvm_span::create_session_globals_then;
 

@@ -628,6 +628,13 @@ dependencies = [
 [[package]]
 name = "kclvm-tools"
 version = "0.1.0"
+dependencies = [
+ "fancy-regex",
+ "indexmap",
+ "kclvm-ast",
+ "kclvm-error",
+ "kclvm-parser",
+]
 
 [[package]]
 name = "kclvm-version"

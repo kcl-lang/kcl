@@ -1252,7 +1252,7 @@ impl<'a> Parser<'_> {
             Vec::new()
         };
 
-        let name_expr = self.parse_expr();
+        let name_expr = self.parse_identifier_expr();
         let name_pos = name_expr.pos();
         let name = expr_as!(name_expr, Expr::Identifier).unwrap();
         let name = node_ref!(name.names.join("."), name_pos);
@@ -1268,7 +1268,7 @@ impl<'a> Parser<'_> {
         };
 
         let mut parent_rules = vec![];
-        if self.token.kind != TokenKind::OpenDelim(DelimToken::Paren) {
+        if self.token.kind == TokenKind::OpenDelim(DelimToken::Paren) {
             self.bump();
             loop {
                 if let TokenKind::CloseDelim(DelimToken::Paren) = self.token.kind {
@@ -1298,20 +1298,30 @@ impl<'a> Parser<'_> {
         self.bump_token(TokenKind::Indent);
 
         // doc string
-        let doc = if matches!(self.token.kind, TokenKind::Literal(_)) {
-            let doc_lit = expr_as!(self.parse_expr(), Expr::StringLit).unwrap();
-            self.skip_newlines();
-            doc_lit.value
-        } else {
-            "".to_string()
+        let body_doc = match self.token.kind {
+            TokenKind::Literal(lit) => {
+                if let LitKind::Str { .. } = lit.kind {
+                    let doc_expr = self.parse_str_expr(lit);
+                    self.skip_newlines();
+                    match &doc_expr.node {
+                        Expr::StringLit(str) => str.raw_value.clone(),
+                        Expr::JoinedString(str) => str.raw_value.clone(),
+                        _ => "".to_string(),
+                    }
+                } else {
+                    "".to_string()
+                }
+            }
+            _ => "".to_string(),
         };
 
         let mut check_expr_list = vec![];
         while self.token.kind != TokenKind::Dedent {
-            let expr = self.parse_expr();
+            let expr = self.parse_check_expr();
             let expr_pos = expr.pos();
             let check_expr = expr_as!(expr, Expr::Check).unwrap();
             check_expr_list.push(node_ref!(check_expr, expr_pos));
+            self.skip_newlines();
         }
         self.bump_token(TokenKind::Dedent);
 
@@ -1319,7 +1329,7 @@ impl<'a> Parser<'_> {
 
         Some(node_ref!(
             Stmt::Rule(RuleStmt {
-                doc,
+                doc: body_doc,
                 name,
                 parent_rules,
                 decorators,

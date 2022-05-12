@@ -1007,14 +1007,6 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
         )
     }
 
-    fn walk_literal(&mut self, literal: &'ctx ast::Literal) -> Self::Result {
-        match literal {
-            ast::Literal::Number(number_lit) => self.walk_number_lit(number_lit),
-            ast::Literal::String(string_lit) => self.walk_string_lit(string_lit),
-            ast::Literal::NameConstant(name_constant) => self.walk_name_constant_lit(name_constant),
-        }
-    }
-
     fn walk_number_lit(&mut self, number_lit: &'ctx ast::NumberLit) -> Self::Result {
         match &number_lit.binary_suffix {
             Some(binary_suffix) => {
