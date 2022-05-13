@@ -1,0 +1,3 @@
+{
+    "code": "schema Data:\n    foo: int = 1\n    bar: str = 'ss'\n\ndata = Data {}"
+}

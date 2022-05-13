@@ -1,0 +1,17 @@
+[package]
+name = "kclvm-error"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rustc_span = { path = "../3rdparty/rustc_span" }
+kclvm-span = {path = "../span", version = "0.1.0"}
+
+tracing = "0.1"
+atty = "0.2"
+termcolor = "1.0"
+annotate-snippets = "0.8.0"
+termize = "0.1.1"
+indexmap = "1.0"

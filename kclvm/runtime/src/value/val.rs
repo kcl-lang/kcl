@@ -1,0 +1,84 @@
+// Copyright 2021 The KCL Authors. All rights reserved.
+
+use crate::*;
+
+impl ValueRef {
+    pub fn undefined() -> Self {
+        Self::from(UNDEFINED)
+    }
+
+    pub fn none() -> Self {
+        Self::from(NONE)
+    }
+
+    pub fn bool(v: bool) -> Self {
+        Self::from(if v { TRUE } else { FALSE })
+    }
+
+    pub fn int(v: i64) -> Self {
+        Self::from(Value::int_value(v))
+    }
+
+    pub fn float(v: f64) -> Self {
+        Self::from(Value::float_value(v))
+    }
+
+    pub fn unit(v: f64, raw: i64, unit: &str) -> Self {
+        Self::from(Value::unit_value(v, raw, unit.to_string()))
+    }
+
+    pub fn str(v: &str) -> Self {
+        Self::from(Value::str_value(v.to_string()))
+    }
+
+    pub fn list(values: Option<&[&Self]>) -> Self {
+        let mut list: ListValue = Default::default();
+        if let Some(values) = values {
+            for x in values {
+                list.values.push((**x).clone());
+            }
+        }
+        Self::from(Value::list_value(list))
+    }
+
+    pub fn list_value(values: Option<&[Self]>) -> Self {
+        let mut list: ListValue = Default::default();
+        if let Some(values) = values {
+            for x in values {
+                list.values.push((*x).clone());
+            }
+        }
+        Self::from(Value::list_value(list))
+    }
+
+    pub fn dict(values: Option<&[(&str, &Self)]>) -> Self {
+        let mut dict: DictValue = Default::default();
+        if let Some(values) = values {
+            for x in values {
+                dict.values.insert(x.0.to_string(), (*x.1).clone());
+            }
+        }
+        Self::from(Value::dict_value(dict))
+    }
+
+    pub fn schema() -> Self {
+        let s: SchemaValue = Default::default();
+        Self::from(Value::schema_value(s))
+    }
+
+    pub fn func(
+        fn_ptr: u64,
+        check_fn_ptr: u64,
+        closure: ValueRef,
+        name: &str,
+        runtime_type: &str,
+    ) -> Self {
+        Self::from(Value::func_value(FuncValue {
+            fn_ptr,
+            check_fn_ptr,
+            closure,
+            external_name: name.to_string(),
+            runtime_type: runtime_type.to_string(),
+        }))
+    }
+}

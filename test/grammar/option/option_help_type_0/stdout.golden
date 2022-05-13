@@ -1,0 +1,7 @@
+option list:
+  -D name=? (str,required) set name value
+  -D a=42 set a value
+  -D b=? set b value
+  -D c={"a":1} (dict) set b value
+  -D obj=?
+  -D obj2=?

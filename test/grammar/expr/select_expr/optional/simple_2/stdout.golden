@@ -1,0 +1,7 @@
+person:
+  name: Alice
+data:
+  name:
+    key: value
+name1: alice
+name2: VALUE

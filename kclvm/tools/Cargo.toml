@@ -1,0 +1,17 @@
+[package]
+name = "kclvm-tools"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+indexmap = "1.0"
+fancy-regex = "0.7.1"
+
+kclvm-ast = {path = "../ast", version = "0.1.0"}
+kclvm-error = {path = "../error", version = "0.1.0"}
+kclvm-parser = {path = "../parser", version = "0.1.0"}
+
+[dev-dependencies]
+pretty_assertions = "1.2.1"

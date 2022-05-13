@@ -1,0 +1,11 @@
+data:
+  base_templating: base
+  base_mixin: base
+  a: 8
+  b: 2
+  c: 4
+  e: 2
+  f: 3
+  d: 4
+  sub_templating: sub
+  sub_mixin: sub

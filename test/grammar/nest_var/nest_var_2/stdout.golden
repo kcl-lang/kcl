@@ -1,0 +1,6 @@
+son:
+  version: v1
+  metadata:
+    labels:
+      key: 123
+  name: Alice

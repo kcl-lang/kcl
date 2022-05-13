@@ -1,0 +1,19 @@
+JohnReese:
+  firstName: John
+  lastName: Reese
+  fullName: John Reese
+JonSnow:
+  firstName: Jon
+  lastName: Snow
+  fullName: Jon Snow
+  age: 10
+  info: Jon Snow, 10 years old
+JohnDoe:
+  firstName: John
+  lastName: Doe
+  fullName: John Doe
+  age: 10
+  info: John Doe, 10 years old
+  subject: CS
+  school: PKU
+  academyFullName: PKU CS

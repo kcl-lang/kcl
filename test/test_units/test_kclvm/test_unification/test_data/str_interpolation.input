@@ -1,0 +1,9 @@
+schema Person:
+    name: str
+    age: int
+
+key = "age"
+alice = Person {
+    name: "Alice"
+}
+alice = {"${key}": 18}

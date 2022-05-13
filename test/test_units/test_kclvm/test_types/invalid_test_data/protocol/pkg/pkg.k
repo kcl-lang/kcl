@@ -1,0 +1,2 @@
+schema SomeProtocol:
+    data: int

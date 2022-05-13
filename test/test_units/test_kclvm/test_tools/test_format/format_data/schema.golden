@@ -1,0 +1,21 @@
+import math
+
+schema XXMixin:
+    nameVar: str
+
+schema Base:
+    """
+    Base schema doc string        
+    """
+    mixin [XXMixin, XXMixin]
+    name: str = "Alice"
+    labels: {str:str} = None
+
+schema Person[para1:str = "value", para2="value"](Base):
+    age: int = 18
+    name = para
+    check:
+        True
+        bool(math.log(10))
+
+person = Person(para1="12") {}

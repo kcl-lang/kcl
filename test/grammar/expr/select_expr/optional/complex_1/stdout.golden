@@ -1,0 +1,10 @@
+person:
+  name: Alice
+  env:
+  - key1: value1
+  - key2: value2
+  data:
+    name:
+      key: value
+  value: value1value2
+name: value1value2

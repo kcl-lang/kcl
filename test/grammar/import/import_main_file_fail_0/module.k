@@ -1,0 +1,4 @@
+
+import main
+
+print('module')

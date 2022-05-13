@@ -1,0 +1,29 @@
+// Copyright 2021 The KCL Authors. All rights reserved.
+
+syntax = "proto3";
+
+package kclvm.modfile;
+
+// kcl.mod 文件对应的内存格式
+// kcl.mod 文件为TOML格式, 字段名字和类型保持一致
+message KclModFile {
+    string root = 1;                           // 根目录路径, 由程序填充(TODO)
+    string root_pkg = 2;                       // 根包import路径, 对应所有子包的前缀, 可以忽略(TODO)
+
+    KclModFile_build_section build = 3;        // build 配置
+    KclModFile_expected_section expected = 4;  // expected 配置
+}
+
+message KclModFile_build_section {
+    bool enable_pkg_cache = 1;    // 启动pkg缓存
+    string cached_pkg_prefix = 2; // 缓存的前缀路径
+    string target = 3;  // 编译的目标，可选 native, wasm
+}
+
+message KclModFile_expected_section {
+    string min_build_time = 1;      // 期望构建时间下界 2021-08-14 20:30:08
+    string max_build_time = 2;      // 期望构建时间上界 2021-08-16 20:30:08
+    string kclvm_version = 3;       // KCLVM 版本依赖
+    string kcl_plugin_version = 4;  // KCLVM Plugin 版本依赖
+    string global_version = 5;      // 全局版本
+}

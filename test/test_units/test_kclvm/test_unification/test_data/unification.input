@@ -1,0 +1,17 @@
+schema Config:
+    """Config Definition"""
+    name?: str
+    args: [str]
+    labels: {str:}
+
+config: Config {
+    name: "config1"  # Literal Initial
+    args: ["kcl", "main.k"]  # List Initial
+    labels.key1: "value1"  # Dict Initial
+}
+
+config: Config {
+    name = "config2"  # Literal Override
+    args: ["kcl2"]  # List Override
+    labels: {key2: "value2"}  # Dict Unification
+}

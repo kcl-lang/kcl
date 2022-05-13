@@ -1,0 +1,7 @@
+config = Config {
+    labels: {
+        env1 = "v1"
+        env2 = "v2"
+        env3 = "v3"
+    }
+}

@@ -1,0 +1,6 @@
+srv_0:
+  port:
+    name: metrics
+    protocol: TCP
+    target: 8080
+    containerPort: 8080

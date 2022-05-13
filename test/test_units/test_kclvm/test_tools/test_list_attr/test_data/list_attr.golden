@@ -1,0 +1,44 @@
+------------ schema list ------------
+Here are schemas defined in list_attr.k:
+- FullName
+- Person1
+- Person2
+Here are schemas imported to list_attr.k:
+imported from import_file.k
+- Person
+imported from nested_import_file.k
+- Persona
+------------ schema structures ------------
+schema FullName:
+name                          type                          default                       is_final  is_optional
+firstName                     str                                                                   Required  
+lastName                      str                                                                   Required  
+
+schema Person1:
+name                          type                          default                       is_final  is_optional
+name                          FullName                      FullName{...}                           Required  
+card                          str                           "abc"                                   Required  
+_mybkLabels                   {str:str}                     ...                                               
+commands                      [str]                         ...                                     Required  
+attrs inherited from Person
+name                          str                                                                   Required  
+age                           int                                                                   Required  
+attrs inherited from Persona
+name                          str                                                                   Required  
+age                           int                                                                   Required  
+
+schema Person2:
+name                          type                          default                       is_final  is_optional
+card                          str                                                                   Required  
+attrs inherited from Person1
+name                          FullName                      FullName{...}                           Required  
+card                          str                           "abc"                                   Required  
+_mybkLabels                   {str:str}                     ...                                               
+commands                      [str]                         ...                                     Required  
+attrs inherited from Person
+name                          str                                                                   Required  
+age                           int                                                                   Required  
+attrs inherited from Persona
+name                          str                                                                   Required  
+age                           int                                                                   Required  
+

@@ -1,0 +1,6 @@
+person:
+  name: Alice
+  age: 18
+personInst:
+  name: Alice
+  age: 18

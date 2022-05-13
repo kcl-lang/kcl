@@ -1,0 +1,6 @@
+a: 1
+b: 3
+data1: '2'
+data2: ${a + 1 if a else b}
+data3: '2'
+data4: ${a + 1 if a else b}

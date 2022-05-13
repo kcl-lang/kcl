@@ -1,0 +1,3 @@
+config:
+  result:
+    name: value

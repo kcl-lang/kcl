@@ -1,0 +1,9 @@
+alice:
+  labels:
+    skin: yellow
+    height: 100
+    female: true
+    teacher:
+    - Finch
+    - Root
+    - Shaw

@@ -1,0 +1,1 @@
+kcl_options: -S :persons.* -S :persons2

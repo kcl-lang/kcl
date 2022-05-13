@@ -1,0 +1,86 @@
+// Copyright 2020 The KCL Authors. All rights reserved.
+
+syntax = "proto3";
+
+package kclvm.doc.model;
+
+message ModuleDoc {
+    string name = 1;  // KCL module name
+    string relative_path = 2; // KCL module relative path
+    string doc = 3;  // KCL module top-level document string
+    repeated SchemaDoc schemas = 4;  // Schema doc list in the module
+    string source_code_url = 5; // The url of the KCL module source code
+}
+
+message SchemaDoc {
+    string name = 1; // Schema name
+    string doc = 2;  // Doc string of schema itself
+    repeated SchemaAttributeDoc attributes = 3;  // Schema attribute doc list in the schema
+    string examples = 4;  // Example string
+    Type base_schema = 5; // Base Schema
+}
+
+message SchemaAttributeDoc {
+    string name = 1;  // Schema attribute
+    string doc = 2;  // Schema attribute document desc string
+    Type type = 4;  // Schema attribute type
+    bool is_optional = 5; // If the attribute must have a value
+    string default_value = 6; // Default value of the attribute
+}
+
+message Type {
+     string type_str = 1;
+     enum TypeCategory {
+         UNION = 0;
+         LIST = 1;
+         DICT = 2;
+         SCHEMA = 3;
+         BUILTIN = 4;
+         LIT = 5;
+         NAMED_CONSTANT = 6;
+         ANY = 7;
+         NUMBER_MULTIPLIER = 8;
+     }
+     TypeCategory type_category = 2; // the category of the type
+     optional UnionType union_type = 3; // optional, if the type is a union type
+     optional ListType list_type = 4; // optional, if the type is a list type
+     optional DictType dict_type = 5; // optional, if the type is a dict type
+     optional SchemaType schema_type = 6; // optional, if the type is a schema type
+     enum BuiltinType {
+        INT = 0;
+        FLOAT = 1;
+        STRING = 2;
+        BOOL = 3;
+     }
+     optional BuiltinType builtin_type = 7; // optional, if the type is a builtin type
+     optional LitType lit_type = 8; // optional, if the type is a literal type
+     enum NamedConstant {
+         NONE = 0;
+     }
+     optional NamedConstant named_constant = 9; // optional, if the type is a named constant
+}
+
+message UnionType {
+    repeated Type types = 1; // the union types
+}
+
+message ListType {
+    Type item_type = 1; // the item type
+}
+
+message DictType {
+    Type key_type = 1; // the key type
+    Type value_type = 2; // the value type
+}
+
+message SchemaType {
+    string name = 1; // the schema name
+    string relative_path = 2; // the relative path of the module that defines the schema
+}
+
+message LitType {
+    optional string string_lit = 1; // optional, if the type is a string literal
+    optional int64 int_lit = 2; // optional, if the type is a int literal
+    optional float float_lit = 3; // optional, if the type is a float literal
+    optional bool bool_lit = 4; // optional, if the type is a float literal
+}

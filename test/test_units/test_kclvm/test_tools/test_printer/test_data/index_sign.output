@@ -1,0 +1,13 @@
+schema Data:
+    [str]: any
+
+schema DataOther:
+    [...str]: str
+    id?: int
+
+schema DataMap:
+    [name: str]: str
+
+    check:
+        name in ["A", "B", "C"]
+

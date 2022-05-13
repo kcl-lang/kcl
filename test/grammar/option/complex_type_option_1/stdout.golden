@@ -1,0 +1,8 @@
+serverInstance:
+  dnsConfig:
+    nameservers:
+    - 172.17.255.252
+    - 172.17.255.253
+    searches:
+    - test1.com
+    - test2.com

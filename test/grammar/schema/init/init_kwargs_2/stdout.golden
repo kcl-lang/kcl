@@ -1,0 +1,4 @@
+person:
+  name: Bob
+  age: 12
+  gender: male

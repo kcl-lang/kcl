@@ -1,0 +1,52 @@
+{
+  "runs": [
+    {
+      "results": [
+        {
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "kclvm/test/test_units/test_kclvm/test_tools/test_lint/test_reporter/test_data/reporter.k"
+                },
+                "region": {
+                  "startColumn": 1,
+                  "startLine": 1
+                }
+              }
+            }
+          ],
+          "message": {
+            "arguments": [
+              "abc"
+            ],
+            "id": "default"
+          },
+          "ruleId": "E0401"
+        }
+      ],
+      "tool": {
+        "driver": {
+          "informationUri": "https://kusion-docs.com/docs/reference/cli/kcl/lint",
+          "name": "kcl-lint",
+          "rules": [
+            {
+              "id": "E0401",
+              "messageStrings": {
+                "default": {
+                  "text": "Unable to import '{0}'."
+                },
+                "shortStrings": {
+                  "text": "Unable to import"
+                }
+              }
+            }
+          ],
+          "version": "0.0.1"
+        }
+      }
+    }
+  ],
+  "version": "2.1.0"
+}

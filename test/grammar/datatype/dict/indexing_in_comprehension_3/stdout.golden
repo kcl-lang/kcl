@@ -1,0 +1,5 @@
+result:
+  person:
+    family:
+    - father: John
+      mother: null

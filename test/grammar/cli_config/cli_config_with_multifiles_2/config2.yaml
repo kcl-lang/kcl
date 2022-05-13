@@ -1,0 +1,5 @@
+kcl_cli_configs:
+  disable_none: true
+kcl_options:
+  - key: key
+    value: value2

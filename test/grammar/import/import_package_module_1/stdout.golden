@@ -1,0 +1,5 @@
+var:
+  field_B: B
+  field_B_int: 2
+  field_A: override
+  field_A_int: 1

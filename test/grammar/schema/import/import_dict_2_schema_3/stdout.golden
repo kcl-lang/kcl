@@ -1,0 +1,5 @@
+alice:
+  name:
+    firstName: alice
+    lastName: smith
+  age: 10

@@ -1,0 +1,13 @@
+John:
+  members:
+  - age: 15
+    name:
+      firstName: John
+      lastName: Reese
+    role: monitor
+    info:
+      address: Beijing
+    family:
+    - mom
+    - dad
+    adult: false

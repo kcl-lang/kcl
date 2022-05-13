@@ -1,0 +1,16 @@
+alice:
+  firstName: Alice
+  lastName: Smith
+  upper: SMITH
+  gender: female
+  title: Ms.Smith
+  info: Ms.Smith, female
+  added: some girl attr
+bob:
+  firstName: Bob
+  lastName: Green
+  upper: GREEN
+  gender: male
+  title: Mr.Green
+  info: Mr.Green, male
+  added: some boy attr

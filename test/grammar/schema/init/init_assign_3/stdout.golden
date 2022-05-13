@@ -1,0 +1,89 @@
+alice:
+  name: alice
+  tagged: true
+  labels:
+    diligent: 'true'
+  famous: false
+  address: St.01
+  partitions:
+  - p1
+  - p2
+  principals:
+    latest: Smith
+  mathematics:
+    versions:
+    - '1'
+    - '2'
+    - '3'
+  art:
+    labels:
+      talent: required
+    major: false
+    credit: 4
+  subjects:
+  - name: mathematics
+    credit: 5
+    major: true
+    labels:
+      diligent: 'true'
+    versions:
+    - '1'
+    - '2'
+    - '3'
+  - name: art
+    credit: 4
+    major: false
+    labels:
+      talent: required
+    versions:
+    - '1'
+    - '2'
+  metadata:
+    name: alice
+    tagged: true
+    version: null
+    historyVersions: null
+    labels:
+      diligent: 'true'
+  scholarModel:
+    school:
+      kind: School
+      metadata:
+        name: null
+        tagged: null
+        version: null
+        historyVersions: null
+        labels:
+          diligent: 'true'
+      address: St.01
+      famous: false
+      subjects:
+      - name: mathematics
+        credit: 5
+        major: true
+        labels:
+          diligent: 'true'
+        versions:
+        - '1'
+        - '2'
+        - '3'
+      - name: art
+        credit: 4
+        major: false
+        labels:
+          talent: required
+        versions:
+        - '1'
+        - '2'
+      partitions:
+      - p1
+      - p2
+      principals:
+        latest: Smith
+    metadata:
+      name: alice
+      tagged: true
+      version: null
+      historyVersions: null
+      labels:
+        diligent: 'true'

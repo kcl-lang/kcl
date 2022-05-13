@@ -1,0 +1,52 @@
+[{
+    "_key": "value",
+    "name": "Alice",
+    "age": 18,
+    "data": [
+        1,
+        2,
+        null
+    ],
+    "labels": {
+        "key1": "value1",
+        "_key2": "value2",
+        "key3": null
+    }
+},
+{
+    "name": "Alice",
+    "age": 18,
+    "data": [
+        1,
+        2,
+        null
+    ],
+    "labels": {
+        "key1": "value1",
+        "key3": null
+    }
+},
+{
+    "_key": "value",
+    "name": "Alice",
+    "age": 18,
+    "data": [
+        1,
+        2
+    ],
+    "labels": {
+        "key1": "value1",
+        "_key2": "value2"
+    }
+},
+{
+    "name": "Alice",
+    "age": 18,
+    "data": [
+        1,
+        2
+    ],
+    "labels": {
+        "key1": "value1"
+    }
+}]

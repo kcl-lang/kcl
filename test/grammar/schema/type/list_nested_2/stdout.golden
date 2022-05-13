@@ -1,0 +1,11 @@
+alice:
+  labels:
+  - skin: yellow
+    height: 100
+    female: true
+    family:
+      father: John
+    teacher:
+    - Finch
+    - Root
+    - Shaw

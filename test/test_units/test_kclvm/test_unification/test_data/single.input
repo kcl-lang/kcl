@@ -1,0 +1,12 @@
+schema Config:
+    name?: str
+    args?: [str]
+    labels?: {str:}
+
+config = Config {
+    labels.env1 = "v1"
+    labels.env2 = "v2"
+    labels: {
+        env3 = "v3"
+    }
+}

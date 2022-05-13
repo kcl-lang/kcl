@@ -1,0 +1,10 @@
+# This is a comment
+kcl_options:
+  - key: app
+    value: kclvm
+  - key: env-type
+    value: dev
+kcl_cli_configs:
+  files:
+    - ./base.k
+    - ${KCL_MOD}/main.k

@@ -1,0 +1,4 @@
+kcl_cli_configs:
+  file:
+    - .
+  debug: false

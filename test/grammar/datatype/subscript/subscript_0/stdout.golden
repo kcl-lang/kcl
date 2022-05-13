@@ -1,0 +1,9 @@
+main:
+  args:
+  - a
+  - b
+  - c
+  - d
+args:
+- a
+- b

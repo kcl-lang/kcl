@@ -1,0 +1,6 @@
+kcl_cli_configs:
+  file:
+    - ${KCL_MOD}/pkg/pkg.k
+    - main.k
+  debug: false
+  strict_range_check: true

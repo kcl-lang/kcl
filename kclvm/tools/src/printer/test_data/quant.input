@@ -1,0 +1,8 @@
+a = all x in [-1, 0, 1, 2, 3] {
+    x >= 1 if x > 0
+}
+b = any x in {k1 = "v1", k2 = "v2"} {x in ["k1", "v2"]}
+c = map x in {k1 = "v1", k2 = "v2"} {x}
+d = filter x in [1, 2, 3] {
+    x > 1
+}

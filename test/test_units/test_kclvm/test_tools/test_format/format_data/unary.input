@@ -1,0 +1,3 @@
+x = not   True   or   not   False
+y = +1   +   -1
+z = ~  0x11

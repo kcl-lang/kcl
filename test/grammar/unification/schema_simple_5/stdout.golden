@@ -1,0 +1,4 @@
+data:
+  person:
+    name: Alice
+    age: 1

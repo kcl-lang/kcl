@@ -1,0 +1,10 @@
+input:
+  k0: v0
+  k1: v1
+output:
+- metadata:
+    name: k0
+  data: v0
+- metadata:
+    name: k1
+  data: v1

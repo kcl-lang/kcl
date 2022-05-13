@@ -1,0 +1,3 @@
+schema Data:
+
+data = Data {}

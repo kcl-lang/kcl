@@ -1,0 +1,13 @@
+personPkg:
+  name: Alice
+  age: 18
+person:
+  name: Alice
+  age: 18
+  hc: null
+instancesTypeofStr:
+- Person
+- Person
+instancesFullTypeofStr:
+- pkg.Person
+- Person

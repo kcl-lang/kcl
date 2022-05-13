@@ -1,0 +1,7 @@
+schema Person:
+    name: str = "kcl"
+    age: int = 1
+
+type PersonOther = Person
+type Int = int
+type UnionType = int | float | str

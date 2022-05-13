@@ -1,0 +1,2 @@
+schema ObjectMeta:
+    name?: str

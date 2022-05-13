@@ -1,0 +1,17 @@
+name: @root
+is_unique: False
+adjs: 
+    name: config
+    is_unique: False
+    config_name: Config
+    adjs: 
+        name: args
+        is_unique: False
+        value: <ListExpr, (7, 11) values: [<StringLit, (7, 12) value: kcl>, <StringLit, (7, 19) value: main.k>]>
+        
+        name: labels
+        is_unique: False
+        adjs: 
+            name: key1
+            is_unique: False
+            value: <StringLit, (8, 18) value: value1>

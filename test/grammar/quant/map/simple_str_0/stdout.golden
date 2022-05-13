@@ -1,0 +1,16 @@
+data0:
+- true
+- true
+- false
+data1:
+- false
+- false
+- true
+data2:
+- true
+- true
+- false
+data3:
+- false
+- false
+- true

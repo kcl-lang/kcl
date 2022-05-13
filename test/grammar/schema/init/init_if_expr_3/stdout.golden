@@ -1,0 +1,6 @@
+person: john
+---
+gender: boy
+meta:
+  name: john
+  age: -1

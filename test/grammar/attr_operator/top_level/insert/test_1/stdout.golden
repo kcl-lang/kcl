@@ -1,0 +1,8 @@
+config:
+  name: config_new
+  args:
+  - kcl
+  - -d
+  - -p
+  - -o
+  - out.txt

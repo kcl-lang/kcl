@@ -1,0 +1,90 @@
+name: Alice
+person1:
+  hc: 3
+  key: Bob
+  name: Bob
+  age: 16
+  labels:
+    key: value
+    ageLabel: ageVal 16
+  info:
+  - Bob
+  - 16
+ceil_val: 2
+a: 13.2
+b:
+  key1: value1
+  key2: value2
+attr: value1Bob
+c: 1.5
+d: 15.2
+e: 15.2
+f: ABC234{}
+p: CBA
+ff: ABC234123
+fff: abc234123
+q: '111111111111'
+g: true
+l:
+- 1
+- 2
+- 3
+- value1Bobvalue1
+ll:
+- 1
+- 2
+- 3
+- value1Bobvalue1
+- 1
+aug1: 7
+aug2: 7
+data:
+- 1
+- 2
+- 3
+- 4
+lcomp:
+- 2
+- 4
+- 6
+- 8
+- 2
+- 4
+- 6
+- 8
+- 2
+- 4
+- 6
+- 8
+- 2
+- 4
+- 6
+- 8
+dcomp:
+  1: 2
+  2: 4
+  3: 6
+  4: 8
+data0: 1
+data12:
+- 4
+- 3
+- 2
+- 1
+pk: CBA
+qk:
+- 3
+- 2
+- 1
+dict_data:
+  hc: 3
+  key: value
+  name: Bob
+  age: 16
+  labels:
+    key: value
+    ageLabel: ageVal 16
+  info:
+  - Bob
+  - 16
+  key2: value2

@@ -1,0 +1,5 @@
+x0 = "aaaa".count("a")
+x1 = "aaaa".count("a", 1)
+x2 = "aaaa".count("a", 1, None)
+x3 = "aaaa".count("a", None, None)
+x4 = "aaaa".count("a", None, -1)

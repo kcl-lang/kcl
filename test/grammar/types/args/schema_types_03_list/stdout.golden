@@ -1,0 +1,11 @@
+x1:
+  attr0:
+  - 123
+  - true
+  attr1:
+  - abc
+  - 456
+  attr2:
+  - aa
+  - bb
+  - true

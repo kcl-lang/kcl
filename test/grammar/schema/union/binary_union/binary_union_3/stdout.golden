@@ -1,0 +1,13 @@
+person1:
+  name: Alice
+  labels:
+    key1: value1
+person2:
+  name: Bob
+  labels:
+    key2: value2
+person3:
+  name: Bob
+  labels:
+    key1: value1
+    key2: value2

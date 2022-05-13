@@ -1,0 +1,9 @@
+back:
+  kubeResource:
+    metadata:
+      name: front
+    spec:
+      podSpec:
+        template:
+          containers:
+          - image: docker:xx

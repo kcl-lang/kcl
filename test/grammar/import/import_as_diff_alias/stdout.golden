@@ -1,0 +1,12 @@
+johnName:
+  firstName: John
+  lastName: Snow
+johnPerson:
+  name:
+    firstName: John
+    lastName: Snow
+  age: 10
+johnFullName:
+  firstName: John
+  lastName: Snow
+  fullName: John Snow

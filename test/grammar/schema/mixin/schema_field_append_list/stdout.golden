@@ -1,0 +1,7 @@
+JohnDoe:
+  firstName: John
+  lastName: Doe
+  fullName: Doe Jon
+  tags:
+  - '123'
+  school: null

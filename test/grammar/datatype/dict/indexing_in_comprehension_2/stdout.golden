@@ -1,0 +1,6 @@
+services:
+- name: Alice
+my_service:
+  services:
+  - service: Alice
+    app: '123'

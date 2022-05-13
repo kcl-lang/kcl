@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package kcl;
+
+import "google/protobuf/descriptor.proto";
+
+message FieldOptions {
+    string val = 1;
+    bool optional = 2;
+    bool final = 3;
+}
+
+extend google.protobuf.FieldOptions {
+    FieldOptions opt = 1;
+}

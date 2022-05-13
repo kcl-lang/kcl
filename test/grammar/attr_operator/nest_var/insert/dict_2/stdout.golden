@@ -1,0 +1,8 @@
+data:
+  spec:
+    replicas: 2
+    data:
+    - 0
+    - 1
+    labels:
+      key: value

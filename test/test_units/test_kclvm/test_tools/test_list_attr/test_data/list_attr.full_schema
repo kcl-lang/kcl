@@ -1,0 +1,3 @@
+FullName, attr:[firstName, lastName],
+Person1, attr:[name, card, _mybkLabels, commands], parent:Person, attr:[name, age], parent:Persona, attr:[name, age],
+Person2, attr:[card], parent:Person1, attr:[name, card, _mybkLabels, commands], parent:Person, attr:[name, age], parent:Persona, attr:[name, age],

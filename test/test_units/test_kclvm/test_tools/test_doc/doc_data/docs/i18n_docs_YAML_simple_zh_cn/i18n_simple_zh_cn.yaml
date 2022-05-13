@@ -1,0 +1,32 @@
+name: simple
+relative_path: ./simple.k
+schemas:
+- name: Person
+  doc: |
+    Person is a simple schema
+  attributes:
+  - name: name
+    doc: |
+      A Normal attribute named 'name'
+    type:
+      type_str: str
+      type_category: BUILTIN
+      builtin_type: STRING
+    default_value: '"Default"'
+    is_optional: false
+  - name: age
+    doc: |
+      A Normal attribute named 'age'
+    type:
+      type_str: int
+      type_category: BUILTIN
+      builtin_type: INT
+    is_optional: true
+    default_value: '18'
+  examples: |
+    person = Person {
+        name: "Alice"
+        age: 18
+    }
+doc: ''
+source_code_url: ''

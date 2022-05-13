@@ -1,0 +1,6 @@
+config = Config {
+    args: ["kcl", "main.k"]
+    labels: {
+        key1: "value1"
+    }
+}

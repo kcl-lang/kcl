@@ -1,0 +1,11 @@
+var:
+  key: val
+var1:
+  key1: val1
+  key2: val2
+person:
+  labels:
+    key: val
+  annotations:
+    key1: val1
+    key2: val2

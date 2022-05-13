@@ -1,0 +1,4 @@
+python-*.zip
+_output*
+build
+*.exe

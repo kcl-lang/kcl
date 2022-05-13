@@ -1,0 +1,8 @@
+group:
+  nums:
+  - id: '000'
+    num: 0
+    title: A
+  - id: '001'
+    num: 1
+    title: B

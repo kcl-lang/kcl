@@ -1,0 +1,12 @@
+a: 1
+b: 2.2
+c: true
+d: ABC
+e: cba
+f:
+- 1
+- 2
+- 3
+myDict:
+  key: value
+myDictNew: {}

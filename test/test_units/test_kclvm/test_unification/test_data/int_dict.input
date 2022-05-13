@@ -1,0 +1,30 @@
+schema Name:
+    firstName: str
+    lastName: str
+
+schema Person:
+    name: Name
+    age: int
+
+schema Group:
+    persons: {int:Person}
+
+group = Group {
+    "persons": {
+        1: {
+            "name": {
+                "firstName": "Alice",
+            },
+            "age": 12
+        }
+    }
+}
+group = Group {
+    "persons": {
+        1: {
+            "name": {
+                "lastName": "Terry"
+            },
+        }
+    }    
+}

@@ -1,0 +1,11 @@
+apiVersion: kusion/v1
+kind: Action
+metadata:
+  name: pod_key_value_update
+spec:
+  pod: podname
+  namespace: namespace
+  cluster: cluster
+  type: pods
+  keyValues:
+    key: val

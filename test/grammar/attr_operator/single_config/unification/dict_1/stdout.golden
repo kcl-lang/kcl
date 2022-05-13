@@ -1,0 +1,7 @@
+config:
+  main:
+    env:
+    - ENV1: '1'
+      ENV2: '2'
+      ENV3: '3'
+      ENV4: '4'

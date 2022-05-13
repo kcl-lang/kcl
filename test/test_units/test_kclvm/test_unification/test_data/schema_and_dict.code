@@ -1,0 +1,5 @@
+config = Config {
+    name: "Alice"
+    age: 18
+    hc: [1]
+}

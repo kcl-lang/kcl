@@ -1,0 +1,6 @@
+{
+    "result": {
+        "json_result": "{\n    \"data\": {\n        \"foo\": 1,\n        \"bar\": \"ss\"\n    }\n}"
+    },
+    "error": ""
+}

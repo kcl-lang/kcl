@@ -1,0 +1,12 @@
+a:
+  a: x
+  b:
+    c: d
+    e: f
+b:
+  b:
+    c: g
+c:
+  a: x
+  b:
+    c: g

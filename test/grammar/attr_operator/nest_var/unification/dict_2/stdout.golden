@@ -1,0 +1,8 @@
+data:
+  spec:
+    replicas: 2
+    env:
+    - key1: value1
+      key2: value2
+    labels:
+      key: value

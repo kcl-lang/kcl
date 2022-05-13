@@ -1,0 +1,11 @@
+group = Group {
+    persons: {
+        1: {
+            name: {
+                firstName: "Alice"
+                lastName: "Terry"
+            }
+            age: 12
+        }
+    }
+}

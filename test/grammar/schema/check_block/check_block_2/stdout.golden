@@ -1,0 +1,6 @@
+JohnDoe:
+  firstName: John
+  midName: Jon
+  lastName: Doe
+  image: docker.image
+  image_pull_policy: Never

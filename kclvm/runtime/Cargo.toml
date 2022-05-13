@@ -1,0 +1,47 @@
+[package]
+name = "kclvm-runtime"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = [
+    "staticlib",
+    "cdylib",
+    "rlib"
+]
+name = "kclvm"
+path = "src/lib.rs"
+
+[dependencies]
+kclvm_runtime_internal_macros = { path = "./internal_macros" }
+json_minimal = {path = "./src/3rdparty/json_minimal", version = "0.1.0"}
+serde_yaml = "0.8.23"
+
+base64 = "0.13.0"
+serde_json = "1.0.69"
+libc = "0.2.112"
+itertools = "0.10.3"
+unic-ucd-bidi = "0.9"
+unic-ucd-category = "0.9"
+unicode-casing = "0.1"
+bstr = "0.2.16"
+regex = "1.5"
+md5 = "0.7.0"
+sha2 = "0.9.8"
+sha1 = "0.6.0"
+chrono = "0.4.19"
+ahash = "0.7.2"
+indexmap = "1.0"
+phf = { version = "0.9", features = ["macros"] }
+fancy-regex = "0.7.1"
+num-integer = "0.1.44"
+
+#pprof = { version = "0.4", features = ["flamegraph"] }
+
+[profile.release]
+rpath = true
+panic = "unwind"
+opt-level = "z"  # Optimize for size.
+lto = true

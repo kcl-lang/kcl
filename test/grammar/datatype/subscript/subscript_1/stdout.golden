@@ -1,0 +1,7 @@
+main:
+  args:
+  - abc
+  - bcd
+  - cde
+  - def
+args: ab

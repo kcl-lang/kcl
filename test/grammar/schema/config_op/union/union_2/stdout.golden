@@ -1,0 +1,7 @@
+person:
+  info:
+    key1: value1
+    key2: value2
+  hc:
+  - 4
+  - 5

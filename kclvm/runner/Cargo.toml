@@ -1,0 +1,25 @@
+[package]
+name = "kclvm-runner"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+clap = "2.33.3"
+serde_json = "1.0"
+serde = { version = "1", features = ["derive"] }
+glob = "0.3.0"
+walkdir = "2"
+libc = "0.2.112"
+indexmap = "1.0"
+fslock = "0.2.1"
+libloading = "0.7.3"
+
+kclvm-ast = {path = "../ast", version = "0.1.0"}
+kclvm-parser = {path = "../parser", version = "0.1.0"}
+kclvm-compiler = {path = "../compiler", version = "0.1.0"}
+kclvm-config = {path = "../config", version = "0.1.0"}
+kclvm-runtime = {path = "../runtime", version = "0.1.0"}
+kclvm-sema = {path = "../sema", version = "0.1.0"}
+kclvm-version = {path = "../version", version = "0.1.0"}

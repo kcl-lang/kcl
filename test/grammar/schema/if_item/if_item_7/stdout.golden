@@ -1,0 +1,15 @@
+data0:
+  labels:
+    key: value
+data1:
+  labels:
+    key: value
+data2:
+  labels:
+    key: value2
+data3:
+  labels:
+    key: value1
+data4:
+  labels:
+    key: value3

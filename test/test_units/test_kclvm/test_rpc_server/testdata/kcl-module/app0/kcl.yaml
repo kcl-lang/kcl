@@ -1,0 +1,10 @@
+kcl_cli_configs:
+  file:
+    - ../main.k
+    - ./before/base.k
+    - main.k
+    - ${KCL_MOD}/app0/sub/sub.k
+
+  disable_none: false
+  strict_range_check: false
+  debug: false

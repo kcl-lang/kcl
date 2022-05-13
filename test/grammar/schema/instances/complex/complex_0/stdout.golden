@@ -1,0 +1,25 @@
+model1:
+  name: model1
+  labels:
+    key1: value1
+    key2: value2
+  annotations:
+    key: value
+model2:
+  name: model2
+  labels:
+    key: value
+  annotations: null
+backends:
+- name: model1
+  metadata:
+    labels:
+      key1: value1
+      key2: value2
+    annotations:
+      key: value
+- name: model2
+  metadata:
+    labels:
+      key: value
+    annotations: null

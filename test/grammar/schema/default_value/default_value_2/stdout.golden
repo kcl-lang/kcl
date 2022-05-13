@@ -1,0 +1,6 @@
+JoeDoe:
+  firstName: Joe
+  lastName: Doe
+  dict:
+    key: value
+    key2: 1

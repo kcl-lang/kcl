@@ -1,0 +1,6 @@
+{
+    "result": {
+        "spliceCode": "schema Person:\n    age: int\n\n    check:\n        age > 0\n"
+    },
+    "error": ""
+}

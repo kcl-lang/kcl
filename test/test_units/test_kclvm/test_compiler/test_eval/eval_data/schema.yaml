@@ -1,0 +1,40 @@
+name: Alice
+person1:
+  hc: 3
+  key: Bob
+  name: Bob
+  age: 16
+  labels:
+    key: value
+    ageLabel: ageVal 16
+  info:
+  - Bob
+  - 16
+person2:
+  hc: 3
+  key: Alice
+  name: Alice
+  age: 18
+  labels:
+    key: value
+    ageLabel: ageVal 18
+  info:
+  - Alice
+  - 18
+person3:
+  hc: 3
+  key: Alice
+  name: Alice
+  age: 18
+  labels:
+    key: value
+    ageLabel: ageVal 18
+  info:
+  - Alice
+  - 18
+info:
+  name: alice
+  age: 10
+  info:
+    gender: girl
+    age: 10

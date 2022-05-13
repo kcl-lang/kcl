@@ -1,0 +1,6 @@
+schema Config:
+    name: str
+
+config: Config {
+    name = "name"
+}

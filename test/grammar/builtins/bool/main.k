@@ -1,0 +1,13 @@
+a = True
+b = False
+c = not True
+d = not False
+e = bool(True)
+f = bool(False)
+g = bool(1)
+h = bool(0)
+i = bool(0.0)
+j = bool(None)
+l = bool('')
+m = bool([])
+n = bool({})

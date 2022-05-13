@@ -1,0 +1,12 @@
+configA:
+  label: A
+  name: A-A
+  anotherName: A-A
+configB:
+  label: B
+  name: B-B
+  anotherName: B-B
+configC:
+  label: C
+  name: C
+  anotherName: C

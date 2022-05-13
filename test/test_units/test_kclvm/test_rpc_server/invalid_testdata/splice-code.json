@@ -1,0 +1,8 @@
+{
+    "codeSnippets": [
+        {
+            "schema": "schema Person:1\n    age: int\n",
+            "rule": "age > 0"
+        }
+    ]
+}

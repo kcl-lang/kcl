@@ -1,0 +1,9 @@
+import math
+
+schema Base:
+    name: str
+
+schema Person(Base):
+    age: int
+
+person = Person {}

@@ -1,0 +1,19 @@
+env: env
+data1:
+  name: env
+  env: env
+data2:
+  name: name
+  env: name
+data3:
+  key1: value1
+data4:
+- value1
+data5:
+- value1
+data6:
+  key: value1
+data7:
+- 1
+data8:
+  k3: v3

@@ -1,0 +1,6 @@
+person:
+  name: Alice
+  count: 1
+personOther:
+  name: Alice
+  count: 1

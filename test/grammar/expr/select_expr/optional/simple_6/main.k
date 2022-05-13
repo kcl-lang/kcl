@@ -1,0 +1,9 @@
+listData = None
+listItem0 = listData?[0]
+listItem1 = listData?[1]
+dictData0 = {}
+dictItem0 = dictData0?["key"]
+dictItem1 = dictData0?["key1"]
+dictData1 = {"key1": "value1", "key2": "value2"}
+dictItem2 = dictData1?["key1"]
+dictItem3 = dictData1?["key2"]

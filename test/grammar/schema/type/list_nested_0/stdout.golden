@@ -1,0 +1,4 @@
+alice:
+  labels:
+  - skin: yellow
+  - father: John

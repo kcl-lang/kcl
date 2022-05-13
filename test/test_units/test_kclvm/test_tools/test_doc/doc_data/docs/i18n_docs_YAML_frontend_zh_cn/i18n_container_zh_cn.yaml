@@ -1,0 +1,70 @@
+name: container
+relative_path: ./frontend/container.k
+schemas:
+- name: Container
+  doc: |
+    A single application container that you want to run within a pod
+  attributes:
+  - name: image
+    doc: |
+      Docker image name.
+    type:
+      type_str: str
+      type_category: BUILTIN
+      builtin_type: STRING
+    default_value: Undefined
+    is_optional: false
+  - name: ports
+    doc: |
+      List of ports to expose from the container.
+    type:
+      type_str: '[frontend.ContainerPort]'
+      type_category: LIST
+      list_type:
+        item_type:
+          type_str: frontend.ContainerPort
+          type_category: SCHEMA
+          schema_type:
+            name: ContainerPort
+            relative_path: ./frontend/container.k
+    is_optional: true
+    default_value: Undefined
+  examples: ''
+- name: ContainerPort
+  doc: |
+    ContainerPort represents a network port in a single container.
+  attributes:
+  - name: port
+    doc: |
+      Number of port to expose on the pod's IP address. This must be a valid port number, 0 < x < 65536.
+    type:
+      type_str: int
+      type_category: BUILTIN
+      builtin_type: INT
+    default_value: Undefined
+    is_optional: false
+  - name: protocol
+    doc: |
+      Protocol for port. Must be UDP, TCP, or SCTP.
+    type:
+      type_str: '"TCP" | "UDP" | "SCTP"'
+      union_type:
+        types:
+        - type_str: '"TCP"'
+          type_category: LIT
+          lit_type:
+            string_lit: TCP
+        - type_str: '"UDP"'
+          type_category: LIT
+          lit_type:
+            string_lit: UDP
+        - type_str: '"SCTP"'
+          type_category: LIT
+          lit_type:
+            string_lit: SCTP
+      type_category: UNION
+    default_value: '"TCP"'
+    is_optional: false
+  examples: ''
+doc: ''
+source_code_url: ''

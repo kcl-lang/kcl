@@ -1,0 +1,7 @@
+person:
+  names:
+  - Alice
+  - Bob
+  - John
+  name:
+    name: Alice

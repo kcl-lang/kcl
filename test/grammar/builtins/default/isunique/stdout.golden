@@ -1,0 +1,18 @@
+a:
+- 100
+- 10
+- 100
+b:
+- 100
+- 10
+c:
+- Hello
+- world
+- world
+d:
+- Hello
+- world
+A: false
+B: true
+C: false
+D: true

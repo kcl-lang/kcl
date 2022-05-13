@@ -1,0 +1,18 @@
+type Color = "Red" | "Yellow" | "Blue"
+
+colorRed: Color = "Red"
+colorYellow: Color = "Yellow"
+colorBlue: Color = "Blue"
+
+schema Data:
+    color: Color
+
+dataColorRed = Data {
+    color = "Red"
+}
+dataColorYellow = Data {
+    color = "Yellow"
+}
+dataColorBlue = Data {
+    color = "Blue"
+}

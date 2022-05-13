@@ -1,0 +1,18 @@
+name: @root
+is_unique: False
+adjs: 
+    name: key
+    is_unique: False
+    value: <StringLit, (5, 7) value: age>
+    
+    name: alice
+    is_unique: False
+    config_name: Person
+    adjs: 
+        name: name
+        is_unique: False
+        value: <StringLit, (7, 11) value: Alice>
+        
+        name: <JoinedString, (9, 10)>
+        is_unique: False
+        value: <NumberLit, (9, 20) value: 18>

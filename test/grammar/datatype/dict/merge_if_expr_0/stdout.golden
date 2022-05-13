@@ -1,0 +1,10 @@
+service:
+  name: name
+  labels:
+    key: value
+result:
+  metadata:
+    name: name
+    labels:
+      key: value
+      app: name

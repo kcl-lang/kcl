@@ -1,0 +1,6 @@
+srv_0:
+  port:
+  - first
+  - second
+srv_1:
+  port: portName

@@ -1,0 +1,8 @@
+srv_0:
+  port:
+  - port1
+  - port2
+srv_1:
+  port:
+  - 9080
+  - 8080

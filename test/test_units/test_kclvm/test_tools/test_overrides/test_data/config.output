@@ -1,0 +1,57 @@
+schema Main:
+    name?: str
+    env?: [{str:}]
+
+schema Probe:
+    initialDelaySeconds?: int
+    timeoutSeconds?: int
+    periodSeconds?: int = 10
+    successThreshold?: int
+    failureThreshold?: int
+
+schema AppConfiguration:
+    appName: str
+    image: str
+    overQuota: bool = False
+    resource: {str:}
+    mainContainer?: Main
+    labels: {str:}
+    probe: Probe
+
+appConfiguration = AppConfiguration {
+    appName: "kusion"
+    image: "kusion/kusion:v0.3.1"
+    resource: {
+        cpu: "4"
+        disk: "50Gi"
+        memory: "12Gi"
+    }
+    labels: {
+        key: {
+            key: "override_value"
+        }
+    }
+    mainContainer: Main {
+        name: "kusion_override"
+    }
+    overQuota = False
+    overQuota = False
+    probe: {
+        periodSeconds = 20
+    }
+}
+
+appConfigurationUnification: AppConfiguration {
+    appName: "kusion"
+    image: "kusion/kusion:v0.3.1"
+    labels: {
+        key: {
+            key: "override_value"
+        }
+    }
+    mainContainer: Main {
+        name: "kusion_override"
+    }
+    overQuota: False
+}
+

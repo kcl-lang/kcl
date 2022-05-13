@@ -1,0 +1,10 @@
+schema Config:
+    name?: str
+    args?: [str]
+    labels?: {str:}
+
+config = Config {}
+
+config = {}
+
+config = {}

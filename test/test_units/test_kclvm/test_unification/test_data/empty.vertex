@@ -1,0 +1,7 @@
+name: @root
+is_unique: False
+adjs: 
+    name: config
+    is_unique: False
+    config_name: Config
+    value: <SchemaExpr, (6, 10) name: <Identifier, (6, 10) name: Config> config: <ConfigExpr, (6, 17) keys: [] values: []>>

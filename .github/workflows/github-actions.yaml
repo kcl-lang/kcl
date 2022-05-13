@@ -1,0 +1,34 @@
+name: KCLVM-actions
+on: [push]
+jobs:
+  test-unit:
+    name: Test
+    runs-on: ubuntu-latest
+    container: 
+      image: kusionstack/kclvm-builder
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+        # with:
+        #  submodules: 'true'
+      - name: Build KCLVM
+        run: make build
+        shell: bash
+      - name: Grammar test
+        run: |
+          chmod +x ./internal/kclvm_py/scripts/test_grammar.sh
+          topdir=$(realpath $(dirname $0)) ./internal/kclvm_py/scripts/test_grammar.sh
+        shell: bash
+      - name: Internal python unit test
+        run: |
+          chmod +x ./internal/kclvm_py/scripts/test_unit.sh
+          ./internal/kclvm_py/scripts/test_unit.sh
+        shell: bash
+      # - name: Rust unit test
+      #   uses: actions-rs/toolchain@v1
+      #   with:
+      #     toolchain: stable
+      #     override: true
+      #     components: rustfmt, clippy
+      #   run: cd kclvm && make test
+      #   shell: bash

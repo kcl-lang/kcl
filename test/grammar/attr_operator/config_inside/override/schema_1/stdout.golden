@@ -1,0 +1,5 @@
+config:
+  main:
+    env:
+    - name: ENV_3
+      value: '3'

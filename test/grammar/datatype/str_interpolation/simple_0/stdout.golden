@@ -1,0 +1,8 @@
+a: 1
+b: 1.2
+c: true
+d:
+- 1
+e:
+  key: value
+data: "1 1.2 True [1] {'key': 'value'}"

@@ -1,0 +1,21 @@
+ipcheck:
+  ip: 192.168.0.1
+isip00: false
+isip01: false
+isip02: false
+isip03: false
+isip04: false
+isip05: false
+isip06: false
+isip07: false
+isip08: false
+isip09: false
+isip10: true
+isip11: true
+isip12: true
+isip14: true
+isip15: true
+isip16: true
+isip17: true
+isip18: true
+isip19: true
