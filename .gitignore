@@ -78,4 +78,9 @@ _a.out.*
 _a.out_*.*
 # KCLVM cache
 .kclvm
-__main__.*
+__main__.dylib
+__main__.so
+__main__.dll
+__main__.lock
+__main__.ll
+__main__.ll.lock
