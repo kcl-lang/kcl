@@ -38,13 +38,13 @@ cp -r $cpython_build_dir/lib/${py_lib_basename} $kclvm_install_dir/lib/
 cp -r $cpython_build_dir/include $kclvm_install_dir/
 
 # Copy KCLVM.
-cp "$topdir/scripts/cli/kcl" $kclvm_install_dir/bin/
-cp "$topdir/scripts/cli/kcl-plugin" $kclvm_install_dir/bin/
-cp "$topdir/scripts/cli/kcl-doc" $kclvm_install_dir/bin/
-cp "$topdir/scripts/cli/kcl-test" $kclvm_install_dir/bin/
-cp "$topdir/scripts/cli/kcl-lint" $kclvm_install_dir/bin/
-cp "$topdir/scripts/cli/kcl-fmt" $kclvm_install_dir/bin/
-cp "$topdir/scripts/cli/kcl-vet" $kclvm_install_dir/bin/
+cp "$topdir/internal/kclvm_py/scripts/cli/kcl" $kclvm_install_dir/bin/
+cp "$topdir/internal/kclvm_py/scripts/cli/kcl-plugin" $kclvm_install_dir/bin/
+cp "$topdir/internal/kclvm_py/scripts/cli/kcl-doc" $kclvm_install_dir/bin/
+cp "$topdir/internal/kclvm_py/scripts/cli/kcl-test" $kclvm_install_dir/bin/
+cp "$topdir/internal/kclvm_py/scripts/cli/kcl-lint" $kclvm_install_dir/bin/
+cp "$topdir/internal/kclvm_py/scripts/cli/kcl-fmt" $kclvm_install_dir/bin/
+cp "$topdir/internal/kclvm_py/scripts/cli/kcl-vet" $kclvm_install_dir/bin/
 chmod +x $kclvm_install_dir/bin/kcl
 chmod +x $kclvm_install_dir/bin/kcl-plugin
 chmod +x $kclvm_install_dir/bin/kcl-doc
@@ -60,8 +60,8 @@ cp -r $kclvm_source_dir $kclvm_install_dir/lib/${py_lib_basename}
 mv $kclvm_install_dir/lib/${py_lib_basename}/kclvm_py $kclvm_install_dir/lib/${py_lib_basename}/kclvm
 
 # Get site-packages.
-chmod +x $topdir/scripts/kcllib-install.sh
-$topdir/scripts/kcllib-install.sh
+chmod +x $topdir/internal/kclvm_py/scripts/kcllib-install.sh
+$topdir/internal/kclvm_py/scripts/kcllib-install.sh
 
 # Install plugins
 cp -rf $topdir/plugins $kclvm_install_dir/

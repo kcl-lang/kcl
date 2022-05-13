@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-topdir=$(realpath $(dirname $0)/../)
+topdir=$(realpath $(dirname $0)/../../../)
 kclvm_install_dir="$topdir/_build/dist/$os/kclvm"
 kclvm_source_dir="$topdir"
 

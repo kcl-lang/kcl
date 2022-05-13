@@ -49,15 +49,15 @@ if [ "$action" == "" ]; then
     do
         case $action in
             "test_unit")
-                $topdir/scripts/test_unit.sh
+                $topdir/internal/kclvm_py/scripts/test_unit.sh
                 break
                 ;;
             "test_grammar")
-                $topdir/scripts/test_grammar.sh
+                $topdir/internal/kclvm_py/scripts/test_grammar.sh
                 break
                 ;;
             "all")
-                $topdir/scripts/test_unit.sh && $topdir/scripts/test_grammar.sh
+                $topdir/internal/kclvm_py/scripts/test_unit.sh && $topdir/internal/kclvm_py/scripts/test_grammar.sh
                 break
                 ;;
             *) echo "Invalid action $REPLY:$action"

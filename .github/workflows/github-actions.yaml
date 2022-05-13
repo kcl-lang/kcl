@@ -16,13 +16,13 @@ jobs:
         shell: bash
       - name: Grammar test
         run: |
-          chmod +x ./scripts/test_grammar.sh
-          topdir=$(realpath $(dirname $0)) ./scripts/test_grammar.sh
+          chmod +x ./internal/kclvm_py/scripts/test_grammar.sh
+          topdir=$(realpath $(dirname $0)) ./internal/kclvm_py/scripts/test_grammar.sh
         shell: bash
       - name: Internal python unit test
         run: |
-          chmod +x ./scripts/test_unit.sh
-          ./scripts/test_unit.sh
+          chmod +x ./internal/kclvm_py/scripts/test_unit.sh
+          ./internal/kclvm_py/scripts/test_unit.sh
         shell: bash
       # - name: Rust unit test
       #   uses: actions-rs/toolchain@v1

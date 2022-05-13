@@ -83,4 +83,4 @@ if [ "$action" == "" ]; then
     done
 fi
 
-os=$os topdir=$topdir sslpath=$sslpath $topdir/scripts/$action.sh
+os=$os topdir=$topdir sslpath=$sslpath $topdir/internal/kclvm_py/scripts/$action.sh
