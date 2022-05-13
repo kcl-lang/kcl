@@ -35,11 +35,56 @@ Kusion 配置语言（KCL）是一种开源配置语言，主要用于 [Kusion S
 
 ## 安装 & 文档
 
-+ [网站](https://kusionstack.io)
+### 如何安装
+
+从 Github releases 页面[下载](https://github.com/KusionStack/KCLVM/releases)，并且将 `{install-location}/kclvm/bin` 添加到您的环境变量中
+
+### 快速开始
+
+`./samples/fib.k` 是一个计算斐波那契数列的例子
+
+```kcl
+schema Fib:
+    n1: int = n - 1
+    n2: int = n1 - 1
+    n: int
+    value: int
+
+    if n <= 1:
+        value = 1
+    elif n == 2:
+        value = 1
+    else:
+        value = Fib {n: n1}.value + Fib {n: n2}.value
+
+fib8 = Fib {n: 8}.value
+```
+
+我们可以通过执行如下命令得到 YAML 输出
+
+```
+kcl ./samples/fib.k
+```
+
+YAML 输出
+
+```yaml
+fib8: 21
+```
+
+### 文档
+
+更多文档请访问 https://kusionstack.io
 
 ## 开发 & 贡献
 
+### 开发
+
 参考[开发手册](./CONTRIBUTING.md).
+
+### 路线规划
+
+参考[KCLVM 路线规划](https://kusionstack.io/docs/governance/intro/roadmap#kclvm-%E8%B7%AF%E7%BA%BF%E8%A7%84%E5%88%92)
 
 ## 许可
 
