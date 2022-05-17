@@ -11,6 +11,9 @@ use std::fs::{File, OpenOptions};
 use std::io;
 use std::path::Path;
 
+#[cfg(target_os = "windows")]
+use tracing::debug;
+
 cfg_if! {
     // We use `flock` rather than `fcntl` on Linux, because WSL1 does not support
     // `fcntl`-style advisory locks properly (rust-lang/rust#72157).
