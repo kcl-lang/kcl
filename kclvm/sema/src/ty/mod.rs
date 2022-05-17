@@ -151,14 +151,28 @@ pub struct SchemaType {
     pub filename: String,
     /// The schema definition document string.
     pub doc: String,
-    /// Mark whether the schema is a type of a instance or
-    /// a type value (Schema.instances()).
+    /// Indicates whether the schema is a type of a instance or
+    /// a type (value). Besides, it is necessary to distinguish 
+    /// between a type instance and a type value, such as the following code:
+    /// ```no_check
+    /// # `Person` in `schema Person` is a type and it is not a schema instance.
+    /// schema Person:
+    ///     name: str
+    /// 
+    /// # `person` is a schema instance.
+    /// person = Person {name = "Alice"}
+    /// # `person` is a schema instance used in the value expression.
+    /// name = person.name
+    /// # `Person` in `persons: [Person]` is a type, `Person` in `Person.instances()`
+    /// # is a type value, and they are not schema instances.
+    /// persons: [Person] = Person.instances()
+    /// ```
     pub is_instance: bool,
-    /// Mark is a schema mixin.
+    /// Indicates whether it is a schema mixin.
     pub is_mixin: bool,
-    /// Mark is a schema protocol.
+    /// Indicates whether it is a schema protocol.
     pub is_protocol: bool,
-    /// Mark is a rule.
+    /// Indicates whether it is a rule.
     pub is_rule: bool,
     /// Base schema.
     pub base: Option<Box<SchemaType>>,
