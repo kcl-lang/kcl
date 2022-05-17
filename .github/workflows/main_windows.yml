@@ -1,0 +1,30 @@
+name: build-and-test-windows
+on: push
+jobs:
+  build-and-test:
+    runs-on: windows-2019
+    env:
+      LLVM_SYS_120_PREFIX: "C:/LLVM"
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v2
+
+      - run: Rename-Item "C:/Program Files/LLVM" "C:/Program Files/LLVM-old"
+
+      # Install LLVM-12
+      - run: Invoke-WebRequest -Uri https://github.com/KusionStack/llvm-package-windows/releases/download/v12.0.1/LLVM-12.0.1-win64.7z -OutFile C:/LLVM-12.0.1-win64.7z
+      - run: Get-FileHash -Algorithm MD5 C:/LLVM-12.0.1-win64.7z # md5: 3fcf77f82c6c3ee650711439b20aebe5
+      - run: 7z x -y C:/LLVM-12.0.1-win64.7z -o"C:/LLVM"
+      - run: Remove-Item C:/LLVM-12.0.1-win64.7z
+
+      - run: echo "C:/LLVM/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - run: clang --version
+      - run: cargo --version
+
+      - name: Run cargo build
+        working-directory: ./kclvm
+        run: cargo build --release
+
+      - run: ./kclvm/target/release/kclvm_cli.exe -h
+

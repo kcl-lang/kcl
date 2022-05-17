@@ -57,22 +57,22 @@ cp ./target/release/kclvm_cli $kclvm_install_dir/bin/kclvm_cli
 # libkclvm_cli
 
 # Darwin dylib
-if [ -e target/release/libkclvm_cli.dylib ]; then
-    touch $kclvm_install_dir/bin/libkclvm_cli.dylib
-    rm $kclvm_install_dir/bin/libkclvm_cli.dylib
-    cp target/release/libkclvm_cli.dylib $kclvm_install_dir/bin/libkclvm_cli.dylib
+if [ -e target/release/libkclvm_cli_cdylib.dylib ]; then
+    touch $kclvm_install_dir/bin/libkclvm_cli_cdylib.dylib
+    rm $kclvm_install_dir/bin/libkclvm_cli_cdylib.dylib
+    cp target/release/libkclvm_cli_cdylib.dylib $kclvm_install_dir/bin/libkclvm_cli_cdylib.dylib
 fi
 # Linux so
-if [ -e target/release/libkclvm_cli.so ]; then
-    touch $kclvm_install_dir/bin/libkclvm_cli.so
-    rm $kclvm_install_dir/bin/libkclvm_cli.so
-    cp target/release/libkclvm_cli.so $kclvm_install_dir/bin/libkclvm_cli.so
+if [ -e target/release/libkclvm_cli_cdylib.so ]; then
+    touch $kclvm_install_dir/bin/libkclvm_cli_cdylib.so
+    rm $kclvm_install_dir/bin/libkclvm_cli_cdylib.so
+    cp target/release/libkclvm_cli_cdylib.so $kclvm_install_dir/bin/libkclvm_cli_cdylib.so
 fi
 # Windows dll
-if [ -e target/release/libkclvm_cli.dll ]; then
-    touch $kclvm_install_dir/bin/libkclvm_cli.dll
-    rm $kclvm_install_dir/bin/libkclvm_cli.dll
-    cp target/release/libkclvm_cli.dll $kclvm_install_dir/bin/libkclvm_cli.dll
+if [ -e target/release/libkclvm_cli_cdylib.dll ]; then
+    touch $kclvm_install_dir/bin/libkclvm_cli_cdylib.dll
+    rm $kclvm_install_dir/bin/libkclvm_cli_cdylib.dll
+    cp target/release/libkclvm_cli_cdylib.dll $kclvm_install_dir/bin/libkclvm_cli_cdylib.dll
 fi
 
 
