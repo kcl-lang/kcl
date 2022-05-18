@@ -382,7 +382,7 @@ impl Command {
 
     fn get_rust_libstd_dylib(executable_root: &str) -> String {
         let txt_path = std::path::Path::new(&executable_root)
-            .join("lib")
+            .join(if Self::is_windows() { "libs" } else { "lib" })
             .join("rust-libstd-name.txt");
         let rust_libstd_name = std::fs::read_to_string(txt_path).unwrap();
         let rust_libstd_name = rust_libstd_name.trim();
@@ -400,7 +400,7 @@ impl Command {
 
     pub fn get_lib_suffix() -> String {
         if Self::is_windows() {
-            return ".dll".to_string();
+            return ".dll.lib".to_string();
         }
         if Self::is_macos() {
             return ".dylib".to_string();
