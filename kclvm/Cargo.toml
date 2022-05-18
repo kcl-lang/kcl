@@ -36,3 +36,4 @@ kclvm-runtime = {path = "./runtime", version = "0.1.0"}
 kclvm-sema = {path = "./sema", version = "0.1.0"}
 kclvm-tools = {path = "./tools", version = "0.1.0"}
 kclvm-version = {path = "./version", version = "0.1.0"}
+kclvm-error = {path = "./error", version = "0.1.0"}

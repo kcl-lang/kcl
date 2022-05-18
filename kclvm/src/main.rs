@@ -4,6 +4,7 @@
 extern crate clap;
 
 use indexmap::IndexMap;
+use kclvm_sema::resolver::scope::ProgramScope;
 use std::path::PathBuf;
 use std::thread;
 use std::{collections::HashMap, path::Path};
@@ -41,7 +42,8 @@ fn main() {
                     let module = parse_file(files[0], None);
                     println!("{}", serde_json::to_string(&module).unwrap())
                 }
-            } else {
+            } else
+            {
                 // load ast
                 let mut program = load_program(&files, None);
                 let scope = resolve_program(&mut program);
@@ -190,6 +192,7 @@ fn main() {
                         std::fs::remove_file(&dylib_path).unwrap();
                     }
                 }
+                scope.check_scope_diagnostics();
             }
         } else {
             println!("{}", matches.usage());

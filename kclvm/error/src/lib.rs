@@ -101,6 +101,11 @@ impl Handler {
         }
     }
 
+    /// Emit all diagnostics but do not abort.
+    pub fn alert_if_any_errors(&mut self) {
+        self.emit();
+    }
+
     /// Construct a parse error and put it into the handler diagnostic buffer
     pub fn add_syntex_error(&mut self, msg: &str, pos: Position) -> &mut Self {
         let message = format!("Invalid syntax: {}", msg);
