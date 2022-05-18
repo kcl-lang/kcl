@@ -1,5 +1,7 @@
 use indexmap::IndexMap;
+use indexmap::IndexSet;
 use kclvm_ast::{ast, MAIN_PKG};
+use kclvm_error::Diagnostic;
 use std::{
     cell::RefCell,
     rc::{Rc, Weak},
@@ -191,6 +193,7 @@ impl Scope {
 pub struct ProgramScope {
     pub scope_map: IndexMap<String, Rc<RefCell<Scope>>>,
     pub import_names: IndexMap<String, IndexMap<String, String>>,
+    pub diagnostics: IndexSet<Diagnostic>,
 }
 
 impl ProgramScope {

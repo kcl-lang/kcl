@@ -78,6 +78,7 @@ impl<'ctx> Resolver<'ctx> {
         ProgramScope {
             scope_map: self.scope_map.clone(),
             import_names: self.ctx.import_names.clone(),
+            diagnostics: self.handler.diagnostics.clone()
         }
     }
 }
@@ -131,7 +132,6 @@ pub fn resolve_program(program: &mut Program) -> ProgramScope {
         },
     );
     let scope = resolver.check(kclvm_ast::MAIN_PKG);
-    resolver.handler.abort_if_any_errors();
     let type_alias_mapping = resolver.ctx.type_alias_mapping.clone();
     process_program_type_alias(program, type_alias_mapping);
     scope
