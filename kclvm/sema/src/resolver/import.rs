@@ -26,6 +26,7 @@ impl<'ctx> Resolver<'ctx> {
                         if STANDARD_SYSTEM_MODULES.contains(&pkgpath.as_str()) {
                             continue;
                         }
+                        // Plugin module.
                         if pkgpath.starts_with(PLUGIN_MODULE_PREFIX) {
                             continue;
                         }
@@ -36,7 +37,7 @@ impl<'ctx> Resolver<'ctx> {
                                 ErrorKind::CannotFindModule,
                                 &[Message {
                                     pos: Position {
-                                        filename: self.ctx.filename.clone(),
+                                        filename: m.filename.clone(),
                                         line: stmt.line,
                                         column: Some(1),
                                     },
@@ -185,7 +186,21 @@ impl<'ctx> Resolver<'ctx> {
                     }
                 }
             }
-            None => bug!("pkgpath {} not found in the program", self.ctx.pkgpath),
+            None => {
+                self.handler.add_error(
+                    ErrorKind::CannotFindModule,
+                    &[Message {
+                        pos: Position {
+                            filename: self.ctx.filename.clone(),
+                            line: 1,
+                            column: Some(1),
+                        },
+                        style: Style::Line,
+                        message: format!("pkgpath {} not found in the program", self.ctx.pkgpath),
+                        note: None,
+                    }],
+                );
+            }
         }
     }
 

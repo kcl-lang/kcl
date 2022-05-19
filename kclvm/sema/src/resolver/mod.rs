@@ -27,7 +27,7 @@ use crate::resolver::ty_alias::process_program_type_alias;
 use crate::{resolver::scope::Scope, ty::SchemaType};
 use kclvm_ast::ast::Program;
 use kclvm_ast::walker::MutSelfTypedResultWalker;
-use kclvm_error::{Handler, Position};
+use kclvm_error::*;
 
 use crate::ty::TypeContext;
 
@@ -73,7 +73,21 @@ impl<'ctx> Resolver<'ctx> {
                     }
                 }
             }
-            None => bug!("pkgpath {} not found in the program", pkgpath),
+            None => {
+                self.handler.add_error(
+                    ErrorKind::CannotFindModule,
+                    &[Message {
+                        pos: Position {
+                            filename: self.ctx.filename.clone(),
+                            line: 1,
+                            column: Some(1),
+                        },
+                        style: Style::Line,
+                        message: format!("pkgpath {} not found in the program", self.ctx.pkgpath),
+                        note: None,
+                    }],
+                );
+            }
         }
         ProgramScope {
             scope_map: self.scope_map.clone(),
@@ -130,6 +144,7 @@ pub fn resolve_program(program: &mut Program) -> ProgramScope {
             config_auto_fix: false,
         },
     );
+    resolver.resolve_import();
     let scope = resolver.check(kclvm_ast::MAIN_PKG);
     resolver.handler.abort_if_any_errors();
     let type_alias_mapping = resolver.ctx.type_alias_mapping.clone();
