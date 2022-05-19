@@ -102,6 +102,7 @@ impl Handler {
     }
 
     /// Emit all diagnostics but do not abort.
+    #[inline]
     pub fn alert_if_any_errors(&mut self) {
         self.emit();
     }

@@ -42,8 +42,7 @@ fn main() {
                     let module = parse_file(files[0], None);
                     println!("{}", serde_json::to_string(&module).unwrap())
                 }
-            } else
-            {
+            } else {
                 // load ast
                 let mut program = load_program(&files, None);
                 let scope = resolve_program(&mut program);
