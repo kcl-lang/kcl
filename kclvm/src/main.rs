@@ -18,7 +18,7 @@ use kclvm_runner::command::Command;
 use kclvm_sema::resolver::resolve_program;
 
 fn main() {
-    let matches = clap_app!(kclx =>
+    let matches = clap_app!(kcl =>
         (@subcommand run =>
             (@arg INPUT: ... "Sets the input file to use")
             (@arg OUTPUT: -o --output +takes_value "Sets the LLVM IR/BC output file path")
