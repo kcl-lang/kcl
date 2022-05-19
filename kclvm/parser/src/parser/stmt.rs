@@ -3,14 +3,11 @@
 
 use core::panic;
 
-use kclvm_ast::ast::*;
+use kclvm_ast::{ast::*, node_ref, expr_as};
 use kclvm_ast::token::{DelimToken, LitKind, Token, TokenKind};
 use kclvm_span::symbol::kw;
 
 use super::Parser;
-
-use crate::expr_as;
-use crate::node_ref;
 
 /// Parser implementation of statements, which consists of expressions and tokens.
 /// Parser uses `parse_exprlist` and `parse_expr` in [`kclvm_parser::parser::expr`]

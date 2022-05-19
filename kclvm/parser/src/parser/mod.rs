@@ -30,38 +30,6 @@ use kclvm_ast::token::{CommentKind, Token, TokenKind};
 use kclvm_ast::token_stream::{Cursor, TokenStream};
 use kclvm_span::symbol::Symbol;
 
-#[macro_export]
-macro_rules! node_ref {
-    ($node: expr) => {
-        NodeRef::new(Node::dummy_node($node))
-    };
-    ($node: expr, $pos:expr) => {
-        NodeRef::new(Node::node_with_pos($node, $pos))
-    };
-}
-
-#[macro_export]
-macro_rules! expr_as {
-    ($expr: expr, $expr_enum: path) => {
-        if let $expr_enum(x) = ($expr.node as Expr) {
-            Some(x)
-        } else {
-            None
-        }
-    };
-}
-
-#[macro_export]
-macro_rules! stmt_as {
-    ($stmt: expr, $stmt_enum: path) => {
-        if let $stmt_enum(x) = ($stmt.node as Stmt) {
-            Some(x)
-        } else {
-            None
-        }
-    };
-}
-
 pub struct Parser<'a> {
     /// The current token.
     pub token: Token,
