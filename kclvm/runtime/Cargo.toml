@@ -16,6 +16,7 @@ path = "src/lib.rs"
 
 [dependencies]
 kclvm_runtime_internal_macros = { path = "./internal_macros" }
+kclvm-ast = {path = "../ast", version = "0.1.0"}
 json_minimal = {path = "./src/3rdparty/json_minimal", version = "0.1.0"}
 serde_yaml = "0.8.23"
 

@@ -424,6 +424,7 @@ dependencies = [
  "indexmap",
  "itertools",
  "json_minimal",
+ "kclvm-ast",
  "kclvm_runtime_internal_macros",
  "libc",
  "md5",

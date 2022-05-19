@@ -2,9 +2,7 @@
 
 use super::Parser;
 
-use crate::expr_as;
-
-use kclvm_ast::ast;
+use kclvm_ast::{ast, expr_as};
 use kclvm_ast::ast::{Expr, Node, NodeRef, Type};
 use kclvm_ast::token;
 use kclvm_ast::token::{BinOpToken, DelimToken, TokenKind};

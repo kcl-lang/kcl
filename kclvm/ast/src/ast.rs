@@ -42,6 +42,8 @@ use kclvm_span::Loc;
 use rustc_span::Pos;
 
 use super::token;
+use crate::node_ref;
+use crate::quoted_string;
 
 /// Node is the file, line and column number information
 /// that all AST nodes need to contain.
@@ -223,6 +225,19 @@ pub struct Module {
     pub name: String,
     pub body: Vec<NodeRef<Stmt>>,
     pub comments: Vec<NodeRef<Comment>>,
+}
+
+impl Module {
+    /// Get all ast.schema_stmts from ast.module and return it in a Vec.
+    pub fn filter_schema_stmt_from_module(&self) -> Vec<NodeRef<SchemaStmt>> {
+        let mut stmts = Vec::new();
+        for stmt in &self.body {
+            if let Stmt::Schema(schema_stmt) = &stmt.node {
+                stmts.push(node_ref!(schema_stmt.clone()));
+            }
+        }
+        return stmts;
+    }
 }
 
 /*
@@ -998,6 +1013,21 @@ pub struct StringLit {
     pub value: String,
 }
 
+/// Generate ast.StringLit from String
+impl TryFrom<String> for StringLit {
+    type Error = &'static str;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Ok(
+            Self{
+                value: value.clone(),
+                raw_value: quoted_string(&value),
+                is_long_string: false
+            }
+        )
+    }
+}
+
 /// NameConstant, e.g.
 /// ```kcl
 /// True
@@ -1020,6 +1050,18 @@ impl NameConstant {
             NameConstant::False => "False",
             NameConstant::None => "None",
             NameConstant::Undefined => "Undefined",
+        }
+    }
+}
+
+/// Generate ast.NameConstant from Bool
+impl TryFrom<bool> for NameConstant {
+    type Error = &'static str;
+
+    fn try_from(value: bool) -> Result<Self, Self::Error> {
+        match value {
+            true => Ok(NameConstant::True),
+            false => Ok(NameConstant::False),
         }
     }
 }

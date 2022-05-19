@@ -5,6 +5,7 @@
 use itertools::{Itertools, PeekingNext};
 use std::cmp;
 use std::str::FromStr;
+use kclvm_ast::quoted_string;
 
 use crate::*;
 
@@ -974,19 +975,6 @@ pub fn value_to_quoted_string(value: &ValueRef) -> String {
         quoted_string(&value)
     } else {
         value.to_string()
-    }
-}
-
-/// Convert a Rust string to a quoted string e.g., abc -> 'abc'
-pub fn quoted_string(value: &str) -> String {
-    let has_double_quote = value.contains('\'');
-    let has_single_quote = value.contains('\"');
-    if !has_single_quote {
-        format!("'{}'", value)
-    } else if !has_double_quote {
-        format!("\"{}\"", value)
-    } else {
-        format!("\"{}\"", value.replace("\"", "\\\""))
     }
 }
 
