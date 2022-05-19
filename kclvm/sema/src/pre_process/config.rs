@@ -284,10 +284,11 @@ fn unify_config_entries(
             }
             None => NAME_NONE_BUCKET_KEY.to_string(),
         };
+        let entry = entry.clone();
         match bucket.get_mut(&name) {
-            Some(values) => values.push(entry.clone()),
+            Some(values) => values.push(entry),
             None => {
-                let values = vec![entry.clone()];
+                let values = vec![entry];
                 bucket.insert(name, values);
             }
         }
@@ -356,6 +357,20 @@ fn unify_config_entries(
                 }
                 None => entries.append(items),
             };
+        }
+    }
+    // Unify config entries recursively.
+    for entry in &mut entries {
+        match &mut entry.node.value.node {
+            ast::Expr::Schema(item_schema_expr) => {
+                if let ast::Expr::Config(item_config_expr) = &mut item_schema_expr.config.node {
+                    item_config_expr.items = unify_config_entries(&item_config_expr.items);
+                }
+            }
+            ast::Expr::Config(item_config_expr) => {
+                item_config_expr.items = unify_config_entries(&item_config_expr.items);
+            }
+            _ => {}
         }
     }
     entries

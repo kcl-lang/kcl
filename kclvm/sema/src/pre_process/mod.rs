@@ -18,8 +18,9 @@ pub fn pre_process_program(program: &mut ast::Program) {
             if pkgpath != kclvm_ast::MAIN_PKG {
                 import_names.clear();
             }
-            fix_qualified_identifier(module, &mut import_names);
+            // First we should transform the raw identifier to avoid raw identifier that happens to be a package path.
             fix_raw_identifier_prefix(module);
+            fix_qualified_identifier(module, &mut import_names);
             fix_config_expr_nest_attr(module);
         }
     }

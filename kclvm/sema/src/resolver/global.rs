@@ -26,142 +26,172 @@ impl<'ctx> Resolver<'ctx> {
     pub(crate) fn init_global_types(&mut self) {
         // 1. Scan all schema and rule type symbols
         let pkgpath = &self.ctx.pkgpath;
-        let modules = match self.program.pkgs.get(pkgpath) {
-            Some(modules) => modules,
-            None => bug!("empty modules on pkgpath {}", pkgpath),
-        };
-        // 1. Scan all schema and rule type symbol
-        for module in modules {
-            let pkgpath = &self.ctx.pkgpath.clone();
-            let filename = &module.filename;
-            self.change_package_context(pkgpath, filename);
-            for stmt in &module.body {
-                let (start, end) = stmt.get_span_pos();
-                let (name, doc, is_mixin, is_protocol, is_rule) = match &stmt.node {
-                    ast::Stmt::Schema(schema_stmt) => (
-                        &schema_stmt.name.node,
-                        &schema_stmt.doc,
-                        schema_stmt.is_mixin,
-                        schema_stmt.is_protocol,
-                        false,
-                    ),
-                    ast::Stmt::Rule(rule_stmt) => {
-                        (&rule_stmt.name.node, &rule_stmt.doc, false, false, true)
+        match self.program.pkgs.get(pkgpath) {
+            Some(modules) => {
+                // 1. Scan all schema and rule type symbol
+                for module in modules {
+                    let pkgpath = &self.ctx.pkgpath.clone();
+                    let filename = &module.filename;
+                    self.change_package_context(pkgpath, filename);
+                    for stmt in &module.body {
+                        let (start, end) = stmt.get_span_pos();
+                        let (name, doc, is_mixin, is_protocol, is_rule) = match &stmt.node {
+                            ast::Stmt::Schema(schema_stmt) => (
+                                &schema_stmt.name.node,
+                                &schema_stmt.doc,
+                                schema_stmt.is_mixin,
+                                schema_stmt.is_protocol,
+                                false,
+                            ),
+                            ast::Stmt::Rule(rule_stmt) => {
+                                (&rule_stmt.name.node, &rule_stmt.doc, false, false, true)
+                            }
+                            _ => continue,
+                        };
+                        if self.contains_object(name) {
+                            self.handler.add_error(
+                                ErrorKind::UniqueKeyError,
+                                &[Message {
+                                    pos: start.clone(),
+                                    style: Style::LineAndColumn,
+                                    message: format!("unique key error name '{}'", name),
+                                    note: None,
+                                }],
+                            );
+                            continue;
+                        }
+                        let schema_ty = SchemaType {
+                            name: name.to_string(),
+                            pkgpath: self.ctx.pkgpath.clone(),
+                            filename: self.ctx.filename.clone(),
+                            doc: doc.to_string(),
+                            is_instance: false,
+                            is_mixin,
+                            is_protocol,
+                            is_rule,
+                            base: None,
+                            protocol: None,
+                            mixins: vec![],
+                            attrs: IndexMap::default(),
+                            func: Box::new(FunctionType {
+                                doc: doc.to_string(),
+                                params: vec![],
+                                self_ty: None,
+                                return_ty: Rc::new(Type::VOID),
+                                is_variadic: false,
+                                kw_only_index: None,
+                            }),
+                            index_signature: None,
+                            decorators: vec![],
+                        };
+                        self.insert_object(
+                            name,
+                            ScopeObject {
+                                name: name.to_string(),
+                                start,
+                                end,
+                                ty: Rc::new(Type::schema(schema_ty)),
+                                kind: ScopeObjectKind::Definition,
+                            },
+                        )
                     }
-                    _ => continue,
-                };
-                if self.contains_object(name) {
-                    self.handler.add_error(
-                        ErrorKind::UniqueKeyError,
-                        &[Message {
-                            pos: start.clone(),
-                            style: Style::LineAndColumn,
-                            message: format!("unique key error name '{}'", name),
-                            note: None,
-                        }],
-                    );
-                    continue;
                 }
-                let schema_ty = SchemaType {
-                    name: name.to_string(),
-                    pkgpath: self.ctx.pkgpath.clone(),
-                    filename: self.ctx.filename.clone(),
-                    doc: doc.to_string(),
-                    is_instance: false,
-                    is_mixin,
-                    is_protocol,
-                    is_rule,
-                    base: None,
-                    protocol: None,
-                    mixins: vec![],
-                    attrs: IndexMap::default(),
-                    func: Box::new(FunctionType {
-                        doc: doc.to_string(),
-                        params: vec![],
-                        self_ty: None,
-                        return_ty: Rc::new(Type::VOID),
-                        is_variadic: false,
-                        kw_only_index: None,
-                    }),
-                    index_signature: None,
-                    decorators: vec![],
-                };
-                self.insert_object(
-                    name,
-                    ScopeObject {
-                        name: name.to_string(),
-                        start,
-                        end,
-                        ty: Rc::new(Type::schema(schema_ty)),
-                        kind: ScopeObjectKind::Definition,
-                    },
-                )
+                // 2. Scan all variable type symbol
+                self.init_global_var_types(true);
+                // 3. Build all schema types
+                for i in 0..MAX_SCOPE_SCAN_COUNT {
+                    for module in modules {
+                        let pkgpath = &self.ctx.pkgpath.clone();
+                        let filename = &module.filename;
+                        self.change_package_context(pkgpath, filename);
+                        for stmt in &module.body {
+                            let (start, end) = stmt.get_span_pos();
+                            let schema_ty = match &stmt.node {
+                                ast::Stmt::Schema(schema_stmt) => {
+                                    let parent_ty = self.build_schema_parent_type(schema_stmt);
+                                    let protocol_ty = self.build_schema_protocol_type(schema_stmt);
+                                    self.build_schema_type(
+                                        schema_stmt,
+                                        parent_ty,
+                                        protocol_ty,
+                                        i == MAX_SCOPE_SCAN_COUNT - 1,
+                                    )
+                                }
+                                ast::Stmt::Rule(rule_stmt) => {
+                                    let protocol_ty = self.build_rule_protocol_type(rule_stmt);
+                                    self.build_rule_type(
+                                        rule_stmt,
+                                        protocol_ty,
+                                        i == MAX_SCOPE_SCAN_COUNT - 1,
+                                    )
+                                }
+                                _ => continue,
+                            };
+                            self.insert_object(
+                                &schema_ty.name.clone(),
+                                ScopeObject {
+                                    name: schema_ty.name.to_string(),
+                                    start,
+                                    end,
+                                    ty: Rc::new(Type::schema(schema_ty)),
+                                    kind: ScopeObjectKind::Definition,
+                                },
+                            )
+                        }
+                    }
+                }
+                // 2.  Build all variable types
+                self.init_global_var_types(false);
             }
-        }
-        // 2. Scan all variable type symbol
-        self.init_global_var_types(true);
-        // 3. Build all schema types
-        for i in 0..MAX_SCOPE_SCAN_COUNT {
-            for module in modules {
-                let pkgpath = &self.ctx.pkgpath.clone();
-                let filename = &module.filename;
-                self.change_package_context(pkgpath, filename);
-                for stmt in &module.body {
-                    let (start, end) = stmt.get_span_pos();
-                    let schema_ty = match &stmt.node {
-                        ast::Stmt::Schema(schema_stmt) => {
-                            let parent_ty = self.build_schema_parent_type(schema_stmt);
-                            let protocol_ty = self.build_schema_protocol_type(schema_stmt);
-                            self.build_schema_type(
-                                schema_stmt,
-                                parent_ty,
-                                protocol_ty,
-                                i == MAX_SCOPE_SCAN_COUNT - 1,
-                            )
-                        }
-                        ast::Stmt::Rule(rule_stmt) => {
-                            let protocol_ty = self.build_rule_protocol_type(rule_stmt);
-                            self.build_rule_type(
-                                rule_stmt,
-                                protocol_ty,
-                                i == MAX_SCOPE_SCAN_COUNT - 1,
-                            )
-                        }
-                        _ => continue,
-                    };
-                    self.insert_object(
-                        &schema_ty.name.clone(),
-                        ScopeObject {
-                            name: schema_ty.name.to_string(),
-                            start,
-                            end,
-                            ty: Rc::new(Type::schema(schema_ty)),
-                            kind: ScopeObjectKind::Definition,
+            None => {
+                self.handler.add_error(
+                    ErrorKind::CannotFindModule,
+                    &[Message {
+                        pos: Position {
+                            filename: self.ctx.filename.clone(),
+                            line: 1,
+                            column: Some(1),
                         },
-                    )
-                }
+                        style: Style::Line,
+                        message: format!("pkgpath {} not found in the program", self.ctx.pkgpath),
+                        note: None,
+                    }],
+                );
             }
-        }
-        // 2.  Build all variable types
-        self.init_global_var_types(false);
+        };
     }
 
     /// Init global var types.
     pub(crate) fn init_global_var_types(&mut self, unique_check: bool) {
         let pkgpath = &self.ctx.pkgpath;
-        let modules = match self.program.pkgs.get(pkgpath) {
-            Some(modules) => modules,
-            None => bug!("empty modules on pkgpath {}", pkgpath),
-        };
-        // 1. Scan all schema and rule type symbol
-        for module in modules {
-            for stmt in &module.body {
-                if matches!(stmt.node, ast::Stmt::TypeAlias(_)) {
-                    self.stmt(stmt);
+        match self.program.pkgs.get(pkgpath) {
+            Some(modules) => {
+                // 1. Scan all schema and rule type symbol
+                for module in modules {
+                    for stmt in &module.body {
+                        if matches!(stmt.node, ast::Stmt::TypeAlias(_)) {
+                            self.stmt(stmt);
+                        }
+                    }
+                    self.init_scope_with_stmts(&module.body, unique_check);
                 }
             }
-            self.init_scope_with_stmts(&module.body, unique_check);
-        }
+            None => {
+                self.handler.add_error(
+                    ErrorKind::CannotFindModule,
+                    &[Message {
+                        pos: Position {
+                            filename: self.ctx.filename.clone(),
+                            line: 1,
+                            column: Some(1),
+                        },
+                        style: Style::Line,
+                        message: format!("pkgpath {} not found in the program", self.ctx.pkgpath),
+                        note: None,
+                    }],
+                );
+            }
+        };
     }
 
     fn init_scope_with_stmts(
