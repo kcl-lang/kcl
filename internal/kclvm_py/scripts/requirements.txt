@@ -1,6 +1,6 @@
 wheel==0.34.2 
 twine==3.2.0
-pyyaml==5.3
+pyyaml==5.4
 pytest-xdist==2.2.1
 lark-parser==0.11.3
 filelock==3.6.0
