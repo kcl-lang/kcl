@@ -8,8 +8,8 @@ use super::int::bytes_to_int;
 use super::Parser;
 
 use either::{self, Either};
+use kclvm_ast::node_ref;
 
-use crate::node_ref;
 use crate::parser::precedence::Precedence;
 use kclvm_ast::ast::*;
 use kclvm_ast::token;
