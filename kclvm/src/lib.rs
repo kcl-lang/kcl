@@ -146,7 +146,8 @@ pub extern "C" fn kclvm_cli_run(args: *const i8, plugin_agent: *const i8) -> *co
                 std::fs::remove_file(&ll_path).unwrap();
             }
             ll_path_lock.unlock().unwrap();
-            tx.send(dylib_path).expect("channel will be there waiting for the pool");
+            tx.send(dylib_path)
+                .expect("channel will be there waiting for the pool");
         });
     }
     let dylib_paths = rx.iter().take(prog_count).collect::<Vec<String>>();
@@ -162,6 +163,7 @@ pub extern "C" fn kclvm_cli_run(args: *const i8, plugin_agent: *const i8) -> *co
             plugin_agent_ptr: plugin_agent,
         }),
     );
+    scope.check_scope_diagnostics();
     match runner.run(&args) {
         Ok(result) => {
             let c_string = std::ffi::CString::new(result.as_str()).expect("CString::new failed");
