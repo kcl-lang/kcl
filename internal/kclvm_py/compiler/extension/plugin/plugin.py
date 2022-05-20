@@ -9,6 +9,7 @@ import typing
 import sys
 import traceback
 import inspect
+import platform
 
 import kclvm.kcl.info as kcl_info
 import kclvm.compiler.extension.plugin.template as plugin_template
@@ -122,7 +123,8 @@ def _find_plugin_root() -> typing.Optional[str]:
         cwd_plugin_path = cwd_plugin_path.parent
 
     # 4. try $HOME/.kusion/kclvm/plugins
-    home_plugin_root = os.path.join(os.getenv("HOME"), ".kusion/kclvm/plugins")
+    home_dir = os.getenv("HOME") if platform.system() != "Windows" else os.getenv("UserProfile")
+    home_plugin_root = os.path.join(home_dir, ".kusion/kclvm/plugins")
     if os.path.exists(f"{home_plugin_root}/hello/plugin.py"):
         return home_plugin_root
 

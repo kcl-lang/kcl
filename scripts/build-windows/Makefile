@@ -11,11 +11,13 @@ default:
 	# install pip
 	_output/kclvm-windows/python.exe get-pip.py
 
-	# pip install -r ../requirements.txt
-	_output/kclvm-windows/python.exe -m pip install -r ../requirements.release.txt  --target=_output/kclvm-windows/Lib/site-packages 
+	# pip install -r ./requirements.txt
+	_output/kclvm-windows/python.exe -m pip install -r ./requirements.release.txt  --target=_output/kclvm-windows/Lib/site-packages 
 
 	# install kclvm
-	go run gen-kclvm-py.go
+	go run ./copy-dir.go ../../internal/kclvm_py ./_output/kclvm-windows/Lib/site-packages/kclvm
+
+	# go run gen-kclvm-py.go
 
 	# renname
 	go run rename.go -old="_output/kclvm-windows/python.exe" -new="_output/kclvm-windows/kclvm.exe"
@@ -36,24 +38,35 @@ default:
 	./_output/kclvm-windows/kclvm.exe ../../kclvm/plugin/setup.py install_lib
 
 	# install kclvm-cli
-	cd ../../kclvm/runtime && cargo build --release
+	cd ../../kclvm && cargo build --release
+	go run ./copy-file.go -src=../../kclvm/target/release/kclvm_cli.exe            -dst=./_output/kclvm-windows/kclvm_cli.exe
+	go run ./copy-file.go -src=../../kclvm/target/release/kclvm_cli_cdylib.dll     -dst=./_output/kclvm-windows/kclvm_cli_cdylib.dll
+	go run ./copy-file.go -src=../../kclvm/target/release/kclvm_cli_cdylib.dll.lib -dst=./_output/kclvm-windows/libs/kclvm_cli_cdylib.dll.lib
+
+	# build rust std lib
+	go run install-rust-std.go -outdir=./_output/kclvm-windows
+
+	# install kcl plugins
+	go run ./copy-dir.go ../../plugins ./_output/kclvm-windows/plugins
 
 	# install hello.k
-	go run ./copy-file.go -src=../../hello.k -dst=./_output/kclvm-windows/hello.k
+	go run ./copy-file.go -src=../../samples/hello.k -dst=./_output/kclvm-windows/hello.k
 
 	# install tools
 	go build -o ./_output/kclvm-windows/kcl.exe        kcl.go
 	go build -o ./_output/kclvm-windows/kcl-doc.exe    kcl-doc.go
 	go build -o ./_output/kclvm-windows/kcl-lint.exe   kcl-lint.go
-	go build -o ./_output/kclvm-windows/kcl-fmt.exe   kcl-fmt.go
+	go build -o ./_output/kclvm-windows/kcl-fmt.exe    kcl-fmt.go
 	go build -o ./_output/kclvm-windows/kcl-plugin.exe kcl-plugin.go
 	go build -o ./_output/kclvm-windows/kcl-vet.exe    kcl-vet.go
 	go build -o ./_output/kclvm-windows/kcl-fmt.exe    kcl-fmt.go
 
-	# run hello.k
-	_output/kclvm-windows/kclvm.exe -m kclvm ../../hello.k
-	_output/kclvm-windows/kcl-go.exe run     ../../hello.k
-	_output/kclvm-windows/kcl.exe            ../../hello.k
+	# todo: build zip
+	
+	# todo: run hello.k
+	# _output/kclvm-windows/kclvm.exe -m kclvm ../../samples/hello.k
+	# _output/kclvm-windows/kcl-go.exe run     ../../samples/hello.k
+	# _output/kclvm-windows/kcl.exe            ../../samples/hello.k
 
 
 clean:
