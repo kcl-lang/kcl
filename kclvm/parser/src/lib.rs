@@ -421,11 +421,6 @@ impl Loader {
 
 // utils
 impl Loader {
-    fn current_work_dir() -> String {
-        let p = std::env::current_dir().unwrap();
-        let s = p.to_str().unwrap().to_string();
-        s
-    }
     fn is_file(&self, path: &str) -> bool {
         std::path::Path::new(path).is_file()
     }

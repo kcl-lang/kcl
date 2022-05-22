@@ -356,7 +356,7 @@ impl ValueRef {
                     let ch = a.chars().nth(index).unwrap();
                     Self::str(ch.to_string().as_ref())
                 } else {
-                    panic!("string index out of range");
+                    panic!("string index out of range: {}", b.to_string());
                 }
             }
             (Value::list_value(a), Value::int_value(b)) => {
@@ -369,18 +369,23 @@ impl ValueRef {
                 if index < a.values.len() {
                     a.values[index].clone()
                 } else {
-                    panic!("list index out of range");
+                    panic!("list index out of range: {}", b.to_string());
                 }
             }
             (Value::dict_value(a), Value::str_value(b)) => match a.values.get(b) {
                 Some(x) => (*x).clone(),
                 _ => Self::undefined(),
             },
+            (Value::dict_value(_), _) => Self::undefined(),
             (Value::schema_value(a), Value::str_value(b)) => match a.config.values.get(b) {
                 Some(x) => (*x).clone(),
                 _ => Self::undefined(),
             },
-            _ => Self::undefined(),
+            _ => panic!(
+                "'{}' object is not subscriptable with '{}'",
+                self.type_str(),
+                x.type_str()
+            ),
         }
     }
 

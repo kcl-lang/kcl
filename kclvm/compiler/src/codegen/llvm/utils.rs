@@ -26,18 +26,6 @@ pub fn update_ctx_pkgpath<'ctx>(gen: &'ctx LLVMCodeGenContext, pkgpath: &str) {
 
 /// Update runtime context filename
 pub fn update_ctx_filename<'ctx, T>(gen: &'ctx LLVMCodeGenContext, node: &'ctx ast::Node<T>) {
-    let mut current_filename = gen.current_filename.borrow_mut();
-    if node.filename != *current_filename && !node.filename.is_empty() {
-        *current_filename = node.filename.clone();
-        gen.build_void_call(
-            &ApiFunc::kclvm_context_set_kcl_filename.name(),
-            &[gen.native_global_string_value(&node.filename)],
-        );
-    }
-}
-
-/// Force update runtime context filename
-pub fn force_update_ctx_filename<'ctx, T>(gen: &'ctx LLVMCodeGenContext, node: &'ctx ast::Node<T>) {
     if !node.filename.is_empty() {
         gen.build_void_call(
             &ApiFunc::kclvm_context_set_kcl_filename.name(),

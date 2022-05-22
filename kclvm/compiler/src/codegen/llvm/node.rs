@@ -1947,7 +1947,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
                 pkgpath,
             ],
         );
-        utils::force_update_ctx_filename(self, &schema_expr.config);
+        utils::update_ctx_filename(self, &schema_expr.config);
         Ok(schema)
     }
 

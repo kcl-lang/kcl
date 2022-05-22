@@ -146,7 +146,10 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
     fn walk_schema_stmt(&mut self, schema_stmt: &'ctx ast::SchemaStmt) -> Self::Result {
         interleave!(
             || self.write_newline(),
-            |expr: &ast::NodeRef<CallExpr>| {self.write("@"); self.walk_call_expr(&expr.node);},
+            |expr: &ast::NodeRef<CallExpr>| {
+                self.write("@");
+                self.walk_call_expr(&expr.node);
+            },
             schema_stmt.decorators
         );
         if !schema_stmt.decorators.is_empty() {
@@ -242,7 +245,10 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
     fn walk_rule_stmt(&mut self, rule_stmt: &'ctx ast::RuleStmt) -> Self::Result {
         interleave!(
             || self.write_newline(),
-            |expr: &ast::NodeRef<CallExpr>| {self.write("@"); self.walk_call_expr(&expr.node);},
+            |expr: &ast::NodeRef<CallExpr>| {
+                self.write("@");
+                self.walk_call_expr(&expr.node);
+            },
             rule_stmt.decorators
         );
         if !rule_stmt.decorators.is_empty() {
@@ -317,7 +323,10 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
     fn walk_schema_attr(&mut self, schema_attr: &'ctx ast::SchemaAttr) -> Self::Result {
         interleave!(
             || self.write_newline(),
-            |expr: &ast::NodeRef<CallExpr>| {self.write("@"); self.walk_call_expr(&expr.node)},
+            |expr: &ast::NodeRef<CallExpr>| {
+                self.write("@");
+                self.walk_call_expr(&expr.node)
+            },
             schema_attr.decorators
         );
         if !schema_attr.decorators.is_empty() {
