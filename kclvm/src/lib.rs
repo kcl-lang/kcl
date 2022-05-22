@@ -18,6 +18,32 @@ use kclvm_tools::query::apply_overrides;
 
 #[no_mangle]
 pub extern "C" fn kclvm_cli_run(args: *const i8, plugin_agent: *const i8) -> *const i8 {
+    match std::panic::catch_unwind(|| kclvm_cli_run_unsafe(args, plugin_agent)) {
+        Ok(result) => match result {
+            Ok(result) => {
+                let c_string =
+                    std::ffi::CString::new(result.as_str()).expect("CString::new failed");
+                let ptr = c_string.into_raw();
+                ptr as *const i8
+            }
+            Err(result) => {
+                let result = format!("ERROR:{}", result);
+                let c_string =
+                    std::ffi::CString::new(result.as_str()).expect("CString::new failed");
+                let ptr = c_string.into_raw();
+                ptr as *const i8
+            }
+        },
+        Err(panic_err) => {
+            let result = format!("ERROR:{:?}", panic_err);
+            let c_string = std::ffi::CString::new(result.as_str()).expect("CString::new failed");
+            let ptr = c_string.into_raw();
+            ptr as *const i8
+        }
+    }
+}
+
+pub fn kclvm_cli_run_unsafe(args: *const i8, plugin_agent: *const i8) -> Result<String, String> {
     let args = ExecProgramArgs::from_str(kclvm::c2str(args));
     let plugin_agent = plugin_agent as u64;
 
@@ -146,7 +172,8 @@ pub extern "C" fn kclvm_cli_run(args: *const i8, plugin_agent: *const i8) -> *co
                 std::fs::remove_file(&ll_path).unwrap();
             }
             ll_path_lock.unlock().unwrap();
-            tx.send(dylib_path).expect("channel will be there waiting for the pool");
+            tx.send(dylib_path)
+                .expect("channel will be there waiting for the pool");
         });
     }
     let dylib_paths = rx.iter().take(prog_count).collect::<Vec<String>>();
@@ -162,17 +189,5 @@ pub extern "C" fn kclvm_cli_run(args: *const i8, plugin_agent: *const i8) -> *co
             plugin_agent_ptr: plugin_agent,
         }),
     );
-    match runner.run(&args) {
-        Ok(result) => {
-            let c_string = std::ffi::CString::new(result.as_str()).expect("CString::new failed");
-            let ptr = c_string.into_raw();
-            ptr as *const i8
-        }
-        Err(result) => {
-            let result = format!("ERROR:{}", result);
-            let c_string = std::ffi::CString::new(result.as_str()).expect("CString::new failed");
-            let ptr = c_string.into_raw();
-            ptr as *const i8
-        }
-    }
+    runner.run(&args)
 }
