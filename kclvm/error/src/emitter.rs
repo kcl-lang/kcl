@@ -13,6 +13,7 @@ use termcolor::{BufferWriter, Color, ColorChoice, ColorSpec, StandardStream, Wri
 
 /// Emitter trait for emitting errors.
 pub trait Emitter {
+    fn format_diagnostic(&mut self, diag: &Diagnostic) -> Vec<String>;
     /// Emit a structured diagnostic.
     fn emit_diagnostic(&mut self, diag: &Diagnostic);
     /// Checks if we can use colors in the current output stream.
@@ -145,6 +146,14 @@ impl Emitter for EmitterWriter {
     }
 
     fn emit_diagnostic(&mut self, diag: &Diagnostic) {
+        let buffer = self.format_diagnostic(diag);
+        if let Err(e) = emit_to_destination(&buffer, &diag.level, &mut self.dst, self.short_message)
+        {
+            panic!("failed to emit error: {}", e)
+        }
+    }
+
+    fn format_diagnostic(&mut self, diag: &Diagnostic) -> Vec<String> {
         let mut buffer: Vec<String> = vec![];
         let mut diag_str = "KCL ".to_string();
         diag_str += diag.level.to_str();
@@ -192,10 +201,7 @@ impl Emitter for EmitterWriter {
             }
             buffer.push("".to_string());
         }
-        if let Err(e) = emit_to_destination(&buffer, &diag.level, &mut self.dst, self.short_message)
-        {
-            panic!("failed to emit error: {}", e)
-        }
+        buffer
     }
 }
 

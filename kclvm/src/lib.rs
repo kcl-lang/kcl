@@ -28,7 +28,7 @@ pub extern "C" fn kclvm_cli_run(args: *const i8, plugin_agent: *const i8) -> *co
     let mut program = load_program(&files, Some(opts));
     apply_overrides(&mut program, &args.overrides, &[]);
     let scope = resolve_program(&mut program);
-
+    scope.check_scope_diagnostics();
     // gen bc or ll file
     let ll_file = "_a.out";
     let path = std::path::Path::new(ll_file);
@@ -163,7 +163,6 @@ pub extern "C" fn kclvm_cli_run(args: *const i8, plugin_agent: *const i8) -> *co
             plugin_agent_ptr: plugin_agent,
         }),
     );
-    scope.check_scope_diagnostics();
     match runner.run(&args) {
         Ok(result) => {
             let c_string = std::ffi::CString::new(result.as_str()).expect("CString::new failed");

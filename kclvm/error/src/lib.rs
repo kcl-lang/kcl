@@ -84,6 +84,14 @@ impl Handler {
         }
         self.has_errors()
     }
+    /// Format and return all diagnostics msg.
+    pub fn format_diagnostic(&mut self) -> Vec<String> {
+        let mut dia_msgs = Vec::new();
+        for diag in &self.diagnostics {
+            dia_msgs.append(&mut self.emitter.format_diagnostic(diag));
+        }
+        dia_msgs
+    }
 
     /// Emit all diagnostics and abort if has any errors.
     pub fn abort_if_errors(&mut self) -> ! {
@@ -104,7 +112,15 @@ impl Handler {
     /// Emit all diagnostics but do not abort.
     #[inline]
     pub fn alert_if_any_errors(&mut self) {
-        self.emit();
+        if self.has_errors() {
+            let mut err_msg = String::new();
+            let msgs = self.format_diagnostic();
+            for msg in msgs {
+                err_msg += &format!("{}\n", msg);
+            }
+
+            panic!("{}", err_msg)
+        }
     }
 
     /// Construct a parse error and put it into the handler diagnostic buffer
