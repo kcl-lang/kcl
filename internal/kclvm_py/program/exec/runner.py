@@ -27,6 +27,7 @@ from .kclvm_cli import kclvm_cli_native_run_dylib
 
 KCLVM_PANIC_INFO_KEY = "$__kcl_PanicInfo__$"
 KCLVM_RUN_MODE_WITHIN_CACHE_ENV = "KCLVM_RUN_MODE_WITHIN_CACHE"
+KCLVM_TARGET_ENV_KEY = "KCLVM_TARGET"
 
 
 def Run(
@@ -59,7 +60,7 @@ def Run(
 
     root = vfs.MustGetPkgRoot(path_list)
     modfile = vfs.LoadModFile(root)
-    target = (target or modfile.build.target or "").lower()
+    target = (target or modfile.build.target or os.getenv(KCLVM_TARGET_ENV_KEY) or "").lower()
 
     kclvm.config.input_file = path_list
     kclvm.config.current_path = work_dir
