@@ -10,8 +10,10 @@ mod tests;
 extern crate kclvm_error;
 
 use crate::session::ParseSession;
+use kclvm::{ErrType, PanicInfo};
 use kclvm_ast::ast;
 use kclvm_span::{self, FilePathMapping, SourceMap};
+
 use lexer::parse_token_streams;
 use parser::Parser;
 use rustc_span::BytePos;
@@ -150,6 +152,13 @@ impl Loader {
     }
 
     fn load_main(&mut self) -> Result<ast::Program, String> {
+        match self._load_main() {
+            Ok(x) => Ok(x),
+            Err(s) => Err(self.str_to_panic_info(&s).to_json_string()),
+        }
+    }
+
+    fn _load_main(&mut self) -> Result<ast::Program, String> {
         debug_assert!(!self.paths.is_empty());
 
         self.pkgroot = kclvm_config::modfile::get_pkg_root_from_paths(&self.paths)?;
@@ -442,5 +451,17 @@ impl Loader {
 
     fn path_exist(&self, path: &str) -> bool {
         std::path::Path::new(path).exists()
+    }
+}
+
+impl Loader {
+    fn str_to_panic_info(&self, s: &str) -> PanicInfo {
+        let mut panic_info = PanicInfo::default();
+
+        panic_info.__kcl_PanicInfo__ = true;
+        panic_info.message = format!("{}", s);
+        panic_info.err_type_code = ErrType::CompileError_TYPE as i32;
+
+        panic_info
     }
 }

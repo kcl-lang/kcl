@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 rustc_span = { path = "../3rdparty/rustc_span" }
 kclvm-span = {path = "../span", version = "0.1.0"}
+kclvm-runtime = {path = "../runtime", version = "0.1.0"}
 
 tracing = "0.1"
 atty = "0.2"

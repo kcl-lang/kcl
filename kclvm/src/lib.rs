@@ -6,6 +6,7 @@ use std::sync::mpsc::channel;
 use threadpool::ThreadPool;
 
 use indexmap::IndexMap;
+use kclvm::{ErrType, PanicInfo};
 use kclvm_ast::ast;
 use kclvm_compiler::codegen::{llvm::emit_code, EmitOptions};
 use kclvm_config::cache::*;
@@ -35,7 +36,17 @@ pub extern "C" fn kclvm_cli_run(args: *const i8, plugin_agent: *const i8) -> *co
             }
         },
         Err(panic_err) => {
-            let result = format!("ERROR:{:?}", panic_err);
+            let err_message = if let Some(s) = panic_err.downcast_ref::<&str>() {
+                s.to_string()
+            } else if let Some(s) = panic_err.downcast_ref::<&String>() {
+                (*s).clone()
+            } else if let Some(s) = panic_err.downcast_ref::<String>() {
+                (*s).clone()
+            } else {
+                "".to_string()
+            };
+
+            let result = format!("ERROR:{:}", err_message);
             let c_string = std::ffi::CString::new(result.as_str()).expect("CString::new failed");
             let ptr = c_string.into_raw();
             ptr as *const i8

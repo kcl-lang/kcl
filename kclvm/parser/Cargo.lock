@@ -461,6 +461,7 @@ dependencies = [
  "kclvm-config",
  "kclvm-error",
  "kclvm-lexer",
+ "kclvm-runtime",
  "kclvm-sema",
  "kclvm-span",
  "num-bigint",
