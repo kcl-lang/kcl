@@ -431,6 +431,7 @@ dependencies = [
  "kclvm-ast",
  "kclvm-compiler",
  "kclvm-config",
+ "kclvm-error",
  "kclvm-parser",
  "kclvm-runner",
  "kclvm-runtime",

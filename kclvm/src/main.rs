@@ -4,6 +4,7 @@
 extern crate clap;
 
 use indexmap::IndexMap;
+use kclvm_sema::resolver::scope::ProgramScope;
 use std::path::PathBuf;
 use std::thread;
 use std::{collections::HashMap, path::Path};
@@ -190,6 +191,7 @@ fn main() {
                         std::fs::remove_file(&dylib_path).unwrap();
                     }
                 }
+                scope.check_scope_diagnostics();
             }
         } else {
             println!("{}", matches.usage());

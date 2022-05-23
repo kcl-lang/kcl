@@ -189,5 +189,6 @@ pub fn kclvm_cli_run_unsafe(args: *const i8, plugin_agent: *const i8) -> Result<
             plugin_agent_ptr: plugin_agent,
         }),
     );
+    scope.check_scope_diagnostics();
     runner.run(&args)
 }
