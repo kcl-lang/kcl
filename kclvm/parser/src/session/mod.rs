@@ -38,7 +38,8 @@ impl ParseSession {
                 },
                 pos,
             )
-            .abort_if_errors()
+            .alert_if_any_errors();
+        unreachable!()
     }
 
     /// Struct and report an error based on a span and abort the compiler process.
@@ -47,7 +48,8 @@ impl ParseSession {
         self.handler
             .borrow_mut()
             .add_syntex_error(msg, pos)
-            .abort_if_errors()
+            .alert_if_any_errors();
+        unreachable!()
     }
 
     /// Report a compiler bug

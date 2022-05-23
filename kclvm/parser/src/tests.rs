@@ -5,14 +5,14 @@ use crate::*;
 use expect_test::{expect, Expect};
 
 fn check_parsing_file_ast_json(filename: &str, src: &str, expect: Expect) {
-    let m = parse_file(filename, Some(src.into()));
+    let m = parse_file(filename, Some(src.into())).unwrap();
     let actual = serde_json::ser::to_string(&m).unwrap();
     let actual = format!("{}\n", actual);
     expect.assert_eq(&actual)
 }
 
 fn check_load_program_ast_json(files: &[&str], opts: Option<LoadProgramOptions>, expect: Expect) {
-    let prog = load_program(&files, opts);
+    let prog = load_program(&files, opts).unwrap();
     let actual = serde_json::ser::to_string(&prog).unwrap();
     let actual = format!("{}\n", actual);
     expect.assert_eq(&actual)

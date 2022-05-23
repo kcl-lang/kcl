@@ -44,7 +44,7 @@ fn main() {
                 }
             } else {
                 // load ast
-                let mut program = load_program(&files, None);
+                let mut program = load_program(&files, None).unwrap();
                 let scope = resolve_program(&mut program);
                 scope.check_scope_diagnostics();
                 // gen bc or ll file
