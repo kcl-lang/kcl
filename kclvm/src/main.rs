@@ -46,7 +46,7 @@ fn main() {
                 // load ast
                 let mut program = load_program(&files, None);
                 let scope = resolve_program(&mut program);
-
+                scope.check_scope_diagnostics();
                 // gen bc or ll file
                 let ll_file = "_a.out";
                 let path = std::path::Path::new(ll_file);
@@ -191,7 +191,6 @@ fn main() {
                         std::fs::remove_file(&dylib_path).unwrap();
                     }
                 }
-                scope.check_scope_diagnostics();
             }
         } else {
             println!("{}", matches.usage());

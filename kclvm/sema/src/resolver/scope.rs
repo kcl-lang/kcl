@@ -209,7 +209,7 @@ impl ProgramScope {
         self.scope_map.get(MAIN_PKG)
     }
 
-    pub fn check_scope_diagnostics(&self){
+    pub fn check_scope_diagnostics(&self) {
         if self.diagnostics.len() > 0 {
             let mut err_handler = Handler::default();
             err_handler.diagnostics = self.diagnostics.clone();

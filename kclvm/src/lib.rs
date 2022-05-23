@@ -54,7 +54,7 @@ pub fn kclvm_cli_run_unsafe(args: *const i8, plugin_agent: *const i8) -> Result<
     let mut program = load_program(&files, Some(opts));
     apply_overrides(&mut program, &args.overrides, &[]);
     let scope = resolve_program(&mut program);
-
+    scope.check_scope_diagnostics();
     // gen bc or ll file
     let ll_file = "_a.out";
     let path = std::path::Path::new(ll_file);
@@ -189,6 +189,5 @@ pub fn kclvm_cli_run_unsafe(args: *const i8, plugin_agent: *const i8) -> Result<
             plugin_agent_ptr: plugin_agent,
         }),
     );
-    scope.check_scope_diagnostics();
     runner.run(&args)
 }
