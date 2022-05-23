@@ -18,6 +18,32 @@ use kclvm_tools::query::apply_overrides;
 
 #[no_mangle]
 pub extern "C" fn kclvm_cli_run(args: *const i8, plugin_agent: *const i8) -> *const i8 {
+    match std::panic::catch_unwind(|| kclvm_cli_run_unsafe(args, plugin_agent)) {
+        Ok(result) => match result {
+            Ok(result) => {
+                let c_string =
+                    std::ffi::CString::new(result.as_str()).expect("CString::new failed");
+                let ptr = c_string.into_raw();
+                ptr as *const i8
+            }
+            Err(result) => {
+                let result = format!("ERROR:{}", result);
+                let c_string =
+                    std::ffi::CString::new(result.as_str()).expect("CString::new failed");
+                let ptr = c_string.into_raw();
+                ptr as *const i8
+            }
+        },
+        Err(panic_err) => {
+            let result = format!("ERROR:{:?}", panic_err);
+            let c_string = std::ffi::CString::new(result.as_str()).expect("CString::new failed");
+            let ptr = c_string.into_raw();
+            ptr as *const i8
+        }
+    }
+}
+
+pub fn kclvm_cli_run_unsafe(args: *const i8, plugin_agent: *const i8) -> Result<String, String> {
     let args = ExecProgramArgs::from_str(kclvm::c2str(args));
     let plugin_agent = plugin_agent as u64;
 
@@ -164,17 +190,5 @@ pub extern "C" fn kclvm_cli_run(args: *const i8, plugin_agent: *const i8) -> *co
         }),
     );
     scope.check_scope_diagnostics();
-    match runner.run(&args) {
-        Ok(result) => {
-            let c_string = std::ffi::CString::new(result.as_str()).expect("CString::new failed");
-            let ptr = c_string.into_raw();
-            ptr as *const i8
-        }
-        Err(result) => {
-            let result = format!("ERROR:{}", result);
-            let c_string = std::ffi::CString::new(result.as_str()).expect("CString::new failed");
-            let ptr = c_string.into_raw();
-            ptr as *const i8
-        }
-    }
+    runner.run(&args)
 }
