@@ -275,13 +275,11 @@ fn unify_config_entries(
     let mut bucket: IndexMap<String, Vec<ast::NodeRef<ast::ConfigEntry>>> = IndexMap::new();
     for entry in entries {
         let name = match &entry.node.key {
-            Some(key) => {
-                if let ast::Expr::Identifier(identifier) = &key.node {
-                    identifier.get_name()
-                } else {
-                    NAME_NONE_BUCKET_KEY.to_string()
-                }
-            }
+            Some(key) => match &key.node {
+                ast::Expr::Identifier(identifier) => identifier.get_name(),
+                ast::Expr::StringLit(string_lit) => string_lit.value.clone(),
+                _ => NAME_NONE_BUCKET_KEY.to_string(),
+            },
             None => NAME_NONE_BUCKET_KEY.to_string(),
         };
         let entry = entry.clone();

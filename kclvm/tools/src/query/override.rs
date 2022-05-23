@@ -64,7 +64,7 @@ pub fn build_node_from_string(value: &str) -> ast::NodeRef<ast::Expr> {
     expr
 }
 
-struct OverrideTransformer {
+pub struct OverrideTransformer {
     pub target_id: String,
     pub field_path: String,
     pub override_key: ast::Identifier,

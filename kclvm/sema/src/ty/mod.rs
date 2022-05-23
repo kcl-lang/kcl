@@ -152,13 +152,13 @@ pub struct SchemaType {
     /// The schema definition document string.
     pub doc: String,
     /// Indicates whether the schema is a type of a instance or
-    /// a type (value). Besides, it is necessary to distinguish 
+    /// a type (value). Besides, it is necessary to distinguish
     /// between a type instance and a type value, such as the following code:
     /// ```no_check
     /// # `Person` in `schema Person` is a type and it is not a schema instance.
     /// schema Person:
     ///     name: str
-    /// 
+    ///
     /// # `person` is a schema instance.
     /// person = Person {name = "Alice"}
     /// # `person` is a schema instance used in the value expression.

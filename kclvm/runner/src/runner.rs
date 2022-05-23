@@ -80,9 +80,7 @@ pub struct KclvmRunnerOptions {
 }
 
 pub struct KclvmRunner {
-    dylib_path: String,
     opts: KclvmRunnerOptions,
-
     lib: libloading::Library,
 }
 
@@ -93,7 +91,6 @@ impl KclvmRunner {
                 .unwrap()
         };
         Self {
-            dylib_path: dylib_path.to_string(),
             opts: opts.unwrap_or_default(),
             lib,
         }
@@ -234,44 +231,5 @@ impl KclvmRunner {
             let s = std::str::from_utf8(&warn_data[0..return_len as usize]).unwrap();
             Err(s.to_string())
         }
-    }
-}
-
-impl KclvmRunner {
-    // only for test
-    fn invoke_plugin_method(
-        plugin_method_ptr: u64,
-        method: &str,
-        args: &str,
-        kwargs: &str,
-    ) -> String {
-        use std::ffi::CStr;
-        use std::ffi::CString;
-
-        if plugin_method_ptr == 0 {
-            panic!("no plugin")
-        }
-
-        let plugin_method_ptr = (plugin_method_ptr as *const u64) as *const ()
-            as *const extern "C" fn(
-                method: *const i8,
-                args: *const i8,
-                kwargs: *const i8,
-            ) -> *const i8;
-        let plugin_method: extern "C" fn(
-            method: *const i8,
-            args: *const i8,
-            kwargs: *const i8,
-        ) -> *const i8 = unsafe { std::mem::transmute(plugin_method_ptr) };
-
-        let method = CString::new(method).unwrap();
-        let args = CString::new(args).unwrap();
-        let kwargs = CString::new(kwargs).unwrap();
-
-        let _result_ptr = plugin_method(method.as_ptr(), args.as_ptr(), kwargs.as_ptr());
-        let result: &CStr = unsafe { CStr::from_ptr(_result_ptr) };
-        let result: String = result.to_string_lossy().into();
-
-        result
     }
 }

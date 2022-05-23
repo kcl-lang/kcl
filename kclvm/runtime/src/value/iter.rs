@@ -28,6 +28,9 @@ impl Default for ValueIterator {
 
 impl ValueIterator {
     pub fn from_value(p: &ValueRef) -> Self {
+        if !p.is_str() && !p.is_list() && !p.is_config() {
+            panic!("'{}' object is not iterable", p.type_str());
+        }
         if p.len() == 0 {
             return Default::default();
         }
