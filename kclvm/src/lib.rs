@@ -22,7 +22,8 @@ pub extern "C" fn kclvm_cli_run(args: *const i8, plugin_agent: *const i8) -> *co
 
     // disable print panic info
     std::panic::set_hook(Box::new(|_info| {}));
-    let kclvm_cli_run_unsafe_result = std::panic::catch_unwind(|| kclvm_cli_run_unsafe(args, plugin_agent));
+    let kclvm_cli_run_unsafe_result =
+        std::panic::catch_unwind(|| kclvm_cli_run_unsafe(args, plugin_agent));
     std::panic::set_hook(prev_hook);
 
     match kclvm_cli_run_unsafe_result {
