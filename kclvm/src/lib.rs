@@ -6,7 +6,6 @@ use std::sync::mpsc::channel;
 use threadpool::ThreadPool;
 
 use indexmap::IndexMap;
-use kclvm::{ErrType, PanicInfo};
 use kclvm_ast::ast;
 use kclvm_compiler::codegen::{llvm::emit_code, EmitOptions};
 use kclvm_config::cache::*;

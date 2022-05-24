@@ -4,7 +4,6 @@
 extern crate clap;
 
 use indexmap::IndexMap;
-use kclvm_sema::resolver::scope::ProgramScope;
 use std::path::PathBuf;
 use std::thread;
 use std::{collections::HashMap, path::Path};
