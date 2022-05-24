@@ -2,10 +2,10 @@
 
 use super::Parser;
 
-use kclvm_ast::{ast, expr_as};
 use kclvm_ast::ast::{Expr, Node, NodeRef, Type};
 use kclvm_ast::token;
 use kclvm_ast::token::{BinOpToken, DelimToken, TokenKind};
+use kclvm_ast::{ast, expr_as};
 use kclvm_span::symbol::{kw, sym};
 
 impl<'a> Parser<'_> {

@@ -10,8 +10,10 @@ mod tests;
 extern crate kclvm_error;
 
 use crate::session::ParseSession;
+use kclvm::{ErrType, PanicInfo};
 use kclvm_ast::ast;
 use kclvm_span::{self, FilePathMapping, SourceMap};
+
 use lexer::parse_token_streams;
 use parser::Parser;
 use rustc_span::BytePos;
@@ -40,7 +42,7 @@ pub fn parse_program_from_json_file(path: &str) -> Result<ast::Program, Box<dyn 
     Ok(u)
 }
 
-pub fn parse_program(filename: &str) -> ast::Program {
+pub fn parse_program(filename: &str) -> Result<ast::Program, String> {
     let abspath = std::fs::canonicalize(&std::path::PathBuf::from(filename)).unwrap();
 
     let mut prog = ast::Program {
@@ -53,17 +55,17 @@ pub fn parse_program(filename: &str) -> ast::Program {
 
     let mainpkg = "__main__";
 
-    let mut module = parse_file(abspath.to_str().unwrap(), None);
+    let mut module = parse_file(abspath.to_str().unwrap(), None)?;
     module.filename = filename.to_string();
     module.pkg = mainpkg.to_string();
     module.name = mainpkg.to_string();
 
     prog.pkgs.insert(mainpkg.to_string(), vec![module]);
 
-    prog
+    Ok(prog)
 }
 
-pub fn parse_file(filename: &str, code: Option<String>) -> ast::Module {
+pub fn parse_file(filename: &str, code: Option<String>) -> Result<ast::Module, String> {
     create_session_globals_then(move || {
         let src = if let Some(s) = code {
             s
@@ -83,7 +85,7 @@ pub fn parse_file(filename: &str, code: Option<String>) -> ast::Module {
         m.pkg = kclvm_ast::MAIN_PKG.to_string();
         m.name = kclvm_ast::MAIN_PKG.to_string();
 
-        m
+        Ok(m)
     })
 }
 
@@ -111,7 +113,10 @@ pub struct LoadProgramOptions {
     pub _load_packages: bool,
 }
 
-pub fn load_program(paths: &[&str], opts: Option<LoadProgramOptions>) -> ast::Program {
+pub fn load_program(
+    paths: &[&str],
+    opts: Option<LoadProgramOptions>,
+) -> Result<ast::Program, String> {
     // todo: support cache
     if let Some(opts) = opts {
         Loader::new(paths, Some(opts)).load_main()
@@ -146,12 +151,17 @@ impl Loader {
         }
     }
 
-    fn load_main(&mut self) -> ast::Program {
+    fn load_main(&mut self) -> Result<ast::Program, String> {
+        match self._load_main() {
+            Ok(x) => Ok(x),
+            Err(s) => Err(self.str_to_panic_info(&s).to_json_string()),
+        }
+    }
+
+    fn _load_main(&mut self) -> Result<ast::Program, String> {
         debug_assert!(!self.paths.is_empty());
 
-        if let Ok(s) = kclvm_config::modfile::get_pkg_root_from_paths(&self.paths) {
-            self.pkgroot = s;
-        }
+        self.pkgroot = kclvm_config::modfile::get_pkg_root_from_paths(&self.paths)?;
 
         if !self.pkgroot.is_empty() {
             debug_assert!(self.is_dir(self.pkgroot.as_str()));
@@ -192,10 +202,10 @@ impl Loader {
             // read dir/*.k
             if self.is_dir(path) {
                 if self.opts.k_code_list.len() > i {
-                    panic!("invalid code list")
+                    return Err("invalid code list".to_string());
                 }
                 //k_code_list
-                for s in self.get_dir_kfile_list(path) {
+                for s in self.get_dir_kfile_list(path)? {
                     k_files.push(s);
                 }
                 continue;
@@ -203,7 +213,7 @@ impl Loader {
         }
 
         if k_files.is_empty() {
-            panic!("No input KCL files");
+            return Err("No input KCL files".to_string());
         }
 
         // check all file exists
@@ -218,10 +228,10 @@ impl Loader {
             }
 
             if !self.path_exist(filename.as_str()) {
-                panic!(
+                return Err(format!(
                     "Cannot find the kcl file, please check whether the file path {}",
                     filename.as_str(),
-                );
+                ));
             }
         }
 
@@ -230,11 +240,11 @@ impl Loader {
         for (i, filename) in (&k_files).iter().enumerate() {
             // todo: add shared source map for all files
             if i < self.opts.k_code_list.len() {
-                let mut m = parse_file(filename, Some(self.opts.k_code_list[i].clone()));
+                let mut m = parse_file(filename, Some(self.opts.k_code_list[i].clone()))?;
                 self.fix_rel_import_path(&mut m);
                 pkg_files.push(m)
             } else {
-                let mut m = parse_file(filename, None);
+                let mut m = parse_file(filename, None)?;
                 self.fix_rel_import_path(&mut m);
                 pkg_files.push(m);
             }
@@ -251,13 +261,13 @@ impl Loader {
         }
 
         // Ok
-        ast::Program {
+        Ok(ast::Program {
             root: self.pkgroot.clone(),
             main: __kcl_main__.to_string(),
             pkgs: self.pkgs.clone(),
             cmd_args: Vec::new(),
             cmd_overrides: Vec::new(),
-        }
+        })
     }
 
     fn fix_rel_import_path(&mut self, m: &mut ast::Module) {
@@ -272,33 +282,33 @@ impl Loader {
         }
     }
 
-    fn load_package(&mut self, pkgpath: String) {
+    fn load_package(&mut self, pkgpath: String) -> Result<(), String> {
         if pkgpath.is_empty() {
-            return;
+            return Ok(());
         }
 
         if self.pkgs.contains_key(&pkgpath) {
-            return;
+            return Ok(());
         }
         if self.missing_pkgs.contains(&pkgpath) {
-            return;
+            return Ok(());
         }
 
         // plugin pkgs
         if self.is_plugin_pkg(pkgpath.as_str()) {
-            return;
+            return Ok(());
         }
 
         // builtin pkgs
         if self.is_builtin_pkg(pkgpath.as_str()) {
-            return;
+            return Ok(());
         }
 
-        let k_files = self.get_pkg_kfile_list(pkgpath.as_str());
+        let k_files = self.get_pkg_kfile_list(pkgpath.as_str())?;
 
         if k_files.is_empty() {
             self.missing_pkgs.push(pkgpath);
-            return;
+            return Ok(());
         }
 
         let mut pkg_files = Vec::new();
@@ -306,7 +316,7 @@ impl Loader {
             debug_assert!(self.is_file(filename.as_str()));
             debug_assert!(self.path_exist(filename.as_str()));
 
-            let mut m = parse_file(filename.as_str(), None);
+            let mut m = parse_file(filename.as_str(), None)?;
 
             m.pkg = pkgpath.clone();
             m.name = "".to_string();
@@ -321,6 +331,8 @@ impl Loader {
         for import_spec in import_list {
             self.load_package(import_spec.path.to_string());
         }
+
+        return Ok(());
     }
 
     fn get_import_list(&self, pkg: &[ast::Module]) -> Vec<ast::ImportStmt> {
@@ -341,21 +353,21 @@ impl Loader {
         import_list
     }
 
-    fn get_pkg_kfile_list(&self, pkgpath: &str) -> Vec<String> {
+    fn get_pkg_kfile_list(&self, pkgpath: &str) -> Result<Vec<String>, String> {
         debug_assert!(!pkgpath.is_empty());
 
         // plugin pkgs
         if self.is_plugin_pkg(pkgpath) {
-            return Vec::new();
+            return Ok(Vec::new());
         }
 
         // builtin pkgs
         if self.is_builtin_pkg(pkgpath) {
-            return Vec::new();
+            return Ok(Vec::new());
         }
 
         if self.pkgroot.is_empty() {
-            panic!("pkgroot not found")
+            return Err("pkgroot not found".to_string());
         }
 
         let mut pathbuf = std::path::PathBuf::new();
@@ -377,14 +389,14 @@ impl Loader {
 
         let as_k_path = abspath + ".k";
         if std::path::Path::new((&as_k_path).as_str()).exists() {
-            return vec![as_k_path];
+            return Ok(vec![as_k_path]);
         }
 
-        Vec::new()
+        Ok(Vec::new())
     }
-    fn get_dir_kfile_list(&self, dir: &str) -> Vec<String> {
+    fn get_dir_kfile_list(&self, dir: &str) -> Result<Vec<String>, String> {
         if !std::path::Path::new(dir).exists() {
-            return Vec::new();
+            return Ok(Vec::new());
         }
 
         let mut list = Vec::new();
@@ -406,7 +418,7 @@ impl Loader {
         }
 
         list.sort();
-        list
+        Ok(list)
     }
 
     fn is_builtin_pkg(&self, pkgpath: &str) -> bool {
@@ -434,5 +446,17 @@ impl Loader {
 
     fn path_exist(&self, path: &str) -> bool {
         std::path::Path::new(path).exists()
+    }
+}
+
+impl Loader {
+    fn str_to_panic_info(&self, s: &str) -> PanicInfo {
+        let mut panic_info = PanicInfo::default();
+
+        panic_info.__kcl_PanicInfo__ = true;
+        panic_info.message = format!("{}", s);
+        panic_info.err_type_code = ErrType::CompileError_TYPE as i32;
+
+        panic_info
     }
 }

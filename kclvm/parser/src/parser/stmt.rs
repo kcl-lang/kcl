@@ -3,8 +3,8 @@
 
 use core::panic;
 
-use kclvm_ast::{ast::*, node_ref, expr_as};
 use kclvm_ast::token::{DelimToken, LitKind, Token, TokenKind};
+use kclvm_ast::{ast::*, expr_as, node_ref};
 use kclvm_span::symbol::kw;
 
 use super::Parser;
