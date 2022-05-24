@@ -315,14 +315,20 @@ def native_run_dylib(
         print(json_result, end="")
         return objpkg.KCLResult({})
 
-    data = json.loads(json_result)
+    try:
+        data = json.loads(json_result)
+    except Exception as e:
+        raise Exception(f"Exception={e}, json_result={json_result}")
 
     panic_info = {}
     if KCLVM_PANIC_INFO_KEY in data:
         panic_info = data
     else:
         if warn_json_result:
-            panic_info = json.loads(warn_json_result)
+            try:
+                panic_info = json.loads(warn_json_result)
+            except Exception as e:
+                raise Exception(f"Exception={e}, warn_json_result={warn_json_result}")
         else:
             panic_info = {}
 
