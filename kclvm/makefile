@@ -28,6 +28,9 @@ test-runtime:
 test-grammar: install-pytest
 	cd tests/integration/grammar && kclvm -m pytest -v -n 5 --junitxml $(COVER_TEST_FILE_PATH) --html=$(COVER_REPORT_FILE_PATH)
 
+fuzz-parser:
+	cd tests && cargo fuzz run fuzz_parser
+
 install-pytest:
 	kclvm -mpip install pytest-html 
 

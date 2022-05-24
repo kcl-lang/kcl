@@ -1,7 +1,5 @@
 use crate::walker::MutSelfMutWalker;
-use crate::AugOp::Mod;
 use crate::{ast, build_assign_node, node_ref, Identifier, Module, Node, NodeRef, SchemaStmt};
-use std::process::id;
 
 fn get_dummy_assign_ast() -> ast::Node<ast::AssignStmt> {
     let filename = "main.k";
@@ -149,8 +147,7 @@ fn test_try_from_for_stringlit() {
     let json_str = serde_json::to_string(&str_lit).unwrap();
 
     let str_expected =
-        r#"{"is_long_string":false,"raw_value":"\"test_str\"","value":"test_str"}"#
-            .to_string();
+        r#"{"is_long_string":false,"raw_value":"\"test_str\"","value":"test_str"}"#.to_string();
     assert_eq!(str_expected, json_str);
 }
 
