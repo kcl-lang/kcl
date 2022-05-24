@@ -25,7 +25,7 @@ fn test_scope() {
 
 #[test]
 fn test_resolve_program() {
-    let mut program = parse_program("./src/resolver/test_data/assign.k");
+    let mut program = parse_program("./src/resolver/test_data/assign.k").unwrap();
     let scope = resolve_program(&mut program);
     assert_eq!(scope.pkgpaths(), vec!["__main__".to_string()]);
     let main_scope = scope.main_scope().unwrap();
