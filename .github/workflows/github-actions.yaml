@@ -24,11 +24,16 @@ jobs:
           chmod +x ./internal/kclvm_py/scripts/test_unit.sh
           ./internal/kclvm_py/scripts/test_unit.sh
         shell: bash
-      # - name: Rust unit test
-      #   uses: actions-rs/toolchain@v1
-      #   with:
-      #     toolchain: stable
-      #     override: true
-      #     components: rustfmt, clippy
-      #   run: cd kclvm && make test
-      #   shell: bash
+      - name: Delete rust cargo
+        run: rm -rf /root/.cargo/bin
+        shell: bash
+      - name: Install rust nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+          components: clippy, rustfmt
+      - name: Rust unit test
+        working-directory: ./kclvm
+        run: make test
+        shell: bash
