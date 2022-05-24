@@ -390,12 +390,45 @@ impl Command {
     }
 
     fn get_clang_path() -> String {
-        let clang_path = env::var("KCLVM_CLANG").map_or("clang".to_string(), |v| v);
-        if Self::is_windows() {
-            format!("{}.exe", clang_path)
-        } else {
-            clang_path
+        // ${KCLVM_CLANG}
+        let env_kclvm_clang = env::var("KCLVM_CLANG");
+        if let Ok(clang_path) = env_kclvm_clang {
+            if !clang_path.is_empty() {
+                if Self::is_windows() {
+                    return format!("{}.exe", clang_path);
+                } else {
+                    return clang_path;
+                }
+            }
         }
+
+        // {root}/tools/clang/bin/clang
+        let executable_root = Self::get_executable_root();
+        let clang_path = std::path::Path::new(&executable_root)
+            .join("tools")
+            .join("clang")
+            .join("bin")
+            .join(if Self::is_windows() {
+                "clang.exe"
+            } else {
+                "clang"
+            });
+        if clang_path.exists() {
+            return clang_path.to_str().unwrap().to_string();
+        }
+
+        let clang_exe = if Self::is_windows() {
+            "clang.exe"
+        } else {
+            "clang"
+        };
+        
+
+        if let Some(s) = Self::find_it(clang_exe) {
+            return s.to_str().unwrap().to_string();
+        }
+
+        panic!("get_clang_path failed")
     }
 
     pub fn get_lib_suffix() -> String {
@@ -408,7 +441,7 @@ impl Command {
         if Self::is_linux() {
             return ".so".to_string();
         }
-        panic!("unsuport os")
+        panic!("unsupport os")
     }
 
     fn is_windows() -> bool {
