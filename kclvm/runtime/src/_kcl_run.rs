@@ -56,6 +56,7 @@ pub extern "C" fn _kcl_run(
 ) -> kclvm_size_t {
     let ctx = kclvm_context_new();
 
+    let prev_hook = std::panic::take_hook();
     std::panic::set_hook(Box::new(|info: &std::panic::PanicInfo| {
         let ctx = Context::current_context_mut();
         ctx.set_panic_info(info);
@@ -77,6 +78,7 @@ pub extern "C" fn _kcl_run(
             result_buffer,
         )
     });
+    std::panic::set_hook(prev_hook);
     match result {
         Ok(n) => {
             let json_panic_info = Context::current_context().get_panic_info_json_string();
