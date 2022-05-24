@@ -423,6 +423,7 @@ dependencies = [
  "annotate-snippets",
  "atty",
  "indexmap",
+ "kclvm-runtime",
  "kclvm-span",
  "rustc_span",
  "termcolor",

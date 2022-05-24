@@ -26,7 +26,7 @@ fn read_data(data_name: &str) -> (String, String) {
     );
 
     (
-        print_ast_module(&module),
+        print_ast_module(&module.unwrap()),
         std::fs::read_to_string(&format!(
             "./src/printer/test_data/{}{}",
             data_name, FILE_OUTPUT_SUFFIX

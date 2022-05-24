@@ -257,7 +257,7 @@ impl Loader {
 
         // load imported packages
         for import_spec in import_list {
-            self.load_package(import_spec.path.to_string());
+            self.load_package(import_spec.path.to_string())?;
         }
 
         // Ok
@@ -329,7 +329,7 @@ impl Loader {
         self.pkgs.insert(pkgpath, pkg_files);
 
         for import_spec in import_list {
-            self.load_package(import_spec.path.to_string());
+            self.load_package(import_spec.path.to_string())?;
         }
 
         return Ok(());
