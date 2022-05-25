@@ -1,7 +1,6 @@
 sumFunc1 = lambda x, y {
     z = x + y
     z + x
-    
 }
 sumFunc2 = lambda x, y = 1 {
     x + y

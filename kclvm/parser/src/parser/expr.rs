@@ -235,7 +235,7 @@ impl<'a> Parser<'a> {
                             // slice_suffix
                             operand = self.parse_subscript_expr(operand)
                         }
-                        _ => {}
+                        _ => break operand,
                     }
                 }
                 _ => break operand,
