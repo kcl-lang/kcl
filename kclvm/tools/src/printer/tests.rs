@@ -4,15 +4,15 @@ use pretty_assertions::assert_eq;
 
 const FILE_INPUT_SUFFIX: &str = ".input";
 const FILE_OUTPUT_SUFFIX: &str = ".output";
-const TEST_CASES: &[&'static str; 10] = &[
+const TEST_CASES: &[&'static str; 12] = &[
     "arguments",
     "empty",
     "codelayout",
     "collection_if",
-    // "comment",
+    "comment",
     "index_sign",
     "joined_str",
-    // "lambda",
+    "lambda",
     "quant",
     "rule",
     "type_alias",

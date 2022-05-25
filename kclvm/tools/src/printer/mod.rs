@@ -214,8 +214,8 @@ impl<'p> Printer<'p> {
                 }
             }
             if let Some(index) = index {
-                let mut count = index;
-                while count > 0 {
+                let mut count = index as isize;
+                while count >= 0 {
                     match self.comments.pop_front() {
                         Some(comment) => {
                             self.writeln(&comment.node.text);
@@ -246,7 +246,7 @@ impl<'p> Printer<'p> {
 /// Print AST to string
 pub fn print_ast_module(module: &ast::Module) -> String {
     let mut printer = Printer::default();
-    printer.walk_module(module);
+    printer.write_module(module);
     printer.out
 }
 
