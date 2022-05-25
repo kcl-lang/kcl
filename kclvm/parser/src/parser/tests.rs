@@ -3,7 +3,7 @@ use crate::parser::Parser;
 use crate::session::ParseSession;
 use expect_test::{expect, Expect};
 use kclvm_ast::ast::*;
-use kclvm_span::{create_session_globals_then, BytePos, FilePathMapping, SourceMap, Symbol};
+use kclvm_span::{create_session_globals_then, BytePos, FilePathMapping, SourceMap};
 use rustc_span::Pos;
 use std::path::PathBuf;
 use std::sync::Arc;

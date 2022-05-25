@@ -46,7 +46,7 @@ pub extern "C" fn kclvm_plugin_invoke(
 
     let ptr = kclvm_value_from_json(result_json);
     {
-        if let Some(msg) = ptr_as_ref(ptr).dict_get_value("$__kcl_PanicInfo__$") {
+        if let Some(msg) = ptr_as_ref(ptr).dict_get_value("__kcl_PanicInfo__") {
             let ctx = Context::current_context_mut();
             ctx.set_err_type(&ErrType::EvaluationError_TYPE);
 

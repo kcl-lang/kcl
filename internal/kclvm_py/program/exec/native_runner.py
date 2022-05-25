@@ -27,7 +27,7 @@ BC_FILE_PATTERN = "*.bc"
 LL_FILE_SUFFIX = ".ll"
 BC_FILE_SUFFIX = ".bc"
 LOCK_FILE_SUFFIX = ".lock"
-KCLVM_PANIC_INFO_KEY = "$__kcl_PanicInfo__$"
+KCLVM_PANIC_INFO_KEY = "__kcl_PanicInfo__"
 NATIVE_CACHE_DIR = ".kclvm/native_cache"
 KCLVM_CLI_SUB_CMD = "build"
 CACHE_OPTION = vfs.CacheOption(cache_dir=NATIVE_CACHE_DIR)

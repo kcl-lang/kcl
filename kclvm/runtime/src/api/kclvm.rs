@@ -2,8 +2,8 @@
 
 #[allow(non_camel_case_types)]
 type kclvm_value_ref_t = crate::ValueRef;
-
 use crate::IndexMap;
+use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::{
     cell::RefCell,
@@ -273,9 +273,9 @@ pub struct OptionHelp {
 }
 
 #[allow(non_snake_case)]
-#[derive(PartialEq, Clone, Default, Debug)]
+#[derive(PartialEq, Clone, Default, Debug, Serialize, Deserialize)]
 pub struct PanicInfo {
-    pub __kcl_PanicInfo__: bool, // "$__kcl_PanicInfo__$"
+    pub __kcl_PanicInfo__: bool, // "__kcl_PanicInfo__"
 
     pub rust_file: String,
     pub rust_line: i32,

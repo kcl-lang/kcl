@@ -2,7 +2,6 @@
 
 pub mod api;
 pub use api::*;
-use json_minimal::*;
 
 #[allow(non_camel_case_types)]
 type kclvm_value_ref_t = crate::ValueRef;
@@ -13,86 +12,13 @@ impl crate::PanicInfo {
     }
 
     pub fn to_json_string(&self) -> String {
-        let mut json = Json::new();
-
-        // PanicInfo
-        json.add(Json::OBJECT {
-            name: "$__kcl_PanicInfo__$".to_string(),
-            value: Box::new(Json::BOOL(self.__kcl_PanicInfo__)),
-        });
-
-        // is warnning?
-        json.add(Json::OBJECT {
-            name: "is_warning".to_string(),
-            value: Box::new(Json::BOOL(self.is_warning)),
-        });
-
-        // message
-        json.add(Json::OBJECT {
-            name: "message".to_string(),
-            value: Box::new(Json::STRING(self.message.to_string())),
-        });
-
-        // err_type
-        json.add(Json::OBJECT {
-            name: "err_type_code".to_string(),
-            value: Box::new(Json::NUMBER(self.err_type_code as f64)),
-        });
-
-        // kcl info
-        if !self.kcl_arg_msg.is_empty() {
-            json.add(Json::OBJECT {
-                name: "kcl_arg_msg".to_string(),
-                value: Box::new(Json::STRING(self.kcl_arg_msg.to_string())),
-            });
+        let result = serde_json::to_string(&self);
+        match result {
+            Ok(res) => res,
+            _ => {
+                panic!("PanicInfo Deserialize Failed")
+            }
         }
-        json.add(Json::OBJECT {
-            name: "kcl_file".to_string(),
-            value: Box::new(Json::STRING(self.kcl_file.to_string())),
-        });
-        json.add(Json::OBJECT {
-            name: "kcl_line".to_string(),
-            value: Box::new(Json::NUMBER(self.kcl_line as f64)),
-        });
-        json.add(Json::OBJECT {
-            name: "kcl_col".to_string(),
-            value: Box::new(Json::NUMBER(self.kcl_col as f64)),
-        });
-
-        if !self.kcl_config_meta_arg_msg.is_empty() {
-            json.add(Json::OBJECT {
-                name: "kcl_config_meta_arg_msg".to_string(),
-                value: Box::new(Json::STRING(self.kcl_config_meta_arg_msg.to_string())),
-            });
-            json.add(Json::OBJECT {
-                name: "kcl_config_meta_file".to_string(),
-                value: Box::new(Json::STRING(self.kcl_config_meta_file.to_string())),
-            });
-            json.add(Json::OBJECT {
-                name: "kcl_config_meta_line".to_string(),
-                value: Box::new(Json::NUMBER(self.kcl_config_meta_line as f64)),
-            });
-            json.add(Json::OBJECT {
-                name: "kcl_config_meta_col".to_string(),
-                value: Box::new(Json::NUMBER(self.kcl_config_meta_col as f64)),
-            });
-        }
-
-        // rust info
-        json.add(Json::OBJECT {
-            name: "rust_file".to_string(),
-            value: Box::new(Json::STRING(self.rust_file.to_string())),
-        });
-        json.add(Json::OBJECT {
-            name: "rust_line".to_string(),
-            value: Box::new(Json::NUMBER(self.rust_line as f64)),
-        });
-        json.add(Json::OBJECT {
-            name: "rust_col".to_string(),
-            value: Box::new(Json::NUMBER(self.rust_col as f64)),
-        });
-
-        json.print()
     }
 }
 

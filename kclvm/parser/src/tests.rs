@@ -1,5 +1,3 @@
-use std::fmt::format;
-
 use crate::*;
 
 use expect_test::{expect, Expect};
