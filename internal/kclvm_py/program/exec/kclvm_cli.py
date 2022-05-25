@@ -19,7 +19,7 @@ import kclvm.kcl.error as kcl_error
 import kclvm.config
 
 
-kclvm_PANIC_INFO_KEY = "$__kcl_PanicInfo__$"
+kclvm_PANIC_INFO_KEY = "__kcl_PanicInfo__"
 
 
 _cli_dll = None
@@ -58,7 +58,7 @@ class PluginContex:
         try:
             return self._call_py_method_unsafe(name, args_json, kwargs_json)
         except Exception as e:
-            return json.dumps({"$__kcl_PanicInfo__$": f"{e}"})
+            return json.dumps({"__kcl_PanicInfo__": f"{e}"})
 
     def _get_plugin(self, plugin_name: str) -> typing.Optional[any]:
         if plugin_name in self._plugin_dict:
