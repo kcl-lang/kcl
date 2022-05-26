@@ -28,10 +28,10 @@ impl ParseSession {
     }
 
     /// Struct and report an error based on a token and abort the compiler process.
-    pub fn struct_token_error(&self, expected: &[&String], got: Token) -> ! {
+    pub fn struct_token_error(&self, expected: &[String], got: Token) -> ! {
         let pos: Position = self.source_map.lookup_char_pos(got.span.lo()).into();
         let err = ParseError::UnexpectedToken {
-            expected: expected.iter().map(|tok| (*tok).into()).collect(),
+            expected: expected.iter().map(|tok| tok.into()).collect(),
             got: got.into(),
         };
 
