@@ -133,7 +133,7 @@ impl<'a> Parser<'a> {
                     Ok(op) => op,
                     Err(()) => self
                         .sess
-                        .struct_token_error(&BinOrCmpOp::supported_op(), self.token),
+                        .struct_token_error(&BinOrCmpOp::all_symbols(), self.token),
                 }
             };
 

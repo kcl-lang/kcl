@@ -1132,7 +1132,7 @@ pub enum BinOp {
 }
 
 impl BinOp {
-    pub fn supported_bin_op() -> Vec<String> {
+    pub fn all_symbols() -> Vec<String> {
         vec![
             BinOp::Add.symbol().to_string(),
             BinOp::Sub.symbol().to_string(),
@@ -1298,7 +1298,7 @@ pub enum CmpOp {
 }
 
 impl CmpOp {
-    pub fn supported_cmp_op() -> Vec<String> {
+    pub fn all_symbols() -> Vec<String> {
         vec![
             CmpOp::Eq.symbol().to_string(),
             CmpOp::NotEq.symbol().to_string(),
@@ -1522,10 +1522,10 @@ impl TryFrom<token::Token> for UnaryOp {
 }
 
 impl BinOrCmpOp {
-    pub fn supported_op() -> Vec<String> {
+    pub fn all_symbols() -> Vec<String> {
         let mut result = vec![];
-        result.append(&mut BinOp::supported_bin_op());
-        result.append(&mut CmpOp::supported_cmp_op());
+        result.append(&mut BinOp::all_symbols());
+        result.append(&mut CmpOp::all_symbols());
         result
     }
 }
