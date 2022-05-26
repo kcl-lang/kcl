@@ -1,3 +1,5 @@
+use std::panic::catch_unwind;
+
 use crate::*;
 
 use expect_test::{expect, Expect};
@@ -71,4 +73,21 @@ c = 3 # comment4444
         {"filename":"hello.k","pkg":"__main__","doc":"","name":"__main__","body":[{"node":{"Assign":{"targets":[{"node":{"names":["a"],"pkgpath":"","ctx":"Store"},"filename":"hello.k","line":3,"column":0,"end_line":3,"end_column":1}],"value":{"node":{"NumberLit":{"binary_suffix":null,"value":{"Int":1}}},"filename":"hello.k","line":3,"column":4,"end_line":3,"end_column":5},"type_annotation":null}},"filename":"hello.k","line":3,"column":0,"end_line":5,"end_column":0},{"node":{"Assign":{"targets":[{"node":{"names":["b"],"pkgpath":"","ctx":"Store"},"filename":"hello.k","line":5,"column":0,"end_line":5,"end_column":1}],"value":{"node":{"NumberLit":{"binary_suffix":null,"value":{"Int":2}}},"filename":"hello.k","line":5,"column":4,"end_line":5,"end_column":5},"type_annotation":null}},"filename":"hello.k","line":5,"column":0,"end_line":7,"end_column":0},{"node":{"Assign":{"targets":[{"node":{"names":["c"],"pkgpath":"","ctx":"Store"},"filename":"hello.k","line":7,"column":0,"end_line":7,"end_column":1}],"value":{"node":{"NumberLit":{"binary_suffix":null,"value":{"Int":3}}},"filename":"hello.k","line":7,"column":4,"end_line":7,"end_column":5},"type_annotation":null}},"filename":"hello.k","line":7,"column":0,"end_line":8,"end_column":0}],"comments":[{"node":{"text":"# comment1"},"filename":"hello.k","line":2,"column":0,"end_line":2,"end_column":10},{"node":{"text":"# comment22"},"filename":"hello.k","line":4,"column":0,"end_line":4,"end_column":11},{"node":{"text":"# comment333"},"filename":"hello.k","line":6,"column":0,"end_line":6,"end_column":12},{"node":{"text":"# comment4444"},"filename":"hello.k","line":7,"column":6,"end_line":7,"end_column":19}]}
         "###]],
     );
+}
+
+#[test]
+pub fn test_parse_expr_invalid_arr_out_of_bound_for_token_minus(){
+    let result = catch_unwind(|| {
+        parse_expr("fh==-h==-");
+    });
+    match result {
+        Err(e) => match e.downcast::<String>() {
+            Ok(_v) => {
+                let got = _v.to_string();
+                let _u: PanicInfo = serde_json::from_str(&got).unwrap();
+            }
+            _ => unreachable!(),
+        },
+        _ => {}
+    };
 }
