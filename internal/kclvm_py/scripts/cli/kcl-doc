@@ -1,5 +1,34 @@
 #!/bin/sh
 
-kclvm_path=$(cd `dirname $0`; pwd)/kclvm
-export PATHONPATH=''
-$kclvm_path -m kclvm.tools.docs "$@"
+# Stop on error.
+set -e
+
+# python3 path
+python3_bin=`which python3`
+kclvm_bin_dir=$(dirname "$0")
+kclvm_install_dir=$(cd $kclvm_bin_dir/..; pwd)
+kclvm_cli_bin=$kclvm_install_dir/kclvm_cli
+pip_install_done_file="$kclvm_install_dir/lib/site-packages/kclvm.requirements.done.txt"
+
+# check python3
+if [ -z "$python3_bin" ]; then
+    echo "python3 not found!"
+    exit 1
+fi
+
+# check python3 version
+$python3_bin -c "import sys; sys.exit(0) if sys.version_info>=(3,7,0) else (print('please install python 3.7+') or sys.exit(1))"
+
+# once: pip install
+if [ ! -f $pip_install_done_file ]; then
+    # pip install requirements.txt
+    install_list=$kclvm_install_dir/requirements.txt
+    target_dir=$kclvm_install_dir/lib/site-packages
+
+    # kclvm pip install all libs
+    $python3_bin -m pip install --target=$target_dir -r $install_list
+    echo 'done' > $pip_install_done_file
+fi
+
+export PYTHONPATH=$kclvm_install_dir/lib/site-packages
+$python3_bin -m kclvm.tools.docs "$@"

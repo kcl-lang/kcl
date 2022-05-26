@@ -4,38 +4,17 @@
 set -e
 
 prepare_dirs () {
-    cpython_build_dir="$topdir/_build/dist/$os/cpython"
-    kclvm_packages_dir="$topdir/_build/packages"
+    kclvm_source_dir="$topdir/internal/kclvm_py"
     kclvm_install_dir="$topdir/_build/dist/$os/kclvm"
-    mkdir -p "$kclvm_install_dir"
-    mkdir -p "$kclvm_packages_dir"
+    mkdir -p "$kclvm_install_dir/bin"
+    mkdir -p "$kclvm_install_dir/lib/site-packages"
+    mkdir -p "$kclvm_install_dir/include"
 }
 
 prepare_dirs
-kclvm_source_dir="$topdir/internal/kclvm_py"
-
-# python exe name
-py_exe_name="python3.7"
-if [ -d "${cpython_build_dir}/lib/python3.9" ]; then
-    py_exe_name="python3.9"
-fi
-
-# py_lib_basename: python3.x
-py_lib_basename="python3.7"
-if [ -d "${cpython_build_dir}/lib/python3.9" ]; then
-    py_lib_basename="python3.9"
-fi
 
 # Perform the build process.
 set -x
-
-# Copy files from CPython.
-cd $kclvm_install_dir
-mkdir -p bin
-mkdir -p lib
-cp $cpython_build_dir/bin/${py_exe_name} $kclvm_install_dir/bin/kclvm
-cp -r $cpython_build_dir/lib/${py_lib_basename} $kclvm_install_dir/lib/
-cp -r $cpython_build_dir/include $kclvm_install_dir/
 
 # Copy KCLVM.
 cp "$topdir/internal/kclvm_py/scripts/cli/kcl" $kclvm_install_dir/bin/
@@ -53,15 +32,40 @@ chmod +x $kclvm_install_dir/bin/kcl-lint
 chmod +x $kclvm_install_dir/bin/kcl-fmt
 chmod +x $kclvm_install_dir/bin/kcl-vet
 
-if [ -d $kclvm_install_dir/lib/${py_lib_basename}/kclvm ]; then
-   rm -rf $kclvm_install_dir/lib/${py_lib_basename}/kclvm
+if [ -d $kclvm_install_dir/lib/site-packages/kclvm ]; then
+   rm -rf $kclvm_install_dir/lib/site-packages/kclvm
 fi
-cp -r $kclvm_source_dir $kclvm_install_dir/lib/${py_lib_basename}
-mv $kclvm_install_dir/lib/${py_lib_basename}/kclvm_py $kclvm_install_dir/lib/${py_lib_basename}/kclvm
+cp -r $kclvm_source_dir $kclvm_install_dir/lib/site-packages
+mv $kclvm_install_dir/lib/site-packages/kclvm_py $kclvm_install_dir/lib/site-packages/kclvm
 
-# Get site-packages.
-chmod +x $topdir/internal/kclvm_py/scripts/kcllib-install.sh
-$topdir/internal/kclvm_py/scripts/kcllib-install.sh
+# copy pip requirements
+cp -r $kclvm_source_dir/scripts/requirements.txt $kclvm_install_dir
+
+# Install tools/clang
+# if [ x"$os" == x"Darwin" ]; then
+#     base_url="https://github.com/KusionStack/llvm-package-windows/releases/download/v12.0.1"
+# 
+#     clang12_darwin_url="$base_url/clang12-darwin.tar.gz"
+#     clang12_darwin_arm64_url="$base_url/clang12-darwin-arm64.tar.gz"
+# 
+#     if [ ! -f $topdir/_build/clang12-darwin.tar.gz ]; then
+#         curl -LJO $clang12_darwin_url --output $topdir/_build/clang12-darwin.tar.gz
+#     fi
+#     if [ ! -f $topdir/_build/clang12-darwin-arm64.tar.gz ]; then
+#         curl -LJO $clang12_darwin_arm64_url --output $topdir/_build/clang12-darwin-arm64.tar.gz
+#     fi
+# 
+#     if [ -d $kclvm_install_dir/tools ]; then
+#         rm -rf $kclvm_install_dir/tools
+#     fi
+# 
+#     mkdir -p $kclvm_install_dir/tools
+#     if [[ $(uname -m) == 'arm64' ]]; then
+#         tar -xf $topdir/_build/clang12-darwin-arm64.tar.gz -C $kclvm_install_dir/tools
+#     else
+#         tar -xf $topdir/_build/clang12-darwin.tar.gz -C $kclvm_install_dir/tools
+#     fi
+# fi
 
 # Install plugins
 cp -rf $topdir/plugins $kclvm_install_dir/

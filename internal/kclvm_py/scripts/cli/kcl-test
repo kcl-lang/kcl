@@ -5,5 +5,5 @@ if [[ ! -f $kcl_go_path ]]; then
   echo "kcl-go not found, please check the installation"
   exit 1
 fi
-export PATHONPATH=''
+export PYTHONPATH=''
 $kcl_go_path test "$@"

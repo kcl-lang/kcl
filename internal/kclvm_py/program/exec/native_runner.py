@@ -43,7 +43,7 @@ def native_run(
 
     _no_link = True
     _exe = ".exe" if os.name == "nt" else ""
-    _executable_root = os.path.dirname(os.path.dirname(sys.executable))
+    _executable_root = os.path.dirname(os.path.dirname(shutil.which(f"kclvm_cli{_exe}")))
     _kclvm_cli = f"{_executable_root}/bin/kclvm-cli{_exe}"
     _clang = f"{_executable_root}/tools/clang/bin/{CLANG}{_exe}"
     _clang = _clang if os.path.exists(_clang) else f"{CLANG}{_exe}"

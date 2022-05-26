@@ -366,12 +366,12 @@ impl Command {
             todo!();
         }
 
-        let kclvm_exe = if Self::is_windows() {
-            "kclvm.exe"
+        let kclvm_cli_exe = if Self::is_windows() {
+            "kclvm_cli.exe"
         } else {
-            "kclvm"
+            "kclvm_cli"
         };
-        let p = if let Some(x) = Self::find_it(kclvm_exe) {
+        let p = if let Some(x) = Self::find_it(kclvm_cli_exe) {
             x
         } else {
             std::env::current_exe().unwrap()
@@ -423,7 +423,6 @@ impl Command {
         } else {
             "clang"
         };
-        
 
         if let Some(s) = Self::find_it(clang_exe) {
             return s.to_str().unwrap().to_string();

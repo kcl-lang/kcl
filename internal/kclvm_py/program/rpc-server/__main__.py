@@ -7,6 +7,7 @@ import subprocess
 import typing
 import time
 import pathlib
+import shutil
 
 from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -358,7 +359,7 @@ class KclvmServiceImpl(pbrpc.KclvmService):
                 _executable_root = os.path.dirname(sys.executable)
                 self._kcl_go_exe = f"{_executable_root}/kcl-go.exe"
             else:
-                _executable_root = os.path.dirname(os.path.dirname(sys.executable))
+                _executable_root = os.path.dirname(os.path.dirname(shutil.which(f"kclvm_cli")))
                 self._kcl_go_exe = f"{_executable_root}/bin/kcl-go"
 
         # kcl-go list-app -use-fast-parser=<bool> -show-abs=<bool> -show-index=false <work_dir>

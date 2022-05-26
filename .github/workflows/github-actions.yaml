@@ -11,6 +11,14 @@ jobs:
         uses: actions/checkout@v3
         with:
          submodules: 'true'
+
+      - run: mv /usr/local/python3.9 /usr/local/python3.9-bak
+      - run: mv /usr/bin/python3.9 /usr/bin/python3.9-bak
+      - run: mv /usr/bin/python3 /usr/bin/python3-bak
+
+      - run: apt-get -y install python3.9
+      - run: apt-get -y install python3-pip
+
       - name: Build KCLVM
         run: make build
         shell: bash
@@ -36,4 +44,14 @@ jobs:
       - name: Rust unit test
         working-directory: ./kclvm
         run: make test
+        shell: bash
+
+      # check build kclvm-$tag-$os.tar.gz
+      - run: ./run.sh -a build-kclvm
+        shell: bash
+      - run: ./run.sh -a update-kclvm
+        shell: bash
+      - run: ./run.sh -a release
+        shell: bash
+      - run: ls ./_build
         shell: bash

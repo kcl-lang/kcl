@@ -6,6 +6,7 @@ import platform
 import typing
 import json
 import inspect
+import shutil
 
 from ctypes import *
 
@@ -32,11 +33,11 @@ def init_cli_dll():
         return
 
     if platform.system() == "Darwin":
-        _exe_root = os.path.dirname(os.path.dirname(sys.executable))
+        _exe_root = os.path.dirname(os.path.dirname(shutil.which(f"kclvm_cli")))
         _cli_dll_path = f"{_exe_root}/bin/libkclvm_cli_cdylib.dylib"
         _cli_dll = CDLL(_cli_dll_path)
     elif platform.system() == "Linux":
-        _exe_root = os.path.dirname(os.path.dirname(sys.executable))
+        _exe_root = os.path.dirname(os.path.dirname(shutil.which(f"kclvm_cli")))
         _cli_dll_path = f"{_exe_root}/bin/libkclvm_cli_cdylib.so"
         _cli_dll = CDLL(_cli_dll_path)
     elif platform.system() == "Windows":

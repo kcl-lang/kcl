@@ -3,11 +3,12 @@
 import ctypes
 import json
 import os
-import sys
+import shutil
 
 
 def _find_default_dylib_path() -> str:
-    _executable_root = os.path.dirname(os.path.dirname(sys.executable))
+    _exe = ".exe" if os.name == "nt" else ""
+    _executable_root = os.path.dirname(os.path.dirname(shutil.which(f"kclvm_cli{_exe}")))
 
     pathList = [
         f"{_executable_root}/lib/libkclvm.dylib",

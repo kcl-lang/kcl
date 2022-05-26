@@ -8,6 +8,7 @@ import glob
 import platform
 import json
 import inspect
+import shutil
 
 import kclvm.config
 import kclvm.kcl.ast as ast
@@ -44,7 +45,7 @@ def native_run_wasm32(
 
     else:
         _no_link = True
-        _executable_root = os.path.dirname(os.path.dirname(sys.executable))
+        _executable_root = os.path.dirname(os.path.dirname(shutil.which(f"kclvm_cli")))
         _kclvm_cli = f"{_executable_root}/bin/kclvm_cli"
         _clang = f"{_executable_root}/tools/clang/bin/clang"
         _clang = _clang if os.path.exists(_clang) else "clang"
