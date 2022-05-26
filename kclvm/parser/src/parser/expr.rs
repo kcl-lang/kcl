@@ -128,8 +128,13 @@ impl<'a> Parser<'a> {
                     panic!("unreachable")
                 }
             } else {
-                BinOrCmpOp::try_from(self.token)
-                    .expect("invalid binary expr: missing binary operation")
+                let result = BinOrCmpOp::try_from(self.token);
+                match result {
+                    Ok(op) => op,
+                    Err(()) => self
+                        .sess
+                        .struct_token_error(&BinOrCmpOp::supported_op(), self.token),
+                }
             };
 
             self.bump();
@@ -187,11 +192,10 @@ impl<'a> Parser<'a> {
                     self.sess.struct_token_loc(token, self.prev_token),
                 ))
             } else {
-                self.sess
-                    .struct_token_error(&[&kw::Else.into()], self.token)
+                self.sess.struct_token_error(&[kw::Else.into()], self.token)
             }
         } else {
-            self.sess.struct_token_error(&[&kw::If.into()], self.token)
+            self.sess.struct_token_error(&[kw::If.into()], self.token)
         }
     }
 
@@ -303,7 +307,7 @@ impl<'a> Parser<'a> {
         match self.token.kind {
             TokenKind::OpenDelim(DelimToken::Paren) => self.bump(),
             _ => self.sess.struct_token_error(
-                &[&TokenKind::OpenDelim(DelimToken::Paren).into()],
+                &[TokenKind::OpenDelim(DelimToken::Paren).into()],
                 self.token,
             ),
         }
@@ -324,7 +328,7 @@ impl<'a> Parser<'a> {
         match self.token.kind {
             TokenKind::CloseDelim(DelimToken::Paren) => self.bump(),
             _ => self.sess.struct_token_error(
-                &[&TokenKind::CloseDelim(DelimToken::Paren).into()],
+                &[TokenKind::CloseDelim(DelimToken::Paren).into()],
                 self.token,
             ),
         }
@@ -351,7 +355,7 @@ impl<'a> Parser<'a> {
         match self.token.kind {
             TokenKind::OpenDelim(DelimToken::Bracket) => self.bump(),
             _ => self.sess.struct_token_error(
-                &[&TokenKind::OpenDelim(DelimToken::Bracket).into()],
+                &[TokenKind::OpenDelim(DelimToken::Bracket).into()],
                 self.token,
             ),
         }
@@ -373,7 +377,7 @@ impl<'a> Parser<'a> {
 
                     if colon_counter > 2 {
                         self.sess
-                            .struct_token_error(&[&"expression".to_string()], self.token)
+                            .struct_token_error(&["expression".to_string()], self.token)
                     }
                     exprs_consecutive -= 1
                 }
@@ -405,7 +409,7 @@ impl<'a> Parser<'a> {
         match self.token.kind {
             TokenKind::CloseDelim(DelimToken::Bracket) => self.bump(),
             _ => self.sess.struct_token_error(
-                &[&TokenKind::CloseDelim(DelimToken::Bracket).into()],
+                &[TokenKind::CloseDelim(DelimToken::Bracket).into()],
                 self.token,
             ),
         }
@@ -514,9 +518,9 @@ impl<'a> Parser<'a> {
                     // Note: None and Undefined are handled in ident, skip handle them here.
                     _ => self.sess.struct_token_error(
                         &[
-                            &token::LitKind::Bool.into(),
-                            &token::LitKind::Integer.into(),
-                            &token::LitKind::Str {
+                            token::LitKind::Bool.into(),
+                            token::LitKind::Integer.into(),
+                            token::LitKind::Str {
                                 is_long_string: false,
                                 is_raw: false,
                             }
@@ -537,9 +541,9 @@ impl<'a> Parser<'a> {
                     DelimToken::Brace => self.parse_config_expr(),
                     _ => self.sess.struct_token_error(
                         &[
-                            &TokenKind::OpenDelim(DelimToken::Paren).into(),
-                            &TokenKind::OpenDelim(DelimToken::Bracket).into(),
-                            &TokenKind::OpenDelim(DelimToken::Brace).into(),
+                            TokenKind::OpenDelim(DelimToken::Paren).into(),
+                            TokenKind::OpenDelim(DelimToken::Bracket).into(),
+                            TokenKind::OpenDelim(DelimToken::Brace).into(),
                         ],
                         self.token,
                     ),
@@ -547,9 +551,9 @@ impl<'a> Parser<'a> {
             }
             _ => self.sess.struct_token_error(
                 &[
-                    &TokenKind::ident_value(),
-                    &TokenKind::literal_value(),
-                    &TokenKind::OpenDelim(DelimToken::NoDelim).into(),
+                    TokenKind::ident_value(),
+                    TokenKind::literal_value(),
+                    TokenKind::OpenDelim(DelimToken::NoDelim).into(),
                 ],
                 self.token,
             ),
@@ -582,10 +586,10 @@ impl<'a> Parser<'a> {
         } else {
             self.sess.struct_token_error(
                 &[
-                    &QuantOperation::All.into(),
-                    &QuantOperation::Any.into(),
-                    &QuantOperation::Filter.into(),
-                    &QuantOperation::Map.into(),
+                    QuantOperation::All.into(),
+                    QuantOperation::Any.into(),
+                    QuantOperation::Filter.into(),
+                    QuantOperation::Map.into(),
                 ],
                 self.token,
             )
@@ -603,7 +607,7 @@ impl<'a> Parser<'a> {
         if self.token.is_keyword(kw::In) {
             self.bump();
         } else {
-            self.sess.struct_token_error(&[&kw::In.into()], self.token)
+            self.sess.struct_token_error(&[kw::In.into()], self.token)
         }
 
         // quant_target
@@ -615,7 +619,7 @@ impl<'a> Parser<'a> {
                 self.bump();
             }
             _ => self.sess.struct_token_error(
-                &[&TokenKind::OpenDelim(DelimToken::Brace).into()],
+                &[TokenKind::OpenDelim(DelimToken::Brace).into()],
                 self.token,
             ),
         }
@@ -628,7 +632,7 @@ impl<'a> Parser<'a> {
                 self.bump();
             } else {
                 self.sess
-                    .struct_token_error(&[&TokenKind::Indent.into()], self.token)
+                    .struct_token_error(&[TokenKind::Indent.into()], self.token)
             }
 
             true
@@ -654,14 +658,14 @@ impl<'a> Parser<'a> {
                 self.skip_newlines();
             } else {
                 self.sess
-                    .struct_token_error(&[&TokenKind::Newline.into()], self.token)
+                    .struct_token_error(&[TokenKind::Newline.into()], self.token)
             }
 
             if self.token.kind == TokenKind::Dedent {
                 self.bump();
             } else {
                 self.sess
-                    .struct_token_error(&[&TokenKind::Dedent.into()], self.token)
+                    .struct_token_error(&[TokenKind::Dedent.into()], self.token)
             }
         }
 
@@ -671,7 +675,7 @@ impl<'a> Parser<'a> {
                 self.bump();
             }
             _ => self.sess.struct_token_error(
-                &[&TokenKind::CloseDelim(DelimToken::Brace).into()],
+                &[TokenKind::CloseDelim(DelimToken::Brace).into()],
                 self.token,
             ),
         }
@@ -705,13 +709,13 @@ impl<'a> Parser<'a> {
                 {
                     self.sess.struct_token_error(
                         &[
-                            &kw::None.into(),
-                            &kw::Undefined.into(),
-                            &kw::Lambda.into(),
-                            &kw::Any.into(),
-                            &kw::All.into(),
-                            &kw::Map.into(),
-                            &kw::Filter.into(),
+                            kw::None.into(),
+                            kw::Undefined.into(),
+                            kw::Lambda.into(),
+                            kw::Any.into(),
+                            kw::All.into(),
+                            kw::Map.into(),
+                            kw::Filter.into(),
                         ],
                         self.token,
                     )
@@ -726,7 +730,7 @@ impl<'a> Parser<'a> {
                     token::LitKind::Str { .. } => self.parse_str_expr(lk),
                     // Note: None and Undefined are handled in ident, skip handle them here.
                     _ => self.sess.struct_token_error(
-                        &[&token::LitKind::Str {
+                        &[token::LitKind::Str {
                             is_long_string: false,
                             is_raw: false,
                         }
@@ -744,8 +748,8 @@ impl<'a> Parser<'a> {
                     DelimToken::Brace => self.parse_config_expr(),
                     _ => self.sess.struct_token_error(
                         &[
-                            &TokenKind::OpenDelim(DelimToken::Bracket).into(),
-                            &TokenKind::OpenDelim(DelimToken::Brace).into(),
+                            TokenKind::OpenDelim(DelimToken::Bracket).into(),
+                            TokenKind::OpenDelim(DelimToken::Brace).into(),
                         ],
                         self.token,
                     ),
@@ -753,9 +757,9 @@ impl<'a> Parser<'a> {
             }
             _ => self.sess.struct_token_error(
                 &[
-                    &TokenKind::ident_value(),
-                    &TokenKind::literal_value(),
-                    &TokenKind::OpenDelim(DelimToken::NoDelim).into(),
+                    TokenKind::ident_value(),
+                    TokenKind::literal_value(),
+                    TokenKind::OpenDelim(DelimToken::NoDelim).into(),
                 ],
                 self.token,
             ),
@@ -798,7 +802,7 @@ impl<'a> Parser<'a> {
                 ));
             } else {
                 self.sess
-                    .struct_token_error(&[&TokenKind::Indent.into()], self.token)
+                    .struct_token_error(&[TokenKind::Indent.into()], self.token)
             }
             true
         } else {
@@ -815,7 +819,7 @@ impl<'a> Parser<'a> {
                 self.bump();
             } else {
                 self.sess
-                    .struct_token_error(&[&TokenKind::Dedent.into()], self.token)
+                    .struct_token_error(&[TokenKind::Dedent.into()], self.token)
             }
         }
 
@@ -825,7 +829,7 @@ impl<'a> Parser<'a> {
                 self.bump();
             }
             _ => self.sess.struct_token_error(
-                &[&TokenKind::CloseDelim(DelimToken::Bracket).into()],
+                &[TokenKind::CloseDelim(DelimToken::Bracket).into()],
                 self.token,
             ),
         }
@@ -1100,7 +1104,7 @@ impl<'a> Parser<'a> {
                 ));
             } else {
                 self.sess
-                    .struct_token_error(&[&TokenKind::Indent.into()], self.token)
+                    .struct_token_error(&[TokenKind::Indent.into()], self.token)
             }
             true
         } else {
@@ -1117,7 +1121,7 @@ impl<'a> Parser<'a> {
                 self.bump();
             } else {
                 self.sess
-                    .struct_token_error(&[&TokenKind::Dedent.into()], self.token)
+                    .struct_token_error(&[TokenKind::Dedent.into()], self.token)
             }
         }
 
@@ -1127,7 +1131,7 @@ impl<'a> Parser<'a> {
                 self.bump();
             }
             _ => self.sess.struct_token_error(
-                &[&TokenKind::CloseDelim(DelimToken::Brace).into()],
+                &[TokenKind::CloseDelim(DelimToken::Brace).into()],
                 self.token,
             ),
         }
@@ -1224,9 +1228,9 @@ impl<'a> Parser<'a> {
                         }
                         _ => self.sess.struct_token_error(
                             &[
-                                &TokenKind::Colon.into(),
-                                &TokenKind::Assign.into(),
-                                &TokenKind::BinOpEq(BinOpToken::Plus).into(),
+                                TokenKind::Colon.into(),
+                                TokenKind::Assign.into(),
+                                TokenKind::BinOpEq(BinOpToken::Plus).into(),
                             ],
                             self.token,
                         ),
@@ -1286,7 +1290,7 @@ impl<'a> Parser<'a> {
         }
 
         if !self.token.is_keyword(kw::In) {
-            self.sess.struct_token_error(&[&kw::In.into()], self.token)
+            self.sess.struct_token_error(&[kw::In.into()], self.token)
         }
         self.bump();
 
@@ -1628,7 +1632,7 @@ impl<'a> Parser<'a> {
             Ok(v) => v,
             Err(_) => self
                 .sess
-                .struct_token_error(&[&TokenKind::ident_value()], self.token),
+                .struct_token_error(&[TokenKind::ident_value()], self.token),
         };
 
         // config_expr
@@ -1653,7 +1657,7 @@ impl<'a> Parser<'a> {
             Ok(v) => v,
             Err(_) => self
                 .sess
-                .struct_token_error(&[&TokenKind::ident_value()], self.token),
+                .struct_token_error(&[TokenKind::ident_value()], self.token),
         };
 
         // config_expr
@@ -1711,7 +1715,7 @@ impl<'a> Parser<'a> {
                 self.bump();
             } else {
                 self.sess
-                    .struct_token_error(&[&TokenKind::Indent.into()], self.token)
+                    .struct_token_error(&[TokenKind::Indent.into()], self.token)
             }
             true
         } else {
@@ -1737,7 +1741,7 @@ impl<'a> Parser<'a> {
                 self.bump();
             } else {
                 self.sess
-                    .struct_token_error(&[&TokenKind::Dedent.into()], self.token)
+                    .struct_token_error(&[TokenKind::Dedent.into()], self.token)
             }
         }
 
@@ -1776,8 +1780,7 @@ impl<'a> Parser<'a> {
 
             s.to_string()
         } else {
-            self.sess
-                .struct_token_error(&[&kw::Type.into()], self.token)
+            self.sess.struct_token_error(&[kw::Type.into()], self.token)
         }
     }
 
@@ -1793,7 +1796,7 @@ impl<'a> Parser<'a> {
                 self.bump();
             }
             _ => self.sess.struct_token_error(
-                &[&token::TokenKind::CloseDelim(token::DelimToken::Paren).into()],
+                &[token::TokenKind::CloseDelim(token::DelimToken::Paren).into()],
                 self.token,
             ),
         }
@@ -1856,7 +1859,7 @@ impl<'a> Parser<'a> {
                     Expr::Identifier(x) => x.clone(),
                     _ => self
                         .sess
-                        .struct_token_error(&[&TokenKind::ident_value()], self.token),
+                        .struct_token_error(&[TokenKind::ident_value()], self.token),
                 };
 
                 // expr
@@ -1943,7 +1946,7 @@ impl<'a> Parser<'a> {
             }
             None => self
                 .sess
-                .struct_token_error(&[&TokenKind::ident_value()], self.token),
+                .struct_token_error(&[TokenKind::ident_value()], self.token),
         }
 
         loop {
@@ -1959,7 +1962,7 @@ impl<'a> Parser<'a> {
                         }
                         None => self
                             .sess
-                            .struct_token_error(&[&TokenKind::ident_value()], self.token),
+                            .struct_token_error(&[TokenKind::ident_value()], self.token),
                     }
                 }
                 _ => break,
@@ -1997,10 +2000,7 @@ impl<'a> Parser<'a> {
                 (None, NumberLitValue::Float(value))
             }
             _ => self.sess.struct_token_error(
-                &[
-                    &token::LitKind::Integer.into(),
-                    &token::LitKind::Float.into(),
-                ],
+                &[token::LitKind::Integer.into(), token::LitKind::Float.into()],
                 self.token,
             ),
         };
@@ -2030,7 +2030,7 @@ impl<'a> Parser<'a> {
                 (is_long_string, raw_value, value)
             }
             _ => self.sess.struct_token_error(
-                &[&token::LitKind::Str {
+                &[token::LitKind::Str {
                     is_long_string: false,
                     is_raw: false,
                 }
@@ -2071,16 +2071,16 @@ impl<'a> Parser<'a> {
                     NameConstant::False
                 } else {
                     self.sess
-                        .struct_token_error(&[&token::LitKind::Bool.into()], self.token)
+                        .struct_token_error(&[token::LitKind::Bool.into()], self.token)
                 }
             }
             token::LitKind::None => NameConstant::None,
             token::LitKind::Undefined => NameConstant::Undefined,
             _ => self.sess.struct_token_error(
                 &[
-                    &token::LitKind::Bool.into(),
-                    &token::LitKind::None.into(),
-                    &token::LitKind::Undefined.into(),
+                    token::LitKind::Bool.into(),
+                    token::LitKind::None.into(),
+                    token::LitKind::Undefined.into(),
                 ],
                 self.token,
             ),
