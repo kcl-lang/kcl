@@ -1,4 +1,4 @@
-use std::env;
+use std::{env, path::PathBuf};
 
 use super::runner::*;
 use kclvm::ValueRef;
@@ -356,8 +356,9 @@ impl Command {
             .args(&args)
             .output()
             .expect("clang failed");
-
-        dylib_path
+        // Use absolute path.
+        let path = PathBuf::from(&dylib_path).canonicalize().unwrap();
+        path.to_str().unwrap().to_string()
     }
 
     fn get_executable_root() -> String {
