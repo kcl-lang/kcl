@@ -1,8 +1,9 @@
-use std::panic::catch_unwind;
+use std::panic::{catch_unwind, set_hook};
 
 use crate::*;
 
 use expect_test::{expect, Expect};
+use core::any::Any;
 
 fn check_parsing_file_ast_json(filename: &str, src: &str, expect: Expect) {
     let m = parse_file(filename, Some(src.into())).unwrap();
@@ -75,11 +76,7 @@ c = 3 # comment4444
     );
 }
 
-#[test]
-pub fn test_parse_expr_invalid_binary_expr() {
-    let result = catch_unwind(|| {
-        parse_expr("fs1_i1re1~s");
-    });
+pub fn check_result_panic_info(result: Result<(), Box<dyn Any + Send>>){
     match result {
         Err(e) => match e.downcast::<String>() {
             Ok(_v) => {
@@ -92,21 +89,19 @@ pub fn test_parse_expr_invalid_binary_expr() {
     };
 }
 
+const PARSE_EXPR_INVALID_TEST_CASES: &[&'static str; 3] = &[
+    "fs1_i1re1~s",
+    "fh==-h==-",
+    "8_________i"
+];
 
 #[test]
-pub fn test_parse_expr_invalid_binary_expr1(){
-    let result = catch_unwind(|| {
-        parse_expr("8_________i");
-    });
-    match result {
-        Err(e) => match e.downcast::<String>() {
-            Ok(_v) => {
-                let got = _v.to_string();
-                let _u: PanicInfo = serde_json::from_str(&got).unwrap();
-                println!("{}", _u.message);
-            }
-            _ => unreachable!(),
-        },
-        _ => {}
-    };
+pub fn test_parse_expr_invalid() {
+    for case in PARSE_EXPR_INVALID_TEST_CASES{
+        set_hook(Box::new(|_| {}));
+        let result = catch_unwind(|| {
+            parse_expr(&case);
+        });
+        check_result_panic_info(result);
+    }
 }
