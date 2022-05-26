@@ -1132,6 +1132,26 @@ pub enum BinOp {
 }
 
 impl BinOp {
+    pub fn all_symbols() -> Vec<String> {
+        vec![
+            BinOp::Add.symbol().to_string(),
+            BinOp::Sub.symbol().to_string(),
+            BinOp::Mul.symbol().to_string(),
+            BinOp::Div.symbol().to_string(),
+            BinOp::Mod.symbol().to_string(),
+            BinOp::Pow.symbol().to_string(),
+            BinOp::FloorDiv.symbol().to_string(),
+            BinOp::LShift.symbol().to_string(),
+            BinOp::RShift.symbol().to_string(),
+            BinOp::BitXor.symbol().to_string(),
+            BinOp::BitAnd.symbol().to_string(),
+            BinOp::BitOr.symbol().to_string(),
+            BinOp::And.symbol().to_string(),
+            BinOp::Or.symbol().to_string(),
+            BinOp::As.symbol().to_string(),
+        ]
+    }
+
     pub fn symbol(&self) -> &'static str {
         match self {
             BinOp::Add => "+",
@@ -1278,6 +1298,22 @@ pub enum CmpOp {
 }
 
 impl CmpOp {
+    pub fn all_symbols() -> Vec<String> {
+        vec![
+            CmpOp::Eq.symbol().to_string(),
+            CmpOp::NotEq.symbol().to_string(),
+            CmpOp::Lt.symbol().to_string(),
+            CmpOp::LtE.symbol().to_string(),
+            CmpOp::Gt.symbol().to_string(),
+            CmpOp::GtE.symbol().to_string(),
+            CmpOp::Is.symbol().to_string(),
+            CmpOp::In.symbol().to_string(),
+            CmpOp::NotIn.symbol().to_string(),
+            CmpOp::Not.symbol().to_string(),
+            CmpOp::IsNot.symbol().to_string(),
+        ]
+    }
+
     pub fn symbol(&self) -> &'static str {
         match self {
             CmpOp::Eq => "==",
@@ -1482,6 +1518,15 @@ impl TryFrom<token::Token> for UnaryOp {
                 }
             }
         }
+    }
+}
+
+impl BinOrCmpOp {
+    pub fn all_symbols() -> Vec<String> {
+        let mut result = vec![];
+        result.append(&mut BinOp::all_symbols());
+        result.append(&mut CmpOp::all_symbols());
+        result
     }
 }
 

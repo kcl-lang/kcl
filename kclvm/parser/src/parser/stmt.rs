@@ -987,7 +987,7 @@ impl<'a> Parser<'_> {
                 self.bump();
             } else {
                 self.sess
-                    .struct_token_error(&[&TokenKind::Indent.into()], self.token)
+                    .struct_token_error(&[TokenKind::Indent.into()], self.token)
             }
             true
         } else {
@@ -1019,7 +1019,7 @@ impl<'a> Parser<'_> {
                 self.bump();
             } else {
                 self.sess
-                    .struct_token_error(&[&TokenKind::Dedent.into()], self.token)
+                    .struct_token_error(&[TokenKind::Dedent.into()], self.token)
             }
         }
 

@@ -3,6 +3,7 @@ use std::panic::catch_unwind;
 use crate::*;
 
 use expect_test::{expect, Expect};
+use core::any::Any;
 
 fn check_parsing_file_ast_json(filename: &str, src: &str, expect: Expect) {
     let m = parse_file(filename, Some(src.into())).unwrap();
@@ -75,11 +76,7 @@ c = 3 # comment4444
     );
 }
 
-#[test]
-pub fn test_parse_expr_invalid_arr_out_of_bound_for_token_minus(){
-    let result = catch_unwind(|| {
-        parse_expr("fh==-h==-");
-    });
+pub fn check_result_panic_info(result: Result<(), Box<dyn Any + Send>>){
     match result {
         Err(e) => match e.downcast::<String>() {
             Ok(_v) => {
@@ -90,4 +87,20 @@ pub fn test_parse_expr_invalid_arr_out_of_bound_for_token_minus(){
         },
         _ => {}
     };
+}
+
+#[test]
+pub fn test_parse_expr_invalid_binary_expr() {
+    let result = catch_unwind(|| {
+        parse_expr("fs1_i1re1~s");
+    });
+    check_result_panic_info(result);
+}
+
+#[test]
+pub fn test_parse_expr_invalid_arr_out_of_bound_for_token_minus(){
+    let result = catch_unwind(|| {
+        parse_expr("fh==-h==-");
+    });
+    check_result_panic_info(result);
 }
