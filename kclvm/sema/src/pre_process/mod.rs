@@ -14,6 +14,15 @@ pub use identifier::{fix_qualified_identifier, fix_raw_identifier_prefix};
 pub fn pre_process_program(program: &mut ast::Program) {
     for (pkgpath, modules) in program.pkgs.iter_mut() {
         let mut import_names = IndexMap::default();
+        if pkgpath == kclvm_ast::MAIN_PKG {
+            for module in modules.iter_mut() {
+                for stmt in &module.body {
+                    if let ast::Stmt::Import(import_stmt) = &stmt.node {
+                        import_names.insert(import_stmt.name.clone(), import_stmt.path.clone());
+                    }
+                }
+            }
+        }
         for module in modules.iter_mut() {
             if pkgpath != kclvm_ast::MAIN_PKG {
                 import_names.clear();
