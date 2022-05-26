@@ -240,13 +240,19 @@ impl<'a> Lexer<'a> {
             // Binary op
             kclvm_lexer::TokenKind::Plus => token::BinOp(token::Plus),
             kclvm_lexer::TokenKind::Minus => {
-                let next_tkn =
-                    self.str_from_to(start + BytePos::from_u32(1), start + BytePos::from_u32(2));
-                if next_tkn == ">" {
-                    // waste '>' token
-                    self.pos = self.pos + BytePos::from_usize(1);
-                    token::RArrow
-                } else {
+                let head = start + BytePos::from_u32(1);
+                let tail = start + BytePos::from_u32(2);
+                if self.has_next_token(head, tail){
+                    let next_tkn =
+                        self.str_from_to(head, tail);
+                    if next_tkn == ">" {
+                        // waste '>' token
+                        self.pos = self.pos + BytePos::from_usize(1);
+                        token::RArrow
+                    } else {
+                        token::BinOp(token::Minus) 
+                    }
+                }else{
                     token::BinOp(token::Minus)
                 }
             }
@@ -538,6 +544,10 @@ impl<'a> Lexer<'a> {
     /// Slice of the source text spanning from `start` up to but excluding `end`.
     fn str_from_to(&self, start: BytePos, end: BytePos) -> &str {
         &self.src[self.src_index(start)..self.src_index(end)]
+    }
+
+    fn has_next_token(&self, start: BytePos, end: BytePos) -> bool{
+        if self.src_index(start) > self.src_index(end) || self.src_index(end) > self.src.len(){ false }else{ true }
     }
 
     fn symbol_from_to(&self, start: BytePos, end: BytePos) -> Symbol {
