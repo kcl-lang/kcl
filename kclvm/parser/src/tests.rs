@@ -91,3 +91,22 @@ pub fn test_parse_expr_invalid_binary_expr() {
         _ => {}
     };
 }
+
+
+#[test]
+pub fn test_parse_expr_invalid_binary_expr1(){
+    let result = catch_unwind(|| {
+        parse_expr("8_________i");
+    });
+    match result {
+        Err(e) => match e.downcast::<String>() {
+            Ok(_v) => {
+                let got = _v.to_string();
+                let _u: PanicInfo = serde_json::from_str(&got).unwrap();
+                println!("{}", _u.message);
+            }
+            _ => unreachable!(),
+        },
+        _ => {}
+    };
+}
