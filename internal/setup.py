@@ -25,7 +25,7 @@ with open(require_path) as f:
 setup(
     name='kclvm',
     author='KCL Authors',
-    version='0.4.2.4',
+    version='0.4.2.6',
     license='Apache License 2.0',
 
     description='KCLVM', 
@@ -33,7 +33,7 @@ setup(
     author_email='',  
     url='https://kusionstack.io/',  
     packages=setuptools.find_packages(),
-
+    include_package_data=True,
     zip_safe=True,
     # 依赖包
     install_requires=install_requires,
