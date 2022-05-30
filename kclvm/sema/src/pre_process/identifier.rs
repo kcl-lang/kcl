@@ -154,7 +154,7 @@ impl<'ctx> MutSelfMutWalker<'ctx> for QualifiedIdentifierTransformer {
                         note: None,
                     },
                 ],
-                &vec![String::from(name)]
+                &vec![String::from(name)],
             );
         }
 

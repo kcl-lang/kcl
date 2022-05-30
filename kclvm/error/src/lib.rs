@@ -202,8 +202,9 @@ impl Handler {
     ///         style: Style::LineAndColumn,
     ///         message: "Invalid syntax: expected '+', got '-'".to_string(),
     ///         note: None,
-    ///     }
-    /// ]);
+    ///     }],
+    ///     &vec![],
+    /// );
     /// ```
     pub fn add_error(&mut self, err: ErrorKind, msgs: &[Message], args: &[String]) -> &mut Self {
         let diag = Diagnostic {

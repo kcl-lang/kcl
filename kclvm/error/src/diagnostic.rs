@@ -105,7 +105,6 @@ impl Diagnostic {
         message: &str,
         pos: Position,
         code: Option<DiagnosticId>,
-
     ) -> Self {
         Diagnostic {
             level,
