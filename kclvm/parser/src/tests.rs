@@ -1,4 +1,4 @@
-use std::panic::catch_unwind;
+use std::panic::{catch_unwind, set_hook};
 
 use crate::*;
 
@@ -89,18 +89,19 @@ pub fn check_result_panic_info(result: Result<(), Box<dyn Any + Send>>){
     };
 }
 
-#[test]
-pub fn test_parse_expr_invalid_binary_expr() {
-    let result = catch_unwind(|| {
-        parse_expr("fs1_i1re1~s");
-    });
-    check_result_panic_info(result);
-}
+const PARSE_EXPR_INVALID_TEST_CASES: &[&'static str; 3] = &[
+    "fs1_i1re1~s",
+    "fh==-h==-",
+    "8_________i"
+];
 
 #[test]
-pub fn test_parse_expr_invalid_arr_out_of_bound_for_token_minus(){
-    let result = catch_unwind(|| {
-        parse_expr("fh==-h==-");
-    });
-    check_result_panic_info(result);
+pub fn test_parse_expr_invalid() {
+    for case in PARSE_EXPR_INVALID_TEST_CASES{
+        set_hook(Box::new(|_| {}));
+        let result = catch_unwind(|| {
+            parse_expr(&case);
+        });
+        check_result_panic_info(result);
+    }
 }
