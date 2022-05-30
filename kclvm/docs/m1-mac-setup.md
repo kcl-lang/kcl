@@ -15,7 +15,15 @@
 2. Install openssl@1.1 ➡ brew install openssl@1.1
 3. Check out openssl installed @`/opt/homebrew/opt/openssl@1.1/lib/libssl.1.1.dylib`
 
-## Build LLVM from Source
+## Install LLVM
+
+You can install LLVM@12 from brew or build it from source
+
+### Install LLVM from brew
+
+1. Install llvm@12 ➡ brew install llvm@12
+
+### Build LLVM from Source
 
 1. Go to the folder where you want to build the LLVM source
 2. Download LLVM 12.0.0 source from [http://releases.llvm.org/download.html](http://releases.llvm.org/download.html) and unpack source .tar.xz with tar -xJf [archive]
