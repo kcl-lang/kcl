@@ -23,6 +23,7 @@ impl<'ctx> Resolver<'ctx> {
                                         .to_string(),
                                     note: Some("A default argument".to_string()),
                                 }],
+                                &vec![]
                             );
                         }
                     }

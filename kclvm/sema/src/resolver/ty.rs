@@ -111,7 +111,7 @@ impl<'ctx> Resolver<'ctx> {
                     note: None,
                 });
             }
-            self.handler.add_error(ErrorKind::TypeError, &msgs);
+            self.handler.add_error(ErrorKind::TypeError, &msgs, &vec![expected_ty.ty_str(), ty.ty_str(),]);
         }
     }
 

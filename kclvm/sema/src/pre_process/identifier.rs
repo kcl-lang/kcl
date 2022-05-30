@@ -1,3 +1,5 @@
+use std::env::args;
+
 use crate::info::is_private_field;
 use crate::resolver::pos::GetPos;
 use indexmap::{IndexMap, IndexSet};
@@ -41,6 +43,7 @@ impl<'ctx> MutSelfMutWalker<'ctx> for QualifiedIdentifierTransformer {
                         note: None,
                     },
                 ],
+                &vec![String::from(name)]
             );
         }
         walk_list_mut!(self, walk_identifier, rule_stmt.parent_rules);
@@ -75,6 +78,7 @@ impl<'ctx> MutSelfMutWalker<'ctx> for QualifiedIdentifierTransformer {
                         note: None,
                     },
                 ],
+                &vec![String::from(name)]
             );
         }
         walk_if_mut!(self, walk_identifier, schema_stmt.parent_name);
@@ -116,6 +120,7 @@ impl<'ctx> MutSelfMutWalker<'ctx> for QualifiedIdentifierTransformer {
                             note: None,
                         },
                     ],
+                    &vec![String::from(name)]
                 );
             }
         }
@@ -149,6 +154,7 @@ impl<'ctx> MutSelfMutWalker<'ctx> for QualifiedIdentifierTransformer {
                         note: None,
                     },
                 ],
+                &vec![String::from(name)]
             );
         }
 

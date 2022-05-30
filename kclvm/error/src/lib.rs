@@ -205,11 +205,12 @@ impl Handler {
     ///     }
     /// ]);
     /// ```
-    pub fn add_error(&mut self, err: ErrorKind, msgs: &[Message]) -> &mut Self {
+    pub fn add_error(&mut self, err: ErrorKind, msgs: &[Message], args: &[String]) -> &mut Self {
         let diag = Diagnostic {
             level: Level::Error,
             messages: msgs.to_owned(),
             code: Some(DiagnosticId::Error(err)),
+            args: args.to_owned(),
         };
         self.add_diagnostic(diag);
 

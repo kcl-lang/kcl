@@ -894,6 +894,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                         ),
                         note: None,
                     }],
+                    &vec![val_ty.ty_str()]
                 );
             }
             self.clear_config_expr_context(stack_depth, false);
