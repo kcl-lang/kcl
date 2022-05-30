@@ -1,20 +1,31 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
+import pathlib
 try:
     from setuptools import setup
 except ImportError:
     from distutils.core import setup
+from pkg_resources import require
 import setuptools
 
-"""
-1. cd internal
-2. python setup.py sdist
-3. twine upload dist/*
-"""
+# Steps:
+# 1. cd internal
+# 2. modify kclvm version in setup.py
+# 3. run `python setup.py sdist` to build package
+# 4. run `twine upload dist/kclvm-0.x.x` to upload package to PyPI
+# 5. input username and password of PyPI
+
+install_requires = []
+require_path = pathlib.Path(__file__).parent.joinpath("kclvm/scripts/requirements.txt")
+with open(require_path) as f:
+    requires = f.read().split('\n')
+    for require in requires:
+        install_requires.append(require)
+
 setup(
     name='kclvm',
     author='KCL Authors',
-    version='0.4.2.2',
+    version='0.4.2.4',
     license='Apache License 2.0',
 
     description='KCLVM', 
@@ -25,30 +36,5 @@ setup(
 
     zip_safe=True,
     # 依赖包
-    install_requires=[
-        'wheel==0.34.2', 
-        'twine==3.2.0',
-        'pyyaml==5.4',
-        'pytest-xdist==2.2.1',
-        'lark-parser==0.11.3',
-        'filelock==3.6.0',
-        'yapf==0.29.0',
-        'pytest==6.2.2',
-        'pypeg2==2.15.2',
-        'protobuf==3.19.4',
-        'grequests',
-        'schema',
-        'coverage',
-        'ruamel.yaml',
-        'toml',
-        'numpydoc',
-        'pygls==0.10.3',
-        'fastapi',
-        'uvicorn',
-        'gunicorn==20.1.0',
-        'parsy==1.3.0',
-        'wasmer==1.0.0',
-        'wasmer_compiler_cranelift==1.0.0',
-        'pyopenssl'
-    ],
+    install_requires=install_requires,
 )
