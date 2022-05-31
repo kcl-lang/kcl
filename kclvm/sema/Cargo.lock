@@ -570,6 +570,7 @@ dependencies = [
  "rustc_span",
  "serde",
  "serde_json",
+ "str_indices",
  "tracing",
  "unicode_names2",
 ]
@@ -1363,6 +1364,12 @@ dependencies = [
  "psm",
  "winapi",
 ]
+
+[[package]]
+name = "str_indices"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9d9199fa80c817e074620be84374a520062ebac833f358d74b37060ce4a0f2c0"
 
 [[package]]
 name = "syn"

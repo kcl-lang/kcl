@@ -162,6 +162,16 @@ impl Handler {
                 );
                 self.add_diagnostic(diag);
             }
+            ParseError::UnicodeError => {
+                let message = "Illegal Unicode";
+                let diag = Diagnostic::new_with_code(
+                    Level::Error,
+                    &message,
+                    pos,
+                    Some(DiagnosticId::Error(E1001.kind)),
+                );
+                self.add_diagnostic(diag);
+            }
         }
         self
     }
@@ -228,6 +238,7 @@ impl Handler {
 #[derive(Debug, Clone)]
 pub enum ParseError {
     UnexpectedToken { expected: Vec<String>, got: String },
+    UnicodeError,
 }
 
 impl ParseError {
@@ -239,6 +250,10 @@ impl ParseError {
                 .collect::<Vec<String>>(),
             got: got.to_string(),
         }
+    }
+
+    pub fn unicode_error() -> Self {
+        ParseError::UnicodeError
     }
 }
 

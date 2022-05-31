@@ -1,7 +1,7 @@
 use kclvm::{ErrType, PanicInfo};
 use kclvm_ast::token::Token;
 use kclvm_error::{Handler, ParseError, Position};
-use kclvm_span::{Loc, SourceMap, Span};
+use kclvm_span::{BytePos, Loc, SourceMap, Span};
 use std::cell::RefCell;
 use std::sync::Arc;
 
@@ -68,5 +68,23 @@ impl ParseSession {
     /// Report a compiler bug
     pub fn struct_compiler_bug(&self, msg: &str) -> ! {
         self.handler.borrow_mut().bug(msg)
+    }
+
+    /// Report an unicode bug
+    /// unicode characters are currently not supported in KCLVM
+    pub fn struct_unicode_err(&self, pos: BytePos) -> ! {
+        let pos: Position = self.source_map.lookup_char_pos(pos).into();
+        let err = ParseError::UnicodeError;
+        let mut panic_info = PanicInfo::default();
+
+        panic_info.__kcl_PanicInfo__ = true;
+        panic_info.message = format!("{:?}", err);
+        panic_info.err_type_code = ErrType::CompileError_TYPE as i32;
+
+        panic_info.kcl_file = pos.filename.clone();
+        panic_info.kcl_line = pos.line as i32;
+        panic_info.kcl_col = pos.column.unwrap_or(0) as i32;
+
+        panic!("{}", panic_info.to_json_string())
     }
 }
