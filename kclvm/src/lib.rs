@@ -3,7 +3,6 @@ extern crate serde;
 use kclvm_parser::load_program;
 use kclvm_runner::execute;
 use kclvm_runner::runner::*;
-use kclvm_sema::resolver::resolve_program;
 use kclvm_tools::query::apply_overrides;
 
 #[no_mangle]
@@ -62,10 +61,6 @@ pub fn kclvm_cli_run_unsafe(args: *const i8, plugin_agent: *const i8) -> Result<
     let mut program = load_program(&files, Some(opts))?;
     apply_overrides(&mut program, &args.overrides, &[]);
 
-    // resolve ast
-    let scope = resolve_program(&mut program);
-    scope.check_scope_diagnostics();
-
-    // generate dylibs, link dylibs and execute.
-    execute(program, scope, plugin_agent, &args)
+    // resolve ast, generate dylibs, link dylibs and execute.
+    execute(program, plugin_agent, &args)
 }

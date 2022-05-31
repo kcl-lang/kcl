@@ -12,11 +12,13 @@ use kclvm_compiler::codegen::{llvm::emit_code, EmitOptions};
 use kclvm_config::cache::{load_pkg_cache, save_pkg_cache, CacheOption};
 use kclvm_sema::resolver::scope::ProgramScope;
 
+/// LLVM IR file suffix.
+const LL_FILE: &str = "_a.out";
+
 /// KclvmAssembler is mainly responsible for generating bytecode,
 /// LLVM IR or dylib, and take the result of kclvm-parser and kclvm-sema
 /// as input.
-pub struct KclvmAssembler {}
-const LL_FILE: &str = "_a.out";
+pub struct KclvmAssembler;
 impl KclvmAssembler {
     /// Generate the dylibs and return file paths from .
     ///

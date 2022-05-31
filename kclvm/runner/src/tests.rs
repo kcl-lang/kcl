@@ -1,13 +1,13 @@
 use crate::{execute, runner::ExecProgramArgs};
 use kclvm_ast::ast::{Module, Program};
-use kclvm_sema::resolver::resolve_program;
 use std::{collections::HashMap, fs::File};
 
-const TEST_CASES: &[&'static str; 4] = &[
+const TEST_CASES: &[&'static str; 5] = &[
     "init_check_order_0",
     "init_check_order_1",
     "normal_2",
     "type_annotation_not_full_2",
+    "multi_vars_0",
 ];
 const EXPECTED_FILE_NAME: &str = "stdout.golden.json";
 const TEST_CASE_PATH: &str = "./src/test_datas";
@@ -62,12 +62,9 @@ pub fn execute_for_test(kcl_path: &String) -> String {
     let plugin_agent = 0;
     let args = ExecProgramArgs::default();
     // parse kcl file
-    let mut program = load_program(kcl_path.to_string());
-    // resolve ast
-    let scope = resolve_program(&mut program);
-    scope.check_scope_diagnostics();
+    let program = load_program(kcl_path.to_string());
     // generate dylibs, link dylibs and execute.
-    execute(program, scope, plugin_agent, &args).unwrap()
+    execute(program, plugin_agent, &args).unwrap()
 }
 
 #[test]
