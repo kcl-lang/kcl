@@ -1,6 +1,5 @@
-use serde::{Deserialize, Serialize};
-
 use kclvm_ast::ast;
+use serde::{Deserialize, Serialize};
 
 #[allow(non_camel_case_types)]
 pub type kclvm_char_t = i8;

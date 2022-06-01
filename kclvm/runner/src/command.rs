@@ -423,7 +423,6 @@ impl Command {
         } else {
             "clang"
         };
-        
 
         if let Some(s) = Self::find_it(clang_exe) {
             return s.to_str().unwrap().to_string();

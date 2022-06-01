@@ -571,6 +571,7 @@ dependencies = [
  "libloading",
  "serde",
  "serde_json",
+ "threadpool",
  "walkdir",
 ]
 
