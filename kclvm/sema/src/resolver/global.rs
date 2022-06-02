@@ -57,6 +57,7 @@ impl<'ctx> Resolver<'ctx> {
                                     message: format!("unique key error name '{}'", name),
                                     note: None,
                                 }],
+                                &vec![String::from(name)],
                             );
                             continue;
                         }
@@ -175,6 +176,7 @@ impl<'ctx> Resolver<'ctx> {
                         message: format!("pkgpath {} not found in the program", self.ctx.pkgpath),
                         note: None,
                     }],
+                    &vec![self.ctx.pkgpath.clone()],
                 );
             }
         };
@@ -238,6 +240,7 @@ impl<'ctx> Resolver<'ctx> {
                             note: Some(format!("change the variable name to '_{}'", name)),
                         },
                     ],
+                    &vec![String::from(name)],
                 );
                 continue;
             }
@@ -263,6 +266,7 @@ impl<'ctx> Resolver<'ctx> {
                                     note: Some(format!("got {}", ty.ty_str())),
                                 },
                             ],
+                            &vec![String::from(name), obj.ty.ty_str(), ty.ty_str()],
                         );
                     }
                 }
@@ -321,6 +325,7 @@ impl<'ctx> Resolver<'ctx> {
                         note: Some(format!("Change the variable name to '_{}'", name)),
                     },
                 ],
+                &vec![String::from(name)],
             );
             return;
         }
@@ -359,6 +364,7 @@ impl<'ctx> Resolver<'ctx> {
                             ),
                             note: None,
                         }],
+                        &vec![ty.ty_str()],
                     );
                     None
                 }
@@ -382,6 +388,7 @@ impl<'ctx> Resolver<'ctx> {
                         message: "only schema mixin can inherit from protocol".to_string(),
                         note: None,
                     }],
+                    &vec![],
                 );
                 return None;
             }
@@ -403,6 +410,7 @@ impl<'ctx> Resolver<'ctx> {
                             ),
                             note: None,
                         }],
+                        &vec![ty.ty_str()],
                     );
                     None
                 }
@@ -436,6 +444,7 @@ impl<'ctx> Resolver<'ctx> {
                             ),
                             note: None,
                         }],
+                        &vec![ty.ty_str()],
                     );
                     None
                 }
@@ -472,6 +481,7 @@ impl<'ctx> Resolver<'ctx> {
                     message: format!("schema protocol name must end with '{}'", PROTOCOL_SUFFIX),
                     note: None,
                 }],
+                &vec![String::from(PROTOCOL_SUFFIX)],
             );
         }
         if schema_stmt.is_protocol && !schema_stmt.has_only_attribute_definitions() {
@@ -492,6 +502,7 @@ impl<'ctx> Resolver<'ctx> {
                     message: format!("mixin inheritance {} is prohibited", parent_name),
                     note: None,
                 }],
+                &vec![String::from(parent_name)],
             );
         }
         let schema_attr_names = schema_stmt.get_left_identifier_list();
@@ -510,6 +521,7 @@ impl<'ctx> Resolver<'ctx> {
                             message: format!("index signature attribute name '{}' cannot have the same name as schema attributes", index_sign_name),
                             note: None,
                         }],
+                        &vec![String::from(index_sign_name)],
                     );
                 }
             }
@@ -534,6 +546,7 @@ impl<'ctx> Resolver<'ctx> {
                         message: format!("invalid index signature key type: '{}'", key_ty.ty_str()),
                         note: None,
                     }],
+                    &vec![key_ty.ty_str()],
                 );
             }
             Some(Box::new(SchemaIndexSignature {
@@ -638,6 +651,7 @@ impl<'ctx> Resolver<'ctx> {
                             message: format!("the type '{}' of schema attribute '{}' does not meet the index signature definition {}", ty.ty_str(), name, index_signature_obj.ty_str()),
                             note: None,
                         }],
+                        &vec![ty.ty_str(), name, index_signature_obj.ty_str()],
                     );
                 }
             }
@@ -658,6 +672,7 @@ impl<'ctx> Resolver<'ctx> {
                         ),
                         note: None,
                     }],
+                    &vec![mixin_names[mixin_names.len() - 1].clone()],
                 );
             }
             let ty = self.walk_identifier(&mixin.node);
@@ -676,6 +691,7 @@ impl<'ctx> Resolver<'ctx> {
                             message: format!("illegal schema mixin object type '{}'", ty.ty_str()),
                             note: None,
                         }],
+                        &vec![ty.ty_str()],
                     );
                     None
                 }
@@ -797,6 +813,7 @@ impl<'ctx> Resolver<'ctx> {
                             message: format!("illegal schema mixin object type '{}'", ty.ty_str()),
                             note: None,
                         }],
+                        &vec![ty.ty_str()],
                     );
                     None
                 }

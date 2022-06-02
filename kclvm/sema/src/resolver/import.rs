@@ -49,6 +49,7 @@ impl<'ctx> Resolver<'ctx> {
                                     ),
                                     note: None,
                                 }],
+                                &vec![import_stmt.rawpath.clone(), real_path.to_str().unwrap().to_string()],
                             );
                         } else {
                             let file = real_path.to_str().unwrap().to_string();
@@ -68,6 +69,7 @@ impl<'ctx> Resolver<'ctx> {
                                         ),
                                         note: None,
                                     }],
+                                    &vec![file],
                                 );
                             }
                         }

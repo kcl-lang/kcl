@@ -13,6 +13,7 @@ pub struct Diagnostic {
     pub level: Level,
     pub messages: Vec<Message>,
     pub code: Option<DiagnosticId>,
+    pub args: Vec<String>,
 }
 
 /// Position describes an arbitrary source position including the filename,
@@ -114,6 +115,7 @@ impl Diagnostic {
                 note: None,
             }],
             code,
+            args: vec![],
         }
     }
 
