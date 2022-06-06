@@ -123,13 +123,16 @@ pub fn kclvm_cli_run_unsafe(args: *const i8, plugin_agent: *const i8) -> Result<
     let pool = ThreadPool::new(4);
     let (tx, rx) = channel();
     let prog_count = compile_progs.len();
+    let temp_entry_file = temp_file();
     for (pkgpath, (compile_prog, import_names, cache_dir)) in compile_progs {
         let tx = tx.clone();
+        let temp_entry_file = temp_entry_file.clone();
         pool.execute(move || {
             let root = &compile_prog.root;
             let is_main_pkg = pkgpath == kclvm_ast::MAIN_PKG;
+            // Use temp main entry to prevent conflicts between different mains
             let file = if is_main_pkg {
-                PathBuf::from(&pkgpath)
+                PathBuf::from(&temp_entry_file)
             } else {
                 cache_dir.join(&pkgpath)
             };
@@ -141,6 +144,12 @@ pub fn kclvm_cli_run_unsafe(args: *const i8, plugin_agent: *const i8) -> Result<
             if Path::new(&ll_path).exists() {
                 std::fs::remove_file(&ll_path).unwrap();
             }
+            // The main package does not perform cache reading and writing,
+            // and other packages perform read and write caching. Because
+            // KCL supports multi-file compilation, it is impossible to
+            // specify a standard entry for these multi-files and cannot
+            // be shared, so the cache of the main package is not read and
+            // written.
             let dylib_path = if is_main_pkg {
                 emit_code(
                     &compile_prog,
@@ -155,7 +164,7 @@ pub fn kclvm_cli_run_unsafe(args: *const i8, plugin_agent: *const i8) -> Result<
                 let mut cmd = Command::new(plugin_agent);
                 cmd.run_clang_single(&ll_path, &dylib_path)
             } else {
-                // If AST module has been modified, ignore the dylib cache
+                // Read the dylib cache
                 let dylib_relative_path: Option<String> =
                     load_pkg_cache(root, &pkgpath, CacheOption::default());
                 match dylib_relative_path {
@@ -196,8 +205,14 @@ pub fn kclvm_cli_run_unsafe(args: *const i8, plugin_agent: *const i8) -> Result<
     }
     let dylib_paths = rx.iter().take(prog_count).collect::<Vec<String>>();
     let mut cmd = Command::new(plugin_agent);
+
+    let ll_lock_suffix = ".ll.lock";
+    let dylib_suffix = Command::get_lib_suffix();
+    let temp_entry_dylib_file = format!("{}{}", temp_entry_file, dylib_suffix);
+    let temp_entry_ll_lock_file = format!("{}{}", temp_entry_file, ll_lock_suffix);
+    let temp_out_dylib_file = format!("{}.out{}", temp_entry_file, dylib_suffix);
     // link all dylibs
-    let dylib_path = cmd.link_dylibs(&dylib_paths, "");
+    let dylib_path = cmd.link_dylibs(&dylib_paths, &temp_out_dylib_file);
 
     // Config uild
     // run dylib
@@ -207,5 +222,23 @@ pub fn kclvm_cli_run_unsafe(args: *const i8, plugin_agent: *const i8) -> Result<
             plugin_agent_ptr: plugin_agent,
         }),
     );
-    runner.run(&args)
+    let result = runner.run(&args);
+    remove_file(&dylib_path);
+    remove_file(&temp_entry_dylib_file);
+    remove_file(&temp_entry_ll_lock_file);
+    result
+}
+
+#[inline]
+fn remove_file(file: &str) {
+    if Path::new(&file).exists() {
+        std::fs::remove_file(&file).unwrap();
+    }
+}
+
+#[inline]
+fn temp_file() -> String {
+    let timestamp = chrono::Local::now().timestamp_nanos();
+    let id = std::process::id();
+    format!("{}_{}", id, timestamp)
 }
