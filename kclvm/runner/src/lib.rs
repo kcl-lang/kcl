@@ -1,3 +1,6 @@
+use std::path::Path;
+
+use command::Command;
 use kclvm_ast::ast::Program;
 use kclvm_sema::resolver::resolve_program;
 use runner::{ExecProgramArgs, KclvmRunner, KclvmRunnerOptions};
@@ -67,10 +70,15 @@ pub fn execute(
     scope.check_scope_diagnostics();
 
     // generate dylibs
-    let dylib_paths = assembler::KclvmAssembler::gen_dylibs(program, scope, plugin_agent);
+    let temp_entry_file = temp_file();
+    let dylib_paths =
+        assembler::KclvmAssembler::new().gen_dylibs(program, scope, plugin_agent, &temp_entry_file);
 
     // link dylibsKclvmRunner
-    let dylib_path = linker::KclvmLinker::link_all_dylibs(dylib_paths, plugin_agent);
+    let dylib_suffix = Command::get_lib_suffix();
+    let temp_out_dylib_file = format!("{}.out{}", temp_entry_file, dylib_suffix);
+    let dylib_path =
+        linker::KclvmLinker::link_all_dylibs(dylib_paths, temp_out_dylib_file, plugin_agent);
 
     // run
     let runner = KclvmRunner::new(
@@ -79,5 +87,35 @@ pub fn execute(
             plugin_agent_ptr: plugin_agent,
         }),
     );
-    runner.run(&args)
+    let result = runner.run(&args);
+
+    // clean files
+    remove_file(&dylib_path);
+    clean_tmp_files(&temp_entry_file, &dylib_suffix);
+    result
+}
+
+#[inline]
+/// Clean all the tmp files generated during dylib generating and linking.
+fn clean_tmp_files(temp_entry_file: &String, dylib_suffix: &String) {
+    let ll_lock_suffix = ".ll.lock";
+    let temp_entry_dylib_file = format!("{}{}", temp_entry_file, dylib_suffix);
+    let temp_entry_ll_lock_file = format!("{}{}", temp_entry_file, ll_lock_suffix);
+    remove_file(&temp_entry_dylib_file);
+    remove_file(&temp_entry_ll_lock_file);
+}
+
+#[inline]
+fn remove_file(file: &str) {
+    if Path::new(&file).exists() {
+        std::fs::remove_file(&file).unwrap();
+    }
+}
+
+#[inline]
+/// Returns a temporary file name consisting of timestamp and process id.
+fn temp_file() -> String {
+    let timestamp = chrono::Local::now().timestamp_nanos();
+    let id = std::process::id();
+    format!("{}_{}", id, timestamp)
 }

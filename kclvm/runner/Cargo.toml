@@ -16,6 +16,7 @@ indexmap = "1.0"
 fslock = "0.2.1"
 libloading = "0.7.3"
 threadpool = "1.0"
+chrono = "0.4.19"
 
 kclvm-ast = {path = "../ast", version = "0.1.0"}
 kclvm-parser = {path = "../parser", version = "0.1.0"}
@@ -24,6 +25,7 @@ kclvm-config = {path = "../config", version = "0.1.0"}
 kclvm-runtime = {path = "../runtime", version = "0.1.0"}
 kclvm-sema = {path = "../sema", version = "0.1.0"}
 kclvm-version = {path = "../version", version = "0.1.0"}
+kclvm-error = {path = "../error", version="0.1.0"}
 
 [dev-dependencies]
 kclvm-parser = {path = "../parser", version = "0.1.0"}

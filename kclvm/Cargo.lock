@@ -556,6 +556,7 @@ dependencies = [
 name = "kclvm-runner"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "clap",
  "fslock",
  "glob",
@@ -563,6 +564,7 @@ dependencies = [
  "kclvm-ast",
  "kclvm-compiler",
  "kclvm-config",
+ "kclvm-error",
  "kclvm-parser",
  "kclvm-runtime",
  "kclvm-sema",
