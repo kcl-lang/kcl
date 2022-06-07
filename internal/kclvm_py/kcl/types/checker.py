@@ -2493,6 +2493,9 @@ class TypeChecker(BaseTypeChecker):
     def walk_ListIfItemExpr(self, t: ast.ListIfItemExpr):
         self.expr_or_any_type(t.if_cond)
         or_else_type = self.expr_or_any_type(t.orelse)
+        # `orelse` node maybe a list unpack node, use its item type instead.
+        if isinstance(or_else_type, objpkg.KCLListTypeObject):
+            or_else_type = or_else_type.item_type
         exprs_type = sup(self.exprs(t.exprs))
         return sup([or_else_type, exprs_type])
 
