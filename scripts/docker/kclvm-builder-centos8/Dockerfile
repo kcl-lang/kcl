@@ -8,6 +8,10 @@ FROM centos:centos8
 # https://access.redhat.com/articles/2050743
 RUN touch /etc/sysconfig/64bit_strstr_via_64bit_strstr_sse2_unaligned
 
+# https://forketyfork.medium.com/centos-8-no-urls-in-mirrorlist-error-3f87c3466faa
+RUN sed -i -e "s|mirrorlist=|#mirrorlist=|g" /etc/yum.repos.d/CentOS-*
+RUN sed -i -e "s|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g" /etc/yum.repos.d/CentOS-*
+
 RUN yum -y install make
 RUN yum -y install which
 RUN yum -y install wget
@@ -18,8 +22,8 @@ RUN yum -y install ca-certificates
 
 # rust-1.54.0
 # cargo 1.54.0
-RUN yum -y install rust cargo rustfmt
-# RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
+# RUN yum -y install rust cargo rustfmt
+RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
 RUN echo 'source $HOME/.cargo/env' >> $HOME/.bashrc
 
 ENV PATH="/root/.cargo/bin:${PATH}"
@@ -59,15 +63,7 @@ RUN rm -rf /go/pkg/sumdb
 RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 RUN echo 'Asia/Shanghai' >/etc/timezone
 
-#COPY ./vendor-kclvm /root/vendor-kclvm
-#COPY ./vendor-kclvm-runtime /root/vendor-kclvm-runtime
-
-COPY ./crates.io-index /root/crates.io-index
-
-RUN  mkdir -p /root/.cargo
-COPY ./_cargo_config-kclvm.toml /root/.cargo/config
-
-RUN touch /root/.cargo/env
+RUN mkdir -p /root/.cargo && touch /root/.cargo/env
 
 WORKDIR /root
 
