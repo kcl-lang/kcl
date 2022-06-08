@@ -202,11 +202,14 @@ impl Command {
     }
 
     pub fn link_dylibs(&mut self, dylibs: &[String], dylib_path: &str) -> String {
-        let mut dylib_path = dylib_path.to_string();
-
-        if dylib_path.is_empty() {
-            dylib_path = format!("{}{}", "_a.out", Self::get_lib_suffix());
-        }
+        let dylib_suffix = Self::get_lib_suffix();
+        let dylib_path = if dylib_path.is_empty() {
+            format!("{}{}", "_a.out", dylib_suffix)
+        } else if !dylib_path.ends_with(&dylib_suffix){
+            format!("{}{}", dylib_path, dylib_suffix)
+        } else {
+            dylib_path.to_string()
+        };
 
         let mut args: Vec<String> = vec![
             "-Wno-override-module".to_string(),

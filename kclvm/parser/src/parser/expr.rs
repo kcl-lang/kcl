@@ -1988,15 +1988,26 @@ impl<'a> Parser<'a> {
 
         let (binary_suffix, value) = match lk.kind {
             token::LitKind::Integer => {
-                let value = bytes_to_int(lk.symbol.as_str().as_bytes(), 0).unwrap();
-
+                let result = bytes_to_int(lk.symbol.as_str().as_bytes(), 0);
+                let value = match result {
+                    Some(value) => value,
+                    None => {
+                        self.sess.struct_token_error(&[token::LitKind::Integer.into()], token);
+                    }
+                };
                 match lk.suffix {
                     Some(suffix) => (suffix.as_str().try_into().ok(), NumberLitValue::Int(value)),
                     None => (None, NumberLitValue::Int(value)),
                 }
             }
             token::LitKind::Float => {
-                let value = lk.symbol.as_str().parse().unwrap();
+                let result = lk.symbol.as_str().parse();
+                let value = match result {
+                    Ok(value) => value,
+                    _ => {
+                        self.sess.struct_token_error(&[token::LitKind::Float.into()], token);
+                    }
+                };
                 (None, NumberLitValue::Float(value))
             }
             _ => self.sess.struct_token_error(
