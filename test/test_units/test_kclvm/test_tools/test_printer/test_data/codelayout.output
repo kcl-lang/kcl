@@ -18,7 +18,6 @@ elif True:
     b = 2
 else:
     c = 3
-
 d = 1 + 2
 e = (1 + 2)
 f = [1, 2, 3]
@@ -69,7 +68,6 @@ if foo is not None:
     _dict |= {}
     hello = "world{}".format(1)[2:4:].lower()
     range_int = [i for i in range(10)]
-
 op = 1 + 2 - -3 + (3 - 1) // 3
 op += 1
 op -= 12 + 23

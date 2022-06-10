@@ -4,9 +4,11 @@ use pretty_assertions::assert_eq;
 
 const FILE_INPUT_SUFFIX: &str = ".input";
 const FILE_OUTPUT_SUFFIX: &str = ".output";
-const TEST_CASES: &[&'static str; 12] = &[
+const TEST_CASES: &[&'static str; 14] = &[
     "arguments",
     "empty",
+    "if_stmt",
+    "unary",
     "codelayout",
     "collection_if",
     "comment",
