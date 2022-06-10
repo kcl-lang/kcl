@@ -1,45 +1,74 @@
 default: run
 
 PWD:=$(shell pwd)
-RUNTIME_NATIVE_BC_PATH:=./runtime/src/_kclvm.bc
-COVER_TEST_FILE_PATH:=$(PWD)/../cover/TEST.xml
-COVER_REPORT_FILE_PATH:=$(PWD)/../cover/report.html
-CARGO_LIBS = $(shell find . -maxdepth 1 -type d) 
+COVER_REPORT_FILE_PATH:=$(PWD)/target/llvm-cov/html/index.html
 
+# ------------------------
+# Building and tesing deps
+# ------------------------
+
+# Generate runtime libraries when the runtime code is changed.
+gen-runtime-api:
+	make -C ./runtime gen-api-spec
+
+# Install the wasm target
+install-rustc-wasm:
+	rustup target add wasm32-unknown-unknown
+
+# Install python3 pytest
+install-pytest:
+	python3 -mpip install pytest pytest-html 
+
+# ------------------------
+# Compile and run
+# ------------------------
+
+# E2E compile and run
 run:
 	cd .. && ./run.sh -a update-kclvm && cd kclvm
 	kcl ../samples/hello.k --target native
 
+# Cargo check all packages
 check:
 	cargo check --release
 
+# Cargo fmt all packages
 fmt:
 	cargo fmt --all
 
+# Cargo clippy all packages
 lint:
-	@for i in $(CARGO_LIBS); do cd $(PWD)/$$i && cargo clippy && cd ..; done
+	cargo clippy
 
+# ------------------------
+# Tests
+# ------------------------
+
+# Unit tests without code cov
 test:
-	@for i in $(CARGO_LIBS); do cd $(PWD)/$$i && cargo test || { echo 'test kclvm/' $$i 'crate failed' ; exit 1; } && cd ..; done
+	cargo test -p kclvm-*
 
-test-runtime:
-	cd ./tests/test_units && python3 -m pip install pytest && PYTHONPATH=./../../plugin python3 -m pytest -vv || { echo 'kclvm/tests/test_units failed' ; exit 1; }
+# Unit tests with code cov (Requires rust 1.60+)
+codecov:
+	rustup component add llvm-tools-preview
+	cargo install cargo-llvm-cov
+	cargo llvm-cov --html --open -p kclvm-*
 
+# Unit tests with code cov and output the lcov file (Requires rust 1.60+)
+codecov-lcov:
+	rustup component add llvm-tools-preview
+	cargo install cargo-llvm-cov
+	mkdir $(PWD)/.kclvm
+	cargo llvm-cov --lcov --output-path $(PWD)/.kclvm/lcov.info -p kclvm-*
+
+# Test runtime libaries using python functions
+test-runtime: install-pytest
+	cd ./tests/test_units && PYTHONPATH=./../../plugin python3 -m pytest -vv || { echo 'kclvm/tests/test_units failed' ; exit 1; }
+
+# E2E grammar tests.
 test-grammar: install-pytest
-	cd tests/integration/grammar && kclvm -m pytest -v -n 5 --junitxml $(COVER_TEST_FILE_PATH) --html=$(COVER_REPORT_FILE_PATH)
+	cd tests/integration/grammar && python3 -m pytest -v -n 5
 
+# Parser fuzz.
 fuzz-parser:
 	cd tests && cargo fuzz run fuzz_parser
-
-install-pytest:
-	kclvm -mpip install pytest-html 
-
-release:
-	cargo build --release
-
-
-gen-runtime-api:
-	make -C ./runtime gen-api-spec
-
-install-rustc-wasm:
-	rustup target add wasm32-unknown-unknown

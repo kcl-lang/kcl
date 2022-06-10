@@ -1,5 +1,5 @@
 name: KCLVM-actions
-on: [push]
+on: ["push", "pull_request"]
 jobs:
   test-unit:
     name: Test
@@ -35,5 +35,10 @@ jobs:
           components: clippy, rustfmt
       - name: Rust unit test
         working-directory: ./kclvm
-        run: make test
+        run: make codecov-lcov
         shell: bash
+      - name: Coveralls upload
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: ./kclvm/.kclvm/lcov.info
