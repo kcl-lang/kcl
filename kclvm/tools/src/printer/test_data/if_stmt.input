@@ -1,0 +1,16 @@
+if True:
+    a = 1
+elif True:
+  b = 2
+else:
+      c = 3
+
+if   True:
+    if  False:
+        d   = 4
+    elif True:
+        e   = 5
+    else:
+        f  = 6
+else:
+    g =  7

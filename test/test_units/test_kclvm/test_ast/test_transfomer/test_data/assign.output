@@ -2,4 +2,3 @@ a = aa = 1
 b = bb = 2
 if True:
     c = cc = 3
-

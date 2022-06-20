@@ -286,7 +286,10 @@ class Printer(BasePrinter):
         self.print(Indentation.Dedent)
         if t.elif_cond:
             for cond, body in zip(t.elif_cond, t.elif_body):
+                # Nested if statements need to be considered,
+                # so `elif` needs to be preceded by the current indentation.
                 self.print(
+                    Indentation.Fill,
                     ast.TokenValue.ELIF,
                     WHITESPACE,
                     cond,
@@ -297,7 +300,10 @@ class Printer(BasePrinter):
                 self.stmts(body)
                 self.print(Indentation.Dedent)
         if t.else_body:
+            # Nested if statements need to be considered,
+            # so `else` needs to be preceded by the current indentation.
             self.print(
+                Indentation.Fill,
                 ast.TokenValue.ELSE,
                 ast.TokenValue.COLON,
                 NEWLINE,
@@ -305,7 +311,6 @@ class Printer(BasePrinter):
             )
             self.stmts(t.else_body)
             self.print(Indentation.Dedent)
-        self.print(NEWLINE)
 
     def walk_ImportStmt(self, t: ast.ImportStmt):
         """ast.AST: ImportStmt
@@ -645,6 +650,7 @@ class Printer(BasePrinter):
         assert isinstance(t, ast.UnaryExpr)
         self.print(
             ast.OPERATOR_VALUE_MAP[t.op],
+            WHITESPACE if t.op == ast.UnaryOp.Not else "",
             t.operand,
         )
 
@@ -1119,7 +1125,9 @@ class Printer(BasePrinter):
                     ast.TokenValue.RIGHT_BRACE,
                 )
             elif isinstance(value, ast.StringLit):
-                self.write(value.raw_value or '{}'.format(value.value.replace('"', '\\"')))
+                self.write(
+                    value.raw_value or "{}".format(value.value.replace('"', '\\"'))
+                )
             elif isinstance(value, ast.Expr):
                 self.expr(value)
             else:
