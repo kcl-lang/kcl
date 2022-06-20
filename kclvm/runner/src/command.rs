@@ -7,7 +7,7 @@ use kclvm_config::settings::SettingsFile;
 #[derive(Debug)]
 pub struct Command {
     clang_path: String,
-    rust_libstd_dylib: String,
+    rust_stdlib: String,
     executable_root: String,
     plugin_method_ptr: u64,
 }
@@ -15,20 +15,20 @@ pub struct Command {
 impl Command {
     pub fn new(plugin_method_ptr: u64) -> Self {
         let executable_root = Self::get_executable_root();
-        let rust_libstd_dylib = Self::get_rust_libstd_dylib(executable_root.as_str());
+        let rust_stdlib = Self::get_rust_stdlib(executable_root.as_str());
         let clang_path = Self::get_clang_path();
 
         Self {
             clang_path,
-            rust_libstd_dylib,
+            rust_stdlib,
             executable_root,
             plugin_method_ptr,
         }
     }
 
-    pub fn run_dylib(&self, dylib_path: &str) -> Result<String, String> {
+    pub fn run_lib(&self, lib_path: &str) -> Result<String, String> {
         unsafe {
-            let lib = libloading::Library::new(dylib_path).unwrap();
+            let lib = libloading::Library::new(lib_path).unwrap();
 
             // get kclvm_plugin_init
             let kclvm_plugin_init: libloading::Symbol<
@@ -119,13 +119,13 @@ impl Command {
         }
     }
 
-    pub fn run_dylib_with_settings(
+    pub fn run_lib_with_settings(
         &self,
-        dylib_path: &str,
+        lib_path: &str,
         settings: SettingsFile,
     ) -> Result<String, String> {
         unsafe {
-            let lib = libloading::Library::new(dylib_path).unwrap();
+            let lib = libloading::Library::new(lib_path).unwrap();
 
             let kcl_run: libloading::Symbol<
                 unsafe extern "C" fn(
@@ -201,14 +201,14 @@ impl Command {
         Ok("".to_string())
     }
 
-    pub fn link_dylibs(&mut self, dylibs: &[String], dylib_path: &str) -> String {
-        let dylib_suffix = Self::get_lib_suffix();
-        let dylib_path = if dylib_path.is_empty() {
-            format!("{}{}", "_a.out", dylib_suffix)
-        } else if !dylib_path.ends_with(&dylib_suffix) {
-            format!("{}{}", dylib_path, dylib_suffix)
+    pub fn link_libs(&mut self, libs: &[String], lib_path: &str) -> String {
+        let lib_suffix = Self::get_lib_suffix();
+        let lib_path = if lib_path.is_empty() {
+            format!("{}{}", "_a.out", lib_suffix)
+        } else if !lib_path.ends_with(&lib_suffix) {
+            format!("{}{}", lib_path, lib_suffix)
         } else {
-            dylib_path.to_string()
+            lib_path.to_string()
         };
 
         let mut args: Vec<String> = vec![
@@ -223,13 +223,13 @@ impl Command {
             "-lkclvm_native_shared".to_string(),
             format!("-I{}/include", self.executable_root),
         ];
-        let mut bc_files = dylibs.to_owned();
+        let mut bc_files = libs.to_owned();
         args.append(&mut bc_files);
         let mut more_args = vec![
-            self.rust_libstd_dylib.clone(),
+            self.rust_stdlib.clone(),
             "-fPIC".to_string(),
             "-o".to_string(),
-            dylib_path.to_string(),
+            lib_path.to_string(),
         ];
         args.append(&mut more_args);
 
@@ -240,12 +240,12 @@ impl Command {
             .output()
             .expect("clang failed");
 
-        dylib_path
+        lib_path
     }
 
-    pub fn run_clang(&mut self, bc_path: &str, dylib_path: &str) -> String {
+    pub fn run_clang(&mut self, bc_path: &str, lib_path: &str) -> String {
         let mut bc_path = bc_path.to_string();
-        let mut dylib_path = dylib_path.to_string();
+        let mut lib_path = lib_path.to_string();
 
         let mut bc_files = vec![];
 
@@ -276,8 +276,8 @@ impl Command {
             }
         }
 
-        if dylib_path.is_empty() {
-            dylib_path = format!("{}{}", bc_path, Self::get_lib_suffix());
+        if lib_path.is_empty() {
+            lib_path = format!("{}{}", bc_path, Self::get_lib_suffix());
         }
 
         let mut args: Vec<String> = vec![
@@ -294,10 +294,10 @@ impl Command {
         ];
         args.append(&mut bc_files);
         let mut more_args = vec![
-            self.rust_libstd_dylib.clone(),
+            self.rust_stdlib.clone(),
             "-fPIC".to_string(),
             "-o".to_string(),
-            dylib_path.to_string(),
+            lib_path.to_string(),
         ];
         args.append(&mut more_args);
 
@@ -308,12 +308,12 @@ impl Command {
             .output()
             .expect("clang failed");
 
-        dylib_path
+        lib_path
     }
 
-    pub fn run_clang_single(&mut self, bc_path: &str, dylib_path: &str) -> String {
+    pub fn run_clang_single(&mut self, bc_path: &str, lib_path: &str) -> String {
         let mut bc_path = bc_path.to_string();
-        let mut dylib_path = dylib_path.to_string();
+        let mut lib_path = lib_path.to_string();
 
         if !Self::path_exist(bc_path.as_str()) {
             let s = format!("{}.ll", bc_path);
@@ -327,8 +327,8 @@ impl Command {
             }
         }
 
-        if dylib_path.is_empty() {
-            dylib_path = format!("{}{}", bc_path, Self::get_lib_suffix());
+        if lib_path.is_empty() {
+            lib_path = format!("{}{}", bc_path, Self::get_lib_suffix());
         }
 
         let mut args: Vec<String> = vec![
@@ -346,10 +346,10 @@ impl Command {
         let mut bc_files = vec![bc_path];
         args.append(&mut bc_files);
         let mut more_args = vec![
-            self.rust_libstd_dylib.clone(),
+            self.rust_stdlib.clone(),
             "-fPIC".to_string(),
             "-o".to_string(),
-            dylib_path.to_string(),
+            lib_path.to_string(),
         ];
         args.append(&mut more_args);
 
@@ -360,10 +360,11 @@ impl Command {
             .output()
             .expect("clang failed");
         // Use absolute path.
-        let path = PathBuf::from(&dylib_path).canonicalize().unwrap();
+        let path = PathBuf::from(&lib_path).canonicalize().unwrap();
         path.to_str().unwrap().to_string()
     }
 
+    /// Get the kclvm executable root.
     fn get_executable_root() -> String {
         if Self::is_windows() {
             todo!();
@@ -384,7 +385,7 @@ impl Command {
         p.to_str().unwrap().to_string()
     }
 
-    fn get_rust_libstd_dylib(executable_root: &str) -> String {
+    fn get_rust_stdlib(executable_root: &str) -> String {
         let txt_path = std::path::Path::new(&executable_root)
             .join(if Self::is_windows() { "libs" } else { "lib" })
             .join("rust-libstd-name.txt");

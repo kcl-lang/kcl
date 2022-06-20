@@ -647,6 +647,7 @@ dependencies = [
  "kclvm-parser",
  "kclvm-runtime",
  "kclvm-sema",
+ "kclvm-tools",
  "kclvm-version",
  "libc",
  "libloading",
@@ -710,6 +711,17 @@ dependencies = [
  "kclvm-macros",
  "rustc_span",
  "scoped-tls",
+]
+
+[[package]]
+name = "kclvm-tools"
+version = "0.1.0"
+dependencies = [
+ "fancy-regex",
+ "indexmap",
+ "kclvm-ast",
+ "kclvm-error",
+ "kclvm-parser",
 ]
 
 [[package]]

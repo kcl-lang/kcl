@@ -57,10 +57,10 @@ pub fn kclvm_cli_run_unsafe(args: *const i8, plugin_agent: *const i8) -> Result<
     let files = args.get_files();
     let opts = args.get_load_program_options();
 
-    // load ast
+    // Parse AST program.
     let mut program = load_program(&files, Some(opts))?;
     apply_overrides(&mut program, &args.overrides, &[]);
 
-    // resolve ast, generate dylibs, link dylibs and execute.
+    // Resolve AST program, generate libs, link libs and execute.
     execute(program, plugin_agent, &args)
 }

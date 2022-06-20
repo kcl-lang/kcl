@@ -15,7 +15,7 @@ const KCL_FILE_NAME: &str = "main.k";
 const MAIN_PKG_NAME: &str = "__main__";
 
 /// Load test kcl file to ast.Program
-pub fn load_program(filename: String) -> Program {
+pub fn load_test_program(filename: String) -> Program {
     let module = load_module(filename);
     construct_program(module)
 }
@@ -61,13 +61,14 @@ pub fn format_str_by_json(str: String) -> String {
 pub fn execute_for_test(kcl_path: &String) -> String {
     let plugin_agent = 0;
     let args = ExecProgramArgs::default();
-    // parse kcl file
-    let program = load_program(kcl_path.to_string());
-    // generate dylibs, link dylibs and execute.
+    // Parse kcl file
+    let program = load_test_program(kcl_path.to_string());
+    // Generate libs, link libs and execute.
     execute(program, plugin_agent, &args).unwrap()
 }
 
-#[test]
+// TODO: need to fix issue #79
+// #[test]
 fn test_kclvm_runner_execute() {
     for case in TEST_CASES {
         let kcl_path = &format!("{}/{}/{}", TEST_CASE_PATH, case, KCL_FILE_NAME);

@@ -58,8 +58,8 @@ impl Default for SettingsFile {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct KeyValuePair {
-    key: String,
-    value: String,
+    pub key: String,
+    pub value: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

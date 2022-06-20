@@ -568,11 +568,13 @@ dependencies = [
  "kclvm-parser",
  "kclvm-runtime",
  "kclvm-sema",
+ "kclvm-tools",
  "kclvm-version",
  "libc",
  "libloading",
  "serde",
  "serde_json",
+ "tempfile",
  "threadpool",
  "walkdir",
 ]
