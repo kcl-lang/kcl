@@ -16,6 +16,7 @@ _DIR_PATH = pathlib.Path(__file__).parent.joinpath(_PATH_NAME)
 _TEST_CASES = [
     "arguments",
     "empty",
+    "if_stmt",
     "codelayout",
     "collection_if",
     "comment",
@@ -25,6 +26,7 @@ _TEST_CASES = [
     "quant",
     "rule",
     "type_alias",
+    "unary",
     "unification",
 ]
 

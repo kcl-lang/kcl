@@ -902,7 +902,9 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             }
             self.clear_config_expr_context(stack_depth, false);
         }
-        self.any_ty()
+        let key_ty = sup(&key_types);
+        let val_ty = sup(&val_types);
+        Type::dict_ref(key_ty, val_ty)
     }
 
     fn walk_check_expr(&mut self, check_expr: &'ctx ast::CheckExpr) -> Self::Result {

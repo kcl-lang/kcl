@@ -3,6 +3,7 @@ use crate::resolver::resolve_program;
 use crate::resolver::scope::*;
 use crate::ty::Type;
 use kclvm_ast::ast;
+use kclvm_error::*;
 use kclvm_parser::{load_program, parse_program};
 use std::rc::Rc;
 
@@ -66,4 +67,15 @@ fn test_pkg_init_in_schema_resolve() {
             module.body[1]
         )
     }
+}
+
+#[test]
+fn test_resolve_program_fail() {
+    let mut program = parse_program("./src/resolver/test_fail_data/config_expr.k").unwrap();
+    let scope = resolve_program(&mut program);
+    assert_eq!(scope.diagnostics.len(), 1);
+    let diag = &scope.diagnostics[0];
+    assert_eq!(diag.code, Some(DiagnosticId::Error(ErrorKind::TypeError)));
+    assert_eq!(diag.messages.len(), 1);
+    assert_eq!(diag.messages[0].message, "expect int, got {str:int(1)}");
 }
