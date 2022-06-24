@@ -16,7 +16,7 @@ use threadpool::ThreadPool;
 /// IR code file suffix.
 const IR_FILE: &str = "_a.out";
 /// Default codegen timeout.
-const DEFAULT_TIME_OUT: u64 = 60;
+const DEFAULT_TIME_OUT: u64 = 5;
 
 /// LibAssembler trait is used to indicate the general interface
 /// that must be implemented when different intermediate codes are assembled
@@ -553,17 +553,26 @@ impl KclvmAssembler {
                     )
                 } else {
                     let file = cache_dir.join(&pkgpath);
-                    // Read the lib cache
+                    // Read the lib path cache
                     let lib_relative_path: Option<String> =
                         load_pkg_cache(root, &pkgpath, CacheOption::default());
-                    match lib_relative_path {
+                    let lib_abs_path = match lib_relative_path {
                         Some(lib_relative_path) => {
-                            if lib_relative_path.starts_with('.') {
+                            let path = if lib_relative_path.starts_with('.') {
                                 lib_relative_path.replacen('.', root, 1)
                             } else {
                                 lib_relative_path
+                            };
+                            if Path::new(&path).exists() {
+                                Some(path)
+                            } else {
+                                None
                             }
                         }
+                        None => None,
+                    };
+                    match lib_abs_path {
+                        Some(path) => path,
                         None => {
                             // generate dynamic link library for single file kcl program
                             let lib_path = assembler.lock_file_and_gen_lib(

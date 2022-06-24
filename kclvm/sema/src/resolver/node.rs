@@ -557,7 +557,11 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
         list_if_item_expr: &'ctx ast::ListIfItemExpr,
     ) -> Self::Result {
         self.expr(&list_if_item_expr.if_cond);
-        let or_else_ty = self.expr_or_any_type(&list_if_item_expr.orelse);
+        let mut or_else_ty = self.expr_or_any_type(&list_if_item_expr.orelse);
+        // `orelse` node maybe a list unpack node, use its item type instead.
+        if let TypeKind::List(item_ty) = &or_else_ty.kind {
+            or_else_ty = item_ty.clone();
+        }
         let exprs_ty = sup(&self.exprs(&list_if_item_expr.exprs).to_vec());
         sup(&[or_else_ty, exprs_ty])
     }
