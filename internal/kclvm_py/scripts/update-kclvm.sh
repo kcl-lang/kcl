@@ -57,22 +57,22 @@ cp ./target/release/kclvm_cli $kclvm_install_dir/bin/kclvm_cli
 # libkclvm_cli
 
 # Darwin dylib
-if [ -e target/release/libkclvm_cli_cdylib.dylib ]; then
+if [ -e $topdir/kclvm/target/release/libkclvm_cli_cdylib.dylib ]; then
     touch $kclvm_install_dir/bin/libkclvm_cli_cdylib.dylib
     rm $kclvm_install_dir/bin/libkclvm_cli_cdylib.dylib
-    cp target/release/libkclvm_cli_cdylib.dylib $kclvm_install_dir/bin/libkclvm_cli_cdylib.dylib
+    cp $topdir/kclvm/target/release/libkclvm_cli_cdylib.dylib $kclvm_install_dir/bin/libkclvm_cli_cdylib.dylib
 fi
 # Linux so
-if [ -e target/release/libkclvm_cli_cdylib.so ]; then
+if [ -e $topdir/kclvm/target/release/libkclvm_cli_cdylib.so ]; then
     touch $kclvm_install_dir/bin/libkclvm_cli_cdylib.so
     rm $kclvm_install_dir/bin/libkclvm_cli_cdylib.so
-    cp target/release/libkclvm_cli_cdylib.so $kclvm_install_dir/bin/libkclvm_cli_cdylib.so
+    cp $topdir/kclvm/target/release/libkclvm_cli_cdylib.so $kclvm_install_dir/bin/libkclvm_cli_cdylib.so
 fi
 # Windows dll
-if [ -e target/release/libkclvm_cli_cdylib.dll ]; then
+if [ -e $topdir/kclvm/target/release/libkclvm_cli_cdylib.dll ]; then
     touch $kclvm_install_dir/bin/libkclvm_cli_cdylib.dll
     rm $kclvm_install_dir/bin/libkclvm_cli_cdylib.dll
-    cp target/release/libkclvm_cli_cdylib.dll $kclvm_install_dir/bin/libkclvm_cli_cdylib.dll
+    cp $topdir/kclvm/target/release/libkclvm_cli_cdylib.dll $kclvm_install_dir/bin/libkclvm_cli_cdylib.dll
 fi
 
 
@@ -93,33 +93,33 @@ echo "$RUST_LIBSTD" > $kclvm_install_dir/lib/rust-libstd-name.txt
 cd $topdir/kclvm/runtime
 ## Native
 cargo build --release
-cp target/release/libkclvm.a                        $kclvm_install_dir/lib/libkclvm_native.a
+cp $topdir/kclvm/target/release/libkclvm.a                        $kclvm_install_dir/lib/libkclvm_native.a
 
 # Darwin dylib
-if [ -e target/release/libkclvm.dylib ]; then
+if [ -e $topdir/kclvm/target/release/libkclvm.dylib ]; then
     touch $kclvm_install_dir/lib/libkclvm.dylib
     rm $kclvm_install_dir/lib/libkclvm.dylib
-    cp target/release/libkclvm.dylib $kclvm_install_dir/lib/
-    cp target/release/libkclvm.dylib $kclvm_install_dir/lib/libkclvm_native_shared.dylib
+    cp $topdir/kclvm/target/release/libkclvm.dylib $kclvm_install_dir/lib/
+    cp $topdir/kclvm/target/release/libkclvm.dylib $kclvm_install_dir/lib/libkclvm_native_shared.dylib
 fi
 # Linux so
-if [ -e target/release/libkclvm.so ]; then
+if [ -e $topdir/kclvm/target/release/libkclvm.so ]; then
     touch $kclvm_install_dir/lib/libkclvm.so
     rm $kclvm_install_dir/lib/libkclvm.so
-    cp target/release/libkclvm.so $kclvm_install_dir/lib/
-    cp target/release/libkclvm.so $kclvm_install_dir/lib/libkclvm_native_shared.so
+    cp $topdir/kclvm/target/release/libkclvm.so $kclvm_install_dir/lib/
+    cp $topdir/kclvm/target/release/libkclvm.so $kclvm_install_dir/lib/libkclvm_native_shared.so
 fi
 # Windows dll
-if [ -e target/release/libkclvm.dll ]; then
+if [ -e $topdir/kclvm/target/release/libkclvm.dll ]; then
     touch $kclvm_install_dir/lib/libkclvm.dll
     rm $kclvm_install_dir/lib/libkclvm.dll
-    cp target/release/libkclvm.dll $kclvm_install_dir/lib/
-    cp target/release/libkclvm.dll $kclvm_install_dir/lib/libkclvm_native_shared.dll
+    cp $topdir/kclvm/target/release/libkclvm.dll $kclvm_install_dir/lib/
+    cp $topdir/kclvm/target/release/libkclvm.dll $kclvm_install_dir/lib/libkclvm_native_shared.dll
 fi
 
 # WASM
 cargo build --release --target wasm32-unknown-unknown
-cp target/wasm32-unknown-unknown/release/libkclvm.a $kclvm_install_dir/lib/libkclvm_wasm32.a
+cp $topdir/kclvm/target/wasm32-unknown-unknown/release/libkclvm.a $kclvm_install_dir/lib/libkclvm_wasm32.a
 cp src/_kclvm_undefined_wasm.txt $kclvm_install_dir/lib/_kclvm_undefined_wasm.txt
 
 cp src/_kclvm.bc $kclvm_install_dir/include/_kclvm.bc
