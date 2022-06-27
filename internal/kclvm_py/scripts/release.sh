@@ -8,6 +8,9 @@ kclvm_install_dir="kclvm"
 rm $kclvm_release_file
 
 cd $kclvm_package_dir
+if [[ x"$os" == "xDarwin" ]]; then
+    xattr -rc $kclvm_install_dir
+fi
 tar -czvf $kclvm_release_file $kclvm_install_dir
 
 mv $kclvm_package_dir/$kclvm_release_file $kclvm_release_path/$kclvm_release_file
