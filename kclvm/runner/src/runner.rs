@@ -18,7 +18,7 @@ pub struct ExecProgramArgs {
     pub k_code_list: Vec<String>,
 
     pub args: Vec<ast::CmdArgSpec>,
-    pub overrides: Vec<ast::CmdOverrideSpec>,
+    pub overrides: Vec<ast::OverrideSpec>,
 
     pub disable_yaml_result: bool,
     pub print_override_ast: bool,

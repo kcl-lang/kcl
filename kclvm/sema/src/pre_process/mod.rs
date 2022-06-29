@@ -1,5 +1,6 @@
 mod config;
 mod identifier;
+mod multi_assign;
 
 use indexmap::IndexMap;
 use kclvm_ast::ast;
@@ -9,6 +10,7 @@ mod tests;
 
 pub use config::{fix_config_expr_nest_attr, merge_program};
 pub use identifier::{fix_qualified_identifier, fix_raw_identifier_prefix};
+pub use multi_assign::transform_multi_assign;
 
 /// Pre-process AST program.
 pub fn pre_process_program(program: &mut ast::Program) {
