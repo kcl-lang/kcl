@@ -70,7 +70,9 @@ pub fn kclvm_cli_run_unsafe(args: *const i8, plugin_agent: *const i8) -> Result<
 
     // load ast
     let mut program = load_program(&files, Some(opts))?;
-    apply_overrides(&mut program, &args.overrides, &[]);
+    if let Err(msg) = apply_overrides(&mut program, &args.overrides, &[]) {
+        return Err(msg.to_string());
+    }
     let scope = resolve_program(&mut program);
     scope.check_scope_diagnostics();
     // gen bc or ll file

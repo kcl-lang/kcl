@@ -89,16 +89,32 @@ pub fn parse_file(filename: &str, code: Option<String>) -> Result<ast::Module, S
     })
 }
 
-pub fn parse_expr(src: &str) -> ast::NodeRef<ast::Expr> {
-    let sm = SourceMap::new(FilePathMapping::empty());
-    sm.new_source_file(PathBuf::from("").into(), src.to_string());
-    let sess = &ParseSession::with_source_map(Arc::new(sm));
-
-    create_session_globals_then(|| {
-        let stream = parse_token_streams(sess, src, BytePos::from_u32(0));
-        let mut parser = Parser::new(sess, stream);
-        parser.parse_expr()
-    })
+/// Parse a source string to a expression. When input empty string, it will return [None].
+/// 
+/// # Examples
+/// ```
+/// use kclvm_ast::ast;
+/// use kclvm_parser::parse_expr;
+///
+/// let expr = parse_expr("'alice'").unwrap();
+/// assert!(matches!(expr.node, ast::Expr::StringLit(_)));
+/// let expr = parse_expr("");
+/// assert!(matches!(expr, None));
+/// ```
+pub fn parse_expr(src: &str) -> Option<ast::NodeRef<ast::Expr>> {
+    if src.is_empty() {
+        None
+    } else {
+        let sm = SourceMap::new(FilePathMapping::empty());
+        sm.new_source_file(PathBuf::from("").into(), src.to_string());
+        let sess = &ParseSession::with_source_map(Arc::new(sm));
+    
+        Some(create_session_globals_then(|| {
+            let stream = parse_token_streams(sess, src, BytePos::from_u32(0));
+            let mut parser = Parser::new(sess, stream);
+            parser.parse_expr()
+        }))
+    }
 }
 
 #[derive(Debug, Default, Clone)]
@@ -107,7 +123,7 @@ pub struct LoadProgramOptions {
     pub k_code_list: Vec<String>,
 
     pub cmd_args: Vec<ast::CmdArgSpec>,
-    pub cmd_overrides: Vec<ast::CmdOverrideSpec>,
+    pub cmd_overrides: Vec<ast::OverrideSpec>,
 
     pub _mode: Option<ParseMode>,
     pub _load_packages: bool,
