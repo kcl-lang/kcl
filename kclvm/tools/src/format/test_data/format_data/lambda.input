@@ -1,0 +1,6 @@
+f0 =   lambda    {
+    1 +    1
+}
+f1 = lambda   x  : int , y  : int ->int{
+    x + y
+}

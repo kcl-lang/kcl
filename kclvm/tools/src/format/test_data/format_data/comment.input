@@ -1,0 +1,9 @@
+# Block comment
+a = 1# Inline comment
+schema Person:
+    """
+    Schema doc string
+    """
+    name:str="Alice"# Inline comment in schema
+    # Block comment in schema
+    age:int=18

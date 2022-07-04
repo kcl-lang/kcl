@@ -1,0 +1,17 @@
+# Inline comment 1
+# Inline comment 2
+# Inline comment 3
+a = 1
+# Inline comment 4
+# Inline comment 5
+# 
+# 
+# Inline comment 6
+# Inline comment 7
+# 
+# Inline comment 8
+b = 2
+# Same inline comment
+# Same inline comment
+# Same inline comment
+c = b + 1

@@ -787,6 +787,7 @@ dependencies = [
  "fancy-regex",
  "indexmap",
  "kclvm-ast",
+ "kclvm-config",
  "kclvm-error",
  "kclvm-parser",
  "kclvm-sema",
