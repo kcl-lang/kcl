@@ -47,7 +47,7 @@ pub mod tests;
 ///
 /// # Examples
 ///
-/// ```no_run
+/// ```
 /// use kclvm_runner::{execute, runner::ExecProgramArgs};
 /// use kclvm_parser::load_program;
 /// use kclvm_ast::ast::Program;

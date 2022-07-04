@@ -216,7 +216,7 @@ impl LibAssembler for LlvmLibAssembler {
     /// At last remove the codegen temp files and return the dynamic link library path.
     /// # Examples
     ///
-    /// ```no_run
+    /// ```
     /// use kclvm_runner::runner::ExecProgramArgs;
     /// use kclvm_parser::load_program;
     /// use kclvm_sema::resolver::resolve_program;
@@ -454,7 +454,7 @@ impl KclvmAssembler {
     ///
     /// # Examples
     ///
-    /// ```no_run
+    /// ```
     /// use std::fs;
     /// use kclvm_parser::load_program;
     /// use kclvm_runner::runner::ExecProgramArgs;
@@ -462,14 +462,16 @@ impl KclvmAssembler {
     /// use kclvm_runner::assembler::KclvmLibAssembler;
     /// use kclvm_runner::assembler::LlvmLibAssembler;
     /// use kclvm_sema::resolver::resolve_program;
+    /// use kclvm_runner::command::Command;
     ///
     /// let plugin_agent = 0;
     ///
     /// let args = ExecProgramArgs::default();
     /// let opts = args.get_load_program_options();
     ///
-    /// let kcl_path = "./src/test_datas/init_check_order_0/main.k";
-    /// let mut prog = load_program(&[kcl_path], Some(opts)).unwrap();
+    /// let kcl_path = fs::canonicalize("./src/test_datas/init_check_order_0/main.k").unwrap().display().to_string();
+    ///
+    /// let mut prog = load_program(&[&kcl_path], Some(opts)).unwrap();
     /// let scope = resolve_program(&mut prog);
     ///        
     /// let lib_paths = KclvmAssembler::new().gen_libs(
@@ -479,14 +481,16 @@ impl KclvmAssembler {
     ///                     &("test_entry_file_name".to_string()),
     ///                     KclvmLibAssembler::LLVM(LlvmLibAssembler {}));
     /// assert_eq!(lib_paths.len(), 1);
+    /// println!("kcl path: {}", *lib_paths.get(0).unwrap());
     ///
-    /// let expected_lib_path = fs::canonicalize("./test_entry_file_name.dylib").unwrap().display().to_string();
+    /// let lib_path = format!("./test_entry_file_name{}", Command::get_lib_suffix());
+    /// let expected_lib_path = fs::canonicalize(lib_path).unwrap().display().to_string();
     /// assert_eq!(*lib_paths.get(0).unwrap(), expected_lib_path);
     ///
     /// let path = std::path::Path::new(&expected_lib_path);
     /// assert_eq!(path.exists(), true);
     ///
-    /// KclvmAssembler::new().clean_path_for_genlibs(&expected_lib_path, ".dylib");
+    /// KclvmAssembler::new().clean_path_for_genlibs(&expected_lib_path, &Command::get_lib_suffix());
     /// assert_eq!(path.exists(), false);
     ///```
     pub fn gen_libs(

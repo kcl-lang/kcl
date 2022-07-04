@@ -1,6 +1,14 @@
+use crate::assembler::KclvmAssembler;
+use crate::KclvmLibAssembler;
+use crate::LlvmLibAssembler;
 use crate::{execute, runner::ExecProgramArgs};
 use kclvm_ast::ast::{Module, Program};
-use std::{collections::HashMap, fs::File};
+use kclvm_parser::load_program;
+use kclvm_sema::resolver::resolve_program;
+use std::{
+    collections::HashMap,
+    fs::{self, File},
+};
 
 const TEST_CASES: &[&'static str; 5] = &[
     "init_check_order_0",
@@ -68,7 +76,7 @@ pub fn execute_for_test(kcl_path: &String) -> String {
 }
 
 // TODO: need to fix issue #79
-// #[test]
+#[test]
 fn test_kclvm_runner_execute() {
     for case in TEST_CASES {
         let kcl_path = &format!("{}/{}/{}", TEST_CASE_PATH, case, KCL_FILE_NAME);

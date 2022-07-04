@@ -5,7 +5,7 @@ PROJECT_NAME = KCLVM
 PWD:=$(shell pwd)
 
 KCLVM_VERSION := $(shell cat VERSION)
-BUILD_IMAGE:=kusionstack/kclvm-builder:centos7
+BUILD_IMAGE:=kusionstack/kclvm-builder
 
 # export DOCKER_DEFAULT_PLATFORM=linux/amd64
 # or
