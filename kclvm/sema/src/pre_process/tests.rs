@@ -33,3 +33,26 @@ fn test_fix_raw_identifier_prefix() {
         panic!("invalid assign statement")
     }
 }
+
+#[test]
+fn test_transform_multi_assign() {
+    let targets = ["a", "b", "c", "d"];
+    let mut module = parse_file("./src/pre_process/test_data/multi_assign.k", None).unwrap();
+    if let ast::Stmt::Assign(assign_stmt) = &module.body[1].node {
+        assert_eq!(assign_stmt.targets.len(), targets.len());
+        for (i, target) in targets.iter().enumerate() {
+            assert_eq!(assign_stmt.targets[i].node.get_name(), *target);
+        }
+    } else {
+        panic!("invalid assign statement")
+    }
+    transform_multi_assign(&mut module);
+    for (i, target) in targets.iter().enumerate() {
+        if let ast::Stmt::Assign(assign_stmt) = &module.body[i + 1].node {
+            assert_eq!(assign_stmt.targets.len(), 1);
+            assert_eq!(assign_stmt.targets[0].node.get_name(), *target);
+        } else {
+            panic!("invalid assign statement")
+        }
+    }
+}

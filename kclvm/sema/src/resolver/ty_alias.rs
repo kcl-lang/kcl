@@ -4,6 +4,7 @@ use kclvm_ast::{ast, walk_if_mut, walk_list_mut};
 
 #[derive(Default)]
 struct TypeAliasTransformer {
+    pub pkgpath: String,
     pub type_alias_mapping: IndexMap<String, String>,
 }
 
@@ -83,10 +84,22 @@ impl<'ctx> MutSelfMutWalker<'ctx> for TypeAliasTransformer {
     }
     fn walk_identifier(&mut self, identifier: &'ctx mut ast::Identifier) {
         if let Some(type_alias) = self.type_alias_mapping.get(&identifier.get_name()) {
-            if type_alias.starts_with('@') {
+            if type_alias.starts_with('@') && type_alias.contains('.') {
                 let splits: Vec<&str> = type_alias.rsplitn(2, '.').collect();
-                identifier.pkgpath = splits[1].to_string();
-                identifier.names = vec![splits[1].to_string(), splits[0].to_string()];
+                let pkgpath = splits[1].to_string();
+                // Do not replace package identifier name in the same package.
+                // For example, the following code:
+                //
+                // ```
+                // schema Name:
+                //    name: str
+                // schema Person:
+                //    name: Name
+                // ```
+                if self.pkgpath != &pkgpath[1..] {
+                    identifier.pkgpath = pkgpath;
+                    identifier.names = vec![splits[1].to_string(), splits[0].to_string()];
+                }
             } else {
                 let names = type_alias.split('.').collect::<Vec<&str>>();
                 identifier.names = names.iter().map(|n| n.to_string()).collect();
@@ -100,7 +113,10 @@ fn fix_type_alias_identifier<'ctx>(
     module: &'ctx mut ast::Module,
     type_alias_mapping: IndexMap<String, String>,
 ) {
-    let mut type_alias_transformer = TypeAliasTransformer { type_alias_mapping };
+    let mut type_alias_transformer = TypeAliasTransformer {
+        pkgpath: module.pkg.clone(),
+        type_alias_mapping,
+    };
     type_alias_transformer.walk_module(module);
 }
 

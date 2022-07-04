@@ -59,7 +59,9 @@ pub fn kclvm_cli_run_unsafe(args: *const i8, plugin_agent: *const i8) -> Result<
 
     // Parse AST program.
     let mut program = load_program(&files, Some(opts))?;
-    apply_overrides(&mut program, &args.overrides, &[]);
+    if let Err(msg) = apply_overrides(&mut program, &args.overrides, &[]) {
+        return Err(msg.to_string());
+    }
 
     // Resolve AST program, generate libs, link libs and execute.
     execute(program, plugin_agent, &args)

@@ -166,29 +166,23 @@ impl TryInto<Node<SchemaExpr>> for Node<Expr> {
 /// AST node type T
 pub type NodeRef<T> = Box<Node<T>>;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub enum ParseMode {
-    Null,
-    ParseComments,
-}
-
 /// KCL command line argument spec, e.g. `kcl main.k -D name=value`
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct CmdArgSpec {
     pub name: String,
     pub value: String,
 }
 
 /// KCL command line override spec, e.g. `kcl main.k -O pkgpath:path.to.field=field_value`
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct CmdOverrideSpec {
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct OverrideSpec {
     pub pkgpath: String,
     pub field_path: String,
     pub field_value: String,
     pub action: OverrideAction,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub enum OverrideAction {
     CreateOrUpdate,
     Delete,
@@ -201,7 +195,7 @@ pub struct Program {
     pub main: String,
     pub pkgs: HashMap<String, Vec<Module>>,
     pub cmd_args: Vec<CmdArgSpec>,
-    pub cmd_overrides: Vec<CmdOverrideSpec>,
+    pub cmd_overrides: Vec<OverrideSpec>,
 }
 
 impl Program {
