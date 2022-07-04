@@ -14,7 +14,7 @@ use std::{
 use threadpool::ThreadPool;
 
 /// IR code file suffix.
-const IR_FILE: &str = "_a.out";
+const DEFAULT_IR_FILE: &str = "_a.out";
 /// Default codegen timeout.
 const DEFAULT_TIME_OUT: u64 = 5;
 
@@ -25,31 +25,30 @@ const DEFAULT_TIME_OUT: u64 = 5;
 /// Note: LibAssembler is only for single file kcl program. For multi-file kcl programs,
 /// KclvmAssembler is provided to support for multi-file parallel compilation to improve
 /// the performance of the compiler.
-pub trait LibAssembler {
-    /// Add a suffix to the file name according to the file suffix of different intermediate codes.
-    /// e.g. LLVM IR
-    /// code_file : "/test_dir/test_code_file"
-    /// return : "/test_dir/test_code_file.ll"
+pub(crate) trait LibAssembler {
+    /// Add a suffix to the file name according to the file suffix of different intermediate code files.
+    /// e.g. LLVM IR -> code_file : "/test_dir/test_code_file" -> return : "/test_dir/test_code_file.ll"
     fn add_code_file_suffix(&self, code_file: &str) -> String;
 
-    /// Return the file suffix of different intermediate codes.
-    /// e.g. LLVM IR
-    /// return : ".ll"
-    fn get_code_file_suffix(&self) -> &str;
+    /// Return the file suffix of different intermediate code files.
+    /// e.g. LLVM IR -> return : ".ll"
+    fn get_code_file_suffix(&self) -> String;
 
     /// Assemble different intermediate codes into dynamic link libraries for single file kcl program.
+    /// Returns the path of the dynamic link library.
     ///
     /// Inputs:
     /// compile_prog: Reference of kcl program ast.
     ///
     /// "import_names" is import pkgpath and name of kcl program.
     /// Type of import_names is "IndexMap<kcl_file_name, IndexMap<import_name, import_path>>".
+    ///
     /// "kcl_file_name" is the kcl file name string.
     /// "import_name" is the name string of import stmt.
-    /// e.g. "import test/main_pkg as main", "main" is an import_name.
     /// "import_path" is the path string of import stmt.
+    ///
+    /// e.g. "import test/main_pkg as main", "main" is an "import_name".
     /// e.g. "import test/main_pkg as main", "test/main_pkg" is an import_path.
-    /// import_names is from "ProgramScope.import_names" returned by "resolve_program" after resolving kcl ast by kclvm-sema.
     ///
     /// "code_file" is the filename of the generated intermediate code file.
     /// e.g. code_file : "/test_dir/test_code_file"
@@ -61,10 +60,6 @@ pub trait LibAssembler {
     /// e.g. lib_path : "/test_dir/test_code_file.ll.dylib" (mac)
     /// e.g. lib_path : "/test_dir/test_code_file.ll.dll.lib" (windows)
     /// e.g. lib_path : "/test_dir/test_code_file.ll.so" (ubuntu)
-    ///
-    /// "plugin_agent" is a pointer to the plugin address.
-    ///
-    /// Returns the path of the dynamic link library.
     fn assemble_lib(
         &self,
         compile_prog: &Program,
@@ -72,7 +67,6 @@ pub trait LibAssembler {
         code_file: &str,
         code_file_path: &str,
         lib_path: &str,
-        plugin_agent: &u64,
     ) -> String;
 
     /// This method is prepared for concurrent compilation in KclvmAssembler.
@@ -87,12 +81,7 @@ pub trait LibAssembler {
         compile_prog: &Program,
         import_names: IndexMap<String, IndexMap<String, String>>,
         file: &Path,
-        plugin_agent: &u64,
     ) -> String {
-        // e.g. LLVM IR
-        // code_file: file_name
-        // code_file_path: file_name.ll
-        // lock_file_path: file_name.dll.lib or file_name.lib or file_name.so
         let code_file = file.to_str().unwrap();
         let code_file_path = &self.add_code_file_suffix(code_file);
         let lock_file_path = &format!("{}.lock", code_file_path);
@@ -110,7 +99,6 @@ pub trait LibAssembler {
             code_file,
             code_file_path,
             &lib_path,
-            plugin_agent,
         );
 
         // Unlock file
@@ -119,8 +107,6 @@ pub trait LibAssembler {
         gen_lib_path
     }
 
-    // Clean file path
-    // Delete the file in "path".
     #[inline]
     fn clean_path(&self, path: &str) {
         if Path::new(path).exists() {
@@ -128,8 +114,6 @@ pub trait LibAssembler {
         }
     }
 
-    // Clean lock file
-    // Clear the lock files generated during concurrent compilation.
     #[inline]
     fn clean_lock_file(&self, path: &str) {
         let lock_path = &format!("{}.lock", self.add_code_file_suffix(path));
@@ -140,8 +124,8 @@ pub trait LibAssembler {
 /// This enum lists all the intermediate code assemblers currently supported by kclvm.
 /// Currently only supports assemble llvm intermediate code into dynamic link library.
 #[derive(Clone)]
-pub enum KclvmLibAssembler {
-    LLVM(LlvmLibAssembler),
+pub(crate) enum KclvmLibAssembler {
+    LLVM,
 }
 
 /// KclvmLibAssembler is a dispatcher, responsible for calling corresponding methods
@@ -158,16 +142,14 @@ impl LibAssembler for KclvmLibAssembler {
         code_file: &str,
         code_file_path: &str,
         lib_path: &str,
-        plugin_agent: &u64,
     ) -> String {
         match &self {
-            KclvmLibAssembler::LLVM(llvm_a) => llvm_a.assemble_lib(
+            KclvmLibAssembler::LLVM => LlvmLibAssembler::default().assemble_lib(
                 compile_prog,
                 import_names,
                 code_file,
                 code_file_path,
                 lib_path,
-                plugin_agent,
             ),
         }
     }
@@ -175,14 +157,14 @@ impl LibAssembler for KclvmLibAssembler {
     #[inline]
     fn add_code_file_suffix(&self, code_file: &str) -> String {
         match &self {
-            KclvmLibAssembler::LLVM(llvm_a) => llvm_a.add_code_file_suffix(code_file),
+            KclvmLibAssembler::LLVM => LlvmLibAssembler::default().add_code_file_suffix(code_file),
         }
     }
 
     #[inline]
-    fn get_code_file_suffix(&self) -> &str {
+    fn get_code_file_suffix(&self) -> String {
         match &self {
-            KclvmLibAssembler::LLVM(llvm_a) => llvm_a.get_code_file_suffix(),
+            KclvmLibAssembler::LLVM => LlvmLibAssembler::default().get_code_file_suffix(),
         }
     }
 
@@ -192,11 +174,10 @@ impl LibAssembler for KclvmLibAssembler {
         compile_prog: &Program,
         import_names: IndexMap<String, IndexMap<String, String>>,
         file: &Path,
-        plugin_agent: &u64,
     ) -> String {
         match &self {
-            KclvmLibAssembler::LLVM(llvm_a) => {
-                llvm_a.lock_file_and_gen_lib(compile_prog, import_names, file, plugin_agent)
+            KclvmLibAssembler::LLVM => {
+                LlvmLibAssembler::default().lock_file_and_gen_lib(compile_prog, import_names, file)
             }
         }
     }
@@ -204,7 +185,21 @@ impl LibAssembler for KclvmLibAssembler {
 
 /// LlvmLibAssembler is mainly responsible for assembling the generated LLVM IR into a dynamic link library.
 #[derive(Clone)]
-pub struct LlvmLibAssembler;
+pub(crate) struct LlvmLibAssembler;
+
+impl LlvmLibAssembler {
+    #[inline]
+    fn new() -> Self {
+        Self {}
+    }
+}
+
+impl Default for LlvmLibAssembler {
+    #[inline]
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 /// KclvmLibAssembler implements the LibAssembler trait,
 impl LibAssembler for LlvmLibAssembler {
@@ -214,47 +209,6 @@ impl LibAssembler for LlvmLibAssembler {
     /// And then assemble the dynamic link library based on the LLVM IR,
     ///
     /// At last remove the codegen temp files and return the dynamic link library path.
-    /// # Examples
-    ///
-    /// ```
-    /// use kclvm_runner::runner::ExecProgramArgs;
-    /// use kclvm_parser::load_program;
-    /// use kclvm_sema::resolver::resolve_program;
-    /// use kclvm_runner::assembler::LlvmLibAssembler;
-    /// use crate::kclvm_runner::assembler::LibAssembler;
-    ///
-    /// // default args and configuration
-    /// let mut args = ExecProgramArgs::default();
-    /// let k_path = "./src/test_datas/init_check_order_0/main.k";
-    /// args.k_filename_list.push(k_path.to_string());
-    /// let plugin_agent = 0;
-    /// let files = args.get_files();
-    /// let opts = args.get_load_program_options();
-    ///
-    /// // parse and resolve kcl
-    /// let mut program = load_program(&files, Some(opts)).unwrap();
-    /// let scope = resolve_program(&mut program);
-    ///
-    /// // tmp file
-    /// let temp_entry_file = "test_entry_file";
-    /// let temp_entry_file_path = &format!("{}.ll", temp_entry_file);
-    /// let temp_entry_file_lib = &format!("{}.dylib", temp_entry_file);
-    ///
-    /// // assemble libs
-    /// let llvm_assembler = LlvmLibAssembler{};
-    /// let lib_file = llvm_assembler.assemble_lib(
-    ///      &program,
-    ///      scope.import_names.clone(),
-    ///      temp_entry_file,
-    ///      temp_entry_file_path,
-    ///      temp_entry_file_lib,
-    ///      &plugin_agent
-    /// );
-    /// let lib_path = std::path::Path::new(&lib_file);
-    /// assert_eq!(lib_path.exists(), true);
-    /// llvm_assembler.clean_path(&lib_file);
-    /// assert_eq!(lib_path.exists(), false);
-    /// ```
     #[inline]
     fn assemble_lib(
         &self,
@@ -263,7 +217,6 @@ impl LibAssembler for LlvmLibAssembler {
         code_file: &str,
         code_file_path: &str,
         lib_path: &str,
-        plugin_agent: &u64,
     ) -> String {
         // clean "*.ll" file path.
         self.clean_path(&code_file_path.to_string());
@@ -280,25 +233,21 @@ impl LibAssembler for LlvmLibAssembler {
         )
         .expect("Compile KCL to LLVM error");
 
-        // assemble lib
-        let mut cmd = Command::new(*plugin_agent);
+        let mut cmd = Command::new();
         let gen_lib_path = cmd.run_clang_single(code_file_path, lib_path);
 
-        // clean "*.ll" file path
         self.clean_path(&code_file_path.to_string());
         gen_lib_path
     }
 
-    /// Add ".ll" suffix to a file path.
     #[inline]
     fn add_code_file_suffix(&self, code_file: &str) -> String {
         format!("{}.ll", code_file)
     }
 
-    /// Get String ".ll"
     #[inline]
-    fn get_code_file_suffix(&self) -> &str {
-        ".ll"
+    fn get_code_file_suffix(&self) -> String {
+        ".ll".to_string()
     }
 }
 
@@ -311,39 +260,29 @@ impl LibAssembler for LlvmLibAssembler {
 ///
 /// KclvmAssembler provides an atomic operation for generating a dynamic link library for a single file
 /// through KclvmLibAssembler for each thread.
-pub struct KclvmAssembler {
+pub(crate) struct KclvmAssembler {
     thread_count: usize,
 }
 
 impl KclvmAssembler {
+    /// get the number of threads used in parallel multi-file compilation.
+    pub(crate) fn get_thread_count(self) -> usize {
+        return self.thread_count;
+    }
+
     /// Constructs an KclvmAssembler instance with a default value 4
     /// for the number of threads in multi-file compilation.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use kclvm_runner::assembler::KclvmAssembler;
-    ///
-    /// let assembler = KclvmAssembler::new();
-    /// ```
     #[inline]
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self { thread_count: 4 }
     }
 
     /// Constructs an KclvmAssembler instance with a value
     /// for the number of threads in multi-file compilation.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use kclvm_runner::assembler::KclvmAssembler;
-    ///
-    /// let assembler = KclvmAssembler::new_with_thread_count(5);
-    /// ```
+    /// The number of threads must be greater than to 0.
     #[inline]
-    pub fn new_with_thread_count(thread_count: usize) -> Self {
-        if thread_count == 0 {
+    pub(crate) fn new_with_thread_count(thread_count: usize) -> Self {
+        if thread_count <= 0 {
             bug!("Illegal thread count in multi-file compilation");
         }
         Self { thread_count }
@@ -351,47 +290,8 @@ impl KclvmAssembler {
 
     /// Clean up the path of the dynamic link libraries generated.
     /// It will remove the file in "file_path" and all the files in file_path end with ir code file suffix.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use std::fs;
-    /// use std::fs::File;
-    /// use kclvm_runner::assembler::KclvmAssembler;
-    ///
-    /// // create test dir
-    /// std::fs::create_dir_all("./src/test_datas/test_clean").unwrap();
-    ///
-    /// // File name and suffix for test
-    /// let test_path = "./src/test_datas/test_clean/test.out";
-    /// let file_suffix = ".ll";
-    ///
-    /// // Create file "./src/test_datas/test_clean/test.out"
-    /// File::create(test_path);
-    /// let path = std::path::Path::new(test_path);
-    /// assert_eq!(path.exists(), true);
-    ///
-    /// // Delete file "./src/test_datas/test_clean/test.out" and "./src/test_datas/test_clean/test.out*.ll"
-    /// KclvmAssembler::new().clean_path_for_genlibs(test_path, file_suffix);
-    /// assert_eq!(path.exists(), false);
-    ///
-    /// // Delete files whose filename end with "*.ll"
-    /// let test1 = &format!("{}{}", test_path, ".test1.ll");
-    /// let test2 = &format!("{}{}", test_path, ".test2.ll");
-    /// File::create(test1);
-    /// File::create(test2);
-    /// let path1 = std::path::Path::new(test1);
-    /// let path2 = std::path::Path::new(test2);
-    /// assert_eq!(path1.exists(), true);
-    /// assert_eq!(path2.exists(), true);
-    ///
-    /// // Delete file "./src/test_datas/test_clean/test.out" and "./src/test_datas/test_clean/test.out*.ll"
-    /// KclvmAssembler::new().clean_path_for_genlibs(test_path, file_suffix);
-    /// assert_eq!(path1.exists(), false);
-    /// assert_eq!(path2.exists(), false);
-    /// ```
     #[inline]
-    pub fn clean_path_for_genlibs(&self, file_path: &str, suffix: &str) {
+    pub(crate) fn clean_path_for_genlibs(&self, file_path: &str, suffix: &str) {
         let path = std::path::Path::new(file_path);
         if path.exists() {
             std::fs::remove_file(path).unwrap();
@@ -408,37 +308,23 @@ impl KclvmAssembler {
         }
     }
 
-    /// Generate cache dir from the program root path. Create cache dir if it doesn't exist.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use std::fs;
-    /// use kclvm_runner::assembler::KclvmAssembler;
-    ///
-    /// let expected_dir = "test_prog_name/.kclvm/cache/0.4.2-e07ed7af0d9bd1e86a3131714e4bd20c";
-    /// let path = std::path::Path::new(expected_dir);
-    /// assert_eq!(path.exists(), false);
-    ///
-    /// let cache_dir = KclvmAssembler::new().load_cache_dir("test_prog_name");
-    /// assert_eq!(cache_dir.display().to_string(), expected_dir);
-    ///
-    /// let path = std::path::Path::new(expected_dir);
-    /// assert_eq!(path.exists(), true);
-    ///
-    /// fs::remove_dir(expected_dir);
-    /// assert_eq!(path.exists(), false);
-    /// ```
+    /// Generate cache dir from the program root path.
+    /// Create cache dir if it doesn't exist.
     #[inline]
-    pub fn load_cache_dir(&self, prog_root_name: &str) -> PathBuf {
-        let cache_dir = Path::new(prog_root_name)
-            .join(".kclvm")
-            .join("cache")
-            .join(kclvm_version::get_full_version());
+    pub(crate) fn load_cache_dir(&self, prog_root_name: &str) -> PathBuf {
+        let cache_dir = self.construct_cache_dir(prog_root_name);
         if !cache_dir.exists() {
             std::fs::create_dir_all(&cache_dir).unwrap();
         }
         cache_dir
+    }
+
+    #[inline]
+    pub(crate) fn construct_cache_dir(&self, prog_root_name: &str) -> PathBuf {
+        Path::new(prog_root_name)
+            .join(".kclvm")
+            .join("cache")
+            .join(kclvm_version::get_full_version())
     }
 
     /// Generate the dynamic link libraries and return file paths.
@@ -451,61 +337,18 @@ impl KclvmAssembler {
     ///
     /// `gen_libs` will create multiple threads and call the method provided by [KclvmLibAssembler] in each thread
     /// to generate the dynamic link library in parallel.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use std::fs;
-    /// use kclvm_parser::load_program;
-    /// use kclvm_runner::runner::ExecProgramArgs;
-    /// use kclvm_runner::assembler::KclvmAssembler;
-    /// use kclvm_runner::assembler::KclvmLibAssembler;
-    /// use kclvm_runner::assembler::LlvmLibAssembler;
-    /// use kclvm_sema::resolver::resolve_program;
-    /// use kclvm_runner::command::Command;
-    ///
-    /// let plugin_agent = 0;
-    ///
-    /// let args = ExecProgramArgs::default();
-    /// let opts = args.get_load_program_options();
-    ///
-    /// let kcl_path = fs::canonicalize("./src/test_datas/init_check_order_0/main.k").unwrap().display().to_string();
-    ///
-    /// let mut prog = load_program(&[&kcl_path], Some(opts)).unwrap();
-    /// let scope = resolve_program(&mut prog);
-    ///        
-    /// let lib_paths = KclvmAssembler::new().gen_libs(
-    ///                     prog,
-    ///                     scope,
-    ///                     plugin_agent,
-    ///                     &("test_entry_file_name".to_string()),
-    ///                     KclvmLibAssembler::LLVM(LlvmLibAssembler {}));
-    /// assert_eq!(lib_paths.len(), 1);
-    /// println!("kcl path: {}", *lib_paths.get(0).unwrap());
-    ///
-    /// let lib_path = format!("./test_entry_file_name{}", Command::get_lib_suffix());
-    /// let expected_lib_path = fs::canonicalize(lib_path).unwrap().display().to_string();
-    /// assert_eq!(*lib_paths.get(0).unwrap(), expected_lib_path);
-    ///
-    /// let path = std::path::Path::new(&expected_lib_path);
-    /// assert_eq!(path.exists(), true);
-    ///
-    /// KclvmAssembler::new().clean_path_for_genlibs(&expected_lib_path, &Command::get_lib_suffix());
-    /// assert_eq!(path.exists(), false);
-    ///```
-    pub fn gen_libs(
+    pub(crate) fn gen_libs(
         &self,
         program: ast::Program,
         scope: ProgramScope,
-        plugin_agent: u64,
         entry_file: &String,
         single_file_assembler: KclvmLibAssembler,
     ) -> Vec<String> {
-        // Clean the code generated path.
-        self.clean_path_for_genlibs(IR_FILE, single_file_assembler.get_code_file_suffix());
-        // Load cache
+        self.clean_path_for_genlibs(
+            DEFAULT_IR_FILE,
+            &single_file_assembler.get_code_file_suffix(),
+        );
         let cache_dir = self.load_cache_dir(&program.root);
-
         let mut compile_progs: IndexMap<
             String,
             (
@@ -549,12 +392,7 @@ impl KclvmAssembler {
                 let lib_path = if is_main_pkg {
                     let file = PathBuf::from(&temp_entry_file);
                     // generate dynamic link library for single file kcl program
-                    assembler.lock_file_and_gen_lib(
-                        &compile_prog,
-                        import_names,
-                        &file,
-                        &plugin_agent,
-                    )
+                    assembler.lock_file_and_gen_lib(&compile_prog, import_names, &file)
                 } else {
                     let file = cache_dir.join(&pkgpath);
                     // Read the lib path cache
@@ -579,12 +417,8 @@ impl KclvmAssembler {
                         Some(path) => path,
                         None => {
                             // generate dynamic link library for single file kcl program
-                            let lib_path = assembler.lock_file_and_gen_lib(
-                                &compile_prog,
-                                import_names,
-                                &file,
-                                &plugin_agent,
-                            );
+                            let lib_path =
+                                assembler.lock_file_and_gen_lib(&compile_prog, import_names, &file);
                             let lib_relative_path = lib_path.replacen(root, ".", 1);
                             save_pkg_cache(
                                 root,
@@ -612,13 +446,13 @@ impl KclvmAssembler {
                 .unwrap();
             lib_paths.push(lib_path);
         }
-        // Clean the lock file.
         single_file_assembler.clean_lock_file(entry_file);
         lib_paths
     }
 }
 
 impl Default for KclvmAssembler {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }

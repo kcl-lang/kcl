@@ -122,7 +122,6 @@ cargo build --release --target wasm32-unknown-unknown
 cp $topdir/kclvm/target/wasm32-unknown-unknown/release/libkclvm.a $kclvm_install_dir/lib/libkclvm_wasm32.a
 cp src/_kclvm_undefined_wasm.txt $kclvm_install_dir/lib/_kclvm_undefined_wasm.txt
 
-
 cp src/_kclvm.bc $kclvm_install_dir/include/_kclvm.bc
 cp src/_kclvm.h  $kclvm_install_dir/include/_kclvm.h
 

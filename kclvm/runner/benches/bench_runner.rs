@@ -3,18 +3,12 @@ use kclvm_parser::load_program;
 use kclvm_runner::{execute, runner::ExecProgramArgs};
 use kclvm_tools::query::apply_overrides;
 
-const TEST_CASE_PATH: &str = "/src/test_datas/init_check_order_0/main.k";
+const TEST_CASE_PATH: &str = "./src/test_datas/init_check_order_0/main.k";
 
 pub fn criterion_benchmark(c: &mut Criterion) {
-    let kcl_path = &format!(
-        "{}{}",
-        std::env::current_dir().unwrap().to_str().unwrap(),
-        TEST_CASE_PATH
-    );
-
     c.bench_function("refactor kclvm-runner", |b| {
         b.iter(|| {
-            after_refactor(kcl_path.to_string());
+            after_refactor(TEST_CASE_PATH.to_string());
         })
     });
 }

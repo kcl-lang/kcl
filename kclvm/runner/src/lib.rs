@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use assembler::{KclvmLibAssembler, LlvmLibAssembler};
+use assembler::KclvmLibAssembler;
 use command::Command;
 use kclvm_ast::ast::Program;
 use kclvm_sema::resolver::resolve_program;
@@ -25,7 +25,6 @@ pub mod tests;
 /// It returns the KCL program executing result as Result<a_json_string, an_err_string>,
 /// and mainly takes "program" (ast.Program returned by kclvm-parser) as input.
 ///
-/// "plugin_agent" is related to KCLVM plugin.
 /// "args" is the items selected by the user in the KCLVM CLI.
 ///
 /// This method will first resolve “program” (ast.Program) and save the result to the "scope" (ProgramScope).
@@ -43,18 +42,14 @@ pub mod tests;
 ///
 /// At last, KclvmRunner will be constructed and call method "run" to execute the kcl program.
 ///
-/// TODO: Need to be a better backend abstraction
-///
 /// # Examples
 ///
 /// ```
 /// use kclvm_runner::{execute, runner::ExecProgramArgs};
 /// use kclvm_parser::load_program;
 /// use kclvm_ast::ast::Program;
-///
-/// // Default plugin agent
+/// // plugin_agent is the address of plugin.
 /// let plugin_agent = 0;
-///
 /// // Get default args
 /// let args = ExecProgramArgs::default();
 /// let opts = args.get_load_program_options();
@@ -80,19 +75,19 @@ pub fn execute(
     let temp_dir = tempdir().unwrap();
     let temp_dir_path = temp_dir.path().to_str().unwrap();
     let temp_entry_file = temp_file(temp_dir_path);
+    
     // Generate libs
-    let lib_paths = assembler::KclvmAssembler::new().gen_libs(
+    let lib_paths = assembler::KclvmAssembler::default().gen_libs(
         program,
         scope,
-        plugin_agent,
         &temp_entry_file,
-        KclvmLibAssembler::LLVM(LlvmLibAssembler {}),
+        KclvmLibAssembler::LLVM,
     );
 
     // Link libs
     let lib_suffix = Command::get_lib_suffix();
     let temp_out_lib_file = format!("{}.out{}", temp_entry_file, lib_suffix);
-    let lib_path = linker::KclvmLinker::link_all_libs(lib_paths, temp_out_lib_file, plugin_agent);
+    let lib_path = linker::KclvmLinker::link_all_libs(lib_paths, temp_out_lib_file);
 
     // Run
     let runner = KclvmRunner::new(

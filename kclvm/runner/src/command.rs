@@ -1,19 +1,14 @@
 use std::{env, path::PathBuf};
 
-use super::runner::*;
-use kclvm::ValueRef;
-use kclvm_config::settings::SettingsFile;
-
 #[derive(Debug)]
 pub struct Command {
     clang_path: String,
     rust_stdlib: String,
     executable_root: String,
-    plugin_method_ptr: u64,
 }
 
 impl Command {
-    pub fn new(plugin_method_ptr: u64) -> Self {
+    pub fn new() -> Self {
         let executable_root = Self::get_executable_root();
         let rust_stdlib = Self::get_rust_stdlib(executable_root.as_str());
         let clang_path = Self::get_clang_path();
@@ -22,183 +17,7 @@ impl Command {
             clang_path,
             rust_stdlib,
             executable_root,
-            plugin_method_ptr,
         }
-    }
-
-    pub fn run_lib(&self, lib_path: &str) -> Result<String, String> {
-        unsafe {
-            let lib = libloading::Library::new(lib_path).unwrap();
-
-            // get kclvm_plugin_init
-            let kclvm_plugin_init: libloading::Symbol<
-                unsafe extern "C" fn(
-                    fn_ptr: extern "C" fn(
-                        method: *const i8,
-                        args_json: *const i8,
-                        kwargs_json: *const i8,
-                    ) -> *const i8,
-                ),
-            > = lib.get(b"kclvm_plugin_init").unwrap();
-
-            // get _kcl_run
-            let kcl_run: libloading::Symbol<
-                unsafe extern "C" fn(
-                    kclvm_main_ptr: u64, // main.k => kclvm_main
-                    option_len: kclvm_size_t,
-                    option_keys: *const *const kclvm_char_t,
-                    option_values: *const *const kclvm_char_t,
-                    strict_range_check: i32,
-                    disable_none: i32,
-                    disable_schema_check: i32,
-                    list_option_mode: i32,
-                    debug_mode: i32,
-                    result_buffer_len: kclvm_size_t,
-                    result_buffer: *mut kclvm_char_t,
-                    warn_buffer_len: kclvm_size_t,
-                    warn_buffer: *mut kclvm_char_t,
-                ) -> kclvm_size_t,
-            > = lib.get(b"_kcl_run").unwrap();
-
-            // get kclvm_main
-            let kclvm_main: libloading::Symbol<u64> = lib.get(b"kclvm_main").unwrap();
-            let kclvm_main_ptr = kclvm_main.into_raw().into_raw() as u64;
-
-            // get plugin_method
-            let plugin_method_ptr = self.plugin_method_ptr;
-            let plugin_method_ptr = (plugin_method_ptr as *const u64) as *const ()
-                as *const extern "C" fn(
-                    method: *const i8,
-                    args: *const i8,
-                    kwargs: *const i8,
-                ) -> *const i8;
-            let plugin_method: extern "C" fn(
-                method: *const i8,
-                args: *const i8,
-                kwargs: *const i8,
-            ) -> *const i8 = std::mem::transmute(plugin_method_ptr);
-
-            // register plugin agent
-            kclvm_plugin_init(plugin_method);
-
-            let option_len = 0;
-            let option_keys = std::ptr::null();
-            let option_values = std::ptr::null();
-            let strict_range_check = 0;
-            let disable_none = 0;
-            let disable_schema_check = 0;
-            let list_option_mode = 0;
-            let debug_mode = 0;
-
-            let mut result = vec![0u8; 1024 * 1024];
-            let result_buffer_len = result.len() as i32 - 1;
-            let result_buffer = result.as_mut_ptr() as *mut i8;
-
-            let mut warn_buffer = vec![0u8; 1024 * 1024];
-            let warn_buffer_len = warn_buffer.len() as i32 - 1;
-            let warn_buffer = warn_buffer.as_mut_ptr() as *mut i8;
-
-            let n = kcl_run(
-                kclvm_main_ptr,
-                option_len,
-                option_keys,
-                option_values,
-                strict_range_check,
-                disable_none,
-                disable_schema_check,
-                list_option_mode,
-                debug_mode,
-                result_buffer_len,
-                result_buffer,
-                warn_buffer_len,
-                warn_buffer,
-            );
-
-            let s = std::str::from_utf8(&result[0..n as usize]).unwrap();
-            Ok(s.to_string())
-        }
-    }
-
-    pub fn run_lib_with_settings(
-        &self,
-        lib_path: &str,
-        settings: SettingsFile,
-    ) -> Result<String, String> {
-        unsafe {
-            let lib = libloading::Library::new(lib_path).unwrap();
-
-            let kcl_run: libloading::Symbol<
-                unsafe extern "C" fn(
-                    kclvm_main_ptr: u64, // main.k => kclvm_main
-                    option_len: kclvm_size_t,
-                    option_keys: *const *const kclvm_char_t,
-                    option_values: *const *const kclvm_char_t,
-                    strict_range_check: i32,
-                    disable_none: i32,
-                    disable_schema_check: i32,
-                    list_option_mode: i32,
-                    debug_mode: i32,
-                    result_buffer_len: kclvm_size_t,
-                    result_buffer: *mut kclvm_char_t,
-                    warn_buffer_len: kclvm_size_t,
-                    warn_buffer: *mut kclvm_char_t,
-                ) -> kclvm_size_t,
-            > = lib.get(b"_kcl_run").unwrap();
-
-            let kclvm_main: libloading::Symbol<u64> = lib.get(b"kclvm_main").unwrap();
-            let kclvm_main_ptr = kclvm_main.into_raw().into_raw() as u64;
-
-            let option_len = 0;
-            let option_keys = std::ptr::null();
-            let option_values = std::ptr::null();
-            let strict_range_check = 0;
-            let disable_none = settings
-                .kcl_cli_configs
-                .as_ref()
-                .map_or(0, |c| c.disable_none.map_or(0, |v| v as i32));
-            let disable_schema_check = 0;
-            let list_option_mode = 0;
-            let debug_mode = settings
-                .kcl_cli_configs
-                .as_ref()
-                .map_or(0, |c| c.debug.map_or(0, |v| v as i32));
-
-            let mut result = vec![0u8; 1024 * 1024];
-            let result_buffer_len = result.len() as i32 - 1;
-            let result_buffer = result.as_mut_ptr() as *mut i8;
-
-            let mut warn_buffer = vec![0u8; 1024 * 1024];
-            let warn_buffer_len = warn_buffer.len() as i32 - 1;
-            let warn_buffer = warn_buffer.as_mut_ptr() as *mut i8;
-
-            let n = kcl_run(
-                kclvm_main_ptr,
-                option_len,
-                option_keys,
-                option_values,
-                strict_range_check,
-                disable_none,
-                disable_schema_check,
-                list_option_mode,
-                debug_mode,
-                result_buffer_len,
-                result_buffer,
-                warn_buffer_len,
-                warn_buffer,
-            );
-
-            let ctx = kclvm::Context::current_context_mut();
-            ctx.cfg.debug_mode = debug_mode > 0;
-            ctx.cfg.disable_none = disable_none > 0;
-            let s = std::str::from_utf8(&result[0..n as usize]).unwrap();
-            if s.is_empty() {
-                println!()
-            } else {
-                println!("{}", ValueRef::from_json(s).unwrap().plan_to_yaml_string());
-            }
-        }
-
-        Ok("".to_string())
     }
 
     pub fn link_libs(&mut self, libs: &[String], lib_path: &str) -> String {
