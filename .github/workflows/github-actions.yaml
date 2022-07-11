@@ -35,7 +35,7 @@ jobs:
           components: clippy, rustfmt
       - name: Rust unit test
         working-directory: ./kclvm
-        run: make codecov-lcov
+        run: export PATH=$PATH:$PWD/../_build/dist/ubuntu/kclvm/bin && make install-rustc-wasm && make && make codecov-lcov
         shell: bash
       - name: Coveralls upload
         uses: coverallsapp/github-action@master

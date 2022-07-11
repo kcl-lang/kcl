@@ -1,214 +1,33 @@
 use std::{env, path::PathBuf};
 
-use super::runner::*;
-use kclvm::ValueRef;
-use kclvm_config::settings::SettingsFile;
-
 #[derive(Debug)]
 pub struct Command {
     clang_path: String,
-    rust_libstd_dylib: String,
+    rust_stdlib: String,
     executable_root: String,
-    plugin_method_ptr: u64,
 }
 
 impl Command {
-    pub fn new(plugin_method_ptr: u64) -> Self {
+    pub fn new() -> Self {
         let executable_root = Self::get_executable_root();
-        let rust_libstd_dylib = Self::get_rust_libstd_dylib(executable_root.as_str());
+        let rust_stdlib = Self::get_rust_stdlib(executable_root.as_str());
         let clang_path = Self::get_clang_path();
 
         Self {
             clang_path,
-            rust_libstd_dylib,
+            rust_stdlib,
             executable_root,
-            plugin_method_ptr,
         }
     }
 
-    pub fn run_dylib(&self, dylib_path: &str) -> Result<String, String> {
-        unsafe {
-            let lib = libloading::Library::new(dylib_path).unwrap();
-
-            // get kclvm_plugin_init
-            let kclvm_plugin_init: libloading::Symbol<
-                unsafe extern "C" fn(
-                    fn_ptr: extern "C" fn(
-                        method: *const i8,
-                        args_json: *const i8,
-                        kwargs_json: *const i8,
-                    ) -> *const i8,
-                ),
-            > = lib.get(b"kclvm_plugin_init").unwrap();
-
-            // get _kcl_run
-            let kcl_run: libloading::Symbol<
-                unsafe extern "C" fn(
-                    kclvm_main_ptr: u64, // main.k => kclvm_main
-                    option_len: kclvm_size_t,
-                    option_keys: *const *const kclvm_char_t,
-                    option_values: *const *const kclvm_char_t,
-                    strict_range_check: i32,
-                    disable_none: i32,
-                    disable_schema_check: i32,
-                    list_option_mode: i32,
-                    debug_mode: i32,
-                    result_buffer_len: kclvm_size_t,
-                    result_buffer: *mut kclvm_char_t,
-                    warn_buffer_len: kclvm_size_t,
-                    warn_buffer: *mut kclvm_char_t,
-                ) -> kclvm_size_t,
-            > = lib.get(b"_kcl_run").unwrap();
-
-            // get kclvm_main
-            let kclvm_main: libloading::Symbol<u64> = lib.get(b"kclvm_main").unwrap();
-            let kclvm_main_ptr = kclvm_main.into_raw().into_raw() as u64;
-
-            // get plugin_method
-            let plugin_method_ptr = self.plugin_method_ptr;
-            let plugin_method_ptr = (plugin_method_ptr as *const u64) as *const ()
-                as *const extern "C" fn(
-                    method: *const i8,
-                    args: *const i8,
-                    kwargs: *const i8,
-                ) -> *const i8;
-            let plugin_method: extern "C" fn(
-                method: *const i8,
-                args: *const i8,
-                kwargs: *const i8,
-            ) -> *const i8 = std::mem::transmute(plugin_method_ptr);
-
-            // register plugin agent
-            kclvm_plugin_init(plugin_method);
-
-            let option_len = 0;
-            let option_keys = std::ptr::null();
-            let option_values = std::ptr::null();
-            let strict_range_check = 0;
-            let disable_none = 0;
-            let disable_schema_check = 0;
-            let list_option_mode = 0;
-            let debug_mode = 0;
-
-            let mut result = vec![0u8; 1024 * 1024];
-            let result_buffer_len = result.len() as i32 - 1;
-            let result_buffer = result.as_mut_ptr() as *mut i8;
-
-            let mut warn_buffer = vec![0u8; 1024 * 1024];
-            let warn_buffer_len = warn_buffer.len() as i32 - 1;
-            let warn_buffer = warn_buffer.as_mut_ptr() as *mut i8;
-
-            let n = kcl_run(
-                kclvm_main_ptr,
-                option_len,
-                option_keys,
-                option_values,
-                strict_range_check,
-                disable_none,
-                disable_schema_check,
-                list_option_mode,
-                debug_mode,
-                result_buffer_len,
-                result_buffer,
-                warn_buffer_len,
-                warn_buffer,
-            );
-
-            let s = std::str::from_utf8(&result[0..n as usize]).unwrap();
-            Ok(s.to_string())
-        }
-    }
-
-    pub fn run_dylib_with_settings(
-        &self,
-        dylib_path: &str,
-        settings: SettingsFile,
-    ) -> Result<String, String> {
-        unsafe {
-            let lib = libloading::Library::new(dylib_path).unwrap();
-
-            let kcl_run: libloading::Symbol<
-                unsafe extern "C" fn(
-                    kclvm_main_ptr: u64, // main.k => kclvm_main
-                    option_len: kclvm_size_t,
-                    option_keys: *const *const kclvm_char_t,
-                    option_values: *const *const kclvm_char_t,
-                    strict_range_check: i32,
-                    disable_none: i32,
-                    disable_schema_check: i32,
-                    list_option_mode: i32,
-                    debug_mode: i32,
-                    result_buffer_len: kclvm_size_t,
-                    result_buffer: *mut kclvm_char_t,
-                    warn_buffer_len: kclvm_size_t,
-                    warn_buffer: *mut kclvm_char_t,
-                ) -> kclvm_size_t,
-            > = lib.get(b"_kcl_run").unwrap();
-
-            let kclvm_main: libloading::Symbol<u64> = lib.get(b"kclvm_main").unwrap();
-            let kclvm_main_ptr = kclvm_main.into_raw().into_raw() as u64;
-
-            let option_len = 0;
-            let option_keys = std::ptr::null();
-            let option_values = std::ptr::null();
-            let strict_range_check = 0;
-            let disable_none = settings
-                .kcl_cli_configs
-                .as_ref()
-                .map_or(0, |c| c.disable_none.map_or(0, |v| v as i32));
-            let disable_schema_check = 0;
-            let list_option_mode = 0;
-            let debug_mode = settings
-                .kcl_cli_configs
-                .as_ref()
-                .map_or(0, |c| c.debug.map_or(0, |v| v as i32));
-
-            let mut result = vec![0u8; 1024 * 1024];
-            let result_buffer_len = result.len() as i32 - 1;
-            let result_buffer = result.as_mut_ptr() as *mut i8;
-
-            let mut warn_buffer = vec![0u8; 1024 * 1024];
-            let warn_buffer_len = warn_buffer.len() as i32 - 1;
-            let warn_buffer = warn_buffer.as_mut_ptr() as *mut i8;
-
-            let n = kcl_run(
-                kclvm_main_ptr,
-                option_len,
-                option_keys,
-                option_values,
-                strict_range_check,
-                disable_none,
-                disable_schema_check,
-                list_option_mode,
-                debug_mode,
-                result_buffer_len,
-                result_buffer,
-                warn_buffer_len,
-                warn_buffer,
-            );
-
-            let ctx = kclvm::Context::current_context_mut();
-            ctx.cfg.debug_mode = debug_mode > 0;
-            ctx.cfg.disable_none = disable_none > 0;
-            let s = std::str::from_utf8(&result[0..n as usize]).unwrap();
-            if s.is_empty() {
-                println!()
-            } else {
-                println!("{}", ValueRef::from_json(s).unwrap().plan_to_yaml_string());
-            }
-        }
-
-        Ok("".to_string())
-    }
-
-    pub fn link_dylibs(&mut self, dylibs: &[String], dylib_path: &str) -> String {
-        let dylib_suffix = Self::get_lib_suffix();
-        let dylib_path = if dylib_path.is_empty() {
-            format!("{}{}", "_a.out", dylib_suffix)
-        } else if !dylib_path.ends_with(&dylib_suffix){
-            format!("{}{}", dylib_path, dylib_suffix)
+    pub fn link_libs(&mut self, libs: &[String], lib_path: &str) -> String {
+        let lib_suffix = Self::get_lib_suffix();
+        let lib_path = if lib_path.is_empty() {
+            format!("{}{}", "_a.out", lib_suffix)
+        } else if !lib_path.ends_with(&lib_suffix) {
+            format!("{}{}", lib_path, lib_suffix)
         } else {
-            dylib_path.to_string()
+            lib_path.to_string()
         };
 
         let mut args: Vec<String> = vec![
@@ -223,13 +42,13 @@ impl Command {
             "-lkclvm_native_shared".to_string(),
             format!("-I{}/include", self.executable_root),
         ];
-        let mut bc_files = dylibs.to_owned();
+        let mut bc_files = libs.to_owned();
         args.append(&mut bc_files);
         let mut more_args = vec![
-            self.rust_libstd_dylib.clone(),
+            self.rust_stdlib.clone(),
             "-fPIC".to_string(),
             "-o".to_string(),
-            dylib_path.to_string(),
+            lib_path.to_string(),
         ];
         args.append(&mut more_args);
 
@@ -240,12 +59,12 @@ impl Command {
             .output()
             .expect("clang failed");
 
-        dylib_path
+        lib_path
     }
 
-    pub fn run_clang(&mut self, bc_path: &str, dylib_path: &str) -> String {
+    pub fn run_clang(&mut self, bc_path: &str, lib_path: &str) -> String {
         let mut bc_path = bc_path.to_string();
-        let mut dylib_path = dylib_path.to_string();
+        let mut lib_path = lib_path.to_string();
 
         let mut bc_files = vec![];
 
@@ -276,8 +95,8 @@ impl Command {
             }
         }
 
-        if dylib_path.is_empty() {
-            dylib_path = format!("{}{}", bc_path, Self::get_lib_suffix());
+        if lib_path.is_empty() {
+            lib_path = format!("{}{}", bc_path, Self::get_lib_suffix());
         }
 
         let mut args: Vec<String> = vec![
@@ -294,10 +113,10 @@ impl Command {
         ];
         args.append(&mut bc_files);
         let mut more_args = vec![
-            self.rust_libstd_dylib.clone(),
+            self.rust_stdlib.clone(),
             "-fPIC".to_string(),
             "-o".to_string(),
-            dylib_path.to_string(),
+            lib_path.to_string(),
         ];
         args.append(&mut more_args);
 
@@ -308,12 +127,12 @@ impl Command {
             .output()
             .expect("clang failed");
 
-        dylib_path
+        lib_path
     }
 
-    pub fn run_clang_single(&mut self, bc_path: &str, dylib_path: &str) -> String {
+    pub fn run_clang_single(&mut self, bc_path: &str, lib_path: &str) -> String {
         let mut bc_path = bc_path.to_string();
-        let mut dylib_path = dylib_path.to_string();
+        let mut lib_path = lib_path.to_string();
 
         if !Self::path_exist(bc_path.as_str()) {
             let s = format!("{}.ll", bc_path);
@@ -327,8 +146,8 @@ impl Command {
             }
         }
 
-        if dylib_path.is_empty() {
-            dylib_path = format!("{}{}", bc_path, Self::get_lib_suffix());
+        if lib_path.is_empty() {
+            lib_path = format!("{}{}", bc_path, Self::get_lib_suffix());
         }
 
         let mut args: Vec<String> = vec![
@@ -346,10 +165,10 @@ impl Command {
         let mut bc_files = vec![bc_path];
         args.append(&mut bc_files);
         let mut more_args = vec![
-            self.rust_libstd_dylib.clone(),
+            self.rust_stdlib.clone(),
             "-fPIC".to_string(),
             "-o".to_string(),
-            dylib_path.to_string(),
+            lib_path.to_string(),
         ];
         args.append(&mut more_args);
 
@@ -360,10 +179,11 @@ impl Command {
             .output()
             .expect("clang failed");
         // Use absolute path.
-        let path = PathBuf::from(&dylib_path).canonicalize().unwrap();
+        let path = PathBuf::from(&lib_path).canonicalize().unwrap();
         path.to_str().unwrap().to_string()
     }
 
+    /// Get the kclvm executable root.
     fn get_executable_root() -> String {
         if Self::is_windows() {
             todo!();
@@ -384,7 +204,7 @@ impl Command {
         p.to_str().unwrap().to_string()
     }
 
-    fn get_rust_libstd_dylib(executable_root: &str) -> String {
+    fn get_rust_stdlib(executable_root: &str) -> String {
         let txt_path = std::path::Path::new(&executable_root)
             .join(if Self::is_windows() { "libs" } else { "lib" })
             .join("rust-libstd-name.txt");
@@ -426,7 +246,6 @@ impl Command {
         } else {
             "clang"
         };
-        
 
         if let Some(s) = Self::find_it(clang_exe) {
             return s.to_str().unwrap().to_string();

@@ -1,6 +1,6 @@
-use serde::{Deserialize, Serialize};
-
 use kclvm_ast::ast;
+use kclvm_config::settings::SettingsFile;
+use serde::{Deserialize, Serialize};
 
 #[allow(non_camel_case_types)]
 pub type kclvm_char_t = i8;
@@ -65,12 +65,35 @@ impl ExecProgramArgs {
 
     pub fn get_load_program_options(&self) -> kclvm_parser::LoadProgramOptions {
         kclvm_parser::LoadProgramOptions {
-            work_dir: self.work_dir.clone().unwrap_or("".to_string()).clone(),
+            work_dir: self.work_dir.clone().unwrap_or_else(|| "".to_string()),
             k_code_list: self.k_code_list.clone(),
             cmd_args: self.args.clone(),
             cmd_overrides: self.overrides.clone(),
             ..Default::default()
         }
+    }
+}
+
+impl From<SettingsFile> for ExecProgramArgs {
+    fn from(settings: SettingsFile) -> Self {
+        let mut args = Self::default();
+        if let Some(cli_configs) = settings.kcl_cli_configs {
+            args.k_filename_list = cli_configs.files.unwrap_or_default();
+            args.strict_range_check = cli_configs.strict_range_check.unwrap_or_default();
+            args.disable_none = cli_configs.disable_none.unwrap_or_default();
+            args.verbose = cli_configs.verbose.unwrap_or_default() as i32;
+            args.debug = cli_configs.debug.unwrap_or_default() as i32;
+        }
+        if let Some(options) = settings.kcl_options {
+            args.args = options
+                .iter()
+                .map(|o| ast::CmdArgSpec {
+                    name: o.key.to_string(),
+                    value: o.value.to_string(),
+                })
+                .collect();
+        }
+        args
     }
 }
 
@@ -85,9 +108,9 @@ pub struct KclvmRunner {
 }
 
 impl KclvmRunner {
-    pub fn new(dylib_path: &str, opts: Option<KclvmRunnerOptions>) -> Self {
+    pub fn new(lib_path: &str, opts: Option<KclvmRunnerOptions>) -> Self {
         let lib = unsafe {
-            libloading::Library::new(std::path::PathBuf::from(dylib_path).canonicalize().unwrap())
+            libloading::Library::new(std::path::PathBuf::from(lib_path).canonicalize().unwrap())
                 .unwrap()
         };
         Self {
@@ -98,14 +121,14 @@ impl KclvmRunner {
 
     pub fn run(&self, args: &ExecProgramArgs) -> Result<String, String> {
         unsafe {
-            Self::dylib_kclvm_plugin_init(&self.lib, self.opts.plugin_agent_ptr);
-            Self::dylib_kcl_run(&self.lib, &args)
+            Self::lib_kclvm_plugin_init(&self.lib, self.opts.plugin_agent_ptr);
+            Self::lib_kcl_run(&self.lib, args)
         }
     }
 }
 
 impl KclvmRunner {
-    unsafe fn dylib_kclvm_plugin_init(lib: &libloading::Library, plugin_method_ptr: u64) {
+    unsafe fn lib_kclvm_plugin_init(lib: &libloading::Library, plugin_method_ptr: u64) {
         // get kclvm_plugin_init
         let kclvm_plugin_init: libloading::Symbol<
             unsafe extern "C" fn(
@@ -135,7 +158,7 @@ impl KclvmRunner {
         kclvm_plugin_init(plugin_method);
     }
 
-    unsafe fn dylib_kcl_run(
+    unsafe fn lib_kcl_run(
         lib: &libloading::Library,
         args: &ExecProgramArgs,
     ) -> Result<String, String> {
