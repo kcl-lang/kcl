@@ -1,0 +1,4 @@
+assert True if True, "message"
+# Comment
+assert False if data, "message"
+assert 1

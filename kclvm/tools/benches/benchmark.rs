@@ -1,7 +1,8 @@
 use criterion::{criterion_group, criterion_main, Criterion};
+use kclvm_tools::format::{format, FormatOptions};
 use kclvm_tools::query::override_file;
 
-pub fn criterion_benchmark(c: &mut Criterion) {
+pub fn criterion_benchmark_override(c: &mut Criterion) {
     c.bench_function("override", |b| {
         b.iter(|| {
             override_file(
@@ -14,5 +15,17 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, criterion_benchmark);
+pub fn criterion_benchmark_format(c: &mut Criterion) {
+    c.bench_function("format", |b| {
+        b.iter(|| {
+            format("./benches/test_data/format.k", &FormatOptions::default()).unwrap();
+        })
+    });
+}
+
+criterion_group!(
+    benches,
+    criterion_benchmark_override,
+    criterion_benchmark_format
+);
 criterion_main!(benches);

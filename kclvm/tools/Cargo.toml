@@ -15,6 +15,7 @@ kclvm-ast = {path = "../ast", version = "0.1.0"}
 kclvm-error = {path = "../error", version = "0.1.0"}
 kclvm-parser = {path = "../parser", version = "0.1.0"}
 kclvm-sema = {path = "../sema", version = "0.1.0"}
+kclvm-config = {path = "../config", version = "0.1.0"}
 
 [dev-dependencies]
 pretty_assertions = "1.2.1"

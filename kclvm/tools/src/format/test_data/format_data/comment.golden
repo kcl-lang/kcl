@@ -1,0 +1,12 @@
+# Block comment
+# Inline comment
+a = 1
+schema Person:
+    """
+    Schema doc string
+    """
+    # Inline comment in schema
+    name: str = "Alice"
+    # Block comment in schema
+    age: int = 18
+

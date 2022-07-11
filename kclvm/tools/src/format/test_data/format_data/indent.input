@@ -1,0 +1,14 @@
+if True:
+ a = 1
+elif True:
+ b = 2
+ if True:
+        c = 3
+ else:
+   d = 4
+else:
+  e =  8
+
+schema Person:
+ name: str
+ age: int
