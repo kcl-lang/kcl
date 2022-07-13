@@ -1233,7 +1233,7 @@ impl TryInto<BinOp> for AugOp {
             AugOp::LShift => Ok(BinOp::LShift),
             AugOp::RShift => Ok(BinOp::RShift),
             AugOp::BitXor => Ok(BinOp::BitXor),
-            AugOp::BitAnd => Ok(BinOp::And),
+            AugOp::BitAnd => Ok(BinOp::BitAnd),
             AugOp::BitOr => Ok(BinOp::BitOr),
             _ => Err("aug assign op can not into bin op"),
         }

@@ -11,13 +11,15 @@ use kclvm_sema::resolver::resolve_program;
 use std::fs::create_dir_all;
 use std::panic::catch_unwind;
 use std::panic::set_hook;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::{
     collections::HashMap,
     fs::{self, File},
 };
+use walkdir::WalkDir;
 use tempfile::tempdir;
 
+const EXEC_DATA_PATH: &str = "./src/exec_data/";
 const TEST_CASES: &[&'static str; 5] = &[
     "init_check_order_0",
     "init_check_order_1",
@@ -344,4 +346,48 @@ fn test_from_setting_file_program_arg() {
         let exec_prog_args = ExecProgramArgs::from(settings_file);
         assert_eq!(expected_json_str.trim(), exec_prog_args.to_json().trim());
     }
+}
+
+#[test]
+fn test_exec_file() {
+    let prev_hook = std::panic::take_hook();
+    // disable print panic info
+    std::panic::set_hook(Box::new(|_| {}));
+    let result =
+        std::panic::catch_unwind(|| {
+            for file in get_files(EXEC_DATA_PATH, false, true, ".k") {
+                exec(&file).unwrap();
+            }
+        });
+    assert!(result.is_ok());
+    std::panic::set_hook(prev_hook);
+}
+
+fn exec(file: &str) -> Result<String, String> {
+    let mut args = ExecProgramArgs::default();
+    args.k_filename_list.push(file.to_string());
+    let plugin_agent = 0;
+    let opts = args.get_load_program_options();
+    // Load AST program
+    let program = load_program(&[file], Some(opts)).unwrap();
+    // Resolve ATS, generate libs, link libs and execute.
+    execute(program, plugin_agent, &args)
+}
+
+/// Get kcl files from path.
+fn get_files<P: AsRef<Path>>(path: P, recursively: bool, sorted: bool, suffix: &str) -> Vec<String> {
+    let mut files = vec![];
+    for entry in WalkDir::new(path).into_iter().filter_map(|e| e.ok()) {
+        let path = entry.path();
+        if path.is_file() {
+            let file = path.to_str().unwrap();
+            if file.ends_with(suffix) && (recursively || entry.depth() == 1) {
+                files.push(file.to_string())
+            }
+        }
+    }
+    if sorted {
+        files.sort();
+    }
+    files
 }
