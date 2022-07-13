@@ -1,4 +1,6 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
+use kclvm_parser::load_program;
+use kclvm_sema::resolver::*;
 use kclvm_sema::ty::*;
 
 pub fn criterion_benchmark(c: &mut Criterion) {
@@ -15,5 +17,10 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, criterion_benchmark);
+pub fn criterion_benchmark_resolver(c: &mut Criterion) {
+    let mut program = load_program(&["./src/resolver/test_data/import.k"], None).unwrap();
+    c.bench_function("resolver", |b| b.iter(|| resolve_program(&mut program)));
+}
+
+criterion_group!(benches, criterion_benchmark, criterion_benchmark_resolver);
 criterion_main!(benches);

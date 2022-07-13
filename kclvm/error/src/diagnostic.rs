@@ -5,7 +5,7 @@ use kclvm_span::Loc;
 use rustc_span::Pos;
 use termcolor::{Color, ColorSpec};
 
-use crate::ErrorKind;
+use crate::{ErrorKind, WarningKind};
 
 /// Diagnostic structure.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -134,7 +134,7 @@ pub struct Message {
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum DiagnosticId {
     Error(ErrorKind),
-    Warning(String),
+    Warning(WarningKind),
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]

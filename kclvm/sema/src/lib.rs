@@ -1,6 +1,7 @@
 pub mod builtin;
 pub mod eval;
 pub mod info;
+pub mod lint;
 pub mod plugin;
 pub mod pre_process;
 pub mod resolver;
