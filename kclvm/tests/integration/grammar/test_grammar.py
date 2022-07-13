@@ -129,7 +129,6 @@ def test_grammar(test_dir):
     GOLDEN_FILE_SCRIPT = 3
     settings = {
         "stdout": (None, stdout, STDOUT_GOLDEN, STDOUT_GOLDEN_PY),
-        "stderr": (1, stderr, STDERR_GOLDEN, STDERR_GOLDEN_PY),
     }
     for _, setting in settings.items():
         # Attempt to generate a golden stdout.

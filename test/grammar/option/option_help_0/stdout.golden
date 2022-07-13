@@ -1,6 +1,0 @@
-option list:
-  -D name=? (required) set name value
-  -D a=42 set a value
-  -D b=? set b value
-  -D obj=?
-  -D obj2=?

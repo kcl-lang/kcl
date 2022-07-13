@@ -62,12 +62,12 @@ codecov-lcov:
 	cargo llvm-cov --lcov --output-path $(PWD)/.kclvm/lcov.info -p kclvm-*
 
 # Test runtime libaries using python functions
-test-runtime: install-pytest
-	cd ./tests/test_units && PYTHONPATH=./../../plugin python3 -m pytest -vv || { echo 'kclvm/tests/test_units failed' ; exit 1; }
+test-runtime:
+	cd ./tests/test_units && PYTHONPATH=./../../plugin kclvm -m pytest -vv || { echo 'kclvm/tests/test_units failed' ; exit 1; }
 
 # E2E grammar tests.
-test-grammar: install-pytest
-	cd tests/integration/grammar && python3 -m pytest -v -n 5
+test-grammar:
+	cd tests/integration/grammar && kclvm -m pytest -v -n 5
 
 # Parser fuzz.
 fuzz-parser:

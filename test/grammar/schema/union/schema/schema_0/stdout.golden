@@ -1,8 +1,0 @@
-JohnDoe:
-  name:
-    firstName: John
-    lastName: lastName
-  age: 18
-  info:
-    card: '123'
-    phoneNum: '123'
