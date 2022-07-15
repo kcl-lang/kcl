@@ -80,7 +80,7 @@ Detailed documentation is available at https://kusionstack.io
 
 ### Developing
 
-See [Developing Guide](./CONTRIBUTING.md).
+See [Developing Guide](./docs/dev_guide/1.about_this_guide.md).
 
 ### Roadmap
 

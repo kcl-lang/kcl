@@ -80,7 +80,7 @@ fib8: 21
 
 ### 开发
 
-参考[开发手册](./CONTRIBUTING.md).
+参考[开发手册](./docs/dev_guide/1.about_this_guide.md).
 
 ### 路线规划
 
