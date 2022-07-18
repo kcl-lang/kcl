@@ -79,3 +79,24 @@ fn test_resolve_program_fail() {
     assert_eq!(diag.messages.len(), 1);
     assert_eq!(diag.messages[0].message, "expect int, got {str:int(1)}");
 }
+
+#[test]
+fn test_resolve_program_cycle_reference_fail() {
+    let mut program = load_program(
+        &["./src/resolver/test_fail_data/cycle_reference/file1.k"],
+        None,
+    )
+    .unwrap();
+    let scope = resolve_program(&mut program);
+    let err_messages = [
+        "There is a circular import reference between module file1 and file2",
+        "There is a circular reference between schema SchemaBase and SchemaSub",
+        "There is a circular reference between schema SchemaSub and SchemaBase",
+        "There is a circular reference between rule RuleBase and RuleSub",
+        "There is a circular reference between rule RuleSub and RuleBase",
+    ];
+    assert_eq!(scope.diagnostics.len(), err_messages.len());
+    for (diag, msg) in scope.diagnostics.iter().zip(err_messages.iter()) {
+        assert_eq!(diag.messages[0].message, msg.to_string(),);
+    }
+}

@@ -173,9 +173,18 @@ impl<'ctx> Resolver<'ctx> {
                             }
                             let current_pkgpath = self.ctx.pkgpath.clone();
                             let current_filename = self.ctx.filename.clone();
-                            let idx1 = self.ctx.ty_ctx.dep_graph.add_node(self.ctx.pkgpath.clone());
-                            let idx2 = self.ctx.ty_ctx.dep_graph.add_node(import_stmt.path.clone());
-                            self.ctx.ty_ctx.dep_graph.add_edge(idx1, idx2, ());
+                            self.ctx
+                                .ty_ctx
+                                .add_dependencies(&self.ctx.pkgpath, &import_stmt.path);
+                            if self.ctx.ty_ctx.is_cyclic() {
+                                self.handler.add_compile_error(
+                                    &format!(
+                                        "There is a circular import reference between module {} and {}",
+                                        self.ctx.pkgpath, import_stmt.path,
+                                    ),
+                                    stmt.get_pos(),
+                                );
+                            }
                             // Switch pkgpath context
                             if !self.scope_map.contains_key(&import_stmt.path) {
                                 self.check(&import_stmt.path);

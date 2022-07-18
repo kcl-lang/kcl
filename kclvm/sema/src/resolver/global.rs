@@ -716,16 +716,21 @@ impl<'ctx> Resolver<'ctx> {
         }
         let schema_runtime_ty = kclvm::schema_runtime_type(name, &self.ctx.pkgpath);
         if should_add_schema_ref {
-            let idx1 = self
-                .ctx
-                .ty_ctx
-                .dep_graph
-                .add_node(schema_runtime_ty.clone());
             if let Some(ref parent_ty) = parent_ty {
                 let parent_schema_runtime_ty =
                     kclvm::schema_runtime_type(&parent_ty.name, &parent_ty.pkgpath);
-                let idx2 = self.ctx.ty_ctx.dep_graph.add_node(parent_schema_runtime_ty);
-                self.ctx.ty_ctx.dep_graph.add_edge(idx1, idx2, ());
+                self.ctx
+                    .ty_ctx
+                    .add_dependencies(&schema_runtime_ty, &parent_schema_runtime_ty);
+                if self.ctx.ty_ctx.is_cyclic() {
+                    self.handler.add_compile_error(
+                        &format!(
+                            "There is a circular reference between schema {} and {}",
+                            name, parent_ty.name,
+                        ),
+                        schema_stmt.get_pos(),
+                    );
+                }
             }
         }
         let decorators = self.resolve_decorators(
@@ -785,7 +790,7 @@ impl<'ctx> Resolver<'ctx> {
         for rule in &rule_stmt.parent_rules {
             let ty = self.walk_identifier(&rule.node);
             let parent_ty = match &ty.kind {
-                TypeKind::Schema(schema_ty) if !schema_ty.is_rule && !schema_ty.is_instance => {
+                TypeKind::Schema(schema_ty) if schema_ty.is_rule && !schema_ty.is_instance => {
                     Some(schema_ty.clone())
                 }
                 _ => {
@@ -794,7 +799,7 @@ impl<'ctx> Resolver<'ctx> {
                         &[Message {
                             pos: rule.get_pos(),
                             style: Style::LineAndColumn,
-                            message: format!("illegal schema mixin object type '{}'", ty.ty_str()),
+                            message: format!("illegal rule type '{}'", ty.ty_str()),
                             note: None,
                         }],
                     );
@@ -822,12 +827,21 @@ impl<'ctx> Resolver<'ctx> {
         }
         if should_add_schema_ref {
             let schema_runtime_ty = kclvm::schema_runtime_type(name, &self.ctx.pkgpath);
-            let idx1 = self.ctx.ty_ctx.dep_graph.add_node(schema_runtime_ty);
             for parent_ty in &parent_types {
                 let parent_schema_runtime_ty =
                     kclvm::schema_runtime_type(&parent_ty.name, &parent_ty.pkgpath);
-                let idx2 = self.ctx.ty_ctx.dep_graph.add_node(parent_schema_runtime_ty);
-                self.ctx.ty_ctx.dep_graph.add_edge(idx1, idx2, ());
+                self.ctx
+                    .ty_ctx
+                    .add_dependencies(&schema_runtime_ty, &parent_schema_runtime_ty);
+                if self.ctx.ty_ctx.is_cyclic() {
+                    self.handler.add_compile_error(
+                        &format!(
+                            "There is a circular reference between rule {} and {}",
+                            name, parent_ty.name,
+                        ),
+                        rule_stmt.get_pos(),
+                    );
+                }
             }
         }
         let decorators = self.resolve_decorators(
