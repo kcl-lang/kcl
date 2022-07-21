@@ -281,7 +281,10 @@ def ModuleAddImportPaths(
     if not import_paths:
         return m
     import_stmt_list = []
-    exist_import_set = [stmt.path for stmt in m.GetImportList()]
+    exist_import_set = [
+        f"{stmt.path} as {stmt.asname}" if stmt.asname else stmt.path
+        for stmt in m.GetImportList()
+    ]
     line = 1
     for path in import_paths or []:
         if not ignore_exist and path in exist_import_set:

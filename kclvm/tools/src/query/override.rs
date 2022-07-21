@@ -163,7 +163,11 @@ fn apply_import_paths_on_module(m: &mut ast::Module, import_paths: &[String]) ->
     let mut exist_import_set: HashSet<String> = HashSet::new();
     for stmt in &m.body {
         if let ast::Stmt::Import(import_stmt) = &stmt.node {
-            exist_import_set.insert(import_stmt.path.to_string());
+            if let Some(asname) = &import_stmt.asname {
+                exist_import_set.insert(format!("{} as {}", import_stmt.path, asname));
+            } else {
+                exist_import_set.insert(import_stmt.path.to_string());
+            }
         }
     }
     for (i, path) in import_paths.iter().enumerate() {
