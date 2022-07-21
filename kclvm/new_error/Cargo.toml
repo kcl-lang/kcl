@@ -1,0 +1,10 @@
+[package]
+name = "new_error"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+kclvm-error = {path = "../error", version="0.1.0"}
+kclvm-span = {path = "../span", version = "0.1.0"}
