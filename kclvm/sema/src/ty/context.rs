@@ -1,8 +1,9 @@
+use std::collections::HashMap;
 use std::rc::Rc;
 
 use super::{sup, Type, TypeFlags, TypeKind};
 use petgraph::algo::is_cyclic_directed;
-use petgraph::graph::DiGraph;
+use petgraph::graph::{DiGraph, NodeIndex};
 
 /// TypeContext responsible for type generation, calculation,
 /// and equality and subtype judgment between types.
@@ -10,6 +11,7 @@ use petgraph::graph::DiGraph;
 pub struct TypeContext {
     pub dep_graph: DiGraph<String, ()>,
     pub builtin_types: BuiltinTypes,
+    node_index_map: HashMap<String, NodeIndex>,
 }
 
 #[derive(Debug)]
@@ -43,6 +45,7 @@ impl TypeContext {
                 void: Rc::new(Type::VOID),
                 none: Rc::new(Type::NONE),
             },
+            node_index_map: HashMap::new(),
         }
     }
 
@@ -50,6 +53,26 @@ impl TypeContext {
     #[inline]
     pub fn is_cyclic(&self) -> bool {
         is_cyclic_directed(&self.dep_graph)
+    }
+
+    /// Add dependencies between "from" and "to".
+    pub fn add_dependencies(&mut self, from: &str, to: &str) {
+        let from_idx = self.get_or_insert_node_index(from);
+        let to_idx = self.get_or_insert_node_index(to);
+        self.dep_graph.add_edge(from_idx, to_idx, ());
+    }
+
+    /// Get the node index from the node index map or insert it into the dependency graph.
+    #[inline]
+    fn get_or_insert_node_index(&mut self, name: &str) -> NodeIndex {
+        match self.node_index_map.get(name) {
+            Some(idx) => idx.clone(),
+            None => {
+                let idx = self.dep_graph.add_node(name.to_string());
+                self.node_index_map.insert(name.to_string(), idx.clone());
+                idx
+            }
+        }
     }
 
     /// Convert the literal union type to its variable type
