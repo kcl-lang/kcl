@@ -19,11 +19,11 @@ impl Sentence {
     }
 
     pub fn format(&self, shader: Rc<dyn Shader>, sb: &mut StyledBuffer) {
-        let sentence_style = shader.sentence_style();
+        let sentence_style = shader.msg_style();
         self.pendant.format(shader, sb);
         match &self.sentence {
-            Message::Str(s) => sb.putl(&s, sentence_style),
-            Message::FluentId(s) => sb.putl(&s, sentence_style.clone()),
+            Message::Str(s) => sb.appendl(&s, sentence_style),
+            Message::FluentId(s) => sb.appendl(&s, sentence_style.clone()),
         }
     }
 }

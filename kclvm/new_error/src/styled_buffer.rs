@@ -43,7 +43,6 @@ impl StyledBuffer {
 
             for sc in styled_line {
                 if sc.style != current_style {
-                    // 同一个style的就会放在一起，都放在 styled_vec 中
                     if !current_text.is_empty() {
                         styled_vec.push(StyledString {
                             text: current_text,
@@ -106,6 +105,11 @@ impl StyledBuffer {
             self.putc(line, col, c, style);
             col += 1;
         }
+    }
+
+    pub fn appendl(&mut self, string: &str, style: Style) {
+        let line = self.num_lines() - 1;
+        self.append(line, string, style);
     }
 
     /// For given `line` inserts `string` with `style` before old content of that line,

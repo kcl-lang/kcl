@@ -1,6 +1,6 @@
 use crate::{
-    diagnostic::{Diagnostic, Level},
-    shader::{ColorShader, Shader, Style},
+    diagnostic::Diagnostic,
+    shader::{ColorShader, Shader, Style, Level},
     snippet::StyledString,
     styled_buffer::StyledBuffer,
 };
@@ -94,7 +94,7 @@ impl Destination {
                 spec.set_bold(true);
                 spec = lvl.color();
             }
-            Style::Line => {
+            Style::Line |Style::LineNumber => {
                 spec.set_bold(true);
                 spec.set_intense(true);
                 if cfg!(windows) {
@@ -103,19 +103,16 @@ impl Destination {
                     spec.set_fg(Some(Color::Blue));
                 }
             }
-            Style::MainHeaderMsg => todo!(),
-            Style::HeaderMsg => todo!(),
-            Style::LineNumber => todo!(),
-            Style::Quotation => todo!(),
-            Style::UnderlinePrimary => todo!(),
-            Style::UnderlineSecondary => todo!(),
-            Style::LabelPrimary => todo!(),
-            Style::LabelSecondary => todo!(),
-            Style::NoStyle => todo!(),
-            Style::Level(_) => todo!(),
-            Style::Highlight => todo!(),
-            Style::Addition => todo!(),
-            Style::Removal => todo!(),
+            Style::Quotation => {}
+            Style::NoStyle => {},
+            Style::Level(lvl) => {
+                spec = lvl.color();
+                spec.set_bold(true);
+            }
+            Style::Logo => {},
+            Style::Label => {
+                spec.set_bold(true);
+            },
         }
         self.set_color(&spec)
     }

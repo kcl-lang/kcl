@@ -1,49 +1,75 @@
 use std::{path::Path, rc::Rc};
 use std::sync::Arc;
-
-use crate::shader::Shader;
+use crate::shader::{Shader, Level};
 use crate::styled_buffer::StyledBuffer;
 use kclvm_error::Position;
 use kclvm_span::{FilePathMapping, SourceMap};
 
-// TODO(zongz): The pendant can also be replaced by macros.
+// TODO(zongz): The 'impl Pendant' can also be replaced by macros.
 pub trait Pendant {
     fn format(&self, shader: Rc<dyn Shader>, sb: &mut StyledBuffer);
 }
+
+// TODO(zongz): Put this in the lib.rs and combina with macros.
 pub struct HeaderPendant {
-    diagnostic_type: String,
-    diagnostic_code: String,
+    logo: Option<String>,
+    diag_level: Level,
+    diag_code: String,
 }
 
 impl HeaderPendant {
-    pub fn new(diagnostic_type: String, diagnostic_code: String) -> Self {
+    pub fn new(diag_level: Level, diag_code: String) -> Self {
         Self {
-            diagnostic_type,
-            diagnostic_code,
+            logo: None,
+            diag_level,
+            diag_code,
         }
+    }
+
+    pub fn set_logo(&mut self, logo: String){
+        self.logo = Some(logo);
     }
 }
 
+// TODO(zongz): These are not part of CompilerBase. 
+// Generated them by macro in the
 impl Pendant for HeaderPendant {
     fn format(&self, shader: Rc<dyn Shader>, sb: &mut StyledBuffer) {
-        // 诊断信息中的KCL logo可以在这里加进去，style也可以给他搞一个logo_style
         let line_num = sb.num_lines();
         let col = 0;
-        sb.puts(line_num, col, &self.diagnostic_type, shader.header_style());
 
-        let mut offset = self.diagnostic_type.len();
-        sb.putc(line_num, col + offset, '[', shader.header_style());
+        // format logo
+        if let Some(logo) = &self.logo{
+            sb.puts(line_num, col, &logo, shader.logo_style());
+        }
+        
+        // format header -> error[E0101] or warning[W1010]
 
+        // get label text, label text length, style for different level.
+        let (label_text, label_len, style) = match self.diag_level{
+            Level::Error => ("error", "error".len(), shader.err_style()),
+            Level::Warning => ("warning", "warning".len(), shader.warning_style()),
+            Level::Note => ("note", "note".len(), shader.msg_style()),
+        };
+
+        sb.puts(line_num, col, label_text, style);
+        let mut offset = label_len;
+
+        // for e.g. "error[E1010]"
+        sb.putc(line_num, col + offset, '[', shader.msg_style());
         offset = offset + 1;
         sb.puts(
             line_num,
             col + offset,
-            &self.diagnostic_code,
-            shader.header_style(),
+            &self.diag_code,
+            shader.msg_style(),
         );
 
-        offset = offset + self.diagnostic_code.len();
-        sb.putc(line_num, col + offset, ']', shader.header_style());
+        offset = offset + self.diag_code.len();
+        sb.putc(line_num, col + offset, ']', shader.msg_style());
+
+        offset = offset+1;
+        sb.putc(line_num, col + offset, ':', shader.msg_style());
     }
 }
 
@@ -61,10 +87,10 @@ impl Pendant for LabelPendant {
     fn format(&self, shader: Rc<dyn Shader>, sb: &mut StyledBuffer) {
         let line_num = sb.num_lines();
         let col = 0;
-        sb.puts(line_num, col, &self.diagnostic_type, shader.label_style());
+        sb.puts(line_num, col, &self.diagnostic_type, shader.msg_style());
 
         let offset = self.diagnostic_type.len();
-        sb.putc(line_num, col + offset, ':', shader.label_style());
+        sb.putc(line_num, col + offset, ':', shader.msg_style());
     }
 }
 
@@ -84,27 +110,27 @@ impl CodeCtxPendant {
 
 impl Pendant for CodeCtxPendant {
     fn format(&self, shader: Rc<dyn Shader>, sb: &mut StyledBuffer) {
-        sb.putl(&self.code_pos.info(), shader.file_header_style());
+        sb.putl(&self.code_pos.info(), shader.file_path_style());
 
         sb.putl(
             &format!("{} |", self.code_pos.line),
-            shader.file_header_style(),
+            shader.line_and_column_style(),
         );
 
         if let Some(sm) = &self.source_map {
             if let Some(source_file) = sm.source_file_by_filename(&self.code_pos.filename) {
                 if let Some(line) = source_file.get_line(self.code_pos.line as usize - 1) {
-                    sb.putl(&line.to_string(), shader.file_header_style());
+                    sb.putl(&line.to_string(), shader.err_style());
                 }
             }
         } else {
             let sm = SourceMap::new(FilePathMapping::empty());
             if let Ok(source_file) = sm.load_file(Path::new(&self.code_pos.filename)) {
                 if let Some(line) = source_file.get_line(self.code_pos.line as usize - 1) {
-                    sb.putl(&line.to_string(), shader.line_and_column_style());
+                    sb.putl(&line.to_string(), shader.msg_style());
                 }
             }
         }
-        sb.putl(&format!("^"), shader.line_and_column_style());
+        sb.putl(&format!("^"), shader.err_style());
     }
 }

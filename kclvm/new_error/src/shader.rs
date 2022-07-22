@@ -1,35 +1,26 @@
-use crate::diagnostic::Level;
+use core::fmt;
 
-#[derive(Copy, Clone, Debug, PartialEq, Hash)]
-pub enum Style {
-    MainHeaderMsg,
-    HeaderMsg,
-    LineAndColumn,
-    LineNumber,
-    Quotation,
-    UnderlinePrimary,
-    UnderlineSecondary,
-    LabelPrimary,
-    LabelSecondary,
-    NoStyle,
-    Level(Level),
-    Highlight,
-    Addition,
-    Removal,
-    Empty,
-    Line,
-}
+use termcolor::{ColorSpec, Color};
 
-// Shader 是有必要的，因为把整个shader传进去，
-// 想用什么Style就调用什么方法获取对应的Style，
-// 如果只将style传递进去，那就只能用一种Style，
-// 因为传递进去的东西是常量。
 pub trait Shader {
-    fn header_style(&self) -> Style;
-    fn label_style(&self) -> Style;
-    fn file_header_style(&self) -> Style;
+    // logo - "KCL"
+    fn logo_style(&self) -> Style;
+    // error - "error[E0101]"
+    fn err_style(&self) -> Style;
+    // warning - "warning[W5523]"
+    fn warning_style(&self) -> Style;
+    // suggestion
+    // error: this is an error.
+    // warning: this is an warning.
+    // help: this is a help tip.
+    // note: this is a note.
+    fn msg_style(&self) -> Style;
+    // line and column - "21:3"
     fn line_and_column_style(&self) -> Style;
-    fn sentence_style(&self) -> Style;
+    // file path - "User/xxx/xxx/xxx.k"
+    fn file_path_style(&self) -> Style;
+    // label = "~ \ ^"
+    fn label_style(&self) -> Style;
 }
 
 pub struct ColorShader;
@@ -41,23 +32,84 @@ impl ColorShader {
 }
 
 impl Shader for ColorShader {
-    fn header_style(&self) -> Style {
-        Style::Line
+    fn logo_style(&self) -> Style {
+        Style::Logo
     }
 
-    fn label_style(&self) -> Style {
-        Style::Line
+    fn err_style(&self) -> Style {
+        Style::Level(Level::Error)
     }
 
-    fn file_header_style(&self) -> Style {
-        Style::Line
+    fn warning_style(&self) -> Style {
+        Style::Level(Level::Warning)
+    }
+
+    fn msg_style(&self) -> Style {
+        Style::NoStyle
     }
 
     fn line_and_column_style(&self) -> Style {
-        Style::Line
+        Style::LineAndColumn
     }
 
-    fn sentence_style(&self) -> Style {
-        Style::Line
+    fn file_path_style(&self) -> Style {
+        Style::NoStyle
+    }
+
+    fn label_style(&self) -> Style {
+        Style::Label
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Hash)]
+pub enum Style {
+    Logo,
+    Level(Level),
+    NoStyle,
+    LineAndColumn,
+    LineNumber,
+    Line,
+    Label,
+    Quotation,
+    Empty
+}
+
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub enum Level {
+    Error,
+    Warning,
+    Note,
+}
+
+impl Level {
+    pub fn to_str(self) -> &'static str {
+        match self {
+            Level::Error => "Error",
+            Level::Warning => "Warning",
+            Level::Note => "Note",
+        }
+    }
+
+    pub fn color(&self) -> ColorSpec {
+        let mut spec = ColorSpec::new();
+        match self {
+            Level::Error => {
+                spec.set_fg(Some(Color::Red)).set_intense(true);
+            }
+            Level::Warning => {
+                spec.set_fg(Some(Color::Yellow)).set_intense(cfg!(windows));
+            }
+            Level::Note => {
+                spec.set_fg(Some(Color::Green)).set_intense(true);
+            }
+        }
+        spec
+    }
+}
+
+impl fmt::Display for Level {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.to_str().fmt(f)
     }
 }

@@ -1,14 +1,14 @@
-use std::{sync::Arc, rc::Rc};
+use std::{sync::Arc, rc::Rc, path::PathBuf};
 
 use kclvm_error::{ErrorKind, Position};
 use kclvm_span::FilePathMapping;
 
 use crate::{
-    diagnostic::{Diagnostic, DiagnosticId, Level},
+    diagnostic::{Diagnostic, DiagnosticId},
     emitter::{Emitter, EmitterWriter},
     pendant::{CodeCtxPendant, HeaderPendant, LabelPendant, Pendant},
     sentence::{Message, Sentence},
-    shader::{ColorShader, Shader},
+    shader::{ColorShader, Shader, Level},
     styled_buffer::StyledBuffer,
 };
 
@@ -25,11 +25,13 @@ fn get_code_position() -> Position {
 #[test]
 fn test_pendant() {
     let pos = get_code_position();
+    let src =std::fs::read_to_string(pos.filename.clone()).unwrap();
     let sm = Arc::new(kclvm_span::SourceMap::new(FilePathMapping::empty()));
+    sm.new_source_file(PathBuf::from(pos.filename.clone()).into(), src.to_string());
     let mut sb = StyledBuffer::new();
     let shader: Rc<dyn Shader> = Rc::new(ColorShader::new());
 
-    let hp = HeaderPendant::new("error".to_string(), "E1000".to_string());
+    let hp = HeaderPendant::new(Level::Error, "E1000".to_string());
     hp.format(Rc::clone(&shader), &mut sb);
 
     let ccp = CodeCtxPendant::new(pos, Some(Arc::clone(&sm)));
