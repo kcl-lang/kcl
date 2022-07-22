@@ -1,6 +1,6 @@
 // Code for annotating snippets.
 
-use crate::Level;
+use crate::shader::Style;
 
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
 pub struct Line {
@@ -158,22 +158,4 @@ impl Annotation {
 pub struct StyledString {
     pub text: String,
     pub style: Style,
-}
-
-#[derive(Copy, Clone, Debug, PartialEq, Hash)]
-pub enum Style {
-    MainHeaderMsg,
-    HeaderMsg,
-    LineAndColumn,
-    LineNumber,
-    Quotation,
-    UnderlinePrimary,
-    UnderlineSecondary,
-    LabelPrimary,
-    LabelSecondary,
-    NoStyle,
-    Level(Level),
-    Highlight,
-    Addition,
-    Removal,
 }

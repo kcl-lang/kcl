@@ -1,6 +1,6 @@
 // Code for creating styled buffers
 
-use crate::snippet::{Style, StyledString};
+use crate::{shader::Style, snippet::StyledString};
 
 #[derive(Debug)]
 pub struct StyledBuffer {
@@ -29,7 +29,10 @@ impl StyledBuffer {
     /// Returns content of `StyledBuffer` split by lines and line styles
     pub fn render(&self) -> Vec<Vec<StyledString>> {
         // Tabs are assumed to have been replaced by spaces in calling code.
-        debug_assert!(self.lines.iter().all(|r| !r.iter().any(|sc| sc.chr == '\t')));
+        debug_assert!(self
+            .lines
+            .iter()
+            .all(|r| !r.iter().any(|sc| sc.chr == '\t')));
 
         let mut output: Vec<Vec<StyledString>> = vec![];
         let mut styled_vec: Vec<StyledString> = vec![];
@@ -42,7 +45,10 @@ impl StyledBuffer {
                 if sc.style != current_style {
                     // 同一个style的就会放在一起，都放在 styled_vec 中
                     if !current_text.is_empty() {
-                        styled_vec.push(StyledString { text: current_text, style: current_style });
+                        styled_vec.push(StyledString {
+                            text: current_text,
+                            style: current_style,
+                        });
                     }
                     current_style = sc.style;
                     current_text = String::new();
@@ -50,7 +56,10 @@ impl StyledBuffer {
                 current_text.push(sc.chr);
             }
             if !current_text.is_empty() {
-                styled_vec.push(StyledString { text: current_text, style: current_style });
+                styled_vec.push(StyledString {
+                    text: current_text,
+                    style: current_style,
+                });
             }
 
             // We're done with the row, push and keep going
@@ -90,9 +99,8 @@ impl StyledBuffer {
         }
     }
 
-
-    pub fn putl(&mut self, string: &str, style: Style){
-        let line = self.num_lines()+1;
+    pub fn putl(&mut self, string: &str, style: Style) {
+        let line = self.num_lines();
         let mut col = 0;
         for c in string.chars() {
             self.putc(line, col, c, style);

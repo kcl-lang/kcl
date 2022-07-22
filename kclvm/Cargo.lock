@@ -925,6 +925,8 @@ version = "0.1.0"
 dependencies = [
  "kclvm-error",
  "kclvm-span",
+ "rustc_span",
+ "termcolor",
 ]
 
 [[package]]
