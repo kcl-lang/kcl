@@ -242,17 +242,16 @@ impl<'a> Lexer<'a> {
             kclvm_lexer::TokenKind::Minus => {
                 let head = start + BytePos::from_u32(1);
                 let tail = start + BytePos::from_u32(2);
-                if self.has_next_token(head, tail){
-                    let next_tkn =
-                        self.str_from_to(head, tail);
+                if self.has_next_token(head, tail) {
+                    let next_tkn = self.str_from_to(head, tail);
                     if next_tkn == ">" {
                         // waste '>' token
                         self.pos = self.pos + BytePos::from_usize(1);
                         token::RArrow
                     } else {
-                        token::BinOp(token::Minus) 
+                        token::BinOp(token::Minus)
                     }
-                }else{
+                } else {
                     token::BinOp(token::Minus)
                 }
             }
@@ -546,8 +545,12 @@ impl<'a> Lexer<'a> {
         &self.src[self.src_index(start)..self.src_index(end)]
     }
 
-    fn has_next_token(&self, start: BytePos, end: BytePos) -> bool{
-        if self.src_index(start) > self.src_index(end) || self.src_index(end) > self.src.len(){ false }else{ true }
+    fn has_next_token(&self, start: BytePos, end: BytePos) -> bool {
+        if self.src_index(start) > self.src_index(end) || self.src_index(end) > self.src.len() {
+            false
+        } else {
+            true
+        }
     }
 
     fn symbol_from_to(&self, start: BytePos, end: BytePos) -> Symbol {

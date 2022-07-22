@@ -1,5 +1,7 @@
 // Copyright 2021 The KCL Authors. All rights reserved.
 
+use crate::kclvm_value_Undefined;
+
 /// New a mutable raw pointer.
 pub fn new_mut_ptr<T>(x: T) -> *mut T {
     Box::into_raw(Box::new(x))
@@ -16,14 +18,24 @@ pub fn free_mut_ptr<T>(p: *mut T) {
 
 /// Convert a const raw pointer to a immutable borrow.
 pub fn ptr_as_ref<'a, T>(p: *const T) -> &'a T {
-    assert!(!p.is_null());
-    unsafe { &*p }
+    if p.is_null() {
+        let v = kclvm_value_Undefined();
+        ptr_as_ref(v as *const T)
+    } else {
+        unsafe { &*p }
+    }
 }
 
 /// Convert a mutable raw pointer to a mutable borrow.
 pub fn mut_ptr_as_ref<'a, T>(p: *mut T) -> &'a mut T {
     assert!(!p.is_null());
-    unsafe { &mut *p }
+
+    if p.is_null() {
+        let v = kclvm_value_Undefined();
+        mut_ptr_as_ref(v as *mut T)
+    } else {
+        unsafe { &mut *p }
+    }
 }
 
 /// Convert a C str pointer to a Rust &str.

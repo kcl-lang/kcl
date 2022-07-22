@@ -54,7 +54,9 @@ where
     K: Eq + Hash,
 {
     pub fn new() -> StableMap<K, V> {
-        StableMap { base: FxHashMap::default() }
+        StableMap {
+            base: FxHashMap::default(),
+        }
     }
 
     pub fn into_sorted_vector(self) -> Vec<(K, V)>

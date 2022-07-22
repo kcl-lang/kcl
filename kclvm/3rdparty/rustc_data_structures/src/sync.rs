@@ -23,30 +23,30 @@ use std::hash::{BuildHasher, Hash};
 pub use std::sync::atomic::Ordering;
 pub use std::sync::atomic::Ordering::SeqCst;
 
-        pub use std::marker::Send as Send;
-        pub use std::marker::Sync as Sync;
+pub use std::marker::Send;
+pub use std::marker::Sync;
 
-        pub use parking_lot::RwLockReadGuard as ReadGuard;
-        pub use parking_lot::MappedRwLockReadGuard as MappedReadGuard;
-        pub use parking_lot::RwLockWriteGuard as WriteGuard;
-        pub use parking_lot::MappedRwLockWriteGuard as MappedWriteGuard;
+pub use parking_lot::MappedRwLockReadGuard as MappedReadGuard;
+pub use parking_lot::MappedRwLockWriteGuard as MappedWriteGuard;
+pub use parking_lot::RwLockReadGuard as ReadGuard;
+pub use parking_lot::RwLockWriteGuard as WriteGuard;
 
-        pub use parking_lot::MutexGuard as LockGuard;
-        pub use parking_lot::MappedMutexGuard as MappedLockGuard;
+pub use parking_lot::MappedMutexGuard as MappedLockGuard;
+pub use parking_lot::MutexGuard as LockGuard;
 
-        pub use std::sync::atomic::{AtomicBool, AtomicUsize, AtomicU32, AtomicU64};
+pub use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, AtomicUsize};
 
-        pub use std::sync::Arc as Lrc;
-        pub use std::sync::Weak as Weak;
+pub use std::sync::Arc as Lrc;
+pub use std::sync::Weak;
 
-        pub type MTRef<'a, T> = &'a T;
+pub type MTRef<'a, T> = &'a T;
 
-        pub use rayon::{join, scope};
+pub use rayon::{join, scope};
 
-        /// Runs a list of blocks in parallel. The first block is executed immediately on
-        /// the current thread. Use that for the longest running block.
-        #[macro_export]
-        macro_rules! parallel {
+/// Runs a list of blocks in parallel. The first block is executed immediately on
+/// the current thread. Use that for the longest running block.
+#[macro_export]
+macro_rules! parallel {
             (impl $fblock:tt [$($c:tt,)*] [$block:tt $(, $rest:tt)*]) => {
                 parallel!(impl $fblock [$block, $($c,)*] [$($rest),*])
             };
@@ -66,31 +66,27 @@ pub use std::sync::atomic::Ordering::SeqCst;
             };
         }
 
-        pub use rayon_core::WorkerLocal;
+pub use rayon_core::WorkerLocal;
 
-        pub use rayon::iter::ParallelIterator;
-        use rayon::iter::IntoParallelIterator;
+use rayon::iter::IntoParallelIterator;
+pub use rayon::iter::ParallelIterator;
 
-        pub fn par_iter<T: IntoParallelIterator>(t: T) -> T::Iter {
-            t.into_par_iter()
-        }
+pub fn par_iter<T: IntoParallelIterator>(t: T) -> T::Iter {
+    t.into_par_iter()
+}
 
-        pub fn par_for_each_in<T: IntoParallelIterator>(
-            t: T,
-            for_each: impl Fn(T::Item) + Sync + Send,
-        ) {
-            t.into_par_iter().for_each(for_each)
-        }
+pub fn par_for_each_in<T: IntoParallelIterator>(t: T, for_each: impl Fn(T::Item) + Sync + Send) {
+    t.into_par_iter().for_each(for_each)
+}
 
-        #[macro_export]
-        macro_rules! rustc_erase_owner {
-            ($v:expr) => {{
-                let v = $v;
-                ::rustc_data_structures::sync::assert_send_val(&v);
-                v.erase_send_sync_owner()
-            }}
-        }
-
+#[macro_export]
+macro_rules! rustc_erase_owner {
+    ($v:expr) => {{
+        let v = $v;
+        ::rustc_data_structures::sync::assert_send_val(&v);
+        v.erase_send_sync_owner()
+    }};
+}
 
 pub fn assert_sync<T: ?Sized + Sync>() {}
 pub fn assert_send<T: ?Sized + Send>() {}
@@ -105,6 +101,8 @@ pub trait HashMapExt<K, V> {
 
 impl<K: Eq + Hash, V: Eq, S: BuildHasher> HashMapExt<K, V> for HashMap<K, V, S> {
     fn insert_same(&mut self, key: K, value: V) {
-        self.entry(key).and_modify(|old| assert!(*old == value)).or_insert(value);
+        self.entry(key)
+            .and_modify(|old| assert!(*old == value))
+            .or_insert(value);
     }
 }
