@@ -35,7 +35,7 @@ do
                 sslpath=$(brew --prefix openssl@1.1)
             fi
 
-            if [ x"$(uname -m)" == x"arm64" ]; then
+            if [ x"$(uname -m)" == x"arm64" ] || [ x"$(uname -m)" == x"x86_64" ]; then
                 py_ver_major="3"
                 py_ver_minor="9"
                 py_ver_micro="12"
