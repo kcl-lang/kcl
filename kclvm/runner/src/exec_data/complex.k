@@ -34,7 +34,7 @@ _e = 1 + 1
 aug1 = aug2 = 4 + 3
 data = [1, 2, 3, 4]
 lcomp = [_d * 2 for _d in data for _d in data]
-dcomp = {dd: dd * 2 for dd in data}
+dcomp = {str(dd): dd * 2 for dd in data}
 data0 = data[0]
 data12 = data[::-1]
 pk = "ABC"[::-1]
