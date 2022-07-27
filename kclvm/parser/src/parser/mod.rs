@@ -189,7 +189,7 @@ impl<'a> Parser<'a> {
                                 node: Comment {
                                     text: x.as_str().to_string(),
                                 },
-                                filename: filename,
+                                filename,
                                 line: lo.line as u64,
                                 column: lo.col.to_usize() as u64,
                                 end_line: hi.line as u64,

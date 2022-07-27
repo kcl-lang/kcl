@@ -2,9 +2,6 @@
 /// Bases up to and including 36 can be used for case-insensitive things.
 use std::str;
 
-#[cfg(test)]
-mod tests;
-
 pub const MAX_BASE: usize = 64;
 pub const ALPHANUMERIC_ONLY: usize = 62;
 pub const CASE_INSENSITIVE: usize = 36;

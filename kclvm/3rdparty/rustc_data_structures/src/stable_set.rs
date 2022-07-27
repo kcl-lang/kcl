@@ -43,7 +43,9 @@ impl<T> Eq for StableSet<T> where T: Eq + Hash {}
 
 impl<T: Hash + Eq> StableSet<T> {
     pub fn new() -> StableSet<T> {
-        StableSet { base: FxHashSet::default() }
+        StableSet {
+            base: FxHashSet::default(),
+        }
     }
 
     pub fn into_sorted_vector(self) -> Vec<T>

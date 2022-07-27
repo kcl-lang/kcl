@@ -29,6 +29,9 @@ impl AsRef<Path> for MaybeTempDir {
 
 impl MaybeTempDir {
     pub fn new(dir: TempDir, keep_on_drop: bool) -> MaybeTempDir {
-        MaybeTempDir { dir: ManuallyDrop::new(dir), keep: keep_on_drop }
+        MaybeTempDir {
+            dir: ManuallyDrop::new(dir),
+            keep: keep_on_drop,
+        }
     }
 }

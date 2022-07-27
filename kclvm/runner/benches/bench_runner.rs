@@ -9,19 +9,20 @@ use kclvm_runner::{execute, runner::ExecProgramArgs};
 const EXEC_DATA_PATH: &str = "./src/exec_data/";
 
 pub fn criterion_benchmark(c: &mut Criterion) {
-    c.bench_function("refactor kclvm-runner", |b| b.iter(|| {
-        let prev_hook = std::panic::take_hook();
-        // disable print panic info
-        std::panic::set_hook(Box::new(|_| {}));
-        let result =
-            std::panic::catch_unwind(|| {
+    c.bench_function("refactor kclvm-runner", |b| {
+        b.iter(|| {
+            let prev_hook = std::panic::take_hook();
+            // disable print panic info
+            std::panic::set_hook(Box::new(|_| {}));
+            let result = std::panic::catch_unwind(|| {
                 for file in get_files(EXEC_DATA_PATH, false, true, ".k") {
                     exec(&file).unwrap();
                 }
             });
-        assert!(result.is_ok());
-        std::panic::set_hook(prev_hook);
-    }));
+            assert!(result.is_ok());
+            std::panic::set_hook(prev_hook);
+        })
+    });
 }
 
 criterion_group!(benches, criterion_benchmark);
@@ -39,7 +40,12 @@ fn exec(file: &str) -> Result<String, String> {
 }
 
 /// Get kcl files from path.
-fn get_files<P: AsRef<Path>>(path: P, recursively: bool, sorted: bool, suffix: &str) -> Vec<String> {
+fn get_files<P: AsRef<Path>>(
+    path: P,
+    recursively: bool,
+    sorted: bool,
+    suffix: &str,
+) -> Vec<String> {
     let mut files = vec![];
     for entry in WalkDir::new(path).into_iter().filter_map(|e| e.ok()) {
         let path = entry.path();

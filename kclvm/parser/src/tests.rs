@@ -2,19 +2,12 @@ use std::panic::{catch_unwind, set_hook};
 
 use crate::*;
 
-use expect_test::{expect, Expect};
 use core::any::Any;
+use expect_test::{expect, Expect};
 
 fn check_parsing_file_ast_json(filename: &str, src: &str, expect: Expect) {
     let m = parse_file(filename, Some(src.into())).unwrap();
     let actual = serde_json::ser::to_string(&m).unwrap();
-    let actual = format!("{}\n", actual);
-    expect.assert_eq(&actual)
-}
-
-fn check_load_program_ast_json(files: &[&str], opts: Option<LoadProgramOptions>, expect: Expect) {
-    let prog = load_program(&files, opts).unwrap();
-    let actual = serde_json::ser::to_string(&prog).unwrap();
     let actual = format!("{}\n", actual);
     expect.assert_eq(&actual)
 }
@@ -76,7 +69,7 @@ c = 3 # comment4444
     );
 }
 
-pub fn check_result_panic_info(result: Result<(), Box<dyn Any + Send>>){
+pub fn check_result_panic_info(result: Result<(), Box<dyn Any + Send>>) {
     match result {
         Err(e) => match e.downcast::<String>() {
             Ok(_v) => {
@@ -89,15 +82,12 @@ pub fn check_result_panic_info(result: Result<(), Box<dyn Any + Send>>){
     };
 }
 
-const PARSE_EXPR_INVALID_TEST_CASES: &[&'static str; 3] = &[
-    "fs1_i1re1~s",
-    "fh==-h==-",
-    "8_________i"
-];
+const PARSE_EXPR_INVALID_TEST_CASES: &[&'static str; 3] =
+    &["fs1_i1re1~s", "fh==-h==-", "8_________i"];
 
 #[test]
 pub fn test_parse_expr_invalid() {
-    for case in PARSE_EXPR_INVALID_TEST_CASES{
+    for case in PARSE_EXPR_INVALID_TEST_CASES {
         set_hook(Box::new(|_| {}));
         let result = catch_unwind(|| {
             parse_expr(&case);
