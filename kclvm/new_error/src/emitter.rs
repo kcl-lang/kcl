@@ -1,13 +1,14 @@
 use crate::{
     diagnostic::Diagnostic,
-    shader::{ColorShader, Shader, Style, Level},
+    shader::{ColorShader, Level, Shader, Style},
     snippet::StyledString,
     styled_buffer::StyledBuffer,
 };
 
-use kclvm_span::SourceMap;
-use std::{io::{self, Write}, rc::Rc};
-use std::sync::Arc;
+use std::{
+    io::{self, Write},
+    rc::Rc,
+};
 use termcolor::{BufferWriter, Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 /// Emitter trait for emitting errors.
@@ -26,27 +27,20 @@ pub struct EmitterWriter {
     shader: Rc<dyn Shader>,
     dst: Destination,
     short_message: bool,
-    source_map: Option<Arc<SourceMap>>,
 }
 
 impl Default for EmitterWriter {
     fn default() -> Self {
-        Self {
-            shader: Rc::new(ColorShader::new()),
-            dst: Destination::from_stderr(),
-            short_message: false,
-            source_map: None,
-        }
+        EmitterWriter::from_stderr()
     }
 }
 
 impl EmitterWriter {
-    pub fn from_stderr(source_map: Arc<SourceMap>) -> Self {
+    pub fn from_stderr() -> Self {
         Self {
             shader: Rc::new(ColorShader::new()),
             dst: Destination::from_stderr(),
             short_message: false,
-            source_map: Some(source_map),
         }
     }
 }
@@ -94,7 +88,7 @@ impl Destination {
                 spec.set_bold(true);
                 spec = lvl.color();
             }
-            Style::Line |Style::LineNumber => {
+            Style::Line | Style::LineNumber => {
                 spec.set_bold(true);
                 spec.set_intense(true);
                 if cfg!(windows) {
@@ -104,15 +98,15 @@ impl Destination {
                 }
             }
             Style::Quotation => {}
-            Style::NoStyle => {},
+            Style::NoStyle => {}
             Style::Level(lvl) => {
                 spec = lvl.color();
                 spec.set_bold(true);
             }
-            Style::Logo => {},
+            Style::Logo => {}
             Style::Label => {
                 spec.set_bold(true);
-            },
+            }
         }
         self.set_color(&spec)
     }
@@ -161,7 +155,6 @@ impl Emitter for EmitterWriter {
         let buffer = self.format_diagnostic(diag);
         if let Err(e) = emit_to_destination(
             &buffer.render(),
-            &diag.level,
             &mut self.dst,
             self.short_message,
         ) {
@@ -180,7 +173,6 @@ impl Emitter for EmitterWriter {
 
 fn emit_to_destination(
     rendered_buffer: &[Vec<StyledString>],
-    lvl: &Level,
     dst: &mut Destination,
     short_message: bool,
 ) -> io::Result<()> {
@@ -198,7 +190,6 @@ fn emit_to_destination(
     // enough to output the full error message, then we release.
     for (pos, line) in rendered_buffer.iter().enumerate() {
         for part in line {
-            dst.apply_style(*lvl, part.style)?;
             write!(dst, "{}", part.text)?;
             dst.reset()?;
         }

@@ -1,6 +1,6 @@
 use core::fmt;
 
-use termcolor::{ColorSpec, Color};
+use termcolor::{Color, ColorSpec};
 
 pub trait Shader {
     // logo - "KCL"
@@ -21,6 +21,7 @@ pub trait Shader {
     fn file_path_style(&self) -> Style;
     // label = "~ \ ^"
     fn label_style(&self) -> Style;
+    fn no_style(&self) -> Style;
 }
 
 pub struct ColorShader;
@@ -59,6 +60,10 @@ impl Shader for ColorShader {
     fn label_style(&self) -> Style {
         Style::Label
     }
+
+    fn no_style(&self) -> Style {
+        Style::Empty
+    }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Hash)]
@@ -71,9 +76,8 @@ pub enum Style {
     Line,
     Label,
     Quotation,
-    Empty
+    Empty,
 }
-
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Level {

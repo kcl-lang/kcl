@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use crate::{pendant::Pendant, shader::Shader, styled_buffer::StyledBuffer};
+use crate::{pendant::{Pendant, NoPendant}, shader::Shader, styled_buffer::StyledBuffer};
 
 pub struct Sentence {
     pendant: Box<dyn Pendant>,
@@ -16,6 +16,13 @@ pub enum Message {
 impl Sentence {
     pub fn new_sentence_str(pendant: Box<dyn Pendant>, sentence: Message) -> Self {
         Self { pendant, sentence }
+    }
+
+    pub fn new_nopendant_sentence(sentence: Message) -> Self{
+        Self { 
+            pendant: Box::new(NoPendant::new()), 
+            sentence 
+        }
     }
 
     pub fn format(&self, shader: Rc<dyn Shader>, sb: &mut StyledBuffer) {

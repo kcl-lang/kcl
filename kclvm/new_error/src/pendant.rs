@@ -1,9 +1,10 @@
-use std::{path::Path, rc::Rc};
-use std::sync::Arc;
-use crate::shader::{Shader, Level};
+use crate::shader::{Level, Shader};
 use crate::styled_buffer::StyledBuffer;
 use kclvm_error::Position;
 use kclvm_span::{FilePathMapping, SourceMap};
+use std::path::PathBuf;
+use std::sync::Arc;
+use std::{path::Path, rc::Rc};
 
 // TODO(zongz): The 'impl Pendant' can also be replaced by macros.
 pub trait Pendant {
@@ -26,12 +27,12 @@ impl HeaderPendant {
         }
     }
 
-    pub fn set_logo(&mut self, logo: String){
+    pub fn set_logo(&mut self, logo: String) {
         self.logo = Some(logo);
     }
 }
 
-// TODO(zongz): These are not part of CompilerBase. 
+// TODO(zongz): These are not part of CompilerBase.
 // Generated them by macro in the
 impl Pendant for HeaderPendant {
     fn format(&self, shader: Rc<dyn Shader>, sb: &mut StyledBuffer) {
@@ -39,14 +40,14 @@ impl Pendant for HeaderPendant {
         let col = 0;
 
         // format logo
-        if let Some(logo) = &self.logo{
+        if let Some(logo) = &self.logo {
             sb.puts(line_num, col, &logo, shader.logo_style());
         }
-        
+
         // format header -> error[E0101] or warning[W1010]
 
         // get label text, label text length, style for different level.
-        let (label_text, label_len, style) = match self.diag_level{
+        let (label_text, label_len, style) = match self.diag_level {
             Level::Error => ("error", "error".len(), shader.err_style()),
             Level::Warning => ("warning", "warning".len(), shader.warning_style()),
             Level::Note => ("note", "note".len(), shader.msg_style()),
@@ -58,17 +59,12 @@ impl Pendant for HeaderPendant {
         // for e.g. "error[E1010]"
         sb.putc(line_num, col + offset, '[', shader.msg_style());
         offset = offset + 1;
-        sb.puts(
-            line_num,
-            col + offset,
-            &self.diag_code,
-            shader.msg_style(),
-        );
+        sb.puts(line_num, col + offset, &self.diag_code, shader.msg_style());
 
         offset = offset + self.diag_code.len();
         sb.putc(line_num, col + offset, ']', shader.msg_style());
 
-        offset = offset+1;
+        offset = offset + 1;
         sb.putc(line_num, col + offset, ':', shader.msg_style());
     }
 }
@@ -100,11 +96,29 @@ pub struct CodeCtxPendant {
 }
 
 impl CodeCtxPendant {
-    pub fn new(code_pos: Position, source_map: Option<Arc<SourceMap>>) -> Self {
+    /// Share source_map with the outside through input parameter 'source_map: Option<Arc<SourceMap>>'.
+    pub fn new_with_source_map(code_pos: Position, source_map: Option<Arc<SourceMap>>) -> Self {
         Self {
             code_pos,
             source_map,
         }
+    }
+
+    /// Create a new source_map by code_pos.filename.
+    pub fn new(code_pos: Position) -> Self {
+        let source_map = Arc::new(CodeCtxPendant::init_source_map(&code_pos.filename));
+
+        Self {
+            code_pos,
+            source_map: Some(source_map),
+        }
+    }
+
+    pub fn init_source_map(filename: &String) -> SourceMap {
+        let src = std::fs::read_to_string(filename.clone()).unwrap();
+        let sm = kclvm_span::SourceMap::new(FilePathMapping::empty());
+        sm.new_source_file(PathBuf::from(filename.clone()).into(), src.to_string());
+        sm
     }
 }
 
@@ -134,3 +148,19 @@ impl Pendant for CodeCtxPendant {
         sb.putl(&format!("^"), shader.err_style());
     }
 }
+
+
+pub struct NoPendant;
+
+impl NoPendant {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+
+impl Pendant for NoPendant {
+    fn format(&self, shader: Rc<dyn Shader>, sb: &mut StyledBuffer) {
+        sb.putl(&format!(""), shader.no_style());
+    }
+}
+

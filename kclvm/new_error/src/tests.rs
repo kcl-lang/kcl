@@ -1,15 +1,15 @@
-use std::{sync::Arc, rc::Rc, path::PathBuf};
+use std::{path::PathBuf, rc::Rc, sync::Arc};
 
 use kclvm_error::{ErrorKind, Position};
 use kclvm_span::FilePathMapping;
 
 use crate::{
-    diagnostic::{Diagnostic, DiagnosticId},
+    diagnostic::Diagnostic,
     emitter::{Emitter, EmitterWriter},
     pendant::{CodeCtxPendant, HeaderPendant, LabelPendant, Pendant},
     sentence::{Message, Sentence},
-    shader::{ColorShader, Shader, Level},
-    styled_buffer::StyledBuffer,
+    shader::{ColorShader, Level, Shader},
+    styled_buffer::StyledBuffer, error::{ThisIsAnErr, DiagnosticBuilder},
 };
 
 fn get_code_position() -> Position {
@@ -25,16 +25,14 @@ fn get_code_position() -> Position {
 #[test]
 fn test_pendant() {
     let pos = get_code_position();
-    let src =std::fs::read_to_string(pos.filename.clone()).unwrap();
-    let sm = Arc::new(kclvm_span::SourceMap::new(FilePathMapping::empty()));
-    sm.new_source_file(PathBuf::from(pos.filename.clone()).into(), src.to_string());
+
     let mut sb = StyledBuffer::new();
     let shader: Rc<dyn Shader> = Rc::new(ColorShader::new());
 
     let hp = HeaderPendant::new(Level::Error, "E1000".to_string());
     hp.format(Rc::clone(&shader), &mut sb);
 
-    let ccp = CodeCtxPendant::new(pos, Some(Arc::clone(&sm)));
+    let ccp = CodeCtxPendant::new(pos);
     ccp.format(Rc::clone(&shader), &mut sb);
 
     let lp = LabelPendant::new("note".to_string());
@@ -52,14 +50,24 @@ fn test_pendant() {
     let sent3 =
         Sentence::new_sentence_str(Box::new(lp), Message::Str("This is an error".to_string()));
 
-    let mut emitter = EmitterWriter::from_stderr(Arc::clone(&sm));
-    let mut diag = Diagnostic::new_with_code(
-        Level::Error,
-        Some(DiagnosticId::Error(ErrorKind::AssertionError)),
-    );
-    diag.add_message(sent1);
-    diag.add_message(sent2);
-    diag.add_message(sent3);
+    let mut emitter = EmitterWriter::default();
+    let mut diag = Diagnostic::new();
+    diag.add_sentence(sent1);
+    diag.add_sentence(sent2);
+    diag.add_sentence(sent3);
 
     emitter.emit_diagnostic(&diag)
+}
+
+
+#[test]
+fn test_diagnostic_builder(){
+
+    let err = ThisIsAnErr{
+        pos: get_code_position()
+    };
+
+    let mut emitter = EmitterWriter::default();
+    
+    emitter.emit_diagnostic(&err.into_diagnostic());
 }

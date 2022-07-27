@@ -1,6 +1,7 @@
 // mod formatter;
 pub mod diagnostic;
 pub mod emitter;
+pub mod error;
 pub mod pendant;
 pub mod sentence;
 pub mod shader;
