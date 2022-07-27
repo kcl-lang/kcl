@@ -22,7 +22,12 @@ fn test_override_file_simple() {
 #[test]
 fn test_override_file_import_paths() {
     let specs = vec!["data.value=\"override_value\"".to_string()];
-    let import_paths = vec!["pkg".to_string(), "pkg.pkg".to_string()];
+    let import_paths = vec![
+        "pkg".to_string(),
+        "pkg.pkg".to_string(),
+        "pkg.pkg as alias_pkg1".to_string(),
+        "pkg.pkg as alias_pkg2".to_string(),
+    ];
     assert_eq!(
         override_file(
             "./src/query/test_data/import_paths.k",
