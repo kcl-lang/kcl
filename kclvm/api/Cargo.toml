@@ -1,0 +1,26 @@
+[package]
+name = "kclvm-api"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+#[lib]
+#name = "kclvm_spec_cdylib"
+#crate-type = ["rlib"]
+#path = "src/lib.rs"
+
+
+[dependencies]
+protobuf = "3.1.0"
+serde_json = "1.0"
+serde_yaml = "0.8.26"
+protobuf-json-mapping = "3.1.0"
+serde = { version = "1", features = ["derive"] }
+
+kclvm-runner = {path = "../runner" , version = "0.1.0"}
+kclvm-parser = {path = "../parser" , version = "0.1.0"}
+kclvm-ast = {path = "../ast" , version = "0.1.0"}
+
+[build_dependencies]
+protobuf-codegen= "3.1.0"
+protoc-bin-vendored = "3.0.0"

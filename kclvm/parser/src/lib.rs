@@ -90,7 +90,7 @@ pub fn parse_file(filename: &str, code: Option<String>) -> Result<ast::Module, S
 }
 
 /// Parse a source string to a expression. When input empty string, it will return [None].
-/// 
+///
 /// # Examples
 /// ```
 /// use kclvm_ast::ast;
@@ -108,7 +108,7 @@ pub fn parse_expr(src: &str) -> Option<ast::NodeRef<ast::Expr>> {
         let sm = SourceMap::new(FilePathMapping::empty());
         sm.new_source_file(PathBuf::from("").into(), src.to_string());
         let sess = &ParseSession::with_source_map(Arc::new(sm));
-    
+
         Some(create_session_globals_then(|| {
             let stream = parse_token_streams(sess, src, BytePos::from_u32(0));
             let mut parser = Parser::new(sess, stream);

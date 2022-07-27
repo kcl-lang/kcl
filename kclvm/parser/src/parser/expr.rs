@@ -1992,7 +1992,8 @@ impl<'a> Parser<'a> {
                 let value = match result {
                     Some(value) => value,
                     None => {
-                        self.sess.struct_token_error(&[token::LitKind::Integer.into()], token);
+                        self.sess
+                            .struct_token_error(&[token::LitKind::Integer.into()], token);
                     }
                 };
                 match lk.suffix {
@@ -2005,7 +2006,8 @@ impl<'a> Parser<'a> {
                 let value = match result {
                     Ok(value) => value,
                     _ => {
-                        self.sess.struct_token_error(&[token::LitKind::Float.into()], token);
+                        self.sess
+                            .struct_token_error(&[token::LitKind::Float.into()], token);
                     }
                 };
                 (None, NumberLitValue::Float(value))

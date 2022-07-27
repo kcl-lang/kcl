@@ -37,6 +37,13 @@ kclvm-sema = {path = "./sema", version = "0.1.0"}
 kclvm-tools = {path = "./tools", version = "0.1.0"}
 kclvm-version = {path = "./version", version = "0.1.0"}
 kclvm-error = {path = "./error", version = "0.1.0"}
+kclvm-api = {path = "./api" , version = "0.1.0"}
+
+[profile.release]
+rpath = true
+panic = "unwind"
+opt-level = "z"  # Optimize for size.
+lto = true
 
 [workspace]
 members = [
@@ -52,5 +59,6 @@ members = [
     "sema",
     "span",
     "tools",
-    "version"
+    "version",
+    "api"
 ]

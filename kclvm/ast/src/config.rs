@@ -3,7 +3,7 @@ use crate::ast;
 /// Try get a config expr mut ref from a expr if the expr is a schema or a config.
 /// If not, return [None].
 /// TODO: use [TryInto]?
-/// 
+///
 /// # Examples
 ///
 /// ```
@@ -29,6 +29,6 @@ pub fn try_get_config_expr_mut(expr: &mut ast::Expr) -> Option<&mut ast::ConfigE
             }
         }
         ast::Expr::Config(config_expr) => Some(config_expr),
-        _ => None
+        _ => None,
     }
 }

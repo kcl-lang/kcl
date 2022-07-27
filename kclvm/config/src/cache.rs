@@ -155,7 +155,8 @@ pub fn write_info_cache(
     let mut cache = read_info_cache(root, cache_name);
     cache.insert(relative_path, cache_info);
     let mut file = File::create(&tmp_filename).unwrap();
-    file.write_all(&ron::ser::to_string(&cache).unwrap().as_bytes()).unwrap();
+    file.write_all(&ron::ser::to_string(&cache).unwrap().as_bytes())
+        .unwrap();
     std::fs::rename(&tmp_filename, &dst_filename).unwrap();
     lock_file.unlock().unwrap();
     Ok(())
