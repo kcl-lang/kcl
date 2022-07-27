@@ -170,7 +170,7 @@ impl<'ctx> Resolver<'ctx> {
                         pos: Position {
                             filename: self.ctx.filename.clone(),
                             line: 1,
-                            column: Some(1),
+                            column: None,
                         },
                         style: Style::Line,
                         message: format!("pkgpath {} not found in the program", self.ctx.pkgpath),

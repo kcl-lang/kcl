@@ -39,7 +39,7 @@ impl<'ctx> Resolver<'ctx> {
                                     pos: Position {
                                         filename: m.filename.clone(),
                                         line: stmt.line,
-                                        column: Some(1),
+                                        column: None,
                                     },
                                     style: Style::Line,
                                     message: format!(
@@ -59,7 +59,7 @@ impl<'ctx> Resolver<'ctx> {
                                         pos: Position {
                                             filename: self.ctx.filename.clone(),
                                             line: stmt.line,
-                                            column: Some(1),
+                                            column: None,
                                         },
                                         style: Style::Line,
                                         message: format!(
