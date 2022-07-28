@@ -974,6 +974,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "new_err_macro"
+version = "0.1.0"
+dependencies = [
+ "kclvm-error",
+ "proc-macro2",
+ "quote",
+ "syn",
+ "synstructure",
+]
+
+[[package]]
 name = "new_err_msg"
 version = "0.1.0"
 dependencies = [
@@ -989,6 +1000,7 @@ version = "0.1.0"
 dependencies = [
  "kclvm-error",
  "kclvm-span",
+ "new_err_macro",
  "rustc_span",
  "style-term",
  "termcolor",

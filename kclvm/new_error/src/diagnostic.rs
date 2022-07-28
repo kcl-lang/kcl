@@ -7,9 +7,7 @@ pub struct Diagnostic {
 impl Diagnostic {
     /// New a diagnostic with error code.
     pub fn new() -> Self {
-        Diagnostic {
-            messages: vec![],
-        }
+        Diagnostic { messages: vec![] }
     }
 
     pub fn add_sentence(&mut self, sentence: Sentence) {

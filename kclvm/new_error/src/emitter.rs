@@ -2,7 +2,7 @@ use crate::{
     diagnostic::Diagnostic,
     shader::{ColorShader, Level, Shader, Style},
     snippet::StyledString,
-    styled_buffer::StyledBuffer,
+    styled_buffer::StyledBuffer, error::DiagnosticBuilder,
 };
 
 use std::{
@@ -20,6 +20,8 @@ pub trait Emitter {
     fn supports_color(&self) -> bool {
         false
     }
+
+    fn emit_err(&mut self, err: impl DiagnosticBuilder);
 }
 
 /// Emitter writer.
@@ -153,11 +155,14 @@ impl Emitter for EmitterWriter {
 
     fn emit_diagnostic(&mut self, diag: &Diagnostic) {
         let buffer = self.format_diagnostic(diag);
-        if let Err(e) = emit_to_destination(
-            &buffer.render(),
-            &mut self.dst,
-            self.short_message,
-        ) {
+        if let Err(e) = emit_to_destination(&buffer.render(), &mut self.dst, self.short_message) {
+            panic!("failed to emit error: {}", e)
+        }
+    }
+
+    fn emit_err(&mut self, err: impl DiagnosticBuilder) {
+        let buffer = self.format_diagnostic(&err.into_diagnostic());
+        if let Err(e) = emit_to_destination(&buffer.render(), &mut self.dst, self.short_message) {
             panic!("failed to emit error: {}", e)
         }
     }

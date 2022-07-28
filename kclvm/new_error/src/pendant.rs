@@ -149,7 +149,6 @@ impl Pendant for CodeCtxPendant {
     }
 }
 
-
 pub struct NoPendant;
 
 impl NoPendant {
@@ -163,4 +162,3 @@ impl Pendant for NoPendant {
         sb.putl(&format!(""), shader.no_style());
     }
 }
-

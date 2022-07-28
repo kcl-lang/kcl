@@ -1,6 +1,10 @@
 use std::rc::Rc;
 
-use crate::{pendant::{Pendant, NoPendant}, shader::Shader, styled_buffer::StyledBuffer};
+use crate::{
+    pendant::{NoPendant, Pendant},
+    shader::Shader,
+    styled_buffer::StyledBuffer,
+};
 
 pub struct Sentence {
     pendant: Box<dyn Pendant>,
@@ -18,10 +22,10 @@ impl Sentence {
         Self { pendant, sentence }
     }
 
-    pub fn new_nopendant_sentence(sentence: Message) -> Self{
-        Self { 
-            pendant: Box::new(NoPendant::new()), 
-            sentence 
+    pub fn new_nopendant_sentence(sentence: Message) -> Self {
+        Self {
+            pendant: Box::new(NoPendant::new()),
+            sentence,
         }
     }
 

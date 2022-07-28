@@ -1,15 +1,15 @@
-use std::{path::PathBuf, rc::Rc, sync::Arc};
-
-use kclvm_error::{ErrorKind, Position};
-use kclvm_span::FilePathMapping;
+use std::rc::Rc;
+use new_err_macro::DiagnosticBuilder;
+use kclvm_error::Position;
 
 use crate::{
     diagnostic::Diagnostic,
     emitter::{Emitter, EmitterWriter},
+    error::{DiagnosticBuilder, ThisIsAnErr},
     pendant::{CodeCtxPendant, HeaderPendant, LabelPendant, Pendant},
     sentence::{Message, Sentence},
     shader::{ColorShader, Level, Shader},
-    styled_buffer::StyledBuffer, error::{ThisIsAnErr, DiagnosticBuilder},
+    styled_buffer::StyledBuffer,
 };
 
 fn get_code_position() -> Position {
@@ -59,15 +59,40 @@ fn test_pendant() {
     emitter.emit_diagnostic(&diag)
 }
 
-
 #[test]
-fn test_diagnostic_builder(){
-
-    let err = ThisIsAnErr{
-        pos: get_code_position()
+fn test_diagnostic_builder() {
+    let err = ThisIsAnErr {
+        pos: get_code_position(),
     };
 
     let mut emitter = EmitterWriter::default();
-    
     emitter.emit_diagnostic(&err.into_diagnostic());
+}
+
+// 这里可以出了title 都放后面，title只能有一个。
+// 这里的顺序怎么写，外面后面就怎么输出。
+#[derive(DiagnosticBuilder)]
+#[title(kind = "error", msg = "oh no! this is an error!", code = "E0124")]
+#[note(label = "error", msg = "oh no! this is an error!")]
+pub struct ThisIsAnErr1 {
+    // 这里都是放在title 和 后面中间的部分，这里的顺序怎么写，外面就怎么输出。
+    // 在position下面目前只能有一个注解，用来标识代码挂件的一句话
+    // 或者可以用挂件的堆叠表示嵌套 TOFEAT(zongz)
+    // #[position]
+    // #[help]
+    // #[note(msg = "Hello World")]
+    // $ Code ctx^ help:note: Hello World.
+    // 一阶段所有的msg写在注解参数里
+    #[position(msg = "oh no! this is an error!")]
+    pub pos: Position,
+}
+
+#[test]
+fn test_macro() {
+    let err = ThisIsAnErr1 {
+        pos: get_code_position(),
+    };
+
+    let mut emitter = EmitterWriter::default();
+    emitter.emit_err(err);
 }

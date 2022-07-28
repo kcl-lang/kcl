@@ -1,0 +1,15 @@
+[package]
+name = "new_err_macro"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+proc-macro = true
+
+[dependencies]
+synstructure = "0.12.1"
+proc-macro2 = "1"
+quote = "1"
+syn = { version = "1", features = ["full"] }
+kclvm-error = {path = "../error", version="0.1.0"}

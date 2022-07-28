@@ -55,7 +55,7 @@ pub enum SubdiagnosticMessage {
 /// TODO: generated from macros
 #[allow(non_upper_case_globals)]
 #[doc(hidden)]
-pub mod fluent{
+pub mod fluent {
     pub static DEFAULT_LOCALE_RESOURCES: &'static [&'static str] = &[
         "../locales/en-US/borrowck.ftl",
         "../locales/en-US/builtin_macros.ftl",
@@ -81,4 +81,3 @@ pub mod fluent{
             ));
     }
 }
-
