@@ -162,6 +162,7 @@ impl<'ctx> Resolver<'ctx> {
                                                 end,
                                                 ty: Rc::new(ty),
                                                 kind: ScopeObjectKind::Module,
+                                                used: false,
                                             })),
                                         );
                                         matches!(kind, ModuleKind::User)

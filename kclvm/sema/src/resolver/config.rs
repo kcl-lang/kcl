@@ -41,6 +41,7 @@ impl<'ctx> Resolver<'ctx> {
             end,
             ty,
             kind: ScopeObjectKind::Attribute,
+            used: false,
         }
     }
 
