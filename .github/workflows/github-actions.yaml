@@ -30,7 +30,7 @@ jobs:
       - name: Install rust nightly toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly
+          toolchain: 1.61
           override: true
           components: clippy, rustfmt
       - name: Rust grammar test
