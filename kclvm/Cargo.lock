@@ -571,6 +571,7 @@ dependencies = [
  "fslock",
  "glob",
  "indexmap",
+ "kclvm-api",
  "kclvm-ast",
  "kclvm-compiler",
  "kclvm-config",
@@ -587,6 +588,24 @@ dependencies = [
  "serde_json",
  "threadpool",
  "walkdir",
+]
+
+[[package]]
+name = "kclvm-api"
+version = "0.1.0"
+dependencies = [
+ "criterion",
+ "kclvm-ast",
+ "kclvm-parser",
+ "kclvm-runner",
+ "kclvm-runtime",
+ "protobuf",
+ "protobuf-codegen",
+ "protobuf-json-mapping",
+ "protoc-bin-vendored",
+ "serde",
+ "serde_json",
+ "serde_yaml",
 ]
 
 [[package]]
@@ -1146,6 +1165,118 @@ dependencies = [
 ]
 
 [[package]]
+name = "protobuf"
+version = "3.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4ee4a7d8b91800c8f167a6268d1a1026607368e1adc84e98fe044aeb905302f7"
+dependencies = [
+ "once_cell",
+ "protobuf-support",
+ "thiserror",
+]
+
+[[package]]
+name = "protobuf-codegen"
+version = "3.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "07b893e5e7d3395545d5244f8c0d33674025bd566b26c03bfda49b82c6dec45e"
+dependencies = [
+ "anyhow",
+ "once_cell",
+ "protobuf",
+ "protobuf-parse",
+ "regex",
+ "tempfile",
+ "thiserror",
+]
+
+[[package]]
+name = "protobuf-json-mapping"
+version = "3.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "be57102eab3e96da74543c6d4cb44b375d87497b4e8959c2fbdc637f2c92ea1a"
+dependencies = [
+ "protobuf",
+ "protobuf-support",
+ "thiserror",
+]
+
+[[package]]
+name = "protobuf-parse"
+version = "3.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9b1447dd751c434cc1b415579837ebd0411ed7d67d465f38010da5d7cd33af4d"
+dependencies = [
+ "anyhow",
+ "indexmap",
+ "log",
+ "protobuf",
+ "protobuf-support",
+ "tempfile",
+ "thiserror",
+ "which",
+]
+
+[[package]]
+name = "protobuf-support"
+version = "3.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8ca157fe12fc7ee2e315f2f735e27df41b3d97cdd70ea112824dac1ffb08ee1c"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
+name = "protoc-bin-vendored"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "005ca8623e5633e298ad1f917d8be0a44bcf406bf3cde3b80e63003e49a3f27d"
+dependencies = [
+ "protoc-bin-vendored-linux-aarch_64",
+ "protoc-bin-vendored-linux-ppcle_64",
+ "protoc-bin-vendored-linux-x86_32",
+ "protoc-bin-vendored-linux-x86_64",
+ "protoc-bin-vendored-macos-x86_64",
+ "protoc-bin-vendored-win32",
+]
+
+[[package]]
+name = "protoc-bin-vendored-linux-aarch_64"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8fb9fc9cce84c8694b6ea01cc6296617b288b703719b725b8c9c65f7c5874435"
+
+[[package]]
+name = "protoc-bin-vendored-linux-ppcle_64"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "02d2a07dcf7173a04d49974930ccbfb7fd4d74df30ecfc8762cf2f895a094516"
+
+[[package]]
+name = "protoc-bin-vendored-linux-x86_32"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d54fef0b04fcacba64d1d80eed74a20356d96847da8497a59b0a0a436c9165b0"
+
+[[package]]
+name = "protoc-bin-vendored-linux-x86_64"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b8782f2ce7d43a9a5c74ea4936f001e9e8442205c244f7a3d4286bd4c37bc924"
+
+[[package]]
+name = "protoc-bin-vendored-macos-x86_64"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b5de656c7ee83f08e0ae5b81792ccfdc1d04e7876b1d9a38e6876a9e09e02537"
+
+[[package]]
+name = "protoc-bin-vendored-win32"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9653c3ed92974e34c5a6e0a510864dab979760481714c172e0a34e437cb98804"
+
+[[package]]
 name = "psm"
 version = "0.1.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1537,9 +1668,9 @@ dependencies = [
 
 [[package]]
 name = "serde_yaml"
-version = "0.8.24"
+version = "0.8.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "707d15895415db6628332b737c838b88c598522e4dc70647e59b72312924aebc"
+checksum = "578a7433b776b56a35785ed5ce9a7e777ac0598aac5a6dd1b4b18a307c7fc71b"
 dependencies = [
  "indexmap",
  "ryu",
@@ -1993,6 +2124,17 @@ checksum = "2fed94beee57daf8dd7d51f2b15dc2bcde92d7a72304cdf662a4371008b71b90"
 dependencies = [
  "js-sys",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "which"
+version = "4.2.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5c4fb54e6113b6a8772ee41c3404fb0301ac79604489467e0a9ce1f3e97c24ae"
+dependencies = [
+ "either",
+ "lazy_static",
+ "libc",
 ]
 
 [[package]]
