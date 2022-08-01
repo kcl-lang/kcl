@@ -1,6 +1,8 @@
 //! This module is used to gather all error codes into one place,
 //! the goal being to make their maintenance easier.
 
+use crate::Position;
+
 macro_rules! register_errors {
     ($($ecode:ident: $kind:expr, $message:expr,)*) => (
         pub static ERRORS: &[(&str, Error)] = &[

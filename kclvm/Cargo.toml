@@ -53,7 +53,5 @@ members = [
     "span",
     "tools",
     "version",
-    "new_error",
-    "new_err_msg",
-    "new_err_macro"
+    "compiler_base"
 ]
