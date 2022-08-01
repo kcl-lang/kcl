@@ -1,5 +1,5 @@
 name: build-and-test-windows
-on: push
+on: ["push", "pull_request"]
 jobs:
   build-and-test:
     runs-on: windows-2019
@@ -14,8 +14,6 @@ jobs:
 
       - run: clang --version
       - run: cargo --version
-
-      - run: rustc --print sysroot
 
       - run: Rename-Item "C:/Program Files/LLVM" "C:/Program Files/LLVM-old"
 

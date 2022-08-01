@@ -35,11 +35,9 @@ do
                 sslpath=$(brew --prefix openssl@1.1)
             fi
 
-            if [ x"$(uname -m)" == x"arm64" ]; then
-                py_ver_major="3"
-                py_ver_minor="9"
-                py_ver_micro="12"
-            fi
+            py_ver_major="3"
+            py_ver_minor="9"
+            py_ver_micro="12"
 
             config_envs="LANG=C.UTF-8"
             config_options="--enable-optimizations --with-openssl=$sslpath --with-ssl-default-suites=python"

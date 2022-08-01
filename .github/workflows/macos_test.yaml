@@ -1,23 +1,27 @@
-name: KCLVM-actions
+name: build-and-test-macos
 on: ["push", "pull_request"]
 jobs:
-  test-unit:
-    name: Test
-    runs-on: ubuntu-latest
-    container: 
-      image: kusionstack/kclvm-builder
+  build-and-test:
+    # Ref: https://github.com/actions/virtual-environments/blob/main/images/macos/macos-11-Readme.md
+    runs-on: macos-11
     steps:
-      - name: Check out code
-        uses: actions/checkout@v3
+      - name: Git checkout
+        uses: actions/checkout@v2
         with:
          submodules: 'true'
+
+      - run: clang --version
+      - run: cargo --version
+      - run: rustc --print sysroot
+
       - name: Build KCLVM
         run: make build
         shell: bash
       - name: Grammar test
         run: |
+          brew install coreutils
           chmod +x ./internal/kclvm_py/scripts/test_grammar.sh
-          topdir=$(realpath $(dirname $0)) ./internal/kclvm_py/scripts/test_grammar.sh
+          ./internal/kclvm_py/scripts/test_grammar.sh
         shell: bash
       - name: Internal python unit test
         run: |
@@ -27,6 +31,9 @@ jobs:
       - name: Delete rust cargo
         run: rm -rf /root/.cargo/bin
         shell: bash
+      - name: Install LLVM 12
+        run: brew install llvm@12
+        shell: bash
       - name: Install rust nightly toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -35,18 +42,13 @@ jobs:
           components: clippy, rustfmt
       - name: Rust grammar test
         working-directory: ./kclvm
-        run: export PATH=$PATH:$PWD/../_build/dist/ubuntu/kclvm/bin && make install-rustc-wasm && make && make test-grammar
+        run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin:/usr/local/opt/llvm@12/bin && make install-rustc-wasm && make && make test-grammar
         shell: bash
       - name: Rust runtime test
         working-directory: ./kclvm
-        run: export PATH=$PATH:$PWD/../_build/dist/ubuntu/kclvm/bin && make install-rustc-wasm && make && make test-runtime
+        run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin:/usr/local/opt/llvm@12/bin && make install-rustc-wasm && make && make test-runtime
         shell: bash
       - name: Rust unit test
         working-directory: ./kclvm
-        run: export PATH=$PATH:$PWD/../_build/dist/ubuntu/kclvm/bin && make install-rustc-wasm && make && make codecov-lcov
+        run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin:/usr/local/opt/llvm@12/bin && make install-rustc-wasm && make && make codecov-lcov
         shell: bash
-      - name: Coveralls upload
-        uses: coverallsapp/github-action@master
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: ./kclvm/.kclvm/lcov.info
