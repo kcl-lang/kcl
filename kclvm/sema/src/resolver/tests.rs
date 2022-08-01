@@ -100,3 +100,14 @@ fn test_resolve_program_cycle_reference_fail() {
         assert_eq!(diag.messages[0].message, msg.to_string(),);
     }
 }
+
+#[test]
+fn test_cannot_find_module() {
+    let mut program = load_program(
+        &["./src/resolver/test_fail_data/cannot_find_module.k"],
+        None,
+    )
+    .unwrap();
+    let scope = resolve_program(&mut program);
+    assert_eq!(scope.diagnostics[0].messages[0].pos.column, None);
+}
