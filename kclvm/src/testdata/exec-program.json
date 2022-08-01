@@ -1,0 +1,10 @@
+
+{
+	"work_dir" : "./src/testdata",
+	"k_filename_list":[
+		"hello.k"
+	],
+	"k_code_list":[
+		"a=1"
+	]
+}
