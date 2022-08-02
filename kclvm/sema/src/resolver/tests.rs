@@ -109,8 +109,12 @@ fn test_record_used_module() {
     for (_, obj) in main_scope.elems {
         let obj = obj.borrow_mut().clone();
         if obj.kind == ScopeObjectKind::Module {
-            assert_eq!(obj.used, true);
-        }
+            if obj.name == "math" {
+                assert_eq!(obj.used, false);
+            } else {
+                assert_eq!(obj.used, true);
+            }
+        } 
     }
 }
 

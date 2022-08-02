@@ -5,6 +5,7 @@ import import_test.d
 import import_test.e
 import import_test.f as g
 import pkg
+import math
 
 schema Main(d.Parent):
     mixin [c.TestOfMixin]
