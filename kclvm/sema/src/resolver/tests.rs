@@ -102,6 +102,23 @@ fn test_resolve_program_cycle_reference_fail() {
 }
 
 #[test]
+fn test_record_used_module() {
+    let mut program = load_program(&["./src/resolver/test_data/record_used_module.k"], None).unwrap();
+    let scope = resolve_program(&mut program);
+    let main_scope = scope.scope_map.get(kclvm::MAIN_PKG_PATH).unwrap().borrow_mut().clone();
+    for (_, obj) in main_scope.elems {
+        let obj = obj.borrow_mut().clone();
+        if obj.kind == ScopeObjectKind::Module {
+            if obj.name == "math" {
+                assert_eq!(obj.used, false);
+            } else {
+                assert_eq!(obj.used, true);
+            }
+        } 
+    }
+}
+
+#[test]
 fn test_cannot_find_module() {
     let mut program = load_program(
         &["./src/resolver/test_fail_data/cannot_find_module.k"],
