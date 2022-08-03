@@ -1,10 +1,13 @@
 use std::rc::Rc;
 
-use diagnostic::shader::{DefaultShader, DiagnosticShader};
+use shader::{DefaultShader, DiagnosticShader};
 use termcolor::{Color, ColorSpec};
 
-pub mod diagnostic;
+mod shader;
 pub mod styled_buffer;
+
+#[cfg(test)]
+mod tests;
 pub trait Shader {
     fn logo_style(&self) -> Style;
     fn need_fix_style(&self) -> Style;
@@ -53,13 +56,8 @@ impl Style {
                 spec.set_bold(true);
             }
             Style::NeedAttention => {
+                spec.set_fg(Some(Color::Yellow)).set_intense(true);
                 spec.set_bold(true);
-                spec.set_intense(true);
-                if cfg!(windows) {
-                    spec.set_fg(Some(Color::Yellow));
-                } else {
-                    spec.set_fg(Some(Color::Yellow));
-                }
             }
             Style::Helpful => {
                 spec.set_fg(Some(Color::Green)).set_intense(true);
@@ -76,4 +74,36 @@ impl Style {
         }
         spec
     }
+
+    pub fn check_is_expected_colorspec(&self, spec: &ColorSpec){
+        match self{
+            Style::Logo | Style::Normal | Style::NoStyle => assert!(true),
+            Style::NeedFix => {
+                assert_eq!(spec.fg(), Some(&Color::Red));
+                assert_eq!(spec.intense(), true);
+                assert_eq!(spec.bold(), true);
+            },
+            Style::NeedAttention => {
+                assert_eq!(spec.fg(), Some(&Color::Yellow));
+                assert_eq!(spec.intense(), true);
+                assert_eq!(spec.bold(), true);
+            },
+            Style::Helpful => {
+                assert_eq!(spec.fg(), Some(&Color::Green));
+                assert_eq!(spec.intense(), true);
+                assert_eq!(spec.bold(), true);
+            },
+            Style::Important => {
+                assert_eq!(spec.fg(), Some(&Color::Cyan));
+                assert_eq!(spec.intense(), true);
+                assert_eq!(spec.bold(), true);
+            },
+            Style::Url => {
+                assert_eq!(spec.fg(), Some(&Color::Blue));
+                assert_eq!(spec.intense(), true);
+                assert_eq!(spec.bold(), true);
+            }
+        }
+    }
+
 }
