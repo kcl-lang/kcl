@@ -3,7 +3,7 @@ use std::rc::Rc;
 
 use emitter::{Emitter, EmitterWriter};
 use pendant::NoPendant;
-use style::{diagnostic, styled_buffer::StyledBuffer, Shader};
+use style::{styled_buffer::StyledBuffer, Shader};
 
 pub mod emitter;
 pub mod pendant;
