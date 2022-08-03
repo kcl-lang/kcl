@@ -112,7 +112,11 @@ impl StyledBuffer {
     }
 
     pub fn appendl(&mut self, string: &str, style: Style) {
-        let line = self.num_lines() - 1;
+        let line = if self.num_lines() > 0 {
+            self.num_lines() - 1
+        } else {
+            self.num_lines()
+        };
         self.append(line, string, style);
     }
 

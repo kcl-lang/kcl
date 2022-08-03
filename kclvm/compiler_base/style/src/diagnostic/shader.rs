@@ -41,3 +41,45 @@ impl Shader for DiagnosticShader {
         Style::NoStyle
     }
 }
+
+pub struct DefaultShader;
+
+impl DefaultShader {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+
+impl Shader for DefaultShader {
+    fn logo_style(&self) -> Style {
+        Style::NoStyle
+    }
+
+    fn need_fix_style(&self) -> Style {
+        Style::NoStyle
+    }
+
+    fn need_attention_style(&self) -> Style {
+        Style::NoStyle
+    }
+
+    fn helpful_style(&self) -> Style {
+        Style::NoStyle
+    }
+
+    fn important_style(&self) -> Style {
+        Style::NoStyle
+    }
+
+    fn normal_msg_style(&self) -> Style {
+        Style::NoStyle
+    }
+
+    fn url_style(&self) -> Style {
+        Style::NoStyle
+    }
+
+    fn no_style(&self) -> Style {
+        Style::NoStyle
+    }
+}

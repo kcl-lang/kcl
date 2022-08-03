@@ -1,12 +1,12 @@
+use std::panic;
 use std::rc::Rc;
 
-use style::{styled_buffer::StyledBuffer, Shader};
+use emitter::{Emitter, EmitterWriter};
+use pendant::NoPendant;
+use style::{diagnostic, styled_buffer::StyledBuffer, Shader};
 
 pub mod emitter;
 pub mod pendant;
-
-#[cfg(test)]
-mod tests;
 
 /// Diagnostic is just diagnostc, only responsible for output.
 pub struct Diagnostic {
@@ -31,6 +31,11 @@ pub trait DiagnosticBuilder {
 pub struct Sentence {
     pendant: Box<dyn Pendant>,
     sentence: Message,
+}
+
+// TODO(zongz): The 'impl Pendant' can also be replaced by macros 'regiester_pendants'.
+pub trait Pendant {
+    fn format(&self, shader: Rc<dyn Shader>, sb: &mut StyledBuffer);
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -59,25 +64,6 @@ impl Sentence {
             Message::Str(s) => sb.appendl(&s, sentence_style),
             Message::FluentId(s) => sb.appendl(&s, sentence_style.clone()),
         }
-    }
-}
-
-// TODO(zongz): The 'impl Pendant' can also be replaced by macros 'regiester_pendants'.
-pub trait Pendant {
-    fn format(&self, shader: Rc<dyn Shader>, sb: &mut StyledBuffer);
-}
-
-pub struct NoPendant;
-
-impl NoPendant {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
-
-impl Pendant for NoPendant {
-    fn format(&self, shader: Rc<dyn Shader>, sb: &mut StyledBuffer) {
-        sb.putl(&format!(""), shader.no_style());
     }
 }
 
@@ -141,5 +127,27 @@ impl Position {
             info += &format!(":{}", column + 1);
         }
         info
+    }
+}
+
+pub struct ErrHandler {
+    emitter: Box<dyn Emitter>,
+}
+
+impl ErrHandler {
+    pub fn new() -> Self {
+        Self {
+            emitter: Box::new(EmitterWriter::default()),
+        }
+    }
+
+    pub fn after_emit(&self) {
+        panic::set_hook(Box::new(|_| {}));
+        panic!()
+    }
+
+    pub fn emit_err(&mut self, err: impl DiagnosticBuilder) {
+        self.emitter.emit_diagnostic(&err.into_diagnostic());
+        self.after_emit();
     }
 }

@@ -1,7 +1,5 @@
-use diagnostic::{emitter::Emitter, emitter::EmitterWriter, Position};
-use diagnostic::DiagnosticBuilder;
-
 use crate::ThisIsAnErr;
+use compiler_base_diagnostic::{ErrHandler, Position};
 
 fn get_code_position() -> Position {
     let mut pos = Position::default();
@@ -15,9 +13,9 @@ fn get_code_position() -> Position {
 
 #[test]
 fn test_this_is_an_error() {
-    let err = ThisIsAnErr {
-        loc: get_code_position(),
-    };
-    let mut emitter = EmitterWriter::default();
-    emitter.emit_err(err);
+    let mut err_handler = ErrHandler::new();
+
+    err_handler.emit_err(ThisIsAnErr {
+        pos: get_code_position(),
+    });
 }

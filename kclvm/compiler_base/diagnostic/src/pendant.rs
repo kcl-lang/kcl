@@ -10,15 +10,15 @@ use style::Shader;
 // TODO(zongz): Put this in the lib.rs and combina with macros.
 pub struct HeaderPendant {
     logo: Option<String>,
-    diag_level: String,
+    diag_label: String,
     diag_code: Option<String>,
 }
 
 impl HeaderPendant {
-    pub fn new(diag_level: String, diag_code: Option<String>) -> Self {
+    pub fn new(diag_label: String, diag_code: Option<String>) -> Self {
         Self {
             logo: None,
-            diag_level,
+            diag_label,
             diag_code,
         }
     }
@@ -35,17 +35,16 @@ impl Pendant for HeaderPendant {
         let line_num = sb.num_lines();
         let col = 0;
 
-        // format logo
         if let Some(logo) = &self.logo {
             sb.puts(line_num, col, &logo, shader.logo_style());
         }
 
-        // format header -> error[E0101] or warning[W1010]
-
-        // get label text, label text length, style for different level.
-        let (label_text, label_len, style) = match self.diag_level.as_str() {
-            "error" => ("error", "error".len(), shader.need_fix_style()),
-            "warning" => ("warning", "warning".len(), shader.need_attention_style()),
+        let label_text = self.diag_label.as_str();
+        let label_len = label_text.len();
+        let style = match label_text {
+            "error" => shader.need_fix_style(),
+            "warning" | "help" | "note" => shader.need_attention_style(),
+            "nopendant" => shader.no_style(),
             _ => {
                 panic!("Internal bug")
             }
@@ -55,20 +54,19 @@ impl Pendant for HeaderPendant {
         let mut offset = label_len;
 
         // for e.g. "error[E1010]"
-        sb.putc(line_num, col + offset, '[', shader.helpful_style());
-        offset = offset + 1;
-        sb.puts(line_num, col + offset, "E0000", shader.helpful_style());
+        if let Some(c) = &self.diag_code {
+            sb.putc(line_num, col + offset, '[', shader.helpful_style());
+            offset = offset + 1;
 
-        offset = offset + "E0000".len();
-        sb.putc(line_num, col + offset, ']', shader.helpful_style());
+            sb.puts(line_num, col + offset, c.as_str(), shader.helpful_style());
+            offset = offset + c.len();
 
-        offset = offset + 1;
-        sb.putc(line_num, col + offset, ':', shader.helpful_style());
+            sb.putc(line_num, col + offset, ']', shader.helpful_style());
+            offset = offset + 1;
+        }
+
+        sb.putc(line_num, col + offset, ':', shader.no_style());
     }
-}
-
-pub struct LabelPendant {
-    diagnostic_type: String,
 }
 
 pub struct CodeCtxPendant {
@@ -107,22 +105,47 @@ impl Pendant for CodeCtxPendant {
     fn format(&self, shader: Rc<dyn Shader>, sb: &mut StyledBuffer) {
         sb.putl(&self.code_pos.info(), shader.url_style());
 
-        sb.putl(&format!("{} |", self.code_pos.line), shader.url_style());
+        let line = self.code_pos.line.to_string();
+        let indent = line.len() + 1;
+
+        sb.putl(&format!("{:indent$}|", ""), shader.no_style());
+        sb.putl(&format!("{:indent$}", &line), shader.url_style());
+        sb.appendl("|", shader.no_style());
 
         if let Some(sm) = &self.source_map {
             if let Some(source_file) = sm.source_file_by_filename(&self.code_pos.filename) {
                 if let Some(line) = source_file.get_line(self.code_pos.line as usize - 1) {
-                    sb.putl(&line.to_string(), shader.url_style());
+                    sb.appendl(&line.to_string(), shader.no_style());
                 }
             }
         } else {
             let sm = SourceMap::new(FilePathMapping::empty());
             if let Ok(source_file) = sm.load_file(Path::new(&self.code_pos.filename)) {
                 if let Some(line) = source_file.get_line(self.code_pos.line as usize - 1) {
-                    sb.putl(&line.to_string(), shader.url_style());
+                    sb.appendl(&line.to_string(), shader.no_style());
                 }
             }
         }
-        sb.putl(&format!("^"), shader.need_fix_style());
+        sb.putl(&format!("{:indent$}|", ""), shader.no_style());
+
+        let col = self.code_pos.column;
+        if let Some(col) = col {
+            let col = col as usize;
+            sb.appendl(&format!("{:col$}^ ", col), shader.need_fix_style());
+        }
+    }
+}
+
+pub struct NoPendant;
+
+impl NoPendant {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+
+impl Pendant for NoPendant {
+    fn format(&self, shader: Rc<dyn Shader>, sb: &mut StyledBuffer) {
+        sb.putl("- ", shader.no_style());
     }
 }

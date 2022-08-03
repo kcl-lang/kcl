@@ -1,17 +1,17 @@
-use diagnostic::diagnostic_derive;
+use diagnostic_builder::diagnostic_builder_derive;
 use synstructure::decl_derive;
-mod diagnostic;
+mod diagnostic_builder;
+mod error;
 
 decl_derive!(
-    [DiagnosticBuilder, attributes(
+    [DiagnosticBuilderMacro, attributes(
         // struct attributes
         error,
         warning,
         help,
         nopendant,
         note,
-        help,
         // field attributes
         position,
-        )] => diagnostic_derive
+        )] => diagnostic_builder_derive
 );

@@ -6,9 +6,9 @@ use style::{
     styled_buffer::{StyledBuffer, StyledString},
     Shader, ShaderFactory,
 };
-use termcolor::{BufferWriter, ColorChoice, StandardStream, WriteColor};
+use termcolor::{BufferWriter, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
-use crate::{Diagnostic, DiagnosticBuilder};
+use crate::Diagnostic;
 
 /// Emitter trait for emitting errors.
 pub trait Emitter {
@@ -20,7 +20,7 @@ pub trait Emitter {
         false
     }
 
-    fn emit_err(&mut self, err: impl DiagnosticBuilder);
+    fn get_shader(&self) -> Rc<dyn Shader>;
 }
 
 /// Emitter writer.
@@ -82,6 +82,14 @@ impl Destination {
         }
     }
 
+    fn set_color(&mut self, color: &ColorSpec) -> io::Result<()> {
+        match *self {
+            Destination::Terminal(ref mut t) => t.set_color(color),
+            Destination::Buffered(ref mut t) => t.buffer().set_color(color),
+            Destination::Raw(_, _) => Ok(()),
+        }
+    }
+
     fn reset(&mut self) -> io::Result<()> {
         match *self {
             Destination::Terminal(ref mut t) => t.reset(),
@@ -121,19 +129,16 @@ impl Emitter for EmitterWriter {
         }
     }
 
-    fn emit_err(&mut self, err: impl DiagnosticBuilder) {
-        let buffer = self.format_diagnostic(&err.into_diagnostic());
-        if let Err(e) = emit_to_destination(&buffer.render(), &mut self.dst, self.short_message) {
-            panic!("failed to emit error: {}", e)
-        }
-    }
-
     fn format_diagnostic(&mut self, diag: &Diagnostic) -> StyledBuffer {
         let mut sb = StyledBuffer::new();
         for sentence in diag.messages.iter() {
-            sentence.format(Rc::clone(&self.shader), &mut sb)
+            sentence.format(self.get_shader(), &mut sb)
         }
         sb
+    }
+
+    fn get_shader(&self) -> Rc<dyn Shader> {
+        Rc::clone(&self.shader)
     }
 }
 
@@ -144,6 +149,8 @@ fn emit_to_destination(
 ) -> io::Result<()> {
     for (pos, line) in rendered_buffer.iter().enumerate() {
         for part in line {
+            dst.set_color(&part.style.render_style())?;
+            // TORM(zongz): 下面这句话就输出了，所以有颜色的话要在上面渲染。
             write!(dst, "{}", part.text)?;
             dst.reset()?;
         }

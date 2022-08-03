@@ -1,5 +1,5 @@
 [package]
-name = "diagnostic"
+name = "compiler-base-diagnostic"
 version = "0.1.0"
 edition = "2021"
 
@@ -8,7 +8,6 @@ edition = "2021"
 [dependencies]
 style = {path="../style", version="0.1.0"}
 kclvm-span = {path = "../../span", version = "0.1.0"}
-macros = {path = "../macros", version = "0.1.0"}
 
 termcolor = "1.0"
 style-term = "1.0"

@@ -1,23 +1,22 @@
-use diagnostic::Position;
-use macros::DiagnosticBuilder;
-use diagnostic::DiagnosticBuilder;
-use diagnostic::Diagnostic;
-use diagnostic::pendant::CodeCtxPendant;
-use diagnostic::Sentence;
-use diagnostic::Message;
-use diagnostic::pendant::HeaderPendant;
+use compiler_base_diagnostic::{
+    pendant::*, Diagnostic, DiagnosticBuilder, Message, Position, Sentence,
+};
+
+use macros::DiagnosticBuilderMacro;
 
 #[cfg(test)]
 mod tests;
 
 // CompilerBase-Error
-
-#[derive(DiagnosticBuilder)]
-#[error(title, msg = "oh no! this is an error!", code = "E0124")]
-#[help(title, msg = "I need help !", code = "E0124")]
-#[nopendant(msg = "For more information about this error, try `rustc --explain E0999`.")]
+#[derive(DiagnosticBuilderMacro)]
+#[nopendant(
+    title,
+    msg = "For more information about this error, try `rustc --explain E0999`."
+)]
+#[error(title, msg = "oh no! this is an error!", code = "E012")] // 目前在这里多写没人管，少写不行，因为是从一个list里面往出找。
+#[help(title, code = "E00", msg = "I need help !")]
 #[error(msg = "oh no! this is an error!")]
 pub struct ThisIsAnErr {
     #[position(msg = "err position")]
-    pub loc: Position,
+    pub pos: Position,
 }
