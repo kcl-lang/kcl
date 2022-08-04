@@ -8,6 +8,9 @@ use style::{styled_buffer::StyledBuffer, Shader};
 pub mod emitter;
 pub mod pendant;
 
+#[cfg(test)]
+mod tests;
+
 /// Diagnostic is just diagnostc, only responsible for output.
 pub struct Diagnostic {
     pub messages: Vec<Sentence>,

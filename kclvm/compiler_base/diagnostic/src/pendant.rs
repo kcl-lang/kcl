@@ -26,6 +26,10 @@ impl HeaderPendant {
     pub fn set_logo(&mut self, logo: String) {
         self.logo = Some(logo);
     }
+
+    pub fn get_logo(&self) -> String {
+        self.logo.clone().unwrap()
+    }
 }
 
 // TODO(zongz): These are not part of CompilerBase.
@@ -34,9 +38,11 @@ impl Pendant for HeaderPendant {
     fn format(&self, shader: Rc<dyn Shader>, sb: &mut StyledBuffer) {
         let line_num = sb.num_lines();
         let col = 0;
+        let mut offset = 0;
 
         if let Some(logo) = &self.logo {
             sb.puts(line_num, col, &logo, shader.logo_style());
+            offset = offset + logo.len();
         }
 
         let label_text = self.diag_label.as_str();
@@ -44,14 +50,10 @@ impl Pendant for HeaderPendant {
         let style = match label_text {
             "error" => shader.need_fix_style(),
             "warning" | "help" | "note" => shader.need_attention_style(),
-            "nopendant" => shader.no_style(),
-            _ => {
-                panic!("Internal bug")
-            }
+            _ => shader.no_style(),
         };
-
-        sb.puts(line_num, col, label_text, style);
-        let mut offset = label_len;
+        sb.puts(line_num, col + offset, label_text, style);
+        offset = offset + label_len;
 
         // for e.g. "error[E1010]"
         if let Some(c) = &self.diag_code {
@@ -108,8 +110,8 @@ impl Pendant for CodeCtxPendant {
         let line = self.code_pos.line.to_string();
         let indent = line.len() + 1;
 
-        sb.putl(&format!("{:indent$}|", ""), shader.no_style());
-        sb.putl(&format!("{:indent$}", &line), shader.url_style());
+        sb.putl(&format!("{:<indent$}|", ""), shader.no_style());
+        sb.putl(&format!("{:<indent$}", &line), shader.url_style());
         sb.appendl("|", shader.no_style());
 
         if let Some(sm) = &self.source_map {
@@ -126,12 +128,12 @@ impl Pendant for CodeCtxPendant {
                 }
             }
         }
-        sb.putl(&format!("{:indent$}|", ""), shader.no_style());
+        sb.putl(&format!("{:<indent$}|", ""), shader.no_style());
 
         let col = self.code_pos.column;
         if let Some(col) = col {
             let col = col as usize;
-            sb.appendl(&format!("{:col$}^ ", col), shader.need_fix_style());
+            sb.appendl(&format!("{:>col$}^ ", col), shader.need_fix_style());
         }
     }
 }

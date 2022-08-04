@@ -75,29 +75,29 @@ impl Style {
         spec
     }
 
-    pub fn check_is_expected_colorspec(&self, spec: &ColorSpec){
-        match self{
+    pub fn check_is_expected_colorspec(&self, spec: &ColorSpec) {
+        match self {
             Style::Logo | Style::Normal | Style::NoStyle => assert!(true),
             Style::NeedFix => {
                 assert_eq!(spec.fg(), Some(&Color::Red));
                 assert_eq!(spec.intense(), true);
                 assert_eq!(spec.bold(), true);
-            },
+            }
             Style::NeedAttention => {
                 assert_eq!(spec.fg(), Some(&Color::Yellow));
                 assert_eq!(spec.intense(), true);
                 assert_eq!(spec.bold(), true);
-            },
+            }
             Style::Helpful => {
                 assert_eq!(spec.fg(), Some(&Color::Green));
                 assert_eq!(spec.intense(), true);
                 assert_eq!(spec.bold(), true);
-            },
+            }
             Style::Important => {
                 assert_eq!(spec.fg(), Some(&Color::Cyan));
                 assert_eq!(spec.intense(), true);
                 assert_eq!(spec.bold(), true);
-            },
+            }
             Style::Url => {
                 assert_eq!(spec.fg(), Some(&Color::Blue));
                 assert_eq!(spec.intense(), true);
@@ -105,5 +105,4 @@ impl Style {
             }
         }
     }
-
 }

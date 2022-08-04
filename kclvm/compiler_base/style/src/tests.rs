@@ -1,114 +1,114 @@
-mod test_shader{
+mod test_shader {
     mod test_diagnostic_shader {
         use crate::{ShaderFactory, Style};
 
         #[test]
-        fn test_logo_style(){
+        fn test_logo_style() {
             let shader = ShaderFactory::Diagnostic.get_shader();
             assert_eq!(shader.logo_style(), Style::Logo);
         }
 
         #[test]
-        fn test_need_fix_style(){
+        fn test_need_fix_style() {
             let shader = ShaderFactory::Diagnostic.get_shader();
             assert_eq!(shader.need_fix_style(), Style::NeedFix);
         }
 
         #[test]
-        fn test_need_attention_style(){
+        fn test_need_attention_style() {
             let shader = ShaderFactory::Diagnostic.get_shader();
             assert_eq!(shader.need_attention_style(), Style::NeedAttention);
         }
 
         #[test]
-        fn test_helpful_style(){
+        fn test_helpful_style() {
             let shader = ShaderFactory::Diagnostic.get_shader();
             assert_eq!(shader.helpful_style(), Style::Helpful);
         }
 
         #[test]
-        fn test_important_style(){
+        fn test_important_style() {
             let shader = ShaderFactory::Diagnostic.get_shader();
             assert_eq!(shader.important_style(), Style::Important);
         }
 
         #[test]
-        fn test_normal_msg_style(){
+        fn test_normal_msg_style() {
             let shader = ShaderFactory::Diagnostic.get_shader();
             assert_eq!(shader.normal_msg_style(), Style::Normal);
         }
 
         #[test]
-        fn test_url_style(){
+        fn test_url_style() {
             let shader = ShaderFactory::Diagnostic.get_shader();
             assert_eq!(shader.url_style(), Style::Url);
         }
 
         #[test]
-        fn test_no_style(){
+        fn test_no_style() {
             let shader = ShaderFactory::Diagnostic.get_shader();
             assert_eq!(shader.no_style(), Style::NoStyle);
         }
     }
-    
+
     mod test_default_shader {
         use crate::{ShaderFactory, Style};
 
         #[test]
-        fn test_logo_style(){
+        fn test_logo_style() {
             let shader = ShaderFactory::Default.get_shader();
             assert_eq!(shader.logo_style(), Style::NoStyle);
         }
 
         #[test]
-        fn test_need_fix_style(){
+        fn test_need_fix_style() {
             let shader = ShaderFactory::Default.get_shader();
             assert_eq!(shader.need_fix_style(), Style::NoStyle);
         }
 
         #[test]
-        fn test_need_attention_style(){
+        fn test_need_attention_style() {
             let shader = ShaderFactory::Default.get_shader();
             assert_eq!(shader.need_attention_style(), Style::NoStyle);
         }
 
         #[test]
-        fn test_helpful_style(){
+        fn test_helpful_style() {
             let shader = ShaderFactory::Default.get_shader();
             assert_eq!(shader.helpful_style(), Style::NoStyle);
         }
 
         #[test]
-        fn test_important_style(){
+        fn test_important_style() {
             let shader = ShaderFactory::Default.get_shader();
             assert_eq!(shader.important_style(), Style::NoStyle);
         }
 
         #[test]
-        fn test_normal_msg_style(){
+        fn test_normal_msg_style() {
             let shader = ShaderFactory::Default.get_shader();
             assert_eq!(shader.normal_msg_style(), Style::NoStyle);
         }
 
         #[test]
-        fn test_url_style(){
+        fn test_url_style() {
             let shader = ShaderFactory::Default.get_shader();
             assert_eq!(shader.url_style(), Style::NoStyle);
         }
 
         #[test]
-        fn test_no_style(){
+        fn test_no_style() {
             let shader = ShaderFactory::Default.get_shader();
             assert_eq!(shader.no_style(), Style::NoStyle);
         }
     }
 }
 
-mod test_style{
+mod test_style {
     use crate::Style;
 
     #[test]
-    fn test_render_style(){
+    fn test_render_style() {
         let color_spec = Style::NeedFix.render_style();
         Style::NeedFix.check_is_expected_colorspec(&color_spec);
         let color_spec = Style::NeedAttention.render_style();
@@ -128,15 +128,15 @@ mod test_style{
     }
 }
 
-mod test_styled_buffer{
+mod test_styled_buffer {
     use crate::styled_buffer::{StyledBuffer, StyledString};
     use crate::Style;
 
     fn construct_new_styledbuffer() -> StyledBuffer {
         StyledBuffer::new()
     }
-    
-    fn putc_hello_world(sb: &mut StyledBuffer){
+
+    fn putc_hello_world(sb: &mut StyledBuffer) {
         sb.putc(0, 0, 'H', Style::NoStyle);
         sb.putc(0, 1, 'e', Style::NoStyle);
         sb.putc(0, 2, 'l', Style::NoStyle);
@@ -150,30 +150,36 @@ mod test_styled_buffer{
         sb.putc(0, 9, 'd', Style::NeedFix);
     }
 
-    fn puts_hello_world(sb: &mut StyledBuffer){
+    fn puts_hello_world(sb: &mut StyledBuffer) {
         sb.puts(0, 0, "Hello", Style::NoStyle);
         sb.puts(0, 5, "World", Style::NeedFix);
     }
 
-    fn putl_hello_world(sb: &mut StyledBuffer){
+    fn putl_hello_world(sb: &mut StyledBuffer) {
         sb.putl("Hello", Style::NoStyle);
         sb.putl("World", Style::NeedFix);
     }
 
-    fn appendl_hello_world(sb: &mut StyledBuffer){
+    fn appendl_hello_world(sb: &mut StyledBuffer) {
         sb.appendl("Hello", Style::NoStyle);
         sb.appendl("World", Style::NeedFix);
     }
 
-    fn require_hello_world(styled_strings: Vec<Vec<StyledString>>){
+    fn require_hello_world(styled_strings: Vec<Vec<StyledString>>) {
         assert_eq!(styled_strings.len(), 1);
         assert_eq!(styled_strings.get(0).unwrap().len(), 2);
 
         assert_eq!(styled_strings.get(0).unwrap().get(0).unwrap().text, "Hello");
-        assert_eq!(styled_strings.get(0).unwrap().get(0).unwrap().style, Style::NoStyle);
+        assert_eq!(
+            styled_strings.get(0).unwrap().get(0).unwrap().style,
+            Style::NoStyle
+        );
 
         assert_eq!(styled_strings.get(0).unwrap().get(1).unwrap().text, "World");
-        assert_eq!(styled_strings.get(0).unwrap().get(1).unwrap().style, Style::NeedFix);
+        assert_eq!(
+            styled_strings.get(0).unwrap().get(1).unwrap().style,
+            Style::NeedFix
+        );
     }
 
     #[test]
@@ -192,11 +198,14 @@ mod test_styled_buffer{
         sb.putc(0, 4, 'O', Style::NoStyle);
         let styled_strings = sb.render();
         assert_eq!(styled_strings.get(0).unwrap().get(0).unwrap().text, "HELLO");
-        assert_eq!(styled_strings.get(0).unwrap().get(0).unwrap().style, Style::NoStyle);
+        assert_eq!(
+            styled_strings.get(0).unwrap().get(0).unwrap().style,
+            Style::NoStyle
+        );
     }
 
     #[test]
-    fn test_putc_new_line(){
+    fn test_putc_new_line() {
         let mut sb = construct_new_styledbuffer();
         putc_hello_world(&mut sb);
 
@@ -207,9 +216,12 @@ mod test_styled_buffer{
         assert_eq!(styled_strings.get(1).unwrap().len(), 0);
         assert_eq!(styled_strings.get(2).unwrap().len(), 1);
         assert_eq!(styled_strings.get(2).unwrap().get(0).unwrap().text, "A");
-        assert_eq!(styled_strings.get(2).unwrap().get(0).unwrap().style, Style::Important);
+        assert_eq!(
+            styled_strings.get(2).unwrap().get(0).unwrap().style,
+            Style::Important
+        );
     }
-    
+
     #[test]
     fn test_puts() {
         let mut sb = construct_new_styledbuffer();
@@ -219,7 +231,7 @@ mod test_styled_buffer{
     }
 
     #[test]
-    fn test_puts_new_line(){
+    fn test_puts_new_line() {
         let mut sb = construct_new_styledbuffer();
         puts_hello_world(&mut sb);
 
@@ -230,7 +242,10 @@ mod test_styled_buffer{
         assert_eq!(styled_strings.get(1).unwrap().len(), 0);
         assert_eq!(styled_strings.get(2).unwrap().len(), 1);
         assert_eq!(styled_strings.get(2).unwrap().get(0).unwrap().text, "A");
-        assert_eq!(styled_strings.get(2).unwrap().get(0).unwrap().style, Style::Important);
+        assert_eq!(
+            styled_strings.get(2).unwrap().get(0).unwrap().style,
+            Style::Important
+        );
     }
 
     #[test]
@@ -242,10 +257,16 @@ mod test_styled_buffer{
         assert_eq!(styled_strings.get(0).unwrap().len(), 1);
 
         assert_eq!(styled_strings.get(0).unwrap().get(0).unwrap().text, "Hello");
-        assert_eq!(styled_strings.get(0).unwrap().get(0).unwrap().style, Style::NoStyle);
+        assert_eq!(
+            styled_strings.get(0).unwrap().get(0).unwrap().style,
+            Style::NoStyle
+        );
 
         assert_eq!(styled_strings.get(1).unwrap().get(0).unwrap().text, "World");
-        assert_eq!(styled_strings.get(1).unwrap().get(0).unwrap().style, Style::NeedFix);
+        assert_eq!(
+            styled_strings.get(1).unwrap().get(0).unwrap().style,
+            Style::NeedFix
+        );
     }
 
     #[test]
@@ -255,7 +276,7 @@ mod test_styled_buffer{
         let styled_strings = sb.render();
         require_hello_world(styled_strings);
     }
-    
+
     #[test]
     fn test_prepend() {
         let mut sb = construct_new_styledbuffer();
@@ -264,7 +285,7 @@ mod test_styled_buffer{
         let styled_strings = sb.render();
         require_hello_world(styled_strings);
     }
-    
+
     #[test]
     fn test_num_lines() {
         let mut sb = construct_new_styledbuffer();
@@ -278,5 +299,3 @@ mod test_styled_buffer{
         assert_eq!(sb.num_lines(), 3);
     }
 }
-
-
