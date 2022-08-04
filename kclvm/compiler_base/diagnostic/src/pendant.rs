@@ -50,7 +50,7 @@ impl Pendant for HeaderPendant {
         let style = match label_text {
             "error" => shader.need_fix_style(),
             "warning" | "help" | "note" => shader.need_attention_style(),
-            _ => shader.no_style(),
+            _ => shader.normal_msg_style(),
         };
         sb.puts(line_num, col + offset, label_text, style);
         offset = offset + label_len;
@@ -67,7 +67,7 @@ impl Pendant for HeaderPendant {
             offset = offset + 1;
         }
 
-        sb.putc(line_num, col + offset, ':', shader.no_style());
+        sb.putc(line_num, col + offset, ':', shader.normal_msg_style());
     }
 }
 
@@ -110,25 +110,25 @@ impl Pendant for CodeCtxPendant {
         let line = self.code_pos.line.to_string();
         let indent = line.len() + 1;
 
-        sb.putl(&format!("{:<indent$}|", ""), shader.no_style());
+        sb.putl(&format!("{:<indent$}|", ""), shader.normal_msg_style());
         sb.putl(&format!("{:<indent$}", &line), shader.url_style());
-        sb.appendl("|", shader.no_style());
+        sb.appendl("|", shader.normal_msg_style());
 
         if let Some(sm) = &self.source_map {
             if let Some(source_file) = sm.source_file_by_filename(&self.code_pos.filename) {
                 if let Some(line) = source_file.get_line(self.code_pos.line as usize - 1) {
-                    sb.appendl(&line.to_string(), shader.no_style());
+                    sb.appendl(&line.to_string(), shader.normal_msg_style());
                 }
             }
         } else {
             let sm = SourceMap::new(FilePathMapping::empty());
             if let Ok(source_file) = sm.load_file(Path::new(&self.code_pos.filename)) {
                 if let Some(line) = source_file.get_line(self.code_pos.line as usize - 1) {
-                    sb.appendl(&line.to_string(), shader.no_style());
+                    sb.appendl(&line.to_string(), shader.normal_msg_style());
                 }
             }
         }
-        sb.putl(&format!("{:<indent$}|", ""), shader.no_style());
+        sb.putl(&format!("{:<indent$}|", ""), shader.normal_msg_style());
 
         let col = self.code_pos.column;
         if let Some(col) = col {
@@ -148,6 +148,6 @@ impl NoPendant {
 
 impl Pendant for NoPendant {
     fn format(&self, shader: Rc<dyn Shader>, sb: &mut StyledBuffer) {
-        sb.putl("- ", shader.no_style());
+        sb.putl("- ", shader.normal_msg_style());
     }
 }
