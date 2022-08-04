@@ -1,3 +1,7 @@
+//! 'Pendant' defines the template of pendant, 
+//! and provides three builtin templates, 
+//! HeaderPendant, CodeCtxPendant and NoPendant.
+
 use crate::{Pendant, Position};
 use kclvm_span::{FilePathMapping, SourceMap};
 use std::path::PathBuf;
@@ -6,7 +10,15 @@ use std::{path::Path, rc::Rc};
 use compiler_base_style::styled_buffer::StyledBuffer;
 use compiler_base_style::Shader;
 
-// TODO(zongz): Put this in the lib.rs and combina with macros.
+/// HeaderPendant: A pendant to shown some short messages for diagnostics.
+/// 
+/// e.g. 
+/// error: this is an error!
+/// warning[W0011]: this is an warning!
+/// note: this is note.
+/// KCL error[E1000]: this is a KCL error!
+/// 
+/// 'error', 'warning[W0011]', 'KCL error[E1000]' and 'note' are 'HeaderPendant'.
 pub struct HeaderPendant {
     logo: Option<String>,
     diag_label: String,
@@ -31,8 +43,6 @@ impl HeaderPendant {
     }
 }
 
-// TODO(zongz): These are not part of CompilerBase.
-// Generated them by macro in the
 impl Pendant for HeaderPendant {
     fn format(&self, shader: Rc<dyn Shader>, sb: &mut StyledBuffer) {
         let line_num = sb.num_lines();
@@ -70,6 +80,18 @@ impl Pendant for HeaderPendant {
     }
 }
 
+/// CodeCtxPendant: A pendant to shown some code context for diagnostics.
+/// 
+/// --> mycode.rs:3:5
+///  |
+///3 |     a:int
+///  |     ^ error here!
+/// 
+/// The CodeCtxPendant looks like:
+/// --> mycode.rs:3:5
+///  |
+///3 |     a:int
+///  |     ^ 
 pub struct CodeCtxPendant {
     code_pos: Position,
     source_map: Option<Arc<SourceMap>>,
@@ -132,11 +154,12 @@ impl Pendant for CodeCtxPendant {
         let col = self.code_pos.column;
         if let Some(col) = col {
             let col = col as usize;
-            sb.appendl(&format!("{:>col$}^ ", col), shader.need_fix_style());
+            sb.appendl(&format!("{:>col$} ", format!("^{}",col)), shader.need_fix_style());
         }
     }
 }
 
+/// NoPendant: A pendant for some sentences with no pendants.
 pub struct NoPendant;
 
 impl NoPendant {

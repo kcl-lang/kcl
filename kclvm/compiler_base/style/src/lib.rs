@@ -1,3 +1,4 @@
+//! 'Style' is responsible for providing 'Shader' for text color rendering.
 use std::rc::Rc;
 
 use shader::{DefaultShader, DiagnosticShader};
@@ -33,7 +34,6 @@ impl ShaderFactory {
     }
 }
 
-/// FIXME(zongz): Once the 'Style' changed, all the shader are deprecated.
 #[derive(Copy, Clone, Debug, PartialEq, Hash)]
 pub enum Style {
     Logo,

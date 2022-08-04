@@ -1,5 +1,4 @@
-// Code for creating styled buffers
-
+//! 'StyledBuffer' is responsible for text rendering.
 use crate::Style;
 
 pub struct StyledBuffer {
@@ -32,12 +31,6 @@ impl StyledBuffer {
 
     /// Returns content of `StyledBuffer` split by lines and line styles
     pub fn render(&self) -> Vec<Vec<StyledString>> {
-        // Tabs are assumed to have been replaced by spaces in calling code.
-        debug_assert!(self
-            .lines
-            .iter()
-            .all(|r| !r.iter().any(|sc| sc.chr == '\t')));
-
         let mut output: Vec<Vec<StyledString>> = vec![];
         let mut styled_vec: Vec<StyledString> = vec![];
 
@@ -65,7 +58,7 @@ impl StyledBuffer {
                 });
             }
 
-            // We're done with the row, push and keep going
+            // done with the row, push and keep going
             output.push(styled_vec);
 
             styled_vec = vec![];

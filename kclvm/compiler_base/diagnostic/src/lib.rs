@@ -1,3 +1,5 @@
+//! 'Diagnostic' is used to show the error/warning .etc diagnostic message.
+
 use std::rc::Rc;
 use pendant::NoPendant;
 use compiler_base_style::{styled_buffer::StyledBuffer, Shader};
@@ -91,7 +93,7 @@ pub enum Message {
     // 'Sentence' text message
     Str(String),
     // 'Sentence' text template id
-    // TODO(zong-zhe): Some text messages are too long and require template management.
+    // TODO(zong-zhe): Some text messages are too long and require template.
     FluentId(String),
 }
 

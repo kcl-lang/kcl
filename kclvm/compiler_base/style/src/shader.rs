@@ -1,3 +1,4 @@
+//! 'Shader' is responsible for providing color style for text rendering.
 use crate::{Shader, Style};
 
 pub struct DiagnosticShader;
