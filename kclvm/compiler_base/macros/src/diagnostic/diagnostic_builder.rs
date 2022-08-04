@@ -1,4 +1,5 @@
-use compiler_base_diagnostic::{DiagnosticBuilder, ErrHandler};
+use compiler_base::ErrHandler;
+use compiler_base_diagnostic::{DiagnosticBuilder};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::{

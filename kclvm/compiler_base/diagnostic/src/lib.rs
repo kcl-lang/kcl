@@ -1,7 +1,4 @@
-use std::panic;
 use std::rc::Rc;
-
-use emitter::{Emitter, EmitterWriter};
 use pendant::NoPendant;
 use compiler_base_style::{styled_buffer::StyledBuffer, Shader};
 
@@ -11,7 +8,30 @@ pub mod pendant;
 #[cfg(test)]
 mod tests;
 
-/// Diagnostic is just diagnostc, only responsible for output.
+/// 'Diagnostic' consists of 'Sentence'.
+/// 
+/// e.g. an error diagnostic.
+/// error[E0999]: oh no! this is an error!
+///  --> mycode.k:3:5
+///  |
+///3 |     a: int
+///  |     ^ error here!
+/// error: aborting due to previous error.
+/// For more information about this error.
+/// 
+/// It consists of 4 'Sentence'
+/// 
+/// Sentence 1: error[E0999]: oh no! this is an error!
+/// 
+/// Sentence 2: 
+/// --> mycode.rs:3:5
+///  |
+///3 |     a:int
+///  |     ^ error here!
+/// 
+/// Sentence 3: error: aborting due to previous error.
+/// 
+/// Sentence 4: For more information about this error.
 pub struct Diagnostic {
     pub messages: Vec<Sentence>,
 }
@@ -30,19 +50,48 @@ pub trait DiagnosticBuilder {
     fn into_diagnostic(self) -> Diagnostic;
 }
 
+/// 'Sentence' consists of 'Pendant' and sentence content.
+/// 'Pendant' is optional.
+/// 
+/// e.g. 
+/// Sentence 1: error[E0999]: oh no! this is an error!
+///     Pendant: error[E0999]:
+///     Sentence content: oh no! this is an error!
+/// 
+/// Sentence 2: 
+/// --> mycode.rs:3:5
+///  |
+///3 |     a:int
+///  |     ^ error here!
+///     Pendant: 
+///     --> mycode.rs:3:5
+///       |
+///     3 |     a:int
+///       |     ^ 
+///     Sentence content: error here!
+/// 
+/// Sentence 3: error: aborting due to previous error.
+///     Pendant: error
+///     Sentence content: aborting due to previous error.
+/// 
+/// Sentence 4: For more information about this error.
+///     Pendant: no pendant
+///     Sentence content: For more information about this error.
 pub struct Sentence {
     pendant: Box<dyn Pendant>,
     sentence: Message,
 }
 
-// TODO(zongz): The 'impl Pendant' can also be replaced by macros 'regiester_pendants'.
 pub trait Pendant {
     fn format(&self, shader: Rc<dyn Shader>, sb: &mut StyledBuffer);
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Message {
+    // 'Sentence' text message
     Str(String),
+    // 'Sentence' text template id
+    // TODO(zong-zhe): Some text messages are too long and require template management.
     FluentId(String),
 }
 
@@ -128,27 +177,5 @@ impl Position {
             info += &format!(":{}", column + 1);
         }
         info
-    }
-}
-
-pub struct ErrHandler {
-    emitter: Box<dyn Emitter>,
-}
-
-impl ErrHandler {
-    pub fn new() -> Self {
-        Self {
-            emitter: Box::new(EmitterWriter::default()),
-        }
-    }
-
-    pub fn after_emit(&self) {
-        panic::set_hook(Box::new(|_| {}));
-        panic!()
-    }
-
-    pub fn emit_err(&mut self, err: impl DiagnosticBuilder) {
-        self.emitter.emit_diagnostic(&err.into_diagnostic());
-        self.after_emit();
     }
 }
