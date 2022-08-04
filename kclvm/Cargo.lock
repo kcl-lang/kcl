@@ -187,6 +187,48 @@ dependencies = [
 [[package]]
 name = "compiler-base"
 version = "0.1.0"
+dependencies = [
+ "compiler-base-diagnostic",
+]
+
+[[package]]
+name = "compiler-base-diagnostic"
+version = "0.1.0"
+dependencies = [
+ "compiler-base-style",
+ "kclvm-span",
+ "style-term",
+ "termcolor",
+]
+
+[[package]]
+name = "compiler-base-error"
+version = "0.1.0"
+dependencies = [
+ "compiler-base",
+ "compiler-base-diagnostic",
+ "compiler-base-macros",
+]
+
+[[package]]
+name = "compiler-base-macros"
+version = "0.1.0"
+dependencies = [
+ "compiler-base",
+ "compiler-base-diagnostic",
+ "compiler-base-style",
+ "proc-macro2",
+ "quote",
+ "syn",
+ "synstructure",
+]
+
+[[package]]
+name = "compiler-base-style"
+version = "0.1.0"
+dependencies = [
+ "termcolor",
+]
 
 [[package]]
 name = "cpufeatures"
@@ -1637,6 +1679,12 @@ name = "strsim"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ea5119cdb4c55b55d432abb513a0429384878c15dde60cc77b1c99de1a95a6a"
+
+[[package]]
+name = "style-term"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d4a46ded528fd9b5b1302bcec03a2372b78b28cbc01ba8a76e0887fc88af37ab"
 
 [[package]]
 name = "syn"
