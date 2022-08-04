@@ -150,7 +150,6 @@ fn emit_to_destination(
     for (pos, line) in rendered_buffer.iter().enumerate() {
         for part in line {
             dst.set_color(&part.style.render_style())?;
-            // TORM(zongz): 下面这句话就输出了，所以有颜色的话要在上面渲染。
             write!(dst, "{}", part.text)?;
             dst.reset()?;
         }

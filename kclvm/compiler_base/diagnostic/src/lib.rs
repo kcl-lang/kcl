@@ -59,7 +59,6 @@ impl Sentence {
         }
     }
 
-    /// TODO(zongz): add fluent msg
     pub fn format(&self, shader: Rc<dyn Shader>, sb: &mut StyledBuffer) {
         let sentence_style = shader.normal_msg_style();
         self.pendant.format(shader, sb);

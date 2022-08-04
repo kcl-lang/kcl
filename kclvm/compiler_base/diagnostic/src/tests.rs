@@ -192,3 +192,122 @@ mod test_pendant {
         }
     }
 }
+
+mod test_sentence {
+
+}
+
+mod test_position{
+    use crate::Position;
+
+    #[test]
+    fn test_dummy_pos(){
+        let pos = Position::dummy_pos();
+        assert_eq!(pos.filename, "".to_string());
+        assert_eq!(pos.line, 1);
+        assert_eq!(pos.column, None);
+    }
+
+    #[test]
+    fn test_is_valid(){
+        let mut pos = Position::dummy_pos();
+        assert_eq!(pos.is_valid(), true);
+        pos.line = 0;
+        assert_eq!(pos.is_valid(), false);
+    }
+
+    #[test]
+    fn test_less(){
+        let mut pos_greater = Position::dummy_pos();
+        let mut pos_less = Position::dummy_pos();
+
+        pos_greater.line = 0;
+        assert_eq!(pos_less.less(&pos_greater), false);
+        
+        pos_greater.line = 1;
+        pos_less.line = 0;
+        assert_eq!(pos_less.less(&pos_greater), false);
+
+        pos_greater.line = 1;
+        pos_greater.filename = "greater filename".to_string();
+        pos_less.line = 1;
+        pos_less.filename = "less filename".to_string();
+        assert_eq!(pos_less.less(&pos_greater), false);
+
+        pos_greater.column = Some(2);
+        pos_greater.filename = "filename".to_string();
+        pos_less.column = Some(1);
+        pos_less.filename = "filename".to_string();
+        assert_eq!(pos_less.less(&pos_greater), true);
+
+        pos_greater.column = Some(0);
+        pos_less.column = Some(1);
+        assert_eq!(pos_less.less(&pos_greater), false);
+
+        pos_greater.column = None;
+        pos_less.column = Some(1);
+        assert_eq!(pos_less.less(&pos_greater), false);
+
+        pos_greater.line = 2;
+        pos_less.line = 1;
+        assert_eq!(pos_less.less(&pos_greater), true);
+
+        pos_greater.line = 0;
+        pos_less.line = 1;
+        assert_eq!(pos_less.less(&pos_greater), false);
+    }
+
+    #[test]
+    fn test_less_equal(){
+        let mut pos_greater = Position::dummy_pos();
+        let mut pos_less = Position::dummy_pos();
+
+        assert_eq!(pos_less.less_equal(&pos_greater), true);
+
+        pos_greater.line = 0;
+        assert_eq!(pos_less.less_equal(&pos_greater), false);
+        
+        pos_greater.line = 1;
+        pos_less.line = 0;
+        assert_eq!(pos_less.less_equal(&pos_greater), false);
+
+        pos_greater.line = 1;
+        pos_greater.filename = "greater filename".to_string();
+        pos_less.line = 1;
+        pos_less.filename = "less filename".to_string();
+        assert_eq!(pos_less.less_equal(&pos_greater), false);
+
+        pos_greater.column = Some(2);
+        pos_greater.filename = "filename".to_string();
+        pos_less.column = Some(1);
+        pos_less.filename = "filename".to_string();
+        assert_eq!(pos_less.less_equal(&pos_greater), true);
+
+        pos_greater.column = Some(0);
+        pos_less.column = Some(1);
+        assert_eq!(pos_less.less_equal(&pos_greater), false);
+
+        pos_greater.column = None;
+        pos_less.column = Some(1);
+        assert_eq!(pos_less.less_equal(&pos_greater), false);
+
+        pos_greater.line = 2;
+        pos_less.line = 1;
+        assert_eq!(pos_less.less_equal(&pos_greater), true);
+
+        pos_greater.line = 0;
+        pos_less.line = 1;
+        assert_eq!(pos_less.less_equal(&pos_greater), false);
+        assert_eq!(pos_less.less_equal(&pos_less), true);
+    }
+
+    #[test]
+    fn test_info(){
+        let mut dummy_pos = Position::dummy_pos();
+        assert_eq!(dummy_pos.info(), "---> File :1");
+        let col = 12;
+        dummy_pos.column = Some(col);
+        let expected = format!("---> File :1:{}", col+1);
+        assert_eq!(dummy_pos.info(), expected);
+    }
+}
