@@ -1,11 +1,10 @@
 use crate::{Pendant, Position};
-use core::panic;
 use kclvm_span::{FilePathMapping, SourceMap};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::{path::Path, rc::Rc};
-use style::styled_buffer::StyledBuffer;
-use style::Shader;
+use compiler_base_style::styled_buffer::StyledBuffer;
+use compiler_base_style::Shader;
 
 // TODO(zongz): Put this in the lib.rs and combina with macros.
 pub struct HeaderPendant {

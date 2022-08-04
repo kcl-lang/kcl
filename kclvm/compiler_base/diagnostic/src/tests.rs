@@ -1,12 +1,12 @@
 use std::{fs, path::PathBuf};
 
-use style::{styled_buffer::StyledString, Style};
+use compiler_base_style::{styled_buffer::StyledString, Style};
 
 use crate::Position;
 
 mod test_pendant {
     mod test_header_pendant {
-        use style::{styled_buffer::StyledBuffer, ShaderFactory, Style};
+        use compiler_base_style::{styled_buffer::StyledBuffer, ShaderFactory, Style};
 
         use crate::{pendant::HeaderPendant, tests::check_styled_strings, Pendant};
 
@@ -80,7 +80,7 @@ mod test_pendant {
             tests::{check_styled_strings, get_code_position},
             Pendant,
         };
-        use style::{styled_buffer::StyledBuffer, ShaderFactory, Style};
+        use compiler_base_style::{styled_buffer::StyledBuffer, ShaderFactory, Style};
 
         #[test]
         fn test_code_ctx_pendant() {
@@ -121,7 +121,7 @@ mod test_pendant {
     }
 
     mod test_no_pendant {
-        use style::{styled_buffer::StyledBuffer, ShaderFactory, Style};
+        use compiler_base_style::{styled_buffer::StyledBuffer, ShaderFactory, Style};
 
         use crate::{pendant::NoPendant, tests::check_styled_strings, Pendant};
 
@@ -149,7 +149,7 @@ mod test_pendant {
 }
 
 mod test_sentence {
-    use style::{styled_buffer::StyledBuffer, ShaderFactory, Style};
+    use compiler_base_style::{styled_buffer::StyledBuffer, ShaderFactory, Style};
 
     use crate::{
         pendant::{CodeCtxPendant, HeaderPendant},

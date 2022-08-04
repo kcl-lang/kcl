@@ -1,22 +1,22 @@
+//！This is a mini error management crate, 
+//! mainly responsible for managing exceptions in compiler_base_macros/diagnostic. 
+//! It is an internal crate and does not support external calls.
+
 use compiler_base_diagnostic::pendant::HeaderPendant;
 use compiler_base_diagnostic::Diagnostic;
 use compiler_base_diagnostic::DiagnosticBuilder;
 use compiler_base_diagnostic::Message;
 use compiler_base_diagnostic::Sentence;
 
-pub struct MissingField {
-    label_name: String,
-}
 
-impl DiagnosticBuilder for MissingField {
-    fn into_diagnostic(self) -> Diagnostic {
-        construct_one_sentence_diagnostic(Message::Str(format!(
-            "#[{}] needs to be bound to a struct field",
-            self.label_name
-        )))
-    }
-}
-
+/// UnexpectedAttr: Unsupported sub-attribute used in macro attribute.
+/// 
+/// # Examples
+/// 
+/// ```no run
+/// 
+/// #[error(msg="error msg !", unknown="")] // Unexpected sub-attribute 'unknown' cause the error.
+/// ```
 pub struct UnexpectedAttr {
     label_name: String,
     attr_name: String,
@@ -40,6 +40,17 @@ impl DiagnosticBuilder for UnexpectedAttr {
     }
 }
 
+/// UnexpectedFieldType: Macro attribute binds to struct field with wrong type.
+/// 
+/// # Examples
+/// 
+/// ```no run
+/// 
+/// struct ErrorType{
+///     #[position(msg="error msg !")] 
+///     pos: String // The type of 'pos' must be 'Position'.
+/// }
+/// ```
 pub struct UnexpectedFieldType {
     label_name: String,
     field_name: String,
@@ -55,6 +66,14 @@ impl DiagnosticBuilder for UnexpectedFieldType {
     }
 }
 
+/// MissingAttr: Macro attribute is missing the required sub-attribute.
+/// 
+/// # Examples
+/// 
+/// ```no run
+/// 
+/// #error[code="E0101"] // Sub-attribute 'msg' is required for 'error'.
+/// ```
 pub struct MissingAttr {
     label_name: String,
     attr_name: String,
@@ -78,6 +97,17 @@ impl DiagnosticBuilder for MissingAttr {
     }
 }
 
+/// UnexpectedDiagnosticType: Some macros only support 'struct'.
+/// 
+/// # Examples
+/// 
+/// ```no run
+/// 
+/// #[derive(DiagnosticBuilderMacro)] // 'DiagnosticBuilderMacro' only support 'struct'.
+/// enum ErrorType{
+///     ...
+/// }
+/// ```
 pub struct UnexpectedDiagnosticType;
 
 impl UnexpectedDiagnosticType {
@@ -94,6 +124,18 @@ impl DiagnosticBuilder for UnexpectedDiagnosticType {
     }
 }
 
+/// UnexpectedLabel: Unexpected macro attribute is used.
+/// 
+/// # Examples
+/// 
+/// ```no run
+/// 
+/// #[derive(DiagnosticBuilderMacro)] 
+/// #[unknown_label()] // 'DiagnosticBuilderMacro' do not has sub-attribute 'unknown_label'.
+/// struct ErrorType{
+///     ...
+/// }
+/// ```
 pub struct UnexpectedLabel {
     label_name: String,
 }
@@ -112,6 +154,18 @@ impl DiagnosticBuilder for UnexpectedLabel {
     }
 }
 
+/// DuplicateAttr: Duplicate sub-attributes are defined.
+/// 
+/// # Examples
+/// 
+/// ```no run
+/// 
+/// #[derive(DiagnosticBuilderMacro)] 
+/// #[error(msg="error msg1", msg="error msg2")] // Duplicate sub-attributes 'msg'.
+/// struct ErrorType{
+///     ...
+/// }
+/// ```
 pub struct DuplicateAttr {
     label_name: String,
     attr_name: String,
@@ -135,6 +189,7 @@ impl DiagnosticBuilder for DuplicateAttr {
     }
 }
 
+/// InternalBug: An internal bug.
 pub struct InternalBug;
 
 impl InternalBug {

@@ -1,4 +1,3 @@
-use crate::error::*;
 use compiler_base_diagnostic::{DiagnosticBuilder, ErrHandler};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -8,6 +7,9 @@ use syn::{
 };
 use synstructure::{BindingInfo, Structure};
 
+use super::error::*;
+
+// generate the implementation code for trait 'DiagnosticBuilder'
 pub fn diagnostic_builder_derive(s: Structure<'_>) -> TokenStream {
     DiagnosticBuilderGenerator::new().generate_diagnostic_builder(s)
 }
@@ -85,6 +87,7 @@ impl DiagnosticBuilderGenerator {
         self.generate_undep_sentence_code(kind.to_string(), &nested, index)
     }
 
+    // generate code that does not depend on struct fields.
     pub fn generate_undep_sentence_code(
         &mut self,
         kind: String,
@@ -128,7 +131,6 @@ impl DiagnosticBuilderGenerator {
     pub fn generate_field_attrs_code(&mut self, binding_info: &BindingInfo<'_>) -> TokenStream {
         let field = binding_info.ast();
         if !field.attrs.is_empty() {
-            // FIXME(zongz): field type check here !
             for attr in &field.attrs {
                 let meta = attr.parse_meta().unwrap();
                 let nested = match meta {
@@ -159,6 +161,7 @@ impl DiagnosticBuilderGenerator {
         TokenStream::new()
     }
 
+    // generate code that depends on struct fields.
     pub fn generate_dep_code_sentence(
         &mut self,
         field_name: &Ident,
@@ -195,6 +198,7 @@ impl DiagnosticBuilderGenerator {
                 }) = &meta
                 {
                     if meta.path().segments.last().unwrap().ident.to_string() == "msg" {
+                        // Sub-attribute 'msg' is only allowed once.
                         sentence_info
                             .set_msg_only_once(s.value())
                             .unwrap_or_else(|err| {
@@ -202,6 +206,7 @@ impl DiagnosticBuilderGenerator {
                                 false
                             });
                     } else if meta.path().segments.last().unwrap().ident.to_string() == "code" {
+                        // Sub-attribute 'code' is only allowed once.
                         sentence_info
                             .set_code_only_once(s.value())
                             .unwrap_or_else(|err| {
@@ -218,6 +223,7 @@ impl DiagnosticBuilderGenerator {
             } else if let NestedMeta::Meta(meta @ Meta::Path(_)) = nested_attr {
                 if let Meta::Path(Path { segments, .. }) = &meta {
                     if segments.last().unwrap().ident.to_string() == "title" {
+                        // Sub-attribute 'title' is only allowed once.
                         sentence_info
                             .set_is_title_true_only_once()
                             .unwrap_or_else(|err| {
@@ -241,7 +247,6 @@ impl DiagnosticBuilderGenerator {
     }
 }
 
-// TOFIX(zongz) : 这里面还是需要一个内置的错误处理模块，不然用起来太别扭
 struct SentenceInfo {
     pendant_ident: Ident,
     sentence_ident: Ident,
@@ -251,8 +256,6 @@ struct SentenceInfo {
     is_title: bool,
 }
 
-// TORM(zongz): 不通过handler 抛出的方式传递饮用
-// 通过rust提供的返回值的方式
 impl SentenceInfo {
     pub fn new(label_name: String, pendant_ident: Ident, sentence_ident: Ident) -> Self {
         Self {
@@ -324,6 +327,7 @@ impl SentenceTokensFactory {
             None => quote! {None},
         };
 
+        // sub-attribute 'msg' is required.
         let msg_is_required = sentence_info.msg_is_required();
 
         match msg_is_required {
@@ -342,6 +346,7 @@ impl SentenceTokensFactory {
             Err(err) => Err(err),
         }
     }
+   
     pub fn gen_nopendant_sentence_tokens(
         sentence_info: &SentenceInfo,
     ) -> Result<TokenStream, impl DiagnosticBuilder> {
@@ -366,6 +371,7 @@ impl SentenceTokensFactory {
             Err(err) => Err(err),
         }
     }
+
     pub fn gen_code_ctx_pendant_sentence_tokens(
         code_pos_field_name: &Ident,
         sentence_info: &SentenceInfo,

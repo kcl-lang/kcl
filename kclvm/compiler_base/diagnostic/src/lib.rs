@@ -3,7 +3,7 @@ use std::rc::Rc;
 
 use emitter::{Emitter, EmitterWriter};
 use pendant::NoPendant;
-use style::{styled_buffer::StyledBuffer, Shader};
+use compiler_base_style::{styled_buffer::StyledBuffer, Shader};
 
 pub mod emitter;
 pub mod pendant;
@@ -17,7 +17,6 @@ pub struct Diagnostic {
 }
 
 impl Diagnostic {
-    /// New a diagnostic with error code.
     pub fn new() -> Self {
         Diagnostic { messages: vec![] }
     }

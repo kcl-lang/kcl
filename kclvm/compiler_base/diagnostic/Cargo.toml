@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-style = {path="../style", version="0.1.0"}
+compiler-base-style = {path="../style", version="0.1.0"}
 kclvm-span = {path = "../../span", version = "0.1.0"}
 
 termcolor = "1.0"

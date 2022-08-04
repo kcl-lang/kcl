@@ -2,7 +2,7 @@ use std::{
     io::{self, Write},
     rc::Rc,
 };
-use style::{
+use compiler_base_style::{
     styled_buffer::{StyledBuffer, StyledString},
     Shader, ShaderFactory,
 };

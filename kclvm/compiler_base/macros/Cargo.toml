@@ -1,5 +1,5 @@
 [package]
-name = "macros"
+name = "compiler-base-macros"
 version = "0.1.0"
 edition = "2021"
 
@@ -9,7 +9,7 @@ edition = "2021"
 proc-macro = true
 
 [dependencies]
-style = {path="../style", version="0.1.0"}
+compiler-base-style = {path="../style", version="0.1.0"}
 compiler-base-diagnostic = {path = "../diagnostic", version = "0.1.0"}
 synstructure = "0.12.1"
 syn = { version = "1", features = ["full"] }

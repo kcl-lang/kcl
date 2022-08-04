@@ -7,10 +7,3 @@ edition = "2021"
 
 [dependencies]
 
-[workspace]
-members = [
-    # "diagnostic",
-    "error",
-    "macros",
-    # "style"
-]
