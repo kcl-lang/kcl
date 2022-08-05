@@ -16,7 +16,10 @@ impl<'ctx> Resolver<'ctx> {
                 &[Message {
                     pos,
                     style: Style::LineAndColumn,
-                    message: format!("type '{}'", attr_ty.ty_str()),
+                    message: format!(
+                        "A attribute must be string type, got '{}'",
+                        attr_ty.ty_str()
+                    ),
                     note: None,
                 }],
             );
