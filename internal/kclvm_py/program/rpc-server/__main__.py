@@ -186,7 +186,10 @@ class KclvmServiceImpl(pbrpc.KclvmService):
             if stdout and stderr:
                 raise Exception(f"stdout: {stdout}, stderr: {stderr}")
             else:
-                raise Exception(stdout if stdout else stderr)
+                kcl_error.report_exception(
+                    err_type=kcl_error.ErrType.CompileError_TYPE,
+                    arg_msg=stderr,
+                )
 
         end_time = time.time()
 
