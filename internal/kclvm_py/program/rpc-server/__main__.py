@@ -178,7 +178,7 @@ class KclvmServiceImpl(pbrpc.KclvmService):
 
         start_time = time.time()
 
-        proc = subprocess.run(cli_args, capture_output=True, text=True)
+        proc = subprocess.run(cli_args, capture_output=True, text=True, cwd=work_dir)
         stdout = str(proc.stdout or "")
         stderr = str(proc.stderr or "").strip()
 
