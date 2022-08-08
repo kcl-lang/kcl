@@ -79,6 +79,9 @@ impl From<SettingsFile> for ExecProgramArgs {
         let mut args = Self::default();
         if let Some(cli_configs) = settings.kcl_cli_configs {
             args.k_filename_list = cli_configs.files.unwrap_or_default();
+            if args.k_filename_list.is_empty() {
+                args.k_filename_list = cli_configs.file.unwrap_or_default();
+            }
             args.strict_range_check = cli_configs.strict_range_check.unwrap_or_default();
             args.disable_none = cli_configs.disable_none.unwrap_or_default();
             args.verbose = cli_configs.verbose.unwrap_or_default() as i32;
