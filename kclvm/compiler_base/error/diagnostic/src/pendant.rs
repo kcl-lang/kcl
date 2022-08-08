@@ -3,12 +3,12 @@
 //! HeaderPendant, CodeCtxPendant and NoPendant.
 
 use crate::{Pendant, Position};
+use compiler_base_style::diagnostic_style::Shader;
 use kclvm_span::{FilePathMapping, SourceMap};
+use rustc_errors::styled_buffer::StyledBuffer;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::{path::Path, rc::Rc};
-use compiler_base_style::styled_buffer::StyledBuffer;
-use compiler_base_style::Shader;
 
 /// HeaderPendant: A pendant to shown some short messages for diagnostics.
 /// 

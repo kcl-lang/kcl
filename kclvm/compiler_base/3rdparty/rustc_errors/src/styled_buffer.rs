@@ -1,6 +1,6 @@
 //! 'StyledBuffer' is responsible for text rendering.
-use crate::Style;
 
+use compiler_base_style::Style;
 pub struct StyledBuffer {
     lines: Vec<Vec<StyledChar>>,
 }
@@ -8,18 +8,18 @@ pub struct StyledBuffer {
 #[derive(Clone)]
 struct StyledChar {
     chr: char,
-    style: Style,
+    style: Option<Box<dyn Style>>,
 }
 
 pub struct StyledString {
     pub text: String,
-    pub style: Style,
+    pub style: Option<Box<dyn Style>>,
 }
 
 impl StyledChar {
-    const SPACE: StyledChar = StyledChar::new(' ', Style::NoStyle);
+    const SPACE: StyledChar = StyledChar::new(' ', None);
 
-    const fn new(chr: char, style: Style) -> Self {
+    const fn new(chr: char, style: Option<Box<dyn Style>>) -> Self {
         StyledChar { chr, style }
     }
 }
@@ -35,7 +35,7 @@ impl StyledBuffer {
         let mut styled_vec: Vec<StyledString> = vec![];
 
         for styled_line in &self.lines {
-            let mut current_style = Style::NoStyle;
+            let mut current_style = None;
             let mut current_text = String::new();
 
             for sc in styled_line {
@@ -46,7 +46,7 @@ impl StyledBuffer {
                             style: current_style,
                         });
                     }
-                    current_style = sc.style;
+                    current_style = sc.style.clone();
                     current_text = String::new();
                 }
                 current_text.push(sc.chr);
@@ -76,7 +76,7 @@ impl StyledBuffer {
     /// Sets `chr` with `style` for given `line`, `col`.
     /// If `line` does not exist in our buffer, adds empty lines up to the given
     /// and fills the last line with unstyled whitespace.
-    pub fn putc(&mut self, line: usize, col: usize, chr: char, style: Style) {
+    pub fn putc(&mut self, line: usize, col: usize, chr: char, style: Option<Box<dyn Style>>) {
         self.ensure_lines(line);
         if col >= self.lines[line].len() {
             self.lines[line].resize(col + 1, StyledChar::SPACE);
@@ -87,24 +87,24 @@ impl StyledBuffer {
     /// Sets `string` with `style` for given `line`, starting from `col`.
     /// If `line` does not exist in our buffer, adds empty lines up to the given
     /// and fills the last line with unstyled whitespace.
-    pub fn puts(&mut self, line: usize, col: usize, string: &str, style: Style) {
+    pub fn puts(&mut self, line: usize, col: usize, string: &str, style: Option<Box<dyn Style>>) {
         let mut n = col;
         for c in string.chars() {
-            self.putc(line, n, c, style);
+            self.putc(line, n, c, style.clone());
             n += 1;
         }
     }
 
-    pub fn putl(&mut self, string: &str, style: Style) {
+    pub fn putl(&mut self, string: &str, style: Option<Box<dyn Style>>) {
         let line = self.num_lines();
         let mut col = 0;
         for c in string.chars() {
-            self.putc(line, col, c, style);
+            self.putc(line, col, c, style.clone());
             col += 1;
         }
     }
 
-    pub fn appendl(&mut self, string: &str, style: Style) {
+    pub fn appendl(&mut self, string: &str, style: Option<Box<dyn Style>>) {
         let line = if self.num_lines() > 0 {
             self.num_lines() - 1
         } else {
@@ -115,7 +115,7 @@ impl StyledBuffer {
 
     /// For given `line` inserts `string` with `style` before old content of that line,
     /// adding lines if needed
-    pub fn prepend(&mut self, line: usize, string: &str, style: Style) {
+    pub fn prepend(&mut self, line: usize, string: &str, style: Option<Box<dyn Style>>) {
         self.ensure_lines(line);
         let string_len = string.chars().count();
 
@@ -131,7 +131,7 @@ impl StyledBuffer {
 
     /// For given `line` inserts `string` with `style` after old content of that line,
     /// adding lines if needed
-    pub fn append(&mut self, line: usize, string: &str, style: Style) {
+    pub fn append(&mut self, line: usize, string: &str, style: Option<Box<dyn Style>>) {
         if line >= self.lines.len() {
             self.puts(line, 0, string, style);
         } else {

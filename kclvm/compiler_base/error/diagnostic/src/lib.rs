@@ -1,8 +1,9 @@
 //! 'Diagnostic' is used to show the error/warning .etc diagnostic message.
 
 use std::rc::Rc;
+use compiler_base_style::{diagnostic_style::Shader};
 use pendant::NoPendant;
-use compiler_base_style::{styled_buffer::StyledBuffer, Shader};
+use rustc_errors::styled_buffer::StyledBuffer;
 
 pub mod emitter;
 pub mod pendant;

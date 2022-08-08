@@ -1,0 +1,14 @@
+[package]
+name = "compiler-base-diagnostic"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+compiler-base-style ={ path = "../../style", version = "0.1.0"}
+rustc_errors = {path = "../../3rdparty/rustc_errors", version="0.1.0"}
+kclvm-span = {path = "../../../span", version = "0.1.0"}
+
+termcolor = "1.0"
+

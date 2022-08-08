@@ -1,23 +1,40 @@
 //! 'Style' is responsible for providing 'Shader' for text color rendering.
-use std::rc::Rc;
+use std::{rc::Rc, any::Any};
 
-use shader::{DefaultShader, DiagnosticShader};
-use termcolor::{Color, ColorSpec};
+use diagnostic_style::{Shader, DiagnosticShader};
+use termcolor::ColorSpec;
 
-mod shader;
-pub mod styled_buffer;
+pub mod diagnostic_style;
 
-#[cfg(test)]
-mod tests;
-pub trait Shader {
-    fn logo_style(&self) -> Style;
-    fn need_fix_style(&self) -> Style;
-    fn need_attention_style(&self) -> Style;
-    fn helpful_style(&self) -> Style;
-    fn important_style(&self) -> Style;
-    fn normal_msg_style(&self) -> Style;
-    fn url_style(&self) -> Style;
-    fn no_style(&self) -> Style;
+#[macro_export]
+macro_rules! option_box_style {
+    ($node: expr) => {
+        Some(Box::new($node))
+    };
+}
+
+pub trait Style{
+    fn as_any(&self) -> &dyn Any;
+    fn box_clone(&self) -> Box<dyn Style>;
+    fn style_eq(&self, other: &Box<dyn Style>) -> bool;
+    fn render_style(&self) -> ColorSpec;
+}
+
+impl PartialEq for Box<dyn Style> {
+    fn eq(&self, other: &Self) -> bool {
+        self.style_eq(other)
+    }
+
+    fn ne(&self, other: &Self) -> bool {
+        !self.eq(other)
+    }
+}
+
+impl Clone for Box<dyn Style>
+{
+    fn clone(&self) -> Box<dyn Style> {
+        self.box_clone()
+    }
 }
 
 pub enum ShaderFactory {
@@ -29,80 +46,8 @@ impl ShaderFactory {
     pub fn get_shader(&self) -> Rc<dyn Shader> {
         match self {
             ShaderFactory::Diagnostic => Rc::new(DiagnosticShader::new()),
-            ShaderFactory::Default => Rc::new(DefaultShader::new()),
-        }
-    }
-}
-
-#[derive(Copy, Clone, Debug, PartialEq, Hash)]
-pub enum Style {
-    Logo,
-    NeedFix,
-    NeedAttention,
-    Helpful,
-    Important,
-    Normal,
-    Url,
-    NoStyle,
-}
-
-impl Style {
-    pub fn render_style(&self) -> ColorSpec {
-        let mut spec = ColorSpec::new();
-        match self {
-            Style::Logo | Style::Normal | Style::NoStyle => {}
-            Style::NeedFix => {
-                spec.set_fg(Some(Color::Red)).set_intense(true);
-                spec.set_bold(true);
-            }
-            Style::NeedAttention => {
-                spec.set_fg(Some(Color::Yellow)).set_intense(true);
-                spec.set_bold(true);
-            }
-            Style::Helpful => {
-                spec.set_fg(Some(Color::Green)).set_intense(true);
-                spec.set_bold(true);
-            }
-            Style::Important => {
-                spec.set_fg(Some(Color::Cyan)).set_intense(true);
-                spec.set_bold(true);
-            }
-            Style::Url => {
-                spec.set_fg(Some(Color::Blue)).set_intense(true);
-                spec.set_bold(true);
-            }
-        }
-        spec
-    }
-
-    pub fn check_is_expected_colorspec(&self, spec: &ColorSpec) {
-        match self {
-            Style::Logo | Style::Normal | Style::NoStyle => assert!(true),
-            Style::NeedFix => {
-                assert_eq!(spec.fg(), Some(&Color::Red));
-                assert_eq!(spec.intense(), true);
-                assert_eq!(spec.bold(), true);
-            }
-            Style::NeedAttention => {
-                assert_eq!(spec.fg(), Some(&Color::Yellow));
-                assert_eq!(spec.intense(), true);
-                assert_eq!(spec.bold(), true);
-            }
-            Style::Helpful => {
-                assert_eq!(spec.fg(), Some(&Color::Green));
-                assert_eq!(spec.intense(), true);
-                assert_eq!(spec.bold(), true);
-            }
-            Style::Important => {
-                assert_eq!(spec.fg(), Some(&Color::Cyan));
-                assert_eq!(spec.intense(), true);
-                assert_eq!(spec.bold(), true);
-            }
-            Style::Url => {
-                assert_eq!(spec.fg(), Some(&Color::Blue));
-                assert_eq!(spec.intense(), true);
-                assert_eq!(spec.bold(), true);
-            }
+            _ => todo!()
+            // ShaderFactory::Default => Rc::new(DefaultShader::new()),
         }
     }
 }

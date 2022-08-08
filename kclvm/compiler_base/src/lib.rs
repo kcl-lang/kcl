@@ -1,5 +1,8 @@
+use compiler_base_diagnostic::{
+    emitter::{Emitter, EmitterWriter},
+    DiagnosticBuilder,
+};
 use std::panic;
-use compiler_base_diagnostic::{emitter::{Emitter, EmitterWriter}, DiagnosticBuilder};
 
 pub struct ErrHandler {
     emitter: Box<dyn Emitter>,

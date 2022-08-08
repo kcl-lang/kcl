@@ -1,12 +1,15 @@
 use std::{fs, path::PathBuf};
 
-use compiler_base_style::{styled_buffer::StyledString, Style};
+use compiler_base_style::{diagnostic_style::DiagnosticStyle, Style};
+use rustc_errors::styled_buffer::StyledString;
 
 use crate::Position;
 
 mod test_pendant {
     mod test_header_pendant {
-        use compiler_base_style::{styled_buffer::StyledBuffer, ShaderFactory, Style};
+
+        use compiler_base_style::{ShaderFactory, diagnostic_style::DiagnosticStyle, Style};
+        use rustc_errors::styled_buffer::StyledBuffer;
 
         use crate::{pendant::HeaderPendant, tests::check_styled_strings, Pendant};
 
@@ -30,10 +33,10 @@ mod test_pendant {
                 ":".to_string(),
             ]];
             let expected_styles = vec![vec![
-                Style::Logo,
-                Style::Normal,
-                Style::Helpful,
-                Style::Normal,
+                DiagnosticStyle::Logo,
+                DiagnosticStyle::Normal,
+                DiagnosticStyle::Helpful,
+                DiagnosticStyle::Normal,
             ]];
 
             check_styled_strings(
@@ -47,16 +50,16 @@ mod test_pendant {
 
         #[test]
         fn test_header_pendnant_style() {
-            test_logo_header_pendnant_style_with_labels("error".to_string(), Style::NeedFix);
+            test_logo_header_pendnant_style_with_labels("error".to_string(), DiagnosticStyle::NeedFix);
             test_logo_header_pendnant_style_with_labels(
                 "warning".to_string(),
-                Style::NeedAttention,
+                DiagnosticStyle::NeedAttention,
             );
-            test_logo_header_pendnant_style_with_labels("help".to_string(), Style::NeedAttention);
-            test_logo_header_pendnant_style_with_labels("note".to_string(), Style::NeedAttention);
+            test_logo_header_pendnant_style_with_labels("help".to_string(), DiagnosticStyle::NeedAttention);
+            test_logo_header_pendnant_style_with_labels("note".to_string(), DiagnosticStyle::NeedAttention);
         }
 
-        fn test_logo_header_pendnant_style_with_labels(label: String, style: Style) {
+        fn test_logo_header_pendnant_style_with_labels(label: String, style: DiagnosticStyle) {
             let shader = ShaderFactory::Diagnostic.get_shader();
             let mut sb = StyledBuffer::new();
             let header_pendant = HeaderPendant::new(label.to_string(), None);
@@ -69,7 +72,7 @@ mod test_pendant {
                 styled_strings.get(0).unwrap().get(0).unwrap().text,
                 label.to_string()
             );
-            assert_eq!(styled_strings.get(0).unwrap().get(0).unwrap().style, style);
+            assert!(style.style_eq(&styled_strings.get(0).unwrap().get(0).unwrap().style.as_ref().unwrap()));
             assert_eq!(styled_strings.get(0).unwrap().get(1).unwrap().text, ":");
         }
     }
@@ -80,7 +83,8 @@ mod test_pendant {
             tests::{check_styled_strings, get_code_position},
             Pendant,
         };
-        use compiler_base_style::{styled_buffer::StyledBuffer, ShaderFactory, Style};
+        use compiler_base_style::{ShaderFactory, diagnostic_style::DiagnosticStyle};
+        use rustc_errors::styled_buffer::StyledBuffer;
 
         #[test]
         fn test_code_ctx_pendant() {
@@ -101,13 +105,13 @@ mod test_pendant {
                     format!("{:<indent$}", &code_pos.line),
                     "|    name = _name".to_string(),
                 ],
-                vec![format!("{:<indent$}|", ""), format!("{:>col$}^ ", col)],
+                vec![format!("{:<indent$}|", ""), format!("{:>col$} ", format!("^{}",col))],
             ];
             let expected_styles = vec![
-                vec![Style::Url],
-                vec![Style::Normal],
-                vec![Style::Url, Style::Normal],
-                vec![Style::Normal, Style::NeedFix],
+                vec![DiagnosticStyle::Url],
+                vec![DiagnosticStyle::Normal],
+                vec![DiagnosticStyle::Url, DiagnosticStyle::Normal],
+                vec![DiagnosticStyle::Normal, DiagnosticStyle::NeedFix],
             ];
 
             check_styled_strings(
@@ -121,7 +125,8 @@ mod test_pendant {
     }
 
     mod test_no_pendant {
-        use compiler_base_style::{styled_buffer::StyledBuffer, ShaderFactory, Style};
+        use compiler_base_style::{ShaderFactory, diagnostic_style::DiagnosticStyle};
+        use rustc_errors::styled_buffer::StyledBuffer;
 
         use crate::{pendant::NoPendant, tests::check_styled_strings, Pendant};
 
@@ -135,7 +140,7 @@ mod test_pendant {
             let styled_strings = sb.render();
 
             let expected_texts = vec![vec!["- ".to_string()]];
-            let expected_styles = vec![vec![Style::Normal]];
+            let expected_styles = vec![vec![DiagnosticStyle::Normal]];
 
             check_styled_strings(
                 &styled_strings,
@@ -149,7 +154,8 @@ mod test_pendant {
 }
 
 mod test_sentence {
-    use compiler_base_style::{styled_buffer::StyledBuffer, ShaderFactory, Style};
+    use compiler_base_style::{ShaderFactory, diagnostic_style::DiagnosticStyle};
+    use rustc_errors::styled_buffer::StyledBuffer;
 
     use crate::{
         pendant::{CodeCtxPendant, HeaderPendant},
@@ -167,7 +173,7 @@ mod test_sentence {
         let styled_strings = sb.render();
 
         let expected_texts = vec![vec!["- test str".to_string()]];
-        let expected_styles = vec![vec![Style::Normal]];
+        let expected_styles = vec![vec![DiagnosticStyle::Normal]];
 
         check_styled_strings(
             &styled_strings,
@@ -198,7 +204,7 @@ mod test_sentence {
             "[E1010]".to_string(),
             ":test str".to_string(),
         ]];
-        let expected_styles = vec![vec![Style::Normal, Style::Helpful, Style::Normal]];
+        let expected_styles = vec![vec![DiagnosticStyle::Normal, DiagnosticStyle::Helpful, DiagnosticStyle::Normal]];
 
         check_styled_strings(
             &styled_strings,
@@ -240,10 +246,10 @@ mod test_sentence {
             ],
         ];
         let expected_styles = vec![
-            vec![Style::Url],
-            vec![Style::Normal],
-            vec![Style::Url, Style::Normal],
-            vec![Style::Normal, Style::NeedFix, Style::Normal],
+            vec![DiagnosticStyle::Url],
+            vec![DiagnosticStyle::Normal],
+            vec![DiagnosticStyle::Url, DiagnosticStyle::Normal],
+            vec![DiagnosticStyle::Normal, DiagnosticStyle::NeedFix, DiagnosticStyle::Normal],
         ];
 
         check_styled_strings(
@@ -376,7 +382,7 @@ fn check_styled_strings(
     expected_line_count: usize,
     expected_string_counts: &Vec<usize>,
     expected_texts: &Vec<Vec<String>>,
-    expected_styles: &Vec<Vec<Style>>,
+    expected_styles: &Vec<Vec<DiagnosticStyle>>,
 ) {
     assert_eq!(styled_strings.len(), expected_line_count);
     assert_eq!(expected_texts.len(), expected_line_count);
@@ -393,10 +399,7 @@ fn check_styled_strings(
                 styled_strings.get(i).unwrap().get(j).unwrap().text,
                 expected_texts[i][j]
             );
-            assert_eq!(
-                styled_strings.get(i).unwrap().get(j).unwrap().style,
-                expected_styles[i][j]
-            );
+            assert!(expected_styles[i][j].style_eq(&styled_strings.get(i).unwrap().get(j).unwrap().style.as_ref().unwrap()));
         }
     }
 }
@@ -411,3 +414,5 @@ fn get_code_position() -> Position {
     pos.column = Some(5);
     pos
 }
+
+

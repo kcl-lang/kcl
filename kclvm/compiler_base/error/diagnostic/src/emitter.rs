@@ -2,13 +2,11 @@ use std::{
     io::{self, Write},
     rc::Rc,
 };
-use compiler_base_style::{
-    styled_buffer::{StyledBuffer, StyledString},
-    Shader, ShaderFactory,
-};
+use compiler_base_style::{ShaderFactory, diagnostic_style::Shader};
+use rustc_errors::styled_buffer::{StyledBuffer, StyledString};
 use termcolor::{BufferWriter, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
-use crate::Diagnostic;
+use crate::{Diagnostic};
 
 /// Emitter trait for emitting errors.
 pub trait Emitter {
@@ -149,7 +147,7 @@ fn emit_to_destination(
 ) -> io::Result<()> {
     for (pos, line) in rendered_buffer.iter().enumerate() {
         for part in line {
-            dst.set_color(&part.style.render_style())?;
+            dst.set_color(&part.style.as_ref().unwrap().render_style())?;
             write!(dst, "{}", part.text)?;
             dst.reset()?;
         }

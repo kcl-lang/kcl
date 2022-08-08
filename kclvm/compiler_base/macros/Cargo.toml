@@ -10,8 +10,9 @@ proc-macro = true
 
 [dependencies]
 compiler-base = {path="../", version = "0.1.0"}
-compiler-base-style = {path="../style", version="0.1.0"}
-compiler-base-diagnostic = {path = "../diagnostic", version = "0.1.0"}
+# compiler-base-style = {path="../style", version="0.1.0"}
+compiler-base-diagnostic = {path = "../error/diagnostic", version = "0.1.0"}
+
 synstructure = "0.12.1"
 syn = { version = "1", features = ["full"] }
 proc-macro2 = "1"

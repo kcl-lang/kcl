@@ -7,5 +7,7 @@ edition = "2021"
 
 [dependencies]
 compiler-base = {path="../", version = "0.1.0"}
-compiler-base-diagnostic = {path = "../diagnostic", version = "0.1.0"}
+compiler-base-style = {path="../style", version = "0.1.0"}
 compiler-base-macros = {path = "../macros", version = "0.1.0"}
+compiler-base-diagnostic = {path = "./diagnostic", version = "0.1.0"}
+
