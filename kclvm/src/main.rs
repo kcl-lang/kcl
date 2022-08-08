@@ -29,7 +29,7 @@ fn main() {
         match (matches.values_of("INPUT"), matches.values_of("SETTING")) {
             (None, None) => {
                 println!("{}", matches.usage());
-            },
+            }
             (_, _) => {
                 let mut files: Vec<&str> = match matches.values_of("INPUT") {
                     Some(files) => files.into_iter().collect::<Vec<&str>>(),
@@ -39,13 +39,17 @@ fn main() {
                 let settings = build_settings(&matches);
                 // Convert settings into execute arguments.
                 let args: ExecProgramArgs = settings.into();
-                files = if !files.is_empty() {files} else {args.get_files()};
+                files = if !files.is_empty() {
+                    files
+                } else {
+                    args.get_files()
+                };
                 // Parse AST program.
                 let program = load_program(&files, Some(args.get_load_program_options())).unwrap();
                 // Resolve AST program, generate libs, link libs and execute.
                 // TODO: The argument "plugin_agent" need to be read from python3.
                 execute(program, 0, &ExecProgramArgs::default()).unwrap();
-            },
+            }
         }
     } else {
         println!("{}", matches.usage());
