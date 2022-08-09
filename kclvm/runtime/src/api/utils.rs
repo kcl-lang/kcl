@@ -16,7 +16,7 @@ pub fn new_mut_ptr(x: ValueRef) -> *mut ValueRef {
 pub fn free_mut_ptr<T>(p: *mut T) {
     if !p.is_null() {
         unsafe {
-            p.drop_in_place()
+            Box::from_raw(p);
         }
     }
 }
