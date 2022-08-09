@@ -37,7 +37,7 @@ pub struct KCLModFileExpectedSection {
 
 pub fn get_pkg_root_from_paths(file_paths: &[String]) -> Result<String, String> {
     if file_paths.is_empty() {
-        return Err("no files".to_string());
+        return Err("No input KCL files or paths".to_string());
     }
 
     let mut m = std::collections::HashMap::<String, String>::new();
@@ -52,7 +52,7 @@ pub fn get_pkg_root_from_paths(file_paths: &[String]) -> Result<String, String> 
         }
     }
     if m.is_empty() {
-        return Err("not found".to_string());
+        return Ok("".to_string());
     }
     if m.len() == 1 {
         return Ok(last_root);
@@ -107,6 +107,24 @@ mod modfile_test {
 
     const TEST_ROOT: &str = "./src/testdata/";
     const SETTINGS_FILE: &str = "./src/testdata/kcl.mod";
+
+    #[test]
+    fn test_get_pkg_root_from_paths() {
+        assert_eq!(
+            get_pkg_root_from_paths(&[]),
+            Err("No input KCL files or paths".to_string())
+        );
+        assert_eq!(
+            get_pkg_root_from_paths(&["wrong_path".to_string()]),
+            Ok("".to_string())
+        );
+        let expected_root = std::path::Path::new(TEST_ROOT).canonicalize().unwrap();
+        let expected = expected_root.to_str().unwrap();
+        assert_eq!(
+            get_pkg_root_from_paths(&[SETTINGS_FILE.to_string()]),
+            Ok(expected.to_string())
+        );
+    }
 
     #[test]
     fn test_get_pkg_root() {

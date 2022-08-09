@@ -23,11 +23,6 @@ jobs:
           chmod +x ./internal/kclvm_py/scripts/test_grammar.sh
           ./internal/kclvm_py/scripts/test_grammar.sh
         shell: bash
-      - name: Internal python unit test
-        run: |
-          chmod +x ./internal/kclvm_py/scripts/test_unit.sh
-          ./internal/kclvm_py/scripts/test_unit.sh
-        shell: bash
       - name: Delete rust cargo
         run: rm -rf /root/.cargo/bin
         shell: bash
