@@ -41,7 +41,8 @@ impl DiagnosticBuilderGenerator {
                     for @Self
             {
                 fn into_diagnostic(
-                    self
+                    self,
+                    sm: Arc<SourceMap>
                 ) -> Diagnostic {
                     let mut diagnostic = Diagnostic::new();
                     # head

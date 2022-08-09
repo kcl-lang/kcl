@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 compiler-base-diagnostic = {path = "./error/diagnostic", version = "0.1.0"}
+rustc_span = { path = "./3rdparty/rustc_span", version="0.0.0"}

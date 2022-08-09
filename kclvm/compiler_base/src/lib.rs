@@ -2,10 +2,11 @@ use compiler_base_diagnostic::{
     emitter::{Emitter, EmitterWriter},
     DiagnosticBuilder,
 };
-use std::panic;
+use std::{panic, sync::Arc};
 
 pub struct ErrHandler {
     emitter: Box<dyn Emitter>,
+    source_map: Arc<SourceMap>,
 }
 
 impl ErrHandler {

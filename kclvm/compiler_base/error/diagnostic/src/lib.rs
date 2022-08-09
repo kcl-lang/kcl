@@ -1,9 +1,10 @@
 //! 'Diagnostic' is used to show the error/warning .etc diagnostic message.
 
-use std::rc::Rc;
+use std::{rc::Rc, sync::Arc};
 use compiler_base_style::{diagnostic_style::Shader};
 use pendant::NoPendant;
 use rustc_errors::styled_buffer::StyledBuffer;
+use rustc_span::SourceMap;
 
 pub mod emitter;
 pub mod pendant;
@@ -15,7 +16,7 @@ mod tests;
 /// 
 /// e.g. an error diagnostic.
 /// error[E0999]: oh no! this is an error!
-///  --> mycode.k:3:5
+///  --> mycode.X:3:5
 ///  |
 ///3 |     a: int
 ///  |     ^ error here!
@@ -27,7 +28,7 @@ mod tests;
 /// Sentence 1: error[E0999]: oh no! this is an error!
 /// 
 /// Sentence 2: 
-/// --> mycode.rs:3:5
+/// --> mycode.X:3:5
 ///  |
 ///3 |     a:int
 ///  |     ^ error here!
@@ -50,7 +51,7 @@ impl Diagnostic {
 }
 
 pub trait DiagnosticBuilder {
-    fn into_diagnostic(self) -> Diagnostic;
+    fn into_diagnostic(self, sm: Arc<SourceMap>) -> Diagnostic;
 }
 
 /// 'Sentence' consists of 'Pendant' and sentence content.
@@ -62,12 +63,12 @@ pub trait DiagnosticBuilder {
 ///     Sentence content: oh no! this is an error!
 /// 
 /// Sentence 2: 
-/// --> mycode.rs:3:5
+/// --> mycode.X:3:5
 ///  |
 ///3 |     a:int
 ///  |     ^ error here!
 ///     Pendant: 
-///     --> mycode.rs:3:5
+///     --> mycode.X:3:5
 ///       |
 ///     3 |     a:int
 ///       |     ^ 
@@ -120,11 +121,11 @@ impl Sentence {
     }
 }
 
-/// Position describes an arbitrary source position including the filename,
-/// line, and column location.
-///
-/// A Position is valid if the line number is > 0.
-/// The line and column are both 1 based.
+// / Position describes an arbitrary source position including the filename,
+// / line, and column location.
+// /
+// / A Position is valid if the line number is > 0.
+// / The line and column are both 1 based.
 #[derive(PartialEq, Clone, Eq, Hash, Debug, Default)]
 pub struct Position {
     pub filename: String,

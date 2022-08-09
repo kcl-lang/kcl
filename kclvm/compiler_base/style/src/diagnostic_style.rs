@@ -44,7 +44,6 @@ impl Style for DiagnosticStyle{
 }
 
 impl DiagnosticStyle {
-
     pub fn render_style(&self) -> ColorSpec {
         let mut spec = ColorSpec::new();
         match self {

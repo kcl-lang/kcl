@@ -25,5 +25,6 @@ use compiler_base_macros::DiagnosticBuilderMacro;
 #[nopendant(msg="Variable name must be unique in package context")]
 struct UniqueKeyError{
     #[position(msg="Failure")]
-    pos: Position
+    pos: Position,
+    span: Span
 }

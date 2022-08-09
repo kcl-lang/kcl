@@ -55,5 +55,8 @@ members = [
     "version",
     "compiler_base",
     "compiler_base/error",
-    "compiler_base/macros"
+    "compiler_base/style",
+    "compiler_base/macros",
+    "compiler_base/error/diagnostic",
+    "compiler_base/3rdparty/rustc_errors",
 ]

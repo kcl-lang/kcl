@@ -79,7 +79,7 @@ mod test_pendant {
 
     mod test_code_ctx_pendant {
         use crate::{
-            pendant::CodeCtxPendant,
+            pendant::CodePosPendant,
             tests::{check_styled_strings, get_code_position},
             Pendant,
         };
@@ -89,7 +89,7 @@ mod test_pendant {
         #[test]
         fn test_code_ctx_pendant() {
             let code_pos = get_code_position();
-            let code_pendant = CodeCtxPendant::new(code_pos.clone());
+            let code_pendant = CodePosPendant::new(code_pos.clone());
             let shader = ShaderFactory::Diagnostic.get_shader();
             let mut sb = StyledBuffer::new();
 
@@ -121,6 +121,41 @@ mod test_pendant {
                 &expected_texts,
                 &expected_styles,
             );
+        }
+    }
+
+    mod test_code_span_pendant {
+        use std::{fs, path::PathBuf, sync::Arc};
+
+        use rustc_span::{SourceMap, source_map::FilePathMapping, SpanData, BytePos};
+
+        use crate::{pendant::CodeSpanPendant, Sentence, Message, Diagnostic, emitter::{EmitterWriter, Emitter}};
+
+        #[test]
+        fn test_code_span_pendant(){
+            let filename = fs::canonicalize(&PathBuf::from("./test_datas/main.k"))
+            .unwrap()
+            .display()
+            .to_string();
+            
+            let src = std::fs::read_to_string(filename.clone()).unwrap();
+            let sm = SourceMap::new(FilePathMapping::empty());
+            sm.new_source_file(PathBuf::from(filename.clone()).into(), src.to_string());
+            let a = SpanData{
+                lo: BytePos(20),
+                hi: BytePos(22),
+            };
+
+            let code_span = a.span();
+
+            let code_span_pendant = CodeSpanPendant::new_with_source_map(code_span, Some(Arc::new(sm)));
+            let sentence = Sentence::new_sentence_str(Box::new(code_span_pendant), Message::Str("test code spane".to_string()));
+
+            let mut diag = Diagnostic::new();
+            diag.add_sentence(sentence);
+
+            let mut emitter = EmitterWriter::default();
+            emitter.emit_diagnostic(&diag);
         }
     }
 
@@ -158,7 +193,7 @@ mod test_sentence {
     use rustc_errors::styled_buffer::StyledBuffer;
 
     use crate::{
-        pendant::{CodeCtxPendant, HeaderPendant},
+        pendant::{CodePosPendant, HeaderPendant},
         Message, Sentence,
     };
 
@@ -218,7 +253,7 @@ mod test_sentence {
     #[test]
     fn test_sentence_with_code_ctx_sentence() {
         let code_pos = get_code_position();
-        let code_pendant = CodeCtxPendant::new(code_pos.clone());
+        let code_pendant = CodePosPendant::new(code_pos.clone());
         let sentence = Sentence::new_sentence_str(
             Box::new(code_pendant),
             Message::Str("test str".to_string()),

@@ -189,6 +189,7 @@ name = "compiler-base"
 version = "0.1.0"
 dependencies = [
  "compiler-base-diagnostic",
+ "rustc_span",
 ]
 
 [[package]]
@@ -196,8 +197,8 @@ name = "compiler-base-diagnostic"
 version = "0.1.0"
 dependencies = [
  "compiler-base-style",
- "kclvm-span",
- "style-term",
+ "rustc_errors",
+ "rustc_span",
  "termcolor",
 ]
 
@@ -208,6 +209,7 @@ dependencies = [
  "compiler-base",
  "compiler-base-diagnostic",
  "compiler-base-macros",
+ "compiler-base-style",
 ]
 
 [[package]]
@@ -216,7 +218,6 @@ version = "0.1.0"
 dependencies = [
  "compiler-base",
  "compiler-base-diagnostic",
- "compiler-base-style",
  "proc-macro2",
  "quote",
  "syn",
@@ -1455,6 +1456,15 @@ dependencies = [
  "tempfile",
  "tracing",
  "winapi",
+]
+
+[[package]]
+name = "rustc_errors"
+version = "0.1.0"
+dependencies = [
+ "compiler-base-style",
+ "style-term",
+ "termcolor",
 ]
 
 [[package]]
