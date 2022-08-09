@@ -89,13 +89,13 @@ static mut kclvm_value_Float_0_obj: usize = 0;
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_value_Undefined() -> *mut kclvm_value_ref_t {
-    ValueRef::undefined().into_raw()
+    new_mut_ptr(ValueRef::undefined())
 }
 
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_value_None() -> *mut kclvm_value_ref_t {
-    ValueRef::none().into_raw()
+    new_mut_ptr(ValueRef::none())
 }
 
 // bool/int/float/str
@@ -699,7 +699,6 @@ pub extern "C" fn kclvm_value_delete(p: *mut kclvm_value_ref_t) {
         if p as usize == kclvm_value_Bool_false_obj {
             return;
         }
-
         if p as usize == kclvm_value_Int_0_obj {
             return;
         }
@@ -719,7 +718,7 @@ pub extern "C" fn kclvm_value_delete(p: *mut kclvm_value_ref_t) {
 pub extern "C" fn kclvm_value_iter(p: *const kclvm_value_ref_t) -> *mut kclvm_iterator_t {
     let p = ptr_as_ref(p);
     let iter = ValueIterator::from_value(p);
-    new_mut_ptr(iter)
+    Box::into_raw(Box::new(iter))
 }
 
 #[no_mangle]

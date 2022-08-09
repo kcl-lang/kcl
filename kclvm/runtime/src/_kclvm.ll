@@ -446,41 +446,13 @@ declare void @kclvm_testing_arguments(%kclvm_context_t* %_ctx, %kclvm_value_ref_
 
 declare void @kclvm_testing_setting_file(%kclvm_context_t* %_ctx, %kclvm_value_ref_t* %_args, %kclvm_value_ref_t* %_kwargs);
 
-declare %kclvm_type_t* @kclvm_type_Any();
-
-declare %kclvm_type_t* @kclvm_type_Bool();
-
-declare %kclvm_type_t* @kclvm_type_BoolLit(%kclvm_bool_t %v);
-
 declare %kclvm_bool_t @kclvm_type_BoolLit_value(%kclvm_type_t* %p);
-
-declare %kclvm_type_t* @kclvm_type_Dict(%kclvm_type_t* %key_type, %kclvm_type_t* %elem_type);
-
-declare %kclvm_type_t* @kclvm_type_Float();
-
-declare %kclvm_type_t* @kclvm_type_FloatLit(double %v);
 
 declare double @kclvm_type_FloatLit_value(%kclvm_type_t* %p);
 
-declare %kclvm_type_t* @kclvm_type_Func(%kclvm_size_t %args_len, %kclvm_type_t** %args_types, %kclvm_type_t* %return_type);
-
-declare %kclvm_type_t* @kclvm_type_Int();
-
-declare %kclvm_type_t* @kclvm_type_IntLit(i64 %v);
-
 declare i64 @kclvm_type_IntLit_value(%kclvm_type_t* %p);
 
-declare %kclvm_type_t* @kclvm_type_List(%kclvm_type_t* %elem_type);
-
-declare %kclvm_type_t* @kclvm_type_Schema(%kclvm_char_t* %name, %kclvm_char_t* %parent_name, %kclvm_bool_t %_is_relaxed, %kclvm_size_t %field_num, %kclvm_char_t** %field_names, %kclvm_type_t** %field_types);
-
-declare %kclvm_type_t* @kclvm_type_Str();
-
-declare %kclvm_type_t* @kclvm_type_StrLit(%kclvm_char_t* %s);
-
 declare %kclvm_char_t* @kclvm_type_StrLit_value(%kclvm_type_t* %p);
-
-declare %kclvm_type_t* @kclvm_type_Union(%kclvm_size_t %n, %kclvm_type_t** %elem_types);
 
 declare %kclvm_size_t @kclvm_type_arg_num(%kclvm_type_t* %p);
 

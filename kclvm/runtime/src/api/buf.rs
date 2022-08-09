@@ -67,7 +67,7 @@ impl Buffer {
 pub extern "C" fn kclvm_buffer_new(size: kclvm_size_t) -> *mut kclvm_buffer_t {
     let mut p = Buffer { buf: Vec::new() };
     p.buf.resize(size as usize, 0);
-    new_mut_ptr(p)
+    Box::into_raw(Box::new(p))
 }
 
 #[no_mangle]

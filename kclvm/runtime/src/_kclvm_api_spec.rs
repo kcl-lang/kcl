@@ -130,62 +130,6 @@
 // api-spec(c):    kclvm_bool_t kclvm_context_pkgpath_is_imported(kclvm_char_t* pkgpath);
 // api-spec(llvm): declare %kclvm_bool_t @kclvm_context_pkgpath_is_imported(%kclvm_char_t* %pkgpath);
 
-// api-spec:       kclvm_type_Any
-// api-spec(c):    kclvm_type_t* kclvm_type_Any();
-// api-spec(llvm): declare %kclvm_type_t* @kclvm_type_Any();
-
-// api-spec:       kclvm_type_Bool
-// api-spec(c):    kclvm_type_t* kclvm_type_Bool();
-// api-spec(llvm): declare %kclvm_type_t* @kclvm_type_Bool();
-
-// api-spec:       kclvm_type_BoolLit
-// api-spec(c):    kclvm_type_t* kclvm_type_BoolLit(kclvm_bool_t v);
-// api-spec(llvm): declare %kclvm_type_t* @kclvm_type_BoolLit(%kclvm_bool_t %v);
-
-// api-spec:       kclvm_type_Int
-// api-spec(c):    kclvm_type_t* kclvm_type_Int();
-// api-spec(llvm): declare %kclvm_type_t* @kclvm_type_Int();
-
-// api-spec:       kclvm_type_IntLit
-// api-spec(c):    kclvm_type_t* kclvm_type_IntLit(int64_t v);
-// api-spec(llvm): declare %kclvm_type_t* @kclvm_type_IntLit(i64 %v);
-
-// api-spec:       kclvm_type_Float
-// api-spec(c):    kclvm_type_t* kclvm_type_Float();
-// api-spec(llvm): declare %kclvm_type_t* @kclvm_type_Float();
-
-// api-spec:       kclvm_type_FloatLit
-// api-spec(c):    kclvm_type_t* kclvm_type_FloatLit(double v);
-// api-spec(llvm): declare %kclvm_type_t* @kclvm_type_FloatLit(double %v);
-
-// api-spec:       kclvm_type_Str
-// api-spec(c):    kclvm_type_t* kclvm_type_Str();
-// api-spec(llvm): declare %kclvm_type_t* @kclvm_type_Str();
-
-// api-spec:       kclvm_type_StrLit
-// api-spec(c):    kclvm_type_t* kclvm_type_StrLit(kclvm_char_t* s);
-// api-spec(llvm): declare %kclvm_type_t* @kclvm_type_StrLit(%kclvm_char_t* %s);
-
-// api-spec:       kclvm_type_List
-// api-spec(c):    kclvm_type_t* kclvm_type_List(kclvm_type_t* elem_type);
-// api-spec(llvm): declare %kclvm_type_t* @kclvm_type_List(%kclvm_type_t* %elem_type);
-
-// api-spec:       kclvm_type_Dict
-// api-spec(c):    kclvm_type_t* kclvm_type_Dict(kclvm_type_t* key_type, kclvm_type_t* elem_type);
-// api-spec(llvm): declare %kclvm_type_t* @kclvm_type_Dict(%kclvm_type_t* %key_type, %kclvm_type_t* %elem_type);
-
-// api-spec:       kclvm_type_Union
-// api-spec(c):    kclvm_type_t* kclvm_type_Union(kclvm_size_t n, kclvm_type_t** elem_types);
-// api-spec(llvm): declare %kclvm_type_t* @kclvm_type_Union(%kclvm_size_t %n, %kclvm_type_t** %elem_types);
-
-// api-spec:       kclvm_type_Schema
-// api-spec(c):    kclvm_type_t* kclvm_type_Schema(kclvm_char_t* name, kclvm_char_t* parent_name, kclvm_bool_t _is_relaxed, kclvm_size_t field_num, kclvm_char_t** field_names, kclvm_type_t** field_types);
-// api-spec(llvm): declare %kclvm_type_t* @kclvm_type_Schema(%kclvm_char_t* %name, %kclvm_char_t* %parent_name, %kclvm_bool_t %_is_relaxed, %kclvm_size_t %field_num, %kclvm_char_t** %field_names, %kclvm_type_t** %field_types);
-
-// api-spec:       kclvm_type_Func
-// api-spec(c):    kclvm_type_t* kclvm_type_Func(kclvm_size_t args_len, kclvm_type_t** args_types, kclvm_type_t* return_type);
-// api-spec(llvm): declare %kclvm_type_t* @kclvm_type_Func(%kclvm_size_t %args_len, %kclvm_type_t** %args_types, %kclvm_type_t* %return_type);
-
 // api-spec:       kclvm_type_delete
 // api-spec(c):    void kclvm_type_delete(kclvm_type_t* p);
 // api-spec(llvm): declare void @kclvm_type_delete(%kclvm_type_t* %p);

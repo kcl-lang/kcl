@@ -1,17 +1,22 @@
 // Copyright 2021 The KCL Authors. All rights reserved.
 
-use crate::kclvm_value_Undefined;
+use crate::{kclvm_value_Undefined, Context, ValueRef};
 
 /// New a mutable raw pointer.
-pub fn new_mut_ptr<T>(x: T) -> *mut T {
-    Box::into_raw(Box::new(x))
+pub fn new_mut_ptr(x: ValueRef) -> *mut ValueRef {
+    let ptr = Box::into_raw(Box::new(x));
+    let ctx = Context::current_context_mut();
+    // Store the object pointer address to
+    // drop it it after execution is complete
+    ctx.objects.insert(ptr as usize);
+    ptr
 }
 
 /// Free a mutable raw pointer.
 pub fn free_mut_ptr<T>(p: *mut T) {
     if !p.is_null() {
         unsafe {
-            Box::from_raw(p);
+            p.drop_in_place()
         }
     }
 }

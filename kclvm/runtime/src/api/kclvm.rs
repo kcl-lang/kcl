@@ -2,7 +2,8 @@
 
 #[allow(non_camel_case_types)]
 type kclvm_value_ref_t = crate::ValueRef;
-use crate::IndexMap;
+use crate::{IndexMap, new_mut_ptr};
+use indexmap::IndexSet;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::{
@@ -194,7 +195,7 @@ impl Default for ValueRef {
 
 impl ValueRef {
     pub fn into_raw(self) -> *mut Self {
-        Box::into_raw(Box::new(self))
+        new_mut_ptr(self)
     }
 }
 
@@ -361,6 +362,8 @@ pub struct Context {
 
     pub option_helps: Vec<OptionHelp>,
     pub buffer: ContextBuffer,
+    /// objects is to store all KCL object pointers.
+    pub objects: IndexSet<usize>,
 }
 
 impl Context {

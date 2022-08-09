@@ -56,7 +56,7 @@ pub extern "C" fn kclvm_context_current() -> *mut kclvm_context_t {
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_context_new() -> *mut kclvm_context_t {
-    let p = new_mut_ptr(Context::new());
+    let p = Box::into_raw(Box::new(Context::new()));
     unsafe {
         _kclvm_context_current = p as u64;
     }
@@ -66,7 +66,12 @@ pub extern "C" fn kclvm_context_new() -> *mut kclvm_context_t {
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_context_delete(p: *mut kclvm_context_t) {
-    free_mut_ptr(p)
+    let ctx = mut_ptr_as_ref(p);
+    for o in &ctx.objects {
+        let ptr = (*o) as *mut kclvm_value_ref_t;
+        kclvm_value_delete(ptr);
+    }
+    free_mut_ptr(p);
 }
 
 // ----------------------------------------------------------------------------

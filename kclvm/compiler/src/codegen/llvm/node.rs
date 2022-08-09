@@ -1336,6 +1336,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         ]);
         self.leave_scope();
         self.local_vars.borrow_mut().clear();
+        self.build_void_call(&ApiFunc::kclvm_iterator_delete.name(), &[iter_value]);
         Ok(phi.as_basic_value())
     }
 
@@ -2795,6 +2796,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         }
         self.br(start_block);
         self.builder.position_at_end(end_for_block);
+        self.build_void_call(&ApiFunc::kclvm_iterator_delete.name(), &[iter_value]);
         self.local_vars.borrow_mut().clear();
     }
 }
