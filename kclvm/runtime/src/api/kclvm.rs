@@ -2,7 +2,7 @@
 
 #[allow(non_camel_case_types)]
 type kclvm_value_ref_t = crate::ValueRef;
-use crate::{IndexMap, new_mut_ptr};
+use crate::{new_mut_ptr, IndexMap};
 use indexmap::IndexSet;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};

@@ -41,8 +41,9 @@ pub extern "C" fn kclvm_plugin_invoke(
 
     let result_json = kclvm_plugin_invoke_json(method, args_json, kwargs_json);
 
-    kclvm_value_delete(args_s);
-    kclvm_value_delete(kwargs_s);
+    // Value delete by context.
+    // kclvm_value_delete(args_s);
+    // kclvm_value_delete(kwargs_s);
 
     let ptr = kclvm_value_from_json(result_json);
     {
