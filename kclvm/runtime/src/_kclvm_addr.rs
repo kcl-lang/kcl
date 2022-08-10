@@ -409,6 +409,7 @@ pub fn _kclvm_get_fn_ptr_by_name(name: &str) -> u64 {
         "kclvm_value_unary_plus" => crate::kclvm_value_unary_plus as *const () as u64,
         "kclvm_value_union" => crate::kclvm_value_union as *const () as u64,
         "kclvm_value_union_all" => crate::kclvm_value_union_all as *const () as u64,
+        "kclvm_value_union_with" => crate::kclvm_value_union_with as *const () as u64,
         "kclvm_yaml_decode" => crate::kclvm_yaml_decode as *const () as u64,
         "kclvm_yaml_dump_to_file" => crate::kclvm_yaml_dump_to_file as *const () as u64,
         "kclvm_yaml_encode" => crate::kclvm_yaml_encode as *const () as u64,

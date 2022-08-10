@@ -16,6 +16,8 @@ gen-api-spec:
 
 	make -C ./tools/kclvm-runtime-gen-api
 
+	cargo fmt
+
 dev:
 	cargo build
 	cargo run --bin hello-llvm

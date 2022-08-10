@@ -376,6 +376,7 @@ pub enum ApiFunc {
     kclvm_value_unary_plus,
     kclvm_value_union,
     kclvm_value_union_all,
+    kclvm_value_union_with,
     kclvm_yaml_decode,
     kclvm_yaml_dump_to_file,
     kclvm_yaml_encode,

@@ -774,6 +774,10 @@
 // api-spec(c):    kclvm_value_ref_t* kclvm_value_union(kclvm_value_ref_t* schema, kclvm_value_ref_t* b);
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_value_union(%kclvm_value_ref_t* %schema, %kclvm_value_ref_t* %b);
 
+// api-spec:       kclvm_value_union_with
+// api-spec(c):    kclvm_value_ref_t* kclvm_value_union_with(kclvm_value_ref_t* a, kclvm_value_ref_t* b);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_value_union_with(%kclvm_value_ref_t* %a, %kclvm_value_ref_t* %b);
+
 // api-spec:       kclvm_value_logic_and
 // api-spec(c):    kclvm_value_ref_t* kclvm_value_logic_and(kclvm_value_ref_t* a, kclvm_value_ref_t* b);
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_value_logic_and(%kclvm_value_ref_t* %a, %kclvm_value_ref_t* %b);

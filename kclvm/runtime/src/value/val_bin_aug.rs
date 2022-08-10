@@ -421,19 +421,27 @@ impl ValueRef {
                 *a |= *b as i64;
                 self
             }
+            _ => panic_unsupported_bin_op!("|", self.type_str(), x.type_str()),
+        }
+    }
+
+    /// Union with another config with the `:` operator.
+    /// Union with another config with the `:` operator.
+    pub fn union_with(&mut self, x: &Self) -> &mut Self {
+        match (&*self.rc, &*x.rc) {
+            (Value::int_value(a), Value::int_value(b)) => {
+                let a: &mut i64 = get_ref_mut(a);
+                *a |= *b as i64;
+                self
+            }
             _ => {
                 if self.is_list_or_config() || x.is_list_or_config() {
                     self.union(x, true, false, true, true);
                     return self;
                 }
-                panic_unsupported_bin_op!("|", self.type_str(), x.type_str());
+                panic_unsupported_bin_op!(":", self.type_str(), x.type_str());
             }
         }
-    }
-
-    /// Binary aug union a | b
-    pub fn bin_aug_union_with(&mut self, x: &Self) -> &mut Self {
-        self.bin_aug_bit_or(x)
     }
 }
 

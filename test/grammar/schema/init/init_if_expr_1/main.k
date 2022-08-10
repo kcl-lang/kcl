@@ -5,7 +5,7 @@ schema Person:
     info?: {str: int|str}
 
 schema InfoMixin:
-    info |= {"age": age} if age else {}
+    info = {"age": age} if age else {}
 
 alice = Person {
     "name": "alice",

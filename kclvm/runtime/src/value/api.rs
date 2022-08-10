@@ -1759,6 +1759,20 @@ pub extern "C" fn kclvm_value_union(
     }
 }
 
+/// value union with the `:` operator
+#[no_mangle]
+#[runtime_fn]
+pub extern "C" fn kclvm_value_union_with(
+    a: *const kclvm_value_ref_t,
+    b: *const kclvm_value_ref_t,
+) -> *mut kclvm_value_ref_t {
+    let a = ptr_as_ref(a);
+    let b = ptr_as_ref(b);
+    let mut v = a.deep_copy();
+    v.union_with(b);
+    v.into_raw()
+}
+
 // logic: && ||
 
 #[no_mangle]

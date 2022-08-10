@@ -14,7 +14,6 @@ schema Data:
         }
     }
 
-    _alice.name |= {last: "value"}
     _alice.name.age += 1
     alice = _alice
 
@@ -26,6 +25,5 @@ _alice = A {
     }
 }
 
-_alice.name |= {last: "value"}
 _alice.name.age += 1
 alice = _alice

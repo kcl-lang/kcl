@@ -728,6 +728,8 @@ declare %kclvm_value_ref_t* @kclvm_value_union(%kclvm_value_ref_t* %schema, %kcl
 
 declare %kclvm_value_ref_t* @kclvm_value_union_all(%kclvm_context_t* %_ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
 
+declare %kclvm_value_ref_t* @kclvm_value_union_with(%kclvm_value_ref_t* %a, %kclvm_value_ref_t* %b);
+
 declare %kclvm_value_ref_t* @kclvm_yaml_decode(%kclvm_context_t* %_ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
 
 declare %kclvm_value_ref_t* @kclvm_yaml_dump_to_file(%kclvm_context_t* %_ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);

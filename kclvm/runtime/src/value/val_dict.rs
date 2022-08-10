@@ -339,7 +339,7 @@ impl ValueRef {
                 Value::dict_value(_) | Value::schema_value(_),
                 Value::dict_value(_) | Value::schema_value(_),
             ) => {
-                self.bin_aug_bit_or(&v.schema_to_dict().deep_copy());
+                self.union_with(&v.schema_to_dict().deep_copy());
             }
             (Value::dict_value(_) | Value::schema_value(_), Value::none) => { /*Do nothing on unpacking None/Undefined*/
             }

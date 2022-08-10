@@ -26,7 +26,7 @@ pub extern "C" fn kclvm_value_union_all(
         let mut result = value.values[0].deep_copy();
         for (i, v) in value.values.iter().enumerate() {
             if i > 0 {
-                result.bin_aug_union_with(v);
+                result.union_with(v);
             }
         }
         return result.into_raw();

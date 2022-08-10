@@ -4,7 +4,7 @@ schema Data:
     metaLabels: {str:} = labels
         
 schema DataMixin:
-    labels |= {
+    labels = {
         "key": "value"  
     }
         

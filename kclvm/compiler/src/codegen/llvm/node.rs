@@ -91,7 +91,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
                         None,
                     )
                     .expect(kcl_error::COMPILE_ERROR_MSG);
-                let fn_name = ApiFunc::kclvm_value_op_aug_bit_or;
+                let fn_name = ApiFunc::kclvm_value_union_with;
                 let value = self.build_call(&fn_name.name(), &[org_value, value]);
                 // Store the identifier value
                 self.walk_identifier_with_ctx(
@@ -195,7 +195,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
             ast::AugOp::Pow => ApiFunc::kclvm_value_op_aug_pow,
             ast::AugOp::LShift => ApiFunc::kclvm_value_op_aug_bit_lshift,
             ast::AugOp::RShift => ApiFunc::kclvm_value_op_aug_bit_rshift,
-            ast::AugOp::BitOr => ApiFunc::kclvm_value_op_bit_or,
+            ast::AugOp::BitOr => ApiFunc::kclvm_value_op_aug_bit_or,
             ast::AugOp::BitXor => ApiFunc::kclvm_value_op_aug_bit_xor,
             ast::AugOp::BitAnd => ApiFunc::kclvm_value_op_aug_bit_and,
             ast::AugOp::FloorDiv => ApiFunc::kclvm_value_op_aug_floor_div,
