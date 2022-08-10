@@ -8,11 +8,6 @@
 //! - replaced the `enum Style` with generics `T: Clone + PartialEq + Eq + Style` to support extending more styles.
 //!   `StyledBuffer` still should be valid when facing the user-defined style, rather than just supporting a built-in `enum Style`.
 //!
-//! - add method `appendl()` and `putl()` to `StyledBuffer`.
-//! 
-//! - replaced the `enum Style` with generics `T: Clone + PartialEq + Eq + Style` to support extending more styles. 
-//!   `StyledBuffer` still should be valid when facing the user-defined style, rather than just supporting a built-in `enum Style`.
-//! 
 //! - add some test cases for 'StyledBuffer'.
 use termcolor::ColorSpec;
 
