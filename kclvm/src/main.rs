@@ -14,7 +14,7 @@ fn main() {
         (@subcommand run =>
             (@arg INPUT: ... "Sets the input file to use")
             (@arg OUTPUT: -o --output +takes_value "Sets the LLVM IR/BC output file path")
-            (@arg SETTING: ... -Y --setting "Sets the input file to use")
+            (@arg SETTING: ... -Y --setting +takes_value "Sets the input file to use")
             (@arg EMIT_TYPE: --emit +takes_value "Sets the emit type, expect (ast)")
             (@arg BC_PATH: --bc +takes_value "Sets the linked LLVM bitcode file path")
             (@arg verbose: -v --verbose "Print test information verbosely")
@@ -26,19 +26,30 @@ fn main() {
     )
     .get_matches();
     if let Some(matches) = matches.subcommand_matches("run") {
-        if let Some(files) = matches.values_of("INPUT") {
-            let files: Vec<&str> = files.into_iter().collect::<Vec<&str>>();
-            // Config settings build
-            let settings = build_settings(&matches);
-            // Convert settings into execute arguments.
-            let args: ExecProgramArgs = settings.into();
-            // Parse AST program.
-            let program = load_program(&files, Some(args.get_load_program_options())).unwrap();
-            // Resolve AST program, generate libs, link libs and execute.
-            // TODO: The argument "plugin_agent" need to be read from python3.
-            execute(program, 0, &ExecProgramArgs::default()).unwrap();
-        } else {
-            println!("{}", matches.usage());
+        match (matches.values_of("INPUT"), matches.values_of("SETTING")) {
+            (None, None) => {
+                println!("{}", matches.usage());
+            }
+            (_, _) => {
+                let mut files: Vec<&str> = match matches.values_of("INPUT") {
+                    Some(files) => files.into_iter().collect::<Vec<&str>>(),
+                    None => vec![],
+                };
+                // Config settings build
+                let settings = build_settings(&matches);
+                // Convert settings into execute arguments.
+                let args: ExecProgramArgs = settings.into();
+                files = if !files.is_empty() {
+                    files
+                } else {
+                    args.get_files()
+                };
+                // Parse AST program.
+                let program = load_program(&files, Some(args.get_load_program_options())).unwrap();
+                // Resolve AST program, generate libs, link libs and execute.
+                // TODO: The argument "plugin_agent" need to be read from python3.
+                execute(program, 0, &ExecProgramArgs::default()).unwrap();
+            }
         }
     } else {
         println!("{}", matches.usage());
