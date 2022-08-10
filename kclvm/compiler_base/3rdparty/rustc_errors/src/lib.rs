@@ -3,19 +3,16 @@
 //! Reuse 'styled_buffer.rs' in 'rustc_errors',
 //! and 'styled_buffer.rs' has been modified to fit the feature of 'Compiler-Base'.
 //!
-<<<<<<< HEAD
 //! - add method `appendl()` and `pushs()` to `StyledBuffer`.
 //!
 //! - replaced the `enum Style` with generics `T: Clone + PartialEq + Eq + Style` to support extending more styles.
 //!   `StyledBuffer` still should be valid when facing the user-defined style, rather than just supporting a built-in `enum Style`.
 //!
-=======
 //! - add method `appendl()` and `putl()` to `StyledBuffer`.
 //! 
 //! - replaced the `enum Style` with generics `T: Clone + PartialEq + Eq + Style` to support extending more styles. 
 //!   `StyledBuffer` still should be valid when facing the user-defined style, rather than just supporting a built-in `enum Style`.
 //! 
->>>>>>> 637f9c4 (use generic to replace `dyn trait`)
 //! - add some test cases for 'StyledBuffer'.
 use termcolor::ColorSpec;
 
@@ -23,13 +20,8 @@ pub mod styled_buffer;
 
 /// 'Style' is a trait used to specify the user customize 'XXXStyle' can be accepted by 'StyleBuffer'.
 ///
-<<<<<<< HEAD
 /// It provides the following method `render_style_to_color_spec()`.
 /// render_style_to_color_spec(&self) : render style to terminal color/font configuration.
-=======
-/// It provides the following method `render_style()`.
-/// render_style(&self) : render style to terminal color/font configuration.
->>>>>>> 637f9c4 (use generic to replace `dyn trait`)
 pub trait Style {
     /// render style to terminal color/font configuration.
     ///
@@ -55,11 +47,7 @@ pub trait Style {
     ///     }
     /// }
     /// ```
-<<<<<<< HEAD
     fn render_style_to_color_spec(&self) -> ColorSpec;
-=======
-    fn render_style(&self) -> ColorSpec;
->>>>>>> 637f9c4 (use generic to replace `dyn trait`)
 }
 
 #[cfg(test)]
@@ -71,22 +59,14 @@ mod test_styled_buffer {
     use termcolor::{Color, ColorSpec};
 
     // DummyStyle for testing 'StyledBuffer'.
-<<<<<<< HEAD
     #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-=======
-    #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
->>>>>>> 637f9c4 (use generic to replace `dyn trait`)
     pub enum DummyStyle {
         Dummy,
         NoStyle,
     }
 
     impl Style for DummyStyle {
-<<<<<<< HEAD
         fn render_style_to_color_spec(&self) -> ColorSpec {
-=======
-        fn render_style(&self) -> ColorSpec {
->>>>>>> 637f9c4 (use generic to replace `dyn trait`)
             let mut spec = ColorSpec::new();
             match self {
                 DummyStyle::Dummy => {
@@ -122,15 +102,9 @@ mod test_styled_buffer {
         sb.puts(0, 5, "World", Some(DummyStyle::Dummy));
     }
 
-<<<<<<< HEAD
     fn pushs_hello_world(sb: &mut StyledBuffer<DummyStyle>) {
         sb.pushs("Hello", Some(DummyStyle::NoStyle));
         sb.pushs("World", Some(DummyStyle::Dummy));
-=======
-    fn putl_hello_world(sb: &mut StyledBuffer<DummyStyle>) {
-        sb.putl("Hello", Some(DummyStyle::NoStyle));
-        sb.putl("World", Some(DummyStyle::Dummy));
->>>>>>> 637f9c4 (use generic to replace `dyn trait`)
     }
 
     fn appendl_hello_world(sb: &mut StyledBuffer<DummyStyle>) {
