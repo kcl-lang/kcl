@@ -14,7 +14,6 @@ pub trait Formatter {
     /// # Examples
     ///
     /// ```rust
-    ///
     /// struct PendantWithStyleLogo{
     ///     text: String
     /// }

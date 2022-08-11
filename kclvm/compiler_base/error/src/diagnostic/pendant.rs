@@ -19,8 +19,11 @@ use rustc_errors::styled_buffer::StyledBuffer;
 /// - "note" => DiagnosticStyle::Important,
 /// - other  => DiagnosticStyle::NoStyle,
 pub struct LabelPendant {
+    /// It's just an icon for the language. e.g. Rust、Java or KCL
     logo: Option<String>,
+    /// A short label message for an exception. e.g. error, warning, help.
     diag_label: String,
+    /// Code for the current exception type. e.g. E1010, W0091
     diag_code: Option<String>,
 }
 
