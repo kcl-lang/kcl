@@ -3,7 +3,7 @@ use rustc_errors::Style;
 use termcolor::{Color, ColorSpec};
 
 /// 'DiagnosticStyle' defines all the styles that needed when displaying diagnostic message.
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum DiagnosticStyle {
     Logo,
     NeedFix,
@@ -20,19 +20,29 @@ impl Style for DiagnosticStyle {
         match self {
             DiagnosticStyle::Logo | DiagnosticStyle::NoStyle => {}
             DiagnosticStyle::NeedFix => {
-                spec.set_fg(Some(Color::Red)).set_intense(true).set_bold(true);
+                spec.set_fg(Some(Color::Red))
+                    .set_intense(true)
+                    .set_bold(true);
             }
             DiagnosticStyle::NeedAttention => {
-                spec.set_fg(Some(Color::Yellow)).set_intense(true).set_bold(true);
+                spec.set_fg(Some(Color::Yellow))
+                    .set_intense(true)
+                    .set_bold(true);
             }
             DiagnosticStyle::Helpful => {
-                spec.set_fg(Some(Color::Green)).set_intense(true).set_bold(true);
+                spec.set_fg(Some(Color::Green))
+                    .set_intense(true)
+                    .set_bold(true);
             }
             DiagnosticStyle::Important => {
-                spec.set_fg(Some(Color::Cyan)).set_intense(true).set_bold(true);
+                spec.set_fg(Some(Color::Cyan))
+                    .set_intense(true)
+                    .set_bold(true);
             }
             DiagnosticStyle::Url => {
-                spec.set_fg(Some(Color::Blue)).set_intense(true).set_bold(true);
+                spec.set_fg(Some(Color::Blue))
+                    .set_intense(true)
+                    .set_bold(true);
             }
         }
         spec

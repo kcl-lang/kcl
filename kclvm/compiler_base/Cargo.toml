@@ -10,6 +10,5 @@ edition = "2021"
 [workspace]
 members = [
     "error",
-    "macros",
     "3rdparty/rustc_errors",
 ]
