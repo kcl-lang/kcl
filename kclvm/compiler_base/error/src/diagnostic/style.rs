@@ -107,7 +107,7 @@ mod tests {
 
             let mut color_spec = DiagnosticStyle::Url.render_style_to_color_spec();
             assert!(DiagnosticStyle::Url.check_is_expected_colorspec(&color_spec));
-            
+
             color_spec.set_bold(false);
             assert!(!DiagnosticStyle::Url.check_is_expected_colorspec(&color_spec));
         }
