@@ -20,24 +20,19 @@ impl Style for DiagnosticStyle {
         match self {
             DiagnosticStyle::Logo | DiagnosticStyle::NoStyle => {}
             DiagnosticStyle::NeedFix => {
-                spec.set_fg(Some(Color::Red)).set_intense(true);
-                spec.set_bold(true);
+                spec.set_fg(Some(Color::Red)).set_intense(true).set_bold(true);
             }
             DiagnosticStyle::NeedAttention => {
-                spec.set_fg(Some(Color::Yellow)).set_intense(true);
-                spec.set_bold(true);
+                spec.set_fg(Some(Color::Yellow)).set_intense(true).set_bold(true);
             }
             DiagnosticStyle::Helpful => {
-                spec.set_fg(Some(Color::Green)).set_intense(true);
-                spec.set_bold(true);
+                spec.set_fg(Some(Color::Green)).set_intense(true).set_bold(true);
             }
             DiagnosticStyle::Important => {
-                spec.set_fg(Some(Color::Cyan)).set_intense(true);
-                spec.set_bold(true);
+                spec.set_fg(Some(Color::Cyan)).set_intense(true).set_bold(true);
             }
             DiagnosticStyle::Url => {
-                spec.set_fg(Some(Color::Blue)).set_intense(true);
-                spec.set_bold(true);
+                spec.set_fg(Some(Color::Blue)).set_intense(true).set_bold(true);
             }
         }
         spec
@@ -112,7 +107,7 @@ mod tests {
 
             let mut color_spec = DiagnosticStyle::Url.render_style_to_color_spec();
             assert!(DiagnosticStyle::Url.check_is_expected_colorspec(&color_spec));
-            
+
             color_spec.set_bold(false);
             assert!(!DiagnosticStyle::Url.check_is_expected_colorspec(&color_spec));
         }
