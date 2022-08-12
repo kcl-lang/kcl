@@ -1,24 +1,24 @@
 use self::style::DiagnosticStyle;
 use rustc_errors::styled_buffer::StyledBuffer;
 
-pub mod pendant;
+pub mod components;
 pub mod style;
 
 #[cfg(test)]
 mod tests;
 
-/// 'Formatter' specifies the method `format()` that all Pendants/Sentences/SentenceMessage should implement.
-pub trait Formatter {
-    /// `format()` formats `Pendant` into `StyledString` and saves them in `StyledBuffer`.
+/// 'Component' specifies the method `format()` that all diagnostic components should implement.
+pub trait Component {
+    /// `format()` formats components into `StyledString` and saves them in `StyledBuffer`.
     ///
     /// # Examples
     ///
     /// ```rust
-    /// struct PendantWithStyleLogo{
+    /// struct ComponentWithStyleLogo{
     ///     text: String
     /// }
     ///
-    /// impl Pendant for PendantWithStyleLogo{
+    /// impl Component for ComponentWithStyleLogo{
     ///     fn format(&self, sb: &mut StyledBuffer<DiagnosticStyle>){
     ///         // set style
     ///         sb.pushs(&self.text, Some(DiagnosticStyle::Logo));
@@ -29,81 +29,79 @@ pub trait Formatter {
     fn format(&self, sb: &mut StyledBuffer<DiagnosticStyle>);
 }
 
-/// `Sentence` consists of `pendant` and `sentence_message`.
-/// `pendant` is optional.
+/// `Diagnostic` is a collection of various components, 
+/// and any data structure that implements `Component` can be a part of `Diagnostic`.
+/// 
+/// # Examples
+/// 
+/// ```rust
+/// # use rustc_errors::styled_buffer::StyledBuffer;
+/// # use compiler_base_error::diagnostic::{Diagnostic, components::Label, style::DiagnosticStyle, Component};
+/// 
+/// // If you want a diagnostic message “error[E3033]: this is an error!”.
+/// let mut diagnostic = Diagnostic::new();
+/// 
+/// // First, create a label component wrapped by `Box<>`
+/// let err_label =Box::new(Label::Error("E3033".to_string()));
+/// 
+/// // Second, add the label component to `Diagnostic`.
+/// diagnostic.append_component(err_label);
 ///
-/// e.g.
-/// Sentence 1: error[E0999]: oh no! this is an error!
-///     pendant: error[E0999]:
-///     sentence_message: oh no! this is an error!
+/// // Then, create a string component wrapped by `Box<>`.
+/// let msg = Box::new(": this is an error!".to_string());
 ///
-/// Sentence 2:
-/// --> mycode.X:3:5
-///  |
-///3 |     a:int
-///  |     ^ error here!
-///     pendant:
-///     --> mycode.X:3:5
-///       |
-///     3 |     a:int
-///       |     ^
-///     sentence content: error here!
+/// // And add it to `Diagnostic`.
+/// diagnostic.append_component(msg);
 ///
-/// Sentence 3: error: aborting due to previous error.
-///     pendant: error
-///     sentence content: aborting due to previous error.
+/// // Create a `Styledbuffer` to get the result.
+/// let mut sb = StyledBuffer::<DiagnosticStyle>::new();
 ///
-/// Sentence 4: For more information about this error.
-///     pendant: -
-///     sentence content: For more information about this error.
+/// // Rendering !
+/// diagnostic.format(&mut sb);
+/// let result = sb.render();
 ///
-/// `Sentence` supports nesting.
+/// // “error[E3033]: this is an error!” is only one line.
+/// assert_eq!(result.len(), 1);
 ///
-/// e.g.
-/// --> mycode.X:3:5
-///  |
-///3 |     a:int
-///  |     ^ help: error here!
+/// // “error[E3033]: this is an error!” has three different style snippets.
+/// 
+/// // "error" - DiagnosticStyle::NeedFix
+/// // "[E3033]" - DiagnosticStyle::Helpful
+/// // ": this is an error!" - DiagnosticStyle::NoStyle
+/// 
+/// // `DiagnosticStyle` can be rendered into different text colors and formats when diaplaying.
+/// 
+/// assert_eq!(result.get(0).unwrap().len(), 3);
+/// assert_eq!(result.get(0).unwrap().get(0).unwrap().text, "error");
+/// assert_eq!(result.get(0).unwrap().get(1).unwrap().text, "[E3033]");
+/// assert_eq!(result.get(0).unwrap().get(2).unwrap().text, ": this is an error!");
 ///
-/// "help: error here!" is another `Sentence` whose `pendant` is "help" and `sentence_message` is "error here!".
-pub struct Sentence {
-    pendant: Option<Box<dyn Formatter>>,
-    sentence_message: Box<dyn Formatter>,
+/// assert_eq!(result.get(0).unwrap().get(0).unwrap().style, Some(DiagnosticStyle::NeedFix));
+/// assert_eq!(result.get(0).unwrap().get(1).unwrap().style, Some(DiagnosticStyle::Helpful));
+/// assert_eq!(result.get(0).unwrap().get(2).unwrap().style, Some(DiagnosticStyle::NoStyle));
+/// ```
+pub struct Diagnostic {
+    diagnostic_components: Vec<Box<dyn Component>>,
 }
 
-impl Sentence {
-    pub fn new_sentence_str(
-        pendant: Box<dyn Formatter>,
-        sentence_message: Box<dyn Formatter>,
-    ) -> Self {
-        Self {
-            pendant: Some(pendant),
-            sentence_message,
-        }
+impl Diagnostic{
+    pub fn new() -> Self{
+        Diagnostic { diagnostic_components: vec![] }
     }
 
-    pub fn new_nopendant_sentence(sentence_message: Box<dyn Formatter>) -> Self {
-        Self {
-            pendant: None,
-            sentence_message,
-        }
+    pub fn append_component(&mut self, component: Box<dyn Component>){
+        self.diagnostic_components.push(component);
+    }
+
+    pub fn prepend_component(&mut self, component: Box<dyn Component>){
+        self.diagnostic_components.insert(0, component);
     }
 }
 
-impl Formatter for Sentence {
+impl Component for Diagnostic {
     fn format(&self, sb: &mut StyledBuffer<DiagnosticStyle>) {
-        if let Some(p) = &self.pendant {
-            p.format(sb);
+        for diagnostic_component in &self.diagnostic_components {
+            diagnostic_component.format(sb);
         }
-        self.sentence_message.format(sb)
-    }
-}
-
-/// `String` is a type of `sentence_message` supported by `Sentence`.
-///
-/// `sentence_message` of type `String` will be append to the end line of the `StyledBuffer`.
-impl Formatter for String {
-    fn format(&self, sb: &mut StyledBuffer<DiagnosticStyle>) {
-        sb.appendl(&self, Some(DiagnosticStyle::NoStyle));
     }
 }

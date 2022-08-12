@@ -1,168 +1,65 @@
-use super::style::DiagnosticStyle;
-use rustc_errors::styled_buffer::StyledString;
-
-mod test_pendant {
-    mod test_label_pendant {
-        use crate::diagnostic::{
-            pendant::LabelPendant, style::DiagnosticStyle, tests::check_styled_strings, Formatter,
-        };
-        use rustc_errors::styled_buffer::StyledBuffer;
-
-        #[test]
-        fn test_label_pendnant() {
-            let diag_label = "test_label".to_string();
-            let diag_code = Some("E1010".to_string());
-
-            let mut label_pendant = LabelPendant::new(diag_label.to_string(), diag_code);
-            label_pendant.set_logo("LOGO".to_string());
-
-            let mut sb = StyledBuffer::new();
-            label_pendant.format(&mut sb);
-
-            let styled_strings = sb.render();
-            let expected_texts = vec![vec![
-                "LOGO".to_string(),
-                " test_label".to_string(),
-                "[E1010]".to_string(),
-                ":".to_string(),
-            ]];
-            let expected_styles = vec![vec![
-                DiagnosticStyle::Logo,
-                DiagnosticStyle::NoStyle,
-                DiagnosticStyle::Helpful,
-                DiagnosticStyle::NoStyle,
-            ]];
-
-            check_styled_strings(
-                &styled_strings,
-                1,
-                &vec![4],
-                &expected_texts,
-                &expected_styles,
-            );
-        }
-
-        #[test]
-        fn test_label_pendnant_style() {
-            test_logo_label_pendnant_style_with_labels(
-                "error".to_string(),
-                DiagnosticStyle::NeedFix,
-            );
-            test_logo_label_pendnant_style_with_labels(
-                "warning".to_string(),
-                DiagnosticStyle::NeedAttention,
-            );
-            test_logo_label_pendnant_style_with_labels(
-                "help".to_string(),
-                DiagnosticStyle::Helpful,
-            );
-            test_logo_label_pendnant_style_with_labels(
-                "note".to_string(),
-                DiagnosticStyle::Important,
-            );
-        }
-
-        fn test_logo_label_pendnant_style_with_labels(label: String, style: DiagnosticStyle) {
-            let mut sb = StyledBuffer::new();
-            let label_pendant = LabelPendant::new(label.to_string(), None);
-            label_pendant.format(&mut sb);
-            let styled_strings = sb.render();
-            assert_eq!(styled_strings.len(), 1);
-            assert_eq!(styled_strings.get(0).unwrap().len(), 2);
-
-            assert_eq!(
-                styled_strings.get(0).unwrap().get(0).unwrap().text,
-                label.to_string()
-            );
-            assert!(
-                style
-                    == *styled_strings
-                        .get(0)
-                        .unwrap()
-                        .get(0)
-                        .unwrap()
-                        .style
-                        .as_ref()
-                        .unwrap()
-            );
-            assert_eq!(styled_strings.get(0).unwrap().get(1).unwrap().text, ":");
-        }
-    }
-}
-
-mod test_sentence {
+mod test_diagnostic {
     use rustc_errors::styled_buffer::StyledBuffer;
-
-    use crate::diagnostic::{pendant::LabelPendant, style::DiagnosticStyle, Formatter, Sentence};
-
-    use super::check_styled_strings;
+    use crate::diagnostic::{Diagnostic, components::Label, style::DiagnosticStyle, Component};
 
     #[test]
-    fn test_sentence_with_labelpendant() {
-        let diag_label = "test_label".to_string();
-        let diag_code = Some("E1010".to_string());
-        let label_pendant = LabelPendant::new(diag_label.to_string(), diag_code);
+    fn test_diagnostic_with_label() {
+        let mut diagnostic = Diagnostic::new();
 
-        let sentence =
-            Sentence::new_sentence_str(Box::new(label_pendant), Box::new("test str".to_string()));
-        let mut sb = StyledBuffer::new();
-        sentence.format(&mut sb);
-        let styled_strings = sb.render();
+        let err_label =Box::new(Label::Error("E3033".to_string()));
+        diagnostic.append_component(err_label);
 
-        let expected_texts = vec![vec![
-            "test_label".to_string(),
-            "[E1010]".to_string(),
-            ":test str".to_string(),
-        ]];
-        let expected_styles = vec![vec![
-            DiagnosticStyle::NoStyle,
-            DiagnosticStyle::Helpful,
-            DiagnosticStyle::NoStyle,
-        ]];
+        let msg = Box::new(": this is an error!".to_string());
+        diagnostic.append_component(msg);
 
-        check_styled_strings(
-            &styled_strings,
-            1,
-            &vec![3],
-            &expected_texts,
-            &expected_styles,
-        );
+        let mut sb = StyledBuffer::<DiagnosticStyle>::new();
+        
+        diagnostic.format(&mut sb);
+        let result = sb.render();
+
+        assert_eq!(result.len(), 1);
+        assert_eq!(result.get(0).unwrap().len(), 3);
+        assert_eq!(result.get(0).unwrap().get(0).unwrap().text, "error");
+        assert_eq!(result.get(0).unwrap().get(1).unwrap().text, "[E3033]");
+        assert_eq!(result.get(0).unwrap().get(2).unwrap().text, ": this is an error!");
+
+        assert_eq!(result.get(0).unwrap().get(0).unwrap().style, Some(DiagnosticStyle::NeedFix));
+        assert_eq!(result.get(0).unwrap().get(1).unwrap().style, Some(DiagnosticStyle::Helpful));
+        assert_eq!(result.get(0).unwrap().get(2).unwrap().style, None);
     }
 }
 
-fn check_styled_strings(
-    styled_strings: &Vec<Vec<StyledString<DiagnosticStyle>>>,
-    expected_line_count: usize,
-    expected_string_counts: &Vec<usize>,
-    expected_texts: &Vec<Vec<String>>,
-    expected_styles: &Vec<Vec<DiagnosticStyle>>,
-) {
-    assert_eq!(styled_strings.len(), expected_line_count);
-    assert_eq!(expected_texts.len(), expected_line_count);
-    assert_eq!(expected_styles.len(), expected_line_count);
+mod test_components {
 
-    for i in 0..expected_line_count {
-        let styled_string_count = styled_strings.get(i).unwrap().len();
-        assert_eq!(styled_string_count, *expected_string_counts.get(i).unwrap());
-        assert_eq!(styled_string_count, expected_texts.get(i).unwrap().len());
-        assert_eq!(styled_string_count, expected_styles.get(i).unwrap().len());
+        use rustc_errors::styled_buffer::StyledBuffer;
+        use crate::diagnostic::{components::Label, style::DiagnosticStyle, Component};
 
-        for j in 0..styled_string_count {
-            assert_eq!(
-                styled_strings.get(i).unwrap().get(j).unwrap().text,
-                expected_texts[i][j]
-            );
-            assert!(
-                expected_styles[i][j]
-                    == *styled_strings
-                        .get(i)
-                        .unwrap()
-                        .get(j)
-                        .unwrap()
-                        .style
-                        .as_ref()
-                        .unwrap()
-            );
+        #[test]
+        fn test_label() {
+            let mut sb = StyledBuffer::<DiagnosticStyle>::new();
+            Label::Error("E3030".to_string()).format(&mut sb);
+            Label::Warning("W3030".to_string()).format(&mut sb);
+            Label::Note.format(&mut sb);
+            Label::Help.format(&mut sb);
+            let result = sb.render();
+            assert_eq!(result.len(),1);
+            assert_eq!(result.get(0).unwrap().len(),6);
+            assert_eq!(result.get(0).unwrap().get(0).unwrap().text, "error");
+            assert_eq!(result.get(0).unwrap().get(1).unwrap().text, "[E3030]");
+            assert_eq!(result.get(0).unwrap().get(2).unwrap().text, "warning");
+            assert_eq!(result.get(0).unwrap().get(3).unwrap().text, "[W3030]");
+            assert_eq!(result.get(0).unwrap().get(4).unwrap().text, "note");
+            assert_eq!(result.get(0).unwrap().get(5).unwrap().text, "help");
         }
-    }
+
+        #[test]
+        fn test_string(){
+            let mut sb = StyledBuffer::<DiagnosticStyle>::new();
+            "this is a component string".to_string().format(&mut sb);
+            let result = sb.render();
+            assert_eq!(result.len(),1);
+            assert_eq!(result.get(0).unwrap().len(),1);
+            assert_eq!(result.get(0).unwrap().get(0).unwrap().text, "this is a component string");
+            assert_eq!(result.get(0).unwrap().get(0).unwrap().style, None);
+        }
 }

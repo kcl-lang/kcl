@@ -11,14 +11,13 @@ pub enum DiagnosticStyle {
     Helpful,
     Important,
     Url,
-    NoStyle,
 }
 
 impl Style for DiagnosticStyle {
     fn render_style_to_color_spec(&self) -> ColorSpec {
         let mut spec = ColorSpec::new();
         match self {
-            DiagnosticStyle::Logo | DiagnosticStyle::NoStyle => {}
+            DiagnosticStyle::Logo => {}
             DiagnosticStyle::NeedFix => {
                 spec.set_fg(Some(Color::Red))
                     .set_intense(true)
@@ -66,7 +65,7 @@ impl DiagnosticStyle {
     /// ```
     pub fn check_is_expected_colorspec(&self, spec: &ColorSpec) -> bool {
         match self {
-            DiagnosticStyle::Logo | DiagnosticStyle::NoStyle => true,
+            DiagnosticStyle::Logo => true,
             DiagnosticStyle::NeedFix => {
                 spec.fg() == Some(&Color::Red) && spec.intense() && spec.bold()
             }
@@ -108,12 +107,6 @@ mod tests {
 
             let color_spec = DiagnosticStyle::Logo.render_style_to_color_spec();
             assert!(DiagnosticStyle::Logo.check_is_expected_colorspec(&color_spec));
-
-            let color_spec = DiagnosticStyle::NoStyle.render_style_to_color_spec();
-            assert!(DiagnosticStyle::NoStyle.check_is_expected_colorspec(&color_spec));
-
-            let color_spec = DiagnosticStyle::NoStyle.render_style_to_color_spec();
-            assert!(DiagnosticStyle::NoStyle.check_is_expected_colorspec(&color_spec));
 
             let mut color_spec = DiagnosticStyle::Url.render_style_to_color_spec();
             assert!(DiagnosticStyle::Url.check_is_expected_colorspec(&color_spec));
