@@ -1,5 +1,5 @@
-use self::style::DiagnosticStyle;
 pub use rustc_errors::styled_buffer::StyledBuffer;
+use rustc_errors::Style;
 
 pub mod components;
 pub mod style;
@@ -8,7 +8,10 @@ pub mod style;
 mod tests;
 
 /// 'Component' specifies the method `format()` that all diagnostic components should implement.
-pub trait Component {
+pub trait Component<T>
+where
+    T: Clone + PartialEq + Eq + Style,
+{
     /// `format()` formats components into `StyledString` and saves them in `StyledBuffer`.
     ///
     /// # Examples
@@ -18,7 +21,7 @@ pub trait Component {
     ///     text: String
     /// }
     ///
-    /// impl Component for ComponentWithStyleLogo {
+    /// impl Component<DiagnosticStyle> for ComponentWithStyleLogo {
     ///     fn format(&self, sb: &mut StyledBuffer<DiagnosticStyle>) {
     ///         // set style
     ///         sb.pushs(&self.text, Some(DiagnosticStyle::Logo));
@@ -26,7 +29,7 @@ pub trait Component {
     /// }
     ///
     /// ```
-    fn format(&self, sb: &mut StyledBuffer<DiagnosticStyle>);
+    fn format(&self, sb: &mut StyledBuffer<T>);
 }
 
 /// `Diagnostic` is a collection of various components,
@@ -67,7 +70,7 @@ pub trait Component {
 ///
 /// // "error" - DiagnosticStyle::NeedFix
 /// // "[E3033]" - DiagnosticStyle::Helpful
-/// // ": this is an error!" - DiagnosticStyle::NoStyle
+/// // ": this is an error!" - None
 ///
 /// // `DiagnosticStyle` can be rendered into different text colors and formats when diaplaying.
 ///
@@ -78,28 +81,37 @@ pub trait Component {
 ///
 /// assert_eq!(result.get(0).unwrap().get(0).unwrap().style, Some(DiagnosticStyle::NeedFix));
 /// assert_eq!(result.get(0).unwrap().get(1).unwrap().style, Some(DiagnosticStyle::Helpful));
-/// assert_eq!(result.get(0).unwrap().get(2).unwrap().style, Some(DiagnosticStyle::NoStyle));
+/// assert_eq!(result.get(0).unwrap().get(2).unwrap().style, None);
 /// ```
-pub struct Diagnostic {
-    components: Vec<Box<dyn Component>>,
+pub struct Diagnostic<T>
+where
+    T: Clone + PartialEq + Eq + Style,
+{
+    components: Vec<Box<dyn Component<T>>>,
 }
 
-impl Diagnostic {
+impl<T> Diagnostic<T>
+where
+    T: Clone + PartialEq + Eq + Style,
+{
     pub fn new() -> Self {
         Diagnostic { components: vec![] }
     }
 
-    pub fn append_component(&mut self, component: Box<dyn Component>) {
+    pub fn append_component(&mut self, component: Box<dyn Component<T>>) {
         self.components.push(component);
     }
 
-    pub fn prepend_component(&mut self, component: Box<dyn Component>) {
+    pub fn prepend_component(&mut self, component: Box<dyn Component<T>>) {
         self.components.insert(0, component);
     }
 }
 
-impl Component for Diagnostic {
-    fn format(&self, sb: &mut StyledBuffer<DiagnosticStyle>) {
+impl<T> Component<T> for Diagnostic<T>
+where
+    T: Clone + PartialEq + Eq + Style,
+{
+    fn format(&self, sb: &mut StyledBuffer<T>) {
         for component in &self.components {
             component.format(sb);
         }

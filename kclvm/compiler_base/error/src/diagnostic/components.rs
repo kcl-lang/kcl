@@ -34,7 +34,7 @@ pub enum Label {
     Help,
 }
 
-impl Component for Label {
+impl Component<DiagnosticStyle> for Label {
     fn format(&self, sb: &mut StyledBuffer<DiagnosticStyle>) {
         let (text, style, code) = match self {
             Label::Error(ecode) => ("error", DiagnosticStyle::NeedFix, Some(ecode)),
@@ -56,7 +56,7 @@ impl Component for Label {
 /// `String` can be considered as a component of diagnostic.
 ///
 /// The result of component `String` rendering is a `String` who has no style.
-impl Component for String {
+impl Component<DiagnosticStyle> for String {
     fn format(&self, sb: &mut StyledBuffer<DiagnosticStyle>) {
         sb.appendl(&self, None);
     }
