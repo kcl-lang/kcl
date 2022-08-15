@@ -8,6 +8,10 @@ pub mod style;
 mod tests;
 
 /// 'Component' specifies the method `format()` that all diagnostic components should implement.
+/// 
+/// 'Component' decouples 'structures' and 'theme' during formatting diagnostic components.
+/// `T: Clone + PartialEq + Eq + Style` is responsible for 'theme' such as colors/fonts in the component formatting.
+/// `format()` organizes the 'structure' of diagnostic components.
 pub trait Component<T>
 where
     T: Clone + PartialEq + Eq + Style,
