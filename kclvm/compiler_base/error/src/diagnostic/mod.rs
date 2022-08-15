@@ -18,8 +18,8 @@ pub trait Component {
     ///     text: String
     /// }
     ///
-    /// impl Component for ComponentWithStyleLogo{
-    ///     fn format(&self, sb: &mut StyledBuffer<DiagnosticStyle>){
+    /// impl Component for ComponentWithStyleLogo {
+    ///     fn format(&self, sb: &mut StyledBuffer<DiagnosticStyle>) {
     ///         // set style
     ///         sb.pushs(&self.text, Some(DiagnosticStyle::Logo));
     ///     }
