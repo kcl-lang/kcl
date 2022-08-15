@@ -117,3 +117,15 @@ where
         }
     }
 }
+
+/// `String` can be considered as a component of diagnostic with no style.
+///
+/// The result of component `String` rendering is a `String` who has no style.
+impl<T> Component<T> for String
+where
+    T: Clone + PartialEq + Eq + Style,
+{
+    fn format(&self, sb: &mut StyledBuffer<T>) {
+        sb.appendl(&self, None);
+    }
+}
