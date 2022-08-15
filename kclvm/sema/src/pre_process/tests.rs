@@ -1,6 +1,7 @@
 use super::*;
 use indexmap::IndexMap;
-use kclvm_parser::parse_file;
+use kclvm_ast::path::get_attr_paths_from_config_expr;
+use kclvm_parser::{load_program, parse_file};
 
 #[test]
 fn test_fix_qualified_identifier() {
@@ -54,5 +55,44 @@ fn test_transform_multi_assign() {
         } else {
             panic!("invalid assign statement")
         }
+    }
+}
+
+#[test]
+fn test_config_merge() {
+    let mut program = load_program(
+        &[
+            "./src/pre_process/test_data/config_merge/def.k",
+            "./src/pre_process/test_data/config_merge/config1.k",
+            "./src/pre_process/test_data/config_merge/config2.k",
+            "./src/pre_process/test_data/config_merge/config2.k",
+        ],
+        None,
+    )
+    .unwrap();
+    merge_program(&mut program);
+    let modules = program.pkgs.get_mut(kclvm_ast::MAIN_PKG).unwrap();
+    assert_eq!(modules.len(), 4);
+    // Test the module merge result
+    let module = modules.last().unwrap();
+    if let ast::Stmt::Unification(unification) = &module.body[0].node {
+        let schema = &unification.value.node;
+        if let ast::Expr::Config(config) = &schema.config.node {
+            // 2 contains `name` in `config1.k`, `age` in `config2.k` and `age` in `config2.k`
+            assert_eq!(
+                get_attr_paths_from_config_expr(&config),
+                vec!["name".to_string(), "age".to_string(), "age".to_string(),]
+            );
+        } else {
+            panic!(
+                "test failed, expect config expression, got {:?}",
+                schema.config
+            )
+        }
+    } else {
+        panic!(
+            "test failed, expect unification statement, got {:?}",
+            module.body[0]
+        )
     }
 }

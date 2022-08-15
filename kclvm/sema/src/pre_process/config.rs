@@ -99,12 +99,15 @@ enum ConfigMergeKind {
 
 impl ConfigMergeTransformer {
     pub fn merge(&mut self, program: &mut ast::Program) {
-        // {name: (filename, index, kind)}
-        let mut name_declaration_mapping: IndexMap<String, Vec<(String, usize, ConfigMergeKind)>> =
-            IndexMap::default();
+        // {name: (filename, module index in main package, statement index in the module body, kind)}
+        // module index is to prevent same filename in main package
+        let mut name_declaration_mapping: IndexMap<
+            String,
+            Vec<(String, usize, usize, ConfigMergeKind)>,
+        > = IndexMap::default();
         // 1. Collect merged config
         if let Some(modules) = program.pkgs.get_mut(kclvm_ast::MAIN_PKG) {
-            for module in modules {
+            for (module_id, module) in modules.iter_mut().enumerate() {
                 for (i, stmt) in module.body.iter_mut().enumerate() {
                     match &mut stmt.node {
                         ast::Stmt::Unification(unification_stmt) => {
@@ -112,6 +115,7 @@ impl ConfigMergeTransformer {
                             match name_declaration_mapping.get_mut(name) {
                                 Some(declarations) => declarations.push((
                                     module.filename.to_string(),
+                                    module_id,
                                     i,
                                     ConfigMergeKind::Union,
                                 )),
@@ -120,6 +124,7 @@ impl ConfigMergeTransformer {
                                         name.to_string(),
                                         vec![(
                                             module.filename.to_string(),
+                                            module_id,
                                             i,
                                             ConfigMergeKind::Union,
                                         )],
@@ -135,6 +140,7 @@ impl ConfigMergeTransformer {
                                         match name_declaration_mapping.get_mut(name) {
                                             Some(declarations) => declarations.push((
                                                 module.filename.to_string(),
+                                                module_id,
                                                 i,
                                                 ConfigMergeKind::Override,
                                             )),
@@ -143,6 +149,7 @@ impl ConfigMergeTransformer {
                                                     name.to_string(),
                                                     vec![(
                                                         module.filename.to_string(),
+                                                        module_id,
                                                         i,
                                                         ConfigMergeKind::Override,
                                                     )],
@@ -162,12 +169,12 @@ impl ConfigMergeTransformer {
         for (_, index_list) in &name_declaration_mapping {
             let index_len = index_list.len();
             if index_len > 1 {
-                let (filename, merged_index, merged_kind) = index_list.last().unwrap();
+                let (filename, merged_id, merged_index, merged_kind) = index_list.last().unwrap();
                 let mut items: Vec<ast::NodeRef<ast::ConfigEntry>> = vec![];
-                for (merged_filename, index, kind) in index_list {
+                for (merged_filename, merged_id, index, kind) in index_list {
                     if let Some(modules) = program.pkgs.get_mut(kclvm_ast::MAIN_PKG) {
-                        for module in modules {
-                            if &module.filename == merged_filename {
+                        for (module_id, module) in modules.iter_mut().enumerate() {
+                            if &module.filename == merged_filename && module_id == *merged_id {
                                 let stmt = module.body.get_mut(*index).unwrap();
                                 match &mut stmt.node {
                                     ast::Stmt::Unification(unification_stmt)
@@ -203,8 +210,8 @@ impl ConfigMergeTransformer {
                     }
                 }
                 if let Some(modules) = program.pkgs.get_mut(kclvm_ast::MAIN_PKG) {
-                    for module in modules {
-                        if &module.filename == filename {
+                    for (module_id, module) in modules.iter_mut().enumerate() {
+                        if &module.filename == filename && module_id == *merged_id {
                             if let Some(stmt) = module.body.get_mut(*merged_index) {
                                 match &mut stmt.node {
                                     ast::Stmt::Unification(unification_stmt)
@@ -243,13 +250,15 @@ impl ConfigMergeTransformer {
         }
         // 3. Delete redundant config.
         if let Some(modules) = program.pkgs.get_mut(kclvm_ast::MAIN_PKG) {
-            for module in modules {
+            for (i, module) in modules.iter_mut().enumerate() {
                 let mut delete_index_set: IndexSet<usize> = IndexSet::default();
                 for (_, index_list) in &name_declaration_mapping {
                     let index_len = index_list.len();
                     if index_len > 1 {
-                        for (filename, index, _) in &index_list[..index_len - 1] {
-                            if &module.filename == filename {
+                        for (filename, module_id, index, _) in &index_list[..index_len - 1] {
+                            // Use module filename and index to prevent the same compile filenames
+                            // in the main package.
+                            if &module.filename == filename && i == *module_id {
                                 delete_index_set.insert(*index);
                             }
                         }
