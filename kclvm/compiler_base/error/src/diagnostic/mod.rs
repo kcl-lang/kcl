@@ -1,5 +1,5 @@
 use self::style::DiagnosticStyle;
-use rustc_errors::styled_buffer::StyledBuffer;
+pub use rustc_errors::styled_buffer::StyledBuffer;
 
 pub mod components;
 pub mod style;
@@ -14,7 +14,7 @@ pub trait Component {
     /// # Examples
     ///
     /// ```rust
-    /// struct ComponentWithStyleLogo{
+    /// struct ComponentWithStyleLogo {
     ///     text: String
     /// }
     ///
@@ -29,21 +29,21 @@ pub trait Component {
     fn format(&self, sb: &mut StyledBuffer<DiagnosticStyle>);
 }
 
-/// `Diagnostic` is a collection of various components, 
+/// `Diagnostic` is a collection of various components,
 /// and any data structure that implements `Component` can be a part of `Diagnostic`.
-/// 
+///
 /// # Examples
-/// 
+///
 /// ```rust
 /// # use rustc_errors::styled_buffer::StyledBuffer;
 /// # use compiler_base_error::diagnostic::{Diagnostic, components::Label, style::DiagnosticStyle, Component};
-/// 
+///
 /// // If you want a diagnostic message “error[E3033]: this is an error!”.
 /// let mut diagnostic = Diagnostic::new();
-/// 
+///
 /// // First, create a label component wrapped by `Box<>`
-/// let err_label =Box::new(Label::Error("E3033".to_string()));
-/// 
+/// let err_label = Box::new(Label::Error("E3033".to_string()));
+///
 /// // Second, add the label component to `Diagnostic`.
 /// diagnostic.append_component(err_label);
 ///
@@ -64,13 +64,13 @@ pub trait Component {
 /// assert_eq!(result.len(), 1);
 ///
 /// // “error[E3033]: this is an error!” has three different style snippets.
-/// 
+///
 /// // "error" - DiagnosticStyle::NeedFix
 /// // "[E3033]" - DiagnosticStyle::Helpful
 /// // ": this is an error!" - DiagnosticStyle::NoStyle
-/// 
+///
 /// // `DiagnosticStyle` can be rendered into different text colors and formats when diaplaying.
-/// 
+///
 /// assert_eq!(result.get(0).unwrap().len(), 3);
 /// assert_eq!(result.get(0).unwrap().get(0).unwrap().text, "error");
 /// assert_eq!(result.get(0).unwrap().get(1).unwrap().text, "[E3033]");
@@ -81,27 +81,27 @@ pub trait Component {
 /// assert_eq!(result.get(0).unwrap().get(2).unwrap().style, Some(DiagnosticStyle::NoStyle));
 /// ```
 pub struct Diagnostic {
-    diagnostic_components: Vec<Box<dyn Component>>,
+    components: Vec<Box<dyn Component>>,
 }
 
-impl Diagnostic{
-    pub fn new() -> Self{
-        Diagnostic { diagnostic_components: vec![] }
+impl Diagnostic {
+    pub fn new() -> Self {
+        Diagnostic { components: vec![] }
     }
 
-    pub fn append_component(&mut self, component: Box<dyn Component>){
-        self.diagnostic_components.push(component);
+    pub fn append_component(&mut self, component: Box<dyn Component>) {
+        self.components.push(component);
     }
 
-    pub fn prepend_component(&mut self, component: Box<dyn Component>){
-        self.diagnostic_components.insert(0, component);
+    pub fn prepend_component(&mut self, component: Box<dyn Component>) {
+        self.components.insert(0, component);
     }
 }
 
 impl Component for Diagnostic {
     fn format(&self, sb: &mut StyledBuffer<DiagnosticStyle>) {
-        for diagnostic_component in &self.diagnostic_components {
-            diagnostic_component.format(sb);
+        for component in &self.components {
+            component.format(sb);
         }
     }
 }

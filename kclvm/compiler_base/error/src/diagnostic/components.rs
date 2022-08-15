@@ -1,32 +1,29 @@
 //! 'components.rs' defines all components that builtin in compiler_base_error.
-use super::{
-    style::DiagnosticStyle,
-    Component,
-};
+use super::{style::DiagnosticStyle, Component};
 use rustc_errors::styled_buffer::StyledBuffer;
 
 /// `Label` can be considered as a component of diagnostic to display a short label message in `Diagnositc`.
 /// `Label` provides "error", "warning", "note" and "Help" four kinds of labels.
-/// 
+///
 /// # Examples
-/// 
+///
 /// ```rust
 /// # use crate::compiler_base_error::diagnostic::Component;
 /// # use compiler_base_error::diagnostic::components::Label;
 /// # use compiler_base_error::diagnostic::style::DiagnosticStyle;
 /// # use rustc_errors::styled_buffer::StyledBuffer;
-/// 
+///
 /// let mut sb = StyledBuffer::<DiagnosticStyle>::new();
-/// 
+///
 /// // rendering text: "error[E3131]"
-/// Label::Error("E3131".to_string()).format(&mut sb); 
-/// 
+/// Label::Error("E3131".to_string()).format(&mut sb);
+///
 /// // rendering text: "warning[W3131]"
 /// Label::Warning("W3131".to_string()).format(&mut sb);
-/// 
+///
 /// // rendering text: "note"
 /// Label::Note.format(&mut sb);
-/// 
+///
 /// // rendering text: "help"
 /// Label::Help.format(&mut sb);
 /// ```
