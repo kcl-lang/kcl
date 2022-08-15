@@ -1,4 +1,5 @@
-//! 'components.rs' defines all components that builtin in compiler_base_error.
+//! 'components.rs' defines all components with style `DiagnosticStyle` that builtin in compiler_base_error.
+use super::{style::DiagnosticStyle, Component};
 use rustc_errors::styled_buffer::StyledBuffer;
 
 use super::{style::DiagnosticStyle, Component};
@@ -35,7 +36,7 @@ pub enum Label {
     Help,
 }
 
-impl Component for Label {
+impl Component<DiagnosticStyle> for Label {
     fn format(&self, sb: &mut StyledBuffer<DiagnosticStyle>) {
         let (text, style, code) = match self {
             Label::Error(ecode) => ("error", DiagnosticStyle::NeedFix, Some(ecode)),
@@ -51,14 +52,5 @@ impl Component for Label {
             sb.appendl(c.as_str(), Some(DiagnosticStyle::Helpful));
             sb.appendl("]", Some(DiagnosticStyle::Helpful));
         }
-    }
-}
-
-/// `String` can be considered as a component of diagnostic.
-///
-/// The result of component `String` rendering is a `String` who has no style.
-impl Component for String {
-    fn format(&self, sb: &mut StyledBuffer<DiagnosticStyle>) {
-        sb.appendl(&self, None);
     }
 }
