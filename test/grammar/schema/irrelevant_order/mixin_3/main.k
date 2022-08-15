@@ -1,6 +1,6 @@
 schema ConfigMixin:
     output: str = option("output") or "default_output"
-    data |= {"output": output}
+    data = {"output": output}
 
 schema Config:
     mixin [ConfigMixin]

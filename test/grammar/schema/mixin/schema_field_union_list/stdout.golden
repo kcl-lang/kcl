@@ -1,7 +1,0 @@
-JohnDoe:
-  firstName: John
-  lastName: Doe
-  fullName: Doe Jon
-  tags:
-  - '234'
-  school: null

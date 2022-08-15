@@ -10,11 +10,11 @@ schema AppConfig(Config):
     name: str = "app"
 
     if overQuota:
-        labels |= {
+        labels = {
             "key1": "value1"
         }
     if overQuota:
-        labels |= {
+        labels = {
             "key2": "value2"
         }
 

@@ -3,7 +3,7 @@ schema Data:
     data: {str:str} = {
         "key1": "value1"
     }
-    data |= {
+    data = {
         "key2": "value2"
     }
     dataOther = {**data}
