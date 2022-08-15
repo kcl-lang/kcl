@@ -1,6 +1,7 @@
 //! 'components.rs' defines all components that builtin in compiler_base_error.
-use super::{style::DiagnosticStyle, Component};
 use rustc_errors::styled_buffer::StyledBuffer;
+
+use super::{style::DiagnosticStyle, Component};
 
 /// `Label` can be considered as a component of diagnostic to display a short label message in `Diagnositc`.
 /// `Label` provides "error", "warning", "note" and "Help" four kinds of labels.
