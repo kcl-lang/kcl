@@ -28,6 +28,10 @@ jobs:
           toolchain: 1.61
           override: true
           components: clippy, rustfmt
+      - name: Rust code format check
+        working-directory: ./kclvm
+        run: cargo fmt --check
+        shell: bash
       - name: Rust grammar test
         working-directory: ./kclvm
         run: export PATH=$PATH:$PWD/../_build/dist/ubuntu/kclvm/bin && make install-rustc-wasm && make && make test-grammar
