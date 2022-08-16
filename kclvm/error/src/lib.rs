@@ -216,6 +216,30 @@ impl Handler {
         self
     }
 
+    /// Add an warning into the handler
+    /// ```
+    /// use kclvm_error::*;
+    /// let mut handler = Handler::default();
+    /// handler.add_warning(WarningKind::UnusedImportWarning, &[
+    ///     Message {
+    ///         pos: Position::dummy_pos(),
+    ///         style: Style::LineAndColumn,
+    ///         message: "Module 'a' imported but unused.".to_string(),
+    ///         note: None,
+    ///     }],
+    /// );
+    /// ```
+    pub fn add_warning(&mut self, warning: WarningKind, msgs: &[Message]) -> &mut Self {
+        let diag = Diagnostic {
+            level: Level::Warning,
+            messages: msgs.to_owned(),
+            code: Some(DiagnosticId::Warning(warning)),
+        };
+        self.add_diagnostic(diag);
+
+        self
+    }
+
     /// Store a diagnostics
     #[inline]
     fn add_diagnostic(&mut self, diagnostic: Diagnostic) -> &mut Self {
