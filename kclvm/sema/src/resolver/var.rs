@@ -84,9 +84,10 @@ impl<'ctx> Resolver<'ctx> {
                 }
             }
         } else {
+            // lookup pkgpath scope and record it as "used"
             if !pkgpath.is_empty() {
-                if let Some(module_scope) = self.scope.borrow_mut().elems.get_mut(pkgpath) {
-                    module_scope.borrow_mut().used = true;
+                if let Some(obj) = self.scope.borrow().lookup(pkgpath) {
+                    obj.borrow_mut().used = true;
                 }
             }
             // Load type
