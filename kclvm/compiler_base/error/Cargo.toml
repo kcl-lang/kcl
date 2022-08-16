@@ -7,5 +7,6 @@ edition = "2021"
 
 [dependencies]
 compiler_base_span = {path = "../span", version = "0.1.0"}
+compiler_base_macros = {path = "../macros", version = "0.1.0"}
 rustc_errors = {path="../3rdparty/rustc_errors", version="0.1.0"}
 termcolor = "1.0"

@@ -1,6 +1,7 @@
 //! 'emitter.rs' defines the diagnostic emitter,
 //! which is responsible for displaying the rendered diagnostic.
 use crate::diagnostic::{Component, Diagnostic};
+use compiler_base_macros::bug;
 use rustc_errors::{
     styled_buffer::{StyledBuffer, StyledString},
     Style,
@@ -173,7 +174,7 @@ where
     fn emit_diagnostic(&mut self, diag: &Diagnostic<T>) {
         let buffer = self.format_diagnostic(diag);
         if let Err(e) = emit_to_destination(&buffer.render(), &mut self.dst, self.short_message) {
-            panic!("failed to emit error: {}", e)
+            bug!("failed to emit diagnositc: {}", e)
         }
     }
 
