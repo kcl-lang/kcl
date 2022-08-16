@@ -91,7 +91,7 @@ pub struct Diagnostic<T>
 where
     T: Clone + PartialEq + Eq + Style,
 {
-    pub components: Vec<Box<dyn Component<T>>>,
+    components: Vec<Box<dyn Component<T>>>,
 }
 
 impl<T> Diagnostic<T>

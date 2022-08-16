@@ -1,22 +1,28 @@
-use crate::diagnostic::Diagnostic;
-
-use compiler_base_span::SourceMap;
+//! 'emitter.rs' defines the diagnostic emitter,
+//! which is responsible for displaying the rendered diagnostic.
+use crate::diagnostic::{Component, Diagnostic};
 use rustc_errors::{
     styled_buffer::{StyledBuffer, StyledString},
     Style,
 };
 use std::io::{self, Write};
-use std::sync::Arc;
 use termcolor::{BufferWriter, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
-/// Emitter trait for emitting errors.
+/// Emitter trait for emitting diagnostic.
+///
+/// `T: Clone + PartialEq + Eq + Style` is responsible for the theme style when diaplaying diagnostic.
+/// Builtin `DiagnosticStyle` provided in 'compiler_base/error/diagnostic/style.rs'.
 pub trait Emitter<T>
 where
     T: Clone + PartialEq + Eq + Style,
 {
+    /// Format struct `Diagnostic` into `String` and render `String` into `StyledString`,
+    /// and save `StyledString` in `StyledBuffer`.
     fn format_diagnostic(&mut self, diag: &Diagnostic<T>) -> StyledBuffer<T>;
+
     /// Emit a structured diagnostic.
     fn emit_diagnostic(&mut self, diag: &Diagnostic<T>);
+
     /// Checks if we can use colors in the current output stream.
     fn supports_color(&self) -> bool {
         false
@@ -27,7 +33,6 @@ where
 pub struct EmitterWriter {
     dst: Destination,
     short_message: bool,
-    source_map: Option<Arc<SourceMap>>,
 }
 
 impl Default for EmitterWriter {
@@ -35,25 +40,61 @@ impl Default for EmitterWriter {
         Self {
             dst: Destination::from_stderr(),
             short_message: false,
-            source_map: None,
         }
     }
 }
 
 impl EmitterWriter {
-    pub fn from_stderr(source_map: Arc<SourceMap>) -> Self {
+    pub fn from_stderr() -> Self {
         Self {
             dst: Destination::from_stderr(),
             short_message: false,
-            source_map: Some(source_map),
         }
     }
 }
 
 /// Emit destinations
 pub enum Destination {
+    /// The `StandardStream` works similarly to `std::io::Stdout`,
+    /// it is augmented with methods for coloring by the `WriteColor` trait.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use std::io::Write;
+    /// # use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
+    /// // Diaplay a red color string "test text".
+    /// let mut standard_stream = StandardStream::stdout(ColorChoice::Always);
+    /// standard_stream.set_color(ColorSpec::new().set_fg(Some(Color::Red)))?;
+    /// writeln!(&mut standard_stream, "test text")?;
+    /// ```
     Terminal(StandardStream),
+
+    /// `BufferWriter` can create buffers and write buffers to stdout or stderr.
+    /// It does not implement `io::Write or WriteColor` itself.
+    ///
+    /// `Buffer` implements `io::Write and io::WriteColor`.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use std::io::Write;
+    /// # use termcolor::{BufferWriter, Color, ColorChoice, ColorSpec, WriteColor};
+    /// // `buffer` can be created.
+    /// let mut writter = BufferWriter::stderr(ColorChoice::Always);
+    /// let mut buffer = writter.buffer();
+    ///
+    /// // write in `buffer`
+    /// buffer.set_color(ColorSpec::new().set_fg(Some(Color::Red)))?;
+    /// writeln!(&mut buffer, "test text 1")?;
+    /// writeln!(&mut buffer, "test text 2")?;
+    /// writeln!(&mut buffer, "test text 3")?;
+    ///
+    /// // print `buffer`
+    /// writter.print(&buffer)?;
+    /// ```
     Buffered(BufferWriter),
+
     // The bool denotes whether we should be emitting ansi color codes or not
     Raw(Box<(dyn Write + Send)>, bool),
 }
@@ -138,9 +179,7 @@ where
 
     fn format_diagnostic(&mut self, diag: &Diagnostic<T>) -> StyledBuffer<T> {
         let mut sb = StyledBuffer::<T>::new();
-        for component in &diag.components {
-            component.format(&mut sb)
-        }
+        diag.format(&mut sb);
         sb
     }
 }
