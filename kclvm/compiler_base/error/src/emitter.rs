@@ -96,6 +96,7 @@ pub enum Destination {
     /// ```
     Buffered(BufferWriter),
 
+    // 'Raw' is an interface used to expand the emitter destination
     // The bool denotes whether we should be emitting ansi color codes or not
     Raw(Box<(dyn Write + Send)>, bool),
 }
@@ -113,7 +114,7 @@ impl Destination {
         //
         // On non-Windows we rely on the atomicity of `write` to ensure errors
         // don't get all jumbled up.
-        if !cfg!(windows) {
+        if cfg!(windows) {
             Destination::Terminal(StandardStream::stderr(ColorChoice::Auto))
         } else {
             Destination::Buffered(BufferWriter::stderr(ColorChoice::Auto))
@@ -193,6 +194,20 @@ fn emit_to_destination<T>(
 where
     T: Clone + PartialEq + Eq + Style,
 {
+    use rustc_errors::lock;
+    // In order to prevent error message interleaving, where multiple error lines get intermixed
+    // when multiple compiler processes error simultaneously, we emit errors with additional
+    // steps.
+    //
+    // On Unix systems, we write into a buffered terminal rather than directly to a terminal. When
+    // the .flush() is called we take the buffer created from the buffered writes and write it at
+    // one shot.  Because the Unix systems use ANSI for the colors, which is a text-based styling
+    // scheme, this buffered approach works and maintains the styling.
+    //
+    // On Windows, styling happens through calls to a terminal API. This prevents us from using the
+    // same buffering approach.  Instead, we use a global Windows mutex, which we acquire long
+    // enough to output the full error message, then we release.
+    let _buffer_lock = lock::acquire_global_lock("rustc_errors");
     for (pos, line) in rendered_buffer.iter().enumerate() {
         for part in line {
             dst.set_color(&part.style.as_ref().unwrap().render_style_to_color_spec())?;

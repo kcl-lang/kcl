@@ -7,3 +7,6 @@ edition = "2021"
 
 [dependencies]
 termcolor = "1.0"
+
+[target.'cfg(windows)'.dependencies]
+winapi = { version = "0.3", features = ["handleapi", "synchapi", "winbase"] }

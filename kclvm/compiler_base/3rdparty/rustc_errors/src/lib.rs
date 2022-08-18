@@ -10,7 +10,7 @@
 //!
 //! - add some test cases for 'StyledBuffer'.
 use termcolor::ColorSpec;
-
+pub mod lock;
 pub mod styled_buffer;
 
 /// 'Style' is a trait used to specify the user customize 'XXXStyle' can be accepted by 'StyleBuffer'.
