@@ -1,4 +1,3 @@
-use crate::resolver::scope::Scope;
 use kclvm_error::{Level, Position};
 
 /// Record the information at `LintContext` when traversing the AST for analysis across AST nodes, e.g., record

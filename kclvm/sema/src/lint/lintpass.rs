@@ -1,4 +1,3 @@
-use crate::declare_default_lint_pass_impl;
 use crate::lint::lint::LintContext;
 use crate::resolver::scope::Scope;
 use kclvm_ast::ast;
@@ -73,7 +72,6 @@ macro_rules! lint_methods {
 }
 
 /// Provide a default implementation of the methods in lint_methods for each lintpass: null checking
-#[macro_export]
 macro_rules! expand_default_lint_pass_methods {
     ($handler:ty, $ctx:ty, [$($(#[$attr:meta])* fn $name:ident($($param:ident: $arg:ty),*);)*]) => (
         $(#[inline(always)] fn $name(&mut self, _handler: &mut $handler, _ctx: &mut $ctx, $($param: $arg),*) {})*
@@ -81,7 +79,6 @@ macro_rules! expand_default_lint_pass_methods {
 }
 
 /// Definition of `LintPass` trait
-#[macro_export]
 macro_rules! declare_default_lint_pass_impl {
     ([], [$($methods:tt)*]) => (
         pub trait LintPass {

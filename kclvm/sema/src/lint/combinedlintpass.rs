@@ -3,8 +3,8 @@ use crate::lint::lintpass::LintPass;
 use crate::lint::lints_def::ImportPosition;
 use crate::lint::lints_def::ReImport;
 use crate::lint::lints_def::UnusedImport;
+use crate::lint_methods;
 use crate::resolver::scope::Scope;
-use crate::{declare_combined_default_pass, default_lint_passes, lint_methods};
 use kclvm_ast::ast;
 use kclvm_error::Handler;
 
@@ -16,7 +16,6 @@ use kclvm_error::Handler;
 ///         ...
 ///     }
 /// ```
-#[macro_export]
 macro_rules! expand_combined_lint_pass_method {
     ([$($passes:ident),*], $self: ident, $name: ident, $params:tt) => ({
         $($self.$passes.$name $params;)*
@@ -30,7 +29,6 @@ macro_rules! expand_combined_lint_pass_method {
 ///     fn check_stmt(&mut self, handler: &mut Handler, ctx: &mut LintContext, module: &ast::Module){};
 ///     ...
 ///  ```
-#[macro_export]
 macro_rules! expand_combined_lint_pass_methods {
     ($handler:ty, $ctx:ty, $passes:tt, [$($(#[$attr:meta])* fn $name:ident($($param:ident: $arg:ty),*);)*]) => (
         $(fn $name(&mut self, handler: &mut $handler, ctx: &mut $ctx, $($param: $arg),*) {
@@ -79,7 +77,6 @@ macro_rules! expand_combined_lint_pass_methods {
 ///     ...
 /// }
 /// ```
-#[macro_export]
 macro_rules! declare_combined_lint_pass {
     ([$v:vis $name:ident, [$($passes:ident: $constructor:expr,)*]], $methods:tt) => (
         #[allow(non_snake_case)]
@@ -107,7 +104,6 @@ macro_rules! declare_combined_lint_pass {
     )
 }
 
-#[macro_export]
 macro_rules! default_lint_passes {
     ($macro:path, $args:tt) => {
         $macro!(
@@ -121,7 +117,6 @@ macro_rules! default_lint_passes {
     };
 }
 
-#[macro_export]
 macro_rules! declare_combined_default_pass {
     ([$name:ident], $passes:tt) => (
         lint_methods!(declare_combined_lint_pass, [pub $name, $passes]);

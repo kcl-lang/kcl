@@ -21,7 +21,7 @@ mod tests;
 use indexmap::IndexMap;
 use std::{cell::RefCell, rc::Rc};
 
-use crate::lint::{CombinedLintPass, LintContext, Linter};
+use crate::lint::{CombinedLintPass, Linter};
 use crate::pre_process::pre_process_program;
 use crate::resolver::scope::ScopeObject;
 use crate::resolver::ty_alias::process_program_type_alias;
@@ -59,7 +59,7 @@ impl<'ctx> Resolver<'ctx> {
             ctx: Context::default(),
             options,
             handler: Handler::default(),
-            linter: Linter::<CombinedLintPass>::new(Handler::default(), LintContext::dummy_ctx()),
+            linter: Linter::<CombinedLintPass>::new(),
         }
     }
 
@@ -90,10 +90,7 @@ impl<'ctx> Resolver<'ctx> {
 
     pub(crate) fn check_and_lint(&mut self, pkgpath: &str) -> ProgramScope {
         let mut scope = self.check(pkgpath);
-        let scope_map = self.scope_map.clone();
-        for (_, scope) in scope_map.iter() {
-            self.lint_check_scope(&scope.borrow())
-        }
+        self.lint_check_scope_map();
         for diag in &self.linter.handler.diagnostics {
             scope.diagnostics.insert(diag.clone());
         }

@@ -73,10 +73,7 @@
 //! should be copied here so that it can continue to traverse the child nodes.
 
 use crate::resolver::pos::GetPos;
-use crate::resolver::{
-    scope::{builtin_scope, Scope},
-    Resolver,
-};
+use crate::resolver::{scope::Scope, Resolver};
 use kclvm_error::{Handler, Position};
 mod combinedlintpass;
 mod lint;
@@ -105,11 +102,11 @@ impl LintContext {
 }
 
 impl Linter<CombinedLintPass> {
-    pub fn new(handler: Handler, ctx: LintContext) -> Self {
+    pub fn new() -> Self {
         Linter::<CombinedLintPass> {
             pass: CombinedLintPass::new(),
-            handler,
-            ctx,
+            handler: Handler::default(),
+            ctx: LintContext::dummy_ctx(),
         }
     }
     pub fn walk_scope(&mut self, scope: &Scope) {
@@ -119,11 +116,12 @@ impl Linter<CombinedLintPass> {
 }
 
 impl Resolver<'_> {
+    /// Iterate the module and run lint checks, generating diagnostics and save them in `lint.handler`
     pub fn lint_check_module(&mut self, module: &ast::Module) {
         self.linter.ctx.filename = module.filename.clone();
         self.linter.walk_module(module);
     }
-
+    /// Recursively iterate the scope and its child scope, run lint checks, generating diagnostics and save them in `lint.handler`
     pub fn lint_check_scope(&mut self, scope: &Scope) {
         self.linter.walk_scope(scope);
         for children in &scope.children {
@@ -131,7 +129,8 @@ impl Resolver<'_> {
         }
     }
 
-    pub fn lint_check_scopes(&mut self) {
+    /// Iterate the resolver.scope_map and run lint checks, generating diagnostics and save them in `lint.handler`
+    pub fn lint_check_scope_map(&mut self) {
         let scope_map = self.scope_map.clone();
         for (_, scope) in scope_map.iter() {
             self.lint_check_scope(&scope.borrow())
@@ -139,7 +138,6 @@ impl Resolver<'_> {
     }
 }
 
-#[macro_export]
 macro_rules! walk_set_list {
     ($walker: expr, $method: ident, $list: expr) => {
         for elem in &$list {
@@ -149,7 +147,6 @@ macro_rules! walk_set_list {
     };
 }
 
-#[macro_export]
 macro_rules! walk_set_if {
     ($walker: expr, $method: ident, $value: expr) => {
         match &$value {
@@ -162,7 +159,6 @@ macro_rules! walk_set_if {
     };
 }
 
-#[macro_export]
 macro_rules! set_pos {
     ($walker: expr, $value: expr) => {
         $walker.set_pos(&$value.get_pos(), &$value.get_end_pos());
