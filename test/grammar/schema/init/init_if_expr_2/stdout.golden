@@ -1,9 +1,0 @@
-gender: girl
-meta:
-  name: alice
-  age: 10
----
-gender: boy
-meta:
-  name: john
-  age: -1

@@ -1,5 +1,4 @@
 alice:
   name:
     first: aa
-    last: value
     age: 3

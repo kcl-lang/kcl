@@ -2,5 +2,4 @@ data:
   alice:
     name:
       first: aa
-      last: value
       age: 2

@@ -2,8 +2,8 @@ alice:
   name: alice
   age: 10
   info:
-    gender: girl
     age: 10
+    gender: girl
 John:
   name: john
   age: null
