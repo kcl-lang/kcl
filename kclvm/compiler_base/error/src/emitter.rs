@@ -45,17 +45,8 @@ impl Default for EmitterWriter {
     }
 }
 
-impl EmitterWriter {
-    pub fn from_stderr() -> Self {
-        Self {
-            dst: Destination::from_stderr(),
-            short_message: false,
-        }
-    }
-}
-
 /// Emit destinations
-pub enum Destination {
+enum Destination {
     /// The `StandardStream` works similarly to `std::io::Stdout`,
     /// it is augmented with methods for coloring by the `WriteColor` trait.
     ///
