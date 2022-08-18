@@ -663,10 +663,14 @@ class BaseTypeChecker(ast.TreeWalker):
                 tpe = self.parse_type_str_with_scope(attr.type_str, attr)
                 attr.type_str = type_to_kcl_type_annotation_str(tpe)
             else:
-                tpe = self.parse_type_str_with_scope(
-                    attr.value.name.get_first_name(), attr
+                tpe = self.parse_type_str_with_scope(attr.value.name.get_name(), attr)
+                tpe_str = type_to_kcl_type_annotation_str(tpe)
+                names = (
+                    tpe_str.rsplit(".", 1)
+                    if tpe_str.startswith("@")
+                    else tpe_str.split(".")
                 )
-                attr.value.name.names = [type_to_kcl_type_annotation_str(tpe)]
+                attr.value.name.names = names
             base_tpe = (base.get_type_of_attr(name) if base else None) or ANY_TYPE
             if name not in attr_obj_map:
                 existed_attr = base.get_obj_of_attr(name) if base else None

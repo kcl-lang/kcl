@@ -569,7 +569,7 @@ impl<'ctx> Resolver<'ctx> {
             let pos = stmt.get_pos();
             let (name, ty, is_optional, has_default) = match &stmt.node {
                 ast::Stmt::Unification(unification_stmt) => {
-                    let name = unification_stmt.value.node.name.node.names[0].clone();
+                    let name = unification_stmt.value.node.name.node.get_name();
                     let ty = self.parse_ty_str_with_scope(&name, pos.clone());
                     let is_optional = true;
                     let has_default = true;
