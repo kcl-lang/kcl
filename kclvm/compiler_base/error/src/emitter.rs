@@ -94,11 +94,11 @@ enum Destination {
 
 impl Destination {
     #[allow(dead_code)]
-    pub fn from_raw(dst: Box<dyn Write + Send>, colored: bool) -> Self {
+    fn from_raw(dst: Box<dyn Write + Send>, colored: bool) -> Self {
         Destination::Raw(dst, colored)
     }
 
-    pub fn from_stderr() -> Self {
+    fn from_stderr() -> Self {
         // On Windows we'll be performing global synchronization on the entire
         // system for emitting rustc errors, so there's no need to buffer
         // anything.

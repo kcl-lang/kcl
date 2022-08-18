@@ -1,2 +1,5 @@
+mod emitter;
 pub mod diagnostic;
-pub mod emitter;
+
+pub use emitter::Emitter;
+pub use emitter::EmitterWriter;
