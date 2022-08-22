@@ -1,5 +1,14 @@
 //! 'emitter.rs' defines the diagnostic emitter,
 //! which is responsible for displaying the rendered diagnostic.
+//!
+//! Provides trait `Emitter` to support customizing the diagnostic emitter.
+//! To customize your own `Emitter`, you need to make it implement trait `Emitter`.
+//!
+//! The builtin emitters currently provided in 'emitter.rs' are as follows:
+//!
+//! - `EmitterWriter` is responsible for rendering diagnostic as strings and displaying them to the terminal.
+//! - TODO(zongz): `EmitterAPI` is responsible for serializing diagnostic and sent them to the API.
+//!
 use crate::diagnostic::{Component, Diagnostic};
 use compiler_base_macros::bug;
 use rustc_errors::{
@@ -17,7 +26,7 @@ use termcolor::{Buffer, BufferWriter, ColorChoice, ColorSpec, StandardStream, Wr
 /// To customize your own `Emitter`, you could do the following steps:
 ///
 /// # Examples
-/// 
+///
 /// 1. Define your Emitter:
 ///
 /// ```no_run rust
@@ -55,13 +64,13 @@ use termcolor::{Buffer, BufferWriter, ColorChoice, ColorSpec, StandardStream, Wr
 /// 2. Use your Emitter with diagnostic:
 ///
 /// ```no_run rust
-/// 
+///
 /// // Create a diagnostic for emitting.
 /// let mut diagnostic = Diagnostic::<DiagnosticStyle>::new();
-/// 
+///
 /// // Create a string component wrapped by `Box<>`.
 /// let msg = Box::new(": this is an error!".to_string());
-/// 
+///
 /// // Add it to `Diagnostic`.
 /// diagnostic.append_component(msg);
 ///
