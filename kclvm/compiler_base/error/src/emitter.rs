@@ -13,6 +13,42 @@ use termcolor::{BufferWriter, ColorChoice, ColorSpec, StandardStream, WriteColor
 ///
 /// `T: Clone + PartialEq + Eq + Style` is responsible for the theme style when diaplaying diagnostic.
 /// Builtin `DiagnosticStyle` provided in 'compiler_base/error/diagnostic/style.rs'.
+///
+/// ```no_run rust
+///
+/// // create a new `Emitter`
+/// struct DummyEmitter {
+///     ...
+/// }
+///
+/// // `Dummy_Emitter` can use `DiagnosticStyle` or other style user-defined.
+/// impl Emitter<DiagnosticStyle> for DummyEmitter {
+///     fn supports_color(&self) -> bool {
+///         // Does `Dummy_Emitter` support color ?
+///     }
+///
+///     fn emit_diagnostic(&mut self, diag: &Diagnostic<DiagnosticStyle>) {
+///         // Format `Diagnostic` into `String` and diaplay it.
+///     }
+///
+///     fn format_diagnostic(&mut self, diag: &Diagnostic<DiagnosticStyle>) -> StyledBuffer<DiagnosticStyle> {
+///         // Format `Diagnostic` into `String`.
+///         // This part can format `Diagnostic` into a `String`, but it does not automatically diaplay,
+///         // and the `String` can be sent to an external port such as RPC.
+///     }
+/// }
+///
+/// // create a diagnostic for emitting.
+/// let mut diagnostic = Diagnostic::<DiagnosticStyle>::new();
+/// // create a string component wrapped by `Box<>`.
+/// let msg = Box::new(": this is an error!".to_string());
+/// // add it to `Diagnostic`.
+/// diagnostic.append_component(msg);
+///
+/// // create the emitter and emit it.
+/// let mut emitter = DummyEmitter{};
+/// emitter.emit_diagnostic(&diagnostic);
+/// ```
 pub trait Emitter<T>
 where
     T: Clone + PartialEq + Eq + Style,
@@ -25,12 +61,22 @@ where
     fn emit_diagnostic(&mut self, diag: &Diagnostic<T>);
 
     /// Checks if we can use colors in the current output stream.
+    /// `false` by default.
     fn supports_color(&self) -> bool {
         false
     }
 }
 
 /// Emitter writer.
+///
+/// # Examples
+///
+/// ```rust
+/// use compiler_base_error::EmitterWriter;
+///
+/// // It is only recommended to use 'default()' to create struct instances.
+/// let emitter_writer = EmitterWriter::default();
+/// ```
 pub struct EmitterWriter {
     dst: Destination,
     short_message: bool,
@@ -49,42 +95,12 @@ impl Default for EmitterWriter {
 enum Destination {
     /// The `StandardStream` works similarly to `std::io::Stdout`,
     /// it is augmented with methods for coloring by the `WriteColor` trait.
-    ///
-    /// # Examples
-    ///
-    /// ```no_run
-    /// # use std::io::Write;
-    /// # use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
-    /// // Diaplay a red color string "test text".
-    /// let mut standard_stream = StandardStream::stdout(ColorChoice::Always);
-    /// standard_stream.set_color(ColorSpec::new().set_fg(Some(Color::Red)))?;
-    /// writeln!(&mut standard_stream, "test text")?;
-    /// ```
     Terminal(StandardStream),
 
     /// `BufferWriter` can create buffers and write buffers to stdout or stderr.
     /// It does not implement `io::Write or WriteColor` itself.
     ///
     /// `Buffer` implements `io::Write and io::WriteColor`.
-    ///
-    /// # Examples
-    ///
-    /// ```no_run
-    /// # use std::io::Write;
-    /// # use termcolor::{BufferWriter, Color, ColorChoice, ColorSpec, WriteColor};
-    /// // `buffer` can be created.
-    /// let mut writter = BufferWriter::stderr(ColorChoice::Always);
-    /// let mut buffer = writter.buffer();
-    ///
-    /// // write in `buffer`
-    /// buffer.set_color(ColorSpec::new().set_fg(Some(Color::Red)))?;
-    /// writeln!(&mut buffer, "test text 1")?;
-    /// writeln!(&mut buffer, "test text 2")?;
-    /// writeln!(&mut buffer, "test text 3")?;
-    ///
-    /// // print `buffer`
-    /// writter.print(&buffer)?;
-    /// ```
     Buffered(BufferWriter),
 }
 
@@ -145,10 +161,16 @@ impl<T> Emitter<T> for EmitterWriter
 where
     T: Clone + PartialEq + Eq + Style,
 {
+    /// Checks if we can use colors in the current output stream.
+    /// Depends on `termcolor1.0` which supports color.
     fn supports_color(&self) -> bool {
         self.dst.supports_color()
     }
 
+    /// Emit a structured diagnostic.
+    /// It will call `format_diagnostic` first to format the `Diagnostic` into `StyledString`.
+    ///
+    /// It will `panic` if something wrong during emitting.
     fn emit_diagnostic(&mut self, diag: &Diagnostic<T>) {
         let buffer = self.format_diagnostic(diag);
         if let Err(e) = emit_to_destination(&buffer.render(), &mut self.dst, self.short_message) {
@@ -156,6 +178,8 @@ where
         }
     }
 
+    /// Format struct `Diagnostic` into `String` and render `String` into `StyledString`,
+    /// and save `StyledString` in `StyledBuffer`.
     fn format_diagnostic(&mut self, diag: &Diagnostic<T>) -> StyledBuffer<T> {
         let mut sb = StyledBuffer::<T>::new();
         diag.format(&mut sb);
