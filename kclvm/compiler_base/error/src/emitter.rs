@@ -7,37 +7,52 @@ use rustc_errors::{
     Style,
 };
 use std::io::{self, Write};
-use termcolor::{BufferWriter, ColorChoice, ColorSpec, StandardStream, WriteColor};
+use termcolor::{Buffer, BufferWriter, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 /// Emitter trait for emitting diagnostic.
 ///
 /// `T: Clone + PartialEq + Eq + Style` is responsible for the theme style when diaplaying diagnostic.
 /// Builtin `DiagnosticStyle` provided in 'compiler_base/error/diagnostic/style.rs'.
 ///
+/// To customize your own `Emitter`, you could do the following steps:
+///
+/// 1. Define your Emitter:
+///
 /// ```no_run rust
 ///
 /// // create a new `Emitter`
 /// struct DummyEmitter {
-///     ...
+///     support_color: bool
 /// }
 ///
 /// // `Dummy_Emitter` can use `DiagnosticStyle` or other style user-defined.
 /// impl Emitter<DiagnosticStyle> for DummyEmitter {
 ///     fn supports_color(&self) -> bool {
 ///         // Does `Dummy_Emitter` support color ?
+///         self.support_color
 ///     }
 ///
 ///     fn emit_diagnostic(&mut self, diag: &Diagnostic<DiagnosticStyle>) {
-///         // Format `Diagnostic` into `String` and diaplay it.
+///         // Format `Diagnostic` into `String`.
+///         let styled_string = self.format_diagnostic(diag);
+///         todo!("displaying the 'styled_string'");
 ///     }
 ///
 ///     fn format_diagnostic(&mut self, diag: &Diagnostic<DiagnosticStyle>) -> StyledBuffer<DiagnosticStyle> {
 ///         // Format `Diagnostic` into `String`.
 ///         // This part can format `Diagnostic` into a `String`, but it does not automatically diaplay,
 ///         // and the `String` can be sent to an external port such as RPC.
+///         let mut sb = StyledBuffer::<DiagnosticStyle>::new();
+///         diag.format(&mut sb);
+///         sb
 ///     }
 /// }
 ///
+/// ```
+///
+/// 2. Use your Emitter with diagnostic:
+///
+/// ```no_run rust
 /// // create a diagnostic for emitting.
 /// let mut diagnostic = Diagnostic::<DiagnosticStyle>::new();
 /// // create a string component wrapped by `Box<>`.
@@ -46,7 +61,7 @@ use termcolor::{BufferWriter, ColorChoice, ColorSpec, StandardStream, WriteColor
 /// diagnostic.append_component(msg);
 ///
 /// // create the emitter and emit it.
-/// let mut emitter = DummyEmitter{};
+/// let mut emitter = DummyEmitter {};
 /// emitter.emit_diagnostic(&diagnostic);
 /// ```
 pub trait Emitter<T>
@@ -67,15 +82,33 @@ where
     }
 }
 
-/// Emitter writer.
+/// `EmitterWriter` is a default concrete struct of trait `Emitter` based on `termcolor1.0`.
+/// `termcolor1.0` supports displaying colorful string to terminal.
 ///
 /// # Examples
 ///
 /// ```rust
-/// use compiler_base_error::EmitterWriter;
+/// # use crate::compiler_base_error::Emitter;
+/// # use compiler_base_error::EmitterWriter;
+/// # use compiler_base_error::diagnostic::{components::Label, Diagnostic};
+/// # use compiler_base_error::diagnostic::style::DiagnosticStyle;
 ///
-/// // It is only recommended to use 'default()' to create struct instances.
-/// let emitter_writer = EmitterWriter::default();
+/// // 1. Create a EmitterWriter
+/// let mut emitter_writer = EmitterWriter::default();
+///
+/// // 2. create a diagnostic for emitting.
+/// let mut diagnostic = Diagnostic::<DiagnosticStyle>::new();
+///
+/// // 3. create components wrapped by `Box<>`.
+/// let err_label = Box::new(Label::Error("E3033".to_string()));
+/// let msg = Box::new(": this is an error!".to_string());
+///
+/// // 4. add components to `Diagnostic`.
+/// diagnostic.append_component(err_label);
+/// diagnostic.append_component(msg);
+///
+/// // 5. emit the diagnostic.
+/// emitter_writer.emit_diagnostic(&diagnostic);
 /// ```
 pub struct EmitterWriter {
     dst: Destination,
@@ -104,6 +137,14 @@ enum Destination {
     Buffered(BufferWriter),
 }
 
+// Convert terminal to writable terminal
+// On Unix systems, a buffer will be create for `BufferWriter` and return `&mut BufferWriter` and buffer.
+// On Windows, it will still return the `&mut StandardStream`.
+enum WritableDst<'a> {
+    Terminal(&'a mut StandardStream),
+    Buffered(&'a mut BufferWriter, Buffer),
+}
+
 impl Destination {
     fn from_stderr() -> Self {
         // On Windows we'll be performing global synchronization on the entire
@@ -119,24 +160,38 @@ impl Destination {
         }
     }
 
+    fn writable(&mut self) -> WritableDst<'_> {
+        match *self {
+            // On Windows, it will still return the `StandardStream`.
+            Destination::Terminal(ref mut t) => WritableDst::Terminal(t),
+            // On Unix systems, a buffer will be create for `BufferWriter`.
+            Destination::Buffered(ref mut t) => {
+                let buf = t.buffer();
+                WritableDst::Buffered(t, buf)
+            }
+        }
+    }
+
     fn supports_color(&self) -> bool {
         match *self {
             Self::Terminal(ref stream) => stream.supports_color(),
             Self::Buffered(ref buffer) => buffer.buffer().supports_color(),
         }
     }
+}
 
+impl<'a> WritableDst<'a> {
     fn set_color(&mut self, color: &ColorSpec) -> io::Result<()> {
         match *self {
-            Destination::Terminal(ref mut t) => t.set_color(color),
-            Destination::Buffered(ref mut t) => t.buffer().set_color(color),
+            WritableDst::Terminal(ref mut t) => t.set_color(color),
+            WritableDst::Buffered(_, ref mut t) => t.set_color(color),
         }
     }
 
     fn reset(&mut self) -> io::Result<()> {
         match *self {
-            Destination::Terminal(ref mut t) => t.reset(),
-            Destination::Buffered(ref mut t) => t.buffer().reset(),
+            WritableDst::Terminal(ref mut t) => t.reset(),
+            WritableDst::Buffered(_, ref mut t) => t.reset(),
         }
     }
 }
@@ -153,6 +208,25 @@ impl<'a> Write for Destination {
         match *self {
             Destination::Terminal(ref mut t) => t.flush(),
             Destination::Buffered(ref mut t) => t.buffer().flush(),
+        }
+    }
+}
+
+impl<'a> Write for WritableDst<'a> {
+    fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+        match *self {
+            WritableDst::Terminal(ref mut t) => t.write(bytes),
+            WritableDst::Buffered(_, ref mut buf) => buf.write(bytes),
+        }
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        match *self {
+            WritableDst::Terminal(ref mut t) => t.flush(),
+            WritableDst::Buffered(ref mut t, ref mut buf) => match buf.flush() {
+                Ok(_) => t.print(buf),
+                Err(err) => Err(err),
+            },
         }
     }
 }
@@ -196,6 +270,11 @@ where
     T: Clone + PartialEq + Eq + Style,
 {
     use rustc_errors::lock;
+
+    // Convert terminal to writable terminal.
+    // On Unix systems, a buffer will be create for `BufferWriter`.
+    // On Windows, it will still return the `StandardStream`.
+    let mut dst = dst.writable();
     // In order to prevent error message interleaving, where multiple error lines get intermixed
     // when multiple compiler processes error simultaneously, we emit errors with additional
     // steps.
@@ -211,7 +290,11 @@ where
     let _buffer_lock = lock::acquire_global_lock("compiler_base_errors");
     for (pos, line) in rendered_buffer.iter().enumerate() {
         for part in line {
-            dst.set_color(&part.style.as_ref().unwrap().render_style_to_color_spec())?;
+            let color_spec = match &part.style {
+                Some(style) => style.render_style_to_color_spec(),
+                None => ColorSpec::new(),
+            };
+            dst.set_color(&color_spec)?;
             write!(dst, "{}", part.text)?;
             dst.reset()?;
         }
