@@ -184,7 +184,7 @@ where
     // On Windows, styling happens through calls to a terminal API. This prevents us from using the
     // same buffering approach.  Instead, we use a global Windows mutex, which we acquire long
     // enough to output the full error message, then we release.
-    let _buffer_lock = lock::acquire_global_lock("rustc_errors");
+    let _buffer_lock = lock::acquire_global_lock("compiler_base_errors");
     for (pos, line) in rendered_buffer.iter().enumerate() {
         for part in line {
             dst.set_color(&part.style.as_ref().unwrap().render_style_to_color_spec())?;
