@@ -16,6 +16,8 @@ use termcolor::{Buffer, BufferWriter, ColorChoice, ColorSpec, StandardStream, Wr
 ///
 /// To customize your own `Emitter`, you could do the following steps:
 ///
+/// # Examples
+/// 
 /// 1. Define your Emitter:
 ///
 /// ```no_run rust
@@ -139,14 +141,6 @@ enum Destination {
     /// `Buffer` implements `io::Write and io::WriteColor`.
     Buffered(Box<BufferWriter>, Buffer),
 }
-
-// Convert terminal to writable terminal
-// On Unix systems, a buffer will be create for `BufferWriter` and return `&mut BufferWriter` and buffer.
-// On Windows, it will still return the `&mut StandardStream`.
-// enum WritableDst<'a> {
-//     Terminal(&'a mut StandardStream),
-//     Buffered(&'a mut BufferWriter, Buffer),
-// }
 
 impl Destination {
     fn from_stderr() -> Self {
