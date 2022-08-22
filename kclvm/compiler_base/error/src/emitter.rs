@@ -7,7 +7,7 @@
 //! The builtin emitters currently provided in 'emitter.rs' are as follows:
 //!
 //! - `EmitterWriter` is responsible for rendering diagnostic as strings and displaying them to the terminal.
-//! - TODO(zongz): `EmitterAPI` is responsible for serializing diagnostic and sent them to the API.
+//! - TODO(zongz): `EmitterAPI` is responsible for serializing diagnostics and sent them to the API.
 //!
 use crate::diagnostic::{Component, Diagnostic};
 use compiler_base_macros::bug;
@@ -18,7 +18,7 @@ use rustc_errors::{
 use std::io::{self, Write};
 use termcolor::{Buffer, BufferWriter, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
-/// Emitter trait for emitting diagnostic.
+/// trait `Emitter` for emitting diagnostic.
 ///
 /// `T: Clone + PartialEq + Eq + Style` is responsible for the theme style when diaplaying diagnostic.
 /// Builtin `DiagnosticStyle` provided in 'compiler_base/error/diagnostic/style.rs'.
@@ -96,7 +96,9 @@ where
     }
 }
 
-/// `EmitterWriter` is a default concrete struct of trait `Emitter` based on `termcolor1.0`.
+/// `EmitterWriter` is a concrete struct of trait `Emitter` based on `termcolor1.0`.
+/// 
+/// It is responsible for rendering diagnostic as strings and displaying them to the terminal.
 /// `termcolor1.0` supports displaying colorful string to terminal.
 ///
 /// # Examples
