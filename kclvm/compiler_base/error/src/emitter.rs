@@ -86,18 +86,9 @@ enum Destination {
     /// writter.print(&buffer)?;
     /// ```
     Buffered(BufferWriter),
-
-    // 'Raw' is an interface used to expand the emitter destination
-    // The bool denotes whether we should be emitting ansi color codes or not
-    Raw(Box<(dyn Write + Send)>, bool),
 }
 
 impl Destination {
-    #[allow(dead_code)]
-    fn from_raw(dst: Box<dyn Write + Send>, colored: bool) -> Self {
-        Destination::Raw(dst, colored)
-    }
-
     fn from_stderr() -> Self {
         // On Windows we'll be performing global synchronization on the entire
         // system for emitting rustc errors, so there's no need to buffer
@@ -116,7 +107,6 @@ impl Destination {
         match *self {
             Self::Terminal(ref stream) => stream.supports_color(),
             Self::Buffered(ref buffer) => buffer.buffer().supports_color(),
-            Self::Raw(_, supports_color) => supports_color,
         }
     }
 
@@ -124,7 +114,6 @@ impl Destination {
         match *self {
             Destination::Terminal(ref mut t) => t.set_color(color),
             Destination::Buffered(ref mut t) => t.buffer().set_color(color),
-            Destination::Raw(_, _) => Ok(()),
         }
     }
 
@@ -132,7 +121,6 @@ impl Destination {
         match *self {
             Destination::Terminal(ref mut t) => t.reset(),
             Destination::Buffered(ref mut t) => t.buffer().reset(),
-            Destination::Raw(..) => Ok(()),
         }
     }
 }
@@ -142,7 +130,6 @@ impl<'a> Write for Destination {
         match *self {
             Destination::Terminal(ref mut t) => t.write(bytes),
             Destination::Buffered(ref mut t) => t.buffer().write(bytes),
-            Destination::Raw(ref mut t, _) => t.write(bytes),
         }
     }
 
@@ -150,7 +137,6 @@ impl<'a> Write for Destination {
         match *self {
             Destination::Terminal(ref mut t) => t.flush(),
             Destination::Buffered(ref mut t) => t.buffer().flush(),
-            Destination::Raw(ref mut t, _) => t.flush(),
         }
     }
 }
