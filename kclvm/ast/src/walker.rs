@@ -990,3 +990,265 @@ pub fn walk_comment<'ctx, V: Walker<'ctx>>(walker: &mut V, comment: &'ctx ast::C
 pub fn walk_module<'ctx, V: Walker<'ctx>>(walker: &mut V, module: &'ctx ast::Module) {
     walk_list!(walker, walk_stmt, module.body)
 }
+
+/// Each method of the `MutSelfWalker` trait returns void type and does not need to modify the AST.
+/// We can use it to traverse the AST and do some check at the same time, For example, in the process
+/// of lint checking, we can use it to check each AST node and generate diagnostcs.
+pub trait MutSelfWalker {
+    fn walk_expr_stmt(&mut self, expr_stmt: &ast::ExprStmt) {
+        for expr in &expr_stmt.exprs {
+            self.walk_expr(&expr.node)
+        }
+    }
+
+    fn walk_type_alias_stmt(&mut self, type_alias_stmt: &ast::TypeAliasStmt) {
+        self.walk_identifier(&type_alias_stmt.type_name.node);
+    }
+    fn walk_unification_stmt(&mut self, unification_stmt: &ast::UnificationStmt) {
+        self.walk_identifier(&unification_stmt.target.node);
+        self.walk_schema_expr(&unification_stmt.value.node);
+    }
+    fn walk_assign_stmt(&mut self, assign_stmt: &ast::AssignStmt) {
+        for target in &assign_stmt.targets {
+            self.walk_identifier(&target.node)
+        }
+        self.walk_expr(&assign_stmt.value.node);
+    }
+    fn walk_aug_assign_stmt(&mut self, aug_assign_stmt: &ast::AugAssignStmt) {
+        self.walk_identifier(&aug_assign_stmt.target.node);
+        self.walk_expr(&aug_assign_stmt.value.node);
+    }
+    fn walk_assert_stmt(&mut self, assert_stmt: &ast::AssertStmt) {
+        self.walk_expr(&assert_stmt.test.node);
+        walk_if!(self, walk_expr, assert_stmt.if_cond);
+        walk_if!(self, walk_expr, assert_stmt.msg);
+    }
+    fn walk_if_stmt(&mut self, if_stmt: &ast::IfStmt) {
+        self.walk_expr(&if_stmt.cond.node);
+        walk_list!(self, walk_stmt, if_stmt.body);
+        walk_list!(self, walk_stmt, if_stmt.orelse);
+    }
+    fn walk_import_stmt(&mut self, _import_stmt: &ast::ImportStmt) {
+        // Nothing to do
+    }
+    fn walk_schema_attr(&mut self, schema_attr: &ast::SchemaAttr) {
+        walk_list!(self, walk_call_expr, schema_attr.decorators);
+        walk_if!(self, walk_expr, schema_attr.value);
+    }
+    fn walk_schema_stmt(&mut self, schema_stmt: &ast::SchemaStmt) {
+        walk_if!(self, walk_identifier, schema_stmt.parent_name);
+        walk_if!(self, walk_identifier, schema_stmt.for_host_name);
+        walk_if!(self, walk_arguments, schema_stmt.args);
+        if let Some(schema_index_signature) = &schema_stmt.index_signature {
+            let value = &schema_index_signature.node.value;
+            walk_if!(self, walk_expr, value);
+        }
+        walk_list!(self, walk_identifier, schema_stmt.mixins);
+        walk_list!(self, walk_call_expr, schema_stmt.decorators);
+        walk_list!(self, walk_check_expr, schema_stmt.checks);
+        walk_list!(self, walk_stmt, schema_stmt.body);
+    }
+    fn walk_rule_stmt(&mut self, rule_stmt: &ast::RuleStmt) {
+        walk_list!(self, walk_identifier, rule_stmt.parent_rules);
+        walk_list!(self, walk_call_expr, rule_stmt.decorators);
+        walk_list!(self, walk_check_expr, rule_stmt.checks);
+        walk_if!(self, walk_arguments, rule_stmt.args);
+        walk_if!(self, walk_identifier, rule_stmt.for_host_name);
+    }
+    fn walk_quant_expr(&mut self, quant_expr: &ast::QuantExpr) {
+        self.walk_expr(&quant_expr.target.node);
+        walk_list!(self, walk_identifier, quant_expr.variables);
+        self.walk_expr(&quant_expr.test.node);
+        walk_if!(self, walk_expr, quant_expr.if_cond);
+    }
+    fn walk_if_expr(&mut self, if_expr: &ast::IfExpr) {
+        self.walk_expr(&if_expr.cond.node);
+        self.walk_expr(&if_expr.body.node);
+        self.walk_expr(&if_expr.orelse.node);
+    }
+    fn walk_unary_expr(&mut self, unary_expr: &ast::UnaryExpr) {
+        self.walk_expr(&unary_expr.operand.node);
+    }
+    fn walk_binary_expr(&mut self, binary_expr: &ast::BinaryExpr) {
+        self.walk_expr(&binary_expr.left.node);
+        self.walk_expr(&binary_expr.right.node);
+    }
+    fn walk_selector_expr(&mut self, selector_expr: &ast::SelectorExpr) {
+        self.walk_expr(&selector_expr.value.node);
+        self.walk_identifier(&selector_expr.attr.node);
+    }
+    fn walk_call_expr(&mut self, call_expr: &ast::CallExpr) {
+        self.walk_expr(&call_expr.func.node);
+        walk_list!(self, walk_expr, call_expr.args);
+        walk_list!(self, walk_keyword, call_expr.keywords);
+    }
+    fn walk_subscript(&mut self, subscript: &ast::Subscript) {
+        self.walk_expr(&subscript.value.node);
+        walk_if!(self, walk_expr, subscript.index);
+        walk_if!(self, walk_expr, subscript.lower);
+        walk_if!(self, walk_expr, subscript.upper);
+        walk_if!(self, walk_expr, subscript.step);
+    }
+    fn walk_paren_expr(&mut self, paren_expr: &ast::ParenExpr) {
+        self.walk_expr(&paren_expr.expr.node);
+    }
+    fn walk_list_expr(&mut self, list_expr: &ast::ListExpr) {
+        walk_list!(self, walk_expr, list_expr.elts);
+    }
+    fn walk_list_comp(&mut self, list_comp: &ast::ListComp) {
+        self.walk_expr(&list_comp.elt.node);
+        walk_list!(self, walk_comp_clause, list_comp.generators);
+    }
+    fn walk_list_if_item_expr(&mut self, list_if_item_expr: &ast::ListIfItemExpr) {
+        self.walk_expr(&list_if_item_expr.if_cond.node);
+        walk_list!(self, walk_expr, list_if_item_expr.exprs);
+        walk_if!(self, walk_expr, list_if_item_expr.orelse);
+    }
+    fn walk_starred_expr(&mut self, starred_expr: &ast::StarredExpr) {
+        self.walk_expr(&starred_expr.value.node);
+    }
+    fn walk_dict_comp(&mut self, dict_comp: &ast::DictComp) {
+        if let Some(key) = &dict_comp.entry.key {
+            self.walk_expr(&key.node);
+        }
+        self.walk_expr(&dict_comp.entry.value.node);
+        walk_list!(self, walk_comp_clause, dict_comp.generators);
+    }
+    fn walk_config_if_entry_expr(&mut self, config_if_entry_expr: &ast::ConfigIfEntryExpr) {
+        self.walk_expr(&config_if_entry_expr.if_cond.node);
+        for config_entry in &config_if_entry_expr.items {
+            walk_if!(self, walk_expr, config_entry.node.key);
+            self.walk_expr(&config_entry.node.value.node);
+        }
+        walk_if!(self, walk_expr, config_if_entry_expr.orelse);
+    }
+    fn walk_comp_clause(&mut self, comp_clause: &ast::CompClause) {
+        walk_list!(self, walk_identifier, comp_clause.targets);
+        self.walk_expr(&comp_clause.iter.node);
+        walk_list!(self, walk_expr, comp_clause.ifs);
+    }
+    fn walk_schema_expr(&mut self, schema_expr: &ast::SchemaExpr) {
+        self.walk_identifier(&schema_expr.name.node);
+        walk_list!(self, walk_expr, schema_expr.args);
+        walk_list!(self, walk_keyword, schema_expr.kwargs);
+        self.walk_expr(&schema_expr.config.node);
+    }
+    fn walk_config_expr(&mut self, config_expr: &ast::ConfigExpr) {
+        for config_entry in &config_expr.items {
+            walk_if!(self, walk_expr, config_entry.node.key);
+            self.walk_expr(&config_entry.node.value.node);
+        }
+    }
+    fn walk_check_expr(&mut self, check_expr: &ast::CheckExpr) {
+        self.walk_expr(&check_expr.test.node);
+        walk_if!(self, walk_expr, check_expr.if_cond);
+        walk_if!(self, walk_expr, check_expr.msg);
+    }
+    fn walk_lambda_expr(&mut self, lambda_expr: &ast::LambdaExpr) {
+        walk_if!(self, walk_arguments, lambda_expr.args);
+        walk_list!(self, walk_stmt, lambda_expr.body);
+    }
+    fn walk_keyword(&mut self, keyword: &ast::Keyword) {
+        self.walk_identifier(&keyword.arg.node);
+        if let Some(v) = &keyword.value {
+            self.walk_expr(&v.node)
+        }
+    }
+    fn walk_arguments(&mut self, arguments: &ast::Arguments) {
+        walk_list!(self, walk_identifier, arguments.args);
+        for default in &arguments.defaults {
+            if let Some(d) = default {
+                self.walk_expr(&d.node)
+            }
+        }
+    }
+    fn walk_compare(&mut self, compare: &ast::Compare) {
+        self.walk_expr(&compare.left.node);
+        walk_list!(self, walk_expr, compare.comparators);
+    }
+    fn walk_identifier(&mut self, identifier: &ast::Identifier) {
+        // Nothing to do.
+        let _ = identifier;
+    }
+    fn walk_number_lit(&mut self, number_lit: &ast::NumberLit) {
+        let _ = number_lit;
+    }
+    fn walk_string_lit(&mut self, string_lit: &ast::StringLit) {
+        // Nothing to do.
+        let _ = string_lit;
+    }
+    fn walk_name_constant_lit(&mut self, name_constant_lit: &ast::NameConstantLit) {
+        // Nothing to do.
+        let _ = name_constant_lit;
+    }
+    fn walk_joined_string(&mut self, joined_string: &ast::JoinedString) {
+        walk_list!(self, walk_expr, joined_string.values);
+    }
+    fn walk_formatted_value(&mut self, formatted_value: &ast::FormattedValue) {
+        self.walk_expr(&formatted_value.value.node);
+    }
+    fn walk_comment(&mut self, comment: &ast::Comment) {
+        // Nothing to do.
+        let _ = comment;
+    }
+    fn walk_module(&mut self, module: &ast::Module) {
+        walk_list!(self, walk_stmt, module.body)
+    }
+    fn walk_stmt(&mut self, stmt: &ast::Stmt) {
+        match stmt {
+            ast::Stmt::TypeAlias(type_alias) => self.walk_type_alias_stmt(type_alias),
+            ast::Stmt::Expr(expr_stmt) => self.walk_expr_stmt(expr_stmt),
+            ast::Stmt::Unification(unification_stmt) => {
+                self.walk_unification_stmt(unification_stmt)
+            }
+            ast::Stmt::Assign(assign_stmt) => self.walk_assign_stmt(assign_stmt),
+            ast::Stmt::AugAssign(aug_assign_stmt) => self.walk_aug_assign_stmt(aug_assign_stmt),
+            ast::Stmt::Assert(assert_stmt) => self.walk_assert_stmt(assert_stmt),
+            ast::Stmt::If(if_stmt) => self.walk_if_stmt(if_stmt),
+            ast::Stmt::Import(import_stmt) => self.walk_import_stmt(import_stmt),
+            ast::Stmt::SchemaAttr(schema_attr) => self.walk_schema_attr(schema_attr),
+            ast::Stmt::Schema(schema_stmt) => self.walk_schema_stmt(schema_stmt),
+            ast::Stmt::Rule(rule_stmt) => self.walk_rule_stmt(rule_stmt),
+        }
+    }
+    fn walk_expr(&mut self, expr: &ast::Expr) {
+        match expr {
+            ast::Expr::Identifier(identifier) => self.walk_identifier(identifier),
+            ast::Expr::Unary(unary_expr) => self.walk_unary_expr(unary_expr),
+            ast::Expr::Binary(binary_expr) => self.walk_binary_expr(binary_expr),
+            ast::Expr::If(if_expr) => self.walk_if_expr(if_expr),
+            ast::Expr::Selector(selector_expr) => self.walk_selector_expr(selector_expr),
+            ast::Expr::Call(call_expr) => self.walk_call_expr(call_expr),
+            ast::Expr::Paren(paren_expr) => self.walk_paren_expr(paren_expr),
+            ast::Expr::Quant(quant_expr) => self.walk_quant_expr(quant_expr),
+            ast::Expr::List(list_expr) => self.walk_list_expr(list_expr),
+            ast::Expr::ListIfItem(list_if_item_expr) => {
+                self.walk_list_if_item_expr(list_if_item_expr)
+            }
+            ast::Expr::ListComp(list_comp) => self.walk_list_comp(list_comp),
+            ast::Expr::Starred(starred_expr) => self.walk_starred_expr(starred_expr),
+            ast::Expr::DictComp(dict_comp) => self.walk_dict_comp(dict_comp),
+            ast::Expr::ConfigIfEntry(config_if_entry_expr) => {
+                self.walk_config_if_entry_expr(config_if_entry_expr)
+            }
+            ast::Expr::CompClause(comp_clause) => self.walk_comp_clause(comp_clause),
+            ast::Expr::Schema(schema_expr) => self.walk_schema_expr(schema_expr),
+            ast::Expr::Config(config_expr) => self.walk_config_expr(config_expr),
+            ast::Expr::Check(check) => self.walk_check_expr(check),
+            ast::Expr::Lambda(lambda) => self.walk_lambda_expr(lambda),
+            ast::Expr::Subscript(subscript) => self.walk_subscript(subscript),
+            ast::Expr::Keyword(keyword) => self.walk_keyword(keyword),
+            ast::Expr::Arguments(arguments) => self.walk_arguments(arguments),
+            ast::Expr::Compare(compare) => self.walk_compare(compare),
+            ast::Expr::NumberLit(number_lit) => self.walk_number_lit(number_lit),
+            ast::Expr::StringLit(string_lit) => self.walk_string_lit(string_lit),
+            ast::Expr::NameConstantLit(name_constant_lit) => {
+                self.walk_name_constant_lit(name_constant_lit)
+            }
+            ast::Expr::JoinedString(joined_string) => self.walk_joined_string(joined_string),
+            ast::Expr::FormattedValue(formatted_value) => {
+                self.walk_formatted_value(formatted_value)
+            }
+        }
+    }
+}

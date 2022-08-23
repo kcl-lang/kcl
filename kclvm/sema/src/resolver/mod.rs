@@ -21,6 +21,7 @@ mod tests;
 use indexmap::IndexMap;
 use std::{cell::RefCell, rc::Rc};
 
+use crate::lint::{CombinedLintPass, Linter};
 use crate::pre_process::pre_process_program;
 use crate::resolver::scope::ScopeObject;
 use crate::resolver::ty_alias::process_program_type_alias;
@@ -43,6 +44,7 @@ pub struct Resolver<'ctx> {
     pub ctx: Context,
     pub options: Options,
     pub handler: Handler,
+    pub linter: Linter<CombinedLintPass>,
 }
 
 impl<'ctx> Resolver<'ctx> {
@@ -57,6 +59,7 @@ impl<'ctx> Resolver<'ctx> {
             ctx: Context::default(),
             options,
             handler: Handler::default(),
+            linter: Linter::<CombinedLintPass>::new(),
         }
     }
 
@@ -71,6 +74,9 @@ impl<'ctx> Resolver<'ctx> {
                     for stmt in &module.body {
                         self.walk_stmt(&stmt.node);
                     }
+                    if self.options.lint_check {
+                        self.lint_check_module(&module);
+                    }
                 }
             }
             None => {}
@@ -80,6 +86,15 @@ impl<'ctx> Resolver<'ctx> {
             import_names: self.ctx.import_names.clone(),
             diagnostics: self.handler.diagnostics.clone(),
         }
+    }
+
+    pub(crate) fn check_and_lint(&mut self, pkgpath: &str) -> ProgramScope {
+        let mut scope = self.check(pkgpath);
+        self.lint_check_scope_map();
+        for diag in &self.linter.handler.diagnostics {
+            scope.diagnostics.insert(diag.clone());
+        }
+        scope
     }
 }
 
@@ -119,6 +134,7 @@ pub struct Context {
 pub struct Options {
     pub raise_err: bool,
     pub config_auto_fix: bool,
+    pub lint_check: bool,
 }
 
 /// Resolve program
@@ -129,10 +145,11 @@ pub fn resolve_program(program: &mut Program) -> ProgramScope {
         Options {
             raise_err: true,
             config_auto_fix: false,
+            lint_check: true,
         },
     );
     resolver.resolve_import();
-    let scope = resolver.check(kclvm_ast::MAIN_PKG);
+    let scope = resolver.check_and_lint(kclvm_ast::MAIN_PKG);
     let type_alias_mapping = resolver.ctx.type_alias_mapping.clone();
     process_program_type_alias(program, type_alias_mapping);
     scope

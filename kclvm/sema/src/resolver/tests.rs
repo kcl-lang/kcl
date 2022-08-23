@@ -1,4 +1,7 @@
+use super::Options;
+use super::Resolver;
 use crate::builtin::BUILTIN_FUNCTION_NAMES;
+use crate::pre_process::pre_process_program;
 use crate::resolver::resolve_program;
 use crate::resolver::scope::*;
 use crate::ty::Type;
@@ -94,6 +97,8 @@ fn test_resolve_program_cycle_reference_fail() {
         "There is a circular reference between schema SchemaSub and SchemaBase",
         "There is a circular reference between rule RuleBase and RuleSub",
         "There is a circular reference between rule RuleSub and RuleBase",
+        "Module 'file2' imported but unused",
+        "Module 'file1' imported but unused",
     ];
     assert_eq!(scope.diagnostics.len(), err_messages.len());
     for (diag, msg) in scope.diagnostics.iter().zip(err_messages.iter()) {
@@ -157,4 +162,72 @@ fn test_resolve_program_illegal_attr_fail() {
     assert_eq!(diag.messages.len(), 1);
     assert_eq!(diag.messages[0].message, expect_err_msg,);
     assert_eq!(diag.messages[0].pos.line, 5);
+}
+
+#[test]
+fn test_lint() {
+    let mut program = load_program(&["./src/resolver/test_data/lint.k"], None).unwrap();
+    pre_process_program(&mut program);
+    let mut resolver = Resolver::new(
+        &program,
+        Options {
+            raise_err: true,
+            config_auto_fix: false,
+            lint_check: true,
+        },
+    );
+    resolver.resolve_import();
+    resolver.check_and_lint(kclvm_ast::MAIN_PKG);
+
+    let root = &program.root.clone();
+    let filename = root.clone() + "/lint.k";
+    let mut handler = Handler::default();
+    handler.add_warning(
+        WarningKind::ImportPositionWarning,
+        &[Message {
+            pos: Position {
+                filename: filename.clone(),
+                line: 10,
+                column: None,
+            },
+            style: Style::Line,
+            message: format!("Importstmt should be placed at the top of the module"),
+            note: Some("Consider moving tihs statement to the top of the file".to_string()),
+        }],
+    );
+    handler.add_warning(
+        WarningKind::ReimportWarning,
+        &[Message {
+            pos: Position {
+                filename: filename.clone(),
+                line: 2,
+                column: None,
+            },
+            style: Style::Line,
+            message: format!("Module 'a' is reimported multiple times"),
+            note: Some("Consider removing this statement".to_string()),
+        }],
+    );
+    handler.add_warning(
+        WarningKind::UnusedImportWarning,
+        &[Message {
+            pos: Position {
+                filename: filename.clone(),
+                line: 1,
+                column: None,
+            },
+            style: Style::Line,
+            message: format!("Module 'import_test.a' imported but unused"),
+            note: Some("Consider removing this statement".to_string()),
+        }],
+    );
+    for (d1, d2) in resolver
+        .linter
+        .handler
+        .diagnostics
+        .iter()
+        .zip(handler.diagnostics.iter())
+    {
+        assert_eq!(d1, d2);
+    }
 }
