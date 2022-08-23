@@ -6,5 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+compiler_base_macros = {path = "../macros", version = "0.1.0"}
 rustc_errors = {path="../3rdparty/rustc_errors", version="0.1.0"}
 termcolor = "1.0"

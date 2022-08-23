@@ -8,7 +8,7 @@ pub mod style;
 mod tests;
 
 /// 'Component' specifies the method `format()` that all diagnostic components should implement.
-/// 
+///
 /// 'Component' decouples 'structure' and 'theme' during formatting diagnostic components.
 /// `T: Clone + PartialEq + Eq + Style` is responsible for 'theme' such as colors/fonts in the component formatting.
 /// `format()` organizes the 'structure' of diagnostic components.
@@ -31,7 +31,7 @@ where
     ///         sb.pushs(&self.text, Some(DiagnosticStyle::Logo));
     ///     }
     /// }
-    /// 
+    ///
     /// ```
     fn format(&self, sb: &mut StyledBuffer<T>);
 }
