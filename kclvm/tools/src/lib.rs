@@ -1,4 +1,5 @@
 pub mod format;
+pub mod lint;
 pub mod printer;
 pub mod query;
 mod util;
