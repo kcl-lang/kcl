@@ -1,13 +1,14 @@
 //! 'emitter.rs' defines the diagnostic emitter,
 //! which is responsible for displaying the rendered diagnostic.
-//!
-//! Provides trait `Emitter` to support customizing the diagnostic emitter.
-//! To customize your own `Emitter`, you need to make it implement trait `Emitter`.
-//!
-//! The builtin emitters currently provided in 'emitter.rs' are as follows:
-//!
-//! - `EmitterWriter` is responsible for rendering diagnostic as strings and displaying them to the terminal.
-//! - TODO(zongz): `EmitterAPI` is responsible for serializing diagnostics and sent them to the API.
+//! 
+//! The crate providers `Emitter` trait to define the interface that diagnostic emitter should implement.
+//! and also provider a built-in emitters:
+//! 
+//!  + `TerminalEmitter` is responsible for emitting diagnostic to the terminal.
+//!  + TODO(zongz): `EmitterAPI` is responsible for serializing diagnostics and emitting them to the API.
+//! 
+//！Besides, it's easy define your customized `Emitter` by implementing `Emitter` trait.
+//! For more information about how to define your customized `Emitter`, see the doc above `Emitter` trait.
 //!
 use crate::diagnostic::{Component, Diagnostic};
 use compiler_base_macros::bug;
@@ -96,21 +97,21 @@ where
     }
 }
 
-/// `EmitterWriter` is a concrete struct of trait `Emitter` based on `termcolor1.0`.
+/// `TerminalEmitter` implements trait `Emitter` based on `termcolor1.0` 
+/// for rendering diagnostic as strings and displaying them to the terminal.
 /// 
-/// It is responsible for rendering diagnostic as strings and displaying them to the terminal.
 /// `termcolor1.0` supports displaying colorful string to terminal.
 ///
 /// # Examples
 ///
 /// ```rust
 /// # use crate::compiler_base_error::Emitter;
-/// # use compiler_base_error::EmitterWriter;
+/// # use compiler_base_error::TerminalEmitter;
 /// # use compiler_base_error::diagnostic::{components::Label, Diagnostic};
 /// # use compiler_base_error::diagnostic::style::DiagnosticStyle;
 ///
-/// // 1. Create a EmitterWriter
-/// let mut emitter_writer = EmitterWriter::default();
+/// // 1. Create a TerminalEmitter
+/// let mut term_emitter = TerminalEmitter::default();
 ///
 /// // 2. Create a diagnostic for emitting.
 /// let mut diagnostic = Diagnostic::<DiagnosticStyle>::new();
@@ -124,14 +125,14 @@ where
 /// diagnostic.append_component(msg);
 ///
 /// // 5. Emit the diagnostic.
-/// emitter_writer.emit_diagnostic(&diagnostic);
+/// term_emitter.emit_diagnostic(&diagnostic);
 /// ```
-pub struct EmitterWriter {
+pub struct TerminalEmitter {
     dst: Destination,
     short_message: bool,
 }
 
-impl Default for EmitterWriter {
+impl Default for TerminalEmitter {
     fn default() -> Self {
         Self {
             dst: Destination::from_stderr(),
@@ -211,7 +212,7 @@ impl<'a> Write for Destination {
     }
 }
 
-impl<T> Emitter<T> for EmitterWriter
+impl<T> Emitter<T> for TerminalEmitter
 where
     T: Clone + PartialEq + Eq + Style,
 {
