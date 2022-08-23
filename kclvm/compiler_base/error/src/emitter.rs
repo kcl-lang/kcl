@@ -1,8 +1,8 @@
 //! 'emitter.rs' defines the diagnostic emitter,
 //! which is responsible for displaying the rendered diagnostic.
 //!
-//! The crate providers `Emitter` trait to define the interface that diagnostic emitter should implement.
-//! and also provide a built-in emitters:
+//! The crate provides `Emitter` trait to define the interface that diagnostic emitter should implement.
+//! and also provides a built-in emitters:
 //!
 //!  + `TerminalEmitter` is responsible for emitting diagnostic to the terminal.
 //!  + TODO(zongz): `EmitterAPI` is responsible for serializing diagnostics and emitting them to the API.
