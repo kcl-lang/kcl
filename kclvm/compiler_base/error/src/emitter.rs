@@ -1,13 +1,13 @@
 //! 'emitter.rs' defines the diagnostic emitter,
 //! which is responsible for displaying the rendered diagnostic.
-//! 
+//!
 //! The crate providers `Emitter` trait to define the interface that diagnostic emitter should implement.
-//! and also provider a built-in emitters:
-//! 
+//! and also provide a built-in emitters:
+//!
 //!  + `TerminalEmitter` is responsible for emitting diagnostic to the terminal.
 //!  + TODO(zongz): `EmitterAPI` is responsible for serializing diagnostics and emitting them to the API.
-//! 
-//！Besides, it's easy define your customized `Emitter` by implementing `Emitter` trait.
+//!
+//！Besides, it's easy to define your customized `Emitter` by implementing `Emitter` trait.
 //! For more information about how to define your customized `Emitter`, see the doc above `Emitter` trait.
 //!
 use crate::diagnostic::{Component, Diagnostic};
@@ -97,9 +97,9 @@ where
     }
 }
 
-/// `TerminalEmitter` implements trait `Emitter` based on `termcolor1.0` 
+/// `TerminalEmitter` implements trait `Emitter` based on `termcolor1.0`
 /// for rendering diagnostic as strings and displaying them to the terminal.
-/// 
+///
 /// `termcolor1.0` supports displaying colorful string to terminal.
 ///
 /// # Examples
