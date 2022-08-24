@@ -35,6 +35,25 @@ mkdir -p bin
 mkdir -p lib
 cp $cpython_build_dir/bin/${py_exe_name} $kclvm_install_dir/bin/kclvm
 cp -r $cpython_build_dir/lib/${py_lib_basename} $kclvm_install_dir/lib/
+
+# Darwin dylib
+if [ -e $cpython_build_dir/lib/lib${py_lib_basename}.dylib ]; then
+    touch $kclvm_install_dir/lib/lib${py_lib_basename}.dylib
+    rm $kclvm_install_dir/lib/lib${py_lib_basename}.dylib
+    mv $cpython_build_dir/lib/lib${py_lib_basename}.dylib $kclvm_install_dir/lib/lib${py_lib_basename}.dylib
+fi
+# Linux so
+if [ -e $cpython_build_dir/lib/lib${py_lib_basename}m.so.1.0 ]; then
+    touch $kclvm_install_dir/lib/lib${py_lib_basename}.so
+    rm $kclvm_install_dir/lib/lib${py_lib_basename}.so
+    mv $cpython_build_dir/lib/lib${py_lib_basename}m.so.1.0 $kclvm_install_dir/lib/lib${py_lib_basename}.so
+fi
+# Windows dll
+if [ -e $cpython_build_dir/lib/lib${py_lib_basename}.dll ]; then
+    touch $kclvm_install_dir/lib/lib${py_lib_basename}.dll
+    rm $kclvm_install_dir/lib/lib${py_lib_basename}.dll
+    mv $cpython_build_dir/lib/lib${py_lib_basename}.dll $kclvm_install_dir/lib/lib${py_lib_basename}.dll
+fi
 cp -r $cpython_build_dir/include $kclvm_install_dir/
 
 # Copy KCLVM.

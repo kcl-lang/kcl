@@ -72,6 +72,7 @@ cpython_source_dir="$topdir/_build/3rdparty/Python-${py_ver_str}"
 # Perform the configuration/make/make install process.
 set -x
 cd $cpython_build_dir
+eval $config_envs $cpython_source_dir/configure $prefix_option $config_options "--enable-shared"
 eval $config_envs $cpython_source_dir/configure $prefix_option $config_options
 # The make -j command may fail on some OS.
 # make -j "$(nproc)"
