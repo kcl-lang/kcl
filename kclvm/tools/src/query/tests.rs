@@ -8,7 +8,7 @@ use pretty_assertions::assert_eq;
 #[test]
 fn test_override_file_simple() {
     let specs = vec![
-        "config.image=\"image/image\"".to_string(),
+        "config.image=image/image".to_string(),
         ":config.image=\"image/image:v1\"".to_string(),
         ":config.data={id=1,value=\"override_value\"}".to_string(),
     ];
@@ -44,7 +44,7 @@ fn test_override_file_import_paths() {
 fn test_override_file_config() {
     let specs = vec![
         "appConfiguration.image=\"kcl/kcl:{}\".format(version)".to_string(),
-        "appConfiguration.mainContainer.name=\"override_name\"".to_string(),
+        "appConfiguration.mainContainer.name=override_name".to_string(),
         "appConfiguration.labels.key.key=\"override_value\"".to_string(),
         "appConfiguration.overQuota=False".to_string(),
         "appConfiguration.probe={periodSeconds=20}".to_string(),

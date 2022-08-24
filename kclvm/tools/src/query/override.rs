@@ -57,6 +57,28 @@ pub fn apply_overrides(
     Ok(())
 }
 
+/// Build a expression from string.
+fn build_expr_from_string(value: &str) -> Option<ast::NodeRef<ast::Expr>> {
+    let expr: Option<ast::NodeRef<ast::Expr>> = parse_expr(value);
+    match &expr {
+        Some(e) => match &e.node {
+            // fix attr=value to attr="value"
+            ast::Expr::Identifier(_) | ast::Expr::Unary(_) | ast::Expr::Binary(_) => {
+                Some(ast::NodeRef::new(ast::Node::node_with_pos(
+                    ast::Expr::StringLit(ast::StringLit {
+                        is_long_string: false,
+                        raw_value: format!("{:?}", value),
+                        value: value.to_string(),
+                    }),
+                    e.pos(),
+                )))
+            }
+            _ => expr,
+        },
+        None => None,
+    }
+}
+
 /// Apply overrides on the AST module with the override specifications.
 ///
 /// Please note that this a low level internal API used by compiler itself,
@@ -107,7 +129,7 @@ pub fn apply_override_on_module(
         target_id: target_id.to_string(),
         field_path: field,
         override_key: key,
-        override_value: parse_expr(value),
+        override_value: build_expr_from_string(value),
         override_target_count: 0,
         has_override: false,
         action: o.action.clone(),

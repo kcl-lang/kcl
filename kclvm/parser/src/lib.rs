@@ -109,11 +109,12 @@ pub fn parse_expr(src: &str) -> Option<ast::NodeRef<ast::Expr>> {
         sm.new_source_file(PathBuf::from("").into(), src.to_string());
         let sess = &ParseSession::with_source_map(Arc::new(sm));
 
-        Some(create_session_globals_then(|| {
+        let expr: Option<ast::NodeRef<ast::Expr>> = Some(create_session_globals_then(|| {
             let stream = parse_token_streams(sess, src, BytePos::from_u32(0));
             let mut parser = Parser::new(sess, stream);
             parser.parse_expr()
-        }))
+        }));
+        expr
     }
 }
 
