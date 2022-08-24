@@ -2,7 +2,7 @@
 
 #[allow(non_camel_case_types)]
 type kclvm_value_ref_t = crate::ValueRef;
-use crate::{new_mut_ptr, IndexMap};
+use crate::{get_ref_mut, new_mut_ptr, IndexMap};
 use indexmap::IndexSet;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
@@ -196,6 +196,16 @@ impl Default for ValueRef {
 impl ValueRef {
     pub fn into_raw(self) -> *mut Self {
         new_mut_ptr(self)
+    }
+
+    pub fn from_raw(&self) {
+        match &*self.rc {
+            //if value is a func,clear captured ValueRef to break circular reference
+            Value::func_value(val) => {
+                get_ref_mut(val).closure = ValueRef::none();
+            }
+            _ => {}
+        }
     }
 }
 
