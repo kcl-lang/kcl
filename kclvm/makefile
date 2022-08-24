@@ -52,14 +52,14 @@ test:
 codecov:
 	rustup component add llvm-tools-preview
 	cargo install cargo-llvm-cov
-	cargo llvm-cov --html --open -p kclvm-*
+	cargo llvm-cov --workspace --ignore-filename-regex gpyrpc.rs --html --open 
 
 # Unit tests with code cov and output the lcov file (Requires rust 1.60+)
 codecov-lcov:
 	rustup component add llvm-tools-preview
 	cargo install cargo-llvm-cov
 	mkdir $(PWD)/.kclvm
-	cargo llvm-cov --lcov --output-path $(PWD)/.kclvm/lcov.info -p kclvm-*
+	cargo llvm-cov --lcov --output-path $(PWD)/.kclvm/lcov.info --workspace --ignore-filename-regex gpyrpc.rs
 
 # Test runtime libaries using python functions
 test-runtime:
