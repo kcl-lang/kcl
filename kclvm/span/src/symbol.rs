@@ -112,7 +112,7 @@ impl Ident {
     ///
     /// Note that the lifetime of the return value is a lie. See
     /// `Symbol::as_str()` for details.
-    pub fn as_str(&self) -> &str {
+    pub fn as_str(&self) -> String {
         self.name.as_str()
     }
 }
@@ -167,10 +167,8 @@ impl Symbol {
     /// interner. Interners are long-lived, and there are very few of them, and
     /// this function is typically used for short-lived things, so in practice
     /// it works out ok.
-    pub fn as_str(&self) -> &str {
-        with_session_globals(|session_globals| unsafe {
-            std::mem::transmute::<&str, &str>(session_globals.symbol_interner.get(*self))
-        })
+    pub fn as_str(&self) -> String {
+        with_session_globals(|session_globals| session_globals.symbol_interner.get(*self))
     }
 
     pub fn as_u32(self) -> u32 {
@@ -188,7 +186,7 @@ impl Symbol {
 
 impl fmt::Display for Symbol {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Display::fmt(self.as_str(), f)
+        fmt::Display::fmt(&self.as_str(), f)
     }
 }
 
