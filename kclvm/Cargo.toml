@@ -46,6 +46,7 @@ lto = true
 
 [workspace]
 members = [
+    "capi",
     "ast",
     "compiler",
     "config",
