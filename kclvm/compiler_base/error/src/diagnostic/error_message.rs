@@ -1,10 +1,11 @@
 //! The crate provides `ErrorMessage` to define the message displayed in diagnostics,
 //!
-use std::fs;
+use std::{fs, path::Path};
 
 use compiler_base_macros::bug;
 use fluent::{FluentArgs, FluentBundle, FluentResource};
 use unic_langid::langid;
+use walkdir::{DirEntry, WalkDir};
 
 // Enum `ErrorMessage` defines the message displayed in diagnostics.
 //
@@ -145,20 +146,43 @@ struct TemplateLoaderInner {
 impl TemplateLoaderInner {
     fn new_with_template_path(template_path: String) -> Self {
         let mut template_bunder = FluentBundle::new(vec![langid!("en-US")]);
-        let resource = fs::read_to_string(template_path).unwrap_or_else(|_err| {
-            bug!("Failed to read '*ftl' file");
-        });
-        let source = FluentResource::try_new(resource).unwrap_or_else(|_err| {
-            bug!("Failed to add FTL resources to the bundle.");
-        });
-        template_bunder.add_resource(source).unwrap_or_else(|_err| {
-            bug!("Failed to parse an FTL string.");
-        });
-
+        load_all_templates_in_dir_to_resources(template_path, &mut template_bunder);
         Self { template_bunder }
     }
 
     fn get_template_bunder(&self) -> &FluentBundle<FluentResource> {
         &self.template_bunder
+    }
+}
+
+fn is_ftl_file(entry: &DirEntry) -> bool {
+    entry
+        .file_name()
+        .to_str()
+        .map(|s| s.ends_with(".ftl"))
+        .unwrap_or(false)
+}
+
+fn load_all_templates_in_dir_to_resources(
+    dir: String,
+    fluent_bundle: &mut FluentBundle<FluentResource>,
+) {
+    if !std::path::Path::new(&dir).exists() {
+        bug!("Failed to load '*.ftl' dir");
+    }
+
+    for entry in WalkDir::new(dir) {
+        let entry = entry.unwrap_or_else(|_err| bug!("Failed to load '*.ftl' dir"));
+        if is_ftl_file(&entry) {
+            let resource = fs::read_to_string(entry.path()).unwrap_or_else(|_err| {
+                bug!("Failed to read '*ftl' file");
+            });
+            let source = FluentResource::try_new(resource).unwrap_or_else(|_err| {
+                bug!("Failed to add FTL resources to the bundle.");
+            });
+            fluent_bundle.add_resource(source).unwrap_or_else(|_err| {
+                bug!("Failed to parse an FTL string.");
+            });
+        }
     }
 }
