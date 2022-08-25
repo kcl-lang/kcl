@@ -83,12 +83,12 @@ mod test_error_message {
 
     #[test]
     fn test_template_message() {
-        let template_path = "./src/diagnostic/locales/en-US/default.ftl";
+        let template_dir = "./src/diagnostic/locales/en-US";
         let no_args = MessageArgs::new();
         let msg_index = MessageIndex::from("invalid-syntax");
         let no_sub_msg_index = None;
         let template_msg = ErrorMessage::new_template_msg(msg_index, no_sub_msg_index, &no_args);
-        let template_loader = TemplateLoader::new_with_template_path(template_path.to_string());
+        let template_loader = TemplateLoader::new_with_template_dir(template_dir.to_string());
         let msg_in_line_1 = template_msg.trans_msg_to_str(Some(&template_loader));
         assert_eq!(msg_in_line_1, "Invalid syntax");
 
@@ -97,7 +97,7 @@ mod test_error_message {
         let msg_index = MessageIndex::from("invalid-syntax");
         let sub_msg_index = MessageIndex::from("expected");
         let template_msg = ErrorMessage::new_template_msg(msg_index, Some(sub_msg_index), &args);
-        let template_loader = TemplateLoader::new_with_template_path(template_path.to_string());
+        let template_loader = TemplateLoader::new_with_template_dir(template_dir.to_string());
         let msg_in_line_2 = template_msg.trans_msg_to_str(Some(&template_loader));
         assert_eq!(
             msg_in_line_2,

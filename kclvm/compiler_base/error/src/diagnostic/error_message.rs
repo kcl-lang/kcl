@@ -1,6 +1,6 @@
 //! The crate provides `ErrorMessage` to define the message displayed in diagnostics,
 //!
-use std::{fs, path::Path};
+use std::fs;
 
 use compiler_base_macros::bug;
 use fluent::{FluentArgs, FluentBundle, FluentResource};
@@ -101,9 +101,9 @@ pub(crate) struct TemplateLoader {
 }
 
 impl TemplateLoader {
-    pub(crate) fn new_with_template_path(template_path: String) -> Self {
+    pub(crate) fn new_with_template_dir(template_dir: String) -> Self {
         Self {
-            template_inner: TemplateLoaderInner::new_with_template_path(template_path),
+            template_inner: TemplateLoaderInner::new_with_template_dir(template_dir),
         }
     }
 
@@ -144,9 +144,9 @@ struct TemplateLoaderInner {
 }
 
 impl TemplateLoaderInner {
-    fn new_with_template_path(template_path: String) -> Self {
+    fn new_with_template_dir(template_dir: String) -> Self {
         let mut template_bunder = FluentBundle::new(vec![langid!("en-US")]);
-        load_all_templates_in_dir_to_resources(template_path, &mut template_bunder);
+        load_all_templates_in_dir_to_resources(template_dir, &mut template_bunder);
         Self { template_bunder }
     }
 
