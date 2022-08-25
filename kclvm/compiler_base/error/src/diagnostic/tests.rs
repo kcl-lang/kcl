@@ -82,7 +82,7 @@ mod test_error_message {
     #[test]
     fn test_template_message() {
         let template_dir = "./src/diagnostic/locales/en-US";
-        let template_loader = TemplateLoader::new_with_template_dir(template_dir.to_string());
+        let template_loader = TemplateLoader::new_with_template_dir(template_dir).unwrap();
 
         let mut args = MessageArgs::new();
         check_template_msg(
@@ -120,6 +120,6 @@ mod test_error_message {
         template_loader: &TemplateLoader,
     ) {
         let msg_in_line = template_loader.get_msg_to_str(index, sub_index, &args);
-        assert_eq!(msg_in_line, expected_msg);
+        assert_eq!(msg_in_line.unwrap(), expected_msg);
     }
 }

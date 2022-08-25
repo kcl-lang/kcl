@@ -1,8 +1,8 @@
-//! The crate provides `TemplateLoader` to load the message displayed in diagnostics from "*.ftl" files,
+//! The crate provides `TemplateLoader` to load the error message displayed in diagnostics from "*.ftl" files,
 //!
 use std::fs;
 
-use compiler_base_macros::bug;
+use anyhow::{bail, Context, Error, Result};
 use fluent::{FluentArgs, FluentBundle, FluentResource};
 use unic_langid::langid;
 use walkdir::{DirEntry, WalkDir};
@@ -49,12 +49,12 @@ impl TemplateLoader {
     ///
     /// ```rust
     /// # use compiler_base_error::diagnostic::error_message::TemplateLoader;
-    /// let error_message = TemplateLoader::new_with_template_dir("./src/diagnostic/locales/en-US/".to_string());
+    /// let error_message = TemplateLoader::new_with_template_dir("./src/diagnostic/locales/en-US/");
     /// ```
-    pub fn new_with_template_dir(template_dir: String) -> Self {
-        Self {
-            template_inner: TemplateLoaderInner::new_with_template_dir(template_dir),
-        }
+    pub fn new_with_template_dir(template_dir: &str) -> Result<Self> {
+        let template_inner = TemplateLoaderInner::new_with_template_dir(template_dir)
+            .with_context(|| format!("Failed to load '*.ftl' from '{}'", template_dir))?;
+        Ok(Self { template_inner })
     }
 
     /// Get the message string from "*.ftl" file by `index`, `sub_index` and `MessageArgs`.
@@ -81,8 +81,8 @@ impl TemplateLoader {
     /// let sub_index = None;
     ///
     /// // 3. Create the `TemplateLoader` with template (*.ftl) files directory.
-    /// let error_message = TemplateLoader::new_with_template_dir("./src/diagnostic/locales/en-US/".to_string());
-    /// let msg_in_line_1 = error_message.get_msg_to_str(index, sub_index, &no_args);
+    /// let error_message = TemplateLoader::new_with_template_dir("./src/diagnostic/locales/en-US/").unwrap();
+    /// let msg_in_line_1 = error_message.get_msg_to_str(index, sub_index, &no_args).unwrap();
     ///
     /// assert_eq!(msg_in_line_1, "Invalid syntax");
     /// ```
@@ -105,8 +105,8 @@ impl TemplateLoader {
     /// let sub_index = "expected";
     ///
     /// // 4. With the help of `TemplateLoader`, you can get the message in 'default.ftl'.
-    /// let error_message = TemplateLoader::new_with_template_dir("./src/diagnostic/locales/en-US/".to_string());
-    /// let msg_in_line_2 = error_message.get_msg_to_str(index, Some(sub_index), &args);
+    /// let error_message = TemplateLoader::new_with_template_dir("./src/diagnostic/locales/en-US/").unwrap();
+    /// let msg_in_line_2 = error_message.get_msg_to_str(index, Some(sub_index), &args).unwrap();
     ///
     /// assert_eq!(msg_in_line_2, "Expected one of `\u{2068}I am an expected item\u{2069}`");
     /// ```
@@ -115,19 +115,21 @@ impl TemplateLoader {
         index: &str,
         sub_index: Option<&str>,
         args: &MessageArgs,
-    ) -> String {
-        let msg = self
-            .template_inner
-            .get_template_bunder()
-            .get_message(index)
-            .unwrap_or_else(|| bug!("Message doesn't exist."));
+    ) -> Result<String> {
+        let msg = match self.template_inner.get_template_bunder().get_message(index) {
+            Some(m) => m,
+            None => bail!("Message doesn't exist."),
+        };
 
         let pattern = match sub_index {
             Some(s_id) => {
                 let attr = msg.get_attribute(s_id).unwrap();
                 attr.value()
             }
-            None => msg.value().unwrap_or_else(|| bug!("Message has no value.")),
+            None => match msg.value() {
+                Some(v) => v,
+                None => bail!("Message has no value."),
+            },
         };
 
         let MessageArgs(args) = args;
@@ -136,7 +138,7 @@ impl TemplateLoader {
             Some(&args),
             &mut vec![],
         );
-        value.to_string()
+        Ok(value.to_string())
     }
 }
 
@@ -161,7 +163,7 @@ impl TemplateLoader {
 /// msg_args.set("This is Key", "This is Value");
 ///
 /// // When you use it, just sent it to `TemplateLoader`.
-/// let error_message = TemplateLoader::new_with_template_dir("./src/diagnostic/locales/en-US/".to_string());
+/// let error_message = TemplateLoader::new_with_template_dir("./src/diagnostic/locales/en-US/").unwrap();
 /// let msg_in_line_1 = error_message.get_msg_to_str(index, sub_index, &msg_args);
 /// ```
 ///
@@ -183,10 +185,11 @@ struct TemplateLoaderInner {
 }
 
 impl TemplateLoaderInner {
-    fn new_with_template_dir(template_dir: String) -> Self {
+    fn new_with_template_dir(template_dir: &str) -> Result<Self> {
         let mut template_bunder = FluentBundle::new(vec![langid!("en-US")]);
-        load_all_templates_in_dir_to_resources(template_dir, &mut template_bunder);
-        Self { template_bunder }
+        load_all_templates_in_dir_to_resources(template_dir, &mut template_bunder)
+            .with_context(|| format!("Failed to load '*.ftl' from '{}'", template_dir))?;
+        Ok(Self { template_bunder })
     }
 
     fn get_template_bunder(&self) -> &FluentBundle<FluentResource> {
@@ -203,25 +206,35 @@ fn is_ftl_file(entry: &DirEntry) -> bool {
 }
 
 fn load_all_templates_in_dir_to_resources(
-    dir: String,
+    dir: &str,
     fluent_bundle: &mut FluentBundle<FluentResource>,
-) {
+) -> Result<()> {
     if !std::path::Path::new(&dir).exists() {
-        bug!("Failed to load '*.ftl' dir");
+        bail!("Failed to load '*.ftl' dir");
     }
 
     for entry in WalkDir::new(dir) {
-        let entry = entry.unwrap_or_else(|_err| bug!("Failed to load '*.ftl' dir"));
+        let entry = match entry {
+            Ok(entry) => entry,
+            Err(_) => bail!("Failed to load '*.ftl' dir"),
+        };
+
         if is_ftl_file(&entry) {
-            let resource = fs::read_to_string(entry.path()).unwrap_or_else(|_err| {
-                bug!("Failed to read '*ftl' file");
-            });
-            let source = FluentResource::try_new(resource).unwrap_or_else(|_err| {
-                bug!("Failed to add FTL resources to the bundle.");
-            });
-            fluent_bundle.add_resource(source).unwrap_or_else(|_err| {
-                bug!("Failed to parse an FTL string.");
-            });
+            let resource = match fs::read_to_string(entry.path()) {
+                Ok(res) => res,
+                Err(_) => bail!("Failed to read '*ftl' file"),
+            };
+
+            let source = match FluentResource::try_new(resource) {
+                Ok(s) => s,
+                Err(_) => bail!("Failed to add FTL resources to the bundle."),
+            };
+
+            match fluent_bundle.add_resource(source) {
+                Ok(_) => {}
+                Err(_) => bail!("Failed to parse an FTL string."),
+            }
         }
     }
+    Ok(())
 }
