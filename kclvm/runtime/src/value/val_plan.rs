@@ -7,7 +7,6 @@ use crate::*;
 pub const KCL_PRIVATE_VAR_PREFIX: &str = "_";
 const LIST_DICT_TEMP_KEY: &str = "$";
 
-#[allow(dead_code)]
 fn filter_results(key_values: &ValueRef) -> Vec<ValueRef> {
     let mut results: Vec<ValueRef> = vec![];
     if !key_values.is_config() {
@@ -24,7 +23,7 @@ fn filter_results(key_values: &ValueRef) -> Vec<ValueRef> {
         }
         if key.starts_with(KCL_PRIVATE_VAR_PREFIX) || value.is_undefined() || value.is_func() {
             continue;
-        } else if value.is_schema() {
+        } else if value.is_schema() || value.has_key(SCHEMA_SETTINGS_ATTR_NAME) {
             let (filtered, standalone) = handle_schema(value);
             if !filtered.is_empty() {
                 if standalone {
@@ -47,12 +46,16 @@ fn filter_results(key_values: &ValueRef) -> Vec<ValueRef> {
             }
         } else if value.is_dict() {
             let filtered = filter_results(value);
-            let result = results.get_mut(0).unwrap();
-            result.dict_update_key_value(key.as_str(), filtered[0].clone());
-            // if the value has derived 'STANDALONE' instances, extend them
-            if filtered.len() > 1 {
-                for v in &filtered[1..] {
-                    results.push(v.clone());
+            if !results.is_empty() {
+                let result = results.get_mut(0).unwrap();
+                if !filtered.is_empty() {
+                    result.dict_update_key_value(key.as_str(), filtered[0].clone());
+                }
+                // if the value has derived 'STANDALONE' instances, extend them
+                if filtered.len() > 1 {
+                    for v in &filtered[1..] {
+                        results.push(v.clone());
+                    }
                 }
             }
         } else if value.is_list() {
@@ -61,8 +64,8 @@ fn filter_results(key_values: &ValueRef) -> Vec<ValueRef> {
             let mut ignore_schema_count = 0;
             let list_value = value.as_list_ref();
             for v in &list_value.values {
-                if v.is_schema() {
-                    let (filtered, standalone) = handle_schema(value);
+                if v.is_schema() || v.has_key(SCHEMA_SETTINGS_ATTR_NAME) {
+                    let (filtered, standalone) = handle_schema(v);
                     if filtered.is_empty() {
                         ignore_schema_count += 1;
                         continue;
@@ -115,9 +118,12 @@ fn filter_results(key_values: &ValueRef) -> Vec<ValueRef> {
         }
     }
     results
+        .iter()
+        .filter(|r| !r.is_planned_empty())
+        .cloned()
+        .collect()
 }
 
-#[allow(dead_code)]
 fn handle_schema(value: &ValueRef) -> (Vec<ValueRef>, bool) {
     let filtered = filter_results(value);
     if filtered.is_empty() {
@@ -161,6 +167,32 @@ impl ValueRef {
     pub fn plan_to_yaml_string(&self) -> String {
         let result = self.filter_results();
         result.to_yaml_string()
+    }
+
+    /// Plan the value to the YAML string with delimiter `---`.
+    pub fn plan_to_yaml_string_with_delimiter(&self) -> String {
+        let results = filter_results(self);
+        let results = results
+            .iter()
+            .map(|r| r.to_yaml_string())
+            .collect::<Vec<String>>();
+        results.join("---\n")
+    }
+
+    /// Plan the value to JSON and YAML strings
+    pub fn plan(&self) -> (String, String) {
+        let results = filter_results(self);
+        let yaml_result = results
+            .iter()
+            .map(|r| r.to_yaml_string())
+            .collect::<Vec<String>>()
+            .join("---\n");
+        let mut list_result = ValueRef::list(None);
+        for r in results {
+            list_result.list_append(&r);
+        }
+        let json_result = list_result.to_json_string();
+        (json_result, yaml_result)
     }
 
     fn filter_results(&self) -> ValueRef {

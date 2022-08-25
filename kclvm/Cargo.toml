@@ -38,6 +38,12 @@ kclvm-tools = {path = "./tools", version = "0.1.0"}
 kclvm-version = {path = "./version", version = "0.1.0"}
 kclvm-error = {path = "./error", version = "0.1.0"}
 
+[profile.release]
+rpath = true
+panic = "unwind"
+opt-level = "z"  # Optimize for size.
+lto = true
+
 [workspace]
 members = [
     "ast",
