@@ -1,4 +1,4 @@
-//! The crate provides `ErrorMessage` to define the message displayed in diagnostics,
+//! The crate provides `TemplateLoader` to load the message displayed in diagnostics from "*.ftl" files,
 //!
 use std::fs;
 
@@ -7,115 +7,115 @@ use fluent::{FluentArgs, FluentBundle, FluentResource};
 use unic_langid::langid;
 use walkdir::{DirEntry, WalkDir};
 
-// Enum `ErrorMessage` defines the message displayed in diagnostics.
-//
-// The builtin `ErrorMessage` includes:
-// - StrMessage: the string messages.
-// - TemplateMessage: the string loaded from "*.ftl" file, depends on "fluent-0.16.0".
-//
-// `StrMessage` is only a string.
-//
-// `TemplateMessage` is the message loaded from '*.ftl' file, depends on "fluent-0.16.0".
-// With the help of "fluent-0.16.0", you can get a message string by a message index.
-//
-// "*.ftl" file looks like, e.g. './src/diagnostic/locales/en-US/default.ftl' :
-//
-// ```
-// 1.   invalid-syntax = Invalid syntax
-// 2.             .expected = Expected one of `{$expected_items}`
-// ```
-//
-// - In line 1, `invalid-syntax` is a `MessageIndex`, `Invalid syntax` is the `TemplateMessage` to this `MessageIndex`.
-// - In line 2, `.expected` is another `MessageIndex`, it is a sub-`MessageIndex` of `invalid-syntax`.
-// - In line 2, Sub-`MessageIndex` must start with a point `.` and it is optional.
-// - In line 2, `Expected one of `{$expected_items}`` is the `TemplateMessage` to `.expected`. It is an interpolated string.
-// - In line 2, `{$expected_items}` is a `MessageArgs` of the `Expected one of `{$expected_items}``
-// and `MessageArgs` can be recognized as a Key-Value entry, it is optional.
-//
-// The pattern of above '*.ftl' file looks like:
-// ```
-// 1.   <TemplateMessageIndex>.<MessageIndex> = <TemplateMessage, Optional<MessageArgs>>
-// 2.             .Optional<<TemplateMessageIndex>.<MessageIndex>> = <TemplateMessage, Optional<MessageArgs>>
-// ```
-pub(crate) enum ErrorMessage<'a> {
-    StrMessage(String),
-    TemplateMessage(TemplateMessageIndex, &'a MessageArgs<'a>),
-}
-
-// `MessageIndex` only supports "String".
-pub(crate) type MessageIndex = String;
-
-// `TemplateMessageIndex` includes one index and one sub-index.
-// Index and sub-index are both `MessageIndex`, and sub-index is optional.
-pub(crate) struct TemplateMessageIndex(pub(crate) MessageIndex, pub(crate) Option<MessageIndex>);
-
-impl<'a> ErrorMessage<'a> {
-    // Create a string error message.
-    pub(crate) fn new_str_msg(str_msg: String) -> Self {
-        Self::StrMessage(str_msg)
-    }
-
-    // Create an error message loaded from template file(*.ftl).
-    pub(crate) fn new_template_msg(
-        index: String,
-        sub_index: Option<String>,
-        args: &'a MessageArgs,
-    ) -> Self {
-        let sub_index = match sub_index {
-            Some(sub_i) => Some(MessageIndex::from(sub_i)),
-            None => None,
-        };
-        let template_index = TemplateMessageIndex(MessageIndex::from(index), sub_index);
-        Self::TemplateMessage(template_index, args)
-    }
-
-    // Get the content of the message in string.
-    pub(crate) fn trans_msg_to_str(&self, template_loader: Option<&'a TemplateLoader>) -> String {
-        match self {
-            ErrorMessage::StrMessage(s) => s.to_string(),
-            ErrorMessage::TemplateMessage(index, msg_args) => match template_loader {
-                Some(template_loader) => template_loader.load_message(index, msg_args),
-                None => bug!("'TemplateLoader' is not found."),
-            },
-        }
-    }
-}
-
-// `MessageArgs` is the arguments of the interpolated string in `ErrorMessage`.
-// `MessageArgs` is a Key-Value entry which only supports "set" and without "get".
-// Note: Currently both `Key` and `Value` of `MessageArgs` types only support string (&str).
-pub(crate) struct MessageArgs<'a>(FluentArgs<'a>);
-impl<'a> MessageArgs<'a> {
-    pub(crate) fn new() -> Self {
-        Self(FluentArgs::new())
-    }
-
-    pub(crate) fn set(&mut self, k: &'a str, v: &'a str) {
-        self.0.set(k, v);
-    }
-}
-
-// `TemplateLoader` load template contents from "*.ftl" file.
-pub(crate) struct TemplateLoader {
+/// Struct `TemplateLoader` load template contents from "*.ftl" file.
+///
+/// "*.ftl" file looks like, e.g. './src/diagnostic/locales/en-US/default.ftl' :
+///
+/// ``` ignore
+/// 1.   invalid-syntax = Invalid syntax
+/// 2.             .expected = Expected one of `{$expected_items}`
+/// ```
+///
+/// - In line 1, `invalid-syntax` is a `index`, `Invalid syntax` is the `Message String` to this `index`.
+/// - In line 2, `.expected` is another `index`, it is a `sub_index` of `invalid-syntax`.
+/// - In line 2, `sub_index` must start with a point `.` and it is optional.
+/// - In line 2, `Expected one of `{$expected_items}`` is the `Message String` to `.expected`. It is an interpolated string.
+/// - In line 2, `{$expected_items}` is a `MessageArgs` of the `Expected one of `{$expected_items}``
+/// and `MessageArgs` can be recognized as a Key-Value entry, it is optional.  
+///
+/// The pattern of above '*.ftl' file looks like:
+/// ``` ignore
+/// 1.   <'index'> = <'message_string' with optional 'MessageArgs'>
+/// 2.             <optional 'sub_index' start with point> = <'message_string' with optional 'MessageArgs'>
+/// ```
+pub struct TemplateLoader {
     template_inner: TemplateLoaderInner,
 }
 
 impl TemplateLoader {
-    pub(crate) fn new_with_template_dir(template_dir: String) -> Self {
+    /// Create the `TemplateLoader` with template (*.ftl) files directory.
+    /// `TemplateLoader` will load all the files end with "*.ftl" under the directory recursively.
+    ///
+    /// template_files
+    ///      |
+    ///      |---- template.ftl
+    ///      |---- sub_template_files
+    ///                  |
+    ///                  |---- sub_template.ftl
+    ///
+    /// 'template.ftl' and 'sub_template.ftl' can both loaded by the `new_with_template_dir()`.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use compiler_base_error::diagnostic::error_message::TemplateLoader;
+    /// let error_message = TemplateLoader::new_with_template_dir("./src/diagnostic/locales/en-US/".to_string());
+    /// ```
+    pub fn new_with_template_dir(template_dir: String) -> Self {
         Self {
             template_inner: TemplateLoaderInner::new_with_template_dir(template_dir),
         }
     }
 
-    pub(crate) fn load_message(
+    /// Get the message string from "*.ftl" file by `index`, `sub_index` and `MessageArgs`.
+    /// For more information about "*.ftl" file, see the doc above `TemplateLoader`.
+    ///
+    /// ``` ignore
+    /// 1.   invalid-syntax = Invalid syntax
+    /// 2.             .expected = Expected one of `{$expected_items}`
+    /// ```
+    /// And for the 'default.ftl' shown above, you can get messages as follow:
+    ///
+    /// 1. If you want the message 'Invalid syntax' in line 1.
+    ///
+    /// ```rust
+    /// # use compiler_base_error::diagnostic::error_message::TemplateLoader;
+    /// # use compiler_base_error::diagnostic::error_message::MessageArgs;
+    /// # use std::borrow::Borrow;
+    ///
+    /// // 1. Prepare an empty `MessageArgs`, Message in line 1 is not an interpolated string.
+    /// let no_args = MessageArgs::new();
+    ///
+    /// // 2. `index` is 'invalid-syntax' and has no `sub_index`.
+    /// let index = "invalid-syntax";
+    /// let sub_index = None;
+    ///
+    /// // 3. Create the `TemplateLoader` with template (*.ftl) files directory.
+    /// let error_message = TemplateLoader::new_with_template_dir("./src/diagnostic/locales/en-US/".to_string());
+    /// let msg_in_line_1 = error_message.get_msg_to_str(index, sub_index, &no_args);
+    ///
+    /// assert_eq!(msg_in_line_1, "Invalid syntax");
+    /// ```
+    ///
+    /// 2. If you want the message 'Expected one of `{$expected_items}`' in line 2.
+    ///
+    /// ```rust
+    /// # use compiler_base_error::diagnostic::error_message::TemplateLoader;
+    /// # use compiler_base_error::diagnostic::error_message::MessageArgs;
+    /// # use std::borrow::Borrow;
+    ///
+    /// // 1. Prepare the `MessageArgs` for `{$expected_items}`.
+    /// let mut args = MessageArgs::new();
+    /// args.set("expected_items", "I am an expected item");
+    ///
+    /// // 2. `index` is 'invalid-syntax'.
+    /// let index = "invalid-syntax";
+    ///
+    /// // 3. `sub_index` is 'expected'.
+    /// let sub_index = "expected";
+    ///
+    /// // 4. With the help of `TemplateLoader`, you can get the message in 'default.ftl'.
+    /// let error_message = TemplateLoader::new_with_template_dir("./src/diagnostic/locales/en-US/".to_string());
+    /// let msg_in_line_2 = error_message.get_msg_to_str(index, Some(sub_index), &args);
+    ///
+    /// assert_eq!(msg_in_line_2, "Expected one of `\u{2068}I am an expected item\u{2069}`");
+    /// ```
+    pub fn get_msg_to_str(
         &self,
-        err_msg_index: &TemplateMessageIndex,
-        msg_args: &MessageArgs,
+        index: &str,
+        sub_index: Option<&str>,
+        args: &MessageArgs,
     ) -> String {
-        let MessageArgs(args) = msg_args;
-
-        let TemplateMessageIndex(index, sub_index) = err_msg_index;
-
         let msg = self
             .template_inner
             .get_template_bunder()
@@ -129,12 +129,51 @@ impl TemplateLoader {
             }
             None => msg.value().unwrap_or_else(|| bug!("Message has no value.")),
         };
+
+        let MessageArgs(args) = args;
         let value = self.template_inner.get_template_bunder().format_pattern(
             pattern,
             Some(&args),
             &mut vec![],
         );
         value.to_string()
+    }
+}
+
+/// `MessageArgs` is the arguments of the interpolated string.
+///
+/// `MessageArgs` is a Key-Value entry which only supports "set" and without "get".
+/// You need getting nothing from `MessageArgs`. Only setting it and senting it to `TemplateLoader` is enough.
+///
+/// Note: Currently both `Key` and `Value` of `MessageArgs` types only support string (&str).
+///
+/// # Examples
+///
+/// ```rust
+/// # use compiler_base_error::diagnostic::error_message::MessageArgs;
+/// # use compiler_base_error::diagnostic::error_message::TemplateLoader;
+/// # use std::borrow::Borrow;
+///
+/// let index = "invalid-syntax";
+/// let sub_index = Some("expected");
+/// let mut msg_args = MessageArgs::new();
+/// // You only need "set()".
+/// msg_args.set("This is Key", "This is Value");
+///
+/// // When you use it, just sent it to `TemplateLoader`.
+/// let error_message = TemplateLoader::new_with_template_dir("./src/diagnostic/locales/en-US/".to_string());
+/// let msg_in_line_1 = error_message.get_msg_to_str(index, sub_index, &msg_args);
+/// ```
+///
+/// For more information about the `TemplateLoader` see the doc above struct `TemplateLoader`.
+pub struct MessageArgs<'a>(FluentArgs<'a>);
+impl<'a> MessageArgs<'a> {
+    pub fn new() -> Self {
+        Self(FluentArgs::new())
+    }
+
+    pub fn set(&mut self, k: &'a str, v: &'a str) {
+        self.0.set(k, v);
     }
 }
 

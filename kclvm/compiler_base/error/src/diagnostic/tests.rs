@@ -77,37 +77,49 @@ mod test_components {
 }
 
 mod test_error_message {
-    use crate::diagnostic::error_message::{
-        ErrorMessage, MessageArgs, MessageIndex, TemplateLoader,
-    };
+    use crate::diagnostic::error_message::{MessageArgs, TemplateLoader};
 
     #[test]
     fn test_template_message() {
         let template_dir = "./src/diagnostic/locales/en-US";
-        let no_args = MessageArgs::new();
-        let msg_index = MessageIndex::from("invalid-syntax");
-        let no_sub_msg_index = None;
-        let template_msg = ErrorMessage::new_template_msg(msg_index, no_sub_msg_index, &no_args);
         let template_loader = TemplateLoader::new_with_template_dir(template_dir.to_string());
-        let msg_in_line_1 = template_msg.trans_msg_to_str(Some(&template_loader));
-        assert_eq!(msg_in_line_1, "Invalid syntax");
 
         let mut args = MessageArgs::new();
+        check_template_msg(
+            "invalid-syntax",
+            None,
+            &args,
+            "Invalid syntax",
+            &template_loader,
+        );
+
         args.set("expected_items", "I am an expected item");
-        let msg_index = MessageIndex::from("invalid-syntax");
-        let sub_msg_index = MessageIndex::from("expected");
-        let template_msg = ErrorMessage::new_template_msg(msg_index, Some(sub_msg_index), &args);
-        let template_loader = TemplateLoader::new_with_template_dir(template_dir.to_string());
-        let msg_in_line_2 = template_msg.trans_msg_to_str(Some(&template_loader));
-        assert_eq!(
-            msg_in_line_2,
-            "Expected one of `\u{2068}I am an expected item\u{2069}`"
+        check_template_msg(
+            "invalid-syntax",
+            Some("expected"),
+            &args,
+            "Expected one of `\u{2068}I am an expected item\u{2069}`",
+            &template_loader,
+        );
+
+        args.set("expected_items", "I am an expected item");
+        check_template_msg(
+            "invalid-syntax-1",
+            Some("expected_1"),
+            &args,
+            "Expected one of `\u{2068}I am an expected item\u{2069}` 1",
+            &template_loader,
         );
     }
 
-    #[test]
-    fn test_str_message() {
-        let str_msg = ErrorMessage::new_str_msg("This is a str msg".to_string());
-        assert_eq!(str_msg.trans_msg_to_str(None), "This is a str msg");
+    fn check_template_msg(
+        index: &str,
+        sub_index: Option<&str>,
+        args: &MessageArgs,
+        expected_msg: &str,
+        template_loader: &TemplateLoader,
+    ) {
+        let msg_in_line = template_loader.get_msg_to_str(index, sub_index, &args);
+        assert_eq!(msg_in_line, expected_msg);
     }
 }
