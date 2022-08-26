@@ -17,7 +17,7 @@ impl Context {
     pub fn builtin_option_reset(&mut self) {
         for (_, x) in self.app_args.iter() {
             if (*x) != 0 {
-                kclvm_value_delete((*x) as *mut ValueRef);
+                // kclvm_value_delete((*x) as *mut ValueRef);
             }
         }
         self.app_args.clear();

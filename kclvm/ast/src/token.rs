@@ -303,7 +303,7 @@ impl Into<String> for Token {
                 let sym = lk.symbol.as_str().to_string();
 
                 match lk.suffix {
-                    Some(suf) => sym + suf.as_str(),
+                    Some(suf) => sym + &suf.as_str(),
                     _other_none => sym,
                 }
             }

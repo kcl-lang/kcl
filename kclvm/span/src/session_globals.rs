@@ -61,8 +61,8 @@ pub struct Interner(RefCell<InternerInner>);
 // between `Interner`s.
 #[derive(Default, Debug)]
 struct InternerInner {
-    names: HashMap<&'static str, Symbol>,
-    strings: Vec<&'static str>,
+    names: HashMap<String, Symbol>,
+    strings: Vec<String>,
 }
 
 impl Default for Interner {
@@ -74,8 +74,12 @@ impl Default for Interner {
 impl Interner {
     pub fn prefill(init: &[&'static str]) -> Self {
         Interner(RefCell::new(InternerInner {
-            strings: init.into(),
-            names: init.iter().copied().zip((0..).map(Symbol::new)).collect(),
+            strings: init.iter().map(|s| s.to_string()).collect(),
+            names: init
+                .iter()
+                .map(|s| s.to_string())
+                .zip((0..).map(Symbol::new))
+                .collect(),
         }))
     }
 
@@ -88,18 +92,15 @@ impl Interner {
 
         let name = Symbol::new(inner.strings.len() as u32);
 
-        // SAFETY: we can extend the arena allocation to `'static` because we
-        // only access these while the arena is still alive.
-        let string: &'static str = Box::leak(Box::new(string.to_string()));
-        inner.strings.push(string);
+        inner.strings.push(string.to_string());
 
-        inner.names.insert(string, name);
+        inner.names.insert(string.to_string(), name);
         name
     }
 
     // Get the symbol as a string. `Symbol::as_str()` should be used in
     // preference to this function.
-    pub fn get(&self, symbol: Symbol) -> &str {
-        self.0.borrow().strings[symbol.0.idx as usize]
+    pub fn get(&self, symbol: Symbol) -> String {
+        self.0.borrow().strings[symbol.0.idx as usize].clone()
     }
 }

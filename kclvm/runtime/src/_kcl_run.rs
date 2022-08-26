@@ -171,7 +171,7 @@ fn _kcl_run_in_closure(
             return_len = 0 - return_len;
         }
 
-        kclvm_value_delete(value);
+        // Delete by context to ignore pointer double free.
         return_len
     }
 }

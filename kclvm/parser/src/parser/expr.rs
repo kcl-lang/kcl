@@ -1775,7 +1775,7 @@ impl<'a> Parser<'a> {
                         .struct_span_error("cross line type is not supported.", self.token.span)
                 }
 
-                s.push_str(lt.symbol.as_str())
+                s.push_str(&lt.symbol.as_str())
             }
 
             s.to_string()
@@ -1997,7 +1997,10 @@ impl<'a> Parser<'a> {
                     }
                 };
                 match lk.suffix {
-                    Some(suffix) => (suffix.as_str().try_into().ok(), NumberLitValue::Int(value)),
+                    Some(suffix) => (
+                        suffix.as_str().as_str().try_into().ok(),
+                        NumberLitValue::Int(value),
+                    ),
                     None => (None, NumberLitValue::Int(value)),
                 }
             }
