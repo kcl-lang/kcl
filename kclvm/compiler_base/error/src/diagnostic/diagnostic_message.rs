@@ -7,15 +7,15 @@ use unic_langid::langid;
 use walkdir::{DirEntry, WalkDir};
 
 /// Struct `TemplateLoader` load template contents from "*.ftl" file.
-/// 
-/// `TemplateLoader` will operate on files locally. 
-/// 
-/// In order to avoid the performance loss and thread safety problems that 
+///
+/// `TemplateLoader` will operate on files locally.
+///
+/// In order to avoid the performance loss and thread safety problems that
 /// may occur during the constructing the `TemplateLoader`, we close the constructor of `TemplateLoader`.
-/// 
-/// You only need to pass the path of the "*.ftl" file to `DiagnosticHandler`, 
+///
+/// You only need to pass the path of the "*.ftl" file to `DiagnosticHandler`,
 /// and `DiagnosticHandler` will automatically construct `TemplateLoader` and load the template file.
-/// 
+///
 /// `TemplateLoader` is only useful for you, when you want to get message from template file by `get_msg_to_str()`.
 /// For more information about how to use `get_msg_to_str()`, see the doc above `get_msg_to_str()`.
 pub struct TemplateLoader {
@@ -37,7 +37,9 @@ impl TemplateLoader {
     pub(crate) fn new_with_template_dir(template_dir: &str) -> Result<Self> {
         let template_inner = TemplateLoaderInner::new_with_template_dir(template_dir)
             .with_context(|| format!("Failed to load '*.ftl' from '{}'", template_dir))?;
-        Ok(Self { template_inner: Arc::new(template_inner) })
+        Ok(Self {
+            template_inner: Arc::new(template_inner),
+        })
     }
 
     /// Get the message string from "*.ftl" file by `index`, `sub_index` and `MessageArgs`.
@@ -167,7 +169,7 @@ impl TemplateLoader {
 /// // We cloesd the constructor of `TemplateLoader`.
 /// // For more information, see the doc above the `TemplateLoader`.
 /// let error_message = TemplateLoader::new_with_template_dir("./src/diagnostic/locales/en-US/").unwrap();
-/// 
+///
 /// // When you use it, just sent it to `TemplateLoader`.
 /// let msg_in_line_1 = error_message.get_msg_to_str(index, sub_index, &msg_args);
 /// ```
