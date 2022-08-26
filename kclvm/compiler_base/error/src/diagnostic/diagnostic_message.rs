@@ -1,33 +1,12 @@
-//! The crate provides `TemplateLoader` to load the error message displayed in diagnostics from "*.ftl" files,
+//! The crate provides `TemplateLoader` to load the diagnositc message displayed in diagnostics from "*.ftl" files,
 //!
-use std::fs;
-
-use anyhow::{bail, Context, Error, Result};
+use anyhow::{bail, Context, Result};
 use fluent::{FluentArgs, FluentBundle, FluentResource};
+use std::fs;
 use unic_langid::langid;
 use walkdir::{DirEntry, WalkDir};
 
 /// Struct `TemplateLoader` load template contents from "*.ftl" file.
-///
-/// "*.ftl" file looks like, e.g. './src/diagnostic/locales/en-US/default.ftl' :
-///
-/// ``` ignore
-/// 1.   invalid-syntax = Invalid syntax
-/// 2.             .expected = Expected one of `{$expected_items}`
-/// ```
-///
-/// - In line 1, `invalid-syntax` is a `index`, `Invalid syntax` is the `Message String` to this `index`.
-/// - In line 2, `.expected` is another `index`, it is a `sub_index` of `invalid-syntax`.
-/// - In line 2, `sub_index` must start with a point `.` and it is optional.
-/// - In line 2, `Expected one of `{$expected_items}`` is the `Message String` to `.expected`. It is an interpolated string.
-/// - In line 2, `{$expected_items}` is a `MessageArgs` of the `Expected one of `{$expected_items}``
-/// and `MessageArgs` can be recognized as a Key-Value entry, it is optional.  
-///
-/// The pattern of above '*.ftl' file looks like:
-/// ``` ignore
-/// 1.   <'index'> = <'message_string' with optional 'MessageArgs'>
-/// 2.             <optional 'sub_index' start with point> = <'message_string' with optional 'MessageArgs'>
-/// ```
 pub struct TemplateLoader {
     template_inner: TemplateLoaderInner,
 }
@@ -48,7 +27,7 @@ impl TemplateLoader {
     /// # Examples
     ///
     /// ```rust
-    /// # use compiler_base_error::diagnostic::error_message::TemplateLoader;
+    /// # use compiler_base_error::diagnostic::diagnostic_message::TemplateLoader;
     /// let error_message = TemplateLoader::new_with_template_dir("./src/diagnostic/locales/en-US/");
     /// ```
     pub fn new_with_template_dir(template_dir: &str) -> Result<Self> {
@@ -60,17 +39,32 @@ impl TemplateLoader {
     /// Get the message string from "*.ftl" file by `index`, `sub_index` and `MessageArgs`.
     /// For more information about "*.ftl" file, see the doc above `TemplateLoader`.
     ///
+    /// "*.ftl" file looks like, e.g. './src/diagnostic/locales/en-US/default.ftl' :
+    ///
     /// ``` ignore
     /// 1.   invalid-syntax = Invalid syntax
     /// 2.             .expected = Expected one of `{$expected_items}`
+    /// ```
+    ///
+    /// - In line 1, `invalid-syntax` is a `index`, `Invalid syntax` is the `Message String` to this `index`.
+    /// - In line 2, `.expected` is another `index`, it is a `sub_index` of `invalid-syntax`.
+    /// - In line 2, `sub_index` must start with a point `.` and it is optional.
+    /// - In line 2, `Expected one of `{$expected_items}`` is the `Message String` to `.expected`. It is an interpolated string.
+    /// - In line 2, `{$expected_items}` is a `MessageArgs` of the `Expected one of `{$expected_items}``
+    /// and `MessageArgs` can be recognized as a Key-Value entry, it is optional.  
+    ///
+    /// The pattern of above '*.ftl' file looks like:
+    /// ``` ignore
+    /// 1.   <'index'> = <'message_string' with optional 'MessageArgs'>
+    /// 2.             <optional 'sub_index' start with point> = <'message_string' with optional 'MessageArgs'>
     /// ```
     /// And for the 'default.ftl' shown above, you can get messages as follow:
     ///
     /// 1. If you want the message 'Invalid syntax' in line 1.
     ///
     /// ```rust
-    /// # use compiler_base_error::diagnostic::error_message::TemplateLoader;
-    /// # use compiler_base_error::diagnostic::error_message::MessageArgs;
+    /// # use compiler_base_error::diagnostic::diagnostic_message::TemplateLoader;
+    /// # use compiler_base_error::diagnostic::diagnostic_message::MessageArgs;
     /// # use std::borrow::Borrow;
     ///
     /// // 1. Prepare an empty `MessageArgs`, Message in line 1 is not an interpolated string.
@@ -90,8 +84,8 @@ impl TemplateLoader {
     /// 2. If you want the message 'Expected one of `{$expected_items}`' in line 2.
     ///
     /// ```rust
-    /// # use compiler_base_error::diagnostic::error_message::TemplateLoader;
-    /// # use compiler_base_error::diagnostic::error_message::MessageArgs;
+    /// # use compiler_base_error::diagnostic::diagnostic_message::TemplateLoader;
+    /// # use compiler_base_error::diagnostic::diagnostic_message::MessageArgs;
     /// # use std::borrow::Borrow;
     ///
     /// // 1. Prepare the `MessageArgs` for `{$expected_items}`.
@@ -152,8 +146,8 @@ impl TemplateLoader {
 /// # Examples
 ///
 /// ```rust
-/// # use compiler_base_error::diagnostic::error_message::MessageArgs;
-/// # use compiler_base_error::diagnostic::error_message::TemplateLoader;
+/// # use compiler_base_error::diagnostic::diagnostic_message::MessageArgs;
+/// # use compiler_base_error::diagnostic::diagnostic_message::TemplateLoader;
 /// # use std::borrow::Borrow;
 ///
 /// let index = "invalid-syntax";
@@ -214,26 +208,18 @@ fn load_all_templates_in_dir_to_resources(
     }
 
     for entry in WalkDir::new(dir) {
-        let entry = match entry {
-            Ok(entry) => entry,
-            Err(_) => bail!("Failed to load '*.ftl' dir"),
-        };
+        let entry = entry?;
 
         if is_ftl_file(&entry) {
-            let resource = match fs::read_to_string(entry.path()) {
-                Ok(res) => res,
-                Err(_) => bail!("Failed to read '*ftl' file"),
-            };
+            let resource = fs::read_to_string(entry.path())?;
 
-            let source = match FluentResource::try_new(resource) {
-                Ok(s) => s,
+            match FluentResource::try_new(resource) {
+                Ok(s) => match fluent_bundle.add_resource(s) {
+                    Err(_) => bail!("Failed to parse an FTL string."),
+                    Ok(_) => {}
+                },
                 Err(_) => bail!("Failed to add FTL resources to the bundle."),
             };
-
-            match fluent_bundle.add_resource(source) {
-                Ok(_) => {}
-                Err(_) => bail!("Failed to parse an FTL string."),
-            }
         }
     }
     Ok(())

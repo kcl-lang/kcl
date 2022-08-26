@@ -77,7 +77,7 @@ mod test_components {
 }
 
 mod test_error_message {
-    use crate::diagnostic::error_message::{MessageArgs, TemplateLoader};
+    use crate::diagnostic::diagnostic_message::{MessageArgs, TemplateLoader};
 
     #[test]
     fn test_template_message() {

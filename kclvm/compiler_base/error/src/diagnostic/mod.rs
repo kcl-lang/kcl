@@ -1,6 +1,6 @@
 pub use rustc_errors::styled_buffer::StyledBuffer;
 use rustc_errors::Style;
-pub mod error_message;
+pub mod diagnostic_message;
 
 pub mod components;
 pub mod style;
