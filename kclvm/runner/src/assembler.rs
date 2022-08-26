@@ -88,7 +88,8 @@ pub(crate) trait LibAssembler {
         let lib_path = format!("{}{}", code_file, Command::get_lib_suffix());
 
         // Locking file for parallel code generation.
-        let mut file_lock = fslock::LockFile::open(lock_file_path).unwrap();
+        let mut file_lock =
+            fslock::LockFile::open(lock_file_path).expect(&format!("{} not found", lock_file_path));
         file_lock.lock().unwrap();
 
         // Calling the hook method will generate the corresponding intermediate code

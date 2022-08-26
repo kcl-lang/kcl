@@ -172,14 +172,18 @@ impl Command {
         ];
         args.append(&mut more_args);
 
-        std::process::Command::new(self.clang_path.clone())
+        let output = std::process::Command::new(self.clang_path.clone())
             .stdout(std::process::Stdio::inherit())
             .stderr(std::process::Stdio::inherit())
             .args(&args)
             .output()
             .expect("clang failed");
+
         // Use absolute path.
-        let path = PathBuf::from(&lib_path).canonicalize().unwrap();
+        let path = PathBuf::from(&lib_path).canonicalize().expect(&format!(
+            "{} not found; assembly info: {:?}",
+            lib_path, output
+        ));
         path.to_str().unwrap().to_string()
     }
 
@@ -208,7 +212,7 @@ impl Command {
         let txt_path = std::path::Path::new(&executable_root)
             .join(if Self::is_windows() { "libs" } else { "lib" })
             .join("rust-libstd-name.txt");
-        let rust_libstd_name = std::fs::read_to_string(txt_path).unwrap();
+        let rust_libstd_name = std::fs::read_to_string(txt_path).expect("rust libstd not found");
         let rust_libstd_name = rust_libstd_name.trim();
         format!("{}/lib/{}", executable_root, rust_libstd_name)
     }
