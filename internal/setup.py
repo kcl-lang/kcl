@@ -25,7 +25,7 @@ with open(require_path) as f:
 setup(
     name='kclvm',
     author='KCL Authors',
-    version='0.4.2.6',
+    version='0.4.3',
     license='Apache License 2.0',
 
     description='KCLVM', 
