@@ -2,38 +2,42 @@
 //!
 use anyhow::{bail, Context, Result};
 use fluent::{FluentArgs, FluentBundle, FluentResource};
-use std::fs;
+use std::{fs, sync::Arc};
 use unic_langid::langid;
 use walkdir::{DirEntry, WalkDir};
 
 /// Struct `TemplateLoader` load template contents from "*.ftl" file.
+/// 
+/// `TemplateLoader` will operate on files locally. 
+/// 
+/// In order to avoid the performance loss and thread safety problems that 
+/// may occur during the constructing the `TemplateLoader`, we close the constructor of `TemplateLoader`.
+/// 
+/// You only need to pass the path of the "*.ftl" file to `DiagnosticHandler`, 
+/// and `DiagnosticHandler` will automatically construct `TemplateLoader` and load the template file.
+/// 
+/// `TemplateLoader` is only useful for you, when you want to get message from template file by `get_msg_to_str()`.
+/// For more information about how to use `get_msg_to_str()`, see the doc above `get_msg_to_str()`.
 pub struct TemplateLoader {
-    template_inner: TemplateLoaderInner,
+    template_inner: Arc<TemplateLoaderInner>,
 }
 
 impl TemplateLoader {
-    /// Create the `TemplateLoader` with template (*.ftl) files directory.
-    /// `TemplateLoader` will load all the files end with "*.ftl" under the directory recursively.
-    ///
-    /// template_files
-    ///      |
-    ///      |---- template.ftl
-    ///      |---- sub_template_files
-    ///                  |
-    ///                  |---- sub_template.ftl
-    ///
-    /// 'template.ftl' and 'sub_template.ftl' can both loaded by the `new_with_template_dir()`.
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// # use compiler_base_error::diagnostic::diagnostic_message::TemplateLoader;
-    /// let error_message = TemplateLoader::new_with_template_dir("./src/diagnostic/locales/en-US/");
-    /// ```
-    pub fn new_with_template_dir(template_dir: &str) -> Result<Self> {
+    // Create the `TemplateLoader` with template (*.ftl) files directory.
+    // `TemplateLoader` will load all the files end with "*.ftl" under the directory recursively.
+    //
+    // template_files
+    //      |
+    //      |---- template.ftl
+    //      |---- sub_template_files
+    //                  |
+    //                  |---- sub_template.ftl
+    //
+    // 'template.ftl' and 'sub_template.ftl' can both loaded by the `new_with_template_dir()`.
+    pub(crate) fn new_with_template_dir(template_dir: &str) -> Result<Self> {
         let template_inner = TemplateLoaderInner::new_with_template_dir(template_dir)
             .with_context(|| format!("Failed to load '*.ftl' from '{}'", template_dir))?;
-        Ok(Self { template_inner })
+        Ok(Self { template_inner: Arc::new(template_inner) })
     }
 
     /// Get the message string from "*.ftl" file by `index`, `sub_index` and `MessageArgs`.
@@ -62,7 +66,7 @@ impl TemplateLoader {
     ///
     /// 1. If you want the message 'Invalid syntax' in line 1.
     ///
-    /// ```rust
+    /// ```ignore rust
     /// # use compiler_base_error::diagnostic::diagnostic_message::TemplateLoader;
     /// # use compiler_base_error::diagnostic::diagnostic_message::MessageArgs;
     /// # use std::borrow::Borrow;
@@ -75,6 +79,8 @@ impl TemplateLoader {
     /// let sub_index = None;
     ///
     /// // 3. Create the `TemplateLoader` with template (*.ftl) files directory.
+    /// // We cloesd the constructor of `TemplateLoader`.
+    /// // For more information, see the doc above the `TemplateLoader`.
     /// let error_message = TemplateLoader::new_with_template_dir("./src/diagnostic/locales/en-US/").unwrap();
     /// let msg_in_line_1 = error_message.get_msg_to_str(index, sub_index, &no_args).unwrap();
     ///
@@ -83,7 +89,7 @@ impl TemplateLoader {
     ///
     /// 2. If you want the message 'Expected one of `{$expected_items}`' in line 2.
     ///
-    /// ```rust
+    /// ```ignore rust
     /// # use compiler_base_error::diagnostic::diagnostic_message::TemplateLoader;
     /// # use compiler_base_error::diagnostic::diagnostic_message::MessageArgs;
     /// # use std::borrow::Borrow;
@@ -99,6 +105,8 @@ impl TemplateLoader {
     /// let sub_index = "expected";
     ///
     /// // 4. With the help of `TemplateLoader`, you can get the message in 'default.ftl'.
+    /// // We cloesd the constructor of `TemplateLoader`.
+    /// // For more information, see the doc above the `TemplateLoader`.
     /// let error_message = TemplateLoader::new_with_template_dir("./src/diagnostic/locales/en-US/").unwrap();
     /// let msg_in_line_2 = error_message.get_msg_to_str(index, Some(sub_index), &args).unwrap();
     ///
@@ -145,7 +153,7 @@ impl TemplateLoader {
 ///
 /// # Examples
 ///
-/// ```rust
+/// ```ignore rust
 /// # use compiler_base_error::diagnostic::diagnostic_message::MessageArgs;
 /// # use compiler_base_error::diagnostic::diagnostic_message::TemplateLoader;
 /// # use std::borrow::Borrow;
@@ -156,8 +164,11 @@ impl TemplateLoader {
 /// // You only need "set()".
 /// msg_args.set("This is Key", "This is Value");
 ///
-/// // When you use it, just sent it to `TemplateLoader`.
+/// // We cloesd the constructor of `TemplateLoader`.
+/// // For more information, see the doc above the `TemplateLoader`.
 /// let error_message = TemplateLoader::new_with_template_dir("./src/diagnostic/locales/en-US/").unwrap();
+/// 
+/// // When you use it, just sent it to `TemplateLoader`.
 /// let msg_in_line_1 = error_message.get_msg_to_str(index, sub_index, &msg_args);
 /// ```
 ///
