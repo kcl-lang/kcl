@@ -11,15 +11,6 @@ use crate::MessageArgs;
 // Struct `TemplateLoader` load template contents from "*.ftl" file.
 //
 // `TemplateLoader` will operate on files locally.
-//
-// In order to avoid the performance loss and thread safety problems that
-// may occur during the constructing the `TemplateLoader`, we close the constructor of `TemplateLoader`.
-//
-// You only need to pass the path of the "*.ftl" file to `DiagnosticHandler`,
-// and `DiagnosticHandler` will automatically construct `TemplateLoader` and load the template file.
-//
-// `TemplateLoader` is only useful for you, when you want to get message from template file by `get_msg_to_str()`.
-// For more information about how to use `get_msg_to_str()`, see the doc above `get_msg_to_str()`.
 pub(crate) struct TemplateLoader {
     template_inner: Arc<TemplateLoaderInner>,
 }

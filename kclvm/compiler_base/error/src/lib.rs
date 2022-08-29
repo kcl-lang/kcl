@@ -15,6 +15,7 @@ mod tests;
 /// `DiagnosticHandler` supports diagnostic messages to terminal stderr.
 ///
 /// `DiagnosticHandler` will load template file directory when instantiating through the constructor `new()`.
+/// 
 pub struct DiagnosticHandler {
     template_loader: Arc<TemplateLoader>,
     emitter: Box<dyn Emitter<DiagnosticStyle>>,
