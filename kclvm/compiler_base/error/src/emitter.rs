@@ -30,7 +30,7 @@ use termcolor::{Buffer, BufferWriter, ColorChoice, ColorSpec, StandardStream, Wr
 ///
 /// 1. Define your Emitter:
 ///
-/// ```no_run rust
+/// ```ignore rust
 ///
 /// // create a new `Emitter`
 /// struct DummyEmitter {
@@ -64,7 +64,7 @@ use termcolor::{Buffer, BufferWriter, ColorChoice, ColorSpec, StandardStream, Wr
 ///
 /// 2. Use your Emitter with diagnostic:
 ///
-/// ```no_run rust
+/// ```ignore rust
 ///
 /// // Create a diagnostic for emitting.
 /// let mut diagnostic = Diagnostic::<DiagnosticStyle>::new();

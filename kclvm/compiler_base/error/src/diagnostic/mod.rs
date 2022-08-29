@@ -1,5 +1,6 @@
 pub use rustc_errors::styled_buffer::StyledBuffer;
 use rustc_errors::Style;
+pub mod diagnostic_message;
 
 pub mod components;
 pub mod style;
@@ -21,6 +22,9 @@ where
     /// # Examples
     ///
     /// ```rust
+    /// # use compiler_base_error::diagnostic::style::DiagnosticStyle;
+    /// # use compiler_base_error::diagnostic::StyledBuffer;
+    /// # use compiler_base_error::diagnostic::Component;
     /// struct ComponentWithStyleLogo {
     ///     text: String
     /// }
