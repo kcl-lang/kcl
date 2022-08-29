@@ -107,8 +107,8 @@ where
 /// ```rust
 /// # use crate::compiler_base_error::Emitter;
 /// # use compiler_base_error::TerminalEmitter;
-/// # use compiler_base_error::diagnostic::{components::Label, Diagnostic};
-/// # use compiler_base_error::diagnostic::style::DiagnosticStyle;
+/// # use compiler_base_error::{components::Label, Diagnostic};
+/// # use compiler_base_error::DiagnosticStyle;
 ///
 /// // 1. Create a TerminalEmitter
 /// let mut term_emitter = TerminalEmitter::default();

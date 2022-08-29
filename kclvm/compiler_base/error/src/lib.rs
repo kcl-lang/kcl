@@ -3,11 +3,12 @@ mod emitter;
 
 use anyhow::{Context, Result};
 use diagnostic::diagnostic_message::TemplateLoader;
-use emitter::{Emitter, TerminalEmitter};
 use fluent::FluentArgs;
 use std::sync::Arc;
 
-pub use diagnostic::{style::DiagnosticStyle, Diagnostic};
+pub use emitter::{Emitter, TerminalEmitter};
+pub use diagnostic::{Component, components, style::DiagnosticStyle, Diagnostic};
+
 
 #[cfg(test)]
 mod tests;
@@ -15,7 +16,68 @@ mod tests;
 /// `DiagnosticHandler` supports diagnostic messages to terminal stderr.
 ///
 /// `DiagnosticHandler` will load template file directory when instantiating through the constructor `new()`.
-/// 
+///
+/// When your compiler needs to use `Compiler-Base-Error` to displaying diagnostics, you need to create a `DiagnosticHandler` at first.
+/// For more information about how to create a `DiagnosticHandler`, see the doc above method `new_with_template_dir()`.
+///
+/// Since creating `DiagnosticHandler` needs to load the locally template (*.ftl) file, it may cause I/O performance loss,
+/// so we recommend you create `DiagnosticHandler` globally in the compiler and pass references to other modules that use `DiagnosticHandler`.
+///
+/// And since `DiagnosticHandler` provides methods that need to change the contents of itself,
+/// you need to pass mutable references, and if it is in a multi-threaded environment, you need to use `Arc<Mutex<DiagnosticHandler>>`
+///
+/// For Example:
+///
+/// 1. You can put `DiagnosticHandler` on the same level as `Lexer`, `Parser` and `CodeGenerator` in your compiler.
+/// ```ignore
+/// struct Compiler {
+///     diag_handler: DiagnosticHandler,
+///     lang_lexer: Lexer,
+///     lang_parser: Parser,
+///     code_generator: CodeGenerator
+/// }
+///
+/// // If it is in a multi-threaded environment, you can
+/// struct Compiler {
+///     diag_handler: Arc<Mutex<DiagnosticHandler>>,
+///     lang_lexer: Lexer,
+///     lang_parser: Parser,
+///     code_generator: CodeGenerator
+/// }
+/// ```
+///
+/// 2. And send the mutable references to `Lexer`, `Parser` and `CodeGenerator` to displaying the diagnostic during compiling.
+/// ```ignore
+/// impl Compiler {
+///     fn compile(&self) {
+///         self.lang_lexer.lex(&mut self.diag_handler);
+///         self.lang_parser.parse(&mut self.diag_handler);
+///         self.code_generator.gen(&mut self.diag_handler);
+///     }
+/// }
+/// ```
+/// // If it is in a multi-threaded environment, you can
+/// ```ignore
+/// impl Compiler {
+///     fn compile(&self) {
+///         self.lang_lexer.lex(Arc::clone(self.diag_handler));
+///         self.lang_parser.parse(Arc::clone(self.diag_handler));
+///         self.code_generator.gen(Arc::clone(self.diag_handler));
+///     }
+/// }
+/// ```
+///
+/// // If you use `Arc<Mutex<DiagnosticHandler>>`, maybe you need to `lock()` it before using it.
+///
+/// ```ignore
+/// impl Lexer {
+///     fn lex(&self, diag_handler: Arc<Mutex<DiagnosticHandler>>){
+///        let handler = diag_handler.lock();
+///        handler.XXXX(); // do something to diaplay diagnostic.
+///     }
+/// }
+/// ```
+///
 pub struct DiagnosticHandler {
     template_loader: Arc<TemplateLoader>,
     emitter: Box<dyn Emitter<DiagnosticStyle>>,

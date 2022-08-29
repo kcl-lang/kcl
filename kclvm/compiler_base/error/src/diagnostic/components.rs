@@ -8,9 +8,9 @@ use rustc_errors::styled_buffer::StyledBuffer;
 /// # Examples
 ///
 /// ```rust
-/// # use crate::compiler_base_error::diagnostic::Component;
-/// # use compiler_base_error::diagnostic::components::Label;
-/// # use compiler_base_error::diagnostic::style::DiagnosticStyle;
+/// # use compiler_base_error::Component;
+/// # use compiler_base_error::components::Label;
+/// # use compiler_base_error::DiagnosticStyle;
 /// # use rustc_errors::styled_buffer::StyledBuffer;
 ///
 /// let mut sb = StyledBuffer::<DiagnosticStyle>::new();
