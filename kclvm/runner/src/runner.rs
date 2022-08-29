@@ -113,8 +113,12 @@ pub struct KclvmRunner {
 impl KclvmRunner {
     pub fn new(lib_path: &str, opts: Option<KclvmRunnerOptions>) -> Self {
         let lib = unsafe {
-            libloading::Library::new(std::path::PathBuf::from(lib_path).canonicalize().unwrap())
-                .unwrap()
+            libloading::Library::new(
+                std::path::PathBuf::from(lib_path)
+                    .canonicalize()
+                    .expect(&format!("{} not found", lib_path)),
+            )
+            .unwrap()
         };
         Self {
             opts: opts.unwrap_or_default(),

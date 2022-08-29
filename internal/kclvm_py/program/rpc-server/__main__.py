@@ -1,6 +1,5 @@
 # Copyright 2021 The KCL Authors. All rights reserved.
 
-import io
 import json
 import sys
 import socket
@@ -8,10 +7,8 @@ import subprocess
 import typing
 import time
 import pathlib
-import ruamel.yaml as yaml
 
 from dataclasses import dataclass
-from collections import OrderedDict
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import kclvm.kcl.ast as ast
@@ -33,7 +30,6 @@ from kclvm.tools.validation import validate_code_with_attr_data
 from kclvm.tools.langserver import grpc_wrapper
 from kclvm.tools.printer import SchemaRuleCodeSnippet, splice_schema_with_rule
 from kclvm.tools.list_attribute.schema import get_schema_type_from_code
-from kclvm.vm.planner.plan import order_dict
 
 import kclvm.kcl.error.kcl_err_template as kcl_err_template
 
@@ -128,6 +124,23 @@ class KclvmServiceImpl(pbrpc.KclvmService):
         cmd_args: typing.List[ast.CmdArgSpec] = []
         cmd_overrides: typing.List[ast.CmdOverrideSpec] = []
 
+        # kcl -D name=value main.k
+        for x in args.args:
+            cmd_args.append(ast.CmdArgSpec(name=x.name, value=x.value))
+
+        # kcl main.k -O pkgpath:path.to.field=field_value
+        for x in args.overrides:
+            cmd_overrides.append(
+                ast.CmdOverrideSpec(
+                    pkgpath=x.pkgpath or "__main__",
+                    field_path=x.field_path,
+                    field_value=x.field_value,
+                    action=ast.OverrideAction(x.action)
+                    if x.action
+                    else ast.OverrideAction.CREATE_OR_UPDATE,
+                )
+            )
+
         work_dir: str = args.work_dir
         k_filename_list: typing.List[str] = list(args.k_filename_list)
         k_filename_list = [
@@ -154,64 +167,48 @@ class KclvmServiceImpl(pbrpc.KclvmService):
         sort_keys: bool = args.sort_keys
         include_schema_type_path: bool = args.include_schema_type_path
 
-        cli_args = [
-            "kcl",
-            "--target",
-            "native",
-        ] + k_filename_list or []
-
-        # kcl -D name=value main.k
-        for x in args.args:
-            cli_args += ["-D", x.name + "=" + x.value]
-
-        # kcl main.k -O pkgpath:path.to.field=field_value
-        for x in args.overrides:
-            cli_args += [
-                "-O",
-                (x.pkgpath or "__main__") + ":" + x.field_path + "=" + x.field_value,
-            ]
-
-        if disable_none:
-            cli_args += ["-n"]
-        if sort_keys:
-            cli_args += ["--sort"]
-
         start_time = time.time()
-
-        proc = subprocess.run(cli_args, capture_output=True, text=True, cwd=work_dir)
-        stdout = str(proc.stdout or "")
-        stderr = str(proc.stderr or "").strip()
-
-        if proc.returncode != 0:
-            if stdout and stderr:
-                raise Exception(f"stdout: {stdout}, stderr: {stderr}")
-            else:
-                kcl_error.report_exception(
-                    err_type=kcl_error.ErrType.CompileError_TYPE,
-                    arg_msg=stderr,
-                )
-
+        kcl_result = kclvm_exec.Run(
+            k_filename_list,
+            work_dir=work_dir,
+            k_code_list=k_code_list,
+            cmd_args=cmd_args,
+            cmd_overrides=cmd_overrides,
+            print_override_ast=print_override_ast,
+            strict_range_check=strict_range_check,
+            disable_none=disable_none,
+            verbose=verbose,
+            debug=debug,
+        )
         end_time = time.time()
 
         result = pb2.ExecProgram_Result()
 
         result.escaped_time = f"{end_time-start_time}"
 
-        results = list(yaml.safe_load_all(stdout))
-
-        output_json = (
-            json.dumps(
-                results,
-                default=lambda o: o.__dict__,
-                indent=4,
-            )
-            if results
-            else ""
+        # json
+        output_json = planner.JSONPlanner(
+            sort_keys=sort_keys, include_schema_type_path=include_schema_type_path
+        ).plan(
+            kcl_result.filter_by_path_selector(
+                to_kcl=not kclvm.config.is_target_native
+            ),
+            to_py=not kclvm.config.is_target_native,
         )
-
         result.json_result = output_json
+
+        # yaml
         if not disable_yaml_result:
-            result.yaml_result = stdout
+            output_yaml = planner.YAMLPlanner(
+                sort_keys=sort_keys, include_schema_type_path=include_schema_type_path
+            ).plan(
+                kcl_result.filter_by_path_selector(
+                    to_kcl=not kclvm.config.is_target_native
+                ),
+                to_py=not kclvm.config.is_target_native,
+            )
+            result.yaml_result = output_yaml
+
         return result
 
     def ResetPlugin(self, args: pb2.ResetPlugin_Args) -> pb2.ResetPlugin_Result:
