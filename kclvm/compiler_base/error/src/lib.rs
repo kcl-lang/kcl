@@ -81,14 +81,14 @@ impl DiagnosticHandler {
     /// ```rust
     /// # use compiler_base_error::DiagnosticHandler;
     /// let diag_handler = DiagnosticHandler::new_with_template_dir("./src/diagnostic/locales/en-US/");
-    /// match diag_handler{
+    /// match diag_handler {
     ///     Ok(_) => {}
     ///     Err(_) => {panic!("`diag_handler` should be Ok(...)")}
     /// }
     ///
     /// // './src_invalid/diagnostic/locales/en-US/' does not exist.
     /// let diag_handler_invalid = DiagnosticHandler::new_with_template_dir("./src_invalid/diagnostic/locales/en-US/");
-    /// match diag_handler_invalid{
+    /// match diag_handler_invalid {
     ///     Ok(_) => {panic!("`diag_handler_invalid` should be Err(...)")}
     ///     Err(_) => {}
     /// }
