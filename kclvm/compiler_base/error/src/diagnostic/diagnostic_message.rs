@@ -9,7 +9,6 @@ use walkdir::{DirEntry, WalkDir};
 use crate::MessageArgs;
 
 // Struct `TemplateLoader` load template contents from "*.ftl" file.
-//
 // `TemplateLoader` will operate on files locally.
 pub(crate) struct TemplateLoader {
     template_inner: Arc<TemplateLoaderInner>,
@@ -18,7 +17,6 @@ pub(crate) struct TemplateLoader {
 impl TemplateLoader {
     // Create the `TemplateLoader` with template (*.ftl) files directory.
     // `TemplateLoader` will load all the files end with "*.ftl" under the directory recursively.
-    //
     // template_files
     //      |
     //      |---- template.ftl
@@ -37,7 +35,6 @@ impl TemplateLoader {
 
     // Get the message string from "*.ftl" file by `index`, `sub_index` and `MessageArgs`.
     // For more information about "*.ftl" file, see the doc above `DiagnosticHandler`.
-    //
     // "*.ftl" file looks like, e.g. './src/diagnostic/locales/en-US/default.ftl' :
     pub(crate) fn get_msg_to_str(
         &self,

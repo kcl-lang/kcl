@@ -15,6 +15,7 @@ pub(crate) struct DiagnosticHandlerInner {
 }
 
 impl DiagnosticHandlerInner {
+    // Load all (*.ftl) template files under directory `template_dir`.
     pub(crate) fn new_with_template_dir(template_dir: &str) -> Result<Self> {
         let template_loader = TemplateLoader::new_with_template_dir(template_dir)
             .with_context(|| format!("Failed to init `TemplateLoader` from '{}'", template_dir))?;
@@ -27,6 +28,7 @@ impl DiagnosticHandlerInner {
             template_loader: Arc::new(template_loader),
         })
     }
+
     // Add a diagnostic generated from error to `DiagnosticHandler`.
     // `DiagnosticHandler` contains a set of `Diagnostic<DiagnosticStyle>`
     pub(crate) fn add_err_diagnostic(&mut self, diag: Diagnostic<DiagnosticStyle>) {

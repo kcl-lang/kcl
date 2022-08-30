@@ -16,17 +16,16 @@ mod tests;
 /// `DiagnosticHandler` supports diagnostic messages to terminal stderr.
 ///
 /// `DiagnosticHandler` will load template file directory when instantiating through the constructor `new_with_template_dir()`.
-/// 
-/// Note: `DiagnosticHandler` uses `Mutex` to ensure thread safety, so when you use different threads to call methods provided in `DiagnosticHandler`, 
-/// they will compete for the lock, and the method that got the lock will be called first.
+///
+/// Note: `DiagnosticHandler` uses `Mutex` internally to ensure thread safety,
+/// so you don't need to use references like `Arc` or `Mutex` to make `DiagnosticHandler` thread safe.
 ///
 /// When your compiler needs to use `Compiler-Base-Error` to displaying diagnostics, you need to create a `DiagnosticHandler` at first.
 /// For more information about how to create a `DiagnosticHandler`, see the doc above method `new_with_template_dir()`.
 /// Since creating `DiagnosticHandler` needs to load the locally template (*.ftl) file, it may cause I/O performance loss,
 /// so we recommend you create `DiagnosticHandler` globally in the compiler and pass references to other modules that use `DiagnosticHandler`.
 ///
-/// And since `DiagnosticHandler` provides methods that need to change the contents of itself,
-/// you need to pass mutable references, and if it is in a multi-threaded environment, you need to use `Arc<Mutex<DiagnosticHandler>>`
+/// And since `DiagnosticHandler` provides methods that do not supports mutable references "&mut self", so passing immutable references (&) is enough.
 ///
 /// For Example:
 ///
@@ -38,43 +37,22 @@ mod tests;
 ///     lang_parser: Parser,
 ///     code_generator: CodeGenerator
 /// }
-///
-/// // If it is in a multi-threaded environment, you can
-/// struct Compiler {
-///     diag_handler: Arc<Mutex<DiagnosticHandler>>,
-///     lang_lexer: Lexer,
-///     lang_parser: Parser,
-///     code_generator: CodeGenerator
-/// }
 /// ```
 ///
-/// 2. And send the mutable references to `Lexer`, `Parser` and `CodeGenerator` to displaying the diagnostic during compiling.
+/// 2. And send the immutable references to `Lexer`, `Parser` and `CodeGenerator` to displaying the diagnostic during compiling.
 /// ```ignore
 /// impl Compiler {
 ///     fn compile(&self) {
-///         self.lang_lexer.lex(&mut self.diag_handler);
-///         self.lang_parser.parse(&mut self.diag_handler);
-///         self.code_generator.gen(&mut self.diag_handler);
+///         self.lang_lexer.lex(&self.diag_handler);
+///         self.lang_parser.parse(&self.diag_handler);
+///         self.code_generator.gen(&self.diag_handler);
 ///     }
 /// }
 /// ```
-/// // If it is in a multi-threaded environment, you can
-/// ```ignore
-/// impl Compiler {
-///     fn compile(&self) {
-///         self.lang_lexer.lex(Arc::clone(self.diag_handler));
-///         self.lang_parser.parse(Arc::clone(self.diag_handler));
-///         self.code_generator.gen(Arc::clone(self.diag_handler));
-///     }
-/// }
-/// ```
-///
-/// // If you use `Arc<Mutex<DiagnosticHandler>>`, maybe you need to `lock()` it before using it.
 ///
 /// ```ignore
 /// impl Lexer {
-///     fn lex(&self, diag_handler: Arc<Mutex<DiagnosticHandler>>){
-///        let handler = diag_handler.lock();
+///     fn lex(&self, diag_handler: &DiagnosticHandler){
 ///        handler.XXXX(); // do something to diaplay diagnostic.
 ///     }
 /// }
@@ -177,6 +155,20 @@ impl DiagnosticHandler {
 
     /// Get count of diagnostics in `DiagnosticHandler`.
     /// `DiagnosticHandler` contains a set of `Diagnostic<DiagnosticStyle>`
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use compiler_base_error::DiagnosticStyle;
+    /// # use compiler_base_error::DiagnosticHandler;
+    /// # use compiler_base_error::Diagnostic;
+    /// let diag_1 = Diagnostic::<DiagnosticStyle>::new();
+    /// let mut diag_handler = DiagnosticHandler::new_with_template_dir("./src/diagnostic/locales/en-US/").unwrap();
+    /// assert_eq!(diag_handler.diagnostics_count().unwrap(), 0);
+    ///
+    /// diag_handler.add_warn_diagnostic(diag_1);
+    /// assert_eq!(diag_handler.diagnostics_count().unwrap(), 1);
+    /// ```
     pub fn diagnostics_count(&self) -> Result<usize> {
         match self.handler_inner.lock() {
             Ok(inner) => Ok(inner.diagnostics_count()),
@@ -185,6 +177,20 @@ impl DiagnosticHandler {
     }
 
     /// Emit the diagnostic messages generated from error to to terminal stderr.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use compiler_base_error::DiagnosticStyle;
+    /// # use compiler_base_error::DiagnosticHandler;
+    /// # use compiler_base_error::Diagnostic;
+    /// let diag_1 = Diagnostic::<DiagnosticStyle>::new();
+    /// let mut diag_handler = DiagnosticHandler::new_with_template_dir("./src/diagnostic/locales/en-US/").unwrap();
+    ///
+    /// assert_eq!(diag_handler.has_errors().unwrap(), false);
+    /// diag_handler.emit_error_diagnostic(diag_1);
+    /// assert_eq!(diag_handler.has_errors().unwrap(), true);
+    /// ```
     pub fn emit_error_diagnostic(&self, diag: Diagnostic<DiagnosticStyle>) -> Result<()> {
         match self.handler_inner.lock() {
             Ok(mut inner) => {
@@ -196,6 +202,20 @@ impl DiagnosticHandler {
     }
 
     /// Emit the diagnostic messages generated from warning to to terminal stderr.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use compiler_base_error::DiagnosticStyle;
+    /// # use compiler_base_error::DiagnosticHandler;
+    /// # use compiler_base_error::Diagnostic;
+    /// let diag_1 = Diagnostic::<DiagnosticStyle>::new();
+    /// let mut diag_handler = DiagnosticHandler::new_with_template_dir("./src/diagnostic/locales/en-US/").unwrap();
+    ///
+    /// assert_eq!(diag_handler.has_warns().unwrap(), false);
+    /// diag_handler.emit_warn_diagnostic(diag_1);
+    /// assert_eq!(diag_handler.has_warns().unwrap(), true);
+    /// ```
     pub fn emit_warn_diagnostic(&self, diag: Diagnostic<DiagnosticStyle>) -> Result<()> {
         match self.handler_inner.lock() {
             Ok(mut inner) => {
@@ -208,6 +228,21 @@ impl DiagnosticHandler {
 
     /// Emit all the diagnostics messages to to terminal stderr.
     /// `DiagnosticHandler` contains a set of `Diagnostic<DiagnosticStyle>`
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use compiler_base_error::DiagnosticStyle;
+    /// # use compiler_base_error::DiagnosticHandler;
+    /// # use compiler_base_error::Diagnostic;
+    /// let diag_1 = Diagnostic::<DiagnosticStyle>::new();
+    /// let diag_2 = Diagnostic::<DiagnosticStyle>::new();
+    /// let mut diag_handler = DiagnosticHandler::new_with_template_dir("./src/diagnostic/locales/en-US/").unwrap();
+    ///
+    /// diag_handler.add_err_diagnostic(diag_1);
+    /// diag_handler.add_err_diagnostic(diag_2);
+    /// diag_handler.emit_stashed_diagnostics();
+    /// ```
     pub fn emit_stashed_diagnostics(&self) -> Result<()> {
         match self.handler_inner.lock() {
             Ok(mut inner) => {
@@ -219,6 +254,20 @@ impl DiagnosticHandler {
     }
 
     /// If some diagnotsics generated by errors, `has_errors` returns `True`.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use compiler_base_error::DiagnosticStyle;
+    /// # use compiler_base_error::DiagnosticHandler;
+    /// # use compiler_base_error::Diagnostic;
+    /// let diag_1 = Diagnostic::<DiagnosticStyle>::new();
+    /// let mut diag_handler = DiagnosticHandler::new_with_template_dir("./src/diagnostic/locales/en-US/").unwrap();
+    ///
+    /// assert_eq!(diag_handler.has_errors().unwrap(), false);
+    /// diag_handler.emit_error_diagnostic(diag_1);
+    /// assert_eq!(diag_handler.has_errors().unwrap(), true);
+    /// ```
     pub fn has_errors(&self) -> Result<bool> {
         match self.handler_inner.lock() {
             Ok(inner) => Ok(inner.has_errors()),
@@ -227,6 +276,20 @@ impl DiagnosticHandler {
     }
 
     /// If some diagnotsics generated by warnings, `has_errors` returns `True`.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use compiler_base_error::DiagnosticStyle;
+    /// # use compiler_base_error::DiagnosticHandler;
+    /// # use compiler_base_error::Diagnostic;
+    /// let diag_1 = Diagnostic::<DiagnosticStyle>::new();
+    /// let mut diag_handler = DiagnosticHandler::new_with_template_dir("./src/diagnostic/locales/en-US/").unwrap();
+    ///
+    /// assert_eq!(diag_handler.has_warns().unwrap(), false);
+    /// diag_handler.emit_warn_diagnostic(diag_1);
+    /// assert_eq!(diag_handler.has_warns().unwrap(), true);
+    /// ```
     pub fn has_warns(&self) -> Result<bool> {
         match self.handler_inner.lock() {
             Ok(inner) => Ok(inner.has_warns()),
@@ -235,6 +298,27 @@ impl DiagnosticHandler {
     }
 
     /// After emitting all the diagnostics, it will panic.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use compiler_base_error::DiagnosticStyle;
+    /// # use compiler_base_error::Diagnostic;
+    /// # use compiler_base_error::DiagnosticHandler;
+    /// # use std::panic;
+    /// let diag_handler = DiagnosticHandler::new_with_template_dir("./src/diagnostic/locales/en-US/").unwrap();
+    ///
+    /// diag_handler.abort_if_errors().unwrap();
+    /// diag_handler.add_warn_diagnostic(Diagnostic::<DiagnosticStyle>::new()).unwrap();
+    ///
+    /// diag_handler.abort_if_errors().unwrap();
+    /// diag_handler.add_err_diagnostic(Diagnostic::<DiagnosticStyle>::new()).unwrap();
+    ///
+    /// let result = panic::catch_unwind(|| {
+    ///     diag_handler.abort_if_errors().unwrap();
+    /// });
+    /// assert!(result.is_err());
+    /// ```
     pub fn abort_if_errors(&self) -> Result<()> {
         match self.handler_inner.lock() {
             Ok(mut inner) => {
