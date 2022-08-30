@@ -2,11 +2,9 @@ mod diagnostic;
 mod diagnostic_handler;
 mod emitter;
 
-use anyhow::{Context, Result};
-use diagnostic::diagnostic_message::TemplateLoader;
+use anyhow::{bail, Context, Result};
 use diagnostic_handler::DiagnosticHandlerInner;
 use fluent::FluentArgs;
-use std::sync::Arc;
 use std::sync::Mutex;
 
 pub use diagnostic::{components, style::DiagnosticStyle, Component, Diagnostic};
@@ -116,16 +114,10 @@ impl DiagnosticHandler {
     /// }
     /// ```
     pub fn new_with_template_dir(template_dir: &str) -> Result<Self> {
-        let template_loader = TemplateLoader::new_with_template_dir(template_dir)
+        let handler_inner = DiagnosticHandlerInner::new_with_template_dir(template_dir)
             .with_context(|| format!("Failed to init `TemplateLoader` from '{}'", template_dir))?;
         Ok(Self {
-            handler_inner: Mutex::new(DiagnosticHandlerInner {
-                err_count: 0,
-                warn_count: 0,
-                emitter: Box::new(TerminalEmitter::default()),
-                diagnostics: vec![],
-                template_loader: Arc::new(template_loader),
-            }),
+            handler_inner: Mutex::new(handler_inner),
         })
     }
 
@@ -140,13 +132,19 @@ impl DiagnosticHandler {
     /// # use compiler_base_error::Diagnostic;
     /// let diag_1 = Diagnostic::<DiagnosticStyle>::new();
     /// let mut diag_handler = DiagnosticHandler::new_with_template_dir("./src/diagnostic/locales/en-US/").unwrap();
-    /// assert_eq!(diag_handler.diagnostics_count(), 0);
+    /// assert_eq!(diag_handler.diagnostics_count().unwrap(), 0);
     ///
     /// diag_handler.add_err_diagnostic(diag_1);
-    /// assert_eq!(diag_handler.diagnostics_count(), 1);
+    /// assert_eq!(diag_handler.diagnostics_count().unwrap(), 1);
     /// ```
-    pub fn add_err_diagnostic(&self, diag: Diagnostic<DiagnosticStyle>) {
-        self.handler_inner.lock().unwrap().add_err_diagnostic(diag);
+    pub fn add_err_diagnostic(&self, diag: Diagnostic<DiagnosticStyle>) -> Result<()> {
+        match self.handler_inner.lock() {
+            Ok(mut inner) => {
+                inner.add_err_diagnostic(diag);
+                Ok(())
+            }
+            Err(_) => bail!("Add Error Diagnostic Failed."),
+        }
     }
 
     /// Add a diagnostic generated from warning to `DiagnosticHandler`.
@@ -160,59 +158,89 @@ impl DiagnosticHandler {
     /// # use compiler_base_error::Diagnostic;
     /// let diag_1 = Diagnostic::<DiagnosticStyle>::new();
     /// let mut diag_handler = DiagnosticHandler::new_with_template_dir("./src/diagnostic/locales/en-US/").unwrap();
-    /// assert_eq!(diag_handler.diagnostics_count(), 0);
+    /// assert_eq!(diag_handler.diagnostics_count().unwrap(), 0);
     ///
     /// diag_handler.add_warn_diagnostic(diag_1);
-    /// assert_eq!(diag_handler.diagnostics_count(), 1);
+    /// assert_eq!(diag_handler.diagnostics_count().unwrap(), 1);
     /// ```
-    pub fn add_warn_diagnostic(&self, diag: Diagnostic<DiagnosticStyle>) {
-        self.handler_inner.lock().unwrap().add_warn_diagnostic(diag);
+    pub fn add_warn_diagnostic(&self, diag: Diagnostic<DiagnosticStyle>) -> Result<()> {
+        match self.handler_inner.lock() {
+            Ok(mut inner) => {
+                inner.add_warn_diagnostic(diag);
+                Ok(())
+            }
+            Err(_) => bail!("Add Warn Diagnostic Failed."),
+        }
     }
 
     /// Get count of diagnostics in `DiagnosticHandler`.
     /// `DiagnosticHandler` contains a set of `Diagnostic<DiagnosticStyle>`
-    pub fn diagnostics_count(&self) -> usize {
-        self.handler_inner.lock().unwrap().diagnostics_count()
+    pub fn diagnostics_count(&self) -> Result<usize> {
+        match self.handler_inner.lock() {
+            Ok(inner) => Ok(inner.diagnostics_count()),
+            Err(_) => bail!("Diagnostics Counts Failed."),
+        }
     }
 
     /// Emit the diagnostic messages generated from error to to terminal stderr.
-    pub fn emit_error_diagnostic(&self, diag: Diagnostic<DiagnosticStyle>) {
-        self.handler_inner
-            .lock()
-            .unwrap()
-            .emit_error_diagnostic(diag);
+    pub fn emit_error_diagnostic(&self, diag: Diagnostic<DiagnosticStyle>) -> Result<()> {
+        match self.handler_inner.lock() {
+            Ok(mut inner) => {
+                inner.emit_error_diagnostic(diag);
+                Ok(())
+            }
+            Err(_) => bail!("Emit Error Diagnostics Failed."),
+        }
     }
 
     /// Emit the diagnostic messages generated from warning to to terminal stderr.
-    pub fn emit_warn_diagnostic(&self, diag: Diagnostic<DiagnosticStyle>) {
-        self.handler_inner
-            .lock()
-            .unwrap()
-            .emit_warn_diagnostic(diag);
+    pub fn emit_warn_diagnostic(&self, diag: Diagnostic<DiagnosticStyle>) -> Result<()> {
+        match self.handler_inner.lock() {
+            Ok(mut inner) => {
+                inner.emit_warn_diagnostic(diag);
+                Ok(())
+            }
+            Err(_) => bail!("Emit Warn Diagnostics Failed."),
+        }
     }
 
     /// Emit all the diagnostics messages to to terminal stderr.
     /// `DiagnosticHandler` contains a set of `Diagnostic<DiagnosticStyle>`
-    pub fn emit_stashed_diagnostics(&self) {
-        self.handler_inner
-            .lock()
-            .unwrap()
-            .emit_stashed_diagnostics();
+    pub fn emit_stashed_diagnostics(&self) -> Result<()> {
+        match self.handler_inner.lock() {
+            Ok(mut inner) => {
+                inner.emit_stashed_diagnostics();
+                Ok(())
+            }
+            Err(_) => bail!("Emit Stashed Diagnostics Failed."),
+        }
     }
 
     /// If some diagnotsics generated by errors, `has_errors` returns `True`.
-    pub fn has_errors(&self) -> bool {
-        self.handler_inner.lock().unwrap().has_errors()
+    pub fn has_errors(&self) -> Result<bool> {
+        match self.handler_inner.lock() {
+            Ok(inner) => Ok(inner.has_errors()),
+            Err(_) => bail!("Check Has Errors Failed."),
+        }
     }
 
     /// If some diagnotsics generated by warnings, `has_errors` returns `True`.
-    pub fn has_warns(&self) -> bool {
-        self.handler_inner.lock().unwrap().has_warns()
+    pub fn has_warns(&self) -> Result<bool> {
+        match self.handler_inner.lock() {
+            Ok(inner) => Ok(inner.has_warns()),
+            Err(_) => bail!("Check Has Warns Failed."),
+        }
     }
 
     /// After emitting all the diagnostics, it will panic.
-    pub fn abort_if_errors(&self) {
-        self.handler_inner.lock().unwrap().abort_if_errors()
+    pub fn abort_if_errors(&self) -> Result<()> {
+        match self.handler_inner.lock() {
+            Ok(mut inner) => {
+                inner.abort_if_errors();
+                Ok(())
+            }
+            Err(_) => bail!("Abort If Errors Failed."),
+        }
     }
 
     /// Get the message string from "*.ftl" file by `index`, `sub_index` and `MessageArgs`.
@@ -289,10 +317,10 @@ impl DiagnosticHandler {
         sub_index: Option<&str>,
         args: &MessageArgs,
     ) -> Result<String> {
-        self.handler_inner
-            .lock()
-            .unwrap()
-            .get_diagnostic_msg(index, sub_index, args)
+        match self.handler_inner.lock() {
+            Ok(inner) => inner.get_diagnostic_msg(index, sub_index, args),
+            Err(_) => bail!("Find Diagnostic Message Failed."),
+        }
     }
 }
 

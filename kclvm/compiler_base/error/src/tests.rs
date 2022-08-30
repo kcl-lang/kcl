@@ -28,10 +28,10 @@ mod test_diagnostic_handler {
         let diag_1 = Diagnostic::<DiagnosticStyle>::new();
         let diag_handler =
             DiagnosticHandler::new_with_template_dir("./src/diagnostic/locales/en-US/").unwrap();
-        assert_eq!(diag_handler.diagnostics_count(), 0);
+        assert_eq!(diag_handler.diagnostics_count().unwrap(), 0);
 
         diag_handler.add_err_diagnostic(diag_1);
-        assert_eq!(diag_handler.diagnostics_count(), 1);
+        assert_eq!(diag_handler.diagnostics_count().unwrap(), 1);
     }
 
     #[test]
@@ -63,14 +63,14 @@ mod test_diagnostic_handler {
         let diag_handler =
             DiagnosticHandler::new_with_template_dir("./src/diagnostic/locales/en-US/").unwrap();
         // test has_errors()
-        assert_eq!(diag_handler.has_errors(), false);
+        assert_eq!(diag_handler.has_errors().unwrap(), false);
         diag_handler.add_err_diagnostic(Diagnostic::<DiagnosticStyle>::new());
-        assert_eq!(diag_handler.has_errors(), true);
+        assert_eq!(diag_handler.has_errors().unwrap(), true);
 
         // test has_warns()
-        assert_eq!(diag_handler.has_warns(), false);
+        assert_eq!(diag_handler.has_warns().unwrap(), false);
         diag_handler.add_warn_diagnostic(Diagnostic::<DiagnosticStyle>::new());
-        assert_eq!(diag_handler.has_warns(), true);
+        assert_eq!(diag_handler.has_warns().unwrap(), true);
     }
 
     #[test]

@@ -1,20 +1,32 @@
 use crate::{
     diagnostic::diagnostic_message::TemplateLoader, Diagnostic, DiagnosticStyle, Emitter,
-    MessageArgs,
+    MessageArgs, TerminalEmitter,
 };
-use anyhow::Result;
+use anyhow::{Context, Result};
 use compiler_base_span::fatal_error::FatalError;
 use std::sync::Arc;
 
 pub(crate) struct DiagnosticHandlerInner {
-    pub(crate) emitter: Box<dyn Emitter<DiagnosticStyle>>,
-    pub(crate) diagnostics: Vec<Diagnostic<DiagnosticStyle>>,
-    pub(crate) err_count: usize,
-    pub(crate) warn_count: usize,
-    pub(crate) template_loader: Arc<TemplateLoader>,
+    emitter: Box<dyn Emitter<DiagnosticStyle>>,
+    diagnostics: Vec<Diagnostic<DiagnosticStyle>>,
+    err_count: usize,
+    warn_count: usize,
+    template_loader: Arc<TemplateLoader>,
 }
 
 impl DiagnosticHandlerInner {
+    pub(crate) fn new_with_template_dir(template_dir: &str) -> Result<Self> {
+        let template_loader = TemplateLoader::new_with_template_dir(template_dir)
+            .with_context(|| format!("Failed to init `TemplateLoader` from '{}'", template_dir))?;
+
+        Ok(Self {
+            err_count: 0,
+            warn_count: 0,
+            emitter: Box::new(TerminalEmitter::default()),
+            diagnostics: vec![],
+            template_loader: Arc::new(template_loader),
+        })
+    }
     // Add a diagnostic generated from error to `DiagnosticHandler`.
     // `DiagnosticHandler` contains a set of `Diagnostic<DiagnosticStyle>`
     pub(crate) fn add_err_diagnostic(&mut self, diag: Diagnostic<DiagnosticStyle>) {
