@@ -15,11 +15,13 @@ mod tests;
 
 /// `DiagnosticHandler` supports diagnostic messages to terminal stderr.
 ///
-/// `DiagnosticHandler` will load template file directory when instantiating through the constructor `new()`.
+/// `DiagnosticHandler` will load template file directory when instantiating through the constructor `new_with_template_dir()`.
+/// 
+/// Note: `DiagnosticHandler` uses `Mutex` to ensure thread safety, so when you use different threads to call methods provided in `DiagnosticHandler`, 
+/// they will compete for the lock, and the method that got the lock will be called first.
 ///
 /// When your compiler needs to use `Compiler-Base-Error` to displaying diagnostics, you need to create a `DiagnosticHandler` at first.
 /// For more information about how to create a `DiagnosticHandler`, see the doc above method `new_with_template_dir()`.
-///
 /// Since creating `DiagnosticHandler` needs to load the locally template (*.ftl) file, it may cause I/O performance loss,
 /// so we recommend you create `DiagnosticHandler` globally in the compiler and pass references to other modules that use `DiagnosticHandler`.
 ///

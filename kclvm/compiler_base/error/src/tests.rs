@@ -30,7 +30,7 @@ mod test_diagnostic_handler {
             DiagnosticHandler::new_with_template_dir("./src/diagnostic/locales/en-US/").unwrap();
         assert_eq!(diag_handler.diagnostics_count().unwrap(), 0);
 
-        diag_handler.add_err_diagnostic(diag_1);
+        diag_handler.add_err_diagnostic(diag_1).unwrap();
         assert_eq!(diag_handler.diagnostics_count().unwrap(), 1);
     }
 
@@ -64,12 +64,12 @@ mod test_diagnostic_handler {
             DiagnosticHandler::new_with_template_dir("./src/diagnostic/locales/en-US/").unwrap();
         // test has_errors()
         assert_eq!(diag_handler.has_errors().unwrap(), false);
-        diag_handler.add_err_diagnostic(Diagnostic::<DiagnosticStyle>::new());
+        diag_handler.add_err_diagnostic(Diagnostic::<DiagnosticStyle>::new()).unwrap();
         assert_eq!(diag_handler.has_errors().unwrap(), true);
 
         // test has_warns()
         assert_eq!(diag_handler.has_warns().unwrap(), false);
-        diag_handler.add_warn_diagnostic(Diagnostic::<DiagnosticStyle>::new());
+        diag_handler.add_warn_diagnostic(Diagnostic::<DiagnosticStyle>::new()).unwrap();
         assert_eq!(diag_handler.has_warns().unwrap(), true);
     }
 
@@ -77,13 +77,13 @@ mod test_diagnostic_handler {
     fn test_abort_if_errors() {
         let diag_handler =
             DiagnosticHandler::new_with_template_dir("./src/diagnostic/locales/en-US/").unwrap();
-        diag_handler.abort_if_errors();
-        diag_handler.add_warn_diagnostic(Diagnostic::<DiagnosticStyle>::new());
-        diag_handler.abort_if_errors();
-        diag_handler.add_err_diagnostic(Diagnostic::<DiagnosticStyle>::new());
+        diag_handler.abort_if_errors().unwrap();
+        diag_handler.add_warn_diagnostic(Diagnostic::<DiagnosticStyle>::new()).unwrap();
+        diag_handler.abort_if_errors().unwrap();
+        diag_handler.add_err_diagnostic(Diagnostic::<DiagnosticStyle>::new()).unwrap();
 
         let result = panic::catch_unwind(|| {
-            diag_handler.abort_if_errors();
+            diag_handler.abort_if_errors().unwrap();
         });
         assert!(result.is_err());
     }
