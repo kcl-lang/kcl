@@ -26,7 +26,7 @@ mod test_diagnostic_handler {
     #[test]
     fn test_diagnostic_handler_add_diagnostic() {
         let diag_1 = Diagnostic::<DiagnosticStyle>::new();
-        let mut diag_handler =
+        let diag_handler =
             DiagnosticHandler::new_with_template_dir("./src/diagnostic/locales/en-US/").unwrap();
         assert_eq!(diag_handler.diagnostics_count(), 0);
 
@@ -60,7 +60,7 @@ mod test_diagnostic_handler {
 
     #[test]
     fn test_diagnostic_handler_has() {
-        let mut diag_handler =
+        let diag_handler =
             DiagnosticHandler::new_with_template_dir("./src/diagnostic/locales/en-US/").unwrap();
         // test has_errors()
         assert_eq!(diag_handler.has_errors(), false);
@@ -75,7 +75,7 @@ mod test_diagnostic_handler {
 
     #[test]
     fn test_abort_if_errors() {
-        let mut diag_handler =
+        let diag_handler =
             DiagnosticHandler::new_with_template_dir("./src/diagnostic/locales/en-US/").unwrap();
         diag_handler.abort_if_errors();
         diag_handler.add_warn_diagnostic(Diagnostic::<DiagnosticStyle>::new());
