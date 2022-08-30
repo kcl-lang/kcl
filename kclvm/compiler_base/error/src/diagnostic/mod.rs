@@ -1,8 +1,8 @@
 pub use rustc_errors::styled_buffer::StyledBuffer;
 use rustc_errors::Style;
 
-pub mod diagnostic_message;
 pub mod components;
+pub mod diagnostic_message;
 pub mod style;
 
 #[cfg(test)]
@@ -25,7 +25,7 @@ where
     /// # use compiler_base_error::Component;
     /// # use compiler_base_error::DiagnosticStyle;
     /// # use rustc_errors::styled_buffer::StyledBuffer;
-    /// 
+    ///
     /// struct ComponentWithStyleLogo {
     ///     text: String
     /// }

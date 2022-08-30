@@ -14,7 +14,7 @@
 //! This API is completely unstable and subject to change.
 
 mod caching_source_map_view;
-mod fatal_error;
+pub mod fatal_error;
 pub mod source_map;
 pub use self::caching_source_map_view::CachingSourceMapView;
 use rustc_data_structures::sync::Lrc;

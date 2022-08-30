@@ -1,4 +1,6 @@
 mod test_diagnostic_handler {
+    use std::panic;
+
     use crate::{Diagnostic, DiagnosticHandler, DiagnosticStyle, MessageArgs};
 
     #[test]
@@ -28,7 +30,7 @@ mod test_diagnostic_handler {
             DiagnosticHandler::new_with_template_dir("./src/diagnostic/locales/en-US/").unwrap();
         assert_eq!(diag_handler.diagnostics_count(), 0);
 
-        diag_handler.add_diagnostic(diag_1);
+        diag_handler.add_err_diagnostic(diag_1);
         assert_eq!(diag_handler.diagnostics_count(), 1);
     }
 
@@ -54,5 +56,35 @@ mod test_diagnostic_handler {
             msg_in_line_2,
             "Expected one of `\u{2068}I am an expected item\u{2069}`"
         );
+    }
+
+    #[test]
+    fn test_diagnostic_handler_has() {
+        let mut diag_handler =
+            DiagnosticHandler::new_with_template_dir("./src/diagnostic/locales/en-US/").unwrap();
+        // test has_errors()
+        assert_eq!(diag_handler.has_errors(), false);
+        diag_handler.add_err_diagnostic(Diagnostic::<DiagnosticStyle>::new());
+        assert_eq!(diag_handler.has_errors(), true);
+
+        // test has_warns()
+        assert_eq!(diag_handler.has_warns(), false);
+        diag_handler.add_warn_diagnostic(Diagnostic::<DiagnosticStyle>::new());
+        assert_eq!(diag_handler.has_warns(), true);
+    }
+
+    #[test]
+    fn test_abort_if_errors() {
+        let mut diag_handler =
+            DiagnosticHandler::new_with_template_dir("./src/diagnostic/locales/en-US/").unwrap();
+        diag_handler.abort_if_errors();
+        diag_handler.add_warn_diagnostic(Diagnostic::<DiagnosticStyle>::new());
+        diag_handler.abort_if_errors();
+        diag_handler.add_err_diagnostic(Diagnostic::<DiagnosticStyle>::new());
+
+        let result = panic::catch_unwind(|| {
+            diag_handler.abort_if_errors();
+        });
+        assert!(result.is_err());
     }
 }
