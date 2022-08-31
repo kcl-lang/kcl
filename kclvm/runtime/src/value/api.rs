@@ -706,6 +706,8 @@ pub extern "C" fn kclvm_value_delete(p: *mut kclvm_value_ref_t) {
             return;
         }
     }
+    let val = ptr_as_ref(p);
+    val.from_raw();
     free_mut_ptr(p);
 }
 
