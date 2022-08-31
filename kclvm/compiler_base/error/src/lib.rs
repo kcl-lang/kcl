@@ -1,6 +1,6 @@
 //! This crate provides `DiagnosticHandler` supports diagnostic messages to terminal stderr.
-//! 
-//! 'fluent0.16.0' is used to support diagnostic text template. 
+//!
+//! 'fluent0.16.0' is used to support diagnostic text template.
 //! For more information about 'fluent0.16.0', see https://projectfluent.org/.
 //!
 //! 'fluent0.16.0' uses "*.ftl" as the template file.
@@ -15,7 +15,7 @@
 //! - In line 2, `.expected` is another `index`, it is a `sub_index` of `invalid-syntax`.
 //! - In line 2, `sub_index` must start with a point `.` and it is optional and can be more than one.
 //! - In line 2, `Expected one of `{$expected_items}`` is the `Message String` to `.expected`. It is an interpolated string.
-//! - In line 2, `{$expected_items}` is a `MessageArgs` of the `Expected one of `{$expected_items}`` 
+//! - In line 2, `{$expected_items}` is a `MessageArgs` of the `Expected one of `{$expected_items}``
 //! and `MessageArgs` can be recognized as a Key-Value entry, it is optional.  
 //!
 //! The pattern of above '*.ftl' file looks like:
@@ -89,6 +89,27 @@ pub struct DiagnosticHandler {
 }
 
 impl DiagnosticHandler {
+    /// Load all (*.ftl) template files under default directory.
+    ///
+    /// Default directory "./src/diagnostic/locales/en-US/"
+    /// Call the constructor 'new_with_template_dir()' to load the file.
+    /// For more information about the constructor 'new_with_template_dir()', see the doc above 'new_with_template_dir()'.
+    pub fn default() -> Result<Self> {
+        const DEFAULT_TEMPLATE_RESOURCE: &'static str = "./src/diagnostic/locales/en-US/";
+        let handler_inner = DiagnosticHandlerInner::new_with_template_dir(
+            DEFAULT_TEMPLATE_RESOURCE,
+        )
+        .with_context(|| {
+            format!(
+                "Failed to init `TemplateLoader` from '{}'",
+                DEFAULT_TEMPLATE_RESOURCE
+            )
+        })?;
+        Ok(Self {
+            handler_inner: Mutex::new(handler_inner),
+        })
+    }
+
     /// Load all (*.ftl) template files under directory `template_dir`.
     /// `DiagnosticHandler` will load all the files end with "*.ftl" under the directory recursively.
     /// If directory `template_dir` does not exist, this method will return an error.
@@ -357,12 +378,12 @@ impl DiagnosticHandler {
 
     /// Get the message string from "*.ftl" file by `index`, `sub_index` and `MessageArgs`.
     /// And for the 'default.ftl' shown above, you can get messages as follow:
-    /// 
+    ///
     /// ```ignore
     /// invalid-syntax = Invalid syntax
     ///       .expected = Expected one of `{$expected_items}`
     /// ```
-    /// 
+    ///
     /// 1. If you want the message 'Invalid syntax' in line 1.
     ///
     /// ``` rust
