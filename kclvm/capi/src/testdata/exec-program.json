@@ -1,0 +1,7 @@
+
+{
+	"work_dir" : "./src/testdata",
+	"k_filename_list":[
+		"hello.k"
+	]
+}
