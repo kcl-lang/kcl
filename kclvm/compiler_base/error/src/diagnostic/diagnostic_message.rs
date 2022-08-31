@@ -8,23 +8,23 @@ use walkdir::{DirEntry, WalkDir};
 
 use crate::MessageArgs;
 
-// Struct `TemplateLoader` load template contents from "*.ftl" file.
-// `TemplateLoader` will operate on files locally.
+/// Struct `TemplateLoader` load template contents from "*.ftl" file.
+/// `TemplateLoader` will operate on files locally.
 pub(crate) struct TemplateLoader {
     template_inner: Arc<TemplateLoaderInner>,
 }
 
 impl TemplateLoader {
-    // Create the `TemplateLoader` with template (*.ftl) files directory.
-    // `TemplateLoader` will load all the files end with "*.ftl" under the directory recursively.
-    // template_files
-    //      |
-    //      |---- template.ftl
-    //      |---- sub_template_files
-    //                  |
-    //                  |---- sub_template.ftl
-    //
-    // 'template.ftl' and 'sub_template.ftl' can both loaded by the `new_with_template_dir()`.
+    /// Create the `TemplateLoader` with template (*.ftl) files directory.
+    /// `TemplateLoader` will load all the files end with "*.ftl" under the directory recursively.
+    /// template_files
+    ///      |
+    ///      |---- template.ftl
+    ///      |---- sub_template_files
+    ///                  |
+    ///                  |---- sub_template.ftl
+    ///
+    /// 'template.ftl' and 'sub_template.ftl' can both loaded by the `new_with_template_dir()`.
     pub(crate) fn new_with_template_dir(template_dir: &str) -> Result<Self> {
         let template_inner = TemplateLoaderInner::new_with_template_dir(template_dir)
             .with_context(|| format!("Failed to load '*.ftl' from '{}'", template_dir))?;
@@ -33,9 +33,9 @@ impl TemplateLoader {
         })
     }
 
-    // Get the message string from "*.ftl" file by `index`, `sub_index` and `MessageArgs`.
-    // For more information about "*.ftl" file, see the doc above `DiagnosticHandler`.
-    // "*.ftl" file looks like, e.g. './src/diagnostic/locales/en-US/default.ftl' :
+    /// Get the message string from "*.ftl" file by `index`, `sub_index` and `MessageArgs`.
+    /// For more information about "*.ftl" file, see the doc above `DiagnosticHandler`.
+    /// "*.ftl" file looks like, e.g. './src/diagnostic/locales/en-US/default.ftl' :
     pub(crate) fn get_msg_to_str(
         &self,
         index: &str,
@@ -68,7 +68,7 @@ impl TemplateLoader {
     }
 }
 
-// `TemplateLoaderInner` is used to privatize the default constructor of `TemplateLoader`.
+/// `TemplateLoaderInner` is used to privatize the default constructor of `TemplateLoader`.
 struct TemplateLoaderInner {
     template_bunder: FluentBundle<FluentResource>,
 }
