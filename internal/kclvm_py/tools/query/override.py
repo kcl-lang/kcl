@@ -263,14 +263,14 @@ def ApplyOverrides(
     OverrideInfo.MODIFIED = [copy.deepcopy(m) for m in OverrideInfo.MODIFIED]
 
 
-def PrintOverridesAST():
+def PrintOverridesAST(is_fix: bool = True):
     """Print override AST program"""
     if OverrideInfo.MODIFIED:
         for value in OverrideInfo.MODIFIED:
             with open(value.filename, "w") as f:
                 f.flush()
                 os.fsync(f.fileno())
-                PrintAST(value.module, f, Config(is_fix=True))
+                PrintAST(value.module, f, Config(is_fix=is_fix))
             kcl_fmt_file(pathlib.Path(value.filename))
 
 
@@ -350,7 +350,7 @@ def override_file(
     )
     OverrideInfo.MODIFIED = []
     ApplyOverrides(program, overrides, import_paths)
-    PrintOverridesAST()
+    PrintOverridesAST(False)
     return True
 
 

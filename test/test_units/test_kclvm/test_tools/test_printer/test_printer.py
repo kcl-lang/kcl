@@ -17,6 +17,7 @@ _TEST_CASES = [
     "arguments",
     "empty",
     "if_stmt",
+    "import",
     "codelayout",
     "collection_if",
     "comment",

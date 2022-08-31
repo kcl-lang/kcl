@@ -2994,7 +2994,9 @@ def LoadProgram(
             m.relative_filename = m.filename.replace(root, ".", 1)
             preprocess.fix_identifier_prefix(m)
             fix.fix_test_schema_auto_relaxed(m)
-            import_list = fix.fix_and_get_module_import_list(root, m)
+            import_list = fix.fix_and_get_module_import_list(
+                root, m, is_fix=load_packages
+            )
             for import_stmt in import_list:
                 import_names[import_stmt.name] = import_stmt.path
             fix.fix_qualified_identifier(m, import_names=import_names)
