@@ -151,6 +151,9 @@ impl DiagnosticHandler {
     /// Add a diagnostic generated from error to `DiagnosticHandler`.
     /// `DiagnosticHandler` contains a set of `Diagnostic<DiagnosticStyle>`
     ///
+    /// Note: `DiagnosticHandler` does not deduplicate diagnostics.
+    /// If you add two same diagnostics, you will see two same messages in the terminal.
+    ///
     /// # Examples
     ///
     /// ```rust
@@ -176,6 +179,9 @@ impl DiagnosticHandler {
 
     /// Add a diagnostic generated from warning to `DiagnosticHandler`.
     /// `DiagnosticHandler` contains a set of `Diagnostic<DiagnosticStyle>`
+    ///
+    /// Note: `DiagnosticHandler` does not deduplicate diagnostics.
+    /// If you add two same diagnostics, you will see two same messages in the terminal.
     ///
     /// # Examples
     ///
