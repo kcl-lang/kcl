@@ -1,3 +1,29 @@
+//! This crate provides `DiagnosticHandler` supports diagnostic messages to terminal stderr.
+//! 
+//! 'fluent0.16.0' is used to support diagnostic text template. 
+//! For more information about 'fluent0.16.0', see https://projectfluent.org/.
+//!
+//! 'fluent0.16.0' uses "*.ftl" as the template file.
+//! "*.ftl" file looks like, e.g. './src/diagnostic/locales/en-US/default.ftl' :
+//!
+//! ``` ignore
+//! invalid-syntax = Invalid syntax
+//!       .expected = Expected one of `{$expected_items}`
+//! ```
+//! There are two lines in './src/diagnostic/locales/en-US/default.ftl'.
+//! - In line 1, `invalid-syntax` is a `index`, `Invalid syntax` is the `Message String` to this `index`.
+//! - In line 2, `.expected` is another `index`, it is a `sub_index` of `invalid-syntax`.
+//! - In line 2, `sub_index` must start with a point `.` and it is optional and can be more than one.
+//! - In line 2, `Expected one of `{$expected_items}`` is the `Message String` to `.expected`. It is an interpolated string.
+//! - In line 2, `{$expected_items}` is a `MessageArgs` of the `Expected one of `{$expected_items}`` 
+//! and `MessageArgs` can be recognized as a Key-Value entry, it is optional.  
+//!
+//! The pattern of above '*.ftl' file looks like:
+//! ``` ignore
+//!    <'index'> = <'message_string' with optional 'MessageArgs'>
+//!             <optional 'sub_index' start with point> = <'message_string' with optional 'MessageArgs'>*
+//! ```
+
 mod diagnostic;
 mod diagnostic_handler;
 mod emitter;
@@ -330,27 +356,13 @@ impl DiagnosticHandler {
     }
 
     /// Get the message string from "*.ftl" file by `index`, `sub_index` and `MessageArgs`.
-    /// "*.ftl" file looks like, e.g. './src/diagnostic/locales/en-US/default.ftl' :
-    ///
-    /// ``` ignore
-    /// 1.   invalid-syntax = Invalid syntax
-    /// 2.             .expected = Expected one of `{$expected_items}`
-    /// ```
-    ///
-    /// - In line 1, `invalid-syntax` is a `index`, `Invalid syntax` is the `Message String` to this `index`.
-    /// - In line 2, `.expected` is another `index`, it is a `sub_index` of `invalid-syntax`.
-    /// - In line 2, `sub_index` must start with a point `.` and it is optional.
-    /// - In line 2, `Expected one of `{$expected_items}`` is the `Message String` to `.expected`. It is an interpolated string.
-    /// - In line 2, `{$expected_items}` is a `MessageArgs` of the `Expected one of `{$expected_items}``
-    /// and `MessageArgs` can be recognized as a Key-Value entry, it is optional.  
-    ///
-    /// The pattern of above '*.ftl' file looks like:
-    /// ``` ignore
-    /// 1.   <'index'> = <'message_string' with optional 'MessageArgs'>
-    /// 2.             <optional 'sub_index' start with point> = <'message_string' with optional 'MessageArgs'>
-    /// ```
     /// And for the 'default.ftl' shown above, you can get messages as follow:
-    ///
+    /// 
+    /// ```ignore
+    /// invalid-syntax = Invalid syntax
+    ///       .expected = Expected one of `{$expected_items}`
+    /// ```
+    /// 
     /// 1. If you want the message 'Invalid syntax' in line 1.
     ///
     /// ``` rust
