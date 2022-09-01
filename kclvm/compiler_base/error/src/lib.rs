@@ -10,6 +10,7 @@
 
 mod diagnostic;
 mod emitter;
+pub mod errors;
 #[cfg(test)]
 mod tests;
 
