@@ -53,7 +53,7 @@ const DEFAULT_TEMPLATE_RESOURCE: &'static str = "./src/diagnostic/locales/en-US/
 /// 
 /// Note: 
 /// - Eager loading: If you created a global instance of `DiagnosticHandler` by eager loading, 
-/// then this may affect the performance of your compiler at startup, because `DiagnosticHandler` contains IO to load file.
+/// then this may loss the performance of your compiler at startup, because `DiagnosticHandler` contains IO to load file.
 /// - Lazy loading: If you created a global instance of `DiagnosticHandler` by lazy loading, 
 /// you need to guarantee that the instantiation of `DiagnosticHandler` is done before passing references to other modules.
 ///
