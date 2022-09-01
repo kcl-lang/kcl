@@ -55,7 +55,7 @@ impl DiagnosticStyle {
     ///
     /// ```rust
     /// # use rustc_errors::Style;
-    /// # use compiler_base_error::diagnostic::style::DiagnosticStyle;
+    /// # use compiler_base_error::DiagnosticStyle;
     ///
     /// let mut color_spec = DiagnosticStyle::NeedFix.render_style_to_color_spec();
     /// assert!(DiagnosticStyle::NeedFix.check_is_expected_colorspec(&color_spec));

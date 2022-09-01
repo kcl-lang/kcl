@@ -1,8 +1,9 @@
 pub use rustc_errors::styled_buffer::StyledBuffer;
 use rustc_errors::Style;
-pub mod diagnostic_message;
 
 pub mod components;
+pub mod diagnostic_handler;
+pub mod diagnostic_message;
 pub mod style;
 
 #[cfg(test)]
@@ -22,9 +23,10 @@ where
     /// # Examples
     ///
     /// ```rust
-    /// # use compiler_base_error::diagnostic::style::DiagnosticStyle;
-    /// # use compiler_base_error::diagnostic::StyledBuffer;
-    /// # use compiler_base_error::diagnostic::Component;
+    /// # use compiler_base_error::Component;
+    /// # use compiler_base_error::DiagnosticStyle;
+    /// # use rustc_errors::styled_buffer::StyledBuffer;
+    ///
     /// struct ComponentWithStyleLogo {
     ///     text: String
     /// }
@@ -47,7 +49,10 @@ where
 ///
 /// ```rust
 /// # use rustc_errors::styled_buffer::StyledBuffer;
-/// # use compiler_base_error::diagnostic::{Diagnostic, components::Label, style::DiagnosticStyle, Component};
+/// # use compiler_base_error::components::Label;
+/// # use compiler_base_error::DiagnosticStyle;
+/// # use compiler_base_error::Diagnostic;
+/// # use compiler_base_error::Component;
 ///
 /// // If you want a diagnostic message “error[E3033]: this is an error!”.
 /// let mut diagnostic = Diagnostic::new();

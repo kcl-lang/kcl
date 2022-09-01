@@ -9,7 +9,7 @@
 //!
 //！Besides, it's easy to define your customized `Emitter` by implementing `Emitter` trait.
 //! For more information about how to define your customized `Emitter`, see the doc above `Emitter` trait.
-//!
+
 use crate::diagnostic::{Component, Diagnostic};
 use compiler_base_macros::bug;
 use rustc_errors::{
@@ -107,8 +107,8 @@ where
 /// ```rust
 /// # use crate::compiler_base_error::Emitter;
 /// # use compiler_base_error::TerminalEmitter;
-/// # use compiler_base_error::diagnostic::{components::Label, Diagnostic};
-/// # use compiler_base_error::diagnostic::style::DiagnosticStyle;
+/// # use compiler_base_error::{components::Label, Diagnostic};
+/// # use compiler_base_error::DiagnosticStyle;
 ///
 /// // 1. Create a TerminalEmitter
 /// let mut term_emitter = TerminalEmitter::default();

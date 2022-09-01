@@ -8,6 +8,7 @@
 //! Reference: https://github.com/rust-lang/rust/blob/master/compiler/rustc_span/src/lib.rs
 
 pub mod span;
+pub use rustc_span::fatal_error;
 pub use span::{BytePos, Span, DUMMY_SP};
 
 pub type SourceMap = rustc_span::SourceMap;
