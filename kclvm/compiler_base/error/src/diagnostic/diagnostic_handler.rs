@@ -95,7 +95,7 @@ impl DiagnosticHandler {
     /// Call the constructor 'new_with_template_dir()' to load the file.
     /// For more information about the constructor 'new_with_template_dir()', see the doc above 'new_with_template_dir()'.
     pub fn default() -> Result<Self> {
-        let handler_inner = DiagnosticHandlerInner::new_with_template_dir(
+        DiagnosticHandler::new_with_template_dir(
             DEFAULT_TEMPLATE_RESOURCE,
         )
         .with_context(|| {
@@ -103,9 +103,6 @@ impl DiagnosticHandler {
                 "Failed to init `TemplateLoader` from '{}'",
                 DEFAULT_TEMPLATE_RESOURCE
             )
-        })?;
-        Ok(Self {
-            handler_inner: Mutex::new(handler_inner),
         })
     }
 
