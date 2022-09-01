@@ -1,13 +1,16 @@
 //! The crate provides `TemplateLoader` to load the diagnositc message displayed in diagnostics from "*.ftl" files,
+//! `TemplateLoader` relies on 'fluent0.16.0' to support loading diagnositc message from "*.ftl" files.
 //!
+//! 'fluent0.16.0' is used to support diagnostic text template.
+//! For more information about 'fluent0.16.0', see https://projectfluent.org/.
+
 use anyhow::{bail, Context, Result};
 use fluent::{FluentBundle, FluentResource};
 use std::{fs, sync::Arc};
 use unic_langid::langid;
 use walkdir::{DirEntry, WalkDir};
 
-use crate::MessageArgs;
-
+use crate::diagnostic_handler::MessageArgs;
 /// Struct `TemplateLoader` load template contents from "*.ftl" file.
 /// `TemplateLoader` will operate on files locally.
 pub(crate) struct TemplateLoader {

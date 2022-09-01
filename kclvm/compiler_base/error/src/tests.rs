@@ -1,7 +1,10 @@
 mod test_diagnostic_handler {
     use std::panic;
 
-    use crate::{Diagnostic, DiagnosticHandler, DiagnosticStyle, MessageArgs};
+    use crate::{
+        diagnostic_handler::{DiagnosticHandler, MessageArgs},
+        Diagnostic, DiagnosticStyle,
+    };
 
     #[test]
     fn test_diagnostic_handler_new_with_template_dir() {

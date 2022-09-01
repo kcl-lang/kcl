@@ -9,7 +9,7 @@
 //!
 //！Besides, it's easy to define your customized `Emitter` by implementing `Emitter` trait.
 //! For more information about how to define your customized `Emitter`, see the doc above `Emitter` trait.
-//!
+
 use crate::diagnostic::{Component, Diagnostic};
 use compiler_base_macros::bug;
 use rustc_errors::{
