@@ -18,6 +18,9 @@ use compiler_base_span::fatal_error::FatalError;
 use fluent::FluentArgs;
 use std::sync::{Arc, Mutex};
 
+// Default template resource file path.
+const DEFAULT_TEMPLATE_RESOURCE: &'static str = "./src/diagnostic/locales/en-US/";
+
 /// `DiagnosticHandler` supports diagnostic messages to terminal stderr.
 ///
 /// `DiagnosticHandler` will load template file(*ftl) directory when instantiating through the constructor `new_with_template_dir()`.
@@ -86,6 +89,26 @@ pub struct DiagnosticHandler {
 }
 
 impl DiagnosticHandler {
+    /// Load all (*.ftl) template files under default directory.
+    ///
+    /// Default directory "./src/diagnostic/locales/en-US/"
+    /// Call the constructor 'new_with_template_dir()' to load the file.
+    /// For more information about the constructor 'new_with_template_dir()', see the doc above 'new_with_template_dir()'.
+    pub fn default() -> Result<Self> {
+        let handler_inner = DiagnosticHandlerInner::new_with_template_dir(
+            DEFAULT_TEMPLATE_RESOURCE,
+        )
+        .with_context(|| {
+            format!(
+                "Failed to init `TemplateLoader` from '{}'",
+                DEFAULT_TEMPLATE_RESOURCE
+            )
+        })?;
+        Ok(Self {
+            handler_inner: Mutex::new(handler_inner),
+        })
+    }
+
     /// Load all (*.ftl) template files under directory `template_dir`.
     /// `DiagnosticHandler` will load all the files end with "*.ftl" under the directory recursively.
     /// If directory `template_dir` does not exist, this method will return an error.
