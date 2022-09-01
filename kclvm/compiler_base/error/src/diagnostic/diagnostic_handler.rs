@@ -49,13 +49,7 @@ const DEFAULT_TEMPLATE_RESOURCE: &'static str = "./src/diagnostic/locales/en-US/
 /// When your compiler needs to use `Compiler-Base-Error` to displaying diagnostics, you need to create a `DiagnosticHandler` at first.
 /// For more information about how to create a `DiagnosticHandler`, see the doc above method `new_with_template_dir()`.
 /// Since creating `DiagnosticHandler` needs to load the locally template (*.ftl) file, it may cause I/O performance loss,
-/// so we recommend you create `DiagnosticHandler` globally in the compiler and pass references to other modules that use `DiagnosticHandler`.
-/// 
-/// Note: 
-/// - Eager loading: If you created a global instance of `DiagnosticHandler` by eager loading, 
-/// then this may loss the performance of your compiler at startup, because the constructor of `DiagnosticHandler` contains I/O to load file.
-/// - Lazy loading: If you created a global instance of `DiagnosticHandler` by lazy loading, 
-/// you need to guarantee that the instantiation of `DiagnosticHandler` is done before passing references to other modules.
+/// so we recommend you create `DiagnosticHandler` eagerly and globally in the compiler and pass references to other modules that use `DiagnosticHandler`.
 ///
 /// And since `DiagnosticHandler` provides methods that do not supports mutable references "&mut self", so passing immutable references (&) is enough.
 ///
