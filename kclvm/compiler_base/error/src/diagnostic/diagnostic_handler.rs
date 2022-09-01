@@ -50,6 +50,12 @@ const DEFAULT_TEMPLATE_RESOURCE: &'static str = "./src/diagnostic/locales/en-US/
 /// For more information about how to create a `DiagnosticHandler`, see the doc above method `new_with_template_dir()`.
 /// Since creating `DiagnosticHandler` needs to load the locally template (*.ftl) file, it may cause I/O performance loss,
 /// so we recommend you create `DiagnosticHandler` globally in the compiler and pass references to other modules that use `DiagnosticHandler`.
+/// 
+/// Note: 
+/// - Eager loading: If you created a global instance of `DiagnosticHandler` by eager loading, 
+/// then this may affect the performance of your compiler at startup, because `DiagnosticHandler` contains IO to load file.
+/// - Lazy loading: If you created a global instance of `DiagnosticHandler` by lazy loading, 
+/// you need to guarantee that the instantiation of `DiagnosticHandler` is done before passing references to other modules.
 ///
 /// And since `DiagnosticHandler` provides methods that do not supports mutable references "&mut self", so passing immutable references (&) is enough.
 ///
@@ -578,4 +584,35 @@ impl DiagnosticHandlerInner {
     ) -> Result<String> {
         self.template_loader.get_msg_to_str(index, sub_index, &args)
     }
+}
+
+
+#[cfg(test)]
+mod test{
+    use std::cell::RefCell;
+
+    struct Test{
+        s: String,
+    }
+
+    // impl Test{
+    //     fn ttt(&mut self, a: &mut String){
+    //         self.ttt(&mut self.s);
+    //     }
+    // }
+
+    struct Test1{
+        s: RefCell<TestInner>,
+    }
+
+    struct TestInner{
+        s: String
+    }
+
+    impl Test1{
+        fn ttt(&self, a: &mut String){
+            self.ttt(&mut self.s.borrow_mut().s);
+        }
+    }
+
 }
