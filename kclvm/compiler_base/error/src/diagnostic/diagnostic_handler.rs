@@ -122,7 +122,7 @@ impl DiagnosticHandler {
     /// # Examples
     ///
     /// ```rust
-    /// # use compiler_base_error::DiagnosticHandler;
+    /// # use compiler_base_error::diagnostic_handler::DiagnosticHandler;
     /// let diag_handler = DiagnosticHandler::new_with_template_dir("./src/diagnostic/locales/en-US/");
     /// match diag_handler {
     ///     Ok(_) => {}
@@ -154,7 +154,7 @@ impl DiagnosticHandler {
     ///
     /// ```rust
     /// # use compiler_base_error::DiagnosticStyle;
-    /// # use compiler_base_error::DiagnosticHandler;
+    /// # use compiler_base_error::diagnostic_handler::DiagnosticHandler;
     /// # use compiler_base_error::Diagnostic;
     /// let diag_1 = Diagnostic::<DiagnosticStyle>::new();
     /// let mut diag_handler = DiagnosticHandler::new_with_template_dir("./src/diagnostic/locales/en-US/").unwrap();
@@ -183,7 +183,7 @@ impl DiagnosticHandler {
     ///
     /// ```rust
     /// # use compiler_base_error::DiagnosticStyle;
-    /// # use compiler_base_error::DiagnosticHandler;
+    /// # use compiler_base_error::diagnostic_handler::DiagnosticHandler;
     /// # use compiler_base_error::Diagnostic;
     /// let diag_1 = Diagnostic::<DiagnosticStyle>::new();
     /// let mut diag_handler = DiagnosticHandler::new_with_template_dir("./src/diagnostic/locales/en-US/").unwrap();
@@ -209,7 +209,7 @@ impl DiagnosticHandler {
     ///
     /// ```rust
     /// # use compiler_base_error::DiagnosticStyle;
-    /// # use compiler_base_error::DiagnosticHandler;
+    /// # use compiler_base_error::diagnostic_handler::DiagnosticHandler;
     /// # use compiler_base_error::Diagnostic;
     /// let diag_1 = Diagnostic::<DiagnosticStyle>::new();
     /// let mut diag_handler = DiagnosticHandler::new_with_template_dir("./src/diagnostic/locales/en-US/").unwrap();
@@ -231,7 +231,7 @@ impl DiagnosticHandler {
     ///
     /// ```rust
     /// # use compiler_base_error::DiagnosticStyle;
-    /// # use compiler_base_error::DiagnosticHandler;
+    /// # use compiler_base_error::diagnostic_handler::DiagnosticHandler;
     /// # use compiler_base_error::Diagnostic;
     /// let diag_1 = Diagnostic::<DiagnosticStyle>::new();
     /// let mut diag_handler = DiagnosticHandler::new_with_template_dir("./src/diagnostic/locales/en-US/").unwrap();
@@ -256,7 +256,7 @@ impl DiagnosticHandler {
     ///
     /// ```rust
     /// # use compiler_base_error::DiagnosticStyle;
-    /// # use compiler_base_error::DiagnosticHandler;
+    /// # use compiler_base_error::diagnostic_handler::DiagnosticHandler;
     /// # use compiler_base_error::Diagnostic;
     /// let diag_1 = Diagnostic::<DiagnosticStyle>::new();
     /// let mut diag_handler = DiagnosticHandler::new_with_template_dir("./src/diagnostic/locales/en-US/").unwrap();
@@ -282,7 +282,7 @@ impl DiagnosticHandler {
     ///
     /// ```rust
     /// # use compiler_base_error::DiagnosticStyle;
-    /// # use compiler_base_error::DiagnosticHandler;
+    /// # use compiler_base_error::diagnostic_handler::DiagnosticHandler;
     /// # use compiler_base_error::Diagnostic;
     /// let diag_1 = Diagnostic::<DiagnosticStyle>::new();
     /// let diag_2 = Diagnostic::<DiagnosticStyle>::new();
@@ -308,7 +308,7 @@ impl DiagnosticHandler {
     ///
     /// ```rust
     /// # use compiler_base_error::DiagnosticStyle;
-    /// # use compiler_base_error::DiagnosticHandler;
+    /// # use compiler_base_error::diagnostic_handler::DiagnosticHandler;
     /// # use compiler_base_error::Diagnostic;
     /// let diag_1 = Diagnostic::<DiagnosticStyle>::new();
     /// let mut diag_handler = DiagnosticHandler::new_with_template_dir("./src/diagnostic/locales/en-US/").unwrap();
@@ -330,7 +330,7 @@ impl DiagnosticHandler {
     ///
     /// ```rust
     /// # use compiler_base_error::DiagnosticStyle;
-    /// # use compiler_base_error::DiagnosticHandler;
+    /// # use compiler_base_error::diagnostic_handler::DiagnosticHandler;
     /// # use compiler_base_error::Diagnostic;
     /// let diag_1 = Diagnostic::<DiagnosticStyle>::new();
     /// let mut diag_handler = DiagnosticHandler::new_with_template_dir("./src/diagnostic/locales/en-US/").unwrap();
@@ -353,7 +353,7 @@ impl DiagnosticHandler {
     /// ```rust
     /// # use compiler_base_error::DiagnosticStyle;
     /// # use compiler_base_error::Diagnostic;
-    /// # use compiler_base_error::DiagnosticHandler;
+    /// # use compiler_base_error::diagnostic_handler::DiagnosticHandler;
     /// # use std::panic;
     /// let diag_handler = DiagnosticHandler::new_with_template_dir("./src/diagnostic/locales/en-US/").unwrap();
     ///
@@ -389,8 +389,8 @@ impl DiagnosticHandler {
     /// 1. If you want the message 'Invalid syntax' in line 1.
     ///
     /// ``` rust
-    /// # use compiler_base_error::MessageArgs;
-    /// # use compiler_base_error::DiagnosticHandler;
+    /// # use compiler_base_error::diagnostic_handler::MessageArgs;
+    /// # use compiler_base_error::diagnostic_handler::DiagnosticHandler;
     ///
     /// // 1. Prepare an empty `MessageArgs`, Message in line 1 is not an interpolated string.
     /// let no_args = MessageArgs::new();
@@ -411,8 +411,8 @@ impl DiagnosticHandler {
     /// 2. If you want the message 'Expected one of `{$expected_items}`' in line 2.
     ///
     /// ``` rust
-    /// # use compiler_base_error::MessageArgs;
-    /// # use compiler_base_error::DiagnosticHandler;
+    /// # use compiler_base_error::diagnostic_handler::MessageArgs;
+    /// # use compiler_base_error::diagnostic_handler::DiagnosticHandler;
     ///
     /// // 1. Prepare the `MessageArgs` for `{$expected_items}`.
     /// let mut args = MessageArgs::new();
@@ -455,8 +455,8 @@ impl DiagnosticHandler {
 /// # Examples
 ///
 /// ``` rust
-/// # use compiler_base_error::DiagnosticHandler;
-/// # use compiler_base_error::MessageArgs;
+/// # use compiler_base_error::diagnostic_handler::DiagnosticHandler;
+/// # use compiler_base_error::diagnostic_handler::MessageArgs;
 ///
 /// let index = "invalid-syntax";
 /// let sub_index = Some("expected");
@@ -578,35 +578,4 @@ impl DiagnosticHandlerInner {
     ) -> Result<String> {
         self.template_loader.get_msg_to_str(index, sub_index, &args)
     }
-}
-
-
-#[cfg(test)]
-mod test{
-    use std::cell::RefCell;
-
-    struct Test{
-        s: String,
-    }
-
-    // impl Test{
-    //     fn ttt(&mut self, a: &mut String){
-    //         self.ttt(&mut self.s);
-    //     }
-    // }
-
-    struct Test1{
-        s: RefCell<TestInner>,
-    }
-
-    struct TestInner{
-        s: String
-    }
-
-    impl Test1{
-        fn ttt(&self, a: &mut String){
-            self.ttt(&mut self.s.borrow_mut().s);
-        }
-    }
-
 }
