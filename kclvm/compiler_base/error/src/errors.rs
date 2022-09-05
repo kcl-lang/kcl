@@ -34,7 +34,6 @@ impl fmt::Display for ComponentFormatError {
 #[derive(Debug)]
 pub enum ComponentError {
     ComponentFormatErrors(Vec<ComponentFormatError>),
-    EmitterError,
 }
 
 impl fmt::Display for ComponentError {
@@ -46,9 +45,6 @@ impl fmt::Display for ComponentError {
                     result += &e.format();
                 }
                 write!(f, "{}", result)
-            }
-            ComponentError::EmitterError => {
-                write!(f, "Emitting Diagnostic Failed")
             }
         }
     }
