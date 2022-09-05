@@ -1,3 +1,5 @@
+//! This crate provides all error types used in compiler-base-error.
+
 use std::{error::Error, fmt};
 
 impl Error for ComponentFormatError {}

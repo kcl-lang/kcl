@@ -62,7 +62,7 @@ impl Component<DiagnosticStyle> for Label {
 ///
 /// ```ignore
 /// int test = 0;
-///     ^^^^ This is an underline
+///     ^^^^ This is an underline under variable `test`
 /// ```
 pub struct UnderLine {
     start: usize,
@@ -72,6 +72,27 @@ pub struct UnderLine {
 }
 
 impl UnderLine {
+    /// You can new an underline with a default label.
+    /// 
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use compiler_base_error::Component;
+    /// # use compiler_base_error::components::UnderLine;
+    /// # use compiler_base_error::DiagnosticStyle;
+    /// # use rustc_errors::styled_buffer::StyledBuffer;
+    ///
+    /// let mut sb = StyledBuffer::<DiagnosticStyle>::new();
+    /// let mut errs = vec![];
+    ///
+    /// // rendering text: "^^^^^^^^^^"
+    /// let ul = UnderLine::new_with_default_label(0, 10, None);
+    /// ul.format(&mut sb, &mut errs);
+    ///
+    /// // rendering text: "^^^^^^^^^^" in `DiagnosticStyle::NeedFix`.
+    /// let ul_need_fix = UnderLine::new_with_default_label(0, 10, Some(DiagnosticStyle::NeedFix));
+    /// ul_need_fix.format(&mut sb, &mut errs);
+    /// ```
     pub fn new_with_default_label(
         start: usize,
         end: usize,
@@ -85,6 +106,27 @@ impl UnderLine {
         }
     }
 
+    /// You can new an underline with a custom label.
+    /// 
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use compiler_base_error::Component;
+    /// # use compiler_base_error::components::UnderLine;
+    /// # use compiler_base_error::DiagnosticStyle;
+    /// # use rustc_errors::styled_buffer::StyledBuffer;
+    ///
+    /// let mut sb = StyledBuffer::<DiagnosticStyle>::new();
+    /// let mut errs = vec![];
+    ///
+    /// // rendering text: "__________"
+    /// let ul = UnderLine::new(0, 10, "_".to_string(), None);
+    /// ul.format(&mut sb, &mut errs);
+    ///
+    /// // rendering text: "~~" in `DiagnosticStyle::NeedFix`.
+    /// let ul_need_fix = UnderLine::new(0, 2, "~".to_string(), Some(DiagnosticStyle::NeedFix));
+    /// ul_need_fix.format(&mut sb, &mut errs);
+    /// ```
     pub fn new(start: usize, end: usize, label: String, style: Option<DiagnosticStyle>) -> Self {
         Self {
             start,
@@ -114,7 +156,7 @@ impl Component<DiagnosticStyle> for UnderLine {
 }
 
 /// `IndentWithPrefix` is a component of diagnostic to display an indent with prefix.
-///
+/// An indent is a whitespace.
 /// ```ignore
 /// "|   " is three indent with prefix "|".
 /// ```
@@ -125,6 +167,23 @@ pub struct IndentWithPrefix {
 }
 
 impl IndentWithPrefix {
+    /// You can new a `IndentWithPrefix` by default label with 0 indent.
+    /// 
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use compiler_base_error::Component;
+    /// # use compiler_base_error::components::IndentWithPrefix;
+    /// # use compiler_base_error::DiagnosticStyle;
+    /// # use rustc_errors::styled_buffer::StyledBuffer;
+    ///
+    /// let mut sb = StyledBuffer::<DiagnosticStyle>::new();
+    /// let mut errs = vec![];
+    ///
+    /// // If you want to render default text: "|"
+    /// let indent = IndentWithPrefix::default();
+    /// indent.format(&mut sb, &mut errs);
+    /// ```
     pub fn default() -> Self {
         Self {
             prefix_label: "|".to_string(),
@@ -133,14 +192,23 @@ impl IndentWithPrefix {
         }
     }
 
-    pub fn new_with_default_indent(prefix_label: String, style: Option<DiagnosticStyle>) -> Self {
-        Self {
-            prefix_label,
-            prefix_indent: 0,
-            style,
-        }
-    }
-
+    /// You can new a `IndentWithPrefix` by default label with custom indents.
+    /// 
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use compiler_base_error::Component;
+    /// # use compiler_base_error::components::IndentWithPrefix;
+    /// # use compiler_base_error::DiagnosticStyle;
+    /// # use rustc_errors::styled_buffer::StyledBuffer;
+    ///
+    /// let mut sb = StyledBuffer::<DiagnosticStyle>::new();
+    /// let mut errs = vec![];
+    ///
+    /// // If you want to add 3 indents and render text: "   |"
+    /// let indent = IndentWithPrefix::new_with_default_label(3, None);
+    /// indent.format(&mut sb, &mut errs);
+    /// ```
     pub fn new_with_default_label(prefix_indent: usize, style: Option<DiagnosticStyle>) -> Self {
         Self {
             prefix_label: "|".to_string(),
@@ -149,6 +217,22 @@ impl IndentWithPrefix {
         }
     }
 
+    /// You can new a `IndentWithPrefix` by custom label with custom indents.
+    /// 
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use compiler_base_error::Component;
+    /// # use compiler_base_error::components::IndentWithPrefix;
+    /// # use compiler_base_error::DiagnosticStyle;
+    /// # use rustc_errors::styled_buffer::StyledBuffer;
+    ///
+    /// let mut sb = StyledBuffer::<DiagnosticStyle>::new();
+    /// let mut errs = vec![];
+    /// // If you want to add 3 indents and rendering text: "   ^"
+    /// let indent = IndentWithPrefix::new("^".to_string(), 3, None);
+    /// indent.format(&mut sb, &mut errs);
+    /// ```
     pub fn new(prefix_label: String, prefix_indent: usize, style: Option<DiagnosticStyle>) -> Self {
         Self {
             prefix_label,
@@ -173,6 +257,59 @@ pub struct OneLineCodeSnippet {
 }
 
 impl OneLineCodeSnippet {
+    /// # Examples
+    ///
+    /// If you want to get one line code snippet from 'compiler_base/error/src/diagnostic/test_datas/code_snippet' file
+    /// ```ignore
+    /// Line 1 Code Snippet.
+    /// Line 2 Code Snippet.
+    /// ```
+    ///
+    /// ```rust
+    /// # use compiler_base_error::{
+    /// #     Component,
+    /// #     components::OneLineCodeSnippet,
+    /// #     DiagnosticStyle,
+    /// # };
+    /// # use compiler_base_span::{
+    /// #     SourceMap,
+    /// #     FilePathMapping,
+    /// #     span_to_filename_string
+    /// # };
+    /// # use rustc_errors::styled_buffer::StyledBuffer;
+    /// # use compiler_base_span::{span::new_byte_pos, SpanData};
+    /// # use std::{path::PathBuf, sync::Arc, fs};
+    ///
+    /// let mut sb = StyledBuffer::<DiagnosticStyle>::new();
+    /// let mut errs = vec![];
+    ///
+    /// // 1. You shouled load the file and create the `SourceFile`
+    /// let filename = fs::canonicalize(&PathBuf::from("./src/diagnostic/test_datas/main.k"))
+    ///     .unwrap()
+    ///     .display()
+    ///     .to_string();
+    ///
+    /// let src = std::fs::read_to_string(filename.clone()).unwrap();
+    /// let sm = SourceMap::new(FilePathMapping::empty());
+    /// sm.new_source_file(PathBuf::from(filename.clone()).into(), src.to_string());
+    ///
+    /// // 2. You should create a code span for the code snippet.
+    /// let code_span = SpanData {
+    ///     lo: new_byte_pos(22),
+    ///     hi: new_byte_pos(42),
+    /// }.span();
+    ///
+    /// // 3. You should get the `SourceFile` by the code span.
+    /// let sf = sm.source_file_by_filename(&span_to_filename_string(
+    ///     &code_span,
+    ///     &sm,
+    /// )).unwrap();
+    ///
+    /// // 4. You can create the `OneLineCodeSnippet` by the `SourceFile`,
+    /// // and render text "Line 2 Code Snippet.".
+    /// let code_snippet = OneLineCodeSnippet::new(2, sf, None);
+    /// code_snippet.format(&mut sb, &mut errs);
+    /// ```
     pub fn new(line_num: usize, sf: Arc<SourceFile>, style: Option<DiagnosticStyle>) -> Self {
         Self {
             line_num,
@@ -183,19 +320,73 @@ impl OneLineCodeSnippet {
 }
 
 impl Component<DiagnosticStyle> for OneLineCodeSnippet {
-    fn format(&self, sb: &mut StyledBuffer<DiagnosticStyle>, _: &mut Vec<ComponentFormatError>) {
+    fn format(&self, sb: &mut StyledBuffer<DiagnosticStyle>, errs: &mut Vec<ComponentFormatError>) {
         if let Some(line) = self.sf.get_line(self.line_num) {
             sb.appendl(&line.to_string(), self.style);
+        } else {
+            errs.push(ComponentFormatError::new(
+                "OneLineCodeSnippet",
+                "Failed To Format OneLineCodeSnippet",
+            ))
         }
     }
 }
 
-pub struct CodeSpan {
+/// `CodeSnippet` is a component of diagnostic to display code snippets.
+pub struct CodeSnippet {
     code_span: Span,
     source_map: Arc<SourceMap>,
 }
 
-impl CodeSpan {
+impl CodeSnippet {
+    /// # Examples
+    ///
+    /// If you want to get one line code snippet from 'compiler_base/error/src/diagnostic/test_datas/code_snippet' file
+    /// ```ignore
+    /// Line 1 Code Snippet.
+    /// Line 2 Code Snippet.
+    /// ```
+    ///
+    /// ```rust
+    /// # use compiler_base_error::{
+    /// #     Component,
+    /// #     components::OneLineCodeSnippet,
+    /// #     DiagnosticStyle,
+    /// # };
+    /// # use compiler_base_span::{
+    /// #     SourceMap,
+    /// #     FilePathMapping,
+    /// #     span_to_filename_string
+    /// # };
+    /// # use rustc_errors::styled_buffer::StyledBuffer;
+    /// # use compiler_base_span::{span::new_byte_pos, SpanData};
+    /// # use compiler_base_error::components::CodeSnippet;
+    /// # use std::{path::PathBuf, sync::Arc, fs};
+    ///
+    /// let mut sb = StyledBuffer::<DiagnosticStyle>::new();
+    /// let mut errs = vec![];
+    ///
+    /// // 1. You shouled load the file and create the `SourceFile`
+    /// let filename = fs::canonicalize(&PathBuf::from("./src/diagnostic/test_datas/main.k"))
+    ///     .unwrap()
+    ///     .display()
+    ///     .to_string();
+    ///
+    /// let src = std::fs::read_to_string(filename.clone()).unwrap();
+    /// let sm = SourceMap::new(FilePathMapping::empty());
+    /// sm.new_source_file(PathBuf::from(filename.clone()).into(), src.to_string());
+    ///
+    /// // 2. You should create a code span for the code snippet.
+    /// let code_span = SpanData {
+    ///     lo: new_byte_pos(22),
+    ///     hi: new_byte_pos(42),
+    /// }.span();
+    ///
+    /// // 3. You can create the `CodeSnippet` by the `SourceFile`,
+    /// // and render text "Line 2 Code Snippet.".
+    /// let code_snippet = CodeSnippet::new_with_source_map(code_span, Arc::new(sm));
+    /// code_snippet.format(&mut sb, &mut errs);
+    /// ```
     pub fn new_with_source_map(code_span: Span, source_map: Arc<SourceMap>) -> Self {
         Self {
             code_span,
@@ -204,7 +395,7 @@ impl CodeSpan {
     }
 }
 
-impl Component<DiagnosticStyle> for CodeSpan {
+impl Component<DiagnosticStyle> for CodeSnippet {
     fn format(&self, sb: &mut StyledBuffer<DiagnosticStyle>, errs: &mut Vec<ComponentFormatError>) {
         sb.pushs("---> File: ", Some(DiagnosticStyle::Url));
         let file_info = self.source_map.span_to_diagnostic_string(self.code_span);
@@ -240,13 +431,13 @@ impl Component<DiagnosticStyle> for CodeSpan {
                         }
                     }
                     None => errs.push(ComponentFormatError::new(
-                        "CodeSpan",
+                        "CodeSnippet",
                         "Failed To Load Source File",
                     )),
                 };
             }
             Err(_) => errs.push(ComponentFormatError::new(
-                "CodeSpan",
+                "CodeSnippet",
                 "Failed To Get Code Snippet Lines",
             )),
         };

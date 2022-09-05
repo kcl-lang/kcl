@@ -44,7 +44,7 @@ mod test_components {
     use std::{fs, path::PathBuf, sync::Arc};
 
     use crate::{
-        components::CodeSpan,
+        components::CodeSnippet,
         diagnostic::{components::Label, style::DiagnosticStyle, Component},
         Diagnostic,
     };
@@ -106,7 +106,7 @@ mod test_components {
         }
         .span();
 
-        let code_span = CodeSpan::new_with_source_map(code_span, Arc::new(sm));
+        let code_span = CodeSnippet::new_with_source_map(code_span, Arc::new(sm));
         let mut diag = Diagnostic::new();
         diag.append_component(Box::new(code_span));
 
@@ -182,8 +182,6 @@ mod test_error_message {
 }
 
 mod test_errors {
-    use std::fmt::Debug;
-
     use rustc_errors::styled_buffer::StyledBuffer;
 
     use crate::errors::{ComponentError, ComponentFormatError};
