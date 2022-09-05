@@ -24,7 +24,7 @@ mod tests;
 ///
 /// ```no_run
 /// use kclvm_tools::lint::lint_files;
-/// (error, warning) = lint_files(vec![&test.k], None));
+/// let (error, warning) = lint_files(&["test.k"], None);
 /// ```
 ///
 /// - test.k
