@@ -41,7 +41,14 @@ mod test_diagnostic {
 
 mod test_components {
 
-    use crate::diagnostic::{components::Label, style::DiagnosticStyle, Component};
+    use std::{fs, path::PathBuf, sync::Arc};
+
+    use crate::{
+        components::CodeSpan,
+        diagnostic::{components::Label, style::DiagnosticStyle, Component},
+        Diagnostic,
+    };
+    use compiler_base_span::{span::new_byte_pos, FilePathMapping, SourceMap, SpanData};
     use rustc_errors::styled_buffer::StyledBuffer;
 
     #[test]
@@ -80,6 +87,49 @@ mod test_components {
             "this is a component string"
         );
         assert_eq!(result.get(0).unwrap().get(0).unwrap().style, None);
+    }
+
+    #[test]
+    fn test_code_span() {
+        let filename = fs::canonicalize(&PathBuf::from("./src/diagnostic/test_datas/main.k"))
+            .unwrap()
+            .display()
+            .to_string();
+
+        let src = std::fs::read_to_string(filename.clone()).unwrap();
+        let sm = SourceMap::new(FilePathMapping::empty());
+        sm.new_source_file(PathBuf::from(filename.clone()).into(), src.to_string());
+
+        let code_span = SpanData {
+            lo: new_byte_pos(20),
+            hi: new_byte_pos(21),
+        }
+        .span();
+
+        let code_span = CodeSpan::new_with_source_map(code_span, Arc::new(sm));
+        let mut diag = Diagnostic::new();
+        diag.append_component(Box::new(code_span));
+
+        let mut sb = StyledBuffer::<DiagnosticStyle>::new();
+        let mut errs = vec![];
+        diag.format(&mut sb, &mut errs);
+
+        let result = sb.render();
+        assert_eq!(errs.len(), 0);
+
+        assert_eq!(errs.len(), 0);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result.get(0).unwrap().len(), 6);
+        let expected_path = format!("---> File: {}:2:6: 2:7", filename);
+        assert_eq!(result.get(0).unwrap().get(0).unwrap().text, expected_path);
+        assert_eq!(result.get(0).unwrap().get(1).unwrap().text, "\n");
+        assert_eq!(result.get(0).unwrap().get(2).unwrap().text, " 1");
+        assert_eq!(
+            result.get(0).unwrap().get(3).unwrap().text,
+            "|    firstName: str\n  |"
+        );
+        assert_eq!(result.get(0).unwrap().get(4).unwrap().text, "    ^^ ");
+        assert_eq!(result.get(0).unwrap().get(5).unwrap().text, "\n");
     }
 }
 

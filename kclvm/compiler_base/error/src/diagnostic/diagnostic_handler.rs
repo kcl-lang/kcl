@@ -240,7 +240,9 @@ impl DiagnosticHandler {
     pub fn emit_error_diagnostic(&self, diag: Diagnostic<DiagnosticStyle>) -> Result<()> {
         match self.handler_inner.lock() {
             Ok(mut inner) => {
-                inner.emit_error_diagnostic(diag);
+                inner
+                    .emit_error_diagnostic(diag)
+                    .with_context(|| ("Emit Error Diagnostics Failed."))?;
                 Ok(())
             }
             Err(_) => bail!("Emit Error Diagnostics Failed."),
@@ -265,7 +267,9 @@ impl DiagnosticHandler {
     pub fn emit_warn_diagnostic(&self, diag: Diagnostic<DiagnosticStyle>) -> Result<()> {
         match self.handler_inner.lock() {
             Ok(mut inner) => {
-                inner.emit_warn_diagnostic(diag);
+                inner
+                    .emit_warn_diagnostic(diag)
+                    .with_context(|| ("Emit Warn Diagnostics Failed."))?;
                 Ok(())
             }
             Err(_) => bail!("Emit Warn Diagnostics Failed."),
@@ -292,7 +296,9 @@ impl DiagnosticHandler {
     pub fn emit_stashed_diagnostics(&self) -> Result<()> {
         match self.handler_inner.lock() {
             Ok(mut inner) => {
-                inner.emit_stashed_diagnostics();
+                inner
+                    .emit_stashed_diagnostics()
+                    .with_context(|| ("Emit Stashed Diagnostics Failed."))?;
                 Ok(())
             }
             Err(_) => bail!("Emit Stashed Diagnostics Failed."),
@@ -368,7 +374,9 @@ impl DiagnosticHandler {
     pub fn abort_if_errors(&self) -> Result<()> {
         match self.handler_inner.lock() {
             Ok(mut inner) => {
-                inner.abort_if_errors();
+                inner
+                    .abort_if_errors()
+                    .with_context(|| ("Abort If Errors Failed."))?;
                 Ok(())
             }
             Err(_) => bail!("Abort If Errors Failed."),
