@@ -167,6 +167,8 @@ pub struct IndentWithPrefix {
     style: Option<DiagnosticStyle>,
 }
 
+const DEFAULT_INDENT_PREFIX_LABEL: &str = "|";
+
 impl IndentWithPrefix {
     /// You can new a `IndentWithPrefix` by default label with 0 indent.
     ///
@@ -187,7 +189,7 @@ impl IndentWithPrefix {
     /// ```
     pub fn default() -> Self {
         Self {
-            prefix_label: "|".to_string(),
+            prefix_label: DEFAULT_INDENT_PREFIX_LABEL.to_string(),
             prefix_indent: 0,
             style: None,
         }
@@ -212,7 +214,7 @@ impl IndentWithPrefix {
     /// ```
     pub fn new_with_default_label(prefix_indent: usize, style: Option<DiagnosticStyle>) -> Self {
         Self {
-            prefix_label: "|".to_string(),
+            prefix_label: DEFAULT_INDENT_PREFIX_LABEL.to_string(),
             prefix_indent,
             style,
         }
@@ -396,9 +398,11 @@ impl CodeSnippet {
     }
 }
 
+const DEFAULT_FILE_PATH_PREFIX: &str = "---> File: ";
+
 impl Component<DiagnosticStyle> for CodeSnippet {
     fn format(&self, sb: &mut StyledBuffer<DiagnosticStyle>, errs: &mut Vec<ComponentFormatError>) {
-        sb.pushs("---> File: ", Some(DiagnosticStyle::Url));
+        sb.pushs(DEFAULT_FILE_PATH_PREFIX, Some(DiagnosticStyle::Url));
         let file_info = self.source_map.span_to_diagnostic_string(self.code_span);
         sb.appendl(&file_info, Some(DiagnosticStyle::Url));
         sb.appendl("\n", None);
