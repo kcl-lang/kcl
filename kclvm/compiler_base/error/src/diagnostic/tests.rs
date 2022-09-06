@@ -14,7 +14,8 @@ mod test_diagnostic {
 
         let mut sb = StyledBuffer::<DiagnosticStyle>::new();
 
-        diagnostic.format(&mut sb);
+        let mut errs = vec![];
+        diagnostic.format(&mut sb, &mut errs);
         let result = sb.render();
 
         assert_eq!(result.len(), 1);
@@ -46,11 +47,13 @@ mod test_components {
     #[test]
     fn test_label() {
         let mut sb = StyledBuffer::<DiagnosticStyle>::new();
-        Label::Error("E3030".to_string()).format(&mut sb);
-        Label::Warning("W3030".to_string()).format(&mut sb);
-        Label::Note.format(&mut sb);
-        Label::Help.format(&mut sb);
+        let mut errs = vec![];
+        Label::Error("E3030".to_string()).format(&mut sb, &mut errs);
+        Label::Warning("W3030".to_string()).format(&mut sb, &mut errs);
+        Label::Note.format(&mut sb, &mut errs);
+        Label::Help.format(&mut sb, &mut errs);
         let result = sb.render();
+        assert_eq!(errs.len(), 0);
         assert_eq!(result.len(), 1);
         assert_eq!(result.get(0).unwrap().len(), 6);
         assert_eq!(result.get(0).unwrap().get(0).unwrap().text, "error");
@@ -64,8 +67,12 @@ mod test_components {
     #[test]
     fn test_string() {
         let mut sb = StyledBuffer::<DiagnosticStyle>::new();
-        "this is a component string".to_string().format(&mut sb);
+        let mut errs = vec![];
+        "this is a component string"
+            .to_string()
+            .format(&mut sb, &mut errs);
         let result = sb.render();
+        assert_eq!(errs.len(), 0);
         assert_eq!(result.len(), 1);
         assert_eq!(result.get(0).unwrap().len(), 1);
         assert_eq!(

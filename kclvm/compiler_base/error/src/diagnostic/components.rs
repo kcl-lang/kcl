@@ -1,5 +1,6 @@
 //! 'components.rs' defines all components with style `DiagnosticStyle` that builtin in compiler_base_error.
 use super::{style::DiagnosticStyle, Component};
+use crate::errors::ComponentFormatError;
 use rustc_errors::styled_buffer::StyledBuffer;
 
 /// `Label` can be considered as a component of diagnostic to display a short label message in `Diagnositc`.
@@ -14,18 +15,19 @@ use rustc_errors::styled_buffer::StyledBuffer;
 /// # use rustc_errors::styled_buffer::StyledBuffer;
 ///
 /// let mut sb = StyledBuffer::<DiagnosticStyle>::new();
+/// let mut errs = vec![];
 ///
 /// // rendering text: "error[E3131]"
-/// Label::Error("E3131".to_string()).format(&mut sb);
+/// Label::Error("E3131".to_string()).format(&mut sb, &mut errs);
 ///
 /// // rendering text: "warning[W3131]"
-/// Label::Warning("W3131".to_string()).format(&mut sb);
+/// Label::Warning("W3131".to_string()).format(&mut sb, &mut errs);
 ///
 /// // rendering text: "note"
-/// Label::Note.format(&mut sb);
+/// Label::Note.format(&mut sb, &mut errs);
 ///
 /// // rendering text: "help"
-/// Label::Help.format(&mut sb);
+/// Label::Help.format(&mut sb, &mut errs);
 /// ```
 pub enum Label {
     Error(String),
@@ -35,7 +37,7 @@ pub enum Label {
 }
 
 impl Component<DiagnosticStyle> for Label {
-    fn format(&self, sb: &mut StyledBuffer<DiagnosticStyle>) {
+    fn format(&self, sb: &mut StyledBuffer<DiagnosticStyle>, _: &mut Vec<ComponentFormatError>) {
         let (text, style, code) = match self {
             Label::Error(ecode) => ("error", DiagnosticStyle::NeedFix, Some(ecode)),
             Label::Warning(wcode) => ("warning", DiagnosticStyle::NeedAttention, Some(wcode)),
