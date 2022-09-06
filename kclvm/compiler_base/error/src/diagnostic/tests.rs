@@ -41,10 +41,14 @@ mod test_diagnostic {
 
 mod test_components {
 
+    use std::{fs, path::PathBuf, sync::Arc};
+
     use crate::{
-        components::StringWithStyle,
+        components::{CodeSnippet, StringWithStyle},
         diagnostic::{components::Label, style::DiagnosticStyle, Component},
+        Diagnostic
     };
+    use compiler_base_span::{span::new_byte_pos, FilePathMapping, SourceMap, SpanData};
     use rustc_errors::styled_buffer::StyledBuffer;
 
     #[test]
@@ -118,6 +122,49 @@ mod test_components {
             "This is a string with no style"
         );
         assert_eq!(result.get(0).unwrap().get(1).unwrap().style, None);
+    }
+
+    #[test]
+    fn test_code_span() {
+        let filename = fs::canonicalize(&PathBuf::from("./src/diagnostic/test_datas/code_snippet"))
+            .unwrap()
+            .display()
+            .to_string();
+
+        let src = std::fs::read_to_string(filename.clone()).unwrap();
+        let sm = SourceMap::new(FilePathMapping::empty());
+        sm.new_source_file(PathBuf::from(filename.clone()).into(), src.to_string());
+
+        let code_span = SpanData {
+            lo: new_byte_pos(23),
+            hi: new_byte_pos(25),
+        }
+        .span();
+
+        let code_span = CodeSnippet::new_with_source_map(code_span, Arc::new(sm));
+        let mut diag = Diagnostic::new();
+        diag.append_component(Box::new(code_span));
+
+        let mut sb = StyledBuffer::<DiagnosticStyle>::new();
+        let mut errs = vec![];
+        diag.format(&mut sb, &mut errs);
+
+        let result = sb.render();
+        assert_eq!(errs.len(), 0);
+
+        assert_eq!(errs.len(), 0);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result.get(0).unwrap().len(), 6);
+        let expected_path = format!("---> File: {}:2:3: 2:5", filename);
+        assert_eq!(result.get(0).unwrap().get(0).unwrap().text, expected_path);
+        assert_eq!(result.get(0).unwrap().get(1).unwrap().text, "\n  ");
+        assert_eq!(result.get(0).unwrap().get(2).unwrap().text, "1");
+        assert_eq!(
+            result.get(0).unwrap().get(3).unwrap().text,
+            "|Line 2 Code Snippet.\n   |  "
+        );
+        assert_eq!(result.get(0).unwrap().get(4).unwrap().text, "^^");
+        assert_eq!(result.get(0).unwrap().get(5).unwrap().text, "\n");
     }
 }
 
