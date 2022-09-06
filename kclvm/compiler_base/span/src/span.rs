@@ -13,6 +13,7 @@ pub const DUMMY_SP: Span = rustc_span::DUMMY_SP;
 /// use compiler_base_span::span::new_byte_pos;
 /// let byte_pos = new_byte_pos(10);
 /// ```
+#[inline]
 pub fn new_byte_pos(arg: u32) -> rustc_span::BytePos {
     rustc_span::BytePos(arg)
 }
