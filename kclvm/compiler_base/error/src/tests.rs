@@ -99,3 +99,50 @@ mod test_diagnostic_handler {
         assert!(result.is_err());
     }
 }
+
+mod test_errors {
+    use rustc_errors::styled_buffer::StyledBuffer;
+
+    use crate::errors::{ComponentError, ComponentFormatError};
+    use crate::{Component, Diagnostic, DiagnosticStyle, Emitter, TerminalEmitter};
+
+    // Component to generate errors.
+    struct ComponentGenError;
+    impl Component<DiagnosticStyle> for ComponentGenError {
+        fn format(
+            &self,
+            _: &mut StyledBuffer<DiagnosticStyle>,
+            errs: &mut Vec<ComponentFormatError>,
+        ) {
+            errs.push(ComponentFormatError::new(
+                "ComponentGenError",
+                "This is an error for testing",
+            ));
+        }
+    }
+
+    #[test]
+    fn test_component_format_error() {
+        let cge = ComponentGenError {};
+        let mut diagnostic = Diagnostic::<DiagnosticStyle>::new();
+        diagnostic.append_component(Box::new(cge));
+
+        let mut emitter = TerminalEmitter::default();
+        match emitter.emit_diagnostic(&diagnostic) {
+            Ok(_) => {
+                panic!("`emit_diagnostic` shoule be failed.")
+            }
+            Err(err) => {
+                match err.downcast_ref::<ComponentError>() {
+                    Some(ce) => {
+                        let err_msg = format!("{:?}", ce);
+                        assert_eq!(err_msg, "ComponentFormatErrors([ComponentFormatError { component_name: \"ComponentGenError\", details: \"This is an error for testing\" }])")
+                    }
+                    None => {
+                        panic!("Error Type Error")
+                    }
+                };
+            }
+        };
+    }
+}
