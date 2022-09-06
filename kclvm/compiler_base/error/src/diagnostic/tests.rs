@@ -41,7 +41,10 @@ mod test_diagnostic {
 
 mod test_components {
 
-    use crate::diagnostic::{components::Label, style::DiagnosticStyle, Component};
+    use crate::{
+        components::StringWithStyle,
+        diagnostic::{components::Label, style::DiagnosticStyle, Component},
+    };
     use rustc_errors::styled_buffer::StyledBuffer;
 
     #[test]
@@ -80,6 +83,41 @@ mod test_components {
             "this is a component string"
         );
         assert_eq!(result.get(0).unwrap().get(0).unwrap().style, None);
+    }
+
+    #[test]
+    fn test_string_with_style() {
+        let mut sb = StyledBuffer::<DiagnosticStyle>::new();
+        let mut errs = vec![];
+        StringWithStyle::new_with_style(
+            "This is a string with NeedFix style".to_string(),
+            Some(DiagnosticStyle::NeedFix),
+        )
+        .format(&mut sb, &mut errs);
+        let result = sb.render();
+        assert_eq!(errs.len(), 0);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result.get(0).unwrap().len(), 1);
+        assert_eq!(
+            result.get(0).unwrap().get(0).unwrap().text,
+            "This is a string with NeedFix style"
+        );
+        assert_eq!(
+            result.get(0).unwrap().get(0).unwrap().style.unwrap(),
+            DiagnosticStyle::NeedFix
+        );
+
+        StringWithStyle::new_with_no_style("This is a string with no style".to_string())
+            .format(&mut sb, &mut errs);
+        let result = sb.render();
+        assert_eq!(errs.len(), 0);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result.get(0).unwrap().len(), 2);
+        assert_eq!(
+            result.get(0).unwrap().get(1).unwrap().text,
+            "This is a string with no style"
+        );
+        assert_eq!(result.get(0).unwrap().get(1).unwrap().style, None);
     }
 }
 

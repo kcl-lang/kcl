@@ -54,3 +54,44 @@ impl Component<DiagnosticStyle> for Label {
         }
     }
 }
+
+/// `StringWithStyle` is a component of diagnostic to display a string with style.
+pub struct StringWithStyle {
+    content: String,
+    style: Option<DiagnosticStyle>,
+}
+
+impl StringWithStyle {
+    /// You can new a `StringWithStyle` with the string content and `DiagnosticStyle`.
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use compiler_base_error::components::StringWithStyle;
+    /// # use compiler_base_error::DiagnosticStyle;
+    /// let string_styled = StringWithStyle::new_with_style("A styled string".to_string(), Some(DiagnosticStyle::NeedFix));
+    /// ```
+    pub fn new_with_style(content: String, style: Option<DiagnosticStyle>) -> Self {
+        Self { content, style }
+    }
+
+    /// You can new a `StringWithStyle` with no style.
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use compiler_base_error::components::StringWithStyle;
+    /// # use compiler_base_error::DiagnosticStyle;
+    /// let string_styled = StringWithStyle::new_with_style("A styled string".to_string(), None);
+    /// ```
+    pub fn new_with_no_style(content: String) -> Self {
+        Self {
+            content,
+            style: None,
+        }
+    }
+}
+
+impl Component<DiagnosticStyle> for StringWithStyle {
+    fn format(&self, sb: &mut StyledBuffer<DiagnosticStyle>, _: &mut Vec<ComponentFormatError>) {
+        sb.appendl(&self.content, self.style);
+    }
+}
