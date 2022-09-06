@@ -10,8 +10,8 @@ impl Error for ComponentError {}
 /// and 'compiler_base/error/src/diagnostic/components.rs'.
 #[derive(Debug)]
 pub struct ComponentFormatError {
-    component_name: String,
-    details: String,
+    name: String,
+    message: String,
 }
 
 impl ComponentFormatError {
@@ -23,22 +23,22 @@ impl ComponentFormatError {
     ///
     /// // If you want to new a `ComponentFormatError`,
     /// // the first arg is the component name, and the second arg is the help info for this error.
-    /// let component_format_error = ComponentFormatError::new("component_name", "The component format failed.");
+    /// let component_format_error = ComponentFormatError::new("name", "The component format failed.");
     ///
     /// let err_fmt = format!("{:?}", component_format_error);
-    /// assert_eq!("ComponentFormatError { component_name: \"component_name\", details: \"The component format failed.\" }", err_fmt);
+    /// assert_eq!("ComponentFormatError { name: \"name\", message: \"The component format failed.\" }", err_fmt);
     /// ```
     pub fn new(name: &str, msg: &str) -> Self {
         Self {
-            component_name: name.to_string(),
-            details: msg.to_string(),
+            name: name.to_string(),
+            message: msg.to_string(),
         }
     }
 
     pub(crate) fn format(&self) -> String {
         format!(
-            "Formatting Component {} Failed, {}.\n",
-            self.component_name, self.details
+            "Failed to display '{}' on terminal, {}.\n",
+            self.name, self.message
         )
     }
 }
@@ -62,14 +62,14 @@ impl fmt::Display for ComponentFormatError {
 /// # use compiler_base_error::errors::ComponentError;
 ///
 /// // If you want to new a `ComponentFormatError`,
-/// let component_format_error_1 = ComponentFormatError::new("component_name_1", "The component_1 format failed.");
-/// let component_format_error_2 = ComponentFormatError::new("component_name_2", "The component_1 format failed.");
+/// let component_format_error_1 = ComponentFormatError::new("name_1", "The component_1 format failed.");
+/// let component_format_error_2 = ComponentFormatError::new("name_2", "The component_1 format failed.");
 /// let errs = vec![component_format_error_1, component_format_error_2];
 /// let component_format_errors = ComponentError::ComponentFormatErrors(errs);
 ///
 /// let errs_fmt = format!("{:?}", component_format_errors);
 /// assert_eq!(
-/// "ComponentFormatErrors([ComponentFormatError { component_name: \"component_name_1\", details: \"The component_1 format failed.\" }, ComponentFormatError { component_name: \"component_name_2\", details: \"The component_1 format failed.\" }])"
+/// "ComponentFormatErrors([ComponentFormatError { name: \"name_1\", message: \"The component_1 format failed.\" }, ComponentFormatError { name: \"name_2\", message: \"The component_1 format failed.\" }])"
 /// , errs_fmt)
 /// ```
 #[derive(Debug)]

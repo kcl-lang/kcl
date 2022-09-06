@@ -136,7 +136,7 @@ mod test_errors {
                 match err.downcast_ref::<ComponentError>() {
                     Some(ce) => {
                         let err_msg = format!("{:?}", ce);
-                        assert_eq!(err_msg, "ComponentFormatErrors([ComponentFormatError { component_name: \"ComponentGenError\", details: \"This is an error for testing\" }])")
+                        assert_eq!(err_msg, "ComponentFormatErrors([ComponentFormatError { name: \"ComponentGenError\", message: \"This is an error for testing\" }])")
                     }
                     None => {
                         panic!("Error Type Error")
