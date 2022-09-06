@@ -91,7 +91,7 @@ mod test_components {
 
     #[test]
     fn test_code_span() {
-        let filename = fs::canonicalize(&PathBuf::from("./src/diagnostic/test_datas/main.k"))
+        let filename = fs::canonicalize(&PathBuf::from("./src/diagnostic/test_datas/code_snippet"))
             .unwrap()
             .display()
             .to_string();
@@ -101,8 +101,8 @@ mod test_components {
         sm.new_source_file(PathBuf::from(filename.clone()).into(), src.to_string());
 
         let code_span = SpanData {
-            lo: new_byte_pos(20),
-            hi: new_byte_pos(21),
+            lo: new_byte_pos(21),
+            hi: new_byte_pos(22),
         }
         .span();
 
@@ -120,15 +120,15 @@ mod test_components {
         assert_eq!(errs.len(), 0);
         assert_eq!(result.len(), 1);
         assert_eq!(result.get(0).unwrap().len(), 6);
-        let expected_path = format!("---> File: {}:2:6: 2:7", filename);
+        let expected_path = format!("---> File: {}:2:1: 2:2", filename);
         assert_eq!(result.get(0).unwrap().get(0).unwrap().text, expected_path);
         assert_eq!(result.get(0).unwrap().get(1).unwrap().text, "\n");
         assert_eq!(result.get(0).unwrap().get(2).unwrap().text, " 1");
         assert_eq!(
             result.get(0).unwrap().get(3).unwrap().text,
-            "|    firstName: str\n  |"
+            "|Line 2 Code Snippet.\n  |"
         );
-        assert_eq!(result.get(0).unwrap().get(4).unwrap().text, "    ^^ ");
+        assert_eq!(result.get(0).unwrap().get(4).unwrap().text, "^^ ");
         assert_eq!(result.get(0).unwrap().get(5).unwrap().text, "\n");
     }
 }

@@ -71,9 +71,10 @@ pub struct UnderLine {
     style: Option<DiagnosticStyle>,
 }
 
+const DEFAULT_UNDERLINE_LABEL: &str = "^";
 impl UnderLine {
     /// You can new an underline with a default label.
-    /// 
+    ///
     /// # Examples
     ///
     /// ```rust
@@ -101,13 +102,13 @@ impl UnderLine {
         Self {
             start,
             end,
-            label: "^".to_string(),
+            label: DEFAULT_UNDERLINE_LABEL.to_string(),
             style,
         }
     }
 
     /// You can new an underline with a custom label.
-    /// 
+    ///
     /// # Examples
     ///
     /// ```rust
@@ -168,7 +169,7 @@ pub struct IndentWithPrefix {
 
 impl IndentWithPrefix {
     /// You can new a `IndentWithPrefix` by default label with 0 indent.
-    /// 
+    ///
     /// # Examples
     ///
     /// ```rust
@@ -193,7 +194,7 @@ impl IndentWithPrefix {
     }
 
     /// You can new a `IndentWithPrefix` by default label with custom indents.
-    /// 
+    ///
     /// # Examples
     ///
     /// ```rust
@@ -218,7 +219,7 @@ impl IndentWithPrefix {
     }
 
     /// You can new a `IndentWithPrefix` by custom label with custom indents.
-    /// 
+    ///
     /// # Examples
     ///
     /// ```rust
@@ -284,7 +285,7 @@ impl OneLineCodeSnippet {
     /// let mut errs = vec![];
     ///
     /// // 1. You shouled load the file and create the `SourceFile`
-    /// let filename = fs::canonicalize(&PathBuf::from("./src/diagnostic/test_datas/main.k"))
+    /// let filename = fs::canonicalize(&PathBuf::from("./src/diagnostic/test_datas/code_snippet"))
     ///     .unwrap()
     ///     .display()
     ///     .to_string();
@@ -367,7 +368,7 @@ impl CodeSnippet {
     /// let mut errs = vec![];
     ///
     /// // 1. You shouled load the file and create the `SourceFile`
-    /// let filename = fs::canonicalize(&PathBuf::from("./src/diagnostic/test_datas/main.k"))
+    /// let filename = fs::canonicalize(&PathBuf::from("./src/diagnostic/test_datas/code_snippet"))
     ///     .unwrap()
     ///     .display()
     ///     .to_string();

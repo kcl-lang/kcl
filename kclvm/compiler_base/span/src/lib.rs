@@ -9,9 +9,13 @@
 
 pub mod span;
 pub use rustc_span::fatal_error;
-pub use span::{BytePos, Span, DUMMY_SP};
+pub use span::{BytePos, Span, SpanData, DUMMY_SP};
 
 pub type SourceMap = rustc_span::SourceMap;
 pub type SourceFile = rustc_span::SourceFile;
 pub type FilePathMapping = rustc_span::source_map::FilePathMapping;
 pub type Loc = rustc_span::Loc;
+
+pub fn span_to_filename_string(span: &Span, sm: &SourceMap) -> String {
+    format!("{}", sm.span_to_filename(*span).prefer_remapped())
+}
