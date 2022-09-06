@@ -1,3 +1,4 @@
+use crate::errors::ComponentFormatError;
 pub use rustc_errors::styled_buffer::StyledBuffer;
 use rustc_errors::Style;
 
@@ -23,6 +24,7 @@ where
     /// # Examples
     ///
     /// ```rust
+    /// # use compiler_base_error::errors::ComponentFormatError;
     /// # use compiler_base_error::Component;
     /// # use compiler_base_error::DiagnosticStyle;
     /// # use rustc_errors::styled_buffer::StyledBuffer;
@@ -32,14 +34,14 @@ where
     /// }
     ///
     /// impl Component<DiagnosticStyle> for ComponentWithStyleLogo {
-    ///     fn format(&self, sb: &mut StyledBuffer<DiagnosticStyle>) {
+    ///     fn format(&self, sb: &mut StyledBuffer<DiagnosticStyle>, errs: &mut Vec<ComponentFormatError>) {
     ///         // set style
     ///         sb.pushs(&self.text, Some(DiagnosticStyle::Logo));
     ///     }
     /// }
     ///
     /// ```
-    fn format(&self, sb: &mut StyledBuffer<T>);
+    fn format(&self, sb: &mut StyledBuffer<T>, errs: &mut Vec<ComponentFormatError>);
 }
 
 /// `Diagnostic` is a collection of various components,
@@ -72,8 +74,11 @@ where
 /// // Create a `Styledbuffer` to get the result.
 /// let mut sb = StyledBuffer::<DiagnosticStyle>::new();
 ///
+/// // Create an error set for collecting errors.
+/// let mut errs = vec![];
+///
 /// // Rendering !
-/// diagnostic.format(&mut sb);
+/// diagnostic.format(&mut sb, &mut errs);
 /// let result = sb.render();
 ///
 /// // “error[E3033]: this is an error!” is only one line.
@@ -124,9 +129,9 @@ impl<T> Component<T> for Diagnostic<T>
 where
     T: Clone + PartialEq + Eq + Style,
 {
-    fn format(&self, sb: &mut StyledBuffer<T>) {
+    fn format(&self, sb: &mut StyledBuffer<T>, errs: &mut Vec<ComponentFormatError>) {
         for component in &self.components {
-            component.format(sb);
+            component.format(sb, errs);
         }
     }
 }
@@ -138,7 +143,7 @@ impl<T> Component<T> for String
 where
     T: Clone + PartialEq + Eq + Style,
 {
-    fn format(&self, sb: &mut StyledBuffer<T>) {
+    fn format(&self, sb: &mut StyledBuffer<T>, _: &mut Vec<ComponentFormatError>) {
         sb.appendl(&self, None);
     }
 }
