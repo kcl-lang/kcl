@@ -21,4 +21,4 @@ gunicorn==20.1.0
 parsy==1.3.0
 wasmer==1.0.0
 wasmer_compiler_cranelift==1.0.0
-pyopenssl
+pyopenssl==21.0.0
