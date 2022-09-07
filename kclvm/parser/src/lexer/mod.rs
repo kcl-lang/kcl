@@ -301,12 +301,13 @@ impl<'a> Lexer<'a> {
             }
             kclvm_lexer::TokenKind::CloseParen => {
                 if self.indent_cxt.nesting == 0 {
-                    self.sess.struct_span_error(
+                    self.sess.struct_span_error_recovery(
                         "error nesting on close paren",
                         self.span(start, self.pos),
                     )
-                }
-                self.indent_cxt.nesting -= 1;
+                }else {
+                    self.indent_cxt.nesting -= 1;
+                }                
                 token::CloseDelim(token::Paren)
             }
             kclvm_lexer::TokenKind::OpenBrace => {
@@ -561,10 +562,15 @@ impl<'a> Lexer<'a> {
         let start = self.pos;
 
         if self.indent_cxt.nesting > 0 {
-            self.sess.struct_span_error(
+            self.sess.struct_span_error_recovery(
                 "Unclosed nesting at the end of the file",
                 self.span(start, self.pos),
-            )
+            );
+
+            for _ in 0..self.indent_cxt.nesting{
+                buf.push(Token::new(token::CloseDelim(token::Paren), self.span(self.pos, self.pos)))
+            }
+            
         }
 
         if !self.indent_cxt.new_line_beginning {

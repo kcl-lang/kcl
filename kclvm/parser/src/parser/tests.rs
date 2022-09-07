@@ -1104,6 +1104,36 @@ fn test_parse_file() {
     }
 }
 
+#[test]
+fn expr_with_paren1() {
+    check_parsing_expr(
+        r####"(2+3)"####,
+        expect![[r#"
+        Node { node: Paren(ParenExpr { expr: Node { node: Binary(BinaryExpr { left: Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(2) }), filename: "", line: 1, column: 1, end_line: 1, end_column: 2 }, op: Bin(Add), right: Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(3) }), filename: "", line: 1, column: 3, end_line: 1, end_column: 4 } }), filename: "", line: 1, column: 1, end_line: 1, end_column: 4 } }), filename: "", line: 1, column: 0, end_line: 1, end_column: 5 }
+        "#]],
+    );
+}
+
+#[test]
+fn expr_with_paren2() {
+    check_parsing_expr(
+        r####"((2+3)"####,
+        expect![[r#"
+        Node { node: Paren(ParenExpr { expr: Node { node: Paren(ParenExpr { expr: Node { node: Binary(BinaryExpr { left: Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(2) }), filename: "", line: 1, column: 2, end_line: 1, end_column: 3 }, op: Bin(Add), right: Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(3) }), filename: "", line: 1, column: 4, end_line: 1, end_column: 5 } }), filename: "", line: 1, column: 2, end_line: 1, end_column: 5 } }), filename: "", line: 1, column: 1, end_line: 1, end_column: 6 } }), filename: "", line: 1, column: 0, end_line: 1, end_column: 6 }
+        "#]],
+    );
+}
+
+#[test]
+fn expr_with_paren3() {
+    check_parsing_expr(
+        r####"(2+3))"####,
+        expect![[r#"
+        Node { node: Paren(ParenExpr { expr: Node { node: Binary(BinaryExpr { left: Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(2) }), filename: "", line: 1, column: 1, end_line: 1, end_column: 2 }, op: Bin(Add), right: Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(3) }), filename: "", line: 1, column: 3, end_line: 1, end_column: 4 } }), filename: "", line: 1, column: 1, end_line: 1, end_column: 4 } }), filename: "", line: 1, column: 0, end_line: 1, end_column: 5 }
+        "#]],
+    );
+}
+
 // TODO: enable file tests after pos & error added.
 // #[test]
 fn smoke_test_parsing_stmt() {
