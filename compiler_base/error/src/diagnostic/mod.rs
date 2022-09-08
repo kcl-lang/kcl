@@ -101,6 +101,7 @@ where
 /// assert_eq!(result.get(0).unwrap().get(1).unwrap().style, Some(DiagnosticStyle::Helpful));
 /// assert_eq!(result.get(0).unwrap().get(2).unwrap().style, None);
 /// ```
+#[derive(Default)]
 pub struct Diagnostic<T>
 where
     T: Clone + PartialEq + Eq + Style,
@@ -144,6 +145,6 @@ where
     T: Clone + PartialEq + Eq + Style,
 {
     fn format(&self, sb: &mut StyledBuffer<T>, _: &mut Vec<ComponentFormatError>) {
-        sb.appendl(&self, None);
+        sb.appendl(self, None);
     }
 }

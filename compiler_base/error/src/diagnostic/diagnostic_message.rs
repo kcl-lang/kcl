@@ -64,7 +64,7 @@ impl TemplateLoader {
         let MessageArgs(args) = args;
         let value = self.template_inner.get_template_bunder().format_pattern(
             pattern,
-            Some(&args),
+            Some(args),
             &mut vec![],
         );
         Ok(value.to_string())
@@ -112,10 +112,11 @@ fn load_all_templates_in_dir_to_resources(
             let resource = fs::read_to_string(entry.path())?;
 
             match FluentResource::try_new(resource) {
-                Ok(s) => match fluent_bundle.add_resource(s) {
-                    Err(_) => bail!("Failed to parse an FTL string."),
-                    Ok(_) => {}
-                },
+                Ok(s) => {
+                    if fluent_bundle.add_resource(s).is_err() {
+                        bail!("Failed to parse an FTL string.")
+                    }
+                }
                 Err(_) => bail!("Failed to add FTL resources to the bundle."),
             };
         }

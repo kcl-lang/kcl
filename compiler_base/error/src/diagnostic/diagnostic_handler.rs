@@ -19,7 +19,7 @@ use fluent::FluentArgs;
 use std::sync::{Arc, Mutex};
 
 // Default template resource file path.
-const DEFAULT_TEMPLATE_RESOURCE: &'static str = "./src/diagnostic/locales/en-US/";
+const DEFAULT_TEMPLATE_RESOURCE: &str = "./src/diagnostic/locales/en-US/";
 
 /// `DiagnosticHandler` supports diagnostic messages to terminal stderr.
 ///
@@ -477,6 +477,7 @@ impl DiagnosticHandler {
 /// ```
 ///
 /// For more information about the `DiagnosticHandler` see the doc above struct `DiagnosticHandler`.
+#[derive(Default)]
 pub struct MessageArgs<'a>(pub(crate) FluentArgs<'a>);
 impl<'a> MessageArgs<'a> {
     pub fn new() -> Self {
@@ -553,7 +554,7 @@ impl DiagnosticHandlerInner {
     /// `DiagnosticHandler` contains a set of `Diagnostic<DiagnosticStyle>`
     pub(crate) fn emit_stashed_diagnostics(&mut self) -> Result<()> {
         for diag in &self.diagnostics {
-            self.emitter.emit_diagnostic(&diag)?
+            self.emitter.emit_diagnostic(diag)?
         }
         Ok(())
     }
@@ -589,6 +590,6 @@ impl DiagnosticHandlerInner {
         sub_index: Option<&str>,
         args: &MessageArgs,
     ) -> Result<String> {
-        self.template_loader.get_msg_to_str(index, sub_index, &args)
+        self.template_loader.get_msg_to_str(index, sub_index, args)
     }
 }
