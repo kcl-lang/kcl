@@ -29,6 +29,32 @@ where
     pub style: Option<T>,
 }
 
+impl<T> StyledString<T>
+where
+    T: Clone + PartialEq + Eq + Style,
+{
+    /// Constructs a new `StyledString` by string and style.
+    /// 
+    /// # Examples
+    /// 
+    /// ```ignore
+    /// // You need to choose a style for the generic parameter `T` of `StyledString`.
+    /// #[derive(Clone, PartialEq, Eq)]
+    /// enum MyStyle{
+    ///     Style_1
+    /// }
+    /// impl Style for MyStyle {
+    ///     ...
+    /// }
+    /// 
+    /// let styled_string = StyledString::<MyStyle>::new("Hello Styled String".to_string(), Some<MyStyle::Style_1>);
+    /// ```
+    #[inline]
+    pub fn new(text: String, style: Option<T>) -> Self {
+        StyledString { text, style }
+    }
+}
+
 impl<T> StyledChar<T>
 where
     T: Clone + PartialEq + Eq + Style,
