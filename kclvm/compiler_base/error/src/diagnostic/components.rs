@@ -262,7 +262,7 @@ impl Component<DiagnosticStyle> for UnderLine {
         } else if self.start > self.end {
             errs.push(ComponentFormatError::new(
                 "UnderLine",
-                "Failed To Format UnderLine In One Line.",
+                "Failed to Format UnderLine in One Line.",
             ))
         }
     }
@@ -359,7 +359,7 @@ impl Component<DiagnosticStyle> for CodeSnippet {
                             } else {
                                 errs.push(ComponentFormatError::new(
                                     "CodeSnippet",
-                                    "Failed To Display Code Snippet.",
+                                    "Failed to Display Code Snippet.",
                                 ))
                             }
                             sb.appendl("\n", None);
@@ -376,13 +376,13 @@ impl Component<DiagnosticStyle> for CodeSnippet {
                     }
                     None => errs.push(ComponentFormatError::new(
                         "CodeSnippet",
-                        "Failed To Load Source File",
+                        "Failed to Load Source File",
                     )),
                 };
             }
             Err(_) => errs.push(ComponentFormatError::new(
                 "CodeSnippet",
-                "Failed To Display Code Snippet Lines",
+                "Failed to Display Code Snippet Lines",
             )),
         };
     }
