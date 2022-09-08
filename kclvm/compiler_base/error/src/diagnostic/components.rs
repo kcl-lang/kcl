@@ -61,6 +61,7 @@ impl Component<DiagnosticStyle> for Label {
 // Make `StyledString` into a component of diagnostic to display a string with style.
 // For more information about `StyledString`, see doc in `/compiler_base/3rdparty/rustc_errors/src/styled_buffer.rs`.
 impl Component<DiagnosticStyle> for StyledString<DiagnosticStyle> {
+    #[inline]
     fn format(&self, sb: &mut StyledBuffer<DiagnosticStyle>, _: &mut Vec<ComponentFormatError>) {
         sb.appendl(&self.text, self.style);
     }
@@ -96,6 +97,7 @@ impl IndentWithPrefix {
     /// let indent = IndentWithPrefix::default();
     /// indent.format(&mut sb, &mut errs);
     /// ```
+    #[inline]
     pub fn default() -> Self {
         Self {
             indent: 0,
@@ -123,6 +125,7 @@ impl IndentWithPrefix {
     /// let indent = IndentWithPrefix::new_with_default_label(3, None);
     /// indent.format(&mut sb, &mut errs);
     /// ```
+    #[inline]
     pub fn new_with_default_label(indent: usize, style: Option<DiagnosticStyle>) -> Self {
         Self {
             indent,
@@ -149,6 +152,7 @@ impl IndentWithPrefix {
     /// let indent = IndentWithPrefix::new("^".to_string(), 3, None);
     /// indent.format(&mut sb, &mut errs);
     /// ```
+    #[inline]
     pub fn new(prefix: String, indent: usize, prefix_style: Option<DiagnosticStyle>) -> Self {
         Self {
             indent,
@@ -158,6 +162,7 @@ impl IndentWithPrefix {
 }
 
 impl Component<DiagnosticStyle> for IndentWithPrefix {
+    #[inline]
     fn format(&self, sb: &mut StyledBuffer<DiagnosticStyle>, errs: &mut Vec<ComponentFormatError>) {
         let indent = self.indent;
         sb.appendl(&format!("{:>indent$}", ""), None);
@@ -200,6 +205,7 @@ impl UnderLine {
     /// let ul_need_fix = UnderLine::new_with_default_label(0, 10, Some(DiagnosticStyle::NeedFix));
     /// ul_need_fix.format(&mut sb, &mut errs);
     /// ```
+    #[inline]
     pub fn new_with_default_label(
         start: usize,
         end: usize,
@@ -236,6 +242,7 @@ impl UnderLine {
     /// let ul_need_fix = UnderLine::new(0, 2, "~".to_string(), Some(DiagnosticStyle::NeedFix));
     /// ul_need_fix.format(&mut sb, &mut errs);
     /// ```
+    #[inline]
     pub fn new(start: usize, end: usize, label: String, style: Option<DiagnosticStyle>) -> Self {
         Self {
             start,
@@ -315,6 +322,7 @@ impl CodeSnippet {
     /// let code_snippet = CodeSnippet::new(code_span, Arc::new(sm));
     /// code_snippet.format(&mut sb, &mut errs);
     /// ```
+    #[inline]
     pub fn new(code_span: Span, source_map: Arc<SourceMap>) -> Self {
         Self {
             code_span,

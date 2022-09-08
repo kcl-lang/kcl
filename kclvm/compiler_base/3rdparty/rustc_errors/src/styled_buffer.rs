@@ -49,6 +49,7 @@ where
     /// 
     /// let styled_string = StyledString::<MyStyle>::new("Hello Styled String".to_string(), Some<MyStyle::Style_1>);
     /// ```
+    #[inline]
     pub fn new(text: String, style: Option<T>) -> Self {
         StyledString { text, style }
     }
