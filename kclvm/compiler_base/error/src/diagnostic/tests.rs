@@ -44,12 +44,12 @@ mod test_components {
     use std::{fs, path::PathBuf, sync::Arc};
 
     use crate::{
-        components::{CodeSnippet, StringWithStyle},
+        components::CodeSnippet,
         diagnostic::{components::Label, style::DiagnosticStyle, Component},
-        Diagnostic
+        Diagnostic,
     };
     use compiler_base_span::{span::new_byte_pos, FilePathMapping, SourceMap, SpanData};
-    use rustc_errors::styled_buffer::StyledBuffer;
+    use rustc_errors::styled_buffer::{StyledBuffer, StyledString};
 
     #[test]
     fn test_label() {
@@ -93,7 +93,7 @@ mod test_components {
     fn test_string_with_style() {
         let mut sb = StyledBuffer::<DiagnosticStyle>::new();
         let mut errs = vec![];
-        StringWithStyle::new_with_style(
+        StyledString::<DiagnosticStyle>::new(
             "This is a string with NeedFix style".to_string(),
             Some(DiagnosticStyle::NeedFix),
         )
@@ -111,7 +111,7 @@ mod test_components {
             DiagnosticStyle::NeedFix
         );
 
-        StringWithStyle::new_with_no_style("This is a string with no style".to_string())
+        StyledString::<DiagnosticStyle>::new("This is a string with no style".to_string(), None)
             .format(&mut sb, &mut errs);
         let result = sb.render();
         assert_eq!(errs.len(), 0);
@@ -141,7 +141,7 @@ mod test_components {
         }
         .span();
 
-        let code_span = CodeSnippet::new_with_source_map(code_span, Arc::new(sm));
+        let code_span = CodeSnippet::new(code_span, Arc::new(sm));
         let mut diag = Diagnostic::new();
         diag.append_component(Box::new(code_span));
 

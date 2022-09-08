@@ -4,7 +4,7 @@ use std::sync::Arc;
 use super::{style::DiagnosticStyle, Component};
 use crate::errors::ComponentFormatError;
 use compiler_base_span::{span_to_filename_string, SourceMap, Span};
-use rustc_errors::styled_buffer::StyledBuffer;
+use rustc_errors::styled_buffer::{StyledBuffer, StyledString};
 
 /// `Label` can be considered as a component of diagnostic to display a short label message in `Diagnositc`.
 /// `Label` provides "error", "warning", "note" and "Help" four kinds of labels.
@@ -58,44 +58,11 @@ impl Component<DiagnosticStyle> for Label {
     }
 }
 
-/// `StringWithStyle` is a component of diagnostic to display a string with style.
-pub struct StringWithStyle {
-    content: String,
-    style: Option<DiagnosticStyle>,
-}
-
-impl StringWithStyle {
-    /// You can new a `StringWithStyle` with the string content and `DiagnosticStyle`.
-    /// # Examples
-    ///
-    /// ```rust
-    /// # use compiler_base_error::components::StringWithStyle;
-    /// # use compiler_base_error::DiagnosticStyle;
-    /// let string_styled = StringWithStyle::new_with_style("A styled string".to_string(), Some(DiagnosticStyle::NeedFix));
-    /// ```
-    pub fn new_with_style(content: String, style: Option<DiagnosticStyle>) -> Self {
-        Self { content, style }
-    }
-
-    /// You can new a `StringWithStyle` with no style.
-    /// # Examples
-    ///
-    /// ```rust
-    /// # use compiler_base_error::components::StringWithStyle;
-    /// # use compiler_base_error::DiagnosticStyle;
-    /// let string_styled = StringWithStyle::new_with_no_style("A styled string".to_string());
-    /// ```
-    pub fn new_with_no_style(content: String) -> Self {
-        Self {
-            content,
-            style: None,
-        }
-    }
-}
-
-impl Component<DiagnosticStyle> for StringWithStyle {
+// Make `StyledString` into a component of diagnostic to display a string with style.
+// For more information about `StyledString`, see doc in `/compiler_base/3rdparty/rustc_errors/src/styled_buffer.rs`.
+impl Component<DiagnosticStyle> for StyledString<DiagnosticStyle> {
     fn format(&self, sb: &mut StyledBuffer<DiagnosticStyle>, _: &mut Vec<ComponentFormatError>) {
-        sb.appendl(&self.content, self.style);
+        sb.appendl(&self.text, self.style);
     }
 }
 
@@ -106,13 +73,13 @@ impl Component<DiagnosticStyle> for StringWithStyle {
 /// ```
 pub struct IndentWithPrefix {
     indent: usize,
-    prefix: StringWithStyle,
+    prefix: StyledString<DiagnosticStyle>,
 }
 
 const DEFAULT_INDENT_PREFIX_LABEL: &str = "|";
 
 impl IndentWithPrefix {
-    /// You can new a `IndentWithPrefix` by default label with 0 indent.
+    /// Constructs a new `IndentWithPrefix` by default label with 0 indent.
     ///
     /// # Examples
     ///
@@ -132,11 +99,14 @@ impl IndentWithPrefix {
     pub fn default() -> Self {
         Self {
             indent: 0,
-            prefix: StringWithStyle::new_with_no_style(DEFAULT_INDENT_PREFIX_LABEL.to_string()),
+            prefix: StyledString::<DiagnosticStyle> {
+                text: DEFAULT_INDENT_PREFIX_LABEL.to_string(),
+                style: None,
+            },
         }
     }
 
-    /// You can new a `IndentWithPrefix` by default label with custom indents.
+    /// Constructs a new `IndentWithPrefix` by default label with custom indents.
     ///
     /// # Examples
     ///
@@ -156,11 +126,14 @@ impl IndentWithPrefix {
     pub fn new_with_default_label(indent: usize, style: Option<DiagnosticStyle>) -> Self {
         Self {
             indent,
-            prefix: StringWithStyle::new_with_style(DEFAULT_INDENT_PREFIX_LABEL.to_string(), style),
+            prefix: StyledString::<DiagnosticStyle>::new(
+                DEFAULT_INDENT_PREFIX_LABEL.to_string(),
+                style,
+            ),
         }
     }
 
-    /// You can new a `IndentWithPrefix` by custom label with custom indents.
+    /// Constructs a new `IndentWithPrefix` by custom label with custom indents.
     ///
     /// # Examples
     ///
@@ -179,7 +152,7 @@ impl IndentWithPrefix {
     pub fn new(prefix: String, indent: usize, prefix_style: Option<DiagnosticStyle>) -> Self {
         Self {
             indent,
-            prefix: StringWithStyle::new_with_style(prefix, prefix_style),
+            prefix: StyledString::<DiagnosticStyle>::new(prefix, prefix_style),
         }
     }
 }
@@ -201,12 +174,12 @@ impl Component<DiagnosticStyle> for IndentWithPrefix {
 pub struct UnderLine {
     start: usize,
     end: usize,
-    label_str: StringWithStyle,
+    label_str: StyledString<DiagnosticStyle>,
 }
 
 const DEFAULT_UNDERLINE_LABEL: &str = "^";
 impl UnderLine {
-    /// You can new an underline with a default label.
+    /// Constructs a new `UnderLine` with a default label.
     ///
     /// # Examples
     ///
@@ -235,11 +208,14 @@ impl UnderLine {
         Self {
             start,
             end,
-            label_str: StringWithStyle::new_with_style(DEFAULT_UNDERLINE_LABEL.to_string(), style),
+            label_str: StyledString::<DiagnosticStyle>::new(
+                DEFAULT_UNDERLINE_LABEL.to_string(),
+                style,
+            ),
         }
     }
 
-    /// You can new an underline with a custom label.
+    /// Constructs a new `UnderLine` with a custom label.
     ///
     /// # Examples
     ///
@@ -264,7 +240,7 @@ impl UnderLine {
         Self {
             start,
             end,
-            label_str: StringWithStyle::new_with_style(label.to_string(), style),
+            label_str: StyledString::<DiagnosticStyle>::new(label.to_string(), style),
         }
     }
 }
@@ -303,7 +279,6 @@ impl CodeSnippet {
     /// ```rust
     /// # use compiler_base_error::{
     /// #     Component,
-    /// #     components::OneLineCodeSnippet,
     /// #     DiagnosticStyle,
     /// # };
     /// # use compiler_base_span::{
@@ -337,10 +312,10 @@ impl CodeSnippet {
     ///
     /// // 3. You can create the `CodeSnippet` by the `SourceFile`,
     /// // and render text "Line 2 Code Snippet.".
-    /// let code_snippet = CodeSnippet::new_with_source_map(code_span, Arc::new(sm));
+    /// let code_snippet = CodeSnippet::new(code_span, Arc::new(sm));
     /// code_snippet.format(&mut sb, &mut errs);
     /// ```
-    pub fn new_with_source_map(code_span: Span, source_map: Arc<SourceMap>) -> Self {
+    pub fn new(code_span: Span, source_map: Arc<SourceMap>) -> Self {
         Self {
             code_span,
             source_map,
