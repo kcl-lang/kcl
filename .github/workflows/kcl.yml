@@ -1,0 +1,11 @@
+name: KCL
+on: ["push", "pull_request"]
+jobs:
+  build:
+    # Ref: https://github.com/actions/virtual-environments/blob/main/images/macos/macos-11-Readme.md
+    runs-on: ubuntu-latest
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v2
+        with:
+         submodules: 'true'
