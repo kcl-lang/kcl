@@ -15,9 +15,11 @@
   <img src="https://img.shields.io/github/license/KusionStack/KCLVM.svg">
 </p>
 
+
 ## 介绍
 
 Kusion 配置语言（KCL）是一个开源的基于约束的记录及函数语言。KCL 通过成熟的编程语言技术和实践来改进对大量繁杂配置的编写，致力于构建围绕配置的更好的模块化、扩展性和稳定性，更简单的逻辑编写，以及更快的自动化集成和良好的生态延展性。
+
 
 ## 特性
 
@@ -32,6 +34,8 @@ Kusion 配置语言（KCL）是一个开源的基于约束的记录及函数语�
 + **API 亲和**：原生支持 [OpenAPI](https://github.com/KusionStack/kcl-openapi)、 Kubernetes CRD， Kubernetes YAML 等 API 生态规范
 + **开发友好**：[语言工具](https://kusionstack.io/docs/reference/cli/kcl/) (Format，Lint，Test，Vet，Doc 等)、 [IDE 插件](https://github.com/KusionStack/vscode-kcl) 构建良好的研发体验
 + **安全可控**：面向领域，不原生提供线程、IO 等系统级功能，低噪音，低安全风险，易维护，易治理
++ **生产可用**：广泛应用在蚂蚁集团平台工程及自动化的生产环境实践中
+
 
 ## 场景
 
@@ -44,9 +48,22 @@ Kusion 配置语言（KCL）是一个开源的基于约束的记录及函数语�
 + 通过分块编写配置数据可扩展地管理庞大的配置
 + 与 [Kusion Stack](https://kusionstack.io) 一起，用作平台工程语言来交付现代应用程序
 
+
+## 如何选择
+
+简单的答案：
++ 如果你需要编写结构化的静态的 K-V，或使用 Kubernetes 原生的技术工具，建议选择 YAML
++ 如果你希望引入编程语言便利性以消除文本(如 YAML、JSON) 模板，有良好的可读性，或者你已是 Terraform 的用户，建议选择 HCL
++ 如果你希望引入类型功能提升稳定性，维护可扩展的配置文件，建议选择 CUE
++ 如果你希望以现代语言方式编写复杂类型和建模，维护可扩展的配置文件，原生的纯函数和策略，和生产级的性能和自动化，建议选择 KCL
+
+稍后我们将提供更详细的功能和场景对比。
+
+
 ## 安装
 
 从 Github releases 页面[下载](https://github.com/KusionStack/KCLVM/releases)，并且将 `{install-location}/kclvm/bin` 添加到您的环境变量中
+
 
 ## 快速开始
 
@@ -81,13 +98,16 @@ YAML 输出
 fib8: 21
 ```
 
+
 ## 文档
 
 更多文档请访问[语言手册](https://kusionstack.io/docs/reference/lang/lang/tour)
 
+
 ## 贡献
 
 参考[开发手册](./docs/dev_guide/1.about_this_guide.md).
+
 
 ## 路线规划
 

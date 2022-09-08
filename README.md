@@ -15,9 +15,11 @@
   <img src="https://img.shields.io/github/license/KusionStack/KCLVM.svg">
 </p>
 
+
 ## Introduction
 
 Kusion Configuration Language (KCL) is an open source constraint-based record and functional language. KCL improves the writing of a large number of complex configurations through mature programming language technology and practice, and is committed to building better modularity, scalability and stability around configuration, simpler logic writing, fast automation and good ecological extensionality.
+
 
 ## Features
 
@@ -32,6 +34,8 @@ Kusion Configuration Language (KCL) is an open source constraint-based record an
 + **API affinity**: Native support API ecological specifications such as [OpenAPI](https://github.com/KusionStack/kcl-openapi), Kubernetes CRD, Kubernetes YAML spec.
 + **Development friendly**: Friendly development experiences with rich [language tools](https://kusionstack.io/docs/reference/cli/kcl/) (Format, Lint, Test, Vet, Doc, etc.) and [IDE plugins](https://github.com/KusionStack/vscode-kcl).
 + **Safety & maintainable**: Domain-oriented, no system-level functions such as native threads and IO, low noise and security risk, easy maintenance and governance.
++ **Production-ready**: Widely used in production practice of platform engineering and automation at Ant Group.
+
 
 ## What is it for?
 
@@ -44,9 +48,22 @@ You can use KCL to
 + Manage large configurations scalably with isolated configuration blocks.
 + Used as a platform engineering lang to deliver modern app with [Kusion Stack](https://kusionstack.io).
 
+
+## How to choose?
+
+The simple answer:
++ YAML is recommended if you need to write structured static K-V, or use Kubernetes' native tools
++ HCL is recommended if you want to use programming language convenience to remove boilerplate with good human readability, or if you are already a Terraform user
++ CUE is recommended if you want to use type system to improve stability and maintain scalable configurations
++ KCL is recommended if you want types and modeling like a modern language, scalable configurations, in-house pure functions and rules, and production-ready performance and automation
+
+A detailed feature and scenario comparison will be coming later.
+
+
 ## Installation
 
 [Download](https://github.com/KusionStack/KCLVM/releases) the latest release from GitHub and add `{install-location}/kclvm/bin` to the environment `PATH`.
+
 
 ## Showcase
 
@@ -81,13 +98,16 @@ YAML output
 fib8: 21
 ```
 
+
 ## Documentation
 
 Detailed documentation is available at [KCL tour](https://kusionstack.io/docs/reference/lang/lang/tour)
 
+
 ## Contributing
 
 See [Developing Guide](./docs/dev_guide/1.about_this_guide.md).
+
 
 ## Roadmap
 
