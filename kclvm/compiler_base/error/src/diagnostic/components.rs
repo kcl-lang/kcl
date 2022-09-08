@@ -179,7 +179,7 @@ impl Component<DiagnosticStyle> for IndentWithPrefix {
 pub struct UnderLine {
     start: usize,
     end: usize,
-    label_str: StyledString<DiagnosticStyle>,
+    symbol: StyledString<DiagnosticStyle>,
 }
 
 const DEFAULT_UNDERLINE_LABEL: &str = "^";
@@ -214,7 +214,7 @@ impl UnderLine {
         Self {
             start,
             end,
-            label_str: StyledString::<DiagnosticStyle>::new(
+            symbol: StyledString::<DiagnosticStyle>::new(
                 DEFAULT_UNDERLINE_LABEL.to_string(),
                 style,
             ),
@@ -247,7 +247,7 @@ impl UnderLine {
         Self {
             start,
             end,
-            label_str: StyledString::<DiagnosticStyle>::new(label.to_string(), style),
+            symbol: StyledString::<DiagnosticStyle>::new(label.to_string(), style),
         }
     }
 }
@@ -257,7 +257,7 @@ impl Component<DiagnosticStyle> for UnderLine {
         if self.start < self.end {
             IndentWithPrefix::new("".to_string(), self.start, None).format(sb, errs);
             for _ in self.start..self.end {
-                self.label_str.format(sb, errs);
+                self.symbol.format(sb, errs);
             }
         } else if self.start > self.end {
             errs.push(ComponentFormatError::new(
