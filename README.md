@@ -55,7 +55,7 @@ The simple answer:
 + YAML is recommended if you need to write structured static K-V, or use Kubernetes' native tools
 + HCL is recommended if you want to use programming language convenience to remove boilerplate with good human readability, or if you are already a Terraform user
 + CUE is recommended if you want to use type system to improve stability and maintain scalable configurations
-+ KCL is recommended if you want to write types and modeling like a modern language, maintain scalable configurations, in-house pure functions and rules, and production-ready performance and automation
++ KCL is recommended if you want types and modeling like a modern language, scalable configurations, in-house pure functions and rules, and production-ready performance and automation
 
 A detailed feature and scenario comparison will be coming later.
 
