@@ -199,7 +199,7 @@ impl Destination {
     }
 }
 
-impl<'a> Write for Destination {
+impl Write for Destination {
     fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
         match *self {
             Destination::Terminal(ref mut t) => t.write(bytes),
@@ -247,7 +247,7 @@ where
         let mut sb = StyledBuffer::<T>::new();
         let mut errs = vec![];
         diag.format(&mut sb, &mut errs);
-        if errs.len() > 0 {
+        if !errs.is_empty() {
             return Err(ComponentError::ComponentFormatErrors(errs));
         }
         Ok(sb)

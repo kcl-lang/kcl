@@ -1,5 +1,5 @@
 //! 'components.rs' defines all components with style `DiagnosticStyle` that builtin in compiler_base_error.
-use std::sync::Arc;
+use std::{cmp::Ordering, sync::Arc};
 
 use super::{style::DiagnosticStyle, Component};
 use crate::errors::ComponentFormatError;
@@ -247,23 +247,25 @@ impl UnderLine {
         Self {
             start,
             end,
-            symbol: StyledString::<DiagnosticStyle>::new(label.to_string(), style),
+            symbol: StyledString::<DiagnosticStyle>::new(label, style),
         }
     }
 }
 
 impl Component<DiagnosticStyle> for UnderLine {
     fn format(&self, sb: &mut StyledBuffer<DiagnosticStyle>, errs: &mut Vec<ComponentFormatError>) {
-        if self.start < self.end {
-            IndentWithPrefix::new("".to_string(), self.start, None).format(sb, errs);
-            for _ in self.start..self.end {
-                self.symbol.format(sb, errs);
-            }
-        } else if self.start > self.end {
-            errs.push(ComponentFormatError::new(
+        match self.start.cmp(&self.end) {
+            Ordering::Greater => errs.push(ComponentFormatError::new(
                 "UnderLine",
                 "Failed to Format UnderLine in One Line.",
-            ))
+            )),
+            Ordering::Less => {
+                IndentWithPrefix::new("".to_string(), self.start, None).format(sb, errs);
+                for _ in self.start..self.end {
+                    self.symbol.format(sb, errs);
+                }
+            }
+            Ordering::Equal => {}
         }
     }
 }

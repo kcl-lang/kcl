@@ -133,7 +133,7 @@ mod test_components {
 
         let src = std::fs::read_to_string(filename.clone()).unwrap();
         let sm = SourceMap::new(FilePathMapping::empty());
-        sm.new_source_file(PathBuf::from(filename.clone()).into(), src.to_string());
+        sm.new_source_file(PathBuf::from(filename.clone()).into(), src);
 
         let code_span = SpanData {
             lo: new_byte_pos(23),
@@ -211,7 +211,7 @@ mod test_error_message {
         expected_msg: &str,
         template_loader: &TemplateLoader,
     ) {
-        let msg_in_line = template_loader.get_msg_to_str(index, sub_index, &args);
+        let msg_in_line = template_loader.get_msg_to_str(index, sub_index, args);
         assert_eq!(msg_in_line.unwrap(), expected_msg);
     }
 }
