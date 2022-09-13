@@ -1,52 +1,78 @@
-# KCL
+<h1 align="center">KCL: Constraint-based Record & Functional Language</h1>
 
-![license](https://img.shields.io/badge/license-Apache--2.0-green.svg)
-[![Continuous Integration](https://github.com/KusionStack/KCLVM/actions/workflows/github-actions.yaml/badge.svg)](https://github.com/KusionStack/KCLVM/actions?query=branch%3Amain)
+<p align="center">
+<a href="./README.md">English</a> | <a href="./README-zh.md">简体中文</a>
+</p>
+<p align="center">
+<a href="#introduction">Introduction</a> | <a href="#features">Features</a> | <a href="#what-is-it-for">What is it for</a> | <a href="#installation">Installation</a> | <a href="#showcase">Showcase</a> | <a href="#documentation">Documentation</a> | <a href="#contributing">Contributing</a> | <a href="#roadmap">Roadmap</a>
+</p>
 
-[中文](./README_ZH.md)
+<p align="center">
+  <img src="https://github.com/KusionStack/KCLVM/workflows/KCL/badge.svg">
+  <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square">
+  <img src="https://coveralls.io/repos/github/KusionStack/KCLVM/badge.svg">
+  <img src="https://img.shields.io/github/release/KusionStack/KCLVM.svg">
+  <img src="https://img.shields.io/github/license/KusionStack/KCLVM.svg">
+</p>
 
-Kusion Configuration Language (KCL) is an open source configuration language mainly used in [Kusion Stack](https://kusionstack.io). KCL is a statically typed language for configuration and policy scenarios, based on concepts such as declarative and Object-Oriented Programming (OOP) paradigms.
 
-## Core Features
+## Introduction
 
-+ **Simple**
-  + Originated from Python and Golang, incorporating functional language features.
-  + Absorbs integrated language elements such as statements, expressions, conditions, loops, etc.
-  + Type and data separation, schema declaration configuration definition.
-+ **Stable**
-  + Strong immutable constraint.
-  + Compile-time type deduction, type checking.
-  + Rule policy definition: attribute-centric constraint expressions, query results based on constraints.
-  + Testable: assert, print, and test tools.
-+ **Scalable**
-  + Configuration unification: compile-time configuration dependency graph substitution.
-  + Configuration attribute operators: meet the needs of configuration override, merge, add and delete, etc.
-  + Configuration reuse: rich built-in data structures and syntax semantics, easily to expand one configuration of different scenarios.
-+ **Engineering**
-  + Schema single inheritance and declarative model reuse and assembly.
-  + Tool & API granular configuration automation.
-  + Rich built-in functions and system libraries.
-  + Top-level dynamic data input.
-  + Code organization: modules and packages.
-  + [Plug-in system](https://github.com/KusionStack/kcl-plugin): reuse common programming language ecology.
-  + [OpenAPI model support](https://github.com/KusionStack/kcl-openapi): Swagger and KCL schema bidirectional conversion, Kubernetes CRD conversion to KCL schema.
-+ **High Performance**
-  + Works with the LLVM optimizer, supports compilation to native code and formats like WASM and executes efficiently.
+Kusion Configuration Language (KCL) is an open source constraint-based record and functional language. KCL improves the writing of a large number of complex configurations through mature programming language technology and practice, and is committed to building better modularity, scalability and stability around configuration, simpler logic writing, fast automation and good ecological extensionality.
 
-## Installing & Documentation
 
-### How to install
+## Features
 
-[Download](https://github.com/KusionStack/KCLVM/releases) the latest release from GitHub and add `{install-location}/kclvm/bin` to environment PATH.
++ **Easy-to-use**: Originated from high-level languages ​​such as Python and Golang, incorporating functional language features with low side effects.
++ **Well-designed**: Independent Spec-driven syntax, semantics, runtime and system modules design.
++ **Quick modeling**: [Schema](https://kusionstack.io/docs/reference/lang/lang/tour#schema)-centric configuration types and modular abstraction.
++ **Rich capabilities**: Configuration with type, logic and policy based on [Config](https://kusionstack.io/docs/reference/lang/lang/codelab/simple), [Schema](https://kusionstack.io/docs/reference/lang/lang/tour/#schema), [Lambda](https://kusionstack.io/docs/reference/lang/lang/tour/#%E5%87%BD%E6%95%B0), [Rule](https://kusionstack.io/docs/reference/lang/lang/tour/#rule).
++ **Stability**: Configuration stability built on [static type system](https://kusionstack.io/docs/reference/lang/lang/tour/#%E7%B1%BB%E5%9E%8B%E7%B3%BB%E7%BB%9F), [constraints](https://kusionstack.io/docs/reference/lang/lang/tour/#%E6%A0%A1%E9%AA%8C), and [rules](https://kusionstack.io/docs/reference/lang/lang/tour#rule).
++ **Scalability**: High scalability through [automatic merge mechanism](https://kusionstack.io/docs/reference/lang/lang/tour#%E9%85%8D%E7%BD%AE%E6%93%8D%E4%BD%9C) of isolated config blocks.
++ **Fast automation**: Gradient automation scheme of [CRUD APIs](https://kusionstack.io/docs/reference/lang/lang/tour#kcl-%E5%8F%98%E9%87%8F%E4%BF%AE%E6%94%B9), [multilingual SDKs](https://kusionstack.io/docs/reference/lang/xlang-api/overview), [language plugin](https://github.com/KusionStack/kcl-plugin)
++ **High performance**: High compile time and runtime performance using Rust & C and [LLVM](https://llvm.org/), and support compilation to native code and [WASM](https://webassembly.org/).
++ **API affinity**: Native support API ecological specifications such as [OpenAPI](https://github.com/KusionStack/kcl-openapi), Kubernetes CRD, Kubernetes YAML spec.
++ **Development friendly**: Friendly development experiences with rich [language tools](https://kusionstack.io/docs/reference/cli/kcl/) (Format, Lint, Test, Vet, Doc, etc.) and [IDE plugins](https://github.com/KusionStack/vscode-kcl).
++ **Safety & maintainable**: Domain-oriented, no system-level functions such as native threads and IO, low noise and security risk, easy maintenance and governance.
++ **Production-ready**: Widely used in production practice of platform engineering and automation at Ant Group.
 
-### Quick Showcase
+
+## What is it for?
+
+You can use KCL to
+
++ Generate low-level static configuration data like JSON, YAML, etc.
++ Reduce boilerplate in configuration data with the schema modeling.
++ Define schemas with rule constraints for configuration data and validate them automatically.
++ Organize, simplify, unify and manage large configurations without side effects.
++ Manage large configurations scalably with isolated configuration blocks.
++ Used as a platform engineering lang to deliver modern app with [Kusion Stack](https://kusionstack.io).
+
+
+## How to choose?
+
+The simple answer:
++ YAML is recommended if you need to write structured static K-V, or use Kubernetes' native tools
++ HCL is recommended if you want to use programming language convenience to remove boilerplate with good human readability, or if you are already a Terraform user
++ CUE is recommended if you want to use type system to improve stability and maintain scalable configurations
++ KCL is recommended if you want types and modeling like a modern language, scalable configurations, in-house pure functions and rules, and production-ready performance and automation
+
+A detailed feature and scenario comparison will be coming later.
+
+
+## Installation
+
+[Download](https://github.com/KusionStack/KCLVM/releases) the latest release from GitHub and add `{install-location}/kclvm/bin` to the environment `PATH`.
+
+
+## Showcase
 
 `./samples/fib.k` is an example of calculating the Fibonacci sequence.
 
 ```kcl
 schema Fib:
-    n1: int = n - 1
-    n2: int = n1 - 1
+    n1 = n - 1
+    n2 = n1 - 1
     n: int
     value: int
 
@@ -55,9 +81,9 @@ schema Fib:
     elif n == 2:
         value = 1
     else:
-        value = Fib {n: n1}.value + Fib {n: n2}.value
+        value = Fib {n = n1}.value + Fib {n = n2}.value
 
-fib8 = Fib {n: 8}.value
+fib8 = Fib {n = 8}.value
 ```
 
 We can execute the following command to get a YAML output.
@@ -72,20 +98,17 @@ YAML output
 fib8: 21
 ```
 
-### Documentation
 
-Detailed documentation is available at https://kusionstack.io
+## Documentation
 
-## Developing & Contributing
+Detailed documentation is available at [KCL tour](https://kusionstack.io/docs/reference/lang/lang/tour)
 
-### Developing
+
+## Contributing
 
 See [Developing Guide](./docs/dev_guide/1.about_this_guide.md).
 
-### Roadmap
 
-See [KCLVM Roadmap](https://kusionstack.io/docs/governance/intro/roadmap#kclvm-%E8%B7%AF%E7%BA%BF%E8%A7%84%E5%88%92)
+## Roadmap
 
-## License
-
-Apache License Version 2.0
+See [KCLVM Roadmap](https://kusionstack.io/docs/governance/intro/roadmap#kclvm-%E8%B7%AF%E7%BA%BF%E8%A7%84%E5%88%92).

@@ -32,12 +32,13 @@ const IMPORT_STMT_COLUMN_OFFSET: u64 = 1;
 /// let mut prog = load_program(&["config.k"], None).unwrap();
 /// let overrides = vec![parse_override_spec("config.id=1").unwrap()];
 /// let import_paths = vec!["path.to.pkg".to_string()];
-/// let result = apply_overrides(&mut prog, &overrides, &import_paths).unwrap();
+/// let result = apply_overrides(&mut prog, &overrides, &import_paths, true).unwrap();
 /// ```
 pub fn apply_overrides(
     prog: &mut ast::Program,
     overrides: &[ast::OverrideSpec],
     import_paths: &[String],
+    print_ast: bool,
 ) -> Result<()> {
     for o in overrides {
         let pkgpath = if o.pkgpath.is_empty() {
@@ -47,7 +48,7 @@ pub fn apply_overrides(
         };
         if let Some(modules) = prog.pkgs.get_mut(pkgpath) {
             for m in modules.iter_mut() {
-                if apply_override_on_module(m, o, import_paths)? {
+                if apply_override_on_module(m, o, import_paths)? && print_ast {
                     let code_str = print_ast_module(m);
                     std::fs::write(&m.filename, &code_str)?
                 }

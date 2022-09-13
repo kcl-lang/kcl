@@ -83,10 +83,25 @@ impl KclvmService {
         }
 
         let kcl_paths_str = kcl_paths.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
-
+        let mut result = ExecProgram_Result::default();
         let program = load_program(&kcl_paths_str.as_slice(), Some(opts))?;
         let start_time = SystemTime::now();
-        let json_result = kclvm_runner::execute(program, self.plugin_agent, &native_args)?;
+        let exec_result = kclvm_runner::execute(program, self.plugin_agent, &native_args);
+        let escape_time = match SystemTime::now().duration_since(start_time) {
+            Ok(dur) => dur.as_secs_f32(),
+            Err(err) => return Err(err.to_string()),
+        };
+        result.escaped_time = escape_time.to_string();
+        let json_result = match exec_result {
+            Ok(res) => res,
+            Err(res) => {
+                if res.is_empty() {
+                    return Ok(result);
+                } else {
+                    return Err(res);
+                }
+            }
+        };
         let kcl_val = ValueRef::from_json(&json_result).unwrap();
         if let Some(val) = kcl_val.get_by_key("__kcl_PanicInfo__") {
             if val.is_truthy() {
@@ -94,13 +109,7 @@ impl KclvmService {
             }
         }
         let (json_result, yaml_result) = kcl_val.plan();
-        let escape_time = match SystemTime::now().duration_since(start_time) {
-            Ok(dur) => dur.as_secs_f32(),
-            Err(err) => return Err(err.to_string()),
-        };
-        let mut result = ExecProgram_Result::default();
         result.json_result = json_result;
-        result.escaped_time = escape_time.to_string();
         if !args.disable_yaml_result {
             result.yaml_result = yaml_result;
         }

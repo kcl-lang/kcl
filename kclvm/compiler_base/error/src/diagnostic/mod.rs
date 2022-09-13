@@ -1,8 +1,10 @@
+use crate::errors::ComponentFormatError;
 pub use rustc_errors::styled_buffer::StyledBuffer;
 use rustc_errors::Style;
-pub mod diagnostic_message;
 
 pub mod components;
+pub mod diagnostic_handler;
+pub mod diagnostic_message;
 pub mod style;
 
 #[cfg(test)]
@@ -22,22 +24,24 @@ where
     /// # Examples
     ///
     /// ```rust
-    /// # use compiler_base_error::diagnostic::style::DiagnosticStyle;
-    /// # use compiler_base_error::diagnostic::StyledBuffer;
-    /// # use compiler_base_error::diagnostic::Component;
+    /// # use compiler_base_error::errors::ComponentFormatError;
+    /// # use compiler_base_error::Component;
+    /// # use compiler_base_error::DiagnosticStyle;
+    /// # use rustc_errors::styled_buffer::StyledBuffer;
+    ///
     /// struct ComponentWithStyleLogo {
     ///     text: String
     /// }
     ///
     /// impl Component<DiagnosticStyle> for ComponentWithStyleLogo {
-    ///     fn format(&self, sb: &mut StyledBuffer<DiagnosticStyle>) {
+    ///     fn format(&self, sb: &mut StyledBuffer<DiagnosticStyle>, errs: &mut Vec<ComponentFormatError>) {
     ///         // set style
     ///         sb.pushs(&self.text, Some(DiagnosticStyle::Logo));
     ///     }
     /// }
     ///
     /// ```
-    fn format(&self, sb: &mut StyledBuffer<T>);
+    fn format(&self, sb: &mut StyledBuffer<T>, errs: &mut Vec<ComponentFormatError>);
 }
 
 /// `Diagnostic` is a collection of various components,
@@ -47,7 +51,10 @@ where
 ///
 /// ```rust
 /// # use rustc_errors::styled_buffer::StyledBuffer;
-/// # use compiler_base_error::diagnostic::{Diagnostic, components::Label, style::DiagnosticStyle, Component};
+/// # use compiler_base_error::components::Label;
+/// # use compiler_base_error::DiagnosticStyle;
+/// # use compiler_base_error::Diagnostic;
+/// # use compiler_base_error::Component;
 ///
 /// // If you want a diagnostic message “error[E3033]: this is an error!”.
 /// let mut diagnostic = Diagnostic::new();
@@ -67,8 +74,11 @@ where
 /// // Create a `Styledbuffer` to get the result.
 /// let mut sb = StyledBuffer::<DiagnosticStyle>::new();
 ///
+/// // Create an error set for collecting errors.
+/// let mut errs = vec![];
+///
 /// // Rendering !
-/// diagnostic.format(&mut sb);
+/// diagnostic.format(&mut sb, &mut errs);
 /// let result = sb.render();
 ///
 /// // “error[E3033]: this is an error!” is only one line.
@@ -119,9 +129,9 @@ impl<T> Component<T> for Diagnostic<T>
 where
     T: Clone + PartialEq + Eq + Style,
 {
-    fn format(&self, sb: &mut StyledBuffer<T>) {
+    fn format(&self, sb: &mut StyledBuffer<T>, errs: &mut Vec<ComponentFormatError>) {
         for component in &self.components {
-            component.format(sb);
+            component.format(sb, errs);
         }
     }
 }
@@ -133,7 +143,7 @@ impl<T> Component<T> for String
 where
     T: Clone + PartialEq + Eq + Style,
 {
-    fn format(&self, sb: &mut StyledBuffer<T>) {
+    fn format(&self, sb: &mut StyledBuffer<T>, _: &mut Vec<ComponentFormatError>) {
         sb.appendl(&self, None);
     }
 }

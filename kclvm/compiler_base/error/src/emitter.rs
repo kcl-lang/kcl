@@ -9,9 +9,12 @@
 //!
 //！Besides, it's easy to define your customized `Emitter` by implementing `Emitter` trait.
 //! For more information about how to define your customized `Emitter`, see the doc above `Emitter` trait.
-//!
-use crate::diagnostic::{Component, Diagnostic};
-use compiler_base_macros::bug;
+
+use crate::{
+    diagnostic::{Component, Diagnostic},
+    errors::ComponentError,
+};
+use anyhow::Result;
 use rustc_errors::{
     styled_buffer::{StyledBuffer, StyledString},
     Style,
@@ -85,10 +88,13 @@ where
 {
     /// Format struct `Diagnostic` into `String` and render `String` into `StyledString`,
     /// and save `StyledString` in `StyledBuffer`.
-    fn format_diagnostic(&mut self, diag: &Diagnostic<T>) -> StyledBuffer<T>;
+    fn format_diagnostic(
+        &mut self,
+        diag: &Diagnostic<T>,
+    ) -> Result<StyledBuffer<T>, ComponentError>;
 
     /// Emit a structured diagnostic.
-    fn emit_diagnostic(&mut self, diag: &Diagnostic<T>);
+    fn emit_diagnostic(&mut self, diag: &Diagnostic<T>) -> Result<()>;
 
     /// Checks if we can use colors in the current output stream.
     /// `false` by default.
@@ -107,8 +113,8 @@ where
 /// ```rust
 /// # use crate::compiler_base_error::Emitter;
 /// # use compiler_base_error::TerminalEmitter;
-/// # use compiler_base_error::diagnostic::{components::Label, Diagnostic};
-/// # use compiler_base_error::diagnostic::style::DiagnosticStyle;
+/// # use compiler_base_error::{components::Label, Diagnostic};
+/// # use compiler_base_error::DiagnosticStyle;
 ///
 /// // 1. Create a TerminalEmitter
 /// let mut term_emitter = TerminalEmitter::default();
@@ -226,19 +232,25 @@ where
     /// It will call `format_diagnostic` first to format the `Diagnostic` into `StyledString`.
     ///
     /// It will `panic` if something wrong during emitting.
-    fn emit_diagnostic(&mut self, diag: &Diagnostic<T>) {
-        let buffer = self.format_diagnostic(diag);
-        if let Err(e) = emit_to_destination(&buffer.render(), &mut self.dst, self.short_message) {
-            bug!("failed to emit diagnositc: {}", e)
-        }
+    fn emit_diagnostic(&mut self, diag: &Diagnostic<T>) -> Result<()> {
+        let buffer = self.format_diagnostic(diag)?;
+        emit_to_destination(&buffer.render(), &mut self.dst, self.short_message)?;
+        Ok(())
     }
 
     /// Format struct `Diagnostic` into `String` and render `String` into `StyledString`,
     /// and save `StyledString` in `StyledBuffer`.
-    fn format_diagnostic(&mut self, diag: &Diagnostic<T>) -> StyledBuffer<T> {
+    fn format_diagnostic(
+        &mut self,
+        diag: &Diagnostic<T>,
+    ) -> Result<StyledBuffer<T>, ComponentError> {
         let mut sb = StyledBuffer::<T>::new();
-        diag.format(&mut sb);
-        sb
+        let mut errs = vec![];
+        diag.format(&mut sb, &mut errs);
+        if errs.len() > 0 {
+            return Err(ComponentError::ComponentFormatErrors(errs));
+        }
+        Ok(sb)
     }
 }
 

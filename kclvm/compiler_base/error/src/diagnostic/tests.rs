@@ -14,7 +14,8 @@ mod test_diagnostic {
 
         let mut sb = StyledBuffer::<DiagnosticStyle>::new();
 
-        diagnostic.format(&mut sb);
+        let mut errs = vec![];
+        diagnostic.format(&mut sb, &mut errs);
         let result = sb.render();
 
         assert_eq!(result.len(), 1);
@@ -40,17 +41,26 @@ mod test_diagnostic {
 
 mod test_components {
 
-    use crate::diagnostic::{components::Label, style::DiagnosticStyle, Component};
-    use rustc_errors::styled_buffer::StyledBuffer;
+    use std::{fs, path::PathBuf, sync::Arc};
+
+    use crate::{
+        components::CodeSnippet,
+        diagnostic::{components::Label, style::DiagnosticStyle, Component},
+        Diagnostic,
+    };
+    use compiler_base_span::{span::new_byte_pos, FilePathMapping, SourceMap, SpanData};
+    use rustc_errors::styled_buffer::{StyledBuffer, StyledString};
 
     #[test]
     fn test_label() {
         let mut sb = StyledBuffer::<DiagnosticStyle>::new();
-        Label::Error("E3030".to_string()).format(&mut sb);
-        Label::Warning("W3030".to_string()).format(&mut sb);
-        Label::Note.format(&mut sb);
-        Label::Help.format(&mut sb);
+        let mut errs = vec![];
+        Label::Error("E3030".to_string()).format(&mut sb, &mut errs);
+        Label::Warning("W3030".to_string()).format(&mut sb, &mut errs);
+        Label::Note.format(&mut sb, &mut errs);
+        Label::Help.format(&mut sb, &mut errs);
         let result = sb.render();
+        assert_eq!(errs.len(), 0);
         assert_eq!(result.len(), 1);
         assert_eq!(result.get(0).unwrap().len(), 6);
         assert_eq!(result.get(0).unwrap().get(0).unwrap().text, "error");
@@ -64,8 +74,12 @@ mod test_components {
     #[test]
     fn test_string() {
         let mut sb = StyledBuffer::<DiagnosticStyle>::new();
-        "this is a component string".to_string().format(&mut sb);
+        let mut errs = vec![];
+        "this is a component string"
+            .to_string()
+            .format(&mut sb, &mut errs);
         let result = sb.render();
+        assert_eq!(errs.len(), 0);
         assert_eq!(result.len(), 1);
         assert_eq!(result.get(0).unwrap().len(), 1);
         assert_eq!(
@@ -74,10 +88,88 @@ mod test_components {
         );
         assert_eq!(result.get(0).unwrap().get(0).unwrap().style, None);
     }
+
+    #[test]
+    fn test_string_with_style() {
+        let mut sb = StyledBuffer::<DiagnosticStyle>::new();
+        let mut errs = vec![];
+        StyledString::<DiagnosticStyle>::new(
+            "This is a string with NeedFix style".to_string(),
+            Some(DiagnosticStyle::NeedFix),
+        )
+        .format(&mut sb, &mut errs);
+        let result = sb.render();
+        assert_eq!(errs.len(), 0);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result.get(0).unwrap().len(), 1);
+        assert_eq!(
+            result.get(0).unwrap().get(0).unwrap().text,
+            "This is a string with NeedFix style"
+        );
+        assert_eq!(
+            result.get(0).unwrap().get(0).unwrap().style.unwrap(),
+            DiagnosticStyle::NeedFix
+        );
+
+        StyledString::<DiagnosticStyle>::new("This is a string with no style".to_string(), None)
+            .format(&mut sb, &mut errs);
+        let result = sb.render();
+        assert_eq!(errs.len(), 0);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result.get(0).unwrap().len(), 2);
+        assert_eq!(
+            result.get(0).unwrap().get(1).unwrap().text,
+            "This is a string with no style"
+        );
+        assert_eq!(result.get(0).unwrap().get(1).unwrap().style, None);
+    }
+
+    #[test]
+    fn test_code_span() {
+        let filename = fs::canonicalize(&PathBuf::from("./src/diagnostic/test_datas/code_snippet"))
+            .unwrap()
+            .display()
+            .to_string();
+
+        let src = std::fs::read_to_string(filename.clone()).unwrap();
+        let sm = SourceMap::new(FilePathMapping::empty());
+        sm.new_source_file(PathBuf::from(filename.clone()).into(), src.to_string());
+
+        let code_span = SpanData {
+            lo: new_byte_pos(23),
+            hi: new_byte_pos(25),
+        }
+        .span();
+
+        let code_span = CodeSnippet::new(code_span, Arc::new(sm));
+        let mut diag = Diagnostic::new();
+        diag.append_component(Box::new(code_span));
+
+        let mut sb = StyledBuffer::<DiagnosticStyle>::new();
+        let mut errs = vec![];
+        diag.format(&mut sb, &mut errs);
+
+        let result = sb.render();
+        assert_eq!(errs.len(), 0);
+
+        assert_eq!(errs.len(), 0);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result.get(0).unwrap().len(), 6);
+        let expected_path = format!("---> File: {}:2:3: 2:5", filename);
+        assert_eq!(result.get(0).unwrap().get(0).unwrap().text, expected_path);
+        assert_eq!(result.get(0).unwrap().get(1).unwrap().text, "\n  ");
+        assert_eq!(result.get(0).unwrap().get(2).unwrap().text, "1");
+        assert_eq!(
+            result.get(0).unwrap().get(3).unwrap().text,
+            "|Line 2 Code Snippet.\n   |  "
+        );
+        assert_eq!(result.get(0).unwrap().get(4).unwrap().text, "^^");
+        assert_eq!(result.get(0).unwrap().get(5).unwrap().text, "\n");
+    }
 }
 
 mod test_error_message {
-    use crate::diagnostic::diagnostic_message::{MessageArgs, TemplateLoader};
+    use crate::{diagnostic::diagnostic_message::TemplateLoader, diagnostic_handler::MessageArgs};
 
     #[test]
     fn test_template_message() {
