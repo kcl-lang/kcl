@@ -305,9 +305,9 @@ impl<'a> Lexer<'a> {
                         "error nesting on close paren",
                         self.span(start, self.pos),
                     )
-                }else {
+                } else {
                     self.indent_cxt.nesting -= 1;
-                }                
+                }
                 token::CloseDelim(token::Paren)
             }
             kclvm_lexer::TokenKind::OpenBrace => {
@@ -567,10 +567,12 @@ impl<'a> Lexer<'a> {
                 self.span(start, self.pos),
             );
 
-            for _ in 0..self.indent_cxt.nesting{
-                buf.push(Token::new(token::CloseDelim(token::Paren), self.span(self.pos, self.pos)))
+            for _ in 0..self.indent_cxt.nesting {
+                buf.push(Token::new(
+                    token::CloseDelim(token::Paren),
+                    self.span(self.pos, self.pos),
+                ))
             }
-            
         }
 
         if !self.indent_cxt.new_line_beginning {

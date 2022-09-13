@@ -50,7 +50,7 @@ impl ParseSession {
     }
 
     /// Struct and report an error based on a token and not abort the compiler process.
-     pub fn struct_token_error_recovery(&self, expected: &[String], got: Token) {
+    pub fn struct_token_error_recovery(&self, expected: &[String], got: Token) {
         let pos: Position = self.source_map.lookup_char_pos(got.span.lo()).into();
         let err = ParseError::UnexpectedToken {
             expected: expected.iter().map(|tok| tok.into()).collect(),
@@ -58,7 +58,6 @@ impl ParseSession {
         };
 
         self.handler.borrow_mut().add_parse_error(err, pos);
-        // panic!("{}", panic_info.to_json_string())
     }
 
     /// Struct and report an error based on a span and abort the compiler process.
