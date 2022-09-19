@@ -78,8 +78,9 @@ impl Session {
 /// // For more information about diagnositc displaying, see doc in `compiler_base_error`.
 /// ```
 ///
-/// TODO(zongz): [WIP] This should not be implemented manually. Instead, use
-/// `#[derive(SessionDiagnostic)]` -- see [rustc_macros::SessionDiagnostic].
+/// Note:
+/// TODO(zongz): `#[derive(SessionDiagnostic)]` is WIP, before that you need to manually implement this trait.
+/// This should not be implemented manually. Instead, use `#[derive(SessionDiagnostic)]` in future.
 pub trait SessionDiagnostic {
     fn into_diagnostic(self, sess: &Session) -> Result<Diagnostic<DiagnosticStyle>>;
 }
