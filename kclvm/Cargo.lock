@@ -947,6 +947,7 @@ dependencies = [
  "kclvm-sema",
  "once_cell",
  "pretty_assertions",
+ "rustc_lexer",
  "serde_json",
  "serde_yaml 0.9.13",
  "walkdir",
