@@ -9,8 +9,8 @@ use std::sync::Arc;
 /// Note: TODO(zongz): This is a WIP structure.
 /// Currently only contains the part related to error diagnostic displaying.
 pub struct Session {
-    sm: Arc<SourceMap>,
-    diag_handler: Arc<DiagnosticHandler>,
+    pub sm: Arc<SourceMap>,
+    pub diag_handler: Arc<DiagnosticHandler>,
 }
 
 impl Session {
