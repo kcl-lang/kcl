@@ -80,7 +80,7 @@ impl Session {
 ///
 /// Note:
 /// TODO(zongz): `#[derive(SessionDiagnostic)]` is WIP, before that you need to manually implement this trait.
-/// This should not be implemented manually. Instead, use `#[derive(SessionDiagnostic)]` in future.
+/// This should not be implemented manually. Instead, use `#[derive(SessionDiagnostic)]` in the future.
 pub trait SessionDiagnostic {
     fn into_diagnostic(self, sess: &Session) -> Result<Diagnostic<DiagnosticStyle>>;
 }
