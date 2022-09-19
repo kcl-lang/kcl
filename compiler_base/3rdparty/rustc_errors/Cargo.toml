@@ -1,9 +1,9 @@
 [package]
 name = "rustc_errors"
-version = "0.0.0"
+version = "0.0.1"
 edition = "2021"
 authors = ["zongzhe1024@163.com"]
-license = "Apache-2.0 & MIT"
+license = "Apache-2.0 OR MIT"
 description = "Reuse rustc_errors for compiler_base"
 readme = "README.md"
 homepage = "https://github.com/KusionStack/KCLVM"
