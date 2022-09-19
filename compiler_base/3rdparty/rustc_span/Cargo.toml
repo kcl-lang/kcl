@@ -2,6 +2,14 @@
 name = "rustc_span"
 version = "0.0.0"
 edition = "2021"
+authors = ["zongzhe1024@163.com"]
+license = "Apache-2.0 & MIT"
+description = "Reuse rustc_span for compiler_base"
+readme = "README.md"
+homepage = "https://github.com/KusionStack/KCLVM"
+repository = "https://github.com/KusionStack/KCLVM"
+keywords = ["rustc", "rustc_span"]
+categories = ["command-line-utilities"]
 
 [lib]
 doctest = false
