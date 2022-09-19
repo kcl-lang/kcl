@@ -6,7 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-clap = "2.33.3"
 serde_json = "1.0"
 serde = { version = "1", features = ["derive"] }
 glob = "0.3.0"

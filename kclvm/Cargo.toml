@@ -15,7 +15,7 @@ path = "src/main.rs"
 name = "kclvm_cli"
 
 [dependencies]
-clap = "2.33.3"
+clap = "3.2.22"
 serde_json = "1.0"
 serde = { version = "1", features = ["derive"] }
 glob = "0.3.0"
