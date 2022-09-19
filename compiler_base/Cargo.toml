@@ -17,6 +17,7 @@ categories = ["command-line-utilities"]
 
 [workspace]
 members = [
+    "session",
     "macros",
     "span",
     "error",
