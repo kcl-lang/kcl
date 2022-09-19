@@ -2,6 +2,14 @@
 name = "rustc_data_structures"
 version = "0.0.0"
 edition = "2021"
+authors = ["zongzhe1024@163.com"]
+license = "Apache-2.0 & MIT"
+description = "Reuse rustc_data_structures for compiler_base"
+readme = "README.md"
+homepage = "https://github.com/KusionStack/KCLVM"
+repository = "https://github.com/KusionStack/KCLVM"
+keywords = ["rustc", "rustc_data_structures"]
+categories = ["command-line-utilities"]
 
 [lib]
 doctest = false
