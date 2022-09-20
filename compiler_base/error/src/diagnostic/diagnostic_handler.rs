@@ -16,10 +16,11 @@ use crate::{
 use anyhow::{bail, Context, Result};
 use compiler_base_span::fatal_error::FatalError;
 use fluent::FluentArgs;
-use std::sync::{Arc, Mutex};
+use std::{sync::{Arc, Mutex}, path::PathBuf};
 
 // Default template resource file path.
-const DEFAULT_TEMPLATE_RESOURCE: &str = "./src/diagnostic/locales/en-US/";
+const DEFAULT_TEMPLATE_RESOURCE: &str = "src/diagnostic/locales/en-US/";
+const DIAGNOSTIC_MESSAGES_ROOT: &str = env!("CARGO_MANIFEST_DIR");
 
 /// `DiagnosticHandler` supports diagnostic messages to terminal stderr.
 ///
@@ -95,7 +96,16 @@ impl DiagnosticHandler {
     /// Call the constructor 'new_with_template_dir()' to load the file.
     /// For more information about the constructor 'new_with_template_dir()', see the doc above 'new_with_template_dir()'.
     pub fn default() -> Result<Self> {
-        DiagnosticHandler::new_with_template_dir(DEFAULT_TEMPLATE_RESOURCE).with_context(|| {
+        let mut cargo_file_path = PathBuf::from(DIAGNOSTIC_MESSAGES_ROOT);
+        cargo_file_path.push(DEFAULT_TEMPLATE_RESOURCE);
+        let abs_path = cargo_file_path.to_str().with_context(|| {
+            format!(
+                "No such file or directory '{}'",
+                DEFAULT_TEMPLATE_RESOURCE
+            )
+        })?;
+
+        DiagnosticHandler::new_with_template_dir(abs_path).with_context(|| {
             format!(
                 "Failed to init `TemplateLoader` from '{}'",
                 DEFAULT_TEMPLATE_RESOURCE
