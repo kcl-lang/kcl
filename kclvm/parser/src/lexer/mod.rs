@@ -335,11 +335,11 @@ impl<'a> Lexer<'a> {
                         "error nesting on close brace",
                         self.span(start, self.pos),
                     )
-                }else{
+                } else {
                     self.indent_cxt.nesting -= 1;
                     self.indent_cxt.nesting_brace -= 1;
                 }
-                
+
                 token::CloseDelim(token::Brace)
             }
             kclvm_lexer::TokenKind::OpenBracket => {
@@ -353,11 +353,11 @@ impl<'a> Lexer<'a> {
                         "error nesting on close bracket",
                         self.span(start, self.pos),
                     )
-                }else{
+                } else {
                     self.indent_cxt.nesting -= 1;
                     self.indent_cxt.nesting_bracket -= 1;
                 }
-                
+
                 token::CloseDelim(token::Bracket)
             }
             kclvm_lexer::TokenKind::LineContinue => return None,
