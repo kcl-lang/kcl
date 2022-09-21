@@ -1134,6 +1134,56 @@ fn expr_with_paren3() {
     );
 }
 
+#[test]
+fn expr_with_bracket1() {
+    check_parsing_expr(
+        r####"[2,3]"####,
+        expect![[r#"
+        Node { node: List(ListExpr { elts: [Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(2) }), filename: "", line: 1, column: 1, end_line: 1, end_column: 2 }, Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(3) }), filename: "", line: 1, column: 3, end_line: 1, end_column: 4 }], ctx: Load }), filename: "", line: 1, column: 0, end_line: 1, end_column: 5 }
+        "#]],
+    );
+}
+
+#[test]
+fn expr_with_bracket2() {
+    check_parsing_expr(
+        r####"[[2,3]"####,
+        expect![[r#"
+        Node { node: List(ListExpr { elts: [Node { node: List(ListExpr { elts: [Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(2) }), filename: "", line: 1, column: 2, end_line: 1, end_column: 3 }, Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(3) }), filename: "", line: 1, column: 4, end_line: 1, end_column: 5 }], ctx: Load }), filename: "", line: 1, column: 1, end_line: 1, end_column: 6 }], ctx: Load }), filename: "", line: 1, column: 0, end_line: 1, end_column: 6 }
+        "#]],
+    );
+}
+
+#[test]
+fn expr_with_bracket3() {
+    check_parsing_expr(
+        r####"[2,3]]"####,
+        expect![[r#"
+        Node { node: List(ListExpr { elts: [Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(2) }), filename: "", line: 1, column: 1, end_line: 1, end_column: 2 }, Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(3) }), filename: "", line: 1, column: 3, end_line: 1, end_column: 4 }], ctx: Load }), filename: "", line: 1, column: 0, end_line: 1, end_column: 5 }
+        "#]],
+    );
+}
+
+#[test]
+fn expr_with_brace1() {
+    check_parsing_expr(
+        r####"{a=2}"####,
+        expect![[r#"
+        Node { node: Config(ConfigExpr { items: [Node { node: ConfigEntry { key: Some(Node { node: Identifier(Identifier { names: ["a"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 1, end_line: 1, end_column: 2 }), value: Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(2) }), filename: "", line: 1, column: 3, end_line: 1, end_column: 4 }, operation: Override, insert_index: -1 }, filename: "", line: 1, column: 1, end_line: 1, end_column: 4 }] }), filename: "", line: 1, column: 0, end_line: 1, end_column: 5 }
+        "#]],
+    );
+}
+
+#[test]
+fn expr_with_brace2() {
+    check_parsing_expr(
+        r####"{a=2}}"####,
+        expect![[r#"
+        Node { node: Config(ConfigExpr { items: [Node { node: ConfigEntry { key: Some(Node { node: Identifier(Identifier { names: ["a"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 1, end_line: 1, end_column: 2 }), value: Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(2) }), filename: "", line: 1, column: 3, end_line: 1, end_column: 4 }, operation: Override, insert_index: -1 }, filename: "", line: 1, column: 1, end_line: 1, end_column: 4 }] }), filename: "", line: 1, column: 0, end_line: 1, end_column: 5 }
+        "#]],
+    );
+}
+
 // TODO: enable file tests after pos & error added.
 // #[test]
 fn smoke_test_parsing_stmt() {

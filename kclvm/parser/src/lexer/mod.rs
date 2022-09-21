@@ -48,6 +48,9 @@ pub fn parse_token_streams(sess: &ParseSession, src: &str, start_pos: BytePos) -
         },
         indent_cxt: IndentContext {
             nesting: 0,
+            nesting_paren: 0,
+            nesting_brace: 0,
+            nesting_bracket: 0,
             tabs: 0,
             spaces: 0,
             new_line_beginning: false,
@@ -131,6 +134,15 @@ struct Lexer<'a> {
 struct IndentContext {
     /// nested level counter
     nesting: usize,
+
+    /// nested level counter of paren
+    nesting_paren: usize,
+
+    /// nested level counter of brace
+    nesting_brace: usize,
+
+    /// nested level counter of bracket
+    nesting_bracket: usize,
 
     /// A new line flag
     new_line_beginning: bool,
@@ -297,45 +309,55 @@ impl<'a> Lexer<'a> {
             // Delim tokens
             kclvm_lexer::TokenKind::OpenParen => {
                 self.indent_cxt.nesting += 1;
+                self.indent_cxt.nesting_paren += 1;
                 token::OpenDelim(token::Paren)
             }
             kclvm_lexer::TokenKind::CloseParen => {
-                if self.indent_cxt.nesting == 0 {
+                if self.indent_cxt.nesting_paren == 0 {
                     self.sess.struct_span_error_recovery(
                         "error nesting on close paren",
                         self.span(start, self.pos),
                     )
                 } else {
                     self.indent_cxt.nesting -= 1;
+                    self.indent_cxt.nesting_paren -= 1;
                 }
                 token::CloseDelim(token::Paren)
             }
             kclvm_lexer::TokenKind::OpenBrace => {
                 self.indent_cxt.nesting += 1;
+                self.indent_cxt.nesting_brace += 1;
                 token::OpenDelim(token::Brace)
             }
             kclvm_lexer::TokenKind::CloseBrace => {
-                if self.indent_cxt.nesting == 0 {
-                    self.sess.struct_span_error(
+                if self.indent_cxt.nesting_brace == 0 {
+                    self.sess.struct_span_error_recovery(
                         "error nesting on close brace",
                         self.span(start, self.pos),
                     )
+                }else{
+                    self.indent_cxt.nesting -= 1;
+                    self.indent_cxt.nesting_brace -= 1;
                 }
-                self.indent_cxt.nesting -= 1;
+                
                 token::CloseDelim(token::Brace)
             }
             kclvm_lexer::TokenKind::OpenBracket => {
                 self.indent_cxt.nesting += 1;
+                self.indent_cxt.nesting_bracket += 1;
                 token::OpenDelim(token::Bracket)
             }
             kclvm_lexer::TokenKind::CloseBracket => {
-                if self.indent_cxt.nesting == 0 {
-                    self.sess.struct_span_error(
+                if self.indent_cxt.nesting_bracket == 0 {
+                    self.sess.struct_span_error_recovery(
                         "error nesting on close bracket",
                         self.span(start, self.pos),
                     )
+                }else{
+                    self.indent_cxt.nesting -= 1;
+                    self.indent_cxt.nesting_bracket -= 1;
                 }
-                self.indent_cxt.nesting -= 1;
+                
                 token::CloseDelim(token::Bracket)
             }
             kclvm_lexer::TokenKind::LineContinue => return None,
@@ -567,9 +589,26 @@ impl<'a> Lexer<'a> {
                 self.span(start, self.pos),
             );
 
-            for _ in 0..self.indent_cxt.nesting {
+            // Add parens
+            for _ in 0..self.indent_cxt.nesting_paren {
                 buf.push(Token::new(
                     token::CloseDelim(token::Paren),
+                    self.span(self.pos, self.pos),
+                ))
+            }
+
+            // Add braces
+            for _ in 0..self.indent_cxt.nesting_brace {
+                buf.push(Token::new(
+                    token::CloseDelim(token::Brace),
+                    self.span(self.pos, self.pos),
+                ))
+            }
+
+            // Add brackets
+            for _ in 0..self.indent_cxt.nesting_bracket {
+                buf.push(Token::new(
+                    token::CloseDelim(token::Bracket),
                     self.span(self.pos, self.pos),
                 ))
             }
