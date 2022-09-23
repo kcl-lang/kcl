@@ -82,7 +82,8 @@ pub fn execute(
         scope,
         temp_entry_file.clone(),
         KclvmLibAssembler::LLVM,
-    ).gen_libs();
+    )
+    .gen_libs();
 
     // Link libs
     let lib_suffix = Command::get_lib_suffix();

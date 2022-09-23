@@ -1,3 +1,4 @@
+use crate::assembler::clean_path;
 use crate::assembler::KclvmAssembler;
 use crate::assembler::KclvmLibAssembler;
 use crate::assembler::LibAssembler;
@@ -5,6 +6,7 @@ use crate::temp_file;
 use crate::Command;
 use crate::{execute, runner::ExecProgramArgs};
 use anyhow::Context;
+use anyhow::Result;
 use kclvm_ast::ast::{Module, Program};
 use kclvm_config::settings::load_file;
 use kclvm_parser::load_program;
@@ -13,13 +15,13 @@ use std::fs::create_dir_all;
 use std::panic::catch_unwind;
 use std::panic::set_hook;
 use std::path::{Path, PathBuf};
+use std::thread;
 use std::{
     collections::HashMap,
     fs::{self, File},
 };
 use tempfile::tempdir;
 use walkdir::WalkDir;
-use anyhow::Result;
 
 const EXEC_DATA_PATH: &str = "src/exec_data/";
 const TEST_CASES: &[&'static str; 5] = &[
@@ -53,12 +55,9 @@ const CARGO_PATH: &str = env!("CARGO_MANIFEST_DIR");
 fn gen_full_path(rel_path: String) -> Result<String> {
     let mut cargo_file_path = PathBuf::from(CARGO_PATH);
     cargo_file_path.push(&rel_path);
-    let full_path = cargo_file_path.to_str().with_context(|| {
-        format!(
-            "No such file or directory '{}'",
-            rel_path
-        )
-    })?;
+    let full_path = cargo_file_path
+        .to_str()
+        .with_context(|| format!("No such file or directory '{}'", rel_path))?;
     Ok(full_path.to_string())
 }
 
@@ -104,7 +103,11 @@ fn construct_pkg_lib_path(
     let mut result = vec![];
     for (pkgpath, _) in &prog.pkgs {
         if pkgpath == "__main__" {
-            result.push(PathBuf::from(format!("{}{}", main_path.to_string(), suffix)));
+            result.push(PathBuf::from(format!(
+                "{}{}",
+                main_path.to_string(),
+                suffix
+            )));
         } else {
             result.push(cache_dir.join(format!("{}{}", pkgpath.clone(), suffix)));
         }
@@ -156,7 +159,7 @@ fn gen_libs_for_test(entry_file: &str, test_kcl_case_path: &str) {
     );
 
     let lib_paths = assembler.gen_libs();
-    
+
     assert_eq!(lib_paths.len(), expected_pkg_paths.len());
 
     for pkg_path in &expected_pkg_paths {
@@ -171,7 +174,7 @@ fn gen_libs_for_test(entry_file: &str, test_kcl_case_path: &str) {
     .unwrap();
     assert_eq!(tmp_main_lib_path.exists(), true);
 
-    KclvmLibAssembler::LLVM.clean_path(&tmp_main_lib_path.to_str().unwrap());
+    clean_path(&tmp_main_lib_path.to_str().unwrap());
     assert_eq!(tmp_main_lib_path.exists(), false);
 }
 
@@ -259,7 +262,7 @@ fn test_assemble_lib_llvm() {
 
         let lib_path = std::path::Path::new(&lib_file);
         assert_eq!(lib_path.exists(), true);
-        assembler.clean_path(&lib_file);
+        clean_path(&lib_file);
         assert_eq!(lib_path.exists(), false);
     }
 }
@@ -271,48 +274,36 @@ fn test_gen_libs() {
         let temp_dir_path = temp_dir.path().to_str().unwrap();
         let temp_entry_file = temp_file(temp_dir_path);
 
-        let kcl_path = gen_full_path(format!("{}/{}/{}", TEST_CASE_PATH, case, KCL_FILE_NAME)).unwrap();
+        let kcl_path =
+            gen_full_path(format!("{}/{}/{}", TEST_CASE_PATH, case, KCL_FILE_NAME)).unwrap();
         gen_libs_for_test(&format!("{}{}", temp_entry_file, "4gen_libs"), &kcl_path);
     }
 }
 
 #[test]
-fn test_new_assembler_with_thread_count_invalid() {
-    set_hook(Box::new(|_| {}));
-    let result_new = catch_unwind(|| {
-        let mut prog = parse_program("./src/test_datas/multi_file_compilation/import_abs_path/app-main/main.k");
-        let scope = resolve_program(&mut prog);
-        let _assembler_err = KclvmAssembler::new_with_thread_count(
-            0,
-            prog,
-            scope,
-            String::new(),
-            KclvmLibAssembler::LLVM,
-        );
+fn test_gen_libs_parallel() {
+    let gen_lib_1 = thread::spawn(|| {
+        for _ in 0..9 {
+            test_gen_libs();
+        }
     });
-    let err_msg = "Internal error, please report a bug to us. The error message is: Illegal thread count in multi-file compilation";
-    match result_new {
-        Err(panic_err) => {
-            if let Some(s) = panic_err.downcast_ref::<String>() {
-                assert_eq!(s, err_msg);
-            }
+
+    let gen_lib_2 = thread::spawn(|| {
+        for _ in 0..9 {
+            test_gen_libs();
         }
-        _ => {
-            unreachable!()
-        }
-    }
+    });
+
+    gen_lib_1.join().unwrap();
+    gen_lib_2.join().unwrap();
 }
 
 #[test]
 fn test_clean_path_for_genlibs() {
-    let mut prog = parse_program("./src/test_datas/multi_file_compilation/import_abs_path/app-main/main.k");
+    let mut prog =
+        parse_program("./src/test_datas/multi_file_compilation/import_abs_path/app-main/main.k");
     let scope = resolve_program(&mut prog);
-    let assembler = KclvmAssembler::new(
-        prog,
-        scope,
-        String::new(),
-        KclvmLibAssembler::LLVM,
-    );
+    let assembler = KclvmAssembler::new(prog, scope, String::new(), KclvmLibAssembler::LLVM);
 
     let temp_dir = tempdir().unwrap();
     let temp_dir_path = temp_dir.path().to_str().unwrap();
