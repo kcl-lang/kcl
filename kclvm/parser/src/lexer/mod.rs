@@ -47,10 +47,6 @@ pub fn parse_token_streams(sess: &ParseSession, src: &str, start_pos: BytePos) -
             token: Token::dummy(),
         },
         indent_cxt: IndentContext {
-            nesting: 0,
-            nesting_paren: 0,
-            nesting_brace: 0,
-            nesting_bracket: 0,
             delims: Vec::new(),
             tabs: 0,
             spaces: 0,
@@ -133,18 +129,6 @@ struct Lexer<'a> {
 }
 
 struct IndentContext {
-    /// nested level counter
-    nesting: usize,
-
-    /// nested level counter of paren
-    nesting_paren: usize,
-
-    /// nested level counter of brace
-    nesting_brace: usize,
-
-    /// nested level counter of bracket
-    nesting_bracket: usize,
-
     /// A new line flag
     new_line_beginning: bool,
 
@@ -315,134 +299,97 @@ impl<'a> Lexer<'a> {
                 self.indent_cxt.delims.push(token::OpenDelim(token::Paren));
                 token::OpenDelim(token::Paren)
             }
-            kclvm_lexer::TokenKind::CloseParen => {
-                let mut delimflag = 0;
-                if self
-                    .indent_cxt
-                    .delims
-                    .ends_with(&[token::OpenDelim(token::Paren)])
-                {
-                    self.indent_cxt.delims.pop();
-                } else {
+            kclvm_lexer::TokenKind::CloseParen => match self.indent_cxt.delims.pop() {
+                Some(delim) => match delim {
+                    token::OpenDelim(token::Paren) => token::CloseDelim(token::Paren),
+                    token::OpenDelim(token::Brace) => {
+                        self.sess.struct_span_error_recovery(
+                            "error nesting on close paren",
+                            self.span(start, self.pos),
+                        );
+                        token::CloseDelim(token::Brace)
+                    }
+                    token::OpenDelim(token::Bracket) => {
+                        self.sess.struct_span_error_recovery(
+                            "error nesting on close paren",
+                            self.span(start, self.pos),
+                        );
+                        token::CloseDelim(token::Bracket)
+                    }
+                    _ => token::CloseDelim(token::Paren),
+                },
+                None => {
                     self.sess.struct_span_error_recovery(
                         "error nesting on close paren",
                         self.span(start, self.pos),
                     );
-
-                    if !self.indent_cxt.delims.is_empty() {
-                        match self.indent_cxt.delims.pop() {
-                            Some(token::OpenDelim(token::Paren)) => {
-                                delimflag = 1;
-                            }
-                            Some(token::OpenDelim(token::Brace)) => {
-                                delimflag = 2;
-                            }
-                            Some(token::OpenDelim(token::Bracket)) => {
-                                delimflag = 3;
-                            }
-                            _ => {
-                                delimflag = 4;
-                            }
-                        }
-                    }
+                    token::CloseDelim(token::Paren)
                 }
-                // replace mismatched CloseDselim
-                match delimflag {
-                    1 => token::CloseDelim(token::Paren),
-                    2 => token::CloseDelim(token::Brace),
-                    3 => token::CloseDelim(token::Bracket),
-                    _ => token::CloseDelim(token::Paren),
-                }
-            }
+            },
             kclvm_lexer::TokenKind::OpenBrace => {
                 self.indent_cxt.delims.push(token::OpenDelim(token::Brace));
                 token::OpenDelim(token::Brace)
             }
-            kclvm_lexer::TokenKind::CloseBrace => {
-                let mut delimflag = 0;
-                if self
-                    .indent_cxt
-                    .delims
-                    .ends_with(&[token::OpenDelim(token::Brace)])
-                {
-                    self.indent_cxt.delims.pop();
-                } else {
+            kclvm_lexer::TokenKind::CloseBrace => match self.indent_cxt.delims.pop() {
+                Some(delim) => match delim {
+                    token::OpenDelim(token::Brace) => token::CloseDelim(token::Brace),
+                    token::OpenDelim(token::Paren) => {
+                        self.sess.struct_span_error_recovery(
+                            "error nesting on close brace",
+                            self.span(start, self.pos),
+                        );
+                        token::CloseDelim(token::Paren)
+                    }
+                    token::OpenDelim(token::Bracket) => {
+                        self.sess.struct_span_error_recovery(
+                            "error nesting on close brace",
+                            self.span(start, self.pos),
+                        );
+                        token::CloseDelim(token::Bracket)
+                    }
+                    _ => token::CloseDelim(token::Brace),
+                },
+                None => {
                     self.sess.struct_span_error_recovery(
-                        "error nesting on close paren",
+                        "error nesting on close brace",
                         self.span(start, self.pos),
                     );
-
-                    if !self.indent_cxt.delims.is_empty() {
-                        match self.indent_cxt.delims.pop() {
-                            Some(token::OpenDelim(token::Paren)) => {
-                                delimflag = 1;
-                            }
-                            Some(token::OpenDelim(token::Brace)) => {
-                                delimflag = 2;
-                            }
-                            Some(token::OpenDelim(token::Bracket)) => {
-                                delimflag = 3;
-                            }
-                            _ => {
-                                delimflag = 4;
-                            }
-                        }
-                    }
+                    token::CloseDelim(token::Brace)
                 }
-                // replace mismatched CloseDselim
-                match delimflag {
-                    1 => token::CloseDelim(token::Paren),
-                    2 => token::CloseDelim(token::Brace),
-                    3 => token::CloseDelim(token::Bracket),
-                    _ => token::CloseDelim(token::Brace),
-                }
-            }
+            },
             kclvm_lexer::TokenKind::OpenBracket => {
                 self.indent_cxt
                     .delims
                     .push(token::OpenDelim(token::Bracket));
                 token::OpenDelim(token::Bracket)
             }
-            kclvm_lexer::TokenKind::CloseBracket => {
-                let mut delimflag = 0;
-                if self
-                    .indent_cxt
-                    .delims
-                    .ends_with(&[token::OpenDelim(token::Bracket)])
-                {
-                    self.indent_cxt.delims.pop();
-                } else {
+            kclvm_lexer::TokenKind::CloseBracket => match self.indent_cxt.delims.pop() {
+                Some(delim) => match delim {
+                    token::OpenDelim(token::Bracket) => token::CloseDelim(token::Bracket),
+                    token::OpenDelim(token::Brace) => {
+                        self.sess.struct_span_error_recovery(
+                            "error nesting on close bracket",
+                            self.span(start, self.pos),
+                        );
+                        token::CloseDelim(token::Brace)
+                    }
+                    token::OpenDelim(token::Paren) => {
+                        self.sess.struct_span_error_recovery(
+                            "error nesting on close bracket",
+                            self.span(start, self.pos),
+                        );
+                        token::CloseDelim(token::Paren)
+                    }
+                    _ => token::CloseDelim(token::Bracket),
+                },
+                None => {
                     self.sess.struct_span_error_recovery(
-                        "error nesting on close paren",
+                        "error nesting on close bracket",
                         self.span(start, self.pos),
                     );
-
-                    if !self.indent_cxt.delims.is_empty() {
-                        match self.indent_cxt.delims.pop() {
-                            Some(token::OpenDelim(token::Paren)) => {
-                                delimflag = 1;
-                            }
-                            Some(token::OpenDelim(token::Brace)) => {
-                                delimflag = 2;
-                            }
-                            Some(token::OpenDelim(token::Bracket)) => {
-                                delimflag = 3;
-                            }
-                            _ => {
-                                delimflag = 4;
-                            }
-                        }
-                    }
+                    token::CloseDelim(token::Bracket)
                 }
-
-                // replace mismatched CloseDselim
-                match delimflag {
-                    1 => token::CloseDelim(token::Paren),
-                    2 => token::CloseDelim(token::Brace),
-                    3 => token::CloseDelim(token::Bracket),
-                    _ => token::CloseDelim(token::Bracket),
-                }
-            }
+            },
             kclvm_lexer::TokenKind::LineContinue => return None,
             kclvm_lexer::TokenKind::InvalidLineContinue => self.sess.struct_span_error(
                 "unexpected character after line continuation character",
