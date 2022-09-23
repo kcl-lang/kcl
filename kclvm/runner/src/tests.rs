@@ -233,8 +233,6 @@ fn test_kclvm_runner_execute_timeout() {
     match result_time_out {
         Err(panic_err) => {
             if let Some(s) = panic_err.downcast_ref::<String>() {
-                println!("{:?}", s);
-                println!("{:?}", timeout_panic_msg);
                 assert_eq!(s, timeout_panic_msg)
             }
         }
