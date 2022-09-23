@@ -17,6 +17,7 @@ libloading = "0.7.3"
 threadpool = "1.0"
 chrono = "0.4.19"
 tempfile = "3.3.0"
+anyhow = "1.0"
 
 kclvm-ast = {path = "../ast", version = "0.1.0"}
 kclvm-parser = {path = "../parser", version = "0.1.0"}

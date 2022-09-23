@@ -77,7 +77,7 @@ impl Type {
                 }
                 float_str
             }
-            TypeKind::StrLit(v) => (format!("\"{}\"", v.replace('"', "\\\""))),
+            TypeKind::StrLit(v) => format!("\"{}\"", v.replace('"', "\\\"")),
             TypeKind::List(item_ty) => format!("[{}]", item_ty.into_type_annotation_str()),
             TypeKind::Dict(key_ty, val_ty) => {
                 format!(

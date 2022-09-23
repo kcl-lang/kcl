@@ -741,6 +741,7 @@ dependencies = [
 name = "kclvm-runner"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "chrono",
  "criterion",
  "fslock",

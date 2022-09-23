@@ -77,12 +77,13 @@ pub fn execute(
     let temp_entry_file = temp_file(temp_dir_path);
 
     // Generate libs
-    let lib_paths = assembler::KclvmAssembler::default().gen_libs(
+    let lib_paths = assembler::KclvmAssembler::new(
         program,
         scope,
-        &temp_entry_file,
+        temp_entry_file.clone(),
         KclvmLibAssembler::LLVM,
-    );
+    )
+    .gen_libs();
 
     // Link libs
     let lib_suffix = Command::get_lib_suffix();
