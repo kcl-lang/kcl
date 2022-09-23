@@ -414,7 +414,7 @@ impl KclvmAssembler {
 }
 
 #[inline]
-pub fn clean_path(path: &str) {
+pub(crate) fn clean_path(path: &str) {
     if Path::new(path).exists() {
         std::fs::remove_file(&path).unwrap();
     }
