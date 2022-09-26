@@ -178,5 +178,48 @@ websites:
 "#
             );
         }
+
+        #[test]
+        fn test_load_invalid() {
+            let yaml_loader = data_loader_from_file(
+                LoaderKind::YAML,
+                &format!("{}{}", FILE_TEST_CASES[0], FILE_EXTENSIONS[1]),
+            );
+
+            match <DataLoader as Loader<serde_json::Value>>::load(&yaml_loader) {
+                Ok(_) => {
+                    panic!("unreachable")
+                }
+                Err(err) => {
+                    assert_eq!(format!("{:?}", err), "Failed to String to Json Value");
+                }
+            }
+
+            let json_loader = data_loader_from_file(
+                LoaderKind::JSON,
+                &format!("{}{}", FILE_TEST_CASES[0], FILE_EXTENSIONS[0]),
+            );
+
+            match <DataLoader as Loader<serde_yaml::Value>>::load(&json_loader) {
+                Ok(_) => {
+                    panic!("unreachable")
+                }
+                Err(err) => {
+                    assert_eq!(format!("{:?}", err), "Failed to String to Yaml Value");
+                }
+            }
+        }
+
+        #[test]
+        fn new_with_file_path_invalid() {
+            match DataLoader::new_with_file_path(LoaderKind::JSON, "invalid file path") {
+                Ok(_) => {
+                    panic!("unreachable")
+                }
+                Err(err) => {
+                    assert_eq!(format!("{:?}", err), "Failed to Load 'invalid file path'\n\nCaused by:\n    No such file or directory (os error 2)");
+                }
+            };
+        }
     }
 }
