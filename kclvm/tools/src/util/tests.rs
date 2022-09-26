@@ -1,0 +1,132 @@
+use std::path::PathBuf;
+
+use anyhow::{Context, Result};
+
+const CARGO_DIR: &str = env!("CARGO_MANIFEST_DIR");
+const REL_PATH: &str = "src/util/test_datas";
+const FILE_TEST_CASES: &'static [&'static str] = &["test"];
+
+const FILE_EXTENSIONS: &'static [&'static str] = &[".json", ".yaml"];
+
+const JSON_STR_TEST_CASES: &'static [&'static str] = &[r#"{
+    "name": "John Doe",
+    "age": 43,
+    "address": {
+        "street": "10 Downing Street",
+        "city": "London"
+    },
+    "phones": [
+        "+44 1234567",
+        "+44 2345678"
+    ]
+}
+"#];
+
+const YAML_STR_TEST_CASES: &'static [&'static str] = &[r#"languages:
+  - Ruby
+  - Perl
+  - Python 
+websites:
+  YAML: yaml.org 
+  Ruby: ruby-lang.org 
+  Python: python.org 
+  Perl: use.perl.org
+"#];
+
+fn construct_full_path(path: &str) -> Result<String> {
+    let mut cargo_file_path = PathBuf::from(CARGO_DIR);
+    cargo_file_path.push(REL_PATH);
+    cargo_file_path.push(path);
+    Ok(cargo_file_path
+        .to_str()
+        .with_context(|| format!("No such file or directory '{}'", path))?
+        .to_string())
+}
+
+mod test_loader {
+    mod test_data_loader {
+        use crate::util::{
+            loader::{DataLoader, LoaderKind},
+            tests::{
+                construct_full_path, FILE_EXTENSIONS, FILE_TEST_CASES, JSON_STR_TEST_CASES,
+                YAML_STR_TEST_CASES,
+            },
+        };
+
+        fn data_loader_from_file(loader_kind: LoaderKind, file_path: &str) -> DataLoader {
+            let test_case_path = construct_full_path(file_path).unwrap();
+            let data_loader = DataLoader::new_with_file_path(loader_kind, &test_case_path).unwrap();
+            data_loader
+        }
+
+        fn data_loader_from_str(loader_kind: LoaderKind, s: &str) -> DataLoader {
+            let data_loader = DataLoader::new_with_str(loader_kind, &s).unwrap();
+            data_loader
+        }
+
+        #[test]
+        fn test_new_with_file_path_json() {
+            for test_case in FILE_TEST_CASES {
+                let json_loader = data_loader_from_file(
+                    LoaderKind::JSON,
+                    &format!("{}{}", test_case, FILE_EXTENSIONS[0]),
+                );
+                assert_eq!(
+                    json_loader.get_data(),
+                    r#"{
+    "name": "John Doe",
+    "age": 43,
+    "address": {
+        "street": "10 Downing Street",
+        "city": "London"
+    },
+    "phones": [
+        "+44 1234567",
+        "+44 2345678"
+    ]
+}
+"#
+                );
+            }
+        }
+
+        #[test]
+        fn test_new_with_str_json() {
+            for test_case in JSON_STR_TEST_CASES {
+                let json_loader = data_loader_from_str(LoaderKind::JSON, &test_case);
+                assert_eq!(json_loader.get_data(), *test_case);
+            }
+        }
+
+        #[test]
+        fn test_new_with_file_path_yaml() {
+            for test_case in FILE_TEST_CASES {
+                let yaml_loader = data_loader_from_file(
+                    LoaderKind::YAML,
+                    &format!("{}{}", test_case, FILE_EXTENSIONS[1]),
+                );
+                assert_eq!(
+                    yaml_loader.get_data(),
+                    r#"languages:
+  - Ruby
+  - Perl
+  - Python 
+websites:
+  YAML: yaml.org 
+  Ruby: ruby-lang.org 
+  Python: python.org 
+  Perl: use.perl.org
+"#
+                );
+            }
+        }
+
+        #[test]
+        fn test_new_with_str_yaml() {
+            for test_case in YAML_STR_TEST_CASES {
+                let yaml_loader = data_loader_from_str(LoaderKind::JSON, &test_case);
+                assert_eq!(yaml_loader.get_data(), *test_case);
+            }
+        }
+    }
+}
