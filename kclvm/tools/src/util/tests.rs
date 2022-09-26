@@ -136,47 +136,22 @@ websites:
                 &format!("{}{}", FILE_TEST_CASES[0], FILE_EXTENSIONS[1]),
             );
 
-            let result = <DataLoader as Loader<serde_yaml::Value>>::load(&yaml_loader).unwrap();
-            let get = format!("{}", result.as_str().unwrap());
+            let got_yaml = <DataLoader as Loader<serde_yaml::Value>>::load(&yaml_loader).unwrap();
+            let expect_yaml: serde_yaml::Value =
+                serde_yaml::from_str(yaml_loader.get_data()).unwrap();
 
-            assert_eq!(
-                get,
-                r#"languages:
-  - Ruby
-  - Perl
-  - Python 
-websites:
-  YAML: yaml.org 
-  Ruby: ruby-lang.org 
-  Python: python.org 
-  Perl: use.perl.org
-"#
-            );
+            assert_eq!(got_yaml, expect_yaml);
 
             let json_loader = data_loader_from_file(
                 LoaderKind::JSON,
                 &format!("{}{}", FILE_TEST_CASES[0], FILE_EXTENSIONS[0]),
             );
 
-            let result = <DataLoader as Loader<serde_json::Value>>::load(&json_loader).unwrap();
-            let get = format!("{}", result.as_str().unwrap());
+            let got_json = <DataLoader as Loader<serde_json::Value>>::load(&json_loader).unwrap();
+            let expect_json: serde_json::Value =
+                serde_json::from_str(json_loader.get_data()).unwrap();
 
-            assert_eq!(
-                get,
-                r#"{
-    "name": "John Doe",
-    "age": 43,
-    "address": {
-        "street": "10 Downing Street",
-        "city": "London"
-    },
-    "phones": [
-        "+44 1234567",
-        "+44 2345678"
-    ]
-}
-"#
-            );
+            assert_eq!(got_json, expect_json);
         }
 
         #[test]
