@@ -221,5 +221,34 @@ websites:
                 }
             };
         }
+
+        #[test]
+        fn test_invalid_file() {
+            let invalid_json_file_path = construct_full_path("test_invalid.json").unwrap();
+            let json_loader =
+                DataLoader::new_with_file_path(LoaderKind::JSON, &invalid_json_file_path).unwrap();
+
+            match <DataLoader as Loader<serde_json::Value>>::load(&json_loader) {
+                Ok(_) => {
+                    panic!("unreachable")
+                }
+                Err(err) => {
+                    assert_eq!(format!("{:?}", err), "Failed to String 'languages:\n  - Ruby\n  - Perl\n  - Python \nwebsites:\n  YAML: yaml.org \n  Ruby: ruby-lang.org \n  Python: python.org \n  Perl: use.perl.org' to Json\n\nCaused by:\n    expected value at line 1 column 1");
+                }
+            }
+
+            let invalid_yaml_file_path = construct_full_path("test_invalid.yaml").unwrap();
+            let yaml_loader =
+                DataLoader::new_with_file_path(LoaderKind::YAML, &invalid_yaml_file_path).unwrap();
+
+            match <DataLoader as Loader<serde_yaml::Value>>::load(&yaml_loader) {
+                Ok(_) => {
+                    panic!("unreachable")
+                }
+                Err(err) => {
+                    assert_eq!(format!("{:?}", err), "Failed to String '{\n    \"name\": \"John Doe\",\n        \"city\": \"London\"\ninvalid\n\n' to Yaml\n\nCaused by:\n    did not find expected ',' or '}' at line 4 column 1, while parsing a flow mapping");
+                }
+            }
+        }
     }
 }
