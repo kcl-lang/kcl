@@ -293,7 +293,14 @@ fn unify_config_entries(
         };
         let entry = entry.clone();
         match bucket.get_mut(&name) {
-            Some(values) => values.push(entry),
+            Some(values) => {
+                // If the attribute operation is override, clear all previous entries and override
+                // with current entry.
+                if let ast::ConfigEntryOperation::Override = entry.node.operation {
+                    values.clear();
+                }
+                values.push(entry);
+            }
             None => {
                 let values = vec![entry];
                 bucket.insert(name, values);
