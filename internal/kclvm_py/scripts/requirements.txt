@@ -6,7 +6,7 @@ filelock==3.6.0
 yapf==0.29.0
 pytest==6.2.2
 pypeg2==2.15.2
-protobuf==3.19.4
+protobuf==3.19.5
 gevent==20.9
 grequests
 schema
