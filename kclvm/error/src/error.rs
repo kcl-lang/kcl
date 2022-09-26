@@ -28,6 +28,7 @@ register_errors! {
     E2A31: ErrorKind::IllegalAttributeError, include_str!("./error_codes/E2A31.md"),
     E2L28: ErrorKind::UniqueKeyError, include_str!("./error_codes/E2L28.md"),
     E2D34: ErrorKind::IllegalInheritError, include_str!("./error_codes/E2D34.md"),
+    E3M38: ErrorKind::EvaluationError, include_str!("./error_codes/E2D34.md"),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

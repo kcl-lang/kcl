@@ -20,6 +20,17 @@ impl crate::PanicInfo {
             }
         }
     }
+
+    /// Parse a json string to a PanicInfo.
+    pub fn from_json_string(s: &str) -> Self {
+        let result = serde_json::from_str(s);
+        match result {
+            Ok(res) => res,
+            _ => {
+                panic!("PanicInfo Deserialize Failed")
+            }
+        }
+    }
 }
 
 impl crate::Context {

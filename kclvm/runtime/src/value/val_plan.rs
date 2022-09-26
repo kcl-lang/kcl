@@ -89,7 +89,7 @@ fn filter_results(key_values: &ValueRef) -> Vec<ValueRef> {
                     let list_dict = ValueRef::dict(Some(&[(LIST_DICT_TEMP_KEY, v)]));
                     let filtered = filter_results(&list_dict);
                     if !filtered.is_empty() {
-                        if let Some(v) = filtered[0].get_by_key(key) {
+                        if let Some(v) = filtered[0].get_by_key(LIST_DICT_TEMP_KEY) {
                             filtered_list.push(v.clone());
                         }
                     }
