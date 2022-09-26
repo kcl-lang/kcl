@@ -24,6 +24,7 @@ mod tests;
 use kclvm_ast::ast::NumberBinarySuffix;
 use kclvm_ast::token::{self, CommentKind, Token, TokenKind};
 use kclvm_ast::token_stream::TokenStream;
+use kclvm_error::bug;
 use kclvm_lexer::Base;
 use kclvm_span::symbol::Symbol;
 use kclvm_span::{self, BytePos, Span};
@@ -316,7 +317,7 @@ impl<'a> Lexer<'a> {
                         );
                         token::CloseDelim(token::Bracket)
                     }
-                    _ => token::CloseDelim(token::Paren),
+                    _ => bug!("Impossible!"),
                 },
                 None => {
                     self.sess.struct_span_error_recovery(
@@ -347,7 +348,7 @@ impl<'a> Lexer<'a> {
                         );
                         token::CloseDelim(token::Bracket)
                     }
-                    _ => token::CloseDelim(token::Brace),
+                    _ => bug!("Impossible!"),
                 },
                 None => {
                     self.sess.struct_span_error_recovery(
@@ -380,7 +381,7 @@ impl<'a> Lexer<'a> {
                         );
                         token::CloseDelim(token::Paren)
                     }
-                    _ => token::CloseDelim(token::Bracket),
+                    _ => bug!("Impossible!"),
                 },
                 None => {
                     self.sess.struct_span_error_recovery(
