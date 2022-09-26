@@ -4,6 +4,7 @@ use crate::model::gpyrpc::*;
 
 use kclvm::ValueRef;
 use kclvm_parser::load_program;
+use kclvm_tools::query::apply_overrides;
 use kclvm_tools::query::override_file;
 use protobuf_json_mapping::print_to_string_with_options;
 use protobuf_json_mapping::PrintOptions;
@@ -84,7 +85,17 @@ impl KclvmService {
 
         let kcl_paths_str = kcl_paths.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
         let mut result = ExecProgram_Result::default();
-        let program = load_program(&kcl_paths_str.as_slice(), Some(opts))?;
+        let mut program = load_program(&kcl_paths_str.as_slice(), Some(opts))?;
+
+        if let Err(err) = apply_overrides(
+            &mut program,
+            &native_args.overrides,
+            &[],
+            native_args.print_override_ast,
+        ) {
+            return Err(err.to_string());
+        }
+
         let start_time = SystemTime::now();
         let exec_result = kclvm_runner::execute(program, self.plugin_agent, &native_args);
         let escape_time = match SystemTime::now().duration_since(start_time) {

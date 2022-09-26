@@ -4,13 +4,10 @@
 extern crate clap;
 
 use clap::ArgMatches;
-use kclvm_error::Handler;
-use kclvm_runner::{execute, ExecProgramArgs};
-use std::io::Write;
-
-use kclvm::ValueRef;
+use kclvm::PanicInfo;
 use kclvm_config::settings::{load_file, merge_settings, SettingsFile};
-use kclvm_parser::load_program;
+use kclvm_error::Handler;
+use kclvm_runner::{exec_program, ExecProgramArgs};
 use kclvm_tools::lint::lint_files;
 
 fn main() {
@@ -44,31 +41,19 @@ fn main() {
         match (files, setting) {
             (None, None) => println!("Error: no KCL files"),
             (_, _) => {
-                let mut files: Vec<&str> = match matches.values_of("INPUT") {
-                    Some(files) => files.into_iter().collect::<Vec<&str>>(),
-                    None => vec![],
-                };
                 // Config settings build
                 let settings = build_settings(matches);
-                // Convert settings into execute arguments.
-                let args: ExecProgramArgs = settings.into();
-                files = if !files.is_empty() {
-                    files
-                } else {
-                    args.get_files()
-                };
-                // Parse AST program.
-                let program = load_program(&files, Some(args.get_load_program_options())).unwrap();
-                // Resolve AST program, generate libs, link libs and execute.
-                // TODO: The argument "plugin_agent" need to be read from python3.
-                let result = execute(program, 1, &ExecProgramArgs::default()).unwrap();
-                print!(
-                    "{}",
-                    ValueRef::from_yaml(&result)
-                        .unwrap()
-                        .plan_to_yaml_string_with_delimiter()
-                );
-                std::io::stdout().flush().unwrap();
+                match exec_program(&settings.into(), 1) {
+                    Ok(result) => {
+                        println!("{}", result.yaml_result);
+                    }
+                    Err(msg) => {
+                        let mut handler = Handler::default();
+                        handler
+                            .add_panic_info(&PanicInfo::from_json_string(&msg))
+                            .abort_if_any_errors();
+                    }
+                }
             }
         }
     } else if let Some(matches) = matches.subcommand_matches("lint") {
@@ -104,6 +89,10 @@ fn main() {
 
 /// Build settings from arg matches.
 fn build_settings(matches: &ArgMatches) -> SettingsFile {
+    let files: Vec<&str> = match matches.values_of("INPUT") {
+        Some(files) => files.into_iter().collect::<Vec<&str>>(),
+        None => vec![],
+    };
     let debug_mode = matches.occurrences_of("debug") > 0;
     let disable_none = matches.occurrences_of("disable_none") > 0;
 
@@ -119,6 +108,9 @@ fn build_settings(matches: &ArgMatches) -> SettingsFile {
         SettingsFile::new()
     };
     if let Some(config) = &mut settings.kcl_cli_configs {
+        if !files.is_empty() {
+            config.files = Some(files.iter().map(|f| f.to_string()).collect());
+        }
         config.debug = Some(debug_mode);
         config.disable_none = Some(disable_none);
     }

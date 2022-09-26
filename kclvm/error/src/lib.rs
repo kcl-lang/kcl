@@ -192,6 +192,23 @@ impl Handler {
         self
     }
 
+    /// Put a runtime panic info the handler diagnostic buffer.
+    pub fn add_panic_info(&mut self, panic_info: &PanicInfo) -> &mut Self {
+        let diag = Diagnostic::new_with_code(
+            Level::Error,
+            &panic_info.message,
+            Position {
+                filename: panic_info.kcl_file.clone(),
+                line: panic_info.kcl_line as u64,
+                column: Some(panic_info.kcl_col as u64),
+            },
+            Some(DiagnosticId::Error(E2L23.kind)),
+        );
+        self.add_diagnostic(diag);
+
+        self
+    }
+
     /// Add an error into the handler
     /// ```
     /// use kclvm_error::*;
