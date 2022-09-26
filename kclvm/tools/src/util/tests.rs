@@ -46,7 +46,7 @@ fn construct_full_path(path: &str) -> Result<String> {
 mod test_loader {
     mod test_data_loader {
         use crate::util::{
-            loader::{DataLoader, LoaderKind},
+            loader::{DataLoader, Loader, LoaderKind},
             tests::{
                 construct_full_path, FILE_EXTENSIONS, FILE_TEST_CASES, JSON_STR_TEST_CASES,
                 YAML_STR_TEST_CASES,
@@ -127,6 +127,56 @@ websites:
                 let yaml_loader = data_loader_from_str(LoaderKind::JSON, &test_case);
                 assert_eq!(yaml_loader.get_data(), *test_case);
             }
+        }
+
+        #[test]
+        fn test_load() {
+            let yaml_loader = data_loader_from_file(
+                LoaderKind::YAML,
+                &format!("{}{}", FILE_TEST_CASES[0], FILE_EXTENSIONS[1]),
+            );
+
+            let result = <DataLoader as Loader<serde_yaml::Value>>::load(&yaml_loader).unwrap();
+            let get = format!("{}", result.as_str().unwrap());
+
+            assert_eq!(
+                get,
+                r#"languages:
+  - Ruby
+  - Perl
+  - Python 
+websites:
+  YAML: yaml.org 
+  Ruby: ruby-lang.org 
+  Python: python.org 
+  Perl: use.perl.org
+"#
+            );
+
+            let json_loader = data_loader_from_file(
+                LoaderKind::JSON,
+                &format!("{}{}", FILE_TEST_CASES[0], FILE_EXTENSIONS[0]),
+            );
+
+            let result = <DataLoader as Loader<serde_json::Value>>::load(&json_loader).unwrap();
+            let get = format!("{}", result.as_str().unwrap());
+
+            assert_eq!(
+                get,
+                r#"{
+    "name": "John Doe",
+    "age": 43,
+    "address": {
+        "street": "10 Downing Street",
+        "city": "London"
+    },
+    "phones": [
+        "+44 1234567",
+        "+44 2345678"
+    ]
+}
+"#
+            );
         }
     }
 }
