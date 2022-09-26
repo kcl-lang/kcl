@@ -301,8 +301,11 @@ impl<'a> Lexer<'a> {
                 token::OpenDelim(token::Paren)
             }
             kclvm_lexer::TokenKind::CloseParen => match self.indent_cxt.delims.pop() {
+                // check delim stack
                 Some(delim) => match delim {
+                    // expected case
                     token::OpenDelim(token::Paren) => token::CloseDelim(token::Paren),
+                    // error recovery
                     token::OpenDelim(token::Brace) => {
                         self.sess.struct_span_error_recovery(
                             "error nesting on close paren",
@@ -310,6 +313,7 @@ impl<'a> Lexer<'a> {
                         );
                         token::CloseDelim(token::Brace)
                     }
+                    // error recovery
                     token::OpenDelim(token::Bracket) => {
                         self.sess.struct_span_error_recovery(
                             "error nesting on close paren",
@@ -317,8 +321,10 @@ impl<'a> Lexer<'a> {
                         );
                         token::CloseDelim(token::Bracket)
                     }
+                    // impossible case
                     _ => bug!("Impossible!"),
                 },
+                // error recovery
                 None => {
                     self.sess.struct_span_error_recovery(
                         "error nesting on close paren",
@@ -332,8 +338,11 @@ impl<'a> Lexer<'a> {
                 token::OpenDelim(token::Brace)
             }
             kclvm_lexer::TokenKind::CloseBrace => match self.indent_cxt.delims.pop() {
+                // check delim stack
                 Some(delim) => match delim {
+                    // expected case
                     token::OpenDelim(token::Brace) => token::CloseDelim(token::Brace),
+                    // error recovery
                     token::OpenDelim(token::Paren) => {
                         self.sess.struct_span_error_recovery(
                             "error nesting on close brace",
@@ -341,6 +350,7 @@ impl<'a> Lexer<'a> {
                         );
                         token::CloseDelim(token::Paren)
                     }
+                    // error recovery
                     token::OpenDelim(token::Bracket) => {
                         self.sess.struct_span_error_recovery(
                             "error nesting on close brace",
@@ -348,8 +358,10 @@ impl<'a> Lexer<'a> {
                         );
                         token::CloseDelim(token::Bracket)
                     }
+                    // impossible case
                     _ => bug!("Impossible!"),
                 },
+                // error recovery
                 None => {
                     self.sess.struct_span_error_recovery(
                         "error nesting on close brace",
@@ -365,8 +377,11 @@ impl<'a> Lexer<'a> {
                 token::OpenDelim(token::Bracket)
             }
             kclvm_lexer::TokenKind::CloseBracket => match self.indent_cxt.delims.pop() {
+                // check delim stack
                 Some(delim) => match delim {
+                    // expected case
                     token::OpenDelim(token::Bracket) => token::CloseDelim(token::Bracket),
+                    // error recovery
                     token::OpenDelim(token::Brace) => {
                         self.sess.struct_span_error_recovery(
                             "error nesting on close bracket",
@@ -374,6 +389,7 @@ impl<'a> Lexer<'a> {
                         );
                         token::CloseDelim(token::Brace)
                     }
+                    // error recovery
                     token::OpenDelim(token::Paren) => {
                         self.sess.struct_span_error_recovery(
                             "error nesting on close bracket",
@@ -381,8 +397,10 @@ impl<'a> Lexer<'a> {
                         );
                         token::CloseDelim(token::Paren)
                     }
+                    // impossible case
                     _ => bug!("Impossible!"),
                 },
+                // error recovery
                 None => {
                     self.sess.struct_span_error_recovery(
                         "error nesting on close bracket",
