@@ -3,6 +3,10 @@ use kclvm_config::modfile::KCL_FILE_SUFFIX;
 use std::path::Path;
 use walkdir::WalkDir;
 
+pub mod loader;
+#[cfg(test)]
+mod tests;
+
 /// Get kcl files from path.
 pub(crate) fn get_kcl_files<P: AsRef<Path>>(path: P, recursively: bool) -> Result<Vec<String>> {
     let mut files = vec![];

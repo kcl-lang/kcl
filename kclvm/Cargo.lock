@@ -636,7 +636,7 @@ dependencies = [
  "protoc-bin-vendored",
  "serde",
  "serde_json",
- "serde_yaml 0.9.9",
+ "serde_yaml 0.9.13",
 ]
 
 [[package]]
@@ -837,6 +837,8 @@ dependencies = [
  "kclvm-parser",
  "kclvm-sema",
  "pretty_assertions",
+ "serde_json",
+ "serde_yaml 0.9.13",
  "walkdir",
 ]
 
@@ -1683,9 +1685,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.82"
+version = "1.0.85"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "82c2c1fdcd807d1098552c5b9a36e425e42e9fbd7c6a37a8425f390f781f7fa7"
+checksum = "e55a28e3aaef9d5ce0506d0a14dbba8054ddc7e499ef522dd8b26859ec9d4a44"
 dependencies = [
  "itoa 1.0.2",
  "ryu",
@@ -1706,9 +1708,9 @@ dependencies = [
 
 [[package]]
 name = "serde_yaml"
-version = "0.9.9"
+version = "0.9.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f50845f68d5c693aac7d72a25415ddd21cb8182c04eafe447b73af55a05f9e1b"
+checksum = "8613d593412a0deb7bbd8de9d908efff5a0cb9ccd8f62c641e7b2ed2f57291d1"
 dependencies = [
  "indexmap",
  "itoa 1.0.2",
