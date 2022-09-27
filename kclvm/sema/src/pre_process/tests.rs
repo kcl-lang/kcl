@@ -78,10 +78,15 @@ fn test_config_merge() {
     if let ast::Stmt::Unification(unification) = &module.body[0].node {
         let schema = &unification.value.node;
         if let ast::Expr::Config(config) = &schema.config.node {
-            // 2 contains `name` in `config1.k`, `age` in `config2.k` and `age` in `config2.k`
+            // 2 contains `name` in `config1.k`, `age` in `config2.k`.
+            // person: Person {
+            //     name = "Alice"
+            //     age = 18
+            // }
+            assert_eq!(config.items.len(), 2);
             assert_eq!(
                 get_attr_paths_from_config_expr(&config),
-                vec!["name".to_string(), "age".to_string(), "age".to_string(),]
+                vec!["name".to_string(), "age".to_string()]
             );
         } else {
             panic!(
@@ -93,6 +98,40 @@ fn test_config_merge() {
         panic!(
             "test failed, expect unification statement, got {:?}",
             module.body[0]
+        )
+    }
+}
+
+#[test]
+fn test_config_override() {
+    let mut program =
+        load_program(&["./src/pre_process/test_data/config_override.k"], None).unwrap();
+    merge_program(&mut program);
+    let modules = program.pkgs.get_mut(kclvm_ast::MAIN_PKG).unwrap();
+    assert_eq!(modules.len(), 1);
+    // Test the module merge result
+    let module = modules.first().unwrap();
+    if let ast::Stmt::Unification(unification) = &module.body[2].node {
+        let schema = &unification.value.node;
+        if let ast::Expr::Config(config) = &schema.config.node {
+            // key = Config {
+            //     data.key: "value1"
+            // }
+            assert_eq!(config.items.len(), 1);
+            assert_eq!(
+                get_attr_paths_from_config_expr(&config),
+                vec!["key".to_string(), "key.data.key".to_string()]
+            );
+        } else {
+            panic!(
+                "test failed, expect config expression, got {:?}",
+                schema.config
+            )
+        }
+    } else {
+        panic!(
+            "test failed, expect unification statement, got {:?}",
+            module.body[2]
         )
     }
 }
