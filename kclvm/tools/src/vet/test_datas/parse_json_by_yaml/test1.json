@@ -1,0 +1,20 @@
+{
+    "name": "John Doe",
+    "age": 43,
+    "phones": [
+        "+44 1234567",
+        "+44 2345678"
+    ],
+    "address": {
+        "street": "10 Downing Street",
+        "city": "London"
+    },
+    "test": [
+        {
+            "name2": "I am 2"
+        },
+        {
+            "name1": "I am 1"
+        }
+    ]
+}
