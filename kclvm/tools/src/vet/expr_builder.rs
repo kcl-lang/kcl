@@ -14,13 +14,16 @@ trait ExprGenerator<T> {
     fn generate(&self, value: &T) -> NodeRef<Expr>;
 }
 
+/// `ExprBuilder` will generate ast expr from Json/Yaml.
+/// `Object` in Json and `Mapping` in Yaml is mapped to `Schema Expr`.
+/// You should set `schema_name` for `Schema Expr` before using `ExprBuilder`.
 pub(crate) struct ExprBuilder {
     schema_name: Option<String>,
     loader: DataLoader,
 }
 
 impl ExprBuilder {
-    pub fn new_with_file_path(
+    pub(crate) fn new_with_file_path(
         schema_name: Option<String>,
         kind: LoaderKind,
         file_path: String,
@@ -34,7 +37,7 @@ impl ExprBuilder {
         })
     }
 
-    pub fn new_with_str(
+    pub(crate) fn new_with_str(
         schema_name: Option<String>,
         kind: LoaderKind,
         content: String,
@@ -48,7 +51,8 @@ impl ExprBuilder {
         })
     }
 
-    pub fn build(&self) -> Result<NodeRef<Expr>> {
+    /// Generate ast expr from Json/Yaml depends on `LoaderKind`.
+    pub(crate) fn build(&self) -> Result<NodeRef<Expr>> {
         match self.loader.get_kind() {
             LoaderKind::JSON => {
                 let value = <DataLoader as Loader<serde_json::Value>>::load(&self.loader)
@@ -145,7 +149,7 @@ impl ExprGenerator<serde_yaml::Value> for ExprBuilder {
                 }
             }
             serde_yaml::Value::Tagged(_) => {
-                todo!()
+                bug!("Yaml Tagged is not supported in KCL_Vet, this is an internal bug.")
             }
         }
     }

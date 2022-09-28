@@ -47,6 +47,7 @@ mod test_expr_generator {
         };
 
         #[test]
+        /// Test `expr_builder.build()` with input json files.
         fn test_build_json() {
             for i in 0..TEST_CASES.len() {
                 let file_path =
@@ -73,6 +74,7 @@ mod test_expr_generator {
         }
 
         #[test]
+        /// Test `expr_builder.build()` with input yaml files.
         fn test_build_yaml() {
             for i in 0..TEST_CASES.len() {
                 let file_path =
@@ -99,6 +101,7 @@ mod test_expr_generator {
         }
 
         #[test]
+        /// Test `expr_builder.build()` with input invalid json/yaml files.
         fn test_build_with_invalid() {
             for i in 0..2 {
                 let file_path = construct_full_path(&format!(
@@ -120,6 +123,7 @@ mod test_expr_generator {
         }
 
         #[test]
+        /// Test `expr_builder.build()` with files that do not exist.
         fn test_build_with_noexist_file() {
             for i in 0..2 {
                 let file_path = construct_full_path(&format!(
@@ -142,6 +146,7 @@ mod test_expr_generator {
         }
 
         #[test]
+        /// Test `expr_builder.build()` with yaml files and json data loader.
         fn test_build_with_yaml_file_with_json_kind() {
             let file_path = construct_full_path(&format!("yaml/{}", "test.yaml")).unwrap();
             let expr_builder =
