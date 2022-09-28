@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{fs::File, path::PathBuf};
 
 use anyhow::{Context, Result};
 
@@ -32,6 +32,9 @@ fn construct_full_path(path: &str) -> Result<String> {
 
 mod test_expr_generator {
     mod test_expr_builder {
+        use kclvm_ast::ast::{Expr, Node};
+        use std::fs::File;
+
         use crate::{
             util::loader::LoaderKind,
             vet::{
@@ -42,7 +45,6 @@ mod test_expr_generator {
                 },
             },
         };
-        use std::fs::File;
 
         #[test]
         fn test_build_json() {
@@ -156,34 +158,6 @@ mod test_expr_generator {
                     )
                 }
             }
-        }
-
-        #[test]
-        fn test_build_with_json_file_with_yaml_kind() {
-            let file_path = construct_full_path(&format!("json/{}", "test.json")).unwrap();
-            match ExprBuilder::new_with_file_path(
-                Some("test".to_string()),
-                LoaderKind::YAML,
-                file_path.clone(),
-            ) {
-                Ok(expr_builder) => match expr_builder.build() {
-                    Ok(got_ast) => {
-                        let got_ast_json: serde_json::Value =
-                            serde_json::to_value(&got_ast).unwrap();
-                        let expect_file_path = construct_full_path("json/test.ast.json").unwrap();
-                        let f = File::open(expect_file_path.clone()).unwrap();
-                        let expect_ast_json: serde_json::Value =
-                            serde_yaml::from_reader(f).unwrap();
-                        assert_ne!(expect_ast_json, got_ast_json)
-                    }
-                    Err(_) => {
-                        panic!("This test case should be succeed.")
-                    }
-                },
-                Err(_) => {
-                    panic!("This test case should be succeed.")
-                }
-            };
         }
     }
 }
