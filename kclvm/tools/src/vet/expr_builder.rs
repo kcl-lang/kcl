@@ -8,10 +8,10 @@ use kclvm_ast::{
 };
 
 use crate::util::loader::{DataLoader, Loader, LoaderKind};
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 
 trait ExprGenerator<T> {
-    fn generate(&self, value: &T) -> NodeRef<Expr>;
+    fn generate(&self, value: &T) -> Result<NodeRef<Expr>>;
 }
 
 /// `ExprBuilder` will generate ast expr from Json/Yaml.
@@ -57,70 +57,104 @@ impl ExprBuilder {
             LoaderKind::JSON => {
                 let value = <DataLoader as Loader<serde_json::Value>>::load(&self.loader)
                     .with_context(|| format!("Failed to Load JSON"))?;
-                Ok(self.generate(&value))
+                Ok(self
+                    .generate(&value)
+                    .with_context(|| format!("Failed to Load JSON"))?)
             }
             LoaderKind::YAML => {
                 let value = <DataLoader as Loader<serde_yaml::Value>>::load(&self.loader)
                     .with_context(|| format!("Failed to Load YAML"))?;
-                Ok(self.generate(&value))
+                Ok(self
+                    .generate(&value)
+                    .with_context(|| format!("Failed to Load YAML"))?)
             }
         }
     }
 }
 
 impl ExprGenerator<serde_yaml::Value> for ExprBuilder {
-    fn generate(&self, value: &serde_yaml::Value) -> NodeRef<Expr> {
+    fn generate(&self, value: &serde_yaml::Value) -> Result<NodeRef<Expr>> {
         match value {
-            serde_yaml::Value::Null => {
-                node_ref!(Expr::NameConstantLit(NameConstantLit {
-                    value: NameConstant::None,
-                }))
-            }
+            serde_yaml::Value::Null => Ok(node_ref!(Expr::NameConstantLit(NameConstantLit {
+                value: NameConstant::None,
+            }))),
             serde_yaml::Value::Bool(j_bool) => {
-                node_ref!(Expr::NameConstantLit(NameConstantLit {
-                    value: NameConstant::try_from(*j_bool).unwrap()
-                }))
+                let name_const = match NameConstant::try_from(*j_bool) {
+                    Ok(nc) => nc,
+                    Err(_) => {
+                        bail!("Failed to Load Validated File")
+                    }
+                };
+
+                Ok(node_ref!(Expr::NameConstantLit(NameConstantLit {
+                    value: name_const
+                })))
             }
             serde_yaml::Value::Number(j_num) => {
                 if j_num.is_f64() {
-                    node_ref!(Expr::NumberLit(NumberLit {
+                    let number_lit = match j_num.as_f64() {
+                        Some(num_f64) => num_f64,
+                        None => {
+                            bail!("Failed to Load Validated File")
+                        }
+                    };
+
+                    Ok(node_ref!(Expr::NumberLit(NumberLit {
                         binary_suffix: None,
-                        value: NumberLitValue::Float(j_num.as_f64().unwrap())
-                    }))
+                        value: NumberLitValue::Float(number_lit)
+                    })))
                 } else if j_num.is_i64() {
-                    node_ref!(Expr::NumberLit(NumberLit {
+                    let number_lit = match j_num.as_i64() {
+                        Some(j_num) => j_num,
+                        None => {
+                            bail!("Failed to Load Validated File")
+                        }
+                    };
+
+                    Ok(node_ref!(Expr::NumberLit(NumberLit {
                         binary_suffix: None,
-                        value: NumberLitValue::Int(j_num.as_i64().unwrap())
-                    }))
+                        value: NumberLitValue::Int(number_lit)
+                    })))
                 } else {
-                    node_ref!(Expr::NumberLit(NumberLit {
-                        binary_suffix: None,
-                        value: NumberLitValue::Int(j_num.as_u64().unwrap().try_into().unwrap())
-                    }))
+                    bail!("Failed to Load Validated File, Unsupported Unsigned 64");
                 }
             }
             serde_yaml::Value::String(j_string) => {
-                node_ref!(Expr::StringLit(
-                    StringLit::try_from(j_string.to_string()).unwrap()
-                ))
+                let str_lit = match StringLit::try_from(j_string.to_string()) {
+                    Ok(s) => s,
+                    Err(_) => {
+                        bail!("Failed to Load Validated File")
+                    }
+                };
+                Ok(node_ref!(Expr::StringLit(str_lit)))
             }
             serde_yaml::Value::Sequence(j_arr) => {
                 let mut j_arr_ast_nodes: Vec<NodeRef<Expr>> = Vec::new();
                 for j_arr_item in j_arr {
-                    j_arr_ast_nodes.push(self.generate(j_arr_item));
+                    j_arr_ast_nodes.push(
+                        self.generate(j_arr_item)
+                            .with_context(|| format!("Failed to Load Validated File"))?,
+                    );
                 }
-                node_ref!(Expr::List(ListExpr {
+                Ok(node_ref!(Expr::List(ListExpr {
                     ctx: ExprContext::Load,
                     elts: j_arr_ast_nodes
-                }))
+                })))
             }
             serde_yaml::Value::Mapping(j_map) => {
                 let mut config_entries: Vec<NodeRef<ConfigEntry>> = Vec::new();
 
                 for (k, v) in j_map.iter() {
+                    let k = self
+                        .generate(k)
+                        .with_context(|| format!("Failed to Load Validated File"))?;
+                    let v = self
+                        .generate(v)
+                        .with_context(|| format!("Failed to Load Validated File"))?;
+
                     let config_entry = node_ref!(ConfigEntry {
-                        key: Some(self.generate(k)),
-                        value: self.generate(v),
+                        key: Some(k),
+                        value: v,
                         operation: ConfigEntryOperation::Union,
                         insert_index: -1
                     });
@@ -138,14 +172,14 @@ impl ExprGenerator<serde_yaml::Value> for ExprBuilder {
                             pkgpath: String::new(),
                             ctx: ExprContext::Load
                         });
-                        node_ref!(Expr::Schema(SchemaExpr {
+                        Ok(node_ref!(Expr::Schema(SchemaExpr {
                             name: iden,
                             config: config_expr,
                             args: vec![],
                             kwargs: vec![]
-                        }))
+                        })))
                     }
-                    None => config_expr,
+                    None => Ok(config_expr),
                 }
             }
             serde_yaml::Value::Tagged(_) => {
@@ -156,60 +190,92 @@ impl ExprGenerator<serde_yaml::Value> for ExprBuilder {
 }
 
 impl ExprGenerator<serde_json::Value> for ExprBuilder {
-    fn generate(&self, value: &serde_json::Value) -> NodeRef<Expr> {
+    fn generate(&self, value: &serde_json::Value) -> Result<NodeRef<Expr>> {
         match value {
-            serde_json::Value::Null => {
-                node_ref!(Expr::NameConstantLit(NameConstantLit {
-                    value: NameConstant::None,
-                }))
-            }
+            serde_json::Value::Null => Ok(node_ref!(Expr::NameConstantLit(NameConstantLit {
+                value: NameConstant::None,
+            }))),
             serde_json::Value::Bool(j_bool) => {
-                node_ref!(Expr::NameConstantLit(NameConstantLit {
-                    value: NameConstant::try_from(*j_bool).unwrap()
-                }))
+                let name_const = match NameConstant::try_from(*j_bool) {
+                    Ok(nc) => nc,
+                    Err(_) => {
+                        bail!("Failed to Load Validated File")
+                    }
+                };
+
+                Ok(node_ref!(Expr::NameConstantLit(NameConstantLit {
+                    value: name_const
+                })))
             }
             serde_json::Value::Number(j_num) => {
                 if j_num.is_f64() {
-                    node_ref!(Expr::NumberLit(NumberLit {
+                    let number_lit = match j_num.as_f64() {
+                        Some(num_f64) => num_f64,
+                        None => {
+                            bail!("Failed to Load Validated File")
+                        }
+                    };
+
+                    Ok(node_ref!(Expr::NumberLit(NumberLit {
                         binary_suffix: None,
-                        value: NumberLitValue::Float(j_num.as_f64().unwrap())
-                    }))
+                        value: NumberLitValue::Float(number_lit)
+                    })))
                 } else if j_num.is_i64() {
-                    node_ref!(Expr::NumberLit(NumberLit {
+                    let number_lit = match j_num.as_i64() {
+                        Some(j_num) => j_num,
+                        None => {
+                            bail!("Failed to Load Validated File")
+                        }
+                    };
+
+                    Ok(node_ref!(Expr::NumberLit(NumberLit {
                         binary_suffix: None,
-                        value: NumberLitValue::Int(j_num.as_i64().unwrap())
-                    }))
+                        value: NumberLitValue::Int(number_lit)
+                    })))
                 } else {
-                    node_ref!(Expr::NumberLit(NumberLit {
-                        binary_suffix: None,
-                        value: NumberLitValue::Int(j_num.as_u64().unwrap().try_into().unwrap())
-                    }))
+                    bail!("Failed to Load Validated File, Unsupported Unsigned 64");
                 }
             }
             serde_json::Value::String(j_string) => {
-                node_ref!(Expr::StringLit(
-                    StringLit::try_from(j_string.to_string()).unwrap()
-                ))
+                let str_lit = match StringLit::try_from(j_string.to_string()) {
+                    Ok(s) => s,
+                    Err(_) => {
+                        bail!("Failed to Load Validated File")
+                    }
+                };
+
+                Ok(node_ref!(Expr::StringLit(str_lit)))
             }
             serde_json::Value::Array(j_arr) => {
                 let mut j_arr_ast_nodes: Vec<NodeRef<Expr>> = Vec::new();
                 for j_arr_item in j_arr {
-                    j_arr_ast_nodes.push(self.generate(j_arr_item));
+                    j_arr_ast_nodes.push(
+                        self.generate(j_arr_item)
+                            .with_context(|| format!("Failed to Load Validated File"))?,
+                    );
                 }
-                node_ref!(Expr::List(ListExpr {
+                Ok(node_ref!(Expr::List(ListExpr {
                     ctx: ExprContext::Load,
                     elts: j_arr_ast_nodes
-                }))
+                })))
             }
             serde_json::Value::Object(j_map) => {
                 let mut config_entries: Vec<NodeRef<ConfigEntry>> = Vec::new();
 
                 for (k, v) in j_map.iter() {
+                    let k = match StringLit::try_from(k.to_string()) {
+                        Ok(s) => s,
+                        Err(_) => {
+                            bail!("Failed to Load Validated File")
+                        }
+                    };
+                    let v = self
+                        .generate(v)
+                        .with_context(|| format!("Failed to Load Validated File"))?;
+
                     let config_entry = node_ref!(ConfigEntry {
-                        key: Some(node_ref!(Expr::StringLit(
-                            StringLit::try_from(k.to_string()).unwrap()
-                        ))),
-                        value: self.generate(v),
+                        key: Some(node_ref!(Expr::StringLit(k))),
+                        value: v,
                         operation: ConfigEntryOperation::Union,
                         insert_index: -1
                     });
@@ -227,14 +293,14 @@ impl ExprGenerator<serde_json::Value> for ExprBuilder {
                             pkgpath: String::new(),
                             ctx: ExprContext::Load
                         });
-                        node_ref!(Expr::Schema(SchemaExpr {
+                        Ok(node_ref!(Expr::Schema(SchemaExpr {
                             name: iden,
                             config: config_expr,
                             args: vec![],
                             kwargs: vec![]
-                        }))
+                        })))
                     }
-                    None => config_expr,
+                    None => Ok(config_expr),
                 }
             }
         }

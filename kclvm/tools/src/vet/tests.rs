@@ -1,4 +1,4 @@
-use std::{fs::File, path::PathBuf};
+use std::path::PathBuf;
 
 use anyhow::{Context, Result};
 
@@ -6,10 +6,27 @@ use crate::util::loader::LoaderKind;
 
 const CARGO_DIR: &str = env!("CARGO_MANIFEST_DIR");
 const REL_PATH: &str = "src/vet/test_datas";
-const TEST_CASES: &'static [&'static str] =
-    &["test", "simple.k", "plain_value.k", "list.k", "complex.k"];
+const TEST_CASES: &'static [&'static str] = &[
+    "test",
+    "simple.k",
+    "plain_value.k",
+    "list.k",
+    "complex.k",
+    "json_with_null",
+    "json_with_bool",
+    "json_with_float",
+];
 
-const SCHEMA_NAMES: &'static [&'static str] = &["test", "simple", "plain_value", "list", "complex"];
+const SCHEMA_NAMES: &'static [&'static str] = &[
+    "test",
+    "simple",
+    "plain_value",
+    "list",
+    "complex",
+    "json_with_null",
+    "json_with_bool",
+    "json_with_float",
+];
 
 const FILE_EXTENSIONS: &'static [&'static str] = &["json", "yaml", "ast.json", "ast.yaml"];
 
@@ -32,8 +49,6 @@ fn construct_full_path(path: &str) -> Result<String> {
 
 mod test_expr_generator {
     mod test_expr_builder {
-        use kclvm_ast::ast::{Expr, Node};
-        use std::fs::File;
 
         use crate::{
             util::loader::LoaderKind,
@@ -45,10 +60,11 @@ mod test_expr_generator {
                 },
             },
         };
+        use std::fs::{self, File};
 
         #[test]
         /// Test `expr_builder.build()` with input json files.
-        fn test_build_json() {
+        fn test_build_json_with_filepath() {
             for i in 0..TEST_CASES.len() {
                 let file_path =
                     construct_full_path(&format!("{1}/{0}.{1}", TEST_CASES[i], FILE_EXTENSIONS[0]))
@@ -57,6 +73,39 @@ mod test_expr_generator {
                     Some(SCHEMA_NAMES[i].to_string()),
                     LOADER_KIND[0].clone(),
                     file_path,
+                )
+                .unwrap();
+                let expr_ast = expr_builder.build().unwrap();
+                let got_ast_json = serde_json::to_value(&expr_ast).unwrap();
+
+                let expect_file_path = construct_full_path(&format!(
+                    "{}/{}.{}",
+                    FILE_EXTENSIONS[0], TEST_CASES[i], FILE_EXTENSIONS[2]
+                ))
+                .unwrap();
+                let f = File::open(expect_file_path.clone()).unwrap();
+                let expect_ast_json: serde_json::Value = serde_json::from_reader(f).unwrap();
+                if expect_ast_json != got_ast_json {
+                    println!("{}", got_ast_json);
+                }
+                assert_eq!(expect_ast_json, got_ast_json)
+            }
+        }
+
+        #[test]
+        /// Test `expr_builder.build()` with input json files.
+        fn test_build_json_with_str() {
+            for i in 0..TEST_CASES.len() {
+                let file_path =
+                    construct_full_path(&format!("{1}/{0}.{1}", TEST_CASES[i], FILE_EXTENSIONS[0]))
+                        .unwrap();
+
+                let content = fs::read_to_string(file_path).unwrap();
+
+                let expr_builder = ExprBuilder::new_with_str(
+                    Some(SCHEMA_NAMES[i].to_string()),
+                    LOADER_KIND[0].clone(),
+                    content,
                 )
                 .unwrap();
                 let expr_ast = expr_builder.build().unwrap();
@@ -96,6 +145,9 @@ mod test_expr_generator {
                 .unwrap();
                 let f = File::open(expect_file_path.clone()).unwrap();
                 let expect_ast_yaml: serde_yaml::Value = serde_yaml::from_reader(f).unwrap();
+                if expect_ast_yaml != got_ast_yaml {
+                    serde_yaml::to_writer(std::io::stdout(), &got_ast_yaml);
+                }
                 assert_eq!(expect_ast_yaml, got_ast_yaml)
             }
         }
