@@ -7,6 +7,7 @@ pub mod path;
 pub mod token;
 pub mod token_stream;
 pub mod walker;
+pub mod printer;
 
 #[cfg(test)]
 mod tests;

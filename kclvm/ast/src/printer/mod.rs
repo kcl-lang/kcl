@@ -6,7 +6,11 @@ use kclvm_ast::{
 };
 use std::collections::VecDeque;
 
+<<<<<<<< HEAD:kclvm/ast_pretty/src/lib.rs
+========
 use crate::{ast, token::TokenKind, walker::MutSelfTypedResultWalker};
+
+>>>>>>>> b59824d (refactor(kclvm-tools): move 'printer' from 'kclvm-tools' to 'kclvm-ast'.):kclvm/ast/src/printer/mod.rs
 mod node;
 
 #[cfg(test)]

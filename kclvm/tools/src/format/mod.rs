@@ -11,6 +11,7 @@ use std::path::Path;
 
 use crate::util::get_kcl_files;
 use kclvm_parser::parse_file;
+use kclvm_ast::printer::print_ast_module;
 
 #[cfg(test)]
 mod tests;

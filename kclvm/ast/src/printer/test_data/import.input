@@ -1,0 +1,4 @@
+import path.to.pkg
+import path.to.pkg as abs_pkg_alias
+import .relative.path
+import .relative.path as re_pkg_alias
