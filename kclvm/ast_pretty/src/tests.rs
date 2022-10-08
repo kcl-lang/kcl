@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 use super::print_ast_module;
 use kclvm_parser::parse_file;
 use pretty_assertions::assert_eq;
@@ -13,6 +14,11 @@ use kclvm_parser::parse_file;
 
 use super::print_ast_module;
 >>>>>>> b15d822 (mv query to ast_pretty)
+=======
+use super::print_ast_module;
+use kclvm_parser::parse_file;
+use pretty_assertions::assert_eq;
+>>>>>>> 925e86b (add pretty_assertions)
 
 const FILE_INPUT_SUFFIX: &str = ".input";
 const FILE_OUTPUT_SUFFIX: &str = ".output";
