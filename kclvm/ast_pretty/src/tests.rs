@@ -1,8 +1,8 @@
 use std::path::PathBuf;
 
-use kclvm_parser::parse_file;
-
 use super::print_ast_module;
+use kclvm_parser::parse_file;
+use pretty_assertions::assert_eq;
 
 const FILE_INPUT_SUFFIX: &str = ".input";
 const FILE_OUTPUT_SUFFIX: &str = ".output";
