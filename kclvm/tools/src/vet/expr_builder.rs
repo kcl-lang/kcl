@@ -183,7 +183,7 @@ impl ExprGenerator<serde_yaml::Value> for ExprBuilder {
                 }
             }
             serde_yaml::Value::Tagged(_) => {
-                bug!("Yaml Tagged is not supported in KCL_Vet, this is an internal bug.")
+                bail!("Failed to Load Validated File, Unsupported Yaml Tagged.")
             }
         }
     }

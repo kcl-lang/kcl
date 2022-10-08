@@ -6,6 +6,8 @@ pub(crate) trait Loader<T> {
     fn load(&self) -> Result<T>;
 }
 
+/// Types of verifiable files currently supported by KCL-Vet,
+/// currently only YAML files and Json files are supported.
 #[derive(Clone, Copy)]
 pub enum LoaderKind {
     YAML,
