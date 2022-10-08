@@ -613,12 +613,8 @@ dependencies = [
 name = "kclvm-ast"
 version = "0.1.0"
 dependencies = [
- "fancy-regex",
- "indexmap",
- "kclvm-error",
  "kclvm-parser",
  "kclvm-span",
- "pretty_assertions",
  "rustc_span",
  "serde",
  "serde_json",

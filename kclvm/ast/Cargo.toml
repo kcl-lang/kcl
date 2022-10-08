@@ -9,12 +9,8 @@ edition = "2021"
 rustc_span = { path = "../3rdparty/rustc_span" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1.0"
-indexmap = "1.0"
-fancy-regex = "0.7.1"
 
 kclvm-span = {path = "../span", version = "0.1.0"}
-kclvm-error = {path = "../error", version = "0.1.0"}
 
 [dev-dependencies]
 kclvm-parser = {path = "../parser", version = "0.1.0"}
-pretty_assertions = "1.2.1"
