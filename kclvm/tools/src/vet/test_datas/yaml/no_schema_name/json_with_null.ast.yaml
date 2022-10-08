@@ -1,0 +1,33 @@
+node: !Config
+  items:
+  - node:
+      key:
+        node: !StringLit
+          is_long_string: false
+          raw_value: '"null_val"'
+          value: null_val
+        filename: ''
+        line: 1
+        column: 1
+        end_line: 1
+        end_column: 1
+      value:
+        node: !NameConstantLit
+          value: None
+        filename: ''
+        line: 1
+        column: 1
+        end_line: 1
+        end_column: 1
+      operation: Union
+      insert_index: -1
+    filename: ''
+    line: 1
+    column: 1
+    end_line: 1
+    end_column: 1
+filename: ''
+line: 1
+column: 1
+end_line: 1
+end_column: 1

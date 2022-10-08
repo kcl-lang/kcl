@@ -1,0 +1,199 @@
+node: !Config
+  items:
+  - node:
+      key:
+        node: !StringLit
+          is_long_string: false
+          raw_value: '"languages"'
+          value: languages
+        filename: ''
+        line: 1
+        column: 1
+        end_line: 1
+        end_column: 1
+      value:
+        node: !List
+          elts:
+          - node: !StringLit
+              is_long_string: false
+              raw_value: '"Ruby"'
+              value: Ruby
+            filename: ''
+            line: 1
+            column: 1
+            end_line: 1
+            end_column: 1
+          - node: !StringLit
+              is_long_string: false
+              raw_value: '"Perl"'
+              value: Perl
+            filename: ''
+            line: 1
+            column: 1
+            end_line: 1
+            end_column: 1
+          - node: !StringLit
+              is_long_string: false
+              raw_value: '"Python"'
+              value: Python
+            filename: ''
+            line: 1
+            column: 1
+            end_line: 1
+            end_column: 1
+          ctx: Load
+        filename: ''
+        line: 1
+        column: 1
+        end_line: 1
+        end_column: 1
+      operation: Union
+      insert_index: -1
+    filename: ''
+    line: 1
+    column: 1
+    end_line: 1
+    end_column: 1
+  - node:
+      key:
+        node: !StringLit
+          is_long_string: false
+          raw_value: '"websites"'
+          value: websites
+        filename: ''
+        line: 1
+        column: 1
+        end_line: 1
+        end_column: 1
+      value:
+        node: !Config
+          items:
+          - node:
+              key:
+                node: !StringLit
+                  is_long_string: false
+                  raw_value: '"YAML"'
+                  value: YAML
+                filename: ''
+                line: 1
+                column: 1
+                end_line: 1
+                end_column: 1
+              value:
+                node: !StringLit
+                  is_long_string: false
+                  raw_value: '"yaml.org"'
+                  value: yaml.org
+                filename: ''
+                line: 1
+                column: 1
+                end_line: 1
+                end_column: 1
+              operation: Union
+              insert_index: -1
+            filename: ''
+            line: 1
+            column: 1
+            end_line: 1
+            end_column: 1
+          - node:
+              key:
+                node: !StringLit
+                  is_long_string: false
+                  raw_value: '"Ruby"'
+                  value: Ruby
+                filename: ''
+                line: 1
+                column: 1
+                end_line: 1
+                end_column: 1
+              value:
+                node: !StringLit
+                  is_long_string: false
+                  raw_value: '"ruby-lang.org"'
+                  value: ruby-lang.org
+                filename: ''
+                line: 1
+                column: 1
+                end_line: 1
+                end_column: 1
+              operation: Union
+              insert_index: -1
+            filename: ''
+            line: 1
+            column: 1
+            end_line: 1
+            end_column: 1
+          - node:
+              key:
+                node: !StringLit
+                  is_long_string: false
+                  raw_value: '"Python"'
+                  value: Python
+                filename: ''
+                line: 1
+                column: 1
+                end_line: 1
+                end_column: 1
+              value:
+                node: !StringLit
+                  is_long_string: false
+                  raw_value: '"python.org"'
+                  value: python.org
+                filename: ''
+                line: 1
+                column: 1
+                end_line: 1
+                end_column: 1
+              operation: Union
+              insert_index: -1
+            filename: ''
+            line: 1
+            column: 1
+            end_line: 1
+            end_column: 1
+          - node:
+              key:
+                node: !StringLit
+                  is_long_string: false
+                  raw_value: '"Perl"'
+                  value: Perl
+                filename: ''
+                line: 1
+                column: 1
+                end_line: 1
+                end_column: 1
+              value:
+                node: !StringLit
+                  is_long_string: false
+                  raw_value: '"use.perl.org"'
+                  value: use.perl.org
+                filename: ''
+                line: 1
+                column: 1
+                end_line: 1
+                end_column: 1
+              operation: Union
+              insert_index: -1
+            filename: ''
+            line: 1
+            column: 1
+            end_line: 1
+            end_column: 1
+        filename: ''
+        line: 1
+        column: 1
+        end_line: 1
+        end_column: 1
+      operation: Union
+      insert_index: -1
+    filename: ''
+    line: 1
+    column: 1
+    end_line: 1
+    end_column: 1
+filename: ''
+line: 1
+column: 1
+end_line: 1
+end_column: 1

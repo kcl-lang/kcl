@@ -1,0 +1,275 @@
+{
+    "column": 1,
+    "end_column": 1,
+    "end_line": 1,
+    "filename": "",
+    "line": 1,
+    "node": {
+        "Config": {
+            "items": [
+                {
+                    "column": 1,
+                    "end_column": 1,
+                    "end_line": 1,
+                    "filename": "",
+                    "line": 1,
+                    "node": {
+                        "insert_index": -1,
+                        "key": {
+                            "column": 1,
+                            "end_column": 1,
+                            "end_line": 1,
+                            "filename": "",
+                            "line": 1,
+                            "node": {
+                                "StringLit": {
+                                    "is_long_string": false,
+                                    "raw_value": "\"address\"",
+                                    "value": "address"
+                                }
+                            }
+                        },
+                        "operation": "Union",
+                        "value": {
+                            "column": 1,
+                            "end_column": 1,
+                            "end_line": 1,
+                            "filename": "",
+                            "line": 1,
+                            "node": {
+                                "Config": {
+                                    "items": [
+                                        {
+                                            "column": 1,
+                                            "end_column": 1,
+                                            "end_line": 1,
+                                            "filename": "",
+                                            "line": 1,
+                                            "node": {
+                                                "insert_index": -1,
+                                                "key": {
+                                                    "column": 1,
+                                                    "end_column": 1,
+                                                    "end_line": 1,
+                                                    "filename": "",
+                                                    "line": 1,
+                                                    "node": {
+                                                        "StringLit": {
+                                                            "is_long_string": false,
+                                                            "raw_value": "\"city\"",
+                                                            "value": "city"
+                                                        }
+                                                    }
+                                                },
+                                                "operation": "Union",
+                                                "value": {
+                                                    "column": 1,
+                                                    "end_column": 1,
+                                                    "end_line": 1,
+                                                    "filename": "",
+                                                    "line": 1,
+                                                    "node": {
+                                                        "StringLit": {
+                                                            "is_long_string": false,
+                                                            "raw_value": "\"London\"",
+                                                            "value": "London"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "column": 1,
+                                            "end_column": 1,
+                                            "end_line": 1,
+                                            "filename": "",
+                                            "line": 1,
+                                            "node": {
+                                                "insert_index": -1,
+                                                "key": {
+                                                    "column": 1,
+                                                    "end_column": 1,
+                                                    "end_line": 1,
+                                                    "filename": "",
+                                                    "line": 1,
+                                                    "node": {
+                                                        "StringLit": {
+                                                            "is_long_string": false,
+                                                            "raw_value": "\"street\"",
+                                                            "value": "street"
+                                                        }
+                                                    }
+                                                },
+                                                "operation": "Union",
+                                                "value": {
+                                                    "column": 1,
+                                                    "end_column": 1,
+                                                    "end_line": 1,
+                                                    "filename": "",
+                                                    "line": 1,
+                                                    "node": {
+                                                        "StringLit": {
+                                                            "is_long_string": false,
+                                                            "raw_value": "\"10 Downing Street\"",
+                                                            "value": "10 Downing Street"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "column": 1,
+                    "end_column": 1,
+                    "end_line": 1,
+                    "filename": "",
+                    "line": 1,
+                    "node": {
+                        "insert_index": -1,
+                        "key": {
+                            "column": 1,
+                            "end_column": 1,
+                            "end_line": 1,
+                            "filename": "",
+                            "line": 1,
+                            "node": {
+                                "StringLit": {
+                                    "is_long_string": false,
+                                    "raw_value": "\"age\"",
+                                    "value": "age"
+                                }
+                            }
+                        },
+                        "operation": "Union",
+                        "value": {
+                            "column": 1,
+                            "end_column": 1,
+                            "end_line": 1,
+                            "filename": "",
+                            "line": 1,
+                            "node": {
+                                "NumberLit": {
+                                    "binary_suffix": null,
+                                    "value": {
+                                        "Int": 43
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "column": 1,
+                    "end_column": 1,
+                    "end_line": 1,
+                    "filename": "",
+                    "line": 1,
+                    "node": {
+                        "insert_index": -1,
+                        "key": {
+                            "column": 1,
+                            "end_column": 1,
+                            "end_line": 1,
+                            "filename": "",
+                            "line": 1,
+                            "node": {
+                                "StringLit": {
+                                    "is_long_string": false,
+                                    "raw_value": "\"name\"",
+                                    "value": "name"
+                                }
+                            }
+                        },
+                        "operation": "Union",
+                        "value": {
+                            "column": 1,
+                            "end_column": 1,
+                            "end_line": 1,
+                            "filename": "",
+                            "line": 1,
+                            "node": {
+                                "StringLit": {
+                                    "is_long_string": false,
+                                    "raw_value": "\"John Doe\"",
+                                    "value": "John Doe"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "column": 1,
+                    "end_column": 1,
+                    "end_line": 1,
+                    "filename": "",
+                    "line": 1,
+                    "node": {
+                        "insert_index": -1,
+                        "key": {
+                            "column": 1,
+                            "end_column": 1,
+                            "end_line": 1,
+                            "filename": "",
+                            "line": 1,
+                            "node": {
+                                "StringLit": {
+                                    "is_long_string": false,
+                                    "raw_value": "\"phones\"",
+                                    "value": "phones"
+                                }
+                            }
+                        },
+                        "operation": "Union",
+                        "value": {
+                            "column": 1,
+                            "end_column": 1,
+                            "end_line": 1,
+                            "filename": "",
+                            "line": 1,
+                            "node": {
+                                "List": {
+                                    "ctx": "Load",
+                                    "elts": [
+                                        {
+                                            "column": 1,
+                                            "end_column": 1,
+                                            "end_line": 1,
+                                            "filename": "",
+                                            "line": 1,
+                                            "node": {
+                                                "StringLit": {
+                                                    "is_long_string": false,
+                                                    "raw_value": "\"+44 1234567\"",
+                                                    "value": "+44 1234567"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "column": 1,
+                                            "end_column": 1,
+                                            "end_line": 1,
+                                            "filename": "",
+                                            "line": 1,
+                                            "node": {
+                                                "StringLit": {
+                                                    "is_long_string": false,
+                                                    "raw_value": "\"+44 2345678\"",
+                                                    "value": "+44 2345678"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+    }
+}
