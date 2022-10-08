@@ -10,8 +10,16 @@ use kclvm_error::bug;
 ========
 use kclvm_error::bug;
 
+<<<<<<< HEAD
 use crate::{ast::{self, CallExpr}, walker::MutSelfTypedResultWalker, token::{TokenKind, DelimToken}};
 >>>>>>>> b59824d (refactor(kclvm-tools): move 'printer' from 'kclvm-tools' to 'kclvm-ast'.):kclvm/ast/src/printer/node.rs
+=======
+use crate::{
+    ast::{self, CallExpr},
+    token::{DelimToken, TokenKind},
+    walker::MutSelfTypedResultWalker,
+};
+>>>>>>> 55680e6 (fmt)
 
 use super::{Indentation, Printer};
 
