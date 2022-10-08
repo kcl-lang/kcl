@@ -1,7 +1,7 @@
 use indexmap::IndexMap;
 use std::collections::VecDeque;
 
-use kclvm_ast::{ast, token::TokenKind, walker::MutSelfTypedResultWalker};
+use crate::{ast, token::TokenKind, walker::MutSelfTypedResultWalker};
 
 mod node;
 

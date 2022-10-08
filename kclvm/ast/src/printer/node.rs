@@ -1,8 +1,8 @@
 use std::collections::HashSet;
 
-use kclvm_ast::ast::{self, CallExpr};
-use kclvm_ast::token::{DelimToken, TokenKind};
-use kclvm_ast::walker::MutSelfTypedResultWalker;
+use kclvm_error::bug;
+
+use crate::{ast::{self, CallExpr}, walker::MutSelfTypedResultWalker, token::{TokenKind, DelimToken}};
 
 use super::{Indentation, Printer};
 

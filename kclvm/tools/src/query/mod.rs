@@ -16,7 +16,7 @@ use kclvm_parser::parse_file;
 pub use r#override::{apply_override_on_module, apply_overrides};
 
 use self::r#override::parse_override_spec;
-use crate::printer::print_ast_module;
+use kclvm_ast::printer::print_ast_module;
 
 /// Override and rewrite a file with override specifications. Please note that this is an external user API,
 /// and it can directly modify the KCL file in place.

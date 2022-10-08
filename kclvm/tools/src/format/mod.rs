@@ -8,8 +8,9 @@
 use anyhow::{anyhow, Result};
 use std::path::Path;
 
-use crate::{printer::print_ast_module, util::get_kcl_files};
+use crate::util::get_kcl_files;
 use kclvm_parser::parse_file;
+use kclvm_ast::printer::print_ast_module;
 
 #[cfg(test)]
 mod tests;
