@@ -2,7 +2,11 @@ use std::collections::HashSet;
 
 use kclvm_error::bug;
 
-use crate::{ast::{self, CallExpr}, walker::MutSelfTypedResultWalker, token::{TokenKind, DelimToken}};
+use crate::{
+    ast::{self, CallExpr},
+    token::{DelimToken, TokenKind},
+    walker::MutSelfTypedResultWalker,
+};
 
 use super::{Indentation, Printer};
 

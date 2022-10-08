@@ -4,10 +4,10 @@ use crate::ast::*;
 pub mod ast;
 pub mod config;
 pub mod path;
+pub mod printer;
 pub mod token;
 pub mod token_stream;
 pub mod walker;
-pub mod printer;
 
 #[cfg(test)]
 mod tests;

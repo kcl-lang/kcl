@@ -9,8 +9,8 @@ use anyhow::{anyhow, Result};
 use std::path::Path;
 
 use crate::util::get_kcl_files;
-use kclvm_parser::parse_file;
 use kclvm_ast::printer::print_ast_module;
+use kclvm_parser::parse_file;
 
 #[cfg(test)]
 mod tests;
