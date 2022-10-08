@@ -4,9 +4,9 @@ use anyhow::{anyhow, Result};
 
 use kclvm_ast::config::try_get_config_expr_mut;
 use kclvm_ast::path::{get_attr_paths_from_config_expr, get_key_path};
-use kclvm_ast::printer::print_ast_module;
 use kclvm_ast::walker::MutSelfMutWalker;
 use kclvm_ast::{ast, walk_if_mut};
+use kclvm_ast_pretty::print_ast_module;
 use kclvm_parser::parse_expr;
 use kclvm_sema::pre_process::{fix_config_expr_nest_attr, transform_multi_assign};
 

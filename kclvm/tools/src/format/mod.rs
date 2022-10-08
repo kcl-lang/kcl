@@ -6,10 +6,10 @@
 //! AST Module, and then use the AST printer [kclvm_tools::printer::print_ast_module]
 //! to print it as source code string.
 use anyhow::{anyhow, Result};
+use kclvm_ast_pretty::print_ast_module;
 use std::path::Path;
 
 use crate::util::get_kcl_files;
-use kclvm_ast::printer::print_ast_module;
 use kclvm_parser::parse_file;
 
 #[cfg(test)]

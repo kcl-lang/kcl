@@ -1,6 +1,8 @@
-use super::*;
+use std::path::PathBuf;
+
 use kclvm_parser::parse_file;
-use pretty_assertions::assert_eq;
+
+use super::print_ast_module;
 
 const FILE_INPUT_SUFFIX: &str = ".input";
 const FILE_OUTPUT_SUFFIX: &str = ".output";
@@ -23,18 +25,19 @@ const TEST_CASES: &[&'static str; 15] = &[
 ];
 
 fn read_data(data_name: &str) -> (String, String) {
-    let module = parse_file(
-        &format!("./src/printer/test_data/{}{}", data_name, FILE_INPUT_SUFFIX),
-        None,
-    );
+    let mut filename = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    filename.push(&format!("src/test_data/{}{}", data_name, FILE_INPUT_SUFFIX));
 
+    let module = parse_file(filename.to_str().unwrap(), None);
+
+    let mut filename_expect = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    filename_expect.push(&format!(
+        "src/test_data/{}{}",
+        data_name, FILE_OUTPUT_SUFFIX
+    ));
     (
         print_ast_module(&module.unwrap()),
-        std::fs::read_to_string(&format!(
-            "./src/printer/test_data/{}{}",
-            data_name, FILE_OUTPUT_SUFFIX
-        ))
-        .unwrap(),
+        std::fs::read_to_string(filename_expect.to_str().unwrap()).unwrap(),
     )
 }
 

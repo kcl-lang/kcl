@@ -625,6 +625,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "kclvm-ast-pretty"
+version = "0.1.0"
+dependencies = [
+ "fancy-regex",
+ "indexmap",
+ "kclvm-ast",
+ "kclvm-error",
+ "kclvm-parser",
+]
+
+[[package]]
 name = "kclvm-capi"
 version = "0.1.0"
 dependencies = [
@@ -836,6 +847,7 @@ dependencies = [
  "fancy-regex",
  "indexmap",
  "kclvm-ast",
+ "kclvm-ast-pretty",
  "kclvm-config",
  "kclvm-error",
  "kclvm-parser",
