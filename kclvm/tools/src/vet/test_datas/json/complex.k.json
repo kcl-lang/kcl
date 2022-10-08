@@ -1,0 +1,13 @@
+{
+    "name": "Alice",
+    "age": 18,
+    "message": "This is Alice",
+    "data": {
+        "id": 1,
+        "value": "value1"
+    },
+    "labels": {
+        "key": "value"
+    },
+    "hc": [1, 2, 3]
+}

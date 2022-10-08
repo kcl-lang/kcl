@@ -1,0 +1,409 @@
+{
+    "column": 1,
+    "end_column": 1,
+    "end_line": 1,
+    "filename": "",
+    "line": 1,
+    "node": {
+        "Config": {
+            "items": [
+                {
+                    "column": 1,
+                    "end_column": 1,
+                    "end_line": 1,
+                    "filename": "",
+                    "line": 1,
+                    "node": {
+                        "insert_index": -1,
+                        "key": {
+                            "column": 1,
+                            "end_column": 1,
+                            "end_line": 1,
+                            "filename": "",
+                            "line": 1,
+                            "node": {
+                                "StringLit": {
+                                    "is_long_string": false,
+                                    "raw_value": "\"age\"",
+                                    "value": "age"
+                                }
+                            }
+                        },
+                        "operation": "Union",
+                        "value": {
+                            "column": 1,
+                            "end_column": 1,
+                            "end_line": 1,
+                            "filename": "",
+                            "line": 1,
+                            "node": {
+                                "NumberLit": {
+                                    "binary_suffix": null,
+                                    "value": {
+                                        "Int": 18
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "column": 1,
+                    "end_column": 1,
+                    "end_line": 1,
+                    "filename": "",
+                    "line": 1,
+                    "node": {
+                        "insert_index": -1,
+                        "key": {
+                            "column": 1,
+                            "end_column": 1,
+                            "end_line": 1,
+                            "filename": "",
+                            "line": 1,
+                            "node": {
+                                "StringLit": {
+                                    "is_long_string": false,
+                                    "raw_value": "\"data\"",
+                                    "value": "data"
+                                }
+                            }
+                        },
+                        "operation": "Union",
+                        "value": {
+                            "column": 1,
+                            "end_column": 1,
+                            "end_line": 1,
+                            "filename": "",
+                            "line": 1,
+                            "node": {
+                                "Config": {
+                                    "items": [
+                                        {
+                                            "column": 1,
+                                            "end_column": 1,
+                                            "end_line": 1,
+                                            "filename": "",
+                                            "line": 1,
+                                            "node": {
+                                                "insert_index": -1,
+                                                "key": {
+                                                    "column": 1,
+                                                    "end_column": 1,
+                                                    "end_line": 1,
+                                                    "filename": "",
+                                                    "line": 1,
+                                                    "node": {
+                                                        "StringLit": {
+                                                            "is_long_string": false,
+                                                            "raw_value": "\"id\"",
+                                                            "value": "id"
+                                                        }
+                                                    }
+                                                },
+                                                "operation": "Union",
+                                                "value": {
+                                                    "column": 1,
+                                                    "end_column": 1,
+                                                    "end_line": 1,
+                                                    "filename": "",
+                                                    "line": 1,
+                                                    "node": {
+                                                        "NumberLit": {
+                                                            "binary_suffix": null,
+                                                            "value": {
+                                                                "Int": 1
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "column": 1,
+                                            "end_column": 1,
+                                            "end_line": 1,
+                                            "filename": "",
+                                            "line": 1,
+                                            "node": {
+                                                "insert_index": -1,
+                                                "key": {
+                                                    "column": 1,
+                                                    "end_column": 1,
+                                                    "end_line": 1,
+                                                    "filename": "",
+                                                    "line": 1,
+                                                    "node": {
+                                                        "StringLit": {
+                                                            "is_long_string": false,
+                                                            "raw_value": "\"value\"",
+                                                            "value": "value"
+                                                        }
+                                                    }
+                                                },
+                                                "operation": "Union",
+                                                "value": {
+                                                    "column": 1,
+                                                    "end_column": 1,
+                                                    "end_line": 1,
+                                                    "filename": "",
+                                                    "line": 1,
+                                                    "node": {
+                                                        "StringLit": {
+                                                            "is_long_string": false,
+                                                            "raw_value": "\"value1\"",
+                                                            "value": "value1"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "column": 1,
+                    "end_column": 1,
+                    "end_line": 1,
+                    "filename": "",
+                    "line": 1,
+                    "node": {
+                        "insert_index": -1,
+                        "key": {
+                            "column": 1,
+                            "end_column": 1,
+                            "end_line": 1,
+                            "filename": "",
+                            "line": 1,
+                            "node": {
+                                "StringLit": {
+                                    "is_long_string": false,
+                                    "raw_value": "\"hc\"",
+                                    "value": "hc"
+                                }
+                            }
+                        },
+                        "operation": "Union",
+                        "value": {
+                            "column": 1,
+                            "end_column": 1,
+                            "end_line": 1,
+                            "filename": "",
+                            "line": 1,
+                            "node": {
+                                "List": {
+                                    "ctx": "Load",
+                                    "elts": [
+                                        {
+                                            "column": 1,
+                                            "end_column": 1,
+                                            "end_line": 1,
+                                            "filename": "",
+                                            "line": 1,
+                                            "node": {
+                                                "NumberLit": {
+                                                    "binary_suffix": null,
+                                                    "value": {
+                                                        "Int": 1
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "column": 1,
+                                            "end_column": 1,
+                                            "end_line": 1,
+                                            "filename": "",
+                                            "line": 1,
+                                            "node": {
+                                                "NumberLit": {
+                                                    "binary_suffix": null,
+                                                    "value": {
+                                                        "Int": 2
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "column": 1,
+                                            "end_column": 1,
+                                            "end_line": 1,
+                                            "filename": "",
+                                            "line": 1,
+                                            "node": {
+                                                "NumberLit": {
+                                                    "binary_suffix": null,
+                                                    "value": {
+                                                        "Int": 3
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "column": 1,
+                    "end_column": 1,
+                    "end_line": 1,
+                    "filename": "",
+                    "line": 1,
+                    "node": {
+                        "insert_index": -1,
+                        "key": {
+                            "column": 1,
+                            "end_column": 1,
+                            "end_line": 1,
+                            "filename": "",
+                            "line": 1,
+                            "node": {
+                                "StringLit": {
+                                    "is_long_string": false,
+                                    "raw_value": "\"labels\"",
+                                    "value": "labels"
+                                }
+                            }
+                        },
+                        "operation": "Union",
+                        "value": {
+                            "column": 1,
+                            "end_column": 1,
+                            "end_line": 1,
+                            "filename": "",
+                            "line": 1,
+                            "node": {
+                                "Config": {
+                                    "items": [
+                                        {
+                                            "column": 1,
+                                            "end_column": 1,
+                                            "end_line": 1,
+                                            "filename": "",
+                                            "line": 1,
+                                            "node": {
+                                                "insert_index": -1,
+                                                "key": {
+                                                    "column": 1,
+                                                    "end_column": 1,
+                                                    "end_line": 1,
+                                                    "filename": "",
+                                                    "line": 1,
+                                                    "node": {
+                                                        "StringLit": {
+                                                            "is_long_string": false,
+                                                            "raw_value": "\"key\"",
+                                                            "value": "key"
+                                                        }
+                                                    }
+                                                },
+                                                "operation": "Union",
+                                                "value": {
+                                                    "column": 1,
+                                                    "end_column": 1,
+                                                    "end_line": 1,
+                                                    "filename": "",
+                                                    "line": 1,
+                                                    "node": {
+                                                        "StringLit": {
+                                                            "is_long_string": false,
+                                                            "raw_value": "\"value\"",
+                                                            "value": "value"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "column": 1,
+                    "end_column": 1,
+                    "end_line": 1,
+                    "filename": "",
+                    "line": 1,
+                    "node": {
+                        "insert_index": -1,
+                        "key": {
+                            "column": 1,
+                            "end_column": 1,
+                            "end_line": 1,
+                            "filename": "",
+                            "line": 1,
+                            "node": {
+                                "StringLit": {
+                                    "is_long_string": false,
+                                    "raw_value": "\"message\"",
+                                    "value": "message"
+                                }
+                            }
+                        },
+                        "operation": "Union",
+                        "value": {
+                            "column": 1,
+                            "end_column": 1,
+                            "end_line": 1,
+                            "filename": "",
+                            "line": 1,
+                            "node": {
+                                "StringLit": {
+                                    "is_long_string": false,
+                                    "raw_value": "\"This is Alice\"",
+                                    "value": "This is Alice"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "column": 1,
+                    "end_column": 1,
+                    "end_line": 1,
+                    "filename": "",
+                    "line": 1,
+                    "node": {
+                        "insert_index": -1,
+                        "key": {
+                            "column": 1,
+                            "end_column": 1,
+                            "end_line": 1,
+                            "filename": "",
+                            "line": 1,
+                            "node": {
+                                "StringLit": {
+                                    "is_long_string": false,
+                                    "raw_value": "\"name\"",
+                                    "value": "name"
+                                }
+                            }
+                        },
+                        "operation": "Union",
+                        "value": {
+                            "column": 1,
+                            "end_column": 1,
+                            "end_line": 1,
+                            "filename": "",
+                            "line": 1,
+                            "node": {
+                                "StringLit": {
+                                    "is_long_string": false,
+                                    "raw_value": "\"Alice\"",
+                                    "value": "Alice"
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+    }
+}

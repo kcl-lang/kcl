@@ -221,7 +221,7 @@ websites:
                     panic!("unreachable")
                 }
                 Err(err) => {
-                    assert_eq!(format!("{:?}", err), "Failed to String '{\n    \"name\": \"John Doe\",\n        \"city\": \"London\"\ninvalid\n\n' to Yaml\n\nCaused by:\n    did not find expected ',' or '}' at line 4 column 1, while parsing a flow mapping");
+                    assert_eq!(format!("{:?}", err), "Failed to String '\"name\": \"John Doe\",\ninvalid\n' to Yaml\n\nCaused by:\n    did not find expected key at line 1 column 19, while parsing a block mapping");
                 }
             }
         }

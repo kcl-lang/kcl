@@ -1,0 +1,53 @@
+{
+    "column": 1,
+    "end_column": 1,
+    "end_line": 1,
+    "filename": "",
+    "line": 1,
+    "node": {
+        "Config": {
+            "items": [
+                {
+                    "column": 1,
+                    "end_column": 1,
+                    "end_line": 1,
+                    "filename": "",
+                    "line": 1,
+                    "node": {
+                        "insert_index": -1,
+                        "key": {
+                            "column": 1,
+                            "end_column": 1,
+                            "end_line": 1,
+                            "filename": "",
+                            "line": 1,
+                            "node": {
+                                "StringLit": {
+                                    "is_long_string": false,
+                                    "raw_value": "\"float_value\"",
+                                    "value": "float_value"
+                                }
+                            }
+                        },
+                        "operation": "Union",
+                        "value": {
+                            "column": 1,
+                            "end_column": 1,
+                            "end_line": 1,
+                            "filename": "",
+                            "line": 1,
+                            "node": {
+                                "NumberLit": {
+                                    "binary_suffix": null,
+                                    "value": {
+                                        "Float": 0.33
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+    }
+}
