@@ -2,6 +2,7 @@ use kclvm::{ErrType, PanicInfo};
 use kclvm_ast::token::Token;
 use kclvm_error::{Handler, ParseError, Position};
 use kclvm_span::{Loc, SourceMap, Span};
+use std::borrow::BorrowMut;
 use std::cell::RefCell;
 use std::sync::Arc;
 
@@ -48,6 +49,17 @@ impl ParseSession {
         panic!("{}", panic_info.to_json_string())
     }
 
+    /// Struct and report an error based on a token and not abort the compiler process.
+    pub fn struct_token_error_recovery(&self, expected: &[String], got: Token) {
+        let pos: Position = self.source_map.lookup_char_pos(got.span.lo()).into();
+        let err = ParseError::UnexpectedToken {
+            expected: expected.iter().map(|tok| tok.into()).collect(),
+            got: got.into(),
+        };
+
+        self.handler.borrow_mut().add_parse_error(err, pos);
+    }
+
     /// Struct and report an error based on a span and abort the compiler process.
     pub fn struct_span_error(&self, msg: &str, span: Span) -> ! {
         let pos: Position = self.source_map.lookup_char_pos(span.lo()).into();
@@ -63,6 +75,13 @@ impl ParseSession {
         panic_info.kcl_col = pos.column.unwrap_or(0) as i32;
 
         panic!("{}", panic_info.to_json_string())
+    }
+
+    /// Struct and report an error based on a span and not abort the compiler process.
+    pub fn struct_span_error_recovery(&self, msg: &str, span: Span) {
+        let pos: Position = self.source_map.lookup_char_pos(span.lo()).into();
+
+        self.handler.borrow_mut().add_compile_error(msg, pos);
     }
 
     /// Report a compiler bug

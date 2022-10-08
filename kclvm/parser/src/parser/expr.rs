@@ -1795,7 +1795,8 @@ impl<'a> Parser<'a> {
             TokenKind::CloseDelim(DelimToken::Paren) => {
                 self.bump();
             }
-            _ => self.sess.struct_token_error(
+
+            _ => self.sess.struct_token_error_recovery(
                 &[token::TokenKind::CloseDelim(token::DelimToken::Paren).into()],
                 self.token,
             ),
