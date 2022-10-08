@@ -225,5 +225,8 @@ websites:
                 }
             }
         }
+
+        #[test]
+        fn test_unsupported_u64() {}
     }
 }

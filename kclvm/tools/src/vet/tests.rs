@@ -270,5 +270,38 @@ mod test_expr_generator {
                 }
             }
         }
+
+        #[test]
+        fn test_unsupported_u64_json() {
+            // unsupported u64 json
+            let file_path = construct_full_path("invalid/unsupported/json_with_u64.json").unwrap();
+            let expr_builder =
+                ExprBuilder::new_with_file_path(None, *LOADER_KIND[0], file_path.clone()).unwrap();
+            match expr_builder.build() {
+                Ok(_) => {
+                    panic!("unreachable")
+                }
+                Err(err) => {
+                    assert_eq!(format!("{:?}", err), "Failed to Load JSON\n\nCaused by:\n    0: Failed to Load Validated File\n    1: Failed to Load Validated File, Unsupported Unsigned 64");
+                }
+            };
+        }
+
+        #[test]
+        fn test_unsupported_u64_yaml() {
+            // unsupported u64 yaml
+            let file_path = construct_full_path("invalid/unsupported/yaml_with_u64.yaml").unwrap();
+            let expr_builder =
+                ExprBuilder::new_with_file_path(None, *LOADER_KIND[1], file_path.clone()).unwrap();
+            match expr_builder.build() {
+                Ok(_) => {
+                    panic!("unreachable")
+                }
+                Err(err) => {
+                    assert_eq!(format!("{:?}", err), "Failed to Load YAML\n\nCaused by:\n    0: Failed to Load Validated File\n    1: Failed to Load Validated File, Unsupported Unsigned 64");
+                }
+            };
+            // unsupported u64 yaml
+        }
     }
 }
