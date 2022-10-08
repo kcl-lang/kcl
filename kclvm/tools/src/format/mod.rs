@@ -10,7 +10,6 @@ use kclvm_ast_pretty::print_ast_module;
 use std::path::Path;
 
 use crate::util::get_kcl_files;
-use kclvm_ast::printer::print_ast_module;
 use kclvm_parser::parse_file;
 
 #[cfg(test)]

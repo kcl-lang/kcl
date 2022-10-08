@@ -1,5 +1,9 @@
 use std::collections::HashSet;
 
+<<<<<<< HEAD
+=======
+<<<<<<<< HEAD:kclvm/ast/src/printer/node.rs
+>>>>>>> b15d822 (mv query to ast_pretty)
 <<<<<<<< HEAD:kclvm/ast_pretty/src/node.rs
 use kclvm_ast::{
     ast::{self, CallExpr},
@@ -10,8 +14,28 @@ use kclvm_error::bug;
 ========
 use kclvm_error::bug;
 
+<<<<<<< HEAD
 use crate::{ast::{self, CallExpr}, walker::MutSelfTypedResultWalker, token::{TokenKind, DelimToken}};
 >>>>>>>> b59824d (refactor(kclvm-tools): move 'printer' from 'kclvm-tools' to 'kclvm-ast'.):kclvm/ast/src/printer/node.rs
+=======
+<<<<<<< HEAD
+use crate::{ast::{self, CallExpr}, walker::MutSelfTypedResultWalker, token::{TokenKind, DelimToken}};
+>>>>>>>> b59824d (refactor(kclvm-tools): move 'printer' from 'kclvm-tools' to 'kclvm-ast'.):kclvm/ast/src/printer/node.rs
+=======
+use crate::{
+========
+use kclvm_ast::{
+>>>>>>>> b15d822 (mv query to ast_pretty):kclvm/ast_pretty/src/node.rs
+    ast::{self, CallExpr},
+    token::{DelimToken, TokenKind},
+    walker::MutSelfTypedResultWalker,
+};
+<<<<<<<< HEAD:kclvm/ast/src/printer/node.rs
+>>>>>>> 55680e6 (fmt)
+========
+use kclvm_error::bug;
+>>>>>>>> b15d822 (mv query to ast_pretty):kclvm/ast_pretty/src/node.rs
+>>>>>>> b15d822 (mv query to ast_pretty)
 
 use super::{Indentation, Printer};
 

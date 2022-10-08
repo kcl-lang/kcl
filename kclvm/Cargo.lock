@@ -624,7 +624,10 @@ dependencies = [
  "kclvm-ast",
  "kclvm-error",
  "kclvm-parser",
+<<<<<<< HEAD
  "pretty_assertions",
+=======
+>>>>>>> b15d822 (mv query to ast_pretty)
 ]
 
 [[package]]

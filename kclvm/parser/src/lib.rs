@@ -70,6 +70,7 @@ pub fn parse_file(filename: &str, code: Option<String>) -> Result<ast::Module, S
         let src = if let Some(s) = code {
             s
         } else {
+            println!("{:?}", filename);
             std::fs::read_to_string(filename).unwrap()
         };
 
