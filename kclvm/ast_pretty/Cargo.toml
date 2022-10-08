@@ -11,8 +11,12 @@ kclvm-error = {path = "../error", version = "0.1.0"}
 kclvm-ast = {path = "../ast", version = "0.1.0"}
 indexmap = "1.0"
 <<<<<<< HEAD
+<<<<<<< HEAD
 fancy-regex = "0.7.1"
 pretty_assertions = "1.3.0"
 =======
 fancy-regex = "0.7.1"
 >>>>>>> b15d822 (mv query to ast_pretty)
+=======
+fancy-regex = "0.7.1"
+>>>>>>> f9e4f7b (remove useless dependencies)
