@@ -587,6 +587,7 @@ dependencies = [
  "kclvm-config",
  "kclvm-error",
  "kclvm-parser",
+ "kclvm-query",
  "kclvm-runner",
  "kclvm-runtime",
  "kclvm-sema",
@@ -637,6 +638,7 @@ dependencies = [
  "criterion",
  "kclvm-ast",
  "kclvm-parser",
+ "kclvm-query",
  "kclvm-runner",
  "kclvm-runtime",
  "kclvm-tools",
@@ -748,6 +750,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "kclvm-query"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "kclvm-ast",
+ "kclvm-ast-pretty",
+ "kclvm-error",
+ "kclvm-parser",
+ "kclvm-sema",
+ "pretty_assertions",
+]
+
+[[package]]
 name = "kclvm-runner"
 version = "0.1.0"
 dependencies = [
@@ -762,9 +777,9 @@ dependencies = [
  "kclvm-config",
  "kclvm-error",
  "kclvm-parser",
+ "kclvm-query",
  "kclvm-runtime",
  "kclvm-sema",
- "kclvm-tools",
  "kclvm-version",
  "libc",
  "libloading",
@@ -846,6 +861,7 @@ dependencies = [
  "kclvm-config",
  "kclvm-error",
  "kclvm-parser",
+ "kclvm-query",
  "kclvm-sema",
  "pretty_assertions",
  "serde_json",

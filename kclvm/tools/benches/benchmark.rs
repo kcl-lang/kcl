@@ -1,6 +1,6 @@
 use criterion::{criterion_group, criterion_main, Criterion};
+use kclvm_query::override_file;
 use kclvm_tools::format::{format, FormatOptions};
-use kclvm_tools::query::override_file;
 
 pub fn criterion_benchmark_override(c: &mut Criterion) {
     c.bench_function("override", |b| {
