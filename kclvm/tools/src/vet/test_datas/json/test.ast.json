@@ -46,114 +46,87 @@
                                         "filename": "",
                                         "line": 1,
                                         "node": {
-                                            "Schema": {
-                                                "args": [],
-                                                "config": {
-                                                    "column": 1,
-                                                    "end_column": 1,
-                                                    "end_line": 1,
-                                                    "filename": "",
-                                                    "line": 1,
-                                                    "node": {
-                                                        "Config": {
-                                                            "items": [
-                                                                {
-                                                                    "column": 1,
-                                                                    "end_column": 1,
-                                                                    "end_line": 1,
-                                                                    "filename": "",
-                                                                    "line": 1,
-                                                                    "node": {
-                                                                        "insert_index": -1,
-                                                                        "key": {
-                                                                            "column": 1,
-                                                                            "end_column": 1,
-                                                                            "end_line": 1,
-                                                                            "filename": "",
-                                                                            "line": 1,
-                                                                            "node": {
-                                                                                "StringLit": {
-                                                                                    "is_long_string": false,
-                                                                                    "raw_value": "\"city\"",
-                                                                                    "value": "city"
-                                                                                }
-                                                                            }
-                                                                        },
-                                                                        "operation": "Union",
-                                                                        "value": {
-                                                                            "column": 1,
-                                                                            "end_column": 1,
-                                                                            "end_line": 1,
-                                                                            "filename": "",
-                                                                            "line": 1,
-                                                                            "node": {
-                                                                                "StringLit": {
-                                                                                    "is_long_string": false,
-                                                                                    "raw_value": "\"London\"",
-                                                                                    "value": "London"
-                                                                                }
-                                                                            }
-                                                                        }
-                                                                    }
-                                                                },
-                                                                {
-                                                                    "column": 1,
-                                                                    "end_column": 1,
-                                                                    "end_line": 1,
-                                                                    "filename": "",
-                                                                    "line": 1,
-                                                                    "node": {
-                                                                        "insert_index": -1,
-                                                                        "key": {
-                                                                            "column": 1,
-                                                                            "end_column": 1,
-                                                                            "end_line": 1,
-                                                                            "filename": "",
-                                                                            "line": 1,
-                                                                            "node": {
-                                                                                "StringLit": {
-                                                                                    "is_long_string": false,
-                                                                                    "raw_value": "\"street\"",
-                                                                                    "value": "street"
-                                                                                }
-                                                                            }
-                                                                        },
-                                                                        "operation": "Union",
-                                                                        "value": {
-                                                                            "column": 1,
-                                                                            "end_column": 1,
-                                                                            "end_line": 1,
-                                                                            "filename": "",
-                                                                            "line": 1,
-                                                                            "node": {
-                                                                                "StringLit": {
-                                                                                    "is_long_string": false,
-                                                                                    "raw_value": "\"10 Downing Street\"",
-                                                                                    "value": "10 Downing Street"
-                                                                                }
-                                                                            }
-                                                                        }
+                                            "Config": {
+                                                "items": [
+                                                    {
+                                                        "column": 1,
+                                                        "end_column": 1,
+                                                        "end_line": 1,
+                                                        "filename": "",
+                                                        "line": 1,
+                                                        "node": {
+                                                            "insert_index": -1,
+                                                            "key": {
+                                                                "column": 1,
+                                                                "end_column": 1,
+                                                                "end_line": 1,
+                                                                "filename": "",
+                                                                "line": 1,
+                                                                "node": {
+                                                                    "StringLit": {
+                                                                        "is_long_string": false,
+                                                                        "raw_value": "\"city\"",
+                                                                        "value": "city"
                                                                     }
                                                                 }
-                                                            ]
+                                                            },
+                                                            "operation": "Union",
+                                                            "value": {
+                                                                "column": 1,
+                                                                "end_column": 1,
+                                                                "end_line": 1,
+                                                                "filename": "",
+                                                                "line": 1,
+                                                                "node": {
+                                                                    "StringLit": {
+                                                                        "is_long_string": false,
+                                                                        "raw_value": "\"London\"",
+                                                                        "value": "London"
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    {
+                                                        "column": 1,
+                                                        "end_column": 1,
+                                                        "end_line": 1,
+                                                        "filename": "",
+                                                        "line": 1,
+                                                        "node": {
+                                                            "insert_index": -1,
+                                                            "key": {
+                                                                "column": 1,
+                                                                "end_column": 1,
+                                                                "end_line": 1,
+                                                                "filename": "",
+                                                                "line": 1,
+                                                                "node": {
+                                                                    "StringLit": {
+                                                                        "is_long_string": false,
+                                                                        "raw_value": "\"street\"",
+                                                                        "value": "street"
+                                                                    }
+                                                                }
+                                                            },
+                                                            "operation": "Union",
+                                                            "value": {
+                                                                "column": 1,
+                                                                "end_column": 1,
+                                                                "end_line": 1,
+                                                                "filename": "",
+                                                                "line": 1,
+                                                                "node": {
+                                                                    "StringLit": {
+                                                                        "is_long_string": false,
+                                                                        "raw_value": "\"10 Downing Street\"",
+                                                                        "value": "10 Downing Street"
+                                                                    }
+                                                                }
+                                                            }
                                                         }
                                                     }
-                                                },
-                                                "kwargs": [],
-                                                "name": {
-                                                    "column": 1,
-                                                    "end_column": 1,
-                                                    "end_line": 1,
-                                                    "filename": "",
-                                                    "line": 1,
-                                                    "node": {
-                                                        "ctx": "Load",
-                                                        "names": [
-                                                            "test"
-                                                        ],
-                                                        "pkgpath": ""
-                                                    }
-                                                }
+                                                ]
                                             }
                                         }
                                     }

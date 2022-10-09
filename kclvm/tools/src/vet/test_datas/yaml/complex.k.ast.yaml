@@ -110,78 +110,58 @@ node: !Schema
             end_line: 1
             end_column: 1
           value:
-            node: !Schema
-              name:
-                node:
-                  names:
-                  - complex
-                  pkgpath: ''
-                  ctx: Load
+            node: !Config
+              items:
+              - node:
+                  key:
+                    node: !StringLit
+                      is_long_string: false
+                      raw_value: '"id"'
+                      value: id
+                    filename: ''
+                    line: 1
+                    column: 1
+                    end_line: 1
+                    end_column: 1
+                  value:
+                    node: !NumberLit
+                      binary_suffix: null
+                      value: !Int 1
+                    filename: ''
+                    line: 1
+                    column: 1
+                    end_line: 1
+                    end_column: 1
+                  operation: Union
+                  insert_index: -1
                 filename: ''
                 line: 1
                 column: 1
                 end_line: 1
                 end_column: 1
-              args: []
-              kwargs: []
-              config:
-                node: !Config
-                  items:
-                  - node:
-                      key:
-                        node: !StringLit
-                          is_long_string: false
-                          raw_value: '"id"'
-                          value: id
-                        filename: ''
-                        line: 1
-                        column: 1
-                        end_line: 1
-                        end_column: 1
-                      value:
-                        node: !NumberLit
-                          binary_suffix: null
-                          value: !Int 1
-                        filename: ''
-                        line: 1
-                        column: 1
-                        end_line: 1
-                        end_column: 1
-                      operation: Union
-                      insert_index: -1
+              - node:
+                  key:
+                    node: !StringLit
+                      is_long_string: false
+                      raw_value: '"value"'
+                      value: value
                     filename: ''
                     line: 1
                     column: 1
                     end_line: 1
                     end_column: 1
-                  - node:
-                      key:
-                        node: !StringLit
-                          is_long_string: false
-                          raw_value: '"value"'
-                          value: value
-                        filename: ''
-                        line: 1
-                        column: 1
-                        end_line: 1
-                        end_column: 1
-                      value:
-                        node: !StringLit
-                          is_long_string: false
-                          raw_value: '"value1"'
-                          value: value1
-                        filename: ''
-                        line: 1
-                        column: 1
-                        end_line: 1
-                        end_column: 1
-                      operation: Union
-                      insert_index: -1
+                  value:
+                    node: !StringLit
+                      is_long_string: false
+                      raw_value: '"value1"'
+                      value: value1
                     filename: ''
                     line: 1
                     column: 1
                     end_line: 1
                     end_column: 1
+                  operation: Union
+                  insert_index: -1
                 filename: ''
                 line: 1
                 column: 1
@@ -211,51 +191,31 @@ node: !Schema
             end_line: 1
             end_column: 1
           value:
-            node: !Schema
-              name:
-                node:
-                  names:
-                  - complex
-                  pkgpath: ''
-                  ctx: Load
-                filename: ''
-                line: 1
-                column: 1
-                end_line: 1
-                end_column: 1
-              args: []
-              kwargs: []
-              config:
-                node: !Config
-                  items:
-                  - node:
-                      key:
-                        node: !StringLit
-                          is_long_string: false
-                          raw_value: '"key"'
-                          value: key
-                        filename: ''
-                        line: 1
-                        column: 1
-                        end_line: 1
-                        end_column: 1
-                      value:
-                        node: !StringLit
-                          is_long_string: false
-                          raw_value: '"value"'
-                          value: value
-                        filename: ''
-                        line: 1
-                        column: 1
-                        end_line: 1
-                        end_column: 1
-                      operation: Union
-                      insert_index: -1
+            node: !Config
+              items:
+              - node:
+                  key:
+                    node: !StringLit
+                      is_long_string: false
+                      raw_value: '"key"'
+                      value: key
                     filename: ''
                     line: 1
                     column: 1
                     end_line: 1
                     end_column: 1
+                  value:
+                    node: !StringLit
+                      is_long_string: false
+                      raw_value: '"value"'
+                      value: value
+                    filename: ''
+                    line: 1
+                    column: 1
+                    end_line: 1
+                    end_column: 1
+                  operation: Union
+                  insert_index: -1
                 filename: ''
                 line: 1
                 column: 1

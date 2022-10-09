@@ -11,61 +11,46 @@ use crate::util::loader::{DataLoader, Loader, LoaderKind};
 use anyhow::{bail, Context, Result};
 
 trait ExprGenerator<T> {
-    fn generate(&self, value: &T) -> Result<NodeRef<Expr>>;
+    fn generate(&self, value: &T, schema_name: &Option<String>) -> Result<NodeRef<Expr>>;
 }
 
 /// `ExprBuilder` will generate ast expr from Json/Yaml.
 /// `Object` in Json and `Mapping` in Yaml is mapped to `Schema Expr`.
 /// You should set `schema_name` for `Schema Expr` before using `ExprBuilder`.
 pub(crate) struct ExprBuilder {
-    schema_name: Option<String>,
     loader: DataLoader,
 }
 
 impl ExprBuilder {
-    pub(crate) fn new_with_file_path(
-        schema_name: Option<String>,
-        kind: LoaderKind,
-        file_path: String,
-    ) -> Result<Self> {
+    pub(crate) fn new_with_file_path(kind: LoaderKind, file_path: String) -> Result<Self> {
         let loader = DataLoader::new_with_file_path(kind, &file_path)
             .with_context(|| format!("Failed to Load '{}'", file_path))?;
 
-        Ok(Self {
-            schema_name,
-            loader,
-        })
+        Ok(Self { loader })
     }
 
-    pub(crate) fn new_with_str(
-        schema_name: Option<String>,
-        kind: LoaderKind,
-        content: String,
-    ) -> Result<Self> {
+    pub(crate) fn new_with_str(kind: LoaderKind, content: String) -> Result<Self> {
         let loader = DataLoader::new_with_str(kind, &content)
             .with_context(|| format!("Failed to Parse String '{}'", content))?;
 
-        Ok(Self {
-            schema_name,
-            loader,
-        })
+        Ok(Self { loader })
     }
 
     /// Generate ast expr from Json/Yaml depends on `LoaderKind`.
-    pub(crate) fn build(&self) -> Result<NodeRef<Expr>> {
+    pub(crate) fn build(&self, schema_name: Option<String>) -> Result<NodeRef<Expr>> {
         match self.loader.get_kind() {
             LoaderKind::JSON => {
                 let value = <DataLoader as Loader<serde_json::Value>>::load(&self.loader)
                     .with_context(|| format!("Failed to Load JSON"))?;
                 Ok(self
-                    .generate(&value)
+                    .generate(&value, &schema_name)
                     .with_context(|| format!("Failed to Load JSON"))?)
             }
             LoaderKind::YAML => {
                 let value = <DataLoader as Loader<serde_yaml::Value>>::load(&self.loader)
                     .with_context(|| format!("Failed to Load YAML"))?;
                 Ok(self
-                    .generate(&value)
+                    .generate(&value, &schema_name)
                     .with_context(|| format!("Failed to Load YAML"))?)
             }
         }
@@ -73,7 +58,11 @@ impl ExprBuilder {
 }
 
 impl ExprGenerator<serde_yaml::Value> for ExprBuilder {
-    fn generate(&self, value: &serde_yaml::Value) -> Result<NodeRef<Expr>> {
+    fn generate(
+        &self,
+        value: &serde_yaml::Value,
+        schema_name: &Option<String>,
+    ) -> Result<NodeRef<Expr>> {
         match value {
             serde_yaml::Value::Null => Ok(node_ref!(Expr::NameConstantLit(NameConstantLit {
                 value: NameConstant::None,
@@ -132,7 +121,7 @@ impl ExprGenerator<serde_yaml::Value> for ExprBuilder {
                 let mut j_arr_ast_nodes: Vec<NodeRef<Expr>> = Vec::new();
                 for j_arr_item in j_arr {
                     j_arr_ast_nodes.push(
-                        self.generate(j_arr_item)
+                        self.generate(j_arr_item, schema_name)
                             .with_context(|| format!("Failed to Load Validated File"))?,
                     );
                 }
@@ -146,10 +135,10 @@ impl ExprGenerator<serde_yaml::Value> for ExprBuilder {
 
                 for (k, v) in j_map.iter() {
                     let k = self
-                        .generate(k)
+                        .generate(k, schema_name)
                         .with_context(|| format!("Failed to Load Validated File"))?;
                     let v = self
-                        .generate(v)
+                        .generate(v, &None)
                         .with_context(|| format!("Failed to Load Validated File"))?;
 
                     let config_entry = node_ref!(ConfigEntry {
@@ -165,7 +154,7 @@ impl ExprGenerator<serde_yaml::Value> for ExprBuilder {
                     items: config_entries
                 }));
 
-                match &self.schema_name {
+                match schema_name {
                     Some(s_name) => {
                         let iden = node_ref!(Identifier {
                             names: vec![s_name.to_string()],
@@ -190,7 +179,11 @@ impl ExprGenerator<serde_yaml::Value> for ExprBuilder {
 }
 
 impl ExprGenerator<serde_json::Value> for ExprBuilder {
-    fn generate(&self, value: &serde_json::Value) -> Result<NodeRef<Expr>> {
+    fn generate(
+        &self,
+        value: &serde_json::Value,
+        schema_name: &Option<String>,
+    ) -> Result<NodeRef<Expr>> {
         match value {
             serde_json::Value::Null => Ok(node_ref!(Expr::NameConstantLit(NameConstantLit {
                 value: NameConstant::None,
@@ -250,7 +243,7 @@ impl ExprGenerator<serde_json::Value> for ExprBuilder {
                 let mut j_arr_ast_nodes: Vec<NodeRef<Expr>> = Vec::new();
                 for j_arr_item in j_arr {
                     j_arr_ast_nodes.push(
-                        self.generate(j_arr_item)
+                        self.generate(j_arr_item, schema_name)
                             .with_context(|| format!("Failed to Load Validated File"))?,
                     );
                 }
@@ -270,7 +263,7 @@ impl ExprGenerator<serde_json::Value> for ExprBuilder {
                         }
                     };
                     let v = self
-                        .generate(v)
+                        .generate(v, &None)
                         .with_context(|| format!("Failed to Load Validated File"))?;
 
                     let config_entry = node_ref!(ConfigEntry {
@@ -286,7 +279,7 @@ impl ExprGenerator<serde_json::Value> for ExprBuilder {
                     items: config_entries
                 }));
 
-                match &self.schema_name {
+                match schema_name {
                     Some(s_name) => {
                         let iden = node_ref!(Identifier {
                             names: vec![s_name.to_string()],
