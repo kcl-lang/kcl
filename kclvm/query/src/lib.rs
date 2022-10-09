@@ -42,7 +42,7 @@ use self::r#override::parse_override_spec;
 /// # Examples
 ///
 /// ```no_run
-/// use kclvm_tools::query::override_file;
+/// use kclvm_query::override_file;
 ///
 /// let result = override_file(
 ///     "test.k",

@@ -1,7 +1,11 @@
+use std::path::PathBuf;
+
 use super::{r#override::apply_override_on_module, *};
 use kclvm_ast::ast;
 use kclvm_parser::parse_file;
 use pretty_assertions::assert_eq;
+
+const CARGO_FILE_PATH: &str = env!("CARGO_MANIFEST_DIR");
 
 /// Test override_file result.
 #[test]
@@ -11,9 +15,14 @@ fn test_override_file_simple() {
         ":config.image=\"image/image:v1\"".to_string(),
         ":config.data={id=1,value=\"override_value\"}".to_string(),
     ];
+
+    let mut cargo_file_path = PathBuf::from(CARGO_FILE_PATH);
+    cargo_file_path.push("src/test_data/simple.k");
+    let abs_path = cargo_file_path.to_str().unwrap();
+
     let import_paths = vec![];
     assert_eq!(
-        override_file("./src/query/test_data/simple.k", &specs, &import_paths).unwrap(),
+        override_file(abs_path, &specs, &import_paths).unwrap(),
         true
     )
 }
@@ -27,13 +36,13 @@ fn test_override_file_import_paths() {
         "pkg.pkg as alias_pkg1".to_string(),
         "pkg.pkg as alias_pkg2".to_string(),
     ];
+
+    let mut cargo_file_path = PathBuf::from(CARGO_FILE_PATH);
+    cargo_file_path.push("src/test_data/import_paths.k");
+    let abs_path = cargo_file_path.to_str().unwrap();
+
     assert_eq!(
-        override_file(
-            "./src/query/test_data/import_paths.k",
-            &specs,
-            &import_paths
-        )
-        .unwrap(),
+        override_file(abs_path, &specs, &import_paths).unwrap(),
         true
     )
 }
@@ -60,7 +69,12 @@ fn test_override_file_config() {
         .filter_map(Result::ok)
         .collect::<Vec<ast::OverrideSpec>>();
     let import_paths = vec![];
-    let mut module = parse_file("./src/query/test_data/config.k", None).unwrap();
+
+    let mut cargo_file_path = PathBuf::from(CARGO_FILE_PATH);
+    cargo_file_path.push("src/test_data/config.k");
+    let abs_path = cargo_file_path.to_str().unwrap();
+
+    let mut module = parse_file(abs_path, None).unwrap();
     for o in &overrides {
         apply_override_on_module(&mut module, o, &import_paths).unwrap();
     }
