@@ -1,7 +1,10 @@
 use indexmap::IndexMap;
+use kclvm_ast::{
+    ast::{self, Module},
+    token::TokenKind,
+    walker::MutSelfTypedResultWalker,
+};
 use std::collections::VecDeque;
-
-use kclvm_ast::{ast, token::TokenKind, walker::MutSelfTypedResultWalker};
 
 mod node;
 
@@ -244,7 +247,7 @@ impl<'p> Printer<'p> {
 }
 
 /// Print AST to string
-pub fn print_ast_module(module: &ast::Module) -> String {
+pub fn print_ast_module(module: &Module) -> String {
     let mut printer = Printer::default();
     printer.write_module(module);
     printer.out

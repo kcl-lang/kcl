@@ -48,6 +48,7 @@ lto = true
 members = [
     "capi",
     "ast",
+    "ast_pretty",
     "compiler",
     "config",
     "error",

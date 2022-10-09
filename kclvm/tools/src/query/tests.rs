@@ -1,5 +1,4 @@
 use super::{r#override::apply_override_on_module, *};
-use crate::printer::print_ast_module;
 use kclvm_ast::ast;
 use kclvm_parser::parse_file;
 use pretty_assertions::assert_eq;
