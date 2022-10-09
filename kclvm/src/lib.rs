@@ -1,9 +1,9 @@
 extern crate serde;
 
 use kclvm_parser::load_program;
+use kclvm_query::apply_overrides;
 use kclvm_runner::execute;
 use kclvm_runner::runner::*;
-use kclvm_tools::query::apply_overrides;
 
 #[no_mangle]
 pub extern "C" fn kclvm_cli_run(args: *const i8, plugin_agent: *const i8) -> *const i8 {

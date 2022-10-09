@@ -5,7 +5,6 @@ use kclvm_ast::{
     walker::MutSelfTypedResultWalker,
 };
 use std::collections::VecDeque;
-
 mod node;
 
 #[cfg(test)]

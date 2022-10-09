@@ -17,6 +17,7 @@ kclvm-parser = {path = "../parser", version = "0.1.0"}
 kclvm-sema = {path = "../sema", version = "0.1.0"}
 kclvm-config = {path = "../config", version = "0.1.0"}
 kclvm-ast-pretty = {path = "../ast_pretty", version = "0.1.0"}
+kclvm-query = {path = "../query", version = "0.1.0"}
 
 serde_json = "1.0.85"
 serde_yaml = "0.9.13"
