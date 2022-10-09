@@ -5,19 +5,6 @@ use kclvm_ast::{
     walker::MutSelfTypedResultWalker,
 };
 use std::collections::VecDeque;
-
-<<<<<<< HEAD
-use crate::{ast, token::TokenKind, walker::MutSelfTypedResultWalker};
-=======
-<<<<<<<< HEAD:kclvm/ast/src/printer/mod.rs
-<<<<<<<< HEAD:kclvm/ast_pretty/src/lib.rs
-========
-use crate::{ast, token::TokenKind, walker::MutSelfTypedResultWalker};
-
->>>>>>>> b59824d (refactor(kclvm-tools): move 'printer' from 'kclvm-tools' to 'kclvm-ast'.):kclvm/ast/src/printer/mod.rs
-========
->>>>>>>> b15d822 (mv query to ast_pretty):kclvm/ast_pretty/src/lib.rs
->>>>>>> b15d822 (mv query to ast_pretty)
 mod node;
 
 #[cfg(test)]
