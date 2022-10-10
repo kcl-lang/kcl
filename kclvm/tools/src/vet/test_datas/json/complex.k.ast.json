@@ -86,115 +86,88 @@
                                         "filename": "",
                                         "line": 1,
                                         "node": {
-                                            "Schema": {
-                                                "args": [],
-                                                "config": {
-                                                    "column": 1,
-                                                    "end_column": 1,
-                                                    "end_line": 1,
-                                                    "filename": "",
-                                                    "line": 1,
-                                                    "node": {
-                                                        "Config": {
-                                                            "items": [
-                                                                {
-                                                                    "column": 1,
-                                                                    "end_column": 1,
-                                                                    "end_line": 1,
-                                                                    "filename": "",
-                                                                    "line": 1,
-                                                                    "node": {
-                                                                        "insert_index": -1,
-                                                                        "key": {
-                                                                            "column": 1,
-                                                                            "end_column": 1,
-                                                                            "end_line": 1,
-                                                                            "filename": "",
-                                                                            "line": 1,
-                                                                            "node": {
-                                                                                "StringLit": {
-                                                                                    "is_long_string": false,
-                                                                                    "raw_value": "\"id\"",
-                                                                                    "value": "id"
-                                                                                }
-                                                                            }
-                                                                        },
-                                                                        "operation": "Union",
-                                                                        "value": {
-                                                                            "column": 1,
-                                                                            "end_column": 1,
-                                                                            "end_line": 1,
-                                                                            "filename": "",
-                                                                            "line": 1,
-                                                                            "node": {
-                                                                                "NumberLit": {
-                                                                                    "binary_suffix": null,
-                                                                                    "value": {
-                                                                                        "Int": 1
-                                                                                    }
-                                                                                }
-                                                                            }
-                                                                        }
+                                            "Config": {
+                                                "items": [
+                                                    {
+                                                        "column": 1,
+                                                        "end_column": 1,
+                                                        "end_line": 1,
+                                                        "filename": "",
+                                                        "line": 1,
+                                                        "node": {
+                                                            "insert_index": -1,
+                                                            "key": {
+                                                                "column": 1,
+                                                                "end_column": 1,
+                                                                "end_line": 1,
+                                                                "filename": "",
+                                                                "line": 1,
+                                                                "node": {
+                                                                    "StringLit": {
+                                                                        "is_long_string": false,
+                                                                        "raw_value": "\"id\"",
+                                                                        "value": "id"
                                                                     }
-                                                                },
-                                                                {
-                                                                    "column": 1,
-                                                                    "end_column": 1,
-                                                                    "end_line": 1,
-                                                                    "filename": "",
-                                                                    "line": 1,
-                                                                    "node": {
-                                                                        "insert_index": -1,
-                                                                        "key": {
-                                                                            "column": 1,
-                                                                            "end_column": 1,
-                                                                            "end_line": 1,
-                                                                            "filename": "",
-                                                                            "line": 1,
-                                                                            "node": {
-                                                                                "StringLit": {
-                                                                                    "is_long_string": false,
-                                                                                    "raw_value": "\"value\"",
-                                                                                    "value": "value"
-                                                                                }
-                                                                            }
-                                                                        },
-                                                                        "operation": "Union",
+                                                                }
+                                                            },
+                                                            "operation": "Union",
+                                                            "value": {
+                                                                "column": 1,
+                                                                "end_column": 1,
+                                                                "end_line": 1,
+                                                                "filename": "",
+                                                                "line": 1,
+                                                                "node": {
+                                                                    "NumberLit": {
+                                                                        "binary_suffix": null,
                                                                         "value": {
-                                                                            "column": 1,
-                                                                            "end_column": 1,
-                                                                            "end_line": 1,
-                                                                            "filename": "",
-                                                                            "line": 1,
-                                                                            "node": {
-                                                                                "StringLit": {
-                                                                                    "is_long_string": false,
-                                                                                    "raw_value": "\"value1\"",
-                                                                                    "value": "value1"
-                                                                                }
-                                                                            }
+                                                                            "Int": 1
                                                                         }
                                                                     }
                                                                 }
-                                                            ]
+                                                            }
+                                                        }
+                                                    },
+                                                    {
+                                                        "column": 1,
+                                                        "end_column": 1,
+                                                        "end_line": 1,
+                                                        "filename": "",
+                                                        "line": 1,
+                                                        "node": {
+                                                            "insert_index": -1,
+                                                            "key": {
+                                                                "column": 1,
+                                                                "end_column": 1,
+                                                                "end_line": 1,
+                                                                "filename": "",
+                                                                "line": 1,
+                                                                "node": {
+                                                                    "StringLit": {
+                                                                        "is_long_string": false,
+                                                                        "raw_value": "\"value\"",
+                                                                        "value": "value"
+                                                                    }
+                                                                }
+                                                            },
+                                                            "operation": "Union",
+                                                            "value": {
+                                                                "column": 1,
+                                                                "end_column": 1,
+                                                                "end_line": 1,
+                                                                "filename": "",
+                                                                "line": 1,
+                                                                "node": {
+                                                                    "StringLit": {
+                                                                        "is_long_string": false,
+                                                                        "raw_value": "\"value1\"",
+                                                                        "value": "value1"
+                                                                    }
+                                                                }
+                                                            }
                                                         }
                                                     }
-                                                },
-                                                "kwargs": [],
-                                                "name": {
-                                                    "column": 1,
-                                                    "end_column": 1,
-                                                    "end_line": 1,
-                                                    "filename": "",
-                                                    "line": 1,
-                                                    "node": {
-                                                        "ctx": "Load",
-                                                        "names": [
-                                                            "complex"
-                                                        ],
-                                                        "pkgpath": ""
-                                                    }
-                                                }
+                                                ]
                                             }
                                         }
                                     }
@@ -314,75 +287,48 @@
                                         "filename": "",
                                         "line": 1,
                                         "node": {
-                                            "Schema": {
-                                                "args": [],
-                                                "config": {
-                                                    "column": 1,
-                                                    "end_column": 1,
-                                                    "end_line": 1,
-                                                    "filename": "",
-                                                    "line": 1,
-                                                    "node": {
-                                                        "Config": {
-                                                            "items": [
-                                                                {
-                                                                    "column": 1,
-                                                                    "end_column": 1,
-                                                                    "end_line": 1,
-                                                                    "filename": "",
-                                                                    "line": 1,
-                                                                    "node": {
-                                                                        "insert_index": -1,
-                                                                        "key": {
-                                                                            "column": 1,
-                                                                            "end_column": 1,
-                                                                            "end_line": 1,
-                                                                            "filename": "",
-                                                                            "line": 1,
-                                                                            "node": {
-                                                                                "StringLit": {
-                                                                                    "is_long_string": false,
-                                                                                    "raw_value": "\"key\"",
-                                                                                    "value": "key"
-                                                                                }
-                                                                            }
-                                                                        },
-                                                                        "operation": "Union",
-                                                                        "value": {
-                                                                            "column": 1,
-                                                                            "end_column": 1,
-                                                                            "end_line": 1,
-                                                                            "filename": "",
-                                                                            "line": 1,
-                                                                            "node": {
-                                                                                "StringLit": {
-                                                                                    "is_long_string": false,
-                                                                                    "raw_value": "\"value\"",
-                                                                                    "value": "value"
-                                                                                }
-                                                                            }
-                                                                        }
+                                            "Config": {
+                                                "items": [
+                                                    {
+                                                        "column": 1,
+                                                        "end_column": 1,
+                                                        "end_line": 1,
+                                                        "filename": "",
+                                                        "line": 1,
+                                                        "node": {
+                                                            "insert_index": -1,
+                                                            "key": {
+                                                                "column": 1,
+                                                                "end_column": 1,
+                                                                "end_line": 1,
+                                                                "filename": "",
+                                                                "line": 1,
+                                                                "node": {
+                                                                    "StringLit": {
+                                                                        "is_long_string": false,
+                                                                        "raw_value": "\"key\"",
+                                                                        "value": "key"
                                                                     }
                                                                 }
-                                                            ]
+                                                            },
+                                                            "operation": "Union",
+                                                            "value": {
+                                                                "column": 1,
+                                                                "end_column": 1,
+                                                                "end_line": 1,
+                                                                "filename": "",
+                                                                "line": 1,
+                                                                "node": {
+                                                                    "StringLit": {
+                                                                        "is_long_string": false,
+                                                                        "raw_value": "\"value\"",
+                                                                        "value": "value"
+                                                                    }
+                                                                }
+                                                            }
                                                         }
                                                     }
-                                                },
-                                                "kwargs": [],
-                                                "name": {
-                                                    "column": 1,
-                                                    "end_column": 1,
-                                                    "end_line": 1,
-                                                    "filename": "",
-                                                    "line": 1,
-                                                    "node": {
-                                                        "ctx": "Load",
-                                                        "names": [
-                                                            "complex"
-                                                        ],
-                                                        "pkgpath": ""
-                                                    }
-                                                }
+                                                ]
                                             }
                                         }
                                     }

@@ -1,0 +1,54 @@
+node: !Schema
+  name:
+    node:
+      names:
+      - only_with_float
+      pkgpath: ''
+      ctx: Load
+    filename: ''
+    line: 1
+    column: 1
+    end_line: 1
+    end_column: 1
+  args: []
+  kwargs: []
+  config:
+    node: !Config
+      items:
+      - node:
+          key:
+            node: !StringLit
+              is_long_string: false
+              raw_value: '"float_val"'
+              value: float_val
+            filename: ''
+            line: 1
+            column: 1
+            end_line: 1
+            end_column: 1
+          value:
+            node: !NumberLit
+              binary_suffix: null
+              value: !Float 0.33
+            filename: ''
+            line: 1
+            column: 1
+            end_line: 1
+            end_column: 1
+          operation: Union
+          insert_index: -1
+        filename: ''
+        line: 1
+        column: 1
+        end_line: 1
+        end_column: 1
+    filename: ''
+    line: 1
+    column: 1
+    end_line: 1
+    end_column: 1
+filename: ''
+line: 1
+column: 1
+end_line: 1
+end_column: 1

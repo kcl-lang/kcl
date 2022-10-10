@@ -67,7 +67,7 @@
                 "node": {
                     "ctx": "Load",
                     "names": [
-                        "json_with_bool"
+                        "only_with_bool"
                     ],
                     "pkgpath": ""
                 }

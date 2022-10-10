@@ -33,8 +33,8 @@
                                         "node": {
                                             "StringLit": {
                                                 "is_long_string": false,
-                                                "raw_value": "\"null_value\"",
-                                                "value": "null_value"
+                                                "raw_value": "\"float_value\"",
+                                                "value": "float_value"
                                             }
                                         }
                                     },
@@ -46,8 +46,11 @@
                                         "filename": "",
                                         "line": 1,
                                         "node": {
-                                            "NameConstantLit": {
-                                                "value": "None"
+                                            "NumberLit": {
+                                                "binary_suffix": null,
+                                                "value": {
+                                                    "Float": 0.33
+                                                }
                                             }
                                         }
                                     }
@@ -67,7 +70,7 @@
                 "node": {
                     "ctx": "Load",
                     "names": [
-                        "json_with_null"
+                        "only_with_float"
                     ],
                     "pkgpath": ""
                 }

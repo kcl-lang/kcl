@@ -14,9 +14,9 @@ const TEST_CASES: &'static [&'static str] = &[
     "plain_value.k",
     "list.k",
     "complex.k",
-    "json_with_null",
-    "json_with_bool",
-    "json_with_float",
+    "only_with_null",
+    "only_with_bool",
+    "only_with_float",
 ];
 
 const SCHEMA_NAMES: &'static [&'static str] = &[
@@ -25,9 +25,9 @@ const SCHEMA_NAMES: &'static [&'static str] = &[
     "plain_value",
     "list",
     "complex",
-    "json_with_null",
-    "json_with_bool",
-    "json_with_float",
+    "only_with_null",
+    "only_with_bool",
+    "only_with_float",
 ];
 
 const FILE_EXTENSIONS: &'static [&'static str] = &["json", "yaml", "ast.json", "ast.yaml"];
@@ -73,9 +73,8 @@ mod test_expr_generator {
                 ))
                 .unwrap();
                 let expr_builder =
-                    ExprBuilder::new_with_file_path(None, *LOADER_KIND[0], file_path.clone())
-                        .unwrap();
-                let expr_ast = expr_builder.build().unwrap();
+                    ExprBuilder::new_with_file_path(*LOADER_KIND[0], file_path.clone()).unwrap();
+                let expr_ast = expr_builder.build(None).unwrap();
                 let got_ast_json = serde_json::to_value(&expr_ast).unwrap();
 
                 let expect_file_path = construct_full_path(&format!(
@@ -98,9 +97,8 @@ mod test_expr_generator {
                 ))
                 .unwrap();
                 let expr_builder =
-                    ExprBuilder::new_with_file_path(None, *LOADER_KIND[1], file_path.clone())
-                        .unwrap();
-                let expr_ast = expr_builder.build().unwrap();
+                    ExprBuilder::new_with_file_path(*LOADER_KIND[1], file_path.clone()).unwrap();
+                let expr_ast = expr_builder.build(None).unwrap();
                 let got_ast_yaml = serde_yaml::to_value(&expr_ast).unwrap();
 
                 let expect_file_path = construct_full_path(&format!(
@@ -126,13 +124,11 @@ mod test_expr_generator {
                 let file_path =
                     construct_full_path(&format!("{1}/{0}.{1}", TEST_CASES[i], FILE_EXTENSIONS[0]))
                         .unwrap();
-                let expr_builder = ExprBuilder::new_with_file_path(
-                    Some(SCHEMA_NAMES[i].to_string()),
-                    LOADER_KIND[0].clone(),
-                    file_path,
-                )
-                .unwrap();
-                let expr_ast = expr_builder.build().unwrap();
+                let expr_builder =
+                    ExprBuilder::new_with_file_path(LOADER_KIND[0].clone(), file_path).unwrap();
+                let expr_ast = expr_builder
+                    .build(Some(SCHEMA_NAMES[i].to_string()))
+                    .unwrap();
                 let got_ast_json = serde_json::to_value(&expr_ast).unwrap();
 
                 let expect_file_path = construct_full_path(&format!(
@@ -156,13 +152,11 @@ mod test_expr_generator {
 
                 let content = fs::read_to_string(file_path).unwrap();
 
-                let expr_builder = ExprBuilder::new_with_str(
-                    Some(SCHEMA_NAMES[i].to_string()),
-                    LOADER_KIND[0].clone(),
-                    content,
-                )
-                .unwrap();
-                let expr_ast = expr_builder.build().unwrap();
+                let expr_builder =
+                    ExprBuilder::new_with_str(LOADER_KIND[0].clone(), content).unwrap();
+                let expr_ast = expr_builder
+                    .build(Some(SCHEMA_NAMES[i].to_string()))
+                    .unwrap();
                 let got_ast_json = serde_json::to_value(&expr_ast).unwrap();
 
                 let expect_file_path = construct_full_path(&format!(
@@ -183,13 +177,11 @@ mod test_expr_generator {
                 let file_path =
                     construct_full_path(&format!("{1}/{0}.{1}", TEST_CASES[i], FILE_EXTENSIONS[1]))
                         .unwrap();
-                let expr_builder = ExprBuilder::new_with_file_path(
-                    Some(SCHEMA_NAMES[i].to_string()),
-                    LOADER_KIND[1].clone(),
-                    file_path,
-                )
-                .unwrap();
-                let expr_ast = expr_builder.build().unwrap();
+                let expr_builder =
+                    ExprBuilder::new_with_file_path(LOADER_KIND[1].clone(), file_path).unwrap();
+                let expr_ast = expr_builder
+                    .build(Some(SCHEMA_NAMES[i].to_string()))
+                    .unwrap();
                 let got_ast_yaml = serde_yaml::to_value(&expr_ast).unwrap();
 
                 let expect_file_path = construct_full_path(&format!(
@@ -199,9 +191,6 @@ mod test_expr_generator {
                 .unwrap();
                 let f = File::open(expect_file_path.clone()).unwrap();
                 let expect_ast_yaml: serde_yaml::Value = serde_yaml::from_reader(f).unwrap();
-                if expect_ast_yaml != got_ast_yaml {
-                    serde_yaml::to_writer(std::io::stdout(), &got_ast_yaml);
-                }
                 assert_eq!(expect_ast_yaml, got_ast_yaml)
             }
         }
@@ -216,8 +205,8 @@ mod test_expr_generator {
                 ))
                 .unwrap();
                 let expr_builder =
-                    ExprBuilder::new_with_file_path(None, *LOADER_KIND[i], file_path).unwrap();
-                match expr_builder.build() {
+                    ExprBuilder::new_with_file_path(*LOADER_KIND[i], file_path).unwrap();
+                match expr_builder.build(None) {
                     Ok(_) => {
                         panic!("This test case should be failed.")
                     }
@@ -237,7 +226,7 @@ mod test_expr_generator {
                     "test_json_not_exist", FILE_EXTENSIONS[i]
                 ))
                 .unwrap();
-                match ExprBuilder::new_with_file_path(None, *LOADER_KIND[i], file_path.clone()) {
+                match ExprBuilder::new_with_file_path(*LOADER_KIND[i], file_path.clone()) {
                     Ok(_) => {
                         panic!("This test case should be failed.")
                     }
@@ -256,9 +245,9 @@ mod test_expr_generator {
         fn test_build_with_yaml_file_with_json_kind() {
             let file_path = construct_full_path(&format!("yaml/{}", "test.yaml")).unwrap();
             let expr_builder =
-                ExprBuilder::new_with_file_path(None, LoaderKind::JSON, file_path.clone()).unwrap();
+                ExprBuilder::new_with_file_path(LoaderKind::JSON, file_path.clone()).unwrap();
 
-            match expr_builder.build() {
+            match expr_builder.build(None) {
                 Ok(_) => {
                     panic!("This test case should be failed.")
                 }
@@ -276,8 +265,8 @@ mod test_expr_generator {
             // unsupported u64 json
             let file_path = construct_full_path("invalid/unsupported/json_with_u64.json").unwrap();
             let expr_builder =
-                ExprBuilder::new_with_file_path(None, *LOADER_KIND[0], file_path.clone()).unwrap();
-            match expr_builder.build() {
+                ExprBuilder::new_with_file_path(*LOADER_KIND[0], file_path.clone()).unwrap();
+            match expr_builder.build(None) {
                 Ok(_) => {
                     panic!("unreachable")
                 }
@@ -292,8 +281,8 @@ mod test_expr_generator {
             // unsupported u64 yaml
             let file_path = construct_full_path("invalid/unsupported/yaml_with_u64.yaml").unwrap();
             let expr_builder =
-                ExprBuilder::new_with_file_path(None, *LOADER_KIND[1], file_path.clone()).unwrap();
-            match expr_builder.build() {
+                ExprBuilder::new_with_file_path(*LOADER_KIND[1], file_path.clone()).unwrap();
+            match expr_builder.build(None) {
                 Ok(_) => {
                     panic!("unreachable")
                 }
@@ -308,8 +297,8 @@ mod test_expr_generator {
             // unsupported yaml with tag
             let file_path = construct_full_path("invalid/unsupported/yaml_with_tag.yaml").unwrap();
             let expr_builder =
-                ExprBuilder::new_with_file_path(None, *LOADER_KIND[1], file_path.clone()).unwrap();
-            match expr_builder.build() {
+                ExprBuilder::new_with_file_path(*LOADER_KIND[1], file_path.clone()).unwrap();
+            match expr_builder.build(None) {
                 Ok(_) => {
                     panic!("unreachable")
                 }
