@@ -10,13 +10,6 @@ use std::str;
 impl<'ctx> LLVMCodeGenContext<'ctx> {
     pub fn compile_module_import_and_types(&self, module: &'ctx ast::Module) {
         for stmt in &module.body {
-            if let ast::Stmt::Assign(assign_stmt) = &stmt.node {
-                for t in &assign_stmt.targets {
-                    self.predefine_global_types(&t.node.names[0])
-                }
-            }
-        }
-        for stmt in &module.body {
             match &stmt.node {
                 ast::Stmt::Import(import_stmt) => {
                     self.walk_import_stmt(import_stmt)
