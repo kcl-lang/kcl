@@ -135,7 +135,7 @@ impl ExprGenerator<serde_yaml::Value> for ExprBuilder {
 
                 for (k, v) in j_map.iter() {
                     let k = self
-                        .generate(k, schema_name)
+                        .generate(k, &None)
                         .with_context(|| format!("Failed to Load Validated File"))?;
                     let v = self
                         .generate(v, &None)
