@@ -41,7 +41,7 @@ impl Command {
             format!("-L{}/lib", self.executable_root),
             "-lkclvm_native_shared".to_string(),
             format!("-I{}/include", self.executable_root),
-            "-Wl,-w".to_string()
+            "-Wl,-w".to_string(),
         ];
         let mut bc_files = libs.to_owned();
         args.append(&mut bc_files);
@@ -111,7 +111,7 @@ impl Command {
             format!("-L{}/lib", self.executable_root),
             "-lkclvm_native_shared".to_string(),
             format!("-I{}/include", self.executable_root),
-            "-Wl,-w".to_string()
+            "-Wl,-w".to_string(),
         ];
         args.append(&mut bc_files);
         let mut more_args = vec![
@@ -163,7 +163,7 @@ impl Command {
             format!("-L{}/lib", self.executable_root),
             "-lkclvm_native_shared".to_string(),
             format!("-I{}/include", self.executable_root),
-            "-Wl,-w".to_string()
+            "-Wl,-w".to_string(),
         ];
         let mut bc_files = vec![bc_path];
         args.append(&mut bc_files);
