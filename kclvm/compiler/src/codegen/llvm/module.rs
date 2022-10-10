@@ -10,6 +10,13 @@ use std::str;
 impl<'ctx> LLVMCodeGenContext<'ctx> {
     pub fn compile_module_import_and_types(&self, module: &'ctx ast::Module) {
         for stmt in &module.body {
+            if let ast::Stmt::Assign(assign_stmt) = &stmt.node {
+                for t in &assign_stmt.targets {
+                    self.predefine_global_types(&t.node.names[0])
+                }
+            }
+        }
+        for stmt in &module.body {
             match &stmt.node {
                 ast::Stmt::Import(import_stmt) => {
                     self.walk_import_stmt(import_stmt)
@@ -17,9 +24,13 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 }
                 ast::Stmt::Schema(schema_stmt) => {
                     self.predefine_global_types(&schema_stmt.name.node);
+                    self.walk_schema_stmt(schema_stmt)
+                        .expect(kcl_error::COMPILE_ERROR_MSG);
                 }
                 ast::Stmt::Rule(rule_stmt) => {
                     self.predefine_global_types(&rule_stmt.name.node);
+                    self.walk_rule_stmt(rule_stmt)
+                        .expect(kcl_error::COMPILE_ERROR_MSG);
                 }
                 _ => {}
             };
