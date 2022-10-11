@@ -17,9 +17,13 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 }
                 ast::Stmt::Schema(schema_stmt) => {
                     self.predefine_global_types(&schema_stmt.name.node);
+                    self.walk_schema_stmt(schema_stmt)
+                        .expect(kcl_error::COMPILE_ERROR_MSG);
                 }
                 ast::Stmt::Rule(rule_stmt) => {
                     self.predefine_global_types(&rule_stmt.name.node);
+                    self.walk_rule_stmt(rule_stmt)
+                        .expect(kcl_error::COMPILE_ERROR_MSG);
                 }
                 _ => {}
             };
