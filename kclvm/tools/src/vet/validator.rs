@@ -1,4 +1,4 @@
-//!
+//! This
 
 use std::collections::HashMap;
 
@@ -15,6 +15,116 @@ use kclvm_runner::{execute, ExecProgramArgs};
 
 const TMP_FILE: &str = "validationTempKCLCode.k";
 
+/// Validate the data string using the schema code string, when the parameter
+/// `schema` is omitted, use the first scheam appeared in the kcl code, when the schema
+/// not found, raise an schema not found error. Schema要是找不到的话要报错吗？？？
+///
+/// Returns a bool result denoting whether validating success,这个注释不对哦 raise an error
+/// when validating failed because of the file not found error, schema not found
+/// error, syntax error, check error, etc.
+///
+/// # Examples
+///
+/// 1. If you want to verify the following json file.
+/// (kclvm/tools/src/vet/test_datas/validate_cases/test.json)
+/// ```ignore
+/// {
+///     "name": "Alice",
+///     "age": 18,
+///     "message": "This is Alice"
+/// }
+/// ```
+///
+/// 2. First, you can create a KCL schema and write validation rules.
+/// (kclvm/tools/src/vet/test_datas/validate_cases/test.k)
+/// ```ignore
+/// schema User:
+///     name: str
+///     age: int
+///     message?: str
+///
+///     check:
+///         name == "Alice"
+///         age > 10
+/// ```
+///
+/// 3. Second, you can call this method as follows to validate the content of the json file with the kcl file.
+/// ```rust
+/// // First get the file path of the file to be verified.
+/// let mut validated_file_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+/// validated_file_path.push("src/vet/test_datas/validate_cases/test.json");
+/// let validated_file_path = validated_file_path.to_str().unwrap()
+/// 
+/// // Then get the path to the KCL file. 
+/// let mut kcl_file_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+/// kcl_file_path.push("src/vet/test_datas/validate_cases/test.k");
+/// let kcl_file_path = kcl_file_path.to_str().unwrap()
+/// 
+/// // Get the name of the schema defined in the kcl file
+/// let schema_name = Some("User".to_string());
+/// 
+/// // Define the name of an attribute.
+/// // The name of this property is related to the rules in the KCL file.
+/// let attr_name = "value";
+/// 
+/// // Define the kind of file you want to validate.
+/// let kind = LoaderKind::JSON;
+/// 
+/// // One of the KCL file path or the content of the KCL file is enough.
+/// let result = validate(schema_name, attr_name, validated_file_path, kind, kcl_file_path, None)
+/// ```
+/// 
+/// The json file used above conforms to the schema rules, so the content of `result` you get is :
+/// 
+/// ```
+/// {
+/// "value": {
+///     "name": "Alice",
+///     "age": 18,
+///     "message": "This is Alice",
+///         "__settings__": {
+///             "output_type": "INLINE",
+///             "__schema_type__": "__main__.User"
+///         }
+///     }
+/// }
+/// ```
+/// 
+/// If you change the content of the above json file to :
+/// 
+/// ```
+/// {
+///     "name": "Tom",
+///     "age": 18,
+///     "message": "This is Alice"
+/// }
+/// ```
+/// 
+/// TO BE CONTINUE .......
+/// 
+/// ```
+/// {
+///     "__kcl_PanicInfo__": true,
+///     "rust_file": "runtime/src/value/api.rs",
+///     "rust_line": 2203,
+///     "rust_col": 9,
+///     "kcl_pkgpath": "__main__",
+///     "kcl_file": "kclvm/tools/src/vet/test_datas/invalid_validate_cases/test.json",
+///     "kcl_line": 7,
+///     "kcl_col": 0,
+///     "kcl_arg_msg": "Check failed on the condition",
+///     "kcl_config_meta_file": "",
+///     "kcl_config_meta_line": 1,
+///     "kcl_config_meta_col": 1,
+///     "kcl_config_meta_arg_msg": "Instance check failed",
+///     "message": "",
+///     "err_type_code": 17,
+///     "is_warning": false
+/// }
+/// ```
+///
+///
+///
 pub fn validate(
     schema_name: Option<String>,
     attribute_name: &str,
@@ -22,7 +132,7 @@ pub fn validate(
     validated_file_kind: LoaderKind,
     kcl_path: Option<&str>,
     kcl_code: Option<String>,
-) -> Result<bool, String> {
+) -> String {
     let k_path = match kcl_path {
         Some(path) => path,
         None => TMP_FILE,
@@ -30,7 +140,7 @@ pub fn validate(
 
     let mut module: Module = match kclvm_parser::parse_file(&k_path, kcl_code) {
         Ok(ast_m) => ast_m,
-        Err(err_msg) => return Err(err_msg),
+        Err(err_msg) => return err_msg,
     };
 
     let schemas = filter_schema_stmt(&module);
@@ -45,12 +155,12 @@ pub fn validate(
     let expr_builder =
         match ExprBuilder::new_with_file_path(validated_file_kind, validated_file_path) {
             Ok(builder) => builder,
-            Err(_) => return Err("Failed to load validated file.".to_string()),
+            Err(_) => return "Failed to load validated file.".to_string(),
         };
 
     let validated_expr = match expr_builder.build(schema_name) {
         Ok(expr) => expr,
-        Err(_) => return Err("Failed to load validated file.".to_string()),
+        Err(_) => return "Failed to load validated file.".to_string(),
     };
 
     let assign_stmt = build_assign(attribute_name, validated_expr);
@@ -58,8 +168,8 @@ pub fn validate(
     module.body.insert(0, assign_stmt);
 
     match eval_ast(module) {
-        Ok(res) => Ok(true),
-        Err(err) => Err(err),
+        Ok(res) => res,
+        Err(err) => err,
     }
 }
 
@@ -102,6 +212,5 @@ fn filter_schema_stmt(module: &Module) -> Vec<&SchemaStmt> {
             result.push(s);
         }
     }
-
     result
 }

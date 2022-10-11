@@ -12,7 +12,7 @@
     "kcl_config_meta_line": 0,
     "kcl_config_meta_col": 0,
     "kcl_config_meta_arg_msg": "",
-    "message": "Cannot add member 'name' to schema 'User'",
+    "message": "expect str, got int(10)",
     "err_type_code": 5,
     "is_warning": false
 }

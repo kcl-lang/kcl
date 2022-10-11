@@ -310,16 +310,10 @@ mod test_expr_builder {
         };
     }
 }
-// use pretty_assertions::assert_eq;
-// use std::{fs::File, io::Read, panic};
 
-// use crate::{
-//     util::loader::LoaderKind,
-//     vet::{tests::construct_full_path, validator::validate},
-// };
 mod test_validater {
-    use std::{panic, sync::Mutex};
-    use once_cell::sync::Lazy;
+    use std::{fs, panic};
+
     use crate::vet::validator::validate;
 
     use super::{construct_full_path, LOADER_KIND};
@@ -335,7 +329,7 @@ mod test_validater {
         test_invalid_validate();
         println!("{}", "test_invalid_validate PASS");
     }
-    
+
     fn test_validate() {
         for (i, file_suffix) in VALIDATED_FILE_TYPE.iter().enumerate() {
             for case in KCL_TEST_CASES {
@@ -346,19 +340,26 @@ mod test_validater {
                 let kcl_file_path =
                     construct_full_path(&format!("{}/{}", "validate_cases", case)).unwrap();
 
-                match validate(
+                let expected_result = fs::read_to_string(
+                    construct_full_path(&format!(
+                        "{}/{}.{}",
+                        "validate_cases", case, "stdout.json"
+                    ))
+                    .unwrap(),
+                )
+                .expect("Something went wrong reading the file");
+
+                let got_result = validate(
                     None,
                     "value",
                     validated_file_path.clone(),
                     *LOADER_KIND[i],
                     Some(&kcl_file_path.to_string()),
                     None,
-                ) {
-                    Err(_) => {
-                        panic!("All validated files should pass.")
-                    }
-                    _ => {}
-                }
+                );
+                let got: serde_json::Value = serde_json::from_str(&got_result).unwrap();
+                let expect: serde_json::Value = serde_json::from_str(&expected_result).unwrap();
+                assert_eq!(got, expect);
             }
         }
     }
@@ -374,8 +375,19 @@ mod test_validater {
                 ))
                 .unwrap();
 
-                let kcl_file_path =
-                    construct_full_path(&format!("{}/{}", "invalid_validate_cases", case)).unwrap();
+                let kcl_code = fs::read_to_string(
+                    construct_full_path(&format!("{}/{}", "invalid_validate_cases", case)).unwrap(),
+                )
+                .expect("Something went wrong reading the file");
+
+                let expected_err_msg = fs::read_to_string(
+                    construct_full_path(&format!(
+                        "{}/{}.{}",
+                        "invalid_validate_cases", case, "stderr.json"
+                    ))
+                    .unwrap(),
+                )
+                .expect("Something went wrong reading the file");
 
                 let result = panic::catch_unwind(|| {
                     validate(
@@ -383,14 +395,28 @@ mod test_validater {
                         "value",
                         validated_file_path.clone(),
                         *LOADER_KIND[i],
-                        Some(&kcl_file_path.to_string()),
                         None,
+                        Some(kcl_code),
                     )
                 });
-                assert!(result.is_err());
+
+                let expect: serde_json::Value = serde_json::from_str(&expected_err_msg).unwrap();
+                match result {
+                    Ok(result) => {
+                        let got: serde_json::Value = serde_json::from_str(&result).unwrap();
+                        assert_eq!(got, expect);
+                    }
+                    Err(panic_err) => {
+                        if let Some(result) = panic_err.downcast_ref::<String>() {
+                            let got: serde_json::Value = serde_json::from_str(&result).unwrap();
+                            assert_eq!(got, expect);
+                        } else {
+                            panic!("Unreachable.")
+                        };
+                    }
+                }
             }
         }
     }
 }
-
 // 注释 + benchmark

@@ -1,0 +1,13 @@
+{
+    "value": [
+        {
+            "name": "Alice",
+            "age": 18,
+            "message": "This is Alice",
+            "__settings__": {
+                "output_type": "INLINE",
+                "__schema_type__": "__main__.User"
+            }
+        }
+    ]
+}
