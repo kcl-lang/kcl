@@ -70,7 +70,14 @@ pub fn parse_file(filename: &str, code: Option<String>) -> Result<ast::Module, S
         let src = if let Some(s) = code {
             s
         } else {
-            std::fs::read_to_string(filename).unwrap()
+            match std::fs::read_to_string(filename) {
+                Ok(src) => src,
+                Err(_err) => {
+                    let err_msg =
+                        format!("Failed to load KCL file '{}'. Because '{}'", filename, _err);
+                    return Err(err_msg);
+                }
+            }
         };
 
         let sm = kclvm_span::SourceMap::new(FilePathMapping::empty());
