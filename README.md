@@ -113,3 +113,7 @@ See [Developing Guide](./docs/dev_guide/1.about_this_guide.md).
 ## Roadmap
 
 See [KCLVM Roadmap](https://kusionstack.io/docs/governance/intro/roadmap/).
+
+## Community
+
+See the [community](https://github.com/KusionStack/community) for ways to join us.

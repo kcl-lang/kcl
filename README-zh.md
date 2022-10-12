@@ -113,3 +113,8 @@ fib8: 21
 ## 路线规划
 
 参考[KCLVM 路线规划](https://kusionstack.io/docs/governance/intro/roadmap/)
+
+
+## 开源社区
+
+欢迎访问 [KusionStack 社区](https://github.com/KusionStack/community) 加入我们。
