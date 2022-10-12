@@ -1,4 +1,5 @@
 use crate::lexer::parse_token_streams;
+use crate::parse_file;
 use crate::parser::Parser;
 use crate::session::ParseSession;
 use expect_test::{expect, Expect};
@@ -1265,4 +1266,16 @@ fn smoke_test_parsing_stmt() {
 
         assert_eq!(got, expect);
     });
+}
+
+#[test]
+fn test_parse_file_not_found() {
+    match parse_file("The file path is invalid", None) {
+        Ok(_) => {
+            panic!("unreachable")
+        }
+        Err(err_msg) => {
+            assert_eq!(err_msg, "Failed to load KCL file 'The file path is invalid'. Because 'No such file or directory (os error 2)'");
+        }
+    }
 }
