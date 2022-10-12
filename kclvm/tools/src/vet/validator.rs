@@ -1,5 +1,67 @@
-//! This
-
+//! KCL-Vet can use KCL to validate the content of json or yaml files.
+//!
+//! The main principle consists of three parts:
+//!
+//! - Validation rules for validating file contents are defined in KCL statment.
+//! - Convert the json or yaml file to be verified into a KCL assign expression.
+//! - Combine KCL statment and KCL expression into a KCL program,
+//!   and the KCL program is checked by the KCLVM compiler.
+//!
+//! For example.
+//!
+//! 1. If the json file to be verified is as follows:
+//! (kclvm/tools/src/vet/test_datas/validate_cases/test.json)
+//!
+//! ```ignore
+//! {
+//!     "name": "Alice",
+//!     "age": 18,
+//!     "message": "This is Alice"
+//! }
+//! ```
+//!
+//! 2. You can define KCL like below and define validation rules in check block.
+//! (kclvm/tools/src/vet/test_datas/validate_cases/test.k)
+//!
+//! ```ignore
+//! schema User:
+//!     name: str
+//!     age: int
+//!     message?: str
+//!
+//!     check:
+//!         name == "Alice"
+//!         age > 10
+//! ```
+//!
+//! 3. The json file mentioned in 1 will generate the following kcl expression:
+//!
+//! ```
+//! value = User {
+//!     name: "Alice",
+//!     age: 18,
+//!     message: "This is Alice"
+//! }
+//! ```
+//!
+//! 4. Finally, a KCL program like the following will be handed over to KCLVM to compile and check for problems.
+//!
+//! ```
+//! value = User {
+//!     name: "Alice",
+//!     age: 18,
+//!     message: "This is Alice"
+//! }
+//!
+//! schema User:
+//!     name: str
+//!     age: int
+//!     message?: str
+//!
+//!     check:
+//!         name == "Alice"
+//!         age > 10
+//! ```
 use std::collections::HashMap;
 
 use crate::util::loader::LoaderKind;
@@ -16,12 +78,14 @@ use kclvm_runner::{execute, ExecProgramArgs};
 const TMP_FILE: &str = "validationTempKCLCode.k";
 
 /// Validate the data string using the schema code string, when the parameter
-/// `schema` is omitted, use the first scheam appeared in the kcl code, when the schema
-/// not found, raise an schema not found error. Schema要是找不到的话要报错吗？？？
+/// `schema` is omitted, use the first schema appeared in the kcl code, when the schema
+/// not found, raise an schema not found error.
 ///
-/// Returns a bool result denoting whether validating success,这个注释不对哦 raise an error
+/// Returns a string result denoting whether validating success, raise an error
 /// when validating failed because of the file not found error, schema not found
 /// error, syntax error, check error, etc.
+///
+/// When the content of the json file conforms to the rules, a normal kcl expression will be returned.
 ///
 /// # Examples
 ///
@@ -50,33 +114,37 @@ const TMP_FILE: &str = "validationTempKCLCode.k";
 ///
 /// 3. Second, you can call this method as follows to validate the content of the json file with the kcl file.
 /// ```rust
+/// # use kclvm_tools::vet::validator::validate;
+/// # use std::path::PathBuf;
+/// # use kclvm_tools::util::loader::LoaderKind;
+///
 /// // First get the file path of the file to be verified.
 /// let mut validated_file_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 /// validated_file_path.push("src/vet/test_datas/validate_cases/test.json");
-/// let validated_file_path = validated_file_path.to_str().unwrap()
-/// 
-/// // Then get the path to the KCL file. 
+/// let validated_file_path = validated_file_path.to_str().unwrap();
+///
+/// // Then get the path to the KCL file.
 /// let mut kcl_file_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 /// kcl_file_path.push("src/vet/test_datas/validate_cases/test.k");
-/// let kcl_file_path = kcl_file_path.to_str().unwrap()
-/// 
+/// let kcl_file_path = Some(kcl_file_path.to_str().unwrap());
+///
 /// // Get the name of the schema defined in the kcl file
 /// let schema_name = Some("User".to_string());
-/// 
+///
 /// // Define the name of an attribute.
 /// // The name of this property is related to the rules in the KCL file.
 /// let attr_name = "value";
-/// 
+///
 /// // Define the kind of file you want to validate.
 /// let kind = LoaderKind::JSON;
-/// 
+///
 /// // One of the KCL file path or the content of the KCL file is enough.
-/// let result = validate(schema_name, attr_name, validated_file_path, kind, kcl_file_path, None)
+/// let result = validate(schema_name, attr_name, validated_file_path.to_string(), kind, kcl_file_path, None);
 /// ```
-/// 
+///
 /// The json file used above conforms to the schema rules, so the content of `result` you get is :
-/// 
-/// ```
+///
+/// ```ignore
 /// {
 /// "value": {
 ///     "name": "Alice",
@@ -89,20 +157,20 @@ const TMP_FILE: &str = "validationTempKCLCode.k";
 ///     }
 /// }
 /// ```
-/// 
+///
 /// If you change the content of the above json file to :
-/// 
-/// ```
+///
+/// ```ignore
 /// {
 ///     "name": "Tom",
 ///     "age": 18,
 ///     "message": "This is Alice"
 /// }
 /// ```
-/// 
-/// TO BE CONTINUE .......
-/// 
-/// ```
+///
+/// You will get an error message like this:
+///
+/// ```ignore
 /// {
 ///     "__kcl_PanicInfo__": true,
 ///     "rust_file": "runtime/src/value/api.rs",
@@ -122,9 +190,6 @@ const TMP_FILE: &str = "validationTempKCLCode.k";
 ///     "is_warning": false
 /// }
 /// ```
-///
-///
-///
 pub fn validate(
     schema_name: Option<String>,
     attribute_name: &str,

@@ -1,6 +1,6 @@
 pub mod format;
 pub mod lint;
-mod util;
+pub mod util;
 pub mod vet;
 
 #[macro_use]
