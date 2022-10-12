@@ -41,7 +41,6 @@ impl Command {
             format!("-L{}/lib", self.executable_root),
             "-lkclvm_native_shared".to_string(),
             format!("-I{}/include", self.executable_root),
-            "-Wl,-w".to_string(),
         ];
         let mut bc_files = libs.to_owned();
         args.append(&mut bc_files);
@@ -111,7 +110,6 @@ impl Command {
             format!("-L{}/lib", self.executable_root),
             "-lkclvm_native_shared".to_string(),
             format!("-I{}/include", self.executable_root),
-            "-Wl,-w".to_string(),
         ];
         args.append(&mut bc_files);
         let mut more_args = vec![
@@ -163,7 +161,6 @@ impl Command {
             format!("-L{}/lib", self.executable_root),
             "-lkclvm_native_shared".to_string(),
             format!("-I{}/include", self.executable_root),
-            "-Wl,-w".to_string(),
         ];
         let mut bc_files = vec![bc_path];
         args.append(&mut bc_files);
@@ -176,8 +173,6 @@ impl Command {
         args.append(&mut more_args);
 
         let output = std::process::Command::new(self.clang_path.clone())
-            .stdout(std::process::Stdio::inherit())
-            .stderr(std::process::Stdio::inherit())
             .args(&args)
             .output()
             .expect("clang failed");
