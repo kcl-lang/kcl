@@ -384,7 +384,7 @@ pub extern "C" fn kclvm_value_from_json(s: *const kclvm_char_t) -> *mut kclvm_va
         return kclvm_value_Undefined();
     }
     match ValueRef::from_json(c2str(s)) {
-        Some(x) => x.into_raw(),
+        Ok(x) => x.into_raw(),
         _ => kclvm_value_Undefined(),
     }
 }

@@ -16,7 +16,7 @@ impl ValueRef {
     pub fn from_yaml(s: &str) -> Option<Self> {
         let json_value: serde_json::Value = serde_yaml::from_str(s).unwrap();
         match serde_json::to_string(&json_value) {
-            Ok(s) => Self::from_json(s.as_ref()),
+            Ok(s) => Some(Self::from_json(s.as_ref()).unwrap()),
             _ => None,
         }
     }

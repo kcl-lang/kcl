@@ -6,7 +6,7 @@ use crate::*;
 
 impl Context {
     pub fn builtin_option_init(&mut self, key: &str, value: &str) {
-        if let Some(x) = ValueRef::from_json(value) {
+        if let Ok(x) = ValueRef::from_json(value) {
             self.app_args.insert(key.to_string(), x.into_raw() as u64);
             return;
         }

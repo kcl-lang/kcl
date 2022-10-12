@@ -50,8 +50,9 @@ pub extern "C" fn kclvm_json_decode(
     let args = ptr_as_ref(args);
 
     if let Some(arg0) = args.arg_i(0) {
-        if let Some(x) = ValueRef::from_json(arg0.as_str().as_ref()) {
-            return x.into_raw();
+        match ValueRef::from_json(arg0.as_str().as_ref()) {
+            Ok(x) => return x.into_raw(),
+            Err(err) => panic!("{}", err),
         }
     }
     panic!("decode() missing 1 required positional argument: 'value'")
