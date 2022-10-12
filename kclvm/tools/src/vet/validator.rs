@@ -1,5 +1,7 @@
 //! KCL-Vet can use KCL to validate the content of json or yaml files.
 //!
+//! The entry point of KCL-Vet is method `validate`, for more information, see doc above method `validate`.
+//!
 //! The main principle consists of three parts:
 //!
 //! - Validation rules for validating file contents are defined in KCL statment.
@@ -36,7 +38,7 @@
 //!
 //! 3. The json file mentioned in 1 will generate the following kcl expression:
 //!
-//! ```
+//! ```ignore
 //! value = User {
 //!     name: "Alice",
 //!     age: 18,
@@ -46,7 +48,7 @@
 //!
 //! 4. Finally, a KCL program like the following will be handed over to KCLVM to compile and check for problems.
 //!
-//! ```
+//! ```ignore
 //! value = User {
 //!     name: "Alice",
 //!     age: 18,
@@ -143,7 +145,6 @@ const TMP_FILE: &str = "validationTempKCLCode.k";
 /// ```
 ///
 /// The json file used above conforms to the schema rules, so the content of `result` you get is :
-///
 /// ```ignore
 /// {
 /// "value": {
@@ -159,7 +160,6 @@ const TMP_FILE: &str = "validationTempKCLCode.k";
 /// ```
 ///
 /// If you change the content of the above json file to :
-///
 /// ```ignore
 /// {
 ///     "name": "Tom",
@@ -169,7 +169,6 @@ const TMP_FILE: &str = "validationTempKCLCode.k";
 /// ```
 ///
 /// You will get an error message like this:
-///
 /// ```ignore
 /// {
 ///     "__kcl_PanicInfo__": true,

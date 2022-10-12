@@ -58,12 +58,10 @@ mod test_expr_builder {
                 construct_full_path, FILE_EXTENSIONS, INVALID_FILE_RESULT, LOADER_KIND,
                 NO_SCHEMA_NAME_PATH, SCHEMA_NAMES, TEST_CASES,
             },
-            validator::validate,
         },
     };
     use std::{
         fs::{self, File},
-        io::Read,
         panic,
     };
 
@@ -85,7 +83,6 @@ mod test_expr_builder {
                 FILE_EXTENSIONS[0], NO_SCHEMA_NAME_PATH, test_name, FILE_EXTENSIONS[2]
             ))
             .unwrap();
-            println!("{:?}", expect_file_path);
             let f = File::open(expect_file_path.clone()).unwrap();
             let expect_ast_json: serde_json::Value = serde_json::from_reader(f).unwrap();
             assert_eq!(expect_ast_json, got_ast_json)
@@ -111,10 +108,8 @@ mod test_expr_builder {
             ))
             .unwrap();
             let f = File::open(expect_file_path.clone()).unwrap();
-            println!("{:?}", expect_file_path);
             let expect_ast_yaml: serde_yaml::Value = serde_yaml::from_reader(f).unwrap();
             if expect_ast_yaml != got_ast_yaml {
-                println!("{:?}", expect_file_path);
                 serde_yaml::to_writer(std::io::stdout(), &got_ast_yaml).unwrap();
             }
             assert_eq!(expect_ast_yaml, got_ast_yaml)
@@ -314,7 +309,7 @@ mod test_expr_builder {
 mod test_validater {
     use std::{fs, panic};
 
-    use crate::vet::validator::validate;
+    use crate::{util::loader::LoaderKind, vet::validator::validate};
 
     use super::{construct_full_path, LOADER_KIND};
 
@@ -325,9 +320,10 @@ mod test_validater {
     #[test]
     fn test_validator() {
         test_validate();
-        println!("{}", "test_validate PASS");
         test_invalid_validate();
-        println!("{}", "test_invalid_validate PASS");
+        test_validate_with_invalid_kcl_path();
+        test_validate_with_invalid_file_path();
+        test_validate_with_invalid_file_type();
     }
 
     fn test_validate() {
@@ -418,5 +414,60 @@ mod test_validater {
             }
         }
     }
+
+    fn test_validate_with_invalid_kcl_path() {
+        assert_eq!(validate(
+                        None,
+                        "value",
+                        "The validated file path is invalid".to_string(),
+                        LoaderKind::JSON,
+                        None,
+                        None,
+                    ),
+                "Failed to load KCL file 'validationTempKCLCode.k'. Because 'No such file or directory (os error 2)'");
+    }
+
+    fn test_validate_with_invalid_file_path() {
+        let kcl_code = fs::read_to_string(
+            construct_full_path(&format!("{}/{}", "validate_cases", "test.k")).unwrap(),
+        )
+        .expect("Something went wrong reading the file");
+
+        assert_eq!(
+            validate(
+                None,
+                "value",
+                "The validated file path is invalid".to_string(),
+                LoaderKind::JSON,
+                None,
+                Some(kcl_code),
+            ),
+            "Failed to load validated file."
+        );
+    }
+
+    fn test_validate_with_invalid_file_type() {
+        let kcl_code = fs::read_to_string(
+            construct_full_path(&format!("{}/{}", "validate_cases", "test.k")).unwrap(),
+        )
+        .expect("Something went wrong reading the file");
+
+        let validated_file_path = construct_full_path(&format!(
+            "{}/{}",
+            "validate_cases", "test.k.yaml"
+        ))
+        .unwrap();
+
+        assert_eq!(
+            validate(
+                None,
+                "value",
+                validated_file_path,
+                LoaderKind::JSON,
+                None,
+                Some(kcl_code),
+            ),
+            "Failed to load validated file."
+        );
+    }
 }
-// 注释 + benchmark
