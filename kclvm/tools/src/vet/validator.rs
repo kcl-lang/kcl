@@ -80,8 +80,7 @@ use kclvm_runner::{execute, ExecProgramArgs};
 const TMP_FILE: &str = "validationTempKCLCode.k";
 
 /// Validate the data string using the schema code string, when the parameter
-/// `schema` is omitted, use the first schema appeared in the kcl code, when the schema
-/// not found, raise an schema not found error.
+/// `schema` is omitted, use the first schema appeared in the kcl code.
 ///
 /// Returns a string result denoting whether validating success, raise an error
 /// when validating failed because of the file not found error, schema not found
