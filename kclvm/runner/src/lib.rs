@@ -103,11 +103,6 @@ pub fn exec_program(
         }
     };
     let kcl_val = ValueRef::from_json(&json_result).unwrap();
-    if let Some(val) = kcl_val.get_by_key("__kcl_PanicInfo__") {
-        if val.is_truthy() {
-            return Err(json_result);
-        }
-    }
     let (json_result, yaml_result) = kcl_val.plan();
     result.json_result = json_result;
     if !args.disable_yaml_result {
