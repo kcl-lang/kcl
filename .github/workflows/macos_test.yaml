@@ -2,8 +2,8 @@ name: build-and-test-macos
 on: ["push", "pull_request"]
 jobs:
   build-and-test:
-    # Ref: https://github.com/actions/virtual-environments/blob/main/images/macos/macos-11-Readme.md
-    runs-on: macos-11
+    # Ref: https://github.com/actions/virtual-environments/blob/main/images/macos/macos-12-Readme.md
+    runs-on: macos-12
     steps:
       - name: Git checkout
         uses: actions/checkout@v2
