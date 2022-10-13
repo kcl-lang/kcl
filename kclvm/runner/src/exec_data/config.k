@@ -14,5 +14,4 @@ schema Config:
 config = Config {
     data = [1]
     data += [2]
-    env[0]: {key2: 2}
 }
