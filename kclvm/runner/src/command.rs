@@ -53,8 +53,6 @@ impl Command {
         args.append(&mut more_args);
 
         std::process::Command::new(self.clang_path.clone())
-            .stdout(std::process::Stdio::inherit())
-            .stderr(std::process::Stdio::inherit())
             .args(&args)
             .output()
             .expect("clang failed");
@@ -121,8 +119,6 @@ impl Command {
         args.append(&mut more_args);
 
         std::process::Command::new(self.clang_path.clone())
-            .stdout(std::process::Stdio::inherit())
-            .stderr(std::process::Stdio::inherit())
             .args(&args)
             .output()
             .expect("clang failed");
