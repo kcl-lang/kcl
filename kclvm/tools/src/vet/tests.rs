@@ -452,11 +452,8 @@ mod test_validater {
         )
         .expect("Something went wrong reading the file");
 
-        let validated_file_path = construct_full_path(&format!(
-            "{}/{}",
-            "validate_cases", "test.k.yaml"
-        ))
-        .unwrap();
+        let validated_file_path =
+            construct_full_path(&format!("{}/{}", "validate_cases", "test.k.yaml")).unwrap();
 
         assert_eq!(
             validate(
