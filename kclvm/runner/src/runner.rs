@@ -268,7 +268,9 @@ impl KclvmRunner {
 fn wrap_msg_in_result(msg: &str) -> Result<String, String> {
     let kcl_val = match ValueRef::from_json(&msg) {
         Ok(msg) => msg,
-        Err(err) => {return Err(err.to_string());},
+        Err(err) => {
+            return Err(err.to_string());
+        }
     };
     if let Some(val) = kcl_val.get_by_key("__kcl_PanicInfo__") {
         if val.is_truthy() {
