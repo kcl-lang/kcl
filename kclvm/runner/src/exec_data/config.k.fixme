@@ -1,3 +1,4 @@
+# TOFIX(zong-zhe): issue https://github.com/KusionStack/KCLVM/issues/241
 data = {
     key1: [0]
     key1 += [1]
@@ -14,4 +15,5 @@ schema Config:
 config = Config {
     data = [1]
     data += [2]
+    env[0]: {key2: 2}
 }
