@@ -73,9 +73,9 @@ use kclvm_ast::{
     ast::{
         AssignStmt, Expr, ExprContext, Identifier, Module, Node, NodeRef, Program, SchemaStmt, Stmt,
     },
-    node_ref,
+    node_ref, MAIN_PKG,
 };
-use kclvm_runner::{execute, ExecProgramArgs};
+use kclvm_runner::{exec_program, execute, ExecProgramArgs};
 
 const TMP_FILE: &str = "validationTempKCLCode.k";
 
@@ -195,7 +195,7 @@ pub fn validate(
     validated_file_kind: LoaderKind,
     kcl_path: Option<&str>,
     kcl_code: Option<String>,
-) -> String {
+) -> Result<bool, String> {
     let k_path = match kcl_path {
         Some(path) => path,
         None => TMP_FILE,
@@ -203,7 +203,7 @@ pub fn validate(
 
     let mut module: Module = match kclvm_parser::parse_file(&k_path, kcl_code) {
         Ok(ast_m) => ast_m,
-        Err(err_msg) => return err_msg,
+        Err(err_msg) => return Err(err_msg),
     };
 
     let schemas = filter_schema_stmt(&module);
@@ -218,12 +218,12 @@ pub fn validate(
     let expr_builder =
         match ExprBuilder::new_with_file_path(validated_file_kind, validated_file_path) {
             Ok(builder) => builder,
-            Err(_) => return "Failed to load validated file.".to_string(),
+            Err(_) => return Err("Failed to load validated file.".to_string()),
         };
 
     let validated_expr = match expr_builder.build(schema_name) {
         Ok(expr) => expr,
-        Err(_) => return "Failed to load validated file.".to_string(),
+        Err(_) => return Err("Failed to load validated file.".to_string()),
     };
 
     let assign_stmt = build_assign(attribute_name, validated_expr);
@@ -231,8 +231,11 @@ pub fn validate(
     module.body.insert(0, assign_stmt);
 
     match eval_ast(module) {
-        Ok(res) => res,
-        Err(err) => err,
+        Ok(res) => {
+            println!("This is res - {}", res);
+            Ok(true)
+        },
+        Err(err) => Err(err),
     }
 }
 
@@ -249,17 +252,15 @@ fn build_assign(attr_name: &str, node: NodeRef<Expr>) -> NodeRef<Stmt> {
     }))
 }
 
-const MAIN_PKG_NAME: &str = "__main__";
-
 fn eval_ast(mut m: Module) -> Result<String, String> {
-    m.pkg = MAIN_PKG_NAME.to_string();
+    m.pkg = MAIN_PKG.to_string();
 
     let mut pkgs = HashMap::new();
-    pkgs.insert(MAIN_PKG_NAME.to_string(), vec![m]);
+    pkgs.insert(MAIN_PKG.to_string(), vec![m]);
 
     let prog = Program {
-        root: MAIN_PKG_NAME.to_string(),
-        main: MAIN_PKG_NAME.to_string(),
+        root: MAIN_PKG.to_string(),
+        main: MAIN_PKG.to_string(),
         pkgs,
         cmd_args: vec![],
         cmd_overrides: vec![],
