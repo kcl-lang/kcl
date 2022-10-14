@@ -8,12 +8,12 @@ const (
 The commands are:
         add     add dependencies pkg
         del    del  dependencies pkg
-        download    download modules to local cache
-        graph       print module requirement graph
+        download    download dependencies pkg to local cache and link to workspace
+        graph       print dependencies pkg requirement graph
         init        initialize new module in current directory
-        store       全局存储管理
-        publish       推送包
-        search       搜索包
+        store       Reads and performs actions on kpm store that is on the current filesystem
+        publish     publish dependencies pkg
+        search      search  dependencies pkg
 `
 	CliNotFound  = `unknown command`
 	CliStoreHelp = `Usage: kpm store <command>
