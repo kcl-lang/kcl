@@ -309,7 +309,10 @@ mod test_expr_builder {
 mod test_validater {
     use std::{fs, panic};
 
-    use crate::{util::loader::LoaderKind, vet::validator::validate};
+    use crate::{
+        util::loader::LoaderKind,
+        vet::validator::{validate, ValidateOption},
+    };
 
     use super::{construct_full_path, LOADER_KIND};
 
@@ -317,160 +320,49 @@ mod test_validater {
         &["test.k", "simple.k", "list.k", "plain_value.k", "complex.k"];
     const VALIDATED_FILE_TYPE: &'static [&'static str] = &["json", "yaml"];
 
+    // #[test]
+    // fn test_validator() {
+    //     // test_validate();
+    //     // test_invalid_validate();
+    //     // test_validate_with_invalid_kcl_path();
+    //     // test_validate_with_invalid_file_path();
+    //     // test_validate_with_invalid_file_type();
+    // }
+
     #[test]
-    fn test_validator() {
-        // test_validate();
-        // test_invalid_validate();
-        // test_validate_with_invalid_kcl_path();
-        // test_validate_with_invalid_file_path();
-        // test_validate_with_invalid_file_type();
+    fn test_validate() {
+        for (i, file_suffix) in VALIDATED_FILE_TYPE.iter().enumerate() {
+            for case in KCL_TEST_CASES {
+                let validated_file_path =
+                    construct_full_path(&format!("{}/{}.{}", "validate_cases", case, file_suffix))
+                        .unwrap();
+
+                let kcl_file_path =
+                    construct_full_path(&format!("{}/{}", "validate_cases", case)).unwrap();
+
+                let opt = ValidateOption::new(
+                    None,
+                    "value".to_string(),
+                    validated_file_path.clone(),
+                    *LOADER_KIND[i],
+                    Some(kcl_file_path.to_string()),
+                    None,
+                );
+
+                match validate(opt) {
+                    Ok(res) => assert!(res),
+                    Err(_) => panic!("Unreachable"),
+                }
+            }
+        }
     }
 
-    // fn test_validate() {
-    //     for (i, file_suffix) in VALIDATED_FILE_TYPE.iter().enumerate() {
-    //         for case in KCL_TEST_CASES {
-    //             let validated_file_path =
-    //                 construct_full_path(&format!("{}/{}.{}", "validate_cases", case, file_suffix))
-    //                     .unwrap();
-
-    //             let kcl_file_path =
-    //                 construct_full_path(&format!("{}/{}", "validate_cases", case)).unwrap();
-
-    //             let expected_result = fs::read_to_string(
-    //                 construct_full_path(&format!(
-    //                     "{}/{}.{}",
-    //                     "validate_cases", case, "stdout.json"
-    //                 ))
-    //                 .unwrap(),
-    //             )
-    //             .expect("Something went wrong reading the file");
-
-    //             let got_result = validate(
-    //                 None,
-    //                 "value",
-    //                 validated_file_path.clone(),
-    //                 *LOADER_KIND[i],
-    //                 Some(&kcl_file_path.to_string()),
-    //                 None,
-    //             );
-    //             let got: serde_json::Value = serde_json::from_str(&got_result).unwrap();
-    //             let expect: serde_json::Value = serde_json::from_str(&expected_result).unwrap();
-    //             assert_eq!(got, expect);
-    //         }
-    //     }
-    // }
-
-    // fn test_invalid_validate() {
-    //     panic::set_hook(Box::new(|_| {}));
-
-    //     for (i, file_suffix) in VALIDATED_FILE_TYPE.iter().enumerate() {
-    //         for case in KCL_TEST_CASES {
-    //             let validated_file_path = construct_full_path(&format!(
-    //                 "{}/{}.{}",
-    //                 "invalid_validate_cases", case, file_suffix
-    //             ))
-    //             .unwrap();
-
-    //             let kcl_code = fs::read_to_string(
-    //                 construct_full_path(&format!("{}/{}", "invalid_validate_cases", case)).unwrap(),
-    //             )
-    //             .expect("Something went wrong reading the file");
-
-    //             let expected_err_msg = fs::read_to_string(
-    //                 construct_full_path(&format!(
-    //                     "{}/{}.{}",
-    //                     "invalid_validate_cases", case, "stderr.json"
-    //                 ))
-    //                 .unwrap(),
-    //             )
-    //             .expect("Something went wrong reading the file");
-
-    //             let result = panic::catch_unwind(|| {
-    //                 validate(
-    //                     None,
-    //                     "value",
-    //                     validated_file_path.clone(),
-    //                     *LOADER_KIND[i],
-    //                     None,
-    //                     Some(kcl_code),
-    //                 )
-    //             });
-
-    //             let expect: serde_json::Value = serde_json::from_str(&expected_err_msg).unwrap();
-    //             match result {
-    //                 Ok(result) => {
-    //                     let got: serde_json::Value = serde_json::from_str(&result).unwrap();
-    //                     assert_eq!(got, expect);
-    //                 }
-    //                 Err(panic_err) => {
-    //                     if let Some(result) = panic_err.downcast_ref::<String>() {
-    //                         let got: serde_json::Value = serde_json::from_str(&result).unwrap();
-    //                         assert_eq!(got, expect);
-    //                     } else {
-    //                         panic!("Unreachable.")
-    //                     };
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
-
-    // fn test_validate_with_invalid_kcl_path() {
-    //     assert_eq!(validate(
-    //                     None,
-    //                     "value",
-    //                     "The validated file path is invalid".to_string(),
-    //                     LoaderKind::JSON,
-    //                     None,
-    //                     None,
-    //                 ),
-    //             "Failed to load KCL file 'validationTempKCLCode.k'. Because 'No such file or directory (os error 2)'");
-    // }
-
-    // fn test_validate_with_invalid_file_path() {
-    //     let kcl_code = fs::read_to_string(
-    //         construct_full_path(&format!("{}/{}", "validate_cases", "test.k")).unwrap(),
-    //     )
-    //     .expect("Something went wrong reading the file");
-
-    //     assert_eq!(
-    //         validate(
-    //             None,
-    //             "value",
-    //             "The validated file path is invalid".to_string(),
-    //             LoaderKind::JSON,
-    //             None,
-    //             Some(kcl_code),
-    //         ),
-    //         "Failed to load validated file."
-    //     );
-    // }
-
-    // fn test_validate_with_invalid_file_type() {
-    //     let kcl_code = fs::read_to_string(
-    //         construct_full_path(&format!("{}/{}", "validate_cases", "test.k")).unwrap(),
-    //     )
-    //     .expect("Something went wrong reading the file");
-
-    //     let validated_file_path =
-    //         construct_full_path(&format!("{}/{}", "validate_cases", "test.k.yaml")).unwrap();
-
-    //     assert_eq!(
-    //         validate(
-    //             None,
-    //             "value",
-    //             validated_file_path,
-    //             LoaderKind::JSON,
-    //             None,
-    //             Some(kcl_code),
-    //         ),
-    //         "Failed to load validated file."
-    //     );
-    // }
-
     #[test]
-    fn test_invalid() {
-        panic::set_hook(Box::new(|_| {}));
+    fn test_invalid_validate() {
+        let prev_hook = std::panic::take_hook();
+        // disable print panic info
+        std::panic::set_hook(Box::new(|_| {}));
+
         for (i, file_suffix) in VALIDATED_FILE_TYPE.iter().enumerate() {
             for case in KCL_TEST_CASES {
                 let validated_file_path = construct_full_path(&format!(
@@ -493,25 +385,28 @@ mod test_validater {
                 )
                 .expect("Something went wrong reading the file");
 
-                let result = panic::catch_unwind(|| {
-                    validate(
-                        None,
-                        "value",
-                        validated_file_path.clone(),
-                        *LOADER_KIND[i],
-                        None,
-                        Some(kcl_code),
-                    )
-                });
+                let opt = ValidateOption::new(
+                    None,
+                    "value".to_string(),
+                    validated_file_path.clone(),
+                    *LOADER_KIND[i],
+                    None,
+                    Some(kcl_code),
+                );
+
+                let result = panic::catch_unwind(|| validate(opt));
 
                 let expect: serde_json::Value = serde_json::from_str(&expected_err_msg).unwrap();
                 match result {
-                    Ok(result) => {
-                        match result {
-                            Ok(res) => println!("PASS"),
-                            Err(err) => println!("Failed"),
+                    Ok(result) => match result {
+                        Ok(_) => {
+                            panic!("Unreachable.")
                         }
-                    }
+                        Err(err) => {
+                            let got: serde_json::Value = serde_json::from_str(&err).unwrap();
+                            assert_eq!(got, expect);
+                        }
+                    },
                     Err(panic_err) => {
                         if let Some(result) = panic_err.downcast_ref::<String>() {
                             let got: serde_json::Value = serde_json::from_str(&result).unwrap();
@@ -521,6 +416,84 @@ mod test_validater {
                         };
                     }
                 }
+            }
+        }
+        std::panic::set_hook(prev_hook);
+    }
+
+    #[test]
+    fn test_validate_with_invalid_kcl_path() {
+        let opt = ValidateOption::new(
+            None,
+            "value".to_string(),
+            "The validated file path is invalid".to_string(),
+            LoaderKind::JSON,
+            None,
+            None,
+        );
+
+        match validate(opt) {
+            Ok(_) => {
+                panic!("unreachable")
+            }
+            Err(err) => {
+                assert_eq!(err,
+                "Failed to load KCL file 'validationTempKCLCode.k'. Because 'No such file or directory (os error 2)'")
+            }
+        }
+    }
+
+    #[test]
+    fn test_validate_with_invalid_file_path() {
+        let kcl_code = fs::read_to_string(
+            construct_full_path(&format!("{}/{}", "validate_cases", "test.k")).unwrap(),
+        )
+        .expect("Something went wrong reading the file");
+
+        let opt = ValidateOption::new(
+            None,
+            "value".to_string(),
+            "The validated file path is invalid".to_string(),
+            LoaderKind::JSON,
+            None,
+            Some(kcl_code),
+        );
+
+        match validate(opt) {
+            Ok(_) => {
+                panic!("unreachable")
+            }
+            Err(err) => {
+                assert_eq!(err, "Failed to load validated file.")
+            }
+        }
+    }
+
+    #[test]
+    fn test_validate_with_invalid_file_type() {
+        let kcl_code = fs::read_to_string(
+            construct_full_path(&format!("{}/{}", "validate_cases", "test.k")).unwrap(),
+        )
+        .expect("Something went wrong reading the file");
+
+        let validated_file_path =
+            construct_full_path(&format!("{}/{}", "validate_cases", "test.k.yaml")).unwrap();
+
+        let opt = ValidateOption::new(
+            None,
+            "value".to_string(),
+            validated_file_path,
+            LoaderKind::JSON,
+            None,
+            Some(kcl_code),
+        );
+
+        match validate(opt) {
+            Ok(_) => {
+                panic!("unreachable")
+            }
+            Err(err) => {
+                assert_eq!(err, "Failed to load validated file.")
             }
         }
     }

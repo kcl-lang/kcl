@@ -64,25 +64,20 @@
 //!         name == "Alice"
 //!         age > 10
 //! ```
-use std::collections::HashMap;
-
-use crate::util::loader::LoaderKind;
-
 use super::expr_builder::ExprBuilder;
+use crate::util::loader::LoaderKind;
 use kclvm_ast::{
-    ast::{
-        AssignStmt, Expr, ExprContext, Identifier, Module, Node, NodeRef, Program, SchemaStmt, Stmt,
-    },
-    node_ref, MAIN_PKG,
+    ast::{AssignStmt, Expr, ExprContext, Identifier, Module, Node, NodeRef, SchemaStmt, Stmt},
+    node_ref,
 };
-use kclvm_runner::{exec_program, execute, ExecProgramArgs};
+use kclvm_runner::execute_module;
 
 const TMP_FILE: &str = "validationTempKCLCode.k";
 
 /// Validate the data string using the schema code string, when the parameter
 /// `schema` is omitted, use the first schema appeared in the kcl code.
 ///
-/// Returns a string result denoting whether validating success, raise an error
+/// Returns a bool result denoting whether validating success, raise an error
 /// when validating failed because of the file not found error, schema not found
 /// error, syntax error, check error, etc.
 ///
@@ -144,18 +139,6 @@ const TMP_FILE: &str = "validationTempKCLCode.k";
 /// ```
 ///
 /// The json file used above conforms to the schema rules, so the content of `result` you get is :
-/// ```ignore
-/// {
-/// "value": {
-///     "name": "Alice",
-///     "age": 18,
-///     "message": "This is Alice",
-///         "__settings__": {
-///             "output_type": "INLINE",
-///             "__schema_type__": "__main__.User"
-///         }
-///     }
-/// }
 /// ```
 ///
 /// If you change the content of the above json file to :
@@ -188,26 +171,19 @@ const TMP_FILE: &str = "validationTempKCLCode.k";
 ///     "is_warning": false
 /// }
 /// ```
-pub fn validate(
-    schema_name: Option<String>,
-    attribute_name: &str,
-    validated_file_path: String,
-    validated_file_kind: LoaderKind,
-    kcl_path: Option<&str>,
-    kcl_code: Option<String>,
-) -> Result<bool, String> {
-    let k_path = match kcl_path {
+pub fn validate(val_opt: ValidateOption) -> Result<bool, String> {
+    let k_path = match val_opt.kcl_path {
         Some(path) => path,
-        None => TMP_FILE,
+        None => TMP_FILE.to_string(),
     };
 
-    let mut module: Module = match kclvm_parser::parse_file(&k_path, kcl_code) {
+    let mut module: Module = match kclvm_parser::parse_file(&k_path, val_opt.kcl_code) {
         Ok(ast_m) => ast_m,
         Err(err_msg) => return Err(err_msg),
     };
 
     let schemas = filter_schema_stmt(&module);
-    let schema_name = match schema_name {
+    let schema_name = match val_opt.schema_name {
         Some(name) => Some(name),
         None => match schemas.get(0) {
             Some(schema) => Some(schema.name.node.clone()),
@@ -215,26 +191,25 @@ pub fn validate(
         },
     };
 
-    let expr_builder =
-        match ExprBuilder::new_with_file_path(validated_file_kind, validated_file_path) {
-            Ok(builder) => builder,
-            Err(_) => return Err("Failed to load validated file.".to_string()),
-        };
+    let expr_builder = match ExprBuilder::new_with_file_path(
+        val_opt.validated_file_kind,
+        val_opt.validated_file_path,
+    ) {
+        Ok(builder) => builder,
+        Err(_) => return Err("Failed to load validated file.".to_string()),
+    };
 
     let validated_expr = match expr_builder.build(schema_name) {
         Ok(expr) => expr,
         Err(_) => return Err("Failed to load validated file.".to_string()),
     };
 
-    let assign_stmt = build_assign(attribute_name, validated_expr);
+    let assign_stmt = build_assign(&val_opt.attribute_name, validated_expr);
 
     module.body.insert(0, assign_stmt);
 
-    match eval_ast(module) {
-        Ok(res) => {
-            println!("This is res - {}", res);
-            Ok(true)
-        },
+    match execute_module(module) {
+        Ok(_) => Ok(true),
         Err(err) => Err(err),
     }
 }
@@ -252,23 +227,6 @@ fn build_assign(attr_name: &str, node: NodeRef<Expr>) -> NodeRef<Stmt> {
     }))
 }
 
-fn eval_ast(mut m: Module) -> Result<String, String> {
-    m.pkg = MAIN_PKG.to_string();
-
-    let mut pkgs = HashMap::new();
-    pkgs.insert(MAIN_PKG.to_string(), vec![m]);
-
-    let prog = Program {
-        root: MAIN_PKG.to_string(),
-        main: MAIN_PKG.to_string(),
-        pkgs,
-        cmd_args: vec![],
-        cmd_overrides: vec![],
-    };
-
-    execute(prog, 0, &ExecProgramArgs::default())
-}
-
 fn filter_schema_stmt(module: &Module) -> Vec<&SchemaStmt> {
     let mut result = vec![];
     for stmt in &module.body {
@@ -277,4 +235,33 @@ fn filter_schema_stmt(module: &Module) -> Vec<&SchemaStmt> {
         }
     }
     result
+}
+
+pub struct ValidateOption {
+    schema_name: Option<String>,
+    attribute_name: String,
+    validated_file_path: String,
+    validated_file_kind: LoaderKind,
+    kcl_path: Option<String>,
+    kcl_code: Option<String>,
+}
+
+impl ValidateOption {
+    pub fn new(
+        schema_name: Option<String>,
+        attribute_name: String,
+        validated_file_path: String,
+        validated_file_kind: LoaderKind,
+        kcl_path: Option<String>,
+        kcl_code: Option<String>,
+    ) -> Self {
+        Self {
+            schema_name,
+            attribute_name,
+            validated_file_path,
+            validated_file_kind,
+            kcl_path,
+            kcl_code,
+        }
+    }
 }
