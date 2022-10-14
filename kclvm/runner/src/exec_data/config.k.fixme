@@ -1,3 +1,4 @@
+# TOFIX(zong-zhe): issue https://github.com/KusionStack/KCLVM/issues/241
 data = {
     key1: [0]
     key1 += [1]

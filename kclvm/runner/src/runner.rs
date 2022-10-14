@@ -1,3 +1,4 @@
+use kclvm::ValueRef;
 use kclvm_ast::ast;
 use kclvm_config::settings::SettingsFile;
 use serde::{Deserialize, Serialize};
@@ -255,11 +256,26 @@ impl KclvmRunner {
         if n > 0 {
             let return_len = n;
             let s = std::str::from_utf8(&result[0..return_len as usize]).unwrap();
-            Ok(s.to_string())
+            wrap_msg_in_result(s)
         } else {
             let return_len = 0 - n;
             let s = std::str::from_utf8(&warn_data[0..return_len as usize]).unwrap();
             Err(s.to_string())
         }
     }
+}
+
+fn wrap_msg_in_result(msg: &str) -> Result<String, String> {
+    let kcl_val = match ValueRef::from_json(&msg) {
+        Ok(msg) => msg,
+        Err(err) => {
+            return Err(err.to_string());
+        }
+    };
+    if let Some(val) = kcl_val.get_by_key("__kcl_PanicInfo__") {
+        if val.is_truthy() {
+            return Err(msg.to_string());
+        }
+    }
+    Ok(msg.to_string())
 }
