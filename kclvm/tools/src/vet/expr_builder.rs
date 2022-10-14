@@ -134,8 +134,9 @@ impl ExprGenerator<serde_yaml::Value> for ExprBuilder {
                 let mut config_entries: Vec<NodeRef<ConfigEntry>> = Vec::new();
 
                 for (k, v) in j_map.iter() {
+                    // The configuration builder already in the schema no longer needs a schema name
                     let k = self
-                        .generate(k, schema_name)
+                        .generate(k, &None)
                         .with_context(|| format!("Failed to Load Validated File"))?;
                     let v = self
                         .generate(v, &None)

@@ -1,9 +1,12 @@
-use std::{path::Path, time::SystemTime};
+use std::{collections::HashMap, path::Path, time::SystemTime};
 
 use assembler::KclvmLibAssembler;
 use command::Command;
 use kclvm::ValueRef;
-use kclvm_ast::ast::Program;
+use kclvm_ast::{
+    ast::{Module, Program},
+    MAIN_PKG,
+};
 use kclvm_parser::load_program;
 use kclvm_query::apply_overrides;
 use kclvm_sema::resolver::resolve_program;
@@ -198,6 +201,27 @@ pub fn execute(
     remove_file(&lib_path);
     clean_tmp_files(&temp_entry_file, &lib_suffix);
     result
+}
+
+/// `execute_module` can directly execute the ast `Module`.
+/// `execute_module` constructs `Program` with default pkg name `MAIN_PKG`,
+/// and calls method `execute` with default `plugin_agent` and `ExecProgramArgs`.
+/// For more information, see doc above method `execute`.
+pub fn execute_module(mut m: Module) -> Result<String, String> {
+    m.pkg = MAIN_PKG.to_string();
+
+    let mut pkgs = HashMap::new();
+    pkgs.insert(MAIN_PKG.to_string(), vec![m]);
+
+    let prog = Program {
+        root: MAIN_PKG.to_string(),
+        main: MAIN_PKG.to_string(),
+        pkgs,
+        cmd_args: vec![],
+        cmd_overrides: vec![],
+    };
+
+    execute(prog, 0, &ExecProgramArgs::default())
 }
 
 /// Clean all the tmp files generated during lib generating and linking.
