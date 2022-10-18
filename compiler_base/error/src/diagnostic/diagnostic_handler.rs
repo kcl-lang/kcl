@@ -16,7 +16,10 @@ use crate::{
 use anyhow::{bail, Context, Result};
 use compiler_base_span::fatal_error::FatalError;
 use fluent::FluentArgs;
-use std::{sync::{Arc, Mutex}, path::PathBuf};
+use std::{
+    path::PathBuf,
+    sync::{Arc, Mutex},
+};
 
 // Default template resource file path.
 const DEFAULT_TEMPLATE_RESOURCE: &str = "src/diagnostic/locales/en-US/";
@@ -99,10 +102,7 @@ impl DiagnosticHandler {
         let mut cargo_file_path = PathBuf::from(DIAGNOSTIC_MESSAGES_ROOT);
         cargo_file_path.push(DEFAULT_TEMPLATE_RESOURCE);
         let abs_path = cargo_file_path.to_str().with_context(|| {
-            format!(
-                "No such file or directory '{}'",
-                DEFAULT_TEMPLATE_RESOURCE
-            )
+            format!("No such file or directory '{}'", DEFAULT_TEMPLATE_RESOURCE)
         })?;
 
         DiagnosticHandler::new_with_template_dir(abs_path).with_context(|| {
@@ -170,11 +170,11 @@ impl DiagnosticHandler {
     /// diag_handler.add_err_diagnostic(diag_1);
     /// assert_eq!(diag_handler.diagnostics_count().unwrap(), 1);
     /// ```
-    pub fn add_err_diagnostic(&self, diag: Diagnostic<DiagnosticStyle>) -> Result<()> {
+    pub fn add_err_diagnostic(&self, diag: Diagnostic<DiagnosticStyle>) -> Result<&Self> {
         match self.handler_inner.lock() {
             Ok(mut inner) => {
                 inner.add_err_diagnostic(diag);
-                Ok(())
+                Ok(self)
             }
             Err(_) => bail!("Add Error Diagnostic Failed."),
         }
@@ -199,11 +199,11 @@ impl DiagnosticHandler {
     /// diag_handler.add_warn_diagnostic(diag_1);
     /// assert_eq!(diag_handler.diagnostics_count().unwrap(), 1);
     /// ```
-    pub fn add_warn_diagnostic(&self, diag: Diagnostic<DiagnosticStyle>) -> Result<()> {
+    pub fn add_warn_diagnostic(&self, diag: Diagnostic<DiagnosticStyle>) -> Result<&Self> {
         match self.handler_inner.lock() {
             Ok(mut inner) => {
                 inner.add_warn_diagnostic(diag);
-                Ok(())
+                Ok(self)
             }
             Err(_) => bail!("Add Warn Diagnostic Failed."),
         }
@@ -247,13 +247,13 @@ impl DiagnosticHandler {
     /// diag_handler.emit_error_diagnostic(diag_1);
     /// assert_eq!(diag_handler.has_errors().unwrap(), true);
     /// ```
-    pub fn emit_error_diagnostic(&self, diag: Diagnostic<DiagnosticStyle>) -> Result<()> {
+    pub fn emit_error_diagnostic(&self, diag: Diagnostic<DiagnosticStyle>) -> Result<&Self> {
         match self.handler_inner.lock() {
             Ok(mut inner) => {
                 inner
                     .emit_error_diagnostic(diag)
                     .with_context(|| ("Emit Error Diagnostics Failed."))?;
-                Ok(())
+                Ok(self)
             }
             Err(_) => bail!("Emit Error Diagnostics Failed."),
         }
@@ -274,13 +274,13 @@ impl DiagnosticHandler {
     /// diag_handler.emit_warn_diagnostic(diag_1);
     /// assert_eq!(diag_handler.has_warns().unwrap(), true);
     /// ```
-    pub fn emit_warn_diagnostic(&self, diag: Diagnostic<DiagnosticStyle>) -> Result<()> {
+    pub fn emit_warn_diagnostic(&self, diag: Diagnostic<DiagnosticStyle>) -> Result<&Self> {
         match self.handler_inner.lock() {
             Ok(mut inner) => {
                 inner
                     .emit_warn_diagnostic(diag)
                     .with_context(|| ("Emit Warn Diagnostics Failed."))?;
-                Ok(())
+                Ok(self)
             }
             Err(_) => bail!("Emit Warn Diagnostics Failed."),
         }
@@ -303,13 +303,13 @@ impl DiagnosticHandler {
     /// diag_handler.add_err_diagnostic(diag_2);
     /// diag_handler.emit_stashed_diagnostics();
     /// ```
-    pub fn emit_stashed_diagnostics(&self) -> Result<()> {
+    pub fn emit_stashed_diagnostics(&self) -> Result<&Self> {
         match self.handler_inner.lock() {
             Ok(mut inner) => {
                 inner
                     .emit_stashed_diagnostics()
                     .with_context(|| ("Emit Stashed Diagnostics Failed."))?;
-                Ok(())
+                Ok(self)
             }
             Err(_) => bail!("Emit Stashed Diagnostics Failed."),
         }
@@ -381,13 +381,13 @@ impl DiagnosticHandler {
     /// });
     /// assert!(result.is_err());
     /// ```
-    pub fn abort_if_errors(&self) -> Result<()> {
+    pub fn abort_if_errors(&self) -> Result<&Self> {
         match self.handler_inner.lock() {
             Ok(mut inner) => {
                 inner
                     .abort_if_errors()
                     .with_context(|| ("Abort If Errors Failed."))?;
-                Ok(())
+                Ok(self)
             }
             Err(_) => bail!("Abort If Errors Failed."),
         }
