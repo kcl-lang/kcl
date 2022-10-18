@@ -215,3 +215,30 @@ mod test_error_message {
         assert_eq!(msg_in_line.unwrap(), expected_msg);
     }
 }
+
+mod test_diag_handler {
+    use crate::{diagnostic_handler::DiagnosticHandler, Diagnostic, DiagnosticStyle};
+    use anyhow::{Context, Result};
+    #[test]
+    fn test_return_self() {
+        let prev_hook = std::panic::take_hook();
+        std::panic::set_hook(Box::new(|_| {}));
+        let result = std::panic::catch_unwind(|| {
+            return_self_for_test().unwrap();
+        });
+        assert!(result.is_err());
+        std::panic::set_hook(prev_hook);
+    }
+
+    fn return_self_for_test() -> Result<()> {
+        DiagnosticHandler::default()?
+            .add_err_diagnostic(Diagnostic::<DiagnosticStyle>::new())?
+            .add_warn_diagnostic(Diagnostic::<DiagnosticStyle>::new())?
+            .emit_error_diagnostic(Diagnostic::<DiagnosticStyle>::new())?
+            .emit_warn_diagnostic(Diagnostic::<DiagnosticStyle>::new())?
+            .emit_stashed_diagnostics()?
+            .abort_if_errors()
+            .with_context(|| "One of the five methods above failed")?;
+        Ok(())
+    }
+}
