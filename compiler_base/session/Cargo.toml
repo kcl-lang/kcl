@@ -15,5 +15,5 @@ categories = ["command-line-utilities"]
 
 [dependencies]
 compiler_base_span = "0.0.1"
-compiler_base_error = "0.0.2"
+compiler_base_error = "0.0.3"
 anyhow = "1.0"

@@ -111,13 +111,8 @@ impl Session {
     ///
     /// ```
     pub fn emit_err(&self, err: impl SessionDiagnostic) -> Result<bool> {
-        let diag = err
-            .into_diagnostic(self)
-            .with_context(|| "Internale Bug: Fail to display error diagnostic")?;
         self.diag_handler
-            .add_err_diagnostic(diag)
-            .with_context(|| "Internale Bug: Fail to display error diagnostic")?;
-        self.diag_handler
+            .add_err_diagnostic(err.into_diagnostic(self)?)?
             .abort_if_errors()
             .with_context(|| "Internale Bug: Fail to display error diagnostic")?;
         Ok(true)
