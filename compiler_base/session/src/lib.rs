@@ -1,7 +1,10 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use compiler_base_error::{diagnostic_handler::DiagnosticHandler, Diagnostic, DiagnosticStyle};
-use compiler_base_span::SourceMap;
-use std::sync::Arc;
+use compiler_base_span::{FilePathMapping, SourceMap};
+use std::{path::PathBuf, sync::Arc};
+
+#[cfg(test)]
+mod tests;
 
 /// Represents the data associated with a compilation
 /// session for a single crate.
@@ -26,23 +29,93 @@ impl Session {
     /// # use compiler_base_span::SourceMap;
     /// # use std::sync::Arc;
     /// # use std::fs;
-    /// 
+    ///
     /// // 1. You should create a new `SourceMap` wrapped with `Arc`.
     /// let filename = fs::canonicalize(&PathBuf::from("./src/test_datas/code_snippet")).unwrap().display().to_string();
     /// let src = std::fs::read_to_string(filename.clone()).unwrap();
     /// let sm = Arc::new(SourceMap::new(FilePathMapping::empty()));
     /// sm.new_source_file(PathBuf::from(filename.clone()).into(), src.to_string());
-    /// 
+    ///
     /// // 2. You should create a new `DiagnosticHandler` wrapped with `Arc`.
     /// let diag_handler = Arc::new(DiagnosticHandler::new_with_template_dir("./src/test_datas/locales/en-US").unwrap());
-    /// 
+    ///
     /// // 3. Create `Session`
     /// let sess = Session::new(sm, diag_handler);
-    /// 
+    ///
     /// ```
     #[inline]
     pub fn new(sm: Arc<SourceMap>, diag_handler: Arc<DiagnosticHandler>) -> Self {
         Self { sm, diag_handler }
+    }
+
+    /// Construct a `Session` with source code.
+    ///
+    /// In the method, a `SourceMap` with a `SourceFile` will be created form an empty path.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use compiler_base_session::Session;
+    /// let sess = Session::new_with_src_code("This is the source code");
+    /// ```
+    #[inline]
+    pub fn new_with_src_code(code: &str) -> Result<Self> {
+        let sm = SourceMap::new(FilePathMapping::empty());
+        sm.new_source_file(PathBuf::from("").into(), code.to_string());
+        let diag = DiagnosticHandler::default().with_context(|| "Failed to create session")?;
+
+        Ok(Self {
+            sm: Arc::new(sm),
+            diag_handler: Arc::new(diag),
+        })
+    }
+
+    /// Emit error diagnostic to terminal.
+    ///
+    /// # Panics
+    ///
+    /// After emitting the error diagnositc, the program will panic.
+    ///
+    /// # Examples
+    ///
+    /// If you want to emit an error diagnostic.
+    /// ```rust
+    /// # use compiler_base_session::Session;
+    /// # use compiler_base_error::components::Label;
+    /// # use compiler_base_error::DiagnosticStyle;
+    /// # use compiler_base_error::Diagnostic;
+    /// # use compiler_base_session::SessionDiagnostic;
+    /// # use anyhow::Result;
+    ///
+    /// // 1. Create your own error type.
+    /// struct MyError;
+    ///
+    /// // 2. Implement trait `SessionDiagnostic` manually.
+    /// impl SessionDiagnostic for MyError {
+    ///     fn into_diagnostic(self, sess: &Session) -> Result<Diagnostic<DiagnosticStyle>> {
+    ///         let mut diag = Diagnostic::<DiagnosticStyle>::new();
+    ///         // 1. Label Component
+    ///         let label_component = Box::new(Label::Error("error".to_string()));
+    ///         diag.append_component(label_component);
+    ///         Ok(diag)
+    ///     }
+    /// }
+    ///
+    /// let result = std::panic::catch_unwind(|| {
+    ///    // 3. Create a Session.
+    ///    let sess = Session::new_with_src_code("test code").unwrap();
+    ///    // 4. Emit the error diagnostic.
+    ///    sess.emit_err(MyError {}).unwrap();
+    /// });
+    /// assert!(result.is_err());
+    ///
+    /// ```
+    pub fn emit_err(&self, err: impl SessionDiagnostic) -> Result<bool> {
+        self.diag_handler
+            .add_err_diagnostic(err.into_diagnostic(self)?)?
+            .abort_if_errors()
+            .with_context(|| "Internale Bug: Fail to display error diagnostic")?;
+        Ok(true)
     }
 }
 
