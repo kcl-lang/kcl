@@ -136,8 +136,8 @@ mod test_components {
         sm.new_source_file(PathBuf::from(filename.clone()).into(), src);
 
         let code_span = SpanData {
-            lo: new_byte_pos(23),
-            hi: new_byte_pos(25),
+            lo: new_byte_pos(0),
+            hi: new_byte_pos(5),
         }
         .span();
 
@@ -155,15 +155,15 @@ mod test_components {
         assert_eq!(errs.len(), 0);
         assert_eq!(result.len(), 1);
         assert_eq!(result.get(0).unwrap().len(), 6);
-        let expected_path = format!("---> File: {}:2:3: 2:5", filename);
+        let expected_path = format!("---> File: {}:1:1: 1:6", filename);
         assert_eq!(result.get(0).unwrap().get(0).unwrap().text, expected_path);
         assert_eq!(result.get(0).unwrap().get(1).unwrap().text, "\n  ");
         assert_eq!(result.get(0).unwrap().get(2).unwrap().text, "1");
         assert_eq!(
             result.get(0).unwrap().get(3).unwrap().text,
-            "|Line 2 Code Snippet.\n   |  "
+            "|Line 1 Code Snippet.\n   |"
         );
-        assert_eq!(result.get(0).unwrap().get(4).unwrap().text, "^^");
+        assert_eq!(result.get(0).unwrap().get(4).unwrap().text, "^^^^^");
         assert_eq!(result.get(0).unwrap().get(5).unwrap().text, "\n");
     }
 }

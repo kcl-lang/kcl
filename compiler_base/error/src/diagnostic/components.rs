@@ -351,7 +351,7 @@ impl Component<DiagnosticStyle> for CodeSnippet {
                     )) {
                     Some(sf) => {
                         for line in affected_lines.lines {
-                            let line_index = line.line_index.to_string();
+                            let line_index = (line.line_index + 1).to_string();
                             let indent = line_index.len() + 1;
                             IndentWithPrefix::new(line_index, indent, Some(DiagnosticStyle::Url))
                                 .format(sb, errs);
