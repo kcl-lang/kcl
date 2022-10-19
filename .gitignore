@@ -85,3 +85,6 @@ lark_parser.pickle
 *.ll.lock
 _a.out.*
 _a.out_*.*
+
+# Compiler_base
+.compiler_base
