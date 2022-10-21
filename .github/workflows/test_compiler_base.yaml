@@ -1,0 +1,50 @@
+name: build-and-test-compiler-base
+on: ["push", "pull_request"]
+jobs:
+  check-fmt:
+    name: Test
+    strategy:
+      matrix: 
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+        with:
+         submodules: 'true'
+      - name: Install rust nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.61
+          override: true
+          components: clippy, rustfmt
+      - name: Rust code format check
+        working-directory: ./compiler_base
+        run: cargo fmt --check
+        shell: bash
+  test-codecov-lcov:
+    name: Test
+    strategy:
+      matrix: 
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+        with:
+          submodules: 'true'
+      - name: Install rust nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.61
+          override: true
+          components: clippy, rustfmt
+      - name: Compiler_base rust unit test
+        working-directory: ./compiler_base
+        run: make codecov-lcov
+        shell: bash
+      - name: Coveralls upload
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: ./compiler_base/.compiler_base/lcov.info
