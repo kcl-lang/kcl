@@ -154,7 +154,7 @@ mod test_components {
 
         assert_eq!(errs.len(), 0);
         assert_eq!(result.len(), 1);
-        assert_eq!(result.get(0).unwrap().len(), 6);
+        assert_eq!(result.get(0).unwrap().len(), 5);
         let expected_path = format!("---> File: {}:1:1: 1:6", filename);
         assert_eq!(result.get(0).unwrap().get(0).unwrap().text, expected_path);
         assert_eq!(result.get(0).unwrap().get(1).unwrap().text, "\n  ");
@@ -164,7 +164,6 @@ mod test_components {
             "|Line 1 Code Snippet.\n   |"
         );
         assert_eq!(result.get(0).unwrap().get(4).unwrap().text, "^^^^^");
-        assert_eq!(result.get(0).unwrap().get(5).unwrap().text, "\n");
     }
 }
 
