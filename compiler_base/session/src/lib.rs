@@ -1,7 +1,10 @@
 use anyhow::{Context, Result};
 use compiler_base_error::{diagnostic_handler::DiagnosticHandler, Diagnostic, DiagnosticStyle};
 use compiler_base_span::{FilePathMapping, SourceMap};
-use std::{path::PathBuf, sync::Arc};
+use std::{
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 #[cfg(test)]
 mod tests;
@@ -48,9 +51,63 @@ impl Session {
         Self { sm, diag_handler }
     }
 
+    /// Construct a `Session` with file name and optional source code.
+    ///
+    /// In the method, a `SourceMap` with a `SourceFile` will be created from `filename` and the optional source code `code`.
+    ///
+    /// Note: `code` has higher priority than `filename`,
+    /// If `code` is not None and the content in file `filename` is not the same as `code`,
+    /// then the content in `code` will be used as the source code.
+    ///
+    /// If `code` is None, the session will use the content of file `filename` as source code.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use compiler_base_session::Session;
+    /// # use std::path::PathBuf;
+    /// const CARGO_ROOT: &str = env!("CARGO_MANIFEST_DIR");
+    /// let mut cargo_file_path = PathBuf::from(CARGO_ROOT);
+    /// cargo_file_path.push("src/test_datas/code_snippet");
+    /// let abs_path = cargo_file_path.to_str().unwrap();
+    ///
+    /// let sess = Session::new_with_file_and_code(abs_path, None);
+    /// ```
+    /// The `sess` will take the content of file `abs_path` as source code.
+    ///
+    /// ```rust
+    /// # use compiler_base_session::Session;
+    /// # use std::path::PathBuf;
+    /// const CARGO_ROOT: &str = env!("CARGO_MANIFEST_DIR");
+    /// let mut cargo_file_path = PathBuf::from(CARGO_ROOT);
+    /// cargo_file_path.push("src/test_datas/code_snippet");
+    /// let abs_path = cargo_file_path.to_str().unwrap();
+    ///
+    /// let sess = Session::new_with_file_and_code(abs_path, Some("This is tmp source code"));
+    /// ```
+    /// The `sess` will take "This is tmp source code" as source code.
+    pub fn new_with_file_and_code(filename: &str, code: Option<&str>) -> Result<Self> {
+        let sm = SourceMap::new(FilePathMapping::empty());
+        match code {
+            Some(c) => {
+                sm.new_source_file(PathBuf::from(filename).into(), c.to_string());
+            }
+            None => {
+                sm.load_file(&Path::new(&filename))
+                    .with_context(|| "Failed to load source file")?;
+            }
+        }
+        let diag = DiagnosticHandler::default()
+            .with_context(|| "Internal bug: Failed to create session")?;
+        Ok(Self {
+            sm: Arc::new(sm),
+            diag_handler: Arc::new(diag),
+        })
+    }
+
     /// Construct a `Session` with source code.
     ///
-    /// In the method, a `SourceMap` with a `SourceFile` will be created form an empty path.
+    /// In the method, a `SourceMap` with a `SourceFile` will be created from an empty path.
     ///
     /// # Examples
     ///
@@ -62,7 +119,8 @@ impl Session {
     pub fn new_with_src_code(code: &str) -> Result<Self> {
         let sm = SourceMap::new(FilePathMapping::empty());
         sm.new_source_file(PathBuf::from("").into(), code.to_string());
-        let diag = DiagnosticHandler::default().with_context(|| "Failed to create session")?;
+        let diag = DiagnosticHandler::default()
+            .with_context(|| "Internal bug: Failed to create session")?;
 
         Ok(Self {
             sm: Arc::new(sm),
