@@ -376,7 +376,9 @@ impl Component<DiagnosticStyle> for CodeSnippet {
                                 Some(DiagnosticStyle::NeedFix),
                             )
                             .format(sb, errs);
-                            sb.appendl("\n", None);
+                            // The newline "\n" should not be included at the end of the `CodeSnippet`.
+                            // The user can choose whether to add a newline at the end of `CodeSnippet` instead of
+                            // having the newline built in at the end of `CodeSnippet`.
                         }
                     }
                     None => errs.push(ComponentFormatError::new(
