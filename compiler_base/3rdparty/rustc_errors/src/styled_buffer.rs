@@ -4,6 +4,7 @@
 use crate::Style;
 
 /// An acceptable custom `XXXStyle` for `StyledBuffer` must implement trait `Clone`, `PartialEq`, `Eq` and `Style`.
+#[derive(Debug, PartialEq, Eq)]
 pub struct StyledBuffer<T>
 where
     T: Clone + PartialEq + Eq + Style,
@@ -11,7 +12,7 @@ where
     lines: Vec<Vec<StyledChar<T>>>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 struct StyledChar<T>
 where
     T: Clone + PartialEq + Eq + Style,
@@ -21,6 +22,7 @@ where
 }
 
 /// An acceptable custom `XXXStyle` for `StyledString` must implement trait `Clone`, `PartialEq`, `Eq` and `Style`.
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct StyledString<T>
 where
     T: Clone + PartialEq + Eq + Style,
