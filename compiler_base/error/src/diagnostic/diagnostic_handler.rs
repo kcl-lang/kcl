@@ -17,6 +17,7 @@ use anyhow::{bail, Context, Result};
 use compiler_base_span::fatal_error::FatalError;
 use fluent::FluentArgs;
 use std::{
+    fmt::Debug,
     path::PathBuf,
     sync::{Arc, Mutex},
 };
@@ -90,6 +91,19 @@ const DIAGNOSTIC_MESSAGES_ROOT: &str = env!("CARGO_MANIFEST_DIR");
 ///
 pub struct DiagnosticHandler {
     handler_inner: Mutex<DiagnosticHandlerInner>,
+}
+
+impl Debug for DiagnosticHandler {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.handler_inner.lock() {
+            Ok(inner) => {
+                write!(f, "{:?}", inner)
+            }
+            Err(_) => {
+                write!(f, "")
+            }
+        }
+    }
 }
 
 impl DiagnosticHandler {
@@ -505,6 +519,16 @@ pub(crate) struct DiagnosticHandlerInner {
     err_count: usize,
     warn_count: usize,
     template_loader: Arc<TemplateLoader>,
+}
+
+impl Debug for DiagnosticHandlerInner {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut diag_fmt = String::new();
+        for diag in &self.diagnostics {
+            diag_fmt.push_str(&format!("{:?}", diag));
+        }
+        write!(f, "{}", diag_fmt)
+    }
 }
 
 impl DiagnosticHandlerInner {
