@@ -252,7 +252,7 @@ mod test_error_message {
 }
 
 mod test_diag_handler {
-    use crate::{diagnostic_handler::DiagnosticHandler, Diagnostic, DiagnosticStyle};
+    use crate::{diagnostic_handler::DiagnosticHandler, Diagnostic, DiagnosticStyle, components::Label};
     use anyhow::{Context, Result};
     #[test]
     fn test_return_self() {
@@ -275,5 +275,16 @@ mod test_diag_handler {
             .abort_if_errors()
             .with_context(|| "One of the five methods above failed")?;
         Ok(())
+    }
+
+    #[test]
+    fn test_diag_handler_fmt() {
+        let diag_handler = DiagnosticHandler::default().unwrap();
+        let mut diag = Diagnostic::<DiagnosticStyle>::new();
+        let err_label_1 = Box::new(Label::Error("E3033".to_string()));
+        diag.append_component(err_label_1);
+        diag_handler.add_err_diagnostic(diag).unwrap();
+        assert_eq!(format!("{:?}", diag_handler), "[[StyledString { text: \"error\", style: Some(NeedFix) }, StyledString { text: \"[E3033]\", style: Some(Helpful) }]]\n");
+
     }
 }
