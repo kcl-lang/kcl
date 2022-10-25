@@ -1,5 +1,5 @@
 use crate::errors::ComponentFormatError;
-pub use rustc_errors::styled_buffer::StyledBuffer;
+pub use rustc_errors::styled_buffer::{StyledBuffer, StyledString};
 use rustc_errors::Style;
 
 pub mod components;
