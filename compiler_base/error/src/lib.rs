@@ -16,6 +16,7 @@ mod tests;
 pub mod errors;
 
 pub use diagnostic::{
-    components, diagnostic_handler, style::DiagnosticStyle, Component, Diagnostic,
+    components, diagnostic_handler, style::DiagnosticStyle, Component, Diagnostic, StyledBuffer,
+    StyledString,
 };
 pub use emitter::{Emitter, TerminalEmitter};
