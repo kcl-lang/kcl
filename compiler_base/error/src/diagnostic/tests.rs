@@ -37,6 +37,42 @@ mod test_diagnostic {
         );
         assert_eq!(result.get(0).unwrap().get(2).unwrap().style, None);
     }
+
+    #[test]
+    fn test_diagnsotic_fmt() {
+        let mut diag_1 = Diagnostic::<DiagnosticStyle>::new();
+        let err_label_1 = Box::new(Label::Error("E3033".to_string()));
+        diag_1.append_component(err_label_1);
+
+        assert_eq!(format!("{:?}", diag_1), "[[StyledString { text: \"error\", style: Some(NeedFix) }, StyledString { text: \"[E3033]\", style: Some(Helpful) }]]\n");
+    }
+
+    #[test]
+    fn test_diagnostic_equal() {
+        let mut diag_1 = Diagnostic::<DiagnosticStyle>::new();
+        let err_label_1 = Box::new(Label::Error("E3033".to_string()));
+        diag_1.append_component(err_label_1);
+
+        let msg_1 = Box::new(": this is an error!".to_string());
+        diag_1.append_component(msg_1);
+
+        let mut diag_2 = Diagnostic::<DiagnosticStyle>::new();
+        let err_label_2 = Box::new(Label::Error("E3033".to_string()));
+        diag_2.append_component(err_label_2);
+
+        let msg_2 = Box::new(": this is another error!".to_string());
+        diag_2.append_component(msg_2);
+
+        assert_ne!(diag_1, diag_2);
+
+        let mut diag_3 = Diagnostic::<DiagnosticStyle>::new();
+        let err_label_3 = Box::new(Label::Error("E3033".to_string()));
+        diag_3.append_component(err_label_3);
+        let msg_3 = Box::new(": this is another error!".to_string());
+        diag_3.append_component(msg_3);
+
+        assert_eq!(diag_2, diag_3);
+    }
 }
 
 mod test_components {

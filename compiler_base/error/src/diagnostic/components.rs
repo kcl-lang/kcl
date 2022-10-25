@@ -360,7 +360,7 @@ impl Component<DiagnosticStyle> for CodeSnippet {
                                 .format(sb, errs);
                             IndentWithPrefix::default().format(sb, errs);
                             if let Some(line) = sf.get_line(line.line_index) {
-                                sb.appendl(&line.to_string(), None);
+                                sb.appendl(&line, None);
                             } else {
                                 errs.push(ComponentFormatError::new(
                                     "CodeSnippet",

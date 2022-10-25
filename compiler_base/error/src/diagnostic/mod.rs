@@ -1,6 +1,7 @@
 use crate::errors::ComponentFormatError;
 pub use rustc_errors::styled_buffer::{StyledBuffer, StyledString};
 use rustc_errors::Style;
+use std::fmt::Debug;
 
 pub mod components;
 pub mod diagnostic_handler;
@@ -104,14 +105,39 @@ where
 #[derive(Default)]
 pub struct Diagnostic<T>
 where
-    T: Clone + PartialEq + Eq + Style,
+    T: Clone + PartialEq + Eq + Style + Debug,
 {
     components: Vec<Box<dyn Component<T>>>,
 }
 
+impl<T> Debug for Diagnostic<T>
+where
+    T: Clone + PartialEq + Eq + Style + Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut diag_fmt = String::new();
+        for component in &self.components {
+            let mut s_sb = StyledBuffer::<T>::new();
+            let mut s_errs = vec![];
+            component.format(&mut s_sb, &mut s_errs);
+            diag_fmt.push_str(&format!("{:?}\n", s_sb.render()));
+        }
+        write!(f, "{}", diag_fmt)
+    }
+}
+
+impl<T> PartialEq for Diagnostic<T>
+where
+    T: Clone + PartialEq + Eq + Style + Debug,
+{
+    fn eq(&self, other: &Self) -> bool {
+        format!("{:?}", self) == format!("{:?}", other)
+    }
+}
+
 impl<T> Diagnostic<T>
 where
-    T: Clone + PartialEq + Eq + Style,
+    T: Clone + PartialEq + Eq + Style + Debug,
 {
     pub fn new() -> Self {
         Diagnostic { components: vec![] }
@@ -128,7 +154,7 @@ where
 
 impl<T> Component<T> for Diagnostic<T>
 where
-    T: Clone + PartialEq + Eq + Style,
+    T: Clone + PartialEq + Eq + Style + Debug,
 {
     fn format(&self, sb: &mut StyledBuffer<T>, errs: &mut Vec<ComponentFormatError>) {
         for component in &self.components {
@@ -142,7 +168,7 @@ where
 /// The result of component `String` rendering is a `String` who has no style.
 impl<T> Component<T> for String
 where
-    T: Clone + PartialEq + Eq + Style,
+    T: Clone + PartialEq + Eq + Style + Debug,
 {
     fn format(&self, sb: &mut StyledBuffer<T>, _: &mut Vec<ComponentFormatError>) {
         sb.appendl(self, None);
