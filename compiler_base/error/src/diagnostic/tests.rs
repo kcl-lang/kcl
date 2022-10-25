@@ -252,7 +252,9 @@ mod test_error_message {
 }
 
 mod test_diag_handler {
-    use crate::{diagnostic_handler::DiagnosticHandler, Diagnostic, DiagnosticStyle, components::Label};
+    use crate::{
+        components::Label, diagnostic_handler::DiagnosticHandler, Diagnostic, DiagnosticStyle,
+    };
     use anyhow::{Context, Result};
     #[test]
     fn test_return_self() {
@@ -285,6 +287,5 @@ mod test_diag_handler {
         diag.append_component(err_label_1);
         diag_handler.add_err_diagnostic(diag).unwrap();
         assert_eq!(format!("{:?}", diag_handler), "[[StyledString { text: \"error\", style: Some(NeedFix) }, StyledString { text: \"[E3033]\", style: Some(Helpful) }]]\n");
-
     }
 }

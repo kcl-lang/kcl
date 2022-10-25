@@ -17,9 +17,9 @@ use anyhow::{bail, Context, Result};
 use compiler_base_span::fatal_error::FatalError;
 use fluent::FluentArgs;
 use std::{
+    fmt::Debug,
     path::PathBuf,
     sync::{Arc, Mutex},
-    fmt::Debug
 };
 
 // Default template resource file path.
@@ -96,8 +96,12 @@ pub struct DiagnosticHandler {
 impl Debug for DiagnosticHandler {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.handler_inner.lock() {
-            Ok(inner) => {write!(f, "{:?}", inner)},
-            Err(_) => {write!(f, "")},
+            Ok(inner) => {
+                write!(f, "{:?}", inner)
+            }
+            Err(_) => {
+                write!(f, "")
+            }
         }
     }
 }
