@@ -19,6 +19,7 @@ use rustc_errors::{
     styled_buffer::{StyledBuffer, StyledString},
     Style,
 };
+use std::fmt::Debug;
 use std::io::{self, Write};
 use termcolor::{Buffer, BufferWriter, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
@@ -84,7 +85,7 @@ use termcolor::{Buffer, BufferWriter, ColorChoice, ColorSpec, StandardStream, Wr
 /// ```
 pub trait Emitter<T>
 where
-    T: Clone + PartialEq + Eq + Style,
+    T: Clone + PartialEq + Eq + Style + Debug,
 {
     /// Format struct `Diagnostic` into `String` and render `String` into `StyledString`,
     /// and save `StyledString` in `StyledBuffer`.
@@ -220,7 +221,7 @@ impl Write for Destination {
 
 impl<T> Emitter<T> for TerminalEmitter
 where
-    T: Clone + PartialEq + Eq + Style,
+    T: Clone + PartialEq + Eq + Style + Debug,
 {
     /// Checks if we can use colors in the current output stream.
     /// Depends on `termcolor1.0` which supports color.
@@ -260,7 +261,7 @@ fn emit_to_destination<T>(
     short_message: bool,
 ) -> io::Result<()>
 where
-    T: Clone + PartialEq + Eq + Style,
+    T: Clone + PartialEq + Eq + Style + Debug,
 {
     use rustc_errors::lock;
 
