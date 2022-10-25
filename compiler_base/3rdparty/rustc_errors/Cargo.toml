@@ -1,6 +1,6 @@
 [package]
 name = "rustc_errors"
-version = "0.0.1"
+version = "0.0.2"
 edition = "2021"
 authors = ["zongzhe1024@163.com"]
 license = "Apache-2.0 OR MIT"
