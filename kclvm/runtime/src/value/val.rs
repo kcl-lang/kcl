@@ -38,7 +38,7 @@ impl ValueRef {
                 list.values.push((**x).clone());
             }
         }
-        Self::from(Value::list_value(list))
+        Self::from(Value::list_value(Box::new(list)))
     }
 
     pub fn list_value(values: Option<&[Self]>) -> Self {
@@ -48,7 +48,7 @@ impl ValueRef {
                 list.values.push((*x).clone());
             }
         }
-        Self::from(Value::list_value(list))
+        Self::from(Value::list_value(Box::new(list)))
     }
 
     pub fn dict(values: Option<&[(&str, &Self)]>) -> Self {
@@ -58,12 +58,12 @@ impl ValueRef {
                 dict.values.insert(x.0.to_string(), (*x.1).clone());
             }
         }
-        Self::from(Value::dict_value(dict))
+        Self::from(Value::dict_value(Box::new(dict)))
     }
 
     pub fn schema() -> Self {
         let s: SchemaValue = Default::default();
-        Self::from(Value::schema_value(s))
+        Self::from(Value::schema_value(Box::new(s)))
     }
 
     pub fn func(
@@ -73,12 +73,12 @@ impl ValueRef {
         name: &str,
         runtime_type: &str,
     ) -> Self {
-        Self::from(Value::func_value(FuncValue {
+        Self::from(Value::func_value(Box::new(FuncValue {
             fn_ptr,
             check_fn_ptr,
             closure,
             external_name: name.to_string(),
             runtime_type: runtime_type.to_string(),
-        }))
+        })))
     }
 }

@@ -199,12 +199,9 @@ impl ValueRef {
     }
 
     pub fn from_raw(&self) {
-        match &*self.rc {
-            //if value is a func,clear captured ValueRef to break circular reference
-            Value::func_value(val) => {
-                get_ref_mut(val).closure = ValueRef::none();
-            }
-            _ => {}
+        //if value is a func,clear captured ValueRef to break circular reference
+        if let Value::func_value(val) = &*self.rc {
+            get_ref_mut(val).closure = ValueRef::none();
         }
     }
 }
@@ -218,10 +215,10 @@ pub enum Value {
     int_value(i64),
     float_value(f64),
     str_value(String),
-    list_value(ListValue),
-    dict_value(DictValue),
-    schema_value(SchemaValue),
-    func_value(FuncValue),
+    list_value(Box<ListValue>),
+    dict_value(Box<DictValue>),
+    schema_value(Box<SchemaValue>),
+    func_value(Box<FuncValue>),
     unit_value(f64, i64, String), // (Real value, raw value, unit string)
 }
 

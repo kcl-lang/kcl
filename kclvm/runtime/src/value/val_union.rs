@@ -79,11 +79,12 @@ impl ValueRef {
                                 (Value::list_value(origin_value), Value::list_value(value)) => {
                                     // As RefMut
                                     let origin_value: &mut ListValue = unsafe {
-                                        &mut *(origin_value as *const ListValue as *mut ListValue)
+                                        &mut *(&**origin_value as *const ListValue
+                                            as *mut ListValue)
                                     };
                                     // As RefMut
                                     let value: &mut ListValue = unsafe {
-                                        &mut *(value as *const ListValue as *mut ListValue)
+                                        &mut *(&**value as *const ListValue as *mut ListValue)
                                     };
                                     if index == -1 {
                                         origin_value.values.append(&mut value.clone().values);

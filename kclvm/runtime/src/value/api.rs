@@ -240,7 +240,7 @@ pub extern "C" fn kclvm_value_ListN(
             list.values.push(v.clone());
         }
 
-        ValueRef::from(Value::list_value(list)).into_raw()
+        ValueRef::from(Value::list_value(Box::new(list))).into_raw()
     }
 }
 

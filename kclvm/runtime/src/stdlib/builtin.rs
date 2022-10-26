@@ -120,7 +120,7 @@ impl ValueRef {
                 } else {
                     values.sort();
                 }
-                Self::from(Value::list_value(list))
+                Self::from(Value::list_value(Box::new(list)))
             }
             Value::list_value(_) => {
                 let mut list = self.deep_copy();
@@ -145,7 +145,7 @@ impl ValueRef {
                 } else {
                     values.sort();
                 }
-                Self::from(Value::list_value(list))
+                Self::from(Value::list_value(Box::new(list)))
             }
             _ => panic!("sorted only for str|list|dict type"),
         }

@@ -40,12 +40,12 @@ pub fn schema_config_meta(filename: &str, line: u64, column: u64) -> ValueRef {
 impl ValueRef {
     pub fn dict_to_schema(&self, name: &str, pkgpath: &str, config_keys: &[String]) -> Self {
         if self.is_dict() {
-            Self::from(Value::schema_value(SchemaValue {
+            Self::from(Value::schema_value(Box::new(SchemaValue {
                 name: name.to_string(),
                 pkgpath: pkgpath.to_string(),
                 config: Rc::new(self.as_dict_ref().clone()),
                 config_keys: config_keys.to_owned(),
-            }))
+            })))
         } else if self.is_schema() {
             self.clone()
         } else {
@@ -56,7 +56,7 @@ impl ValueRef {
     pub fn schema_to_dict(&self) -> Self {
         match &*self.rc {
             Value::schema_value(ref schema) => {
-                Self::from(Value::dict_value(schema.config.as_ref().clone()))
+                Self::from(Value::dict_value(Box::new(schema.config.as_ref().clone())))
             }
             Value::dict_value(_) => self.clone(),
             _ => panic!("invalid schema object to dict"),

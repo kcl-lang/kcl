@@ -92,7 +92,7 @@ macro_rules! define_value_list_from_iter_trait {
                 for i in iter {
                     list.values.push(i.into());
                 }
-                Self::from(Value::list_value(list))
+                Self::from(Value::list_value(Box::new(list)))
             }
         }
     };
@@ -103,7 +103,7 @@ macro_rules! define_value_list_from_iter_trait {
                 for i in iter {
                     list.values.push(i.into());
                 }
-                Self::from(Value::list_value(list))
+                Self::from(Value::list_value(Box::new(list)))
             }
         }
     };
@@ -116,9 +116,9 @@ define_value_list_from_iter_trait!(f64);
 define_value_list_from_iter_trait!(ref, str);
 define_value_list_from_iter_trait!(ref, ValueRef);
 
-define_value_try_from_trait!(ListValue, list_value);
+define_value_try_from_trait!(Box<ListValue>, list_value);
 
-define_value_try_into_method!(try_into_list, ListValue);
+define_value_try_into_method!(try_into_list, Box<ListValue>);
 
 // dict
 
@@ -130,7 +130,7 @@ macro_rules! define_value_dict_from_iter_trait {
                 for (k, v) in iter {
                     dict.values.insert(k.to_string(), v.into());
                 }
-                Self::from(Value::dict_value(dict))
+                Self::from(Value::dict_value(Box::new(dict)))
             }
         }
     };
@@ -141,7 +141,7 @@ macro_rules! define_value_dict_from_iter_trait {
                 for (k, v) in iter {
                     dict.values.insert(k.to_string(), v.into());
                 }
-                Self::from(Value::dict_value(dict))
+                Self::from(Value::dict_value(Box::new(dict)))
             }
         }
     };
@@ -153,13 +153,13 @@ define_value_dict_from_iter_trait!(f64);
 define_value_dict_from_iter_trait!(ref, str);
 define_value_dict_from_iter_trait!(ref, ValueRef);
 
-define_value_try_from_trait!(DictValue, dict_value);
+define_value_try_from_trait!(Box<DictValue>, dict_value);
 
-define_value_try_into_method!(try_into_dict, DictValue);
+define_value_try_into_method!(try_into_dict, Box<DictValue>);
 
 // schema
 
-define_value_try_from_trait!(SchemaValue, schema_value);
+define_value_try_from_trait!(Box<SchemaValue>, schema_value);
 
 #[cfg(test)]
 mod tests_from {
@@ -227,7 +227,7 @@ mod tests_from {
         let list = vec![1, 2, 4, 3];
 
         let list_value: ValueRef = ValueRef::from_iter(list.clone().into_iter());
-        let list_value: ListValue = list_value.try_into().unwrap();
+        let list_value: Box<ListValue> = list_value.try_into().unwrap();
 
         assert_eq!(
             list_value
