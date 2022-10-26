@@ -72,8 +72,10 @@ mod test_session {
         let result = std::panic::catch_unwind(|| {
             // 3. Create a Session.
             let sess = Session::new_with_src_code("test code").unwrap();
-            // 4. Emit the error diagnostic.
-            sess.emit_err(MyError {}).unwrap();
+            // 4. Add the error diagnostic.
+            sess.add_err(MyError {}).unwrap();
+            // 5. Emit the error diagnostic.
+            sess.emit_stashed_diagnostics_and_abort().unwrap();
         });
         assert!(result.is_err());
         std::panic::set_hook(prev_hook);
@@ -118,11 +120,13 @@ mod test_session {
         let result = std::panic::catch_unwind(|| {
             // Create a Session with no src code.
             let sess = Session::new_with_file_and_code(abs_path, None).unwrap();
-            // Emit the error diagnostic.
-            sess.emit_err(CodeSnippetError {
+            // Add the error diagnostic.
+            sess.add_err(CodeSnippetError {
                 span: Span::new(new_byte_pos(0), new_byte_pos(8)),
             })
             .unwrap();
+            // Emit the error diagnostic.
+            sess.emit_stashed_diagnostics_and_abort().unwrap();
         });
         assert!(result.is_err());
 
@@ -131,15 +135,52 @@ mod test_session {
             let sess_with_src =
                 Session::new_with_file_and_code(abs_path, Some("This is session with src code ."))
                     .unwrap();
-            // Emit the error diagnostic.
+            // Add the error diagnostic.
             sess_with_src
-                .emit_err(CodeSnippetError {
+                .add_err(CodeSnippetError {
                     span: Span::new(new_byte_pos(0), new_byte_pos(8)),
                 })
                 .unwrap();
+            // Emit the error diagnostic.
+            sess_with_src.emit_stashed_diagnostics_and_abort().unwrap();
         });
         assert!(result_with_src.is_err());
 
         std::panic::set_hook(prev_hook);
+    }
+
+    #[test]
+    fn test_emit_stashed_diagnostics() {
+        let sess = Session::new_with_src_code("test code").unwrap();
+        sess.add_err(MyError {});
+        sess.emit_stashed_diagnostics().unwrap();
+    }
+
+    #[test]
+    fn test_add_err() {
+        let sess = Session::new_with_src_code("test code").unwrap();
+        assert_eq!(sess.diagnostics_count().unwrap(), 0);
+        sess.add_err(MyError {}).unwrap();
+        assert_eq!(sess.diagnostics_count().unwrap(), 1);
+    }
+
+    struct MyWarning;
+
+    impl SessionDiagnostic for MyWarning {
+        fn into_diagnostic(self, _: &Session) -> Result<Diagnostic<DiagnosticStyle>> {
+            let mut diag = Diagnostic::<DiagnosticStyle>::new();
+            // Label Component
+            let label_component = Box::new(Label::Warning("warning".to_string()));
+            diag.append_component(label_component);
+            Ok(diag)
+        }
+    }
+
+    #[test]
+    fn test_add_warn() {
+        let sess = Session::new_with_src_code("test code").unwrap();
+        assert_eq!(sess.diagnostics_count().unwrap(), 0);
+        sess.add_warn(MyWarning {}).unwrap();
+        assert_eq!(sess.diagnostics_count().unwrap(), 1);
     }
 }

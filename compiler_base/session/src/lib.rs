@@ -128,11 +128,11 @@ impl Session {
         })
     }
 
-    /// Emit error diagnostic to terminal.
+    /// Emit all diagnostics to terminal and abort.
     ///
     /// # Panics
     ///
-    /// After emitting the error diagnositc, the program will panic.
+    /// After emitting the diagnositcs, the program will panic.
     ///
     /// # Examples
     ///
@@ -162,18 +162,176 @@ impl Session {
     /// let result = std::panic::catch_unwind(|| {
     ///    // 3. Create a Session.
     ///    let sess = Session::new_with_src_code("test code").unwrap();
-    ///    // 4. Emit the error diagnostic.
-    ///    sess.emit_err(MyError {}).unwrap();
+    ///    // 4. Add the error diagnostic.
+    ///    sess.add_err(MyError {}).unwrap();
+    ///    // 5. Emit the error diagnostic.
+    ///    sess.emit_stashed_diagnostics_and_abort().unwrap();
     /// });
     /// assert!(result.is_err());
-    ///
     /// ```
-    pub fn emit_err(&self, err: impl SessionDiagnostic) -> Result<bool> {
+    #[inline]
+    pub fn emit_stashed_diagnostics_and_abort(&self) -> Result<&Self> {
         self.diag_handler
-            .add_err_diagnostic(err.into_diagnostic(self)?)?
             .abort_if_errors()
             .with_context(|| "Internale Bug: Fail to display error diagnostic")?;
-        Ok(true)
+        Ok(self)
+    }
+
+    /// Emit all diagnostics to terminal.
+    ///
+    /// # Examples
+    ///
+    /// If you want to emit an diagnostic.
+    /// ```rust
+    /// # use compiler_base_session::Session;
+    /// # use compiler_base_error::components::Label;
+    /// # use compiler_base_error::DiagnosticStyle;
+    /// # use compiler_base_error::Diagnostic;
+    /// # use compiler_base_session::SessionDiagnostic;
+    /// # use anyhow::Result;
+    ///
+    /// // 1. Create your own error type.
+    /// struct MyError;
+    ///
+    /// // 2. Implement trait `SessionDiagnostic` manually.
+    /// impl SessionDiagnostic for MyError {
+    ///     fn into_diagnostic(self, sess: &Session) -> Result<Diagnostic<DiagnosticStyle>> {
+    ///         let mut diag = Diagnostic::<DiagnosticStyle>::new();
+    ///         // 1. Label Component
+    ///         let label_component = Box::new(Label::Error("error".to_string()));
+    ///         diag.append_component(label_component);
+    ///         Ok(diag)
+    ///     }
+    /// }
+    /// // 3. Create a Session.
+    /// let sess = Session::new_with_src_code("test code").unwrap();
+    ///
+    /// // 4. Add the error
+    /// sess.add_err(MyError {}).unwrap();
+    ///
+    /// // 5. Emit the error diagnostic.
+    /// sess.emit_stashed_diagnostics().unwrap();
+    /// ```
+    pub fn emit_stashed_diagnostics(&self) -> Result<&Self> {
+        self.diag_handler
+            .emit_stashed_diagnostics()
+            .with_context(|| "Internale Bug: Fail to display error diagnostic")?;
+        Ok(self)
+    }
+
+    /// Add an error diagnostic generated from error to `Session`.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use compiler_base_error::DiagnosticStyle;
+    /// # use compiler_base_error::diagnostic_handler::DiagnosticHandler;
+    /// # use compiler_base_error::Diagnostic;
+    /// # use compiler_base_error::components::Label;
+    /// # use compiler_base_session::Session;
+    /// # use compiler_base_session::SessionDiagnostic;
+    /// # use anyhow::Result;
+    ///
+    /// // 1. Create your own error type.
+    /// struct MyError;
+    ///
+    /// // 2. Implement trait `SessionDiagnostic` manually.
+    /// impl SessionDiagnostic for MyError {
+    ///     fn into_diagnostic(self, sess: &Session) -> Result<Diagnostic<DiagnosticStyle>> {
+    ///         let mut diag = Diagnostic::<DiagnosticStyle>::new();
+    ///         // 1. Label Component
+    ///         let label_component = Box::new(Label::Error("error".to_string()));
+    ///         diag.append_component(label_component);
+    ///         Ok(diag)
+    ///     }
+    /// }
+    ///
+    /// let sess = Session::new_with_src_code("test code").unwrap();
+    /// assert_eq!(sess.diagnostics_count().unwrap(), 0);
+    ///
+    /// sess.add_err(MyError{});
+    /// assert_eq!(sess.diagnostics_count().unwrap(), 1);
+    /// ```
+    pub fn add_err(&self, err: impl SessionDiagnostic) -> Result<&Self> {
+        self.diag_handler
+            .add_err_diagnostic(err.into_diagnostic(self)?)?;
+        Ok(self)
+    }
+
+    /// Add an warn diagnostic generated from warning to `Session`.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use compiler_base_error::DiagnosticStyle;
+    /// # use compiler_base_error::diagnostic_handler::DiagnosticHandler;
+    /// # use compiler_base_error::Diagnostic;
+    /// # use compiler_base_error::components::Label;
+    /// # use compiler_base_session::Session;
+    /// # use compiler_base_session::SessionDiagnostic;
+    /// # use anyhow::Result;
+    ///
+    /// // 1. Create your own error type.
+    /// struct MyWarning;
+    ///
+    /// // 2. Implement trait `SessionDiagnostic` manually.
+    /// impl SessionDiagnostic for MyWarning {
+    ///     fn into_diagnostic(self, sess: &Session) -> Result<Diagnostic<DiagnosticStyle>> {
+    ///         let mut diag = Diagnostic::<DiagnosticStyle>::new();
+    ///         // 1. Label Component
+    ///         let label_component = Box::new(Label::Warning("warning".to_string()));
+    ///         diag.append_component(label_component);
+    ///         Ok(diag)
+    ///     }
+    /// }
+    ///
+    /// let sess = Session::new_with_src_code("test code").unwrap();
+    /// assert_eq!(sess.diagnostics_count().unwrap(), 0);
+    ///
+    /// sess.add_err(MyWarning{});
+    /// assert_eq!(sess.diagnostics_count().unwrap(), 1);
+    /// ```
+    pub fn add_warn(&self, warn: impl SessionDiagnostic) -> Result<&Self> {
+        self.diag_handler
+            .add_warn_diagnostic(warn.into_diagnostic(self)?)?;
+        Ok(self)
+    }
+
+    /// Get count of diagnostics in `DiagnosticHandler`.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use compiler_base_error::DiagnosticStyle;
+    /// # use compiler_base_error::diagnostic_handler::DiagnosticHandler;
+    /// # use compiler_base_error::Diagnostic;
+    /// # use compiler_base_error::components::Label;
+    /// # use compiler_base_session::Session;
+    /// # use compiler_base_session::SessionDiagnostic;
+    /// # use anyhow::Result;
+    ///
+    /// // 1. Create your own error type.
+    /// struct MyWarning;
+    ///
+    /// // 2. Implement trait `SessionDiagnostic` manually.
+    /// impl SessionDiagnostic for MyWarning {
+    ///     fn into_diagnostic(self, sess: &Session) -> Result<Diagnostic<DiagnosticStyle>> {
+    ///         let mut diag = Diagnostic::<DiagnosticStyle>::new();
+    ///         // 1. Label Component
+    ///         let label_component = Box::new(Label::Warning("warning".to_string()));
+    ///         diag.append_component(label_component);
+    ///         Ok(diag)
+    ///     }
+    /// }
+    ///
+    /// let sess = Session::new_with_src_code("test code").unwrap();
+    /// assert_eq!(sess.diagnostics_count().unwrap(), 0);
+    ///
+    /// sess.add_err(MyWarning{});
+    /// assert_eq!(sess.diagnostics_count().unwrap(), 1);
+    #[inline]
+    pub fn diagnostics_count(&self) -> Result<usize> {
+        self.diag_handler.diagnostics_count()
     }
 }
 
