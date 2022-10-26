@@ -114,7 +114,7 @@ pub extern "C" fn kclvm_builtin_option(
                     if list_option_mode {
                         return ValueRef::none();
                     }
-                    let err_msg = format!("cannot use '{}' as type '{}'", this.to_string(), typ);
+                    let err_msg = format!("cannot use '{}' as type '{}'", this, typ);
                     panic!("{}", err_msg);
                 }
             }
@@ -144,7 +144,7 @@ pub extern "C" fn kclvm_builtin_option(
                     if list_option_mode {
                         return ValueRef::none();
                     }
-                    let err_msg = format!("cannot use '{}' as type '{}'", this.to_string(), typ);
+                    let err_msg = format!("cannot use '{}' as type '{}'", this, typ);
                     panic!("{}", err_msg);
                 }
             }
@@ -170,7 +170,7 @@ pub extern "C" fn kclvm_builtin_option(
                     if list_option_mode {
                         return ValueRef::none();
                     }
-                    let err_msg = format!("cannot use '{}' as type '{}'", this.to_string(), typ);
+                    let err_msg = format!("cannot use '{}' as type '{}'", this, typ);
                     panic!("{}", err_msg);
                 }
             }
@@ -184,7 +184,7 @@ pub extern "C" fn kclvm_builtin_option(
                     if list_option_mode {
                         return ValueRef::none();
                     }
-                    let err_msg = format!("cannot use '{}' as type '{}'", this.to_string(), typ);
+                    let err_msg = format!("cannot use '{}' as type '{}'", this, typ);
                     panic!("{}", err_msg);
                 }
             }
@@ -198,7 +198,7 @@ pub extern "C" fn kclvm_builtin_option(
                     if list_option_mode {
                         return ValueRef::none();
                     }
-                    let err_msg = format!("cannot use '{}' as type '{}'", this.to_string(), typ);
+                    let err_msg = format!("cannot use '{}' as type '{}'", this, typ);
                     panic!("{}", err_msg);
                 }
             }
@@ -267,7 +267,7 @@ pub extern "C" fn kclvm_builtin_print(
     let dict = kwargs.as_dict_ref();
     // kwargs: end
     if let Some(c) = dict.values.get("end") {
-        print!("{}", c.to_string());
+        print!("{}", c);
         use std::io::Write;
         let _ = std::io::stdout().flush();
     } else {

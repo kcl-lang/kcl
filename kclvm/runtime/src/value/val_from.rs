@@ -24,24 +24,24 @@ macro_rules! define_value_from_trait {
 }
 
 macro_rules! define_value_try_from_trait {
-    ($for_type: ty, $kcl_type_value :ident) => {
+    ($for_type: ty, $kcl_type_value :ident, $for_type_name :expr) => {
         impl TryFrom<ValueRef> for $for_type {
-            type Error = ();
+            type Error = String;
 
             fn try_from(v: ValueRef) -> Result<Self, Self::Error> {
                 match &*v.rc {
                     Value::$kcl_type_value(v) => Ok(v.clone()),
-                    _ => Err(()),
+                    _ => Err(format!("can't convert {} to {}", v, $for_type_name)),
                 }
             }
         }
         impl TryFrom<&ValueRef> for $for_type {
-            type Error = ();
+            type Error = String;
 
             fn try_from(v: &ValueRef) -> Result<Self, Self::Error> {
                 match &*v.rc {
                     Value::$kcl_type_value(v) => Ok(v.clone()),
-                    _ => Err(()),
+                    _ => Err(format!("can't convert {} to {}", v, $for_type_name)),
                 }
             }
         }
@@ -51,7 +51,7 @@ macro_rules! define_value_try_from_trait {
 macro_rules! define_value_try_into_method {
     ($try_into_type: ident, $type: ty) => {
         impl ValueRef {
-            pub fn $try_into_type(&self) -> Result<$type, ()> {
+            pub fn $try_into_type(&self) -> Result<$type, String> {
                 use std::convert::TryInto;
                 self.try_into()
             }
@@ -69,10 +69,10 @@ define_value_try_into_method!(try_into_int, i64);
 define_value_try_into_method!(try_into_float, f64);
 define_value_try_into_method!(try_into_str, String);
 
-define_value_try_from_trait!(bool, bool_value);
-define_value_try_from_trait!(i64, int_value);
-define_value_try_from_trait!(f64, float_value);
-define_value_try_from_trait!(String, str_value);
+define_value_try_from_trait!(bool, bool_value, "bool");
+define_value_try_from_trait!(i64, int_value, "i64");
+define_value_try_from_trait!(f64, float_value, "f64");
+define_value_try_from_trait!(String, str_value, "String");
 
 // value
 
@@ -116,7 +116,7 @@ define_value_list_from_iter_trait!(f64);
 define_value_list_from_iter_trait!(ref, str);
 define_value_list_from_iter_trait!(ref, ValueRef);
 
-define_value_try_from_trait!(Box<ListValue>, list_value);
+define_value_try_from_trait!(Box<ListValue>, list_value, "ListValue");
 
 define_value_try_into_method!(try_into_list, Box<ListValue>);
 
@@ -153,13 +153,13 @@ define_value_dict_from_iter_trait!(f64);
 define_value_dict_from_iter_trait!(ref, str);
 define_value_dict_from_iter_trait!(ref, ValueRef);
 
-define_value_try_from_trait!(Box<DictValue>, dict_value);
+define_value_try_from_trait!(Box<DictValue>, dict_value, "DictValue");
 
 define_value_try_into_method!(try_into_dict, Box<DictValue>);
 
 // schema
 
-define_value_try_from_trait!(Box<SchemaValue>, schema_value);
+define_value_try_from_trait!(Box<SchemaValue>, schema_value, "SchemaValue");
 
 #[cfg(test)]
 mod tests_from {
@@ -175,12 +175,12 @@ mod tests_from {
         assert_eq!(ValueRef::bool(true), ValueRef::from(TRUE));
         assert_eq!(ValueRef::bool(false), ValueRef::from(FALSE));
 
-        assert_eq!(true, ValueRef::from(true).try_into_bool().unwrap());
+        assert!(ValueRef::from(true).try_into_bool().unwrap());
         assert_eq!(123, ValueRef::from(123).try_into_int().unwrap());
         assert_eq!(1.5, ValueRef::from(1.5).try_into_float().unwrap());
         assert_eq!("abc", ValueRef::from("abc").try_into_str().unwrap());
 
-        assert_eq!(true, bool::try_from(ValueRef::from(true)).unwrap());
+        assert!(bool::try_from(ValueRef::from(true)).unwrap());
         assert_eq!(123, i64::try_from(ValueRef::from(123)).unwrap());
         assert_eq!(1.5, f64::try_from(ValueRef::from(1.5)).unwrap());
         assert_eq!("abc", String::try_from(ValueRef::from("abc")).unwrap());
@@ -201,11 +201,11 @@ mod tests_from {
     }
 
     test_x_type!(test_bool, bool, vec![true, false]);
-    test_x_type!(test_int, int, vec![-1 as i64, 0, 1, 123, 0xFFFFFFFF + 1]);
+    test_x_type!(test_int, int, vec![-1, 0, 1, 123, 0xFFFFFFFF + 1]);
     test_x_type!(
         test_float,
         float,
-        vec![0.0 as f64, 1.5, 123.0, 0xFFFFFFFFi64 as f64 + 1.0]
+        vec![0.0, 1.5, 123.0, 0xFFFFFFFFi64 as f64 + 1.0]
     );
 
     test_x_type!(test_str, str, vec!["", "abc", "123"]);
@@ -223,6 +223,7 @@ mod tests_from {
         }
     }
 
+    #[test]
     fn test_list2() {
         let list = vec![1, 2, 4, 3];
 
@@ -241,6 +242,7 @@ mod tests_from {
 
     macro_rules! test_try_into {
         ($test_fn_name: ident, $type: ty, $tests: expr) => {
+            #[test]
             fn $test_fn_name() {
                 for v in $tests {
                     let v0 = v;

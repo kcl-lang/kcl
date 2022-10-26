@@ -37,11 +37,3 @@ indexmap = "1.0"
 phf = { version = "0.9", features = ["macros"] }
 fancy-regex = "0.7.1"
 num-integer = "0.1.44"
-
-#pprof = { version = "0.4", features = ["flamegraph"] }
-
-[profile.release]
-rpath = true
-panic = "unwind"
-opt-level = "z"  # Optimize for size.
-lto = true

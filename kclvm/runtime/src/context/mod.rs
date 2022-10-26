@@ -2,15 +2,18 @@
 
 pub mod api;
 pub use api::*;
+use std::fmt;
 
 #[allow(non_camel_case_types)]
 type kclvm_value_ref_t = crate::ValueRef;
 
-impl crate::PanicInfo {
-    pub fn to_string(&self) -> String {
-        return format!("{:?}", self);
+impl fmt::Display for crate::PanicInfo {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
     }
+}
 
+impl crate::PanicInfo {
     pub fn to_json_string(&self) -> String {
         let result = serde_json::to_string(&self);
         match result {

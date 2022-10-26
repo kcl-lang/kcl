@@ -72,27 +72,27 @@ mod test_value_get {
 
     #[test]
     fn test_get() {
-        let mut list_int = ValueRef::list_int(&vec![10 as i64, 20, 30]);
+        let mut list_int = ValueRef::list_int(&[10_i64, 20, 30]);
 
         let mut dict = ValueRef::dict(None);
         dict.dict_insert("a", &ValueRef::str("a-value"), Default::default(), 0);
         dict.dict_insert("b", &ValueRef::str("b-value"), Default::default(), 0);
 
         list_int.list_set(1, &dict);
-        list_int.list_set(2, &ValueRef::list_int(&vec![100 as i64, 200, 300]));
+        list_int.list_set(2, &ValueRef::list_int(&[100_i64, 200, 300]));
 
         assert_eq!(list_int.get_by_path("1.a").unwrap().as_str(), "a-value");
 
         assert_eq!(list_int.get_by_path("2.2").unwrap().as_int(), 300);
 
-        let dict = ValueRef::dict(Some(&vec![
+        let dict = ValueRef::dict(Some(&[
             ("aaa", &ValueRef::int(111)),
             (
                 "bbb",
-                &ValueRef::list(Some(&vec![
+                &ValueRef::list(Some(&[
                     &ValueRef::str("a"),
                     &ValueRef::str("b"),
-                    &ValueRef::dict(Some(&vec![("key0", &ValueRef::int(12345))])),
+                    &ValueRef::dict(Some(&[("key0", &ValueRef::int(12345))])),
                 ])),
             ),
         ]));

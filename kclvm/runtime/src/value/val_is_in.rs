@@ -148,39 +148,27 @@ mod test_value_in {
 
     #[test]
     fn test_in() {
-        assert_eq!(ValueRef::str("a").r#in(&ValueRef::str("abc")), true);
-        assert_eq!(ValueRef::str("ab").r#in(&ValueRef::str("abc")), true);
-        assert_eq!(ValueRef::str("abcd").r#in(&ValueRef::str("abc")), false);
+        assert!(ValueRef::str("a").r#in(&ValueRef::str("abc")));
+        assert!(ValueRef::str("ab").r#in(&ValueRef::str("abc")));
+        assert!(!ValueRef::str("abcd").r#in(&ValueRef::str("abc")));
 
-        assert_eq!(
-            ValueRef::str("a").r#in(&ValueRef::list_str(&[
-                "a".to_string(),
-                "b".to_string(),
-                "c".to_string()
-            ])),
-            true
-        );
-        assert_eq!(
-            ValueRef::str("d").r#in(&ValueRef::list_str(&[
-                "a".to_string(),
-                "b".to_string(),
-                "c".to_string()
-            ])),
-            false
-        );
-        assert_eq!(
-            ValueRef::str("key1").r#in(&ValueRef::dict_str(&[
-                ("key1", "value1"),
-                ("key2", "value1"),
-            ])),
-            true
-        );
-        assert_eq!(
-            ValueRef::str("err_key").r#in(&ValueRef::dict_str(&[
-                ("key1", "value1"),
-                ("key2", "value1"),
-            ])),
-            false
-        );
+        assert!(ValueRef::str("a").r#in(&ValueRef::list_str(&[
+            "a".to_string(),
+            "b".to_string(),
+            "c".to_string()
+        ])));
+        assert!(!ValueRef::str("d").r#in(&ValueRef::list_str(&[
+            "a".to_string(),
+            "b".to_string(),
+            "c".to_string()
+        ])));
+        assert!(ValueRef::str("key1").r#in(&ValueRef::dict_str(&[
+            ("key1", "value1"),
+            ("key2", "value1"),
+        ])));
+        assert!(!ValueRef::str("err_key").r#in(&ValueRef::dict_str(&[
+            ("key1", "value1"),
+            ("key2", "value1"),
+        ])));
     }
 }

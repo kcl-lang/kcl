@@ -28,9 +28,3 @@ criterion = "0.3"
 [build_dependencies]
 protobuf-codegen= "3.1.0"
 protoc-bin-vendored = "3.0.0"
-
-[profile.release]
-rpath = true
-panic = "unwind"
-opt-level = "z"  # Optimize for size.
-lto = true

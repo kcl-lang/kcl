@@ -8,14 +8,14 @@ use syn::{parse_macro_input, FnArg};
 pub fn runtime_fn(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let parsed_fn = parse_macro_input!(item as syn::ItemFn);
 
-    if let Ok(_) = std::env::var("kclvm_RUNTIME_GEN_API_SPEC") {
+    if std::env::var("kclvm_RUNTIME_GEN_API_SPEC").is_ok() {
         print_api_spec(&parsed_fn);
     }
 
     let x = quote! {
         #parsed_fn
     };
-    return x.into();
+    x.into()
 }
 
 // ----------------------------------------------------------------------------
@@ -32,7 +32,7 @@ fn print_api_spec(fn_item: &syn::ItemFn) {
     let fn_llvm_sig = get_fn_sig(fn_item, &TargetName::LLVM);
 
     // skip _fn_name()
-    if !fn_name.starts_with("_") {
+    if !fn_name.starts_with('_') {
         println!("// api-spec:       {}", fn_name);
         println!("// api-spec(c):    {};", fn_c_sig);
         println!("// api-spec(llvm): {};", fn_llvm_sig);
@@ -101,27 +101,29 @@ fn get_fn_args_type(fn_item: &syn::ItemFn, target: &TargetName) -> String {
 
 fn get_fn_arg_name(arg: &FnArg, target: &TargetName) -> String {
     match arg {
-        syn::FnArg::Typed(ty) => match ty {
-            syn::PatType { pat, .. } => match &**pat {
+        syn::FnArg::Typed(ty) => {
+            let syn::PatType { pat, .. } = ty;
+            match &**pat {
                 syn::Pat::Ident(x) => match target {
                     TargetName::C => x.ident.to_string(),
                     TargetName::LLVM => format!("%{}", x.ident),
                 },
                 _ => panic!("unsupported type: {}", quote!(#ty)),
-            },
-        },
+            }
+        }
         _ => panic!("unsupported arg: {}", quote!(#arg)),
     }
 }
 
 fn get_fn_arg_type(arg: &FnArg, target: &TargetName) -> String {
     match arg {
-        syn::FnArg::Typed(ty) => match ty {
-            syn::PatType { ty, .. } => match target {
+        syn::FnArg::Typed(ty) => {
+            let syn::PatType { ty, .. } = ty;
+            match target {
                 TargetName::C => build_c_type(ty),
                 TargetName::LLVM => build_llvm_type(ty),
-            },
-        },
+            }
+        }
         _ => panic!("unsupported fn arg: {}", quote!(#arg)),
     }
 }
@@ -160,13 +162,13 @@ fn build_c_type(ty: &syn::Type) -> String {
         }
         syn::Type::Ptr(ty_ptr) => {
             let base_ty = &ty_ptr.elem;
-            let base_constr = build_c_type(&base_ty);
-            format!("{}*", base_constr).to_string()
+            let base_constr = build_c_type(base_ty);
+            format!("{}*", base_constr)
         }
         syn::Type::Reference(ty_ref) => {
             let base_ty = &ty_ref.elem;
-            let base_constr = build_c_type(&base_ty);
-            format!("{}*", base_constr).to_string()
+            let base_constr = build_c_type(base_ty);
+            format!("{}*", base_constr)
         }
         syn::Type::BareFn(_) => "void*".to_string(),
         syn::Type::Never(_) => "void".to_string(),
@@ -199,13 +201,13 @@ fn build_llvm_type(ty: &syn::Type) -> String {
         }
         syn::Type::Ptr(ty_ptr) => {
             let base_ty = &ty_ptr.elem;
-            let base_constr = build_llvm_type(&base_ty);
-            format!("{}*", base_constr).to_string()
+            let base_constr = build_llvm_type(base_ty);
+            format!("{}*", base_constr)
         }
         syn::Type::Reference(ty_ref) => {
             let base_ty = &ty_ref.elem;
-            let base_constr = build_llvm_type(&base_ty);
-            format!("{}*", base_constr).to_string()
+            let base_constr = build_llvm_type(base_ty);
+            format!("{}*", base_constr)
         }
         syn::Type::BareFn(_) => "i8*".to_string(),
         syn::Type::Never(_) => "void".to_string(),

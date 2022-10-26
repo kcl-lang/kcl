@@ -4,7 +4,7 @@
 macro_rules! panic_i32_overflow {
     ($v: expr) => {
         let v = $v as i128;
-        let ctx = crate::Context::current_context_mut();
+        let ctx = $crate::Context::current_context_mut();
         ctx.set_err_type(&ErrType::IntOverflow_TYPE);
         panic!("{}: A 32 bit integer overflow", v)
     };
@@ -14,7 +14,7 @@ macro_rules! panic_i32_overflow {
 macro_rules! panic_i64_overflow {
     ($v: expr) => {
         let v = $v as i128;
-        let ctx = crate::Context::current_context_mut();
+        let ctx = $crate::Context::current_context_mut();
         ctx.set_err_type(&ErrType::IntOverflow_TYPE);
         panic!("{}: A 64 bit integer overflow", v)
     };
@@ -24,7 +24,7 @@ macro_rules! panic_f32_overflow {
     ($v: expr) => {
         let v = $v as f64;
 
-        let ctx = crate::Context::current_context_mut();
+        let ctx = $crate::Context::current_context_mut();
         ctx.set_err_type(&ErrType::FloatOverflow_TYPE);
 
         let mut s = format!("{:e}: A 32-bit floating point number overflow", v);

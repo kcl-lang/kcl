@@ -179,7 +179,7 @@ impl ValueRef {
                     }
                 }
                 Value::none | Value::undefined => { /*Do nothing on unpacking None/Undefined*/ }
-                _ => panic!("only list, dict and schema object can be used with unpack operators * and **, got {}", x_or_list.to_string()),
+                _ => panic!("only list, dict and schema object can be used with unpack operators * and **, got {}", x_or_list),
             },
             _ => panic!("Invalid list object in list_append_unpack"),
         }
@@ -230,7 +230,7 @@ impl ValueRef {
             }
             _ => panic!("Invalid list object in list_find"),
         }
-        return count;
+        count
     }
 
     pub fn list_find(&self, item: &Self) -> isize {
@@ -244,7 +244,7 @@ impl ValueRef {
             }
             _ => panic!("Invalid list object in list_find"),
         }
-        return -1;
+        -1
     }
 
     pub fn list_insert_at(&mut self, i: usize, v: &Self) {

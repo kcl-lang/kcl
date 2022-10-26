@@ -187,11 +187,7 @@ impl ValueRef {
                 let number_str = to_quantity(v.as_str()).to_string();
                 let v: i64 =
                     i64::from_str_radix(number_str.as_str(), base as u32).unwrap_or_else(|_| {
-                        panic!(
-                            "invalid literal for int() with base {}: '{}'",
-                            base,
-                            self.to_string()
-                        )
+                        panic!("invalid literal for int() with base {}: '{}'", base, self)
                     });
                 ValueRef::int(v)
             }
@@ -229,10 +225,7 @@ impl ValueRef {
             Value::bool_value(ref v) => ValueRef::float((*v as i64) as f64),
             Value::str_value(ref v) => {
                 let v: f64 = v.parse().unwrap_or_else(|_| {
-                    panic!(
-                        "invalid literal for float() with base 10: '{}'",
-                        self.to_string()
-                    )
+                    panic!("invalid literal for float() with base 10: '{}'", self)
                 });
                 let float32_overflow = strict_range_check_i32 && (v as f32).is_infinite();
                 let float64_overflow = strict_range_check_i64 && (v).is_infinite();
@@ -248,10 +241,7 @@ impl ValueRef {
                 }
                 ValueRef::float(v)
             }
-            _ => panic!(
-                "invalid literal for float() with base 10: '{}'",
-                self.to_string()
-            ),
+            _ => panic!("invalid literal for float() with base 10: '{}'", self),
         }
     }
 
@@ -299,14 +289,11 @@ impl ValueRef {
                 let keys: Vec<String> = dict.values.keys().map(|s| (*s).clone()).collect();
                 let mut result = keys.first().unwrap();
                 for key in keys.iter() {
-                    if filter(
-                        &ValueRef::str(&key.to_string()),
-                        &ValueRef::str(&result.to_string()),
-                    ) {
+                    if filter(&ValueRef::str(key), &ValueRef::str(result)) {
                         result = key;
                     }
                 }
-                ValueRef::str(&result.to_string())
+                ValueRef::str(result)
             }
             Value::schema_value(ref schema) => {
                 if schema.config.values.is_empty() {
@@ -315,14 +302,11 @@ impl ValueRef {
                 let keys: Vec<String> = schema.config.values.keys().map(|s| (*s).clone()).collect();
                 let mut result = keys.first().unwrap();
                 for key in keys.iter() {
-                    if filter(
-                        &ValueRef::str(&key.to_string()),
-                        &ValueRef::str(&result.to_string()),
-                    ) {
+                    if filter(&ValueRef::str(key), &ValueRef::str(result)) {
                         result = key;
                     }
                 }
-                ValueRef::str(&result.to_string())
+                ValueRef::str(result)
             }
             _ => panic!("{} object is not iterable", self.type_str()),
         }
@@ -639,7 +623,7 @@ pub fn type_of(x: &ValueRef, full_name: &ValueRef) -> ValueRef {
             };
             let mut result = String::new();
             if full_type_str != MAIN_PKG_PATH {
-                result += &full_type_str.to_string();
+                result += full_type_str;
                 result += ".";
             }
             result += &x.type_str();
@@ -674,7 +658,7 @@ mod test_builtin {
             builtin::pow(&ValueRef::int(2), &ValueRef::int(3), &ValueRef::int(5)).as_int()
         );
         assert_eq!(
-            (2.0 as f64).powf(0.5),
+            (2.0_f64).powf(0.5),
             builtin::pow(&ValueRef::int(2), &ValueRef::float(0.5), &ValueRef::none()).as_float()
         );
         assert_eq!(

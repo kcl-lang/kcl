@@ -80,8 +80,8 @@ mod test_is_int_overflow {
 
     #[test]
     fn test_is_i32_overflow() {
-        assert_eq!(is_i32_overflow(2147483647), false);
-        assert_eq!(is_i32_overflow(2147483647 + 1), true);
+        assert!(!is_i32_overflow(2147483647));
+        assert!(is_i32_overflow(2147483647 + 1));
 
         assert!(is_i32_overflow2(i32::MAX as i64 + 1, i32::MAX as i64 + 2));
     }

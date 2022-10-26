@@ -18,23 +18,12 @@ macro_rules! tri {
     };
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct JsonEncodeOptions {
     pub sort_keys: bool,
     pub indent: i64,
     pub ignore_private: bool,
     pub ignore_none: bool,
-}
-
-impl Default for JsonEncodeOptions {
-    fn default() -> JsonEncodeOptions {
-        JsonEncodeOptions {
-            sort_keys: false,
-            indent: 0,
-            ignore_private: false,
-            ignore_none: false,
-        }
-    }
 }
 
 struct JsonFormatter {
@@ -436,7 +425,7 @@ impl ValueRef {
 
     pub fn to_json_string_with_option(&self, opt: &JsonEncodeOptions) -> String {
         let json = self.build_json(opt);
-        let formatter = JsonFormatter::with_indent(opt.indent.clone());
+        let formatter = JsonFormatter::with_indent(opt.indent);
         let mut writer = Vec::with_capacity(128);
         let mut serializer = serde_json::Serializer::with_formatter(&mut writer, formatter);
         json.serialize(&mut serializer).unwrap();
@@ -549,7 +538,7 @@ impl ValueRef {
                 JsonValue::Object(val_map)
             }
             crate::Value::func_value(ref v) => {
-                JsonValue::Number(serde_json::Number::from(v.fn_ptr.clone()))
+                JsonValue::Number(serde_json::Number::from(v.fn_ptr))
             }
         }
     }
