@@ -169,11 +169,12 @@ impl Session {
     /// });
     /// assert!(result.is_err());
     /// ```
-    pub fn emit_stashed_diagnostics_and_abort(&self) -> Result<bool> {
+    #[inline]
+    pub fn emit_stashed_diagnostics_and_abort(&self) -> Result<&Self> {
         self.diag_handler
             .abort_if_errors()
             .with_context(|| "Internale Bug: Fail to display error diagnostic")?;
-        Ok(true)
+        Ok(self)
     }
 
     /// Emit all diagnostics to terminal.
