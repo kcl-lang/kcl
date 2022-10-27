@@ -117,7 +117,7 @@ impl KclvmRunner {
             libloading::Library::new(
                 std::path::PathBuf::from(lib_path)
                     .canonicalize()
-                    .expect(&format!("{} not found", lib_path)),
+                    .unwrap_or_else(|_| panic!("{} not found", lib_path)),
             )
             .unwrap()
         };
@@ -266,7 +266,7 @@ impl KclvmRunner {
 }
 
 fn wrap_msg_in_result(msg: &str) -> Result<String, String> {
-    let kcl_val = match ValueRef::from_json(&msg) {
+    let kcl_val = match ValueRef::from_json(msg) {
         Ok(msg) => msg,
         Err(err) => {
             return Err(err.to_string());

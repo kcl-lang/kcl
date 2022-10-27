@@ -1,7 +1,10 @@
 use crate::command::Command;
 use indexmap::IndexMap;
 use kclvm_ast::ast::{self, Program};
-use kclvm_compiler::codegen::{llvm::emit_code, EmitOptions};
+use kclvm_compiler::codegen::{
+    llvm::{emit_code, LL_FILE_SUFFIX},
+    EmitOptions,
+};
 use kclvm_config::cache::{load_pkg_cache, save_pkg_cache, CacheOption};
 use kclvm_error::bug;
 use kclvm_sema::resolver::scope::ProgramScope;
@@ -16,7 +19,7 @@ use threadpool::ThreadPool;
 /// IR code file suffix.
 const DEFAULT_IR_FILE: &str = "_a.out";
 /// Default codegen timeout.
-const DEFAULT_TIME_OUT: u64 = 5;
+const DEFAULT_TIME_OUT: u64 = 50;
 
 /// LibAssembler trait is used to indicate the general interface
 /// that must be implemented when different intermediate codes are assembled
@@ -160,7 +163,7 @@ impl LibAssembler for LlvmLibAssembler {
         lib_path: &str,
     ) -> String {
         // clean "*.ll" file path.
-        clean_path(&code_file_path.to_string());
+        clean_path(code_file_path);
 
         // gen LLVM IR code into ".ll" file.
         emit_code(
@@ -175,20 +178,20 @@ impl LibAssembler for LlvmLibAssembler {
         .expect("Compile KCL to LLVM error");
 
         let mut cmd = Command::new();
-        let gen_lib_path = cmd.run_clang_single(code_file_path, lib_path);
+        let gen_lib_path = cmd.link_libs(&[code_file_path.to_string()], lib_path);
 
-        clean_path(&code_file_path.to_string());
+        clean_path(code_file_path);
         gen_lib_path
     }
 
     #[inline]
     fn add_code_file_suffix(&self, code_file: &str) -> String {
-        format!("{}.ll", code_file)
+        format!("{}{}", code_file, LL_FILE_SUFFIX)
     }
 
     #[inline]
     fn get_code_file_suffix(&self) -> String {
-        ".ll".to_string()
+        LL_FILE_SUFFIX.to_string()
     }
 }
 
@@ -326,7 +329,7 @@ impl KclvmAssembler {
             pool.execute(move || {
                 // Locking file for parallel code generation.
                 let mut file_lock = fslock::LockFile::open(&lock_file_path)
-                    .expect(&format!("{} not found", lock_file_path));
+                    .unwrap_or_else(|_| panic!("{} not found", lock_file_path));
                 file_lock.lock().unwrap();
 
                 let root = &compile_prog.root;
@@ -370,13 +373,13 @@ impl KclvmAssembler {
                         Some(path) => path,
                         None => {
                             let code_file = file.to_str().unwrap();
-                            let code_file_path = assembler.add_code_file_suffix(&code_file);
+                            let code_file_path = assembler.add_code_file_suffix(code_file);
                             let lib_path = format!("{}{}", code_file, Command::get_lib_suffix());
                             // generate dynamic link library for single file kcl program
                             let lib_path = assembler.assemble_lib(
                                 &compile_prog,
                                 import_names,
-                                &code_file,
+                                code_file,
                                 &code_file_path,
                                 &lib_path,
                             );

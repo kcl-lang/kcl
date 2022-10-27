@@ -4,12 +4,14 @@ use indexmap::IndexMap;
 use inkwell::module::Module;
 use inkwell::{context::Context, memory_buffer::MemoryBuffer};
 use kclvm_ast::ast;
+use once_cell::sync::OnceCell;
 use std::error;
 
 use crate::codegen::{EmitOptions, MODULE_NAME};
 
 use super::context::LLVMCodeGenContext;
 
+static LLVM_INIT: OnceCell<()> = OnceCell::new();
 static RUNTIME_LLVM_BC: &[u8] = include_bytes!("../../../../runtime/src/_kclvm.bc");
 
 /// Load runtime libraries and parse it to a module.
@@ -24,6 +26,10 @@ pub fn emit_code(
     import_names: IndexMap<String, IndexMap<String, String>>,
     opt: &EmitOptions,
 ) -> Result<(), Box<dyn error::Error>> {
+    // Init LLVM targets
+    LLVM_INIT.get_or_init(|| {
+        inkwell::targets::Target::initialize_all(&Default::default());
+    });
     // Create a LLVM context
     let context = Context::create();
     // Create a LLVM module using an exist LLVM bitcode file
