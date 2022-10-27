@@ -224,7 +224,7 @@ impl ValueRef {
             },
             Value::list_value(ref v) => {
                 let mut list = ValueRef {
-                    rc: Rc::new(Value::list_value(ListValue { values: vec![] })),
+                    rc: Rc::new(Value::list_value(Box::new(ListValue { values: vec![] }))),
                 };
                 for x in v.values.iter() {
                     if !(x.is_undefined() || x.is_func() || ctx.cfg.disable_none && x.is_none()) {
@@ -235,12 +235,12 @@ impl ValueRef {
             }
             Value::dict_value(ref v) => {
                 let mut dict = ValueRef {
-                    rc: Rc::new(Value::dict_value(DictValue {
+                    rc: Rc::new(Value::dict_value(Box::new(DictValue {
                         values: IndexMap::default(),
                         ops: IndexMap::default(),
                         insert_indexs: IndexMap::default(),
                         attr_map: IndexMap::default(),
-                    })),
+                    }))),
                 };
                 for (key, val) in v.values.iter() {
                     if !(val.is_undefined()
@@ -259,7 +259,7 @@ impl ValueRef {
             }
             Value::schema_value(ref v) => {
                 let mut schema = ValueRef {
-                    rc: Rc::new(Value::schema_value(SchemaValue {
+                    rc: Rc::new(Value::schema_value(Box::new(SchemaValue {
                         name: v.name.clone(),
                         pkgpath: v.pkgpath.clone(),
                         config: Rc::new(DictValue {
@@ -269,7 +269,7 @@ impl ValueRef {
                             attr_map: IndexMap::default(),
                         }),
                         config_keys: vec![],
-                    })),
+                    }))),
                 };
                 for (key, val) in v.config.values.iter() {
                     if !val.is_undefined() && !val.is_func() {

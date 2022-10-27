@@ -8,7 +8,7 @@ impl DictValue {
         for x in values {
             dict.values.insert(x.0.to_string(), x.1.clone());
         }
-        ValueRef::from(Value::dict_value(dict))
+        ValueRef::from(Value::dict_value(Box::new(dict)))
     }
 
     pub fn get(&self, key: &ValueRef) -> Option<&ValueRef> {
@@ -46,7 +46,7 @@ impl ValueRef {
         for x in values {
             dict.values.insert(x.0.to_string(), Self::int(x.1));
         }
-        Self::from(Value::dict_value(dict))
+        Self::from(Value::dict_value(Box::new(dict)))
     }
 
     pub fn dict_float(values: &[(&str, f64)]) -> Self {
@@ -54,7 +54,7 @@ impl ValueRef {
         for x in values {
             dict.values.insert(x.0.to_string(), Self::float(x.1));
         }
-        Self::from(Value::dict_value(dict))
+        Self::from(Value::dict_value(Box::new(dict)))
     }
 
     pub fn dict_bool(values: &[(&str, bool)]) -> Self {
@@ -62,7 +62,7 @@ impl ValueRef {
         for x in values {
             dict.values.insert(x.0.to_string(), Self::bool(x.1));
         }
-        Self::from(Value::dict_value(dict))
+        Self::from(Value::dict_value(Box::new(dict)))
     }
 
     pub fn dict_str(values: &[(&str, &str)]) -> Self {
@@ -70,7 +70,7 @@ impl ValueRef {
         for x in values {
             dict.values.insert(x.0.to_string(), Self::str(x.1));
         }
-        Self::from(Value::dict_value(dict))
+        Self::from(Value::dict_value(Box::new(dict)))
     }
 
     /// Dict clear
@@ -321,7 +321,7 @@ impl ValueRef {
                 dict.ops.insert(key.to_string(), op);
                 dict.insert_indexs.insert(key.to_string(), insert_index);
                 self.union(
-                    &ValueRef::from(Value::dict_value(dict)),
+                    &ValueRef::from(Value::dict_value(Box::new(dict))),
                     true,
                     false,
                     should_idempotent_check,

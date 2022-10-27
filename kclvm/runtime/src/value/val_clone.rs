@@ -14,13 +14,13 @@ impl ValueRef {
                 rc: Rc::new(Value::none),
             },
             Value::func_value(ref v) => ValueRef {
-                rc: Rc::new(Value::func_value(FuncValue {
+                rc: Rc::new(Value::func_value(Box::new(FuncValue {
                     fn_ptr: v.fn_ptr,
                     check_fn_ptr: v.check_fn_ptr,
                     closure: v.closure.deep_copy(),
                     external_name: v.external_name.clone(),
                     runtime_type: v.runtime_type.clone(),
-                })),
+                }))),
             },
             Value::bool_value(ref v) => ValueRef {
                 rc: Rc::new(Value::bool_value(*v)),
@@ -38,9 +38,9 @@ impl ValueRef {
                 rc: Rc::new(Value::str_value(v.to_string())),
             },
             Value::list_value(ref v) => ValueRef {
-                rc: Rc::new(Value::list_value(ListValue {
+                rc: Rc::new(Value::list_value(Box::new(ListValue {
                     values: v.values.iter().map(|x| x.deep_copy()).collect(),
-                })),
+                }))),
             },
             Value::dict_value(ref v) => {
                 let mut dict = DictValue::new(&[]);
@@ -81,12 +81,12 @@ impl ValueRef {
                     }
                 }
                 ValueRef {
-                    rc: Rc::new(Value::schema_value(SchemaValue {
+                    rc: Rc::new(Value::schema_value(Box::new(SchemaValue {
                         name: v.name.clone(),
                         pkgpath: v.pkgpath.clone(),
                         config: Rc::new(dict.as_dict_ref().clone()),
                         config_keys: v.config_keys.clone(),
-                    })),
+                    }))),
                 }
             }
         }

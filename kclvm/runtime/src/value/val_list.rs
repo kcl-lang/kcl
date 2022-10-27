@@ -8,7 +8,7 @@ impl ValueRef {
         for _i in 0..size {
             list.values.push(val.clone());
         }
-        Self::from(Value::list_value(list))
+        Self::from(Value::list_value(Box::new(list)))
     }
 
     pub fn list_bool(x: &[bool]) -> Self {
@@ -16,7 +16,7 @@ impl ValueRef {
         for x in x.iter() {
             list.values.push(Self::bool(*x));
         }
-        Self::from(Value::list_value(list))
+        Self::from(Value::list_value(Box::new(list)))
     }
 
     pub fn list_int(x: &[i64]) -> Self {
@@ -24,7 +24,7 @@ impl ValueRef {
         for x in x.iter() {
             list.values.push(Self::int(*x));
         }
-        Self::from(Value::list_value(list))
+        Self::from(Value::list_value(Box::new(list)))
     }
 
     pub fn list_float(x: &[f64]) -> Self {
@@ -32,7 +32,7 @@ impl ValueRef {
         for x in x.iter() {
             list.values.push(Self::float(*x));
         }
-        Self::from(Value::list_value(list))
+        Self::from(Value::list_value(Box::new(list)))
     }
 
     pub fn list_str(x: &[String]) -> Self {
@@ -40,7 +40,7 @@ impl ValueRef {
         for x in x.iter() {
             list.values.push(Self::str((*x).as_ref()));
         }
-        Self::from(Value::list_value(list))
+        Self::from(Value::list_value(Box::new(list)))
     }
 
     pub fn list_resize(&mut self, newsize: usize) {

@@ -167,7 +167,7 @@ impl ValueRef {
                         list.values.push(x.clone());
                     }
                 }
-                Self::from(Value::list_value(list))
+                Self::from(Value::list_value(Box::new(list)))
             }
             (Value::int_value(b), Value::list_value(a)) => {
                 let mut list = ListValue::default();
@@ -176,7 +176,7 @@ impl ValueRef {
                         list.values.push(x.clone());
                     }
                 }
-                Self::from(Value::list_value(list))
+                Self::from(Value::list_value(Box::new(list)))
             }
             _ => panic_unsupported_bin_op!("*", self.type_str(), x.type_str()),
         }
