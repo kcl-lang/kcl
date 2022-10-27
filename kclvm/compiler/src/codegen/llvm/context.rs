@@ -34,6 +34,8 @@ use crate::codegen::{
 use crate::pkgpath_without_prefix;
 use crate::value;
 
+use super::LL_FILE_SUFFIX;
+
 /// Float type string width mapping
 pub const FLOAT_TYPE_WIDTH_MAPPING: Map<&str, usize> = phf_map! {
     "half" => 16,
@@ -1236,15 +1238,13 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 let modules = self.modules.borrow_mut();
                 for (index, (_, module)) in modules.iter().enumerate() {
                     let path = if modules.len() == 1 {
-                        format!("{}.ll", path_str)
+                        format!("{}{}", path_str, LL_FILE_SUFFIX)
                     } else {
-                        format!("{}_{}.ll", path_str, index)
+                        format!("{}_{}{}", path_str, index, LL_FILE_SUFFIX)
                     };
                     let path = std::path::Path::new(&path);
-                    module
-                        .borrow_mut()
-                        .print_to_file(path)
-                        .expect(kcl_error::CODE_GEN_ERROR_MSG);
+                    // Emit LLVM ll file
+                    module.borrow_mut().print_to_file(path)?;
                 }
             } else {
                 self.module

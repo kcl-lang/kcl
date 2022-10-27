@@ -8,6 +8,7 @@ use crate::{execute, runner::ExecProgramArgs};
 use anyhow::Context;
 use anyhow::Result;
 use kclvm_ast::ast::{Module, Program};
+use kclvm_compiler::codegen::llvm::LL_FILE_SUFFIX;
 use kclvm_config::settings::load_file;
 use kclvm_parser::load_program;
 use kclvm_sema::resolver::resolve_program;
@@ -24,7 +25,7 @@ use tempfile::tempdir;
 use walkdir::WalkDir;
 
 const EXEC_DATA_PATH: &str = "src/exec_data/";
-const TEST_CASES: &[&'static str; 5] = &[
+const TEST_CASES: &[&str; 5] = &[
     "init_check_order_0",
     "init_check_order_1",
     "normal_2",
@@ -32,7 +33,7 @@ const TEST_CASES: &[&'static str; 5] = &[
     "multi_vars_0",
 ];
 
-const MULTI_FILE_TEST_CASES: &[&'static str; 6] = &[
+const MULTI_FILE_TEST_CASES: &[&str; 6] = &[
     "multi_file_compilation/no_kcl_mod_file",
     "multi_file_compilation/relative_import",
     "multi_file_compilation/relative_import_as",
@@ -41,9 +42,9 @@ const MULTI_FILE_TEST_CASES: &[&'static str; 6] = &[
     "multi_file_compilation/import_regular_module_as",
 ];
 
-const EXEC_PROG_ARGS_TEST_CASE: &[&'static str; 1] = &["exec_prog_args/default.json"];
+const EXEC_PROG_ARGS_TEST_CASE: &[&str; 1] = &["exec_prog_args/default.json"];
 
-const SETTINGS_FILE_TEST_CASE: &[&'static (&str, &str); 1] =
+const SETTINGS_FILE_TEST_CASE: &[&(&str, &str); 1] =
     &[&("settings_file/settings.yaml", "settings_file/settings.json")];
 
 const EXPECTED_JSON_FILE_NAME: &str = "stdout.golden.json";
@@ -70,7 +71,7 @@ fn load_test_program(filename: String) -> Program {
 fn parse_program(test_kcl_case_path: &str) -> Program {
     let args = ExecProgramArgs::default();
     let opts = args.get_load_program_options();
-    load_program(&[&test_kcl_case_path], Some(opts)).unwrap()
+    load_program(&[test_kcl_case_path], Some(opts)).unwrap()
 }
 
 /// Construct ast.Program by ast.Module and default configuration.
@@ -103,16 +104,12 @@ fn construct_pkg_lib_path(
     let mut result = vec![];
     for (pkgpath, _) in &prog.pkgs {
         if pkgpath == "__main__" {
-            result.push(PathBuf::from(format!(
-                "{}{}",
-                main_path.to_string(),
-                suffix
-            )));
+            result.push(PathBuf::from(format!("{}{}", main_path, suffix)));
         } else {
             result.push(cache_dir.join(format!("{}{}", pkgpath.clone(), suffix)));
         }
     }
-    return result;
+    result
 }
 
 /// Load the expect result from stdout.golden.json
@@ -166,15 +163,11 @@ fn gen_libs_for_test(entry_file: &str, test_kcl_case_path: &str) {
         assert_eq!(pkg_path.exists(), true);
     }
 
-    let tmp_main_lib_path = fs::canonicalize(format!(
-        "{}{}",
-        entry_file.to_string(),
-        Command::get_lib_suffix()
-    ))
-    .unwrap();
+    let tmp_main_lib_path =
+        fs::canonicalize(format!("{}{}", entry_file, Command::get_lib_suffix())).unwrap();
     assert_eq!(tmp_main_lib_path.exists(), true);
 
-    clean_path(&tmp_main_lib_path.to_str().unwrap());
+    clean_path(tmp_main_lib_path.to_str().unwrap());
     assert_eq!(tmp_main_lib_path.exists(), false);
 }
 
@@ -196,13 +189,13 @@ fn assemble_lib_for_test(
     let scope = resolve_program(&mut program);
 
     // tmp file
-    let temp_entry_file_path = &format!("{}.ll", entry_file);
+    let temp_entry_file_path = &format!("{}{}", entry_file, LL_FILE_SUFFIX);
     let temp_entry_file_lib = &format!("{}.{}", entry_file, Command::get_lib_suffix());
 
     // assemble libs
     assembler.assemble_lib(
         &program,
-        scope.import_names.clone(),
+        scope.import_names,
         entry_file,
         temp_entry_file_path,
         temp_entry_file_lib,

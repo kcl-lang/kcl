@@ -13,3 +13,8 @@ mod schema;
 mod utils;
 
 pub use emit::emit_code;
+
+/// Object file type format suffix .o
+pub const OBJECT_FILE_SUFFIX: &str = ".o";
+/// LLVM IR text format suffix .ll
+pub const LL_FILE_SUFFIX: &str = ".ll";

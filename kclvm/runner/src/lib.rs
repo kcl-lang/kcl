@@ -72,7 +72,7 @@ pub fn exec_program(
     let work_dir = args.work_dir.clone().unwrap_or_default();
 
     // join work_path with k_file_path
-    for (_, file) in k_files.into_iter().enumerate() {
+    for (_, file) in k_files.iter().enumerate() {
         match Path::new(&work_dir).join(file).to_str() {
             Some(str) => kcl_paths.push(String::from(str)),
             None => (),
@@ -81,14 +81,14 @@ pub fn exec_program(
 
     let kcl_paths_str = kcl_paths.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
 
-    let mut program = load_program(&kcl_paths_str.as_slice(), Some(opts))?;
+    let mut program = load_program(kcl_paths_str.as_slice(), Some(opts))?;
 
     if let Err(err) = apply_overrides(&mut program, &args.overrides, &[], args.print_override_ast) {
         return Err(err.to_string());
     }
 
     let start_time = SystemTime::now();
-    let exec_result = execute(program, plugin_agent, &args);
+    let exec_result = execute(program, plugin_agent, args);
     let escape_time = match SystemTime::now().duration_since(start_time) {
         Ok(dur) => dur.as_secs_f32(),
         Err(err) => return Err(err.to_string()),
@@ -234,7 +234,7 @@ fn clean_tmp_files(temp_entry_file: &String, lib_suffix: &String) {
 #[inline]
 fn remove_file(file: &str) {
     if Path::new(&file).exists() {
-        std::fs::remove_file(&file).expect(&format!("{} not found", file));
+        std::fs::remove_file(&file).unwrap_or_else(|_| panic!("{} not found", file));
     }
 }
 
@@ -243,6 +243,6 @@ fn temp_file(dir: &str) -> String {
     let timestamp = chrono::Local::now().timestamp_nanos();
     let id = std::process::id();
     let file = format!("{}_{}", id, timestamp);
-    std::fs::create_dir_all(dir).expect(&format!("{} not found", dir));
+    std::fs::create_dir_all(dir).unwrap_or_else(|_| panic!("{} not found", dir));
     Path::new(dir).join(file).to_str().unwrap().to_string()
 }
