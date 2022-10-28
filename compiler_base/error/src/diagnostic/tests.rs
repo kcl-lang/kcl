@@ -253,7 +253,9 @@ mod test_error_message {
 
 mod test_diag_handler {
     use crate::{
-        components::Label, diagnostic_handler::DiagnosticHandler, Diagnostic, DiagnosticStyle,
+        components::Label,
+        diagnostic_handler::{DiagnosticHandler, MessageArgs},
+        Diagnostic, DiagnosticStyle,
     };
     use anyhow::{Context, Result};
     #[test]
@@ -268,7 +270,7 @@ mod test_diag_handler {
     }
 
     fn return_self_for_test() -> Result<()> {
-        DiagnosticHandler::default()?
+        DiagnosticHandler::new_with_default_template_dir()?
             .add_err_diagnostic(Diagnostic::<DiagnosticStyle>::new())?
             .add_warn_diagnostic(Diagnostic::<DiagnosticStyle>::new())?
             .emit_error_diagnostic(Diagnostic::<DiagnosticStyle>::new())?
@@ -281,11 +283,24 @@ mod test_diag_handler {
 
     #[test]
     fn test_diag_handler_fmt() {
-        let diag_handler = DiagnosticHandler::default().unwrap();
+        let diag_handler = DiagnosticHandler::new_with_default_template_dir().unwrap();
         let mut diag = Diagnostic::<DiagnosticStyle>::new();
         let err_label_1 = Box::new(Label::Error("E3033".to_string()));
         diag.append_component(err_label_1);
         diag_handler.add_err_diagnostic(diag).unwrap();
         assert_eq!(format!("{:?}", diag_handler), "[[StyledString { text: \"error\", style: Some(NeedFix) }, StyledString { text: \"[E3033]\", style: Some(Helpful) }]]\n");
+    }
+
+    #[test]
+    fn test_diag_handler_default() {
+        let diag_handler = DiagnosticHandler::default();
+        match diag_handler.get_diagnostic_msg("index", Some("sub_index"), &MessageArgs::default()) {
+            Ok(_) => {
+                panic!("Unreachable")
+            }
+            Err(err) => {
+                assert_eq!(format!("{:?}", err), "Message doesn't exist.")
+            }
+        };
     }
 }
