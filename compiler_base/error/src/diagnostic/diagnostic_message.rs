@@ -18,6 +18,13 @@ pub(crate) struct TemplateLoader {
 }
 
 impl TemplateLoader {
+    /// Create an empty TemplateLoader that does not load any template files(*.ftl).
+    pub(crate) fn default() -> Self {
+        Self {
+            template_inner: Arc::new(TemplateLoaderInner::default()),
+        }
+    }
+
     /// Create the `TemplateLoader` with template (*.ftl) files directory.
     /// `TemplateLoader` will load all the files end with "*.ftl" under the directory recursively.
     /// template_files
@@ -77,6 +84,12 @@ struct TemplateLoaderInner {
 }
 
 impl TemplateLoaderInner {
+    fn default() -> Self {
+        Self {
+            template_bunder: FluentBundle::default(),
+        }
+    }
+
     fn new_with_template_dir(template_dir: &str) -> Result<Self> {
         let mut template_bunder = FluentBundle::new(vec![langid!("en-US")]);
         load_all_templates_in_dir_to_resources(template_dir, &mut template_bunder)
