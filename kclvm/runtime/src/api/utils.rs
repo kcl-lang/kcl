@@ -74,7 +74,7 @@ pub fn convert_double_pointer_to_vec(data: &mut &mut i8, len: usize) -> Vec<Stri
     }
 }
 
-pub fn assert_panic<F: FnOnce() -> () + std::panic::UnwindSafe>(msg: &str, func: F) {
+pub fn assert_panic<F: FnOnce() + std::panic::UnwindSafe>(msg: &str, func: F) {
     match std::panic::catch_unwind(func) {
         Ok(_v) => {
             panic!("not panic, expect={}", msg);

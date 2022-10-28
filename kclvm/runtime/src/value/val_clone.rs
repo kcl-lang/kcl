@@ -43,14 +43,10 @@ impl ValueRef {
                 }))),
             },
             Value::dict_value(ref v) => {
-                let mut dict = DictValue::new(&[]);
+                let mut dict = ValueRef::from(Value::dict_value(Box::new(DictValue::new(&[]))));
                 for (key, val) in &v.values {
-                    let op = v
-                        .ops
-                        .get(key)
-                        .or(Some(&ConfigEntryOperationKind::Union))
-                        .unwrap();
-                    let index = v.insert_indexs.get(key).or(Some(&-1)).unwrap();
+                    let op = v.ops.get(key).unwrap_or(&ConfigEntryOperationKind::Union);
+                    let index = v.insert_indexs.get(key).unwrap_or(&-1);
                     dict.dict_update_entry(
                         key.as_str(),
                         &val.deep_copy(),
@@ -61,15 +57,14 @@ impl ValueRef {
                 dict
             }
             Value::schema_value(ref v) => {
-                let mut dict = DictValue::new(&[]);
+                let mut dict = ValueRef::from(Value::dict_value(Box::new(DictValue::new(&[]))));
                 for (key, val) in &v.config.values {
                     let op = v
                         .config
                         .ops
                         .get(key)
-                        .or(Some(&ConfigEntryOperationKind::Union))
-                        .unwrap();
-                    let index = v.config.insert_indexs.get(key).or(Some(&-1)).unwrap();
+                        .unwrap_or(&ConfigEntryOperationKind::Union);
+                    let index = v.config.insert_indexs.get(key).unwrap_or(&-1);
                     dict.dict_update_entry(
                         key.as_str(),
                         &val.deep_copy(),

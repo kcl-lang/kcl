@@ -87,7 +87,7 @@ impl ValueRef {
                 for (attr, is_optional) in &optional_mapping.values {
                     let is_required = !is_optional.as_bool();
                     let undefined = ValueRef::undefined();
-                    let value = attr_map.get(attr).or(Some(&undefined)).unwrap();
+                    let value = attr_map.get(attr).unwrap_or(&undefined);
                     if is_required && value.is_none_or_undefined() {
                         let filename = config_meta.get_by_key(CONFIG_META_FILENAME);
                         let line = config_meta.get_by_key(CONFIG_META_LINE);
@@ -177,9 +177,8 @@ impl ValueRef {
                     .config
                     .ops
                     .get(k)
-                    .or(Some(&ConfigEntryOperationKind::Union))
-                    .unwrap();
-                let index = value.config.insert_indexs.get(k).or(Some(&-1)).unwrap();
+                    .unwrap_or(&ConfigEntryOperationKind::Union);
+                let index = value.config.insert_indexs.get(k).unwrap_or(&-1);
                 values.insert(k.clone(), v.clone());
                 ops.insert(k.clone(), op.clone());
                 insert_indexs.insert(k.clone(), *index);
@@ -208,13 +207,13 @@ mod test_value_schema {
     fn test_dict_schema_convention() {
         let dict = ValueRef::dict(None);
         let dict = dict.schema_to_dict();
-        assert_eq!(dict.is_dict(), true);
+        assert!(dict.is_dict());
         let schema = dict.dict_to_schema(TEST_SCHEMA_NAME, MAIN_PKG_PATH, &[]);
-        assert_eq!(schema.is_schema(), true);
+        assert!(schema.is_schema());
         let schema = schema.dict_to_schema(TEST_SCHEMA_NAME, MAIN_PKG_PATH, &[]);
-        assert_eq!(schema.is_schema(), true);
+        assert!(schema.is_schema());
         let dict = schema.schema_to_dict();
-        assert_eq!(dict.is_dict(), true);
+        assert!(dict.is_dict());
     }
 
     #[test]

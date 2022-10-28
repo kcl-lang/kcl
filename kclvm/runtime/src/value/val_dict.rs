@@ -3,12 +3,12 @@
 use crate::*;
 
 impl DictValue {
-    pub fn new(values: &[(&str, &ValueRef)]) -> ValueRef {
+    pub fn new(values: &[(&str, &ValueRef)]) -> DictValue {
         let mut dict = DictValue::default();
         for x in values {
             dict.values.insert(x.0.to_string(), x.1.clone());
         }
-        ValueRef::from(Value::dict_value(Box::new(dict)))
+        dict
     }
 
     pub fn get(&self, key: &ValueRef) -> Option<&ValueRef> {
@@ -93,7 +93,7 @@ impl ValueRef {
     /// Dict get values
     pub fn dict_values(&self) -> ValueRef {
         let dict = self.dict_config();
-        let values: Vec<&ValueRef> = dict.values.values().map(|k| k).collect();
+        let values: Vec<&ValueRef> = dict.values.values().collect();
         ValueRef::list(Some(&values))
     }
 
@@ -174,9 +174,8 @@ impl ValueRef {
                         let op = dict
                             .ops
                             .get(key)
-                            .or(Some(&ConfigEntryOperationKind::Union))
-                            .unwrap();
-                        let index = dict.insert_indexs.get(key).or(Some(&-1)).unwrap();
+                            .unwrap_or(&ConfigEntryOperationKind::Union);
+                        let index = dict.insert_indexs.get(key).unwrap_or(&-1);
                         d.dict_update_entry(key, value, op, index);
                     }
                 }
@@ -191,9 +190,8 @@ impl ValueRef {
                             .config
                             .ops
                             .get(key)
-                            .or(Some(&ConfigEntryOperationKind::Union))
-                            .unwrap();
-                        let index = schema.config.insert_indexs.get(key).or(Some(&-1)).unwrap();
+                            .unwrap_or(&ConfigEntryOperationKind::Union);
+                        let index = schema.config.insert_indexs.get(key).unwrap_or(&-1);
                         d.dict_update_entry(key, value, op, index);
                     }
                 }
@@ -345,7 +343,7 @@ impl ValueRef {
             }
             (Value::dict_value(_) | Value::schema_value(_), Value::undefined) => { /*Do nothing on unpacking None/Undefined*/
             }
-            _ => panic!("only list, dict and schema object can be used with unpack operators * and **, got {}", v.to_string()),
+            _ => panic!("only list, dict and schema object can be used with unpack operators * and **, got {}", v),
         }
     }
 

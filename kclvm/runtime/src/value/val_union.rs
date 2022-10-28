@@ -41,7 +41,7 @@ impl ValueRef {
                                 && obj.values.contains_key(k)
                                 && !value_subsume(v, obj.values.get(k).unwrap(), false)
                             {
-                                panic!("conflicting values on the attribute '{}' between {:?} and {:?}", k, self.to_string(), x.to_string());
+                                panic!("conflicting values on the attribute '{}' between {:?} and {:?}", k, self, x);
                             }
                             let value = obj.values.get(k).unwrap().union(
                                 v,

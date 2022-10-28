@@ -161,7 +161,7 @@ pub fn type_pack_and_check(value: &ValueRef, expected_types: Vec<&str>) -> Value
     let value_tpe = value.type_str();
     let mut checked = false;
     let mut convertted_value = value.clone();
-    let expected_type = &expected_types.join(" | ").replace("@", "");
+    let expected_type = &expected_types.join(" | ").replace('@', "");
     for tpe in expected_types {
         let tpe = if !tpe.contains('.') {
             let ctx = Context::current_context_mut();
@@ -219,9 +219,8 @@ pub fn convert_collection_value(value: &ValueRef, tpe: &str) -> ValueRef {
             let op = dict_ref
                 .ops
                 .get(k)
-                .or(Some(&ConfigEntryOperationKind::Union))
-                .unwrap();
-            let index = dict_ref.insert_indexs.get(k).or(Some(&-1)).unwrap();
+                .unwrap_or(&ConfigEntryOperationKind::Union);
+            let index = dict_ref.insert_indexs.get(k).unwrap_or(&-1);
             expected_dict.dict_update_entry(k, &expected_value, op, index)
         }
         expected_dict
@@ -359,9 +358,13 @@ pub fn check_type(value: &ValueRef, tpe: &str) -> bool {
     }
     if is_type_union(tpe) {
         return check_type_union(value, tpe);
-    } else if check_type_literal(value, tpe) {
+    }
+
+    if check_type_literal(value, tpe) {
         return true;
-    } else if check_number_multiplier_type(value, tpe) {
+    }
+
+    if check_number_multiplier_type(value, tpe) {
         return true;
     }
     // if value type is a dict type e.g. {"k": "v"}
@@ -496,7 +499,7 @@ pub fn is_literal_type(tpe: &str) -> bool {
     if ValueRef::str(tpe).str_isdigit().is_truthy() {
         return true;
     }
-    if ValueRef::str(tpe.replacen(".", "", 1).as_str())
+    if ValueRef::str(tpe.replacen('.', "", 1).as_str())
         .str_isdigit()
         .is_truthy()
         && tpe.matches('.').count() < 2

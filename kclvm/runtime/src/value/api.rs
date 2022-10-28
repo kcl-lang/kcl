@@ -1963,30 +1963,22 @@ pub extern "C" fn kclvm_schema_backtrack_cache(
             if let Some(value) = schema.dict_get_value(name) {
                 cache.dict_update_key_value(name, value.clone());
             }
-        } else {
-            match (
-                cal_map.dict_get_value(&format!("{}_{}", name, CAL_MAP_RUNTIME_TYPE)),
-                cal_map.dict_get_value(&format!("{}_{}", name, CAL_MAP_META_LINE)),
+        } else if let (Some(cal_map_runtime_type_list), Some(cal_map_meta_line_list)) = (
+            cal_map.dict_get_value(&format!("{}_{}", name, CAL_MAP_RUNTIME_TYPE)),
+            cal_map.dict_get_value(&format!("{}_{}", name, CAL_MAP_META_LINE)),
+        ) {
+            if let (Some(cal_map_runtime_type), Some(cal_map_meta_line)) = (
+                cal_map_runtime_type_list.list_get(-1),
+                cal_map_meta_line_list.list_get(-1),
             ) {
-                (Some(cal_map_runtime_type_list), Some(cal_map_meta_line_list)) => {
-                    match (
-                        cal_map_runtime_type_list.list_get(-1),
-                        cal_map_meta_line_list.list_get(-1),
-                    ) {
-                        (Some(cal_map_runtime_type), Some(cal_map_meta_line)) => {
-                            let runtime_type = ptr_as_ref(runtime_type);
-                            let line = Context::current_context().panic_info.kcl_line as i64;
-                            let cal_map_meta_line = cal_map_meta_line.as_int();
-                            if runtime_type == cal_map_runtime_type && line >= cal_map_meta_line {
-                                if let Some(value) = schema.dict_get_value(name) {
-                                    cache.dict_update_key_value(name, value.clone());
-                                }
-                            }
-                        }
-                        _ => {}
+                let runtime_type = ptr_as_ref(runtime_type);
+                let line = Context::current_context().panic_info.kcl_line as i64;
+                let cal_map_meta_line = cal_map_meta_line.as_int();
+                if runtime_type == cal_map_runtime_type && line >= cal_map_meta_line {
+                    if let Some(value) = schema.dict_get_value(name) {
+                        cache.dict_update_key_value(name, value.clone());
                     }
                 }
-                _ => {}
             }
         }
     }
@@ -2085,8 +2077,7 @@ pub extern "C" fn kclvm_schema_value_check(
             let op = config
                 .ops
                 .get(key)
-                .or_else(|| Some(&ConfigEntryOperationKind::Union))
-                .unwrap();
+                .unwrap_or(&ConfigEntryOperationKind::Union);
             schema_value.dict_update_entry(key.as_str(), &value.clone(), op, &-1);
         } else if !should_add_attr && is_not_in_schema {
             let schema_name = c2str(schema_name);
@@ -2327,8 +2318,7 @@ pub extern "C" fn kclvm_schema_get_value(
     let default_level = ValueRef::int(0);
     let level = backtrack_level_map
         .dict_get_value(key)
-        .or(Some(&default_level))
-        .unwrap();
+        .unwrap_or(&default_level);
     let level = level.as_int();
     let is_backtracking = level > 0;
     // Deal in-place modify and return it self immediately

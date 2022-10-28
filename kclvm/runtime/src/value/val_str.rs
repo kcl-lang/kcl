@@ -340,7 +340,7 @@ impl ValueRef {
 
                 let result = !v.is_empty()
                     && v.chars()
-                        .filter(|c| !c.is_digit(10))
+                        .filter(|c| !c.is_ascii_digit())
                         .all(|c| valid_unicodes.contains(&(c as u16)));
                 ValueRef::bool(result)
             }

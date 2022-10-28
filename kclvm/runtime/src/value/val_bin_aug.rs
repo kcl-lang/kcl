@@ -10,25 +10,19 @@ impl ValueRef {
 
         match (&*self.rc, &*x.rc) {
             (Value::int_value(a), Value::int_value(b)) => {
-                if strict_range_check_32 {
-                    if is_i32_overflow_add(*a, *b) {
-                        panic_i32_overflow!(*a as i128 + *b as i128);
-                    }
+                if strict_range_check_32 && is_i32_overflow_add(*a, *b) {
+                    panic_i32_overflow!(*a as i128 + *b as i128);
                 }
-                if strict_range_check_64 {
-                    if is_i64_overflow_add(*a, *b) {
-                        panic_i64_overflow!(*a as i128 + *b as i128);
-                    }
+                if strict_range_check_64 && is_i64_overflow_add(*a, *b) {
+                    panic_i64_overflow!(*a as i128 + *b as i128);
                 }
                 let a: &mut i64 = get_ref_mut(a);
                 *a += *b;
                 self
             }
             (Value::float_value(a), Value::float_value(b)) => {
-                if strict_range_check_32 {
-                    if is_f32_overflow_add(*a, *b) {
-                        panic_f32_overflow!(*a + *b);
-                    }
+                if strict_range_check_32 && is_f32_overflow_add(*a, *b) {
+                    panic_f32_overflow!(*a + *b);
                 }
                 let a: &mut f64 = get_ref_mut(a);
                 *a += *b;
@@ -76,13 +70,11 @@ impl ValueRef {
 
         match (&*self.rc, &*x.rc) {
             (Value::int_value(a), Value::int_value(b)) => {
-                if strict_range_check_32 {
-                    if is_i32_overflow_sub(*a, *b) {
-                        panic_i32_overflow!(*a as i128 - *b as i128);
-                    }
+                if strict_range_check_32 && is_i32_overflow_sub(*a, *b) {
+                    panic_i32_overflow!(*a as i128 - *b as i128);
                 }
-                if strict_range_check_64 {
-                    if is_i64_overflow_sub(*a, *b) {
+                if strict_range_check_64 && is_i64_overflow_sub(*a, *b) {
+                    {
                         panic_i32_overflow!(*a as i128 - *b as i128);
                     }
                 }
@@ -91,30 +83,24 @@ impl ValueRef {
                 self
             }
             (Value::float_value(a), Value::float_value(b)) => {
-                if strict_range_check_32 {
-                    if is_f32_overflow_sub(*a, *b) {
-                        panic_f32_overflow!(*a - *b);
-                    }
+                if strict_range_check_32 && is_f32_overflow_sub(*a, *b) {
+                    panic_f32_overflow!(*a - *b);
                 }
                 let a: &mut f64 = get_ref_mut(a);
                 *a -= *b;
                 self
             }
             (Value::int_value(a), Value::float_value(b)) => {
-                if strict_range_check_32 {
-                    if is_f32_overflow_sub(*a as f64, *b) {
-                        panic_f32_overflow!(*a as f64 - *b);
-                    }
+                if strict_range_check_32 && is_f32_overflow_sub(*a as f64, *b) {
+                    panic_f32_overflow!(*a as f64 - *b);
                 }
                 let a: &mut i64 = get_ref_mut(a);
                 *a -= *b as i64;
                 self
             }
             (Value::float_value(a), Value::int_value(b)) => {
-                if strict_range_check_32 {
-                    if is_f32_overflow_sub(*a, *b as f64) {
-                        panic_f32_overflow!(*a - *b as f64);
-                    }
+                if strict_range_check_32 && is_f32_overflow_sub(*a, *b as f64) {
+                    panic_f32_overflow!(*a - *b as f64);
                 }
                 let a: &mut f64 = get_ref_mut(a);
                 *a -= *b as f64;
@@ -131,45 +117,35 @@ impl ValueRef {
 
         match (&*self.rc, &*x.rc) {
             (Value::int_value(a), Value::int_value(b)) => {
-                if strict_range_check_32 {
-                    if is_i32_overflow_mul(*a, *b) {
-                        panic_i32_overflow!(*a as i128 * *b as i128);
-                    }
+                if strict_range_check_32 && is_i32_overflow_mul(*a, *b) {
+                    panic_i32_overflow!(*a as i128 * *b as i128);
                 }
-                if strict_range_check_64 {
-                    if is_i64_overflow_mul(*a, *b) {
-                        panic_i64_overflow!(*a as i128 * *b as i128);
-                    }
+                if strict_range_check_64 && is_i64_overflow_mul(*a, *b) {
+                    panic_i64_overflow!(*a as i128 * *b as i128);
                 }
                 let a: &mut i64 = get_ref_mut(a);
                 *a *= *b;
                 self
             }
             (Value::float_value(a), Value::float_value(b)) => {
-                if strict_range_check_32 {
-                    if is_f32_overflow_mul(*a, *b) {
-                        panic_f32_overflow!(*a * *b);
-                    }
+                if strict_range_check_32 && is_f32_overflow_mul(*a, *b) {
+                    panic_f32_overflow!(*a * *b);
                 }
                 let a: &mut f64 = get_ref_mut(a);
                 *a *= *b;
                 self
             }
             (Value::int_value(a), Value::float_value(b)) => {
-                if strict_range_check_32 {
-                    if is_f32_overflow_mul(*a as f64, *b) {
-                        panic_f32_overflow!(*a as f64 * *b);
-                    }
+                if strict_range_check_32 && is_f32_overflow_mul(*a as f64, *b) {
+                    panic_f32_overflow!(*a as f64 * *b);
                 }
                 let a: &mut i64 = get_ref_mut(a);
                 *a *= *b as i64;
                 self
             }
             (Value::float_value(a), Value::int_value(b)) => {
-                if strict_range_check_32 {
-                    if is_f32_overflow_mul(*a, *b as f64) {
-                        panic_f32_overflow!(*a * *b as f64);
-                    }
+                if strict_range_check_32 && is_f32_overflow_mul(*a, *b as f64) {
+                    panic_f32_overflow!(*a * *b as f64);
                 }
                 let a: &mut f64 = get_ref_mut(a);
                 *a *= *b as f64;
@@ -229,10 +205,10 @@ impl ValueRef {
                 let a: &mut i64 = get_ref_mut(a);
                 let x = *a;
                 let y = *b;
-                if -13 / 5 == -2 && (x < 0) != (y < 0) && x % y != 0 {
+                if (x < 0) != (y < 0) && x % y != 0 {
                     *a = *a % *b + *b;
                 } else {
-                    *a = *a % *b
+                    *a %= *b
                 }
                 self
             }
@@ -262,45 +238,35 @@ impl ValueRef {
 
         match (&*self.rc, &*x.rc) {
             (Value::int_value(ref a), Value::int_value(b)) => {
-                if strict_range_check_32 {
-                    if is_i32_overflow_pow(*a, *b) {
-                        panic_i32_overflow!((*a as i128).pow(*b as u32));
-                    }
+                if strict_range_check_32 && is_i32_overflow_pow(*a, *b) {
+                    panic_i32_overflow!((*a as i128).pow(*b as u32));
                 }
-                if strict_range_check_64 {
-                    if is_i64_overflow_pow(*a, *b) {
-                        panic_i64_overflow!((*a as i128).pow(*b as u32));
-                    }
+                if strict_range_check_64 && is_i64_overflow_pow(*a, *b) {
+                    panic_i64_overflow!((*a as i128).pow(*b as u32));
                 }
                 let a: &mut i64 = get_ref_mut(a);
                 *a = a.pow(*b as u32);
                 self
             }
             (Value::float_value(ref a), Value::float_value(b)) => {
-                if strict_range_check_32 {
-                    if is_f32_overflow_pow(*a, *b) {
-                        panic_f32_overflow!(a.powf(*b));
-                    }
+                if strict_range_check_32 && is_f32_overflow_pow(*a, *b) {
+                    panic_f32_overflow!(a.powf(*b));
                 }
                 let a: &mut f64 = get_ref_mut(a);
                 *a = a.powf(*b as f64);
                 self
             }
             (Value::int_value(ref a), Value::float_value(b)) => {
-                if strict_range_check_32 {
-                    if is_f32_overflow_pow(*a as f64, *b) {
-                        panic_f32_overflow!((*a as f64).powf(*b));
-                    }
+                if strict_range_check_32 && is_f32_overflow_pow(*a as f64, *b) {
+                    panic_f32_overflow!((*a as f64).powf(*b));
                 }
                 let a: &mut i64 = get_ref_mut(a);
                 *a = a.pow(*b as u32);
                 self
             }
             (Value::float_value(ref a), Value::int_value(b)) => {
-                if strict_range_check_32 {
-                    if is_f32_overflow_pow(*a, *b as f64) {
-                        panic_f32_overflow!(a.powf(*b as f64));
-                    }
+                if strict_range_check_32 && is_f32_overflow_pow(*a, *b as f64) {
+                    panic_f32_overflow!(a.powf(*b as f64));
                 }
                 let a: &mut f64 = get_ref_mut(a);
                 *a = a.powf(*b as f64);
@@ -316,7 +282,7 @@ impl ValueRef {
                 let a: &mut i64 = get_ref_mut(a);
                 let x = *a;
                 let y = *b;
-                if -13 / 5 == -2 && (x < 0) != (y < 0) && x % y != 0 {
+                if (x < 0) != (y < 0) && x % y != 0 {
                     *a = *a / *b - 1
                 } else {
                     *a /= *b
@@ -349,15 +315,11 @@ impl ValueRef {
 
         match (&*self.rc, &*x.rc) {
             (Value::int_value(a), Value::int_value(b)) => {
-                if strict_range_check_32 {
-                    if is_i32_overflow_shl(*a, *b) {
-                        panic_i32_overflow!((*a as i128) << (*b as u32));
-                    }
+                if strict_range_check_32 && is_i32_overflow_shl(*a, *b) {
+                    panic_i32_overflow!((*a as i128) << (*b as u32));
                 }
-                if strict_range_check_64 {
-                    if is_i64_overflow_shl(*a, *b) {
-                        panic_i64_overflow!((*a as i128) << (*b as u32));
-                    }
+                if strict_range_check_64 && is_i64_overflow_shl(*a, *b) {
+                    panic_i64_overflow!((*a as i128) << (*b as u32));
                 }
                 let a: &mut i64 = get_ref_mut(a);
                 *a <<= *b as usize;
@@ -374,15 +336,11 @@ impl ValueRef {
 
         match (&*self.rc, &*x.rc) {
             (Value::int_value(a), Value::int_value(b)) => {
-                if strict_range_check_32 {
-                    if is_i32_overflow_shr(*a, *b) {
-                        panic_i32_overflow!((*a as i128) >> (*b as u32));
-                    }
+                if strict_range_check_32 && is_i32_overflow_shr(*a, *b) {
+                    panic_i32_overflow!((*a as i128) >> (*b as u32));
                 }
-                if strict_range_check_64 {
-                    if is_i64_overflow_shr(*a, *b) {
-                        panic_i64_overflow!((*a as i128) >> (*b as u32));
-                    }
+                if strict_range_check_64 && is_i64_overflow_shr(*a, *b) {
+                    panic_i64_overflow!((*a as i128) >> (*b as u32));
                 }
                 let a: &mut i64 = get_ref_mut(a);
                 *a >>= *b as usize;

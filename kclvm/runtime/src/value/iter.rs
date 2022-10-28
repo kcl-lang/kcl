@@ -31,7 +31,7 @@ impl ValueIterator {
         if !p.is_str() && !p.is_list() && !p.is_config() {
             panic!("'{}' object is not iterable", p.type_str());
         }
-        if p.len() == 0 {
+        if p.is_empty() {
             return Default::default();
         }
         match *p.rc {
@@ -98,7 +98,7 @@ impl ValueIterator {
         }
     }
 
-    pub fn value<'a>(&'a mut self) -> Option<&'a ValueRef> {
+    pub fn value(&mut self) -> Option<&ValueRef> {
         if self.pos == 0 {
             return Option::None;
         }
@@ -110,7 +110,7 @@ impl ValueIterator {
     }
 
     pub fn next<'a>(&'a mut self, host: &'a ValueRef) -> Option<&'a ValueRef> {
-        if host.len() == 0 {
+        if host.is_empty() {
             return None;
         }
         if self.pos >= host.len() as i32 {
@@ -170,14 +170,14 @@ mod test_value_iter {
         let s = ValueRef::str("abc");
 
         let mut it = s.iter();
-        assert_eq!(it.is_end(), false);
+        assert!(!it.is_end());
 
         let _ = it.next(&s);
         assert_eq!(it.key().unwrap().as_int(), 0);
         assert_eq!(it.value().unwrap().as_str(), "a");
 
         let _ = it.next(&s);
-        assert_eq!(it.is_end(), false);
+        assert!(!it.is_end());
         assert_eq!(it.key().unwrap().as_int(), 1);
         assert_eq!(it.value().unwrap().as_str(), "b");
 
@@ -185,10 +185,10 @@ mod test_value_iter {
         assert_eq!(v.unwrap().as_str(), "c");
         assert_eq!(it.key().unwrap().as_int(), 2);
         assert_eq!(it.value().unwrap().as_str(), "c");
-        assert_eq!(it.is_end(), true);
+        assert!(it.is_end());
 
         let _ = it.next(&s);
-        assert_eq!(it.is_end(), true);
+        assert!(it.is_end());
     }
 
     #[test]
@@ -196,24 +196,24 @@ mod test_value_iter {
         let value = ValueRef::list_int(&[1, 2, 3]);
 
         let mut it = value.iter();
-        assert_eq!(it.is_end(), false);
+        assert!(!it.is_end());
 
         let _ = it.next(&value);
         assert_eq!(it.key().unwrap().as_int(), 0);
         assert_eq!(it.value().unwrap().as_int(), 1);
 
         let _ = it.next(&value);
-        assert_eq!(it.is_end(), false);
+        assert!(!it.is_end());
         assert_eq!(it.key().unwrap().as_int(), 1);
         assert_eq!(it.value().unwrap().as_int(), 2);
 
         let _ = it.next(&value);
         assert_eq!(it.key().unwrap().as_int(), 2);
         assert_eq!(it.value().unwrap().as_int(), 3);
-        assert_eq!(it.is_end(), true);
+        assert!(it.is_end());
 
         let _ = it.next(&value);
-        assert_eq!(it.is_end(), true);
+        assert!(it.is_end());
     }
 
     #[test]
@@ -221,23 +221,23 @@ mod test_value_iter {
         let value = ValueRef::dict_int(&[("a", 1), ("b", 2), ("c", 3)]);
 
         let mut it = value.iter();
-        assert_eq!(it.is_end(), false);
+        assert!(!it.is_end());
 
         let _ = it.next(&value);
         assert_eq!(it.key().unwrap().as_str(), "a");
         assert_eq!(it.value().unwrap().as_int(), 1);
 
         let _ = it.next(&value);
-        assert_eq!(it.is_end(), false);
+        assert!(!it.is_end());
         assert_eq!(it.key().unwrap().as_str(), "b");
         assert_eq!(it.value().unwrap().as_int(), 2);
 
         let _ = it.next(&value);
         assert_eq!(it.key().unwrap().as_str(), "c");
         assert_eq!(it.value().unwrap().as_int(), 3);
-        assert_eq!(it.is_end(), true);
+        assert!(it.is_end());
 
         let _ = it.next(&value);
-        assert_eq!(it.is_end(), true);
+        assert!(it.is_end());
     }
 }

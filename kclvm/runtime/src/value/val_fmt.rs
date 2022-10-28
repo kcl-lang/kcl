@@ -4,6 +4,7 @@
 
 use itertools::{Itertools, PeekingNext};
 use std::cmp;
+use std::fmt;
 use std::str::FromStr;
 
 use crate::*;
@@ -251,7 +252,7 @@ pub(crate) struct FormatSpec {
 
 pub(crate) fn get_num_digits(text: &str) -> usize {
     for (index, character) in text.char_indices() {
-        if !character.is_digit(10) {
+        if !character.is_ascii_digit() {
             return index;
         }
     }
@@ -525,11 +526,8 @@ impl FormatSpec {
             },
         };
 
-        if raw_magnitude_string_result.is_err() {
-            return raw_magnitude_string_result;
-        }
-
-        let magnitude_string = self.add_magnitude_separators(raw_magnitude_string_result.unwrap());
+        let raw_magnitude_string = raw_magnitude_string_result?;
+        let magnitude_string = self.add_magnitude_separators(raw_magnitude_string);
         let format_sign = self.sign.unwrap_or(FormatSign::Minus);
         let sign_str = if num.is_sign_negative() && !num.is_nan() {
             "-"
@@ -583,13 +581,11 @@ impl FormatSpec {
             | Some(FormatType::Percentage) => self.format_float(*num as f64),
             None => Ok(magnitude.to_string()),
         };
-        if raw_magnitude_string_result.is_err() {
-            return raw_magnitude_string_result;
-        }
+        let raw_magnitude_string = raw_magnitude_string_result?;
         let magnitude_string = format!(
             "{}{}",
             prefix,
-            self.add_magnitude_separators(raw_magnitude_string_result.unwrap())
+            self.add_magnitude_separators(raw_magnitude_string)
         );
 
         let format_sign = self.sign.unwrap_or(FormatSign::Minus);
@@ -986,7 +982,57 @@ pub fn quoted_string(value: &str) -> String {
     } else if !has_double_quote {
         format!("\"{}\"", value)
     } else {
-        format!("\"{}\"", value.replace("\"", "\\\""))
+        format!("\"{}\"", value.replace('\"', "\\\""))
+    }
+}
+
+impl fmt::Display for ValueRef {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match &*self.rc {
+            Value::undefined => write!(f, "Undefined"),
+            Value::none => write!(f, "None"),
+            Value::bool_value(ref v) => {
+                if *v {
+                    write!(f, "True")
+                } else {
+                    write!(f, "False")
+                }
+            }
+            Value::int_value(ref v) => write!(f, "{}", v),
+            Value::float_value(ref v) => {
+                let mut float_str = v.to_string();
+                if !float_str.contains('.') {
+                    float_str.push_str(".0");
+                }
+                write!(f, "{}", float_str)
+            }
+            Value::unit_value(_, raw, unit) => {
+                write!(f, "{}{}", raw, unit)
+            }
+            Value::str_value(ref v) => write!(f, "{}", v),
+            Value::list_value(ref v) => {
+                let values: Vec<String> = v.values.iter().map(|v| v.to_string()).collect();
+                write!(f, "[{}]", values.join(", "))
+            }
+            Value::dict_value(ref v) => {
+                let values: Vec<String> = v
+                    .values
+                    .iter()
+                    .map(|(k, v)| format!("{}: {}", quoted_string(k), value_to_quoted_string(v)))
+                    .collect();
+                write!(f, "{{{}}}", values.join(", "))
+            }
+            Value::schema_value(ref v) => {
+                let values: Vec<String> = v
+                    .config
+                    .values
+                    .iter()
+                    .map(|(k, v)| format!("{}: {}", quoted_string(k), value_to_quoted_string(v)))
+                    .collect();
+                write!(f, "{{{}}}", values.join(", "))
+            }
+            Value::func_value(_) => write!(f, "function"),
+        }
     }
 }
 
@@ -1007,55 +1053,6 @@ impl ValueRef {
                 }
             }
             _ => self.to_string(),
-        }
-    }
-
-    /// to_string e.g., "{}".format(1.0)
-    pub fn to_string(&self) -> String {
-        match &*self.rc {
-            Value::undefined => String::from("Undefined"),
-            Value::none => String::from("None"),
-            Value::bool_value(ref v) => {
-                if *v {
-                    String::from("True")
-                } else {
-                    String::from("False")
-                }
-            }
-            Value::int_value(ref v) => v.to_string(),
-            Value::float_value(ref v) => {
-                let mut float_str = v.to_string();
-                if !float_str.contains('.') {
-                    float_str.push_str(".0");
-                }
-                float_str
-            }
-            Value::unit_value(_, raw, unit) => {
-                format!("{}{}", raw, unit)
-            }
-            Value::str_value(ref v) => v.clone(),
-            Value::list_value(ref v) => {
-                let values: Vec<String> = v.values.iter().map(|v| v.to_string()).collect();
-                format!("[{}]", values.join(", "))
-            }
-            Value::dict_value(ref v) => {
-                let values: Vec<String> = v
-                    .values
-                    .iter()
-                    .map(|(k, v)| format!("{}: {}", quoted_string(k), value_to_quoted_string(v)))
-                    .collect();
-                format!("{{{}}}", values.join(", "))
-            }
-            Value::schema_value(ref v) => {
-                let values: Vec<String> = v
-                    .config
-                    .values
-                    .iter()
-                    .map(|(k, v)| format!("{}: {}", quoted_string(k), value_to_quoted_string(v)))
-                    .collect();
-                format!("{{{}}}", values.join(", "))
-            }
-            Value::func_value(_) => String::from("function"),
         }
     }
 }
