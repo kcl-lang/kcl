@@ -97,8 +97,7 @@ impl Session {
                     .with_context(|| "Failed to load source file")?;
             }
         }
-        let diag = DiagnosticHandler::default()
-            .with_context(|| "Internal bug: Failed to create session")?;
+        let diag = DiagnosticHandler::default();
         Ok(Self {
             sm: Arc::new(sm),
             diag_handler: Arc::new(diag),
@@ -119,8 +118,7 @@ impl Session {
     pub fn new_with_src_code(code: &str) -> Result<Self> {
         let sm = SourceMap::new(FilePathMapping::empty());
         sm.new_source_file(PathBuf::from("").into(), code.to_string());
-        let diag = DiagnosticHandler::default()
-            .with_context(|| "Internal bug: Failed to create session")?;
+        let diag = DiagnosticHandler::default();
 
         Ok(Self {
             sm: Arc::new(sm),
