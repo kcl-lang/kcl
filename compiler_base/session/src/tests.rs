@@ -152,7 +152,7 @@ mod test_session {
     #[test]
     fn test_emit_stashed_diagnostics() {
         let sess = Session::new_with_src_code("test code").unwrap();
-        sess.add_err(MyError {});
+        sess.add_err(MyError {}).unwrap();
         sess.emit_stashed_diagnostics().unwrap();
     }
 
