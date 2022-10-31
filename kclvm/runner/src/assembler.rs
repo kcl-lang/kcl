@@ -300,21 +300,26 @@ impl KclvmAssembler {
         let prog_count = compile_progs.len();
         for (pkgpath, (compile_prog, import_names, cache_dir)) in compile_progs {
             let tx = tx.clone();
+            let entry_file = self.entry_file.clone();
             // clone a single file assembler for one thread.
             let assembler = self.single_file_assembler.clone();
-
-            let code_file = self.entry_file.clone();
+            let is_main_pkg = pkgpath == kclvm_ast::MAIN_PKG;
+            let file = if is_main_pkg {
+                PathBuf::from(entry_file)
+            } else {
+                cache_dir.join(&pkgpath)
+            };
+            let code_file = file.to_str().unwrap().to_string();
             let code_file_path = assembler.add_code_file_suffix(&code_file);
             let lock_file_path = format!("{}.lock", code_file_path);
 
             pool.execute(move || {
+                let root = &compile_prog.root;
                 // Locking file for parallel code generation.
                 let mut file_lock = fslock::LockFile::open(&lock_file_path)
                     .unwrap_or_else(|_| panic!("{} not found", lock_file_path));
                 file_lock.lock().unwrap();
 
-                let root = &compile_prog.root;
-                let is_main_pkg = pkgpath == kclvm_ast::MAIN_PKG;
                 // The main package does not perform cache reading and writing,
                 // and other packages perform read and write caching. Because
                 // KCL supports multi-file compilation, it is impossible to
@@ -325,7 +330,6 @@ impl KclvmAssembler {
                     // generate dynamic link library for single file kcl program
                     assembler.assemble(&compile_prog, import_names, &code_file, &code_file_path)
                 } else {
-                    let file = cache_dir.join(&pkgpath);
                     // Read the lib path cache
                     let file_relative_path: Option<String> =
                         load_pkg_cache(root, &pkgpath, CacheOption::default());
@@ -347,9 +351,7 @@ impl KclvmAssembler {
                     match file_abs_path {
                         Some(path) => path,
                         None => {
-                            let code_file = file.to_str().unwrap();
-                            let code_file_path = assembler.add_code_file_suffix(code_file);
-                            // Generate the object file for single file kcl program.
+                            // generate dynamic link library for single file kcl program
                             let file_path = assembler.assemble(
                                 &compile_prog,
                                 import_names,
