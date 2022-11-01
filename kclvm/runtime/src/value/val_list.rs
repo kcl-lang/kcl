@@ -44,7 +44,7 @@ impl ValueRef {
     }
 
     pub fn list_resize(&mut self, newsize: usize) {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::list_value(ref list) => {
                 let list: &mut ListValue = get_ref_mut(list);
                 if list.values.len() > newsize {
@@ -60,7 +60,7 @@ impl ValueRef {
     }
 
     pub fn list_clear(&mut self) {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::list_value(ref list) => {
                 let list: &mut ListValue = get_ref_mut(list);
                 list.values.clear();
@@ -69,8 +69,8 @@ impl ValueRef {
         }
     }
 
-    pub fn list_get(&self, i: isize) -> Option<&Self> {
-        match &*self.rc {
+    pub fn list_get(&self, i: isize) -> Option<Self> {
+        match &*self.rc.borrow() {
             Value::list_value(ref list) => {
                 let index = if i < 0 {
                     (i + list.values.len() as isize) as usize
@@ -78,7 +78,7 @@ impl ValueRef {
                     i as usize
                 };
                 if !list.values.is_empty() {
-                    Some(&list.values.as_slice()[index])
+                    Some(list.values.as_slice()[index].clone())
                 } else {
                     None
                 }
@@ -87,8 +87,8 @@ impl ValueRef {
         }
     }
 
-    pub fn list_get_option(&self, i: isize) -> Option<&Self> {
-        match &*self.rc {
+    pub fn list_get_option(&self, i: isize) -> Option<Self> {
+        match &*self.rc.borrow() {
             Value::list_value(ref list) => {
                 let index = if i < 0 {
                     (i + list.values.len() as isize) as usize
@@ -96,7 +96,7 @@ impl ValueRef {
                     i as usize
                 };
                 if !list.values.is_empty() && index < list.values.len() {
-                    Some(&list.values.as_slice()[index])
+                    Some(list.values.as_slice()[index].clone())
                 } else {
                     None
                 }
@@ -106,7 +106,7 @@ impl ValueRef {
     }
 
     pub fn list_set(&mut self, i: usize, v: &Self) {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::list_value(ref list) => {
                 let list: &mut ListValue = get_ref_mut(list);
                 if i < list.values.len() {
@@ -117,8 +117,8 @@ impl ValueRef {
         }
     }
 
-    pub fn list_pop(&mut self) -> Option<&Self> {
-        match &*self.rc {
+    pub fn list_pop(&mut self) -> Option<Self> {
+        match &*self.rc.borrow() {
             Value::list_value(ref list) => {
                 let list: &mut ListValue = get_ref_mut(list);
                 let last_value = self.list_get((list.values.len() - 1) as isize);
@@ -130,7 +130,7 @@ impl ValueRef {
     }
 
     pub fn list_pop_first(&mut self) -> Option<Self> {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::list_value(ref list) => {
                 let list: &mut ListValue = get_ref_mut(list);
                 if !list.values.is_empty() {
@@ -144,7 +144,7 @@ impl ValueRef {
     }
 
     pub fn list_append(&mut self, v: &Self) {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::list_value(ref list) => {
                 let list: &mut ListValue = get_ref_mut(list);
                 list.values.push(v.clone());
@@ -158,8 +158,8 @@ impl ValueRef {
     }
 
     pub fn list_append_unpack(&mut self, x_or_list: &Self) {
-        match &*self.rc {
-            Value::list_value(ref list) => match &*x_or_list.rc {
+        match &*self.rc.borrow() {
+            Value::list_value(ref list) => match &*x_or_list.rc.borrow() {
                 Value::list_value(ref list_b) => {
                     let list: &mut ListValue = get_ref_mut(list);
                     for x in list_b.values.iter() {
@@ -186,8 +186,8 @@ impl ValueRef {
     }
 
     pub fn list_append_unpack_first(&mut self, x_or_list: &Self) {
-        match &*self.rc {
-            Value::list_value(ref list) => match &*x_or_list.rc {
+        match &*self.rc.borrow() {
+            Value::list_value(ref list) => match &*x_or_list.rc.borrow() {
                 Value::list_value(ref list_b) => {
                     let list: &mut ListValue = get_ref_mut(list);
                     for (i, x) in list_b.values.iter().enumerate() {
@@ -220,7 +220,7 @@ impl ValueRef {
 
     pub fn list_count(&self, item: &Self) -> usize {
         let mut count: usize = 0;
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::list_value(ref list) => {
                 for v in &list.values {
                     if v == item {
@@ -234,7 +234,7 @@ impl ValueRef {
     }
 
     pub fn list_find(&self, item: &Self) -> isize {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::list_value(ref list) => {
                 for (i, v) in list.values.iter().enumerate() {
                     if v == item {
@@ -248,7 +248,7 @@ impl ValueRef {
     }
 
     pub fn list_insert_at(&mut self, i: usize, v: &Self) {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::list_value(ref list) => {
                 let list: &mut ListValue = get_ref_mut(list);
                 list.values.insert(i, v.clone());
@@ -258,7 +258,7 @@ impl ValueRef {
     }
 
     pub fn list_remove_at(&mut self, i: usize) {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::list_value(ref list) => {
                 let list: &mut ListValue = get_ref_mut(list);
                 list.values.remove(i);
@@ -268,7 +268,7 @@ impl ValueRef {
     }
 
     pub fn list_remove(&mut self, item: &ValueRef) {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::list_value(ref list) => {
                 let list: &mut ListValue = get_ref_mut(list);
                 let mut index: Option<usize> = None;
@@ -289,7 +289,7 @@ impl ValueRef {
         let start_val;
         let step_val;
         let stop_val;
-        match &*step.rc {
+        match &*step.rc.borrow() {
             Value::int_value(ref step) => {
                 step_val = *step;
                 if step_val == 0 {
@@ -300,7 +300,7 @@ impl ValueRef {
                 step_val = 1;
             }
         }
-        match &*start.rc {
+        match &*start.rc.borrow() {
             Value::int_value(ref start) => start_val = *start,
             _ => {
                 if step_val < 0 {
@@ -310,7 +310,7 @@ impl ValueRef {
                 }
             }
         }
-        match &*stop.rc {
+        match &*stop.rc.borrow() {
             Value::int_value(ref stop) => stop_val = *stop,
             _ => {
                 if step_val < 0 {
@@ -377,7 +377,7 @@ impl ValueRef {
     }
 
     pub fn list_slice(&self, start: &ValueRef, stop: &ValueRef, step: &ValueRef) -> ValueRef {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::list_value(ref list) => {
                 let (start, stop, step) = ValueRef::slice_unpack(start, stop, step);
                 let (start, _stop, slice_len) =

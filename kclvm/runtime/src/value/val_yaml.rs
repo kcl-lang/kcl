@@ -48,7 +48,7 @@ impl ValueRef {
     }
 
     fn yaml_clone_with_filter(&self, opt: &YamlEncodeOptions) -> Self {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::undefined => ValueRef::undefined(),
             Value::none => ValueRef::none(),
 
@@ -60,7 +60,7 @@ impl ValueRef {
             Value::list_value(ref v) => {
                 let mut list = ValueRef::list(None);
                 for x in v.values.iter() {
-                    match *x.rc {
+                    match *x.rc.borrow() {
                         Value::undefined => {
                             continue;
                         }
@@ -85,7 +85,7 @@ impl ValueRef {
                     if opt.ignore_private && (*key).starts_with(KCL_PRIVATE_VAR_PREFIX) {
                         continue;
                     }
-                    match *val.rc {
+                    match *val.rc.borrow() {
                         Value::undefined => {
                             continue;
                         }
@@ -121,7 +121,7 @@ impl ValueRef {
                     if opt.ignore_private && (*key).starts_with(KCL_PRIVATE_VAR_PREFIX) {
                         continue;
                     }
-                    match *val.rc {
+                    match *val.rc.borrow() {
                         Value::undefined => {
                             continue;
                         }

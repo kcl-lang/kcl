@@ -26,7 +26,7 @@ impl Context {
 
 impl ValueRef {
     pub fn any_true(&self) -> bool {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::list_value(ref list) => {
                 for x in list.values.iter() {
                     if x.is_truthy() {
@@ -56,7 +56,7 @@ impl ValueRef {
     }
 
     pub fn all_true(&self) -> bool {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::list_value(ref list) => {
                 for x in list.values.iter() {
                     if !x.is_truthy() {
@@ -86,7 +86,7 @@ impl ValueRef {
     }
 
     pub fn isunique(&self) -> bool {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::list_value(ref list) => {
                 let mut set: HashSet<&ValueRef> = HashSet::new();
                 for x in list.values.iter() {
@@ -107,7 +107,7 @@ impl ValueRef {
         } else {
             false
         };
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::str_value(s) => {
                 let mut list = ListValue::default();
                 for c in s.chars() {
@@ -124,12 +124,14 @@ impl ValueRef {
             }
             Value::list_value(_) => {
                 let mut list = self.deep_copy();
-                let list_ref = list.as_list_mut_ref();
-                let values = &mut list_ref.values;
-                if reverse {
-                    values.sort_by(|a, b| b.partial_cmp(a).unwrap());
-                } else {
-                    values.sort();
+                {
+                    let mut list_ref = list.as_list_mut_ref();
+                    let values = &mut list_ref.values;
+                    if reverse {
+                        values.sort_by(|a, b| b.partial_cmp(a).unwrap());
+                    } else {
+                        values.sort();
+                    }
                 }
                 list
             }
@@ -156,7 +158,7 @@ impl ValueRef {
         let strict_range_check_i32 = ctx.cfg.strict_range_check;
         let strict_range_check_i64 = ctx.cfg.debug_mode || !ctx.cfg.strict_range_check;
 
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::int_value(ref v) => ValueRef::int(*v),
             Value::float_value(ref v) => ValueRef::int(*v as i64),
             Value::unit_value(ref v, raw, unit) => {
@@ -203,7 +205,7 @@ impl ValueRef {
         let strict_range_check_i32 = ctx.cfg.strict_range_check;
         let strict_range_check_i64 = ctx.cfg.debug_mode || !ctx.cfg.strict_range_check;
 
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::int_value(ref v) => ValueRef::float(*v as f64),
             Value::float_value(ref v) => {
                 let float32_overflow = strict_range_check_i32 && (*v as f32).is_infinite();
@@ -254,7 +256,7 @@ impl ValueRef {
     }
 
     pub fn filter(&self, filter: fn(&ValueRef, &ValueRef) -> bool) -> ValueRef {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::str_value(ref s) => {
                 if s.is_empty() {
                     panic!("arg is an empty str");
@@ -313,7 +315,7 @@ impl ValueRef {
     }
 
     pub fn hex(&self) -> ValueRef {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::int_value(val) => {
                 if *val == i64::MIN {
                     ValueRef::str("-0x8000000000000000")
@@ -328,7 +330,7 @@ impl ValueRef {
     }
 
     pub fn oct(&self) -> ValueRef {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::int_value(val) => {
                 if *val == i64::MIN {
                     ValueRef::str("-01000000000000000000000")
@@ -343,7 +345,7 @@ impl ValueRef {
     }
 
     pub fn bin(&self) -> ValueRef {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::int_value(val) => {
                 if *val == i64::MIN {
                     ValueRef::str(
@@ -360,9 +362,9 @@ impl ValueRef {
     }
 
     pub fn sum(&self, init_value: &ValueRef) -> ValueRef {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::list_value(list) => {
-                let mut result = match &*init_value.rc {
+                let mut result = match &*init_value.rc.borrow() {
                     Value::str_value(_str) => panic!("sum() can't sum strings"),
                     _ => init_value.clone(),
                 };
@@ -377,7 +379,7 @@ impl ValueRef {
     }
 
     pub fn abs(&self) -> ValueRef {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::int_value(val) => ValueRef::int(val.abs()),
             Value::float_value(val) => ValueRef::float(val.abs()),
             _ => ValueRef::undefined(),
@@ -385,7 +387,7 @@ impl ValueRef {
     }
 
     pub fn ord(&self) -> ValueRef {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::str_value(str) => {
                 let string_len = str.chars().count();
                 if string_len != 1 {
@@ -402,7 +404,7 @@ impl ValueRef {
     }
 
     pub fn zip(&self) -> ValueRef {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::list_value(list) => {
                 let mut iters = Vec::new();
                 for val in list.values.iter() {
@@ -456,11 +458,11 @@ pub fn dict(iterable: Option<&ValueRef>) -> ValueRef {
             let mut result = ValueRef::dict(None);
             while !iter.is_end() {
                 iter.next(val);
-                let elem = &iter.cur_val.clone();
-                let k = &iter.cur_key.clone();
-                match &*k.rc {
+                let elem = iter.cur_val.clone();
+                let k = iter.cur_key.clone();
+                match &*k.rc.borrow() {
                     Value::str_value(str) => {
-                        result.dict_insert(str.as_str(), elem, Default::default(), 0);
+                        result.dict_insert(str.as_str(), &elem, Default::default(), 0);
                     }
                     _ => {
                         let mut elem_iter = elem.iter();
@@ -471,7 +473,7 @@ pub fn dict(iterable: Option<&ValueRef>) -> ValueRef {
                         let v = elem_iter.next(val).unwrap();
                         result.dict_insert(k.as_str(), v, Default::default(), 0);
                     }
-                }
+                };
             }
             result
         }
@@ -480,7 +482,7 @@ pub fn dict(iterable: Option<&ValueRef>) -> ValueRef {
 }
 
 pub fn range(start: &ValueRef, stop: &ValueRef, step: &ValueRef) -> ValueRef {
-    match (&*start.rc, &*stop.rc, &*step.rc) {
+    match (&*start.rc.borrow(), &*stop.rc.borrow(), &*step.rc.borrow()) {
         (Value::int_value(start), Value::int_value(stop), Value::int_value(step)) => {
             if *step == 0 {
                 panic!("range() step argument must not be zero");
@@ -504,19 +506,19 @@ pub fn range(start: &ValueRef, stop: &ValueRef, step: &ValueRef) -> ValueRef {
 
 /// Check if the modular result of a and b is 0
 pub fn multiplyof(a: &ValueRef, b: &ValueRef) -> ValueRef {
-    match (&*a.rc, &*b.rc) {
+    match (&*a.rc.borrow(), &*b.rc.borrow()) {
         (Value::int_value(a), Value::int_value(b)) => ValueRef::bool(a % b == 0),
         _ => ValueRef::undefined(),
     }
 }
 
 pub fn pow(x: &ValueRef, y: &ValueRef, z: &ValueRef) -> ValueRef {
-    match &*z.rc {
+    match &*z.rc.borrow() {
         Value::int_value(z) => {
             if *z == 0 {
                 panic!("pow() 3rd argument cannot be 0")
             }
-            match (&*x.rc, &*y.rc) {
+            match (&*x.rc.borrow(), &*y.rc.borrow()) {
                 (Value::int_value(x), Value::int_value(y)) => match (*y).cmp(&0) {
                     std::cmp::Ordering::Equal => ValueRef::int(1),
                     std::cmp::Ordering::Greater => {
@@ -540,7 +542,7 @@ pub fn pow(x: &ValueRef, y: &ValueRef, z: &ValueRef) -> ValueRef {
                 _ => panic!("pow() 3rd argument not allowed unless all arguments are integers"),
             }
         }
-        _ => match (&*x.rc, &*y.rc) {
+        _ => match (&*x.rc.borrow(), &*y.rc.borrow()) {
             (Value::int_value(x), Value::int_value(y)) => {
                 if *y >= 0 {
                     ValueRef::int((*x as f64).powf(*y as f64) as i64)
@@ -557,8 +559,8 @@ pub fn pow(x: &ValueRef, y: &ValueRef, z: &ValueRef) -> ValueRef {
 }
 
 pub fn round(number: &ValueRef, ndigits: &ValueRef) -> ValueRef {
-    match &*ndigits.rc {
-        Value::int_value(ndigits) => match &*number.rc {
+    match &*ndigits.rc.borrow() {
+        Value::int_value(ndigits) => match &*number.rc.borrow() {
             Value::int_value(number) => ValueRef::float(*number as f64),
             Value::float_value(number) => {
                 if *ndigits == 0 {
@@ -604,7 +606,7 @@ pub fn round(number: &ValueRef, ndigits: &ValueRef) -> ValueRef {
             }
             _ => ValueRef::undefined(),
         },
-        _ => match &*number.rc {
+        _ => match &*number.rc.borrow() {
             Value::int_value(number) => ValueRef::int(*number),
             Value::float_value(number) => ValueRef::int(number.round() as i64),
             _ => ValueRef::undefined(),

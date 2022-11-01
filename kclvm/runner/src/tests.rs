@@ -365,7 +365,7 @@ fn test_from_setting_file_program_arg() {
 fn test_exec_file() {
     let prev_hook = std::panic::take_hook();
     // disable print panic info
-    std::panic::set_hook(Box::new(|_| {}));
+    //std::panic::set_hook(Box::new(|_| {}));
     let result = std::panic::catch_unwind(|| {
         for file in get_files(EXEC_DATA_PATH, false, true, ".k") {
             exec(&file).unwrap();

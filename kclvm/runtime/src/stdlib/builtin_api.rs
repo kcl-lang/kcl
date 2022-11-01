@@ -71,7 +71,7 @@ pub extern "C" fn kclvm_builtin_option(
             return this.clone();
         }
         if typ == "bool" {
-            match *this.rc {
+            match *this.rc.borrow() {
                 Value::bool_value(ref v) => {
                     return ValueRef::bool(*v);
                 }
@@ -90,7 +90,7 @@ pub extern "C" fn kclvm_builtin_option(
             }
         }
         if typ == "int" {
-            match *this.rc {
+            match *this.rc.borrow() {
                 Value::bool_value(ref v) => {
                     if *v {
                         return ValueRef::int(1);
@@ -120,7 +120,7 @@ pub extern "C" fn kclvm_builtin_option(
             }
         }
         if typ == "float" {
-            match *this.rc {
+            match *this.rc.borrow() {
                 Value::bool_value(ref v) => {
                     if *v {
                         return ValueRef::float(1.0);
@@ -150,7 +150,7 @@ pub extern "C" fn kclvm_builtin_option(
             }
         }
         if typ == "str" {
-            match *this.rc {
+            match *this.rc.borrow() {
                 Value::bool_value(ref v) => {
                     let s = format!("{}", *v);
                     return ValueRef::str(s.as_ref());
@@ -176,7 +176,7 @@ pub extern "C" fn kclvm_builtin_option(
             }
         }
         if typ == "list" {
-            match *this.rc {
+            match *this.rc.borrow() {
                 Value::list_value(_) => {
                     return this.clone();
                 }
@@ -190,7 +190,7 @@ pub extern "C" fn kclvm_builtin_option(
             }
         }
         if typ == "dict" {
-            match *this.rc {
+            match *this.rc.borrow() {
                 Value::dict_value(_) => {
                     return this.clone();
                 }
@@ -226,11 +226,11 @@ pub extern "C" fn kclvm_builtin_option(
             return (*x) as *mut kclvm_value_ref_t;
         } else if let Some(kwarg_default) = kwargs.kwarg("default") {
             if let Some(kwarg_type) = kwargs.kwarg_str("type", None) {
-                return _value_to_type(kwarg_default, kwarg_type, ctx.cfg.list_option_mode)
+                return _value_to_type(&kwarg_default, kwarg_type, ctx.cfg.list_option_mode)
                     .into_raw();
             }
 
-            return kwarg_default.clone().into_raw();
+            return kwarg_default.into_raw();
         }
     }
 
@@ -338,7 +338,7 @@ pub extern "C" fn kclvm_builtin_sorted(
 
     if let Some(arg0) = args.arg_0() {
         let reverse = kwargs.kwarg("reverse");
-        return arg0.sorted(reverse).into_raw();
+        return arg0.sorted(reverse.as_ref()).into_raw();
     }
     panic!("sorted() takes exactly one argument (0 given)");
 }
@@ -356,7 +356,7 @@ pub extern "C" fn kclvm_builtin_int(
 
     if let Some(arg0) = args.arg_0() {
         let base = args.arg_i(1).or_else(|| kwargs.kwarg("base"));
-        return arg0.convert_to_int(base).into_raw();
+        return arg0.convert_to_int(base.as_ref()).into_raw();
     }
     panic!("int() takes exactly one argument (0 given)");
 }
@@ -457,7 +457,7 @@ pub extern "C" fn kclvm_builtin_multiplyof(
     let args = ptr_as_ref(args);
     let _kwargs = ptr_as_ref(kwargs);
     if let (Some(arg0), Some(arg1)) = (args.arg_i(0), args.arg_i(1)) {
-        return builtin::multiplyof(arg0, arg1).into_raw();
+        return builtin::multiplyof(&arg0, &arg1).into_raw();
     }
     panic!(
         "multiplyof() takes exactly two argument ({} given)",
@@ -525,7 +525,7 @@ pub extern "C" fn kclvm_builtin_sum(
     let _kwargs = ptr_as_ref(kwargs);
     match args.arg_i(0) {
         Some(arg0) => match args.arg_i(1) {
-            Some(arg1) => arg0.sum(arg1).into_raw(),
+            Some(arg1) => arg0.sum(&arg1).into_raw(),
             _ => arg0.sum(&ValueRef::int(0)).into_raw(),
         },
         _ => kclvm_value_Undefined(),
@@ -544,8 +544,8 @@ pub extern "C" fn kclvm_builtin_pow(
     let _kwargs = ptr_as_ref(kwargs);
     match (args.arg_i(0), args.arg_i(1)) {
         (Some(arg0), Some(arg1)) => match args.arg_i(2) {
-            Some(arg2) => builtin::pow(arg0, arg1, arg2).into_raw(),
-            _ => builtin::pow(arg0, arg1, &ValueRef::none()).into_raw(),
+            Some(arg2) => builtin::pow(&arg0, &arg1, &arg2).into_raw(),
+            _ => builtin::pow(&arg0, &arg1, &ValueRef::none()).into_raw(),
         },
         _ => kclvm_value_Undefined(),
     }
@@ -563,8 +563,8 @@ pub extern "C" fn kclvm_builtin_round(
     let _kwargs = ptr_as_ref(kwargs);
     match args.arg_i(0) {
         Some(arg0) => match args.arg_i(1) {
-            Some(arg1) => builtin::round(arg0, arg1).into_raw(),
-            _ => builtin::round(arg0, &ValueRef::none()).into_raw(),
+            Some(arg1) => builtin::round(&arg0, &arg1).into_raw(),
+            _ => builtin::round(&arg0, &ValueRef::none()).into_raw(),
         },
         _ => kclvm_value_Undefined(),
     }
@@ -595,7 +595,7 @@ pub extern "C" fn kclvm_builtin_list(
     let _kwargs = ptr_as_ref(kwargs);
     if args.args_len() > 0 {
         if let Some(arg0) = args.arg_0() {
-            return builtin::list(Some(arg0)).into_raw();
+            return builtin::list(Some(&arg0)).into_raw();
         }
         panic!("invalid arguments in list() function");
     } else {
@@ -615,7 +615,7 @@ pub extern "C" fn kclvm_builtin_dict(
     let kwargs = ptr_as_ref(kwargs);
     let mut dict = ValueRef::dict(None);
     if let Some(arg0) = args.arg_0() {
-        dict.dict_insert_unpack(&builtin::dict(Some(arg0)));
+        dict.dict_insert_unpack(&builtin::dict(Some(&arg0)));
     }
     dict.dict_insert_unpack(&builtin::dict(Some(kwargs)));
     dict.into_raw()
@@ -633,9 +633,9 @@ pub extern "C" fn kclvm_builtin_typeof(
     let kwargs = ptr_as_ref(kwargs);
     if let Some(arg0) = args.arg_0() {
         if let Some(full_name) = kwargs.kwarg("full_name") {
-            return builtin::type_of(arg0, full_name).into_raw();
+            return builtin::type_of(&arg0, &full_name).into_raw();
         }
-        return builtin::type_of(arg0, &ValueRef::bool(false)).into_raw();
+        return builtin::type_of(&arg0, &ValueRef::bool(false)).into_raw();
     }
 
     panic!("typeof() missing 1 required positional argument: 'x'");
@@ -705,10 +705,10 @@ pub extern "C" fn kclvm_builtin_range(
     match args.arg_i(0) {
         Some(arg0) => match args.arg_i(1) {
             Some(arg1) => match args.arg_i(2) {
-                Some(arg2) => builtin::range(arg0, arg1, arg2).into_raw(),
-                _ => builtin::range(arg0, arg1, &ValueRef::int(1)).into_raw(),
+                Some(arg2) => builtin::range(&arg0, &arg1, &arg2).into_raw(),
+                _ => builtin::range(&arg0, &arg1, &ValueRef::int(1)).into_raw(),
             },
-            _ => builtin::range(&ValueRef::int(0), arg0, &ValueRef::int(1)).into_raw(),
+            _ => builtin::range(&ValueRef::int(0), &arg0, &ValueRef::int(1)).into_raw(),
         },
         _ => kclvm_value_Undefined(),
     }

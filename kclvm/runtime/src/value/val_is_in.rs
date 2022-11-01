@@ -7,12 +7,12 @@ use crate::*;
 impl ValueRef {
     #[inline]
     pub fn is_undefined(&self) -> bool {
-        matches!(&*self.rc, Value::undefined)
+        matches!(&*self.rc.borrow(), Value::undefined)
     }
 
     #[inline]
     pub fn is_none(&self) -> bool {
-        matches!(&*self.rc, Value::none)
+        matches!(&*self.rc.borrow(), Value::none)
     }
 
     #[inline]
@@ -52,18 +52,24 @@ impl ValueRef {
 
     #[inline]
     pub fn is_number(&self) -> bool {
-        matches!(&*self.rc, Value::int_value(_) | Value::float_value(_))
+        matches!(
+            &*self.rc.borrow(),
+            Value::int_value(_) | Value::float_value(_)
+        )
     }
 
     #[inline]
     pub fn is_config(&self) -> bool {
-        matches!(&*self.rc, Value::schema_value(_) | Value::dict_value(_))
+        matches!(
+            &*self.rc.borrow(),
+            Value::schema_value(_) | Value::dict_value(_)
+        )
     }
 
     #[inline]
     pub fn is_list_or_config(&self) -> bool {
         matches!(
-            &*self.rc,
+            &*self.rc.borrow(),
             Value::list_value(_) | Value::schema_value(_) | Value::dict_value(_)
         )
     }
@@ -75,12 +81,12 @@ impl ValueRef {
 
     #[inline]
     pub fn is_none_or_undefined(&self) -> bool {
-        matches!(&*self.rc, Value::none | Value::undefined)
+        matches!(&*self.rc.borrow(), Value::none | Value::undefined)
     }
 
     #[inline]
     pub fn is_unit(&self) -> bool {
-        matches!(&*self.rc, Value::unit_value(..))
+        matches!(&*self.rc.borrow(), Value::unit_value(..))
     }
 }
 
@@ -88,9 +94,9 @@ impl ValueRef {
 
 impl ValueRef {
     pub fn r#in(&self, x: &Self) -> bool {
-        match &*x.rc {
+        match &*x.rc.borrow() {
             // "a" in "abc"
-            Value::str_value(ref b) => match &*self.rc {
+            Value::str_value(ref b) => match &*self.rc.borrow() {
                 Value::str_value(ref a) => b.contains(a),
                 _ => false,
             },
@@ -130,7 +136,7 @@ impl ValueRef {
 
 impl ValueRef {
     pub fn has_key(&self, key: &str) -> bool {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::dict_value(ref dict) => dict.values.contains_key(key),
             Value::schema_value(ref schema) => schema.config.values.contains_key(key),
             _ => false,

@@ -1,6 +1,7 @@
 // Copyright 2022 The KCL Authors. All rights reserved.
 
 use crate::*;
+use std::cell::RefCell;
 use std::convert::{From, TryFrom};
 use std::iter::FromIterator;
 use std::rc::Rc;
@@ -29,7 +30,7 @@ macro_rules! define_value_try_from_trait {
             type Error = String;
 
             fn try_from(v: ValueRef) -> Result<Self, Self::Error> {
-                match &*v.rc {
+                match &*v.rc.borrow() {
                     Value::$kcl_type_value(v) => Ok(v.clone()),
                     _ => Err(format!("can't convert {} to {}", v, $for_type_name)),
                 }
@@ -39,7 +40,7 @@ macro_rules! define_value_try_from_trait {
             type Error = String;
 
             fn try_from(v: &ValueRef) -> Result<Self, Self::Error> {
-                match &*v.rc {
+                match &*v.rc.borrow() {
                     Value::$kcl_type_value(v) => Ok(v.clone()),
                     _ => Err(format!("can't convert {} to {}", v, $for_type_name)),
                 }
@@ -78,7 +79,9 @@ define_value_try_from_trait!(String, str_value, "String");
 
 impl From<Value> for ValueRef {
     fn from(v: Value) -> Self {
-        Self { rc: Rc::new(v) }
+        Self {
+            rc: Rc::new(RefCell::new(v)),
+        }
     }
 }
 

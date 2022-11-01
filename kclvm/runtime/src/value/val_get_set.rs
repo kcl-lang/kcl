@@ -3,59 +3,22 @@
 use crate::*;
 
 impl ValueRef {
-    pub fn get_by_key(&self, key: &str) -> Option<&Self> {
-        match &*self.rc {
+    pub fn get_by_key(&self, key: &str) -> Option<Self> {
+        match &*self.rc.borrow() {
             Value::list_value(ref list) => match key.parse::<usize>() {
-                Ok(i) => list.values.as_slice().get(i),
+                Ok(i) => list.values.as_slice().get(i).cloned(),
                 Err(_) => None,
             },
-            Value::dict_value(ref dict) => dict.values.get(key),
-            Value::schema_value(ref schema) => schema.config.values.get(key),
+            Value::dict_value(ref dict) => dict.values.get(key).cloned(),
+            Value::schema_value(ref schema) => schema.config.values.get(key).cloned(),
             _ => None,
         }
     }
 
-    pub fn get_mut_by_key(&mut self, key: &str) -> Option<&mut Self> {
-        match &*self.rc {
-            Value::list_value(ref list) => match key.parse::<usize>() {
-                Ok(i) => {
-                    let list: &mut ListValue = get_ref_mut(list);
-                    return list.values.as_mut_slice().get_mut(i);
-                }
-                Err(_) => None,
-            },
-            Value::dict_value(ref dict) => {
-                let dict: &mut DictValue = get_ref_mut(dict);
-                dict.values.get_mut(key)
-            }
-            Value::schema_value(ref schema) => {
-                let schema: &mut SchemaValue = get_ref_mut(schema);
-                let dict: &mut DictValue = get_ref_mut(schema.config.as_ref());
-                dict.values.get_mut(key)
-            }
-            _ => None,
-        }
-    }
-
-    pub fn get_by_path(&self, path: &str) -> Option<&Self> {
-        let mut val: &Self = self;
+    pub fn get_by_path(&self, path: &str) -> Option<Self> {
+        let mut val: Self = self.clone();
         for key in path.split('.') {
             match val.get_by_key(key) {
-                Some(x) => {
-                    val = x;
-                }
-                None => {
-                    return None;
-                }
-            }
-        }
-        Some(val)
-    }
-
-    pub fn get_mut(&mut self, path: &str) -> Option<&Self> {
-        let mut val: &mut Self = self;
-        for key in path.split('.') {
-            match val.get_mut_by_key(key) {
                 Some(x) => {
                     val = x;
                 }

@@ -2,7 +2,7 @@
 
 #[allow(non_camel_case_types)]
 type kclvm_value_ref_t = crate::ValueRef;
-use crate::{get_ref_mut, new_mut_ptr, IndexMap};
+use crate::{new_mut_ptr, IndexMap};
 use indexmap::IndexSet;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
@@ -25,7 +25,7 @@ pub const TRUE: Value = Value::bool_value(true);
 #[allow(non_upper_case_globals)]
 pub const FALSE: Value = Value::bool_value(false);
 
-#[derive(PartialEq, Clone, Default, Debug)]
+#[derive(PartialEq, Eq, Clone, Default, Debug)]
 pub struct KclError {
     pub err_code: i32,
     pub err_text: String,
@@ -101,7 +101,7 @@ pub struct FuncType {
 #[allow(non_camel_case_types)]
 #[derive(Clone, Debug)]
 pub struct ValueRef {
-    pub rc: Rc<Value>,
+    pub rc: Rc<RefCell<Value>>,
 }
 
 impl Eq for ValueRef {}
@@ -114,18 +114,18 @@ impl PartialEq for ValueRef {
 
 impl Ord for ValueRef {
     fn cmp(&self, other: &ValueRef) -> Ordering {
-        let ord = match *self.rc {
-            Value::int_value(a) => match *other.rc {
+        let ord = match *self.rc.borrow() {
+            Value::int_value(a) => match *other.rc.borrow() {
                 Value::int_value(b) => a.partial_cmp(&b),
                 Value::float_value(b) => (a as f64).partial_cmp(&b),
                 _ => None,
             },
-            Value::float_value(a) => match *other.rc {
+            Value::float_value(a) => match *other.rc.borrow() {
                 Value::int_value(b) => a.partial_cmp(&(b as f64)),
                 Value::float_value(b) => a.partial_cmp(&b),
                 _ => None,
             },
-            Value::str_value(ref a) => match &*other.rc {
+            Value::str_value(ref a) => match &*other.rc.borrow() {
                 Value::str_value(ref b) => a.partial_cmp(b),
                 _ => None,
             },
@@ -150,7 +150,7 @@ impl PartialOrd for ValueRef {
 
 impl Hash for ValueRef {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::undefined => panic!("unsupport hash for undefined"),
             Value::none => panic!("unsupport hash for none"),
             Value::int_value(v) => (*v as f64).to_bits().hash(state),
@@ -188,7 +188,7 @@ impl Hash for ValueRef {
 impl Default for ValueRef {
     fn default() -> Self {
         Self {
-            rc: Rc::new(Value::undefined),
+            rc: Rc::new(RefCell::new(Value::undefined)),
         }
     }
 }
@@ -200,9 +200,7 @@ impl ValueRef {
 
     pub fn from_raw(&self) {
         //if value is a func,clear captured ValueRef to break circular reference
-        if let Value::func_value(val) = &*self.rc {
-            get_ref_mut(val).closure = ValueRef::none();
-        }
+        if let Value::func_value(val) = &*self.rc.borrow() {}
     }
 }
 
@@ -228,12 +226,12 @@ impl Default for Value {
     }
 }
 
-#[derive(PartialEq, Clone, Default, Debug)]
+#[derive(PartialEq, Eq, Clone, Default, Debug)]
 pub struct ListValue {
     pub values: Vec<ValueRef>,
 }
 
-#[derive(PartialEq, Clone, Default, Debug)]
+#[derive(PartialEq, Eq, Clone, Default, Debug)]
 pub struct DictValue {
     pub values: IndexMap<String, ValueRef>,
     pub ops: IndexMap<String, ConfigEntryOperationKind>,
@@ -245,18 +243,18 @@ pub struct DictValue {
 pub struct SchemaValue {
     pub name: String,
     pub pkgpath: String,
-    pub config: Rc<DictValue>,
+    pub config: Box<DictValue>,
     pub config_keys: Vec<String>,
 }
 
-#[derive(PartialEq, Clone, Default, Debug)]
+#[derive(PartialEq, Eq, Clone, Default, Debug)]
 pub struct DecoratorValue {
     pub name: String,
     pub args: ValueRef,
     pub kwargs: ValueRef,
 }
 
-#[derive(PartialEq, Clone, Default, Debug)]
+#[derive(PartialEq, Eq, Clone, Default, Debug)]
 pub struct FuncValue {
     // TODO (refactor): SchemaFuncValue
     pub fn_ptr: u64,
@@ -271,7 +269,7 @@ pub struct ErrorValue {
     pub errors: Vec<KclError>,
 }
 
-#[derive(PartialEq, Clone, Default, Debug)]
+#[derive(PartialEq, Eq, Clone, Default, Debug)]
 pub struct OptionHelp {
     pub name: String,
     pub typ: String,
@@ -281,7 +279,7 @@ pub struct OptionHelp {
 }
 
 #[allow(non_snake_case)]
-#[derive(PartialEq, Clone, Default, Debug, Serialize, Deserialize)]
+#[derive(PartialEq, Eq, Clone, Default, Debug, Serialize, Deserialize)]
 pub struct PanicInfo {
     pub __kcl_PanicInfo__: bool, // "__kcl_PanicInfo__"
 
@@ -306,7 +304,7 @@ pub struct PanicInfo {
     pub is_warning: bool,
 }
 
-#[derive(PartialEq, Clone, Default, Debug)]
+#[derive(PartialEq, Eq, Clone, Default, Debug)]
 pub struct ContextConfig {
     pub debug_mode: bool,
 
@@ -317,7 +315,7 @@ pub struct ContextConfig {
     pub list_option_mode: bool,
 }
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Eq, Clone, Debug)]
 pub struct ContextBuffer {
     pub kclvm_context_invoke_result: String,
 }
@@ -330,7 +328,7 @@ impl Default for ContextBuffer {
     }
 }
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Eq, Clone, Debug)]
 pub struct ContextOutput {
     pub stdout: String,
     pub stderr: String,
@@ -382,7 +380,7 @@ impl Context {
     }
 }
 
-#[derive(PartialEq, Clone, Default, Debug)]
+#[derive(PartialEq, Eq, Clone, Default, Debug)]
 pub struct FuncHandler {
     pub namespace: String,
     pub fn_pointer: u64,

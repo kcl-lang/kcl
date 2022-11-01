@@ -75,7 +75,7 @@ impl ValueRef {
                                 result_dict.values.insert(k.to_string(), list);
                             }
                             let origin_value = result_dict.values.get_mut(k).unwrap();
-                            match (&*origin_value.rc, &*value.rc) {
+                            match (&*origin_value.rc.borrow(), &*value.rc.borrow()) {
                                 (Value::list_value(origin_value), Value::list_value(value)) => {
                                     // As RefMut
                                     let origin_value: &mut ListValue = unsafe {
@@ -99,14 +99,14 @@ impl ValueRef {
                                     }
                                 }
                                 _ => panic!("only list attribute can be inserted value"),
-                            }
+                            };
                         }
                     }
                 }
             }
             self.clone()
         };
-        match (&*self.rc, &*x.rc) {
+        match (&*self.rc.borrow(), &*x.rc.borrow()) {
             (Value::list_value(obj), Value::list_value(delta)) => {
                 // Clone reference
                 let mut result_list = self.clone();
@@ -208,33 +208,29 @@ impl ValueRef {
         if x.is_none_or_undefined() {
             return self.clone();
         }
-        match (&*self.rc, &*x.rc) {
-            (
-                Value::list_value(_) | Value::dict_value(_) | Value::schema_value(_),
-                Value::list_value(_) | Value::dict_value(_) | Value::schema_value(_),
-            ) => self.do_union(
+        if self.is_list_or_config() && x.is_list_or_config() {
+            self.do_union(
                 x,
                 should_list_override,
                 should_idempotent_check,
                 should_config_resolve,
-            ),
-            _ => {
-                if or_mode {
-                    match (&*self.rc, &*x.rc) {
-                        (Value::int_value(a), Value::int_value(b)) => Self::int(*a | *b),
-                        _ => {
-                            panic!(
-                                "unsupported operand type(s) for |: '{:?}' and '{:?}'",
-                                self.type_str(),
-                                x.type_str()
-                            );
-                        }
+            )
+        } else {
+            if or_mode {
+                match (&*self.rc.borrow(), &*x.rc.borrow()) {
+                    (Value::int_value(a), Value::int_value(b)) => Self::int(*a | *b),
+                    _ => {
+                        panic!(
+                            "unsupported operand type(s) for |: '{:?}' and '{:?}'",
+                            self.type_str(),
+                            x.type_str()
+                        );
                     }
-                } else if x.is_none_or_undefined() {
-                    self.clone()
-                } else {
-                    x.clone()
                 }
+            } else if x.is_none_or_undefined() {
+                self.clone()
+            } else {
+                x.clone()
             }
         }
     }

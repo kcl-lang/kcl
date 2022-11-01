@@ -28,7 +28,7 @@ pub fn value_subsume(value1: &ValueRef, value2: &ValueRef, should_recursive_chec
     if value1.is_str() && value2.is_str() {
         return value1.as_str() == value2.as_str();
     }
-    match (&*value1.rc, &*value2.rc) {
+    match (&*value1.rc.borrow(), &*value2.rc.borrow()) {
         (Value::list_value(value1), Value::list_value(value2)) => {
             return value1.values.len() == value2.values.len()
                 && value1

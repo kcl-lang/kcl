@@ -347,18 +347,19 @@ pub extern "C" fn kclvm_value_schema_function(
     let instance_pkgpath = ValueRef::str(MAIN_PKG_PATH);
 
     let mut schema_args = ValueRef::list(None);
-    let schema_args_ref = schema_args.as_list_mut_ref();
-    schema_args_ref.values.push(is_sub_schema);
-    schema_args_ref.values.push(config_meta);
-    schema_args_ref.values.push(config);
-    schema_args_ref.values.push(schema);
-    schema_args_ref.values.push(optional_mapping);
-    schema_args_ref.values.push(cal_map);
-    schema_args_ref.values.push(backtrack_level_map);
-    schema_args_ref.values.push(backtrack_cache);
-    schema_args_ref.values.push(record_instance);
-    schema_args_ref.values.push(instance_pkgpath);
-
+    {
+        let mut schema_args_ref = schema_args.as_list_mut_ref();
+        schema_args_ref.values.push(is_sub_schema);
+        schema_args_ref.values.push(config_meta);
+        schema_args_ref.values.push(config);
+        schema_args_ref.values.push(schema);
+        schema_args_ref.values.push(optional_mapping);
+        schema_args_ref.values.push(cal_map);
+        schema_args_ref.values.push(backtrack_level_map);
+        schema_args_ref.values.push(backtrack_cache);
+        schema_args_ref.values.push(record_instance);
+        schema_args_ref.values.push(instance_pkgpath);
+    }
     let runtime_type = c2str(tpe);
     let schema_func = ValueRef::func(
         fn_ptr as u64,
@@ -478,7 +479,7 @@ pub extern "C" fn kclvm_value_to_str_value(p: *const kclvm_value_ref_t) -> *mut 
 #[runtime_fn]
 pub extern "C" fn kclvm_value_Bool_ptr(p: *const kclvm_value_ref_t) -> *const kclvm_bool_t {
     let p = ptr_as_ref(p);
-    match &*p.rc {
+    match &*p.rc.borrow() {
         Value::bool_value(ref v) => v as *const bool as *const kclvm_bool_t, // sizeof(bool) == sizeof(i8)
         _ => std::ptr::null(),
     }
@@ -488,7 +489,7 @@ pub extern "C" fn kclvm_value_Bool_ptr(p: *const kclvm_value_ref_t) -> *const kc
 #[runtime_fn]
 pub extern "C" fn kclvm_value_Int_ptr(p: *const kclvm_value_ref_t) -> *const kclvm_int_t {
     let p = ptr_as_ref(p);
-    match &*p.rc {
+    match &*p.rc.borrow() {
         Value::int_value(ref v) => v as *const kclvm_int_t,
         _ => std::ptr::null(),
     }
@@ -498,7 +499,7 @@ pub extern "C" fn kclvm_value_Int_ptr(p: *const kclvm_value_ref_t) -> *const kcl
 #[runtime_fn]
 pub extern "C" fn kclvm_value_Float_ptr(p: *const kclvm_value_ref_t) -> *const kclvm_float_t {
     let p = ptr_as_ref(p);
-    match &*p.rc {
+    match &*p.rc.borrow() {
         Value::float_value(ref v) => v as *const kclvm_float_t,
         _ => std::ptr::null(),
     }
@@ -508,7 +509,7 @@ pub extern "C" fn kclvm_value_Float_ptr(p: *const kclvm_value_ref_t) -> *const k
 #[runtime_fn]
 pub extern "C" fn kclvm_value_Str_ptr(p: *const kclvm_value_ref_t) -> *const kclvm_char_t {
     let p = ptr_as_ref(p);
-    match &*p.rc {
+    match &*p.rc.borrow() {
         Value::str_value(ref v) => v.as_ptr() as *const i8,
         _ => std::ptr::null(),
     }
@@ -532,7 +533,7 @@ pub extern "C" fn kclvm_value_Str_resize(p: *mut kclvm_value_ref_t, n: kclvm_siz
 #[runtime_fn]
 pub extern "C" fn kclvm_value_function_ptr(p: *const kclvm_value_ref_t) -> *const u64 {
     let p = ptr_as_ref(p);
-    match &*p.rc {
+    match &*p.rc.borrow() {
         Value::func_value(ref v) => v.fn_ptr as *const u64,
         _ => std::ptr::null::<u64>(),
     }
@@ -542,7 +543,7 @@ pub extern "C" fn kclvm_value_function_ptr(p: *const kclvm_value_ref_t) -> *cons
 #[runtime_fn]
 pub extern "C" fn kclvm_value_check_function_ptr(p: *const kclvm_value_ref_t) -> *const u64 {
     let p = ptr_as_ref(p);
-    match &*p.rc {
+    match &*p.rc.borrow() {
         Value::func_value(ref v) => v.check_fn_ptr as *const u64,
         _ => std::ptr::null::<u64>(),
     }
@@ -552,7 +553,7 @@ pub extern "C" fn kclvm_value_check_function_ptr(p: *const kclvm_value_ref_t) ->
 #[runtime_fn]
 pub extern "C" fn kclvm_value_function_is_external(p: *const kclvm_value_ref_t) -> kclvm_bool_t {
     let p = ptr_as_ref(p);
-    match &*p.rc {
+    match &*p.rc.borrow() {
         Value::func_value(ref v) => !v.external_name.is_empty() as kclvm_bool_t,
         _ => false as kclvm_bool_t,
     }
@@ -566,7 +567,7 @@ pub extern "C" fn kclvm_value_function_external_invoke(
     kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let p = ptr_as_ref(p);
-    match &*p.rc {
+    match &*p.rc.borrow() {
         Value::func_value(ref v) => {
             let name = format!("{}\0", v.external_name);
             kclvm_plugin_invoke(name.as_ptr() as *const i8, args, kwargs)
@@ -617,7 +618,7 @@ pub extern "C" fn kclvm_value_function_invoke(
                 // instance pkgpath
                 closure_new.list_set(instance_pkgpath_index, &ValueRef::str(pkgpath));
                 // cal map
-                closure_new.list_set(cal_map_index as usize, cal_map);
+                closure_new.list_set(cal_map_index as usize, &cal_map);
                 // config meta
                 let config_meta = schema_config_meta(
                     &ctx_ref.panic_info.kcl_file,
@@ -649,7 +650,7 @@ pub extern "C" fn kclvm_value_function_get_closure(
     p: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
     let p = ptr_as_ref(p);
-    match &*p.rc {
+    match &*p.rc.borrow() {
         Value::func_value(ref v) => v.closure.deep_copy().into_raw(),
         Value::none | Value::undefined => kclvm_value_None(),
         _ => panic!("invalid value of function self value function"),
@@ -846,7 +847,7 @@ pub extern "C" fn kclvm_list_get(
 ) -> *const kclvm_value_ref_t {
     let p = ptr_as_ref(p);
     match p.list_get(i as isize) {
-        Some(x) => x,
+        Some(x) => x.into_raw(),
         _ => panic!("list index out of range"),
     }
 }
@@ -859,7 +860,7 @@ pub extern "C" fn kclvm_list_get_option(
 ) -> *const kclvm_value_ref_t {
     let p = ptr_as_ref(p);
     match p.list_get_option(i as isize) {
-        Some(x) => x.clone().into_raw(),
+        Some(x) => x.into_raw(),
         _ => kclvm_value_Undefined(),
     }
 }
@@ -881,7 +882,7 @@ pub extern "C" fn kclvm_list_set(
 pub extern "C" fn kclvm_list_pop(p: *mut kclvm_value_ref_t) -> *const kclvm_value_ref_t {
     let p = mut_ptr_as_ref(p);
     match p.list_pop() {
-        Some(x) => x,
+        Some(x) => x.into_raw(),
         _ => kclvm_value_Undefined(),
     }
 }
@@ -938,7 +939,7 @@ pub extern "C" fn kclvm_list_append_unpack(p: *mut kclvm_value_ref_t, v: *const 
     let p = mut_ptr_as_ref(p);
     let v = ptr_as_ref(v);
 
-    if let Value::list_value(ref _list) = &*p.rc {
+    if p.is_list() {
         p.list_append_unpack(v);
     }
 }
@@ -958,7 +959,7 @@ pub extern "C" fn kclvm_list_remove_at(p: *mut kclvm_value_ref_t, i: kclvm_size_
 #[runtime_fn]
 pub extern "C" fn kclvm_dict_len(p: *const kclvm_value_ref_t) -> kclvm_size_t {
     let p = ptr_as_ref(p);
-    match &*p.rc {
+    match &*p.rc.borrow() {
         Value::dict_value(ref dict) => dict.values.len() as kclvm_size_t,
         _ => 0,
     }
@@ -981,7 +982,7 @@ pub extern "C" fn kclvm_dict_get(
     let key = ptr_as_ref(key);
 
     match p.dict_get(key) {
-        Some(x) => x.clone().into_raw(),
+        Some(x) => x.into_raw(),
         None => kclvm_value_Undefined(),
     }
 }
@@ -1009,7 +1010,7 @@ pub extern "C" fn kclvm_dict_get_value(
     let p = ptr_as_ref(p);
     let key = c2str(key);
     match p.dict_get_value(key) {
-        Some(x) => x.clone().into_raw(),
+        Some(x) => x.into_raw(),
         None => kclvm_value_Undefined(),
     }
 }
@@ -1037,7 +1038,7 @@ pub extern "C" fn kclvm_dict_get_value_by_path(
     let p = ptr_as_ref(p);
     let path = c2str(path);
     match p.get_by_path(path) {
-        Some(x) => x.clone().into_raw(),
+        Some(x) => x.into_raw(),
         None => kclvm_value_Undefined(),
     }
 }
@@ -1056,10 +1057,13 @@ pub extern "C" fn kclvm_dict_set_value(
         p.dict_update_key_value(key, val.clone());
     }
     if p.is_schema() {
-        let schema_value = p.as_schema();
-        let mut config_keys = schema_value.config_keys.clone();
-        config_keys.push(key.to_string());
-        let schema = resolve_schema(p, &config_keys);
+        let schema: ValueRef;
+        {
+            let schema_value = p.as_schema();
+            let mut config_keys = schema_value.config_keys.clone();
+            config_keys.push(key.to_string());
+            schema = resolve_schema(p, &config_keys);
+        }
         p.schema_update_with_schema(&schema);
     }
     /*panic*/
@@ -1115,9 +1119,9 @@ pub extern "C" fn kclvm_dict_merge(
     let v = ptr_as_ref(v);
     let key = c2str(key);
     let attr_map = {
-        match &*p.rc {
-            Value::dict_value(dict) => &dict.attr_map,
-            Value::schema_value(schema) => &schema.config.attr_map,
+        match &*p.rc.borrow() {
+            Value::dict_value(dict) => dict.attr_map.clone(),
+            Value::schema_value(schema) => schema.config.attr_map.clone(),
             _ => panic!("invalid object '{}' in attr_map", p.type_str()),
         }
     };
@@ -1203,7 +1207,7 @@ pub extern "C" fn kclvm_default_collection_insert_int_pointer(
     let key = c2str(key);
     let ptr = ptr as i64;
     if p.is_dict() {
-        let dict_ref_mut = p.as_dict_mut_ref();
+        let mut dict_ref_mut = p.as_dict_mut_ref();
         if !dict_ref_mut.values.contains_key(key) {
             let value = ValueRef::list(None);
             dict_ref_mut.values.insert(key.to_string(), value);
@@ -1227,7 +1231,7 @@ pub extern "C" fn kclvm_default_collection_insert_value(
     let key = c2str(key);
     let value = ptr_as_ref(value);
     if p.is_dict() {
-        let dict_ref_mut = p.as_dict_mut_ref();
+        let mut dict_ref_mut = p.as_dict_mut_ref();
         if !dict_ref_mut.values.contains_key(key) {
             let value = ValueRef::list(None);
             dict_ref_mut.values.insert(key.to_string(), value);
@@ -1727,12 +1731,10 @@ pub extern "C" fn kclvm_value_union(
 ) -> *const kclvm_value_ref_t {
     let a = mut_ptr_as_ref(schema);
     let b = ptr_as_ref(b);
-    let attr_map = {
-        match &*a.rc {
-            Value::dict_value(dict) => &dict.attr_map,
-            Value::schema_value(schema) => &schema.config.attr_map,
-            _ => panic!("invalid object '{}' in attr_map", a.type_str()),
-        }
+    let attr_map = match &*a.rc.borrow() {
+        Value::dict_value(dict) => dict.attr_map.clone(),
+        Value::schema_value(schema) => schema.config.attr_map.clone(),
+        _ => panic!("invalid object '{}' in attr_map", a.type_str()),
     };
     if b.is_config() {
         let dict = b.as_dict_ref();
@@ -1818,7 +1820,7 @@ pub extern "C" fn kclvm_value_load_attr(
     if p.is_dict() {
         match p.dict_get_value(key) {
             Some(x) => {
-                return x.clone().into_raw();
+                return x.into_raw();
             }
             None => {
                 return kclvm_value_Undefined();
@@ -1828,7 +1830,7 @@ pub extern "C" fn kclvm_value_load_attr(
         let dict = p.schema_to_dict();
         match dict.dict_get_value(key) {
             Some(x) => {
-                return x.clone().into_raw();
+                return x.into_raw();
             }
             None => panic!("schema '{}' attribute '{}' not found", p.type_str(), key),
         }
@@ -1961,7 +1963,7 @@ pub extern "C" fn kclvm_schema_backtrack_cache(
     if let Some(v) = cal_map.dict_get_value(name) {
         if v.len() == 1 {
             if let Some(value) = schema.dict_get_value(name) {
-                cache.dict_update_key_value(name, value.clone());
+                cache.dict_update_key_value(name, value);
             }
         } else if let (Some(cal_map_runtime_type_list), Some(cal_map_meta_line_list)) = (
             cal_map.dict_get_value(&format!("{}_{}", name, CAL_MAP_RUNTIME_TYPE)),
@@ -1974,9 +1976,9 @@ pub extern "C" fn kclvm_schema_backtrack_cache(
                 let runtime_type = ptr_as_ref(runtime_type);
                 let line = Context::current_context().panic_info.kcl_line as i64;
                 let cal_map_meta_line = cal_map_meta_line.as_int();
-                if runtime_type == cal_map_runtime_type && line >= cal_map_meta_line {
+                if runtime_type == &cal_map_runtime_type && line >= cal_map_meta_line {
                     if let Some(value) = schema.dict_get_value(name) {
-                        cache.dict_update_key_value(name, value.clone());
+                        cache.dict_update_key_value(name, value);
                     }
                 }
             }
@@ -2104,11 +2106,10 @@ pub extern "C" fn kclvm_schema_do_check_with_index_sign_attr(
         // Schema check function closure
         let config_meta = args_value.arg_i(0).unwrap();
         let config = args_value.arg_i(1).unwrap();
-        let schema = args_value.arg_i(2).unwrap();
+        let mut schema = args_value.arg_i(2).unwrap();
         let cal_map = args_value.arg_i(3).unwrap();
         let backtrack_level_map = args_value.arg_i(4).unwrap();
         let backtrack_cache = args_value.arg_i(5).unwrap();
-        let schema = get_ref_mut(schema);
         for (k, _) in &config.as_dict_ref().values {
             // relaxed keys
             if schema.attr_map_get(k).is_none() {
@@ -2116,12 +2117,12 @@ pub extern "C" fn kclvm_schema_do_check_with_index_sign_attr(
                 schema.dict_update_key_value(attr_name, value);
                 let args = &mut ValueRef::list(None);
                 // Schema check function closure
-                args.list_append(config_meta);
-                args.list_append(config);
-                args.list_append(schema);
-                args.list_append(cal_map);
-                args.list_append(backtrack_level_map);
-                args.list_append(backtrack_cache);
+                args.list_append(&config_meta);
+                args.list_append(&config);
+                args.list_append(&schema);
+                args.list_append(&cal_map);
+                args.list_append(&backtrack_level_map);
+                args.list_append(&backtrack_cache);
                 let args = args.clone().into_raw();
                 check_fn(ctx, args, kwargs);
             }
@@ -2318,18 +2319,18 @@ pub extern "C" fn kclvm_schema_get_value(
     let default_level = ValueRef::int(0);
     let level = backtrack_level_map
         .dict_get_value(key)
-        .unwrap_or(&default_level);
+        .unwrap_or(default_level);
     let level = level.as_int();
     let is_backtracking = level > 0;
     // Deal in-place modify and return it self immediately
     if key == target_attr && !is_backtracking {
         match schema.dict_get_value(key) {
-            Some(x) => return x.clone().into_raw(),
+            Some(x) => return x.into_raw(),
             None => return kclvm_value_Undefined(),
         }
     }
     if let Some(v) = backtrack_cache.dict_get_value(key) {
-        return v.clone().into_raw();
+        return v.into_raw();
     }
     if let Some(attr_code) = cal_map.dict_get_value(key) {
         let now_level = level + 1;
@@ -2339,7 +2340,7 @@ pub extern "C" fn kclvm_schema_get_value(
         let index = n - now_level as usize;
         if index >= n {
             let value = match schema.dict_get_value(key) {
-                Some(x) => x.clone(),
+                Some(x) => x,
                 None => ValueRef::undefined(),
             };
             return value.into_raw();
@@ -2351,7 +2352,6 @@ pub extern "C" fn kclvm_schema_get_value(
             // args_0: config_meta, args_1: config, args_2: schema, args_3: cal_map
             let config_meta = ptr_as_ref(config_meta);
             let config = ptr_as_ref(config);
-            let schema = get_ref_mut(schema);
             let mut args = ValueRef::list(None);
             let args_org = args_org.as_list_ref();
             for value in &args_org.values {
@@ -2371,13 +2371,13 @@ pub extern "C" fn kclvm_schema_get_value(
         };
         backtrack_level_map.dict_update_key_value(key, ValueRef::int(level));
         let value = match schema.dict_get_value(key) {
-            Some(x) => x.clone(),
+            Some(x) => x,
             None => ValueRef::undefined(),
         };
         backtrack_cache.dict_update_key_value(key, value);
     }
     match schema.dict_get_value(key) {
-        Some(x) => x.clone().into_raw(),
+        Some(x) => x.into_raw(),
         None => kclvm_value_Undefined(),
     }
 }
@@ -2488,7 +2488,7 @@ pub extern "C" fn kclvm_builtin_str_count(
         if let Some(sub) = args.arg_0() {
             let start = args.arg_i(1);
             let end = args.arg_i(2);
-            val.str_count(sub, start, end).into_raw()
+            val.str_count(&sub, start.as_ref(), end.as_ref()).into_raw()
         } else {
             panic!("count() takes at least 1 argument (0 given)");
         }
@@ -2509,7 +2509,8 @@ pub extern "C" fn kclvm_builtin_str_endswith(
         if let Some(suffix) = args.arg_0() {
             let start = args.arg_i(1);
             let end = args.arg_i(2);
-            val.str_endswith(suffix, start, end).into_raw()
+            val.str_endswith(&suffix, start.as_ref(), end.as_ref())
+                .into_raw()
         } else {
             panic!("endswith() takes at least 1 argument (0 given)");
         }
@@ -2530,7 +2531,7 @@ pub extern "C" fn kclvm_builtin_str_find(
         if let Some(sub) = args.arg_0() {
             let start = args.arg_i(1);
             let end = args.arg_i(2);
-            val.str_find(sub, start, end).into_raw()
+            val.str_find(&sub, start.as_ref(), end.as_ref()).into_raw()
         } else {
             panic!("find() takes at least 1 argument (0 given)");
         }
@@ -2567,7 +2568,7 @@ pub extern "C" fn kclvm_builtin_str_index(
         if let Some(sub) = args.arg_0() {
             let start = args.arg_i(1);
             let end = args.arg_i(2);
-            val.str_index(sub, start, end).into_raw()
+            val.str_index(&sub, start.as_ref(), end.as_ref()).into_raw()
         } else {
             panic!("index() takes at least 1 argument (0 given)");
         }
@@ -2691,7 +2692,7 @@ pub extern "C" fn kclvm_builtin_str_join(
     let args = ptr_as_ref(args);
     if let Some(val) = args.pop_arg_first() {
         let iter = args.arg_i(0).unwrap();
-        val.str_join(iter).into_raw()
+        val.str_join(&iter).into_raw()
     } else {
         panic!("invalid self value in str_join");
     }
@@ -2707,7 +2708,7 @@ pub extern "C" fn kclvm_builtin_str_lstrip(
     let args = ptr_as_ref(args);
     if let Some(val) = args.pop_arg_first() {
         let chars = args.arg_i(0);
-        val.str_lstrip(chars).into_raw()
+        val.str_lstrip(chars.as_ref()).into_raw()
     } else {
         panic!("invalid self value in str_lstrip");
     }
@@ -2723,7 +2724,7 @@ pub extern "C" fn kclvm_builtin_str_rstrip(
     let args = ptr_as_ref(args);
     if let Some(val) = args.pop_arg_first() {
         let chars = args.arg_i(0);
-        val.str_rstrip(chars).into_raw()
+        val.str_rstrip(chars.as_ref()).into_raw()
     } else {
         panic!("invalid self value in str_rstrip");
     }
@@ -2741,7 +2742,7 @@ pub extern "C" fn kclvm_builtin_str_replace(
         let old = args.arg_i(0).unwrap();
         let new = args.arg_i(1).unwrap();
         let count = args.arg_i(2);
-        val.str_replace(old, new, count).into_raw()
+        val.str_replace(&old, &new, count.as_ref()).into_raw()
     } else {
         panic!("invalid self value in str_replace");
     }
@@ -2759,7 +2760,7 @@ pub extern "C" fn kclvm_builtin_str_rfind(
         if let Some(sub) = args.arg_0() {
             let start = args.arg_i(1);
             let end = args.arg_i(2);
-            val.str_rfind(sub, start, end).into_raw()
+            val.str_rfind(&sub, start.as_ref(), end.as_ref()).into_raw()
         } else {
             panic!("rfind() takes at least 1 argument (0 given)");
         }
@@ -2780,7 +2781,8 @@ pub extern "C" fn kclvm_builtin_str_rindex(
         if let Some(sub) = args.arg_0() {
             let start = args.arg_i(1);
             let end = args.arg_i(2);
-            val.str_rindex(sub, start, end).into_raw()
+            val.str_rindex(&sub, start.as_ref(), end.as_ref())
+                .into_raw()
         } else {
             panic!("rindex() takes at least 1 argument (0 given)");
         }
@@ -2809,7 +2811,7 @@ pub extern "C" fn kclvm_builtin_str_rsplit(
         } else {
             kwargs.kwarg("maxsplit")
         };
-        val.str_rsplit(sep, maxsplit).into_raw()
+        val.str_rsplit(sep.as_ref(), maxsplit.as_ref()).into_raw()
     } else {
         panic!("invalid self value in str_rsplit");
     }
@@ -2835,7 +2837,7 @@ pub extern "C" fn kclvm_builtin_str_split(
         } else {
             kwargs.kwarg("maxsplit")
         };
-        let x = val.str_split(sep, maxsplit);
+        let x = val.str_split(sep.as_ref(), maxsplit.as_ref());
         x.into_raw()
     } else {
         panic!("invalid self value in str_split");
@@ -2853,9 +2855,9 @@ pub extern "C" fn kclvm_builtin_str_splitlines(
     let kwargs = ptr_as_ref(kwargs);
     if let Some(val) = args.pop_arg_first() {
         if let Some(keepends) = args.arg_i(0) {
-            val.str_splitlines(Some(keepends)).into_raw()
+            val.str_splitlines(Some(&keepends)).into_raw()
         } else if let Some(keepends) = kwargs.kwarg("keepends") {
-            val.str_splitlines(Some(keepends)).into_raw()
+            val.str_splitlines(Some(&keepends)).into_raw()
         } else {
             val.str_splitlines(None).into_raw()
         }
@@ -2876,7 +2878,8 @@ pub extern "C" fn kclvm_builtin_str_startswith(
         if let Some(suffix) = args.arg_0() {
             let start = args.arg_i(1);
             let end = args.arg_i(2);
-            val.str_startswith(suffix, start, end).into_raw()
+            val.str_startswith(&suffix, start.as_ref(), end.as_ref())
+                .into_raw()
         } else {
             panic!("startswith() takes at least 1 argument (0 given)");
         }
@@ -2895,7 +2898,7 @@ pub extern "C" fn kclvm_builtin_str_strip(
     let args = ptr_as_ref(args);
     if let Some(val) = args.pop_arg_first() {
         let chars = args.arg_i(0);
-        val.str_strip(chars).into_raw()
+        val.str_strip(chars.as_ref()).into_raw()
     } else {
         panic!("invalid self value in str_strip");
     }

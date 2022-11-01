@@ -45,7 +45,7 @@ pub type SchemaTypeFunc = unsafe extern "C" fn(
 // common
 impl ValueRef {
     pub fn type_str(&self) -> String {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::undefined => String::from(KCL_TYPE_UNDEFINED),
             Value::none => String::from(KCL_TYPE_NONE),
             Value::bool_value(..) => String::from(BUILTIN_TYPE_BOOL),
