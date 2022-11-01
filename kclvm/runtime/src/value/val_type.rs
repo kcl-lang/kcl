@@ -257,12 +257,11 @@ pub fn convert_collection_value(value: &ValueRef, tpe: &str) -> ValueRef {
             let pkgname = splits[1];
             let name = splits[0];
             match ctx.import_names.get(&now_meta_info.kcl_file) {
-                Some(mapping) => match mapping.get(pkgname) {
-                    Some(pkgpath) => {
+                Some(mapping) => {
+                    if let Some(pkgpath) = mapping.get(pkgname) {
                         schema_type_name = format!("{}.{}", pkgpath, name);
                     }
-                    None => {}
-                },
+                }
                 None => {
                     for (_, mapping) in &ctx.import_names {
                         match mapping.get(pkgname) {

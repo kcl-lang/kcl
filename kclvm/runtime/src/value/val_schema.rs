@@ -113,8 +113,9 @@ impl ValueRef {
                 .dict_update_key_value(SETTINGS_SCHEMA_TYPE_KEY, ValueRef::str(runtime_type));
             self.dict_update_key_value(SCHEMA_SETTINGS_ATTR_NAME, default_settings);
         } else {
-            let settings = get_ref_mut(settings.as_ref().unwrap());
-            settings.dict_update_key_value(SETTINGS_SCHEMA_TYPE_KEY, ValueRef::str(runtime_type));
+            settings
+                .unwrap()
+                .dict_update_key_value(SETTINGS_SCHEMA_TYPE_KEY, ValueRef::str(runtime_type));
         }
         if let Some(v) = config.dict_get_value(SCHEMA_SETTINGS_ATTR_NAME) {
             self.dict_update_key_value(SCHEMA_SETTINGS_ATTR_NAME, v);
@@ -131,14 +132,15 @@ impl ValueRef {
     }
 
     pub fn update_attr_map(&mut self, name: &str, type_str: &str) {
-        match &*self.rc.borrow() {
+        match &mut *self.rc.borrow_mut() {
             Value::dict_value(dict) => {
-                let attr_map = get_ref_mut(&dict.attr_map);
-                attr_map.insert(name.to_string(), type_str.to_string());
+                dict.attr_map.insert(name.to_string(), type_str.to_string());
             }
             Value::schema_value(schema) => {
-                let attr_map = get_ref_mut(&schema.config.attr_map);
-                attr_map.insert(name.to_string(), type_str.to_string());
+                schema
+                    .config
+                    .attr_map
+                    .insert(name.to_string(), type_str.to_string());
             }
             _ => panic!("invalid object '{}' in update_attr_map", self.type_str()),
         }
@@ -146,25 +148,19 @@ impl ValueRef {
 
     pub fn attr_map_get(&mut self, name: &str) -> Option<String> {
         match &*self.rc.borrow() {
-            Value::dict_value(dict) => {
-                let attr_map = get_ref_mut(&dict.attr_map);
-                attr_map.get(name).cloned()
-            }
-            Value::schema_value(schema) => {
-                let attr_map = get_ref_mut(&schema.config.attr_map);
-                attr_map.get(name).cloned()
-            }
+            Value::dict_value(dict) => dict.attr_map.get(name).cloned(),
+            Value::schema_value(schema) => schema.config.attr_map.get(name).cloned(),
             _ => panic!("invalid object '{}' in attr_map_get", self.type_str()),
         }
     }
 
     pub fn schema_update_with_schema(&mut self, value: &ValueRef) {
         if let (Value::schema_value(schema), Value::schema_value(value)) =
-            (&*self.rc.borrow(), &*value.rc.borrow())
+            (&mut *self.rc.borrow_mut(), &*value.rc.borrow())
         {
-            let values = get_ref_mut(&schema.config.values);
-            let ops = get_ref_mut(&schema.config.ops);
-            let insert_indexs = get_ref_mut(&schema.config.insert_indexs);
+            let values = &mut schema.config.values;
+            let ops = &mut schema.config.ops;
+            let insert_indexs = &mut schema.config.insert_indexs;
             for (k, v) in &value.config.values {
                 let op = value
                     .config

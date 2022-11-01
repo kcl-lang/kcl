@@ -200,7 +200,9 @@ impl ValueRef {
 
     pub fn from_raw(&self) {
         //if value is a func,clear captured ValueRef to break circular reference
-        if let Value::func_value(val) = &*self.rc.borrow() {}
+        if let Value::func_value(val) = &mut *self.rc.borrow_mut() {
+            val.closure = ValueRef::none();
+        }
     }
 }
 
