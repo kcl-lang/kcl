@@ -320,16 +320,15 @@ mod test_validater {
         &["test.k", "simple.k", "list.k", "plain_value.k", "complex.k"];
     const VALIDATED_FILE_TYPE: &'static [&'static str] = &["json", "yaml"];
 
-    // #[test]
-    // fn test_validator() {
-    //     // test_validate();
-    //     // test_invalid_validate();
-    //     // test_validate_with_invalid_kcl_path();
-    //     // test_validate_with_invalid_file_path();
-    //     // test_validate_with_invalid_file_type();
-    // }
-
     #[test]
+    fn test_validator() {
+        test_validate();
+        test_invalid_validate();
+        test_validate_with_invalid_kcl_path();
+        test_validate_with_invalid_file_path();
+        test_validate_with_invalid_file_type();
+    }
+
     fn test_validate() {
         for (i, file_suffix) in VALIDATED_FILE_TYPE.iter().enumerate() {
             for case in KCL_TEST_CASES {
@@ -357,7 +356,6 @@ mod test_validater {
         }
     }
 
-    #[test]
     fn test_invalid_validate() {
         let prev_hook = std::panic::take_hook();
         // disable print panic info
@@ -421,7 +419,6 @@ mod test_validater {
         std::panic::set_hook(prev_hook);
     }
 
-    #[test]
     fn test_validate_with_invalid_kcl_path() {
         let opt = ValidateOption::new(
             None,
@@ -443,7 +440,6 @@ mod test_validater {
         }
     }
 
-    #[test]
     fn test_validate_with_invalid_file_path() {
         let kcl_code = fs::read_to_string(
             construct_full_path(&format!("{}/{}", "validate_cases", "test.k")).unwrap(),
@@ -469,7 +465,6 @@ mod test_validater {
         }
     }
 
-    #[test]
     fn test_validate_with_invalid_file_type() {
         let kcl_code = fs::read_to_string(
             construct_full_path(&format!("{}/{}", "validate_cases", "test.k")).unwrap(),
