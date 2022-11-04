@@ -202,7 +202,6 @@ fn assemble_lib_for_test(
     )
 }
 
-#[test]
 fn test_kclvm_runner_execute() {
     for case in TEST_CASES {
         let kcl_path = &format!("{}/{}/{}", TEST_CASE_PATH, case, KCL_FILE_NAME);
@@ -213,7 +212,6 @@ fn test_kclvm_runner_execute() {
     }
 }
 
-#[test]
 fn test_kclvm_runner_execute_timeout() {
     set_hook(Box::new(|_| {}));
     let result_time_out = catch_unwind(|| {
@@ -361,7 +359,6 @@ fn test_from_setting_file_program_arg() {
     }
 }
 
-#[test]
 fn test_exec_file() {
     let prev_hook = std::panic::take_hook();
     // disable print panic info
@@ -373,6 +370,13 @@ fn test_exec_file() {
     });
     assert!(result.is_ok());
     std::panic::set_hook(prev_hook);
+}
+
+#[test]
+fn test_exec() {
+    test_exec_file();
+    test_kclvm_runner_execute();
+    test_kclvm_runner_execute_timeout();
 }
 
 fn exec(file: &str) -> Result<String, String> {
