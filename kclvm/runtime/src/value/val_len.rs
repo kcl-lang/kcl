@@ -4,7 +4,7 @@ use crate::*;
 
 impl ValueRef {
     pub fn len(&self) -> usize {
-        match *self.rc {
+        match *self.rc.borrow() {
             Value::str_value(ref s) => s.len(),
             Value::list_value(ref v) => v.values.len(),
             Value::dict_value(ref v) => v.values.len(),

@@ -1,7 +1,8 @@
 // Copyright 2021 The KCL Authors. All rights reserved.
 
 use crate::*;
-
+use std::cell::Ref;
+use std::cell::RefMut;
 impl ValueRef {
     #[inline]
     pub fn as_bool(&self) -> bool {
@@ -10,7 +11,7 @@ impl ValueRef {
 
     #[inline]
     pub fn as_int(&self) -> i64 {
-        match *self.rc {
+        match *self.rc.borrow() {
             Value::int_value(ref v) => *v,
             Value::float_value(ref v) => *v as i64,
             Value::unit_value(ref v, _, _) => *v as i64,
@@ -20,7 +21,7 @@ impl ValueRef {
 
     #[inline]
     pub fn as_float(&self) -> f64 {
-        match *self.rc {
+        match *self.rc.borrow() {
             Value::int_value(ref v) => *v as f64,
             Value::float_value(ref v) => *v,
             Value::unit_value(ref v, _, _) => *v,
@@ -30,65 +31,65 @@ impl ValueRef {
 
     #[inline]
     pub fn as_str(&self) -> String {
-        match *self.rc {
+        match *self.rc.borrow() {
             Value::str_value(ref v) => v.clone(),
             _ => "".to_string(),
         }
     }
 
     #[inline]
-    pub fn as_list_ref(&self) -> &ListValue {
-        match *self.rc {
-            Value::list_value(ref v) => v,
+    pub fn as_list_ref(&self) -> Ref<ListValue> {
+        Ref::map(self.rc.borrow(), |val| match val {
+            Value::list_value(ref v) => v.as_ref(),
             _ => panic!("invalid list value"),
-        }
+        })
     }
 
     #[inline]
-    pub fn as_list_mut_ref(&mut self) -> &mut ListValue {
-        match *self.rc {
-            Value::list_value(ref v) => get_ref_mut(v),
+    pub fn as_list_mut_ref(&mut self) -> RefMut<ListValue> {
+        RefMut::map(self.rc.borrow_mut(), |val| match val {
+            Value::list_value(ref mut v) => v.as_mut(),
             _ => panic!("invalid list value"),
-        }
+        })
     }
 
     #[inline]
-    pub fn as_dict_ref(&self) -> &DictValue {
-        match *self.rc {
-            Value::dict_value(ref v) => v,
+    pub fn as_dict_ref(&self) -> Ref<DictValue> {
+        Ref::map(self.rc.borrow(), |val| match val {
+            Value::dict_value(ref v) => v.as_ref(),
             Value::schema_value(ref v) => v.config.as_ref(),
             _ => panic!("invalid dict value"),
-        }
+        })
     }
 
     #[inline]
-    pub fn as_dict_mut_ref(&mut self) -> &mut DictValue {
-        match *self.rc {
-            Value::dict_value(ref v) => get_ref_mut(v),
-            Value::schema_value(ref v) => get_ref_mut(v.config.as_ref()),
+    pub fn as_dict_mut_ref(&mut self) -> RefMut<DictValue> {
+        RefMut::map(self.rc.borrow_mut(), |val| match val {
+            Value::dict_value(ref mut v) => v.as_mut(),
+            Value::schema_value(ref mut v) => v.config.as_mut(),
             _ => panic!("invalid dict value"),
-        }
+        })
     }
 
     #[inline]
-    pub fn as_schema(&self) -> &SchemaValue {
-        match *self.rc {
-            Value::schema_value(ref v) => v,
+    pub fn as_schema(&self) -> Ref<SchemaValue> {
+        Ref::map(self.rc.borrow(), |val| match val {
+            Value::schema_value(ref v) => v.as_ref(),
             _ => panic!("invalid schema value"),
-        }
+        })
     }
 
     #[inline]
-    pub fn as_function(&self) -> &FuncValue {
-        match *self.rc {
-            Value::func_value(ref v) => v,
-            _ => panic!("invalid function value"),
-        }
+    pub fn as_function(&self) -> Ref<FuncValue> {
+        Ref::map(self.rc.borrow(), |val| match val {
+            Value::func_value(ref v) => v.as_ref(),
+            _ => panic!("invalid func value"),
+        })
     }
 
     #[inline]
     pub fn as_unit(&self) -> (f64, i64, String) {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::unit_value(v, raw, unit) => (*v, *raw, unit.clone()),
             _ => panic!("invalid unit value"),
         }

@@ -16,7 +16,7 @@ pub extern "C" fn kclvm_base64_encode(
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
     let p = args.arg_0().unwrap();
-    match &*p.rc {
+    match &*p.rc.borrow() {
         Value::str_value(x) => {
             let s = encode(x.clone());
             return ValueRef::str(s.as_str()).into_raw();
@@ -27,7 +27,7 @@ pub extern "C" fn kclvm_base64_encode(
 
             panic!("a bytes-like object is required, not '{}'", p.as_str());
         }
-    }
+    };
 }
 
 #[no_mangle]
@@ -39,7 +39,7 @@ pub extern "C" fn kclvm_base64_decode(
 ) -> *mut kclvm_value_ref_t {
     let args = ptr_as_ref(args);
     let p = args.arg_0().unwrap();
-    match &*p.rc {
+    match &*p.rc.borrow() {
         Value::str_value(x) => {
             let de_str = decode(x.clone()).unwrap();
             return ValueRef::str(std::str::from_utf8(&de_str).unwrap()).into_raw();
@@ -53,5 +53,5 @@ pub extern "C" fn kclvm_base64_decode(
                 p.as_str()
             );
         }
-    }
+    };
 }

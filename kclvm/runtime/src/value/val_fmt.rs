@@ -904,21 +904,22 @@ impl FormatString {
                         }
                         FieldType::Keyword(keyword) => kwargs
                             .dict_get_value(keyword.as_str())
-                            .expect("keyword argument not found"),
+                            .expect("keyword argument not found")
+                            .clone(),
                     };
                     for name_part in parts {
                         match name_part {
                             // Load attr
                             FieldNamePart::Attribute(attr) => {
-                                argument = args.dict_get_value(attr.as_str()).unwrap();
+                                argument = args.dict_get_value(attr.as_str()).unwrap().clone();
                             }
                             // List subscript
                             FieldNamePart::Index(index) => {
-                                argument = args.list_get(index as isize).unwrap();
+                                argument = args.list_get(index as isize).unwrap().clone();
                             }
                             // Dict subscript
                             FieldNamePart::StringIndex(value) => {
-                                argument = args.dict_get_value(value.as_str()).unwrap();
+                                argument = args.dict_get_value(value.as_str()).unwrap().clone();
                             }
                         }
                     }
@@ -988,7 +989,7 @@ pub fn quoted_string(value: &str) -> String {
 
 impl fmt::Display for ValueRef {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::undefined => write!(f, "Undefined"),
             Value::none => write!(f, "None"),
             Value::bool_value(ref v) => {
@@ -1039,7 +1040,7 @@ impl fmt::Display for ValueRef {
 impl ValueRef {
     /// to_string_with_spec e.g., "{:.0f}".format(1.0)
     pub fn to_string_with_spec(&self, spec: &str) -> String {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::int_value(ref v) => {
                 match FormatSpec::parse(spec).and_then(|format_spec| format_spec.format_int(v)) {
                     Ok(string) => string,

@@ -443,7 +443,7 @@ impl ValueRef {
     }
 
     fn build_json(&self, opt: &JsonEncodeOptions) -> JsonValue {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             crate::Value::undefined => JsonValue::Null,
             crate::Value::none => JsonValue::Null,
 
@@ -459,7 +459,7 @@ impl ValueRef {
             crate::Value::list_value(ref v) => {
                 let mut val_array = Vec::new();
                 for x in v.values.iter() {
-                    match *x.rc {
+                    match *x.rc.borrow() {
                         crate::Value::undefined => {
                             continue;
                         }
@@ -488,7 +488,7 @@ impl ValueRef {
                     if opt.ignore_private && (*key).starts_with(KCL_PRIVATE_VAR_PREFIX) {
                         continue;
                     }
-                    match *val.rc {
+                    match *val.rc.borrow() {
                         crate::Value::undefined => {
                             continue;
                         }
@@ -518,7 +518,7 @@ impl ValueRef {
                     if opt.ignore_private && (*key).starts_with(KCL_PRIVATE_VAR_PREFIX) {
                         continue;
                     }
-                    match *val.rc {
+                    match *val.rc.borrow() {
                         crate::Value::undefined => {
                             continue;
                         }

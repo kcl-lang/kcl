@@ -5,7 +5,7 @@ use crate::*;
 impl ValueRef {
     #[inline]
     pub fn is_truthy(&self) -> bool {
-        match *self.rc {
+        match *self.rc.borrow() {
             Value::undefined => false,
             Value::none => false,
             Value::bool_value(ref v) => *v,

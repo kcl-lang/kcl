@@ -5,18 +5,18 @@ use crate::*;
 // cmp
 impl ValueRef {
     pub fn cmp_equal(&self, x: &Self) -> bool {
-        match *self.rc {
-            Value::int_value(a) => match *x.rc {
+        match *self.rc.borrow() {
+            Value::int_value(a) => match *x.rc.borrow() {
                 Value::int_value(b) => a == b,
                 Value::float_value(b) => a as f64 == b,
                 _ => false,
             },
-            Value::float_value(a) => match *x.rc {
+            Value::float_value(a) => match *x.rc.borrow() {
                 Value::int_value(b) => a == b as f64,
                 Value::float_value(b) => a == b,
                 _ => false,
             },
-            _ => match (&*self.rc, &*x.rc) {
+            _ => match (&*self.rc.borrow(), &*x.rc.borrow()) {
                 (Value::undefined, Value::undefined) => true,
                 (Value::none, Value::none) => true,
                 (Value::bool_value(a), Value::bool_value(b)) => *a == *b,
@@ -71,8 +71,8 @@ impl ValueRef {
     }
 
     pub fn cmp_less_than(&self, x: &Self) -> bool {
-        match &*self.rc {
-            Value::int_value(a) => match &*x.rc {
+        match &*self.rc.borrow() {
+            Value::int_value(a) => match &*x.rc.borrow() {
                 Value::int_value(b) => *a < *b,
                 Value::float_value(b) => (*a as f64) < *b,
                 Value::bool_value(b) => *a < (*b as i64),
@@ -82,7 +82,7 @@ impl ValueRef {
                     x.type_str()
                 ),
             },
-            Value::float_value(a) => match &*x.rc {
+            Value::float_value(a) => match &*x.rc.borrow() {
                 Value::int_value(b) => *a < *b as f64,
                 Value::float_value(b) => *a < *b,
                 Value::bool_value(b) => *a < ((*b as i64) as f64),
@@ -92,7 +92,7 @@ impl ValueRef {
                     x.type_str()
                 ),
             },
-            Value::bool_value(a) => match &*x.rc {
+            Value::bool_value(a) => match &*x.rc.borrow() {
                 Value::int_value(b) => (*a as i64) < *b,
                 Value::float_value(b) => ((*a as i64) as f64) < *b,
                 Value::bool_value(b) => !(*a) & *b,
@@ -102,7 +102,7 @@ impl ValueRef {
                     x.type_str()
                 ),
             },
-            Value::str_value(a) => match &*x.rc {
+            Value::str_value(a) => match &*x.rc.borrow() {
                 Value::str_value(b) => *a < *b,
                 _ => panic!(
                     "'<' not supported between instances of '{}' and '{}'",
@@ -110,7 +110,7 @@ impl ValueRef {
                     x.type_str()
                 ),
             },
-            Value::list_value(a) => match &*x.rc {
+            Value::list_value(a) => match &*x.rc.borrow() {
                 Value::list_value(b) => {
                     let len_a = a.values.len();
                     let len_b = b.values.len();
@@ -139,8 +139,8 @@ impl ValueRef {
     }
 
     pub fn cmp_less_than_or_equal(&self, x: &Self) -> bool {
-        match &*self.rc {
-            Value::int_value(a) => match &*x.rc {
+        match &*self.rc.borrow() {
+            Value::int_value(a) => match &*x.rc.borrow() {
                 Value::int_value(b) => *a <= *b,
                 Value::float_value(b) => (*a as f64) <= *b,
                 Value::bool_value(b) => *a <= (*b as i64),
@@ -150,7 +150,7 @@ impl ValueRef {
                     x.type_str()
                 ),
             },
-            Value::float_value(a) => match &*x.rc {
+            Value::float_value(a) => match &*x.rc.borrow() {
                 Value::int_value(b) => *a <= *b as f64,
                 Value::float_value(b) => *a <= *b,
                 Value::bool_value(b) => *a <= ((*b as i64) as f64),
@@ -160,7 +160,7 @@ impl ValueRef {
                     x.type_str()
                 ),
             },
-            Value::bool_value(a) => match &*x.rc {
+            Value::bool_value(a) => match &*x.rc.borrow() {
                 Value::int_value(b) => (*a as i64) <= *b,
                 Value::float_value(b) => ((*a as i64) as f64) <= *b,
                 Value::bool_value(b) => *a <= *b,
@@ -170,7 +170,7 @@ impl ValueRef {
                     x.type_str()
                 ),
             },
-            Value::str_value(a) => match &*x.rc {
+            Value::str_value(a) => match &*x.rc.borrow() {
                 Value::str_value(b) => *a <= *b,
                 _ => panic!(
                     "'<=' not supported between instances of '{}' and '{}'",
@@ -178,7 +178,7 @@ impl ValueRef {
                     x.type_str()
                 ),
             },
-            Value::list_value(a) => match &*x.rc {
+            Value::list_value(a) => match &*x.rc.borrow() {
                 Value::list_value(b) => {
                     let len_a = a.values.len();
                     let len_b = b.values.len();
@@ -207,8 +207,8 @@ impl ValueRef {
     }
 
     pub fn cmp_greater_than(&self, x: &Self) -> bool {
-        match &*self.rc {
-            Value::int_value(a) => match &*x.rc {
+        match &*self.rc.borrow() {
+            Value::int_value(a) => match &*x.rc.borrow() {
                 Value::int_value(b) => *a > *b,
                 Value::float_value(b) => (*a as f64) > *b,
                 Value::bool_value(b) => *a > (*b as i64),
@@ -218,7 +218,7 @@ impl ValueRef {
                     x.type_str()
                 ),
             },
-            Value::float_value(a) => match &*x.rc {
+            Value::float_value(a) => match &*x.rc.borrow() {
                 Value::int_value(b) => *a > *b as f64,
                 Value::float_value(b) => *a > *b,
                 Value::bool_value(b) => *a > ((*b as i64) as f64),
@@ -228,7 +228,7 @@ impl ValueRef {
                     x.type_str()
                 ),
             },
-            Value::bool_value(a) => match &*x.rc {
+            Value::bool_value(a) => match &*x.rc.borrow() {
                 Value::int_value(b) => (*a as i64) > *b,
                 Value::float_value(b) => ((*a as i64) as f64) > *b,
                 Value::bool_value(b) => *a & !(*b),
@@ -238,7 +238,7 @@ impl ValueRef {
                     x.type_str()
                 ),
             },
-            Value::str_value(a) => match &*x.rc {
+            Value::str_value(a) => match &*x.rc.borrow() {
                 Value::str_value(b) => *a > *b,
                 _ => panic!(
                     "'>' not supported between instances of '{}' and '{}'",
@@ -246,7 +246,7 @@ impl ValueRef {
                     x.type_str()
                 ),
             },
-            Value::list_value(a) => match &*x.rc {
+            Value::list_value(a) => match &*x.rc.borrow() {
                 Value::list_value(b) => {
                     let len_a = a.values.len();
                     let len_b = b.values.len();
@@ -275,8 +275,8 @@ impl ValueRef {
     }
 
     pub fn cmp_greater_than_or_equal(&self, x: &Self) -> bool {
-        match &*self.rc {
-            Value::int_value(a) => match &*x.rc {
+        match &*self.rc.borrow() {
+            Value::int_value(a) => match &*x.rc.borrow() {
                 Value::int_value(b) => *a >= *b,
                 Value::float_value(b) => (*a as f64) >= *b,
                 Value::bool_value(b) => *a >= (*b as i64),
@@ -286,7 +286,7 @@ impl ValueRef {
                     x.type_str()
                 ),
             },
-            Value::float_value(a) => match &*x.rc {
+            Value::float_value(a) => match &*x.rc.borrow() {
                 Value::int_value(b) => *a >= *b as f64,
                 Value::float_value(b) => *a >= *b,
                 Value::bool_value(b) => *a >= ((*b as i64) as f64),
@@ -296,7 +296,7 @@ impl ValueRef {
                     x.type_str()
                 ),
             },
-            Value::bool_value(a) => match &*x.rc {
+            Value::bool_value(a) => match &*x.rc.borrow() {
                 Value::int_value(b) => (*a as i64) >= *b,
                 Value::float_value(b) => ((*a as i64) as f64) >= *b,
                 Value::bool_value(b) => *a >= *b,
@@ -306,7 +306,7 @@ impl ValueRef {
                     x.type_str()
                 ),
             },
-            Value::str_value(a) => match &*x.rc {
+            Value::str_value(a) => match &*x.rc.borrow() {
                 Value::str_value(b) => *a >= *b,
                 _ => panic!(
                     "'>=' not supported between instances of '{}' and '{}'",
@@ -314,7 +314,7 @@ impl ValueRef {
                     x.type_str()
                 ),
             },
-            Value::list_value(a) => match &*x.rc {
+            Value::list_value(a) => match &*x.rc.borrow() {
                 Value::list_value(b) => {
                     let len_a = a.values.len();
                     let len_b = b.values.len();

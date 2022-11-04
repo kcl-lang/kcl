@@ -1,46 +1,48 @@
 // Copyright 2021 The KCL Authors. All rights reserved.
 
+use std::boxed::Box;
+use std::cell::RefCell;
 use std::rc::Rc;
 
 use crate::*;
 
 impl ValueRef {
     pub fn deep_copy(&self) -> ValueRef {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::undefined => ValueRef {
-                rc: Rc::new(Value::undefined),
+                rc: Rc::new(RefCell::new(Value::undefined)),
             },
             Value::none => ValueRef {
-                rc: Rc::new(Value::none),
+                rc: Rc::new(RefCell::new(Value::none)),
             },
             Value::func_value(ref v) => ValueRef {
-                rc: Rc::new(Value::func_value(Box::new(FuncValue {
+                rc: Rc::new(RefCell::new(Value::func_value(Box::new(FuncValue {
                     fn_ptr: v.fn_ptr,
                     check_fn_ptr: v.check_fn_ptr,
                     closure: v.closure.deep_copy(),
                     external_name: v.external_name.clone(),
                     runtime_type: v.runtime_type.clone(),
-                }))),
+                })))),
             },
             Value::bool_value(ref v) => ValueRef {
-                rc: Rc::new(Value::bool_value(*v)),
+                rc: Rc::new(RefCell::new(Value::bool_value(*v))),
             },
             Value::int_value(ref v) => ValueRef {
-                rc: Rc::new(Value::int_value(*v)),
+                rc: Rc::new(RefCell::new(Value::int_value(*v))),
             },
             Value::float_value(ref v) => ValueRef {
-                rc: Rc::new(Value::float_value(*v)),
+                rc: Rc::new(RefCell::new(Value::float_value(*v))),
             },
             Value::unit_value(ref v, ref raw, ref unit) => ValueRef {
-                rc: Rc::new(Value::unit_value(*v, *raw, unit.clone())),
+                rc: Rc::new(RefCell::new(Value::unit_value(*v, *raw, unit.clone()))),
             },
             Value::str_value(ref v) => ValueRef {
-                rc: Rc::new(Value::str_value(v.to_string())),
+                rc: Rc::new(RefCell::new(Value::str_value(v.to_string()))),
             },
             Value::list_value(ref v) => ValueRef {
-                rc: Rc::new(Value::list_value(Box::new(ListValue {
+                rc: Rc::new(RefCell::new(Value::list_value(Box::new(ListValue {
                     values: v.values.iter().map(|x| x.deep_copy()).collect(),
-                }))),
+                })))),
             },
             Value::dict_value(ref v) => {
                 let mut dict = ValueRef::from(Value::dict_value(Box::new(DictValue::new(&[]))));
@@ -75,14 +77,14 @@ impl ValueRef {
                         dict.update_attr_map(key, type_str);
                     }
                 }
-                ValueRef {
-                    rc: Rc::new(Value::schema_value(Box::new(SchemaValue {
+                return ValueRef {
+                    rc: Rc::new(RefCell::new(Value::schema_value(Box::new(SchemaValue {
                         name: v.name.clone(),
                         pkgpath: v.pkgpath.clone(),
-                        config: Rc::new(dict.as_dict_ref().clone()),
+                        config: Box::new(dict.as_dict_ref().clone()),
                         config_keys: v.config_keys.clone(),
-                    }))),
-                }
+                    })))),
+                };
             }
         }
     }

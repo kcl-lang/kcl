@@ -1,7 +1,5 @@
 // Copyright 2021 The KCL Authors. All rights reserved.
 
-use std::rc::Rc;
-
 use crate::*;
 
 pub const SETTINGS_OUTPUT_KEY: &str = "output_type";
@@ -43,7 +41,7 @@ impl ValueRef {
             Self::from(Value::schema_value(Box::new(SchemaValue {
                 name: name.to_string(),
                 pkgpath: pkgpath.to_string(),
-                config: Rc::new(self.as_dict_ref().clone()),
+                config: Box::new(self.as_dict_ref().clone()),
                 config_keys: config_keys.to_owned(),
             })))
         } else if self.is_schema() {
@@ -54,7 +52,7 @@ impl ValueRef {
     }
 
     pub fn schema_to_dict(&self) -> Self {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::schema_value(ref schema) => {
                 Self::from(Value::dict_value(Box::new(schema.config.as_ref().clone())))
             }
@@ -69,21 +67,14 @@ impl ValueRef {
         schema_name: &str,
         config_meta: &ValueRef,
     ) {
-        let attr_map = match &*self.rc {
-            Value::schema_value(ref schema) => {
-                let schema: &mut SchemaValue = get_ref_mut(schema);
-                let schema = get_ref_mut(schema);
-                &schema.config.values
-            }
-            Value::dict_value(ref schema) => {
-                let schema: &mut DictValue = get_ref_mut(schema);
-                &schema.values
-            }
+        let mut binding = self.rc.borrow_mut();
+        let attr_map = match &mut *binding {
+            Value::schema_value(schema) => &mut schema.config.values,
+            Value::dict_value(schema) => &mut schema.values,
             _ => panic!("Invalid schema/dict value, got {}", self.type_str()),
         };
-        match &*optional_mapping.rc {
-            Value::dict_value(ref optional_mapping) => {
-                let optional_mapping = get_ref_mut(optional_mapping);
+        match &mut *optional_mapping.rc.borrow_mut() {
+            Value::dict_value(optional_mapping) => {
                 for (attr, is_optional) in &optional_mapping.values {
                     let is_required = !is_optional.as_bool();
                     let undefined = ValueRef::undefined();
@@ -114,7 +105,7 @@ impl ValueRef {
 
     pub fn schema_default_settings(&mut self, config: &ValueRef, runtime_type: &str) {
         let settings = self.dict_get_value(SCHEMA_SETTINGS_ATTR_NAME);
-        if settings.is_none() || (settings.is_some() && !settings.unwrap().is_config()) {
+        if settings.is_none() || (settings.is_some() && !settings.as_ref().unwrap().is_config()) {
             let mut default_settings = ValueRef::dict(None);
             default_settings
                 .dict_update_key_value(SETTINGS_OUTPUT_KEY, ValueRef::str(SETTINGS_OUTPUT_INLINE));
@@ -122,16 +113,17 @@ impl ValueRef {
                 .dict_update_key_value(SETTINGS_SCHEMA_TYPE_KEY, ValueRef::str(runtime_type));
             self.dict_update_key_value(SCHEMA_SETTINGS_ATTR_NAME, default_settings);
         } else {
-            let settings = get_ref_mut(settings.unwrap());
-            settings.dict_update_key_value(SETTINGS_SCHEMA_TYPE_KEY, ValueRef::str(runtime_type));
+            settings
+                .unwrap()
+                .dict_update_key_value(SETTINGS_SCHEMA_TYPE_KEY, ValueRef::str(runtime_type));
         }
         if let Some(v) = config.dict_get_value(SCHEMA_SETTINGS_ATTR_NAME) {
-            self.dict_update_key_value(SCHEMA_SETTINGS_ATTR_NAME, v.clone());
+            self.dict_update_key_value(SCHEMA_SETTINGS_ATTR_NAME, v);
         }
     }
 
     pub fn attr_str(&self) -> String {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::int_value(v) => v.to_string(),
             Value::float_value(v) => v.to_string(),
             Value::str_value(v) => v.clone(),
@@ -140,38 +132,35 @@ impl ValueRef {
     }
 
     pub fn update_attr_map(&mut self, name: &str, type_str: &str) {
-        match &*self.rc {
+        match &mut *self.rc.borrow_mut() {
             Value::dict_value(dict) => {
-                let attr_map = get_ref_mut(&dict.attr_map);
-                attr_map.insert(name.to_string(), type_str.to_string());
+                dict.attr_map.insert(name.to_string(), type_str.to_string());
             }
             Value::schema_value(schema) => {
-                let attr_map = get_ref_mut(&schema.config.attr_map);
-                attr_map.insert(name.to_string(), type_str.to_string());
+                schema
+                    .config
+                    .attr_map
+                    .insert(name.to_string(), type_str.to_string());
             }
             _ => panic!("invalid object '{}' in update_attr_map", self.type_str()),
         }
     }
 
-    pub fn attr_map_get(&mut self, name: &str) -> Option<&String> {
-        match &*self.rc {
-            Value::dict_value(dict) => {
-                let attr_map = get_ref_mut(&dict.attr_map);
-                attr_map.get(name)
-            }
-            Value::schema_value(schema) => {
-                let attr_map = get_ref_mut(&schema.config.attr_map);
-                attr_map.get(name)
-            }
+    pub fn attr_map_get(&mut self, name: &str) -> Option<String> {
+        match &*self.rc.borrow() {
+            Value::dict_value(dict) => dict.attr_map.get(name).cloned(),
+            Value::schema_value(schema) => schema.config.attr_map.get(name).cloned(),
             _ => panic!("invalid object '{}' in attr_map_get", self.type_str()),
         }
     }
 
     pub fn schema_update_with_schema(&mut self, value: &ValueRef) {
-        if let (Value::schema_value(schema), Value::schema_value(value)) = (&*self.rc, &*value.rc) {
-            let values = get_ref_mut(&schema.config.values);
-            let ops = get_ref_mut(&schema.config.ops);
-            let insert_indexs = get_ref_mut(&schema.config.insert_indexs);
+        if let (Value::schema_value(schema), Value::schema_value(value)) =
+            (&mut *self.rc.borrow_mut(), &*value.rc.borrow())
+        {
+            let values = &mut schema.config.values;
+            let ops = &mut schema.config.ops;
+            let insert_indexs = &mut schema.config.insert_indexs;
             for (k, v) in &value.config.values {
                 let op = value
                     .config

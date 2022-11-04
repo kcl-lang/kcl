@@ -5,7 +5,7 @@ use crate::*;
 // common
 impl ValueRef {
     pub fn kind(&self) -> Kind {
-        match *self.rc {
+        match *self.rc.borrow() {
             Value::undefined => Kind::Undefined,
             Value::none => Kind::None,
             Value::bool_value(_) => Kind::Bool,

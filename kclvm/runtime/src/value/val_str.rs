@@ -72,36 +72,36 @@ impl RangeNormal for std::ops::Range<usize> {
 
 impl ValueRef {
     pub fn str_len(&self) -> usize {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::str_value(ref v) => v.len(),
             _ => panic!("Invalid str object in str len"),
         }
     }
     pub fn str_resize(&mut self, n: usize) {
-        match &*self.rc {
-            Value::str_value(_) => {
-                self.rc = std::rc::Rc::new(Value::str_value("?".repeat(n)));
+        match &mut *self.rc.borrow_mut() {
+            Value::str_value(str) => {
+                *str = "?".repeat(n);
             }
             _ => panic!("Invalid str object in str resize"),
         }
     }
 
     pub fn str_lower(&self) -> ValueRef {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::str_value(ref v) => ValueRef::str(&v.to_lowercase()),
             _ => panic!("Invalid str object in lower"),
         }
     }
 
     pub fn str_upper(&self) -> ValueRef {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::str_value(ref v) => ValueRef::str(&v.to_uppercase()),
             _ => panic!("Invalid str object in upper"),
         }
     }
 
     pub fn str_capitalize(&self) -> ValueRef {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::str_value(ref v) => {
                 let mut chars = v.chars();
                 let value = if let Some(first_char) = chars.next() {
@@ -128,7 +128,7 @@ impl ValueRef {
         let start = adjust_parameter(start);
         let end = adjust_parameter(end);
 
-        match (&*self.rc, &*sub.rc) {
+        match (&*self.rc.borrow(), &*sub.rc.borrow()) {
             (Value::str_value(ref v), Value::str_value(ref sub_str)) => {
                 let range = adjust_indices(start, end, v.len());
                 let count = if range.is_normal() {
@@ -151,7 +151,7 @@ impl ValueRef {
         let start = adjust_parameter(start);
         let end = adjust_parameter(end);
 
-        match (&*self.rc, &*prefix.rc) {
+        match (&*self.rc.borrow(), &*prefix.rc.borrow()) {
             (Value::str_value(ref v), Value::str_value(ref prefix)) => {
                 let range = adjust_indices(start, end, v.len());
                 let result = if range.is_normal() {
@@ -174,7 +174,7 @@ impl ValueRef {
         let start = adjust_parameter(start);
         let end = adjust_parameter(end);
 
-        match (&*self.rc, &*suffix.rc) {
+        match (&*self.rc.borrow(), &*suffix.rc.borrow()) {
             (Value::str_value(ref v), Value::str_value(ref suffix)) => {
                 let range = adjust_indices(start, end, v.len());
                 let result = if range.is_normal() {
@@ -189,7 +189,7 @@ impl ValueRef {
     }
 
     pub fn str_format(&self, args: &ValueRef, kwargs: &ValueRef) -> ValueRef {
-        match (&*self.rc, &*args.rc) {
+        match (&*self.rc.borrow(), &*args.rc.borrow()) {
             (Value::str_value(ref v), Value::list_value(_)) => {
                 match FormatString::from_str(v.as_str()) {
                     Ok(format_string) => {
@@ -212,7 +212,7 @@ impl ValueRef {
         let start = adjust_parameter(start);
         let end = adjust_parameter(end);
 
-        match (&*self.rc, &*sub.rc) {
+        match (&*self.rc.borrow(), &*sub.rc.borrow()) {
             (Value::str_value(ref v), Value::str_value(ref sub)) => {
                 let range = adjust_indices(start, end, v.len());
                 let range_start = range.start;
@@ -239,7 +239,7 @@ impl ValueRef {
         let start = adjust_parameter(start);
         let end = adjust_parameter(end);
 
-        match (&*self.rc, &*sub.rc) {
+        match (&*self.rc.borrow(), &*sub.rc.borrow()) {
             (Value::str_value(ref v), Value::str_value(ref sub)) => {
                 let range = adjust_indices(start, end, v.len());
                 let range_start = range.start;
@@ -266,7 +266,7 @@ impl ValueRef {
         let start = adjust_parameter(start);
         let end = adjust_parameter(end);
 
-        match (&*self.rc, &*sub.rc) {
+        match (&*self.rc.borrow(), &*sub.rc.borrow()) {
             (Value::str_value(ref v), Value::str_value(ref sub)) => {
                 let range = adjust_indices(start, end, v.len());
                 let range_start = range.start;
@@ -293,7 +293,7 @@ impl ValueRef {
         let start = adjust_parameter(start);
         let end = adjust_parameter(end);
 
-        match (&*self.rc, &*sub.rc) {
+        match (&*self.rc.borrow(), &*sub.rc.borrow()) {
             (Value::str_value(ref v), Value::str_value(ref sub)) => {
                 let range = adjust_indices(start, end, v.len());
                 let range_start = range.start;
@@ -312,7 +312,7 @@ impl ValueRef {
     }
 
     pub fn str_isalnum(&self) -> ValueRef {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::str_value(ref v) => {
                 let result = !v.is_empty() && v.chars().all(char::is_alphanumeric);
                 ValueRef::bool(result)
@@ -322,7 +322,7 @@ impl ValueRef {
     }
 
     pub fn str_isalpha(&self) -> ValueRef {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::str_value(ref v) => {
                 let result = !v.is_empty() && v.chars().all(char::is_alphabetic);
                 ValueRef::bool(result)
@@ -332,7 +332,7 @@ impl ValueRef {
     }
 
     pub fn str_isdigit(&self) -> ValueRef {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::str_value(ref v) => {
                 let valid_unicodes: [u16; 10] = [
                     0x2070, 0x00B9, 0x00B2, 0x00B3, 0x2074, 0x2075, 0x2076, 0x2077, 0x2078, 0x2079,
@@ -349,7 +349,7 @@ impl ValueRef {
     }
 
     pub fn str_islower(&self) -> ValueRef {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::str_value(ref v) => {
                 let result = is_case(v, char::is_lowercase, char::is_uppercase);
                 ValueRef::bool(result)
@@ -359,7 +359,7 @@ impl ValueRef {
     }
 
     pub fn str_isspace(&self) -> ValueRef {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::str_value(ref v) => {
                 if v.is_empty() {
                     return ValueRef::bool(false);
@@ -376,7 +376,7 @@ impl ValueRef {
     }
 
     pub fn str_istitle(&self) -> ValueRef {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::str_value(ref v) => {
                 if v.is_empty() {
                     return ValueRef::bool(false);
@@ -408,7 +408,7 @@ impl ValueRef {
     }
 
     pub fn str_isupper(&self) -> ValueRef {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::str_value(ref v) => {
                 let result = is_case(v, char::is_uppercase, char::is_lowercase);
                 ValueRef::bool(result)
@@ -418,7 +418,7 @@ impl ValueRef {
     }
 
     pub fn str_isnumeric(&self) -> ValueRef {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::str_value(ref v) => {
                 let result = !v.is_empty() && v.chars().all(char::is_numeric);
                 ValueRef::bool(result)
@@ -428,7 +428,7 @@ impl ValueRef {
     }
 
     pub fn str_join(&self, value: &ValueRef) -> ValueRef {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::str_value(ref v) => {
                 let mut joined = String::new();
                 let mut iter = value.iter();
@@ -448,7 +448,7 @@ impl ValueRef {
     pub fn str_lstrip(&self, value: Option<&ValueRef>) -> ValueRef {
         let value = adjust_parameter(value);
 
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::str_value(ref v) => {
                 let value = match value {
                     Some(chars) => {
@@ -467,7 +467,7 @@ impl ValueRef {
     pub fn str_rstrip(&self, value: Option<&ValueRef>) -> ValueRef {
         let value = adjust_parameter(value);
 
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::str_value(ref v) => {
                 let value = match value {
                     Some(chars) => {
@@ -491,7 +491,7 @@ impl ValueRef {
     ) -> ValueRef {
         let count = adjust_parameter(count);
 
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::str_value(ref v) => {
                 let old = old.as_str();
                 let new = new.as_str();
@@ -516,7 +516,7 @@ impl ValueRef {
         let sep = adjust_parameter(sep);
         let maxsplit = adjust_parameter(maxsplit);
 
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::str_value(ref v) => {
                 let convert = ValueRef::str;
                 let maxsplit = match maxsplit {
@@ -566,7 +566,7 @@ impl ValueRef {
         let sep = adjust_parameter(sep);
         let maxsplit = adjust_parameter(maxsplit);
 
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::str_value(ref v) => {
                 let convert = ValueRef::str;
                 let maxsplit = match maxsplit {
@@ -614,7 +614,7 @@ impl ValueRef {
     pub fn str_splitlines(&self, keepends: Option<&ValueRef>) -> ValueRef {
         let keepends = adjust_parameter(keepends);
 
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::str_value(ref v) => {
                 let convert = ValueRef::str;
                 let keepends = match keepends {
@@ -657,7 +657,7 @@ impl ValueRef {
     pub fn str_strip(&self, value: Option<&ValueRef>) -> ValueRef {
         let value = adjust_parameter(value);
 
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::str_value(ref v) => {
                 let value = match value {
                     Some(chars) => {
@@ -674,7 +674,7 @@ impl ValueRef {
     }
 
     pub fn str_title(&self) -> ValueRef {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::str_value(ref v) => {
                 let mut title = String::with_capacity(v.len());
                 let mut previous_is_cased = false;
@@ -705,7 +705,7 @@ impl ValueRef {
     }
 
     pub fn str_equal(&self, value: &str) -> bool {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::str_value(ref v) => *v == *value,
             _ => false,
         }

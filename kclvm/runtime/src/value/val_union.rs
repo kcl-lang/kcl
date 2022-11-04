@@ -5,21 +5,20 @@ use crate::*;
 
 impl ValueRef {
     fn do_union(
-        &self,
+        &mut self,
         x: &Self,
         should_list_override: bool,
         should_idempotent_check: bool,
         should_config_resolve: bool,
     ) -> Self {
-        let union_fn = |obj: &DictValue, delta: &DictValue| {
-            let result_dict = get_ref_mut(obj);
+        let union_fn = |obj: &mut DictValue, delta: &DictValue| {
             // Update attribute map
             for (k, v) in &delta.ops {
-                result_dict.ops.insert(k.clone(), v.clone());
+                obj.ops.insert(k.clone(), v.clone());
             }
             // Update index map
             for (k, v) in &delta.insert_indexs {
-                result_dict.insert_indexs.insert(k.clone(), *v);
+                obj.insert_indexs.insert(k.clone(), *v);
             }
             for (k, v) in &delta.values {
                 let operation = if let Some(op) = delta.ops.get(k) {
@@ -32,8 +31,8 @@ impl ValueRef {
                 } else {
                     -1
                 };
-                if !result_dict.values.contains_key(k) {
-                    result_dict.values.insert(k.clone(), v.clone());
+                if !obj.values.contains_key(k) {
+                    obj.values.insert(k.clone(), v.clone());
                 } else {
                     match operation {
                         ConfigEntryOperationKind::Union => {
@@ -43,20 +42,20 @@ impl ValueRef {
                             {
                                 panic!("conflicting values on the attribute '{}' between {:?} and {:?}", k, self, x);
                             }
-                            let value = obj.values.get(k).unwrap().union(
+                            let value = obj.values.get_mut(k).unwrap().union(
                                 v,
                                 false,
                                 should_list_override,
                                 should_idempotent_check,
                                 should_config_resolve,
                             );
-                            result_dict.values.insert(k.clone(), value);
+                            obj.values.insert(k.clone(), value);
                         }
                         ConfigEntryOperationKind::Override => {
                             if index < 0 {
-                                result_dict.values.insert(k.clone(), v.clone());
+                                obj.values.insert(k.clone(), v.clone());
                             } else {
-                                let origin_value = result_dict.values.get_mut(k).unwrap();
+                                let origin_value = obj.values.get_mut(k).unwrap();
                                 if !origin_value.is_list() {
                                     panic!("only list attribute can be inserted value");
                                 }
@@ -69,23 +68,17 @@ impl ValueRef {
                         }
                         ConfigEntryOperationKind::Insert => {
                             let value = v.deep_copy();
-                            let origin_value = result_dict.values.get_mut(k).unwrap();
+                            let origin_value = obj.values.get_mut(k).unwrap();
                             if origin_value.is_none_or_undefined() {
                                 let list = ValueRef::list(None);
-                                result_dict.values.insert(k.to_string(), list);
+                                obj.values.insert(k.to_string(), list);
                             }
-                            let origin_value = result_dict.values.get_mut(k).unwrap();
-                            match (&*origin_value.rc, &*value.rc) {
+                            let origin_value = obj.values.get_mut(k).unwrap();
+                            match (
+                                &mut *origin_value.rc.borrow_mut(),
+                                &mut *value.rc.borrow_mut(),
+                            ) {
                                 (Value::list_value(origin_value), Value::list_value(value)) => {
-                                    // As RefMut
-                                    let origin_value: &mut ListValue = unsafe {
-                                        &mut *(&**origin_value as *const ListValue
-                                            as *mut ListValue)
-                                    };
-                                    // As RefMut
-                                    let value: &mut ListValue = unsafe {
-                                        &mut *(&**value as *const ListValue as *mut ListValue)
-                                    };
                                     if index == -1 {
                                         origin_value.values.append(&mut value.clone().values);
                                     } else if index >= 0 {
@@ -99,103 +92,100 @@ impl ValueRef {
                                     }
                                 }
                                 _ => panic!("only list attribute can be inserted value"),
-                            }
+                            };
                         }
                     }
                 }
             }
-            self.clone()
         };
-        match (&*self.rc, &*x.rc) {
+
+        //union schema vars
+        let mut union_schema = false;
+        let mut pkgpath: String = "".to_string();
+        let mut name: String = "".to_string();
+        let mut common_keys: Vec<String> = vec![];
+        let mut valid = true;
+
+        match (&mut *self.rc.borrow_mut(), &*x.rc.borrow()) {
             (Value::list_value(obj), Value::list_value(delta)) => {
-                // Clone reference
-                let mut result_list = self.clone();
-                if should_list_override {
-                    return result_list;
-                }
-                let length = if obj.values.len() > delta.values.len() {
-                    obj.values.len()
-                } else {
-                    delta.values.len()
-                };
-                let obj_len = obj.values.len();
-                let delta_len = delta.values.len();
-                for idx in 0..length {
-                    if idx >= obj_len {
-                        result_list.list_append(&delta.values[idx]);
-                    } else if idx < delta_len {
-                        let value = obj.values[idx].union(
-                            &delta.values[idx],
-                            false,
-                            should_list_override,
-                            should_idempotent_check,
-                            should_config_resolve,
-                        );
-                        result_list.list_set(idx, &value);
+                if !should_list_override {
+                    let length = if obj.values.len() > delta.values.len() {
+                        obj.values.len()
+                    } else {
+                        delta.values.len()
+                    };
+                    let obj_len = obj.values.len();
+                    let delta_len = delta.values.len();
+                    for idx in 0..length {
+                        if idx >= obj_len {
+                            obj.values.push(delta.values[idx].clone());
+                        } else if idx < delta_len {
+                            obj.values[idx].union(
+                                &delta.values[idx],
+                                false,
+                                should_list_override,
+                                should_idempotent_check,
+                                should_config_resolve,
+                            );
+                        }
                     }
                 }
-                result_list
             }
             (Value::dict_value(obj), Value::dict_value(delta)) => union_fn(obj, delta),
             (Value::schema_value(obj), Value::dict_value(delta)) => {
-                let name = &obj.name;
-                let pkgpath = &obj.pkgpath;
-                let obj_value = obj.config.as_ref();
-                let result = union_fn(obj_value, delta);
-                let mut common_keys = obj.config_keys.clone();
+                name = obj.name.clone();
+                pkgpath = obj.pkgpath.clone();
+                let obj_value = obj.config.as_mut();
+                union_fn(obj_value, delta);
+                common_keys = obj.config_keys.clone();
                 let mut other_keys: Vec<String> = delta.values.keys().cloned().collect();
                 common_keys.append(&mut other_keys);
-                let schema = result.dict_to_schema(name.as_str(), pkgpath.as_str(), &common_keys);
-                if should_config_resolve {
-                    resolve_schema(&schema, &common_keys)
-                } else {
-                    schema
-                }
+                union_schema = true;
             }
             (Value::schema_value(obj), Value::schema_value(delta)) => {
-                let name = &obj.name;
-                let pkgpath = &obj.pkgpath;
-                let obj_value = obj.config.as_ref();
+                name = obj.name.clone();
+                pkgpath = obj.pkgpath.clone();
+                let obj_value = obj.config.as_mut();
                 let delta_value = delta.config.as_ref();
-                let result = union_fn(obj_value, delta_value);
-                let mut common_keys = obj.config_keys.clone();
-                let mut other_keys = delta.config_keys.clone();
+                union_fn(obj_value, delta_value);
+                common_keys = obj.config_keys.clone();
+                let mut other_keys: Vec<String> = delta.config_keys.clone();
                 common_keys.append(&mut other_keys);
-                let schema = result.dict_to_schema(name.as_str(), pkgpath.as_str(), &common_keys);
-                if should_config_resolve {
-                    resolve_schema(&schema, &common_keys)
-                } else {
-                    schema
-                }
+                union_schema = true;
             }
             (Value::dict_value(obj), Value::schema_value(delta)) => {
-                let name = &delta.name;
-                let pkgpath = &delta.pkgpath;
+                name = delta.name.clone();
+                pkgpath = delta.pkgpath.clone();
                 let delta_value = delta.config.as_ref();
-                let result = union_fn(obj, delta_value);
-                let mut common_keys = delta.config_keys.clone();
+                union_fn(obj, delta_value);
+                common_keys = delta.config_keys.clone();
                 let mut other_keys: Vec<String> = obj.values.keys().cloned().collect();
                 common_keys.append(&mut other_keys);
-                let schema =
-                    result.dict_to_schema(name.as_str(), pkgpath.as_str(), &delta.config_keys);
-                if should_config_resolve {
-                    resolve_schema(&schema, &common_keys)
-                } else {
-                    schema
-                }
+                union_schema = true;
             }
-            _ => {
-                panic!(
-                    "union failure, expect {:?}, got {:?}",
-                    self.type_str(),
-                    x.type_str()
-                );
+            _ => valid = false,
+        }
+        if !valid {
+            panic!(
+                "union failure, expect {:?}, got {:?}",
+                self.type_str(),
+                x.type_str()
+            )
+        }
+        if union_schema {
+            let result = self.clone();
+            let schema = result.dict_to_schema(name.as_str(), pkgpath.as_str(), &common_keys);
+            if should_config_resolve {
+                *self = resolve_schema(&schema, &common_keys);
+            } else {
+                *self = schema;
             }
         }
+        self.clone()
     }
 
     pub fn union(
-        &self,
+        &mut self,
         x: &Self,
         or_mode: bool,
         should_list_override: bool,
@@ -203,40 +193,36 @@ impl ValueRef {
         should_config_resolve: bool,
     ) -> Self {
         if self.is_none_or_undefined() {
-            return x.clone();
+            *self = x.clone();
+            return self.clone();
         }
         if x.is_none_or_undefined() {
             return self.clone();
         }
-        match (&*self.rc, &*x.rc) {
-            (
-                Value::list_value(_) | Value::dict_value(_) | Value::schema_value(_),
-                Value::list_value(_) | Value::dict_value(_) | Value::schema_value(_),
-            ) => self.do_union(
+        if self.is_list_or_config() && x.is_list_or_config() {
+            self.do_union(
                 x,
                 should_list_override,
                 should_idempotent_check,
                 should_config_resolve,
-            ),
-            _ => {
-                if or_mode {
-                    match (&*self.rc, &*x.rc) {
-                        (Value::int_value(a), Value::int_value(b)) => Self::int(*a | *b),
-                        _ => {
-                            panic!(
-                                "unsupported operand type(s) for |: '{:?}' and '{:?}'",
-                                self.type_str(),
-                                x.type_str()
-                            );
-                        }
-                    }
-                } else if x.is_none_or_undefined() {
-                    self.clone()
-                } else {
-                    x.clone()
+            );
+        } else if or_mode {
+            match (&mut *self.rc.borrow_mut(), &*x.rc.borrow()) {
+                (Value::int_value(a), Value::int_value(b)) => {
+                    *a |= *b;
+                    return self.clone();
                 }
+                _ => {}
             }
+            panic!(
+                "unsupported operand type(s) for |: '{:?}' and '{:?}'",
+                self.type_str(),
+                x.type_str()
+            )
+        } else {
+            *self = x.clone();
         }
+        self.clone()
     }
 }
 

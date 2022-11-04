@@ -1,7 +1,7 @@
 // Copyright 2021 The KCL Authors. All rights reserved.
 
 use crate::*;
-
+use std::cell::Ref;
 impl DictValue {
     pub fn new(values: &[(&str, &ValueRef)]) -> DictValue {
         let mut dict = DictValue::default();
@@ -11,21 +11,21 @@ impl DictValue {
         dict
     }
 
-    pub fn get(&self, key: &ValueRef) -> Option<&ValueRef> {
-        match &*key.rc {
-            Value::str_value(ref s) => self.values.get(s),
+    pub fn get(&self, key: &ValueRef) -> Option<ValueRef> {
+        match &*key.rc.borrow() {
+            Value::str_value(ref s) => self.values.get(s).cloned(),
             _ => None,
         }
     }
 
     pub fn insert(&mut self, key: &ValueRef, value: &ValueRef) {
-        if let Value::str_value(ref s) = &*key.rc {
+        if let Value::str_value(ref s) = &*key.rc.borrow() {
             self.values.insert(s.to_string(), value.clone());
         }
     }
 
     pub fn insert_unpack(&mut self, v: &ValueRef) {
-        if let Value::dict_value(ref b) = &*v.rc {
+        if let Value::dict_value(ref b) = &*v.rc.borrow() {
             for (k, v) in b.values.iter() {
                 self.values.insert(k.clone(), v.clone());
             }
@@ -34,12 +34,12 @@ impl DictValue {
 }
 
 impl ValueRef {
-    fn dict_config(&self) -> &DictValue {
-        match &*self.rc {
-            Value::dict_value(ref dict) => dict,
+    fn dict_config(&self) -> Ref<DictValue> {
+        Ref::map(self.rc.borrow(), |val| match val {
+            Value::dict_value(ref dict) => dict.as_ref(),
             Value::schema_value(ref schema) => schema.config.as_ref(),
             _ => panic!("invalid dict config value type {}", self.type_str()),
-        }
+        })
     }
     pub fn dict_int(values: &[(&str, i64)]) -> Self {
         let mut dict = DictValue::default();
@@ -75,9 +75,10 @@ impl ValueRef {
 
     /// Dict clear
     pub fn dict_clear(&mut self) {
-        let dict = match &*self.rc {
-            Value::dict_value(ref dict) => get_ref_mut(dict),
-            Value::schema_value(ref schema) => get_ref_mut(schema.config.as_ref()),
+        let mut binding = self.rc.borrow_mut();
+        let dict = match &mut *binding {
+            Value::dict_value(dict) => dict.as_mut(),
+            Value::schema_value(schema) => schema.config.as_mut(),
             _ => panic!("invalid config value in dict_clear"),
         };
         dict.values.clear()
@@ -98,8 +99,8 @@ impl ValueRef {
     }
 
     /// Dict get e.g., {k1: v1, k2, v2}.get(ValueRef::str(k1)) == v1
-    pub fn dict_get(&self, key: &ValueRef) -> Option<&ValueRef> {
-        match &*self.rc {
+    pub fn dict_get(&self, key: &ValueRef) -> Option<ValueRef> {
+        match &*self.rc.borrow() {
             Value::dict_value(ref dict) => dict.get(key),
             Value::schema_value(ref schema) => schema.config.get(key),
             _ => panic!("invalid config value in dict_get"),
@@ -107,17 +108,17 @@ impl ValueRef {
     }
 
     /// Dict get value e.g., {k1: v1, k2, v2}.get_value(k1) == v1
-    pub fn dict_get_value(&self, key: &str) -> Option<&ValueRef> {
-        match &*self.rc {
-            Value::dict_value(ref dict) => dict.values.get(key),
-            Value::schema_value(ref schema) => schema.config.values.get(key),
+    pub fn dict_get_value(&self, key: &str) -> Option<ValueRef> {
+        match &*self.rc.borrow() {
+            Value::dict_value(ref dict) => dict.values.get(key).cloned(),
+            Value::schema_value(ref schema) => schema.config.values.get(key).cloned(),
             _ => None,
         }
     }
 
     /// Dict get entry e.g., {k1: v1, k2, v2}.get_entry(k1) == {k1: v1}
     pub fn dict_get_entry(&self, key: &str) -> Option<ValueRef> {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::dict_value(ref dict) => {
                 if dict.values.contains_key(key) {
                     let mut d = ValueRef::dict(None);
@@ -165,7 +166,7 @@ impl ValueRef {
 
     /// Dict get entries e.g., {k1: v1, k2, v2}.get_entries([k1, k2]) == {k1: v1, k1: v2}
     pub fn dict_get_entries(&self, keys: Vec<&str>) -> ValueRef {
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::dict_value(ref dict) => {
                 let mut d = ValueRef::dict(None);
                 for key in keys {
@@ -204,12 +205,10 @@ impl ValueRef {
 
     /// Update dict value without attribute operator check, only update
     pub fn dict_update(&mut self, v: &ValueRef) {
-        let dict = match &*self.rc {
-            Value::dict_value(ref v) => get_ref_mut(v),
-            Value::schema_value(ref v) => {
-                let schema = get_ref_mut(v);
-                get_ref_mut(schema.config.as_ref())
-            }
+        let mut binding = self.rc.borrow_mut();
+        let dict = match &mut *binding {
+            Value::dict_value(v) => v.as_mut(),
+            Value::schema_value(v) => v.config.as_mut(),
             _ => panic!("invalid dict update value: {}", self.type_str()),
         };
         if v.is_config() {
@@ -222,15 +221,12 @@ impl ValueRef {
 
     /// Update key value pair without attribute operator check, only update
     pub fn dict_update_key_value(&mut self, key: &str, val: ValueRef) {
-        match &*self.rc {
-            Value::dict_value(ref v) => {
-                let dict = get_ref_mut(v);
+        match &mut *self.rc.borrow_mut() {
+            Value::dict_value(dict) => {
                 dict.values.insert(key.to_string(), val);
             }
-            Value::schema_value(ref v) => {
-                let schema = get_ref_mut(v);
-                let dict = get_ref_mut(schema.config.as_ref());
-                dict.values.insert(key.to_string(), val);
+            Value::schema_value(schema) => {
+                schema.config.values.insert(key.to_string(), val);
             }
             _ => panic!("invalid dict update value: {}", self.type_str()),
         }
@@ -244,12 +240,10 @@ impl ValueRef {
         op: &ConfigEntryOperationKind,
         index: &i32,
     ) {
-        let dict = match &*self.rc {
-            Value::dict_value(ref v) => get_ref_mut(v),
-            Value::schema_value(ref v) => {
-                let schema = get_ref_mut(v);
-                get_ref_mut(schema.config.as_ref())
-            }
+        let mut binding = self.rc.borrow_mut();
+        let dict = match &mut *binding {
+            Value::dict_value(v) => v.as_mut(),
+            Value::schema_value(v) => v.config.as_mut(),
             _ => panic!("invalid dict update value: {}", self.type_str()),
         };
         dict.values.insert(key.to_string(), val.clone());
@@ -291,7 +285,7 @@ impl ValueRef {
         let ctx = crate::Context::current_context_mut();
 
         if ctx.cfg.debug_mode {
-            if let Value::int_value(ref x) = *v.rc {
+            if let Value::int_value(ref x) = *v.rc.borrow() {
                 let strict_range_check_i32 = ctx.cfg.strict_range_check;
                 let strict_range_check_i64 = ctx.cfg.debug_mode || !ctx.cfg.strict_range_check;
                 let v_i128 = *x as i128;
@@ -312,32 +306,32 @@ impl ValueRef {
             }
         }
 
-        match &*self.rc {
-            Value::dict_value(_) | Value::schema_value(_) => {
-                let mut dict: DictValue = Default::default();
-                dict.values.insert(key.to_string(), v.clone());
-                dict.ops.insert(key.to_string(), op);
-                dict.insert_indexs.insert(key.to_string(), insert_index);
-                self.union(
-                    &ValueRef::from(Value::dict_value(Box::new(dict))),
-                    true,
-                    false,
-                    should_idempotent_check,
-                    false,
-                );
-            }
-            _ => panic!("invalid dict insert value: {}", self.type_str()),
+        if self.is_config() {
+            let mut dict: DictValue = Default::default();
+            dict.values.insert(key.to_string(), v.clone());
+            dict.ops.insert(key.to_string(), op);
+            dict.insert_indexs.insert(key.to_string(), insert_index);
+            self.union(
+                &ValueRef::from(Value::dict_value(Box::new(dict))),
+                true,
+                false,
+                should_idempotent_check,
+                false,
+            );
+        } else {
+            panic!("invalid dict insert value: {}", self.type_str())
         }
     }
 
     /// Dict insert unpack value e.g., data = {**v}
     pub fn dict_insert_unpack(&mut self, v: &ValueRef) {
-        match (&*self.rc, &*v.rc) {
+        let mut union = false;
+        match (&*self.rc.borrow(), &*v.rc.borrow()) {
             (
                 Value::dict_value(_) | Value::schema_value(_),
                 Value::dict_value(_) | Value::schema_value(_),
             ) => {
-                self.bin_aug_bit_or(&v.schema_to_dict().deep_copy());
+                union = true;
             }
             (Value::dict_value(_) | Value::schema_value(_), Value::none) => { /*Do nothing on unpacking None/Undefined*/
             }
@@ -345,18 +339,19 @@ impl ValueRef {
             }
             _ => panic!("only list, dict and schema object can be used with unpack operators * and **, got {}", v),
         }
+        if union {
+            self.bin_aug_bit_or(&v.schema_to_dict().deep_copy());
+        }
     }
 
     /// Dict remove the key-value pair equivalent to key
     pub fn dict_remove(&mut self, key: &str) {
-        match &*self.rc {
-            Value::dict_value(ref dict) => {
-                let dict: &mut DictValue = get_ref_mut(dict);
+        match &mut *self.rc.borrow_mut() {
+            Value::dict_value(dict) => {
                 dict.values.remove(key);
             }
-            Value::schema_value(ref schema) => {
-                let dict: &mut DictValue = get_ref_mut(schema.config.as_ref());
-                dict.values.remove(key);
+            Value::schema_value(schema) => {
+                schema.config.values.remove(key);
             }
             _ => panic!("invalid dict remove value: {}", self.type_str()),
         }

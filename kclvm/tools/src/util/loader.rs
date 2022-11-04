@@ -35,6 +35,7 @@ impl DataLoader {
     }
 
     /// If `DataLoader` is constructed using a Json/Yaml string, then `content` is the string
+    #[allow(dead_code)]
     pub(crate) fn new_with_str(loader_kind: LoaderKind, content: &str) -> Result<Self> {
         Ok(Self {
             kind: loader_kind,

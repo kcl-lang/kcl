@@ -16,7 +16,7 @@ pub fn new_mut_ptr(x: ValueRef) -> *mut ValueRef {
 pub fn free_mut_ptr<T>(p: *mut T) {
     if !p.is_null() {
         unsafe {
-            Box::from_raw(p);
+            drop(Box::from_raw(p));
         }
     }
 }
@@ -47,13 +47,6 @@ pub fn mut_ptr_as_ref<'a, T>(p: *mut T) -> &'a mut T {
 pub fn c2str<'a>(s: *const i8) -> &'a str {
     let s = unsafe { std::ffi::CStr::from_ptr(s) }.to_str().unwrap();
     s
-}
-
-/// Convert a immutable borrow to a mutable borrow unsafely to enable rapid data changes.
-/// Please use it with caution.
-#[inline]
-pub fn get_ref_mut<T>(val: &T) -> &mut T {
-    unsafe { &mut *(val as *const T as *mut T) }
 }
 
 /// Convert a raw double pinter to a Rust Vec.

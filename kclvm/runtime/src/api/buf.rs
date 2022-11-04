@@ -57,7 +57,7 @@ impl Buffer {
                     .unwrap(),
             ) as *mut Self;
 
-            Box::from_raw(p);
+            drop(Box::from_raw(p));
         }
     }
 }

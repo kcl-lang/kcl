@@ -1,8 +1,9 @@
 // Copyright 2021 The KCL Authors. All rights reserved.
 
-use std::rc::Rc;
-
 use crate::*;
+use std::boxed::Box;
+use std::cell::RefCell;
+use std::rc::Rc;
 
 pub const KCL_PRIVATE_VAR_PREFIX: &str = "_";
 const LIST_DICT_TEMP_KEY: &str = "$";
@@ -133,7 +134,7 @@ fn handle_schema(value: &ValueRef) -> (Vec<ValueRef>, bool) {
     let output_type = SETTINGS_OUTPUT_KEY;
     let path = format!("{}.{}", settings, output_type);
     let output_type_option = value.get_by_path(&path);
-    if let Some(output_type) = output_type_option {
+    if let Some(ref output_type) = output_type_option {
         if output_type.str_equal(SETTINGS_OUTPUT_IGNORE) {
             if filtered.is_empty() {
                 return (filtered, false);
@@ -143,7 +144,7 @@ fn handle_schema(value: &ValueRef) -> (Vec<ValueRef>, bool) {
         }
     }
     let mut standalone = false;
-    if let Some(output_type) = output_type_option {
+    if let Some(ref output_type) = output_type_option {
         if output_type.str_equal(SETTINGS_OUTPUT_STANDALONE) {
             standalone = true;
         }
@@ -197,34 +198,36 @@ impl ValueRef {
 
     fn filter_results(&self) -> ValueRef {
         let ctx = Context::current_context();
-        match &*self.rc {
+        match &*self.rc.borrow() {
             Value::undefined => ValueRef {
-                rc: Rc::new(Value::undefined),
+                rc: Rc::new(RefCell::new(Value::undefined)),
             },
             Value::none => ValueRef {
-                rc: Rc::new(Value::none),
+                rc: Rc::new(RefCell::new(Value::none)),
             },
             Value::func_value(ref v) => ValueRef {
-                rc: Rc::new(Value::func_value(v.clone())),
+                rc: Rc::new(RefCell::new(Value::func_value(v.clone()))),
             },
             Value::bool_value(ref v) => ValueRef {
-                rc: Rc::new(Value::bool_value(*v)),
+                rc: Rc::new(RefCell::new(Value::bool_value(*v))),
             },
             Value::int_value(ref v) => ValueRef {
-                rc: Rc::new(Value::int_value(*v)),
+                rc: Rc::new(RefCell::new(Value::int_value(*v))),
             },
             Value::float_value(ref v) => ValueRef {
-                rc: Rc::new(Value::float_value(*v)),
+                rc: Rc::new(RefCell::new(Value::float_value(*v))),
             },
             Value::unit_value(ref v, _, _) => ValueRef {
-                rc: Rc::new(Value::float_value(*v)),
+                rc: Rc::new(RefCell::new(Value::float_value(*v))),
             },
             Value::str_value(ref v) => ValueRef {
-                rc: Rc::new(Value::str_value(v.to_string())),
+                rc: Rc::new(RefCell::new(Value::str_value(v.to_string()))),
             },
             Value::list_value(ref v) => {
                 let mut list = ValueRef {
-                    rc: Rc::new(Value::list_value(Box::new(ListValue { values: vec![] }))),
+                    rc: Rc::new(RefCell::new(Value::list_value(Box::new(ListValue {
+                        values: vec![],
+                    })))),
                 };
                 for x in v.values.iter() {
                     if !(x.is_undefined() || x.is_func() || ctx.cfg.disable_none && x.is_none()) {
@@ -235,12 +238,12 @@ impl ValueRef {
             }
             Value::dict_value(ref v) => {
                 let mut dict = ValueRef {
-                    rc: Rc::new(Value::dict_value(Box::new(DictValue {
+                    rc: Rc::new(RefCell::new(Value::dict_value(Box::new(DictValue {
                         values: IndexMap::default(),
                         ops: IndexMap::default(),
                         insert_indexs: IndexMap::default(),
                         attr_map: IndexMap::default(),
-                    }))),
+                    })))),
                 };
                 for (key, val) in v.values.iter() {
                     if !(val.is_undefined()
@@ -259,17 +262,17 @@ impl ValueRef {
             }
             Value::schema_value(ref v) => {
                 let mut schema = ValueRef {
-                    rc: Rc::new(Value::schema_value(Box::new(SchemaValue {
+                    rc: Rc::new(RefCell::new(Value::schema_value(Box::new(SchemaValue {
                         name: v.name.clone(),
                         pkgpath: v.pkgpath.clone(),
-                        config: Rc::new(DictValue {
+                        config: Box::new(DictValue {
                             values: IndexMap::default(),
                             ops: IndexMap::default(),
                             insert_indexs: IndexMap::default(),
                             attr_map: IndexMap::default(),
                         }),
                         config_keys: vec![],
-                    }))),
+                    })))),
                 };
                 for (key, val) in v.config.values.iter() {
                     if !val.is_undefined() && !val.is_func() {

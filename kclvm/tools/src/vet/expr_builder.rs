@@ -29,6 +29,7 @@ impl ExprBuilder {
         Ok(Self { loader })
     }
 
+    #[allow(dead_code)]
     pub(crate) fn new_with_str(kind: LoaderKind, content: String) -> Result<Self> {
         let loader = DataLoader::new_with_str(kind, &content)
             .with_context(|| format!("Failed to Parse String '{}'", content))?;

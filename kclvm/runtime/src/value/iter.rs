@@ -34,7 +34,7 @@ impl ValueIterator {
         if p.is_empty() {
             return Default::default();
         }
-        match *p.rc {
+        match *p.rc.borrow() {
             Value::str_value(ref s) => {
                 ValueIterator {
                     len: s.len(),
@@ -117,7 +117,7 @@ impl ValueIterator {
             self.end_val = std::ptr::null();
             return None;
         }
-        match *host.rc {
+        match *host.rc.borrow() {
             Value::str_value(ref s) => {
                 let ch = s.chars().nth(self.pos as usize).unwrap();
                 self.cur_key = ValueRef::int(self.pos as i64);
