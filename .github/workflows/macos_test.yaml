@@ -2,8 +2,11 @@ name: build-and-test-macos
 on: ["push", "pull_request"]
 jobs:
   build-and-test:
-    # Ref: https://github.com/actions/virtual-environments/blob/main/images/macos/macos-12-Readme.md
-    runs-on: macos-12
+    # Ref: https://github.com/actions/runner-images/tree/main/images/macos
+    strategy:
+      matrix: 
+        os: [macos-10.15, macos-11, macos-12]
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Git checkout
         uses: actions/checkout@v2

@@ -663,6 +663,7 @@ dependencies = [
 name = "kclvm"
 version = "0.1.0"
 dependencies = [
+ "cc",
  "chrono",
  "clap 3.2.22",
  "fslock",
@@ -846,6 +847,7 @@ name = "kclvm-runner"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "cc",
  "chrono",
  "criterion",
  "fslock",
@@ -862,6 +864,7 @@ dependencies = [
  "kclvm-version",
  "libc",
  "libloading",
+ "once_cell",
  "serde",
  "serde_json",
  "tempfile",
