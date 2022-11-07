@@ -2,6 +2,7 @@ name: build-and-test-ubuntu
 on: ["push", "pull_request"]
 jobs:
   build-and-test:
+    # Ref: https://github.com/actions/runner-images/tree/main/images/linux
     name: Test
     runs-on: ubuntu-latest
     container: 

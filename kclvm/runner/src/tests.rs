@@ -3,12 +3,11 @@ use crate::assembler::KclvmAssembler;
 use crate::assembler::KclvmLibAssembler;
 use crate::assembler::LibAssembler;
 use crate::temp_file;
-use crate::Command;
 use crate::{execute, runner::ExecProgramArgs};
 use anyhow::Context;
 use anyhow::Result;
 use kclvm_ast::ast::{Module, Program};
-use kclvm_compiler::codegen::llvm::LL_FILE_SUFFIX;
+use kclvm_compiler::codegen::llvm::OBJECT_FILE_SUFFIX;
 use kclvm_config::settings::load_file;
 use kclvm_parser::load_program;
 use kclvm_sema::resolver::resolve_program;
@@ -152,7 +151,7 @@ fn gen_libs_for_test(entry_file: &str, test_kcl_case_path: &str) {
         &parse_program(test_kcl_case_path),
         &assembler,
         PathBuf::from(entry_file).to_str().unwrap(),
-        Command::get_lib_suffix(),
+        OBJECT_FILE_SUFFIX.to_string(),
     );
 
     let lib_paths = assembler.gen_libs();
@@ -164,7 +163,7 @@ fn gen_libs_for_test(entry_file: &str, test_kcl_case_path: &str) {
     }
 
     let tmp_main_lib_path =
-        fs::canonicalize(format!("{}{}", entry_file, Command::get_lib_suffix())).unwrap();
+        fs::canonicalize(format!("{}{}", entry_file, OBJECT_FILE_SUFFIX)).unwrap();
     assert_eq!(tmp_main_lib_path.exists(), true);
 
     clean_path(tmp_main_lib_path.to_str().unwrap());
@@ -189,16 +188,14 @@ fn assemble_lib_for_test(
     let scope = resolve_program(&mut program);
 
     // tmp file
-    let temp_entry_file_path = &format!("{}{}", entry_file, LL_FILE_SUFFIX);
-    let temp_entry_file_lib = &format!("{}.{}", entry_file, Command::get_lib_suffix());
+    let temp_entry_file_path = &format!("{}{}", entry_file, OBJECT_FILE_SUFFIX);
 
-    // assemble libs
-    assembler.assemble_lib(
+    // Assemble object files
+    assembler.assemble(
         &program,
         scope.import_names,
         entry_file,
         temp_entry_file_path,
-        temp_entry_file_lib,
     )
 }
 
@@ -301,7 +298,7 @@ fn test_clean_path_for_genlibs() {
     create_dir_all(tmp_file_path).unwrap();
 
     let file_name = &format!("{}/{}", tmp_file_path, "test");
-    let file_suffix = ".ll";
+    let file_suffix = ".o";
 
     File::create(file_name).unwrap();
     let path = std::path::Path::new(file_name);
@@ -310,8 +307,8 @@ fn test_clean_path_for_genlibs() {
     assembler.clean_path_for_genlibs(file_name, file_suffix);
     assert_eq!(path.exists(), false);
 
-    let test1 = &format!("{}{}", file_name, ".test1.ll");
-    let test2 = &format!("{}{}", file_name, ".test2.ll");
+    let test1 = &format!("{}{}", file_name, ".test1.o");
+    let test2 = &format!("{}{}", file_name, ".test2.o");
     File::create(test1).unwrap();
     File::create(test2).unwrap();
     let path1 = std::path::Path::new(test1);

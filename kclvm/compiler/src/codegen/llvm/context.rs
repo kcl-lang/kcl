@@ -4,7 +4,10 @@ use indexmap::IndexMap;
 use inkwell::basic_block::BasicBlock;
 use inkwell::builder::Builder;
 use inkwell::context::Context;
+use inkwell::memory_buffer::MemoryBuffer;
 use inkwell::module::{Linkage, Module};
+use inkwell::support::LLVMString;
+use inkwell::targets::{CodeModel, FileType, RelocMode};
 use inkwell::types::{BasicMetadataTypeEnum, BasicType, BasicTypeEnum, FunctionType};
 use inkwell::values::{
     BasicMetadataValueEnum, BasicValueEnum, FunctionValue, IntValue, PointerValue,
@@ -14,6 +17,7 @@ use phf::{phf_map, Map};
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::error::Error;
+use std::path::Path;
 use std::rc::Rc;
 use std::str;
 
@@ -34,7 +38,7 @@ use crate::codegen::{
 use crate::pkgpath_without_prefix;
 use crate::value;
 
-use super::LL_FILE_SUFFIX;
+use super::OBJECT_FILE_SUFFIX;
 
 /// Float type string width mapping
 pub const FLOAT_TYPE_WIDTH_MAPPING: Map<&str, usize> = phf_map! {
@@ -1238,21 +1242,50 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 let modules = self.modules.borrow_mut();
                 for (index, (_, module)) in modules.iter().enumerate() {
                     let path = if modules.len() == 1 {
-                        format!("{}{}", path_str, LL_FILE_SUFFIX)
+                        format!("{}{}", path_str, OBJECT_FILE_SUFFIX)
                     } else {
-                        format!("{}_{}{}", path_str, index, LL_FILE_SUFFIX)
+                        format!("{}_{}{}", path_str, index, OBJECT_FILE_SUFFIX)
                     };
                     let path = std::path::Path::new(&path);
-                    // Emit LLVM ll file
-                    module.borrow_mut().print_to_file(path)?;
+                    // Build LLVM module to a `.o` object file.
+                    self.build_object_file(&module.borrow(), path)?;
                 }
             } else {
-                self.module
-                    .print_to_file(path)
-                    .expect(kcl_error::CODE_GEN_ERROR_MSG);
+                // Build LLVM module to a `.o` object file.
+                self.build_object_file(&self.module, path)?;
             }
         }
         Ok(())
+    }
+
+    /// Build LLVM module to a `.o` object file.
+    ///
+    /// TODO: WASM and cross platform build.
+    fn build_object_file(
+        self: &LLVMCodeGenContext<'ctx>,
+        module: &Module,
+        path: &Path,
+    ) -> Result<(), LLVMString> {
+        let triple = inkwell::targets::TargetMachine::get_default_triple();
+        let target = inkwell::targets::Target::from_triple(&triple)?;
+        // Convert LLVM module to ll file.
+        module.print_to_file(path)?;
+        let buf = MemoryBuffer::create_from_file(path)?;
+        let module = self.context.create_module_from_ir(buf)?;
+        // Read ll file and use target machine to generate native object file.
+        let target_machine = target
+            .create_target_machine(
+                &triple,
+                "",
+                "",
+                // We do not enable any optimization, so that
+                // the sum of compile time and run time is as small as possible
+                inkwell::OptimizationLevel::None,
+                RelocMode::PIC,
+                CodeModel::Default,
+            )
+            .expect(kcl_error::CODE_GEN_ERROR_MSG);
+        target_machine.write_to_file(&module, FileType::Object, path)
     }
 }
 

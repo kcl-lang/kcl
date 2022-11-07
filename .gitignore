@@ -88,3 +88,7 @@ _a.out_*.*
 
 # Compiler_base
 .compiler_base
+
+# LLVM
+llvm*
+llvm-*

@@ -1,8 +1,7 @@
-use crate::command::Command;
 use indexmap::IndexMap;
 use kclvm_ast::ast::{self, Program};
 use kclvm_compiler::codegen::{
-    llvm::{emit_code, LL_FILE_SUFFIX},
+    llvm::{emit_code, OBJECT_FILE_SUFFIX},
     EmitOptions,
 };
 use kclvm_config::cache::{load_pkg_cache, save_pkg_cache, CacheOption};
@@ -30,15 +29,15 @@ const DEFAULT_TIME_OUT: u64 = 50;
 /// the performance of the compiler.
 pub(crate) trait LibAssembler {
     /// Add a suffix to the file name according to the file suffix of different intermediate code files.
-    /// e.g. LLVM IR -> code_file : "/test_dir/test_code_file" -> return : "/test_dir/test_code_file.ll"
+    /// e.g. LLVM IR -> code_file : "/test_dir/test_code_file" -> return : "/test_dir/test_code_file.o"
     fn add_code_file_suffix(&self, code_file: &str) -> String;
 
     /// Return the file suffix of different intermediate code files.
-    /// e.g. LLVM IR -> return : ".ll"
+    /// e.g. LLVM IR -> return : ".o"
     fn get_code_file_suffix(&self) -> String;
 
-    /// Assemble different intermediate codes into dynamic link libraries for single file kcl program.
-    /// Returns the path of the dynamic link library.
+    /// Assemble different intermediate codes into object files for single file kcl program.
+    /// Returns the path of the object file.
     ///
     /// Inputs:
     /// compile_prog: Reference of kcl program ast.
@@ -56,20 +55,14 @@ pub(crate) trait LibAssembler {
     /// "code_file" is the filename of the generated intermediate code file.
     /// e.g. code_file : "/test_dir/test_code_file"
     ///
-    /// "code_file_path" is the full filename of the generated intermediate code file with suffix.
-    /// e.g. code_file_path : "/test_dir/test_code_file.ll"
-    ///
-    /// "lib_path" is the file path of the dynamic link library.
-    /// e.g. lib_path : "/test_dir/test_code_file.ll.dylib" (mac)
-    /// e.g. lib_path : "/test_dir/test_code_file.ll.dll.lib" (windows)
-    /// e.g. lib_path : "/test_dir/test_code_file.ll.so" (ubuntu)
-    fn assemble_lib(
+    /// "object_file_path" is the full filename of the generated intermediate code file with suffix.
+    /// e.g. code_file_path : "/test_dir/test_code_file.o"
+    fn assemble(
         &self,
         compile_prog: &Program,
         import_names: IndexMap<String, IndexMap<String, String>>,
         code_file: &str,
         code_file_path: &str,
-        lib_path: &str,
     ) -> String;
 
     #[inline]
@@ -93,21 +86,19 @@ pub(crate) enum KclvmLibAssembler {
 /// and calls the corresponding method according to different assembler.
 impl LibAssembler for KclvmLibAssembler {
     #[inline]
-    fn assemble_lib(
+    fn assemble(
         &self,
         compile_prog: &Program,
         import_names: IndexMap<String, IndexMap<String, String>>,
         code_file: &str,
-        code_file_path: &str,
-        lib_path: &str,
+        object_file_path: &str,
     ) -> String {
         match &self {
-            KclvmLibAssembler::LLVM => LlvmLibAssembler::default().assemble_lib(
+            KclvmLibAssembler::LLVM => LlvmLibAssembler::default().assemble(
                 compile_prog,
                 import_names,
                 code_file,
-                code_file_path,
-                lib_path,
+                object_file_path,
             ),
         }
     }
@@ -148,24 +139,19 @@ impl Default for LlvmLibAssembler {
 /// KclvmLibAssembler implements the LibAssembler trait,
 impl LibAssembler for LlvmLibAssembler {
     /// "assemble_lib" will call the [kclvm_compiler::codegen::emit_code]
-    /// to generate IR file.
-    ///
-    /// And then assemble the dynamic link library based on the LLVM IR,
-    ///
-    /// At last remove the codegen temp files and return the dynamic link library path.
+    /// to generate the `.o` object file.
     #[inline]
-    fn assemble_lib(
+    fn assemble(
         &self,
         compile_prog: &Program,
         import_names: IndexMap<String, IndexMap<String, String>>,
         code_file: &str,
-        code_file_path: &str,
-        lib_path: &str,
+        object_file_path: &str,
     ) -> String {
-        // clean "*.ll" file path.
-        clean_path(code_file_path);
+        // Clean the existed "*.o" object file.
+        clean_path(object_file_path);
 
-        // gen LLVM IR code into ".ll" file.
+        // Compile KCL code into ".o" object file.
         emit_code(
             compile_prog,
             import_names,
@@ -177,21 +163,17 @@ impl LibAssembler for LlvmLibAssembler {
         )
         .expect("Compile KCL to LLVM error");
 
-        let mut cmd = Command::new();
-        let gen_lib_path = cmd.link_libs(&[code_file_path.to_string()], lib_path);
-
-        clean_path(code_file_path);
-        gen_lib_path
+        object_file_path.to_string()
     }
 
     #[inline]
     fn add_code_file_suffix(&self, code_file: &str) -> String {
-        format!("{}{}", code_file, LL_FILE_SUFFIX)
+        format!("{}{}", code_file, OBJECT_FILE_SUFFIX)
     }
 
     #[inline]
     fn get_code_file_suffix(&self) -> String {
-        LL_FILE_SUFFIX.to_string()
+        OBJECT_FILE_SUFFIX.to_string()
     }
 }
 
@@ -324,7 +306,6 @@ impl KclvmAssembler {
             let code_file = self.entry_file.clone();
             let code_file_path = assembler.add_code_file_suffix(&code_file);
             let lock_file_path = format!("{}.lock", code_file_path);
-            let lib_path = format!("{}{}", code_file, Command::get_lib_suffix());
 
             pool.execute(move || {
                 // Locking file for parallel code generation.
@@ -340,26 +321,20 @@ impl KclvmAssembler {
                 // specify a standard entry for these multi-files and cannot
                 // be shared, so the cache of the main package is not read and
                 // written.
-                let lib_path = if is_main_pkg {
+                let file_path = if is_main_pkg {
                     // generate dynamic link library for single file kcl program
-                    assembler.assemble_lib(
-                        &compile_prog,
-                        import_names,
-                        &code_file,
-                        &code_file_path,
-                        &lib_path,
-                    )
+                    assembler.assemble(&compile_prog, import_names, &code_file, &code_file_path)
                 } else {
                     let file = cache_dir.join(&pkgpath);
                     // Read the lib path cache
-                    let lib_relative_path: Option<String> =
+                    let file_relative_path: Option<String> =
                         load_pkg_cache(root, &pkgpath, CacheOption::default());
-                    let lib_abs_path = match lib_relative_path {
-                        Some(lib_relative_path) => {
-                            let path = if lib_relative_path.starts_with('.') {
-                                lib_relative_path.replacen('.', root, 1)
+                    let file_abs_path = match file_relative_path {
+                        Some(file_relative_path) => {
+                            let path = if file_relative_path.starts_with('.') {
+                                file_relative_path.replacen('.', root, 1)
                             } else {
-                                lib_relative_path
+                                file_relative_path
                             };
                             if Path::new(&path).exists() {
                                 Some(path)
@@ -369,33 +344,31 @@ impl KclvmAssembler {
                         }
                         None => None,
                     };
-                    match lib_abs_path {
+                    match file_abs_path {
                         Some(path) => path,
                         None => {
                             let code_file = file.to_str().unwrap();
                             let code_file_path = assembler.add_code_file_suffix(code_file);
-                            let lib_path = format!("{}{}", code_file, Command::get_lib_suffix());
-                            // generate dynamic link library for single file kcl program
-                            let lib_path = assembler.assemble_lib(
+                            // Generate the object file for single file kcl program.
+                            let file_path = assembler.assemble(
                                 &compile_prog,
                                 import_names,
-                                code_file,
+                                &code_file,
                                 &code_file_path,
-                                &lib_path,
                             );
-                            let lib_relative_path = lib_path.replacen(root, ".", 1);
+                            let lib_relative_path = file_path.replacen(root, ".", 1);
                             save_pkg_cache(
                                 root,
                                 &pkgpath,
                                 lib_relative_path,
                                 CacheOption::default(),
                             );
-                            lib_path
+                            file_path
                         }
                     }
                 };
                 file_lock.unlock().unwrap();
-                tx.send(lib_path)
+                tx.send(file_path)
                     .expect("channel will be there waiting for the pool");
             });
         }

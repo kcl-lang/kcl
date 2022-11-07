@@ -1,9 +1,10 @@
+use crate::linker::lld_main;
 use std::env::consts::DLL_SUFFIX;
-use std::{env, path::PathBuf};
+use std::ffi::CString;
+use std::path::PathBuf;
 
 #[derive(Debug)]
 pub struct Command {
-    clang_path: String,
     rust_stdlib: String,
     executable_root: String,
 }
@@ -12,13 +13,76 @@ impl Command {
     pub fn new() -> Self {
         let executable_root = Self::get_executable_root();
         let rust_stdlib = Self::get_rust_stdlib(executable_root.as_str());
-        let clang_path = Self::get_clang_path();
 
         Self {
-            clang_path,
             rust_stdlib,
             executable_root,
         }
+    }
+
+    /// Get lld linker args
+    fn lld_args(&self, lib_path: &str) -> Vec<CString> {
+        #[cfg(target_os = "macos")]
+        let args = vec![
+            // Arch
+            CString::new("-arch").unwrap(),
+            CString::new(std::env::consts::ARCH).unwrap(),
+            CString::new("-sdk_version").unwrap(),
+            CString::new("10.5.0").unwrap(),
+            // Output dynamic libs `.dylib`.
+            CString::new("-dylib").unwrap(),
+            // Link relative path
+            CString::new("-rpath").unwrap(),
+            CString::new(format!("{}/lib", self.executable_root)).unwrap(),
+            CString::new(format!("-L{}/lib", self.executable_root)).unwrap(),
+            // With the change from Catalina to Big Sur (11.0), Apple moved the location of
+            // libraries. On Big Sur, it is required to pass the location of the System
+            // library. The -lSystem option is still required for macOS 10.15.7 and
+            // lower.
+            // Ref: https://github.com/ponylang/ponyc/pull/3686
+            CString::new("-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib").unwrap(),
+            CString::new("-lSystem").unwrap(),
+            // Link runtime libs.
+            CString::new("-lkclvm_native_shared").unwrap(),
+            // Output lib path.
+            CString::new("-o").unwrap(),
+            CString::new(lib_path).unwrap(),
+            // Link rust std
+            CString::new(self.rust_stdlib.as_str()).unwrap(),
+        ];
+
+        #[cfg(target_os = "linux")]
+        let args = vec![
+            // clang -fPIC
+            CString::new("-znotext").unwrap(),
+            // Output dynamic libs `.so`.
+            CString::new("--shared").unwrap(),
+            // Link relative path
+            CString::new("-R").unwrap(),
+            CString::new(format!("{}/lib", self.executable_root)).unwrap(),
+            CString::new(format!("-L{}/lib", self.executable_root)).unwrap(),
+            // Link runtime libs.
+            CString::new("-lkclvm_native_shared").unwrap(),
+            // Output lib path.
+            CString::new("-o").unwrap(),
+            CString::new(lib_path).unwrap(),
+            // Link rust std
+            CString::new(self.rust_stdlib.as_str()).unwrap(),
+        ];
+
+        #[cfg(target_os = "windows")]
+        let args = vec![
+            // Output dynamic libs `.dll`.
+            CString::new("/dll").unwrap(),
+            // Lib search path
+            CString::new(format!("/libpath:{}/lib", self.executable_root)).unwrap(),
+            // Output lib path.
+            CString::new(format!("/out:{}", lib_path)).unwrap(),
+            // Link rust std
+            CString::new(self.rust_stdlib.as_str()).unwrap(),
+        ];
+
+        args
     }
 
     /// Link dynamic libraries into one library.
@@ -32,40 +96,14 @@ impl Command {
             lib_path.to_string()
         };
 
-        let mut args: Vec<String> = vec![
-            "-Wno-override-module".to_string(),
-            "-Wno-error=unused-command-line-argument".to_string(),
-            "-Wno-unused-command-line-argument".to_string(),
-            "-shared".to_string(),
-            "-undefined".to_string(),
-            "dynamic_lookup".to_string(),
-            format!("-Wl,-rpath,{}/lib", self.executable_root),
-            format!("-L{}/lib", self.executable_root),
-            "-lkclvm_native_shared".to_string(),
-            format!("-I{}/include", self.executable_root),
-        ];
-        let mut bc_files = libs.to_owned();
-        args.append(&mut bc_files);
-        let mut more_args = vec![
-            self.rust_stdlib.clone(),
-            "-fPIC".to_string(),
-            "-o".to_string(),
-            lib_path.to_string(),
-        ];
-        args.append(&mut more_args);
+        let mut args = self.lld_args(&lib_path);
 
-        let result = std::process::Command::new(self.clang_path.clone())
-            .args(&args)
-            .output()
-            .expect("run clang failed");
-
-        if !result.status.success() {
-            panic!(
-                "run clang failed: stdout {}, stderr: {}",
-                String::from_utf8(result.stdout).unwrap(),
-                String::from_utf8(result.stderr).unwrap()
-            )
+        for lib in libs {
+            args.push(CString::new(lib.as_str()).unwrap())
         }
+
+        // Call lld main function with args.
+        assert!(!lld_main(&args), "Run LLD linker failed");
 
         // Use absolute path.
         let path = PathBuf::from(&lib_path)
@@ -76,10 +114,6 @@ impl Command {
 
     /// Get the kclvm executable root.
     fn get_executable_root() -> String {
-        if Self::is_windows() {
-            todo!();
-        }
-
         let kclvm_exe = if Self::is_windows() {
             "kclvm.exe"
         } else {
@@ -102,50 +136,6 @@ impl Command {
         let rust_libstd_name = std::fs::read_to_string(txt_path).expect("rust libstd not found");
         let rust_libstd_name = rust_libstd_name.trim();
         format!("{}/lib/{}", executable_root, rust_libstd_name)
-    }
-
-    fn get_clang_path() -> String {
-        // ${KCLVM_CLANG}
-        let env_kclvm_clang = env::var("KCLVM_CLANG");
-        if let Ok(clang_path) = env_kclvm_clang {
-            if !clang_path.is_empty() {
-                let clang_path = if Self::is_windows() {
-                    format!("{}.exe", clang_path)
-                } else {
-                    clang_path
-                };
-                if std::path::Path::new(&clang_path).exists() {
-                    return clang_path;
-                }
-            }
-        }
-
-        // {root}/tools/clang/bin/clang
-        let executable_root = Self::get_executable_root();
-        let clang_path = std::path::Path::new(&executable_root)
-            .join("tools")
-            .join("clang")
-            .join("bin")
-            .join(if Self::is_windows() {
-                "clang.exe"
-            } else {
-                "clang"
-            });
-        if clang_path.exists() {
-            return clang_path.to_str().unwrap().to_string();
-        }
-
-        let clang_exe = if Self::is_windows() {
-            "clang.exe"
-        } else {
-            "clang"
-        };
-
-        if let Some(s) = Self::find_it(clang_exe) {
-            return s.to_str().unwrap().to_string();
-        }
-
-        panic!("get_clang_path failed")
     }
 
     /// Specifies the filename suffix used for shared libraries on this
