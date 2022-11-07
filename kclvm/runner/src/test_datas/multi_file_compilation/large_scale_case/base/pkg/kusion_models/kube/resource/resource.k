@@ -1,0 +1,3 @@
+schema ResourceMapping:
+    [str]: any
+

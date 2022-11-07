@@ -32,13 +32,14 @@ const TEST_CASES: &[&str; 5] = &[
     "multi_vars_0",
 ];
 
-const MULTI_FILE_TEST_CASES: &[&str; 6] = &[
-    "multi_file_compilation/no_kcl_mod_file",
-    "multi_file_compilation/relative_import",
-    "multi_file_compilation/relative_import_as",
-    "multi_file_compilation/import_abs_path/app-main",
-    "multi_file_compilation/import_regular_module",
-    "multi_file_compilation/import_regular_module_as",
+const MULTI_FILE_TEST_CASES: &[&str; 1] = &[
+    "multi_file_compilation/large_scale_case",
+    // "multi_file_compilation/no_kcl_mod_file",
+    // "multi_file_compilation/relative_import",
+    // "multi_file_compilation/relative_import_as",
+    // "multi_file_compilation/import_abs_path/app-main",
+    // "multi_file_compilation/import_regular_module",
+    // "multi_file_compilation/import_regular_module_as",
 ];
 
 const EXEC_PROG_ARGS_TEST_CASE: &[&str; 1] = &["exec_prog_args/default.json"];
