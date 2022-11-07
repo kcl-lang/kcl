@@ -314,12 +314,12 @@ impl KclvmAssembler {
             let lock_file_path = format!("{}.lock", code_file_path);
 
             pool.execute(move || {
-                let root = &compile_prog.root;
                 // Locking file for parallel code generation.
                 let mut file_lock = fslock::LockFile::open(&lock_file_path)
                     .unwrap_or_else(|_| panic!("{} not found", lock_file_path));
                 file_lock.lock().unwrap();
 
+                let root = &compile_prog.root;
                 // The main package does not perform cache reading and writing,
                 // and other packages perform read and write caching. Because
                 // KCL supports multi-file compilation, it is impossible to
@@ -351,7 +351,7 @@ impl KclvmAssembler {
                     match file_abs_path {
                         Some(path) => path,
                         None => {
-                            // generate dynamic link library for single file kcl program
+                            // Generate the object file for single file kcl program.
                             let file_path = assembler.assemble(
                                 &compile_prog,
                                 import_names,
