@@ -300,13 +300,16 @@ impl KclvmAssembler {
         let prog_count = compile_progs.len();
         for (pkgpath, (compile_prog, import_names, cache_dir)) in compile_progs {
             let tx = tx.clone();
-            let entry_file = self.entry_file.clone();
-            // clone a single file assembler for one thread.
+            // Clone a single file assembler for one thread.
             let assembler = self.single_file_assembler.clone();
+            // Generate paths for some intermediate files (*.o, *.lock).
+            let entry_file = self.entry_file.clone();
             let is_main_pkg = pkgpath == kclvm_ast::MAIN_PKG;
             let file = if is_main_pkg {
+                // The path to the generated files(*.o or *.lock) when the main package is compiled.
                 PathBuf::from(entry_file)
             } else {
+                // The path to the generated files(*.o or *.lock) when the non-main package is compiled.
                 cache_dir.join(&pkgpath)
             };
             let code_file = file.to_str().unwrap().to_string();

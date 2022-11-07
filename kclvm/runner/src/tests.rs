@@ -39,7 +39,7 @@ const MULTI_FILE_TEST_CASES: &[&str; 7] = &[
     "multi_file_compilation/import_abs_path/app-main",
     "multi_file_compilation/import_regular_module",
     "multi_file_compilation/import_regular_module_as",
-    "../../../../test/konfig/base/examples/job-example/dev"
+    "../../../../test/konfig/base/examples/job-example/dev",
 ];
 
 const EXEC_PROG_ARGS_TEST_CASE: &[&str; 1] = &["exec_prog_args/default.json"];
