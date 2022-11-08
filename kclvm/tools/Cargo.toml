@@ -11,6 +11,7 @@ fancy-regex = "0.7.1"
 walkdir = "2"
 anyhow = "1.0"
 
+rustc_lexer = "0.1.0"
 kclvm-ast = {path = "../ast", version = "0.1.0"}
 kclvm-error = {path = "../error", version = "0.1.0"}
 kclvm-parser = {path = "../parser", version = "0.1.0"}
