@@ -2043,10 +2043,11 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
 
     fn walk_lambda_expr(&self, lambda_expr: &'ctx ast::LambdaExpr) -> Self::Result {
         check_backtrack_stop!(self);
+        let pkgpath = &self.current_pkgpath();
         let is_in_schema = self.schema_stack.borrow().len() > 0;
         let func_before_block = self.append_block("");
         self.br(func_before_block);
-        let function = self.add_function(value::LAMBDA_NAME);
+        let function = self.add_function(&format!("{}.{}", pkgpath, value::LAMBDA_NAME));
         // Enter the function
         self.push_function(function);
         self.lambda_stack.borrow_mut().push(true);
