@@ -247,7 +247,7 @@ impl ValueRef {
                 if strict_range_check_32 && is_f32_overflow_pow(*a, *b) {
                     panic_f32_overflow!(a.powf(*b));
                 }
-                *a = a.powf(*b as f64);
+                *a = a.powf(*b);
                 true
             }
             (Value::int_value(a), Value::float_value(b)) => {
@@ -355,7 +355,7 @@ impl ValueRef {
     pub fn bin_aug_bit_and(&mut self, x: &Self) -> &mut Self {
         let valid = match (&mut *self.rc.borrow_mut(), &*x.rc.borrow()) {
             (Value::int_value(a), Value::int_value(b)) => {
-                *a &= *b as i64;
+                *a &= *b;
                 true
             }
             _ => false,
@@ -369,7 +369,7 @@ impl ValueRef {
     pub fn bin_aug_bit_xor(&mut self, x: &Self) -> &mut Self {
         let valid = match (&mut *self.rc.borrow_mut(), &*x.rc.borrow()) {
             (Value::int_value(a), Value::int_value(b)) => {
-                *a ^= *b as i64;
+                *a ^= *b;
                 true
             }
             _ => false,
@@ -383,14 +383,14 @@ impl ValueRef {
     pub fn bin_aug_bit_or(&mut self, x: &Self) -> &mut Self {
         let valid = match (&mut *self.rc.borrow_mut(), &*x.rc.borrow()) {
             (Value::int_value(a), Value::int_value(b)) => {
-                *a |= *b as i64;
+                *a |= *b;
                 true
             }
             _ => false,
         };
         if !valid {
             if self.is_list_or_config() || x.is_list_or_config() {
-                self.union(x, true, false, true, true);
+                self.union_entry(x, true, false, true, true);
             } else {
                 panic_unsupported_bin_op!("|", self.type_str(), x.type_str());
             }

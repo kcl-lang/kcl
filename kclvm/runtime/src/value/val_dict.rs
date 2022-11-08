@@ -311,7 +311,7 @@ impl ValueRef {
             dict.values.insert(key.to_string(), v.clone());
             dict.ops.insert(key.to_string(), op);
             dict.insert_indexs.insert(key.to_string(), insert_index);
-            self.union(
+            self.union_entry(
                 &ValueRef::from(Value::dict_value(Box::new(dict))),
                 true,
                 false,

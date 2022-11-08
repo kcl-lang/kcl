@@ -42,14 +42,13 @@ impl ValueRef {
                             {
                                 panic!("conflicting values on the attribute '{}' between {:?} and {:?}", k, self, x);
                             }
-                            let value = obj.values.get_mut(k).unwrap().union(
+                            obj.values.get_mut(k).unwrap().union(
                                 v,
                                 false,
                                 should_list_override,
                                 should_idempotent_check,
                                 should_config_resolve,
                             );
-                            obj.values.insert(k.clone(), value);
                         }
                         ConfigEntryOperationKind::Override => {
                             if index < 0 {
@@ -67,20 +66,18 @@ impl ValueRef {
                             }
                         }
                         ConfigEntryOperationKind::Insert => {
-                            let value = v.deep_copy();
                             let origin_value = obj.values.get_mut(k).unwrap();
                             if origin_value.is_none_or_undefined() {
                                 let list = ValueRef::list(None);
                                 obj.values.insert(k.to_string(), list);
                             }
                             let origin_value = obj.values.get_mut(k).unwrap();
-                            match (
-                                &mut *origin_value.rc.borrow_mut(),
-                                &mut *value.rc.borrow_mut(),
-                            ) {
+                            match (&mut *origin_value.rc.borrow_mut(), &*v.rc.borrow()) {
                                 (Value::list_value(origin_value), Value::list_value(value)) => {
                                     if index == -1 {
-                                        origin_value.values.append(&mut value.clone().values);
+                                        for elem in value.values.iter() {
+                                            origin_value.values.push(elem.clone());
+                                        }
                                     } else if index >= 0 {
                                         let mut insert_index = index;
                                         for v in &value.values {
@@ -183,8 +180,7 @@ impl ValueRef {
         }
         self.clone()
     }
-
-    pub fn union(
+    fn union(
         &mut self,
         x: &Self,
         or_mode: bool,
@@ -207,13 +203,12 @@ impl ValueRef {
                 should_config_resolve,
             );
         } else if or_mode {
-            match (&mut *self.rc.borrow_mut(), &*x.rc.borrow()) {
-                (Value::int_value(a), Value::int_value(b)) => {
-                    *a |= *b;
-                    return self.clone();
-                }
-                _ => {}
-            }
+            if let (Value::int_value(a), Value::int_value(b)) =
+                (&mut *self.rc.borrow_mut(), &*x.rc.borrow())
+            {
+                *a |= *b;
+                return self.clone();
+            };
             panic!(
                 "unsupported operand type(s) for |: '{:?}' and '{:?}'",
                 self.type_str(),
@@ -223,6 +218,24 @@ impl ValueRef {
             *self = x.clone();
         }
         self.clone()
+    }
+
+    // Deep copy the right value of the union call to avoid the left value part refering to the right value
+    pub fn union_entry(
+        &mut self,
+        x: &Self,
+        or_mode: bool,
+        should_list_override: bool,
+        should_idempotent_check: bool,
+        should_config_resolve: bool,
+    ) -> Self {
+        self.union(
+            &x.deep_copy(),
+            or_mode,
+            should_list_override,
+            should_idempotent_check,
+            should_config_resolve,
+        )
     }
 }
 
