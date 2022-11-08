@@ -11,6 +11,10 @@ impl ValueRef {
         should_idempotent_check: bool,
         should_config_resolve: bool,
     ) -> Self {
+        if self.is_same_ref(x) {
+            return self.clone();
+        }
+
         let union_fn = |obj: &mut DictValue, delta: &DictValue| {
             // Update attribute map
             for (k, v) in &delta.ops {
@@ -72,6 +76,9 @@ impl ValueRef {
                                 obj.values.insert(k.to_string(), list);
                             }
                             let origin_value = obj.values.get_mut(k).unwrap();
+                            if origin_value.is_same_ref(v) {
+                                continue;
+                            }
                             match (&mut *origin_value.rc.borrow_mut(), &*v.rc.borrow()) {
                                 (Value::list_value(origin_value), Value::list_value(value)) => {
                                     if index == -1 {
@@ -230,7 +237,7 @@ impl ValueRef {
         should_config_resolve: bool,
     ) -> Self {
         self.union(
-            &x.deep_copy(),
+            x,
             or_mode,
             should_list_override,
             should_idempotent_check,
