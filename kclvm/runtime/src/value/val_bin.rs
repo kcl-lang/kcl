@@ -292,10 +292,9 @@ impl ValueRef {
     }
 
     pub fn bin_bit_or(&self, x: &Self) -> Self {
-        match (&*self.rc.borrow(), &*x.rc.borrow()) {
-            (Value::int_value(a), Value::int_value(b)) => return Self::int(*a | *b),
-            _ => {}
-        }
+        if let (Value::int_value(a), Value::int_value(b)) = (&*self.rc.borrow(), &*x.rc.borrow()) {
+            return Self::int(*a | *b);
+        };
         self.deep_copy().union_entry(x, true, false, true, true)
     }
 

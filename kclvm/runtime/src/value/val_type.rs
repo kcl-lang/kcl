@@ -264,12 +264,9 @@ pub fn convert_collection_value(value: &ValueRef, tpe: &str) -> ValueRef {
                 }
                 None => {
                     for (_, mapping) in &ctx.import_names {
-                        match mapping.get(pkgname) {
-                            Some(pkgpath) => {
-                                schema_type_name = format!("{}.{}", pkgpath, name);
-                                break;
-                            }
-                            None => {}
+                        if let Some(pkgpath) = mapping.get(pkgname) {
+                            schema_type_name = format!("{}.{}", pkgpath, name);
+                            break;
                         }
                     }
                 }

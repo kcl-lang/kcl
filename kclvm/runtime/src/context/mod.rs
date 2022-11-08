@@ -181,7 +181,7 @@ impl crate::Context {
         // check dup
         for i in 0..self.option_helps.len() {
             if self.option_helps[i].name == name {
-                if typ.is_empty() && !required && default_value == None && help.is_empty() {
+                if typ.is_empty() && !required && default_value.is_none() && help.is_empty() {
                     return;
                 }
 
@@ -192,7 +192,7 @@ impl crate::Context {
                 if !self.option_helps[i].required {
                     self.option_helps[i].required = required;
                 }
-                if self.option_helps[i].default_value == None {
+                if self.option_helps[i].default_value.is_none() {
                     self.option_helps[i].default_value = default_value;
                 }
                 if self.option_helps[i].help.is_empty() {

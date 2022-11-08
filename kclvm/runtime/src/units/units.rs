@@ -362,7 +362,7 @@ pub fn to_quantity(quantity: &str) -> i64 {
         1000
     };
     let exponent = EXPONENTS.get(&suffix[0..1]).unwrap();
-    number * (base.pow(*exponent as u32)) as i64
+    number * (base.pow(*exponent as u32))
 }
 
 /// Calculate number based on value and binary suffix.
