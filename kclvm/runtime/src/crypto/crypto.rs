@@ -25,7 +25,7 @@ pub extern "C" fn kclvm_crypto_md5(
     let args = ptr_as_ref(args);
 
     if let Some(s) = args.arg_i_str(0, None) {
-        let hex = format!("{:x}", md5::compute(&s));
+        let hex = format!("{:x}", md5::compute(s));
         return ValueRef::str(hex.as_ref()).into_raw();
     }
     panic!("md5() missing 1 required positional argument: 'value'");

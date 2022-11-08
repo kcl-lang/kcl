@@ -1745,20 +1745,20 @@ pub extern "C" fn kclvm_value_union(
                 let mut entry = b.dict_get_entry(k).unwrap().deep_copy();
                 entry.dict_update_key_value(k, v);
                 result = a
-                    .union(&entry, true, false, false, false)
+                    .union_entry(&entry, true, false, false, false)
                     .clone()
                     .into_raw();
             } else {
                 let entry = b.dict_get_entry(k).unwrap();
                 result = a
-                    .union(&entry, true, false, false, false)
+                    .union_entry(&entry, true, false, false, false)
                     .clone()
                     .into_raw();
             }
         }
         result
     } else {
-        a.union(b, true, false, false, false).into_raw()
+        a.union_entry(b, true, false, false, false).into_raw()
     }
 }
 
@@ -2075,7 +2075,7 @@ pub extern "C" fn kclvm_schema_value_check(
         if should_add_attr && is_not_in_schema {
             let value = index_sign_value
                 .deep_copy()
-                .union(value, true, false, false, true);
+                .union_entry(value, true, false, false, true);
             let op = config
                 .ops
                 .get(key)
@@ -2277,7 +2277,7 @@ pub extern "C" fn kclvm_schema_value_new(
         let config = ptr_as_ref(config);
         let result = schema_value_or_func
             .deep_copy()
-            .union(config, true, false, true, true);
+            .union_entry(config, true, false, true, true);
         result.into_raw()
     }
 }
