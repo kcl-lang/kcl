@@ -227,7 +227,6 @@ impl ValueRef {
         self.clone()
     }
 
-    // Deep copy the right value of the union call to avoid the left value part refering to the right value
     pub fn union_entry(
         &mut self,
         x: &Self,
@@ -385,6 +384,100 @@ mod test_value_union {
                 let result_op = result_dict.ops.get(key).unwrap();
                 let result_index = result_dict.insert_indexs.get(key).unwrap();
                 assert_eq!(result_val.clone(), ValueRef::list_int(val.as_slice()));
+                assert_eq!(*result_op, op);
+                assert_eq!(*result_index, index);
+            }
+        }
+    }
+
+    #[test]
+    fn test_dict_union_same_ref() {
+        let cases = [
+            (
+                vec![("key1", "value", ConfigEntryOperationKind::Union, -1)],
+                vec![("key1", "value", ConfigEntryOperationKind::Union, -1)],
+                vec![("key2", "value", ConfigEntryOperationKind::Union, -1)],
+                vec![
+                    ("key1", "value", ConfigEntryOperationKind::Union, -1),
+                    ("key2", "value", ConfigEntryOperationKind::Union, -1),
+                ],
+            ),
+            (
+                vec![("key1", "value1", ConfigEntryOperationKind::Override, -1)],
+                vec![("key1", "value2", ConfigEntryOperationKind::Override, -1)],
+                vec![("key2", "value", ConfigEntryOperationKind::Override, -1)],
+                vec![
+                    ("key1", "value2", ConfigEntryOperationKind::Override, -1),
+                    ("key2", "value", ConfigEntryOperationKind::Override, -1),
+                ],
+            ),
+            (
+                vec![("key1", "value1", ConfigEntryOperationKind::Union, -1)],
+                vec![("key1", "value2", ConfigEntryOperationKind::Override, -1)],
+                vec![("key2", "value", ConfigEntryOperationKind::Override, -1)],
+                vec![
+                    ("key1", "value2", ConfigEntryOperationKind::Override, -1),
+                    ("key2", "value", ConfigEntryOperationKind::Override, -1),
+                ],
+            ),
+            (
+                vec![
+                    ("key1", "value1", ConfigEntryOperationKind::Union, -1),
+                    ("key2", "value2", ConfigEntryOperationKind::Union, -1),
+                ],
+                vec![
+                    (
+                        "key1",
+                        "override_value1",
+                        ConfigEntryOperationKind::Override,
+                        -1,
+                    ),
+                    (
+                        "key2",
+                        "override_value2",
+                        ConfigEntryOperationKind::Override,
+                        -1,
+                    ),
+                ],
+                vec![("key3", "value", ConfigEntryOperationKind::Union, -1)],
+                vec![
+                    (
+                        "key1",
+                        "override_value1",
+                        ConfigEntryOperationKind::Override,
+                        -1,
+                    ),
+                    (
+                        "key2",
+                        "override_value2",
+                        ConfigEntryOperationKind::Override,
+                        -1,
+                    ),
+                    ("key3", "value", ConfigEntryOperationKind::Union, -1),
+                ],
+            ),
+        ];
+        for (left_entries, right_entries, both_entries, expected) in cases {
+            let mut left_value = ValueRef::dict(None);
+            let mut right_value = ValueRef::dict(None);
+            for (key, val, op, index) in left_entries {
+                left_value.dict_update_entry(key, &ValueRef::str(val), &op, &index);
+            }
+            for (key, val, op, index) in right_entries {
+                right_value.dict_update_entry(key, &ValueRef::str(val), &op, &index);
+            }
+            for (key, val, op, index) in both_entries {
+                let both_val = ValueRef::str(val);
+                left_value.dict_update_entry(key, &both_val, &op, &index);
+                left_value.dict_update_entry(key, &both_val, &op, &index);
+            }
+            let result = left_value.bin_bit_or(&right_value);
+            for (key, val, op, index) in expected {
+                let result_dict = result.as_dict_ref();
+                let result_val = result_dict.values.get(key).unwrap().as_str();
+                let result_op = result_dict.ops.get(key).unwrap();
+                let result_index = result_dict.insert_indexs.get(key).unwrap();
+                assert_eq!(result_val, val);
                 assert_eq!(*result_op, op);
                 assert_eq!(*result_index, index);
             }
