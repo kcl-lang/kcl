@@ -2335,9 +2335,18 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                         let value = right_value.expect(kcl_error::INTERNAL_ERROR_MSG);
                         // If variable exists in the scope and update it, if not, add it to the scope.
                         if !self.store_variable_in_current_scope(name, value) {
+                            let cur_bb = self.builder.get_insert_block().unwrap();
+                            let lambda_func = cur_bb.get_parent().unwrap();
+                            let entry_bb = lambda_func.get_first_basic_block().unwrap();
+                            match entry_bb.get_first_instruction() {
+                                Some(inst) => self.builder.position_before(&inst),
+                                None => self.builder.position_at_end(entry_bb),
+                            };
                             let var = self.builder.build_alloca(tpe, name);
-                            self.builder.build_store(var, value);
+                            let undefined_val = self.undefined_value();
+                            self.builder.build_store(var, undefined_val);
                             self.add_variable(name, var);
+                            self.builder.position_at_end(cur_bb);
                             self.store_variable(name, value);
                         }
                     } else {
