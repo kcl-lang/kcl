@@ -5,11 +5,41 @@ extern crate serde_yaml;
 
 use crate::*;
 
-#[derive(Debug, Default)]
+use serde::{Deserialize, Serialize};
+
+/// YAML encode options.
+/// - sort_keys: Sort the encode result by keys (defaults to false).
+/// - ignore_private: Whether to ignore the attribute whose name starts with
+///     a character `_` (defaults to false).
+/// - ignore_none: Whether to ignore the attribute whose value is `None` (defaults to false).
+/// - sep: Which separator to use between YAML documents (defaults to "---").
+///
+/// TODO: We have not yet supported the following options because serde_yaml
+/// does not support these capabilities yet.
+/// Ref: https://github.com/dtolnay/serde-yaml/issues/337
+/// - indent: Which kind of indentation to use when emitting (defaults to 2).
+/// - width: The character width to use when folding text (defaults to 80).
+/// - use_fold: Force folding of text when emitting (defaults to false).
+/// - use_block: Force all text to be literal when emitting (defaults to false).
+/// - use_version: Display the YAML version when emitting (defaults to false).
+/// - use_header: Display the YAML header when emitting (defaults to false).
+#[derive(Debug, Serialize, Deserialize)]
 pub struct YamlEncodeOptions {
     pub sort_keys: bool,
     pub ignore_private: bool,
     pub ignore_none: bool,
+    pub sep: String,
+}
+
+impl Default for YamlEncodeOptions {
+    fn default() -> Self {
+        Self {
+            sort_keys: false,
+            ignore_private: false,
+            ignore_none: false,
+            sep: "---".to_string(),
+        }
+    }
 }
 
 impl ValueRef {

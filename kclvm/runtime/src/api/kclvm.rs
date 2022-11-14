@@ -325,12 +325,15 @@ pub struct ContextConfig {
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub struct ContextBuffer {
     pub kclvm_context_invoke_result: String,
+    /// Custom manifest output string.
+    pub custom_manifests_output: Option<String>,
 }
 
 impl Default for ContextBuffer {
     fn default() -> Self {
         Self {
             kclvm_context_invoke_result: "\0".to_string(),
+            custom_manifests_output: None,
         }
     }
 }

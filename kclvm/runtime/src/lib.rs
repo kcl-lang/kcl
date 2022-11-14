@@ -83,6 +83,9 @@ pub use self::datetime::*;
 pub mod json;
 pub use self::json::*;
 
+pub mod manifests;
+pub use self::manifests::*;
+
 pub mod math;
 pub use self::math::*;
 

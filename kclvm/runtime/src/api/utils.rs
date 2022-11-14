@@ -73,7 +73,10 @@ pub fn assert_panic<F: FnOnce() + std::panic::UnwindSafe>(msg: &str, func: F) {
             panic!("not panic, expect={}", msg);
         }
         Err(e) => match e.downcast::<String>() {
-            Ok(_v) => panic!("unreachable"),
+            Ok(v) => {
+                let got = v.to_string();
+                assert!(got.contains(msg), "expect={}, got={}", msg, got);
+            }
             Err(e) => match e.downcast::<&str>() {
                 Ok(v) => {
                     let got = v.to_string();
