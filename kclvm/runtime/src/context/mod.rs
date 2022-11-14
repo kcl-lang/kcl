@@ -68,6 +68,9 @@ impl crate::Context {
         if self.cfg.list_option_mode {
             self.output.return_value =
                 crate::ValueRef::str(self.list_option_help().as_str()).into_raw();
+        // If there is a custom manifests, output them.
+        } else if let Some(output) = &self.buffer.custom_manifests_output {
+            self.output.return_value = crate::ValueRef::str(output.as_str()).into_raw();
         }
 
         self.output.return_value
