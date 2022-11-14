@@ -6,7 +6,7 @@ use pretty_assertions::assert_eq;
 
 const FILE_INPUT_SUFFIX: &str = ".input";
 const FILE_OUTPUT_SUFFIX: &str = ".output";
-const TEST_CASES: &[&'static str; 15] = &[
+const TEST_CASES: &[&'static str; 16] = &[
     "arguments",
     "empty",
     "if_stmt",
@@ -20,6 +20,7 @@ const TEST_CASES: &[&'static str; 15] = &[
     "lambda",
     "quant",
     "rule",
+    "str",
     "type_alias",
     "unification",
 ];
