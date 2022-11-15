@@ -22,10 +22,10 @@ mod string;
 mod tests;
 
 use kclvm_ast::ast::NumberBinarySuffix;
-use kclvm_ast::token::{self, CommentKind, Token, TokenKind};
+use kclvm_ast::token::{self, CommentKind, Token};
 use kclvm_ast::token_stream::TokenStream;
 use kclvm_error::bug;
-use kclvm_lexer::Base;
+use kclvm_lexer::{Base};
 use kclvm_span::symbol::Symbol;
 use kclvm_span::{self, BytePos, Span};
 use rustc_span::Pos;
@@ -76,6 +76,18 @@ enum IndentOrDedents {
 }
 
 impl TokenWithIndents {
+
+    pub(crate) fn is_dummy(&self) -> bool {
+        self.get_tok_kind() == kclvm_ast::token::TokenKind::Dummy
+    }
+
+    pub(crate) fn get_tok_kind(&self) -> kclvm_ast::token::TokenKind {
+        match self {
+            TokenWithIndents::Token { token } => token.kind,
+            TokenWithIndents::WithIndent { token, indent: _ } => token.kind,
+        }
+    }
+
     pub(crate) fn is_eof(&self) -> bool {
         match self {
             TokenWithIndents::Token { token } => *token == token::Eof,
@@ -134,7 +146,7 @@ struct IndentContext {
     new_line_beginning: bool,
 
     /// Delim stack
-    delims: Vec<TokenKind>,
+    delims: Vec<kclvm_ast::token::TokenKind>,
 
     /// tab counter
     tabs: usize,
@@ -204,7 +216,7 @@ impl<'a> Lexer<'a> {
     }
 
     /// Turns `kclvm_lexer::TokenKind` into a rich `kclvm_ast::TokenKind`.
-    fn lex_token(&mut self, token: kclvm_lexer::Token, start: BytePos) -> Option<TokenKind> {
+    fn lex_token(&mut self, token: kclvm_lexer::Token, start: BytePos) -> Option<kclvm_ast::token::TokenKind> {
         Some(match token.kind {
             kclvm_lexer::TokenKind::LineComment { doc_style: _ } => {
                 let s = self.str_from(start);
@@ -240,22 +252,23 @@ impl<'a> Lexer<'a> {
             kclvm_lexer::TokenKind::Bang => token::UnaryOp(token::UNot),
             // Binary op
             kclvm_lexer::TokenKind::Plus => token::BinOp(token::Plus),
-            kclvm_lexer::TokenKind::Minus => {
-                let head = start + BytePos::from_u32(1);
-                let tail = start + BytePos::from_u32(2);
-                if self.has_next_token(head, tail) {
-                    let next_tkn = self.str_from_to(head, tail);
-                    if next_tkn == ">" {
-                        // waste '>' token
-                        self.pos = self.pos + BytePos::from_usize(1);
-                        token::RArrow
-                    } else {
-                        token::BinOp(token::Minus)
-                    }
-                } else {
-                    token::BinOp(token::Minus)
-                }
-            }
+            kclvm_lexer::TokenKind::Minus => token::BinOp(token::Minus),
+            // kclvm_lexer::TokenKind::Minus => {
+            //     let head = start + BytePos::from_u32(1);
+            //     let tail = start + BytePos::from_u32(2);
+            //     if self.has_next_token(head, tail) {
+            //         let next_tkn = self.str_from_to(head, tail);
+            //         if next_tkn == ">" {
+            //             // waste '>' token
+            //             self.pos = self.pos + BytePos::from_usize(1);
+            //             token::RArrow
+            //         } else {
+            //             token::BinOp(token::Minus)
+            //         }
+            //     } else {
+            //         token::BinOp(token::Minus)
+            //     }
+            // }
             kclvm_lexer::TokenKind::Star => token::BinOp(token::Star),
             kclvm_lexer::TokenKind::Slash => token::BinOp(token::Slash),
             kclvm_lexer::TokenKind::Percent => token::BinOp(token::Percent),
@@ -284,7 +297,13 @@ impl<'a> Lexer<'a> {
             kclvm_lexer::TokenKind::BangEq => token::BinCmp(token::NotEq),
             kclvm_lexer::TokenKind::Lt => token::BinCmp(token::Lt),
             kclvm_lexer::TokenKind::LtEq => token::BinCmp(token::LtEq),
-            kclvm_lexer::TokenKind::Gt => token::BinCmp(token::Gt),
+            kclvm_lexer::TokenKind::Gt => {
+                // 这里要尝试回去glue一下
+                match self.glue(kclvm_lexer::TokenKind::Gt, self.token.get_tok_kind()) {
+                    Some(tok) => {tok},
+                    None => {token::BinCmp(token::Gt)},
+                }
+            },
             kclvm_lexer::TokenKind::GtEq => token::BinCmp(token::GtEq),
             // Structural symbols
             kclvm_lexer::TokenKind::At => token::At,
@@ -418,6 +437,22 @@ impl<'a> Lexer<'a> {
                 .sess
                 .struct_span_error("unknown start of token", self.span(start, self.pos)),
         })
+    }
+
+    fn glue(&self, tok_kind: kclvm_lexer::TokenKind, last_tok_kind: kclvm_ast::token::TokenKind) -> Option<kclvm_ast::token::TokenKind> {
+        match tok_kind {
+            kclvm_lexer::TokenKind::Gt => match last_tok_kind {
+                kclvm_ast::token::TokenKind::BinOp(bin_op) => {
+                    if let kclvm_ast::token::BinOpToken::Minus = bin_op {
+                        Some(kclvm_ast::token::TokenKind::RArrow)
+                    } else {
+                        None
+                    }
+                },
+                kclvm_ast::token::TokenKind::Dummy | _ => None,
+            },
+            _ => None
+        }
     }
 
     fn lex_literal(
