@@ -1076,7 +1076,14 @@ class Printer(BasePrinter):
         - is_long_string = False
         """
         assert isinstance(t, ast.StringLit)
-        self.write(t.raw_value or '"{}"'.format(t.value.replace('"', '\\"')))
+        self.write(
+            t.raw_value
+            or (
+                '"""{}"""'.format(t.value.replace('"', '\\"'))
+                if t.is_long_string
+                else '"{}"'.format(t.value.replace('"', '\\"'))
+            )
+        )
 
     def walk_NameConstantLit(self, t: ast.NameConstantLit):
         """ast.AST: NameConstantLit
@@ -1107,7 +1114,8 @@ class Printer(BasePrinter):
         """
         assert isinstance(t, ast.JoinedString)
         assert t.values
-        self.print('"')
+        quote_str = '"""' if t.is_long_string else '"'
+        self.print(quote_str)
         for value in t.values:
             if isinstance(value, ast.FormattedValue):
                 self.print(
@@ -1132,7 +1140,7 @@ class Printer(BasePrinter):
                 self.expr(value)
             else:
                 raise Exception("Invalid AST JoinedString children")
-        self.print('"')
+        self.print(quote_str)
 
     def walk_TypeAliasStmt(self, t: ast.TypeAliasStmt):
         """ast.AST: TypeAliasStmt

@@ -26,6 +26,7 @@ _TEST_CASES = [
     "lambda",
     "quant",
     "rule",
+    "str",
     "type_alias",
     "unary",
     "unification",

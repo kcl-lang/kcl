@@ -718,7 +718,11 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
         if !string_lit.raw_value.is_empty() {
             self.write(&string_lit.raw_value)
         } else {
-            self.write(&format!("\"{}\"", string_lit.value.replace('\"', "\\\"")));
+            self.write(&if string_lit.is_long_string {
+                format!("\"\"\"{}\"\"\"", string_lit.value.replace('\"', "\\\""))
+            } else {
+                format!("\"{}\"", string_lit.value.replace('\"', "\\\""))
+            });
         }
     }
 
@@ -731,7 +735,12 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
     }
 
     fn walk_joined_string(&mut self, joined_string: &'ctx ast::JoinedString) -> Self::Result {
-        self.write("\"");
+        let quote_str = if joined_string.is_long_string {
+            "\"\"\""
+        } else {
+            "\""
+        };
+        self.write(quote_str);
         for value in &joined_string.values {
             match &value.node {
                 ast::Expr::StringLit(string_lit) => {
@@ -740,7 +749,7 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
                 _ => self.expr(value),
             }
         }
-        self.write("\"");
+        self.write(quote_str);
     }
 
     fn walk_formatted_value(&mut self, formatted_value: &'ctx ast::FormattedValue) -> Self::Result {
