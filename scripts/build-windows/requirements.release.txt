@@ -1,13 +1,10 @@
-wheel==0.34.2
 pyyaml==5.4
 pytest-xdist==2.2.1
 lark-parser==0.11.3
 filelock==3.6.0
 yapf==0.29.0
-pytest==6.2.2
 pypeg2==2.15.2
 protobuf==3.19.5
-grequests
 schema
 coverage
 ruamel.yaml
@@ -20,3 +17,4 @@ gunicorn==20.1.0
 parsy==1.3.0
 wasmer==1.0.0
 wasmer_compiler_cranelift==1.0.0
+pyopenssl==21.0.0

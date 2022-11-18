@@ -4,11 +4,10 @@
 set -e
 
 prepare_dirs () {
-    cpython_build_dir="$topdir/_build/dist/$os/cpython"
-    kclvm_packages_dir="$topdir/_build/packages"
     kclvm_install_dir="$topdir/_build/dist/$os/kclvm"
-    mkdir -p "$kclvm_install_dir"
-    mkdir -p "$kclvm_packages_dir"
+    mkdir -p "$kclvm_install_dir/bin"
+    mkdir -p "$kclvm_install_dir/lib/site-packages"
+    mkdir -p "$kclvm_install_dir/include"
 }
 
 prepare_dirs
@@ -18,6 +17,7 @@ kclvm_source_dir="$topdir/internal"
 set -x
 
 # Copy KCLVM.
+cp "$topdir/internal/kclvm_py/scripts/requirements.txt" $kclvm_install_dir/
 cp "$topdir/internal/kclvm_py/scripts/cli/kcl" $kclvm_install_dir/bin/
 cp "$topdir/internal/kclvm_py/scripts/cli/kcl-plugin" $kclvm_install_dir/bin/
 cp "$topdir/internal/kclvm_py/scripts/cli/kcl-doc" $kclvm_install_dir/bin/
@@ -33,15 +33,11 @@ chmod +x $kclvm_install_dir/bin/kcl-lint
 chmod +x $kclvm_install_dir/bin/kcl-fmt
 chmod +x $kclvm_install_dir/bin/kcl-vet
 
-kclvm_lib_dir=$kclvm_install_dir/lib/python3.7/
-if [ -d $kclvm_install_dir/lib/python3.9/ ]; then
-    kclvm_lib_dir=$kclvm_install_dir/lib/python3.9/
+if [ -d $kclvm_install_dir/lib/site-packages/kclvm ]; then
+   rm -rf $kclvm_install_dir/lib/site-packages/kclvm
 fi
-
-if [ -d $kclvm_lib_dir/kclvm ]; then
-   rm -rf $kclvm_lib_dir/kclvm
-fi
-cp -r $kclvm_source_dir/kclvm_py $kclvm_lib_dir/kclvm
+cp -r $kclvm_source_dir/kclvm_py $kclvm_install_dir/lib/site-packages
+mv $kclvm_install_dir/lib/site-packages/kclvm_py $kclvm_install_dir/lib/site-packages/kclvm
 
 set +x
 
@@ -55,6 +51,8 @@ rm $kclvm_install_dir/bin/kclvm_cli
 cp ./target/release/kclvm_cli $kclvm_install_dir/bin/kclvm_cli
 
 # libkclvm_cli
+
+# TODO: move to kclvm/build.rs
 
 # Darwin dylib
 if [ -e $topdir/kclvm/target/release/libkclvm_cli_cdylib.dylib ]; then
@@ -96,63 +94,32 @@ cargo build --release
 cp $topdir/kclvm/target/release/libkclvm.a                        $kclvm_install_dir/lib/libkclvm_native.a
 
 # Darwin dylib
-if [ -e $topdir/kclvm/target/release/libkclvm.dylib ]; then
+if [ -e target/release/libkclvm.dylib ]; then
     touch $kclvm_install_dir/lib/libkclvm.dylib
     rm $kclvm_install_dir/lib/libkclvm.dylib
-    cp $topdir/kclvm/target/release/libkclvm.dylib $kclvm_install_dir/lib/
-    cp $topdir/kclvm/target/release/libkclvm.dylib $kclvm_install_dir/lib/libkclvm_native_shared.dylib
+    cp target/release/libkclvm.dylib $kclvm_install_dir/lib/
+    cp target/release/libkclvm.dylib $kclvm_install_dir/lib/libkclvm_native_shared.dylib
 fi
 # Linux so
-if [ -e $topdir/kclvm/target/release/libkclvm.so ]; then
+if [ -e target/release/libkclvm.so ]; then
     touch $kclvm_install_dir/lib/libkclvm.so
     rm $kclvm_install_dir/lib/libkclvm.so
-    cp $topdir/kclvm/target/release/libkclvm.so $kclvm_install_dir/lib/
-    cp $topdir/kclvm/target/release/libkclvm.so $kclvm_install_dir/lib/libkclvm_native_shared.so
+    cp target/release/libkclvm.so $kclvm_install_dir/lib/
+    cp target/release/libkclvm.so $kclvm_install_dir/lib/libkclvm_native_shared.so
 fi
 # Windows dll
-if [ -e $topdir/kclvm/target/release/libkclvm.dll ]; then
+if [ -e target/release/libkclvm.dll ]; then
     touch $kclvm_install_dir/lib/libkclvm.dll
     rm $kclvm_install_dir/lib/libkclvm.dll
-    cp $topdir/kclvm/target/release/libkclvm.dll $kclvm_install_dir/lib/
-    cp $topdir/kclvm/target/release/libkclvm.dll $kclvm_install_dir/lib/libkclvm_native_shared.dll
+    cp target/release/libkclvm.dll $kclvm_install_dir/lib/
+    cp target/release/libkclvm.dll $kclvm_install_dir/lib/libkclvm_native_shared.dll
 fi
 
+# TODO: WASM
+# cargo build --release --target wasm32-unknown-unknown
+# cp $topdir/kclvm/target/wasm32-unknown-unknown/release/libkclvm.a $kclvm_install_dir/lib/libkclvm_wasm32.a
+# cp src/_kclvm_undefined_wasm.txt $kclvm_install_dir/lib/_kclvm_undefined_wasm.txt
 
-# WASM
-rustup target add wasm32-unknown-unknown
-cargo build --release --target wasm32-unknown-unknown
-cp $topdir/kclvm/target/wasm32-unknown-unknown/release/libkclvm.a $kclvm_install_dir/lib/libkclvm_wasm32.a
-cp src/_kclvm_undefined_wasm.txt $kclvm_install_dir/lib/_kclvm_undefined_wasm.txt
-
-cd $topdir/kclvm/capi
-## Native
-cargo build --release
-
-# Darwin dylib
-if [ -e $topdir/kclvm/target/release/libkclvm_capi.dylib ]; then
-    touch $kclvm_install_dir/lib/libkclvm_capi.dylib
-    rm $kclvm_install_dir/lib/libkclvm_capi.dylib
-    cp $topdir/kclvm/target/release/libkclvm_capi.dylib $kclvm_install_dir/lib/
-    cp $topdir/kclvm/target/release/libkclvm_capi.dylib $kclvm_install_dir/lib/libkclvm_capi.dylib
-fi
-# Linux so
-if [ -e $topdir/kclvm/target/release/libkclvm_capi.so ]; then
-    touch $kclvm_install_dir/lib/libkclvm_capi.so
-    rm $kclvm_install_dir/lib/libkclvm_capi.so
-    cp $topdir/kclvm/target/release/libkclvm_capi.so $kclvm_install_dir/lib/
-    cp $topdir/kclvm/target/release/libkclvm_capi.so $kclvm_install_dir/lib/libkclvm_capi.so
-fi
-# Windows dll
-if [ -e $topdir/kclvm/target/release/libkclvm_capi.dll ]; then
-    touch $kclvm_install_dir/lib/libkclvm_capi.dll
-    rm $kclvm_install_dir/lib/libkclvm_capi.dll
-    cp $topdir/kclvm/target/release/libkclvm_capi.dll $kclvm_install_dir/lib/
-    cp $topdir/kclvm/target/release/libkclvm_capi.dll $kclvm_install_dir/lib/libkclvm_capi.dll
-fi
-
-
-# Copy LLVM runtime and header
-cd $topdir/kclvm/runtime
 cp src/_kclvm.bc $kclvm_install_dir/include/_kclvm.bc
 cp src/_kclvm.h  $kclvm_install_dir/include/_kclvm.h
 
@@ -161,7 +128,7 @@ cd $kclvm_install_dir/include
 # build kclvm_plugin python module
 
 cd $topdir/kclvm/plugin
-kclvm setup.py install_lib
+python3 setup.py install_lib --install-dir=$kclvm_install_dir/lib/site-packages
 
 # Print the summary.
 echo "================ Summary ================"

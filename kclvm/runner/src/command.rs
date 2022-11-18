@@ -115,9 +115,9 @@ impl Command {
     /// Get the kclvm executable root.
     fn get_executable_root() -> String {
         let kclvm_exe = if Self::is_windows() {
-            "kclvm.exe"
+            "kclvm_cli.exe"
         } else {
-            "kclvm"
+            "kclvm_cli"
         };
         let p = if let Some(x) = Self::find_it(kclvm_exe) {
             x
