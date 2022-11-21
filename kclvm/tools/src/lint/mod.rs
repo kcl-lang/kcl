@@ -58,7 +58,7 @@ pub fn lint_files(
     opts: Option<LoadProgramOptions>,
 ) -> (IndexSet<Diagnostic>, IndexSet<Diagnostic>) {
     // Parse AST program.
-    let mut program = load_program(&files, opts).unwrap();
+    let mut program = load_program(files, opts).unwrap();
     let scope = resolve_program(&mut program);
     let (mut errs, mut warnings) = (IndexSet::new(), IndexSet::new());
     for diag in &scope.diagnostics {

@@ -12,11 +12,10 @@ pub struct FileWordMap {
 
 impl FileWordMap {
     pub fn new(file_name: String) -> Self {
-        let mut map = FileWordMap {
+        Self {
             file_name,
             word_map: HashMap::new(),
-        };
-        map
+        }
     }
 
     // Clear records
@@ -64,11 +63,10 @@ pub struct WorkSpaceWordMap {
 
 impl WorkSpaceWordMap {
     pub fn new(path: String) -> Self {
-        let mut map = WorkSpaceWordMap {
+        Self {
             path,
             file_map: HashMap::new(),
-        };
-        map
+        }
     }
 
     // when user edit a file, the filemap of this file need to rebuild

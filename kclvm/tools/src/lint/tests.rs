@@ -2,7 +2,7 @@ use super::lint_files;
 
 #[test]
 fn test_lint() {
-    let (_, warnings) = lint_files(&vec!["./src/lint/test_data/lint.k"], None);
+    let (_, warnings) = lint_files(&["./src/lint/test_data/lint.k"], None);
     let msgs = [
         "Importstmt should be placed at the top of the module",
         "Module 'a' is reimported multiple times",

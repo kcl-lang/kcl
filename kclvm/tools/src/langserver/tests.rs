@@ -96,32 +96,32 @@ mod tests {
         let path_prefix = "./src/langserver/".to_string();
         let datas = vec![
             Position {
-                filename: (path_prefix.clone() + "test_data/inherit.k").to_string(),
+                filename: (path_prefix.clone() + "test_data/inherit.k"),
                 line: 0,
                 column: Some(0),
             },
             Position {
-                filename: (path_prefix.clone() + "test_data/inherit.k").to_string(),
+                filename: (path_prefix.clone() + "test_data/inherit.k"),
                 line: 1,
                 column: Some(5),
             },
             Position {
-                filename: (path_prefix.clone() + "test_data/inherit.k").to_string(),
+                filename: (path_prefix.clone() + "test_data/inherit.k"),
                 line: 3,
                 column: Some(7),
             },
             Position {
-                filename: (path_prefix.clone() + "test_data/inherit.k").to_string(),
+                filename: (path_prefix.clone() + "test_data/inherit.k"),
                 line: 3,
                 column: Some(10),
             },
             Position {
-                filename: (path_prefix.clone() + "test_data/inherit.k").to_string(),
+                filename: (path_prefix.clone() + "test_data/inherit.k"),
                 line: 4,
                 column: Some(8),
             },
             Position {
-                filename: (path_prefix.clone() + "test_data/inherit.k").to_string(),
+                filename: (path_prefix + "test_data/inherit.k"),
                 line: 4,
                 column: Some(100),
             },
@@ -176,8 +176,8 @@ mod tests {
         let mut mp = langserver::word_map::WorkSpaceWordMap::new(path);
         mp.build();
         let _res = fs::rename(
-            "./src/langserver/test_data/test_word_workspace_map/inherit_pkg.k".to_string(),
-            "./src/langserver/test_data/test_word_workspace_map/inherit_bak.k".to_string(),
+            "./src/langserver/test_data/test_word_workspace_map/inherit_pkg.k",
+            "./src/langserver/test_data/test_word_workspace_map/inherit_bak.k",
         );
         mp.rename_file(
             "./src/langserver/test_data/test_word_workspace_map/inherit_pkg.k".to_string(),
@@ -185,8 +185,8 @@ mod tests {
         );
         mp.delete_file("./src/langserver/test_data/test_word_workspace_map/inherit.k".to_string());
         let _res = fs::rename(
-            "./src/langserver/test_data/test_word_workspace_map/inherit_bak.k".to_string(),
-            "./src/langserver/test_data/test_word_workspace_map/inherit_pkg.k".to_string(),
+            "./src/langserver/test_data/test_word_workspace_map/inherit_bak.k",
+            "./src/langserver/test_data/test_word_workspace_map/inherit_pkg.k",
         );
 
         let except = vec![Position {
