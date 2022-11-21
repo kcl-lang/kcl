@@ -434,15 +434,18 @@ impl<'a> Lexer<'a> {
         })
     }
 
-    // From the lexed tokens stack, check whether the token at the top of the stack and the current character can combine a new token.
-    // If yes, lexer will pop the token at the top of the stack and return a new token combined with the token poped and the current character.
-    // If not, return None.
+    /// From the lexed tokens stack, check whether the token at the top of the stack and the current character can combine a new token.
+    /// If yes, lexer will pop the token at the top of the stack and return a new token combined with the token poped and the current character.
+    /// If not, return None.
     fn look_behind(
         &mut self,
         tok: &kclvm_lexer::Token,
         tok_stream_builder: &mut TokenStreamBuilder,
     ) -> Option<TokenKind> {
         match tok.kind {
+            // Most multi-character tokens are lexed in ['kclvm-lexer'],
+            // and the multi-character tokens that need to be lexed in ['kclvm-parser/lexer'] are only token '->'.
+            // If a new multi-character token is added later, the corresponding operation can be added here.
             kclvm_lexer::TokenKind::Gt => {
                 if let Some(_) =
                     tok_stream_builder.pop_if_tok_kind(&TokenKind::BinOp(BinOpToken::Minus))
@@ -728,13 +731,13 @@ impl TokenStreamBuilder {
         self.buf.push(token)
     }
 
-    // Pop the token at the top of the stack, and return None if the stack is empty.
+    /// Pop the token at the top of the stack, and return None if the stack is empty.
     fn pop(&mut self) -> Option<Token> {
         self.buf.pop()
     }
 
-    // If the token kind at the top of the stack is 'expected_tok_kind',
-    // pop the token and return it, otherwise do nothing and return None.
+    /// If the token kind at the top of the stack is 'expected_tok_kind',
+    /// pop the token and return it, otherwise do nothing and return None.
     fn pop_if_tok_kind(&mut self, expected_tok_kind: &TokenKind) -> Option<Token> {
         if self.peek_tok_kind() == expected_tok_kind {
             self.pop()
@@ -743,7 +746,7 @@ impl TokenStreamBuilder {
         }
     }
 
-    // Peek the kind of the token on the top of the stack.
+    /// Peek the kind of the token on the top of the stack.
     fn peek_tok_kind(&self) -> &TokenKind {
         match self.buf.last() {
             Some(tok) => &tok.kind,

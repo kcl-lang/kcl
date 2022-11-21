@@ -6,7 +6,7 @@ use kclvm_span::{create_session_globals_then, BytePos, FilePathMapping, SourceMa
 use std::path::PathBuf;
 use std::sync::Arc;
 
-// lexing the 'src'.
+/// lexing the 'src'.
 fn lex(src: &str) -> String {
     let sm = SourceMap::new(FilePathMapping::empty());
     sm.new_source_file(PathBuf::from("").into(), src.to_string());
@@ -20,7 +20,7 @@ fn lex(src: &str) -> String {
     })
 }
 
-// check the invalid panic message.
+/// check the invalid panic message.
 fn check_lexing_invalid(src: &str, expect: Expect) {
     let prev_hook = std::panic::take_hook();
     std::panic::set_hook(Box::new(|_info| {}));
@@ -39,7 +39,7 @@ fn check_lexing_invalid(src: &str, expect: Expect) {
     }
 }
 
-// check the lexing result.
+/// check the lexing result.
 fn check_lexing(src: &str, expect: Expect) {
     expect.assert_eq(&lex(src));
 }
