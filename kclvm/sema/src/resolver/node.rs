@@ -388,10 +388,20 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
         let call_ty = self.expr(&call_expr.func);
         let pos = call_expr.func.get_pos();
         if call_ty.is_any() {
-            self.do_arguments_type_check(&call_expr.args, &call_expr.keywords, &[]);
+            self.do_arguments_type_check(
+                &call_expr.func.node,
+                &call_expr.args,
+                &call_expr.keywords,
+                &[],
+            );
             self.any_ty()
         } else if let TypeKind::Function(func_ty) = &call_ty.kind {
-            self.do_arguments_type_check(&call_expr.args, &call_expr.keywords, &func_ty.params);
+            self.do_arguments_type_check(
+                &call_expr.func.node,
+                &call_expr.args,
+                &call_expr.keywords,
+                &func_ty.params,
+            );
             func_ty.return_ty.clone()
         } else if let TypeKind::Schema(schema_ty) = &call_ty.kind {
             if schema_ty.is_instance {
@@ -402,6 +412,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 self.any_ty()
             } else {
                 self.do_arguments_type_check(
+                    &call_expr.func.node,
                     &call_expr.args,
                     &call_expr.keywords,
                     &schema_ty.func.params,
@@ -768,7 +779,10 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                         );
                     }
                 } else {
+                    let func = ast::Expr::Identifier(schema_expr.name.node.clone());
+
                     self.do_arguments_type_check(
+                        &func,
                         &schema_expr.args,
                         &schema_expr.kwargs,
                         &schema_ty.func.params,
