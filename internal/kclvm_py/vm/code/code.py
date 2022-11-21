@@ -1,6 +1,6 @@
 # Copyright 2021 The KCL Authors. All rights reserved.
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Optional
 from enum import IntEnum
 
@@ -226,7 +226,7 @@ class InstructionWithArg(Instruction):
 
 @dataclass
 class JumpRel(InstructionWithArg):
-    dest: Label = Label()
+    dest: Label = field(default_factory=Label)
 
     def output(self) -> List[int]:
         self.arg = self.dest.get_pos()
@@ -235,7 +235,7 @@ class JumpRel(InstructionWithArg):
 
 @dataclass
 class JumpAbs(InstructionWithArg):
-    dest: Label = Label()
+    dest: Label = field(default_factory=Label)
 
     def output(self) -> List[int]:
         self.arg = self.dest.get_pos()
@@ -251,5 +251,9 @@ class EmittedInstruction:
 @dataclass
 class CompilationScope:
     instructions: list
-    last_instruction: Optional[EmittedInstruction] = EmittedInstruction()
-    previous_instruction: Optional[EmittedInstruction] = EmittedInstruction()
+    last_instruction: Optional[EmittedInstruction] = field(
+        default_factory=EmittedInstruction
+    )
+    previous_instruction: Optional[EmittedInstruction] = field(
+        default_factory=EmittedInstruction
+    )

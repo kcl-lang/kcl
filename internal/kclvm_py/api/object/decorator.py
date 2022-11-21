@@ -1,7 +1,7 @@
 # Copyright 2021 The KCL Authors. All rights reserved.
 
 from typing import List, Any
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from kclvm.api.object.internal import decorator_factory, Decorator, DecoratorTargetType
 
@@ -21,9 +21,9 @@ from .function import (
 class KCLDecoratorObject(KCLFunctionObject):
     target: DecoratorTargetType
     name: str
-    key: str = ""
-    value: Any = None
-    decorator: Decorator = None
+    key: str = field(default_factory=lambda: "")
+    value: Any = field(default_factory=lambda: None)
+    decorator: Decorator = field(default_factory=lambda: None)
 
     def resolve(self, args: List[KCLObject], kwargs: List[KWArg]):
         """Build a internal decorator object"""

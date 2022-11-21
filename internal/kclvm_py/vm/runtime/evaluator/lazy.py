@@ -180,10 +180,10 @@ class SchemaEvalContext:
     args: List[obj.KCLObject]
     kwargs: List[obj.KWArg]
     vm: VirtualMachine
-    cache: ValueCache = ValueCache()
+    cache: ValueCache = field(default_factory=ValueCache)
 
-    place_holder_map: Dict[str, ValuePlaceHolder] = None
-    backtracking: Backtracking = Backtracking()
+    place_holder_map: Dict[str, ValuePlaceHolder] = field(default_factory=lambda: None)
+    backtracking: Backtracking = field(default_factory=Backtracking)
 
     def eval_reset(self):
         """Eval status reset to prevent reference interference"""

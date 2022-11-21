@@ -1181,7 +1181,7 @@ STR_TYPE_MEMBER_SCOPE: Scope = Scope(
 @dataclass
 class ProgramScope:
     scope_map: Dict[str, Scope]
-    builtin_scope: Scope = BUILTIN_SCOPE
+    builtin_scope: Scope = field(default_factory=lambda: BUILTIN_SCOPE)
     plugin_scope_map: Scope = field(default_factory=lambda: PLUGIN_SCOPE_MAPPING)
     system_module_scope_map: Dict[str, Scope] = field(
         default_factory=lambda: MODULE_SCOPE_MAPPING
@@ -1192,7 +1192,7 @@ class ProgramScope:
             objpkg.KCLTypeKind.SchemaKind: STR_TYPE_MEMBER_SCOPE,
         }
     )
-    schema_reference: objpkg.SchemaTypeRefGraph = None
+    schema_reference: objpkg.SchemaTypeRefGraph = field(default_factory=lambda: None)
 
     @property
     def main_scope(self) -> Scope:
