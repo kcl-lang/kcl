@@ -185,10 +185,7 @@ pub fn validate(val_opt: ValidateOption) -> Result<bool, String> {
     let schemas = filter_schema_stmt(&module);
     let schema_name = match val_opt.schema_name {
         Some(name) => Some(name),
-        None => match schemas.get(0) {
-            Some(schema) => Some(schema.name.node.clone()),
-            None => None,
-        },
+        None => schemas.get(0).map(|schema| schema.name.node.clone()),
     };
 
     let expr_builder = match ExprBuilder::new_with_file_path(

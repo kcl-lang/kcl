@@ -3,7 +3,7 @@ use pretty_assertions::assert_eq;
 
 const FILE_INPUT_SUFFIX: &str = ".input";
 const FILE_OUTPUT_SUFFIX: &str = ".golden";
-const TEST_CASES: &[&'static str; 18] = &[
+const TEST_CASES: &[&str; 18] = &[
     "assert",
     "check",
     "blankline",

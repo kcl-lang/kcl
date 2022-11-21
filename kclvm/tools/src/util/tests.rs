@@ -4,11 +4,11 @@ use anyhow::{Context, Result};
 
 const CARGO_DIR: &str = env!("CARGO_MANIFEST_DIR");
 const REL_PATH: &str = "src/util/test_datas";
-const FILE_TEST_CASES: &'static [&'static str] = &["test"];
+const FILE_TEST_CASES: &[&str] = &["test"];
 
-const FILE_EXTENSIONS: &'static [&'static str] = &[".json", ".yaml"];
+const FILE_EXTENSIONS: &[&str] = &[".json", ".yaml"];
 
-const JSON_STR_TEST_CASES: &'static [&'static str] = &[r#"{
+const JSON_STR_TEST_CASES: &[&str] = &[r#"{
     "name": "John Doe",
     "age": 43,
     "address": {
@@ -22,7 +22,7 @@ const JSON_STR_TEST_CASES: &'static [&'static str] = &[r#"{
 }
 "#];
 
-const YAML_STR_TEST_CASES: &'static [&'static str] = &[r#"languages:
+const YAML_STR_TEST_CASES: &[&str] = &[r#"languages:
   - Ruby
   - Perl
   - Python 
@@ -55,13 +55,12 @@ mod test_loader {
 
         fn data_loader_from_file(loader_kind: LoaderKind, file_path: &str) -> DataLoader {
             let test_case_path = construct_full_path(file_path).unwrap();
-            let data_loader = DataLoader::new_with_file_path(loader_kind, &test_case_path).unwrap();
-            data_loader
+
+            DataLoader::new_with_file_path(loader_kind, &test_case_path).unwrap()
         }
 
         fn data_loader_from_str(loader_kind: LoaderKind, s: &str) -> DataLoader {
-            let data_loader = DataLoader::new_with_str(loader_kind, &s).unwrap();
-            data_loader
+            DataLoader::new_with_str(loader_kind, s).unwrap()
         }
 
         #[test]
@@ -93,7 +92,7 @@ mod test_loader {
         #[test]
         fn test_new_with_str_json() {
             for test_case in JSON_STR_TEST_CASES {
-                let json_loader = data_loader_from_str(LoaderKind::JSON, &test_case);
+                let json_loader = data_loader_from_str(LoaderKind::JSON, test_case);
                 assert_eq!(json_loader.get_data(), *test_case);
             }
         }
@@ -124,7 +123,7 @@ websites:
         #[test]
         fn test_new_with_str_yaml() {
             for test_case in YAML_STR_TEST_CASES {
-                let yaml_loader = data_loader_from_str(LoaderKind::JSON, &test_case);
+                let yaml_loader = data_loader_from_str(LoaderKind::JSON, test_case);
                 assert_eq!(yaml_loader.get_data(), *test_case);
             }
         }

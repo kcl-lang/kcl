@@ -42,17 +42,17 @@ impl ExprBuilder {
         match self.loader.get_kind() {
             LoaderKind::JSON => {
                 let value = <DataLoader as Loader<serde_json::Value>>::load(&self.loader)
-                    .with_context(|| format!("Failed to Load JSON"))?;
+                    .with_context(|| "Failed to Load JSON".to_string())?;
                 Ok(self
                     .generate(&value, &schema_name)
-                    .with_context(|| format!("Failed to Load JSON"))?)
+                    .with_context(|| "Failed to Load JSON".to_string())?)
             }
             LoaderKind::YAML => {
                 let value = <DataLoader as Loader<serde_yaml::Value>>::load(&self.loader)
-                    .with_context(|| format!("Failed to Load YAML"))?;
+                    .with_context(|| "Failed to Load YAML".to_string())?;
                 Ok(self
                     .generate(&value, &schema_name)
-                    .with_context(|| format!("Failed to Load YAML"))?)
+                    .with_context(|| "Failed to Load YAML".to_string())?)
             }
         }
     }
@@ -123,7 +123,7 @@ impl ExprGenerator<serde_yaml::Value> for ExprBuilder {
                 for j_arr_item in j_arr {
                     j_arr_ast_nodes.push(
                         self.generate(j_arr_item, schema_name)
-                            .with_context(|| format!("Failed to Load Validated File"))?,
+                            .with_context(|| "Failed to Load Validated File".to_string())?,
                     );
                 }
                 Ok(node_ref!(Expr::List(ListExpr {
@@ -138,10 +138,10 @@ impl ExprGenerator<serde_yaml::Value> for ExprBuilder {
                     // The configuration builder already in the schema no longer needs a schema name
                     let k = self
                         .generate(k, &None)
-                        .with_context(|| format!("Failed to Load Validated File"))?;
+                        .with_context(|| "Failed to Load Validated File".to_string())?;
                     let v = self
                         .generate(v, &None)
-                        .with_context(|| format!("Failed to Load Validated File"))?;
+                        .with_context(|| "Failed to Load Validated File".to_string())?;
 
                     let config_entry = node_ref!(ConfigEntry {
                         key: Some(k),
@@ -246,7 +246,7 @@ impl ExprGenerator<serde_json::Value> for ExprBuilder {
                 for j_arr_item in j_arr {
                     j_arr_ast_nodes.push(
                         self.generate(j_arr_item, schema_name)
-                            .with_context(|| format!("Failed to Load Validated File"))?,
+                            .with_context(|| "Failed to Load Validated File".to_string())?,
                     );
                 }
                 Ok(node_ref!(Expr::List(ListExpr {
@@ -266,7 +266,7 @@ impl ExprGenerator<serde_json::Value> for ExprBuilder {
                     };
                     let v = self
                         .generate(v, &None)
-                        .with_context(|| format!("Failed to Load Validated File"))?;
+                        .with_context(|| "Failed to Load Validated File".to_string())?;
 
                     let config_entry = node_ref!(ConfigEntry {
                         key: Some(node_ref!(Expr::StringLit(k))),

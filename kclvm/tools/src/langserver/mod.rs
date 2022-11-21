@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::util;
 use anyhow::Result;
 use kclvm_error::Position;
@@ -29,12 +31,10 @@ pub fn word_at_pos(pos: Position) -> Option<String> {
     if pos.line >= lines.len() as u64 {
         return None;
     }
-    if pos.column.is_none() {
-        return None;
-    }
+    pos.column?;
     let col = pos.column.unwrap();
     let line_words = line_to_words(lines[pos.line as usize].to_string());
-    if line_words.len() == 0
+    if line_words.is_empty()
         || col < line_words.first().unwrap().startpos
         || col >= line_words.last().unwrap().endpos
     {
@@ -45,7 +45,7 @@ pub fn word_at_pos(pos: Position) -> Option<String> {
             return Some(line_word.word);
         }
     }
-    return None;
+    None
 }
 
 pub fn read_file(path: &String) -> Result<String> {
@@ -81,7 +81,7 @@ pub fn line_to_words(text: String) -> Vec<LineWord> {
                     words.push(LineWord {
                         startpos: start_pos as u64,
                         endpos: i as u64,
-                        word: chars[start_pos..i].into_iter().collect::<String>().clone(),
+                        word: chars[start_pos..i].iter().collect::<String>().clone(),
                     });
                 }
                 // Reset the start position.
@@ -124,7 +124,7 @@ pub fn match_word(path: String, name: String) -> Vec<Position> {
         }
         Err(_) => {}
     }
-    return res;
+    res
 }
 
 // Convert pos format
