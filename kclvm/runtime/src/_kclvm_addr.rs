@@ -187,6 +187,7 @@ pub fn _kclvm_get_fn_ptr_by_name(name: &str) -> u64 {
         "kclvm_list_resize" => crate::kclvm_list_resize as *const () as u64,
         "kclvm_list_set" => crate::kclvm_list_set as *const () as u64,
         "kclvm_malloc" => crate::kclvm_malloc as *const () as u64,
+        "kclvm_manifests_yaml_stream" => crate::kclvm_manifests_yaml_stream as *const () as u64,
         "kclvm_math_ceil" => crate::kclvm_math_ceil as *const () as u64,
         "kclvm_math_exp" => crate::kclvm_math_exp as *const () as u64,
         "kclvm_math_expm1" => crate::kclvm_math_expm1 as *const () as u64,

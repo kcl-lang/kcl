@@ -392,6 +392,8 @@ void kclvm_list_set(kclvm_value_ref_t* p, kclvm_size_t i, kclvm_value_ref_t* v);
 
 uint8_t* kclvm_malloc(int32_t n);
 
+void kclvm_manifests_yaml_stream(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+
 kclvm_value_ref_t* kclvm_math_ceil(kclvm_context_t* _ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
 
 kclvm_value_ref_t* kclvm_math_exp(kclvm_context_t* _ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);

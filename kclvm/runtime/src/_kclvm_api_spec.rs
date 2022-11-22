@@ -974,6 +974,10 @@
 // api-spec(c):    kclvm_value_ref_t* kclvm_json_dump_to_file(kclvm_context_t* _ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_json_dump_to_file(%kclvm_context_t* %_ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
 
+// api-spec:       kclvm_manifests_yaml_stream
+// api-spec(c):    void kclvm_manifests_yaml_stream(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+// api-spec(llvm): declare void @kclvm_manifests_yaml_stream(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
+
 // api-spec:       kclvm_math_ceil
 // api-spec(c):    kclvm_value_ref_t* kclvm_math_ceil(kclvm_context_t* _ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_math_ceil(%kclvm_context_t* %_ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
