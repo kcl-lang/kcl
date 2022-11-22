@@ -182,6 +182,7 @@ pub enum ApiFunc {
     kclvm_list_resize,
     kclvm_list_set,
     kclvm_malloc,
+    kclvm_manifests_yaml_stream,
     kclvm_math_ceil,
     kclvm_math_exp,
     kclvm_math_expm1,
