@@ -578,14 +578,8 @@ impl<'ctx> Resolver<'ctx> {
                 ast::Stmt::SchemaAttr(schema_attr) => {
                     let name = schema_attr.name.node.clone();
                     let ty = self.parse_ty_with_scope(
-                        &schema_attr
-                            .ty
-                            .as_ref()
-                            .map_or(ast::Type::Any, |ty| ty.node.clone()),
-                        schema_attr
-                            .ty
-                            .as_ref()
-                            .map_or(pos.clone(), |ty| ty.get_pos()),
+                        &schema_attr.ty.node.clone(),
+                        schema_attr.ty.get_pos(),
                     );
                     let is_optional = schema_attr.is_optional;
                     let has_default = schema_attr.value.is_some();

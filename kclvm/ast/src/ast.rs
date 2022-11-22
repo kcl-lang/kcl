@@ -261,8 +261,7 @@ pub struct TypeAliasStmt {
     pub type_name: NodeRef<Identifier>,
     pub type_value: NodeRef<String>,
 
-    #[serde(skip_serializing)]
-    pub ty: Option<NodeRef<Type>>,
+    pub ty: NodeRef<Type>,
 }
 
 /// ExprStmt represents a expression statement, e.g.
@@ -295,7 +294,6 @@ pub struct AssignStmt {
     pub value: NodeRef<Expr>,
     pub type_annotation: Option<NodeRef<String>>,
 
-    #[serde(skip_serializing)]
     pub ty: Option<NodeRef<Type>>,
 }
 
@@ -457,8 +455,7 @@ pub struct SchemaIndexSignature {
     pub value: Option<NodeRef<Expr>>,
     pub any_other: bool,
 
-    #[serde(skip_serializing)]
-    pub value_ty: Option<NodeRef<Type>>,
+    pub value_ty: NodeRef<Type>,
 }
 
 /// SchemaAttr, e.g.
@@ -477,8 +474,7 @@ pub struct SchemaAttr {
     pub is_optional: bool,
     pub decorators: Vec<NodeRef<CallExpr>>,
 
-    #[serde(skip_serializing)]
-    pub ty: Option<NodeRef<Type>>,
+    pub ty: NodeRef<Type>,
 }
 
 /// RuleStmt, e.g.
@@ -836,7 +832,6 @@ pub struct LambdaExpr {
     pub return_type_str: Option<String>,
     pub body: Vec<NodeRef<Stmt>>,
 
-    #[serde(skip_serializing)]
     pub return_ty: Option<NodeRef<Type>>,
 }
 
@@ -879,7 +874,6 @@ pub struct Arguments {
     pub defaults: Vec<Option<NodeRef<Expr>>>,
     pub type_annotation_list: Vec<Option<NodeRef<String>>>,
 
-    #[serde(skip_serializing)]
     #[serde(default)]
     pub ty_list: Vec<Option<NodeRef<Type>>>,
 }

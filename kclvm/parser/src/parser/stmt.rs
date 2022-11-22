@@ -248,7 +248,7 @@ impl<'a> Parser<'_> {
                             doc: "".to_string(),
                             name: node_ref!(target.names.join("."), targets[0].pos()),
                             type_str: type_annotation.unwrap(),
-                            ty,
+                            ty: ty.unwrap(),
                             op: Some(BinOrAugOp::Aug(aug_op)),
                             value: Some(value),
                             is_optional: false,
@@ -296,7 +296,7 @@ impl<'a> Parser<'_> {
                             doc: "".to_string(),
                             name: node_ref!(target.names.join("."), targets[0].pos()),
                             type_str: type_annotation.unwrap(),
-                            ty,
+                            ty: ty.unwrap(),
                             op: None,
                             value: None,
                             is_optional: false,
@@ -429,7 +429,7 @@ impl<'a> Parser<'_> {
             Stmt::TypeAlias(TypeAliasStmt {
                 type_name: node_ref!(type_name, self.token_span_pos(type_name_pos, type_name_end)),
                 type_value: node_ref!(typ.node.to_string(), self.token_span_pos(typ_pos, typ_end)),
-                ty: Some(typ),
+                ty: typ,
             }),
             self.token_span_pos(type_name_pos, typ_end)
         ))
@@ -920,7 +920,7 @@ impl<'a> Parser<'_> {
                                             assign.targets[0].pos()
                                         ),
                                         type_str,
-                                        ty: assign.ty,
+                                        ty: assign.ty.unwrap(),
                                         op: Some(BinOrAugOp::Aug(AugOp::Assign)),
                                         value: Some(assign.value),
                                         is_optional: false,
@@ -1081,7 +1081,7 @@ impl<'a> Parser<'_> {
             doc,
             name,
             type_str,
-            ty: Some(typ),
+            ty: typ,
             op,
             value,
             is_optional,
@@ -1208,7 +1208,7 @@ impl<'a> Parser<'_> {
             key_name,
             key_type,
             value_type,
-            value_ty: Some(typ),
+            value_ty: typ,
             value,
             any_other,
         };
