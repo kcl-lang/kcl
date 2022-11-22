@@ -165,6 +165,32 @@ fn test_resolve_program_illegal_attr_fail() {
 }
 
 #[test]
+fn test_resolve_program_unmatched_args_fail() {
+    let mut program = parse_program("./src/resolver/test_fail_data/unmatched_args.k").unwrap();
+    let scope = resolve_program(&mut program);
+    assert_eq!(scope.diagnostics.len(), 2);
+    let expect_err_msg = "\"Foo\" takes 1 positional argument but 3 were given";
+    let diag = &scope.diagnostics[0];
+    assert_eq!(
+        diag.code,
+        Some(DiagnosticId::Error(ErrorKind::CompileError))
+    );
+    assert_eq!(diag.messages.len(), 1);
+    assert_eq!(diag.messages[0].pos.line, 6);
+    assert_eq!(diag.messages[0].message, expect_err_msg);
+
+    let expect_err_msg = "\"f\" takes 1 positional argument but 2 were given";
+    let diag = &scope.diagnostics[1];
+    assert_eq!(
+        diag.code,
+        Some(DiagnosticId::Error(ErrorKind::CompileError))
+    );
+    assert_eq!(diag.messages.len(), 1);
+    assert_eq!(diag.messages[0].pos.line, 7);
+    assert_eq!(diag.messages[0].message, expect_err_msg);
+}
+
+#[test]
 fn test_lint() {
     let mut program = load_program(&["./src/resolver/test_data/lint.k"], None).unwrap();
     pre_process_program(&mut program);
