@@ -7,7 +7,7 @@ import sys
 
 
 def _find_default_dylib_path() -> str:
-    _executable_root = os.path.dirname(os.path.dirname(sys.executable))
+    _executable_root = os.path.dirname(os.environ.get("KCLVM_CLI_BIN_PATH") or sys.executable)
 
     pathList = [
         f"{_executable_root}/lib/libkclvm.dylib",

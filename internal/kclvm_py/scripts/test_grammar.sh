@@ -17,4 +17,6 @@ export PATH=$PATH:$topdir/_build/dist/$os/kclvm/bin
 
 # Grammar test
 cd $kclvm_source_dir/test/grammar
-kclvm -m pytest -v -n 10
+python3 -m pip install --upgrade pip
+python3 -m pip install -r $topdir/internal/kclvm_py/scripts/requirements.txt
+python3 -m pytest -v -n 10
