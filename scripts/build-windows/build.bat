@@ -18,9 +18,7 @@ _output\kclvm-windows\kclvm.exe get-pip.py
 :: pip install -r ..\requirements.txt
 _output\kclvm-windows\kclvm.exe -m pip install ^
     -r .\requirements.release.txt ^
-    --target=_output\kclvm-windows\Lib\site-packages ^
-    -i http://mirrors.aliyun.com/pypi/simple/ ^
-    --trusted-host mirrors.aliyun.com
+    --target=_output\kclvm-windows\Lib\site-packages
 
 :: install kclvm
 go run gen-kclvm-py.go

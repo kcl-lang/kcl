@@ -1,7 +1,7 @@
 # Copyright 2021 The KCL Authors. All rights reserved.
 
 from io import StringIO
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import cast, List, Optional, Union
 
 import kclvm.kcl.ast as ast
@@ -15,11 +15,11 @@ VERTEX_ROOT_NAME = "@root"
 class Meta:
     """The filename, line and column info"""
 
-    filename: Optional[str] = None
-    line: Optional[int] = None
-    column: Optional[int] = None
-    end_line: Optional[int] = None
-    end_column: Optional[int] = None
+    filename: Optional[str] = field(default_factory=lambda: None)
+    line: Optional[int] = field(default_factory=lambda: None)
+    column: Optional[int] = field(default_factory=lambda: None)
+    end_line: Optional[int] = field(default_factory=lambda: None)
+    end_column: Optional[int] = field(default_factory=lambda: None)
 
     @staticmethod
     def from_ast_node(node: ast.AST) -> "Meta":
@@ -86,10 +86,10 @@ class Vertex:
 
     name: Union[int, float, str, ast.AST]
     adjs: Optional[List["Vertex"]]
-    node: ast.AST = None
-    meta: Optional[Meta] = Meta()
-    config_meta: Optional[ConfigMeta] = ConfigMeta()
-    option: Optional[VertexOption] = VertexOption()
+    node: ast.AST = field(default_factory=lambda: None)
+    meta: Optional[Meta] = field(default_factory=lambda: Meta)
+    config_meta: Optional[ConfigMeta] = field(default_factory=lambda: ConfigMeta)
+    option: Optional[VertexOption] = field(default_factory=lambda: VertexOption)
 
     # ---------------
     # Member method
