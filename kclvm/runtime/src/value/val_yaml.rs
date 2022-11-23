@@ -73,114 +73,22 @@ impl ValueRef {
     }
 
     pub fn to_yaml_string_with_options(&self, opt: &YamlEncodeOptions) -> String {
-        let x = self.yaml_clone_with_filter(opt);
-        x.to_yaml_string()
-    }
-
-    fn yaml_clone_with_filter(&self, opt: &YamlEncodeOptions) -> Self {
-        match &*self.rc.borrow() {
-            Value::undefined => ValueRef::undefined(),
-            Value::none => ValueRef::none(),
-
-            Value::bool_value(ref v) => ValueRef::bool(*v),
-            Value::int_value(ref v) => ValueRef::int(*v),
-            Value::float_value(ref v) => ValueRef::float(*v),
-            Value::str_value(ref v) => ValueRef::str(v.as_ref()),
-            Value::unit_value(ref v, ref raw, ref unit) => ValueRef::unit(*v, *raw, unit),
-            Value::list_value(ref v) => {
-                let mut list = ValueRef::list(None);
-                for x in v.values.iter() {
-                    match *x.rc.borrow() {
-                        Value::undefined => {
-                            continue;
-                        }
-                        Value::none => {
-                            if !opt.ignore_none {
-                                list.list_append(&x.yaml_clone_with_filter(opt));
-                            }
-                        }
-                        Value::func_value(_) => {
-                            // ignore func
-                        }
-                        _ => {
-                            list.list_append(&x.yaml_clone_with_filter(opt));
-                        }
-                    }
-                }
-                list
+        // convert Value to json in order to reuse
+        // "crate::val_json::JsonValue" to customize the serialized results
+        let json_opt = JsonEncodeOptions {
+            sort_keys: opt.sort_keys,
+            indent: 0,
+            ignore_private: opt.ignore_private,
+            ignore_none: opt.ignore_none,
+        };
+        let json = self.to_json_string_with_option(&json_opt);
+        let yaml_value: serde_yaml::Value = serde_json::from_str(json.as_ref()).unwrap();
+        match serde_yaml::to_string(&yaml_value) {
+            Ok(s) => {
+                let s = s.strip_prefix("---\n").unwrap_or_else(|| s.as_ref());
+                s.to_string()
             }
-            Value::dict_value(ref v) => {
-                let mut dict = ValueRef::dict(None);
-                for (key, val) in v.values.iter() {
-                    if opt.ignore_private && (*key).starts_with(KCL_PRIVATE_VAR_PREFIX) {
-                        continue;
-                    }
-                    match *val.rc.borrow() {
-                        Value::undefined => {
-                            continue;
-                        }
-                        Value::none => {
-                            if !opt.ignore_none {
-                                dict.dict_insert(
-                                    key,
-                                    &val.yaml_clone_with_filter(opt),
-                                    Default::default(),
-                                    0,
-                                );
-                            }
-                        }
-                        Value::func_value(_) => {
-                            // ignore func
-                        }
-                        _ => {
-                            dict.dict_insert(
-                                key,
-                                &val.yaml_clone_with_filter(opt),
-                                Default::default(),
-                                0,
-                            );
-                        }
-                    }
-                }
-                dict
-            }
-
-            Value::schema_value(ref v) => {
-                let mut dict = ValueRef::dict(None);
-                for (key, val) in v.config.values.iter() {
-                    if opt.ignore_private && (*key).starts_with(KCL_PRIVATE_VAR_PREFIX) {
-                        continue;
-                    }
-                    match *val.rc.borrow() {
-                        Value::undefined => {
-                            continue;
-                        }
-                        Value::none => {
-                            if !opt.ignore_none {
-                                dict.dict_insert(
-                                    key,
-                                    &val.yaml_clone_with_filter(opt),
-                                    Default::default(),
-                                    0,
-                                );
-                            }
-                        }
-                        Value::func_value(_) => {
-                            // ignore func
-                        }
-                        _ => {
-                            dict.dict_insert(
-                                key,
-                                &val.yaml_clone_with_filter(opt),
-                                Default::default(),
-                                0,
-                            );
-                        }
-                    }
-                }
-                dict
-            }
-            Value::func_value(_) => ValueRef::undefined(),
+            Err(err) => panic!("{}", err),
         }
     }
 }
@@ -229,6 +137,69 @@ mod test_value_yaml {
         ];
         for (value, expected) in cases {
             let result = ValueRef::to_yaml_string(&value);
+            assert_eq!(result, expected);
+        }
+    }
+
+    #[test]
+    fn test_value_to_yaml_string_with_opts() {
+        let cases = [
+            (
+                ValueRef::dict(Some(&[("b", &ValueRef::int(2)), ("a", &ValueRef::int(1))])),
+                "a: 1\nb: 2\n",
+                YamlEncodeOptions {
+                    sort_keys: true,
+                    ignore_private: false,
+                    ignore_none: false,
+                    sep: "---".to_string(),
+                },
+            ),
+            (
+                ValueRef::dict(Some(&[("b", &ValueRef::int(2)), ("a", &ValueRef::int(1))])),
+                "b: 2\na: 1\n",
+                YamlEncodeOptions {
+                    sort_keys: false,
+                    ignore_private: false,
+                    ignore_none: false,
+                    sep: "---".to_string(),
+                },
+            ),
+            (
+                ValueRef::dict(Some(&[("_b", &ValueRef::int(2)), ("a", &ValueRef::int(1))])),
+                "a: 1\n",
+                YamlEncodeOptions {
+                    sort_keys: false,
+                    ignore_private: true,
+                    ignore_none: false,
+                    sep: "---".to_string(),
+                },
+            ),
+            (
+                ValueRef::dict(Some(&[("b", &ValueRef::none()), ("a", &ValueRef::int(1))])),
+                "a: 1\n",
+                YamlEncodeOptions {
+                    sort_keys: false,
+                    ignore_private: true,
+                    ignore_none: true,
+                    sep: "---".to_string(),
+                },
+            ),
+            (
+                ValueRef::dict(Some(&[
+                    ("b", &ValueRef::list_int(&[1, 2, 3])),
+                    ("a", &ValueRef::str("s")),
+                ])),
+                "a: s\nb:\n  - 1\n  - 2\n  - 3\n",
+                YamlEncodeOptions {
+                    sort_keys: true,
+                    ignore_private: false,
+                    ignore_none: false,
+                    sep: "---".to_string(),
+                },
+            ),
+        ];
+        for (value, expected, opts) in cases {
+            let result = ValueRef::to_yaml_string_with_options(&value, &opts);
             assert_eq!(result, expected);
         }
     }
