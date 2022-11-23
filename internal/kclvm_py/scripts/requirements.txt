@@ -1,12 +1,10 @@
 PyYAML==5.4
-pytest-xdist==2.2.1
 lark-parser==0.11.3
 filelock==3.6.0
 yapf==0.29.0
 pypeg2==2.15.2
 protobuf==3.19.5
 schema
-coverage
 ruamel.yaml
 toml
 numpydoc

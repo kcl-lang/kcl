@@ -19,4 +19,5 @@ export PATH=$PATH:$topdir/_build/dist/$os/kclvm/bin
 cd $kclvm_source_dir/test/grammar
 python3 -m pip install --upgrade pip
 python3 -m pip install -r $topdir/internal/kclvm_py/scripts/requirements.txt
+python3 -m pip install pytest pytest-xdist
 python3 -m pytest -v -n 10
