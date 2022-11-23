@@ -23,8 +23,8 @@ jobs:
       - name: Grammar test
         run: |
           brew install coreutils
-          chmod +x ./internal/kclvm_py/scripts/test_grammar.sh
-          ./internal/kclvm_py/scripts/test_grammar.sh
+          chmod +x ./internal/scripts/test_grammar.sh
+          ./internal/scripts/test_grammar.sh
         shell: bash
       - name: Delete rust cargo
         run: rm -rf /root/.cargo/bin

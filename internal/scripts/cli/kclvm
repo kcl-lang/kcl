@@ -1,0 +1,9 @@
+#!/bin/sh
+
+# Stop on error.
+set -e
+
+kclvm_install_dir=$(cd `dirname $0`/..; pwd)
+export KCLVM_CLI_BIN_PATH=$kclvm_install_dir/bin
+export PYTHONPATH=$kclvm_install_dir/lib/site-packages
+python3 "$@"

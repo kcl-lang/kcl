@@ -53,14 +53,11 @@ done
 
 if [ "$action" == "" ]; then
     PS3='Please select the action: '
-    options=("build" "build-cpython" "build-kclvm" "update-kclvm" "test" "release")
+    options=("build" "build-kclvm" "update-kclvm" "test" "release")
     select action in "${options[@]}"
     do
         case $action in
             "build")
-                break
-                ;;
-            "build-cpython")
                 break
                 ;;
             "build-kclvm")
@@ -83,4 +80,4 @@ if [ "$action" == "" ]; then
     done
 fi
 
-os=$os topdir=$topdir sslpath=$sslpath $topdir/internal/kclvm_py/scripts/$action.sh
+os=$os topdir=$topdir sslpath=$sslpath $topdir/internal/scripts/$action.sh

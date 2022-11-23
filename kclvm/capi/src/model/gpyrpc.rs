@@ -8244,8 +8244,8 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     umentSymbol_Result\x121\n\x05Hover\x12\x12.gpyrpc.Hover_Args\x1a\x14.gpy\
     rpc.Hover_Result\x12F\n\x0cListDepFiles\x12\x19.gpyrpc.ListDepFiles_Args\
     \x1a\x1b.gpyrpc.ListDepFiles_Result\x12U\n\x11LoadSettingsFiles\x12\x1e.\
-    gpyrpc.LoadSettingsFiles_Args\x1a\x20.gpyrpc.LoadSettingsFiles_ResultB0Z\
-    .kusionstack.io/kclvm-go/pkg/spec/gpyrpc;gpyrpcb\x06proto3\
+    gpyrpc.LoadSettingsFiles_Args\x1a\x20.gpyrpc.LoadSettingsFiles_Resultb\
+    \x06proto3\
 ";
 
 /// `FileDescriptorProto` object which was a source for this generated file
