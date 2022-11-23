@@ -5,8 +5,8 @@ fn main() {
         .protoc()
         .protoc_path(&protoc_bin_vendored::protoc_bin_path().unwrap())
         .out_dir("src/model")
-        .include("../../internal/kclvm_py/spec/gpyrpc")
-        .inputs(&["../../internal/kclvm_py/spec/gpyrpc/gpyrpc.proto"])
+        .include("../../internal/spec/gpyrpc")
+        .inputs(&["../../internal/spec/gpyrpc/gpyrpc.proto"])
         .run()
         .expect("Running protoc failed.");
 }

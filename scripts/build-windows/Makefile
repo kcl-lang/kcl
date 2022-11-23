@@ -11,11 +11,8 @@ default:
 	# install pip
 	_output/kclvm-windows/python.exe get-pip.py
 
-	# pip install -r ./requirements.txt
-	_output/kclvm-windows/python.exe -m pip install -r ./requirements.release.txt  --target=_output/kclvm-windows/Lib/site-packages 
-
-	# install kclvm
-	go run ./copy-dir.go ../../internal/kclvm_py ./_output/kclvm-windows/Lib/site-packages/kclvm
+	# pip install kclvm
+	_output/kclvm-windows/python.exe -m pip install kclvm
 
 	# go run gen-kclvm-py.go
 

@@ -43,7 +43,7 @@ impl Command {
             CString::new("-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib").unwrap(),
             CString::new("-lSystem").unwrap(),
             // Link runtime libs.
-            CString::new("-lkclvm_native_shared").unwrap(),
+            CString::new("-lkclvm").unwrap(),
             // Output lib path.
             CString::new("-o").unwrap(),
             CString::new(lib_path).unwrap(),
@@ -62,7 +62,7 @@ impl Command {
             CString::new(format!("{}/lib", self.executable_root)).unwrap(),
             CString::new(format!("-L{}/lib", self.executable_root)).unwrap(),
             // Link runtime libs.
-            CString::new("-lkclvm_native_shared").unwrap(),
+            CString::new("-lkclvm").unwrap(),
             // Output lib path.
             CString::new("-o").unwrap(),
             CString::new(lib_path).unwrap(),

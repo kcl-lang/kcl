@@ -44,7 +44,7 @@ pub extern "C" fn kclvm_service_free_string(res: *mut c_char) {
 ///
 /// `args`: [*const c_char]
 ///     Arguments of the call serialized as protobuf byte sequence,
-///     refer to internal/kclvm_py/spec/gpyrpc/gpyrpc.proto for the specific definitions of arguments
+///     refer to internal/spec/gpyrpc/gpyrpc.proto for the specific definitions of arguments
 ///
 /// # Returns
 ///
