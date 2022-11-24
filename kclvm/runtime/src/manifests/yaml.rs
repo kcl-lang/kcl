@@ -14,7 +14,7 @@ pub(crate) fn encode_yaml_stream_to_manifests(
             .iter()
             .map(|v| v.to_yaml_string_with_options(&opts))
             .collect::<Vec<String>>()
-            .join(&format!("{}\n", opts.sep)),
+            .join(&format!("\n{}\n", opts.sep)),
     );
 }
 

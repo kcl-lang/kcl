@@ -266,7 +266,8 @@ impl KclvmRunner {
 }
 
 fn wrap_msg_in_result(msg: &str) -> Result<String, String> {
-    let kcl_val = match ValueRef::from_json(msg) {
+    // YAML is compatible with JSON. We can use YAML library for result parsing.
+    let kcl_val = match ValueRef::from_yaml_stream(msg) {
         Ok(msg) => msg,
         Err(err) => {
             return Err(err.to_string());

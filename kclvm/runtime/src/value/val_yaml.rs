@@ -43,11 +43,26 @@ impl Default for YamlEncodeOptions {
 }
 
 impl ValueRef {
-    pub fn from_yaml(s: &str) -> Option<Self> {
-        let json_value: serde_json::Value = serde_yaml::from_str(s).unwrap();
-        match serde_json::to_string(&json_value) {
-            Ok(s) => Some(Self::from_json(s.as_ref()).unwrap()),
-            _ => None,
+    /// Decode a yaml single document string to a ValueRef.
+    /// Returns [serde_yaml::Error] when decoding fails.
+    pub fn from_yaml(s: &str) -> Result<Self, serde_yaml::Error> {
+        // We use JsonValue to implement the KCL universal serialization object.
+        let json_value: JsonValue = serde_yaml::from_str(s)?;
+        Ok(Self::from_json(serde_json::to_string(&json_value).unwrap().as_ref()).unwrap())
+    }
+
+    /// Decode yaml stream string that contains `---` to a ValueRef.
+    /// Returns [serde_yaml::Error] when decoding fails.
+    pub fn from_yaml_stream(s: &str) -> Result<Self, serde_yaml::Error> {
+        let parts: Vec<&str> = s.split("---").collect();
+        if parts.len() <= 1 {
+            ValueRef::from_yaml(s)
+        } else {
+            let mut result = ValueRef::list_value(None);
+            for part in parts {
+                result.list_append(&ValueRef::from_yaml(part)?);
+            }
+            Ok(result)
         }
     }
 
@@ -112,10 +127,73 @@ mod test_value_yaml {
                     ("b", &ValueRef::str("s")),
                 ])),
             ),
+            // This case is to test that the `from_yaml` function does not change
+            // the order of dictionary keys.
+            (
+                "b: [1, 2, 3]\na: \"s\"\n",
+                ValueRef::dict(Some(&[
+                    ("b", &ValueRef::list_int(&[1, 2, 3])),
+                    ("a", &ValueRef::str("s")),
+                ])),
+            ),
         ];
         for (yaml_str, expected) in cases {
             let result = ValueRef::from_yaml(yaml_str);
-            assert_eq!(result, Some(expected));
+            assert_eq!(result.unwrap(), expected);
+        }
+    }
+
+    #[test]
+    fn test_value_from_yaml_fail() {
+        let cases = [
+            (
+                "a: 1\n  b: 2\nc: 3",
+                "mapping values are not allowed in this context at line 2 column 4",
+            ),
+            (
+                "a:\n- 1\n  -2\n-3",
+                "while parsing a block mapping, did not find expected key at line 4 column 1",
+            ),
+        ];
+        for (yaml_str, expected) in cases {
+            let result = ValueRef::from_yaml(yaml_str);
+            assert_eq!(result.err().unwrap().to_string(), expected);
+        }
+    }
+
+    #[test]
+    fn test_value_from_yaml_stream() {
+        let cases = [
+            ("a: 1\n", ValueRef::dict(Some(&[("a", &ValueRef::int(1))]))),
+            (
+                "a: 1\nb: 2\n---\nb: 1\na: 2\n",
+                ValueRef::list_value(Some(&[
+                    ValueRef::dict(Some(&[("a", &ValueRef::int(1)), ("b", &ValueRef::int(2))])),
+                    ValueRef::dict(Some(&[("b", &ValueRef::int(1)), ("a", &ValueRef::int(2))])),
+                ])),
+            ),
+        ];
+        for (yaml_str, expected) in cases {
+            let result = ValueRef::from_yaml_stream(yaml_str);
+            assert_eq!(result.unwrap(), expected);
+        }
+    }
+
+    #[test]
+    fn test_value_from_yaml_stream_fail() {
+        let cases = [
+            (
+                "a: 1\n---\na: 1\n  b: 2\nc: 3",
+                "mapping values are not allowed in this context at line 3 column 4",
+            ),
+            (
+                "b:3\n---\na:\n- 1\n  -2\n-3",
+                "while parsing a block mapping, did not find expected key at line 5 column 1",
+            ),
+        ];
+        for (yaml_str, expected) in cases {
+            let result = ValueRef::from_yaml_stream(yaml_str);
+            assert_eq!(result.err().unwrap().to_string(), expected);
         }
     }
 
