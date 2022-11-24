@@ -7,6 +7,7 @@ use kclvm_ast::{
     ast::{Module, Program},
     MAIN_PKG,
 };
+use kclvm_error::Diagnostic;
 use kclvm_parser::load_program;
 use kclvm_query::apply_overrides;
 use kclvm_sema::resolver::resolve_program;
@@ -64,7 +65,7 @@ pub mod tests;
 pub fn exec_program(
     args: &ExecProgramArgs,
     plugin_agent: u64,
-) -> Result<ExecProgramResult, String> {
+) -> Result<ExecProgramResult, Diagnostic> {
     // parse args from json string
     let opts = args.get_load_program_options();
     let k_files = &args.k_filename_list;
@@ -84,14 +85,14 @@ pub fn exec_program(
     let mut program = load_program(kcl_paths_str.as_slice(), Some(opts))?;
 
     if let Err(err) = apply_overrides(&mut program, &args.overrides, &[], args.print_override_ast) {
-        return Err(err.to_string());
+        return Err(err.to_string().into());
     }
 
     let start_time = SystemTime::now();
     let exec_result = execute(program, plugin_agent, args);
     let escape_time = match SystemTime::now().duration_since(start_time) {
         Ok(dur) => dur.as_secs_f32(),
-        Err(err) => return Err(err.to_string()),
+        Err(err) => return Err(err.to_string().into()),
     };
     let mut result = ExecProgramResult::default();
     result.escaped_time = escape_time.to_string();
@@ -102,13 +103,13 @@ pub fn exec_program(
             if res.is_empty() {
                 return Ok(result);
             } else {
-                return Err(res);
+                return Err(res.into());
             }
         }
     };
     let kcl_val = match ValueRef::from_yaml_stream(&exec_result) {
         Ok(v) => v,
-        Err(err) => return Err(err.to_string()),
+        Err(err) => return Err(Diagnostic::from(err.to_string())),
     };
     let (json_result, yaml_result) = kcl_val.plan();
     result.json_result = json_result;

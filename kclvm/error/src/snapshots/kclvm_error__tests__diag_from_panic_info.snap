@@ -1,0 +1,5 @@
+---
+source: error/src/tests.rs
+expression: "format!(\"{:?}\", Diagnostic :: from(panic_info))"
+---
+"Diagnostic { level: Error, messages: [Message { pos: Position { filename: \"filename\", line: 1, column: Some(2) }, style: LineAndColumn, message: \"Invalid syntax\", note: None }], code: Some(Error(CompileError)) }"

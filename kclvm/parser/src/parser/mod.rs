@@ -117,19 +117,12 @@ impl<'a> Parser<'a> {
 
     pub(crate) fn bump_token(&mut self, kind: TokenKind) {
         if self.token.kind != kind {
-            if let TokenKind::Ident(ident) = self.token.kind {
-                self.sess.struct_span_error(
-                    &format!(
-                        "bump token failed: expect={:?}, got={:?} # ident={}",
-                        kind, self.token, ident
-                    ),
-                    self.token.span,
-                );
+            if let TokenKind::Ident(_) = self.token.kind {
+                self.sess
+                    .struct_token_error(&[kind.into()], self.token.into());
             } else {
-                self.sess.struct_span_error(
-                    &format!("bump token failed: expect={:?}, {:?}", kind, self.token),
-                    self.token.span,
-                );
+                self.sess
+                    .struct_token_error(&[kind.into()], self.token.into());
             }
         }
         self.bump();

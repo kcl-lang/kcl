@@ -1,5 +1,6 @@
 extern crate serde;
 
+use kclvm::PanicInfo;
 pub use kclvm_capi::service::api::*;
 use kclvm_runner::exec_program;
 use kclvm_runner::runner::*;
@@ -52,5 +53,11 @@ pub extern "C" fn kclvm_cli_run(args: *const i8, plugin_agent: *const i8) -> *co
 pub fn kclvm_cli_run_unsafe(args: *const i8, plugin_agent: *const i8) -> Result<String, String> {
     let args = ExecProgramArgs::from_str(kclvm::c2str(args));
     let plugin_agent = plugin_agent as u64;
-    exec_program(&args, plugin_agent).map(|r| r.json_result)
+    match exec_program(&args, plugin_agent).map(|r| r.json_result) {
+        Ok(exec_res) => Ok(exec_res),
+        Err(diag) => {
+            let panic_info: PanicInfo = diag.into();
+            Err(panic_info.to_json_string())
+        }
+    }
 }

@@ -1,22 +1,23 @@
 use kclvm_ast::ast::*;
 use kclvm_ast::{token::LitKind, token::TokenKind};
+use kclvm_error::Diagnostic;
 
 use super::Parser;
 
 impl<'a> Parser<'_> {
     /// Syntax:
     /// start: (NEWLINE | statement)*
-    pub fn parse_module(&mut self) -> Module {
+    pub fn parse_module(&mut self) -> Result<Module, Diagnostic> {
         let doc = self.parse_doc();
-        let body = self.parse_body();
-        Module {
+        let body = self.parse_body()?;
+        Ok(Module {
             filename: "".to_string(),
             pkg: "".to_string(),
             name: "".to_string(),
             doc,
             comments: self.comments.clone(),
             body,
-        }
+        })
     }
 
     fn parse_doc(&mut self) -> String {
@@ -32,13 +33,13 @@ impl<'a> Parser<'_> {
         "".to_string()
     }
 
-    fn parse_body(&mut self) -> Vec<NodeRef<Stmt>> {
+    fn parse_body(&mut self) -> Result<Vec<NodeRef<Stmt>>, Diagnostic> {
         let mut stmts = Vec::new();
 
-        while let Some(stmt) = self.parse_stmt() {
+        while let Some(stmt) = self.parse_stmt()? {
             stmts.push(stmt)
         }
 
-        stmts
+        Ok(stmts)
     }
 }

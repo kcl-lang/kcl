@@ -6,6 +6,7 @@ use kclvm_ast::ast::{Expr, Node, NodeRef, Type};
 use kclvm_ast::token;
 use kclvm_ast::token::{BinOpToken, DelimToken, TokenKind};
 use kclvm_ast::{ast, expr_as};
+use kclvm_error::Diagnostic;
 use kclvm_span::symbol::{kw, sym};
 
 impl<'a> Parser<'_> {
@@ -19,13 +20,13 @@ impl<'a> Parser<'_> {
     /// list_type: LEFT_BRACKETS (type)? RIGHT_BRACKETS
     /// dict_type: LEFT_BRACE (type)? COLON (type)? RIGHT_BRACE
     /// literal_type: string | number | TRUE | FALSE | NONE
-    pub(crate) fn parse_type_annotation(&mut self) -> NodeRef<Type> {
+    pub(crate) fn parse_type_annotation(&mut self) -> Result<NodeRef<Type>, Diagnostic> {
         let token = self.token;
-        let mut type_node_list = vec![self.parse_type_element()];
+        let mut type_node_list = vec![self.parse_type_element()?];
 
         while let TokenKind::BinOp(BinOpToken::Or) = self.token.kind {
             self.bump();
-            let t = self.parse_type_element();
+            let t = self.parse_type_element()?;
             type_node_list.push(t);
         }
 
@@ -37,87 +38,87 @@ impl<'a> Parser<'_> {
                 union_type.type_elements.push(v.clone());
             }
 
-            Box::new(Node::node(
+            Ok(Box::new(Node::node(
                 Type::Union(union_type.clone()),
                 self.sess.struct_token_loc(token, self.prev_token),
-            ))
+            )))
         } else {
-            type_node_list[0].clone()
+            Ok(type_node_list[0].clone())
         }
     }
 
-    fn parse_type_element(&mut self) -> NodeRef<Type> {
+    fn parse_type_element(&mut self) -> Result<NodeRef<Type>, Diagnostic> {
         let token = self.token;
 
         // any
         if self.token.is_keyword(kw::Any) {
             let t = Type::Any;
             self.bump_keyword(kw::Any);
-            return Box::new(Node::node(
+            return Ok(Box::new(Node::node(
                 t,
                 self.sess.struct_token_loc(token, self.prev_token),
-            ));
+            )));
         }
 
         // lit: true/false
         if self.token.is_keyword(kw::True) {
             self.bump_keyword(kw::True);
-            return Box::new(Node::node(
+            return Ok(Box::new(Node::node(
                 Type::Literal(ast::LiteralType::Bool(true)),
                 self.sess.struct_token_loc(token, self.prev_token),
-            ));
+            )));
         }
         if self.token.is_keyword(kw::False) {
             self.bump_keyword(kw::False);
-            return Box::new(Node::node(
+            return Ok(Box::new(Node::node(
                 Type::Literal(ast::LiteralType::Bool(false)),
                 self.sess.struct_token_loc(token, self.prev_token),
-            ));
+            )));
         }
 
         // basic type
         if self.token.is_keyword(sym::bool) {
             let t = Type::Basic(ast::BasicType::Bool);
             self.bump_keyword(sym::bool);
-            return Box::new(Node::node(
+            return Ok(Box::new(Node::node(
                 t,
                 self.sess.struct_token_loc(token, self.prev_token),
-            ));
+            )));
         }
         if self.token.is_keyword(sym::int) {
             let t = Type::Basic(ast::BasicType::Int);
             self.bump_keyword(sym::int);
-            return Box::new(Node::node(
+            return Ok(Box::new(Node::node(
                 t,
                 self.sess.struct_token_loc(token, self.prev_token),
-            ));
+            )));
         }
         if self.token.is_keyword(sym::float) {
             let t = Type::Basic(ast::BasicType::Float);
             self.bump_keyword(sym::float);
-            return Box::new(Node::node(
+            return Ok(Box::new(Node::node(
                 t,
                 self.sess.struct_token_loc(token, self.prev_token),
-            ));
+            )));
         }
         if self.token.is_keyword(sym::str) {
             let t = Type::Basic(ast::BasicType::Str);
             self.bump_keyword(sym::str);
-            return Box::new(Node::node(
+            return Ok(Box::new(Node::node(
                 t,
                 self.sess.struct_token_loc(token, self.prev_token),
-            ));
+            )));
         }
 
         // named type
         if let TokenKind::Ident(_) = self.token.kind {
-            let ident = self.parse_identifier_expr();
+            let ident = self.parse_identifier_expr()?;
             let ident = expr_as!(ident, Expr::Identifier).unwrap();
             let t = Type::Named(ident);
-            return Box::new(Node::node(
+            return Ok(Box::new(Node::node(
                 t,
                 self.sess.struct_token_loc(token, self.prev_token),
-            ));
+            )));
         }
 
         // lit type
@@ -129,7 +130,11 @@ impl<'a> Parser<'_> {
                     } else if lit.symbol == kw::False {
                         ast::LiteralType::Bool(false)
                     } else {
-                        panic!("invalid lit type: {:?}", self.token);
+                        // FIXME(issue #117)
+                        return Err(self.sess.struct_span_error(
+                            &format!("invalid lit type: {:?}", self.token),
+                            self.token.span,
+                        ));
                     }
                 }
                 token::LitKind::Integer => {
@@ -154,7 +159,11 @@ impl<'a> Parser<'_> {
                     } else if self.token.is_keyword(kw::False) {
                         ast::LiteralType::Bool(false)
                     } else {
-                        panic!("invalid lit type: {:?}", self.token);
+                        // FIXME(issue #117)
+                        return Err(self.sess.struct_span_error(
+                            &format!("invalid lit type: {:?}", self.token),
+                            self.token.span,
+                        ));
                     }
                 }
             };
@@ -163,10 +172,10 @@ impl<'a> Parser<'_> {
 
             self.bump();
 
-            return Box::new(Node::node(
+            return Ok(Box::new(Node::node(
                 t,
                 self.sess.struct_token_loc(token, self.prev_token),
-            ));
+            )));
         }
 
         // [type]
@@ -177,22 +186,22 @@ impl<'a> Parser<'_> {
                 self.bump();
                 let t = Type::List(ast::ListType { inner_type: None });
 
-                return Box::new(Node::node(
+                return Ok(Box::new(Node::node(
                     t,
                     self.sess.struct_token_loc(token, self.prev_token),
-                ));
+                )));
             } else {
-                let elem_type = self.parse_type_annotation();
+                let elem_type = self.parse_type_annotation()?;
                 let t = Type::List(ast::ListType {
                     inner_type: Some(elem_type),
                 });
 
                 self.bump_token(TokenKind::CloseDelim(DelimToken::Bracket));
 
-                return Box::new(Node::node(
+                return Ok(Box::new(Node::node(
                     t,
                     self.sess.struct_token_loc(token, self.prev_token),
-                ));
+                )));
             }
         }
 
@@ -203,7 +212,7 @@ impl<'a> Parser<'_> {
             let key_type = if let TokenKind::Colon = self.token.kind {
                 None
             } else {
-                Some(self.parse_type_annotation())
+                Some(self.parse_type_annotation()?)
             };
 
             self.bump_token(TokenKind::Colon);
@@ -211,7 +220,7 @@ impl<'a> Parser<'_> {
             let value_type = if let TokenKind::CloseDelim(DelimToken::Brace) = self.token.kind {
                 None
             } else {
-                Some(self.parse_type_annotation())
+                Some(self.parse_type_annotation()?)
             };
 
             let t = Type::Dict(ast::DictType {
@@ -221,12 +230,15 @@ impl<'a> Parser<'_> {
 
             self.bump_token(TokenKind::CloseDelim(DelimToken::Brace));
 
-            return Box::new(Node::node(
+            return Ok(Box::new(Node::node(
                 t,
                 self.sess.struct_token_loc(token, self.prev_token),
-            ));
+            )));
         }
 
-        panic!("invalid type token: {:?}", self.token);
+        return Err(self.sess.struct_span_error(
+            &format!("invalid type token: {}", self.token),
+            self.token.span,
+        ));
     }
 }

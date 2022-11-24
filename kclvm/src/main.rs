@@ -4,7 +4,6 @@
 extern crate clap;
 
 use clap::ArgMatches;
-use kclvm::PanicInfo;
 use kclvm_config::settings::{load_file, merge_settings, SettingsFile};
 use kclvm_error::Handler;
 use kclvm_runner::{exec_program, ExecProgramArgs};
@@ -47,11 +46,10 @@ fn main() {
                     Ok(result) => {
                         println!("{}", result.yaml_result);
                     }
-                    Err(msg) => {
+                    Err(diag) => {
                         let mut handler = Handler::default();
-                        handler
-                            .add_panic_info(&PanicInfo::from_json_string(&msg))
-                            .abort_if_any_errors();
+                        handler.set_hide_panic_info(true);
+                        handler.add_panic_info(&diag.into()).abort_if_errors();
                     }
                 }
             }

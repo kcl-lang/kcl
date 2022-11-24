@@ -10,9 +10,9 @@ mod tests;
 extern crate kclvm_error;
 
 use crate::session::ParseSession;
-use kclvm::{ErrType, PanicInfo};
 use kclvm_ast::ast;
 use kclvm_error::bug;
+use kclvm_error::Diagnostic;
 use kclvm_span::{self, FilePathMapping, SourceMap};
 
 use lexer::parse_token_streams;
@@ -43,7 +43,7 @@ pub fn parse_program_from_json_file(path: &str) -> Result<ast::Program, Box<dyn 
     Ok(u)
 }
 
-pub fn parse_program(filename: &str) -> Result<ast::Program, String> {
+pub fn parse_program(filename: &str) -> Result<ast::Program, Diagnostic> {
     let abspath = std::fs::canonicalize(&std::path::PathBuf::from(filename)).unwrap();
 
     let mut prog = ast::Program {
@@ -66,7 +66,7 @@ pub fn parse_program(filename: &str) -> Result<ast::Program, String> {
     Ok(prog)
 }
 
-pub fn parse_file(filename: &str, code: Option<String>) -> Result<ast::Module, String> {
+pub fn parse_file(filename: &str, code: Option<String>) -> Result<ast::Module, Diagnostic> {
     create_session_globals_then(move || {
         let src = if let Some(s) = code {
             s
@@ -74,9 +74,10 @@ pub fn parse_file(filename: &str, code: Option<String>) -> Result<ast::Module, S
             match std::fs::read_to_string(filename) {
                 Ok(src) => src,
                 Err(_err) => {
-                    let err_msg =
-                        format!("Failed to load KCL file '{}'. Because '{}'", filename, _err);
-                    return Err(err_msg);
+                    return Err(Diagnostic::from(format!(
+                        "Failed to load KCL file '{}'. Because '{}'",
+                        filename, _err
+                    )));
                 }
             }
         };
@@ -88,14 +89,13 @@ pub fn parse_file(filename: &str, code: Option<String>) -> Result<ast::Module, S
         let src_from_sf = match sf.src.as_ref() {
             Some(src) => src,
             None => {
-                let err_msg = format!("Internal Bug: Failed to load KCL file '{}'.", filename);
-                return Err(err_msg);
+                bug!("Internal Bug: Failed to load KCL file '{}'.", filename);
             }
         };
 
-        let stream = lexer::parse_token_streams(sess, src_from_sf.as_str(), sf.start_pos);
+        let stream = lexer::parse_token_streams(sess, src_from_sf.as_str(), sf.start_pos)?;
         let mut p = parser::Parser::new(sess, stream);
-        let mut m = p.parse_module();
+        let mut m = p.parse_module()?;
 
         m.filename = filename.to_string();
         m.pkg = kclvm_ast::MAIN_PKG.to_string();
@@ -117,9 +117,9 @@ pub fn parse_file(filename: &str, code: Option<String>) -> Result<ast::Module, S
 /// let expr = parse_expr("");
 /// assert!(matches!(expr, None));
 /// ```
-pub fn parse_expr(src: &str) -> Option<ast::NodeRef<ast::Expr>> {
+pub fn parse_expr(src: &str) -> Result<Option<ast::NodeRef<ast::Expr>>, Diagnostic> {
     if src.is_empty() {
-        None
+        Ok(None)
     } else {
         let sm = SourceMap::new(FilePathMapping::empty());
         let sf = sm.new_source_file(PathBuf::from("").into(), src.to_string());
@@ -133,11 +133,11 @@ pub fn parse_expr(src: &str) -> Option<ast::NodeRef<ast::Expr>> {
         let sess = &ParseSession::with_source_map(Arc::new(sm));
 
         let expr: Option<ast::NodeRef<ast::Expr>> = Some(create_session_globals_then(|| {
-            let stream = parse_token_streams(sess, src_from_sf.as_str(), BytePos::from_u32(0));
+            let stream = parse_token_streams(sess, src_from_sf.as_str(), BytePos::from_u32(0))?;
             let mut parser = Parser::new(sess, stream);
             parser.parse_expr()
-        }));
-        expr
+        })?);
+        Ok(expr)
     }
 }
 
@@ -156,7 +156,7 @@ pub struct LoadProgramOptions {
 pub fn load_program(
     paths: &[&str],
     opts: Option<LoadProgramOptions>,
-) -> Result<ast::Program, String> {
+) -> Result<ast::Program, Diagnostic> {
     // todo: support cache
     if let Some(opts) = opts {
         Loader::new(paths, Some(opts)).load_main()
@@ -191,17 +191,19 @@ impl Loader {
         }
     }
 
-    fn load_main(&mut self) -> Result<ast::Program, String> {
-        match self._load_main() {
-            Ok(x) => Ok(x),
-            Err(s) => Err(self.str_to_panic_info(&s).to_json_string()),
-        }
+    fn load_main(&mut self) -> Result<ast::Program, Diagnostic> {
+        self._load_main()
     }
 
-    fn _load_main(&mut self) -> Result<ast::Program, String> {
+    fn _load_main(&mut self) -> Result<ast::Program, Diagnostic> {
         debug_assert!(!self.paths.is_empty());
 
-        self.pkgroot = kclvm_config::modfile::get_pkg_root_from_paths(&self.paths)?;
+        self.pkgroot = match kclvm_config::modfile::get_pkg_root_from_paths(&self.paths) {
+            Ok(p_root) => p_root,
+            Err(err) => {
+                return Err(err.into());
+            }
+        };
 
         if !self.pkgroot.is_empty() {
             debug_assert!(self.is_dir(self.pkgroot.as_str()));
@@ -242,18 +244,25 @@ impl Loader {
             // read dir/*.k
             if self.is_dir(path) {
                 if self.opts.k_code_list.len() > i {
-                    return Err("invalid code list".to_string());
+                    return Err("invalid code list".to_string().into());
                 }
                 //k_code_list
-                for s in self.get_dir_kfile_list(path)? {
-                    k_files.push(s);
+                match self.get_dir_kfile_list(path) {
+                    Ok(kfile_list) => {
+                        for s in kfile_list {
+                            k_files.push(s);
+                        }
+                    }
+                    Err(err) => {
+                        return Err(err.into());
+                    }
                 }
                 continue;
             }
         }
 
         if k_files.is_empty() {
-            return Err("No input KCL files".to_string());
+            return Err("No input KCL files".to_string().into());
         }
 
         // check all file exists
@@ -271,7 +280,8 @@ impl Loader {
                 return Err(format!(
                     "Cannot find the kcl file, please check whether the file path {}",
                     filename.as_str(),
-                ));
+                )
+                .into());
             }
         }
 
@@ -297,7 +307,10 @@ impl Loader {
 
         // load imported packages
         for import_spec in import_list {
-            self.load_package(import_spec.path.to_string())?;
+            match self.load_package(import_spec.path.to_string()) {
+                Err(err) => return Err(err.into()),
+                _ => {}
+            };
         }
 
         // Ok
@@ -322,7 +335,7 @@ impl Loader {
         }
     }
 
-    fn load_package(&mut self, pkgpath: String) -> Result<(), String> {
+    fn load_package(&mut self, pkgpath: String) -> Result<(), Diagnostic> {
         if pkgpath.is_empty() {
             return Ok(());
         }
@@ -486,17 +499,5 @@ impl Loader {
 
     fn path_exist(&self, path: &str) -> bool {
         std::path::Path::new(path).exists()
-    }
-}
-
-impl Loader {
-    fn str_to_panic_info(&self, s: &str) -> PanicInfo {
-        let mut panic_info = PanicInfo::default();
-
-        panic_info.__kcl_PanicInfo__ = true;
-        panic_info.message = format!("{}", s);
-        panic_info.err_type_code = ErrType::CompileError_TYPE as i32;
-
-        panic_info
     }
 }

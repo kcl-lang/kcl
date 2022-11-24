@@ -1,6 +1,5 @@
-use kclvm::{ErrType, PanicInfo};
 use kclvm_ast::token::Token;
-use kclvm_error::{Handler, ParseError, Position};
+use kclvm_error::{Diagnostic, Handler, ParseError, Position, E2L23};
 use kclvm_span::{Loc, SourceMap, Span};
 use std::cell::RefCell;
 use std::sync::Arc;
@@ -27,25 +26,23 @@ impl ParseSession {
         )
     }
 
+    /// Struct and report an error and abort the compiler process.
+    pub fn struct_compile_error(&self, msg: &str, pos: Position) -> Diagnostic {
+        self.handler
+            .borrow_mut()
+            .contract_diagnostic(E2L23.kind, msg, pos)
+    }
+
     /// Struct and report an error based on a token and abort the compiler process.
-    pub fn struct_token_error(&self, expected: &[String], got: Token) -> ! {
+    pub fn struct_token_error(&self, expected: &[String], got: Token) -> Diagnostic {
         let pos: Position = self.source_map.lookup_char_pos(got.span.lo()).into();
         let err = ParseError::UnexpectedToken {
             expected: expected.iter().map(|tok| tok.into()).collect(),
             got: got.into(),
         };
-
-        let mut panic_info = PanicInfo::default();
-
-        panic_info.__kcl_PanicInfo__ = true;
-        panic_info.message = format!("{:?}", err);
-        panic_info.err_type_code = ErrType::CompileError_TYPE as i32;
-
-        panic_info.kcl_file = pos.filename.clone();
-        panic_info.kcl_line = pos.line as i32;
-        panic_info.kcl_col = pos.column.unwrap_or(0) as i32;
-
-        panic!("{}", panic_info.to_json_string())
+        self.handler
+            .borrow_mut()
+            .contract_diagnostic(E2L23.kind, &format!("{}", err), pos)
     }
 
     /// Struct and report an error based on a token and not abort the compiler process.
@@ -60,20 +57,9 @@ impl ParseSession {
     }
 
     /// Struct and report an error based on a span and abort the compiler process.
-    pub fn struct_span_error(&self, msg: &str, span: Span) -> ! {
+    pub fn struct_span_error(&self, msg: &str, span: Span) -> Diagnostic {
         let pos: Position = self.source_map.lookup_char_pos(span.lo()).into();
-
-        let mut panic_info = PanicInfo::default();
-
-        panic_info.__kcl_PanicInfo__ = true;
-        panic_info.message = format!("Invalid syntax: {}", msg);
-        panic_info.err_type_code = ErrType::CompileError_TYPE as i32;
-
-        panic_info.kcl_file = pos.filename.clone();
-        panic_info.kcl_line = pos.line as i32;
-        panic_info.kcl_col = pos.column.unwrap_or(0) as i32;
-
-        panic!("{}", panic_info.to_json_string())
+        self.struct_compile_error(&format!("{}", msg), pos)
     }
 
     /// Struct and report an error based on a span and not abort the compiler process.

@@ -6,6 +6,7 @@ use std::cmp::Ordering;
 use crate::lexer::IndentOrDedents;
 use crate::lexer::Lexer;
 use kclvm_ast::token::{self, Token};
+use kclvm_error::Diagnostic;
 
 #[derive(Clone, Copy, PartialEq, Debug, Default)]
 pub(crate) struct IndentLevel {
@@ -39,10 +40,10 @@ impl<'a> Lexer<'a> {
     pub(crate) fn lex_indent_context(
         &mut self,
         token: kclvm_lexer::TokenKind,
-    ) -> Option<IndentOrDedents> {
+    ) -> Result<Option<IndentOrDedents>, Diagnostic> {
         // process for indent context for a newline
         if !self.indent_cxt.new_line_beginning {
-            return None;
+            return Ok(None);
         }
 
         match token {
@@ -51,15 +52,15 @@ impl<'a> Lexer<'a> {
                 // No in(de)ent in comment line and new line
                 self.indent_cxt.tabs = 0;
                 self.indent_cxt.spaces = 0;
-                None
+                Ok(None)
             }
             kclvm_lexer::TokenKind::Tab => {
                 self.indent_cxt.tabs += 1;
-                None
+                Ok(None)
             }
             kclvm_lexer::TokenKind::Space => {
                 self.indent_cxt.spaces += 1;
-                None
+                Ok(None)
             }
             _ => {
                 // End of detect on unrelated token, then do lex indent.
@@ -69,7 +70,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn lex_indent(&mut self) -> Option<IndentOrDedents> {
+    fn lex_indent(&mut self) -> Result<Option<IndentOrDedents>, Diagnostic> {
         let tabs = self.indent_cxt.tabs;
         let spaces = self.indent_cxt.spaces;
         // reset counters
@@ -83,7 +84,7 @@ impl<'a> Lexer<'a> {
 
         match ordering {
             Ok(order) => {
-                Some(match order {
+                Ok(Some(match order {
                     Ordering::Greater => {
                         self.indent_cxt.indents.push(indet);
 
@@ -113,30 +114,36 @@ impl<'a> Lexer<'a> {
                                             // Proper indent level found.
                                             break;
                                         }
-                                        Ordering::Greater => self.sess.struct_span_error(
-                                            "fatal: logic error on dedenting.",
-                                            self.span(self.pos, self.pos),
-                                        ),
+                                        Ordering::Greater => {
+                                            return Err(self.sess.struct_span_error(
+                                                "fatal: logic error on dedenting.",
+                                                self.span(self.pos, self.pos),
+                                            ))
+                                        }
                                     }
 
                                     // update cur indent and ordering
                                     cur_indent = self.indent_cxt.indents.last().unwrap();
                                     ordering = indet.cmp(cur_indent);
                                 }
-                                Err(msg) => self
-                                    .sess
-                                    .struct_span_error(msg, self.span(self.pos, self.pos)),
+                                Err(msg) => {
+                                    return Err(self
+                                        .sess
+                                        .struct_span_error(msg, self.span(self.pos, self.pos)))
+                                }
                             }
                         }
 
                         IndentOrDedents::Dedents { tokens: dedents }
                     }
-                    _ => return None,
-                })
+                    _ => return Ok(None),
+                }))
             }
-            Err(msg) => self
-                .sess
-                .struct_span_error(msg, self.span(self.pos, self.pos)),
+            Err(msg) => {
+                return Err(self
+                    .sess
+                    .struct_span_error(msg, self.span(self.pos, self.pos)))
+            }
         }
     }
 }

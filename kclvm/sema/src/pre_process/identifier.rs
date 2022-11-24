@@ -286,7 +286,7 @@ pub fn fix_qualified_identifier<'ctx>(
         ..Default::default()
     };
     global_names_walker.walk_module(module);
-    global_names_walker.handler.abort_if_any_errors();
+    global_names_walker.handler.abort_if_errors();
 }
 
 /// Fix AST raw identifier prefix `$`, e.g., $filter -> filter

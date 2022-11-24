@@ -1,11 +1,12 @@
 use std::fmt;
 use std::hash::Hash;
 
+use kclvm::{ErrType, PanicInfo};
 use kclvm_span::Loc;
 use rustc_span::Pos;
 use termcolor::{Color, ColorSpec};
 
-use crate::{ErrorKind, WarningKind};
+use crate::{ErrorKind, WarningKind, E2L23};
 
 /// Diagnostic structure.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -13,6 +14,59 @@ pub struct Diagnostic {
     pub level: Level,
     pub messages: Vec<Message>,
     pub code: Option<DiagnosticId>,
+}
+
+/// Construct 'Diagnostic' from 'PanicInfo'.
+impl From<PanicInfo> for Diagnostic {
+    fn from(panic_info: PanicInfo) -> Self {
+        Self::new_with_code(
+            Level::Error,
+            &panic_info.message,
+            Position {
+                filename: panic_info.kcl_file.clone(),
+                line: panic_info.kcl_line as u64,
+                column: Some(panic_info.kcl_col as u64),
+            },
+            Some(DiagnosticId::Error(E2L23.kind)),
+        )
+    }
+}
+
+/// Construct 'PanicInfo' from 'Diagnostic'.
+impl Into<PanicInfo> for Diagnostic {
+    fn into(self) -> PanicInfo {
+        let pos = self.messages[0].pos.clone();
+        let message = self.messages[0].message.clone();
+
+        let mut panic_info = PanicInfo::default();
+
+        panic_info.__kcl_PanicInfo__ = true;
+        panic_info.message = message;
+        panic_info.err_type_code = ErrType::CompileError_TYPE as i32;
+
+        panic_info.kcl_file = pos.filename.clone();
+        panic_info.kcl_line = pos.line as i32;
+        panic_info.kcl_col = pos.column.unwrap_or(0) as i32;
+        panic_info
+    }
+}
+
+impl From<String> for Diagnostic {
+    fn from(item: String) -> Self {
+        Self::new_with_code(
+            Level::Error,
+            &format!("{}", item),
+            Position::dummy_pos(),
+            Some(DiagnosticId::Error(E2L23.kind)),
+        )
+    }
+}
+
+impl Into<String> for Diagnostic {
+    fn into(self) -> String {
+        let panic_info: PanicInfo = self.into();
+        panic_info.to_json_string()
+    }
 }
 
 /// Position describes an arbitrary source position including the filename,

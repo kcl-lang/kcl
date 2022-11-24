@@ -179,7 +179,7 @@ pub fn validate(val_opt: ValidateOption) -> Result<bool, String> {
 
     let mut module: Module = match kclvm_parser::parse_file(&k_path, val_opt.kcl_code) {
         Ok(ast_m) => ast_m,
-        Err(err_msg) => return Err(err_msg),
+        Err(err_msg) => return Err(err_msg.into()),
     };
 
     let schemas = filter_schema_stmt(&module);

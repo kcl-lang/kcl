@@ -12,6 +12,7 @@ mod util;
 use anyhow::{anyhow, Result};
 use kclvm_ast::ast;
 use kclvm_ast_pretty::print_ast_module;
+use kclvm_error::Diagnostic;
 use kclvm_parser::parse_file;
 
 pub use r#override::{apply_override_on_module, apply_overrides};
@@ -82,7 +83,7 @@ pub fn override_file(file: &str, specs: &[String], import_paths: &[String]) -> R
     // Parse file to AST module.
     let mut module = match parse_file(file, None) {
         Ok(module) => module,
-        Err(msg) => return Err(anyhow!("{}", msg)),
+        Err(msg) => return Err(anyhow!("{}", <Diagnostic as Into<String>>::into(msg))),
     };
     let mut result = false;
     // Override AST module.

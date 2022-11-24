@@ -85,7 +85,10 @@ impl KclvmService {
 
         let kcl_paths_str = kcl_paths.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
         let mut result = ExecProgram_Result::default();
-        let mut program = load_program(&kcl_paths_str.as_slice(), Some(opts))?;
+        let mut program = match load_program(&kcl_paths_str.as_slice(), Some(opts)) {
+            Ok(prog) => prog,
+            Err(diag) => return Err(diag.into()),
+        };
 
         if let Err(err) = apply_overrides(
             &mut program,

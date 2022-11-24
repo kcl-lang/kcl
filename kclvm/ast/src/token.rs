@@ -3,6 +3,8 @@
 //! Tokens are designed based on the KCL AST.
 //! Including indent and dedent tokens.
 //! Not Include some tokens of low level tokens, such as ';', '..', '..=', '<-'.
+use std::fmt;
+
 pub use BinCmpToken::*;
 pub use BinCmpToken::*;
 pub use BinOpToken::*;
@@ -294,6 +296,13 @@ impl Into<String> for TokenKind {
 pub struct Token {
     pub kind: TokenKind,
     pub span: Span,
+}
+
+impl fmt::Display for Token {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let tok_kind: String = self.kind.into();
+        write!(f, "{}", tok_kind)
+    }
 }
 
 impl Into<String> for Token {

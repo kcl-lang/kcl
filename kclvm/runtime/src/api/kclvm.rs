@@ -2,7 +2,7 @@
 
 #[allow(non_camel_case_types)]
 type kclvm_value_ref_t = crate::ValueRef;
-use crate::{new_mut_ptr, IndexMap};
+use crate::{new_mut_ptr, ErrType, IndexMap};
 use indexmap::IndexSet;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
@@ -309,6 +309,18 @@ pub struct PanicInfo {
     pub message: String,
     pub err_type_code: i32,
     pub is_warning: bool,
+}
+
+impl From<String> for PanicInfo {
+    fn from(item: String) -> Self {
+        let mut panic_info = PanicInfo::default();
+
+        panic_info.__kcl_PanicInfo__ = true;
+        panic_info.message = format!("{}", item);
+        panic_info.err_type_code = ErrType::CompileError_TYPE as i32;
+
+        panic_info
+    }
 }
 
 #[derive(PartialEq, Eq, Clone, Default, Debug)]

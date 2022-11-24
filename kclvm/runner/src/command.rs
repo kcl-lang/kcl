@@ -70,7 +70,6 @@ impl Command {
             // Output lib path.
             CString::new(format!("/out:{}", lib_path)).unwrap(),
         ];
-
         args
     }
 
@@ -90,7 +89,6 @@ impl Command {
         for lib in libs {
             args.push(CString::new(lib.as_str()).unwrap())
         }
-
         // Call lld main function with args.
         assert!(!lld_main(&args), "Run LLD linker failed");
 

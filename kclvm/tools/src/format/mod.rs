@@ -7,6 +7,7 @@
 //! to print it as source code string.
 use anyhow::{anyhow, Result};
 use kclvm_ast_pretty::print_ast_module;
+use kclvm_error::Diagnostic;
 use std::path::Path;
 
 use crate::util::get_kcl_files;
@@ -83,7 +84,7 @@ fn format_file(file: &str, opts: &FormatOptions) -> Result<bool> {
 fn format_source(src: &str) -> Result<(String, bool)> {
     let module = match parse_file("", Some(src.to_string())) {
         Ok(module) => module,
-        Err(err) => return Err(anyhow!("{}", err)),
+        Err(err) => return Err(anyhow!("{}", <Diagnostic as Into<String>>::into(err))),
     };
     let formatted_src = print_ast_module(&module);
     let is_formatted = src != formatted_src;

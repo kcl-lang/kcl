@@ -4,6 +4,7 @@ use crate::*;
 
 use core::any::Any;
 use expect_test::{expect, Expect};
+use kclvm::PanicInfo;
 
 fn check_parsing_file_ast_json(filename: &str, src: &str, expect: Expect) {
     let m = parse_file(filename, Some(src.into())).unwrap();
@@ -82,16 +83,28 @@ pub fn check_result_panic_info(result: Result<(), Box<dyn Any + Send>>) {
     };
 }
 
-const PARSE_EXPR_INVALID_TEST_CASES: &[&'static str; 3] =
-    &["fs1_i1re1~s", "fh==-h==-", "8_________i"];
+const PARSE_EXPR_INVALID_TEST_CASES: &[&'static str; 8] = &[
+    "fs1_i1re1~s",
+    "fh==-h==-",
+    "8_________i",
+    "1=2",
+    "@1+1",
+    "a = \"hello ${}\"",
+    "a = \"hello ${\"",
+    "a = \"hello ${myDict: json}\"",
+    // FIXME(issue #117)
+    // "d: True"
+];
 
 #[test]
 pub fn test_parse_expr_invalid() {
     for case in PARSE_EXPR_INVALID_TEST_CASES {
-        set_hook(Box::new(|_| {}));
+        // let prev_hook = std::panic::take_hook();
+        // std::panic::set_hook(Box::new(|_info| {}));
         let result = catch_unwind(|| {
             parse_expr(&case);
         });
         check_result_panic_info(result);
+        // std::panic::set_hook(prev_hook);
     }
 }

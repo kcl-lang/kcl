@@ -24,7 +24,7 @@ mod tests;
 use kclvm_ast::ast::NumberBinarySuffix;
 use kclvm_ast::token::{self, CommentKind, Token, TokenKind};
 use kclvm_ast::token_stream::TokenStream;
-use kclvm_error::bug;
+use kclvm_error::{bug, Diagnostic};
 use kclvm_lexer::Base;
 use kclvm_span::symbol::Symbol;
 use kclvm_span::{self, BytePos, Span};
@@ -37,7 +37,11 @@ use crate::session::ParseSession;
 /// EntryPoint of the lexer.
 /// Parse token streams from an input raw string and a fixed start point.
 /// Return an iterable token stream.
-pub fn parse_token_streams(sess: &ParseSession, src: &str, start_pos: BytePos) -> TokenStream {
+pub fn parse_token_streams(
+    sess: &ParseSession,
+    src: &str,
+    start_pos: BytePos,
+) -> Result<TokenStream, Diagnostic> {
     Lexer {
         sess,
         start_pos,
@@ -147,56 +151,56 @@ struct IndentContext {
 }
 
 impl<'a> Lexer<'a> {
-    fn into_tokens(mut self) -> TokenStream {
+    fn into_tokens(mut self) -> Result<TokenStream, Diagnostic> {
         let mut buf = TokenStreamBuilder::default();
-        self.token = self.token();
+        self.token = self.token()?;
 
         while !self.token.is_eof() {
             self.token.append_to(&mut buf);
-            self.token = self.token();
+            self.token = self.token()?;
         }
 
         self.eof(&mut buf);
         buf.into_token_stream()
     }
 
-    fn token(&mut self) -> TokenWithIndents {
+    fn token(&mut self) -> Result<TokenWithIndents, Diagnostic> {
         loop {
             let start_src_index = self.src_index(self.pos);
             let text: &str = &self.src[start_src_index..self.end_src_index];
 
             if text.is_empty() {
-                return TokenWithIndents::Token {
+                return Ok(TokenWithIndents::Token {
                     token: Token::new(token::Eof, self.span(self.pos, self.pos)),
-                };
+                });
             }
 
             // fetch next token
             let token = kclvm_lexer::first_token(text);
 
             // Detect and handle indent cases before lexing on-going token
-            let indent = self.lex_indent_context(token.kind);
+            let indent = self.lex_indent_context(token.kind)?;
 
             let start = self.pos;
             // update pos after token and indent handling
             self.pos = self.pos + BytePos::from_usize(token.len);
 
-            if let Some(kind) = self.lex_token(token, start) {
+            if let Some(kind) = self.lex_token(token, start)? {
                 let span = self.span(start, self.pos);
 
                 match indent {
                     Some(iord) => {
                         // return the token with the leading indent/dedents
-                        return TokenWithIndents::WithIndent {
+                        return Ok(TokenWithIndents::WithIndent {
                             token: Token::new(kind, span),
                             indent: iord,
-                        };
+                        });
                     }
                     None => {
                         // return the token itself
-                        return TokenWithIndents::Token {
+                        return Ok(TokenWithIndents::Token {
                             token: Token::new(kind, span),
-                        };
+                        });
                     }
                 }
             }
@@ -204,8 +208,12 @@ impl<'a> Lexer<'a> {
     }
 
     /// Turns `kclvm_lexer::TokenKind` into a rich `kclvm_ast::TokenKind`.
-    fn lex_token(&mut self, token: kclvm_lexer::Token, start: BytePos) -> Option<TokenKind> {
-        Some(match token.kind {
+    fn lex_token(
+        &mut self,
+        token: kclvm_lexer::Token,
+        start: BytePos,
+    ) -> Result<Option<TokenKind>, Diagnostic> {
+        Ok(Some(match token.kind {
             kclvm_lexer::TokenKind::LineComment { doc_style: _ } => {
                 let s = self.str_from(start);
                 token::DocComment(CommentKind::Line(Symbol::intern(s)))
@@ -218,7 +226,7 @@ impl<'a> Lexer<'a> {
             kclvm_lexer::TokenKind::Tab
             | kclvm_lexer::TokenKind::Space
             | kclvm_lexer::TokenKind::CarriageReturn
-            | kclvm_lexer::TokenKind::Whitespace => return None,
+            | kclvm_lexer::TokenKind::Whitespace => return Ok(None),
             // Identifier
             kclvm_lexer::TokenKind::Ident => {
                 let s = self.str_from(start);
@@ -227,7 +235,7 @@ impl<'a> Lexer<'a> {
             // Literal
             kclvm_lexer::TokenKind::Literal { kind, suffix_start } => {
                 let suffix_start = start + BytePos::from_u32(suffix_start as u32);
-                let (kind, symbol, suffix, raw) = self.lex_literal(start, suffix_start, kind);
+                let (kind, symbol, suffix, raw) = self.lex_literal(start, suffix_start, kind)?;
                 token::Literal(token::Lit {
                     kind,
                     symbol,
@@ -409,15 +417,19 @@ impl<'a> Lexer<'a> {
                     token::CloseDelim(token::Bracket)
                 }
             },
-            kclvm_lexer::TokenKind::LineContinue => return None,
-            kclvm_lexer::TokenKind::InvalidLineContinue => self.sess.struct_span_error(
-                "unexpected character after line continuation character",
-                self.span(start, self.pos),
-            ),
-            _ => self
-                .sess
-                .struct_span_error("unknown start of token", self.span(start, self.pos)),
-        })
+            kclvm_lexer::TokenKind::LineContinue => return Ok(None),
+            kclvm_lexer::TokenKind::InvalidLineContinue => {
+                return Err(self.sess.struct_span_error(
+                    "unexpected character after line continuation character",
+                    self.span(start, self.pos),
+                ))
+            }
+            _ => {
+                return Err(self
+                    .sess
+                    .struct_span_error("unknown start of token", self.span(start, self.pos)))
+            }
+        }))
     }
 
     fn lex_literal(
@@ -425,15 +437,16 @@ impl<'a> Lexer<'a> {
         start: BytePos,
         suffix_start: BytePos,
         kind: kclvm_lexer::LiteralKind,
-    ) -> (token::LitKind, Symbol, Option<Symbol>, Option<Symbol>) {
+    ) -> Result<(token::LitKind, Symbol, Option<Symbol>, Option<Symbol>), Diagnostic> {
         match kind {
             kclvm_lexer::LiteralKind::Str {
                 terminated,
                 triple_quoted,
             } => {
                 if !terminated {
-                    self.sess
-                        .struct_span_error("unterminated string", self.span(start, self.pos))
+                    return Err(self
+                        .sess
+                        .struct_span_error("unterminated string", self.span(start, self.pos)));
                 }
 
                 let start_char = self.char_from(start);
@@ -469,13 +482,15 @@ impl<'a> Lexer<'a> {
                     is_raw,
                 ) {
                     Some(v) => v,
-                    None => self.sess.struct_span_error(
-                        "Invalid string syntax",
-                        self.span(content_start, self.pos),
-                    ),
+                    None => {
+                        return Err(self.sess.struct_span_error(
+                            "Invalid string syntax",
+                            self.span(content_start, self.pos),
+                        ))
+                    }
                 };
 
-                (
+                Ok((
                     token::Str {
                         is_long_string: triple_quoted,
                         is_raw,
@@ -483,37 +498,37 @@ impl<'a> Lexer<'a> {
                     Symbol::intern(&value),
                     None,
                     Some(self.symbol_from_to(start, suffix_start)),
-                )
+                ))
             }
             kclvm_lexer::LiteralKind::Int { base, empty_int } => {
                 if empty_int {
-                    self.sess.struct_span_error(
+                    return Err(self.sess.struct_span_error(
                         "no valid digits found for number",
                         self.span(start, self.pos),
-                    )
+                    ));
                 } else {
-                    self.validate_literal_int(base, start, suffix_start);
+                    self.validate_literal_int(base, start, suffix_start)?;
 
                     let suffix = if suffix_start < self.pos {
                         let suffix_str = self.str_from(suffix_start);
                         // int binary suffix
                         if !NumberBinarySuffix::all_names().contains(&suffix_str) {
-                            self.sess.struct_span_error(
+                            return Err(self.sess.struct_span_error(
                                 "invalid int binary suffix",
                                 self.span(start, self.pos),
-                            )
+                            ));
                         }
                         Some(Symbol::intern(suffix_str))
                     } else {
                         None
                     };
 
-                    (
+                    Ok((
                         token::Integer,
                         self.symbol_from_to(start, suffix_start),
                         suffix,
                         None,
-                    )
+                    ))
                 }
             }
 
@@ -521,33 +536,40 @@ impl<'a> Lexer<'a> {
                 base,
                 empty_exponent,
             } => {
-                self.validate_literal_float(base, start, empty_exponent);
-                (
+                self.validate_literal_float(base, start, empty_exponent)?;
+                Ok((
                     token::Float,
                     self.symbol_from_to(start, suffix_start),
                     None,
                     None,
-                )
+                ))
             }
-            kclvm_lexer::LiteralKind::Bool { terminated: _ } => (
+            kclvm_lexer::LiteralKind::Bool { terminated: _ } => Ok((
                 token::Bool,
                 self.symbol_from_to(start, suffix_start),
                 None,
                 None,
-            ),
-            _ => self.sess.struct_span_error(
-                &format!("invalid lit kind {:?}", kind),
-                self.span(start, self.pos),
-            ),
+            )),
+            _ => {
+                return Err(self.sess.struct_span_error(
+                    &format!("invalid lit kind {:?}", kind),
+                    self.span(start, self.pos),
+                ))
+            }
         }
     }
 
-    fn validate_literal_int(&self, base: Base, content_start: BytePos, content_end: BytePos) {
+    fn validate_literal_int(
+        &self,
+        base: Base,
+        content_start: BytePos,
+        content_end: BytePos,
+    ) -> Result<(), Diagnostic> {
         let base = match base {
             Base::Binary => 2,
             Base::Octal => 8,
             Base::Hexadecimal => 16,
-            _ => return,
+            _ => return Ok(()),
         };
         let s = self.str_from_to(content_start + BytePos::from_u32(2), content_end);
         for (idx, c) in s.char_indices() {
@@ -556,39 +578,51 @@ impl<'a> Lexer<'a> {
                 let lo = content_start + BytePos::from_u32(2 + idx);
                 let hi = content_start + BytePos::from_u32(2 + idx + c.len_utf8() as u32);
 
-                self.sess.struct_span_error(
+                return Err(self.sess.struct_span_error(
                     &format!(
                         "invalid digit for a base {} literal, start: {}, stop: {}",
                         base, lo, hi
                     ),
                     self.span(lo, self.pos),
-                )
+                ));
             }
         }
+        return Ok(());
     }
 
-    fn validate_literal_float(&self, base: Base, start: BytePos, empty_exponent: bool) {
+    fn validate_literal_float(
+        &self,
+        base: Base,
+        start: BytePos,
+        empty_exponent: bool,
+    ) -> Result<(), Diagnostic> {
         if empty_exponent {
-            self.sess.struct_span_error(
+            return Err(self.sess.struct_span_error(
                 "expected at least one digit in exponent",
                 self.span(start, self.pos),
-            )
+            ));
         }
 
         match base {
-            kclvm_lexer::Base::Hexadecimal => self.sess.struct_span_error(
-                "hexadecimal float literal is not supported",
-                self.span(start, self.pos),
-            ),
-            kclvm_lexer::Base::Octal => self.sess.struct_span_error(
-                "octal float literal is not supported",
-                self.span(start, self.pos),
-            ),
-            kclvm_lexer::Base::Binary => self.sess.struct_span_error(
-                "binary float literal is not supported",
-                self.span(start, self.pos),
-            ),
-            _ => (),
+            kclvm_lexer::Base::Hexadecimal => {
+                return Err(self.sess.struct_span_error(
+                    "hexadecimal float literal is not supported",
+                    self.span(start, self.pos),
+                ))
+            }
+            kclvm_lexer::Base::Octal => {
+                return Err(self.sess.struct_span_error(
+                    "octal float literal is not supported",
+                    self.span(start, self.pos),
+                ))
+            }
+            kclvm_lexer::Base::Binary => {
+                return Err(self.sess.struct_span_error(
+                    "binary float literal is not supported",
+                    self.span(start, self.pos),
+                ))
+            }
+            _ => Ok(()),
         }
     }
 
@@ -687,7 +721,7 @@ impl TokenStreamBuilder {
         self.buf.push(token)
     }
 
-    fn into_token_stream(self) -> TokenStream {
-        TokenStream::new(self.buf)
+    fn into_token_stream(self) -> Result<TokenStream, Diagnostic> {
+        Ok(TokenStream::new(self.buf))
     }
 }

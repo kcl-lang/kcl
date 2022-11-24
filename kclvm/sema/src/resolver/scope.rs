@@ -215,7 +215,7 @@ impl ProgramScope {
         if self.diagnostics.len() > 0 {
             let mut err_handler = Handler::default();
             err_handler.diagnostics = self.diagnostics.clone();
-            err_handler.alert_if_any_errors();
+            err_handler.abort_if_errors();
         }
     }
 }

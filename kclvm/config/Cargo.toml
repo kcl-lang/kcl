@@ -19,3 +19,4 @@ fslock = "0.2.1"
 pathdiff = "0.2.1"
 
 kclvm-version = {path = "../version", version = "0.1.0"}
+kclvm-error = {path = "../error", version = "0.1.0"}
