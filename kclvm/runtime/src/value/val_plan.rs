@@ -7,36 +7,59 @@ use std::rc::Rc;
 
 pub const KCL_PRIVATE_VAR_PREFIX: &str = "_";
 const LIST_DICT_TEMP_KEY: &str = "$";
+const YAML_STREAM_SEP: &str = "\n---\n";
 
 fn filter_results(key_values: &ValueRef) -> Vec<ValueRef> {
     let mut results: Vec<ValueRef> = vec![];
-    if !key_values.is_config() {
-        return results;
-    }
-    let ctx = Context::current_context();
-    // index 0 for in-line keyvalues output, index 1: for standalone keyvalues outputs
-    let result = ValueRef::dict(None);
-    results.push(result);
-    let key_values = key_values.as_dict_ref();
-    for (key, value) in &key_values.values {
-        if value.is_none() && ctx.cfg.disable_none {
-            continue;
+    // Plan list value with the yaml stream format.
+    if key_values.is_list() {
+        let key_values_list = &key_values.as_list_ref().values;
+        for key_values in key_values_list {
+            results.append(&mut filter_results(key_values));
         }
-        if key.starts_with(KCL_PRIVATE_VAR_PREFIX) || value.is_undefined() || value.is_func() {
-            continue;
-        } else if value.is_schema() || value.has_key(SCHEMA_SETTINGS_ATTR_NAME) {
-            let (filtered, standalone) = handle_schema(value);
-            if !filtered.is_empty() {
-                if standalone {
-                    // if the instance is marked as 'STANDALONE', treat it as a separate one and
-                    // extend it and derived STANDALONE instances to results.
-                    for v in filtered {
-                        results.push(v);
+        results
+    }
+    // Plan dict value
+    else if key_values.is_config() {
+        let ctx = Context::current_context();
+        // index 0 for in-line keyvalues output, index 1: for standalone keyvalues outputs
+        let result = ValueRef::dict(None);
+        results.push(result);
+        let key_values = key_values.as_dict_ref();
+        for (key, value) in &key_values.values {
+            if value.is_none() && ctx.cfg.disable_none {
+                continue;
+            }
+            if key.starts_with(KCL_PRIVATE_VAR_PREFIX) || value.is_undefined() || value.is_func() {
+                continue;
+            } else if value.is_schema() || value.has_key(SCHEMA_SETTINGS_ATTR_NAME) {
+                let (filtered, standalone) = handle_schema(value);
+                if !filtered.is_empty() {
+                    if standalone {
+                        // if the instance is marked as 'STANDALONE', treat it as a separate one and
+                        // extend it and derived STANDALONE instances to results.
+                        for v in filtered {
+                            results.push(v);
+                        }
+                    } else {
+                        // else put it as the value of the key of results
+                        let result = results.get_mut(0).unwrap();
+                        result.dict_update_key_value(key.as_str(), filtered[0].clone());
+                        // if the value has derived 'STANDALONE' instances, extend them
+                        if filtered.len() > 1 {
+                            for v in &filtered[1..] {
+                                results.push(v.clone());
+                            }
+                        }
                     }
-                } else {
-                    // else put it as the value of the key of results
+                }
+            } else if value.is_dict() {
+                let filtered = filter_results(value);
+                if !results.is_empty() {
                     let result = results.get_mut(0).unwrap();
-                    result.dict_update_key_value(key.as_str(), filtered[0].clone());
+                    if !filtered.is_empty() {
+                        result.dict_update_key_value(key.as_str(), filtered[0].clone());
+                    }
                     // if the value has derived 'STANDALONE' instances, extend them
                     if filtered.len() > 1 {
                         for v in &filtered[1..] {
@@ -44,85 +67,73 @@ fn filter_results(key_values: &ValueRef) -> Vec<ValueRef> {
                         }
                     }
                 }
-            }
-        } else if value.is_dict() {
-            let filtered = filter_results(value);
-            if !results.is_empty() {
-                let result = results.get_mut(0).unwrap();
-                if !filtered.is_empty() {
-                    result.dict_update_key_value(key.as_str(), filtered[0].clone());
-                }
-                // if the value has derived 'STANDALONE' instances, extend them
-                if filtered.len() > 1 {
-                    for v in &filtered[1..] {
-                        results.push(v.clone());
-                    }
-                }
-            }
-        } else if value.is_list() {
-            let mut filtered_list: Vec<ValueRef> = vec![];
-            let mut standalone_list: Vec<ValueRef> = vec![];
-            let mut ignore_schema_count = 0;
-            let list_value = value.as_list_ref();
-            for v in &list_value.values {
-                if v.is_schema() || v.has_key(SCHEMA_SETTINGS_ATTR_NAME) {
-                    let (filtered, standalone) = handle_schema(v);
-                    if filtered.is_empty() {
-                        ignore_schema_count += 1;
-                        continue;
-                    } else if standalone {
-                        for v in filtered {
-                            standalone_list.push(v);
+            } else if value.is_list() {
+                let mut filtered_list: Vec<ValueRef> = vec![];
+                let mut standalone_list: Vec<ValueRef> = vec![];
+                let mut ignore_schema_count = 0;
+                let list_value = value.as_list_ref();
+                for v in &list_value.values {
+                    if v.is_schema() || v.has_key(SCHEMA_SETTINGS_ATTR_NAME) {
+                        let (filtered, standalone) = handle_schema(v);
+                        if filtered.is_empty() {
+                            ignore_schema_count += 1;
+                            continue;
+                        } else if standalone {
+                            for v in filtered {
+                                standalone_list.push(v);
+                            }
+                        } else {
+                            for v in filtered {
+                                filtered_list.push(v);
+                            }
                         }
-                    } else {
+                    } else if v.is_dict() {
+                        let filtered = filter_results(v);
                         for v in filtered {
                             filtered_list.push(v);
                         }
-                    }
-                } else if v.is_dict() {
-                    let filtered = filter_results(v);
-                    for v in filtered {
-                        filtered_list.push(v);
-                    }
-                } else if v.is_none() && ctx.cfg.disable_none {
-                    continue;
-                } else if !v.is_undefined() {
-                    let list_dict = ValueRef::dict(Some(&[(LIST_DICT_TEMP_KEY, v)]));
-                    let filtered = filter_results(&list_dict);
-                    if !filtered.is_empty() {
-                        if let Some(v) = filtered[0].get_by_key(LIST_DICT_TEMP_KEY) {
-                            filtered_list.push(v.clone());
+                    } else if v.is_none() && ctx.cfg.disable_none {
+                        continue;
+                    } else if !v.is_undefined() {
+                        let list_dict = ValueRef::dict(Some(&[(LIST_DICT_TEMP_KEY, v)]));
+                        let filtered = filter_results(&list_dict);
+                        if !filtered.is_empty() {
+                            if let Some(v) = filtered[0].get_by_key(LIST_DICT_TEMP_KEY) {
+                                filtered_list.push(v.clone());
+                            }
                         }
-                    }
-                    if filtered.len() > 1 {
-                        for v in &filtered[1..] {
-                            results.push(v.clone());
+                        if filtered.len() > 1 {
+                            for v in &filtered[1..] {
+                                results.push(v.clone());
+                            }
                         }
                     }
                 }
-            }
-            let schema_in_list_count = ignore_schema_count + standalone_list.len();
-            let value = &value.as_list_ref().values;
-            if schema_in_list_count < value.len() {
+                let schema_in_list_count = ignore_schema_count + standalone_list.len();
+                let value = &value.as_list_ref().values;
+                if schema_in_list_count < value.len() {
+                    let result = results.get_mut(0).unwrap();
+                    let filtered_list: Vec<&ValueRef> = filtered_list.iter().collect();
+                    let filtered_list = filtered_list.as_slice();
+                    let filtered_list = ValueRef::list(Some(filtered_list));
+                    result.dict_update_key_value(key.as_str(), filtered_list);
+                }
+                for v in standalone_list {
+                    results.push(v);
+                }
+            } else {
                 let result = results.get_mut(0).unwrap();
-                let filtered_list: Vec<&ValueRef> = filtered_list.iter().collect();
-                let filtered_list = filtered_list.as_slice();
-                let filtered_list = ValueRef::list(Some(filtered_list));
-                result.dict_update_key_value(key.as_str(), filtered_list);
+                result.dict_update_key_value(key.as_str(), value.clone());
             }
-            for v in standalone_list {
-                results.push(v);
-            }
-        } else {
-            let result = results.get_mut(0).unwrap();
-            result.dict_update_key_value(key.as_str(), value.clone());
         }
+        results
+            .iter()
+            .filter(|r| !r.is_planned_empty())
+            .cloned()
+            .collect()
+    } else {
+        results
     }
-    results
-        .iter()
-        .filter(|r| !r.is_planned_empty())
-        .cloned()
-        .collect()
 }
 
 fn handle_schema(value: &ValueRef) -> (Vec<ValueRef>, bool) {
@@ -177,7 +188,7 @@ impl ValueRef {
             .iter()
             .map(|r| r.to_yaml_string())
             .collect::<Vec<String>>();
-        results.join("---\n")
+        results.join(YAML_STREAM_SEP)
     }
 
     /// Plan the value to JSON and YAML strings
@@ -187,7 +198,7 @@ impl ValueRef {
             .iter()
             .map(|r| r.to_yaml_string())
             .collect::<Vec<String>>()
-            .join("---\n");
+            .join(YAML_STREAM_SEP);
         let mut list_result = ValueRef::list(None);
         for r in results {
             list_result.list_append(&r);
@@ -286,6 +297,32 @@ impl ValueRef {
                 }
                 schema
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod test_value_plan {
+    use crate::ValueRef;
+
+    use super::filter_results;
+
+    #[test]
+    fn test_filter_results() {
+        let dict1 = ValueRef::dict_int(&[("k1", 1)]);
+        let dict2 = ValueRef::dict_int(&[("k2", 2)]);
+        let dict3 = ValueRef::dict_int(&[("k3", 3)]);
+        let dict_list = vec![&dict1, &dict2, &dict3];
+        let list_data = ValueRef::list(Some(&dict_list));
+        assert_eq!(
+            filter_results(&list_data),
+            dict_list
+                .iter()
+                .map(|v| v.deep_copy())
+                .collect::<Vec<ValueRef>>()
+        );
+        for dict in dict_list {
+            assert_eq!(filter_results(dict), vec![dict.deep_copy()]);
         }
     }
 }

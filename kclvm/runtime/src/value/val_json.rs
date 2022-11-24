@@ -44,7 +44,7 @@ struct JsonFormatter {
 }
 
 #[derive(Clone, Eq, PartialEq)]
-enum JsonValue {
+pub(crate) enum JsonValue {
     Null,
 
     Bool(bool),
