@@ -196,7 +196,7 @@ impl ValueRef {
         let results = filter_results(self);
         let yaml_result = results
             .iter()
-            .map(|r| r.to_yaml_string())
+            .map(|r| r.to_yaml_string().strip_suffix("\n").unwrap().to_string())
             .collect::<Vec<String>>()
             .join(YAML_STREAM_SEP);
         let mut list_result = ValueRef::list(None);

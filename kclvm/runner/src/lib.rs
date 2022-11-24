@@ -95,7 +95,8 @@ pub fn exec_program(
     };
     let mut result = ExecProgramResult::default();
     result.escaped_time = escape_time.to_string();
-    let json_result = match exec_result {
+    // Exec result is a JSON or YAML string.
+    let exec_result = match exec_result {
         Ok(res) => res,
         Err(res) => {
             if res.is_empty() {
@@ -105,7 +106,10 @@ pub fn exec_program(
             }
         }
     };
-    let kcl_val = ValueRef::from_json(&json_result).unwrap();
+    let kcl_val = match ValueRef::from_yaml_stream(&exec_result) {
+        Ok(v) => v,
+        Err(err) => return Err(err.to_string()),
+    };
     let (json_result, yaml_result) = kcl_val.plan();
     result.json_result = json_result;
     if !args.disable_yaml_result {

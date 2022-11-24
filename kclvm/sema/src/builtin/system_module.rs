@@ -23,6 +23,9 @@ pub const NET_FUNCTION_NAMES: [&str; 16] = [
     "is_unspecified_IP",
 ];
 
+pub const MANIFESTS: &str = "manifests";
+pub const MANIFESTS_FUNCTION_NAMES: [&str; 1] = ["yaml_stream"];
+
 pub const MATH: &str = "math";
 pub const MATH_FUNCTION_NAMES: [&str; 16] = [
     "ceil",
@@ -90,13 +93,14 @@ pub const UNITS_FIELD_NAMES: [&str; 15] = [
 pub const COLLECTION: &str = "collection";
 pub const COLLECTION_FUNCTION_NAMES: [&str; 1] = ["union_all"];
 
-pub const STANDARD_SYSTEM_MODULES: [&str; 11] = [
-    COLLECTION, NET, MATH, DATETIME, REGEX, YAML, JSON, CRYPTO, BASE64, TESTING, UNITS,
+pub const STANDARD_SYSTEM_MODULES: [&str; 12] = [
+    COLLECTION, NET, MANIFESTS, MATH, DATETIME, REGEX, YAML, JSON, CRYPTO, BASE64, TESTING, UNITS,
 ];
 
-pub const STANDARD_SYSTEM_MODULE_NAMES_WITH_AT: [&str; 11] = [
+pub const STANDARD_SYSTEM_MODULE_NAMES_WITH_AT: [&str; 12] = [
     "@collection",
     "@net",
+    "@manifests",
     "@math",
     "@datetime",
     "@regex",
@@ -113,6 +117,7 @@ pub fn get_system_module_members(name: &str) -> Vec<&str> {
     match name {
         BASE64 => BASE64_FUNCTION_NAMES.to_vec(),
         NET => NET_FUNCTION_NAMES.to_vec(),
+        MANIFESTS => MANIFESTS_FUNCTION_NAMES.to_vec(),
         MATH => MATH_FUNCTION_NAMES.to_vec(),
         DATETIME => DATETIME_FUNCTION_NAMES.to_vec(),
         REGEX => REGEX_FUNCTION_NAMES.to_vec(),
