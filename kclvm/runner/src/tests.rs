@@ -2,6 +2,7 @@ use crate::assembler::clean_path;
 use crate::assembler::KclvmAssembler;
 use crate::assembler::KclvmLibAssembler;
 use crate::assembler::LibAssembler;
+use crate::exec_program;
 use crate::temp_file;
 use crate::{execute, runner::ExecProgramArgs};
 use anyhow::Context;
@@ -24,6 +25,7 @@ use tempfile::tempdir;
 use walkdir::WalkDir;
 
 const EXEC_DATA_PATH: &str = "src/exec_data/";
+const CUSTOM_MANIFESTS_DATA_PATH: &str = "src/custom_manifests_data/";
 const TEST_CASES: &[&str; 5] = &[
     "init_check_order_0",
     "init_check_order_1",
@@ -370,11 +372,16 @@ fn test_exec_file() {
     std::panic::set_hook(prev_hook);
 }
 
+fn test_custom_manifests_output() {
+    exec_with_result_at(CUSTOM_MANIFESTS_DATA_PATH)
+}
+
 #[test]
 fn test_exec() {
     test_exec_file();
     test_kclvm_runner_execute();
     test_kclvm_runner_execute_timeout();
+    test_custom_manifests_output();
 }
 
 fn exec(file: &str) -> Result<String, String> {
@@ -386,6 +393,23 @@ fn exec(file: &str) -> Result<String, String> {
     let program = load_program(&[file], Some(opts)).unwrap();
     // Resolve ATS, generate libs, link libs and execute.
     execute(program, plugin_agent, &args)
+}
+
+/// Run all kcl files at path and compare the exec result with the expect output.
+fn exec_with_result_at(path: &str) {
+    let kcl_files = get_files(path, false, true, ".k");
+    let output_files = get_files(path, false, true, ".stdout.golden");
+    for (kcl_file, output_file) in kcl_files.iter().zip(&output_files) {
+        let mut args = ExecProgramArgs::default();
+        args.k_filename_list.push(kcl_file.to_string());
+        let result = exec_program(&args, 0).unwrap();
+        let expected = std::fs::read_to_string(output_file)
+            .unwrap()
+            .strip_suffix("\n")
+            .unwrap()
+            .to_string();
+        assert_eq!(result.yaml_result, expected);
+    }
 }
 
 /// Get kcl files from path.
