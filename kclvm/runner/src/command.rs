@@ -5,19 +5,14 @@ use std::path::PathBuf;
 
 #[derive(Debug)]
 pub struct Command {
-    rust_stdlib: String,
     executable_root: String,
 }
 
 impl Command {
     pub fn new() -> Self {
         let executable_root = Self::get_executable_root();
-        let rust_stdlib = Self::get_rust_stdlib(executable_root.as_str());
 
-        Self {
-            rust_stdlib,
-            executable_root,
-        }
+        Self { executable_root }
     }
 
     /// Get lld linker args
@@ -47,8 +42,6 @@ impl Command {
             // Output lib path.
             CString::new("-o").unwrap(),
             CString::new(lib_path).unwrap(),
-            // Link rust std
-            CString::new(self.rust_stdlib.as_str()).unwrap(),
         ];
 
         #[cfg(target_os = "linux")]
@@ -66,8 +59,6 @@ impl Command {
             // Output lib path.
             CString::new("-o").unwrap(),
             CString::new(lib_path).unwrap(),
-            // Link rust std
-            CString::new(self.rust_stdlib.as_str()).unwrap(),
         ];
 
         #[cfg(target_os = "windows")]
@@ -78,8 +69,6 @@ impl Command {
             CString::new(format!("/libpath:{}/lib", self.executable_root)).unwrap(),
             // Output lib path.
             CString::new(format!("/out:{}", lib_path)).unwrap(),
-            // Link rust std
-            CString::new(self.rust_stdlib.as_str()).unwrap(),
         ];
 
         args
@@ -127,15 +116,6 @@ impl Command {
 
         let p = p.parent().unwrap().parent().unwrap();
         p.to_str().unwrap().to_string()
-    }
-
-    fn get_rust_stdlib(executable_root: &str) -> String {
-        let txt_path = std::path::Path::new(&executable_root)
-            .join(if Self::is_windows() { "libs" } else { "lib" })
-            .join("rust-libstd-name.txt");
-        let rust_libstd_name = std::fs::read_to_string(txt_path).expect("rust libstd not found");
-        let rust_libstd_name = rust_libstd_name.trim();
-        format!("{}/lib/{}", executable_root, rust_libstd_name)
     }
 
     /// Specifies the filename suffix used for shared libraries on this

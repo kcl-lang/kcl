@@ -79,18 +79,6 @@ if [ -e $topdir/kclvm/target/release/libkclvm_cli_cdylib.$dll_extension ]; then
     cp $topdir/kclvm/target/release/libkclvm_cli_cdylib.$dll_extension $kclvm_install_dir/bin/libkclvm_cli_cdylib.$dll_extension
 fi
 
-# build rust std lib
-
-RUST_SYS_ROOT=`rustc --print sysroot`
-
-# libstd-*.dylib or libstd-*.so
-cd $RUST_SYS_ROOT/lib
-RUST_LIBSTD=`find libstd-*.*`
-
-mkdir -p $kclvm_install_dir/lib
-cp "$RUST_SYS_ROOT/lib/$RUST_LIBSTD" $kclvm_install_dir/lib/$RUST_LIBSTD
-echo "$RUST_LIBSTD" > $kclvm_install_dir/lib/rust-libstd-name.txt
-
 # Build kclvm runtime
 
 cd $topdir/kclvm/runtime
