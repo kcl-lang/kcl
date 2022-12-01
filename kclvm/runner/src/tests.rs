@@ -396,7 +396,7 @@ fn test_exec() {
     test_kclvm_runner_execute();
     test_kclvm_runner_execute_timeout();
     test_custom_manifests_output();
-    test_exec_with_err_result()
+    // test_exec_with_err_result()
 }
 
 fn exec(file: &str) -> Result<String, String> {
