@@ -986,12 +986,12 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
             .expect(kcl_error::INTERNAL_ERROR_MSG);
         self.enter_scope();
         // Schema function closures
-        let _instance_pkgpath = self.list_pop(args);
+        let instance_pkgpath = self.list_pop(args);
         let record_instance = self.list_pop(args);
         let backtrack_cache = self.list_pop(args);
         let backtrack_level_map = self.list_pop(args);
         let cal_map = self.list_pop(args);
-        let _attr_optional_mapping = self.list_pop(args);
+        let attr_optional_mapping = self.list_pop(args);
         let schema_value = self.list_pop(args);
         let schema_config = self.list_pop(args);
         let schema_config_meta = self.list_pop(args);
@@ -1013,6 +1013,49 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         let schema = value::SchemaType::new(name, pkgpath, &runtime_type, false);
         self.schema_stack.borrow_mut().push(schema);
         add_variable(value::SCHEMA_SELF_NAME, schema_value);
+        // construct for protocol
+        let schema_value = if let Some(for_host_name) = &rule_stmt.for_host_name {
+            let base_constructor_func = self
+                .walk_identifier_with_ctx(&for_host_name.node, &ast::ExprContext::Load, None)
+                .expect(kcl_error::COMPILE_ERROR_MSG);
+            // Schema function closures
+            let list_value = self.list_values(&[
+                // is_sub_schema
+                self.bool_value(false),
+                schema_config_meta,
+                schema_config,
+                schema_value,
+                attr_optional_mapping,
+                cal_map,
+                backtrack_level_map,
+                backtrack_cache,
+                record_instance,
+                instance_pkgpath,
+            ]);
+            let dict_value = self.dict_value();
+            let func_ptr = self.build_call(
+                &ApiFunc::kclvm_value_function_ptr.name(),
+                &[base_constructor_func],
+            );
+            let fn_ty = self.function_type().ptr_type(AddressSpace::Generic);
+            let func_ptr_cast = self.builder.build_bitcast(func_ptr, fn_ty, "");
+            self.builder
+                .build_call(
+                    CallableValue::try_from(func_ptr_cast.into_pointer_value())
+                        .expect(kcl_error::INTERNAL_ERROR_MSG),
+                    &[
+                        self.global_ctx_ptr().into(),
+                        list_value.into(),
+                        dict_value.into(),
+                    ],
+                    "",
+                )
+                .try_as_basic_value()
+                .left()
+                .expect(kcl_error::FUNCTION_RETURN_VALUE_NOT_FOUND_MSG)
+        } else {
+            schema_value
+        };
         let do_run_i1 = self.value_is_truthy(record_instance);
         let do_run_block = self.append_block("");
         let end_run_block = self.append_block("");
@@ -1041,24 +1084,15 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
                 backtrack_cache,
             ]);
             let dict_value = self.dict_value();
-            // Call schema check block function with index sign attribute name loop set
-            let check_lambda_fn_ptr = self.builder.build_bitcast(
-                check_function.as_global_value().as_pointer_value(),
-                self.context.i64_type().ptr_type(AddressSpace::Generic),
-                "",
-            );
-            let attr_name = self.native_global_string_value("");
-            self.build_void_call(
-                ApiFunc::kclvm_schema_do_check_with_index_sign_attr
-                    .name()
-                    .as_str(),
+            // Call schema check block function
+            self.builder.build_call(
+                check_function,
                 &[
-                    self.global_ctx_ptr(),
-                    list_value,
-                    dict_value,
-                    check_lambda_fn_ptr,
-                    attr_name,
+                    self.global_ctx_ptr().into(),
+                    list_value.into(),
+                    dict_value.into(),
                 ],
+                "",
             );
         }
         self.br(end_check_block);

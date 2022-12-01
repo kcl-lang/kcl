@@ -436,7 +436,7 @@ impl<'ctx> Resolver<'ctx> {
                             pos: parent_name.get_pos(),
                             style: Style::LineAndColumn,
                             message: format!(
-                                "invalid schema inherit object type, expect protocol, got '{}'",
+                                "invalid schema inherit object type, expect schema, got '{}'",
                                 ty.ty_str()
                             ),
                             note: None,
