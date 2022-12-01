@@ -385,7 +385,6 @@ fn test_custom_manifests_output() {
     exec_with_result_at(CUSTOM_MANIFESTS_DATA_PATH);
 }
 
-#[test]
 fn test_exec_with_err_result() {
     exec_with_err_result_at(EXEC_ERR_DATA_PATH);
 }
