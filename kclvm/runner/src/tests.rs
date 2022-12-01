@@ -7,6 +7,7 @@ use crate::temp_file;
 use crate::{execute, runner::ExecProgramArgs};
 use anyhow::Context;
 use anyhow::Result;
+use kclvm::PanicInfo;
 use kclvm_ast::ast::{Module, Program};
 use kclvm_compiler::codegen::llvm::OBJECT_FILE_SUFFIX;
 use kclvm_config::settings::load_file;
@@ -25,6 +26,7 @@ use tempfile::tempdir;
 use walkdir::WalkDir;
 
 const EXEC_DATA_PATH: &str = "src/exec_data/";
+const EXEC_ERR_DATA_PATH: &str = "src/exec_err_data/";
 const CUSTOM_MANIFESTS_DATA_PATH: &str = "src/custom_manifests_data/";
 const TEST_CASES: &[&str; 5] = &[
     "init_check_order_0",
@@ -54,6 +56,13 @@ const TEST_CASE_PATH: &str = "src/test_datas";
 const KCL_FILE_NAME: &str = "main.k";
 const MAIN_PKG_NAME: &str = "__main__";
 const CARGO_PATH: &str = env!("CARGO_MANIFEST_DIR");
+
+#[derive(serde::Deserialize, serde::Serialize)]
+struct SimplePanicInfo {
+    line: i32,
+    col: i32,
+    message: String,
+}
 
 fn gen_full_path(rel_path: String) -> Result<String> {
     let mut cargo_file_path = PathBuf::from(CARGO_PATH);
@@ -373,7 +382,11 @@ fn test_exec_file() {
 }
 
 fn test_custom_manifests_output() {
-    exec_with_result_at(CUSTOM_MANIFESTS_DATA_PATH)
+    exec_with_result_at(CUSTOM_MANIFESTS_DATA_PATH);
+}
+
+fn test_exec_with_err_result() {
+    exec_with_err_result_at(EXEC_ERR_DATA_PATH);
 }
 
 #[test]
@@ -382,6 +395,7 @@ fn test_exec() {
     test_kclvm_runner_execute();
     test_kclvm_runner_execute_timeout();
     test_custom_manifests_output();
+    // test_exec_with_err_result()
 }
 
 fn exec(file: &str) -> Result<String, String> {
@@ -410,6 +424,31 @@ fn exec_with_result_at(path: &str) {
             .to_string();
         assert_eq!(result.yaml_result, expected);
     }
+}
+
+/// Run all kcl files at path and compare the exec error result with the expect error output.
+fn exec_with_err_result_at(path: &str) {
+    let kcl_files = get_files(path, false, true, ".k");
+    let output_files = get_files(path, false, true, ".stderr.json");
+
+    let prev_hook = std::panic::take_hook();
+    // disable print panic info
+    std::panic::set_hook(Box::new(|_| {}));
+    let result = std::panic::catch_unwind(|| {
+        for (kcl_file, output_json_file) in kcl_files.iter().zip(&output_files) {
+            let mut args = ExecProgramArgs::default();
+            args.k_filename_list.push(kcl_file.to_string());
+            let panic_info = PanicInfo::from_json_string(&exec_program(&args, 0).unwrap_err());
+            let expect_info: SimplePanicInfo =
+                serde_json::from_str(std::fs::read_to_string(output_json_file).unwrap().as_str())
+                    .unwrap();
+            assert_eq!(panic_info.kcl_line, expect_info.line);
+            assert_eq!(panic_info.kcl_col, expect_info.col);
+            assert_eq!(panic_info.message, expect_info.message);
+        }
+    });
+    assert!(result.is_ok());
+    std::panic::set_hook(prev_hook);
 }
 
 /// Get kcl files from path.

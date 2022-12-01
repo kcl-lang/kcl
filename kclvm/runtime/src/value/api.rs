@@ -2347,6 +2347,10 @@ pub extern "C" fn kclvm_schema_get_value(
         }
         let fn_ptr = &attr_code.values[index];
         let fn_ptr = fn_ptr.as_int();
+        // When we calculate other schema attribute values, we retain
+        // the row and column number information of the current schema attribute.
+        let ctx = Context::current_context_mut();
+        let panic_info = ctx.panic_info.clone();
         unsafe {
             let attr_fn: SchemaTypeFunc = transmute_copy(&fn_ptr);
             // args_0: config_meta, args_1: config, args_2: schema, args_3: cal_map
@@ -2369,6 +2373,8 @@ pub extern "C" fn kclvm_schema_get_value(
             let ctx = kclvm_context_current();
             attr_fn(ctx, args, kwargs);
         };
+        // Restore the panic info of current schema attribute.
+        ctx.panic_info = panic_info;
         backtrack_level_map.dict_update_key_value(key, ValueRef::int(level));
         let value = match schema.dict_get_value(key) {
             Some(x) => x,
