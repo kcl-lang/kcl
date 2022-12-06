@@ -95,3 +95,14 @@ pub fn test_parse_expr_invalid() {
         check_result_panic_info(result);
     }
 }
+
+#[test]
+pub fn test_newline_on_windows() {
+    match parse_file(
+        "D:\\workspace\\KCLVM\\kclvm\\parser\\testdata\\win\\hello.k",
+        None,
+    ) {
+        Ok(res) => {}
+        Err(_) => {}
+    }
+}
