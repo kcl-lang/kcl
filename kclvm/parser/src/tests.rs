@@ -96,13 +96,13 @@ pub fn test_parse_expr_invalid() {
     }
 }
 
+#[cfg(target_os = "windows")]
 #[test]
 pub fn test_newline_on_windows() {
-    match parse_file(
-        "D:\\workspace\\KCLVM\\kclvm\\parser\\testdata\\win\\hello.k",
-        None,
-    ) {
-        Ok(res) => {}
-        Err(_) => {}
+    match parse_file(".\\testdata\\win\\hello.k", None) {
+        Ok(_) => {}
+        Err(err) => {
+            panic!("{}", err);
+        }
     }
 }
