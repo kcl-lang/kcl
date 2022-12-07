@@ -324,8 +324,19 @@ fn line_continue() {
 fn newline_r_n() {
     check_lexing(
         "\r\n",
+        #[cfg(target_os = "windows")]
         expect![[r#"
             Token { kind: Newline, len: 2 }
+        "#]],
+        #[cfg(target_os = "linux")]
+        expect![[r#"
+            Token { kind: CarriageReturn, len: 1 }
+            Token { kind: Newline, len: 1 }
+        "#]],
+        #[cfg(target_os = "macos")]
+        expect![[r#"
+            Token { kind: CarriageReturn, len: 1 }
+            Token { kind: Newline, len: 1 }
         "#]],
     )
 }
@@ -334,9 +345,24 @@ fn newline_r_n() {
 fn newline_r_n_r_n() {
     check_lexing(
         "\r\n\r\n",
+        #[cfg(target_os = "windows")]
         expect![[r#"
             Token { kind: Newline, len: 2 }
             Token { kind: Newline, len: 2 }
+        "#]],
+        #[cfg(target_os = "linux")]
+        expect![[r#"
+            Token { kind: CarriageReturn, len: 1 }
+            Token { kind: Newline, len: 1 }
+            Token { kind: CarriageReturn, len: 1 }
+            Token { kind: Newline, len: 1 }
+        "#]],
+        #[cfg(target_os = "macos")]
+        expect![[r#"
+            Token { kind: CarriageReturn, len: 1 }
+            Token { kind: Newline, len: 1 }
+            Token { kind: CarriageReturn, len: 1 }
+            Token { kind: Newline, len: 1 }
         "#]],
     )
 }
@@ -355,8 +381,21 @@ fn newline_r() {
 fn newline_r_n_n() {
     check_lexing(
         "\r\n\n",
+        #[cfg(target_os = "windows")]
         expect![[r#"
             Token { kind: Newline, len: 2 }
+            Token { kind: Newline, len: 1 }
+        "#]],
+        #[cfg(target_os = "linux")]
+        expect![[r#"
+            Token { kind: CarriageReturn, len: 1 }
+            Token { kind: Newline, len: 1 }
+            Token { kind: Newline, len: 1 }
+        "#]],
+        #[cfg(target_os = "macos")]
+        expect![[r#"
+            Token { kind: CarriageReturn, len: 1 }
+            Token { kind: Newline, len: 1 }
             Token { kind: Newline, len: 1 }
         "#]],
     )
