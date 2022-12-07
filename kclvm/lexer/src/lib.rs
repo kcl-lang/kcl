@@ -367,7 +367,7 @@ pub trait IIdentCurosr {
     }
 }
 
-/// True if `c` is considered a whitespace according to Rust language definition.
+/// True if `c` is considered a whitespace.
 pub fn is_whitespace(c: char) -> bool {
     match c {
         // Usual ASCII suspects
@@ -418,6 +418,7 @@ impl<'a> ITokenCursor for Cursor<'a> {
 
             '\u{0009}' => Tab,
             '\u{0020}' => Space,
+            // On windows, '\r\n' will be lexed as Token NewLine with len 2.
             #[cfg(target_os = "windows")]
             '\u{000D}' => match self.peek() {
                 '\u{000A}' => {
