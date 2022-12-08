@@ -911,15 +911,15 @@ impl FormatString {
                         match name_part {
                             // Load attr
                             FieldNamePart::Attribute(attr) => {
-                                argument = args.dict_get_value(attr.as_str()).unwrap().clone();
+                                argument = argument.dict_get_value(attr.as_str()).unwrap().clone();
                             }
                             // List subscript
                             FieldNamePart::Index(index) => {
-                                argument = args.list_get(index as isize).unwrap().clone();
+                                argument = argument.list_get(index as isize).unwrap().clone();
                             }
                             // Dict subscript
                             FieldNamePart::StringIndex(value) => {
-                                argument = args.dict_get_value(value.as_str()).unwrap().clone();
+                                argument = argument.dict_get_value(value.as_str()).unwrap().clone();
                             }
                         }
                     }
@@ -1054,6 +1054,32 @@ impl ValueRef {
                 }
             }
             _ => self.to_string(),
+        }
+    }
+}
+
+#[cfg(test)]
+mod test_value_fmt {
+    use crate::*;
+
+    #[test]
+    fn test_string_format() {
+        let cases = [
+            (r#""{} {}""#, r#"["Hello","World"]"#, "\"Hello World\""),
+            (r#""{:.0f}""#, r#"[1.0]"#, "\"1\""),
+            (r#""{:.1f} {:.0f}""#, r#"[1.0,2.0]"#, "\"1.0 2\""),
+            (
+                r#""0{0[0]}, 1{0[1]}, Hello{1[Hello]}""#,
+                r#"[["0","1"],{ "Hello": "World" }]"#,
+                "\"00, 11, HelloWorld\"",
+            ),
+        ];
+        for (format_string, args, expected) in cases {
+            let format_string = FormatString::from_str(format_string).unwrap();
+            let args = ValueRef::from_json(args).unwrap();
+            let kwargs = ValueRef::dict(None);
+            let result = format_string.format(&args, &kwargs);
+            assert_eq!(&result, expected)
         }
     }
 }
