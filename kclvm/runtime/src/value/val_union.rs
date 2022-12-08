@@ -3,6 +3,14 @@
 use crate::unification::value_subsume;
 use crate::*;
 
+#[derive(Default, Debug)]
+struct UnionContext {
+    path_backtrace: Vec<String>,
+    conflict: bool,
+    obj_json: String,
+    delta_json: String,
+}
+
 impl ValueRef {
     fn do_union(
         &mut self,
@@ -10,12 +18,13 @@ impl ValueRef {
         should_list_override: bool,
         should_idempotent_check: bool,
         should_config_resolve: bool,
+        union_context: &mut UnionContext,
     ) -> Self {
         if self.is_same_ref(x) {
             return self.clone();
         }
 
-        let union_fn = |obj: &mut DictValue, delta: &DictValue| {
+        let mut union_fn = |obj: &mut DictValue, delta: &DictValue| {
             // Update attribute map
             for (k, v) in &delta.ops {
                 obj.ops.insert(k.clone(), v.clone());
@@ -40,19 +49,39 @@ impl ValueRef {
                 } else {
                     match operation {
                         ConfigEntryOperationKind::Union => {
-                            if should_idempotent_check
-                                && obj.values.contains_key(k)
-                                && !value_subsume(v, obj.values.get(k).unwrap(), false)
-                            {
-                                panic!("conflicting values on the attribute '{}' between {:?} and {:?}", k, self, x);
+                            let obj_value = obj.values.get_mut(k).unwrap();
+                            if should_idempotent_check && !value_subsume(v, obj_value, false) {
+                                union_context.conflict = true;
+                                union_context.path_backtrace.push(k.clone());
+                                union_context.obj_json = if obj_value.is_config() {
+                                    "{...}".to_string()
+                                } else if obj_value.is_list() {
+                                    "[...]".to_string()
+                                } else {
+                                    obj_value.to_json_string()
+                                };
+
+                                union_context.delta_json = if v.is_config() {
+                                    "{...}".to_string()
+                                } else if v.is_list() {
+                                    "[...]".to_string()
+                                } else {
+                                    v.to_json_string()
+                                };
+                                return;
                             }
-                            obj.values.get_mut(k).unwrap().union(
+                            obj_value.union(
                                 v,
                                 false,
                                 should_list_override,
                                 should_idempotent_check,
                                 should_config_resolve,
+                                union_context,
                             );
+                            if union_context.conflict {
+                                union_context.path_backtrace.push(k.clone());
+                                return;
+                            }
                         }
                         ConfigEntryOperationKind::Override => {
                             if index < 0 {
@@ -109,7 +138,6 @@ impl ValueRef {
         let mut name: String = "".to_string();
         let mut common_keys: Vec<String> = vec![];
         let mut valid = true;
-
         match (&mut *self.rc.borrow_mut(), &*x.rc.borrow()) {
             (Value::list_value(obj), Value::list_value(delta)) => {
                 if !should_list_override {
@@ -130,7 +158,11 @@ impl ValueRef {
                                 should_list_override,
                                 should_idempotent_check,
                                 should_config_resolve,
+                                union_context,
                             );
+                            if union_context.conflict {
+                                union_context.path_backtrace.push(format!("list[{}]", idx));
+                            }
                         }
                     }
                 }
@@ -176,6 +208,9 @@ impl ValueRef {
                 x.type_str()
             )
         }
+        if union_context.conflict {
+            return self.clone();
+        }
         if union_schema {
             let result = self.clone();
             let schema = result.dict_to_schema(name.as_str(), pkgpath.as_str(), &common_keys);
@@ -194,6 +229,7 @@ impl ValueRef {
         should_list_override: bool,
         should_idempotent_check: bool,
         should_config_resolve: bool,
+        union_context: &mut UnionContext,
     ) -> Self {
         if self.is_none_or_undefined() {
             *self = x.clone();
@@ -208,6 +244,7 @@ impl ValueRef {
                 should_list_override,
                 should_idempotent_check,
                 should_config_resolve,
+                union_context,
             );
         } else if or_mode {
             if let (Value::int_value(a), Value::int_value(b)) =
@@ -235,13 +272,43 @@ impl ValueRef {
         should_idempotent_check: bool,
         should_config_resolve: bool,
     ) -> Self {
-        self.union(
+        let mut union_context = UnionContext::default();
+        let ret = self.union(
             x,
             or_mode,
             should_list_override,
             should_idempotent_check,
             should_config_resolve,
-        )
+            &mut union_context,
+        );
+        if union_context.conflict {
+            union_context.path_backtrace.reverse();
+            let confilct_key = union_context.path_backtrace.last().unwrap();
+            let path_string = union_context.path_backtrace.join(".");
+
+            // build override_example
+            // it will be like:
+            // {...} | {
+            //         ...
+            //         b = {...}
+            //         ...
+            // }
+
+            let override_example = format!(
+                "    {{...}} | {{\n            ...\n            {} = {}\n            ...\n    }}",
+                confilct_key, union_context.delta_json
+            );
+
+            panic!(
+                "conflicting values on the attribute '{}' between :\n    {}\nand\n    {}\nwith union path :\n    {}\ntry operator '=' to override the attribute, like:\n{}",
+                confilct_key,
+                union_context.obj_json,
+                union_context.delta_json,
+                path_string,
+                override_example,
+            )
+        }
+        ret.clone()
     }
 }
 
@@ -482,5 +549,101 @@ mod test_value_union {
                 assert_eq!(*result_index, index);
             }
         }
+    }
+
+    #[test]
+    fn test_dict_union_conflict_attr() {
+        let pre_hook = std::panic::take_hook();
+        std::panic::set_hook(Box::new(|_| {}));
+        let cases = [
+            (
+                r#"{"key" : "value"}"#,
+                r#"{"key" : "value1"}"#,
+                r#"conflicting values on the attribute 'key' between :
+    "value"
+and
+    "value1"
+with union path :
+    key
+try operator '=' to override the attribute, like:
+    {...} | {
+            ...
+            key = "value1"
+            ...
+    }"#,
+            ),
+            (
+                r#"[{"key" : "value"}]"#,
+                r#"[{"key" : "value1"}]"#,
+                r#"conflicting values on the attribute 'key' between :
+    "value"
+and
+    "value1"
+with union path :
+    list[0].key
+try operator '=' to override the attribute, like:
+    {...} | {
+            ...
+            key = "value1"
+            ...
+    }"#,
+            ),
+            (
+                r#"{"key1" : { "key2" : 3 }}"#,
+                r#"{"key1" : { "key2" : 4 }}"#,
+                r#"conflicting values on the attribute 'key2' between :
+    3
+and
+    4
+with union path :
+    key1.key2
+try operator '=' to override the attribute, like:
+    {...} | {
+            ...
+            key2 = 4
+            ...
+    }"#,
+            ),
+            (
+                r#"{"key1" : { "key2" : 3 }}"#,
+                r#"{"key1" : [1,2,3]}"#,
+                r#"conflicting values on the attribute 'key1' between :
+    {...}
+and
+    [...]
+with union path :
+    key1
+try operator '=' to override the attribute, like:
+    {...} | {
+            ...
+            key1 = [...]
+            ...
+    }"#,
+            ),
+            (
+                r#"{"key1" : [1,2,3]}"#,
+                r#"{"key1" : { "key2" : 3 }}"#,
+                r#"conflicting values on the attribute 'key1' between :
+    [...]
+and
+    {...}
+with union path :
+    key1
+try operator '=' to override the attribute, like:
+    {...} | {
+            ...
+            key1 = {...}
+            ...
+    }"#,
+            ),
+        ];
+        for (left, right, expected) in cases {
+            assert_panic(expected, || {
+                let left_value = ValueRef::from_json(left).unwrap();
+                let right_value = ValueRef::from_json(right).unwrap();
+                left_value.bin_bit_or(&right_value);
+            });
+        }
+        std::panic::set_hook(pre_hook);
     }
 }
