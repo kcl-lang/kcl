@@ -68,4 +68,10 @@ fn stack_link_lld() {
     // stack, which is not big enough for debug builds
     #[cfg(windows)]
     println!("cargo:rustc-link-arg=/STACK:8388608");
+
+    // Set rustc TARGET to KCLVM_DEFAULT_TARGET
+    println!(
+        "cargo:rustc-env=KCLVM_DEFAULT_TARGET={}",
+        std::env::var("TARGET").unwrap()
+    );
 }
