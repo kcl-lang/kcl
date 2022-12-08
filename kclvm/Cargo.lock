@@ -670,6 +670,7 @@ dependencies = [
  "glob",
  "indexmap",
  "kclvm-ast",
+ "kclvm-capi",
  "kclvm-compiler",
  "kclvm-config",
  "kclvm-error",

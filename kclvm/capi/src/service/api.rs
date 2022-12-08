@@ -101,7 +101,7 @@ pub(crate) fn _kclvm_get_service_fn_ptr_by_name(name: &str) -> u64 {
 
 /// ping is used to test whether kclvm service is successfully imported
 /// arguments and return results should be consistent
-pub fn ping(serv: *mut KclvmService, args: &[u8]) -> *const c_char {
+pub(crate) fn ping(serv: *mut KclvmService, args: &[u8]) -> *const c_char {
     let serv_ref = mut_ptr_as_ref(serv);
     let args = Ping_Args::parse_from_bytes(args).unwrap();
     let res = serv_ref.ping(&args);
@@ -126,7 +126,7 @@ pub fn ping(serv: *mut KclvmService, args: &[u8]) -> *const c_char {
 ///
 /// result: [*const c_char]
 ///     Result of the call serialized as protobuf byte sequence
-pub fn exec_program(serv: &mut KclvmService, args: &[u8]) -> *const c_char {
+pub(crate) fn exec_program(serv: &mut KclvmService, args: &[u8]) -> *const c_char {
     let serv_ref = mut_ptr_as_ref(serv);
     let args = ExecProgram_Args::parse_from_bytes(args).unwrap();
     let res = serv_ref.exec_program(&args);
@@ -156,7 +156,7 @@ pub fn exec_program(serv: &mut KclvmService, args: &[u8]) -> *const c_char {
 ///
 /// result: [*const c_char]
 ///     Result of the call serialized as protobuf byte sequence
-pub fn override_file(serv: &mut KclvmService, args: &[u8]) -> *const c_char {
+pub(crate) fn override_file(serv: &mut KclvmService, args: &[u8]) -> *const c_char {
     let serv_ref = mut_ptr_as_ref(serv);
     let args = OverrideFile_Args::parse_from_bytes(args).unwrap();
     let res = serv_ref.override_file(&args);

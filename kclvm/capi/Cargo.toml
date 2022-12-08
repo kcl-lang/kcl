@@ -3,11 +3,6 @@ name = "kclvm-capi"
 version = "0.1.0"
 edition = "2021"
 
-[lib]
-crate-type = ["cdylib"]
-path = "src/lib.rs"
-name = "kclvm_capi"
-
 [dependencies]
 protobuf = "3.1.0"
 serde_json = "1.0"

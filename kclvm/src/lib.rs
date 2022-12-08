@@ -1,5 +1,6 @@
 extern crate serde;
 
+pub use kclvm_capi::service::api::*;
 use kclvm_parser::load_program;
 use kclvm_query::apply_overrides;
 use kclvm_runner::execute;
