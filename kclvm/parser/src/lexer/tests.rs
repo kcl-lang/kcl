@@ -20,6 +20,21 @@ fn check_lexing(src: &str, expect: Expect) {
     });
 }
 
+// Get the code snippets from 'src' by token.span, and compare with expect.
+fn check_span(src: &str, expect: Expect) {
+    let sm = SourceMap::new(FilePathMapping::empty());
+    sm.new_source_file(PathBuf::from("").into(), src.to_string());
+    let sess = &ParseSession::with_source_map(Arc::new(SourceMap::new(FilePathMapping::empty())));
+
+    create_session_globals_then(move || {
+        let actual: String = parse_token_streams(sess, src, BytePos::from_u32(0))
+            .iter()
+            .map(|token| format!("{:?} ", sm.span_to_snippet(token.span).unwrap()))
+            .collect();
+        expect.assert_eq(&actual)
+    });
+}
+
 #[test]
 fn test_str_content_eval() {
     let cases = [
@@ -486,5 +501,21 @@ a=1
         Token { kind: Newline, span: Span { base_or_index: 4, len_or_tag: 1 } }
         Token { kind: Eof, span: Span { base_or_index: 5, len_or_tag: 0 } }
         "#]],
+    )
+}
+
+#[test]
+fn test_token_span() {
+    let src = r#"
+schema Person:
+    name: str = "kcl"
+
+x0 = Person {}
+    "#;
+    check_span(
+        src,
+        expect![
+            r#""\n" "schema" "Person" ":" "\n" "" "name" ":" "str" "=" "\"kcl\"" "\n" "\n" "" "x0" "=" "Person" "{" "}" "\n" "" "#
+        ],
     )
 }
