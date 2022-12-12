@@ -18,12 +18,6 @@ fn check_parsing_expr(src: &str, expect: Expect) {
         Some(src_from_sf) => {
             create_session_globals_then(|| {
                 let stream = parse_token_streams(sess, src_from_sf.as_str(), BytePos::from_u32(0));
-                let actual: String = stream
-                    .iter()
-                    .map(|token| format!("{:?}\n", token))
-                    .collect();
-                println!("{}", actual);
-
                 let mut parser = Parser::new(sess, stream);
                 let expr = parser.parse_expr();
                 let actual = format!("{:?}\n", expr);

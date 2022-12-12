@@ -95,14 +95,3 @@ pub fn test_parse_expr_invalid() {
         check_result_panic_info(result);
     }
 }
-
-#[cfg(target_os = "windows")]
-#[test]
-pub fn test_newline_on_windows() {
-    match parse_file(".\\testdata\\win\\hello.k", None) {
-        Ok(_) => {}
-        Err(err) => {
-            panic!("{}", err);
-        }
-    }
-}
