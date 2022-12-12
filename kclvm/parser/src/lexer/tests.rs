@@ -35,7 +35,7 @@ fn check_span(src: &str, expect: Expect) {
     create_session_globals_then(move || {
         let actual: String = parse_token_streams(sess, src, BytePos::from_u32(0))
             .iter()
-            .map(|token| format!("{:?} ", sm.span_to_snippet(token.span).unwrap()))
+            .map(|token| format!("{:?}\n", sm.span_to_snippet(token.span).unwrap()))
             .collect();
         expect.assert_eq(&actual)
     });
@@ -521,7 +521,28 @@ x0 = Person {}
     check_span(
         src,
         expect![
-            r#""\n" "schema" "Person" ":" "\n" "" "name" ":" "str" "=" "\"kcl\"" "\n" "\n" "" "x0" "=" "Person" "{" "}" "\n" "" "#
+            r#""\n"
+"schema"
+"Person"
+":"
+"\n"
+""
+"name"
+":"
+"str"
+"="
+"\"kcl\""
+"\n"
+"\n"
+""
+"x0"
+"="
+"Person"
+"{"
+"}"
+"\n"
+""
+"#
         ],
     )
 }

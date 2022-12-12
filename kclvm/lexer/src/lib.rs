@@ -416,6 +416,7 @@ impl<'a> ITokenCursor for Cursor<'a> {
                 TokenKind::Literal { kind, suffix_start }
             }
 
+            // '\r' will be considered as a 'WhiteSpace'.
             '\u{0009}' => Tab,
             '\u{0020}' => Space,
             '\u{000A}' => Newline,
