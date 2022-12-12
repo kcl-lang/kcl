@@ -3,21 +3,27 @@ use crate::lexer::str_content_eval;
 use crate::session::ParseSession;
 use expect_test::{expect, Expect};
 use kclvm_span::{create_session_globals_then, BytePos, FilePathMapping, SourceMap};
+use std::fs;
 use std::path::PathBuf;
 use std::sync::Arc;
 
 fn check_lexing(src: &str, expect: Expect) {
     let sm = SourceMap::new(FilePathMapping::empty());
-    sm.new_source_file(PathBuf::from("").into(), src.to_string());
+    let sf = sm.new_source_file(PathBuf::from("").into(), src.to_string());
     let sess = &ParseSession::with_source_map(Arc::new(sm));
 
-    create_session_globals_then(|| {
-        let actual: String = parse_token_streams(sess, src, BytePos::from_u32(0))
-            .iter()
-            .map(|token| format!("{:?}\n", token))
-            .collect();
-        expect.assert_eq(&actual)
-    });
+    match sf.src.as_ref() {
+        Some(src_from_sf) => {
+            create_session_globals_then(|| {
+                let actual: String = parse_token_streams(sess, src_from_sf, BytePos::from_u32(0))
+                    .iter()
+                    .map(|token| format!("{:?}\n", token))
+                    .collect();
+                expect.assert_eq(&actual)
+            });
+        }
+        None => todo!(),
+    };
 }
 
 // Get the code snippets from 'src' by token.span, and compare with expect.
@@ -518,4 +524,52 @@ x0 = Person {}
             r#""\n" "schema" "Person" ":" "\n" "" "name" ":" "str" "=" "\"kcl\"" "\n" "\n" "" "x0" "=" "Person" "{" "}" "\n" "" "#
         ],
     )
+}
+
+#[test]
+fn test_source_file() {
+    let src = "\r\n\r\n\r\r\n\n\n\r".to_string();
+    let sm = kclvm_span::SourceMap::new(FilePathMapping::empty());
+    let sf = sm.new_source_file(PathBuf::from("").into(), src);
+    match sf.src.as_ref() {
+        Some(src_from_sf) => {
+            assert_eq!(src_from_sf.as_str(), "\n\n\r\n\n\n\r");
+        }
+        None => {
+            unreachable!();
+        }
+    };
+}
+
+#[test]
+fn test_parse_token_stream() {
+    check_lexing(
+        "\n\r\n\r\n\r\r\n",
+        expect![[r#"
+            Token { kind: Newline, span: Span { base_or_index: 0, len_or_tag: 1 } }
+            Token { kind: Newline, span: Span { base_or_index: 1, len_or_tag: 1 } }
+            Token { kind: Newline, span: Span { base_or_index: 2, len_or_tag: 1 } }
+            Token { kind: Newline, span: Span { base_or_index: 4, len_or_tag: 1 } }
+            Token { kind: Eof, span: Span { base_or_index: 5, len_or_tag: 0 } }
+        "#]],
+    );
+}
+
+#[cfg(target_os = "windows")]
+#[test]
+fn test_parse_token_stream_on_win() {
+    let src = fs::read_to_string(".\\src\\lexer\\test\\hello_win.k");
+    assert_eq!(src, "");
+
+    check_lexing(
+        src,
+        expect![[r#"
+            Token { kind: Newline, span: Span { base_or_index: 0, len_or_tag: 1 } }
+            Token { kind: Newline, span: Span { base_or_index: 1, len_or_tag: 1 } }
+            Token { kind: Newline, span: Span { base_or_index: 2, len_or_tag: 1 } }
+            Token { kind: Newline, span: Span { base_or_index: 3, len_or_tag: 1 } }
+            Token { kind: Newline, span: Span { base_or_index: 5, len_or_tag: 0 } }
+            Token { kind: Eof, span: Span { base_or_index: 5, len_or_tag: 0 } }
+        "#]],
+    );
 }

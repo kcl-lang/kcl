@@ -12,6 +12,7 @@ extern crate kclvm_error;
 use crate::session::ParseSession;
 use kclvm::{ErrType, PanicInfo};
 use kclvm_ast::ast;
+use kclvm_error::bug;
 use kclvm_span::{self, FilePathMapping, SourceMap};
 
 use lexer::parse_token_streams;
@@ -84,7 +85,15 @@ pub fn parse_file(filename: &str, code: Option<String>) -> Result<ast::Module, S
         let sf = sm.new_source_file(PathBuf::from(filename).into(), src.to_string());
         let sess = &ParseSession::with_source_map(std::sync::Arc::new(sm));
 
-        let stream = lexer::parse_token_streams(sess, src.as_str(), sf.start_pos);
+        let src_from_sf = match sf.src.as_ref() {
+            Some(src) => src,
+            None => {
+                let err_msg = format!("Internal Bug: Failed to load KCL file '{}'.", filename);
+                return Err(err_msg);
+            }
+        };
+
+        let stream = lexer::parse_token_streams(sess, src_from_sf.as_str(), sf.start_pos);
         let mut p = parser::Parser::new(sess, stream);
         let mut m = p.parse_module();
 
@@ -113,11 +122,18 @@ pub fn parse_expr(src: &str) -> Option<ast::NodeRef<ast::Expr>> {
         None
     } else {
         let sm = SourceMap::new(FilePathMapping::empty());
-        sm.new_source_file(PathBuf::from("").into(), src.to_string());
+        let sf = sm.new_source_file(PathBuf::from("").into(), src.to_string());
+        let src_from_sf = match sf.src.as_ref() {
+            Some(src) => src,
+            None => {
+                bug!("Internal Bug: Failed to load KCL file.");
+            }
+        };
+
         let sess = &ParseSession::with_source_map(Arc::new(sm));
 
         let expr: Option<ast::NodeRef<ast::Expr>> = Some(create_session_globals_then(|| {
-            let stream = parse_token_streams(sess, src, BytePos::from_u32(0));
+            let stream = parse_token_streams(sess, src_from_sf.as_str(), BytePos::from_u32(0));
             let mut parser = Parser::new(sess, stream);
             parser.parse_expr()
         }));

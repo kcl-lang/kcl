@@ -16,6 +16,12 @@ impl TokenStream {
     }
 }
 
+impl Into<Vec<Token>> for TokenStream {
+    fn into(self) -> Vec<Token> {
+        self.0
+    }
+}
+
 impl Deref for TokenStream {
     type Target = Vec<Token>;
 

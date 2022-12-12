@@ -1,4 +1,4 @@
-use crate::lexer::parse_token_streams;
+use crate::lexer::{self, parse_token_streams};
 use crate::parse_file;
 use crate::parser::Parser;
 use crate::session::ParseSession;
@@ -11,16 +11,21 @@ use std::sync::Arc;
 
 fn check_parsing_expr(src: &str, expect: Expect) {
     let sm = SourceMap::new(FilePathMapping::empty());
-    sm.new_source_file(PathBuf::from("").into(), src.to_string());
+    let sf = sm.new_source_file(PathBuf::from("").into(), src.to_string());
     let sess = &ParseSession::with_source_map(Arc::new(sm));
 
-    create_session_globals_then(|| {
-        let stream = parse_token_streams(sess, src, BytePos::from_u32(0));
-        let mut parser = Parser::new(sess, stream);
-        let expr = parser.parse_expr();
-        let actual = format!("{:?}\n", expr);
-        expect.assert_eq(&actual)
-    });
+    match sf.src.as_ref() {
+        Some(src_from_sf) => {
+            create_session_globals_then(|| {
+                let stream = parse_token_streams(sess, src_from_sf.as_str(), BytePos::from_u32(0));
+                let mut parser = Parser::new(sess, stream);
+                let expr = parser.parse_expr();
+                let actual = format!("{:?}\n", expr);
+                expect.assert_eq(&actual)
+            });
+        }
+        None => todo!(),
+    };
 }
 
 fn check_parsing_file_ast_json(filename: &str, src: &str, expect: Expect) {

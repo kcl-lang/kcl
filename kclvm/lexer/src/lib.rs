@@ -373,7 +373,7 @@ pub fn is_whitespace(c: char) -> bool {
         // Usual ASCII suspects
         | '\u{000B}' // vertical tab
         | '\u{000C}' // form feed
-
+        | '\u{000D}' // \r
         // NEXT LINE from latin1
         | '\u{0085}'
 
@@ -418,20 +418,6 @@ impl<'a> ITokenCursor for Cursor<'a> {
 
             '\u{0009}' => Tab,
             '\u{0020}' => Space,
-            // On windows, '\r\n' will be lexed as Token NewLine with len 2.
-            #[cfg(target_os = "windows")]
-            '\u{000D}' => match self.peek() {
-                '\u{000A}' => {
-                    self.bump();
-                    Newline
-                }
-                _ => CarriageReturn,
-            },
-            #[cfg(target_os = "linux")]
-            '\u{000D}' => CarriageReturn,
-            #[cfg(target_os = "macos")]
-            '\u{000D}' => CarriageReturn,
-
             '\u{000A}' => Newline,
 
             ';' => Semi,
