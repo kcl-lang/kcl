@@ -54,14 +54,18 @@ impl ValueRef {
     /// Decode yaml stream string that contains `---` to a ValueRef.
     /// Returns [serde_yaml::Error] when decoding fails.
     pub fn from_yaml_stream(s: &str) -> Result<Self, serde_yaml::Error> {
-        let parts: Vec<&str> = s.split("---").collect();
-        if parts.len() <= 1 {
-            ValueRef::from_yaml(s)
+        let documents = serde_yaml::Deserializer::from_str(s);
+        let mut result = ValueRef::list_value(None);
+        for document in documents {
+            let json_value: JsonValue = JsonValue::deserialize(document)?;
+            result.list_append(&ValueRef::parse_json(&json_value))
+        }
+        if result.len() == 0 {
+            // Empty result returns a empty dict.
+            Ok(ValueRef::dict(None))
+        } else if result.len() == 1 {
+            Ok(result.list_get(0).unwrap())
         } else {
-            let mut result = ValueRef::list_value(None);
-            for part in parts {
-                result.list_append(&ValueRef::from_yaml(part)?);
-            }
             Ok(result)
         }
     }
@@ -184,11 +188,11 @@ mod test_value_yaml {
         let cases = [
             (
                 "a: 1\n---\na: 1\n  b: 2\nc: 3",
-                "mapping values are not allowed in this context at line 3 column 4",
+                "mapping values are not allowed in this context at line 4 column 4",
             ),
             (
                 "b:3\n---\na:\n- 1\n  -2\n-3",
-                "while parsing a block mapping, did not find expected key at line 5 column 1",
+                "while parsing a block mapping, did not find expected key at line 6 column 1",
             ),
         ];
         for (yaml_str, expected) in cases {
