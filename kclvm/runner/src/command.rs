@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::linker::lld_main;
 use std::env::consts::DLL_SUFFIX;
 use std::ffi::CString;
@@ -94,6 +96,55 @@ impl Command {
         // Call lld main function with args.
         assert!(!lld_main(&args), "Run LLD linker failed");
 
+        // Use absolute path.
+        let path = PathBuf::from(&lib_path)
+            .canonicalize()
+            .unwrap_or_else(|_| panic!("{} not found", lib_path));
+        path.to_str().unwrap().to_string()
+    }
+
+    /// Link dynamic libraries into one library using cc-rs lib.
+    pub(crate) fn link_libs_with_cc(&mut self, libs: &[String], lib_path: &str) -> String {
+        let lib_suffix = Self::get_lib_suffix();
+        let lib_path = if lib_path.is_empty() {
+            format!("{}{}", "_a.out", lib_suffix)
+        } else if !lib_path.ends_with(&lib_suffix) {
+            format!("{}{}", lib_path, lib_suffix)
+        } else {
+            lib_path.to_string()
+        };
+
+        let target = format!("{}-{}", std::env::consts::ARCH, std::env::consts::OS);
+        let mut build = cc::Build::new();
+
+        build
+            .cargo_metadata(false)
+            .no_default_flags(false)
+            .pic(true)
+            .shared_flag(true)
+            .opt_level(0)
+            .target(&target)
+            .host(&target)
+            .flag("-o")
+            .flag(&lib_path);
+        build.files(libs);
+
+        // Run command with cc.
+        let mut cmd = build.try_get_compiler().unwrap().to_command();
+        cmd.args(libs);
+        cmd.arg(&format!("-Wl,-rpath,{}/lib", self.executable_root));
+        cmd.arg(&format!("-L{}/lib", self.executable_root));
+        cmd.arg(&format!("-I{}/include", self.executable_root));
+        cmd.arg("-lkclvm");
+
+        let result = cmd.output().expect("run cc command failed");
+        if !result.status.success() {
+            panic!(
+                "run cc failed: stdout {}, stderr: {}",
+                String::from_utf8(result.stdout).unwrap(),
+                String::from_utf8(result.stderr).unwrap()
+            )
+        }
         // Use absolute path.
         let path = PathBuf::from(&lib_path)
             .canonicalize()

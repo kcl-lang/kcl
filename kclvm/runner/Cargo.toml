@@ -22,6 +22,7 @@ chrono = "0.4.19"
 tempfile = "3.3.0"
 anyhow = "1.0"
 once_cell = "1.10"
+cc = "1.0"
 
 kclvm-ast = {path = "../ast", version = "0.1.0"}
 kclvm-parser = {path = "../parser", version = "0.1.0"}
