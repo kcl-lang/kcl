@@ -373,7 +373,7 @@ impl ValueRef {
             Err(err) => Err(err),
         }
     }
-    fn parse_json(json: &JsonValue) -> Self {
+    pub(crate) fn parse_json(json: &JsonValue) -> Self {
         match json {
             JsonValue::Object(values) => {
                 let mut dict = Self::dict(None);

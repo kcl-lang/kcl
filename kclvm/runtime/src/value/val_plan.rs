@@ -128,7 +128,9 @@ fn filter_results(key_values: &ValueRef) -> Vec<ValueRef> {
         }
         results
             .iter()
-            .filter(|r| !r.is_planned_empty())
+            .enumerate()
+            .filter(|(index, r)| *index == 0 || !r.is_planned_empty())
+            .map(|v| v.1)
             .cloned()
             .collect()
     } else {

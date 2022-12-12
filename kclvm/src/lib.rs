@@ -1,9 +1,7 @@
 extern crate serde;
 
 pub use kclvm_capi::service::api::*;
-use kclvm_parser::load_program;
-use kclvm_query::apply_overrides;
-use kclvm_runner::execute;
+use kclvm_runner::exec_program;
 use kclvm_runner::runner::*;
 
 #[no_mangle]
@@ -54,16 +52,5 @@ pub extern "C" fn kclvm_cli_run(args: *const i8, plugin_agent: *const i8) -> *co
 pub fn kclvm_cli_run_unsafe(args: *const i8, plugin_agent: *const i8) -> Result<String, String> {
     let args = ExecProgramArgs::from_str(kclvm::c2str(args));
     let plugin_agent = plugin_agent as u64;
-
-    let files = args.get_files();
-    let opts = args.get_load_program_options();
-
-    // Parse AST program.
-    let mut program = load_program(&files, Some(opts))?;
-    if let Err(msg) = apply_overrides(&mut program, &args.overrides, &[], args.print_override_ast) {
-        return Err(msg.to_string());
-    }
-
-    // Resolve AST program, generate libs, link libs and execute.
-    execute(program, plugin_agent, &args)
+    exec_program(&args, plugin_agent).map(|r| r.json_result)
 }
