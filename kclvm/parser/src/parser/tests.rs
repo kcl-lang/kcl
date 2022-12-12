@@ -18,6 +18,12 @@ fn check_parsing_expr(src: &str, expect: Expect) {
         Some(src_from_sf) => {
             create_session_globals_then(|| {
                 let stream = parse_token_streams(sess, src_from_sf.as_str(), BytePos::from_u32(0));
+                let actual: String = stream
+                    .iter()
+                    .map(|token| format!("{:?}\n", token))
+                    .collect();
+                println!("{}", actual);
+
                 let mut parser = Parser::new(sess, stream);
                 let expr = parser.parse_expr();
                 let actual = format!("{:?}\n", expr);
@@ -80,7 +86,7 @@ fn check_type_stmt(src: &str, expect: Expect) {
 fn check_parsing_module(filename: &str, src: &str, expect: &str) {
     let m = crate::parse_file(filename, Some(src.to_string())).unwrap();
     let actual = format!("{}\n", serde_json::ser::to_string(&m).unwrap());
-    assert_eq!(actual, expect);
+    assert_eq!(actual.trim(), expect.trim());
 }
 
 #[test]
@@ -1098,6 +1104,7 @@ fn test_parse_file() {
         "testdata/if-02.k",
         "testdata/if-03.k",
         "testdata/type-01.k",
+        "testdata/hello_win.k",
     ];
     for filename in filenames {
         let code = std::fs::read_to_string(&filename).unwrap();
