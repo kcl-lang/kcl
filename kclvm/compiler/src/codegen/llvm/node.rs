@@ -2082,7 +2082,11 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         let func_before_block = self.append_block("");
         self.br(func_before_block);
         // Use "pkgpath"+"kclvm_lambda" to name 'function' to prevent conflicts between lambdas with the same name in different packages
-        let function = self.add_function(&format!("{}.{}", pkgpath, value::LAMBDA_NAME));
+        let function = self.add_function(&format!(
+            "{}.{}",
+            pkgpath_without_prefix!(pkgpath),
+            value::LAMBDA_NAME
+        ));
         // Enter the function
         self.push_function(function);
         self.lambda_stack.borrow_mut().push(true);
