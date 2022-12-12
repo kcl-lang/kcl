@@ -192,6 +192,7 @@ pub(crate) struct KclvmAssembler {
     scope: ProgramScope,
     entry_file: String,
     single_file_assembler: KclvmLibAssembler,
+    target: String,
 }
 
 impl KclvmAssembler {
@@ -210,6 +211,7 @@ impl KclvmAssembler {
             scope,
             entry_file,
             single_file_assembler,
+            target: env!("KCLVM_DEFAULT_TARGET").to_string(),
         }
     }
 
@@ -250,6 +252,7 @@ impl KclvmAssembler {
             .join(".kclvm")
             .join("cache")
             .join(kclvm_version::get_full_version())
+            .join(&self.target)
     }
 
     /// Generate the dynamic link libraries and return file paths.
@@ -315,7 +318,7 @@ impl KclvmAssembler {
             let code_file = file.to_str().unwrap().to_string();
             let code_file_path = assembler.add_code_file_suffix(&code_file);
             let lock_file_path = format!("{}.lock", code_file_path);
-
+            let target = self.target.clone();
             pool.execute(move || {
                 // Locking file for parallel code generation.
                 let mut file_lock = fslock::LockFile::open(&lock_file_path)
@@ -335,7 +338,7 @@ impl KclvmAssembler {
                 } else {
                     // Read the lib path cache
                     let file_relative_path: Option<String> =
-                        load_pkg_cache(root, &pkgpath, CacheOption::default());
+                        load_pkg_cache(root, &target, &pkgpath, CacheOption::default());
                     let file_abs_path = match file_relative_path {
                         Some(file_relative_path) => {
                             let path = if file_relative_path.starts_with('.') {
@@ -364,6 +367,7 @@ impl KclvmAssembler {
                             let lib_relative_path = file_path.replacen(root, ".", 1);
                             save_pkg_cache(
                                 root,
+                                &target,
                                 &pkgpath,
                                 lib_relative_path,
                                 CacheOption::default(),

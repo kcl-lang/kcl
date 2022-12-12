@@ -35,21 +35,21 @@ impl Default for CacheOption {
 }
 
 /// Load pkg cache.
-pub fn load_pkg_cache<T>(root: &str, pkgpath: &str, option: CacheOption) -> Option<T>
+pub fn load_pkg_cache<T>(root: &str, target: &str, pkgpath: &str, option: CacheOption) -> Option<T>
 where
     T: DeserializeOwned + Default,
 {
     if root.is_empty() || pkgpath.is_empty() {
         None
     } else {
-        let filename = get_cache_filename(root, pkgpath, Some(&option.cache_dir));
+        let filename = get_cache_filename(root, target, pkgpath, Some(&option.cache_dir));
         if !Path::new(&filename).exists() {
             None
         } else {
             // Compare the md5 using cache
             let real_path = get_pkg_realpath_from_pkgpath(root, pkgpath);
             if Path::new(&real_path).exists() {
-                let cache_info = read_info_cache(root, Some(&option.cache_dir));
+                let cache_info = read_info_cache(root, target, Some(&option.cache_dir));
                 let relative_path = real_path.replacen(root, ".", 1);
                 match cache_info.get(&relative_path) {
                     Some(path_info_in_cache) => {
@@ -66,17 +66,17 @@ where
 }
 
 /// Save pkg cache.
-pub fn save_pkg_cache<T>(root: &str, pkgpath: &str, data: T, option: CacheOption)
+pub fn save_pkg_cache<T>(root: &str, target: &str, pkgpath: &str, data: T, option: CacheOption)
 where
     T: Serialize,
 {
     if root.is_empty() || pkgpath.is_empty() {
         return;
     }
-    let dst_filename = get_cache_filename(root, pkgpath, Some(&option.cache_dir));
+    let dst_filename = get_cache_filename(root, target, pkgpath, Some(&option.cache_dir));
     let real_path = get_pkg_realpath_from_pkgpath(root, pkgpath);
     if Path::new(&real_path).exists() {
-        write_info_cache(root, Some(&option.cache_dir), &real_path).unwrap();
+        write_info_cache(root, target, Some(&option.cache_dir), &real_path).unwrap();
     }
     let cache_dir = get_cache_dir(root, Some(&option.cache_dir));
     create_dir_all(&cache_dir).unwrap();
@@ -98,35 +98,37 @@ fn get_cache_dir(root: &str, cache_dir: Option<&str>) -> String {
 
 #[inline]
 #[allow(dead_code)]
-fn get_cache_filename(root: &str, pkgpath: &str, cache_dir: Option<&str>) -> String {
+fn get_cache_filename(root: &str, target: &str, pkgpath: &str, cache_dir: Option<&str>) -> String {
     let cache_dir = cache_dir.or(Some(DEFAULT_CACHE_DIR)).unwrap();
     format!(
-        "{}/{}/{}-{}/{}",
+        "{}/{}/{}-{}/{}/{}",
         root,
         cache_dir,
         version::VERSION,
         version::CHECK_SUM,
+        target,
         pkgpath
     )
 }
 
 #[inline]
-fn get_cache_info_filename(root: &str, cache_dir: Option<&str>) -> String {
+fn get_cache_info_filename(root: &str, target: &str, cache_dir: Option<&str>) -> String {
     let cache_dir = cache_dir.or(Some(DEFAULT_CACHE_DIR)).unwrap();
     format!(
-        "{}/{}/{}-{}/{}",
+        "{}/{}/{}-{}/{}/{}",
         root,
         cache_dir,
         version::VERSION,
         version::CHECK_SUM,
+        target,
         CACHE_INFO_FILENAME
     )
 }
 
 /// Read the cache if it exists and is well formed.
 /// If it is not well formed, the call to write_info_cache later should resolve the issue.
-pub fn read_info_cache(root: &str, cache_dir: Option<&str>) -> Cache {
-    let cache_file = get_cache_info_filename(root, cache_dir);
+pub fn read_info_cache(root: &str, target: &str, cache_dir: Option<&str>) -> Cache {
+    let cache_file = get_cache_info_filename(root, target, cache_dir);
     if !Path::new(&cache_file).exists() {
         return Cache::default();
     }
@@ -140,10 +142,11 @@ pub fn read_info_cache(root: &str, cache_dir: Option<&str>) -> Cache {
 /// Update the cache info file.
 pub fn write_info_cache(
     root: &str,
+    target: &str,
     cache_name: Option<&str>,
     filepath: &str,
 ) -> Result<(), Box<dyn error::Error>> {
-    let dst_filename = get_cache_info_filename(root, cache_name);
+    let dst_filename = get_cache_info_filename(root, target, cache_name);
     let cache_dir = get_cache_dir(root, cache_name);
     let path = Path::new(&cache_dir);
     create_dir_all(path).unwrap();
@@ -152,7 +155,7 @@ pub fn write_info_cache(
     let tmp_filename = temp_file(&cache_dir, "");
     let mut lock_file = LockFile::open(&format!("{}{}", dst_filename, LOCK_SUFFIX)).unwrap();
     lock_file.lock().unwrap();
-    let mut cache = read_info_cache(root, cache_name);
+    let mut cache = read_info_cache(root, target, cache_name);
     cache.insert(relative_path, cache_info);
     let mut file = File::create(&tmp_filename).unwrap();
     file.write_all(&ron::ser::to_string(&cache).unwrap().as_bytes())
