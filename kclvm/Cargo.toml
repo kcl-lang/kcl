@@ -30,6 +30,7 @@ libloading = "0.7.3"
 chrono = "0.4.19"
 threadpool = "1.0"
 
+kclvm-capi = {path = "./capi",version = "0.1.0"}
 kclvm-ast = {path = "./ast", version = "0.1.0"}
 kclvm-runner = {path = "./runner", version = "0.1.0"}
 kclvm-parser = {path = "./parser", version = "0.1.0"}
