@@ -319,3 +319,49 @@ fn line_continue() {
         "#]],
     )
 }
+
+#[test]
+fn newline_r_n() {
+    check_lexing(
+        "\r\n",
+        expect![[r#"
+            Token { kind: Whitespace, len: 1 }
+            Token { kind: Newline, len: 1 }
+        "#]],
+    )
+}
+
+#[test]
+fn newline_r_n_r_n() {
+    check_lexing(
+        "\r\n\r\n",
+        expect![[r#"
+            Token { kind: Whitespace, len: 1 }
+            Token { kind: Newline, len: 1 }
+            Token { kind: Whitespace, len: 1 }
+            Token { kind: Newline, len: 1 }
+        "#]],
+    )
+}
+
+#[test]
+fn newline_r() {
+    check_lexing(
+        "\r",
+        expect![[r#"
+            Token { kind: Whitespace, len: 1 }
+        "#]],
+    )
+}
+
+#[test]
+fn newline_r_n_n() {
+    check_lexing(
+        "\r\n\n",
+        expect![[r#"
+            Token { kind: Whitespace, len: 1 }
+            Token { kind: Newline, len: 1 }
+            Token { kind: Newline, len: 1 }
+        "#]],
+    )
+}

@@ -3,18 +3,39 @@ use crate::lexer::str_content_eval;
 use crate::session::ParseSession;
 use expect_test::{expect, Expect};
 use kclvm_span::{create_session_globals_then, BytePos, FilePathMapping, SourceMap};
+use std::fs;
 use std::path::PathBuf;
 use std::sync::Arc;
 
 fn check_lexing(src: &str, expect: Expect) {
     let sm = SourceMap::new(FilePathMapping::empty());
-    sm.new_source_file(PathBuf::from("").into(), src.to_string());
+    let sf = sm.new_source_file(PathBuf::from("").into(), src.to_string());
     let sess = &ParseSession::with_source_map(Arc::new(sm));
 
-    create_session_globals_then(|| {
+    match sf.src.as_ref() {
+        Some(src_from_sf) => {
+            create_session_globals_then(|| {
+                let actual: String = parse_token_streams(sess, src_from_sf, BytePos::from_u32(0))
+                    .iter()
+                    .map(|token| format!("{:?}\n", token))
+                    .collect();
+                expect.assert_eq(&actual)
+            });
+        }
+        None => todo!(),
+    };
+}
+
+// Get the code snippets from 'src' by token.span, and compare with expect.
+fn check_span(src: &str, expect: Expect) {
+    let sm = SourceMap::new(FilePathMapping::empty());
+    sm.new_source_file(PathBuf::from("").into(), src.to_string());
+    let sess = &ParseSession::with_source_map(Arc::new(SourceMap::new(FilePathMapping::empty())));
+
+    create_session_globals_then(move || {
         let actual: String = parse_token_streams(sess, src, BytePos::from_u32(0))
             .iter()
-            .map(|token| format!("{:?}\n", token))
+            .map(|token| format!("{:?}\n", sm.span_to_snippet(token.span).unwrap()))
             .collect();
         expect.assert_eq(&actual)
     });
@@ -487,4 +508,107 @@ a=1
         Token { kind: Eof, span: Span { base_or_index: 5, len_or_tag: 0 } }
         "#]],
     )
+}
+
+#[test]
+fn test_token_span() {
+    let src = r#"
+schema Person:
+    name: str = "kcl"
+
+x0 = Person {}
+    "#;
+    check_span(
+        src,
+        expect![
+            r#""\n"
+"schema"
+"Person"
+":"
+"\n"
+""
+"name"
+":"
+"str"
+"="
+"\"kcl\""
+"\n"
+"\n"
+""
+"x0"
+"="
+"Person"
+"{"
+"}"
+"\n"
+""
+"#
+        ],
+    )
+}
+
+#[test]
+fn test_source_file() {
+    let src = "\r\n\r\n\r\r\n\n\n\r".to_string();
+    let sm = kclvm_span::SourceMap::new(FilePathMapping::empty());
+    let sf = sm.new_source_file(PathBuf::from("").into(), src);
+    match sf.src.as_ref() {
+        Some(src_from_sf) => {
+            assert_eq!(src_from_sf.as_str(), "\n\n\r\n\n\n\r");
+        }
+        None => {
+            unreachable!();
+        }
+    };
+}
+
+#[test]
+fn test_parse_token_stream() {
+    check_lexing(
+        "\n\r\n\r\n\r\r\n",
+        expect![[r#"
+            Token { kind: Newline, span: Span { base_or_index: 0, len_or_tag: 1 } }
+            Token { kind: Newline, span: Span { base_or_index: 1, len_or_tag: 1 } }
+            Token { kind: Newline, span: Span { base_or_index: 2, len_or_tag: 1 } }
+            Token { kind: Newline, span: Span { base_or_index: 4, len_or_tag: 1 } }
+            Token { kind: Eof, span: Span { base_or_index: 5, len_or_tag: 0 } }
+        "#]],
+    );
+}
+
+#[cfg(target_os = "windows")]
+#[test]
+fn test_parse_token_stream_on_win() {
+    let src = fs::read_to_string(".\\testdata\\win\\hello.k").unwrap();
+    assert_eq!(
+        src,
+        "\r\nschema Person:\r\n    name: str = \"kcl\"\r\n\r\nx0 = Person {}\r\n"
+    );
+
+    check_lexing(
+        &src,
+        expect![[r#"
+            Token { kind: Newline, span: Span { base_or_index: 0, len_or_tag: 1 } }
+            Token { kind: Ident(Symbol(SymbolIndex { idx: 4 })), span: Span { base_or_index: 1, len_or_tag: 6 } }
+            Token { kind: Ident(Symbol(SymbolIndex { idx: 42 })), span: Span { base_or_index: 8, len_or_tag: 6 } }
+            Token { kind: Colon, span: Span { base_or_index: 14, len_or_tag: 1 } }
+            Token { kind: Newline, span: Span { base_or_index: 15, len_or_tag: 1 } }
+            Token { kind: Indent, span: Span { base_or_index: 20, len_or_tag: 0 } }
+            Token { kind: Ident(Symbol(SymbolIndex { idx: 43 })), span: Span { base_or_index: 20, len_or_tag: 4 } }
+            Token { kind: Colon, span: Span { base_or_index: 24, len_or_tag: 1 } }
+            Token { kind: Ident(Symbol(SymbolIndex { idx: 31 })), span: Span { base_or_index: 26, len_or_tag: 3 } }
+            Token { kind: Assign, span: Span { base_or_index: 30, len_or_tag: 1 } }
+            Token { kind: Literal(Lit { kind: Str { is_long_string: false, is_raw: false }, symbol: Symbol(SymbolIndex { idx: 44 }), suffix: None, raw: Some(Symbol(SymbolIndex { idx: 45 })) }), span: Span { base_or_index: 32, len_or_tag: 5 } }
+            Token { kind: Newline, span: Span { base_or_index: 37, len_or_tag: 1 } }
+            Token { kind: Newline, span: Span { base_or_index: 38, len_or_tag: 1 } }
+            Token { kind: Dedent, span: Span { base_or_index: 39, len_or_tag: 0 } }
+            Token { kind: Ident(Symbol(SymbolIndex { idx: 46 })), span: Span { base_or_index: 39, len_or_tag: 2 } }
+            Token { kind: Assign, span: Span { base_or_index: 42, len_or_tag: 1 } }
+            Token { kind: Ident(Symbol(SymbolIndex { idx: 42 })), span: Span { base_or_index: 44, len_or_tag: 6 } }
+            Token { kind: OpenDelim(Brace), span: Span { base_or_index: 51, len_or_tag: 1 } }
+            Token { kind: CloseDelim(Brace), span: Span { base_or_index: 52, len_or_tag: 1 } }
+            Token { kind: Newline, span: Span { base_or_index: 53, len_or_tag: 1 } }
+            Token { kind: Eof, span: Span { base_or_index: 54, len_or_tag: 0 } }
+        "#]],
+    );
 }

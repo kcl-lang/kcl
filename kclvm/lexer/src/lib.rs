@@ -367,6 +367,28 @@ pub trait IIdentCurosr {
     }
 }
 
+/// True if `c` is considered a whitespace.
+pub fn is_whitespace(c: char) -> bool {
+    match c {
+        // Usual ASCII suspects
+        | '\u{000B}' // vertical tab
+        | '\u{000C}' // form feed
+        | '\u{000D}' // \r
+        // NEXT LINE from latin1
+        | '\u{0085}'
+
+        // Bidi markers
+        | '\u{200E}' // LEFT-TO-RIGHT MARK
+        | '\u{200F}' // RIGHT-TO-LEFT MARK
+
+        // Dedicated whitespace characters from Unicode
+        | '\u{2028}' // LINE SEPARATOR
+        | '\u{2029}' // PARAGRAPH SEPARATOR
+            => true,
+        _ => false,
+    }
+}
+
 impl<'a> ITokenCursor for Cursor<'a> {
     fn token(&mut self) -> Token {
         let char = self.bump().unwrap();
@@ -376,7 +398,7 @@ impl<'a> ITokenCursor for Cursor<'a> {
             c if self.try_comment_magic(c) => self.eat_comment(),
 
             // Whitespace sequence.
-            c if rustc_lexer::is_whitespace(c) => self.whitespace(c),
+            c if is_whitespace(c) => Whitespace,
 
             // Various of string. E.g., quoted string, raw string.
             c if self.try_string_magic(c) => self.eat_string(c),
@@ -393,6 +415,11 @@ impl<'a> ITokenCursor for Cursor<'a> {
 
                 TokenKind::Literal { kind, suffix_start }
             }
+
+            // '\r' will be considered as a 'WhiteSpace'.
+            '\u{0009}' => Tab,
+            '\u{0020}' => Space,
+            '\u{000A}' => Newline,
 
             ';' => Semi,
             ',' => Comma,
@@ -559,18 +586,6 @@ impl<'a> ITokenCursor for Cursor<'a> {
 }
 
 impl<'a> Cursor<'a> {
-    fn whitespace(&mut self, c: char) -> TokenKind {
-        debug_assert!(rustc_lexer::is_whitespace(c));
-
-        match c {
-            '\u{0009}' => Tab,
-            '\u{0020}' => Space,
-            '\u{000D}' => CarriageReturn,
-            '\u{000A}' => Newline,
-            _ => Whitespace,
-        }
-    }
-
     // Eats the suffix of the literal, e.g. 'Ki', 'M', etc.
     fn eat_lit_suffix(&mut self) {
         if !rustc_lexer::is_id_start(self.peek()) {
