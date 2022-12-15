@@ -55,12 +55,12 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 self.default_collection_insert_int_pointer(cal_map, name, lambda_fn_ptr);
                 self.default_collection_insert_value(
                     cal_map,
-                    &format!("{}_{}", name, kclvm::CAL_MAP_RUNTIME_TYPE),
+                    &format!("{}_{}", name, kclvm_runtime::CAL_MAP_RUNTIME_TYPE),
                     self.string_value(runtime_type),
                 );
                 self.default_collection_insert_value(
                     cal_map,
-                    &format!("{}_{}", name, kclvm::CAL_MAP_META_LINE),
+                    &format!("{}_{}", name, kclvm_runtime::CAL_MAP_META_LINE),
                     self.int_value(stmt.line as i64),
                 );
                 if !body_map.contains_key(name) {
@@ -164,11 +164,11 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         let config_meta = self.dict_value();
         if let Some(n) = n {
             let value = self.string_value(&n.filename);
-            self.dict_insert_override_item(config_meta, kclvm::CONFIG_META_FILENAME, value);
+            self.dict_insert_override_item(config_meta, kclvm_runtime::CONFIG_META_FILENAME, value);
             let value = self.int_value(n.line as i64);
-            self.dict_insert_override_item(config_meta, kclvm::CONFIG_META_LINE, value);
+            self.dict_insert_override_item(config_meta, kclvm_runtime::CONFIG_META_LINE, value);
             let value = self.int_value(n.column as i64);
-            self.dict_insert_override_item(config_meta, kclvm::CONFIG_META_COLUMN, value);
+            self.dict_insert_override_item(config_meta, kclvm_runtime::CONFIG_META_COLUMN, value);
         }
         for item in &t.items {
             if let Some(key) = &item.node.key {
@@ -180,11 +180,17 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                     },
                     ast::Expr::StringLit(t) => t.value.clone(),
                     ast::Expr::NameConstantLit(t) => match t.value {
-                        ast::NameConstant::True => kclvm::KCL_NAME_CONSTANT_TRUE.to_string(),
-                        ast::NameConstant::False => kclvm::KCL_NAME_CONSTANT_FALSE.to_string(),
-                        ast::NameConstant::None => kclvm::KCL_NAME_CONSTANT_NONE.to_string(),
+                        ast::NameConstant::True => {
+                            kclvm_runtime::KCL_NAME_CONSTANT_TRUE.to_string()
+                        }
+                        ast::NameConstant::False => {
+                            kclvm_runtime::KCL_NAME_CONSTANT_FALSE.to_string()
+                        }
+                        ast::NameConstant::None => {
+                            kclvm_runtime::KCL_NAME_CONSTANT_NONE.to_string()
+                        }
                         ast::NameConstant::Undefined => {
-                            kclvm::KCL_NAME_CONSTANT_UNDEFINED.to_string()
+                            kclvm_runtime::KCL_NAME_CONSTANT_UNDEFINED.to_string()
                         }
                     },
                     _ => format!("{:?}", key.node),
@@ -193,19 +199,19 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 let value = self.string_value(&key.filename);
                 self.dict_insert_override_item(
                     config_item_meta,
-                    kclvm::CONFIG_ITEM_META_FILENAME,
+                    kclvm_runtime::CONFIG_ITEM_META_FILENAME,
                     value,
                 );
                 let value = self.int_value(key.line as i64);
                 self.dict_insert_override_item(
                     config_item_meta,
-                    kclvm::CONFIG_ITEM_META_LINE,
+                    kclvm_runtime::CONFIG_ITEM_META_LINE,
                     value,
                 );
                 let value = self.int_value(key.column as i64);
                 self.dict_insert_override_item(
                     config_item_meta,
-                    kclvm::CONFIG_ITEM_META_COLUMN,
+                    kclvm_runtime::CONFIG_ITEM_META_COLUMN,
                     value,
                 );
                 let value = match &item.node.value.node {
@@ -214,7 +220,11 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                     }
                     _ => self.dict_value(),
                 };
-                self.dict_insert_override_item(config_item_meta, kclvm::CONFIG_ITEM_META, value);
+                self.dict_insert_override_item(
+                    config_item_meta,
+                    kclvm_runtime::CONFIG_ITEM_META,
+                    value,
+                );
                 self.dict_insert_override_item(config_meta, &name, config_item_meta)
             }
         }

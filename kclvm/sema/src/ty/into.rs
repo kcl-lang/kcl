@@ -147,7 +147,7 @@ impl From<ast::Type> for Type {
                 ast::LiteralType::Bool(v) => Type::bool_lit(v),
                 ast::LiteralType::Int(v, suffix_option) => match suffix_option {
                     Some(suffix) => Type::number_multiplier(
-                        kclvm::cal_num(v, &suffix.value()),
+                        kclvm_runtime::cal_num(v, &suffix.value()),
                         v,
                         &suffix.value(),
                     ),

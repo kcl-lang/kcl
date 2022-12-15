@@ -23,9 +23,7 @@ default:
 	go run ./copy-dir.go ./py39-libs ./_output/kclvm-windows
 
 	# install kclvm-runtime
-	cd ../../kclvm/runtime && cargo build --release
-	go run ./copy-file.go -src=../../kclvm/target/release/kclvm.dll             -dst=./_output/kclvm-windows/libs/kclvm.dll
-	go run ./copy-file.go -src=../../kclvm/target/release/kclvm.dll.lib         -dst=./_output/kclvm-windows/libs/kclvm.dll.lib
+	cd ../../kclvm/runtime 
 	go run ./copy-file.go -src=../../kclvm/runtime/src/_kclvm.ll                -dst=./_output/kclvm-windows/libs/_kclvm.ll
 	go run ./copy-file.go -src=../../kclvm/runtime/src/_kclvm.bc                -dst=./_output/kclvm-windows/libs/_kclvm.bc
 	go run ./copy-file.go -src=../../kclvm/runtime/src/_kclvm.h                 -dst=./_output/kclvm-windows/libs/_kclvm.h

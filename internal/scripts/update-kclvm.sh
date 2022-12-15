@@ -79,22 +79,6 @@ if [ -e $topdir/kclvm/target/release/libkclvm_cli_cdylib.$dll_extension ]; then
     cp $topdir/kclvm/target/release/libkclvm_cli_cdylib.$dll_extension $kclvm_install_dir/bin/libkclvm_cli_cdylib.$dll_extension
 fi
 
-# Build kclvm runtime
-
-cd $topdir/kclvm/runtime
-## Native
-cargo build --release
-
-# Darwin dylib
-# Linux so
-# Windows dll
-if [ -e $topdir/kclvm/target/release/libkclvm.$dll_extension ]; then
-    touch $kclvm_install_dir/lib/libkclvm.$dll_extension
-    rm $kclvm_install_dir/lib/libkclvm.$dll_extension
-    cp $topdir/kclvm/target/release/libkclvm.$dll_extension $kclvm_install_dir/lib/
-    cp $topdir/kclvm/target/release/libkclvm.$dll_extension $kclvm_install_dir/lib/libkclvm.$dll_extension
-fi
-
 # Copy LLVM runtime and header
 cd $topdir/kclvm/runtime
 cp src/_kclvm.bc $kclvm_install_dir/include/_kclvm.bc

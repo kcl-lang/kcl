@@ -2,13 +2,13 @@ use std::{collections::HashMap, path::Path, time::SystemTime};
 
 use assembler::KclvmLibAssembler;
 use command::Command;
-use kclvm::ValueRef;
 use kclvm_ast::{
     ast::{Module, Program},
     MAIN_PKG,
 };
 use kclvm_parser::load_program;
 use kclvm_query::apply_overrides;
+use kclvm_runtime::ValueRef;
 use kclvm_sema::resolver::resolve_program;
 pub use runner::ExecProgramArgs;
 use runner::{ExecProgramResult, KclvmRunner, KclvmRunnerOptions};

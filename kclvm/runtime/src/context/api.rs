@@ -71,6 +71,11 @@ pub extern "C" fn kclvm_context_delete(p: *mut kclvm_context_t) {
         let ptr = (*o) as *mut kclvm_value_ref_t;
         kclvm_value_delete(ptr);
     }
+    unsafe {
+        //todo: remove global _kclvm_context_current
+        //set _kclvm_context_current to null to invoid internal unsoundness
+        _kclvm_context_current = 0;
+    }
     free_mut_ptr(p);
 }
 

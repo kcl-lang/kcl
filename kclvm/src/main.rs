@@ -4,10 +4,10 @@
 extern crate clap;
 
 use clap::ArgMatches;
-use kclvm::PanicInfo;
 use kclvm_config::settings::{load_file, merge_settings, SettingsFile};
 use kclvm_error::Handler;
 use kclvm_runner::{exec_program, ExecProgramArgs};
+use kclvm_runtime::PanicInfo;
 use kclvm_tools::lint::lint_files;
 
 fn main() {

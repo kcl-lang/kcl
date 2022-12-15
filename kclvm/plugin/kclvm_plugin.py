@@ -234,7 +234,7 @@ class AppContext(_kclvm_plugin_AppContextBase):
 
         if self._is_windows:
             _executable_root = os.path.dirname(sys.executable)
-            self._kclvm_runtime = ctypes.CDLL(f"{_executable_root}\\kclvm.dll")
+            self._kclvm_runtime = ctypes.CDLL(f"{_executable_root}\\kclvm_cli_cdylib.dll")
             self._app_lib = ctypes.CDLL(app_dll_name)
         else:
             self._kclvm_runtime = ctypes.CDLL(app_dll_name)

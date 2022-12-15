@@ -1048,7 +1048,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                     }
                 };
                 let binary_suffix_str: String = binary_suffix.value();
-                let value = kclvm::units::cal_num(raw_value, &binary_suffix_str);
+                let value = kclvm_runtime::units::cal_num(raw_value, &binary_suffix_str);
                 Rc::new(Type::number_multiplier(
                     value,
                     raw_value,

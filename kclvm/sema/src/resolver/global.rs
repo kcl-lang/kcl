@@ -553,7 +553,7 @@ impl<'ctx> Resolver<'ctx> {
         // Schema attributes
         let mut attr_obj_map: IndexMap<String, SchemaAttr> = IndexMap::default();
         attr_obj_map.insert(
-            kclvm::SCHEMA_SETTINGS_ATTR_NAME.to_string(),
+            kclvm_runtime::SCHEMA_SETTINGS_ATTR_NAME.to_string(),
             SchemaAttr {
                 is_optional: true,
                 has_default: false,
@@ -713,11 +713,11 @@ impl<'ctx> Resolver<'ctx> {
                 });
             }
         }
-        let schema_runtime_ty = kclvm::schema_runtime_type(name, &self.ctx.pkgpath);
+        let schema_runtime_ty = kclvm_runtime::schema_runtime_type(name, &self.ctx.pkgpath);
         if should_add_schema_ref {
             if let Some(ref parent_ty) = parent_ty {
                 let parent_schema_runtime_ty =
-                    kclvm::schema_runtime_type(&parent_ty.name, &parent_ty.pkgpath);
+                    kclvm_runtime::schema_runtime_type(&parent_ty.name, &parent_ty.pkgpath);
                 self.ctx
                     .ty_ctx
                     .add_dependencies(&schema_runtime_ty, &parent_schema_runtime_ty);
@@ -825,10 +825,10 @@ impl<'ctx> Resolver<'ctx> {
             }
         }
         if should_add_schema_ref {
-            let schema_runtime_ty = kclvm::schema_runtime_type(name, &self.ctx.pkgpath);
+            let schema_runtime_ty = kclvm_runtime::schema_runtime_type(name, &self.ctx.pkgpath);
             for parent_ty in &parent_types {
                 let parent_schema_runtime_ty =
-                    kclvm::schema_runtime_type(&parent_ty.name, &parent_ty.pkgpath);
+                    kclvm_runtime::schema_runtime_type(&parent_ty.name, &parent_ty.pkgpath);
                 self.ctx
                     .ty_ctx
                     .add_dependencies(&schema_runtime_ty, &parent_schema_runtime_ty);

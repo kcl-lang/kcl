@@ -1,6 +1,6 @@
 #![no_main]
-use kclvm::PanicInfo;
 use kclvm_parser::parse_expr;
+use kclvm_runtime::PanicInfo;
 use libfuzzer_sys::arbitrary::Arbitrary;
 use libfuzzer_sys::fuzz_target;
 use serde_json;

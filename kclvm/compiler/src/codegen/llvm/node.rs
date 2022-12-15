@@ -8,9 +8,9 @@ use inkwell::basic_block::BasicBlock;
 use inkwell::module::Linkage;
 use inkwell::values::{BasicValueEnum, CallableValue, FunctionValue};
 use inkwell::{AddressSpace, IntPredicate};
-use kclvm::{ApiFunc, PKG_PATH_PREFIX};
 use kclvm_ast::ast::{self, CallExpr};
 use kclvm_ast::walker::TypedResultWalker;
+use kclvm_runtime::{ApiFunc, PKG_PATH_PREFIX};
 
 use crate::codegen::error as kcl_error;
 use crate::codegen::llvm::context::BacktrackMeta;
@@ -417,7 +417,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         let schema_name = &schema_stmt.name.node;
         let schema_pkgpath = &self.current_pkgpath();
         let filename = &self.current_filename();
-        let runtime_type = kclvm::schema_runtime_type(schema_name, schema_pkgpath);
+        let runtime_type = kclvm_runtime::schema_runtime_type(schema_name, schema_pkgpath);
         // Build schema body function
         let function = self.add_function(&format!(
             "{}.{}",
@@ -956,7 +956,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         let name = &rule_stmt.name.node;
         let pkgpath = &self.current_pkgpath();
         let filename = &self.current_filename();
-        let runtime_type = kclvm::schema_runtime_type(name, pkgpath);
+        let runtime_type = kclvm_runtime::schema_runtime_type(name, pkgpath);
         // Build schema body function
         let function = self.add_function(&format!(
             "{}.{}",
@@ -2236,7 +2236,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
             ast::NumberLitValue::Int(int_value) => match &number_lit.binary_suffix {
                 Some(binary_suffix) => {
                     let unit = binary_suffix.value();
-                    let value = kclvm::cal_num(int_value, unit.as_str());
+                    let value = kclvm_runtime::cal_num(int_value, unit.as_str());
                     Ok(self.unit_value(value, int_value, &unit))
                 }
                 None => Ok(self.int_value(int_value)),

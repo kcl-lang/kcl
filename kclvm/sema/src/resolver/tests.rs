@@ -113,7 +113,7 @@ fn test_record_used_module() {
     let scope = resolve_program(&mut program);
     let main_scope = scope
         .scope_map
-        .get(kclvm::MAIN_PKG_PATH)
+        .get(kclvm_runtime::MAIN_PKG_PATH)
         .unwrap()
         .borrow_mut()
         .clone();

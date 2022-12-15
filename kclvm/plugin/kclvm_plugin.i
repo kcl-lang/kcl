@@ -2,28 +2,28 @@
 
 // http://www.swig.org/Doc3.0/Python.html#Python_directors
 
-%module(directors="1") kclvm_plugin
+% module(directors = "1") kclvm_plugin
 
-%{
+    % {
 #define SWIG_FILE_WITH_INIT
 #include "kclvm_plugin.h"
-%}
+          % }
 
-// ----------------------------------------------------------------------------
-// C/C++ code
-// ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
+    // C/C++ code
+    // ----------------------------------------------------------------------------
 
-%include "stdint.i"
-%include "std_string.i"
+    % include "stdint.i" % include "std_string.i"
 
-%feature("director") _kclvm_plugin_AppContextBase;
-class _kclvm_plugin_AppContextBase {
+    % feature("director") _kclvm_plugin_AppContextBase;
+class _kclvm_plugin_AppContextBase
+{
 public:
     _kclvm_plugin_AppContextBase(uint64_t rust_invoke_json_ptr);
     virtual ~_kclvm_plugin_AppContextBase();
 
     void _clear_options();
-    void _add_option(const std::string& key, const std::string& value);
+    void _add_option(const std::string &key, const std::string &value);
 
     std::string _run_app(
         uint64_t _start_fn_ptr,
@@ -33,46 +33,33 @@ public:
         int32_t disable_schema_check,
         int32_t list_option_mode,
         int32_t debug_mode,
-        int32_t buffer_size
-    );
+        int32_t buffer_size);
 
     std::string _get_warn();
 
     uint64_t _get_cxx_invoke_proxy_ptr();
 
     std::string _call_rust_method(
-        const std::string& name,
-        const std::string& args_json,
-        const std::string& kwargs_json
-    );
+        const std::string &name,
+        const std::string &args_json,
+        const std::string &kwargs_json);
 
     virtual std::string _call_py_method(
-        const std::string& name,
-        const std::string& args_json,
-        const std::string& kwargs_json
-    );
+        const std::string &name,
+        const std::string &args_json,
+        const std::string &kwargs_json);
 };
 
 // ----------------------------------------------------------------------------
 // Python code
 // ----------------------------------------------------------------------------
 
-%pythonbegin %{
-import sys
-import typing
-import ctypes
-import os
-import importlib
-import json
-import inspect
+% pythonbegin % {import sys import typing import ctypes import os import importlib import json import inspect
 
-import kclvm.kcl.info as kcl_info
-import kclvm.compiler.extension.plugin.plugin as kcl_plugin
-import kclvm.api.object.internal.option as option
-import kclvm.api.object as objpkg
-%}
+                     import kclvm.kcl.info as kcl_info import kclvm.compiler.extension.plugin.plugin as kcl_plugin import kclvm.api.object.internal.option as option import kclvm.api.object as objpkg % }
 
-%pythoncode %{
+    % pythoncode %
+{
 class AppContext(_kclvm_plugin_AppContextBase):
     def __init__(self, app_dll_name: str):
         self._is_windows: bool = os.name == "nt"
@@ -83,7 +70,7 @@ class AppContext(_kclvm_plugin_AppContextBase):
 
         if self._is_windows:
             _executable_root = os.path.dirname(sys.executable)
-            self._kclvm_runtime = ctypes.CDLL(f"{_executable_root}\\kclvm.dll")
+            self._kclvm_runtime = ctypes.CDLL(f"{_executable_root}\\kclvm_cli_cdylib.dll")
             self._app_lib = ctypes.CDLL(app_dll_name)
         else:
             self._kclvm_runtime = ctypes.CDLL(app_dll_name)
@@ -182,7 +169,7 @@ class AppContext(_kclvm_plugin_AppContextBase):
         return self._call_rust_method(name, args_json, kwargs_json)
 
     def _call_py_method(self, name:str, args_json:str, kwargs_json:str) -> str:
-        try:
+try:
             return self._call_py_method_unsafe(name, args_json, kwargs_json)
         except Exception as e:
             return json.dumps({ "__kcl_PanicInfo__": f"{e}" })
@@ -238,13 +225,13 @@ class AppContext(_kclvm_plugin_AppContextBase):
             kernel32.FreeLibrary.argtypes = [ctypes.wintypes.HMODULE]
             kernel32.FreeLibrary(self._app_lib._handle)
             self._app_lib = None
-            # kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
-            # kernel32.FreeLibrary.argtypes = [ctypes.wintypes.HMODULE]
-            # kernel32.FreeLibrary(self._app_dll._handle)
+#kernel32 = ctypes.WinDLL('kernel32', use_last_error = True)
+#kernel32.FreeLibrary.argtypes = [ctypes.wintypes.HMODULE]
+#kernel32.FreeLibrary(self._app_dll._handle)
             pass
         else:
-           # libdl = ctypes.CDLL("libdl.so")
-           # libdl.dlclose(self._app_dll._handle)
+#libdl = ctypes.CDLL("libdl.so")
+#libdl.dlclose(self._app_dll._handle)
            pass
 
 
@@ -259,7 +246,8 @@ def main(args: typing.List[str]):
 
 if __name__ == "__main__":
     main(sys.argv)
-%}
+%
+}
 
 // ----------------------------------------------------------------------------
 // END

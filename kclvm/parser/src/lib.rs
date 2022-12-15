@@ -10,9 +10,9 @@ mod tests;
 extern crate kclvm_error;
 
 use crate::session::ParseSession;
-use kclvm::{ErrType, PanicInfo};
 use kclvm_ast::ast;
 use kclvm_error::bug;
+use kclvm_runtime::{ErrType, PanicInfo};
 use kclvm_span::{self, FilePathMapping, SourceMap};
 
 use lexer::parse_token_streams;

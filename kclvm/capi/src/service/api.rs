@@ -2,7 +2,7 @@ use protobuf::Message;
 
 use crate::model::gpyrpc::*;
 use crate::service::service::KclvmService;
-use kclvm::utils::*;
+use kclvm_runtime::utils::*;
 use std::ffi::CString;
 use std::os::raw::c_char;
 
