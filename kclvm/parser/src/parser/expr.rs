@@ -1217,14 +1217,34 @@ impl<'a> Parser<'a> {
                 } else {
                     key = Some(self.parse_expr());
                     match self.token.kind {
+                        // `:`
                         TokenKind::Colon => {
-                            operation = ConfigEntryOperation::Union;
-                        }
-                        TokenKind::Assign => {
                             operation = ConfigEntryOperation::Override;
                         }
+                        // `|:`
+                        TokenKind::BinOpEq(BinOpToken::Or) => {
+                            self.bump();
+                            if !matches!(self.token.kind, TokenKind::Colon) {
+                                self.sess
+                                    .struct_token_error(&[TokenKind::Colon.into()], self.token);
+                            }
+                            operation = ConfigEntryOperation::Union;
+                        }
+                        // `+=`
                         TokenKind::BinOpEq(BinOpToken::Plus) => {
+                            self.bump();
+                            if !matches!(self.token.kind, TokenKind::Assign) {
+                                self.sess.struct_token_error(
+                                    &[TokenKind::Assign.into()],
+                                    self.token,
+                                );
+                            }
                             operation = ConfigEntryOperation::Insert;
+                        }
+                        // Retain the original `=` override semantics for parser
+                        // warning output and subsequent deprecated.
+                        TokenKind::Assign => {
+                            operation = ConfigEntryOperation::Override;
                         }
                         _ => self.sess.struct_token_error(
                             &[
