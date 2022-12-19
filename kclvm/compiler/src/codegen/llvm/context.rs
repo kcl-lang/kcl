@@ -21,10 +21,10 @@ use std::path::Path;
 use std::rc::Rc;
 use std::str;
 
-use kclvm::{ApiFunc, MAIN_PKG_PATH, PKG_PATH_PREFIX};
 use kclvm_ast::ast;
 use kclvm_ast::walker::TypedResultWalker;
 use kclvm_error::*;
+use kclvm_runtime::{ApiFunc, MAIN_PKG_PATH, PKG_PATH_PREFIX};
 use kclvm_sema::builtin;
 use kclvm_sema::plugin;
 
@@ -964,7 +964,7 @@ impl<'ctx> ProgramCodeGen for LLVMCodeGenContext<'ctx> {
         // Init all global types including schema and rule
         let module_list: &Vec<ast::Module> = if self.program.pkgs.contains_key(pkgpath) {
             self.program.pkgs.get(pkgpath).expect(&msg)
-        } else if pkgpath.starts_with(kclvm::PKG_PATH_PREFIX)
+        } else if pkgpath.starts_with(kclvm_runtime::PKG_PATH_PREFIX)
             && self.program.pkgs.contains_key(&pkgpath[1..])
         {
             self.program
@@ -1101,7 +1101,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 assert!(self.program.pkgs.len() == 1);
                 format!(
                     "{}{}",
-                    kclvm::PKG_PATH_PREFIX,
+                    kclvm_runtime::PKG_PATH_PREFIX,
                     self.program
                         .pkgs
                         .keys()
@@ -1148,7 +1148,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             .expect(kcl_error::INTERNAL_ERROR_MSG);
         if self.no_link && !has_main_pkg {
             for pkgpath in self.program.pkgs.keys() {
-                let pkgpath = format!("{}{}", kclvm::PKG_PATH_PREFIX, pkgpath);
+                let pkgpath = format!("{}{}", kclvm_runtime::PKG_PATH_PREFIX, pkgpath);
                 self.pkgpath_stack.borrow_mut().push(pkgpath.clone());
             }
         }
@@ -1187,7 +1187,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             assert!(self.program.pkgs.len() == 1);
             // pkgs may not contains main pkg in no link mode
             for (pkgpath, modules) in &self.program.pkgs {
-                let pkgpath = format!("{}{}", kclvm::PKG_PATH_PREFIX, pkgpath);
+                let pkgpath = format!("{}{}", kclvm_runtime::PKG_PATH_PREFIX, pkgpath);
                 self.pkgpath_stack.borrow_mut().push(pkgpath.clone());
                 // Init all builtin functions.
                 self.init_scope(pkgpath.as_str());
@@ -1583,11 +1583,12 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
     /// Get the variable value named `name` from the scope named `pkgpath`, return Err when not found
     pub fn get_variable_in_pkgpath(&self, name: &str, pkgpath: &str) -> CompileResult<'ctx> {
         let pkg_scopes = self.pkg_scopes.borrow_mut();
-        let pkgpath = if !pkgpath.starts_with(kclvm::PKG_PATH_PREFIX) && pkgpath != MAIN_PKG_PATH {
-            format!("{}{}", kclvm::PKG_PATH_PREFIX, pkgpath)
-        } else {
-            pkgpath.to_string()
-        };
+        let pkgpath =
+            if !pkgpath.starts_with(kclvm_runtime::PKG_PATH_PREFIX) && pkgpath != MAIN_PKG_PATH {
+                format!("{}{}", kclvm_runtime::PKG_PATH_PREFIX, pkgpath)
+            } else {
+                pkgpath.to_string()
+            };
         let mut result = Err(kcl_error::KCLError {
             message: format!("name '{}' is not defined", name),
             ty: kcl_error::KCLErrorType::Compile,
@@ -1604,8 +1605,8 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             let value = if pkgpath == builtin::system_module::UNITS
                 && builtin::system_module::UNITS_FIELD_NAMES.contains(&name)
             {
-                let value_float: f64 = kclvm::f64_unit_value(name);
-                let value_int: u64 = kclvm::u64_unit_value(name);
+                let value_float: f64 = kclvm_runtime::f64_unit_value(name);
+                let value_int: u64 = kclvm_runtime::u64_unit_value(name);
                 if value_int != 1 {
                     self.int_value(value_int as i64)
                 } else {
@@ -1710,12 +1711,13 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         name: &str,
         pkgpath: &str,
     ) -> CompileResult<'ctx> {
-        let ext_pkgpath =
-            if !pkgpath.starts_with(kclvm::PKG_PATH_PREFIX) && pkgpath != kclvm::MAIN_PKG_PATH {
-                format!("{}{}", kclvm::PKG_PATH_PREFIX, pkgpath)
-            } else {
-                pkgpath.to_string()
-            };
+        let ext_pkgpath = if !pkgpath.starts_with(kclvm_runtime::PKG_PATH_PREFIX)
+            && pkgpath != kclvm_runtime::MAIN_PKG_PATH
+        {
+            format!("{}{}", kclvm_runtime::PKG_PATH_PREFIX, pkgpath)
+        } else {
+            pkgpath.to_string()
+        };
         // System module or plugin module
         if builtin::STANDARD_SYSTEM_MODULE_NAMES_WITH_AT.contains(&ext_pkgpath.as_str())
             || ext_pkgpath.starts_with(plugin::PLUGIN_PREFIX_WITH_AT)
@@ -1829,7 +1831,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         let global_dict = self.dict_value();
         for (name, ptr) in globals.iter() {
             // Omit private variables and function variables
-            if name.starts_with(kclvm::KCL_PRIVATE_VAR_PREFIX) {
+            if name.starts_with(kclvm_runtime::KCL_PRIVATE_VAR_PREFIX) {
                 continue;
             }
             let value = self.builder.build_load(*ptr, "");

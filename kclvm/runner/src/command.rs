@@ -30,8 +30,8 @@ impl Command {
             CString::new("-dylib").unwrap(),
             // Link relative path
             CString::new("-rpath").unwrap(),
-            CString::new(format!("{}/lib", self.executable_root)).unwrap(),
-            CString::new(format!("-L{}/lib", self.executable_root)).unwrap(),
+            CString::new(format!("{}/bin", self.executable_root)).unwrap(),
+            CString::new(format!("-L{}/bin", self.executable_root)).unwrap(),
             // With the change from Catalina to Big Sur (11.0), Apple moved the location of
             // libraries. On Big Sur, it is required to pass the location of the System
             // library. The -lSystem option is still required for macOS 10.15.7 and
@@ -40,7 +40,7 @@ impl Command {
             CString::new("-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib").unwrap(),
             CString::new("-lSystem").unwrap(),
             // Link runtime libs.
-            CString::new("-lkclvm").unwrap(),
+            CString::new("-lkclvm_cli_cdylib").unwrap(),
             // Output lib path.
             CString::new("-o").unwrap(),
             CString::new(lib_path).unwrap(),
@@ -54,10 +54,10 @@ impl Command {
             CString::new("--shared").unwrap(),
             // Link relative path
             CString::new("-R").unwrap(),
-            CString::new(format!("{}/lib", self.executable_root)).unwrap(),
-            CString::new(format!("-L{}/lib", self.executable_root)).unwrap(),
+            CString::new(format!("{}/bin", self.executable_root)).unwrap(),
+            CString::new(format!("-L{}/bin", self.executable_root)).unwrap(),
             // Link runtime libs.
-            CString::new("-lkclvm").unwrap(),
+            CString::new("-lkclvm_cli_cdylib").unwrap(),
             // Output lib path.
             CString::new("-o").unwrap(),
             CString::new(lib_path).unwrap(),
@@ -132,10 +132,10 @@ impl Command {
         // Run command with cc.
         let mut cmd = build.try_get_compiler().unwrap().to_command();
         cmd.args(libs);
-        cmd.arg(&format!("-Wl,-rpath,{}/lib", self.executable_root));
-        cmd.arg(&format!("-L{}/lib", self.executable_root));
+        cmd.arg(&format!("-Wl,-rpath,{}/bin", self.executable_root));
+        cmd.arg(&format!("-L{}/bin", self.executable_root));
         cmd.arg(&format!("-I{}/include", self.executable_root));
-        cmd.arg("-lkclvm");
+        cmd.arg("-lkclvm_cli_cdylib");
 
         let result = cmd.output().expect("run cc command failed");
         if !result.status.success() {

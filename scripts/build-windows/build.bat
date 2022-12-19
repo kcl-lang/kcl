@@ -28,23 +28,20 @@ go run .\copy-dir.go .\py39-libs .\_output\kclvm-windows
 
 :: install kclvm-runtime
 cd ..\..\kclvm\runtime
-cargo build --release
 cd %~dp0
 
-go run .\copy-file.go --src=..\..\kclvm\runtime\target\release\kclvm.dll     --dst=.\_output\kclvm-windows\kclvm.dll
-go run .\copy-file.go --src=..\..\kclvm\runtime\target\release\kclvm.dll.lib --dst=.\_output\kclvm-windows\libs\kclvm.dll.lib
 go run .\copy-file.go --src=..\..\kclvm\runtime\src\_kclvm.ll                --dst=.\_output\kclvm-windows\libs\_kclvm.ll
 go run .\copy-file.go --src=..\..\kclvm\runtime\src\_kclvm.bc                --dst=.\_output\kclvm-windows\libs\_kclvm.bc
 go run .\copy-file.go --src=..\..\kclvm\runtime\src\_kclvm.h                 --dst=.\_output\kclvm-windows\libs\_kclvm.h
 go run .\copy-file.go --src=..\..\kclvm\runtime\src\_kclvm_main_win.c        --dst=.\_output\kclvm-windows\libs\_kclvm_main_win.c
 
 :: install kclvm-runtime (wasm)
-cd ..\..\kclvm\runtime
-cargo build --release --target=wasm32-unknown-unknown-wasm
-cd %~dp0
+:: cd ..\..\kclvm\runtime
+:: cargo build --release --target=wasm32-unknown-unknown-wasm
+:: cd %~dp0
 
-go run .\copy-file.go --src=..\..\kclvm\runtime\target\wasm32-unknown-unknown\release\libkclvm.a --dst=.\_output\kclvm-windows\libs\libkclvm_wasm32.a
-go run .\copy-file.go --src=..\..\kclvm\runtime\src\_kclvm_undefined_wasm.txt --dst=.\_output\kclvm-windows\libs\_kclvm_undefined_wasm.txt
+:: go run .\copy-file.go --src=..\..\kclvm\runtime\target\wasm32-unknown-unknown\release\libkclvm.a --dst=.\_output\kclvm-windows\libs\libkclvm_wasm32.a
+:: go run .\copy-file.go --src=..\..\kclvm\runtime\src\_kclvm_undefined_wasm.txt --dst=.\_output\kclvm-windows\libs\_kclvm_undefined_wasm.txt
 
 :: install kclvm-plugin
 .\_output\kclvm-windows\kclvm.exe ..\..\kclvm\plugin\setup.py install_lib

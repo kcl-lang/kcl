@@ -1,6 +1,6 @@
-use kclvm::{ErrType, PanicInfo};
 use kclvm_ast::token::Token;
 use kclvm_error::{Handler, ParseError, Position};
+use kclvm_runtime::{ErrType, PanicInfo};
 use kclvm_span::{Loc, SourceMap, Span};
 use std::cell::RefCell;
 use std::sync::Arc;

@@ -1,8 +1,8 @@
 // Copyright 2021 The KCL Authors. All rights reserved.
 
 use inkwell::values::BasicValueEnum;
-use kclvm::ApiFunc;
 use kclvm_ast::ast;
+use kclvm_runtime::ApiFunc;
 use std::str;
 
 use crate::codegen::traits::ValueMethods;

@@ -190,7 +190,7 @@ pub fn parse_lit_type_str(ty_str: &str) -> Rc<Type> {
 
 /// Parse number multiplier literal type.
 pub fn parse_number_multiplier_literal_type_str(ty_str: &str) -> Rc<Type> {
-    let suffix_index = if &ty_str[ty_str.len() - 1..] == kclvm::IEC_SUFFIX {
+    let suffix_index = if &ty_str[ty_str.len() - 1..] == kclvm_runtime::IEC_SUFFIX {
         ty_str.len() - 2
     } else {
         ty_str.len() - 1
@@ -203,7 +203,7 @@ pub fn parse_number_multiplier_literal_type_str(ty_str: &str) -> Rc<Type> {
         &ty_str[suffix_index..],
     );
     Rc::new(Type::number_multiplier(
-        kclvm::cal_num(value, suffix),
+        kclvm_runtime::cal_num(value, suffix),
         value,
         suffix,
     ))

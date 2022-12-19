@@ -305,7 +305,7 @@ impl<'ctx> Resolver<'ctx> {
 
     /// Check config attr has been defined.
     pub(crate) fn check_config_attr(&mut self, attr: &str, pos: &Position, schema_ty: &SchemaType) {
-        let runtime_type = kclvm::schema_runtime_type(&schema_ty.name, &schema_ty.pkgpath);
+        let runtime_type = kclvm_runtime::schema_runtime_type(&schema_ty.name, &schema_ty.pkgpath);
         match self.ctx.schema_mapping.get(&runtime_type) {
             Some(schema_mapping_ty) => {
                 let schema_ty = schema_mapping_ty.borrow();
@@ -345,7 +345,7 @@ impl<'ctx> Resolver<'ctx> {
         schema_ty: &SchemaType,
         attr: &str,
     ) -> (bool, Rc<Type>) {
-        let runtime_type = kclvm::schema_runtime_type(&schema_ty.name, &schema_ty.pkgpath);
+        let runtime_type = kclvm_runtime::schema_runtime_type(&schema_ty.name, &schema_ty.pkgpath);
         match self.ctx.schema_mapping.get(&runtime_type) {
             Some(schema_mapping_ty) => {
                 let schema_ty = schema_mapping_ty.borrow();

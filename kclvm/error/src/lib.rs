@@ -3,7 +3,7 @@
 //!
 //! We can use `Handler` to create and emit diagnostics.
 
-use kclvm::{ErrType, PanicInfo};
+use kclvm_runtime::{ErrType, PanicInfo};
 
 #[macro_use]
 pub mod bug;
