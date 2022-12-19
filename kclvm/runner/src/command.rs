@@ -140,10 +140,10 @@ impl Command {
     // Add args for cc on unix os.
     pub(crate) fn unix_args(&self, libs: &[String], cmd: &mut std::process::Command) {
         cmd.args(libs)
-            .arg(&format!("-Wl,-rpath,{}/lib", self.executable_root))
-            .arg(&format!("-L{}/lib", self.executable_root))
+            .arg(&format!("-Wl,-rpath,{}/bin", self.executable_root))
+            .arg(&format!("-L{}/bin", self.executable_root))
             .arg(&format!("-I{}/include", self.executable_root))
-            .arg("-lkclvm");
+            .arg("-lkclvm_cli_cdylib");
     }
 
     // Add args for cc on windows os.
@@ -154,7 +154,7 @@ impl Command {
         cmd: &mut std::process::Command,
     ) {
         cmd.args(libs)
-            .arg("kclvm.lib")
+            .arg("kclvm_cli_cdylib.lib")
             .arg("/link")
             .arg("/ENTRY:kclvm_main")
             .arg("/NOLOGO")
