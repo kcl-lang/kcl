@@ -42,6 +42,6 @@ go build -o .\_output\kcl-vet.exe    kcl-vet.go
 
 :: run hello.k
 _output\kcl.exe            ..\..\hello.k
-_output\kclvm-cli.exe run ..\..\samples\hello_invalid.k
+_output\kclvm-cli.exe run ..\..\samples\fib.k
 _output\kclvm-cli.exe run ..\..\samples\hello.k
-
+_output\kclvm-cli.exe run ..\..\samples\kubernetes.k

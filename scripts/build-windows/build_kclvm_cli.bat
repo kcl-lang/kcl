@@ -3,19 +3,6 @@
 setlocal
 cd %~dp0
 
-:: install kclvm-runtime
-cd ..\..\kclvm\runtime
-cargo build --release
-cd %~dp0
-
-go run .\copy-file.go --src=..\..\kclvm\target\release\kclvm.dll     --dst=.\_output\kclvm.dll
-go run .\copy-file.go --src=..\..\kclvm\target\release\kclvm.dll.lib --dst=.\_output\kclvm.lib
-go run .\copy-file.go --src=..\..\kclvm\runtime\src\_kclvm.ll                --dst=.\_output\libs\_kclvm.ll
-go run .\copy-file.go --src=..\..\kclvm\runtime\src\_kclvm.bc                --dst=.\_output\libs\_kclvm.bc
-go run .\copy-file.go --src=..\..\kclvm\runtime\src\_kclvm.h                 --dst=.\_output\libs\_kclvm.h
-go run .\copy-file.go --src=..\..\kclvm\runtime\src\_kclvm_main_win.c        --dst=.\_output\libs\_kclvm_main_win.c
-
-
 :: install kclvm-cli
 cd ..\..\kclvm
 cargo build --release
