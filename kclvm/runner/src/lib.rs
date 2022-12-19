@@ -202,7 +202,7 @@ pub fn execute(
     let result = runner.run(args);
 
     // Clean temp files.
-    // FIXME: On windows, sometimes there will be an error that the file cannot be accessed.
+    // FIXME(issue #346): On windows, sometimes there will be an error that the file cannot be accessed.
     // Therefore, the function of automatically deleting dll files on windows is temporarily turned off.
     #[cfg(not(target_os = "windows"))]
     remove_file(&lib_path);
