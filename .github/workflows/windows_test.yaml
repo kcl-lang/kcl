@@ -2,7 +2,8 @@ name: build-and-test-windows
 on: ["push", "pull_request"]
 jobs:
   build-and-test:
-    runs-on: windows-2019
+    name: build and test on windows
+    runs-on: windows-latest
     env:
       LLVM_SYS_120_PREFIX: "C:/LLVM"
       KCLVM_CLANG: "C:/LLVM/bin/clang.exe"
@@ -11,11 +12,11 @@ jobs:
         uses: actions/checkout@v2
         with:
          submodules: 'true'
+      
+      - uses: ilammy/msvc-dev-cmd@v1
 
       - run: clang --version
       - run: cargo --version
-
-      - run: Rename-Item "C:/Program Files/LLVM" "C:/Program Files/LLVM-old"
 
       # Install LLVM-12
       - run: Invoke-WebRequest -Uri https://github.com/KusionStack/llvm-package-windows/releases/download/v12.0.1/LLVM-12.0.1-win64.7z -OutFile C:/LLVM-12.0.1-win64.7z
@@ -25,12 +26,7 @@ jobs:
 
       - run: echo "C:/LLVM/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
-      - name: Run make
-        working-directory: scripts/build-windows
-        run: mingw32-make
-
-      - run: scripts/build-windows/_output/kclvm_cli.exe -h
-      - run: scripts/build-windows/_output/kcl.exe ./samples/hello.k
+      - run: build_win.bat
 
       - run: Compress-Archive -Path scripts/build-windows/_output -DestinationPath C:/kclvm-windows.zip
       - run: Get-FileHash -Algorithm MD5 C:/kclvm-windows.zip
