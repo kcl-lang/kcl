@@ -10,13 +10,13 @@ go run unzip.go
 go run gen_pth.go
 
 :: renname
-go run rename.go -old="_output\python.exe" -new="_output\kclvm_py.exe"
+go run rename.go -old="_output\python.exe" -new="_output\kclvm.exe"
 
 :: install pip
-_output\kclvm_py.exe get-pip.py
+_output\kclvm.exe get-pip.py
 
 :: pip install -r ..\requirements.txt
-_output\kclvm_py.exe -m pip install ^
+_output\kclvm.exe -m pip install ^
     -r .\requirements.release.txt ^
     --target=_output\Lib\site-packages
 
@@ -41,7 +41,7 @@ go build -o .\_output\kcl-plugin.exe kcl-plugin.go
 go build -o .\_output\kcl-vet.exe    kcl-vet.go
 
 :: run hello.k
-_output\kcl.exe            ..\..\hello.k
+_output\kcl.exe           ..\..\hello.k
 _output\kclvm-cli.exe run ..\..\samples\fib.k
 _output\kclvm-cli.exe run ..\..\samples\hello.k
 _output\kclvm-cli.exe run ..\..\samples\kubernetes.k
