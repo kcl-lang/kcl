@@ -189,7 +189,7 @@ pub fn execute(
 
     // Link libs
     let lib_suffix = Command::get_lib_suffix();
-    let temp_out_lib_file = format!("{}.out{}", temp_entry_file, lib_suffix);
+    let temp_out_lib_file = format!("{}{}", temp_entry_file, lib_suffix);
     let lib_path = linker::KclvmLinker::link_all_libs(lib_paths, temp_out_lib_file);
 
     // Run
@@ -201,8 +201,12 @@ pub fn execute(
     );
     let result = runner.run(args);
 
-    // Clean temp files
+    // Clean temp files.
+    // FIXME: On windows, sometimes there will be an error that the file cannot be accessed.
+    // Therefore, the function of automatically deleting dll files on windows is temporarily turned off.
+    #[cfg(not(target_os = "windows"))]
     remove_file(&lib_path);
+    #[cfg(not(target_os = "windows"))]
     clean_tmp_files(&temp_entry_file, &lib_suffix);
     result
 }
@@ -238,7 +242,8 @@ fn clean_tmp_files(temp_entry_file: &String, lib_suffix: &String) {
 #[inline]
 fn remove_file(file: &str) {
     if Path::new(&file).exists() {
-        std::fs::remove_file(&file).unwrap_or_else(|_| panic!("{} not found", file));
+        std::fs::remove_file(&file)
+            .unwrap_or_else(|err| panic!("{} not found, defailts: {}", file, err));
     }
 }
 

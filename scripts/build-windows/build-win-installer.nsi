@@ -38,7 +38,7 @@ Section "" ;No components page, name is not important
   SetOutPath $INSTDIR
   
   ; Put file there
-  File /r "_output\kclvm-windows\"
+  File /r "_output\"
   
   ; update %path%
   ReadRegStr $R0 HKCU "Environment" PATH

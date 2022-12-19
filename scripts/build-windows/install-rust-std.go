@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	flagOutDir = flag.String("outdir", "./_output/kclvm-windows", "set output dir")
+	flagOutDir = flag.String("outdir", "./_output", "set output dir")
 )
 
 func main() {

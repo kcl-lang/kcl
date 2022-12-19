@@ -11,5 +11,5 @@
   - set `LLVM_SYS_120_PREFIX` to root path
 1. Open Git Bash
   - `cd ./scripts/build-windows` and run `mingw32-make`
-  - output: `scripts/build-windows/_output/kclvm-windows`
+  - output: `scripts/build-windows/_output`
 

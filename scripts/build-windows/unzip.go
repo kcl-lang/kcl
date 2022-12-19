@@ -17,7 +17,7 @@ import (
 
 var (
 	flagZipFile = flag.String("zip", "python-3.9.6-embed-amd64.zip", "set zip file")
-	flagOutput  = flag.String("output", "_output/kclvm-windows", "set output dir")
+	flagOutput  = flag.String("output", "_output", "set output dir")
 )
 
 func main() {

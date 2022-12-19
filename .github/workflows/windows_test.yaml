@@ -29,8 +29,8 @@ jobs:
         working-directory: scripts/build-windows
         run: mingw32-make
 
-      - run: scripts/build-windows/_output/kclvm-windows/kclvm_cli.exe -h
-      - run: scripts/build-windows/_output/kclvm-windows/kcl.exe ./samples/hello.k
+      - run: scripts/build-windows/_output/kclvm_cli.exe -h
+      - run: scripts/build-windows/_output/kcl.exe ./samples/hello.k
 
-      - run: Compress-Archive -Path scripts/build-windows/_output/kclvm-windows -DestinationPath C:/kclvm-windows.zip
+      - run: Compress-Archive -Path scripts/build-windows/_output -DestinationPath C:/kclvm-windows.zip
       - run: Get-FileHash -Algorithm MD5 C:/kclvm-windows.zip
