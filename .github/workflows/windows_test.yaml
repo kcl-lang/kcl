@@ -33,5 +33,5 @@ jobs:
 
       - uses: actions/upload-artifact@v2
         with:
-        name: kclvm-windows.zip
-        path: C:/kclvm-windows.zip  
+          name: kclvm-windows.zip
+          path: C:/kclvm-windows.zip  
