@@ -11,7 +11,7 @@ jobs:
       - name: Git checkout
         uses: actions/checkout@v2
         with:
-         submodules: 'true'
+          submodules: 'true'
       
       - uses: ilammy/msvc-dev-cmd@v1
 
@@ -31,7 +31,7 @@ jobs:
       - run: Compress-Archive -Path scripts/build-windows/_output/kclvm-windows -DestinationPath C:/kclvm-windows.zip
       - run: Get-FileHash -Algorithm MD5 C:/kclvm-windows.zip
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
-          name: kclvm-windows.zip
+          name: kclvm-windows
           path: C:/kclvm-windows.zip  
