@@ -1,6 +1,4 @@
 #![allow(dead_code)]
-
-use crate::linker::lld_main;
 use std::env::consts::DLL_SUFFIX;
 use std::ffi::CString;
 use std::path::PathBuf;
@@ -76,33 +74,6 @@ impl Command {
         args
     }
 
-    /// Link dynamic libraries into one library.
-    pub(crate) fn link_libs(&mut self, libs: &[String], lib_path: &str) -> String {
-        let lib_suffix = Self::get_lib_suffix();
-        let lib_path = if lib_path.is_empty() {
-            format!("{}{}", "_a.out", lib_suffix)
-        } else if !lib_path.ends_with(&lib_suffix) {
-            format!("{}{}", lib_path, lib_suffix)
-        } else {
-            lib_path.to_string()
-        };
-
-        let mut args = self.lld_args(&lib_path);
-
-        for lib in libs {
-            args.push(CString::new(lib.as_str()).unwrap())
-        }
-
-        // Call lld main function with args.
-        assert!(!lld_main(&args), "Run LLD linker failed");
-
-        // Use absolute path.
-        let path = PathBuf::from(&lib_path)
-            .canonicalize()
-            .unwrap_or_else(|_| panic!("{} not found", lib_path));
-        path.to_str().unwrap().to_string()
-    }
-
     /// Link dynamic libraries into one library using cc-rs lib.
     pub(crate) fn link_libs_with_cc(&mut self, libs: &[String], lib_path: &str) -> String {
         let lib_suffix = Self::get_lib_suffix();
@@ -114,7 +85,12 @@ impl Command {
             lib_path.to_string()
         };
 
+        #[cfg(not(target_os = "windows"))]
         let target = format!("{}-{}", std::env::consts::ARCH, std::env::consts::OS);
+
+        #[cfg(target_os = "windows")]
+        let target = format!("{}-{}", std::env::consts::ARCH, Self::cc_env_windows());
+
         let mut build = cc::Build::new();
 
         build
@@ -131,12 +107,7 @@ impl Command {
 
         // Run command with cc.
         let mut cmd = build.try_get_compiler().unwrap().to_command();
-        cmd.args(libs);
-        cmd.arg(&format!("-Wl,-rpath,{}/bin", self.executable_root));
-        cmd.arg(&format!("-L{}/bin", self.executable_root));
-        cmd.arg(&format!("-I{}/include", self.executable_root));
-        cmd.arg("-lkclvm_cli_cdylib");
-
+        self.add_args(libs, lib_path.to_string(), &mut cmd);
         let result = cmd.output().expect("run cc command failed");
         if !result.status.success() {
             panic!(
@@ -150,6 +121,51 @@ impl Command {
             .canonicalize()
             .unwrap_or_else(|_| panic!("{} not found", lib_path));
         path.to_str().unwrap().to_string()
+    }
+
+    /// Add args for cc.
+    pub(crate) fn add_args(
+        &self,
+        libs: &[String],
+        lib_path: String,
+        cmd: &mut std::process::Command,
+    ) {
+        #[cfg(not(target_os = "windows"))]
+        self.unix_args(libs, cmd);
+
+        #[cfg(target_os = "windows")]
+        self.msvc_win_args(libs, lib_path, cmd);
+    }
+
+    // Add args for cc on unix os.
+    pub(crate) fn unix_args(&self, libs: &[String], cmd: &mut std::process::Command) {
+        cmd.args(libs)
+            .arg(&format!("-Wl,-rpath,{}/bin", self.executable_root))
+            .arg(&format!("-L{}/bin", self.executable_root))
+            .arg(&format!("-I{}/include", self.executable_root))
+            .arg("-lkclvm_cli_cdylib");
+    }
+
+    // Add args for cc on windows os.
+    pub(crate) fn msvc_win_args(
+        &self,
+        libs: &[String],
+        lib_path: String,
+        cmd: &mut std::process::Command,
+    ) {
+        cmd.args(libs)
+            .arg("kclvm_cli_cdylib.lib")
+            .arg("/link")
+            .arg("/ENTRY:kclvm_main")
+            .arg("/NOLOGO")
+            .arg(format!(r#"/LIBPATH:"{}\bin""#, self.executable_root))
+            .arg("/DEFAULTLIB:msvcrt.lib")
+            .arg("/DEFAULTLIB:libcmt.lib")
+            .arg("/DLL")
+            .arg(format!("/OUT:{}", lib_path))
+            .arg("/EXPORT:_kcl_run")
+            .arg("/EXPORT:kclvm_main")
+            .arg("/EXPORT:kclvm_plugin_init");
     }
 
     /// Get the kclvm executable root.
@@ -183,6 +199,11 @@ impl Command {
 
     fn is_windows() -> bool {
         cfg!(target_os = "windows")
+    }
+
+    #[cfg(target_os = "windows")]
+    fn cc_env_windows() -> String {
+        "msvc".to_string()
     }
 
     fn find_it<P>(exe_name: P) -> Option<std::path::PathBuf>
