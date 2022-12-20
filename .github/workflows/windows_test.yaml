@@ -28,10 +28,7 @@ jobs:
 
       - run: .\build_win.bat
 
-      - run: Compress-Archive -Path scripts/build-windows/_output/kclvm-windows -DestinationPath C:/kclvm-windows.zip
-      - run: Get-FileHash -Algorithm MD5 C:/kclvm-windows.zip
-
       - uses: actions/upload-artifact@v3
         with:
           name: kclvm-windows
-          path: C:/kclvm-windows.zip  
+          path: scripts/build-windows/_output/kclvm-windows  
