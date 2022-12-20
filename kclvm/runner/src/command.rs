@@ -158,7 +158,7 @@ impl Command {
             .arg("/link")
             .arg("/ENTRY:kclvm_main")
             .arg("/NOLOGO")
-            .arg(format!(r#"/LIBPATH:"{}\_output""#, self.executable_root))
+            .arg(format!(r#"/LIBPATH:"{}\bin""#, self.executable_root))
             .arg("/DEFAULTLIB:msvcrt.lib")
             .arg("/DEFAULTLIB:libcmt.lib")
             .arg("/DLL")

@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	flagFile = flag.String("file", "./_output/python39._pth", "set output file")
+	flagFile = flag.String("file", "./_output/kclvm-windows/python39._pth", "set output file")
 )
 
 func main() {

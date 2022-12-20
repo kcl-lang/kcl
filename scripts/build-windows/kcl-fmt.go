@@ -49,7 +49,7 @@ func findKclvm_dllPath() string {
 		if fi, _ := os.Stat(filepath.Join(wd, kclvmName)); fi != nil && !fi.IsDir() {
 			return filepath.Join(wd, kclvmName)
 		}
-		wd = filepath.Join(wd, "_output")
+		wd = filepath.Join(wd, "_output/kclvm-windows")
 		if fi, _ := os.Stat(filepath.Join(wd, kclvmName)); fi != nil && !fi.IsDir() {
 			return filepath.Join(wd, kclvmName)
 		}
