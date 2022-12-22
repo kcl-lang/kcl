@@ -4,7 +4,7 @@
 //! The crate provides `Emitter` trait to define the interface that diagnostic emitter should implement.
 //! and also provides a built-in emitters:
 //!
-//!  + `TerminalEmitter` is responsible for emitting diagnostic to the terminal.
+//!  + `EmitterWriter` is responsible for emitting diagnostic to the terminal.
 //!  + TODO(zongz): `EmitterAPI` is responsible for serializing diagnostics and emitting them to the API.
 //!
 //！Besides, it's easy to define your customized `Emitter` by implementing `Emitter` trait.
@@ -21,7 +21,7 @@ use rustc_errors::{
 };
 use std::fmt::Debug;
 use std::io::{self, Write};
-use termcolor::{Buffer, BufferWriter, ColorChoice, ColorSpec, StandardStream, WriteColor};
+use termcolor::{Buffer, BufferWriter, ColorChoice, ColorSpec, StandardStream, WriteColor, Ansi};
 
 /// trait `Emitter` for emitting diagnostic.
 ///
@@ -104,7 +104,7 @@ where
     }
 }
 
-/// `TerminalEmitter` implements trait `Emitter` based on `termcolor1.0`
+/// `EmitterWriter` implements trait `Emitter` based on `termcolor1.0`
 /// for rendering diagnostic as strings and displaying them to the terminal.
 ///
 /// `termcolor1.0` supports displaying colorful string to terminal.
@@ -113,12 +113,12 @@ where
 ///
 /// ```rust
 /// # use crate::compiler_base_error::Emitter;
-/// # use compiler_base_error::TerminalEmitter;
+/// # use compiler_base_error::EmitterWriter;
 /// # use compiler_base_error::{components::Label, Diagnostic};
 /// # use compiler_base_error::DiagnosticStyle;
 ///
-/// // 1. Create a TerminalEmitter
-/// let mut term_emitter = TerminalEmitter::default();
+/// // 1. Create a EmitterWriter
+/// let mut term_emitter = EmitterWriter::default();
 ///
 /// // 2. Create a diagnostic for emitting.
 /// let mut diagnostic = Diagnostic::<DiagnosticStyle>::new();
@@ -134,35 +134,59 @@ where
 /// // 5. Emit the diagnostic.
 /// term_emitter.emit_diagnostic(&diagnostic);
 /// ```
-pub struct TerminalEmitter {
-    dst: Destination,
+pub struct EmitterWriter<'a> {
+    dst: Destination<'a>,
     short_message: bool,
 }
 
-impl Default for TerminalEmitter {
+impl<'a> EmitterWriter<'a> {
+    pub fn new_with_writer(writer: Box<(dyn Write + Send)>, color_support: bool) -> Self {
+        todo!()
+        // Self {
+        //     dst: Destination::Raw(writer, color_support),
+        //     short_message: false,
+        // }
+    }
+}
+
+impl<'a> Default for EmitterWriter<'a> {
     fn default() -> Self {
         Self {
-            dst: Destination::from_stderr(),
+            dst: Destination::from_stderr(ColorChoice::Auto),
             short_message: false,
         }
     }
 }
 
 /// Emit destinations
-enum Destination {
-    /// The `StandardStream` works similarly to `std::io::Stdout`,
-    /// it is augmented with methods for coloring by the `WriteColor` trait.
-    Terminal(Box<StandardStream>),
+// enum Destination {
+//     /// The `StandardStream` works similarly to `std::io::Stdout`,
+//     /// it is augmented with methods for coloring by the `WriteColor` trait.
+//     Terminal(Box<StandardStream>),
 
-    /// `BufferWriter` can create buffers and write buffers to stdout or stderr.
-    /// It does not implement `io::Write or WriteColor` itself.
-    ///
-    /// `Buffer` implements `io::Write and io::WriteColor`.
-    Buffered(Box<BufferWriter>, Buffer),
+//     /// `BufferWriter` can create buffers and write buffers to stdout or stderr.
+//     /// It does not implement `io::Write or WriteColor` itself.
+//     ///
+//     /// `Buffer` implements `io::Write and io::WriteColor`.
+//     Buffered(Box<BufferWriter>, Buffer),
+// }
+
+pub enum Destination<'a> {
+    Terminal(StandardStream),
+    Buffered(BufferWriter, Buffer),
+    // The bool denotes whether we should be emitting ansi color codes or not
+    Raw(&'a mut (dyn Write + Send), bool),
+    // ColoredRaw(Ansi<&'a mut (dyn Write + Send)>),
 }
 
-impl Destination {
-    fn from_stderr() -> Self {
+// pub enum WritableDst<'a> {
+//     Terminal(&'a mut StandardStream),
+//     Buffered(&'a mut BufferWriter, Buffer),
+//     Raw(&'a mut (dyn Write + Send), bool),
+// }
+
+impl<'a> Destination<'a> {
+    fn from_stderr(choice: ColorChoice) -> Self {
         // On Windows we'll be performing global synchronization on the entire
         // system for emitting rustc errors, so there's no need to buffer
         // anything.
@@ -170,18 +194,29 @@ impl Destination {
         // On non-Windows we rely on the atomicity of `write` to ensure errors
         // don't get all jumbled up.
         if cfg!(windows) {
-            Destination::Terminal(Box::new(StandardStream::stderr(ColorChoice::Auto)))
+            Self::Terminal(StandardStream::stderr(choice))
         } else {
-            let buffer_writer = BufferWriter::stderr(ColorChoice::Auto);
-            let buffer = buffer_writer.buffer();
-            Destination::Buffered(Box::new(buffer_writer), buffer)
+            Self::Buffered(BufferWriter::stderr(choice))
         }
     }
+
+    // fn writable(&mut self) -> WritableDst<'_> {
+    //     match *self {
+    //         Destination::Terminal(ref mut t) => WritableDst::Terminal(t),
+    //         Destination::Buffered(ref mut t) => {
+    //             let buf = t.buffer();
+    //             WritableDst::Buffered(t, buf)
+    //         }
+    //         Destination::Raw(ref mut t, false) => WritableDst::Raw(t),
+    //         Destination::Raw(ref mut t, true) => WritableDst::ColoredRaw(Ansi::new(t)),
+    //     }
+    // }
 
     fn supports_color(&self) -> bool {
         match *self {
             Self::Terminal(ref stream) => stream.supports_color(),
-            Self::Buffered(_, ref buffer) => buffer.supports_color(),
+            Self::Buffered(ref buffer, _) => buffer.buffer().supports_color(),
+            Self::Raw(_, supports_color) => supports_color,
         }
     }
 
@@ -189,37 +224,56 @@ impl Destination {
         match *self {
             Self::Terminal(ref mut t) => t.set_color(color),
             Self::Buffered(_, ref mut t) => t.set_color(color),
-        }
-    }
-
-    fn reset(&mut self) -> io::Result<()> {
-        match *self {
-            Self::Terminal(ref mut t) => t.reset(),
-            Self::Buffered(_, ref mut t) => t.reset(),
-        }
-    }
-}
-
-impl Write for Destination {
-    fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
-        match *self {
-            Destination::Terminal(ref mut t) => t.write(bytes),
-            Destination::Buffered(_, ref mut buf) => buf.write(bytes),
-        }
-    }
-
-    fn flush(&mut self) -> io::Result<()> {
-        match *self {
-            Destination::Terminal(ref mut t) => t.flush(),
-            Destination::Buffered(ref mut t, ref mut buf) => match buf.flush() {
-                Ok(_) => t.print(buf),
-                Err(err) => Err(err),
+            Self::Raw(t, _) => {
+                t = Ansi::new(t);
+                
             },
         }
     }
 }
 
-impl<T> Emitter<T> for TerminalEmitter
+impl<'a> WritableDst<'a> {
+    
+
+    fn reset(&mut self) -> io::Result<()> {
+        match *self {
+            WritableDst::Terminal(ref mut t) => t.reset(),
+            WritableDst::Buffered(_, ref mut t) => t.reset(),
+            WritableDst::ColoredRaw(ref mut t) => t.reset(),
+            WritableDst::Raw(_) => Ok(()),
+        }
+    }
+}
+
+impl<'a> Write for WritableDst<'a> {
+    fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+        match *self {
+            WritableDst::Terminal(ref mut t) => t.write(bytes),
+            WritableDst::Buffered(_, ref mut buf) => buf.write(bytes),
+            WritableDst::Raw(ref mut w) => w.write(bytes),
+            WritableDst::ColoredRaw(ref mut t) => t.write(bytes),
+        }
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        match *self {
+            WritableDst::Terminal(ref mut t) => t.flush(),
+            WritableDst::Buffered(_, ref mut buf) => buf.flush(),
+            WritableDst::Raw(ref mut w) => w.flush(),
+            WritableDst::ColoredRaw(ref mut w) => w.flush(),
+        }
+    }
+}
+
+impl<'a> Drop for WritableDst<'a> {
+    fn drop(&mut self) {
+        if let WritableDst::Buffered(ref mut dst, ref mut buf) = self {
+            drop(dst.print(buf));
+        }
+    }
+}
+
+impl<'a, T> Emitter<T> for EmitterWriter<'a>
 where
     T: Clone + PartialEq + Eq + Style + Debug,
 {
@@ -264,6 +318,8 @@ where
     T: Clone + PartialEq + Eq + Style + Debug,
 {
     use rustc_errors::lock;
+
+    // let mut dst = dst.writable();
 
     // In order to prevent error message interleaving, where multiple error lines get intermixed
     // when multiple compiler processes error simultaneously, we emit errors with additional

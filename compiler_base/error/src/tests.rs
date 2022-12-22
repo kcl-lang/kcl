@@ -101,7 +101,7 @@ mod test_errors {
     use rustc_errors::styled_buffer::StyledBuffer;
 
     use crate::errors::{ComponentError, ComponentFormatError};
-    use crate::{Component, Diagnostic, DiagnosticStyle, Emitter, TerminalEmitter};
+    use crate::{Component, Diagnostic, DiagnosticStyle, Emitter, EmitterWriter};
 
     // Component to generate errors.
     struct ComponentGenError;
@@ -124,7 +124,7 @@ mod test_errors {
         let mut diagnostic = Diagnostic::<DiagnosticStyle>::new();
         diagnostic.append_component(Box::new(cge));
 
-        let mut emitter = TerminalEmitter::default();
+        let mut emitter = EmitterWriter::default();
         match emitter.emit_diagnostic(&diagnostic) {
             Ok(_) => {
                 panic!("`emit_diagnostic` shoule be failed.")
@@ -141,5 +141,47 @@ mod test_errors {
                 };
             }
         };
+    }
+}
+
+mod test_emitter {
+    use std::{io::{self, Write}, fs::File};
+
+    use crate::{Emitter, EmitterWriter, Diagnostic, components::Label, DiagnosticStyle};
+
+    struct MyWriter {
+        content: Option<String>
+    }
+
+    impl Write for MyWriter {
+        fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+            if let Ok(s) = std::str::from_utf8(buf) {
+                self.content = Some(s.to_string());
+            }else{
+                self.content = None;
+            }
+            Ok(buf.len())
+        }
+
+        fn flush(&mut self) -> io::Result<()> {
+            Ok(())
+        }
+    }
+
+    unsafe impl Send for MyWriter {}
+
+    #[test]
+    fn test_stderr(){
+        // let writer = MyWriter {
+        //     content: None
+        // };
+        let mut buffer = File::create("/Users/shijun/Workspace/kusion/CompilerBase/KCLVM/compiler_base/error/get_output").unwrap();
+        let mut emitter = EmitterWriter::new_with_writer(Box::new(buffer), false);
+        
+        let mut diag = Diagnostic::new();
+        diag.append_component(Box::new(Label::Note));
+
+        emitter.emit_diagnostic(&diag);
+
     }
 }
