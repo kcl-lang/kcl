@@ -145,20 +145,20 @@ mod test_errors {
 }
 
 mod test_emitter {
-    use std::{io::{self, Write}, fs::File};
-
-    use crate::{Emitter, EmitterWriter, Diagnostic, components::Label, DiagnosticStyle, emitter::Destination};
+    use std::io::{self, Write};
+    use termcolor::Ansi;
+    use crate::{components::Label, emitter::Destination, Diagnostic, Emitter, EmitterWriter};
 
     struct MyWriter {
-        content: Option<String>
+        content: String,
     }
 
     impl Write for MyWriter {
         fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
             if let Ok(s) = std::str::from_utf8(buf) {
-                self.content = Some(s.to_string());
-            }else{
-                self.content = None;
+                self.content.push_str(s)
+            } else {
+                self.content = "Nothing".to_string();
             }
             Ok(buf.len())
         }
@@ -171,21 +171,28 @@ mod test_emitter {
     unsafe impl Send for MyWriter {}
 
     #[test]
-    fn test_stderr(){
+    fn test_emit_to_raw() {
         let mut writer = MyWriter {
-            content: None
+            content: String::new(),
         };
-        // let mut buffer = File::create("/Users/shijun/Workspace/kusion/CompilerBase/KCLVM/compiler_base/error/get_output").unwrap();
         {
-        let mut emitter = EmitterWriter::new_with_writer(Destination::UnColoredRaw(&mut writer));
-        let mut diag = Diagnostic::new();
-        diag.append_component(Box::new(Label::Note));
-        emitter.emit_diagnostic(&diag);
+            let mut emitter =
+                EmitterWriter::new_with_writer(Destination::ColoredRaw(Ansi::new(&mut writer)));
+            let mut diag = Diagnostic::new();
+            diag.append_component(Box::new(Label::Note));
+            emitter.emit_diagnostic(&diag).unwrap();
         }
 
-        let content = writer.content.unwrap();
+        assert_eq!(writer.content, "\u{1b}[0m\u{1b}[1m\u{1b}[38;5;14mnote\u{1b}[0m\n");
+        writer.content = String::new();
+        {
+            let mut emitter =
+                EmitterWriter::new_with_writer(Destination::UnColoredRaw(&mut writer));
+            let mut diag = Diagnostic::new();
+            diag.append_component(Box::new(Label::Note));
+            emitter.emit_diagnostic(&diag).unwrap();
+        }
 
-        println!("KKKK '{}'", content);
-
+        assert_eq!(writer.content, "note\n");
     }
 }

@@ -19,4 +19,7 @@ pub use diagnostic::{
     components, diagnostic_handler, style::DiagnosticStyle, Component, Diagnostic, StyledBuffer,
     StyledString,
 };
+
 pub use emitter::{Emitter, EmitterWriter};
+pub use emitter::Destination;
+pub use termcolor::{Ansi, Buffer, BufferWriter, ColorChoice, ColorSpec, StandardStream};

@@ -21,7 +21,7 @@ use rustc_errors::{
 };
 use std::fmt::Debug;
 use std::io::{self, Write};
-use termcolor::{Buffer, BufferWriter, ColorChoice, ColorSpec, StandardStream, WriteColor, Ansi};
+use termcolor::{Ansi, Buffer, BufferWriter, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 /// trait `Emitter` for emitting diagnostic.
 ///
@@ -140,6 +140,20 @@ pub struct EmitterWriter<'a> {
 }
 
 impl<'a> EmitterWriter<'a> {
+    /// Return a [`Destination`] with custom writer.
+    /// 
+    /// # Examples
+    /// 
+    /// ```rust
+    /// use compiler_base_error::Destination;
+    /// use compiler_base_error::EmitterWriter;
+    /// use termcolor::ColorChoice;
+    /// // 1. Create a `Destination` and close the color.
+    /// let dest = Destination::from_stderr(ColorChoice::Never);
+    /// 
+    /// // 2. Create the EmiterWriter by `Destination` with writer stderr.
+    /// let emitter_writer = EmitterWriter::new_with_writer(dest);
+    /// ```
     pub fn new_with_writer(dst: Destination<'a>) -> Self {
         Self {
             dst,
@@ -149,6 +163,7 @@ impl<'a> EmitterWriter<'a> {
 }
 
 impl<'a> Default for EmitterWriter<'a> {
+    /// Return a [`Destination`] with writer stderr.
     fn default() -> Self {
         Self {
             dst: Destination::from_stderr(ColorChoice::Auto),
@@ -157,35 +172,83 @@ impl<'a> Default for EmitterWriter<'a> {
     }
 }
 
-/// Emit destinations
-// enum Destination {
-//     /// The `StandardStream` works similarly to `std::io::Stdout`,
-//     /// it is augmented with methods for coloring by the `WriteColor` trait.
-//     Terminal(Box<StandardStream>),
-
-//     /// `BufferWriter` can create buffers and write buffers to stdout or stderr.
-//     /// It does not implement `io::Write or WriteColor` itself.
-//     ///
-//     /// `Buffer` implements `io::Write and io::WriteColor`.
-//     Buffered(Box<BufferWriter>, Buffer),
-// }
-
+/// Emit destinations provide four ways to emit.
+/// 
+/// - [`Destination::Terminal`]: Emit by [`StandardStream`]
+/// - [`Destination::Buffered`]: Emit by [`BufferWriter`], you can save content in [`Buffer`] first, and then emit the [`Buffer`] to [`BufferWriter`] on flush.
+/// - [`Destination::UnColoredRaw`]: Emit by a custom writer that does not support colors.
+/// - [`Destination::ColoredRaw`]: Emit by a custom writer that supports colors.
+/// 
+/// Note: All custom writers must implement two traits [`Write`] and [`Send`].
+/// 
+/// # Examples
+/// 1. If you want to use writer stdout or stderr, you can use the method `from_stderr` and `from_stdout`.
+/// 
+/// ```rust
+/// use compiler_base_error::Destination;
+/// use termcolor::ColorChoice;
+/// // stdout
+/// let dest_stdout = Destination::from_stdout(ColorChoice::Never);
+/// // stderr
+/// let dest_stderr = Destination::from_stderr(ColorChoice::Never);
+/// ```
+/// 
+/// 2. If you want to use custom writer
+/// ```rust
+/// use compiler_base_error::Destination;
+/// use termcolor::Ansi;
+/// use std::io::Write;
+/// use std::io;
+/// 
+/// // 1. Define a custom writer.
+/// struct MyWriter {
+///     content: String,
+/// }
+///
+/// // 2. Implement trait `Write`.
+/// impl Write for MyWriter {
+///     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+///         if let Ok(s) = std::str::from_utf8(buf) {
+///             self.content.push_str(s)
+///         } else {
+///             self.content = "Nothing".to_string();
+///         }
+///         Ok(buf.len())
+///     }
+///
+///     fn flush(&mut self) -> io::Result<()> {
+///         Ok(())
+///     }
+/// }
+/// // 3. Implement trait `Send`.
+/// unsafe impl Send for MyWriter {}
+///
+/// // 4. Define a destiation.
+/// let mut my_writer = MyWriter{ content: String::new() }; 
+/// Destination::UnColoredRaw(&mut my_writer);
+/// 
+/// // 5. If your custom writer supports color.
+/// Destination::ColoredRaw(Ansi::new(&mut my_writer));
+/// ```
 pub enum Destination<'a> {
-    Terminal(StandardStream),
+    /// Emit to stderr/stdout by stream.
+    Terminal(StandardStream),   
+
+    /// Save by the 'Buffer', and then Emit to stderr/stdout by the 'Buffer' through the 'BufferWriter'.
     Buffered(BufferWriter, Buffer),
-    // The bool denotes whether we should be emitting ansi color codes or not
+
+    /// Emit to a destiation without color.
     UnColoredRaw(&'a mut (dyn Write + Send)),
+
+    /// Emit to a customize destiation with color.
     ColoredRaw(Ansi<&'a mut (dyn Write + Send)>),
 }
 
-// pub enum WritableDst<'a> {
-//     Terminal(&'a mut StandardStream),
-//     Buffered(&'a mut BufferWriter, Buffer),
-//     Raw(&'a mut (dyn Write + Send), bool),
-// }
-
 impl<'a> Destination<'a> {
-    fn from_stderr(choice: ColorChoice) -> Self {
+
+    /// New a stderr destination.
+    /// [`ColorChoice`] is used to determine whether the output content has been colored.
+    pub fn from_stderr(choice: ColorChoice) -> Self {
         // On Windows we'll be performing global synchronization on the entire
         // system for emitting rustc errors, so there's no need to buffer
         // anything.
@@ -201,37 +264,49 @@ impl<'a> Destination<'a> {
         }
     }
 
-    // fn writable(&mut self) -> WritableDst<'_> {
-    //     match *self {
-    //         Destination::Terminal(ref mut t) => WritableDst::Terminal(t),
-    //         Destination::Buffered(ref mut t) => {
-    //             let buf = t.buffer();
-    //             WritableDst::Buffered(t, buf)
-    //         }
-    //         Destination::Raw(ref mut t, false) => WritableDst::Raw(t),
-    //         Destination::Raw(ref mut t, true) => WritableDst::ColoredRaw(Ansi::new(t)),
-    //     }
-    // }
+     /// New a stdout destination.
+    /// [`ColorChoice`] is used to determine whether the output content has been colored.
+    pub fn from_stdout(choice: ColorChoice) -> Self {
+        // On Windows we'll be performing global synchronization on the entire
+        // system for emitting rustc errors, so there's no need to buffer
+        // anything.
+        //
+        // On non-Windows we rely on the atomicity of `write` to ensure errors
+        // don't get all jumbled up.
+        if cfg!(windows) {
+            Self::Terminal(StandardStream::stdout(choice))
+        } else {
+            let buffer_writer = BufferWriter::stdout(ColorChoice::Auto);
+            let buffer = buffer_writer.buffer();
+            Destination::Buffered(buffer_writer, buffer)
+        }
+    }
 
-    fn supports_color(&self) -> bool {
+    /// Returns true if and only if the underlying [`Destination`] supports colors.
+    pub fn supports_color(&self) -> bool {
         match *self {
             Self::Terminal(ref stream) => stream.supports_color(),
             Self::Buffered(ref buffer, _) => buffer.buffer().supports_color(),
             Self::UnColoredRaw(_) => false,
-            Self::ColoredRaw(_) => true
+            Self::ColoredRaw(_) => true,
         }
     }
 
-    fn set_color(&mut self, color: &ColorSpec) -> io::Result<()> {
+    /// Set color for the [`Destination`] by [`ColorSpec`].
+    /// Subsequent writes to this writer will use these settings until either `reset()` is called or new color settings are set.
+    /// If there was a problem resetting the color settings, then an error is returned.
+    pub fn set_color(&mut self, color: &ColorSpec) -> io::Result<()> {
         match *self {
             Self::Terminal(ref mut t) => t.set_color(color),
             Self::Buffered(_, ref mut t) => t.set_color(color),
             Self::ColoredRaw(ref mut t) => t.set_color(color),
-            Self::UnColoredRaw(_) => Ok(())
+            Self::UnColoredRaw(_) => Ok(()),
         }
     }
 
-    fn reset(&mut self) -> io::Result<()> {
+    /// Reset the current color settings for [`Destination`] to their original settings.
+    /// If there was a problem resetting the color settings, then an error is returned.
+    pub fn reset(&mut self) -> io::Result<()> {
         match *self {
             Self::Terminal(ref mut t) => t.reset(),
             Self::Buffered(_, ref mut t) => t.reset(),
@@ -254,7 +329,10 @@ impl<'a> Write for Destination<'a> {
     fn flush(&mut self) -> io::Result<()> {
         match *self {
             Self::Terminal(ref mut t) => t.flush(),
-            Self::Buffered(_, ref mut buf) => buf.flush(),
+            Self::Buffered(ref mut t, ref mut buf) => match buf.flush() {
+                Ok(_) => t.print(buf),
+                Err(err) => Err(err),
+            },
             Self::UnColoredRaw(ref mut w) => w.flush(),
             Self::ColoredRaw(ref mut w) => w.flush(),
         }
