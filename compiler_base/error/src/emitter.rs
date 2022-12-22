@@ -141,16 +141,16 @@ pub struct EmitterWriter<'a> {
 
 impl<'a> EmitterWriter<'a> {
     /// Return a [`Destination`] with custom writer.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```rust
     /// use compiler_base_error::Destination;
     /// use compiler_base_error::EmitterWriter;
     /// use termcolor::ColorChoice;
     /// // 1. Create a `Destination` and close the color.
     /// let dest = Destination::from_stderr(ColorChoice::Never);
-    /// 
+    ///
     /// // 2. Create the EmiterWriter by `Destination` with writer stderr.
     /// let emitter_writer = EmitterWriter::new_with_writer(dest);
     /// ```
@@ -173,17 +173,17 @@ impl<'a> Default for EmitterWriter<'a> {
 }
 
 /// Emit destinations provide four ways to emit.
-/// 
+///
 /// - [`Destination::Terminal`]: Emit by [`StandardStream`]
 /// - [`Destination::Buffered`]: Emit by [`BufferWriter`], you can save content in [`Buffer`] first, and then emit the [`Buffer`] to [`BufferWriter`] on flush.
 /// - [`Destination::UnColoredRaw`]: Emit by a custom writer that does not support colors.
 /// - [`Destination::ColoredRaw`]: Emit by a custom writer that supports colors.
-/// 
+///
 /// Note: All custom writers must implement two traits [`Write`] and [`Send`].
-/// 
+///
 /// # Examples
 /// 1. If you want to use writer stdout or stderr, you can use the method `from_stderr` and `from_stdout`.
-/// 
+///
 /// ```rust
 /// use compiler_base_error::Destination;
 /// use termcolor::ColorChoice;
@@ -192,14 +192,14 @@ impl<'a> Default for EmitterWriter<'a> {
 /// // stderr
 /// let dest_stderr = Destination::from_stderr(ColorChoice::Never);
 /// ```
-/// 
+///
 /// 2. If you want to use custom writer
 /// ```rust
 /// use compiler_base_error::Destination;
 /// use termcolor::Ansi;
 /// use std::io::Write;
 /// use std::io;
-/// 
+///
 /// // 1. Define a custom writer.
 /// struct MyWriter {
 ///     content: String,
@@ -224,15 +224,15 @@ impl<'a> Default for EmitterWriter<'a> {
 /// unsafe impl Send for MyWriter {}
 ///
 /// // 4. Define a destiation.
-/// let mut my_writer = MyWriter{ content: String::new() }; 
+/// let mut my_writer = MyWriter{ content: String::new() };
 /// Destination::UnColoredRaw(&mut my_writer);
-/// 
+///
 /// // 5. If your custom writer supports color.
 /// Destination::ColoredRaw(Ansi::new(&mut my_writer));
 /// ```
 pub enum Destination<'a> {
     /// Emit to stderr/stdout by stream.
-    Terminal(StandardStream),   
+    Terminal(StandardStream),
 
     /// Save by the 'Buffer', and then Emit to stderr/stdout by the 'Buffer' through the 'BufferWriter'.
     Buffered(BufferWriter, Buffer),
@@ -245,7 +245,6 @@ pub enum Destination<'a> {
 }
 
 impl<'a> Destination<'a> {
-
     /// New a stderr destination.
     /// [`ColorChoice`] is used to determine whether the output content has been colored.
     pub fn from_stderr(choice: ColorChoice) -> Self {
@@ -264,7 +263,7 @@ impl<'a> Destination<'a> {
         }
     }
 
-     /// New a stdout destination.
+    /// New a stdout destination.
     /// [`ColorChoice`] is used to determine whether the output content has been colored.
     pub fn from_stdout(choice: ColorChoice) -> Self {
         // On Windows we'll be performing global synchronization on the entire

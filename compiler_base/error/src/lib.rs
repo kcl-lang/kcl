@@ -20,6 +20,6 @@ pub use diagnostic::{
     StyledString,
 };
 
-pub use emitter::{Emitter, EmitterWriter};
 pub use emitter::Destination;
+pub use emitter::{Emitter, EmitterWriter};
 pub use termcolor::{Ansi, Buffer, BufferWriter, ColorChoice, ColorSpec, StandardStream};

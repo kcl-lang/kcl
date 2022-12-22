@@ -145,9 +145,9 @@ mod test_errors {
 }
 
 mod test_emitter {
+    use crate::{components::Label, emitter::Destination, Diagnostic, Emitter, EmitterWriter};
     use std::io::{self, Write};
     use termcolor::Ansi;
-    use crate::{components::Label, emitter::Destination, Diagnostic, Emitter, EmitterWriter};
 
     struct MyWriter {
         content: String,
@@ -183,7 +183,10 @@ mod test_emitter {
             emitter.emit_diagnostic(&diag).unwrap();
         }
 
-        assert_eq!(writer.content, "\u{1b}[0m\u{1b}[1m\u{1b}[38;5;14mnote\u{1b}[0m\n");
+        assert_eq!(
+            writer.content,
+            "\u{1b}[0m\u{1b}[1m\u{1b}[38;5;14mnote\u{1b}[0m\n"
+        );
         writer.content = String::new();
         {
             let mut emitter =
