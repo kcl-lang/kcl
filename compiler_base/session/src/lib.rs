@@ -364,10 +364,54 @@ impl Session {
 /// // 3. The diagnostic of MyError will display "error" on terminal.
 /// // For more information about diagnositc displaying, see doc in `compiler_base_error`.
 /// ```
-///
+/// 
 /// Note:
-/// TODO(zongz): `#[derive(SessionDiagnostic)]` is WIP, before that you need to manually implement this trait.
-/// This should not be implemented manually. Instead, use `#[derive(SessionDiagnostic)]` in the future.
+/// trait [`SessionDiagnostic`] relies on [`anyhow::Result`] to handle return errors. 
+/// If you don't want to introduce [`anyhow`] into your project, you can try to use [`SessionDiagnosticWithError`].
 pub trait SessionDiagnostic {
     fn into_diagnostic(self, sess: &Session) -> Result<Diagnostic<DiagnosticStyle>>;
+}
+
+/// Trait implemented by error types.
+/// 
+/// The difference with [`SessionDiagnostic`] is that [`SessionDiagnostic::into_diagnostic`] returns errors with third-party tools [`anyhow`],
+/// and [`SessionDiagnosticWithError::into_diagnostic`] returns errors through a custom error type.
+/// 
+/// You can implement manually for error types as below.
+///
+/// # Example
+///
+/// ```rust
+/// use compiler_base_error::components::Label;
+/// use compiler_base_error::DiagnosticStyle;
+/// use compiler_base_error::Diagnostic;
+/// use compiler_base_session::Session;
+/// use compiler_base_session::SessionDiagnostic;
+///
+/// // 1. Create your own error type.
+/// struct MyError;
+///
+/// // 2. Implement trait `SessionDiagnosticWithError` manually.
+/// impl SessionDiagnosticWithError for MyError {
+///     type Error = String;
+///     fn into_diagnostic(self, sess: &Session) -> Result<Diagnostic<DiagnosticStyle>, String> {
+///         let mut diag = Diagnostic::<DiagnosticStyle>::new();
+///         // 1. Label Component
+///         let label_component = Box::new(Label::Error("error".to_string()));
+///         diag.append_component(label_component);
+///         Ok(diag)
+///     }
+/// }
+///
+/// // 3. The diagnostic of MyError will display "error" on terminal.
+/// // For more information about diagnositc displaying, see doc in `compiler_base_error`.
+/// ```
+///
+/// Note:
+/// 1. TODO(zongz): `#[derive(SessionDiagnosticWithError)]` is WIP, before that you need to manually implement this trait.
+/// This should not be implemented manually. Instead, use `#[derive(SessionDiagnostic)]` in the future.
+pub trait SessionDiagnosticWithError {
+    type Error;
+
+    fn into_diagnostic(self, sess: &Session) -> Result<Diagnostic<DiagnosticStyle>, Self::Error>;
 }
