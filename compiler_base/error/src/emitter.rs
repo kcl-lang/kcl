@@ -140,12 +140,11 @@ pub struct EmitterWriter<'a> {
 }
 
 impl<'a> EmitterWriter<'a> {
-    pub fn new_with_writer(writer: Box<(dyn Write + Send)>, color_support: bool) -> Self {
-        todo!()
-        // Self {
-        //     dst: Destination::Raw(writer, color_support),
-        //     short_message: false,
-        // }
+    pub fn new_with_writer(dst: Destination<'a>) -> Self {
+        Self {
+            dst,
+            short_message: false,
+        }
     }
 }
 
@@ -175,8 +174,8 @@ pub enum Destination<'a> {
     Terminal(StandardStream),
     Buffered(BufferWriter, Buffer),
     // The bool denotes whether we should be emitting ansi color codes or not
-    Raw(&'a mut (dyn Write + Send), bool),
-    // ColoredRaw(Ansi<&'a mut (dyn Write + Send)>),
+    UnColoredRaw(&'a mut (dyn Write + Send)),
+    ColoredRaw(Ansi<&'a mut (dyn Write + Send)>),
 }
 
 // pub enum WritableDst<'a> {
@@ -196,7 +195,9 @@ impl<'a> Destination<'a> {
         if cfg!(windows) {
             Self::Terminal(StandardStream::stderr(choice))
         } else {
-            Self::Buffered(BufferWriter::stderr(choice))
+            let buffer_writer = BufferWriter::stderr(ColorChoice::Auto);
+            let buffer = buffer_writer.buffer();
+            Destination::Buffered(buffer_writer, buffer)
         }
     }
 
@@ -216,7 +217,8 @@ impl<'a> Destination<'a> {
         match *self {
             Self::Terminal(ref stream) => stream.supports_color(),
             Self::Buffered(ref buffer, _) => buffer.buffer().supports_color(),
-            Self::Raw(_, supports_color) => supports_color,
+            Self::UnColoredRaw(_) => false,
+            Self::ColoredRaw(_) => true
         }
     }
 
@@ -224,50 +226,44 @@ impl<'a> Destination<'a> {
         match *self {
             Self::Terminal(ref mut t) => t.set_color(color),
             Self::Buffered(_, ref mut t) => t.set_color(color),
-            Self::Raw(t, _) => {
-                t = Ansi::new(t);
-                
-            },
+            Self::ColoredRaw(ref mut t) => t.set_color(color),
+            Self::UnColoredRaw(_) => Ok(())
         }
     }
-}
-
-impl<'a> WritableDst<'a> {
-    
 
     fn reset(&mut self) -> io::Result<()> {
         match *self {
-            WritableDst::Terminal(ref mut t) => t.reset(),
-            WritableDst::Buffered(_, ref mut t) => t.reset(),
-            WritableDst::ColoredRaw(ref mut t) => t.reset(),
-            WritableDst::Raw(_) => Ok(()),
+            Self::Terminal(ref mut t) => t.reset(),
+            Self::Buffered(_, ref mut t) => t.reset(),
+            Self::ColoredRaw(ref mut t) => t.reset(),
+            Self::UnColoredRaw(_) => Ok(()),
         }
     }
 }
 
-impl<'a> Write for WritableDst<'a> {
+impl<'a> Write for Destination<'a> {
     fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
         match *self {
-            WritableDst::Terminal(ref mut t) => t.write(bytes),
-            WritableDst::Buffered(_, ref mut buf) => buf.write(bytes),
-            WritableDst::Raw(ref mut w) => w.write(bytes),
-            WritableDst::ColoredRaw(ref mut t) => t.write(bytes),
+            Self::Terminal(ref mut t) => t.write(bytes),
+            Self::Buffered(_, ref mut buf) => buf.write(bytes),
+            Self::UnColoredRaw(ref mut w) => w.write(bytes),
+            Self::ColoredRaw(ref mut t) => t.write(bytes),
         }
     }
 
     fn flush(&mut self) -> io::Result<()> {
         match *self {
-            WritableDst::Terminal(ref mut t) => t.flush(),
-            WritableDst::Buffered(_, ref mut buf) => buf.flush(),
-            WritableDst::Raw(ref mut w) => w.flush(),
-            WritableDst::ColoredRaw(ref mut w) => w.flush(),
+            Self::Terminal(ref mut t) => t.flush(),
+            Self::Buffered(_, ref mut buf) => buf.flush(),
+            Self::UnColoredRaw(ref mut w) => w.flush(),
+            Self::ColoredRaw(ref mut w) => w.flush(),
         }
     }
 }
 
-impl<'a> Drop for WritableDst<'a> {
+impl<'a> Drop for Destination<'a> {
     fn drop(&mut self) {
-        if let WritableDst::Buffered(ref mut dst, ref mut buf) = self {
+        if let Destination::Buffered(ref mut dst, ref mut buf) = self {
             drop(dst.print(buf));
         }
     }
@@ -318,8 +314,6 @@ where
     T: Clone + PartialEq + Eq + Style + Debug,
 {
     use rustc_errors::lock;
-
-    // let mut dst = dst.writable();
 
     // In order to prevent error message interleaving, where multiple error lines get intermixed
     // when multiple compiler processes error simultaneously, we emit errors with additional

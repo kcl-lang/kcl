@@ -147,7 +147,7 @@ mod test_errors {
 mod test_emitter {
     use std::{io::{self, Write}, fs::File};
 
-    use crate::{Emitter, EmitterWriter, Diagnostic, components::Label, DiagnosticStyle};
+    use crate::{Emitter, EmitterWriter, Diagnostic, components::Label, DiagnosticStyle, emitter::Destination};
 
     struct MyWriter {
         content: Option<String>
@@ -172,16 +172,20 @@ mod test_emitter {
 
     #[test]
     fn test_stderr(){
-        // let writer = MyWriter {
-        //     content: None
-        // };
-        let mut buffer = File::create("/Users/shijun/Workspace/kusion/CompilerBase/KCLVM/compiler_base/error/get_output").unwrap();
-        let mut emitter = EmitterWriter::new_with_writer(Box::new(buffer), false);
-        
+        let mut writer = MyWriter {
+            content: None
+        };
+        // let mut buffer = File::create("/Users/shijun/Workspace/kusion/CompilerBase/KCLVM/compiler_base/error/get_output").unwrap();
+        {
+        let mut emitter = EmitterWriter::new_with_writer(Destination::UnColoredRaw(&mut writer));
         let mut diag = Diagnostic::new();
         diag.append_component(Box::new(Label::Note));
-
         emitter.emit_diagnostic(&diag);
+        }
+
+        let content = writer.content.unwrap();
+
+        println!("KKKK '{}'", content);
 
     }
 }
