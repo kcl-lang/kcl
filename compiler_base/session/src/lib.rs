@@ -364,19 +364,19 @@ impl Session {
 /// // 3. The diagnostic of MyError will display "error" on terminal.
 /// // For more information about diagnositc displaying, see doc in `compiler_base_error`.
 /// ```
-/// 
+///
 /// Note:
-/// trait [`SessionDiagnostic`] relies on [`anyhow::Result`] to handle return errors. 
+/// trait [`SessionDiagnostic`] relies on [`anyhow::Result`] to handle return errors.
 /// If you don't want to introduce [`anyhow`] into your project, you can try to use [`SessionDiagnosticWithError`].
 pub trait SessionDiagnostic {
     fn into_diagnostic(self, sess: &Session) -> Result<Diagnostic<DiagnosticStyle>>;
 }
 
 /// Trait implemented by error types.
-/// 
+///
 /// The difference with [`SessionDiagnostic`] is that [`SessionDiagnostic::into_diagnostic`] returns errors with third-party tools [`anyhow`],
 /// and [`SessionDiagnosticWithError::into_diagnostic`] returns errors through a custom error type.
-/// 
+///
 /// You can implement manually for error types as below.
 ///
 /// # Example

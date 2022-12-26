@@ -186,10 +186,10 @@ mod test_session {
     }
 
     mod test_session_diagnostic_with_error {
+        use crate::{Session, SessionDiagnosticWithError};
         use compiler_base_error::{Diagnostic, DiagnosticStyle};
-        use crate::{SessionDiagnosticWithError, Session};
-        struct MyError{
-            pub(crate) is_err: bool
+        struct MyError {
+            pub(crate) is_err: bool,
         }
 
         impl SessionDiagnosticWithError for MyError {
@@ -198,23 +198,23 @@ mod test_session {
             fn into_diagnostic(self, _: &Session) -> Result<Diagnostic<DiagnosticStyle>, String> {
                 if !self.is_err {
                     Ok(Diagnostic::<DiagnosticStyle>::new())
-                }else {
+                } else {
                     Err("Test Err Type".to_string())
                 }
             }
         }
 
         #[test]
-        fn test_return_err(){
-            let my_err = MyError {
-                is_err: true
-            };
+        fn test_return_err() {
+            let my_err = MyError { is_err: true };
             let sess = Session::new_with_src_code("test code").unwrap();
             match my_err.into_diagnostic(&sess) {
-                Ok(_) => {unreachable!()},
+                Ok(_) => {
+                    unreachable!()
+                }
                 Err(err) => {
                     assert_eq!(err, "Test Err Type");
-                },
+                }
             }
         }
     }
