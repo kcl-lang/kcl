@@ -16,6 +16,8 @@ categories = ["command-line-utilities"]
 [dependencies]
 compiler_base_span = "0.0.1"
 compiler_base_macros = "0.0.1"
+pretty_assertions = "1.3.0"
+rustc_span = "0.0.1"
 rustc_errors = "0.0.2"
 unic-langid = {version="0.9.0", features = ["macros"]}
 
