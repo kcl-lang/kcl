@@ -42,10 +42,6 @@ chmod +x $kclvm_install_dir/bin/kcl-lint
 chmod +x $kclvm_install_dir/bin/kcl-fmt
 chmod +x $kclvm_install_dir/bin/kcl-vet
 
-if [ -d $kclvm_install_dir/lib/site-packages/kclvm ]; then
-   rm -rf $kclvm_install_dir/lib/site-packages/kclvm
-fi
-
 set +x
 
 # build kclvm-cli
@@ -70,24 +66,19 @@ case $os in
         ;;
 esac
 
-# libkclvm_cli
+# Copy libkclvm_cli lib
 
-# Darwin dylib
 if [ -e $topdir/kclvm/target/release/libkclvm_cli_cdylib.$dll_extension ]; then
     touch $kclvm_install_dir/bin/libkclvm_cli_cdylib.$dll_extension
     rm $kclvm_install_dir/bin/libkclvm_cli_cdylib.$dll_extension
     cp $topdir/kclvm/target/release/libkclvm_cli_cdylib.$dll_extension $kclvm_install_dir/bin/libkclvm_cli_cdylib.$dll_extension
 fi
 
-# Copy LLVM runtime and header
+# Copy KCLVM C API header
 cd $topdir/kclvm/runtime
-cp src/_kclvm.bc $kclvm_install_dir/include/_kclvm.bc
 cp src/_kclvm.h  $kclvm_install_dir/include/_kclvm.h
 
-cd $kclvm_install_dir/include
-
 # build kclvm_plugin python module
-
 cd $topdir/kclvm/plugin
 python3 setup.py install_lib --install-dir=$kclvm_install_dir/lib/site-packages
 
