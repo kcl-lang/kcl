@@ -25,7 +25,7 @@ You can use KCL to
 
 + [Generate low-level static configuration data](https://kcl-lang.io/docs/user_docs/guides/configuration) like JSON, YAML, etc or [integrate with existing data](https://kcl-lang.io/docs/user_docs/guides/data-integration).
 + Reduce boilerplate in configuration data with the [schema modeling](https://kcl-lang.io/docs/user_docs/guides/schema-definition).
-+ Define schemas with [rule constraints for configuration data and validate](https://kcl-lang.io/docs/user_docs/guides/validation) them automatically].
++ Define schemas with [rule constraints for configuration data and validate](https://kcl-lang.io/docs/user_docs/guides/validation) them automatically.
 + Organize, simplify, unify and manage large configurations without side effects through [gradient automation schemes](https://kcl-lang.io/docs/user_docs/guides/automation).
 + Manage large configurations scalably with [isolated configuration blocks](https://kcl-lang.io/docs/reference/lang/tour#config-operations).
 + Used as a platform engineering programming language to deliver modern app with [Kusion Stack](https://kusionstack.io).
