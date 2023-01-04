@@ -73,9 +73,15 @@ pub fn exec_program(
 
     // join work_path with k_file_path
     for (_, file) in k_files.iter().enumerate() {
-        match Path::new(&work_dir).join(file).to_str() {
-            Some(str) => kcl_paths.push(String::from(str)),
-            None => (),
+        // If the input file or path is a relative path,
+        // join with the work directory path.
+        if file.starts_with(".") {
+            match Path::new(&work_dir).join(file).to_str() {
+                Some(str) => kcl_paths.push(String::from(str)),
+                None => (),
+            }
+        } else {
+            kcl_paths.push(String::from(file))
         }
     }
 
