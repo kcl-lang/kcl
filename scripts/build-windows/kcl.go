@@ -6,7 +6,9 @@
 package main
 
 import (
+	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"syscall"
 	"unsafe"
@@ -14,6 +16,16 @@ import (
 
 func main() {
 	// kclvm -m kclvm ...
+	inputPath := os.Args[0]
+
+	if _, err := os.Stat(inputPath); os.IsNotExist(err) {
+		fmt.Println("Input path does not exist")
+		return
+	}
+
+	parentPath := filepath.Dir(inputPath)
+
+	install_kclvm(parentPath)
 	var args []string
 	args = append(args, os.Args[0])
 	args = append(args, "-m", "kclvm")
@@ -56,4 +68,38 @@ func findKclvm_dllPath() string {
 	}
 
 	return kclvmName
+}
+
+func install_kclvm(installed_path string) {
+	// Check if Python3 is installed
+	cmd := exec.Command("cmd", "/C", "where python3")
+	_, err := cmd.Output()
+	if err != nil {
+		fmt.Println("Python3 is not installed, details: ", err)
+		return
+	}
+	// Check if "installed" file exists
+
+	outputPath := filepath.Join(installed_path, "kclvm_installed")
+
+	if _, err := os.Stat(outputPath); err == nil {
+		return
+	}
+
+	// Install kclvm module using pip
+	cmd = exec.Command("cmd", "/C", "pip", "install", "kclvm")
+
+	_, err = cmd.CombinedOutput()
+	if err != nil {
+		fmt.Println("Pip install kclvm falied ", err)
+		return
+	}
+
+	// Create "installed" file
+	f, err := os.Create("kclvm_installed")
+	if err != nil {
+		fmt.Printf("Error creating file: %s\n", err)
+		return
+	}
+	defer f.Close()
 }
