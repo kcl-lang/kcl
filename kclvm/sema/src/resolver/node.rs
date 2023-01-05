@@ -827,7 +827,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                             let key_ty = if self.ctx.local_vars.contains(name) {
                                 self.expr(key)
                             } else {
-                                self.str_ty()
+                                Rc::new(Type::str_lit(&name))
                             };
                             self.check_attr_ty(&key_ty, key.get_pos());
                             key_ty
