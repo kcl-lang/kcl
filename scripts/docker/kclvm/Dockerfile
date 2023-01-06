@@ -1,11 +1,13 @@
 # Copyright 2021 The KCL Authors. All rights reserved.
 
-FROM ubuntu:20.04
+FROM ubuntu:22.04
+
+# Install python3 and pip
 
 RUN apt-get update
 RUN apt-get install python3 python3-pip -y
 
-# Install python3 and pip
+# Copy the kclvm artifact.
 
 COPY _build/dist/ubuntu/kclvm /kclvm/
 
