@@ -80,7 +80,10 @@ fn test_resolve_program_fail() {
     let diag = &scope.diagnostics[0];
     assert_eq!(diag.code, Some(DiagnosticId::Error(ErrorKind::TypeError)));
     assert_eq!(diag.messages.len(), 1);
-    assert_eq!(diag.messages[0].message, "expect int, got {str:int(1)}");
+    assert_eq!(
+        diag.messages[0].message,
+        "expect int, got {str(key):int(1)}"
+    );
 }
 
 #[test]
