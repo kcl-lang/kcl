@@ -3,9 +3,6 @@
 pub mod assert_api;
 pub use assert_api::*;
 
-pub mod debug_api;
-pub use debug_api::*;
-
 pub mod builtin_api;
 pub use builtin_api::*;
 

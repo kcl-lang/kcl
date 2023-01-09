@@ -126,21 +126,6 @@ pub fn _kclvm_get_fn_ptr_by_name(name: &str) -> u64 {
         "kclvm_datetime_now" => crate::kclvm_datetime_now as *const () as u64,
         "kclvm_datetime_ticks" => crate::kclvm_datetime_ticks as *const () as u64,
         "kclvm_datetime_today" => crate::kclvm_datetime_today as *const () as u64,
-        "kclvm_debug_hello" => crate::kclvm_debug_hello as *const () as u64,
-        "kclvm_debug_invoke_func" => crate::kclvm_debug_invoke_func as *const () as u64,
-        "kclvm_debug_print" => crate::kclvm_debug_print as *const () as u64,
-        "kclvm_debug_print_str_list" => crate::kclvm_debug_print_str_list as *const () as u64,
-        "kclvm_debug_print_type" => crate::kclvm_debug_print_type as *const () as u64,
-        "kclvm_debug_print_value" => crate::kclvm_debug_print_value as *const () as u64,
-        "kclvm_debug_print_value_json_string" => {
-            crate::kclvm_debug_print_value_json_string as *const () as u64
-        }
-        "kclvm_default_collection_insert_int_pointer" => {
-            crate::kclvm_default_collection_insert_int_pointer as *const () as u64
-        }
-        "kclvm_default_collection_insert_value" => {
-            crate::kclvm_default_collection_insert_value as *const () as u64
-        }
         "kclvm_dict_clear" => crate::kclvm_dict_clear as *const () as u64,
         "kclvm_dict_get" => crate::kclvm_dict_get as *const () as u64,
         "kclvm_dict_get_entry" => crate::kclvm_dict_get_entry as *const () as u64,
