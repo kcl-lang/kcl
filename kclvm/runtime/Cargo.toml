@@ -3,9 +3,6 @@ name = "kclvm-runtime"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-path = "src/lib.rs"
-
 [dependencies]
 kclvm_runtime_internal_macros = { path = "./internal_macros" }
 serde_json =  {package = "serde_json", version = "= 1.0.86"}
