@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  <img src="https://github.com/KusionStack/KCLVM/workflows/KCL/badge.svg">
+  <img src="https://github.com/KusionStack/KCLVM/workflows/release/badge.svg">
   <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square">
   <img src="https://coveralls.io/repos/github/KusionStack/KCLVM/badge.svg">
   <img src="https://img.shields.io/github/release/KusionStack/KCLVM.svg">

@@ -11,6 +11,8 @@ jobs:
   test:
     name: Unit tests with coverage
     runs-on: ubuntu-latest
+    container:
+      image: kusionstack/kclvm-builder
     steps:
       - name: Check out code
         uses: actions/checkout@v3
