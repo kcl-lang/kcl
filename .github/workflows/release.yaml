@@ -1,12 +1,16 @@
-name: build-and-test-ubuntu
-on: ["push", "pull_request"]
+name: release
+on:
+  push:
+    branches:
+      - "main"
+    tags:
+      - "v*"
+permissions:
+  contents: write
 jobs:
-  build-and-test:
-    # Ref: https://github.com/actions/runner-images/tree/main/images/linux
-    name: Test
+  test:
+    name: Unit tests with coverage
     runs-on: ubuntu-latest
-    container:
-      image: kusionstack/kclvm-builder
     steps:
       - name: Check out code
         uses: actions/checkout@v3
@@ -45,8 +49,23 @@ jobs:
         working-directory: ./kclvm
         run: export PATH=$PATH:$PWD/../_build/dist/ubuntu/kclvm/bin && make install-rustc-wasm && make && make codecov-lcov
         shell: bash
-      - name: Coveralls upload
-        uses: coverallsapp/github-action@master
+      - name: Copy dockerfile
+        run: cp scripts/docker/kclvm/Dockerfile .
+        shell: bash
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: ./kclvm/.kclvm/lcov.info
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: kusionstack/kclvm
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

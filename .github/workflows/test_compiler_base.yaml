@@ -4,18 +4,18 @@ jobs:
   check-fmt:
     name: Test
     strategy:
-      matrix: 
+      matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Check out code
         uses: actions/checkout@v3
         with:
-         submodules: 'true'
+          submodules: "true"
       - name: Install rust nightly toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: 1.61
+          toolchain: 1.62
           override: true
           components: clippy, rustfmt
       - name: Rust code format check
@@ -25,18 +25,18 @@ jobs:
   test-codecov-lcov:
     name: Test
     strategy:
-      matrix: 
+      matrix:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Check out code
         uses: actions/checkout@v3
         with:
-          submodules: 'true'
+          submodules: "true"
       - name: Install rust nightly toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: 1.61
+          toolchain: 1.62
           override: true
           components: clippy, rustfmt
       - name: Compiler_base rust unit test
