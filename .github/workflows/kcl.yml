@@ -7,4 +7,4 @@ jobs:
       - name: Git checkout
         uses: actions/checkout@v2
         with:
-         submodules: 'true'
+          submodules: "true"

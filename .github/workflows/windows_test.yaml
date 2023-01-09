@@ -11,8 +11,8 @@ jobs:
       - name: Git checkout
         uses: actions/checkout@v2
         with:
-          submodules: 'true'
-      
+          submodules: "true"
+
       - uses: ilammy/msvc-dev-cmd@v1
 
       - run: clang --version
@@ -31,4 +31,4 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: kclvm-windows
-          path: scripts/build-windows/_output/kclvm-windows  
+          path: scripts/build-windows/_output/kclvm-windows
