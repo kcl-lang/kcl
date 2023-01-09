@@ -40,7 +40,7 @@ func findKclvm_dllPath() string {
 	kclvmName := "python39.dll"
 
 	if exePath, _ := os.Executable(); exePath != "" {
-		exeDir := filepath.Join(exePath, "../..")
+		exeDir := filepath.Join(exePath, "..", "..")
 		if fi, _ := os.Stat(filepath.Join(exeDir, kclvmName)); fi != nil && !fi.IsDir() {
 			return filepath.Join(exeDir, kclvmName)
 		}

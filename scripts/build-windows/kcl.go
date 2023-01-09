@@ -16,11 +16,10 @@ import (
 
 func main() {
 	// kclvm -m kclvm ...
-	inputPath := os.Args[0]
-
-	if _, err := os.Stat(inputPath); os.IsNotExist(err) {
+	inputPath, err := os.Executable()
+	if err != nil {
 		fmt.Println("Input path does not exist")
-		return
+		os.Exit(1)
 	}
 
 	parentPath := filepath.Dir(inputPath)
@@ -76,30 +75,29 @@ func install_kclvm(installed_path string) {
 	_, err := cmd.Output()
 	if err != nil {
 		fmt.Println("Python3 is not installed, details: ", err)
-		return
+		os.Exit(1)
 	}
 	// Check if "installed" file exists
 
 	outputPath := filepath.Join(installed_path, "kclvm_installed")
-
 	if _, err := os.Stat(outputPath); err == nil {
 		return
 	}
 
 	// Install kclvm module using pip
-	cmd = exec.Command("cmd", "/C", "pip", "install", "kclvm")
+	cmd = exec.Command("cmd", "/C", "python3", "-m", "pip", "install", "kclvm")
 
 	_, err = cmd.CombinedOutput()
 	if err != nil {
 		fmt.Println("Pip install kclvm falied ", err)
-		return
+		os.Exit(1)
 	}
 
 	// Create "installed" file
-	f, err := os.Create("kclvm_installed")
+	f, err := os.Create(outputPath)
 	if err != nil {
 		fmt.Printf("Error creating file: %s\n", err)
-		return
+		os.Exit(1)
 	}
 	defer f.Close()
 }
