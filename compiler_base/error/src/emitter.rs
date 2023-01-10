@@ -155,9 +155,7 @@ impl<'a> EmitterWriter<'a> {
     /// let emitter_writer = EmitterWriter::new_with_writer(dest);
     /// ```
     pub fn new_with_writer(dst: Destination<'a>) -> Self {
-        Self {
-            dst,
-        }
+        Self { dst }
     }
 }
 

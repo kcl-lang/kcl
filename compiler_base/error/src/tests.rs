@@ -146,8 +146,10 @@ mod test_errors {
 
 mod test_emitter {
     use crate::{
-        components::Label, emit_diagnostic_to_uncolored_text, emitter::{Destination, self}, Diagnostic,
-        Emitter, EmitterWriter,
+        components::Label,
+        emit_diagnostic_to_uncolored_text,
+        emitter::{self, Destination},
+        Diagnostic, Emitter, EmitterWriter,
     };
     use std::io::{self, Write};
     use termcolor::Ansi;
