@@ -2,9 +2,10 @@
 //! the KCLVM CLI.
 //!
 //! Ref: https://github.com/hyperledger/solang/blob/main/build.rs
+#![allow(dead_code)]
 
 fn main() {
-    stack_link_lld();
+    setup_target();
 }
 
 /// Using `cc` crate to package `lld` static libraries into the KCLVM CLI.
@@ -68,8 +69,10 @@ fn stack_link_lld() {
     // stack, which is not big enough for debug builds
     #[cfg(windows)]
     println!("cargo:rustc-link-arg=/STACK:8388608");
+}
 
-    // Set rustc TARGET to KCLVM_DEFAULT_TARGET
+/// Set rustc TARGET to KCLVM_DEFAULT_TARGET
+fn setup_target() {
     println!(
         "cargo:rustc-env=KCLVM_DEFAULT_TARGET={}",
         std::env::var("TARGET").unwrap()
