@@ -38,13 +38,12 @@ make test
 ## Building and Testing in Docker
 
 1. `make -C .. sh-in-docker`
-2. `./run.sh -a build-cpython` only once
-3. `./run.sh -a build-kclvm`
+2. `./run.sh -a build-kclvm` only once
+3. `./run.sh -a update-kclvm`
 4. `export PATH=$PATH:/root/kclvm/_build/dist/ubuntu/kclvm/bin`
-5. `which kcl`
-6. `kcl hello.k`
-7. `kcl hello.k --target native`
-8. `cd kclvm && make test-grammar`
+5. `kcl ./samples/hello.k`
+6. `kcl ./samples/hello.k --target native`
+7. `cd kclvm && make test-grammar`
 
 ## IDE
 
