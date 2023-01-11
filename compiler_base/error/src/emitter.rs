@@ -245,7 +245,7 @@ impl<'a> Destination<'a> {
     /// [`ColorChoice`] is used to determine whether the output content has been colored.
     pub fn from_stderr(choice: ColorChoice) -> Self {
         // On Windows we'll be performing global synchronization on the entire
-        // system for emitting rustc errors, so there's no need to buffer
+        // system for emitting errors, so there's no need to buffer
         // anything.
         //
         // On non-Windows we rely on the atomicity of `write` to ensure errors
@@ -263,7 +263,7 @@ impl<'a> Destination<'a> {
     /// [`ColorChoice`] is used to determine whether the output content has been colored.
     pub fn from_stdout(choice: ColorChoice) -> Self {
         // On Windows we'll be performing global synchronization on the entire
-        // system for emitting rustc errors, so there's no need to buffer
+        // system for emitting errors, so there's no need to buffer
         // anything.
         //
         // On non-Windows we rely on the atomicity of `write` to ensure errors
@@ -396,6 +396,8 @@ where
     // On Windows, styling happens through calls to a terminal API. This prevents us from using the
     // same buffering approach.  Instead, we use a global Windows mutex, which we acquire long
     // enough to output the full error message, then we release.
+    // 
+    // This part of the code refers to the implementation of [`rustc_error`].
     let _buffer_lock = lock::acquire_global_lock("compiler_base_errors");
     for (pos, line) in rendered_buffer.iter().enumerate() {
         for part in line {
