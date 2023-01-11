@@ -396,7 +396,7 @@ where
     // On Windows, styling happens through calls to a terminal API. This prevents us from using the
     // same buffering approach.  Instead, we use a global Windows mutex, which we acquire long
     // enough to output the full error message, then we release.
-    // 
+    //
     // This part of the code refers to the implementation of [`rustc_error`].
     let _buffer_lock = lock::acquire_global_lock("compiler_base_errors");
     for (pos, line) in rendered_buffer.iter().enumerate() {
