@@ -324,12 +324,17 @@ impl<'a> Write for Destination<'a> {
     fn flush(&mut self) -> io::Result<()> {
         match *self {
             Self::Terminal(ref mut t) => t.flush(),
-            Self::Buffered(ref mut t, ref mut buf) => match buf.flush() {
-                Ok(_) => t.print(buf),
-                Err(err) => Err(err),
-            },
+            Self::Buffered(_, ref mut buf) => buf.flush(),
             Self::UnColoredRaw(ref mut w) => w.flush(),
             Self::ColoredRaw(ref mut w) => w.flush(),
+        }
+    }
+}
+
+impl<'a> Drop for Destination<'a> {
+    fn drop(&mut self) {
+        if let Destination::Buffered(ref mut dst, ref mut buf) = self {
+            drop(dst.print(buf));
         }
     }
 }
@@ -428,12 +433,12 @@ where
 /// let text = emit_diagnostic_to_uncolored_text(diag).unwrap();
 /// assert_eq!(text, "note");
 /// ```
-pub fn emit_diagnostic_to_uncolored_text(diag: Diagnostic<DiagnosticStyle>) -> Result<String> {
+pub fn emit_diagnostic_to_uncolored_text(diag: &Diagnostic<DiagnosticStyle>) -> Result<String> {
     let mut emit_tes = EmitResultText::new();
     {
         let mut emit_writter =
             EmitterWriter::new_with_writer(Destination::UnColoredRaw(&mut emit_tes));
-        emit_writter.emit_diagnostic(&diag)?;
+        emit_writter.emit_diagnostic(diag)?;
     }
     Ok(emit_tes.test_res)
 }

@@ -208,6 +208,44 @@ mod test_emitter {
     fn test_emit_diag_to_uncolored_text() {
         let mut diag = Diagnostic::new();
         diag.append_component(Box::new(Label::Note));
-        assert_eq!(emit_diagnostic_to_uncolored_text(diag).unwrap(), "note");
+        assert_eq!(emit_diagnostic_to_uncolored_text(&diag).unwrap(), "note");
+    }
+
+    struct EmitResultText {
+        pub text_res: String,
+    }
+
+    impl Write for EmitResultText {
+        fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+            if let Ok(s) = std::str::from_utf8(buf) {
+                self.text_res.push_str(s)
+            } else {
+                self.text_res = String::new();
+            }
+            Ok(buf.len())
+        }
+
+        fn flush(&mut self) -> io::Result<()> {
+            Ok(())
+        }
+    }
+
+    unsafe impl Send for EmitResultText {}
+
+    #[test]
+    fn test_emit_diag_to_uncolored_text_many_times() {
+        let mut emit_res = EmitResultText {
+            text_res: String::new(),
+        };
+        {
+            let mut emit_writter =
+                EmitterWriter::new_with_writer(Destination::UnColoredRaw(&mut emit_res));
+            let mut diag = Diagnostic::new();
+            diag.append_component(Box::new(Label::Note));
+            emit_writter.emit_diagnostic(&diag).unwrap();
+            emit_writter.emit_diagnostic(&diag).unwrap();
+            emit_writter.emit_diagnostic(&diag).unwrap();
+        }
+        assert_eq!(emit_res.text_res, "notenotenote");
     }
 }
