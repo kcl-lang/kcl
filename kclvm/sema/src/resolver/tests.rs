@@ -194,6 +194,34 @@ fn test_resolve_program_unmatched_args_fail() {
 }
 
 #[test]
+fn test_resolve_program_module_optional_select_fail() {
+    let mut program =
+        parse_program("./src/resolver/test_fail_data/module_optional_select.k").unwrap();
+    let scope = resolve_program(&mut program);
+    assert_eq!(scope.diagnostics.len(), 2);
+    let expect_err_msg =
+        "For the module type, the use of '?.log' is unnecessary and it can be modified as '.log'";
+    let diag = &scope.diagnostics[0];
+    assert_eq!(
+        diag.code,
+        Some(DiagnosticId::Error(ErrorKind::CompileError))
+    );
+    assert_eq!(diag.messages.len(), 1);
+    assert_eq!(diag.messages[0].pos.line, 3);
+    assert_eq!(diag.messages[0].message, expect_err_msg);
+
+    let expect_err_msg = "Module 'math' imported but unused";
+    let diag = &scope.diagnostics[1];
+    assert_eq!(
+        diag.code,
+        Some(DiagnosticId::Warning(WarningKind::UnusedImportWarning))
+    );
+    assert_eq!(diag.messages.len(), 1);
+    assert_eq!(diag.messages[0].pos.line, 1);
+    assert_eq!(diag.messages[0].message, expect_err_msg);
+}
+
+#[test]
 fn test_lint() {
     let mut program = load_program(&["./src/resolver/test_data/lint.k"], None).unwrap();
     pre_process_program(&mut program);

@@ -378,6 +378,17 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
     fn walk_selector_expr(&mut self, selector_expr: &'ctx ast::SelectorExpr) -> Self::Result {
         let mut value_ty = self.expr(&selector_expr.value);
         let pos = selector_expr.attr.get_pos();
+        if value_ty.is_module() && selector_expr.has_question {
+            let attr = selector_expr.attr.node.get_name();
+            self.handler.add_compile_error(
+                &format!(
+                    "For the module type, the use of '?.{}' is unnecessary and it can be modified as '.{}'",
+                    attr,
+                    attr
+                ),
+                selector_expr.value.get_pos(),
+            );
+        }
         for name in &selector_expr.attr.node.names {
             value_ty = self.load_attr(value_ty.clone(), name, pos.clone());
         }
