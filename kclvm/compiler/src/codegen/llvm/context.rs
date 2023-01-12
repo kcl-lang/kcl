@@ -1691,8 +1691,8 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                         handler.add_compile_error(
                             &err.message,
                             Position {
-                                filename: self.current_filename().clone(),
-                                line: self.current_line.borrow().clone(),
+                                filename: self.current_filename(),
+                                line: *self.current_line.borrow(),
                                 column: None,
                             },
                         );
