@@ -3,8 +3,12 @@ use std::{cmp::Ordering, sync::Arc};
 
 use super::{style::DiagnosticStyle, Component};
 use crate::errors::ComponentFormatError;
-use compiler_base_span::{span_to_filename_string, SourceMap, Span};
+use compiler_base_span::{span_to_filename_string, SourceFile, SourceMap, Span};
 use rustc_errors::styled_buffer::{StyledBuffer, StyledString};
+use rustc_span::LineInfo;
+
+const CODE_LINE_PREFIX: &str = " | ";
+const FILE_PATH_PREFIX: &str = "-->";
 
 /// `Label` can be considered as a component of diagnostic to display a short label message in `Diagnositc`.
 /// `Label` provides "error", "warning", "note" and "Help" four kinds of labels.
@@ -64,109 +68,6 @@ impl Component<DiagnosticStyle> for StyledString<DiagnosticStyle> {
     #[inline]
     fn format(&self, sb: &mut StyledBuffer<DiagnosticStyle>, _: &mut Vec<ComponentFormatError>) {
         sb.appendl(&self.text, self.style);
-    }
-}
-
-/// `IndentWithPrefix` is a component of diagnostic to display an indent with prefix.
-/// An indent is a whitespace.
-/// ```ignore
-/// "|   " is three indent with prefix "|".
-/// ```
-pub struct IndentWithPrefix {
-    indent: usize,
-    prefix: StyledString<DiagnosticStyle>,
-}
-
-const DEFAULT_INDENT_PREFIX_LABEL: &str = "|";
-
-impl IndentWithPrefix {
-    /// Constructs a new `IndentWithPrefix` by default label with 0 indent.
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// # use compiler_base_error::Component;
-    /// # use compiler_base_error::components::IndentWithPrefix;
-    /// # use compiler_base_error::DiagnosticStyle;
-    /// # use rustc_errors::styled_buffer::StyledBuffer;
-    ///
-    /// let mut sb = StyledBuffer::<DiagnosticStyle>::new();
-    /// let mut errs = vec![];
-    ///
-    /// // If you want to render default text: "|"
-    /// let indent = IndentWithPrefix::default();
-    /// indent.format(&mut sb, &mut errs);
-    /// ```
-    #[inline]
-    pub fn default() -> Self {
-        Self {
-            indent: 0,
-            prefix: StyledString::<DiagnosticStyle> {
-                text: DEFAULT_INDENT_PREFIX_LABEL.to_string(),
-                style: None,
-            },
-        }
-    }
-
-    /// Constructs a new `IndentWithPrefix` by default label with custom indents.
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// # use compiler_base_error::Component;
-    /// # use compiler_base_error::components::IndentWithPrefix;
-    /// # use compiler_base_error::DiagnosticStyle;
-    /// # use rustc_errors::styled_buffer::StyledBuffer;
-    ///
-    /// let mut sb = StyledBuffer::<DiagnosticStyle>::new();
-    /// let mut errs = vec![];
-    ///
-    /// // If you want to add 3 indents and render text: "   |"
-    /// let indent = IndentWithPrefix::new_with_default_label(3, None);
-    /// indent.format(&mut sb, &mut errs);
-    /// ```
-    #[inline]
-    pub fn new_with_default_label(indent: usize, style: Option<DiagnosticStyle>) -> Self {
-        Self {
-            indent,
-            prefix: StyledString::<DiagnosticStyle>::new(
-                DEFAULT_INDENT_PREFIX_LABEL.to_string(),
-                style,
-            ),
-        }
-    }
-
-    /// Constructs a new `IndentWithPrefix` by custom label with custom indents.
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// # use compiler_base_error::Component;
-    /// # use compiler_base_error::components::IndentWithPrefix;
-    /// # use compiler_base_error::DiagnosticStyle;
-    /// # use rustc_errors::styled_buffer::StyledBuffer;
-    ///
-    /// let mut sb = StyledBuffer::<DiagnosticStyle>::new();
-    /// let mut errs = vec![];
-    /// // If you want to add 3 indents and rendering text: "   ^"
-    /// let indent = IndentWithPrefix::new("^".to_string(), 3, None);
-    /// indent.format(&mut sb, &mut errs);
-    /// ```
-    #[inline]
-    pub fn new(prefix: String, indent: usize, prefix_style: Option<DiagnosticStyle>) -> Self {
-        Self {
-            indent,
-            prefix: StyledString::<DiagnosticStyle>::new(prefix, prefix_style),
-        }
-    }
-}
-
-impl Component<DiagnosticStyle> for IndentWithPrefix {
-    #[inline]
-    fn format(&self, sb: &mut StyledBuffer<DiagnosticStyle>, errs: &mut Vec<ComponentFormatError>) {
-        let indent = self.indent;
-        sb.appendl(&format!("{:>indent$}", ""), None);
-        self.prefix.format(sb, errs)
     }
 }
 
@@ -260,7 +161,8 @@ impl Component<DiagnosticStyle> for UnderLine {
                 "Failed to Format UnderLine in One Line.",
             )),
             Ordering::Less => {
-                IndentWithPrefix::new("".to_string(), self.start, None).format(sb, errs);
+                let indent = self.start;
+                format!("{:<indent$}", "").format(sb, errs);
                 for _ in self.start..self.end {
                     self.symbol.format(sb, errs);
                 }
@@ -271,6 +173,14 @@ impl Component<DiagnosticStyle> for UnderLine {
 }
 
 /// `CodeSnippet` is a component of diagnostic to display code snippets.
+///
+/// Note:
+/// If the span spans multiple lines of code, only the first line of the code will be selected.
+///
+/// In the text rendered by [`CodeSnippet`], the specific position of the span will be highlighted by an underline.
+///
+/// Therefore, we recommend that do not use a span with a large scope,
+/// the scope of the span should be as small as possible and point to the problem location in the code snippet.
 pub struct CodeSnippet {
     code_span: Span,
     source_map: Arc<SourceMap>,
@@ -333,14 +243,8 @@ impl CodeSnippet {
     }
 }
 
-const DEFAULT_FILE_PATH_PREFIX: &str = "---> File: ";
-
 impl Component<DiagnosticStyle> for CodeSnippet {
     fn format(&self, sb: &mut StyledBuffer<DiagnosticStyle>, errs: &mut Vec<ComponentFormatError>) {
-        sb.pushs(DEFAULT_FILE_PATH_PREFIX, Some(DiagnosticStyle::Url));
-        let file_info = self.source_map.span_to_diagnostic_string(self.code_span);
-        sb.appendl(&file_info, Some(DiagnosticStyle::Url));
-        sb.appendl("\n", None);
         match self.source_map.span_to_lines(self.code_span) {
             Ok(affected_lines) => {
                 match self
@@ -350,35 +254,17 @@ impl Component<DiagnosticStyle> for CodeSnippet {
                         &self.source_map,
                     )) {
                     Some(sf) => {
-                        for line in affected_lines.lines {
-                            // The line number shown in diagnostic should begin from 1.
-                            // The `line.line_index` get from `SourceMap` begin from 0.
-                            // So, the line number shown in diagnostic should be equal to line.line_index + 1.
-                            let line_index = (line.line_index + 1).to_string();
-                            let indent = line_index.len() + 1;
-                            IndentWithPrefix::new(line_index, indent, Some(DiagnosticStyle::Url))
-                                .format(sb, errs);
-                            IndentWithPrefix::default().format(sb, errs);
-                            if let Some(line) = sf.get_line(line.line_index) {
-                                sb.appendl(&line, None);
-                            } else {
-                                errs.push(ComponentFormatError::new(
-                                    "CodeSnippet",
-                                    "Failed to Display Code Snippet.",
-                                ))
-                            }
-                            sb.appendl("\n", None);
-                            IndentWithPrefix::new_with_default_label(indent + 1, None)
-                                .format(sb, errs);
-                            UnderLine::new_with_default_label(
-                                line.start_col.0,
-                                line.end_col.0,
-                                Some(DiagnosticStyle::NeedFix),
+                        // If the span cross multiple lines of code,
+                        // only the first line of the code will be selected.
+                        if let Some(line) = affected_lines.lines.first() {
+                            let indent = (line.line_index + 1).to_string().len();
+                            self.format_file_info(sb, errs, &affected_lines.lines, indent);
+                            StyledString::new(
+                                format!("{:<indent$}{}\n", "", CODE_LINE_PREFIX),
+                                Some(DiagnosticStyle::Url),
                             )
                             .format(sb, errs);
-                            // The newline "\n" should not be included at the end of the `CodeSnippet`.
-                            // The user can choose whether to add a newline at the end of `CodeSnippet` instead of
-                            // having the newline built in at the end of `CodeSnippet`.
+                            self.format_code_line(sb, errs, line, indent, &sf)
                         }
                     }
                     None => errs.push(ComponentFormatError::new(
@@ -392,5 +278,100 @@ impl Component<DiagnosticStyle> for CodeSnippet {
                 "Failed to Display Code Snippet Lines",
             )),
         };
+    }
+}
+
+impl CodeSnippet {
+    /// Format a code line in [`CodeSnippet`] into '<line_no> | <src_code_line>'
+    ///
+    /// <line_no>: The line number of the first line of code in the code snippet.
+    /// <src_code_line>: The src code.
+    ///
+    /// e.g. "12 | int a = 10;"
+    fn format_code_line(
+        &self,
+        sb: &mut StyledBuffer<DiagnosticStyle>,
+        errs: &mut Vec<ComponentFormatError>,
+        line: &LineInfo,
+        indent: usize,
+        sf: &SourceFile,
+    ) {
+        // The line number shown in diagnostic should begin from 1.
+        // The `line.line_index` get from `SourceMap` begin from 0.
+        // So, the line number shown in diagnostic should be equal to line.line_index + 1.
+        let line_index = (line.line_index + 1).to_string();
+        StyledString::new(
+            format!("{:<indent$}{}", line_index, CODE_LINE_PREFIX),
+            Some(DiagnosticStyle::Url),
+        )
+        .format(sb, errs);
+
+        if let Some(line) = sf.get_line(line.line_index) {
+            sb.appendl(&line, None);
+        } else {
+            errs.push(ComponentFormatError::new(
+                "CodeSnippet",
+                "Failed to Display Code Snippet.",
+            ))
+        }
+        sb.appendl("\n", None);
+
+        StyledString::new(
+            format!("{:<indent$}{}", "", CODE_LINE_PREFIX),
+            Some(DiagnosticStyle::Url),
+        )
+        .format(sb, errs);
+
+        UnderLine::new_with_default_label(
+            line.start_col.0,
+            line.end_col.0,
+            Some(DiagnosticStyle::NeedFix),
+        )
+        .format(sb, errs);
+        // The newline "\n" should not be included at the end of the `CodeSnippet`.
+        // The user can choose whether to add a newline at the end of `CodeSnippet` instead of
+        // having the newline built in at the end of `CodeSnippet`.
+    }
+
+    /// Format file information in [`CodeSnippet`] into '--> <file_path>:<line_no>:<col_no>'.
+    ///
+    /// <file_path>: The full path of the span.
+    /// <line_no>: The line number of the first line of code in the code snippet.
+    /// <col_no>: The column number of the first line of code in the code snippet.
+    ///
+    /// e.g. "--> /User/test/file_name.file_extension:1:10"
+    fn format_file_info(
+        &self,
+        sb: &mut StyledBuffer<DiagnosticStyle>,
+        errs: &mut Vec<ComponentFormatError>,
+        lines: &[LineInfo],
+        indent: usize,
+    ) {
+        let (first_line, first_col) = match lines.first() {
+            Some(line) => (line.line_index + 1, line.start_col.0 + 1),
+            None => {
+                errs.push(ComponentFormatError::new(
+                    "CodeSnippet",
+                    "Failed to Display Code Snippet.",
+                ));
+                (0, 0)
+            }
+        };
+        StyledString::new(
+            format!("{:>indent$}{}", "", FILE_PATH_PREFIX),
+            Some(DiagnosticStyle::Url),
+        )
+        .format(sb, errs);
+
+        StyledString::new(
+            format!(
+                " {}:{}:{}\n",
+                span_to_filename_string(&self.code_span, &self.source_map),
+                first_line,
+                first_col
+            ),
+            Some(DiagnosticStyle::Url),
+        )
+        .format(sb, errs);
     }
 }

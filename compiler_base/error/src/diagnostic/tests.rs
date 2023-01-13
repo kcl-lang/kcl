@@ -82,9 +82,10 @@ mod test_components {
     use crate::{
         components::CodeSnippet,
         diagnostic::{components::Label, style::DiagnosticStyle, Component},
-        Diagnostic,
+        emit_diagnostic_to_uncolored_text, Diagnostic,
     };
-    use compiler_base_span::{span::new_byte_pos, FilePathMapping, SourceMap, SpanData};
+    use compiler_base_span::{span::new_byte_pos, FilePathMapping, SourceMap, Span, SpanData};
+    use pretty_assertions::assert_eq;
     use rustc_errors::styled_buffer::{StyledBuffer, StyledString};
 
     #[test]
@@ -160,9 +161,8 @@ mod test_components {
         assert_eq!(result.get(0).unwrap().get(1).unwrap().style, None);
     }
 
-    #[test]
-    fn test_code_span() {
-        let filename = fs::canonicalize(&PathBuf::from("./src/diagnostic/test_datas/code_snippet"))
+    fn gen_diag_with_code_snippet(filename: String, sp: Span) -> Diagnostic<DiagnosticStyle> {
+        let filename = fs::canonicalize(&PathBuf::from(filename))
             .unwrap()
             .display()
             .to_string();
@@ -171,15 +171,80 @@ mod test_components {
         let sm = SourceMap::new(FilePathMapping::empty());
         sm.new_source_file(PathBuf::from(filename.clone()).into(), src);
 
+        let code_snippet = CodeSnippet::new(sp, Arc::new(sm));
+        let mut diag = Diagnostic::new();
+        diag.append_component(Box::new(code_snippet));
+        diag
+    }
+
+    #[test]
+    fn test_code_snippet() {
         let code_span = SpanData {
             lo: new_byte_pos(0),
             hi: new_byte_pos(5),
         }
         .span();
+        let filename = "./src/diagnostic/test_datas/code_snippet".to_string();
+        let diag = gen_diag_with_code_snippet(filename.clone(), code_span);
 
-        let code_span = CodeSnippet::new(code_span, Arc::new(sm));
-        let mut diag = Diagnostic::new();
-        diag.append_component(Box::new(code_span));
+        let expected = format!(
+            r#"
+ --> {}:1:1
+  | 
+1 | Line 1 Code Snippet.
+  | ^^^^^
+"#,
+            PathBuf::from(filename)
+                .canonicalize()
+                .unwrap()
+                .display()
+                .to_string()
+        );
+        assert_eq!(
+            format!("\n{}\n", emit_diagnostic_to_uncolored_text(&diag).unwrap()),
+            expected
+        );
+    }
+
+    #[test]
+    fn test_code_snippet_with_larger_line_index() {
+        let code_span = SpanData {
+            lo: new_byte_pos(216),
+            hi: new_byte_pos(220),
+        }
+        .span();
+        let filename = "./src/diagnostic/test_datas/code_snippet".to_string();
+        let diag = gen_diag_with_code_snippet(filename.clone(), code_span);
+
+        let expected = format!(
+            r#"
+  --> {}:11:6
+   | 
+11 | Line 11 Code Snippet.
+   |      ^^^^
+"#,
+            PathBuf::from(filename)
+                .canonicalize()
+                .unwrap()
+                .display()
+                .to_string()
+        );
+
+        assert_eq!(
+            format!("\n{}\n", emit_diagnostic_to_uncolored_text(&diag).unwrap()),
+            expected
+        );
+    }
+
+    #[test]
+    fn test_code_snippet_with_style() {
+        let code_span = SpanData {
+            lo: new_byte_pos(0),
+            hi: new_byte_pos(5),
+        }
+        .span();
+        let filename = "./src/diagnostic/test_datas/code_snippet".to_string();
+        let diag = gen_diag_with_code_snippet(filename.clone(), code_span);
 
         let mut sb = StyledBuffer::<DiagnosticStyle>::new();
         let mut errs = vec![];
@@ -190,16 +255,60 @@ mod test_components {
 
         assert_eq!(errs.len(), 0);
         assert_eq!(result.len(), 1);
-        assert_eq!(result.get(0).unwrap().len(), 5);
-        let expected_path = format!("---> File: {}:1:1: 1:6", filename);
-        assert_eq!(result.get(0).unwrap().get(0).unwrap().text, expected_path);
-        assert_eq!(result.get(0).unwrap().get(1).unwrap().text, "\n  ");
-        assert_eq!(result.get(0).unwrap().get(2).unwrap().text, "1");
-        assert_eq!(
-            result.get(0).unwrap().get(3).unwrap().text,
-            "|Line 1 Code Snippet.\n   |"
+        assert_eq!(result.get(0).unwrap().len(), 4);
+        let expected_path = format!(
+            " --> {}:1:1\n  | \n1 | ",
+            PathBuf::from(filename)
+                .canonicalize()
+                .unwrap()
+                .display()
+                .to_string()
         );
-        assert_eq!(result.get(0).unwrap().get(4).unwrap().text, "^^^^^");
+        assert_eq!(
+            result.get(0).unwrap().get(0).unwrap().style.unwrap(),
+            DiagnosticStyle::Url
+        );
+        assert_eq!(result.get(0).unwrap().get(0).unwrap().text, expected_path);
+        assert_eq!(result.get(0).unwrap().get(1).unwrap().style, None);
+        assert_eq!(
+            result.get(0).unwrap().get(1).unwrap().text,
+            "Line 1 Code Snippet.\n"
+        );
+        assert_eq!(
+            result.get(0).unwrap().get(2).unwrap().style.unwrap(),
+            DiagnosticStyle::Url
+        );
+        assert_eq!(result.get(0).unwrap().get(2).unwrap().text, "  | ");
+        assert_eq!(
+            result.get(0).unwrap().get(3).unwrap().style.unwrap(),
+            DiagnosticStyle::NeedFix
+        );
+        assert_eq!(result.get(0).unwrap().get(3).unwrap().text, "^^^^^");
+    }
+
+    #[test]
+    fn test_code_span_with_cross_lines_span() {
+        let filename = "./src/diagnostic/test_datas/code_snippet".to_string();
+        let code_diag = emit_diagnostic_to_uncolored_text(&gen_diag_with_code_snippet(
+            filename.clone(),
+            SpanData {
+                lo: new_byte_pos(0),
+                hi: new_byte_pos(20),
+            }
+            .span(),
+        ))
+        .unwrap();
+
+        let cross_line_diag = emit_diagnostic_to_uncolored_text(&gen_diag_with_code_snippet(
+            filename.clone(),
+            SpanData {
+                lo: new_byte_pos(0),
+                hi: new_byte_pos(200),
+            }
+            .span(),
+        ))
+        .unwrap();
+        assert_eq!(code_diag, cross_line_diag);
     }
 }
 
