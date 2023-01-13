@@ -11,7 +11,7 @@
 
 use crate::{
     diagnostic::diagnostic_message::TemplateLoader, Diagnostic, DiagnosticStyle, Emitter,
-    TerminalEmitter,
+    EmitterWriter,
 };
 use anyhow::{bail, Context, Result};
 use compiler_base_span::fatal_error::FatalError;
@@ -546,7 +546,7 @@ impl DiagnosticHandlerInner {
         Self {
             err_count: 0,
             warn_count: 0,
-            emitter: Box::new(TerminalEmitter::default()),
+            emitter: Box::new(EmitterWriter::default()),
             diagnostics: vec![],
             template_loader: Arc::new(TemplateLoader::default()),
         }
@@ -560,7 +560,7 @@ impl DiagnosticHandlerInner {
         Ok(Self {
             err_count: 0,
             warn_count: 0,
-            emitter: Box::new(TerminalEmitter::default()),
+            emitter: Box::new(EmitterWriter::default()),
             diagnostics: vec![],
             template_loader: Arc::new(template_loader),
         })

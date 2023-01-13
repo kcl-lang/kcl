@@ -101,7 +101,7 @@ mod test_errors {
     use rustc_errors::styled_buffer::StyledBuffer;
 
     use crate::errors::{ComponentError, ComponentFormatError};
-    use crate::{Component, Diagnostic, DiagnosticStyle, Emitter, TerminalEmitter};
+    use crate::{Component, Diagnostic, DiagnosticStyle, Emitter, EmitterWriter};
 
     // Component to generate errors.
     struct ComponentGenError;
@@ -124,7 +124,7 @@ mod test_errors {
         let mut diagnostic = Diagnostic::<DiagnosticStyle>::new();
         diagnostic.append_component(Box::new(cge));
 
-        let mut emitter = TerminalEmitter::default();
+        let mut emitter = EmitterWriter::default();
         match emitter.emit_diagnostic(&diagnostic) {
             Ok(_) => {
                 panic!("`emit_diagnostic` shoule be failed.")
@@ -141,5 +141,111 @@ mod test_errors {
                 };
             }
         };
+    }
+}
+
+mod test_emitter {
+    use crate::{
+        components::Label,
+        emit_diagnostic_to_uncolored_text,
+        emitter::{self, Destination},
+        Diagnostic, Emitter, EmitterWriter,
+    };
+    use std::io::{self, Write};
+    use termcolor::Ansi;
+
+    struct MyWriter {
+        content: String,
+    }
+
+    impl Write for MyWriter {
+        fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+            if let Ok(s) = std::str::from_utf8(buf) {
+                self.content.push_str(s)
+            } else {
+                self.content = "Nothing".to_string();
+            }
+            Ok(buf.len())
+        }
+
+        fn flush(&mut self) -> io::Result<()> {
+            Ok(())
+        }
+    }
+
+    unsafe impl Send for MyWriter {}
+
+    #[test]
+    fn test_emit_to_raw() {
+        let mut writer = MyWriter {
+            content: String::new(),
+        };
+        {
+            let mut emitter =
+                EmitterWriter::new_with_writer(Destination::ColoredRaw(Ansi::new(&mut writer)));
+            let mut diag = Diagnostic::new();
+            diag.append_component(Box::new(Label::Note));
+            emitter.emit_diagnostic(&diag).unwrap();
+        }
+
+        assert_eq!(
+            writer.content,
+            "\u{1b}[0m\u{1b}[1m\u{1b}[38;5;14mnote\u{1b}[0m"
+        );
+        writer.content = String::new();
+        {
+            let mut emitter =
+                EmitterWriter::new_with_writer(Destination::UnColoredRaw(&mut writer));
+            let mut diag = Diagnostic::new();
+            diag.append_component(Box::new(Label::Note));
+            emitter.emit_diagnostic(&diag).unwrap();
+        }
+
+        assert_eq!(writer.content, "note");
+    }
+
+    #[test]
+    fn test_emit_diag_to_uncolored_text() {
+        let mut diag = Diagnostic::new();
+        diag.append_component(Box::new(Label::Note));
+        assert_eq!(emit_diagnostic_to_uncolored_text(&diag).unwrap(), "note");
+    }
+
+    struct EmitResultText {
+        pub text_res: String,
+    }
+
+    impl Write for EmitResultText {
+        fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+            if let Ok(s) = std::str::from_utf8(buf) {
+                self.text_res.push_str(s)
+            } else {
+                self.text_res = String::new();
+            }
+            Ok(buf.len())
+        }
+
+        fn flush(&mut self) -> io::Result<()> {
+            Ok(())
+        }
+    }
+
+    unsafe impl Send for EmitResultText {}
+
+    #[test]
+    fn test_emit_diag_to_uncolored_text_many_times() {
+        let mut emit_res = EmitResultText {
+            text_res: String::new(),
+        };
+        {
+            let mut emit_writter =
+                EmitterWriter::new_with_writer(Destination::UnColoredRaw(&mut emit_res));
+            let mut diag = Diagnostic::new();
+            diag.append_component(Box::new(Label::Note));
+            emit_writter.emit_diagnostic(&diag).unwrap();
+            emit_writter.emit_diagnostic(&diag).unwrap();
+            emit_writter.emit_diagnostic(&diag).unwrap();
+        }
+        assert_eq!(emit_res.text_res, "notenotenote");
     }
 }

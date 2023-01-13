@@ -4,7 +4,7 @@
 //! The crate provides `Emitter` trait to define the interface that diagnostic emitter should implement.
 //! and also provides a built-in emitters:
 //!
-//!  + `TerminalEmitter` is responsible for emitting diagnostic to the terminal.
+//!  + `EmitterWriter` is responsible for emitting diagnostic to the writer who implements trait [`Write`] and [`Send`].
 //!  + TODO(zongz): `EmitterAPI` is responsible for serializing diagnostics and emitting them to the API.
 //!
 //！Besides, it's easy to define your customized `Emitter` by implementing `Emitter` trait.
@@ -13,6 +13,7 @@
 use crate::{
     diagnostic::{Component, Diagnostic},
     errors::ComponentError,
+    DiagnosticStyle,
 };
 use anyhow::Result;
 use rustc_errors::{
@@ -21,7 +22,7 @@ use rustc_errors::{
 };
 use std::fmt::Debug;
 use std::io::{self, Write};
-use termcolor::{Buffer, BufferWriter, ColorChoice, ColorSpec, StandardStream, WriteColor};
+use termcolor::{Ansi, Buffer, BufferWriter, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 /// trait `Emitter` for emitting diagnostic.
 ///
@@ -104,7 +105,7 @@ where
     }
 }
 
-/// `TerminalEmitter` implements trait `Emitter` based on `termcolor1.0`
+/// `EmitterWriter` implements trait `Emitter` based on `termcolor1.0`
 /// for rendering diagnostic as strings and displaying them to the terminal.
 ///
 /// `termcolor1.0` supports displaying colorful string to terminal.
@@ -113,12 +114,12 @@ where
 ///
 /// ```rust
 /// # use crate::compiler_base_error::Emitter;
-/// # use compiler_base_error::TerminalEmitter;
+/// # use compiler_base_error::EmitterWriter;
 /// # use compiler_base_error::{components::Label, Diagnostic};
 /// # use compiler_base_error::DiagnosticStyle;
 ///
-/// // 1. Create a TerminalEmitter
-/// let mut term_emitter = TerminalEmitter::default();
+/// // 1. Create a EmitterWriter
+/// let mut term_emitter = EmitterWriter::default();
 ///
 /// // 2. Create a diagnostic for emitting.
 /// let mut diagnostic = Diagnostic::<DiagnosticStyle>::new();
@@ -134,92 +135,211 @@ where
 /// // 5. Emit the diagnostic.
 /// term_emitter.emit_diagnostic(&diagnostic);
 /// ```
-pub struct TerminalEmitter {
-    dst: Destination,
-    short_message: bool,
+pub struct EmitterWriter<'a> {
+    dst: Destination<'a>,
 }
 
-impl Default for TerminalEmitter {
+impl<'a> EmitterWriter<'a> {
+    /// Return a [`Destination`] with custom writer.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use compiler_base_error::Destination;
+    /// use compiler_base_error::EmitterWriter;
+    /// use termcolor::ColorChoice;
+    /// // 1. Create a `Destination` and close the color.
+    /// let dest = Destination::from_stderr(ColorChoice::Never);
+    ///
+    /// // 2. Create the EmiterWriter by `Destination` with writer stderr.
+    /// let emitter_writer = EmitterWriter::new_with_writer(dest);
+    /// ```
+    pub fn new_with_writer(dst: Destination<'a>) -> Self {
+        Self { dst }
+    }
+}
+
+impl<'a> Default for EmitterWriter<'a> {
+    /// Return a [`Destination`] with writer stderr.
     fn default() -> Self {
         Self {
-            dst: Destination::from_stderr(),
-            short_message: false,
+            dst: Destination::from_stderr(ColorChoice::Auto),
         }
     }
 }
 
-/// Emit destinations
-enum Destination {
-    /// The `StandardStream` works similarly to `std::io::Stdout`,
-    /// it is augmented with methods for coloring by the `WriteColor` trait.
-    Terminal(Box<StandardStream>),
+/// Emit destinations provide four ways to emit.
+///
+/// - [`Destination::Terminal`]: Emit by [`StandardStream`]
+/// - [`Destination::Buffered`]: Emit by [`BufferWriter`], you can save content in [`Buffer`] first, and then emit the [`Buffer`] to [`BufferWriter`] on flush.
+/// - [`Destination::UnColoredRaw`]: Emit by a custom writer that does not support colors.
+/// - [`Destination::ColoredRaw`]: Emit by a custom writer that supports colors.
+///
+/// Note: All custom writers must implement two traits [`Write`] and [`Send`].
+///
+/// # Examples
+/// 1. If you want to use writer stdout or stderr, you can use the method `from_stderr` and `from_stdout`.
+///
+/// ```rust
+/// use compiler_base_error::Destination;
+/// use termcolor::ColorChoice;
+/// // stdout
+/// let dest_stdout = Destination::from_stdout(ColorChoice::Never);
+/// // stderr
+/// let dest_stderr = Destination::from_stderr(ColorChoice::Never);
+/// ```
+///
+/// 2. If you want to use custom writer
+/// ```rust
+/// use compiler_base_error::Destination;
+/// use termcolor::Ansi;
+/// use std::io::Write;
+/// use std::io;
+///
+/// // 1. Define a custom writer.
+/// struct MyWriter {
+///     content: String,
+/// }
+///
+/// // 2. Implement trait `Write`.
+/// impl Write for MyWriter {
+///     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+///         if let Ok(s) = std::str::from_utf8(buf) {
+///             self.content.push_str(s)
+///         } else {
+///             self.content = "Nothing".to_string();
+///         }
+///         Ok(buf.len())
+///     }
+///
+///     fn flush(&mut self) -> io::Result<()> {
+///         Ok(())
+///     }
+/// }
+/// // 3. Implement trait `Send`.
+/// unsafe impl Send for MyWriter {}
+///
+/// // 4. Define a destiation.
+/// let mut my_writer = MyWriter{ content: String::new() };
+/// Destination::UnColoredRaw(&mut my_writer);
+///
+/// // 5. If your custom writer supports color.
+/// Destination::ColoredRaw(Ansi::new(&mut my_writer));
+/// ```
+pub enum Destination<'a> {
+    /// Emit to stderr/stdout by stream.
+    Terminal(StandardStream),
 
-    /// `BufferWriter` can create buffers and write buffers to stdout or stderr.
-    /// It does not implement `io::Write or WriteColor` itself.
-    ///
-    /// `Buffer` implements `io::Write and io::WriteColor`.
-    Buffered(Box<BufferWriter>, Buffer),
+    /// Save by the 'Buffer', and then Emit to stderr/stdout by the 'Buffer' through the 'BufferWriter'.
+    Buffered(BufferWriter, Buffer),
+
+    /// Emit to a destiation without color.
+    UnColoredRaw(&'a mut (dyn Write + Send)),
+
+    /// Emit to a customize destiation with color.
+    ColoredRaw(Ansi<&'a mut (dyn Write + Send)>),
 }
 
-impl Destination {
-    fn from_stderr() -> Self {
+impl<'a> Destination<'a> {
+    /// New a stderr destination.
+    /// [`ColorChoice`] is used to determine whether the output content has been colored.
+    pub fn from_stderr(choice: ColorChoice) -> Self {
         // On Windows we'll be performing global synchronization on the entire
-        // system for emitting rustc errors, so there's no need to buffer
+        // system for emitting errors, so there's no need to buffer
         // anything.
         //
         // On non-Windows we rely on the atomicity of `write` to ensure errors
         // don't get all jumbled up.
         if cfg!(windows) {
-            Destination::Terminal(Box::new(StandardStream::stderr(ColorChoice::Auto)))
+            Self::Terminal(StandardStream::stderr(choice))
         } else {
-            let buffer_writer = BufferWriter::stderr(ColorChoice::Auto);
+            let buffer_writer = BufferWriter::stderr(choice);
             let buffer = buffer_writer.buffer();
-            Destination::Buffered(Box::new(buffer_writer), buffer)
+            Destination::Buffered(buffer_writer, buffer)
         }
     }
 
-    fn supports_color(&self) -> bool {
+    /// New a stdout destination.
+    /// [`ColorChoice`] is used to determine whether the output content has been colored.
+    pub fn from_stdout(choice: ColorChoice) -> Self {
+        // On Windows we'll be performing global synchronization on the entire
+        // system for emitting errors, so there's no need to buffer
+        // anything.
+        //
+        // On non-Windows we rely on the atomicity of `write` to ensure errors
+        // don't get all jumbled up.
+        if cfg!(windows) {
+            Self::Terminal(StandardStream::stdout(choice))
+        } else {
+            let buffer_writer = BufferWriter::stdout(ColorChoice::Auto);
+            let buffer = buffer_writer.buffer();
+            Destination::Buffered(buffer_writer, buffer)
+        }
+    }
+
+    /// Returns true if and only if the underlying [`Destination`] supports colors.
+    pub fn supports_color(&self) -> bool {
         match *self {
             Self::Terminal(ref stream) => stream.supports_color(),
-            Self::Buffered(_, ref buffer) => buffer.supports_color(),
+            Self::Buffered(ref buffer, _) => buffer.buffer().supports_color(),
+            Self::UnColoredRaw(_) => false,
+            Self::ColoredRaw(_) => true,
         }
     }
 
-    fn set_color(&mut self, color: &ColorSpec) -> io::Result<()> {
+    /// Set color for the [`Destination`] by [`ColorSpec`].
+    /// Subsequent writes to this writer will use these settings until either `reset()` is called or new color settings are set.
+    /// If there was a problem resetting the color settings, then an error is returned.
+    pub fn set_color(&mut self, color: &ColorSpec) -> io::Result<()> {
         match *self {
             Self::Terminal(ref mut t) => t.set_color(color),
             Self::Buffered(_, ref mut t) => t.set_color(color),
+            Self::ColoredRaw(ref mut t) => t.set_color(color),
+            Self::UnColoredRaw(_) => Ok(()),
         }
     }
 
-    fn reset(&mut self) -> io::Result<()> {
+    /// Reset the current color settings for [`Destination`] to their original settings.
+    /// If there was a problem resetting the color settings, then an error is returned.
+    pub fn reset(&mut self) -> io::Result<()> {
         match *self {
             Self::Terminal(ref mut t) => t.reset(),
             Self::Buffered(_, ref mut t) => t.reset(),
+            Self::ColoredRaw(ref mut t) => t.reset(),
+            Self::UnColoredRaw(_) => Ok(()),
         }
     }
 }
 
-impl Write for Destination {
+impl<'a> Write for Destination<'a> {
     fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
         match *self {
-            Destination::Terminal(ref mut t) => t.write(bytes),
-            Destination::Buffered(_, ref mut buf) => buf.write(bytes),
+            Self::Terminal(ref mut t) => t.write(bytes),
+            Self::Buffered(_, ref mut buf) => buf.write(bytes),
+            Self::UnColoredRaw(ref mut w) => w.write(bytes),
+            Self::ColoredRaw(ref mut t) => t.write(bytes),
         }
     }
 
     fn flush(&mut self) -> io::Result<()> {
         match *self {
-            Destination::Terminal(ref mut t) => t.flush(),
-            Destination::Buffered(ref mut t, ref mut buf) => match buf.flush() {
-                Ok(_) => t.print(buf),
-                Err(err) => Err(err),
-            },
+            Self::Terminal(ref mut t) => t.flush(),
+            Self::Buffered(_, ref mut buf) => buf.flush(),
+            Self::UnColoredRaw(ref mut w) => w.flush(),
+            Self::ColoredRaw(ref mut w) => w.flush(),
         }
     }
 }
 
-impl<T> Emitter<T> for TerminalEmitter
+impl<'a> Drop for Destination<'a> {
+    fn drop(&mut self) {
+        if let Destination::Buffered(ref mut dst, ref mut buf) = self {
+            drop(dst.print(buf));
+        }
+    }
+}
+
+impl<'a, T> Emitter<T> for EmitterWriter<'a>
 where
     T: Clone + PartialEq + Eq + Style + Debug,
 {
@@ -235,7 +355,7 @@ where
     /// It will `panic` if something wrong during emitting.
     fn emit_diagnostic(&mut self, diag: &Diagnostic<T>) -> Result<()> {
         let buffer = self.format_diagnostic(diag)?;
-        emit_to_destination(&buffer.render(), &mut self.dst, self.short_message)?;
+        emit_to_destination(&buffer.render(), &mut self.dst)?;
         Ok(())
     }
 
@@ -258,7 +378,6 @@ where
 fn emit_to_destination<T>(
     rendered_buffer: &[Vec<StyledString<T>>],
     dst: &mut Destination,
-    short_message: bool,
 ) -> io::Result<()>
 where
     T: Clone + PartialEq + Eq + Style + Debug,
@@ -277,6 +396,8 @@ where
     // On Windows, styling happens through calls to a terminal API. This prevents us from using the
     // same buffering approach.  Instead, we use a global Windows mutex, which we acquire long
     // enough to output the full error message, then we release.
+    //
+    // This part of the code refers to the implementation of [`rustc_error`].
     let _buffer_lock = lock::acquire_global_lock("compiler_base_errors");
     for (pos, line) in rendered_buffer.iter().enumerate() {
         for part in line {
@@ -288,10 +409,70 @@ where
             write!(dst, "{}", part.text)?;
             dst.reset()?;
         }
-        if !short_message || pos != rendered_buffer.len() - 1 {
+        if pos != rendered_buffer.len() - 1 {
             writeln!(dst)?;
         }
     }
     dst.flush()?;
     Ok(())
+}
+
+/// Emit the [`Diagnostic`] with [`DiagnosticStyle`] to uncolored text strng.
+///
+/// Examples
+///
+/// ```rust
+/// use compiler_base_error::{Diagnostic, components::Label};
+/// use compiler_base_error::emit_diagnostic_to_uncolored_text;
+/// use compiler_base_error::DiagnosticStyle;
+/// // 1. Define your diagnostic.
+/// let mut diag = Diagnostic::<DiagnosticStyle>::new();
+///
+/// // 2. Add a component for the diagnostic, otherwise it will emit an empty string.
+/// diag.append_component(Box::new(Label::Note));
+///
+/// // 3. Emit it.
+/// let text = emit_diagnostic_to_uncolored_text(diag).unwrap();
+/// assert_eq!(text, "note");
+/// ```
+pub fn emit_diagnostic_to_uncolored_text(diag: &Diagnostic<DiagnosticStyle>) -> Result<String> {
+    let mut emit_tes = EmitResultText::new();
+    {
+        let mut emit_writter =
+            EmitterWriter::new_with_writer(Destination::UnColoredRaw(&mut emit_tes));
+        emit_writter.emit_diagnostic(diag)?;
+    }
+    Ok(emit_tes.test_res)
+}
+
+/// Used to save the result of emit into a [`String`],
+/// because trait [`Write`] and [`Send`] cannot be directly implemented by [`String`].
+struct EmitResultText {
+    test_res: String,
+}
+
+impl Write for EmitResultText {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        if let Ok(s) = std::str::from_utf8(buf) {
+            self.test_res.push_str(s)
+        } else {
+            self.test_res = String::new();
+        }
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
+    }
+}
+
+unsafe impl Send for EmitResultText {}
+
+impl EmitResultText {
+    /// New a [`EmitResultText`] with an empty [`String`]。
+    pub(crate) fn new() -> Self {
+        Self {
+            test_res: String::new(),
+        }
+    }
 }
