@@ -432,7 +432,7 @@ where
 /// diag.append_component(Box::new(Label::Note));
 ///
 /// // 3. Emit it.
-/// let text = emit_diagnostic_to_uncolored_text(diag).unwrap();
+/// let text = emit_diagnostic_to_uncolored_text(&diag).unwrap();
 /// assert_eq!(text, "note");
 /// ```
 pub fn emit_diagnostic_to_uncolored_text(diag: &Diagnostic<DiagnosticStyle>) -> Result<String> {

@@ -148,7 +148,7 @@ mod test_emitter {
     use crate::{
         components::Label,
         emit_diagnostic_to_uncolored_text,
-        emitter::{self, Destination},
+        emitter::Destination,
         Diagnostic, Emitter, EmitterWriter,
     };
     use std::io::{self, Write};

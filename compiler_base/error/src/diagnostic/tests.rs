@@ -201,13 +201,13 @@ mod test_components {
                 .to_string()
         );
         assert_eq!(
-            format!("\n{}", emit_diagnostic_to_uncolored_text(diag).unwrap()),
+            format!("\n{}\n", emit_diagnostic_to_uncolored_text(&diag).unwrap()),
             expected
         );
     }
 
     #[test]
-    fn test_code_span_with_larger_line_index() {
+    fn test_code_snippet_with_larger_line_index() {
         let code_span = SpanData {
             lo: new_byte_pos(216),
             hi: new_byte_pos(220),
@@ -231,7 +231,7 @@ mod test_components {
         );
 
         assert_eq!(
-            format!("\n{}", emit_diagnostic_to_uncolored_text(diag).unwrap()),
+            format!("\n{}\n", emit_diagnostic_to_uncolored_text(&diag).unwrap()),
             expected
         );
     }
@@ -289,7 +289,7 @@ mod test_components {
     #[test]
     fn test_code_span_with_cross_lines_span() {
         let filename = "./src/diagnostic/test_datas/code_snippet".to_string();
-        let code_diag = emit_diagnostic_to_uncolored_text(gen_diag_with_code_snippet(
+        let code_diag = emit_diagnostic_to_uncolored_text(&gen_diag_with_code_snippet(
             filename.clone(),
             SpanData {
                 lo: new_byte_pos(0),
@@ -299,7 +299,7 @@ mod test_components {
         ))
         .unwrap();
 
-        let cross_line_diag = emit_diagnostic_to_uncolored_text(gen_diag_with_code_snippet(
+        let cross_line_diag = emit_diagnostic_to_uncolored_text(&gen_diag_with_code_snippet(
             filename.clone(),
             SpanData {
                 lo: new_byte_pos(0),
