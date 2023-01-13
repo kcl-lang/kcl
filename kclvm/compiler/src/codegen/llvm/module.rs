@@ -9,6 +9,7 @@ use std::str;
 
 impl<'ctx> LLVMCodeGenContext<'ctx> {
     pub fn compile_module_import_and_types(&self, module: &'ctx ast::Module) {
+        self.predefine_global_vars(module);
         for stmt in &module.body {
             match &stmt.node {
                 ast::Stmt::Import(import_stmt) => {
@@ -36,6 +37,19 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             let global_var_ptr = self.new_global_kcl_value_ptr("");
             self.builder.build_store(global_var_ptr, function);
             self.add_variable(name, global_var_ptr);
+        }
+    }
+    /// Predefine all global variables.
+    pub(crate) fn predefine_global_vars(&self, module: &'ctx ast::Module) {
+        for stmt in &module.body {
+            if let ast::Stmt::Assign(assign_stmt) = &stmt.node {
+                for target in &assign_stmt.targets {
+                    let names = &target.node.names;
+                    if names.len() == 1 {
+                        self.add_or_update_global_variable(&names[0], self.undefined_value());
+                    }
+                }
+            }
         }
     }
 }
