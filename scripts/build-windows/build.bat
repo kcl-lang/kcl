@@ -15,16 +15,8 @@ go run rename.go -old="_output\kclvm-windows\python.exe" -new="_output\kclvm-win
 :: install pip
 _output\kclvm-windows\kclvm.exe get-pip.py
 
-:: pip install -r ..\requirements.txt
-_output\kclvm-windows\kclvm.exe -m pip install ^
-    -r .\requirements.release.txt ^
-    --target=_output\kclvm-windows\Lib\site-packages
-
 :: install kclvm
 _output\kclvm-windows\kclvm.exe -m pip install kclvm
-
-:: install python39 include and libs
-go run .\copy-dir.go .\py39-libs .\_output\kclvm-windows
 
 :: install kclvm-cli
 call .\\build_kclvm_cli.bat
