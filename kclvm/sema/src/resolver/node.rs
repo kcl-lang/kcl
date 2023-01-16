@@ -137,13 +137,13 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                     self.clear_config_expr_context(init_stack_depth as usize, false)
                 } else {
                     value_ty = self.expr(&assign_stmt.value);
-                    self.must_assignable_to(
-                        value_ty.clone(),
-                        expected_ty.clone(),
-                        target.get_pos(),
-                        None,
-                    )
                 }
+                self.must_assignable_to(
+                    value_ty.clone(),
+                    expected_ty.clone(),
+                    target.get_pos(),
+                    None,
+                );
                 if !value_ty.is_any()
                     && expected_ty.is_any()
                     && assign_stmt.type_annotation.is_none()
