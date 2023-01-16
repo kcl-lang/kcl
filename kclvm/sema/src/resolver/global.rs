@@ -522,8 +522,8 @@ impl<'ctx> Resolver<'ctx> {
                 &index_signature.node.key_type.node,
                 index_signature.node.key_type.get_pos(),
             );
-            let val_ty = self.parse_ty_str_with_scope(
-                &index_signature.node.value_type.node,
+            let val_ty = self.parse_ty_with_scope(
+                &index_signature.node.value_ty.node,
                 index_signature.node.value_type.get_pos(),
             );
             if !self
