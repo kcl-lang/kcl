@@ -8,7 +8,7 @@ use kclvm_ast::{
 };
 use kclvm_parser::load_program;
 use kclvm_query::apply_overrides;
-use kclvm_runtime::ValueRef;
+use kclvm_runtime::{ErrType, PanicInfo, ValueRef};
 use kclvm_sema::resolver::resolve_program;
 pub use runner::ExecProgramArgs;
 use runner::{ExecProgramResult, KclvmRunner, KclvmRunnerOptions};
@@ -74,11 +74,18 @@ pub fn exec_program(
     // join work_path with k_file_path
     for (_, file) in k_files.iter().enumerate() {
         // If the input file or path is a relative path,
-        // join with the work directory path.
+        // join with the work directory path and convert
+        // it to a absolute path.
         if file.starts_with(".") {
-            match Path::new(&work_dir).join(file).to_str() {
-                Some(str) => kcl_paths.push(String::from(str)),
-                None => (),
+            match Path::new(&work_dir).join(file).canonicalize() {
+                Ok(path) => kcl_paths.push(String::from(path.to_str().unwrap())),
+                Err(err) => {
+                    return Err(str_to_panic_info(&format!(
+                        "Cannot find the kcl file, please check whether the file path {}",
+                        file
+                    ))
+                    .to_json_string())
+                }
             }
         } else {
             kcl_paths.push(String::from(file))
@@ -260,4 +267,15 @@ fn temp_file(dir: &str) -> String {
     let file = format!("{}_{}", id, timestamp);
     std::fs::create_dir_all(dir).unwrap_or_else(|_| panic!("{} not found", dir));
     Path::new(dir).join(file).to_str().unwrap().to_string()
+}
+
+/// Convert string to a program panic info
+fn str_to_panic_info(s: &str) -> PanicInfo {
+    let mut panic_info = PanicInfo::default();
+
+    panic_info.__kcl_PanicInfo__ = true;
+    panic_info.message = format!("{}", s);
+    panic_info.err_type_code = ErrType::CompileError_TYPE as i32;
+
+    panic_info
 }
