@@ -6,54 +6,85 @@
 package main
 
 import (
+	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
-	"syscall"
-	"unsafe"
 )
 
 func main() {
-	// kclvm -m kclvm ...
+	// python3 -m kclvm ...
+
 	var args []string
-	args = append(args, os.Args[0])
-	args = append(args, "-m", "kclvm.tools.plugin")
+	args = append(args, "/C", "python3", "-m", "kclvm.tools.plugin")
 	args = append(args, os.Args[1:]...)
+
 	os.Exit(Py_Main(args))
 }
 
-var (
-	python39_dll = syscall.NewLazyDLL(findKclvm_dllPath())
-	proc_Py_Main = python39_dll.NewProc("Py_Main")
-)
-
-// int Py_Main(int argc, wchar_t **argv)
 func Py_Main(args []string) int {
-	c_args := make([]*uint16, len(args)+1)
-	for i, s := range args {
-		c_args[i] = syscall.StringToUTF16Ptr(s)
+	inputPath, err := os.Executable()
+	if err != nil {
+		fmt.Println("Input path does not exist")
+		os.Exit(1)
 	}
-	ret, _, _ := proc_Py_Main.Call(uintptr(len(args)), uintptr(unsafe.Pointer(&c_args[0])))
-	return int(ret)
+	kclvm_install_dir_bin := filepath.Dir(inputPath)
+	Install_Kclvm(kclvm_install_dir_bin)
+	kclvm_install_dir := filepath.Dir(kclvm_install_dir_bin)
+
+	cmd := exec.Command("cmd", args...)
+
+	Set_Env(kclvm_install_dir, cmd)
+
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+
+	err = cmd.Run()
+	if err != nil {
+		fmt.Println("exec failed:", err)
+		os.Exit(1)
+	}
+	return 0
 }
 
-func findKclvm_dllPath() string {
-	kclvmName := "python39.dll"
-
-	if exePath, _ := os.Executable(); exePath != "" {
-		exeDir := filepath.Join(exePath, "..", "..")
-		if fi, _ := os.Stat(filepath.Join(exeDir, kclvmName)); fi != nil && !fi.IsDir() {
-			return filepath.Join(exeDir, kclvmName)
-		}
-	}
-	if wd, _ := os.Getwd(); wd != "" {
-		if fi, _ := os.Stat(filepath.Join(wd, kclvmName)); fi != nil && !fi.IsDir() {
-			return filepath.Join(wd, kclvmName)
-		}
-		wd = filepath.Join(wd, "_output/kclvm-windows")
-		if fi, _ := os.Stat(filepath.Join(wd, kclvmName)); fi != nil && !fi.IsDir() {
-			return filepath.Join(wd, kclvmName)
-		}
+func Install_Kclvm(installed_path string) {
+	// Check if Python3 is installed
+	cmd := exec.Command("cmd", "/C", "where python3")
+	_, err := cmd.Output()
+	if err != nil {
+		fmt.Println("Python3 is not installed, details: ", err)
+		os.Exit(1)
 	}
 
-	return kclvmName
+	// Check if "installed" file exists
+	outputPath := filepath.Join(installed_path, "kclvm_installed")
+	if _, err := os.Stat(outputPath); err == nil {
+		return
+	}
+
+	// Install kclvm module using pip
+	cmd = exec.Command("cmd", "/C", "python3", "-m", "pip", "install", "kclvm")
+
+	err = cmd.Run()
+	if err != nil {
+		fmt.Println("Pip install kclvm falied ", err)
+		os.Exit(1)
+	}
+
+	// Create "installed" file
+	f, err := os.Create(outputPath)
+	if err != nil {
+		fmt.Printf("Error creating file: %s\n", err)
+		os.Exit(1)
+	}
+	defer f.Close()
+}
+
+func Set_Env(kclvm_install_dir string, cmd *exec.Cmd) {
+	bin_path := filepath.Join(kclvm_install_dir, "bin")
+	site_packages_path := filepath.Join(kclvm_install_dir, "lib", "site-packages")
+
+	cmd.Env = os.Environ()
+	cmd.Env = append(cmd.Env, "KCLVM_CLI_BIN_PATH="+bin_path)
+	cmd.Env = append(cmd.Env, "PYTHONPATH="+site_packages_path)
 }
