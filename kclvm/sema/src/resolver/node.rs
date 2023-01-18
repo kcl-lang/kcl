@@ -77,7 +77,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
     fn walk_type_alias_stmt(&mut self, type_alias_stmt: &'ctx ast::TypeAliasStmt) -> Self::Result {
         let (start, end) = type_alias_stmt.type_name.get_span_pos();
         let mut ty = self
-            .parse_ty_str_with_scope(&type_alias_stmt.type_value.node, start.clone())
+            .parse_ty_with_scope(&type_alias_stmt.ty.node, start.clone())
             .as_ref()
             .clone();
         if let TypeKind::Schema(schema_ty) = &mut ty.kind {
@@ -137,13 +137,13 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                     self.clear_config_expr_context(init_stack_depth as usize, false)
                 } else {
                     value_ty = self.expr(&assign_stmt.value);
-                    self.must_assignable_to(
-                        value_ty.clone(),
-                        expected_ty.clone(),
-                        target.get_pos(),
-                        None,
-                    )
                 }
+                self.must_assignable_to(
+                    value_ty.clone(),
+                    expected_ty.clone(),
+                    target.get_pos(),
+                    None,
+                );
                 if !value_ty.is_any()
                     && expected_ty.is_any()
                     && assign_stmt.type_annotation.is_none()
