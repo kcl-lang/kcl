@@ -84,6 +84,7 @@ func Set_Env(kclvm_install_dir string, cmd *exec.Cmd) {
 	bin_path := filepath.Join(kclvm_install_dir, "bin")
 	site_packages_path := filepath.Join(kclvm_install_dir, "lib", "site-packages")
 
+	os.Setenv("PATH", os.Getenv("PATH")+";"+bin_path)
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env, "KCLVM_CLI_BIN_PATH="+bin_path)
 	cmd.Env = append(cmd.Env, "PYTHONPATH="+site_packages_path)
