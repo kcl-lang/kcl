@@ -33,11 +33,10 @@ func Py_Main(args []string) int {
 	kclvm_install_dir := filepath.Dir(kclvm_install_dir_bin)
 
 	cmd := exec.Command("cmd", args...)
-
-	Set_Env(kclvm_install_dir, cmd)
-
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
+
+	Set_Env(kclvm_install_dir, cmd)
 
 	err = cmd.Run()
 	if err != nil {
@@ -50,7 +49,9 @@ func Py_Main(args []string) int {
 func Install_Kclvm(installed_path string) {
 	// Check if Python3 is installed
 	cmd := exec.Command("cmd", "/C", "where python3")
-	_, err := cmd.Output()
+	cmd.Stderr = os.Stderr
+
+	err := cmd.Run()
 	if err != nil {
 		fmt.Println("Python3 is not installed, details: ", err)
 		os.Exit(1)
@@ -64,6 +65,7 @@ func Install_Kclvm(installed_path string) {
 
 	// Install kclvm module using pip
 	cmd = exec.Command("cmd", "/C", "python3", "-m", "pip", "install", "kclvm")
+	cmd.Stderr = os.Stderr
 
 	err = cmd.Run()
 	if err != nil {
