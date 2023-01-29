@@ -4,6 +4,5 @@ setlocal
 cd %~dp0
 
 :: Copy KCLVM C API header
-cd ..\..\kclvm\runtime
-go run .\copy-file.go --src=src\_kclvm.h --dst=..\..\scripts\build-windows\_output\kclvm-windows\include\_kclvm.h
+go run .\copy-file.go --src=..\..\kclvm\runtime\src\_kclvm.h --dst=.\_output\kclvm-windows\include\_kclvm.h
 cd %~dp0
