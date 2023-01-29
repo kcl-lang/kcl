@@ -25,7 +25,7 @@ func main() {
 func Py_Main(args []string) int {
 	inputPath, err := os.Executable()
 	if err != nil {
-		fmt.Println("Input path does not exist")
+		fmt.Fprintln(os.Stderr, "Input path does not exist")
 		os.Exit(1)
 	}
 	kclvm_install_dir_bin := filepath.Dir(inputPath)
@@ -40,7 +40,7 @@ func Py_Main(args []string) int {
 
 	err = cmd.Run()
 	if err != nil {
-		fmt.Println("exec failed:", err)
+		fmt.Fprintln(os.Stderr, "exec failed:", err)
 		os.Exit(1)
 	}
 	return 0
@@ -53,7 +53,7 @@ func Install_Kclvm(installed_path string) {
 
 	err := cmd.Run()
 	if err != nil {
-		fmt.Println("Python3 is not installed, details: ", err)
+		fmt.Fprintln(os.Stderr, "Python3 is not installed, details: ", err)
 		os.Exit(1)
 	}
 
@@ -69,14 +69,14 @@ func Install_Kclvm(installed_path string) {
 
 	err = cmd.Run()
 	if err != nil {
-		fmt.Println("Pip install kclvm falied ", err)
+		fmt.Fprintln(os.Stderr, "Pip install kclvm falied ", err)
 		os.Exit(1)
 	}
 
 	// Create "installed" file
 	f, err := os.Create(outputPath)
 	if err != nil {
-		fmt.Printf("Error creating file: %s\n", err)
+		fmt.Fprintln(os.Stderr, "Error creating file: ", err)
 		os.Exit(1)
 	}
 	defer f.Close()
