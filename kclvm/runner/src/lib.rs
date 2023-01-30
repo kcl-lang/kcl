@@ -79,7 +79,7 @@ pub fn exec_program(
         if file.starts_with(".") {
             match Path::new(&work_dir).join(file).canonicalize() {
                 Ok(path) => kcl_paths.push(String::from(path.to_str().unwrap())),
-                Err(err) => {
+                Err(_) => {
                     return Err(str_to_panic_info(&format!(
                         "Cannot find the kcl file, please check whether the file path {}",
                         file

@@ -212,7 +212,7 @@ impl ProgramScope {
     }
 
     pub fn check_scope_diagnostics(&self) {
-        if self.diagnostics.len() > 0 {
+        if !self.diagnostics.is_empty() {
             let mut err_handler = Handler::default();
             err_handler.diagnostics = self.diagnostics.clone();
             err_handler.alert_if_any_errors();

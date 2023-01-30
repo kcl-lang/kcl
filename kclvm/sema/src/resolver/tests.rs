@@ -124,9 +124,9 @@ fn test_record_used_module() {
         let obj = obj.borrow_mut().clone();
         if obj.kind == ScopeObjectKind::Module {
             if obj.name == "math" {
-                assert_eq!(obj.used, false);
+                assert!(!obj.used);
             } else {
-                assert_eq!(obj.used, true);
+                assert!(obj.used);
             }
         }
     }
@@ -269,7 +269,7 @@ fn test_lint() {
         WarningKind::UnusedImportWarning,
         &[Message {
             pos: Position {
-                filename: filename.clone(),
+                filename,
                 line: 1,
                 column: None,
             },

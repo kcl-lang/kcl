@@ -85,7 +85,7 @@ fn test_config_merge() {
             // }
             assert_eq!(config.items.len(), 2);
             assert_eq!(
-                get_attr_paths_from_config_expr(&config),
+                get_attr_paths_from_config_expr(config),
                 vec!["name".to_string(), "age".to_string()]
             );
         } else {
@@ -119,7 +119,7 @@ fn test_config_override() {
             // }
             assert_eq!(config.items.len(), 1);
             assert_eq!(
-                get_attr_paths_from_config_expr(&config),
+                get_attr_paths_from_config_expr(config),
                 vec!["key".to_string(), "key.data.key".to_string()]
             );
         } else {

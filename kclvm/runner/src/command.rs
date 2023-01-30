@@ -127,14 +127,14 @@ impl Command {
     pub(crate) fn add_args(
         &self,
         libs: &[String],
-        lib_path: String,
+        _lib_path: String,
         cmd: &mut std::process::Command,
     ) {
         #[cfg(not(target_os = "windows"))]
         self.unix_args(libs, cmd);
 
         #[cfg(target_os = "windows")]
-        self.msvc_win_args(libs, lib_path, cmd);
+        self.msvc_win_args(libs, _lib_path, cmd);
     }
 
     // Add args for cc on unix os.
