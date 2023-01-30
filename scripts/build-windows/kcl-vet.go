@@ -64,7 +64,7 @@ func Install_Kclvm(installed_path string) {
 	}
 
 	// Install kclvm module using pip
-	cmd = exec.Command("cmd", "/C", "python3", "-m", "pip", "install", "kclvm")
+	cmd = exec.Command("cmd", "/C", "python3", "-m", "pip", "install", "--use-pep517", "kclvm")
 	cmd.Stderr = os.Stderr
 
 	err = cmd.Run()
