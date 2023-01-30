@@ -75,7 +75,7 @@ impl<'ctx> Resolver<'ctx> {
                         self.walk_stmt(&stmt.node);
                     }
                     if self.options.lint_check {
-                        self.lint_check_module(&module);
+                        self.lint_check_module(module);
                     }
                 }
             }

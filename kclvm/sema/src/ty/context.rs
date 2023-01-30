@@ -66,10 +66,10 @@ impl TypeContext {
     #[inline]
     fn get_or_insert_node_index(&mut self, name: &str) -> NodeIndex {
         match self.node_index_map.get(name) {
-            Some(idx) => idx.clone(),
+            Some(idx) => *idx,
             None => {
                 let idx = self.dep_graph.add_node(name.to_string());
-                self.node_index_map.insert(name.to_string(), idx.clone());
+                self.node_index_map.insert(name.to_string(), idx);
                 idx
             }
         }

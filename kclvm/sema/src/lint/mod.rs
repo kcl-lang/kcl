@@ -380,7 +380,7 @@ impl MutSelfWalker for Linter<CombinedLintPass> {
         walk_set_list!(self, walk_identifier, arguments.args);
         for default in &arguments.defaults {
             if let Some(d) = default {
-                set_pos!(self, &d);
+                set_pos!(self, d);
                 self.walk_expr(&d.node)
             }
         }
