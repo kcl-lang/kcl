@@ -636,68 +636,13 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
         config_if_entry_expr: &'ctx ast::ConfigIfEntryExpr,
     ) -> Self::Result {
         self.expr(&config_if_entry_expr.if_cond);
-        let mut key_types: Vec<TypeRef> = vec![];
-        let mut val_types: Vec<TypeRef> = vec![];
-        for entry in &config_if_entry_expr.items {
-            let key = &entry.node.key;
-            let value = &entry.node.value;
-            let mut stack_depth = 0;
-            self.check_config_entry(key, value);
-            stack_depth += self.switch_config_expr_context_by_key(key) as usize;
-            let mut entry_key_ty = self.any_ty();
-            let mut entry_val_ty = self.expr(value).clone();
-            match key {
-                Some(key) => {
-                    if let ast::Expr::Identifier(identifier) = &key.node {
-                        entry_key_ty = self.str_ty();
-                        for _ in 0..identifier.names.len() - 1 {
-                            entry_val_ty = Type::dict_ref(self.str_ty(), entry_val_ty.clone())
-                        }
-                    }
-                }
-                None => match &entry_val_ty.kind {
-                    TypeKind::None | TypeKind::Any => {}
-                    TypeKind::Dict(key_ty, val_ty) => {
-                        entry_key_ty = key_ty.clone();
-                        entry_val_ty = val_ty.clone();
-                    }
-                    TypeKind::Schema(schema_ty) => {
-                        entry_key_ty = schema_ty.key_ty();
-                        entry_val_ty = schema_ty.val_ty();
-                    }
-                    TypeKind::Union(types)
-                        if self
-                            .ctx
-                            .ty_ctx
-                            .is_config_type_or_config_union_type(entry_val_ty.clone()) =>
-                    {
-                        entry_key_ty = sup(&types
-                            .iter()
-                            .map(|ty| ty.config_key_ty())
-                            .collect::<Vec<TypeRef>>());
-                        entry_val_ty = sup(&types
-                            .iter()
-                            .map(|ty| ty.config_val_ty())
-                            .collect::<Vec<TypeRef>>());
-                    }
-                    _ => {
-                        self.handler.add_compile_error(
-                            &format!(
-                                "only dict and schema can be used ** unpack, got '{}'",
-                                entry_val_ty.ty_str()
-                            ),
-                            value.get_pos(),
-                        );
-                    }
-                },
-            }
-            key_types.push(entry_key_ty);
-            val_types.push(entry_val_ty);
-            self.clear_config_expr_context(stack_depth, false);
+        let dict_ty = self.walk_config_entries(&config_if_entry_expr.items);
+        if let Some(orelse) = &config_if_entry_expr.orelse {
+            let or_else_ty = self.expr(orelse);
+            sup(&[dict_ty, or_else_ty])
+        } else {
+            dict_ty
         }
-        let dict_ty = Type::dict_ref(sup(&key_types), sup(&val_types));
-        let or_else_ty = self.expr_or_any_type(&config_if_entry_expr.orelse);
-        sup(&[dict_ty, or_else_ty])
     }
 
     fn walk_comp_clause(&mut self, comp_clause: &'ctx ast::CompClause) -> Self::Result {
@@ -820,122 +765,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
     }
 
     fn walk_config_expr(&mut self, config_expr: &'ctx ast::ConfigExpr) -> Self::Result {
-        let mut key_types: Vec<TypeRef> = vec![];
-        let mut val_types: Vec<TypeRef> = vec![];
-        for item in &config_expr.items {
-            let key = &item.node.key;
-            let value = &item.node.value;
-            let op = &item.node.operation;
-            let mut stack_depth: usize = 0;
-            self.check_config_entry(key, value);
-            stack_depth += self.switch_config_expr_context_by_key(key) as usize;
-            let mut has_insert_index = false;
-            let val_ty = match key {
-                Some(key) => match &key.node {
-                    ast::Expr::Identifier(identifier) => {
-                        let key_ty = if identifier.names.len() == 1 {
-                            let name = &identifier.names[0];
-                            let key_ty = if self.ctx.local_vars.contains(name) {
-                                self.expr(key)
-                            } else {
-                                Rc::new(Type::str_lit(&name))
-                            };
-                            self.check_attr_ty(&key_ty, key.get_pos());
-                            key_ty
-                        } else {
-                            self.str_ty()
-                        };
-                        let mut val_ty = self.expr(value);
-                        for _ in 0..identifier.names.len() - 1 {
-                            val_ty = Type::dict_ref(self.str_ty(), val_ty.clone());
-                        }
-                        key_types.push(key_ty);
-                        val_types.push(val_ty.clone());
-                        val_ty
-                    }
-                    ast::Expr::Subscript(subscript)
-                        if matches!(subscript.value.node, ast::Expr::Identifier(_)) =>
-                    {
-                        has_insert_index = true;
-                        let val_ty = self.expr(value);
-                        key_types.push(self.str_ty());
-                        val_types.push(Type::list_ref(val_ty.clone()));
-                        val_ty
-                    }
-                    _ => {
-                        let key_ty = self.expr(key);
-                        let val_ty = self.expr(value);
-                        self.check_attr_ty(&key_ty, key.get_pos());
-                        key_types.push(key_ty);
-                        val_types.push(val_ty.clone());
-                        val_ty
-                    }
-                },
-                None => {
-                    let val_ty = self.expr(value);
-                    match &val_ty.kind {
-                        TypeKind::None | TypeKind::Any => {
-                            val_types.push(val_ty.clone());
-                        }
-                        TypeKind::Dict(key_ty, val_ty) => {
-                            key_types.push(key_ty.clone());
-                            val_types.push(val_ty.clone());
-                        }
-                        TypeKind::Schema(schema_ty) => {
-                            key_types.push(schema_ty.key_ty());
-                            val_types.push(schema_ty.val_ty());
-                        }
-                        TypeKind::Union(types)
-                            if self
-                                .ctx
-                                .ty_ctx
-                                .is_config_type_or_config_union_type(val_ty.clone()) =>
-                        {
-                            key_types.push(sup(&types
-                                .iter()
-                                .map(|ty| ty.config_key_ty())
-                                .collect::<Vec<TypeRef>>()));
-                            val_types.push(sup(&types
-                                .iter()
-                                .map(|ty| ty.config_val_ty())
-                                .collect::<Vec<TypeRef>>()));
-                        }
-                        _ => {
-                            self.handler.add_compile_error(
-                                &format!(
-                                    "only dict and schema can be used ** unpack, got '{}'",
-                                    val_ty.ty_str()
-                                ),
-                                value.get_pos(),
-                            );
-                        }
-                    }
-                    val_ty
-                }
-            };
-            if matches!(op, ast::ConfigEntryOperation::Insert)
-                && !has_insert_index
-                && !val_ty.is_any()
-                && !val_ty.is_list()
-            {
-                self.handler.add_error(
-                    ErrorKind::IllegalAttributeError,
-                    &[Message {
-                        pos: value.get_pos(),
-                        style: Style::LineAndColumn,
-                        message: format!(
-                            "only list type can in inserted, got '{}'",
-                            val_ty.ty_str()
-                        ),
-                        note: None,
-                    }],
-                );
-            }
-            self.clear_config_expr_context(stack_depth, false);
-        }
-        let key_ty = sup(&key_types);
-        let val_ty = sup(&val_types);
-        Type::dict_ref(key_ty, val_ty)
+        self.walk_config_entries(&config_expr.items)
     }
 
     fn walk_check_expr(&mut self, check_expr: &'ctx ast::CheckExpr) -> Self::Result {
