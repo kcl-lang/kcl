@@ -6,6 +6,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
@@ -28,9 +29,8 @@ func Py_Main(args []string) int {
 		fmt.Fprintln(os.Stderr, "Input path does not exist")
 		os.Exit(1)
 	}
-	kclvm_install_dir_bin := filepath.Dir(inputPath)
-	Install_Kclvm(kclvm_install_dir_bin)
-	kclvm_install_dir := filepath.Dir(kclvm_install_dir_bin)
+	Install_Kclvm()
+	kclvm_install_dir := filepath.Dir(filepath.Dir(inputPath))
 
 	cmd := exec.Command("cmd", args...)
 	cmd.Stderr = os.Stderr
@@ -46,7 +46,7 @@ func Py_Main(args []string) int {
 	return 0
 }
 
-func Install_Kclvm(installed_path string) {
+func Install_Kclvm() {
 	// Check if Python3 is installed
 	cmd := exec.Command("cmd", "/C", "where python3")
 	cmd.Stderr = os.Stderr
@@ -57,29 +57,22 @@ func Install_Kclvm(installed_path string) {
 		os.Exit(1)
 	}
 
-	// Check if "installed" file exists
-	outputPath := filepath.Join(installed_path, "kclvm_installed")
-	if _, err := os.Stat(outputPath); err == nil {
+	cmd = exec.Command("cmd", "/C", "python3", "-m", "pip", "show", "kclvm")
+	var out bytes.Buffer
+	cmd.Stdout = &out
+
+	// Check if kclvm has been installed.
+	if err := cmd.Run(); err == nil && out.String() != "WARNING: Package(s) not found: kclvm" {
 		return
 	}
 
 	// Install kclvm module using pip
-	cmd = exec.Command("cmd", "/C", "python3", "-m", "pip", "install", "kclvm")
-	cmd.Stderr = os.Stderr
+	cmd = exec.Command("cmd", "/C", "python3", "-m", "pip", "install", "-U", "kclvm", "--user")
 
-	err = cmd.Run()
-	if err != nil {
+	if err := cmd.Run(); err != nil {
 		fmt.Fprintln(os.Stderr, "Pip install kclvm falied ", err)
 		os.Exit(1)
 	}
-
-	// Create "installed" file
-	f, err := os.Create(outputPath)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error creating file: ", err)
-		os.Exit(1)
-	}
-	defer f.Close()
 }
 
 func Set_Env(kclvm_install_dir string, cmd *exec.Cmd) {

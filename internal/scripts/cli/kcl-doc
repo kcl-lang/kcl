@@ -19,7 +19,7 @@ if [ ! -f $pip_install_done_file ]; then
     # check python3 version
     $python3_bin -c "import sys; sys.exit(0) if sys.version_info>=(3,7,3) else (print('please install python 3.7.3+') or sys.exit(1))"
     # kclvm pip install all libs
-    $python3_bin -m pip install kclvm --user
+    $python3_bin -m pip install -U kclvm --user
     echo 'done' > $pip_install_done_file
 fi
 
