@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 )
 
 func main() {
@@ -57,12 +58,19 @@ func Install_Kclvm() {
 		os.Exit(1)
 	}
 
-	cmd = exec.Command("cmd", "/C", "python3", "-m", "pip", "show", "kclvm")
+	cmd = exec.Command("cmd", "/C", "python3", "-c", "import pkgutil; print(bool(pkgutil.find_loader('kclvm')))")
 	var out bytes.Buffer
 	cmd.Stdout = &out
 
+	if err := cmd.Run(); err != nil {
+		fmt.Fprintln(os.Stderr, "Pip install kclvm falied ", err)
+		os.Exit(1)
+	}
+
+	is_installed, err := strconv.ParseBool(out.String())
+
 	// Check if kclvm has been installed.
-	if err := cmd.Run(); err == nil && out.String() != "WARNING: Package(s) not found: kclvm" {
+	if err == nil && is_installed {
 		return
 	}
 
