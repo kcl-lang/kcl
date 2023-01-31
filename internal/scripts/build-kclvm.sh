@@ -47,5 +47,5 @@ echo "================ Summary ================"
 echo "  KCLVM is installed into $kclvm_install_dir"
 
 # Run KCL CLI to install dependencies.
-$kclvm_install_dir/bin/kclvm -m pip install kclvm --user
+$kclvm_install_dir/bin/kclvm -m pip install -U kclvm --user
 $kclvm_install_dir/bin/kcl

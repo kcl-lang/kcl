@@ -23,5 +23,5 @@ $python3_bin -c "import sys; sys.exit(0) if sys.version_info>=(3,7,3) else (prin
 
 # kclvm pip install all libs
 $python3_bin -m pip install --upgrade pip
-$python3_bin -m pip install kclvm
+$python3_bin -m pip install -U kclvm
 echo 'done' > $pip_install_done_file
