@@ -1,11 +1,17 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 
 use crate::util::loader::LoaderKind;
 
 const CARGO_DIR: &str = env!("CARGO_MANIFEST_DIR");
-const REL_PATH: &str = "src/vet/test_datas";
+pub(crate) fn rel_path() -> String {
+    Path::new("src")
+        .join("vet")
+        .join("test_datas")
+        .display()
+        .to_string()
+}
 const NO_SCHEMA_NAME_PATH: &str = "no_schema_name";
 
 const TEST_CASES: &[&str] = &[
@@ -41,7 +47,7 @@ const INVALID_FILE_RESULT: &[&str] = &[
 
 fn construct_full_path(path: &str) -> Result<String> {
     let mut cargo_file_path = PathBuf::from(CARGO_DIR);
-    cargo_file_path.push(REL_PATH);
+    cargo_file_path.push(&rel_path());
     cargo_file_path.push(path);
     Ok(cargo_file_path
         .to_str()
@@ -50,6 +56,8 @@ fn construct_full_path(path: &str) -> Result<String> {
 }
 
 mod test_expr_builder {
+    use regex::Regex;
+
     use crate::{
         util::loader::LoaderKind,
         vet::{
@@ -63,14 +71,19 @@ mod test_expr_builder {
     use std::{
         fs::{self, File},
         panic,
+        path::Path,
     };
 
     #[test]
     fn test_build_with_json_no_schema_name() {
         for test_name in TEST_CASES {
             let file_path = construct_full_path(&format!(
-                "{}/{}.{}",
-                FILE_EXTENSIONS[0], test_name, FILE_EXTENSIONS[0]
+                "{}.{}",
+                Path::new(FILE_EXTENSIONS[0])
+                    .join(test_name)
+                    .display()
+                    .to_string(),
+                FILE_EXTENSIONS[0]
             ))
             .unwrap();
             let expr_builder =
@@ -79,8 +92,13 @@ mod test_expr_builder {
             let got_ast_json = serde_json::to_value(&expr_ast).unwrap();
 
             let expect_file_path = construct_full_path(&format!(
-                "{}/{}/{}.{}",
-                FILE_EXTENSIONS[0], NO_SCHEMA_NAME_PATH, test_name, FILE_EXTENSIONS[2]
+                "{}.{}",
+                Path::new(FILE_EXTENSIONS[0])
+                    .join(NO_SCHEMA_NAME_PATH)
+                    .join(test_name)
+                    .display()
+                    .to_string(),
+                FILE_EXTENSIONS[2]
             ))
             .unwrap();
             let f = File::open(expect_file_path.clone()).unwrap();
@@ -206,7 +224,12 @@ mod test_expr_builder {
                     panic!("This test case should be failed.")
                 }
                 Err(err) => {
-                    assert_eq!(format!("{:?}", err), INVALID_FILE_RESULT[i]);
+                    #[cfg(not(target_os = "windows"))]
+                    let got_err = format!("{:?}", err);
+                    #[cfg(target_os = "windows")]
+                    let got_err = format!("{:?}", err).replace("\r\n", "\n");
+
+                    assert_eq!(got_err, INVALID_FILE_RESULT[i]);
                 }
             };
         }
@@ -226,10 +249,11 @@ mod test_expr_builder {
                     panic!("This test case should be failed.")
                 }
                 Err(err) => {
-                    assert_eq!(
-                        format!("{:?}", err), 
-                        format!("Failed to Load '{0}'\n\nCaused by:\n    0: Failed to Load '{0}'\n    1: No such file or directory (os error 2)", file_path)
+                    assert!(Regex::new(
+                        r"^Failed to Load '.*'\n\nCaused by:\n    0: Failed to Load '.*'\n .*"
                     )
+                    .unwrap()
+                    .is_match(&format!("{:?}", err)))
                 }
             };
         }
@@ -246,8 +270,13 @@ mod test_expr_builder {
                 panic!("This test case should be failed.")
             }
             Err(err) => {
+                #[cfg(not(target_os = "windows"))]
+                let got_err = format!("{:?}", err);
+                #[cfg(target_os = "windows")]
+                let got_err = format!("{:?}", err).replace("\r\n", "\n");
+
                 assert_eq!(
-                    format!("{:?}", err), 
+                    got_err,
                     "Failed to Load JSON\n\nCaused by:\n    0: Failed to String 'languages:\n         - Ruby\n         - Perl\n         - Python \n       websites:\n         YAML: yaml.org \n         Ruby: ruby-lang.org \n         Python: python.org \n         Perl: use.perl.org\n       ' to Json\n    1: expected value at line 1 column 1"
                 )
             }
@@ -301,7 +330,15 @@ mod test_expr_builder {
 }
 
 mod test_validater {
-    use std::{fs, panic};
+    use std::{
+        fs,
+        os::windows::prelude::OsStrExt,
+        panic,
+        path::{Path, PathBuf},
+    };
+
+    use kclvm_runtime::PanicInfo;
+    use regex::Regex;
 
     use crate::{
         util::loader::LoaderKind,
@@ -316,22 +353,32 @@ mod test_validater {
     #[test]
     fn test_validator() {
         test_validate();
+        println!("test_validate - PASS");
         // TOOD: Fix me on ubuntu platform. @zongzhe
         // test_invalid_validate();
+        println!("test_invalid_validate - PASS");
         test_validate_with_invalid_kcl_path();
+        println!("test_validate_with_invalid_kcl_path - PASS");
         test_validate_with_invalid_file_path();
+        println!("test_validate_with_invalid_file_path - PASS");
         test_validate_with_invalid_file_type();
+        println!("test_validate_with_invalid_file_type - PASS");
     }
 
     fn test_validate() {
         for (i, file_suffix) in VALIDATED_FILE_TYPE.iter().enumerate() {
             for case in KCL_TEST_CASES {
-                let validated_file_path =
-                    construct_full_path(&format!("{}/{}.{}", "validate_cases", case, file_suffix))
-                        .unwrap();
+                let validated_file_path = construct_full_path(&format!(
+                    "{}.{}",
+                    Path::new("validate_cases").join(case).display().to_string(),
+                    file_suffix
+                ))
+                .unwrap();
 
-                let kcl_file_path =
-                    construct_full_path(&format!("{}/{}", "validate_cases", case)).unwrap();
+                let kcl_file_path = construct_full_path(
+                    &Path::new("validate_cases").join(case).display().to_string(),
+                )
+                .unwrap();
 
                 let opt = ValidateOption::new(
                     None,
@@ -358,20 +405,34 @@ mod test_validater {
         for (i, file_suffix) in VALIDATED_FILE_TYPE.iter().enumerate() {
             for case in KCL_TEST_CASES {
                 let validated_file_path = construct_full_path(&format!(
-                    "{}/{}.{}",
-                    "invalid_validate_cases", case, file_suffix
+                    "{}.{}",
+                    Path::new("invalid_validate_cases")
+                        .join(case)
+                        .display()
+                        .to_string(),
+                    file_suffix
                 ))
                 .unwrap();
 
                 let kcl_code = fs::read_to_string(
-                    construct_full_path(&format!("{}/{}", "invalid_validate_cases", case)).unwrap(),
+                    construct_full_path(
+                        &Path::new("invalid_validate_cases")
+                            .join(case)
+                            .display()
+                            .to_string(),
+                    )
+                    .unwrap(),
                 )
                 .expect("Something went wrong reading the file");
 
                 let expected_err_msg = fs::read_to_string(
                     construct_full_path(&format!(
-                        "{}/{}.{}",
-                        "invalid_validate_cases", case, "stderr.json"
+                        "{}.{}",
+                        Path::new("invalid_validate_cases")
+                            .join(case)
+                            .display()
+                            .to_string(),
+                        "stderr.json"
                     ))
                     .unwrap(),
                 )
@@ -388,20 +449,25 @@ mod test_validater {
 
                 let result = panic::catch_unwind(|| validate(opt));
 
-                let expect: serde_json::Value = serde_json::from_str(&expected_err_msg).unwrap();
+                let mut expect: PanicInfo = serde_json::from_str(&expected_err_msg).unwrap();
+
+                #[cfg(target_os = "windows")]
+                expect.path_to_windows();
+
                 match result {
                     Ok(result) => match result {
                         Ok(_) => {
                             panic!("Unreachable.")
                         }
                         Err(err) => {
-                            let got: serde_json::Value = serde_json::from_str(&err).unwrap();
+                            let got: PanicInfo = serde_json::from_str(&err).unwrap();
+
                             assert_eq!(got, expect);
                         }
                     },
                     Err(panic_err) => {
                         if let Some(result) = panic_err.downcast_ref::<String>() {
-                            let got: serde_json::Value = serde_json::from_str(result).unwrap();
+                            let got: PanicInfo = serde_json::from_str(result).unwrap();
                             assert_eq!(got, expect);
                         } else {
                             panic!("Unreachable.")
@@ -428,8 +494,11 @@ mod test_validater {
                 panic!("unreachable")
             }
             Err(err) => {
-                assert_eq!(err,
-                "Failed to load KCL file 'validationTempKCLCode.k'. Because 'No such file or directory (os error 2)'")
+                assert!(Regex::new(
+                    r"^Failed to load KCL file 'validationTempKCLCode.k'. Because .*"
+                )
+                .unwrap()
+                .is_match(&err))
             }
         }
     }

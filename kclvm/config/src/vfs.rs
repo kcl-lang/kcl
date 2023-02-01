@@ -100,7 +100,10 @@ pub fn fix_import_path(root: &str, filepath: &str, import_path: &str) -> String 
 
 #[test]
 fn test_fix_import_path() {
+    #[cfg(not(target_os = "windows"))]
     let root = "/home/konfig";
+    #[cfg(target_os = "windows")]
+    let root = r#"c:\home\konfig"#;
 
     let s = fix_import_path(root, "path/to/app/file.k", ".sub");
     assert_eq!(s, "path.to.app.sub");

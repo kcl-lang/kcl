@@ -156,7 +156,7 @@ impl Command {
         cmd.args(libs)
             .arg("kclvm_cli_cdylib.lib")
             .arg("/link")
-            .arg("/ENTRY:kclvm_main")
+            .arg("/NOENTRY")
             .arg("/NOLOGO")
             .arg(format!(r#"/LIBPATH:"{}\bin""#, self.executable_root))
             .arg("/DEFAULTLIB:msvcrt.lib")

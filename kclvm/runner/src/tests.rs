@@ -25,9 +25,14 @@ use std::{
 use tempfile::tempdir;
 use walkdir::WalkDir;
 
-const EXEC_DATA_PATH: &str = "src/exec_data/";
-const EXEC_ERR_DATA_PATH: &str = "src/exec_err_data/";
-const CUSTOM_MANIFESTS_DATA_PATH: &str = "src/custom_manifests_data/";
+const MULTI_FILE_TEST_CASES: &[&str; 5] = &[
+    "no_kcl_mod_file",
+    "relative_import",
+    "relative_import_as",
+    "import_regular_module",
+    "import_regular_module_as",
+];
+
 const TEST_CASES: &[&str; 5] = &[
     "init_check_order_0",
     "init_check_order_1",
@@ -36,23 +41,83 @@ const TEST_CASES: &[&str; 5] = &[
     "multi_vars_0",
 ];
 
-const MULTI_FILE_TEST_CASES: &[&str; 7] = &[
-    "multi_file_compilation/no_kcl_mod_file",
-    "multi_file_compilation/relative_import",
-    "multi_file_compilation/relative_import_as",
-    "multi_file_compilation/import_abs_path/app-main",
-    "multi_file_compilation/import_regular_module",
-    "multi_file_compilation/import_regular_module_as",
-    "../../../../test/konfig/base/examples/job-example/dev",
-];
+fn exec_data_path() -> String {
+    Path::new("src").join("exec_data").display().to_string()
+}
 
-const EXEC_PROG_ARGS_TEST_CASE: &[&str; 1] = &["exec_prog_args/default.json"];
+fn exec_err_data_path() -> String {
+    Path::new("src").join("exec_err_data").display().to_string()
+}
 
-const SETTINGS_FILE_TEST_CASE: &[&(&str, &str); 1] =
-    &[&("settings_file/settings.yaml", "settings_file/settings.json")];
+fn custom_manifests_data_path() -> String {
+    Path::new("src")
+        .join("custom_manifests_data")
+        .display()
+        .to_string()
+}
+
+fn multi_file_test_cases() -> Vec<String> {
+    let mut test_cases: Vec<String> = MULTI_FILE_TEST_CASES
+        .iter()
+        .map(|case| {
+            Path::new("multi_file_compilation")
+                .join(case)
+                .display()
+                .to_string()
+        })
+        .collect();
+
+    test_cases.push(
+        Path::new("multi_file_compilation")
+            .join("import_abs_path")
+            .join("app-main")
+            .display()
+            .to_string(),
+    );
+    test_cases.push(
+        Path::new("..")
+            .join("..")
+            .join("..")
+            .join("..")
+            .join("test")
+            .join("konfig")
+            .join("base")
+            .join("examples")
+            .join("job-example")
+            .join("dev")
+            .display()
+            .to_string(),
+    );
+
+    test_cases
+}
+
+fn exec_prog_args_test_case() -> Vec<String> {
+    vec![Path::new("exec_prog_args")
+        .join("default.json")
+        .display()
+        .to_string()]
+}
+
+fn settings_file_test_case() -> Vec<(String, String)> {
+    vec![(
+        Path::new("settings_file")
+            .join("settings.yaml")
+            .display()
+            .to_string(),
+        Path::new("settings_file")
+            .join("settings.json")
+            .display()
+            .to_string(),
+    )]
+}
 
 const EXPECTED_JSON_FILE_NAME: &str = "stdout.golden.json";
-const TEST_CASE_PATH: &str = "src/test_datas";
+
+fn test_case_path() -> String {
+    Path::new("src").join("test_datas").display().to_string()
+}
+
 const KCL_FILE_NAME: &str = "main.k";
 const MAIN_PKG_NAME: &str = "__main__";
 const CARGO_PATH: &str = env!("CARGO_MANIFEST_DIR");
@@ -213,8 +278,16 @@ fn assemble_lib_for_test(
 
 fn test_kclvm_runner_execute() {
     for case in TEST_CASES {
-        let kcl_path = &format!("{}/{}/{}", TEST_CASE_PATH, case, KCL_FILE_NAME);
-        let expected_path = &format!("{}/{}/{}", TEST_CASE_PATH, case, EXPECTED_JSON_FILE_NAME);
+        let kcl_path = &Path::new(&test_case_path())
+            .join(case)
+            .join(KCL_FILE_NAME)
+            .display()
+            .to_string();
+        let expected_path = &Path::new(&test_case_path())
+            .join(case)
+            .join(EXPECTED_JSON_FILE_NAME)
+            .display()
+            .to_string();
         let result = execute_for_test(kcl_path);
         let expected_result = load_expect_file(expected_path.to_string());
         assert_eq!(expected_result, format_str_by_json(result));
@@ -225,8 +298,19 @@ fn test_kclvm_runner_execute_timeout() {
     set_hook(Box::new(|_| {}));
     let result_time_out = catch_unwind(|| {
         gen_libs_for_test(
-            "test/no_exist_path/",
-            "./src/test_datas/multi_file_compilation/import_abs_path/app-main/main.k",
+            &Path::new("test")
+                .join("no_exist_path")
+                .display()
+                .to_string(),
+            &Path::new(".")
+                .join("src")
+                .join("test_datas")
+                .join("multi_file_compilation")
+                .join("import_abs_path")
+                .join("app-main")
+                .join("main.k")
+                .display()
+                .to_string(),
         );
     });
     let timeout_panic_msg = "called `Result::unwrap()` on an `Err` value: Timeout";
@@ -248,8 +332,11 @@ fn test_assemble_lib_llvm() {
         let temp_dir = tempdir().unwrap();
         let temp_dir_path = temp_dir.path().to_str().unwrap();
         let temp_entry_file = temp_file(temp_dir_path);
-
-        let kcl_path = &format!("{}/{}/{}", TEST_CASE_PATH, case, KCL_FILE_NAME);
+        let kcl_path = &Path::new(&test_case_path())
+            .join(case)
+            .join(KCL_FILE_NAME)
+            .display()
+            .to_string();
         let assembler = &KclvmLibAssembler::LLVM;
 
         let lib_file = assemble_lib_for_test(
@@ -267,13 +354,19 @@ fn test_assemble_lib_llvm() {
 
 #[test]
 fn test_gen_libs() {
-    for case in MULTI_FILE_TEST_CASES {
+    for case in multi_file_test_cases() {
         let temp_dir = tempdir().unwrap();
         let temp_dir_path = temp_dir.path().to_str().unwrap();
         let temp_entry_file = temp_file(temp_dir_path);
 
-        let kcl_path =
-            gen_full_path(format!("{}/{}/{}", TEST_CASE_PATH, case, KCL_FILE_NAME)).unwrap();
+        let kcl_path = gen_full_path(
+            Path::new(&test_case_path())
+                .join(case)
+                .join(KCL_FILE_NAME)
+                .display()
+                .to_string(),
+        )
+        .unwrap();
         gen_libs_for_test(&format!("{}{}", temp_entry_file, "4gen_libs"), &kcl_path);
     }
 }
@@ -298,8 +391,17 @@ fn test_gen_libs_parallel() {
 
 #[test]
 fn test_clean_path_for_genlibs() {
-    let mut prog =
-        parse_program("./src/test_datas/multi_file_compilation/import_abs_path/app-main/main.k");
+    let mut prog = parse_program(
+        &Path::new(".")
+            .join("src")
+            .join("test_datas")
+            .join("multi_file_compilation")
+            .join("import_abs_path")
+            .join("app-main")
+            .join("main.k")
+            .display()
+            .to_string(),
+    );
     let scope = resolve_program(&mut prog);
     let assembler = KclvmAssembler::new(prog, scope, String::new(), KclvmLibAssembler::LLVM);
 
@@ -309,7 +411,7 @@ fn test_clean_path_for_genlibs() {
 
     create_dir_all(tmp_file_path).unwrap();
 
-    let file_name = &format!("{}/{}", tmp_file_path, "test");
+    let file_name = &Path::new(tmp_file_path).join("test").display().to_string();
     let file_suffix = ".o";
 
     File::create(file_name).unwrap();
@@ -336,8 +438,11 @@ fn test_clean_path_for_genlibs() {
 
 #[test]
 fn test_to_json_program_arg() {
-    for case in EXEC_PROG_ARGS_TEST_CASE {
-        let test_case_json_file = &format!("{}/{}", TEST_CASE_PATH, case);
+    for case in exec_prog_args_test_case() {
+        let test_case_json_file = &Path::new(&test_case_path())
+            .join(case)
+            .display()
+            .to_string();
         let expected_json_str = fs::read_to_string(test_case_json_file).unwrap();
         let exec_prog_args = ExecProgramArgs::default();
         assert_eq!(expected_json_str.trim(), exec_prog_args.to_json().trim());
@@ -346,8 +451,11 @@ fn test_to_json_program_arg() {
 
 #[test]
 fn test_from_str_program_arg() {
-    for case in EXEC_PROG_ARGS_TEST_CASE {
-        let test_case_json_file = &format!("{}/{}", TEST_CASE_PATH, case);
+    for case in exec_prog_args_test_case() {
+        let test_case_json_file = &Path::new(&test_case_path())
+            .join(case)
+            .display()
+            .to_string();
         let expected_json_str = fs::read_to_string(test_case_json_file).unwrap();
         let exec_prog_args = ExecProgramArgs::from_str(&expected_json_str);
         assert_eq!(expected_json_str.trim(), exec_prog_args.to_json().trim());
@@ -356,11 +464,17 @@ fn test_from_str_program_arg() {
 
 #[test]
 fn test_from_setting_file_program_arg() {
-    for (case_yaml, case_json) in SETTINGS_FILE_TEST_CASE {
-        let test_case_yaml_file = &format!("{}/{}", TEST_CASE_PATH, case_yaml);
+    for (case_yaml, case_json) in settings_file_test_case() {
+        let test_case_yaml_file = &Path::new(&test_case_path())
+            .join(case_yaml)
+            .display()
+            .to_string();
         let settings_file = load_file(test_case_yaml_file).unwrap();
 
-        let test_case_json_file = &format!("{}/{}", TEST_CASE_PATH, case_json);
+        let test_case_json_file = &Path::new(&test_case_path())
+            .join(case_json)
+            .display()
+            .to_string();
         let expected_json_str = fs::read_to_string(test_case_json_file).unwrap();
 
         let exec_prog_args = ExecProgramArgs::from(settings_file);
@@ -368,13 +482,15 @@ fn test_from_setting_file_program_arg() {
     }
 }
 
+#[test]
 fn test_exec_file() {
     let prev_hook = std::panic::take_hook();
     // disable print panic info
     std::panic::set_hook(Box::new(|_| {}));
     let result = std::panic::catch_unwind(|| {
-        for file in get_files(EXEC_DATA_PATH, false, true, ".k") {
+        for file in get_files(exec_data_path(), false, true, ".k") {
             exec(&file).unwrap();
+            println!("{} - PASS", file);
         }
     });
     assert!(result.is_ok());
@@ -382,20 +498,30 @@ fn test_exec_file() {
 }
 
 fn test_custom_manifests_output() {
-    exec_with_result_at(CUSTOM_MANIFESTS_DATA_PATH);
+    exec_with_result_at(&custom_manifests_data_path());
 }
 
 fn test_exec_with_err_result() {
-    exec_with_err_result_at(EXEC_ERR_DATA_PATH);
+    exec_with_err_result_at(&exec_err_data_path());
 }
 
 #[test]
 fn test_exec() {
     test_exec_file();
+    println!("test_exec_file - PASS");
+
     test_kclvm_runner_execute();
+    println!("test_kclvm_runner_execute - PASS");
+
     test_kclvm_runner_execute_timeout();
+    println!("test_kclvm_runner_execute_timeout - PASS");
+    fs::remove_dir_all(Path::new("__main__")).unwrap();
+
     test_custom_manifests_output();
-    test_exec_with_err_result()
+    println!("test_custom_manifests_output - PASS");
+
+    test_exec_with_err_result();
+    println!("test_exec_with_err_result - PASS");
 }
 
 fn exec(file: &str) -> Result<String, String> {
@@ -417,11 +543,21 @@ fn exec_with_result_at(path: &str) {
         let mut args = ExecProgramArgs::default();
         args.k_filename_list.push(kcl_file.to_string());
         let result = exec_program(&args, 0).unwrap();
+
+        #[cfg(not(target_os = "windows"))]
+        let newline = "\n";
+        #[cfg(target_os = "windows")]
+        let newline = "\r\n";
+
         let expected = std::fs::read_to_string(output_file)
             .unwrap()
-            .strip_suffix("\n")
+            .strip_suffix(newline)
             .unwrap()
             .to_string();
+
+        #[cfg(target_os = "windows")]
+        let expected = expected.replace("\r\n", "\n");
+
         assert_eq!(result.yaml_result, expected);
     }
 }

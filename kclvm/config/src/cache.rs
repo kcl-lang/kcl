@@ -86,43 +86,37 @@ where
 
 #[inline]
 fn get_cache_dir(root: &str, cache_dir: Option<&str>) -> String {
-    let cache_dir = cache_dir.unwrap_or(DEFAULT_CACHE_DIR);
-    format!(
-        "{}/{}/{}-{}",
-        root,
-        cache_dir,
-        version::VERSION,
-        version::CHECK_SUM
-    )
+    let cache_dir = cache_dir.or(Some(DEFAULT_CACHE_DIR)).unwrap();
+    Path::new(root)
+        .join(cache_dir)
+        .join(format!("{}-{}", version::VERSION, version::CHECK_SUM))
+        .display()
+        .to_string()
 }
 
 #[inline]
 #[allow(dead_code)]
 fn get_cache_filename(root: &str, target: &str, pkgpath: &str, cache_dir: Option<&str>) -> String {
-    let cache_dir = cache_dir.unwrap_or(DEFAULT_CACHE_DIR);
-    format!(
-        "{}/{}/{}-{}/{}/{}",
-        root,
-        cache_dir,
-        version::VERSION,
-        version::CHECK_SUM,
-        target,
-        pkgpath
-    )
+    let cache_dir = cache_dir.or(Some(DEFAULT_CACHE_DIR)).unwrap();
+    Path::new(root)
+        .join(cache_dir)
+        .join(format!("{}-{}", version::VERSION, version::CHECK_SUM))
+        .join(target)
+        .join(pkgpath)
+        .display()
+        .to_string()
 }
 
 #[inline]
 fn get_cache_info_filename(root: &str, target: &str, cache_dir: Option<&str>) -> String {
-    let cache_dir = cache_dir.unwrap_or(DEFAULT_CACHE_DIR);
-    format!(
-        "{}/{}/{}-{}/{}/{}",
-        root,
-        cache_dir,
-        version::VERSION,
-        version::CHECK_SUM,
-        target,
-        CACHE_INFO_FILENAME
-    )
+    let cache_dir = cache_dir.or(Some(DEFAULT_CACHE_DIR)).unwrap();
+    Path::new(root)
+        .join(cache_dir)
+        .join(format!("{}-{}", version::VERSION, version::CHECK_SUM))
+        .join(target)
+        .join(CACHE_INFO_FILENAME)
+        .display()
+        .to_string()
 }
 
 /// Read the cache if it exists and is well formed.
@@ -175,7 +169,10 @@ fn get_cache_info(path_str: &str) -> CacheInfo {
         file.read_to_end(&mut buf).unwrap();
         md5.input(buf.as_slice());
     } else {
-        let pattern = format!("{}/{}", path_str, KCL_SUFFIX_PATTERN);
+        let pattern = Path::new(path_str)
+            .join(KCL_SUFFIX_PATTERN)
+            .display()
+            .to_string();
         for file in glob::glob(&pattern).unwrap().flatten() {
             let mut file = File::open(file).unwrap();
             let mut buf: Vec<u8> = vec![];
@@ -224,5 +221,8 @@ where
 fn temp_file(cache_dir: &str, pkgpath: &str) -> String {
     let timestamp = chrono::Local::now().timestamp_nanos();
     let id = std::process::id();
-    format!("{}/{}.{}.{}.tmp", cache_dir, pkgpath, id, timestamp)
+    Path::new(cache_dir)
+        .join(format!("{}.{}.{}.tmp", pkgpath, id, timestamp))
+        .display()
+        .to_string()
 }

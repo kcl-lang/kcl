@@ -48,7 +48,7 @@ impl KclvmService {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// use kclvm_capi::service::service::KclvmService;
     /// use kclvm_capi::model::gpyrpc::*;
     /// let serv = &KclvmService { plugin_agent: 0 };

@@ -52,8 +52,6 @@ pub fn lld_main(args: &[CString]) -> bool {
     unsafe {
         LldELFMain(command_line.as_ptr(), command_line.len()) == 0
     }
-    #[cfg(target_os = "windows")]
-    unsafe {
-        LldMinGWMain(command_line.as_ptr(), command_line.len()) == 0
-    }
+
+    true
 }

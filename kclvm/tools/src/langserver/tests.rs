@@ -6,6 +6,7 @@ use kclvm_error::Position;
 mod tests {
     use super::*;
     use std::fs;
+    use std::path::Path;
     use std::{collections::HashMap, hash::Hash};
 
     fn check_line_to_words(code: &str, expect: Vec<LineWord>) {
@@ -26,7 +27,6 @@ mod tests {
             }
             cnt
         }
-
         count(a) == count(b)
     }
 
@@ -139,25 +139,42 @@ mod tests {
         }
     }
 
+    fn test_word_workspace() -> String {
+        Path::new(".")
+            .join("src")
+            .join("langserver")
+            .join("test_data")
+            .join("test_word_workspace")
+            .display()
+            .to_string()
+    }
+
     #[test]
     fn test_match_word() {
-        let path = "./src/langserver/test_data/test_word_workspace".to_string();
+        let path = test_word_workspace();
         let datas = vec![String::from("Son")];
         let except = vec![vec![
             Position {
-                filename: String::from(
-                    "./src/langserver/test_data/test_word_workspace/inherit_pkg.k",
-                ),
+                filename: Path::new(&test_word_workspace())
+                    .join("inherit_pkg.k")
+                    .display()
+                    .to_string(),
                 line: 2,
                 column: Some(7),
             },
             Position {
-                filename: String::from("./src/langserver/test_data/test_word_workspace/inherit.k"),
+                filename: Path::new(&test_word_workspace())
+                    .join("inherit.k")
+                    .display()
+                    .to_string(),
                 line: 3,
                 column: Some(7),
             },
             Position {
-                filename: String::from("./src/langserver/test_data/test_word_workspace/inherit.k"),
+                filename: Path::new(&test_word_workspace())
+                    .join("inherit.k")
+                    .display()
+                    .to_string(),
                 line: 7,
                 column: Some(16),
             },
@@ -170,28 +187,64 @@ mod tests {
         }
     }
 
+    fn test_word_workspace_map() -> String {
+        Path::new(".")
+            .join("src")
+            .join("langserver")
+            .join("test_data")
+            .join("test_word_workspace_map")
+            .display()
+            .to_string()
+    }
+
     #[test]
     fn test_word_map() {
-        let path = "./src/langserver/test_data/test_word_workspace_map".to_string();
+        let path = test_word_workspace_map();
         let mut mp = langserver::word_map::WorkSpaceWordMap::new(path);
         mp.build();
         let _res = fs::rename(
-            "./src/langserver/test_data/test_word_workspace_map/inherit_pkg.k",
-            "./src/langserver/test_data/test_word_workspace_map/inherit_bak.k",
+            Path::new(&test_word_workspace_map())
+                .join("inherit_pkg.k")
+                .display()
+                .to_string(),
+            Path::new(&test_word_workspace_map())
+                .join("inherit_bak.k")
+                .display()
+                .to_string(),
         );
         mp.rename_file(
-            "./src/langserver/test_data/test_word_workspace_map/inherit_pkg.k".to_string(),
-            "./src/langserver/test_data/test_word_workspace_map/inherit_bak.k".to_string(),
+            Path::new(&test_word_workspace_map())
+                .join("inherit_pkg.k")
+                .display()
+                .to_string(),
+            Path::new(&test_word_workspace_map())
+                .join("inherit_bak.k")
+                .display()
+                .to_string(),
         );
-        mp.delete_file("./src/langserver/test_data/test_word_workspace_map/inherit.k".to_string());
+        mp.delete_file(
+            Path::new(&test_word_workspace_map())
+                .join("inherit.k")
+                .display()
+                .to_string(),
+        );
         let _res = fs::rename(
-            "./src/langserver/test_data/test_word_workspace_map/inherit_bak.k",
-            "./src/langserver/test_data/test_word_workspace_map/inherit_pkg.k",
+            Path::new(&test_word_workspace_map())
+                .join("inherit_bak.k")
+                .display()
+                .to_string(),
+            Path::new(&test_word_workspace_map())
+                .join("inherit_pkg.k")
+                .display()
+                .to_string(),
         );
 
         let except = vec![Position {
             filename: String::from(
-                "./src/langserver/test_data/test_word_workspace_map/inherit_bak.k",
+                Path::new(&test_word_workspace_map())
+                    .join("inherit_bak.k")
+                    .display()
+                    .to_string(),
             ),
             line: 2,
             column: Some(7),

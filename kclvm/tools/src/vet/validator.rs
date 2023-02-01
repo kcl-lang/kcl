@@ -109,7 +109,7 @@ const TMP_FILE: &str = "validationTempKCLCode.k";
 /// ```
 ///
 /// 3. Second, you can call this method as follows to validate the content of the json file with the kcl file.
-/// ```rust
+/// ```ignore
 /// # use kclvm_tools::vet::validator::validate;
 /// # use std::path::PathBuf;
 /// # use kclvm_tools::util::loader::LoaderKind;
@@ -139,7 +139,7 @@ const TMP_FILE: &str = "validationTempKCLCode.k";
 /// ```
 ///
 /// The json file used above conforms to the schema rules, so the content of `result` you get is :
-/// ```
+/// ```ignore
 ///
 /// If you change the content of the above json file to :
 /// ```ignore

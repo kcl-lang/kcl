@@ -5,6 +5,7 @@ use crate::session::ParseSession;
 use expect_test::{expect, Expect};
 use kclvm_ast::ast::*;
 use kclvm_span::{create_session_globals_then, BytePos, FilePathMapping, SourceMap};
+use regex::Regex;
 use rustc_span::Pos;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -1281,7 +1282,11 @@ fn test_parse_file_not_found() {
             panic!("unreachable")
         }
         Err(err_msg) => {
-            assert_eq!(err_msg, "Failed to load KCL file 'The file path is invalid'. Because 'No such file or directory (os error 2)'");
+            assert!(
+                Regex::new(r"^Failed to load KCL file 'The file path is invalid'. Because.*")
+                    .unwrap()
+                    .is_match(&err_msg)
+            );
         }
     }
 }
