@@ -42,7 +42,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 ));
                 let lambda_fn_ptr = self.builder.build_bitcast(
                     function.as_global_value().as_pointer_value(),
-                    self.context.i64_type().ptr_type(AddressSpace::Generic),
+                    self.context.i64_type().ptr_type(AddressSpace::default()),
                     "",
                 );
                 if !place_holder_map.contains_key(name) {
