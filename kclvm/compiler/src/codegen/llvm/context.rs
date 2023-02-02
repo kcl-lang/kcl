@@ -29,12 +29,12 @@ use kclvm_sema::builtin;
 use kclvm_sema::plugin;
 
 use crate::codegen::abi::Align;
-use crate::codegen::CodeGenContext;
 use crate::codegen::{error as kcl_error, EmitOptions};
 use crate::codegen::{
     traits::*, ENTRY_NAME, GLOBAL_VAL_ALIGNMENT, KCL_CONTEXT_VAR_NAME, MODULE_NAME,
     PKG_INIT_FUNCTION_SUFFIX,
 };
+use crate::codegen::{CodeGenContext, GLOBAL_LEVEL};
 use crate::pkgpath_without_prefix;
 use crate::value;
 
@@ -1450,6 +1450,38 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             }
         }
         existed
+    }
+
+    /// Append a variable or update the existed local variable.
+    pub fn add_or_update_local_variable(&self, name: &str, value: BasicValueEnum<'ctx>) {
+        let current_pkgpath = self.current_pkgpath();
+        let mut pkg_scopes = self.pkg_scopes.borrow_mut();
+        let msg = format!("pkgpath {} is not found", current_pkgpath);
+        let scopes = pkg_scopes.get_mut(&current_pkgpath).expect(&msg);
+        let mut existed = false;
+        // Query the variable in all scopes.
+        for i in 0..scopes.len() {
+            let index = scopes.len() - i - 1;
+            let variables_mut = scopes[index].variables.borrow_mut();
+            match variables_mut.get(&name.to_string()) {
+                // If the local varibale is found, store the new value for the variable.
+                Some(ptr) if index > GLOBAL_LEVEL && !self.local_vars.borrow().contains(name) => {
+                    self.builder.build_store(*ptr, value);
+                    existed = true;
+                }
+                _ => {}
+            }
+        }
+        // If not found, alloca a new varibale.
+        if !existed {
+            let ptr = self.builder.build_alloca(self.value_ptr_type(), name);
+            self.builder.build_store(ptr, value);
+            // Store the value for the variable and add the varibale into the current scope.
+            if let Some(last) = scopes.last_mut() {
+                let mut variables = last.variables.borrow_mut();
+                variables.insert(name.to_string(), ptr);
+            }
+        }
     }
 
     /// Append a variable or update the existed variable

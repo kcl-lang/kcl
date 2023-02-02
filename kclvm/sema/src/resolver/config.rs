@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use super::{
     node::TypeRef,
-    scope::{ScopeObject, ScopeObjectKind},
+    scope::{ScopeKind, ScopeObject, ScopeObjectKind},
     Resolver,
 };
 use crate::ty::SchemaType;
@@ -378,6 +378,11 @@ impl<'ctx> Resolver<'ctx> {
         &mut self,
         entries: &'ctx [ast::NodeRef<ast::ConfigEntry>],
     ) -> TypeRef {
+        self.enter_scope(
+            self.ctx.start_pos.clone(),
+            self.ctx.end_pos.clone(),
+            ScopeKind::Config,
+        );
         let mut key_types: Vec<TypeRef> = vec![];
         let mut val_types: Vec<TypeRef> = vec![];
         for item in entries {
@@ -403,6 +408,17 @@ impl<'ctx> Resolver<'ctx> {
                                 Rc::new(Type::str_lit(name))
                             };
                             self.check_attr_ty(&key_ty, key.get_pos());
+                            self.insert_object(
+                                name,
+                                ScopeObject {
+                                    name: name.to_string(),
+                                    start: key.get_pos(),
+                                    end: key.get_end_pos(),
+                                    ty: val_ty.clone(),
+                                    kind: ScopeObjectKind::Attribute,
+                                    used: false,
+                                },
+                            );
                             key_ty
                         } else {
                             self.str_ty()
@@ -424,6 +440,19 @@ impl<'ctx> Resolver<'ctx> {
                         let key_ty = self.expr(key);
                         let val_ty = self.expr(value);
                         self.check_attr_ty(&key_ty, key.get_pos());
+                        if let ast::Expr::StringLit(string_lit) = &key.node {
+                            self.insert_object(
+                                &string_lit.value,
+                                ScopeObject {
+                                    name: string_lit.value.clone(),
+                                    start: key.get_pos(),
+                                    end: key.get_end_pos(),
+                                    ty: val_ty.clone(),
+                                    kind: ScopeObjectKind::Attribute,
+                                    used: false,
+                                },
+                            );
+                        }
                         key_types.push(key_ty);
                         val_types.push(val_ty.clone());
                         val_ty
@@ -491,6 +520,7 @@ impl<'ctx> Resolver<'ctx> {
             }
             self.clear_config_expr_context(stack_depth, false);
         }
+        self.leave_scope();
         let key_ty = sup(&key_types);
         let val_ty = sup(&val_types);
         Type::dict_ref(key_ty, val_ty)

@@ -122,6 +122,8 @@ pub enum ScopeKind {
     CondStmt,
     /// Lambda expression.
     Lambda,
+    /// Config expression
+    Config,
 }
 
 impl Scope {

@@ -8,7 +8,7 @@ use inkwell::basic_block::BasicBlock;
 use inkwell::module::Linkage;
 use inkwell::values::{BasicValueEnum, CallableValue, FunctionValue};
 use inkwell::{AddressSpace, IntPredicate};
-use kclvm_ast::ast::{self, CallExpr};
+use kclvm_ast::ast::{self, CallExpr, ConfigEntry, NodeRef};
 use kclvm_ast::walker::TypedResultWalker;
 use kclvm_runtime::{ApiFunc, PKG_PATH_PREFIX};
 
@@ -1860,56 +1860,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         let tpe = self.value_ptr_type();
         self.cond_br(is_truth, then_block, else_block);
         self.builder.position_at_end(then_block);
-        let then_value = self.dict_value();
-        for item in &config_if_entry_expr.items {
-            let key = &item.node.key;
-            let value = &item.node.value;
-            let op = &item.node.operation;
-            let value = self.walk_expr(value).expect(kcl_error::COMPILE_ERROR_MSG);
-            if let Some(key) = key {
-                let mut insert_index = -1;
-                let key = match &key.node {
-                    ast::Expr::Identifier(identifier) => {
-                        let name = &identifier.names[0];
-                        self.string_value(name)
-                    }
-                    ast::Expr::StringLit(string_lit) => {
-                        self.string_value(string_lit.value.as_str())
-                    }
-                    ast::Expr::Subscript(subscript) => match &subscript.value.node {
-                        ast::Expr::Identifier(identifier) => {
-                            let has_index = match &subscript.index {
-                                Some(index) => match &index.node {
-                                    ast::Expr::NumberLit(v) => match &v.value {
-                                        ast::NumberLitValue::Int(v) => {
-                                            insert_index = *v as i32;
-                                            true
-                                        }
-                                        _ => false,
-                                    },
-                                    _ => false,
-                                },
-                                _ => false,
-                            };
-                            if has_index {
-                                let name = &identifier.names[0];
-                                self.string_value(name)
-                            } else {
-                                self.walk_expr(key).expect(kcl_error::COMPILE_ERROR_MSG)
-                            }
-                        }
-                        _ => self.walk_expr(key).expect(kcl_error::COMPILE_ERROR_MSG),
-                    },
-                    _ => self.walk_expr(key).expect(kcl_error::COMPILE_ERROR_MSG),
-                };
-                self.dict_insert_with_key_value(then_value, key, value, op.value(), insert_index);
-            } else {
-                self.build_void_call(
-                    &ApiFunc::kclvm_dict_insert_unpack.name(),
-                    &[then_value, value],
-                );
-            }
-        }
+        let then_value = self.walk_config_entries(&config_if_entry_expr.items)?;
         let then_block = self.append_block("");
         self.br(then_block);
         self.builder.position_at_end(then_block);
@@ -1988,56 +1939,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
 
     fn walk_config_expr(&self, config_expr: &'ctx ast::ConfigExpr) -> Self::Result {
         check_backtrack_stop!(self);
-        let config_value = self.dict_value();
-        for item in &config_expr.items {
-            let value = &item.node.value;
-            let op = &item.node.operation;
-            let value = self.walk_expr(value).expect(kcl_error::COMPILE_ERROR_MSG);
-            if let Some(key) = &item.node.key {
-                let mut insert_index = -1;
-                let key = match &key.node {
-                    ast::Expr::Identifier(identifier) => {
-                        let name = &identifier.names[0];
-                        self.string_value(name)
-                    }
-                    ast::Expr::StringLit(string_lit) => {
-                        self.string_value(string_lit.value.as_str())
-                    }
-                    ast::Expr::Subscript(subscript) => match &subscript.value.node {
-                        ast::Expr::Identifier(identifier) => {
-                            let has_index = match &subscript.index {
-                                Some(index) => match &index.node {
-                                    ast::Expr::NumberLit(v) => match &v.value {
-                                        ast::NumberLitValue::Int(v) => {
-                                            insert_index = *v as i32;
-                                            true
-                                        }
-                                        _ => false,
-                                    },
-                                    _ => false,
-                                },
-                                _ => false,
-                            };
-                            if has_index {
-                                let name = &identifier.names[0];
-                                self.string_value(name)
-                            } else {
-                                self.walk_expr(key).expect(kcl_error::COMPILE_ERROR_MSG)
-                            }
-                        }
-                        _ => self.walk_expr(key).expect(kcl_error::COMPILE_ERROR_MSG),
-                    },
-                    _ => self.walk_expr(key).expect(kcl_error::COMPILE_ERROR_MSG),
-                };
-                self.dict_insert_with_key_value(config_value, key, value, op.value(), insert_index);
-            } else {
-                self.build_void_call(
-                    &ApiFunc::kclvm_dict_insert_unpack.name(),
-                    &[config_value, value],
-                );
-            }
-        }
-        Ok(config_value)
+        self.walk_config_entries(&config_expr.items)
     }
 
     fn walk_check_expr(&self, check_expr: &'ctx ast::CheckExpr) -> Self::Result {
@@ -2846,6 +2748,68 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         self.br(start_block);
         self.builder.position_at_end(end_for_block);
         self.build_void_call(&ApiFunc::kclvm_iterator_delete.name(), &[iter_value]);
-        self.local_vars.borrow_mut().clear();
+        {
+            let mut local_vars = self.local_vars.borrow_mut();
+            for v in targets {
+                let name = &v.node.names[0];
+                local_vars.remove(name);
+            }
+        }
+    }
+
+    pub(crate) fn walk_config_entries(
+        &self,
+        items: &'ctx [NodeRef<ConfigEntry>],
+    ) -> CompileResult<'ctx> {
+        let config_value = self.dict_value();
+        self.enter_scope();
+        for item in items {
+            let value = self.walk_expr(&item.node.value)?;
+            if let Some(key) = &item.node.key {
+                let mut insert_index = -1;
+                let optional_name = match &key.node {
+                    ast::Expr::Identifier(identifier) => Some(identifier.names[0].clone()),
+                    ast::Expr::StringLit(string_lit) => Some(string_lit.value.clone()),
+                    ast::Expr::Subscript(subscript) => {
+                        let mut name = None;
+                        if let ast::Expr::Identifier(identifier) = &subscript.value.node {
+                            if let Some(index_node) = &subscript.index {
+                                if let ast::Expr::NumberLit(number) = &index_node.node {
+                                    if let ast::NumberLitValue::Int(v) = number.value {
+                                        insert_index = v;
+                                        name = Some(identifier.names[0].clone())
+                                    }
+                                }
+                            }
+                        }
+                        name
+                    }
+                    _ => None,
+                };
+                // Store a local variable for every entry key.
+                let key = match optional_name {
+                    Some(name) => {
+                        self.add_or_update_local_variable(&name, value);
+                        self.string_value(&name)
+                    }
+                    None => self.walk_expr(key)?,
+                };
+                self.dict_insert_with_key_value(
+                    config_value,
+                    key,
+                    value,
+                    item.node.operation.value(),
+                    insert_index as i32,
+                );
+            } else {
+                // If the key does not exist, execute the logic of unpacking expression `**expr` here.
+                self.build_void_call(
+                    &ApiFunc::kclvm_dict_insert_unpack.name(),
+                    &[config_value, value],
+                );
+            }
+        }
+        self.leave_scope();
+        Ok(config_value)
     }
 }

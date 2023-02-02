@@ -13,10 +13,10 @@ kcl_error.print_kcl_error_message(
                 filename=cwd + "/main.k",
                 line_no=1,
                 col_no=1,
-                arg_msg="got {str:str(2)}"
+                arg_msg="got {str(A):str(2)}"
             )
         ],
-        arg_msg="expect {str(A)|str(B):int}, got {str:str(2)}"
+        arg_msg="expect {str(A)|str(B):int}, got {str(A):str(2)}"
     ),
     file=sys.stdout
 )
