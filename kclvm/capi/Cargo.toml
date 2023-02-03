@@ -1,6 +1,6 @@
 [package]
 name = "kclvm-capi"
-version = "0.1.0"
+version = "0.4.5"
 edition = "2021"
 
 [dependencies]
@@ -10,12 +10,12 @@ serde_yaml = "0.9.2"
 protobuf-json-mapping = "3.1.0"
 serde = { version = "1", features = ["derive"] }
 
-kclvm-runner = {path = "../runner", version = "0.1.0"}
-kclvm-parser = {path = "../parser", version = "0.1.0"}
-kclvm-ast = {path = "../ast", version = "0.1.0"}
-kclvm-runtime = {path = "../runtime", version = "0.1.0"}
-kclvm-tools = {path = "../tools", version = "0.1.0" }
-kclvm-query = {path = "../query", version = "0.1.0"}
+kclvm-runner = {path = "../runner", version = "0.4.5"}
+kclvm-parser = {path = "../parser", version = "0.4.5"}
+kclvm-ast = {path = "../ast", version = "0.4.5"}
+kclvm-runtime = {path = "../runtime", version = "0.4.5"}
+kclvm-tools = {path = "../tools", version = "0.4.5" }
+kclvm-query = {path = "../query", version = "0.4.5"}
 
 [dev-dependencies]
 criterion = "0.3"
