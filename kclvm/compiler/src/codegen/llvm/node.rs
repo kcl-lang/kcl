@@ -503,7 +503,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
                 &ApiFunc::kclvm_value_function_ptr.name(),
                 &[base_constructor_func],
             );
-            let fn_ty = self.function_type().ptr_type(AddressSpace::Generic);
+            let fn_ty = self.function_type().ptr_type(AddressSpace::default());
             let func_ptr_cast = self.builder.build_bitcast(func_ptr, fn_ty, "");
             self.builder
                 .build_call(
@@ -586,7 +586,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
             let dict_value = self.dict_value();
             let func_ptr =
                 self.build_call(&ApiFunc::kclvm_value_function_ptr.name(), &[mixin_func]);
-            let fn_ty = self.function_type().ptr_type(AddressSpace::Generic);
+            let fn_ty = self.function_type().ptr_type(AddressSpace::default());
             let func_ptr_cast = self.builder.build_bitcast(func_ptr, fn_ty, "");
             self.builder.build_call(
                 CallableValue::try_from(func_ptr_cast.into_pointer_value())
@@ -709,7 +709,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
                 // Call schema check block function with index sign attribute name loop set
                 let check_lambda_fn_ptr = self.builder.build_bitcast(
                     check_function.as_global_value().as_pointer_value(),
-                    self.context.i64_type().ptr_type(AddressSpace::Generic),
+                    self.context.i64_type().ptr_type(AddressSpace::default()),
                     "",
                 );
                 let attr_name = self.native_global_string_value(index_sign_key_name);
@@ -786,7 +786,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
                     &ApiFunc::kclvm_value_check_function_ptr.name(),
                     &[base_constructor_func],
                 );
-                let fn_ty = self.function_type().ptr_type(AddressSpace::Generic);
+                let fn_ty = self.function_type().ptr_type(AddressSpace::default());
                 let func_ptr_cast = self.builder.build_bitcast(func_ptr, fn_ty, "");
                 // Schema check function closure
                 let list_value = self.list_values(&[
@@ -827,7 +827,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
                     &ApiFunc::kclvm_value_check_function_ptr.name(),
                     &[mixin_func],
                 );
-                let fn_ty = self.function_type().ptr_type(AddressSpace::Generic);
+                let fn_ty = self.function_type().ptr_type(AddressSpace::default());
                 let func_ptr_cast = self.builder.build_bitcast(func_ptr, fn_ty, "");
                 // Schema check function closure
                 let list_value = self.list_values(&[
@@ -1037,7 +1037,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
                 &ApiFunc::kclvm_value_function_ptr.name(),
                 &[base_constructor_func],
             );
-            let fn_ty = self.function_type().ptr_type(AddressSpace::Generic);
+            let fn_ty = self.function_type().ptr_type(AddressSpace::default());
             let func_ptr_cast = self.builder.build_bitcast(func_ptr, fn_ty, "");
             self.builder
                 .build_call(
@@ -1141,7 +1141,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
                     &ApiFunc::kclvm_value_check_function_ptr.name(),
                     &[base_constructor_func],
                 );
-                let fn_ty = self.function_type().ptr_type(AddressSpace::Generic);
+                let fn_ty = self.function_type().ptr_type(AddressSpace::default());
                 let func_ptr_cast = self.builder.build_bitcast(func_ptr, fn_ty, "");
                 // Schema check function closure
                 let list_value = self.list_values(&[

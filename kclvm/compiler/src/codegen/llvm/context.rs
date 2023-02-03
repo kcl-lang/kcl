@@ -418,7 +418,7 @@ impl<'ctx> ValueMethods for LLVMCodeGenContext<'ctx> {
     fn function_value(&self, function: FunctionValue<'ctx>) -> Self::Value {
         let lambda_fn_ptr = self.builder.build_bitcast(
             function.as_global_value().as_pointer_value(),
-            self.context.i64_type().ptr_type(AddressSpace::Generic),
+            self.context.i64_type().ptr_type(AddressSpace::default()),
             "",
         );
         self.build_call(
@@ -431,7 +431,7 @@ impl<'ctx> ValueMethods for LLVMCodeGenContext<'ctx> {
         // Convert the function to a i64 pointer to store it into the function value.
         let fn_ptr = self.builder.build_bitcast(
             function.as_global_value().as_pointer_value(),
-            self.context.i64_type().ptr_type(AddressSpace::Generic),
+            self.context.i64_type().ptr_type(AddressSpace::default()),
             "",
         );
         let name = self.native_global_string("", "").into();
@@ -452,20 +452,20 @@ impl<'ctx> ValueMethods for LLVMCodeGenContext<'ctx> {
         // Convert the function to a i64 pointer to store it into the function value.
         let schema_body_fn_ptr = self.builder.build_bitcast(
             functions[0].as_global_value().as_pointer_value(),
-            self.context.i64_type().ptr_type(AddressSpace::Generic),
+            self.context.i64_type().ptr_type(AddressSpace::default()),
             "",
         );
         // Convert the function to a i64 pointer to store it into the function value.
         let check_block_fn_ptr = if functions.len() > 1 {
             self.builder.build_bitcast(
                 functions[1].as_global_value().as_pointer_value(),
-                self.context.i64_type().ptr_type(AddressSpace::Generic),
+                self.context.i64_type().ptr_type(AddressSpace::default()),
                 "",
             )
         } else {
             self.context
                 .i64_type()
-                .ptr_type(AddressSpace::Generic)
+                .ptr_type(AddressSpace::default())
                 .const_zero()
                 .into()
         };
@@ -509,10 +509,10 @@ impl<'ctx> ValueMethods for LLVMCodeGenContext<'ctx> {
             let msg = format!("pkgpath {} is not found", pkgpath);
             let modules = self.modules.borrow_mut();
             let module = modules.get(&pkgpath).expect(&msg).borrow_mut();
-            module.add_global(tpe, Some(AddressSpace::Generic), name)
+            module.add_global(tpe, Some(AddressSpace::default()), name)
         } else {
             self.module
-                .add_global(tpe, Some(AddressSpace::Generic), name)
+                .add_global(tpe, Some(AddressSpace::default()), name)
         };
         global_var.set_alignment(GLOBAL_VAL_ALIGNMENT);
         global_var.set_initializer(&tpe.const_zero());
@@ -1174,7 +1174,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         if !self.no_link {
             let global_ctx = self.module.add_global(
                 context_ptr_type,
-                Some(AddressSpace::Generic),
+                Some(AddressSpace::default()),
                 KCL_CONTEXT_VAR_NAME,
             );
             global_ctx.set_alignment(GLOBAL_VAL_ALIGNMENT);
@@ -1375,10 +1375,10 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             let msg = format!("pkgpath {} is not found", pkgpath);
             let modules = self.modules.borrow_mut();
             let module = modules.get(&pkgpath).expect(&msg).borrow_mut();
-            module.add_global(tpe, Some(AddressSpace::Generic), name)
+            module.add_global(tpe, Some(AddressSpace::default()), name)
         } else {
             self.module
-                .add_global(tpe, Some(AddressSpace::Generic), name)
+                .add_global(tpe, Some(AddressSpace::default()), name)
         };
         global_var.set_alignment(GLOBAL_VAL_ALIGNMENT);
         global_var.set_initializer(&tpe.const_zero());
@@ -1617,7 +1617,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 // Convert the function to a i64 pointer to store it into the function value.
                 let lambda_fn_ptr = self.builder.build_bitcast(
                     function.as_global_value().as_pointer_value(),
-                    self.context.i64_type().ptr_type(AddressSpace::Generic),
+                    self.context.i64_type().ptr_type(AddressSpace::default()),
                     "",
                 );
                 let name = self.native_global_string("", "").into();
@@ -1634,7 +1634,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             let null_fn_ptr = self
                 .context
                 .i64_type()
-                .ptr_type(AddressSpace::Generic)
+                .ptr_type(AddressSpace::default())
                 .const_zero()
                 .into();
             let name = format!("{}.{}", &pkgpath[1..], name);
@@ -1742,7 +1742,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             *ptr
         } else {
             let global_var =
-                module.add_global(tpe, Some(AddressSpace::Generic), &external_var_name);
+                module.add_global(tpe, Some(AddressSpace::default()), &external_var_name);
             global_var.set_alignment(GLOBAL_VAL_ALIGNMENT);
             global_var.set_linkage(Linkage::External);
             let ptr = global_var.as_pointer_value();
