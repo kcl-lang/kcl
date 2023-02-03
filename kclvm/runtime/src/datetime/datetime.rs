@@ -20,7 +20,7 @@ pub extern "C" fn kclvm_datetime_today(
     _args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
-    let s = Local::today().to_string();
+    let s = Local::now().to_string();
     return ValueRef::str(s.as_ref()).into_raw();
 }
 
@@ -59,6 +59,6 @@ pub extern "C" fn kclvm_datetime_date(
     _args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
-    let s = Local::today().to_string();
+    let s = Local::now().to_string();
     return ValueRef::str(s.as_ref()).into_raw();
 }
