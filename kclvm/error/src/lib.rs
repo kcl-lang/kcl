@@ -112,9 +112,9 @@ impl Handler {
         }
     }
 
-    /// Emit all diagnostics but do not abort.
+    /// Emit all diagnostics but do not abort and return the error json string format.
     #[inline]
-    pub fn alert_if_any_errors(&mut self) {
+    pub fn alert_if_any_errors(&mut self) -> Result<(), String> {
         if self.has_errors() {
             for diag in &self.diagnostics {
                 let pos = diag.messages[0].pos.clone();
@@ -130,9 +130,10 @@ impl Handler {
                 panic_info.kcl_line = pos.line as i32;
                 panic_info.kcl_col = pos.column.unwrap_or(0) as i32;
 
-                panic!("{}", panic_info.to_json_string());
+                return Err(panic_info.to_json_string());
             }
         }
+        Ok(())
     }
 
     /// Construct a parse error and put it into the handler diagnostic buffer

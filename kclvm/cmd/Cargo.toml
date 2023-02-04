@@ -1,0 +1,15 @@
+[package]
+name = "kclvm-cmd"
+version = "0.4.5"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0"
+clap = "3.2.22"
+
+kclvm-capi = {path = "../capi",version = "0.4.5"}
+kclvm-runner = {path = "../runner", version = "0.4.5"}
+kclvm-config = {path = "../config", version = "0.4.5"}
+kclvm-runtime = {path = "../runtime", version = "0.4.5"}
+kclvm-tools = {path = "../tools", version = "0.4.5"}
+kclvm-error = {path = "../error", version = "0.4.5"}

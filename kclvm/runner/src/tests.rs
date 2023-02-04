@@ -358,7 +358,7 @@ fn test_from_str_program_arg() {
 fn test_from_setting_file_program_arg() {
     for (case_yaml, case_json) in SETTINGS_FILE_TEST_CASE {
         let test_case_yaml_file = &format!("{}/{}", TEST_CASE_PATH, case_yaml);
-        let settings_file = load_file(test_case_yaml_file);
+        let settings_file = load_file(test_case_yaml_file).unwrap();
 
         let test_case_json_file = &format!("{}/{}", TEST_CASE_PATH, case_json);
         let expected_json_str = fs::read_to_string(test_case_json_file).unwrap();

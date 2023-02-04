@@ -68,13 +68,17 @@ impl Position {
     }
 
     pub fn info(&self) -> String {
-        let mut info = "---> File ".to_string();
-        info += &self.filename;
-        info += &format!(":{}", self.line);
-        if let Some(column) = self.column {
-            info += &format!(":{}", column + 1);
+        if !self.filename.is_empty() {
+            let mut info = "---> File ".to_string();
+            info += &self.filename;
+            info += &format!(":{}", self.line);
+            if let Some(column) = self.column {
+                info += &format!(":{}", column + 1);
+            }
+            info
+        } else {
+            "".to_string()
         }
-        info
     }
 }
 
@@ -147,9 +151,9 @@ pub enum Level {
 impl Level {
     pub fn to_str(self) -> &'static str {
         match self {
-            Level::Error => "Error",
-            Level::Warning => "Warning",
-            Level::Note => "Note",
+            Level::Error => "error",
+            Level::Warning => "warning",
+            Level::Note => "note",
         }
     }
 

@@ -201,21 +201,26 @@ pub struct ProgramScope {
 }
 
 impl ProgramScope {
+    /// Get all package paths.
     #[inline]
     pub fn pkgpaths(&self) -> Vec<String> {
         self.scope_map.keys().cloned().collect::<Vec<String>>()
     }
 
+    /// Get the scope in the main package.
     #[inline]
     pub fn main_scope(&self) -> Option<&Rc<RefCell<Scope>>> {
         self.scope_map.get(MAIN_PKG)
     }
 
-    pub fn check_scope_diagnostics(&self) {
+    /// Return diagnostic json string but do not abort if exist any diagnostic.
+    pub fn alert_scope_diagnostics(&self) -> Result<(), String> {
         if !self.diagnostics.is_empty() {
             let mut err_handler = Handler::default();
             err_handler.diagnostics = self.diagnostics.clone();
-            err_handler.alert_if_any_errors();
+            err_handler.alert_if_any_errors()
+        } else {
+            Ok(())
         }
     }
 }

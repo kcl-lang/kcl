@@ -184,7 +184,7 @@ pub fn execute(
 ) -> Result<String, String> {
     // Resolve ast
     let scope = resolve_program(&mut program);
-    scope.check_scope_diagnostics();
+    scope.alert_scope_diagnostics()?;
 
     // Create a temp entry file and the temp dir will be delete automatically
     let temp_dir = tempdir().unwrap();

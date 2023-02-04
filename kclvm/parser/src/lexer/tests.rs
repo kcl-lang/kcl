@@ -3,7 +3,6 @@ use crate::lexer::str_content_eval;
 use crate::session::ParseSession;
 use expect_test::{expect, Expect};
 use kclvm_span::{create_session_globals_then, BytePos, FilePathMapping, SourceMap};
-use std::fs;
 use std::path::PathBuf;
 use std::sync::Arc;
 

@@ -138,10 +138,7 @@ mod modfile_test {
     #[test]
     fn test_load_mod_file() {
         let kcl_mod = load_mod_file(TEST_ROOT);
-        assert_eq!(
-            kcl_mod.build.as_ref().unwrap().enable_pkg_cache.unwrap(),
-            true
-        );
+        assert!(kcl_mod.build.as_ref().unwrap().enable_pkg_cache.unwrap());
         assert_eq!(
             kcl_mod
                 .build
