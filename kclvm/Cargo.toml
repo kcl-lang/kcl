@@ -20,7 +20,6 @@ name = "kclvm_cli"
 cc = "1.0"
 
 [dependencies]
-clap = "3.2.22"
 serde_json = "1.0"
 serde = { version = "1", features = ["derive"] }
 glob = "0.3.0"
@@ -33,6 +32,7 @@ chrono = "0.4.19"
 threadpool = "1.0"
 
 kclvm-capi = {path = "./capi",version = "0.4.5"}
+kclvm-cmd = {path = "./cmd",version = "0.4.5"}
 kclvm-ast = {path = "./ast", version = "0.4.5"}
 kclvm-runner = {path = "./runner", version = "0.4.5"}
 kclvm-parser = {path = "./parser", version = "0.4.5"}
@@ -54,6 +54,7 @@ lto = true
 [workspace]
 members = [
     "capi",
+    "cmd",
     "ast",
     "ast_pretty",
     "compiler",

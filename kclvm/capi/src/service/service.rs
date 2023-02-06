@@ -26,6 +26,7 @@ impl KclvmService {
     /// # Examples
     ///
     /// ```
+    /// use kclvm_capi::service::service::KclvmService;
     /// use kclvm_capi::model::gpyrpc::*;
     /// let serv = &KclvmService { plugin_agent: 0 };
     /// let args = &Ping_Args {
@@ -48,6 +49,7 @@ impl KclvmService {
     /// # Examples
     ///
     /// ```
+    /// use kclvm_capi::service::service::KclvmService;
     /// use kclvm_capi::model::gpyrpc::*;
     /// let serv = &KclvmService { plugin_agent: 0 };
     /// let args = &ExecProgram_Args {
@@ -132,6 +134,7 @@ impl KclvmService {
     /// # Examples
     ///
     /// ```
+    /// use kclvm_capi::service::service::KclvmService;
     /// use kclvm_capi::model::gpyrpc::*;
     /// let serv = &KclvmService { plugin_agent: 0 };
     /// let args = &OverrideFile_Args {

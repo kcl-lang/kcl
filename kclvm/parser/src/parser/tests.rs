@@ -1,4 +1,4 @@
-use crate::lexer::{self, parse_token_streams};
+use crate::lexer::parse_token_streams;
 use crate::parse_file;
 use crate::parser::Parser;
 use crate::session::ParseSession;

@@ -674,12 +674,12 @@ version = "0.4.5"
 dependencies = [
  "cc",
  "chrono",
- "clap 3.2.23",
  "fslock",
  "glob",
  "indexmap",
  "kclvm-ast",
  "kclvm-capi",
+ "kclvm-cmd",
  "kclvm-compiler",
  "kclvm-config",
  "kclvm-error",
@@ -742,6 +742,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "kclvm-cmd"
+version = "0.4.5"
+dependencies = [
+ "anyhow",
+ "clap 3.2.23",
+ "kclvm-capi",
+ "kclvm-config",
+ "kclvm-error",
+ "kclvm-runner",
+ "kclvm-runtime",
+ "kclvm-tools",
+]
+
+[[package]]
 name = "kclvm-compiler"
 version = "0.4.5"
 dependencies = [
@@ -766,6 +780,7 @@ name = "kclvm-config"
 version = "0.4.5"
 dependencies = [
  "ahash",
+ "anyhow",
  "chrono",
  "fslock",
  "glob",

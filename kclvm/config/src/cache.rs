@@ -86,7 +86,7 @@ where
 
 #[inline]
 fn get_cache_dir(root: &str, cache_dir: Option<&str>) -> String {
-    let cache_dir = cache_dir.or(Some(DEFAULT_CACHE_DIR)).unwrap();
+    let cache_dir = cache_dir.unwrap_or(DEFAULT_CACHE_DIR);
     format!(
         "{}/{}/{}-{}",
         root,
@@ -99,7 +99,7 @@ fn get_cache_dir(root: &str, cache_dir: Option<&str>) -> String {
 #[inline]
 #[allow(dead_code)]
 fn get_cache_filename(root: &str, target: &str, pkgpath: &str, cache_dir: Option<&str>) -> String {
-    let cache_dir = cache_dir.or(Some(DEFAULT_CACHE_DIR)).unwrap();
+    let cache_dir = cache_dir.unwrap_or(DEFAULT_CACHE_DIR);
     format!(
         "{}/{}/{}-{}/{}/{}",
         root,
@@ -113,7 +113,7 @@ fn get_cache_filename(root: &str, target: &str, pkgpath: &str, cache_dir: Option
 
 #[inline]
 fn get_cache_info_filename(root: &str, target: &str, cache_dir: Option<&str>) -> String {
-    let cache_dir = cache_dir.or(Some(DEFAULT_CACHE_DIR)).unwrap();
+    let cache_dir = cache_dir.unwrap_or(DEFAULT_CACHE_DIR);
     format!(
         "{}/{}/{}-{}/{}/{}",
         root,
@@ -158,7 +158,7 @@ pub fn write_info_cache(
     let mut cache = read_info_cache(root, target, cache_name);
     cache.insert(relative_path, cache_info);
     let mut file = File::create(&tmp_filename).unwrap();
-    file.write_all(&ron::ser::to_string(&cache).unwrap().as_bytes())
+    file.write_all(ron::ser::to_string(&cache).unwrap().as_bytes())
         .unwrap();
     std::fs::rename(&tmp_filename, &dst_filename).unwrap();
     lock_file.unlock().unwrap();

@@ -167,30 +167,33 @@ impl Emitter for EmitterWriter {
         buffer.push(diag_str);
         for (i, msg) in diag.messages.iter().enumerate() {
             buffer.push("  ".repeat(i) + &msg.pos.info());
-            let mut line_source = format!("{} |", msg.pos.line);
-            let line_hint_len = line_source.len();
-            if let Some(sm) = &self.source_map {
-                if let Some(source_file) = sm.source_file_by_filename(&msg.pos.filename) {
-                    if let Some(line) = source_file.get_line(msg.pos.line as usize - 1) {
-                        line_source += &line.to_string();
+            // To prevent read empty source content.
+            if msg.pos.line > 0 {
+                let mut line_source = format!("{} |", msg.pos.line);
+                let line_hint_len = line_source.len();
+                if let Some(sm) = &self.source_map {
+                    if let Some(source_file) = sm.source_file_by_filename(&msg.pos.filename) {
+                        if let Some(line) = source_file.get_line(msg.pos.line as usize - 1) {
+                            line_source += &line.to_string();
+                        }
+                    }
+                } else {
+                    let sm = SourceMap::new(FilePathMapping::empty());
+                    if let Ok(source_file) = sm.load_file(Path::new(&msg.pos.filename)) {
+                        if let Some(line) = source_file.get_line(msg.pos.line as usize - 1) {
+                            line_source += &line.to_string();
+                        }
                     }
                 }
-            } else {
-                let sm = SourceMap::new(FilePathMapping::empty());
-                if let Ok(source_file) = sm.load_file(Path::new(&msg.pos.filename)) {
-                    if let Some(line) = source_file.get_line(msg.pos.line as usize - 1) {
-                        line_source += &line.to_string();
+                buffer.push("  ".repeat(i) + &line_source);
+                if let Style::LineAndColumn = msg.style {
+                    if let Some(column) = msg.pos.column {
+                        let column = column + 1;
+                        let column_source = format!("{} ^", column);
+                        let prefix_space = line_hint_len + column as usize - column_source.len();
+                        let column_source = " ".repeat(prefix_space) + &column_source;
+                        buffer.push("  ".repeat(i) + &column_source);
                     }
-                }
-            }
-            buffer.push("  ".repeat(i) + &line_source);
-            if let Style::LineAndColumn = msg.style {
-                if let Some(column) = msg.pos.column {
-                    let column = column + 1;
-                    let column_source = format!("{} ^", column);
-                    let prefix_space = line_hint_len + column as usize - column_source.len();
-                    let column_source = " ".repeat(prefix_space) + &column_source;
-                    buffer.push("  ".repeat(i) + &column_source);
                 }
             }
             buffer.push("  ".repeat(i) + &msg.message.clone());
