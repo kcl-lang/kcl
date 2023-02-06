@@ -670,7 +670,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm"
-version = "0.1.0"
+version = "0.4.5"
 dependencies = [
  "cc",
  "chrono",
@@ -700,7 +700,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-ast"
-version = "0.1.0"
+version = "0.4.5"
 dependencies = [
  "kclvm-parser",
  "kclvm-span",
@@ -711,7 +711,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-ast-pretty"
-version = "0.1.0"
+version = "0.4.5"
 dependencies = [
  "fancy-regex",
  "indexmap",
@@ -723,7 +723,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-capi"
-version = "0.1.0"
+version = "0.4.5"
 dependencies = [
  "criterion",
  "kclvm-ast",
@@ -743,7 +743,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-compiler"
-version = "0.1.0"
+version = "0.4.5"
 dependencies = [
  "ahash",
  "bit-set",
@@ -763,7 +763,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-config"
-version = "0.1.0"
+version = "0.4.5"
 dependencies = [
  "ahash",
  "chrono",
@@ -781,7 +781,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-error"
-version = "0.1.0"
+version = "0.4.5"
 dependencies = [
  "annotate-snippets",
  "atty",
@@ -796,7 +796,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-lexer"
-version = "0.1.0"
+version = "0.4.5"
 dependencies = [
  "expect-test",
  "kclvm-error",
@@ -806,7 +806,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-macros"
-version = "0.1.0"
+version = "0.4.5"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -816,7 +816,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-parser"
-version = "0.1.0"
+version = "0.4.5"
 dependencies = [
  "bstr",
  "either",
@@ -841,7 +841,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-query"
-version = "0.1.0"
+version = "0.4.5"
 dependencies = [
  "anyhow",
  "kclvm-ast",
@@ -854,7 +854,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-runner"
-version = "0.1.0"
+version = "0.4.5"
 dependencies = [
  "anyhow",
  "cc",
@@ -884,7 +884,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-runtime"
-version = "0.1.0"
+version = "0.4.5"
 dependencies = [
  "ahash",
  "base64",
@@ -911,7 +911,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-sema"
-version = "0.1.0"
+version = "0.4.5"
 dependencies = [
  "ahash",
  "bit-set",
@@ -932,7 +932,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-span"
-version = "0.1.0"
+version = "0.4.5"
 dependencies = [
  "kclvm-macros",
  "rustc_span",
@@ -941,7 +941,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-tools"
-version = "0.1.0"
+version = "0.4.5"
 dependencies = [
  "anyhow",
  "criterion",
@@ -965,11 +965,11 @@ dependencies = [
 
 [[package]]
 name = "kclvm-version"
-version = "0.1.0"
+version = "0.4.5"
 
 [[package]]
 name = "kclvm_runtime_internal_macros"
-version = "0.1.0"
+version = "0.4.5"
 dependencies = [
  "proc-macro2",
  "quote",

@@ -1,6 +1,6 @@
 [package]
 name = "kclvm-sema"
-version = "0.1.0"
+version = "0.4.5"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -15,13 +15,13 @@ once_cell = "1.5.2"
 fancy-regex = "0.7.1"
 unicode_names2 = "0.4"
 petgraph = "0.6.0"
-kclvm-ast = {path = "../ast", version = "0.1.0"}
-kclvm-runtime = {path = "../runtime", version = "0.1.0"}
-kclvm-error = {path = "../error", version = "0.1.0"}
-kclvm-span = {path = "../span", version = "0.1.0"}
+kclvm-ast = {path = "../ast", version = "0.4.5"}
+kclvm-runtime = {path = "../runtime", version = "0.4.5"}
+kclvm-error = {path = "../error", version = "0.4.5"}
+kclvm-span = {path = "../span", version = "0.4.5"}
 
 [dev-dependencies]
-kclvm-parser = {path = "../parser", version = "0.1.0"}
+kclvm-parser = {path = "../parser", version = "0.4.5"}
 criterion = "0.3"
 
 [[bench]]

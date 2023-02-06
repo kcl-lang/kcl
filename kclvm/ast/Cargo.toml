@@ -1,6 +1,6 @@
 [package]
 name = "kclvm-ast"
-version = "0.1.0"
+version = "0.4.5"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -10,7 +10,7 @@ rustc_span = { path = "../3rdparty/rustc_span" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1.0"
 
-kclvm-span = {path = "../span", version = "0.1.0"}
+kclvm-span = {path = "../span", version = "0.4.5"}
 
 [dev-dependencies]
-kclvm-parser = {path = "../parser", version = "0.1.0"}
+kclvm-parser = {path = "../parser", version = "0.4.5"}
