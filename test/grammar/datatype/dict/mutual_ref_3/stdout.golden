@@ -1,0 +1,14 @@
+name: global-release-name
+data:
+  name: data-release
+  metadata:
+    name: data-release
+  spec:
+    template:
+      metadata:
+        name: data-release
+metadata:
+  name: metadata-release-name
+  labels:
+    app.kubernetes.io/name: metadata-release-name
+    app.kubernetes.io/instance: metadata-release-name

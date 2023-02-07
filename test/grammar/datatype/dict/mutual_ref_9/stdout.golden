@@ -1,0 +1,6 @@
+isProdEnv: false
+data:
+  env: staging
+  staging: true
+  metadata:
+    env: staging

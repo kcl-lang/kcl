@@ -1,0 +1,4 @@
+c:
+- name: main
+  volumeMounts:
+  - name: mainContainer

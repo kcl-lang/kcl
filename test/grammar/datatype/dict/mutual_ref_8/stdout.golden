@@ -1,0 +1,5 @@
+isProdEnv: true
+data:
+  env: prod
+  metadata:
+    env: prod
