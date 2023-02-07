@@ -45,6 +45,8 @@ fn read_data(data_name: &str) -> (String, String) {
 fn test_format_source() {
     for case in TEST_CASES {
         let (data_input, data_output) = read_data(case);
+        #[cfg(target_os = "windows")]
+        let data_output = data_output.replace("\r\n", "\n");
         assert_eq!(data_input, data_output, "Test failed on {}", case);
     }
 }

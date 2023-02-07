@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context, Result};
 
 use crate::util::loader::LoaderKind;
+use kclvm_runtime::PanicInfo;
 
 const CARGO_DIR: &str = env!("CARGO_MANIFEST_DIR");
 pub(crate) fn rel_path() -> String {
@@ -53,6 +54,18 @@ fn construct_full_path(path: &str) -> Result<String> {
         .to_str()
         .with_context(|| format!("No such file or directory '{}'", path))?
         .to_string())
+}
+
+#[cfg(target_os = "windows")]
+pub(crate) fn path_to_windows(panic_info: &mut PanicInfo) {
+    panic_info.rust_file = panic_info.rust_file.replace("/", "\\");
+    panic_info.kcl_pkgpath = panic_info.kcl_pkgpath.replace("/", "\\");
+    panic_info.kcl_file = panic_info.kcl_file.replace("/", "\\");
+    panic_info.kcl_config_meta_file = panic_info.kcl_config_meta_file.replace("/", "\\");
+}
+
+#[cfg(not(target_os = "windows"))]
+pub(crate) fn path_to_windows(panic_info: &mut PanicInfo) {
 }
 
 mod test_expr_builder {
@@ -345,7 +358,7 @@ mod test_validater {
         vet::validator::{validate, ValidateOption},
     };
 
-    use super::{construct_full_path, LOADER_KIND};
+    use super::{construct_full_path, LOADER_KIND, path_to_windows};
 
     const KCL_TEST_CASES: &[&str] = &["test.k", "simple.k", "list.k", "plain_value.k", "complex.k"];
     const VALIDATED_FILE_TYPE: &[&str] = &["json", "yaml"];
@@ -452,8 +465,7 @@ mod test_validater {
 
                 let mut expect: PanicInfo = serde_json::from_str(&expected_err_msg).unwrap();
 
-                // #[cfg(target_os = "windows")]
-                expect.path_to_windows();
+                path_to_windows(&mut expect);
 
                 match result {
                     Ok(result) => match result {

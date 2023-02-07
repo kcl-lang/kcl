@@ -315,16 +315,6 @@ pub struct PanicInfo {
     pub is_warning: bool,
 }
 
-impl PanicInfo {
-    #[cfg(target_os = "windows")]
-    pub fn path_to_windows(&mut self) {
-        self.rust_file = self.rust_file.replace("/", "\\");
-        self.kcl_pkgpath = self.kcl_pkgpath.replace("/", "\\");
-        self.kcl_file = self.kcl_file.replace("/", "\\");
-        self.kcl_config_meta_file = self.kcl_config_meta_file.replace("/", "\\");
-    }
-}
-
 #[derive(PartialEq, Eq, Clone, Default, Debug)]
 pub struct ContextConfig {
     pub debug_mode: bool,

@@ -159,7 +159,7 @@ pub fn exec_program(
 ///
 /// # Examples
 ///
-/// ```ignore
+/// ```
 /// use kclvm_runner::{execute, runner::ExecProgramArgs};
 /// use kclvm_parser::load_program;
 /// use kclvm_ast::ast::Program;
