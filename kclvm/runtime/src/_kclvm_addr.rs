@@ -126,6 +126,12 @@ pub fn _kclvm_get_fn_ptr_by_name(name: &str) -> u64 {
         "kclvm_datetime_now" => crate::kclvm_datetime_now as *const () as u64,
         "kclvm_datetime_ticks" => crate::kclvm_datetime_ticks as *const () as u64,
         "kclvm_datetime_today" => crate::kclvm_datetime_today as *const () as u64,
+        "kclvm_default_collection_insert_int_pointer" => {
+            crate::kclvm_default_collection_insert_int_pointer as *const () as u64
+        }
+        "kclvm_default_collection_insert_value" => {
+            crate::kclvm_default_collection_insert_value as *const () as u64
+        }
         "kclvm_dict_clear" => crate::kclvm_dict_clear as *const () as u64,
         "kclvm_dict_get" => crate::kclvm_dict_get as *const () as u64,
         "kclvm_dict_get_entry" => crate::kclvm_dict_get_entry as *const () as u64,

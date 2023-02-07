@@ -589,6 +589,7 @@ pub extern "C" fn kclvm_value_function_invoke(
     args: *mut kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
     pkgpath: *const kclvm_char_t,
+    is_in_schema: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let func = ptr_as_ref(p);
     let args_ref = mut_ptr_as_ref(args);
@@ -642,6 +643,11 @@ pub extern "C" fn kclvm_value_function_invoke(
                 let args = args_ref.clone().into_raw();
                 call_fn(ctx, args, kwargs)
             };
+            let is_in_schema = ptr_as_ref(is_in_schema);
+            if is_schema && !is_in_schema.is_truthy() {
+                let schema_value = ptr_as_ref(value);
+                schema_value.schema_check_attr_optional(true);
+            }
             ctx_ref.panic_info = now_meta_info;
             return value;
         };

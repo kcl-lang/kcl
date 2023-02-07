@@ -355,8 +355,8 @@
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_value_function_external_invoke(%kclvm_value_ref_t* %p, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 // api-spec:       kclvm_value_function_invoke
-// api-spec(c):    kclvm_value_ref_t* kclvm_value_function_invoke(kclvm_value_ref_t* p, kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs, kclvm_char_t* pkgpath);
-// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_value_function_invoke(%kclvm_value_ref_t* %p, %kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs, %kclvm_char_t* %pkgpath);
+// api-spec(c):    kclvm_value_ref_t* kclvm_value_function_invoke(kclvm_value_ref_t* p, kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs, kclvm_char_t* pkgpath, kclvm_value_ref_t* is_in_schema);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_value_function_invoke(%kclvm_value_ref_t* %p, %kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs, %kclvm_char_t* %pkgpath, %kclvm_value_ref_t* %is_in_schema);
 
 // api-spec:       kclvm_value_function_get_closure
 // api-spec(c):    kclvm_value_ref_t* kclvm_value_function_get_closure(kclvm_value_ref_t* p);

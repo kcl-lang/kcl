@@ -1669,9 +1669,17 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
             self.dict_insert(dict_value, name.as_str(), value, 0, -1);
         }
         let pkgpath = self.native_global_string_value(&self.current_pkgpath());
+        let is_in_schema = self.schema_stack.borrow().len() > 0;
         Ok(self.build_call(
             &ApiFunc::kclvm_value_function_invoke.name(),
-            &[func, self.global_ctx_ptr(), list_value, dict_value, pkgpath],
+            &[
+                func,
+                self.global_ctx_ptr(),
+                list_value,
+                dict_value,
+                pkgpath,
+                self.bool_value(is_in_schema),
+            ],
         ))
     }
 
