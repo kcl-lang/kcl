@@ -230,20 +230,6 @@ declare %kclvm_value_ref_t* @kclvm_datetime_ticks(%kclvm_context_t* %_ctx, %kclv
 
 declare %kclvm_value_ref_t* @kclvm_datetime_today(%kclvm_context_t* %_ctx, %kclvm_value_ref_t* %_args, %kclvm_value_ref_t* %_kwargs);
 
-declare void @kclvm_debug_hello();
-
-declare void @kclvm_debug_invoke_func(i8* %fn_ptr);
-
-declare void @kclvm_debug_print(i8* %cs);
-
-declare void @kclvm_debug_print_str_list(i32 %len, i8** %ss);
-
-declare void @kclvm_debug_print_type(%kclvm_type_t* %p);
-
-declare void @kclvm_debug_print_value(%kclvm_value_ref_t* %p);
-
-declare void @kclvm_debug_print_value_json_string(%kclvm_value_ref_t* %p);
-
 declare void @kclvm_default_collection_insert_int_pointer(%kclvm_value_ref_t* %p, %kclvm_char_t* %key, i64* %ptr);
 
 declare void @kclvm_default_collection_insert_value(%kclvm_value_ref_t* %p, %kclvm_char_t* %key, %kclvm_value_ref_t* %value);
@@ -436,7 +422,7 @@ declare %kclvm_value_ref_t* @kclvm_schema_get_value(%kclvm_value_ref_t* %p, %kcl
 
 declare %kclvm_value_ref_t* @kclvm_schema_instances(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
-declare %kclvm_value_ref_t* @kclvm_schema_optional_check(%kclvm_value_ref_t* %p, %kclvm_value_ref_t* %v, %kclvm_char_t* %schema_name, %kclvm_value_ref_t* %config_meta);
+declare %kclvm_value_ref_t* @kclvm_schema_optional_check(%kclvm_value_ref_t* %p);
 
 declare void @kclvm_schema_value_check(%kclvm_value_ref_t* %schema_value, %kclvm_value_ref_t* %schema_config, %kclvm_value_ref_t* %_config_meta, %kclvm_char_t* %schema_name, %kclvm_value_ref_t* %index_sign_value, %kclvm_char_t* %_key_name, %kclvm_char_t* %key_type, %kclvm_char_t* %_value_type, %kclvm_bool_t %_any_other, %kclvm_bool_t %is_relaxed);
 
@@ -670,7 +656,7 @@ declare void @kclvm_value_remove_item(%kclvm_value_ref_t* %a, %kclvm_value_ref_t
 
 declare %kclvm_value_ref_t* @kclvm_value_schema_function(i64* %fn_ptr, i64* %check_fn_ptr, %kclvm_char_t* %tpe);
 
-declare %kclvm_value_ref_t* @kclvm_value_schema_with_config(%kclvm_value_ref_t* %schema_dict, %kclvm_value_ref_t* %config, %kclvm_char_t* %name, %kclvm_char_t* %pkgpath, %kclvm_value_ref_t* %is_sub_schema, %kclvm_value_ref_t* %record_instance, %kclvm_value_ref_t* %instance_pkgpath);
+declare %kclvm_value_ref_t* @kclvm_value_schema_with_config(%kclvm_value_ref_t* %schema_dict, %kclvm_value_ref_t* %config, %kclvm_value_ref_t* %config_meta, %kclvm_char_t* %name, %kclvm_char_t* %pkgpath, %kclvm_value_ref_t* %is_sub_schema, %kclvm_value_ref_t* %record_instance, %kclvm_value_ref_t* %instance_pkgpath, %kclvm_value_ref_t* %optional_mapping);
 
 declare %kclvm_value_ref_t* @kclvm_value_slice(%kclvm_value_ref_t* %x, %kclvm_value_ref_t* %a, %kclvm_value_ref_t* %b, %kclvm_value_ref_t* %step);
 

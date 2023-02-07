@@ -261,15 +261,18 @@ pub extern "C" fn kclvm_value_Schema() -> *mut kclvm_value_ref_t {
 pub extern "C" fn kclvm_value_schema_with_config(
     schema_dict: *const kclvm_value_ref_t,
     config: *const kclvm_value_ref_t,
+    config_meta: *const kclvm_value_ref_t,
     name: *const kclvm_char_t,
     pkgpath: *const kclvm_char_t,
     is_sub_schema: *const kclvm_value_ref_t,
     record_instance: *const kclvm_value_ref_t,
     instance_pkgpath: *const kclvm_value_ref_t,
+    optional_mapping: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
     let schema_dict = ptr_as_ref(schema_dict);
     // Config dict
     let config = ptr_as_ref(config);
+    let config_meta = ptr_as_ref(config_meta);
     let config_keys: Vec<String> = config
         .as_dict_ref()
         .values
@@ -285,7 +288,9 @@ pub extern "C" fn kclvm_value_schema_with_config(
     let record_instance = ptr_as_ref(record_instance);
     let instance_pkgpath = ptr_as_ref(instance_pkgpath);
     let instance_pkgpath = instance_pkgpath.as_str();
-    let schema = schema_dict.dict_to_schema(name, pkgpath, &config_keys);
+    let optional_mapping = ptr_as_ref(optional_mapping);
+    let schema =
+        schema_dict.dict_to_schema(name, pkgpath, &config_keys, config_meta, optional_mapping);
     // Runtime context
     let ctx = Context::current_context();
     if record_instance.is_truthy()
@@ -2030,7 +2035,13 @@ pub extern "C" fn kclvm_schema_instances(
                     let names: Vec<&str> = runtime_type.rsplit('.').collect();
                     let name = names[0];
                     let pkgpath = names[1];
-                    let v = v.dict_to_schema(name, pkgpath, &[]);
+                    let v = v.dict_to_schema(
+                        name,
+                        pkgpath,
+                        &[],
+                        &ValueRef::dict(None),
+                        &ValueRef::dict(None),
+                    );
                     list.list_append(&v);
                 }
             }
@@ -2135,21 +2146,13 @@ pub extern "C" fn kclvm_schema_do_check_with_index_sign_attr(
 #[runtime_fn]
 pub extern "C" fn kclvm_schema_optional_check(
     p: *const kclvm_value_ref_t,
-    v: *const kclvm_value_ref_t,
-    schema_name: *const kclvm_char_t,
-    config_meta: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let p = ptr_as_ref(p);
-    let v = ptr_as_ref(v);
-    let schema_name = c2str(schema_name);
-    let config_meta = ptr_as_ref(config_meta);
 
     let ctx = Context::current_context_mut();
-    if ctx.cfg.disable_schema_check {
-        return kclvm_value_None();
+    if !ctx.cfg.disable_schema_check {
+        p.schema_check_attr_optional(true);
     }
-
-    p.schema_check_attr_optional(v, schema_name, config_meta);
     kclvm_value_None()
 }
 

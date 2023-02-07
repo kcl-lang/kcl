@@ -213,7 +213,14 @@ impl ValueRef {
         }
         if union_schema {
             let result = self.clone();
-            let schema = result.dict_to_schema(name.as_str(), pkgpath.as_str(), &common_keys);
+            let optional_mapping = self.schema_optional_mapping();
+            let schema = result.dict_to_schema(
+                name.as_str(),
+                pkgpath.as_str(),
+                &common_keys,
+                &x.schema_config_meta(),
+                &optional_mapping,
+            );
             if should_config_resolve {
                 *self = resolve_schema(&schema, &common_keys);
             } else {

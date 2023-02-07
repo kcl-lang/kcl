@@ -10,6 +10,7 @@ COVER_REPORT_FILE_PATH:=$(PWD)/target/llvm-cov/html/index.html
 # Generate runtime libraries when the runtime code is changed.
 gen-runtime-api:
 	make -C ./runtime gen-api-spec
+	make fmt
 
 # Install the wasm target
 install-rustc-wasm:

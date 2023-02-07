@@ -666,15 +666,6 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
                 ],
             );
         }
-        self.build_void_call(
-            &ApiFunc::kclvm_schema_optional_check.name(),
-            &[
-                schema_value,
-                attr_optional_mapping,
-                schema_name_native_str,
-                schema_config_meta,
-            ],
-        );
         {
             let index_sign_key_name = if let Some(index_signature) = &schema_stmt.index_signature {
                 if let Some(key_name) = &index_signature.node.key_name {
@@ -735,11 +726,13 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
             &[
                 schema_value,
                 schema_config,
+                schema_config_meta,
                 schema_name_native_str,
                 schema_pkgpath_native_str,
                 is_sub_schema,
                 record_instance,
                 instance_pkgpath,
+                attr_optional_mapping,
             ],
         );
         // Schema constructor function returns a schema
@@ -1933,6 +1926,12 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
                 pkgpath,
             ],
         );
+        // Check the required attributes only when the values of all attributes
+        // in the final schema are solved.
+        let is_in_schema = self.schema_stack.borrow().len() > 0;
+        if !is_in_schema {
+            self.build_void_call(&ApiFunc::kclvm_schema_optional_check.name(), &[schema]);
+        }
         utils::update_ctx_filename(self, &schema_expr.config);
         Ok(schema)
     }

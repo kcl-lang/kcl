@@ -1,0 +1,10 @@
+x0:
+  name:
+    firstName: Bob
+    lastName: John
+  age: 1
+x1:
+  name:
+    firstName: Alice
+    lastName: John
+  age: 10

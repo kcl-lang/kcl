@@ -53,8 +53,8 @@ impl KclvmService {
     /// use kclvm_capi::model::gpyrpc::*;
     /// let serv = &KclvmService { plugin_agent: 0 };
     /// let args = &ExecProgram_Args {
-    ///     work_dir: "./src/testdata".to_string(),
-    ///     k_filename_list: vec!["./src/testdata".to_string()],
+    ///     work_dir: ".".to_string(),
+    ///     k_filename_list: vec!["./src/testdata/test.k".to_string()],
     ///     ..Default::default()
     /// };
     /// let exec_result = serv.exec_program(args).unwrap();

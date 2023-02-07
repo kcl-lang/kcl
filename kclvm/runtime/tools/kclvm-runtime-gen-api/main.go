@@ -325,7 +325,7 @@ impl std::fmt::Display for ApiType {
 impl ApiType {
     #[allow(dead_code)]
     pub fn name(&self) -> String {
-        return format!("{:?}", self);
+        format!("{:?}", self)
     }
 }
 
@@ -346,7 +346,7 @@ impl std::fmt::Display for ApiFunc {
 impl ApiFunc {
     #[allow(dead_code)]
     pub fn name(&self) -> String {
-        return format!("{:?}", self);
+        format!("{:?}", self)
     }
 }
 `

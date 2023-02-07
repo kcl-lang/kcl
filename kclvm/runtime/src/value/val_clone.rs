@@ -83,6 +83,8 @@ impl ValueRef {
                         pkgpath: v.pkgpath.clone(),
                         config: Box::new(dict.as_dict_ref().clone()),
                         config_keys: v.config_keys.clone(),
+                        config_meta: v.config_meta.clone(),
+                        optional_mapping: v.optional_mapping.clone(),
                     })))),
                 };
             }
