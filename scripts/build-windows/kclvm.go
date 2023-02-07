@@ -19,9 +19,11 @@ func main() {
 	os.Setenv("PYTHONPATH", filepath.Join(kclvm_install_dir, "lib", "site-packages"))
 
 	cmd := exec.Command("python3", os.Args[1:]...)
+	cmd.Env = os.Environ()
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
-	if err := cmd.Run(); err != nil {
+	cmd.Stdin = os.Stdin
+	if err := cmd.Start(); err != nil {
 		os.Exit(1)
 	}
 }

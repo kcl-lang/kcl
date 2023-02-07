@@ -53,5 +53,6 @@ pub fn lld_main(args: &[CString]) -> bool {
         LldELFMain(command_line.as_ptr(), command_line.len()) == 0
     }
 
+    #[cfg(target_os = "windows")]
     true
 }

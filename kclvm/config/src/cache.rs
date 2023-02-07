@@ -86,7 +86,7 @@ where
 
 #[inline]
 fn get_cache_dir(root: &str, cache_dir: Option<&str>) -> String {
-    let cache_dir = cache_dir.or(Some(DEFAULT_CACHE_DIR)).unwrap();
+    let cache_dir = cache_dir.unwrap_or(DEFAULT_CACHE_DIR);
     Path::new(root)
         .join(cache_dir)
         .join(format!("{}-{}", version::VERSION, version::CHECK_SUM))
@@ -97,7 +97,7 @@ fn get_cache_dir(root: &str, cache_dir: Option<&str>) -> String {
 #[inline]
 #[allow(dead_code)]
 fn get_cache_filename(root: &str, target: &str, pkgpath: &str, cache_dir: Option<&str>) -> String {
-    let cache_dir = cache_dir.or(Some(DEFAULT_CACHE_DIR)).unwrap();
+    let cache_dir = cache_dir.unwrap_or(DEFAULT_CACHE_DIR);
     Path::new(root)
         .join(cache_dir)
         .join(format!("{}-{}", version::VERSION, version::CHECK_SUM))
@@ -109,7 +109,7 @@ fn get_cache_filename(root: &str, target: &str, pkgpath: &str, cache_dir: Option
 
 #[inline]
 fn get_cache_info_filename(root: &str, target: &str, cache_dir: Option<&str>) -> String {
-    let cache_dir = cache_dir.or(Some(DEFAULT_CACHE_DIR)).unwrap();
+    let cache_dir = cache_dir.unwrap_or(DEFAULT_CACHE_DIR);
     Path::new(root)
         .join(cache_dir)
         .join(format!("{}-{}", version::VERSION, version::CHECK_SUM))

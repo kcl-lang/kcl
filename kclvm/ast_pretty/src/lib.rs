@@ -200,6 +200,26 @@ impl<'p> Printer<'p> {
         }
     }
 
+    /// Convert the string format between unix and windows formats. 
+    /// For now, only newline conversion is required.
+    pub fn format(&mut self) -> &mut Self {
+         self.out = self.convert_newlines();
+         self
+         // TODO: Additional conversions can be added in this method if you encounter them in the future.
+    }
+
+    #[cfg(not(target_os = "windows"))] 
+    /// convert '\r\n' -> '\n'
+    pub fn convert_newlines(&self) -> String {
+        self.out.replace("\r\n", "\n")
+    }
+
+    #[cfg(target_os = "windows")] 
+    /// convert '\n' -> '\r\n'
+    pub fn convert_newlines(&self) -> String {
+        self.out.replace("\n", "\r\n")
+    }
+
     /// Print ast comments.
     pub fn write_ast_comments<T>(&mut self, node: &ast::NodeRef<T>) {
         if !self.cfg.write_comments {
@@ -249,6 +269,7 @@ impl<'p> Printer<'p> {
 pub fn print_ast_module(module: &Module) -> String {
     let mut printer = Printer::default();
     printer.write_module(module);
+    printer.format();
     printer.out
 }
 
@@ -256,5 +277,6 @@ pub fn print_ast_module(module: &Module) -> String {
 pub fn print_ast_node(node: ASTNode) -> String {
     let mut printer = Printer::default();
     printer.write_node(node);
+    printer.format();
     printer.out
 }

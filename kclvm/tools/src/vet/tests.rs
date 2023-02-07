@@ -397,10 +397,11 @@ mod test_validater {
         }
     }
 
+    #[test]
     fn test_invalid_validate() {
         let prev_hook = std::panic::take_hook();
         // disable print panic info
-        std::panic::set_hook(Box::new(|_| {}));
+        // std::panic::set_hook(Box::new(|_| {}));
 
         for (i, file_suffix) in VALIDATED_FILE_TYPE.iter().enumerate() {
             for case in KCL_TEST_CASES {
@@ -451,7 +452,7 @@ mod test_validater {
 
                 let mut expect: PanicInfo = serde_json::from_str(&expected_err_msg).unwrap();
 
-                #[cfg(target_os = "windows")]
+                // #[cfg(target_os = "windows")]
                 expect.path_to_windows();
 
                 match result {

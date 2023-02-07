@@ -497,6 +497,7 @@ fn test_exec_file() {
     std::panic::set_hook(prev_hook);
 }
 
+#[test]
 fn test_custom_manifests_output() {
     exec_with_result_at(&custom_manifests_data_path());
 }
