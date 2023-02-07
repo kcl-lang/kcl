@@ -64,10 +64,6 @@ pub(crate) fn path_to_windows(panic_info: &mut PanicInfo) {
     panic_info.kcl_config_meta_file = panic_info.kcl_config_meta_file.replace("/", "\\");
 }
 
-#[cfg(not(target_os = "windows"))]
-pub(crate) fn path_to_windows(panic_info: &mut PanicInfo) {
-}
-
 mod test_expr_builder {
     use regex::Regex;
 
@@ -358,7 +354,10 @@ mod test_validater {
         vet::validator::{validate, ValidateOption},
     };
 
-    use super::{construct_full_path, LOADER_KIND, path_to_windows};
+    use super::{construct_full_path, LOADER_KIND};
+
+    #[cfg(target_os = "windows")]
+    use super::path_to_windows;
 
     const KCL_TEST_CASES: &[&str] = &["test.k", "simple.k", "list.k", "plain_value.k", "complex.k"];
     const VALIDATED_FILE_TYPE: &[&str] = &["json", "yaml"];
@@ -465,6 +464,7 @@ mod test_validater {
 
                 let mut expect: PanicInfo = serde_json::from_str(&expected_err_msg).unwrap();
 
+                #[cfg(target_os = "windows")]
                 path_to_windows(&mut expect);
 
                 match result {
