@@ -1,4 +1,5 @@
-a:
-  spec:
-    data: 1
-    id: 1
+app:
+  config:
+    spec:
+      id: 1
+      value: value

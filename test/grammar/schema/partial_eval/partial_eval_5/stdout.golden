@@ -7,3 +7,10 @@ config:
     - name: log-storage
       volumeSource:
         medium: Memory
+  workload:
+    spec:
+      template:
+        spec:
+          volumes:
+          - name: kubeconfig
+          - name: log-storage

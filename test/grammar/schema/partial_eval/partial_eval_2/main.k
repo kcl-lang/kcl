@@ -1,17 +1,15 @@
 schema Spec:
-    data: int
     id: int
+    value: str
 
-mixin AMixin:
-    spec: Spec {
+schema Config:
+    spec: Spec = Spec {
         id = 1
     }
 
-schema A:
-    mixin [AMixin]
+schema App:
+    config: Config
 
-    spec: Spec {
-        data = 1
-    }
-
-a = A()
+app = App {
+    config.spec.value = "value"
+}

@@ -3,13 +3,11 @@ schema Spec:
     value: str
 
 schema Config:
-    spec: Spec = Spec {
+    name?: str
+    spec: Spec {
         id = 1
     }
 
-schema App:
-    config: Config
-
-app = App {
-    config.spec.value = "value"
+config = Config {
+    spec.value = "value"
 }

@@ -1,5 +1,4 @@
-app:
-  config:
-    spec:
-      id: 1
-      value: value
+config:
+  spec:
+    id: 1
+    value: value

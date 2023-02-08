@@ -16,20 +16,4 @@ schema Config:
         ]
     }
 
-    workload: {str:} = {
-        spec = {
-            template = {
-                spec = {
-                    if config.volumes: volumes = [
-                        (lambda volume {
-                            {
-                                name = volume.name
-                            }
-                        })(v) for v in config.volumes if v.volumeSource
-                    ]
-                }
-            }
-        }
-    }
-
 config = Config {}
