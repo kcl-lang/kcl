@@ -17,42 +17,42 @@
 
 ## Introduction
 
-Kusion Configuration Language (KCL) is an open source constraint-based record and functional language. KCL improves the writing of a large number of complex configurations such as cloud native scenarios through mature programming language technology and practice, and is committed to building better modularity, scalability and stability around configuration, simpler logic writing, fast automation and good ecological extensionality.
+Kusion Configuration Language (KCL) is an open-source, constraint-based record and functional language. KCL improves the complexity of writing numerous complex configurations, such as cloud native scenarios, through its mature programming language technology and practice. It is dedicated to building better modularity, scalability, and stability around configurations, simpler logic writing, faster automation, and great ecological extensibility.
 
 ## What is it for?
 
 You can use KCL to
 
-+ [Generate low-level static configuration data](https://kcl-lang.io/docs/user_docs/guides/configuration) like JSON, YAML, etc or [integrate with existing data](https://kcl-lang.io/docs/user_docs/guides/data-integration).
++ [Generate low-level static configuration data](https://kcl-lang.io/docs/user_docs/guides/configuration) such as JSON, YAML, etc., or [integrate with existing data](https://kcl-lang.io/docs/user_docs/guides/data-integration).
 + Reduce boilerplate in configuration data with the [schema modeling](https://kcl-lang.io/docs/user_docs/guides/schema-definition).
 + Define schemas with [rule constraints for configuration data and validate](https://kcl-lang.io/docs/user_docs/guides/validation) them automatically.
 + Organize, simplify, unify and manage large configurations without side effects through [gradient automation schemes](https://kcl-lang.io/docs/user_docs/guides/automation).
-+ Manage large configurations scalably with [isolated configuration blocks](https://kcl-lang.io/docs/reference/lang/tour#config-operations).
-+ Used as a platform engineering programming language to deliver modern app with [Kusion Stack](https://kusionstack.io).
++ Manage large configurations in a scalable way with [isolated configuration blocks](https://kcl-lang.io/docs/reference/lang/tour#config-operations).
++ Used as a platform engineering programming language to deliver modern applications with [Kusion Stack](https://kusionstack.io).
 
 ## Features
 
-+ **Easy-to-use**: Originated from high-level languages ​​such as Python and Golang, incorporating functional language features with low side effects.
-+ **Well-designed**: Independent Spec-driven syntax, semantics, runtime and system modules design.
++ **Easy-to-use**: Originated from high-level languages ​​such as Python and Golang, incorporating functional language features with low side-effects.
++ **Well-designed**: Independent spec-driven syntax, semantics, runtime and system modules design.
 + **Quick modeling**: [Schema](https://kcl-lang.io/docs/reference/lang/tour#schema)-centric configuration types and modular abstraction.
 + **Rich capabilities**: Configuration with type, logic and policy based on [Config](https://kcl-lang.io/docs/reference/lang/tour#config-operations), [Schema](https://kcl-lang.io/docs/reference/lang/tour#schema), [Lambda](https://kcl-lang.io/docs/reference/lang/tour#function), [Rule](https://kcl-lang.io/docs/reference/lang/tour#rule).
-+ **Stability**: Configuration stability built on [static type system](https://kcl-lang.io/docs/reference/lang/tour/#type-system), [constraints](https://kcl-lang.io/docs/reference/lang/tour/#validation), and [rules](https://kcl-lang.io/docs/reference/lang/tour#rule).
-+ **Scalability**: High scalability through [automatic merge mechanism](https://kcl-lang.io/docs/reference/lang/tour/#-operators-1) of isolated config blocks.
-+ **Fast automation**: Gradient automation scheme of [CRUD APIs](https://kcl-lang.io/docs/reference/lang/tour/#kcl-cli-variable-override), [multilingual SDKs](https://kcl-lang.io/docs/reference/xlang-api/overview), [language plugin](https://github.com/KusionStack/kcl-plugin)
-+ **High performance**: High compile time and runtime performance using Rust & C and [LLVM](https://llvm.org/), and support compilation to native code and [WASM](https://webassembly.org/).
-+ **API affinity**: Native support API ecological specifications such as [OpenAPI](https://github.com/KusionStack/kcl-openapi), Kubernetes CRD, Kubernetes YAML spec.
-+ **Development friendly**: Friendly development experiences with rich [language tools](https://kcl-lang.io/docs/tools/cli/kcl/) (Format, Lint, Test, Vet, Doc, etc.) and [IDE plugins](https://github.com/KusionStack/vscode-kcl).
++ **Stability**: Configuration stability is achieved through a [static type system](https://kcl-lang.io/docs/reference/lang/tour/#type-system), [constraints](https://kcl-lang.io/docs/reference/lang/tour/#validation), and [rules](https://kcl-lang.io/docs/reference/lang/tour#rule).
++ **Scalability**: High scalability is assured with an [automatic merge mechanism](https://kcl-lang.io/docs/reference/lang/tour/#-operators-1) of isolated config blocks.
++ **Fast automation**: Gradient automation scheme of [CRUD APIs](https://kcl-lang.io/docs/reference/lang/tour/#kcl-cli-variable-override), [multilingual SDKs](https://kcl-lang.io/docs/reference/xlang-api/overview), and [language plugin](https://github.com/KusionStack/kcl-plugin)
++ **High performance**: High compile-time and runtime performance using Rust & C and [LLVM](https://llvm.org/), and support compilation to native code and [WASM](https://webassembly.org/).
++ **API affinity**: Native support for ecological API specifications such as [OpenAPI](https://github.com/KusionStack/kcl-openapi), Kubernetes CRD, Kubernetes YAML spec.
++ **Developer-friendly**: Friendly development experiences with rich [language tools](https://kcl-lang.io/docs/tools/cli/kcl/) (Format, Lint, Test, Vet, Doc, etc.) and [IDE plugins](https://github.com/KusionStack/vscode-kcl).
 + **Safety & maintainable**: Domain-oriented, no system-level functions such as native threads and IO, low noise and security risk, easy maintenance and governance.
-+ **Production-ready**: Widely used in production practice of platform engineering and automation at Ant Group.
++ **Production-ready**: Widely used in production practices of platform engineering and automation at Ant Group.
 
 ## How to choose?
 
 The simple answer:
 
-+ YAML is recommended if you need to write structured static K-V, or use Kubernetes' native tools
-+ HCL is recommended if you want to use programming language convenience to remove boilerplate with good human readability, or if you are already a Terraform user
-+ CUE is recommended if you want to use type system to improve stability and maintain scalable configurations
-+ KCL is recommended if you want types and modeling like a modern language, scalable configurations, in-house pure functions and rules, and production-ready performance and automation
++ YAML is recommended if you need to write structured static K-V or use Kubernetes' native tools.
++ HCL is recommended if you want to use programming language convenience to remove boilerplate with good human readability or if you are already a Terraform user.
++ CUE is recommended if you want to use a type system to improve stability and maintain scalable configurations.
++ KCL is recommended if you want types and modeling like a modern language, scalable configurations, in-house pure functions and rules, and production-ready performance and automation.
 
 A detailed feature and scenario comparison is [here](https://kcl-lang.io/docs/user_docs/getting-started/intro).
 
