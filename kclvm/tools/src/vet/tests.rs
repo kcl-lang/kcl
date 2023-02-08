@@ -341,9 +341,8 @@ mod test_expr_builder {
 mod test_validater {
     use std::{
         fs,
-        os::windows::prelude::OsStrExt,
         panic,
-        path::{Path, PathBuf},
+        path::Path,
     };
 
     use kclvm_runtime::PanicInfo;
