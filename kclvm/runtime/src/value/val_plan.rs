@@ -285,6 +285,8 @@ impl ValueRef {
                             attr_map: IndexMap::default(),
                         }),
                         config_keys: vec![],
+                        config_meta: v.config_meta.clone(),
+                        optional_mapping: v.optional_mapping.clone(),
                     })))),
                 };
                 for (key, val) in v.config.values.iter() {

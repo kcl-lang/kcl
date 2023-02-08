@@ -36,13 +36,22 @@ pub fn schema_config_meta(filename: &str, line: u64, column: u64) -> ValueRef {
 }
 
 impl ValueRef {
-    pub fn dict_to_schema(&self, name: &str, pkgpath: &str, config_keys: &[String]) -> Self {
+    pub fn dict_to_schema(
+        &self,
+        name: &str,
+        pkgpath: &str,
+        config_keys: &[String],
+        config_meta: &ValueRef,
+        optional_mapping: &ValueRef,
+    ) -> Self {
         if self.is_dict() {
             Self::from(Value::schema_value(Box::new(SchemaValue {
                 name: name.to_string(),
                 pkgpath: pkgpath.to_string(),
                 config: Box::new(self.as_dict_ref().clone()),
                 config_keys: config_keys.to_owned(),
+                config_meta: config_meta.clone(),
+                optional_mapping: optional_mapping.clone(),
             })))
         } else if self.is_schema() {
             self.clone()
@@ -61,19 +70,48 @@ impl ValueRef {
         }
     }
 
-    pub fn schema_check_attr_optional(
-        &self,
-        optional_mapping: &ValueRef,
-        schema_name: &str,
-        config_meta: &ValueRef,
-    ) {
-        let mut binding = self.rc.borrow_mut();
-        let attr_map = match &mut *binding {
-            Value::schema_value(schema) => &mut schema.config.values,
-            Value::dict_value(schema) => &mut schema.values,
+    /// Get the schema attribute optional mapping.
+    #[inline]
+    pub fn schema_name(&self) -> String {
+        if let Value::schema_value(schema) = &*self.rc.borrow() {
+            schema.name.clone()
+        } else {
+            "".to_string()
+        }
+    }
+
+    /// Get the schema name
+    #[inline]
+    pub fn schema_optional_mapping(&self) -> ValueRef {
+        if let Value::schema_value(schema) = &*self.rc.borrow() {
+            schema.optional_mapping.clone()
+        } else {
+            ValueRef::dict(None)
+        }
+    }
+
+    /// Get the schema config meta information including filename, line and column.
+    #[inline]
+    pub fn schema_config_meta(&self) -> ValueRef {
+        if let Value::schema_value(schema) = &*self.rc.borrow() {
+            schema.config_meta.clone()
+        } else {
+            ValueRef::dict(None)
+        }
+    }
+
+    /// Check schema optional attributes.
+    pub fn schema_check_attr_optional(&self, recursive: bool) {
+        let binding = self.rc.borrow();
+        let attr_map = match &*binding {
+            Value::schema_value(schema) => &schema.config.values,
+            Value::dict_value(schema) => &schema.values,
             _ => panic!("Invalid schema/dict value, got {}", self.type_str()),
         };
-        match &mut *optional_mapping.rc.borrow_mut() {
+        let optional_mapping = self.schema_optional_mapping();
+        let optional_mapping_ref = optional_mapping.rc.borrow();
+        let config_meta = self.schema_config_meta();
+        match &*optional_mapping_ref {
             Value::dict_value(optional_mapping) => {
                 for (attr, is_optional) in &optional_mapping.values {
                     let is_required = !is_optional.as_bool();
@@ -91,8 +129,12 @@ impl ValueRef {
                         }
                         panic!(
                             "attribute '{}' of {} is required and can't be None or Undefined",
-                            attr, schema_name
+                            attr,
+                            self.schema_name()
                         );
+                    }
+                    if recursive && value.is_schema() {
+                        value.schema_check_attr_optional(recursive);
                     }
                 }
             }
@@ -184,7 +226,13 @@ mod test_value_schema {
 
     fn get_test_schema_value() -> ValueRef {
         let config = ValueRef::dict(None);
-        let mut schema = ValueRef::dict(None).dict_to_schema(TEST_SCHEMA_NAME, MAIN_PKG_PATH, &[]);
+        let mut schema = ValueRef::dict(None).dict_to_schema(
+            TEST_SCHEMA_NAME,
+            MAIN_PKG_PATH,
+            &[],
+            &ValueRef::dict(None),
+            &ValueRef::dict(None),
+        );
         schema.schema_default_settings(
             &config,
             &schema_runtime_type(TEST_SCHEMA_NAME, MAIN_PKG_PATH),
@@ -197,9 +245,21 @@ mod test_value_schema {
         let dict = ValueRef::dict(None);
         let dict = dict.schema_to_dict();
         assert!(dict.is_dict());
-        let schema = dict.dict_to_schema(TEST_SCHEMA_NAME, MAIN_PKG_PATH, &[]);
+        let schema = dict.dict_to_schema(
+            TEST_SCHEMA_NAME,
+            MAIN_PKG_PATH,
+            &[],
+            &ValueRef::dict(None),
+            &ValueRef::dict(None),
+        );
         assert!(schema.is_schema());
-        let schema = schema.dict_to_schema(TEST_SCHEMA_NAME, MAIN_PKG_PATH, &[]);
+        let schema = schema.dict_to_schema(
+            TEST_SCHEMA_NAME,
+            MAIN_PKG_PATH,
+            &[],
+            &ValueRef::dict(None),
+            &ValueRef::dict(None),
+        );
         assert!(schema.is_schema());
         let dict = schema.schema_to_dict();
         assert!(dict.is_dict());
@@ -208,24 +268,33 @@ mod test_value_schema {
     #[test]
     fn test_schema_check_attr_optional() {
         let dict = ValueRef::dict_str(&[("key", "value")]);
-        let schema = dict.dict_to_schema(TEST_SCHEMA_NAME, MAIN_PKG_PATH, &[]);
         let config_meta = ValueRef::dict(None);
         let optional_mapping = ValueRef::dict_bool(&[("key", true)]);
-        schema.schema_check_attr_optional(&optional_mapping, TEST_SCHEMA_NAME, &config_meta);
-        let optional_mapping = ValueRef::dict_bool(&[("key", false)]);
-        schema.schema_check_attr_optional(&optional_mapping, TEST_SCHEMA_NAME, &config_meta);
-        let optional_mapping = ValueRef::dict_bool(&[("another_key", true)]);
-        schema.schema_check_attr_optional(&optional_mapping, TEST_SCHEMA_NAME, &config_meta);
+        let schema = dict.dict_to_schema(
+            TEST_SCHEMA_NAME,
+            MAIN_PKG_PATH,
+            &[],
+            &config_meta,
+            &optional_mapping,
+        );
+        schema.schema_check_attr_optional(true);
+        schema.schema_check_attr_optional(false);
     }
 
     #[test]
     fn test_schema_check_attr_optional_invalid() {
         let err = std::panic::catch_unwind(|| {
             let dict = ValueRef::dict_str(&[("key", "value")]);
-            let schema = dict.dict_to_schema(TEST_SCHEMA_NAME, MAIN_PKG_PATH, &[]);
             let config_meta = ValueRef::dict(None);
             let optional_mapping = ValueRef::dict_bool(&[("another_key", false)]);
-            schema.schema_check_attr_optional(&optional_mapping, TEST_SCHEMA_NAME, &config_meta);
+            let schema = dict.dict_to_schema(
+                TEST_SCHEMA_NAME,
+                MAIN_PKG_PATH,
+                &[],
+                &config_meta,
+                &optional_mapping,
+            );
+            schema.schema_check_attr_optional(true);
         });
         assert!(err.is_err())
     }

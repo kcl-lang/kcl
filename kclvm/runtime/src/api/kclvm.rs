@@ -252,6 +252,10 @@ pub struct SchemaValue {
     pub pkgpath: String,
     pub config: Box<DictValue>,
     pub config_keys: Vec<String>,
+    /// schema config meta information including filename, line and column.
+    pub config_meta: ValueRef,
+    /// This map stores which attributes of the schema are optional and which are required.
+    pub optional_mapping: ValueRef,
 }
 
 #[derive(PartialEq, Eq, Clone, Default, Debug)]

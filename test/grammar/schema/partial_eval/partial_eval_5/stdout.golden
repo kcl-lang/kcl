@@ -1,0 +1,16 @@
+config:
+  config:
+    volumes:
+    - name: kubeconfig
+      volumeSource:
+        medium: ''
+    - name: log-storage
+      volumeSource:
+        medium: Memory
+  workload:
+    spec:
+      template:
+        spec:
+          volumes:
+          - name: kubeconfig
+          - name: log-storage

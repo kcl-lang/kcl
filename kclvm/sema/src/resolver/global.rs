@@ -573,7 +573,12 @@ impl<'ctx> Resolver<'ctx> {
                     let ty = self.parse_ty_str_with_scope(&name, pos.clone());
                     let is_optional = true;
                     let has_default = true;
-                    (name, ty, is_optional, has_default)
+                    (
+                        unification_stmt.target.node.get_name(),
+                        ty,
+                        is_optional,
+                        has_default,
+                    )
                 }
                 ast::Stmt::SchemaAttr(schema_attr) => {
                     let name = schema_attr.name.node.clone();

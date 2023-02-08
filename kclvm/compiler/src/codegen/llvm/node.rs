@@ -666,15 +666,6 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
                 ],
             );
         }
-        self.build_void_call(
-            &ApiFunc::kclvm_schema_optional_check.name(),
-            &[
-                schema_value,
-                attr_optional_mapping,
-                schema_name_native_str,
-                schema_config_meta,
-            ],
-        );
         {
             let index_sign_key_name = if let Some(index_signature) = &schema_stmt.index_signature {
                 if let Some(key_name) = &index_signature.node.key_name {
@@ -735,11 +726,13 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
             &[
                 schema_value,
                 schema_config,
+                schema_config_meta,
                 schema_name_native_str,
                 schema_pkgpath_native_str,
                 is_sub_schema,
                 record_instance,
                 instance_pkgpath,
+                attr_optional_mapping,
             ],
         );
         // Schema constructor function returns a schema
@@ -1676,9 +1669,17 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
             self.dict_insert(dict_value, name.as_str(), value, 0, -1);
         }
         let pkgpath = self.native_global_string_value(&self.current_pkgpath());
+        let is_in_schema = self.schema_stack.borrow().len() > 0;
         Ok(self.build_call(
             &ApiFunc::kclvm_value_function_invoke.name(),
-            &[func, self.global_ctx_ptr(), list_value, dict_value, pkgpath],
+            &[
+                func,
+                self.global_ctx_ptr(),
+                list_value,
+                dict_value,
+                pkgpath,
+                self.bool_value(is_in_schema),
+            ],
         ))
     }
 
@@ -1933,6 +1934,12 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
                 pkgpath,
             ],
         );
+        // Check the required attributes only when the values of all attributes
+        // in the final schema are solved.
+        let is_in_schema = self.schema_stack.borrow().len() > 0;
+        if !is_in_schema {
+            self.build_void_call(&ApiFunc::kclvm_schema_optional_check.name(), &[schema]);
+        }
         utils::update_ctx_filename(self, &schema_expr.config);
         Ok(schema)
     }
@@ -2008,19 +2015,19 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         self.builder.build_store(var, closure_map);
         self.add_variable(value::LAMBDA_CLOSURE, var);
         if is_in_schema {
-            let string_ptr_value = self
-                .native_global_string(value::SCHEMA_SELF_NAME, "")
-                .into();
-            let schema_value = self.build_call(
-                &ApiFunc::kclvm_dict_get_value.name(),
-                &[closure_map, string_ptr_value],
-            );
-            let value_ptr_type = self.value_ptr_type();
-            let var = self
-                .builder
-                .build_alloca(value_ptr_type, value::SCHEMA_SELF_NAME);
-            self.builder.build_store(var, schema_value);
-            self.add_variable(value::SCHEMA_SELF_NAME, var);
+            for shcmea_closure_name in value::SCHEMA_VARIABLE_LIST {
+                let string_ptr_value = self.native_global_string(shcmea_closure_name, "").into();
+                let schema_value = self.build_call(
+                    &ApiFunc::kclvm_dict_get_value.name(),
+                    &[closure_map, string_ptr_value],
+                );
+                let value_ptr_type = self.value_ptr_type();
+                let var = self
+                    .builder
+                    .build_alloca(value_ptr_type, shcmea_closure_name);
+                self.builder.build_store(var, schema_value);
+                self.add_variable(shcmea_closure_name, var);
+            }
         }
         self.walk_arguments(&lambda_expr.args, args, kwargs);
         let val = self

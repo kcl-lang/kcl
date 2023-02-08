@@ -1,6 +1,5 @@
 // Copyright 2021 The KCL Authors. All rights reserved.
 
-use inkwell::values::BasicValueEnum;
 use kclvm_ast::ast;
 use kclvm_runtime::ApiFunc;
 use std::str;
@@ -58,14 +57,5 @@ pub fn update_ctx_current_line(gen: &LLVMCodeGenContext) {
             gen.native_int_value(*current_line as i32),
             gen.native_int_value(0),
         ],
-    );
-}
-
-/// Runtime debug print value
-#[allow(dead_code)]
-pub fn runtime_print_value<'ctx>(gen: &'ctx LLVMCodeGenContext, value: BasicValueEnum<'ctx>) {
-    gen.build_void_call(
-        ApiFunc::kclvm_debug_print_value_json_string.name().as_str(),
-        &[value],
     );
 }
