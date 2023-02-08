@@ -10,6 +10,17 @@ pub const SCHEMA_CAL_MAP: &str = "$schema_cal_map";
 pub const SCHEMA_ARGS: &str = "$schema_args";
 pub const SCHEMA_KWARGS: &str = "$schema_kwargs";
 pub const SCHEMA_RUNTIME_TYPE: &str = "$schema_runtime_type";
+pub const SCHEMA_VARIABLE_LIST: &[&str] = &[
+    BACKTRACK_CACHE,
+    BACKTRACK_LEVEL_MAP,
+    SCHEMA_CAL_MAP,
+    SCHEMA_CONFIG_NAME,
+    SCHEMA_CONFIG_META_NAME,
+    SCHEMA_SELF_NAME,
+    SCHEMA_ARGS,
+    SCHEMA_KWARGS,
+    SCHEMA_RUNTIME_TYPE,
+];
 pub const BACKTRACK_LEVEL_MAP: &str = "$backtrack_level_map";
 pub const BACKTRACK_CACHE: &str = "$backtrack_cache";
 

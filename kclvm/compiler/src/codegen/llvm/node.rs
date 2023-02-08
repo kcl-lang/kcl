@@ -2015,19 +2015,19 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         self.builder.build_store(var, closure_map);
         self.add_variable(value::LAMBDA_CLOSURE, var);
         if is_in_schema {
-            let string_ptr_value = self
-                .native_global_string(value::SCHEMA_SELF_NAME, "")
-                .into();
-            let schema_value = self.build_call(
-                &ApiFunc::kclvm_dict_get_value.name(),
-                &[closure_map, string_ptr_value],
-            );
-            let value_ptr_type = self.value_ptr_type();
-            let var = self
-                .builder
-                .build_alloca(value_ptr_type, value::SCHEMA_SELF_NAME);
-            self.builder.build_store(var, schema_value);
-            self.add_variable(value::SCHEMA_SELF_NAME, var);
+            for shcmea_closure_name in value::SCHEMA_VARIABLE_LIST {
+                let string_ptr_value = self.native_global_string(shcmea_closure_name, "").into();
+                let schema_value = self.build_call(
+                    &ApiFunc::kclvm_dict_get_value.name(),
+                    &[closure_map, string_ptr_value],
+                );
+                let value_ptr_type = self.value_ptr_type();
+                let var = self
+                    .builder
+                    .build_alloca(value_ptr_type, shcmea_closure_name);
+                self.builder.build_store(var, schema_value);
+                self.add_variable(shcmea_closure_name, var);
+            }
         }
         self.walk_arguments(&lambda_expr.args, args, kwargs);
         let val = self

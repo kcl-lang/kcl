@@ -1819,10 +1819,12 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             }
         }
         if is_in_schema {
-            let schema_value = self
-                .get_variable(value::SCHEMA_SELF_NAME)
-                .expect(kcl_error::INTERNAL_ERROR_MSG);
-            self.dict_insert_override_item(dict_value, value::SCHEMA_SELF_NAME, schema_value);
+            for shcmea_closure_name in value::SCHEMA_VARIABLE_LIST {
+                let value = self
+                    .get_variable(shcmea_closure_name)
+                    .expect(kcl_error::INTERNAL_ERROR_MSG);
+                self.dict_insert_override_item(dict_value, shcmea_closure_name, value);
+            }
         }
         dict_value
     }
