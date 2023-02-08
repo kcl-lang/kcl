@@ -339,11 +339,7 @@ mod test_expr_builder {
 }
 
 mod test_validater {
-    use std::{
-        fs,
-        panic,
-        path::Path,
-    };
+    use std::{fs, panic, path::Path};
 
     use kclvm_runtime::PanicInfo;
     use regex::Regex;
