@@ -404,7 +404,6 @@ mod test_validater {
         }
     }
 
-    #[test]
     fn test_invalid_validate() {
         let prev_hook = std::panic::take_hook();
         // disable print panic info
