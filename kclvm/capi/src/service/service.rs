@@ -52,7 +52,7 @@ impl KclvmService {
     /// use kclvm_capi::service::service::KclvmService;
     /// use kclvm_capi::model::gpyrpc::*;
     /// use std::path::Path;
-    /// 
+    ///
     /// let serv = &KclvmService { plugin_agent: 0 };
     /// let args = &ExecProgram_Args {
     ///     work_dir: Path::new(".").join("src").join("testdata").canonicalize().unwrap().display().to_string(),
@@ -62,7 +62,7 @@ impl KclvmService {
     /// let exec_result = serv.exec_program(args).unwrap();
     /// println!("{}",exec_result.json_result);
     /// ```
-    /// 
+    ///
     pub fn exec_program(&self, args: &ExecProgram_Args) -> Result<ExecProgram_Result, String> {
         // transform args to json
         let args_json = print_to_string_with_options(
