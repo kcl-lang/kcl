@@ -30,7 +30,7 @@ jobs:
 
       - name: Rust unit test
         working-directory: ./kclvm
-        run: cargo test -p kclvm-*
+        run: set PATH=../scripts/build-windows/_output/kclvm-windows/bin;%PATH% && cargo test -p kclvm-*
 
       - name: Rust runtime test
         working-directory: ./kclvm/tests/test_units
