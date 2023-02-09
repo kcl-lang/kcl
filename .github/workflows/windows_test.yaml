@@ -30,16 +30,19 @@ jobs:
 
       - name: Set PATH variable
         working-directory: ./kclvm
-        env:
-          PATH: ${{ env.PATH }}:/../scripts/build-windows/_output/kclvm-windows/bin
+
 
       - name: Rust unit test
         working-directory: ./kclvm
         run: cargo test -p kclvm-*
+        env:
+          PATH: ${{ env.PATH }}:/../scripts/build-windows/_output/kclvm-windows/bin
 
       - name: Rust runtime test
         working-directory: ./kclvm/tests/test_units
         run: kclvm -m pytest -vv
+        env:
+          PATH: ${{ env.PATH }}:/../../../scripts/build-windows/_output/kclvm-windows/bin
       
       - uses: actions/upload-artifact@v3
         with:
