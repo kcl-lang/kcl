@@ -578,7 +578,15 @@ fn test_parse_token_stream() {
 #[cfg(target_os = "windows")]
 #[test]
 fn test_parse_token_stream_on_win() {
-    let src = fs::read_to_string(".\\testdata\\win\\hello.k").unwrap();
+    use std::{fs, path::Path};
+    let src = fs::read_to_string(
+        Path::new(".")
+            .join("testdata")
+            .join("hello_win.k")
+            .display()
+            .to_string(),
+    )
+    .unwrap();
     assert_eq!(
         src,
         "\r\nschema Person:\r\n    name: str = \"kcl\"\r\n\r\nx0 = Person {}\r\n"

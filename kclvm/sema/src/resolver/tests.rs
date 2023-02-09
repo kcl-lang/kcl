@@ -8,6 +8,7 @@ use crate::ty::Type;
 use kclvm_ast::ast;
 use kclvm_error::*;
 use kclvm_parser::{load_program, parse_program};
+use std::path::Path;
 use std::rc::Rc;
 
 #[test]
@@ -237,7 +238,10 @@ fn test_lint() {
     resolver.check_and_lint(kclvm_ast::MAIN_PKG);
 
     let root = &program.root.clone();
-    let filename = root.clone() + "/lint.k";
+    let filename = Path::new(&root.clone())
+        .join("lint.k")
+        .display()
+        .to_string();
     let mut handler = Handler::default();
     handler.add_warning(
         WarningKind::ImportPositionWarning,

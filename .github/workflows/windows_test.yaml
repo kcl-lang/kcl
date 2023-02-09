@@ -28,6 +28,19 @@ jobs:
 
       - run: .\build_win.bat
 
+      - name: Set PATH variable
+        working-directory: ./kclvm
+        env:
+          PATH: ${{ env.PATH }}:/../scripts/build-windows/_output/kclvm-windows/bin
+
+      - name: Rust unit test
+        working-directory: ./kclvm
+        run: cargo test -p kclvm-*
+
+      - name: Rust runtime test
+        working-directory: ./kclvm/tests/test_units
+        run: kclvm -m pytest -vv
+      
       - uses: actions/upload-artifact@v3
         with:
           name: kclvm-windows

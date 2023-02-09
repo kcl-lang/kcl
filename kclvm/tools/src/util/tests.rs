@@ -45,6 +45,8 @@ fn construct_full_path(path: &str) -> Result<String> {
 
 mod test_loader {
     mod test_data_loader {
+        use regex::Regex;
+
         use crate::util::{
             loader::{DataLoader, Loader, LoaderKind},
             tests::{
@@ -70,8 +72,14 @@ mod test_loader {
                     LoaderKind::JSON,
                     &format!("{}{}", test_case, FILE_EXTENSIONS[0]),
                 );
+
+                #[cfg(not(target_os = "windows"))]
+                let got_data = json_loader.get_data();
+                #[cfg(target_os = "windows")]
+                let got_data = json_loader.get_data().replace("\r\n", "\n");
+
                 assert_eq!(
-                    json_loader.get_data(),
+                    got_data,
                     r#"{
     "name": "John Doe",
     "age": 43,
@@ -104,8 +112,14 @@ mod test_loader {
                     LoaderKind::YAML,
                     &format!("{}{}", test_case, FILE_EXTENSIONS[1]),
                 );
+
+                #[cfg(not(target_os = "windows"))]
+                let got_data = yaml_loader.get_data();
+                #[cfg(target_os = "windows")]
+                let got_data = yaml_loader.get_data().replace("\r\n", "\n");
+
                 assert_eq!(
-                    yaml_loader.get_data(),
+                    got_data,
                     r#"languages:
   - Ruby
   - Perl
@@ -191,7 +205,11 @@ websites:
                     panic!("unreachable")
                 }
                 Err(err) => {
-                    assert_eq!(format!("{:?}", err), "Failed to Load 'invalid file path'\n\nCaused by:\n    No such file or directory (os error 2)");
+                    assert!(
+                        Regex::new(r"^Failed to Load 'invalid file path'\n\nCaused by:.*")
+                            .unwrap()
+                            .is_match(&format!("{:?}", err))
+                    );
                 }
             };
         }
@@ -207,7 +225,12 @@ websites:
                     panic!("unreachable")
                 }
                 Err(err) => {
-                    assert_eq!(format!("{:?}", err), "Failed to String 'languages:\n  - Ruby\n  - Perl\n  - Python \nwebsites:\n  YAML: yaml.org \n  Ruby: ruby-lang.org \n  Python: python.org \n  Perl: use.perl.org' to Json\n\nCaused by:\n    expected value at line 1 column 1");
+                    #[cfg(not(target_os = "windows"))]
+                    let got_err = format!("{:?}", err);
+                    #[cfg(target_os = "windows")]
+                    let got_err = format!("{:?}", err).replace("\r\n", "\n");
+
+                    assert_eq!(got_err, "Failed to String 'languages:\n  - Ruby\n  - Perl\n  - Python \nwebsites:\n  YAML: yaml.org \n  Ruby: ruby-lang.org \n  Python: python.org \n  Perl: use.perl.org' to Json\n\nCaused by:\n    expected value at line 1 column 1");
                 }
             }
 
@@ -220,7 +243,12 @@ websites:
                     panic!("unreachable")
                 }
                 Err(err) => {
-                    assert_eq!(format!("{:?}", err), "Failed to String '\"name\": \"John Doe\",\ninvalid\n' to Yaml\n\nCaused by:\n    did not find expected key at line 1 column 19, while parsing a block mapping");
+                    #[cfg(not(target_os = "windows"))]
+                    let got_err = format!("{:?}", err);
+                    #[cfg(target_os = "windows")]
+                    let got_err = format!("{:?}", err).replace("\r\n", "\n");
+
+                    assert_eq!(got_err, "Failed to String '\"name\": \"John Doe\",\ninvalid\n' to Yaml\n\nCaused by:\n    did not find expected key at line 1 column 19, while parsing a block mapping");
                 }
             }
         }

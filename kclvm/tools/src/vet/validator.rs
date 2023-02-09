@@ -109,11 +109,11 @@ const TMP_FILE: &str = "validationTempKCLCode.k";
 /// ```
 ///
 /// 3. Second, you can call this method as follows to validate the content of the json file with the kcl file.
-/// ```rust
-/// # use kclvm_tools::vet::validator::validate;
-/// # use std::path::PathBuf;
-/// # use kclvm_tools::util::loader::LoaderKind;
-///
+/// ```
+/// use kclvm_tools::vet::validator::validate;
+/// use std::path::PathBuf;
+/// use kclvm_tools::util::loader::LoaderKind;
+/// use kclvm_tools::vet::validator::ValidateOption;
 /// // First get the file path of the file to be verified.
 /// let mut validated_file_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 /// validated_file_path.push("src/vet/test_datas/validate_cases/test.json");
@@ -129,17 +129,16 @@ const TMP_FILE: &str = "validationTempKCLCode.k";
 ///
 /// // Define the name of an attribute.
 /// // The name of this property is related to the rules in the KCL file.
-/// let attr_name = "value";
+/// let attr_name = "value".to_string();
 ///
 /// // Define the kind of file you want to validate.
 /// let kind = LoaderKind::JSON;
 ///
 /// // One of the KCL file path or the content of the KCL file is enough.
-/// let result = validate(schema_name, attr_name, validated_file_path.to_string(), kind, kcl_file_path, None);
+/// let result = validate(ValidateOption::new(schema_name, attr_name, validated_file_path.to_string(), kind, None, None));
 /// ```
 ///
 /// The json file used above conforms to the schema rules, so the content of `result` you get is :
-/// ```
 ///
 /// If you change the content of the above json file to :
 /// ```ignore
