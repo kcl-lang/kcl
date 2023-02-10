@@ -112,8 +112,8 @@ impl Command {
         if !result.status.success() {
             panic!(
                 "run cc failed: stdout {}, stderr: {}",
-                String::from_utf8(result.stdout).unwrap(),
-                String::from_utf8(result.stderr).unwrap()
+                String::from_utf8_lossy(&result.stdout),
+                String::from_utf8_lossy(&result.stderr)
             )
         }
         // Use absolute path.

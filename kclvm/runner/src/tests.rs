@@ -482,7 +482,6 @@ fn test_from_setting_file_program_arg() {
     }
 }
 
-#[test]
 fn test_exec_file() {
     let prev_hook = std::panic::take_hook();
     // disable print panic info
@@ -497,7 +496,6 @@ fn test_exec_file() {
     std::panic::set_hook(prev_hook);
 }
 
-#[test]
 fn test_custom_manifests_output() {
     exec_with_result_at(&custom_manifests_data_path());
 }
@@ -506,8 +504,33 @@ fn test_exec_with_err_result() {
     exec_with_err_result_at(&exec_err_data_path());
 }
 
+fn clean_dir(path: String) {
+    match fs::remove_dir_all(path) {
+        Ok(_) => {}
+        Err(_) => {}
+    }
+}
+
 #[test]
 fn test_exec() {
+    clean_dir(
+        Path::new(".")
+            .join("src")
+            .join("exec_data")
+            .join(".kclvm")
+            .display()
+            .to_string(),
+    );
+
+    clean_dir(
+        Path::new(".")
+            .join("src")
+            .join("exec_err_data")
+            .join(".kclvm")
+            .display()
+            .to_string(),
+    );
+
     test_exec_file();
     println!("test_exec_file - PASS");
 
