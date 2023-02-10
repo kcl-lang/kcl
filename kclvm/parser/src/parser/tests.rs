@@ -3,7 +3,6 @@ use crate::parse_file;
 use crate::parser::Parser;
 use crate::session::ParseSession;
 use expect_test::{expect, Expect};
-use kclvm_ast::ast::*;
 use kclvm_span::{create_session_globals_then, BytePos, FilePathMapping, SourceMap};
 use regex::Regex;
 use rustc_span::Pos;
@@ -60,20 +59,6 @@ fn check_type_str(src: &str, expect: Expect) {
         let mut parser = Parser::new(sess, stream);
         let typ = parser.parse_type_annotation();
         let actual = typ.node.to_string();
-        expect.assert_eq(&actual)
-    });
-}
-
-fn check_type_stmt(src: &str, expect: Expect) {
-    let sm = SourceMap::new(FilePathMapping::empty());
-    sm.new_source_file(PathBuf::from("").into(), src.to_string());
-    let sess = &ParseSession::with_source_map(Arc::new(sm));
-
-    create_session_globals_then(|| {
-        let stream = parse_token_streams(sess, src, BytePos::from_u32(0));
-        let mut parser = Parser::new(sess, stream);
-        let stmt = parser.parse_stmt().unwrap();
-        let actual = format!("{:?}\n", stmt);
         expect.assert_eq(&actual)
     });
 }
@@ -1240,39 +1225,6 @@ fn expr_with_delim5() {
         Node { node: Paren(ParenExpr { expr: Node { node: Config(ConfigExpr { items: [Node { node: ConfigEntry { key: Some(Node { node: Identifier(Identifier { names: ["a"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 2, end_line: 1, end_column: 3 }), value: Node { node: List(ListExpr { elts: [Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(2) }), filename: "", line: 1, column: 5, end_line: 1, end_column: 6 }], ctx: Load }), filename: "", line: 1, column: 4, end_line: 1, end_column: 7 }, operation: Override, insert_index: -1 }, filename: "", line: 1, column: 2, end_line: 1, end_column: 7 }] }), filename: "", line: 1, column: 1, end_line: 1, end_column: 7 } }), filename: "", line: 1, column: 0, end_line: 1, end_column: 7 }
         "#]],
     );
-}
-// TODO: enable file tests after pos & error added.
-// #[test]
-fn smoke_test_parsing_stmt() {
-    let code = "a=1";
-    let node = Some(Node::dummy_node(Stmt::Assign(AssignStmt {
-        targets: vec![Box::new(Node::dummy_node(Identifier {
-            names: vec!["a".to_string()],
-            pkgpath: "".to_string(),
-            ctx: ExprContext::Store,
-        }))],
-        value: Box::new(Node::dummy_node(Expr::NumberLit(NumberLit {
-            binary_suffix: None,
-            value: NumberLitValue::Int(1),
-        }))),
-        type_annotation: None,
-        ty: None,
-    })));
-
-    create_session_globals_then(move || {
-        let sm = SourceMap::new(FilePathMapping::empty());
-        sm.new_source_file(PathBuf::from("").into(), code.to_string());
-        let sess = &ParseSession::with_source_map(Arc::new(sm));
-
-        let stream = parse_token_streams(sess, code, BytePos::from_u32(0));
-        let mut parser = Parser::new(sess, stream);
-        let stmt = parser.parse_stmt();
-
-        let expect = format!("{:?}\n", node);
-        let got = format!("{:?}\n", stmt);
-
-        assert_eq!(got, expect);
-    });
 }
 
 #[test]

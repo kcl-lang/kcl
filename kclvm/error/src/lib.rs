@@ -7,13 +7,13 @@ use kclvm_runtime::{ErrType, PanicInfo};
 
 #[macro_use]
 pub mod bug;
-mod diagnostic;
+pub mod diagnostic;
 mod emitter;
 mod error;
 #[cfg(test)]
 mod tests;
 
-use std::sync::Arc;
+use std::{any::Any, sync::Arc};
 
 pub use diagnostic::{Diagnostic, DiagnosticId, Level, Message, Position, Style};
 pub use emitter::{Emitter, EmitterWriter};
@@ -306,3 +306,22 @@ impl std::fmt::Display for FatalError {
 }
 
 impl std::error::Error for FatalError {}
+
+/// Convert an error to string.
+///
+/// ```
+/// use kclvm_error::err_to_str;
+///
+/// assert_eq!(err_to_str(Box::new("error_string".to_string())), "error_string");
+/// ```
+pub fn err_to_str(err: Box<dyn Any + Send>) -> String {
+    if let Some(s) = err.downcast_ref::<&str>() {
+        s.to_string()
+    } else if let Some(s) = err.downcast_ref::<&String>() {
+        (*s).clone()
+    } else if let Some(s) = err.downcast_ref::<String>() {
+        (*s).clone()
+    } else {
+        "".to_string()
+    }
+}

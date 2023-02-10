@@ -34,18 +34,15 @@ impl ParseSession {
             expected: expected.iter().map(|tok| tok.into()).collect(),
             got: got.into(),
         };
-
-        let mut panic_info = PanicInfo::default();
-
-        panic_info.__kcl_PanicInfo__ = true;
-        panic_info.message = format!("{:?}", err);
-        panic_info.err_type_code = ErrType::CompileError_TYPE as i32;
-
-        panic_info.kcl_file = pos.filename.clone();
-        panic_info.kcl_line = pos.line as i32;
-        panic_info.kcl_col = pos.column.unwrap_or(0) as i32;
-
-        panic!("{}", panic_info.to_json_string())
+        if let Err(err_str) = self
+            .handler
+            .borrow_mut()
+            .add_parse_error(err.clone(), pos)
+            .alert_if_any_errors()
+        {
+            panic!("{}", err_str);
+        }
+        panic!("{:?}", err);
     }
 
     /// Struct and report an error based on a token and not abort the compiler process.

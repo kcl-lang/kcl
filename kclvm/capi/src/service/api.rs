@@ -70,17 +70,8 @@ pub extern "C" fn kclvm_service_call(
     match result {
         //todo uniform error handling
         Ok(result) => result,
-        Err(panic_err) => {
-            let err_message = if let Some(s) = panic_err.downcast_ref::<&str>() {
-                s.to_string()
-            } else if let Some(s) = panic_err.downcast_ref::<&String>() {
-                (*s).clone()
-            } else if let Some(s) = panic_err.downcast_ref::<String>() {
-                (*s).clone()
-            } else {
-                "".to_string()
-            };
-
+        Err(err) => {
+            let err_message = kclvm_error::err_to_str(err);
             let c_string =
                 std::ffi::CString::new(format!("KCLVM_CAPI_CALL_ERROR:{}", err_message.as_str()))
                     .expect("CString::new failed");

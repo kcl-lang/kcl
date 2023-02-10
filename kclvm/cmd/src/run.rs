@@ -23,7 +23,7 @@ pub fn run_command(matches: &ArgMatches) {
                 },
                 Err(msg) => {
                     Handler::default()
-                        .add_panic_info(&PanicInfo::from_json_string(&msg))
+                        .add_panic_info(&PanicInfo::from(msg))
                         .abort_if_any_errors();
                 }
             }

@@ -11,6 +11,7 @@ protobuf-json-mapping = "3.1.0"
 serde = { version = "1", features = ["derive"] }
 
 kclvm-runner = {path = "../runner", version = "0.4.5"}
+kclvm-error = {path = "../error", version = "0.4.5"}
 kclvm-parser = {path = "../parser", version = "0.4.5"}
 kclvm-ast = {path = "../ast", version = "0.4.5"}
 kclvm-runtime = {path = "../runtime", version = "0.4.5"}

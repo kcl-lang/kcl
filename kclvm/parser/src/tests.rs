@@ -82,8 +82,7 @@ pub fn check_result_panic_info(result: Result<(), Box<dyn Any + Send>>) {
     };
 }
 
-const PARSE_EXPR_INVALID_TEST_CASES: &[&'static str; 3] =
-    &["fs1_i1re1~s", "fh==-h==-", "8_________i"];
+const PARSE_EXPR_INVALID_TEST_CASES: &[&str] = &["fs1_i1re1~s", "fh==-h==-", "8_________i"];
 
 #[test]
 pub fn test_parse_expr_invalid() {
@@ -93,5 +92,15 @@ pub fn test_parse_expr_invalid() {
             parse_expr(&case);
         });
         check_result_panic_info(result);
+    }
+}
+
+const PARSE_FILE_INVALID_TEST_CASES: &[&str] = &["a: int", "a -", "a?: int"];
+
+#[test]
+pub fn test_parse_file_invalid() {
+    for case in PARSE_FILE_INVALID_TEST_CASES {
+        let result = parse_file("test.k", Some((&case).to_string()));
+        assert!(result.is_err(), "case: {}", case)
     }
 }

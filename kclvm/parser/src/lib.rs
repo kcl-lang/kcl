@@ -12,7 +12,7 @@ extern crate kclvm_error;
 use crate::session::ParseSession;
 use kclvm_ast::ast;
 use kclvm_error::bug;
-use kclvm_runtime::{ErrType, PanicInfo};
+use kclvm_runtime::PanicInfo;
 use kclvm_span::{self, FilePathMapping, SourceMap};
 
 use lexer::parse_token_streams;
@@ -68,40 +68,55 @@ pub fn parse_program(filename: &str) -> Result<ast::Program, String> {
 
 pub fn parse_file(filename: &str, code: Option<String>) -> Result<ast::Module, String> {
     create_session_globals_then(move || {
-        let src = if let Some(s) = code {
-            s
-        } else {
-            match std::fs::read_to_string(filename) {
-                Ok(src) => src,
-                Err(_err) => {
-                    let err_msg =
-                        format!("Failed to load KCL file '{}'. Because '{}'", filename, _err);
-                    return Err(err_msg);
+        let prev_hook = std::panic::take_hook();
+        std::panic::set_hook(Box::new(|_| {}));
+        let result = std::panic::catch_unwind(|| {
+            // Code source.
+            let src = if let Some(s) = code {
+                s
+            } else {
+                match std::fs::read_to_string(filename) {
+                    Ok(src) => src,
+                    Err(err) => {
+                        return Err(format!(
+                            "Failed to load KCL file '{}'. Because '{}'",
+                            filename, err
+                        ));
+                    }
                 }
-            }
-        };
+            };
 
-        let sm = kclvm_span::SourceMap::new(FilePathMapping::empty());
-        let sf = sm.new_source_file(PathBuf::from(filename).into(), src.to_string());
-        let sess = &ParseSession::with_source_map(std::sync::Arc::new(sm));
+            // Build a source map to store file sources.
+            let sm = kclvm_span::SourceMap::new(FilePathMapping::empty());
+            let sf = sm.new_source_file(PathBuf::from(filename).into(), src.to_string());
+            let sess = &ParseSession::with_source_map(std::sync::Arc::new(sm));
 
-        let src_from_sf = match sf.src.as_ref() {
-            Some(src) => src,
-            None => {
-                let err_msg = format!("Internal Bug: Failed to load KCL file '{}'.", filename);
-                return Err(err_msg);
-            }
-        };
+            let src_from_sf = match sf.src.as_ref() {
+                Some(src) => src,
+                None => {
+                    return Err(format!(
+                        "Internal Bug: Failed to load KCL file '{}'.",
+                        filename
+                    ));
+                }
+            };
 
-        let stream = lexer::parse_token_streams(sess, src_from_sf.as_str(), sf.start_pos);
-        let mut p = parser::Parser::new(sess, stream);
-        let mut m = p.parse_module();
+            // Lexer
+            let stream = lexer::parse_token_streams(sess, src_from_sf.as_str(), sf.start_pos);
+            // Parser
+            let mut p = parser::Parser::new(sess, stream);
+            let mut m = p.parse_module();
+            m.filename = filename.to_string();
+            m.pkg = kclvm_ast::MAIN_PKG.to_string();
+            m.name = kclvm_ast::MAIN_PKG.to_string();
 
-        m.filename = filename.to_string();
-        m.pkg = kclvm_ast::MAIN_PKG.to_string();
-        m.name = kclvm_ast::MAIN_PKG.to_string();
-
-        Ok(m)
+            Ok(m)
+        });
+        std::panic::set_hook(prev_hook);
+        match result {
+            Ok(result) => result,
+            Err(err) => Err(kclvm_error::err_to_str(err)),
+        }
     })
 }
 
@@ -192,10 +207,7 @@ impl Loader {
     }
 
     fn load_main(&mut self) -> Result<ast::Program, String> {
-        match self._load_main() {
-            Ok(x) => Ok(x),
-            Err(s) => Err(self.str_to_panic_info(&s).to_json_string()),
-        }
+        self._load_main()
     }
 
     fn _load_main(&mut self) -> Result<ast::Program, String> {
@@ -242,7 +254,7 @@ impl Loader {
             // read dir/*.k
             if self.is_dir(path) {
                 if self.opts.k_code_list.len() > i {
-                    return Err("invalid code list".to_string());
+                    return Err(PanicInfo::from("Invalid code list").to_json_string());
                 }
                 //k_code_list
                 for s in self.get_dir_kfile_list(path)? {
@@ -253,7 +265,7 @@ impl Loader {
         }
 
         if k_files.is_empty() {
-            return Err("No input KCL files".to_string());
+            return Err(PanicInfo::from("No input KCL files").to_json_string());
         }
 
         // check all file exists
@@ -268,10 +280,11 @@ impl Loader {
             }
 
             if !self.path_exist(filename.as_str()) {
-                return Err(format!(
+                return Err(PanicInfo::from(format!(
                     "Cannot find the kcl file, please check whether the file path {}",
                     filename.as_str(),
-                ));
+                ))
+                .to_json_string());
             }
         }
 
@@ -486,17 +499,5 @@ impl Loader {
 
     fn path_exist(&self, path: &str) -> bool {
         std::path::Path::new(path).exists()
-    }
-}
-
-impl Loader {
-    fn str_to_panic_info(&self, s: &str) -> PanicInfo {
-        let mut panic_info = PanicInfo::default();
-
-        panic_info.__kcl_PanicInfo__ = true;
-        panic_info.message = format!("{}", s);
-        panic_info.err_type_code = ErrType::CompileError_TYPE as i32;
-
-        panic_info
     }
 }
