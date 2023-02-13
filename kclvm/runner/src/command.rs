@@ -253,8 +253,16 @@ fn adjust_canonicalization<P: AsRef<Path>>(p: P) -> String {
 }
 
 #[test]
+#[cfg(target_os = "windows")]
 fn test_adjust_canonicalization() {
     let path = Path::new(".").canonicalize().unwrap().display().to_string();
     assert!(path.contains("\\\\?\\"));
     assert!(!adjust_canonicalization(path).contains("\\\\?\\"));
+}
+
+#[test]
+#[cfg(not(target_os = "windows"))]
+fn test_adjust_canonicalization() {
+    let path = Path::new(".").canonicalize().unwrap().display().to_string();
+    assert_eq!(adjust_canonicalization(path), path);
 }
