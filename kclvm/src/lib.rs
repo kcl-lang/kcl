@@ -31,17 +31,8 @@ pub extern "C" fn kclvm_cli_run(args: *const i8, plugin_agent: *const i8) -> *co
                 ptr as *const i8
             }
         },
-        Err(panic_err) => {
-            let err_message = if let Some(s) = panic_err.downcast_ref::<&str>() {
-                s.to_string()
-            } else if let Some(s) = panic_err.downcast_ref::<&String>() {
-                (*s).clone()
-            } else if let Some(s) = panic_err.downcast_ref::<String>() {
-                (*s).clone()
-            } else {
-                "".to_string()
-            };
-
+        Err(err) => {
+            let err_message = kclvm_error::err_to_str(err);
             let result = format!("ERROR:{:}", err_message);
             let c_string = std::ffi::CString::new(result.as_str()).expect("CString::new failed");
             let ptr = c_string.into_raw();

@@ -1,6 +1,7 @@
 use std::fmt;
 use std::hash::Hash;
 
+use indexmap::IndexSet;
 use kclvm_span::Loc;
 use rustc_span::Pos;
 use termcolor::{Color, ColorSpec};
@@ -188,4 +189,21 @@ pub enum Style {
     Empty,
     LineAndColumn,
     Line,
+}
+
+/// Classify diagnostics into errors and warnings.
+pub fn classification(
+    diagnostics: &IndexSet<Diagnostic>,
+) -> (IndexSet<Diagnostic>, IndexSet<Diagnostic>) {
+    let (mut errs, mut warnings) = (IndexSet::new(), IndexSet::new());
+    for diag in diagnostics {
+        if diag.level == Level::Error {
+            errs.insert(diag.clone());
+        } else if diag.level == Level::Warning {
+            warnings.insert(diag.clone());
+        } else {
+            continue;
+        }
+    }
+    (errs, warnings)
 }

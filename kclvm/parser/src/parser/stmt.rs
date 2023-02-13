@@ -117,7 +117,7 @@ impl<'a> Parser<'_> {
         }
 
         // expr or assign
-        self.parse_expr_or_assign_stmt()
+        self.parse_expr_or_assign_stmt(false)
     }
 
     /// Syntax:
@@ -170,7 +170,7 @@ impl<'a> Parser<'_> {
     ///     | COMP_DOUBLE_DIVIDE | COMP_MOD | COMP_AND | COMP_OR | COMP_XOR | COMP_SHIFT_LEFT
     ///     | COMP_SHIFT_RIGHT | L_OR | L_AND)
     ///     test
-    fn parse_expr_or_assign_stmt(&mut self) -> Option<NodeRef<Stmt>> {
+    fn parse_expr_or_assign_stmt(&mut self, is_in_schema_stmt: bool) -> Option<NodeRef<Stmt>> {
         let token = self.token;
         let mut targets = vec![self.parse_expr()];
 
@@ -237,7 +237,7 @@ impl<'a> Parser<'_> {
         }
 
         if let TokenKind::BinOpEq(x) = self.token.kind {
-            if targets.len() == 1 && type_annotation.is_some() {
+            if targets.len() == 1 && type_annotation.is_some() && is_in_schema_stmt {
                 let aug_op = AugOp::from(x);
                 self.bump_token(self.token.kind);
                 let value = self.parse_expr();
@@ -289,7 +289,7 @@ impl<'a> Parser<'_> {
                 self.token_span_pos(token, self.prev_token)
             ))
         } else {
-            if targets.len() == 1 && type_annotation.is_some() {
+            if targets.len() == 1 && type_annotation.is_some() && is_in_schema_stmt {
                 if let Expr::Identifier(target) = &targets[0].node {
                     return Some(node_ref!(
                         Stmt::SchemaAttr(SchemaAttr {
@@ -306,19 +306,23 @@ impl<'a> Parser<'_> {
                     ));
                 }
             }
+            if type_annotation.is_none() {
+                let mut pos = targets[0].pos();
+                pos.3 = targets.last().unwrap().end_line;
+                pos.4 = targets.last().unwrap().end_column;
 
-            let mut pos = targets[0].pos();
-            pos.3 = targets.last().unwrap().end_line;
-            pos.4 = targets.last().unwrap().end_column;
+                let t = Box::new(Node::node_with_pos(
+                    Stmt::Expr(ExprStmt {
+                        exprs: targets.clone(),
+                    }),
+                    pos,
+                ));
 
-            let t = Box::new(Node::node_with_pos(
-                Stmt::Expr(ExprStmt {
-                    exprs: targets.clone(),
-                }),
-                pos,
-            ));
-
-            Some(t)
+                Some(t)
+            } else {
+                self.sess
+                    .struct_token_error(&[TokenKind::Assign.into()], self.token)
+            }
         }
     }
 
@@ -452,7 +456,9 @@ impl<'a> Parser<'_> {
             self.bump_token(TokenKind::Colon);
 
             let body = if self.token.kind != TokenKind::Newline {
-                vec![self.parse_expr_or_assign_stmt().expect("invalid if_stmt")]
+                vec![self
+                    .parse_expr_or_assign_stmt(false)
+                    .expect("invalid if_stmt")]
             } else {
                 self.skip_newlines();
                 self.parse_block_stmt_list(TokenKind::Indent, TokenKind::Dedent)
@@ -480,7 +486,9 @@ impl<'a> Parser<'_> {
             self.bump_token(TokenKind::Colon);
 
             let body = if self.token.kind != TokenKind::Newline {
-                vec![self.parse_expr_or_assign_stmt().expect("invalid if_stmt")]
+                vec![self
+                    .parse_expr_or_assign_stmt(false)
+                    .expect("invalid if_stmt")]
             } else {
                 self.skip_newlines();
                 self.parse_block_stmt_list(TokenKind::Indent, TokenKind::Dedent)
@@ -508,7 +516,9 @@ impl<'a> Parser<'_> {
             self.bump_token(TokenKind::Colon);
 
             let else_body = if self.token.kind != TokenKind::Newline {
-                vec![self.parse_expr_or_assign_stmt().expect("invalid if_stmt")]
+                vec![self
+                    .parse_expr_or_assign_stmt(false)
+                    .expect("invalid if_stmt")]
             } else {
                 self.skip_newlines();
                 self.parse_block_stmt_list(TokenKind::Indent, TokenKind::Dedent)
@@ -901,7 +911,7 @@ impl<'a> Parser<'_> {
             }
 
             // expr or attr
-            if let Some(x) = self.parse_expr_or_assign_stmt() {
+            if let Some(x) = self.parse_expr_or_assign_stmt(true) {
                 if let Stmt::SchemaAttr(attr) = &x.node {
                     body_body.push(node_ref!(Stmt::SchemaAttr(attr.clone()), x.pos()));
                     continue;
