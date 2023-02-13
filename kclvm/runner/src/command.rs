@@ -262,7 +262,7 @@ fn test_adjust_canonicalization() {
 
 #[test]
 #[cfg(not(target_os = "windows"))]
-fn test_adjust_canonicalization() {
+fn test_adjust_canonicalization1() {
     let path = Path::new(".").canonicalize().unwrap().display().to_string();
-    assert_eq!(adjust_canonicalization(path), path);
+    assert_eq!(adjust_canonicalization(path.to_string()), path);
 }
