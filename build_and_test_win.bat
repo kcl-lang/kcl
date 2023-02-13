@@ -1,4 +1,3 @@
-@echo off
 cd %~dp0
 
 call .\\scripts\\build-windows\\build.bat
