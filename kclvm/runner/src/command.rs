@@ -238,9 +238,10 @@ fn adjust_canonicalization<P: AsRef<Path>>(p: P) -> String {
 }
 
 #[cfg(target_os = "windows")]
-/// On windows, the "\\? \ " will cause the obj file to not be found when linking by "cl.exe".
+/// On windows, the "\\?\ ", for the Windows APIs, will cause the obj file to not be found when linking by "cl.exe".
 /// Slicing this path directly is not a good solution,
 /// we will find a more fluent way to solve this problem in the future. @zongz
+/// Note: On windows systems, a file path that is too long may cause "cl.exe" to crash.
 fn adjust_canonicalization<P: AsRef<Path>>(p: P) -> String {
     const VERBATIM_PREFIX: &str = r#"\\?\"#;
     let p = p.as_ref().display().to_string();
@@ -249,4 +250,11 @@ fn adjust_canonicalization<P: AsRef<Path>>(p: P) -> String {
     } else {
         p
     }
+}
+
+#[test]
+fn test_adjust_canonicalization() {
+    let path = Path::new(".").canonicalize().unwrap().display().to_string();
+    assert!(path.contains("\\\\?\\"));
+    assert!(!adjust_canonicalization(path).contains("\\\\?\\"));
 }
