@@ -13,3 +13,7 @@ cd %~dp0
 @REM rust runtime test
 cd .\\kclvm\\tests\\test_units
 kclvm -m pytest -vv
+cd %~dp0
+
+@REM konfig test
+call .\\test\\integration\\test_konfig.bat
