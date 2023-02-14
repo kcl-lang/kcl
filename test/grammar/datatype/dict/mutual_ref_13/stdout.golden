@@ -1,0 +1,9 @@
+spec:
+  internal:
+    data: 1
+  id: 1
+config:
+  spec:
+    internal:
+      data: 1
+    id: 1

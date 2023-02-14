@@ -2585,6 +2585,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             } else {
                 self.none_value()
             };
+            self.store_argument_in_current_scope(&arg_name.get_name());
             self.walk_identifier_with_ctx(arg_name, &ast::ExprContext::Store, Some(arg_value))
                 .expect(kcl_error::COMPILE_ERROR_MSG);
         }
