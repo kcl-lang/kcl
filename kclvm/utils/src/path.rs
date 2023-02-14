@@ -24,6 +24,19 @@ where
 {
     #[cfg(not(target_os = "windows"))]
     /// On non-Windows systems, this method does not make any modifications to the file path.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use std::path::Path;
+    /// use kclvm_utils::path::PathPrefix;
+    ///
+    /// let path = Path::new(".").canonicalize().unwrap();
+    /// assert_eq!(
+    ///     path.clone().adjust_canonicalization(),
+    ///     path.display().to_string()
+    /// );
+    /// ```
     fn adjust_canonicalization(&self) -> String {
         self.as_ref().display().to_string()
     }
@@ -35,6 +48,17 @@ where
     /// we will find a more fluent way to solve this problem in the future. @zongz
     /// Note: On windows systems, a file path that is too long may cause "cl.exe" to crash.
     /// For more information, see doc in trait [`PathPrefix`].
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use std::path::Path;
+    /// use kclvm_utils::path::PathPrefix;
+    ///
+    /// let path = Path::new(".").canonicalize().unwrap();
+    /// assert!(path.display().to_string().contains("\\\\?\\"));
+    /// assert!(!path.adjust_canonicalization().contains("\\\\?\\"));
+    /// ```
     fn adjust_canonicalization(&self) -> String {
         const VERBATIM_PREFIX: &str = r#"\\?\"#;
         let p = self.as_ref().display().to_string();
