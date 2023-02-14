@@ -69,5 +69,6 @@ members = [
     "span",
     "tools",
     "version",
-    "query"
+    "query",
+    "utils"
 ]

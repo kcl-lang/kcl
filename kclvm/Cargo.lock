@@ -804,6 +804,7 @@ dependencies = [
  "fslock",
  "glob",
  "indexmap",
+ "kclvm-utils",
  "kclvm-version",
  "pathdiff",
  "ron",
@@ -863,6 +864,7 @@ dependencies = [
  "kclvm-runtime",
  "kclvm-sema",
  "kclvm-span",
+ "kclvm-utils",
  "num-bigint",
  "regex",
  "rustc_data_structures",
@@ -906,6 +908,7 @@ dependencies = [
  "kclvm-query",
  "kclvm-runtime",
  "kclvm-sema",
+ "kclvm-utils",
  "kclvm-version",
  "libc",
  "libloading",
@@ -999,6 +1002,10 @@ dependencies = [
  "serde_yaml 0.9.17",
  "walkdir",
 ]
+
+[[package]]
+name = "kclvm-utils"
+version = "0.4.5"
 
 [[package]]
 name = "kclvm-version"

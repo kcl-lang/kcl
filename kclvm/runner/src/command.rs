@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+use kclvm_utils::path::PathPrefix;
 use std::env::consts::DLL_SUFFIX;
 use std::ffi::CString;
 use std::path::Path;
@@ -105,11 +106,6 @@ impl Command {
             .flag("-o")
             .flag(&lib_path);
 
-        let libs: Vec<String> = libs
-            .into_iter()
-            .map(|lib| adjust_canonicalization(lib))
-            .collect();
-        let libs = libs.as_slice();
         build.files(libs);
 
         // Run command with cc.
@@ -127,7 +123,7 @@ impl Command {
         let path = PathBuf::from(&lib_path)
             .canonicalize()
             .unwrap_or_else(|_| panic!("{} not found", lib_path));
-        path.to_str().unwrap().to_string()
+        path.adjust_canonicalization()
     }
 
     /// Add args for cc.
@@ -230,39 +226,4 @@ impl Command {
                 .next()
         })
     }
-}
-
-#[cfg(not(target_os = "windows"))]
-fn adjust_canonicalization<P: AsRef<Path>>(p: P) -> String {
-    p.as_ref().display().to_string()
-}
-
-#[cfg(target_os = "windows")]
-/// On windows, the "\\?\ ", for the Windows APIs, will cause the obj file to not be found when linking by "cl.exe".
-/// Slicing this path directly is not a good solution,
-/// we will find a more fluent way to solve this problem in the future. @zongz
-/// Note: On windows systems, a file path that is too long may cause "cl.exe" to crash.
-fn adjust_canonicalization<P: AsRef<Path>>(p: P) -> String {
-    const VERBATIM_PREFIX: &str = r#"\\?\"#;
-    let p = p.as_ref().display().to_string();
-    if p.starts_with(VERBATIM_PREFIX) {
-        p[VERBATIM_PREFIX.len()..].to_string()
-    } else {
-        p
-    }
-}
-
-#[test]
-#[cfg(target_os = "windows")]
-fn test_adjust_canonicalization() {
-    let path = Path::new(".").canonicalize().unwrap().display().to_string();
-    assert!(path.contains("\\\\?\\"));
-    assert!(!adjust_canonicalization(path).contains("\\\\?\\"));
-}
-
-#[test]
-#[cfg(not(target_os = "windows"))]
-fn test_adjust_canonicalization1() {
-    let path = Path::new(".").canonicalize().unwrap().display().to_string();
-    assert_eq!(adjust_canonicalization(path.to_string()), path);
 }

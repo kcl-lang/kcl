@@ -14,6 +14,7 @@ use kclvm_ast::ast;
 use kclvm_error::bug;
 use kclvm_runtime::PanicInfo;
 use kclvm_span::{self, FilePathMapping, SourceMap};
+use kclvm_utils::path::PathPrefix;
 
 use lexer::parse_token_streams;
 use parser::Parser;
@@ -47,7 +48,7 @@ pub fn parse_program(filename: &str) -> Result<ast::Program, String> {
     let abspath = std::fs::canonicalize(&std::path::PathBuf::from(filename)).unwrap();
 
     let mut prog = ast::Program {
-        root: abspath.parent().unwrap().to_str().unwrap().to_string(),
+        root: abspath.parent().unwrap().adjust_canonicalization(),
         main: "__main__".to_string(),
         pkgs: std::collections::HashMap::new(),
         cmd_args: Vec::new(),
@@ -236,7 +237,7 @@ impl Loader {
             if !self.pkgroot.is_empty() && !self.is_absolute(s.as_str()) {
                 let p = std::path::Path::new(s.as_str());
                 if let Ok(x) = std::fs::canonicalize(p) {
-                    s = x.to_str().unwrap_or(s.as_str()).to_string();
+                    s = x.adjust_canonicalization();
                 }
             }
 
