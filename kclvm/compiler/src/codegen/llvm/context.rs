@@ -1,6 +1,6 @@
 // Copyright 2021 The KCL Authors. All rights reserved.
 
-use indexmap::IndexMap;
+use indexmap::{IndexMap, IndexSet};
 use inkwell::basic_block::BasicBlock;
 use inkwell::builder::Builder;
 use inkwell::context::Context;
@@ -57,6 +57,7 @@ pub type CompileResult<'a> = Result<BasicValueEnum<'a>, kcl_error::KCLError>;
 pub struct Scope<'ctx> {
     pub variables: RefCell<IndexMap<String, PointerValue<'ctx>>>,
     pub closures: RefCell<IndexMap<String, PointerValue<'ctx>>>,
+    pub arguments: RefCell<IndexSet<String>>,
 }
 
 /// Schema internal order independent computation backtracking meta information.
@@ -957,6 +958,7 @@ impl<'ctx> ProgramCodeGen for LLVMCodeGenContext<'ctx> {
             let scopes = vec![Rc::new(Scope {
                 variables: RefCell::new(IndexMap::default()),
                 closures: RefCell::new(IndexMap::default()),
+                arguments: RefCell::new(IndexSet::default()),
             })];
             pkg_scopes.insert(String::from(pkgpath), scopes);
         }
@@ -1026,6 +1028,7 @@ impl<'ctx> ProgramCodeGen for LLVMCodeGenContext<'ctx> {
         let scope = Rc::new(Scope {
             variables: RefCell::new(IndexMap::default()),
             closures: RefCell::new(IndexMap::default()),
+            arguments: RefCell::new(IndexSet::default()),
         });
         scopes.push(scope);
     }
@@ -1399,6 +1402,18 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         }
     }
 
+    /// Store the argument named `name` in the current scope.
+    pub(crate) fn store_argument_in_current_scope(&self, name: &str) {
+        // Find argument name in the scope
+        let current_pkgpath = self.current_pkgpath();
+        let mut pkg_scopes = self.pkg_scopes.borrow_mut();
+        let msg = format!("pkgpath {} is not found", current_pkgpath);
+        let scopes = pkg_scopes.get_mut(&current_pkgpath).expect(&msg);
+        let index = scopes.len() - 1;
+        let mut arguments_mut = scopes[index].arguments.borrow_mut();
+        arguments_mut.insert(name.to_string());
+    }
+
     /// Store the variable named `name` with `value` from the current scope, return false when not found
     pub fn store_variable_in_current_scope(&self, name: &str, value: BasicValueEnum<'ctx>) -> bool {
         // Find argument name in the scope
@@ -1465,7 +1480,12 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             let variables_mut = scopes[index].variables.borrow_mut();
             match variables_mut.get(&name.to_string()) {
                 // If the local varibale is found, store the new value for the variable.
-                Some(ptr) if index > GLOBAL_LEVEL && !self.local_vars.borrow().contains(name) => {
+                // We cannot update rule/lambda/schema arguments because they are read-only.
+                Some(ptr)
+                    if index > GLOBAL_LEVEL
+                        && !self.local_vars.borrow().contains(name)
+                        && !scopes[index].arguments.borrow().contains(name) =>
+                {
                     self.builder.build_store(*ptr, value);
                     existed = true;
                 }
