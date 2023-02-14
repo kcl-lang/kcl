@@ -1,5 +1,6 @@
 // Copyright 2021 The KCL Authors. All rights reserved.
 
+use kclvm_utils::path::PathPrefix;
 use serde::Deserialize;
 use std::io::Read;
 use toml;
@@ -71,7 +72,7 @@ pub fn get_pkg_root(k_file_path: &str) -> Option<String> {
         while module_path.exists() {
             let kcl_mod_path = module_path.join(KCL_MOD_FILE);
             if kcl_mod_path.exists() && kcl_mod_path.is_file() {
-                return Some(module_path.to_str().unwrap().to_string());
+                return Some(module_path.adjust_canonicalization());
             }
             if let Some(path) = module_path.parent() {
                 module_path = path.to_path_buf();
@@ -83,7 +84,7 @@ pub fn get_pkg_root(k_file_path: &str) -> Option<String> {
     if k_file_path.ends_with(KCL_FILE_SUFFIX) {
         if let Ok(path) = std::path::Path::new(k_file_path).canonicalize() {
             if let Some(path) = path.parent() {
-                return Some(path.to_str().unwrap().to_string());
+                return Some(path.adjust_canonicalization());
             }
         }
     }
@@ -119,7 +120,7 @@ mod modfile_test {
             Ok("".to_string())
         );
         let expected_root = std::path::Path::new(TEST_ROOT).canonicalize().unwrap();
-        let expected = expected_root.to_str().unwrap();
+        let expected = expected_root.adjust_canonicalization();
         assert_eq!(
             get_pkg_root_from_paths(&[SETTINGS_FILE.to_string()]),
             Ok(expected.to_string())
@@ -131,7 +132,7 @@ mod modfile_test {
         let root = get_pkg_root(SETTINGS_FILE);
         assert!(root.is_some());
         let expected_root = std::path::Path::new(TEST_ROOT).canonicalize().unwrap();
-        let expected = expected_root.to_str().unwrap();
+        let expected = expected_root.adjust_canonicalization();
         assert_eq!(root.unwrap().as_str(), expected);
     }
 

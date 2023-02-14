@@ -10,6 +10,7 @@ use kclvm_parser::load_program;
 use kclvm_query::apply_overrides;
 use kclvm_runtime::{PanicInfo, ValueRef};
 use kclvm_sema::resolver::resolve_program;
+use kclvm_utils::path::PathPrefix;
 pub use runner::ExecProgramArgs;
 use runner::{ExecProgramResult, KclvmRunner, KclvmRunnerOptions};
 use tempfile::tempdir;
@@ -78,7 +79,7 @@ pub fn exec_program(
         // it to a absolute path.
         if file.starts_with(".") {
             match Path::new(&work_dir).join(file).canonicalize() {
-                Ok(path) => kcl_paths.push(String::from(path.to_str().unwrap())),
+                Ok(path) => kcl_paths.push(String::from(path.adjust_canonicalization())),
                 Err(_) => {
                     return Err(PanicInfo::from_string(&format!(
                         "Cannot find the kcl file, please check whether the file path {}",

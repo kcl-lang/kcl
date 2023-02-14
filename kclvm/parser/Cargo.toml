@@ -27,6 +27,7 @@ kclvm-error = {path = "../error", version = "0.4.5"}
 kclvm-config = {path = "../config", version = "0.4.5"}
 kclvm-sema = {path = "../sema", version = "0.4.5"}
 kclvm-runtime = {path = "../runtime", version = "0.4.5"}
+kclvm-utils = {path = "../utils", version = "0.4.5"}
 
 
 [dev-dependencies]
