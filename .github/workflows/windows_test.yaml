@@ -26,7 +26,23 @@ jobs:
 
       - run: echo "C:/LLVM/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
-      - run: .\build_and_test_win.bat
+      # Build kclvm-cli
+      - run: .\scripts\build-windows\build.bat
+
+      # Set kclvm-cli path
+      - run: echo ";$(pwd)\scripts\build-windows\_output\kclvm-windows\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - working-directory: .
+
+      # Rust unit test
+      - run: cargo test -p kclvm-*
+        working-directory: ./kclvm
+
+      # Rust runtime test
+      - run: python3 -m pip install --upgrade pip && python3 -m pip install pytest && kclvm -m pytest -vv
+        working-directory: ./kclvm/tests/test_units
+
+      # Rust konfig test
+      - run: .\test\integration\test_konfig.bat
         working-directory: .
       
       - uses: actions/upload-artifact@v3
