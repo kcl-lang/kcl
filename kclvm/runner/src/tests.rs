@@ -80,6 +80,7 @@ fn multi_file_test_cases() -> Vec<String> {
             .join("..")
             .join("..")
             .join("test")
+            .join("integration")
             .join("konfig")
             .join("base")
             .join("examples")
