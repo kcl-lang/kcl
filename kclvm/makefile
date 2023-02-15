@@ -70,6 +70,10 @@ test-runtime:
 test-grammar:
 	cd tests/integration/grammar && kclvm -m pytest -v -n 5
 
+# E2E konfig tests.
+test-konfig:
+	cd tests/integration/konfig && kclvm -m pytest -v -n 5
+
 # Parser fuzz.
 fuzz-parser:
 	cd tests && cargo fuzz run fuzz_parser

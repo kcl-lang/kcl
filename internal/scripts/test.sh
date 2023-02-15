@@ -23,6 +23,8 @@ help_message=$(cat <<-END
             trigger unit test
         test_grammar
             trigger grammar test
+        test_konfig
+            trigger konfig test
         all
             trigger all tests
 END
@@ -44,12 +46,16 @@ done
 
 if [ "$action" == "" ]; then
     PS3='Please select the test scope: '
-    options=("test_grammar")
+    options=("test_grammar", "test_konfig")
     select action in "${options[@]}"
     do
         case $action in
             "test_grammar")
                 $topdir/internal/scripts/test_grammar.sh
+                break
+                ;;
+            "test_konfig")
+                $topdir/internal/scripts/test_konfig.sh
                 break
                 ;;
             *) echo "Invalid action $REPLY:$action"

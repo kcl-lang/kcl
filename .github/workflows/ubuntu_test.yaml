@@ -45,6 +45,10 @@ jobs:
         working-directory: ./kclvm
         run: export PATH=$PATH:$PWD/../_build/dist/ubuntu/kclvm/bin && make install-rustc-wasm && make && make codecov-lcov
         shell: bash
+      - name: Rust konfig test
+        working-directory: ./kclvm
+        run: export PATH=$PATH:$PWD/../_build/dist/ubuntu/kclvm/bin && make install-rustc-wasm && make && make test-konfig
+        shell: bash
       - name: Coveralls upload
         uses: coverallsapp/github-action@master
         with:
