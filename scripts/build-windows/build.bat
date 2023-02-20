@@ -6,6 +6,7 @@ cd %~dp0
 
 :: install kclvm-cli
 call .\\build_kclvm_cli.bat
+call .\\build_kcl_lsp_server.bat
 
 :: install kclvm-plugin python module
 call .\\build_kclvm_plugin_py.bat
