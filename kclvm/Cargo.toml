@@ -70,5 +70,6 @@ members = [
     "tools",
     "version",
     "query",
-    "utils"
+    "utils",
+    "tools/src/LSP"
 ]

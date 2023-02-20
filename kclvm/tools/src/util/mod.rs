@@ -4,6 +4,7 @@ use std::path::Path;
 use walkdir::WalkDir;
 
 pub mod loader;
+pub mod lsp;
 #[cfg(test)]
 mod tests;
 
