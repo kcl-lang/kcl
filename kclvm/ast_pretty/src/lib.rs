@@ -200,6 +200,22 @@ impl<'p> Printer<'p> {
         }
     }
 
+    /// Wether has comments on ast node.
+    pub(crate) fn has_comments_on_node<T>(&mut self, node: &ast::NodeRef<T>) -> bool {
+        if !self.cfg.write_comments {
+            return false;
+        }
+        let mut index = None;
+        for (i, comment) in self.comments.iter().enumerate() {
+            if comment.line <= node.line {
+                index = Some(i);
+            } else {
+                break;
+            }
+        }
+        index.is_some()
+    }
+
     /// Print ast comments.
     pub fn write_ast_comments<T>(&mut self, node: &ast::NodeRef<T>) {
         if !self.cfg.write_comments {

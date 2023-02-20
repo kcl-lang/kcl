@@ -442,7 +442,14 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
             .iter()
             .map(|e| e.line)
             .collect::<HashSet<u64>>();
-        let mut in_one_line = line_set.len() <= 1;
+        // There are comments in the configuration block.
+        let has_comment = list_expr
+            .elts
+            .iter()
+            .map(|e| self.has_comments_on_node(e))
+            .all(|r| r);
+        // When there are comments in the configuration block, print them as multiline configurations.
+        let mut in_one_line = line_set.len() <= 1 && !has_comment;
         if let Some(elt) = list_expr.elts.first() {
             if let ast::Expr::ListIfItem(_) = &elt.node {
                 in_one_line = false;
@@ -527,6 +534,7 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
         }
         self.write(dict_comp.entry.operation.symbol());
         self.write_space();
+        self.expr(&dict_comp.entry.value);
         for gen in &dict_comp.generators {
             self.walk_comp_clause(&gen.node);
         }
@@ -596,10 +604,23 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
 
     fn walk_config_expr(&mut self, config_expr: &'ctx ast::ConfigExpr) -> Self::Result {
         let line_set: HashSet<u64> = config_expr.items.iter().map(|item| item.line).collect();
-        let mut in_one_line = line_set.len() <= 1;
-        if let Some(item) = config_expr.items.first() {
-            if let ast::Expr::ConfigIfEntry(_) = &item.node.value.node {
-                in_one_line = false;
+        // There are comments in the configuration block.
+        let has_comment = config_expr
+            .items
+            .iter()
+            .map(|item| self.has_comments_on_node(item))
+            .all(|r| r);
+        // When there are comments in the configuration block, print them as multiline configurations.
+        let mut in_one_line = line_set.len() <= 1 && !has_comment;
+        // When there are complex configuration blocks in the configuration block, print them as multiline configurations.
+        if config_expr.items.len() == 1 && in_one_line {
+            if let Some(item) = config_expr.items.first() {
+                if matches!(
+                    &item.node.value.node,
+                    ast::Expr::ConfigIfEntry(_) | ast::Expr::Config(_) | ast::Expr::Schema(_)
+                ) {
+                    in_one_line = false;
+                }
             }
         }
         self.write_token(TokenKind::OpenDelim(DelimToken::Brace));
@@ -649,7 +670,7 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
         }
         self.write_space();
         self.write_token(TokenKind::OpenDelim(DelimToken::Brace));
-        self.write_newline();
+        self.write_newline_without_fill();
         self.write_indentation(Indentation::Indent);
 
         // lambda body

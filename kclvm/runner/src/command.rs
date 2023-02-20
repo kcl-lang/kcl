@@ -2,7 +2,6 @@
 use kclvm_utils::path::PathPrefix;
 use std::env::consts::DLL_SUFFIX;
 use std::ffi::CString;
-use std::path::Path;
 use std::path::PathBuf;
 
 #[derive(Debug)]

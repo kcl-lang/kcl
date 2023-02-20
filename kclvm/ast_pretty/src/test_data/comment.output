@@ -23,7 +23,9 @@ appConfiguration = AppConfiguration {
         disk: "50Gi"
         memory: "12Gi"
     }
-    labels: {key: {key: 12}}
+    labels: {
+        key: {key: 12}
+    }
     # Comment Six
     mainContainer: Main {name: "kusion_override"}
     # Comment Seven
