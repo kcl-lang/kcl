@@ -4,3 +4,10 @@ f0 =   lambda    {
 f1 = lambda   x  : int , y  : int ->int{
     x + y
 }
+f2 = lambda {
+    lambda x {
+        lambda y {
+            y    +   1
+        }
+    }
+}

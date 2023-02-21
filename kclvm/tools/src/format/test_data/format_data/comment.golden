@@ -10,3 +10,7 @@ schema Person:
     # Block comment in schema
     age: int = 18
 
+config = {
+    # Data comment
+    data = 1
+}

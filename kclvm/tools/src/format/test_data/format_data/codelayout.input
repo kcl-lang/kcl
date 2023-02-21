@@ -74,3 +74,10 @@ aa = 1
 assert aa     == 1  if  aa,"message"
 aaaa = (1 + 2 / 2) if    _a == 2   +  +   134.3    else ("a"*3)  
 bbbb = "{}".    format(a)
+config: Config {
+   main: Container {
+    name: "main"
+    image: "test/test:v2"
+   }
+
+}

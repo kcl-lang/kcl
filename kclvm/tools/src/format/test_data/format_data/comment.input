@@ -7,3 +7,8 @@ schema Person:
     name:str="Alice"# Inline comment in schema
     # Block comment in schema
     age:int=18
+
+config = {
+    # Data comment
+    data = 1
+}

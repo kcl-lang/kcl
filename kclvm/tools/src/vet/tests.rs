@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context, Result};
 
 use crate::util::loader::LoaderKind;
+#[cfg(target_os = "windows")]
 use kclvm_runtime::PanicInfo;
 
 const CARGO_DIR: &str = env!("CARGO_MANIFEST_DIR");
