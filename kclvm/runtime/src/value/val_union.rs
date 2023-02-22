@@ -161,7 +161,7 @@ impl ValueRef {
                                 union_context,
                             );
                             if union_context.conflict {
-                                union_context.path_backtrace.push(format!("list[{}]", idx));
+                                union_context.path_backtrace.push(format!("list[{idx}]"));
                             }
                         }
                     }
@@ -315,7 +315,7 @@ impl ValueRef {
                 override_example,
             )
         }
-        ret.clone()
+        ret
     }
 }
 

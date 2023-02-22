@@ -295,13 +295,13 @@ impl ValueRef {
                         let ctx = Context::current_context_mut();
                         ctx.set_err_type(&ErrType::IntOverflow_TYPE);
 
-                        panic!("{}: A 32 bit integer overflow", v_i128);
+                        panic!("{v_i128}: A 32 bit integer overflow");
                     }
                 } else if strict_range_check_i64 && v_i128 != ((v_i128 as i64) as i128) {
                     let ctx = Context::current_context_mut();
                     ctx.set_err_type(&ErrType::IntOverflow_TYPE);
 
-                    panic!("{}: A 64 bit integer overflow", v_i128);
+                    panic!("{v_i128}: A 64 bit integer overflow");
                 }
             }
         }
@@ -337,7 +337,7 @@ impl ValueRef {
             }
             (Value::dict_value(_) | Value::schema_value(_), Value::undefined) => { /*Do nothing on unpacking None/Undefined*/
             }
-            _ => panic!("only list, dict and schema object can be used with unpack operators * and **, got {}", v),
+            _ => panic!("only list, dict and schema object can be used with unpack operators * and **, got {v}"),
         }
         if union {
             self.bin_aug_bit_or(&v.schema_to_dict().deep_copy());

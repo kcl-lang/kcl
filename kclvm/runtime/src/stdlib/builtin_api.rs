@@ -1,4 +1,5 @@
 // Copyright 2021 The KCL Authors. All rights reserved.
+#![allow(clippy::missing_safety_doc)]
 
 use crate::*;
 
@@ -7,7 +8,7 @@ type kclvm_value_ref_t = ValueRef;
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_option_init(
+pub unsafe extern "C" fn kclvm_builtin_option_init(
     ctx: *mut kclvm_context_t,
     key: *const i8,
     value: *const i8,
@@ -18,7 +19,7 @@ pub extern "C" fn kclvm_builtin_option_init(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_option_reset(
+pub unsafe extern "C" fn kclvm_builtin_option_reset(
     ctx: *mut kclvm_context_t,
     _args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -33,7 +34,7 @@ pub extern "C" fn kclvm_builtin_option_reset(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_option(
+pub unsafe extern "C" fn kclvm_builtin_option(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -107,14 +108,14 @@ pub extern "C" fn kclvm_builtin_option(
                 Value::str_value(ref v) => {
                     match v.parse::<i64>() {
                         Ok(n) => return ValueRef::int(n),
-                        _ => panic!("cannot use '{}' as type '{}'", v, typ),
+                        _ => panic!("cannot use '{v}' as type '{typ}'"),
                     };
                 }
                 _ => {
                     if list_option_mode {
                         return ValueRef::none();
                     }
-                    let err_msg = format!("cannot use '{}' as type '{}'", this, typ);
+                    let err_msg = format!("cannot use '{this}' as type '{typ}'");
                     panic!("{}", err_msg);
                 }
             }
@@ -144,7 +145,7 @@ pub extern "C" fn kclvm_builtin_option(
                     if list_option_mode {
                         return ValueRef::none();
                     }
-                    let err_msg = format!("cannot use '{}' as type '{}'", this, typ);
+                    let err_msg = format!("cannot use '{this}' as type '{typ}'");
                     panic!("{}", err_msg);
                 }
             }
@@ -170,7 +171,7 @@ pub extern "C" fn kclvm_builtin_option(
                     if list_option_mode {
                         return ValueRef::none();
                     }
-                    let err_msg = format!("cannot use '{}' as type '{}'", this, typ);
+                    let err_msg = format!("cannot use '{this}' as type '{typ}'");
                     panic!("{}", err_msg);
                 }
             }
@@ -184,7 +185,7 @@ pub extern "C" fn kclvm_builtin_option(
                     if list_option_mode {
                         return ValueRef::none();
                     }
-                    let err_msg = format!("cannot use '{}' as type '{}'", this, typ);
+                    let err_msg = format!("cannot use '{this}' as type '{typ}'");
                     panic!("{}", err_msg);
                 }
             }
@@ -198,7 +199,7 @@ pub extern "C" fn kclvm_builtin_option(
                     if list_option_mode {
                         return ValueRef::none();
                     }
-                    let err_msg = format!("cannot use '{}' as type '{}'", this, typ);
+                    let err_msg = format!("cannot use '{this}' as type '{typ}'");
                     panic!("{}", err_msg);
                 }
             }
@@ -208,7 +209,7 @@ pub extern "C" fn kclvm_builtin_option(
             return ValueRef::none();
         }
 
-        panic!("unknonwn type '{}'", typ);
+        panic!("unknonwn type '{typ}'");
     }
 
     if let Some(arg0) = args.arg_0() {
@@ -241,10 +242,7 @@ pub extern "C" fn kclvm_builtin_option(
     let required = kwargs.kwarg_bool("required", Some(false)).unwrap();
     if required {
         let name = args.arg_i_str(0, Some("?".to_string())).unwrap();
-        panic!(
-            "option('{}') must be initialized, try '-D {}=?' argument",
-            name, name
-        );
+        panic!("option('{name}') must be initialized, try '-D {name}=?' argument");
     }
 
     kclvm_value_None()
@@ -252,7 +250,7 @@ pub extern "C" fn kclvm_builtin_option(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_print(
+pub unsafe extern "C" fn kclvm_builtin_print(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -267,7 +265,7 @@ pub extern "C" fn kclvm_builtin_print(
     let dict = kwargs.as_dict_ref();
     // kwargs: end
     if let Some(c) = dict.values.get("end") {
-        print!("{}", c);
+        print!("{c}");
         use std::io::Write;
         let _ = std::io::stdout().flush();
     } else {
@@ -278,7 +276,7 @@ pub extern "C" fn kclvm_builtin_print(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_len(
+pub unsafe extern "C" fn kclvm_builtin_len(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -293,7 +291,7 @@ pub extern "C" fn kclvm_builtin_len(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_any_true(
+pub unsafe extern "C" fn kclvm_builtin_any_true(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -310,7 +308,7 @@ pub extern "C" fn kclvm_builtin_any_true(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_isunique(
+pub unsafe extern "C" fn kclvm_builtin_isunique(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -327,7 +325,7 @@ pub extern "C" fn kclvm_builtin_isunique(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_sorted(
+pub unsafe extern "C" fn kclvm_builtin_sorted(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -345,7 +343,7 @@ pub extern "C" fn kclvm_builtin_sorted(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_int(
+pub unsafe extern "C" fn kclvm_builtin_int(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -363,7 +361,7 @@ pub extern "C" fn kclvm_builtin_int(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_float(
+pub unsafe extern "C" fn kclvm_builtin_float(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -380,7 +378,7 @@ pub extern "C" fn kclvm_builtin_float(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_bool(
+pub unsafe extern "C" fn kclvm_builtin_bool(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -395,7 +393,7 @@ pub extern "C" fn kclvm_builtin_bool(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_str(
+pub unsafe extern "C" fn kclvm_builtin_str(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -410,7 +408,7 @@ pub extern "C" fn kclvm_builtin_str(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_max(
+pub unsafe extern "C" fn kclvm_builtin_max(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -429,7 +427,7 @@ pub extern "C" fn kclvm_builtin_max(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_min(
+pub unsafe extern "C" fn kclvm_builtin_min(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -448,7 +446,7 @@ pub extern "C" fn kclvm_builtin_min(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_multiplyof(
+pub unsafe extern "C" fn kclvm_builtin_multiplyof(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -467,7 +465,7 @@ pub extern "C" fn kclvm_builtin_multiplyof(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_abs(
+pub unsafe extern "C" fn kclvm_builtin_abs(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -483,7 +481,7 @@ pub extern "C" fn kclvm_builtin_abs(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_all_true(
+pub unsafe extern "C" fn kclvm_builtin_all_true(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -499,7 +497,7 @@ pub extern "C" fn kclvm_builtin_all_true(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_hex(
+pub unsafe extern "C" fn kclvm_builtin_hex(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -515,7 +513,7 @@ pub extern "C" fn kclvm_builtin_hex(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_sum(
+pub unsafe extern "C" fn kclvm_builtin_sum(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -534,7 +532,7 @@ pub extern "C" fn kclvm_builtin_sum(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_pow(
+pub unsafe extern "C" fn kclvm_builtin_pow(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -553,7 +551,7 @@ pub extern "C" fn kclvm_builtin_pow(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_round(
+pub unsafe extern "C" fn kclvm_builtin_round(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -572,7 +570,7 @@ pub extern "C" fn kclvm_builtin_round(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_zip(
+pub unsafe extern "C" fn kclvm_builtin_zip(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -585,7 +583,7 @@ pub extern "C" fn kclvm_builtin_zip(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_list(
+pub unsafe extern "C" fn kclvm_builtin_list(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -605,7 +603,7 @@ pub extern "C" fn kclvm_builtin_list(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_dict(
+pub unsafe extern "C" fn kclvm_builtin_dict(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -623,7 +621,7 @@ pub extern "C" fn kclvm_builtin_dict(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_typeof(
+pub unsafe extern "C" fn kclvm_builtin_typeof(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -643,7 +641,7 @@ pub extern "C" fn kclvm_builtin_typeof(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_bin(
+pub unsafe extern "C" fn kclvm_builtin_bin(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -659,7 +657,7 @@ pub extern "C" fn kclvm_builtin_bin(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_oct(
+pub unsafe extern "C" fn kclvm_builtin_oct(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -675,7 +673,7 @@ pub extern "C" fn kclvm_builtin_oct(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_ord(
+pub unsafe extern "C" fn kclvm_builtin_ord(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -694,7 +692,7 @@ pub extern "C" fn kclvm_builtin_ord(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_range(
+pub unsafe extern "C" fn kclvm_builtin_range(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,

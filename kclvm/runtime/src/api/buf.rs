@@ -64,7 +64,7 @@ impl Buffer {
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_buffer_new(size: kclvm_size_t) -> *mut kclvm_buffer_t {
+pub unsafe extern "C" fn kclvm_buffer_new(size: kclvm_size_t) -> *mut kclvm_buffer_t {
     let mut p = Buffer { buf: Vec::new() };
     p.buf.resize(size as usize, 0);
     Box::into_raw(Box::new(p))
@@ -72,20 +72,20 @@ pub extern "C" fn kclvm_buffer_new(size: kclvm_size_t) -> *mut kclvm_buffer_t {
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_buffer_delete(p: *mut kclvm_buffer_t) {
+pub unsafe extern "C" fn kclvm_buffer_delete(p: *mut kclvm_buffer_t) {
     free_mut_ptr(p)
 }
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_buffer_size(p: *const kclvm_buffer_t) -> kclvm_size_t {
+pub unsafe extern "C" fn kclvm_buffer_size(p: *const kclvm_buffer_t) -> kclvm_size_t {
     let p = ptr_as_ref(p);
     p.buf.len() as kclvm_size_t
 }
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_buffer_data(p: *const kclvm_buffer_t) -> *const kclvm_char_t {
+pub unsafe extern "C" fn kclvm_buffer_data(p: *const kclvm_buffer_t) -> *const kclvm_char_t {
     let p = ptr_as_ref(p);
     if !p.buf.is_empty() {
         p.buf.as_ptr() as *const kclvm_char_t

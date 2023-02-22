@@ -1,4 +1,5 @@
 // Copyright 2021 The KCL Authors. All rights reserved.
+#![allow(clippy::missing_safety_doc)]
 
 use crate::*;
 
@@ -28,7 +29,7 @@ pub extern "C" fn kclvm_plugin_init(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_plugin_invoke(
+pub unsafe extern "C" fn kclvm_plugin_invoke(
     method: *const i8,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,

@@ -166,7 +166,7 @@ impl ValueRef {
                     }
                 }
                 Value::none | Value::undefined => { /*Do nothing on unpacking None/Undefined*/ }
-                _ => panic!("only list, dict and schema object can be used with unpack operators * and **, got {}", x_or_list),
+                _ => panic!("only list, dict and schema object can be used with unpack operators * and **, got {x_or_list}"),
             },
             _ => panic!("Invalid list object in list_append_unpack"),
         }

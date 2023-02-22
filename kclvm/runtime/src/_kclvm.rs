@@ -19,7 +19,7 @@ impl std::fmt::Display for ApiType {
 impl ApiType {
     #[allow(dead_code)]
     pub fn name(&self) -> String {
-        format!("{:?}", self)
+        format!("{self:?}")
     }
 }
 
@@ -363,13 +363,13 @@ pub enum ApiFunc {
 
 impl std::fmt::Display for ApiFunc {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 
 impl ApiFunc {
     #[allow(dead_code)]
     pub fn name(&self) -> String {
-        format!("{:?}", self)
+        format!("{self:?}")
     }
 }

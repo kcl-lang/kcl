@@ -1,3 +1,5 @@
+#![allow(clippy::missing_safety_doc)]
+
 extern crate serde;
 
 pub use kclvm_capi::service::api::*;
@@ -6,7 +8,7 @@ use kclvm_runner::runner::*;
 pub use kclvm_runtime::*;
 
 #[no_mangle]
-pub extern "C" fn kclvm_cli_run(args: *const i8, plugin_agent: *const i8) -> *const i8 {
+pub unsafe extern "C" fn kclvm_cli_run(args: *const i8, plugin_agent: *const i8) -> *const i8 {
     let prev_hook = std::panic::take_hook();
 
     // disable print panic info
@@ -24,7 +26,7 @@ pub extern "C" fn kclvm_cli_run(args: *const i8, plugin_agent: *const i8) -> *co
                 ptr as *const i8
             }
             Err(result) => {
-                let result = format!("ERROR:{}", result);
+                let result = format!("ERROR:{result}");
                 let c_string =
                     std::ffi::CString::new(result.as_str()).expect("CString::new failed");
                 let ptr = c_string.into_raw();
@@ -33,7 +35,7 @@ pub extern "C" fn kclvm_cli_run(args: *const i8, plugin_agent: *const i8) -> *co
         },
         Err(err) => {
             let err_message = kclvm_error::err_to_str(err);
-            let result = format!("ERROR:{:}", err_message);
+            let result = format!("ERROR:{err_message:}");
             let c_string = std::ffi::CString::new(result.as_str()).expect("CString::new failed");
             let ptr = c_string.into_raw();
             ptr as *const i8

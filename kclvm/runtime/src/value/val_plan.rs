@@ -145,7 +145,7 @@ fn handle_schema(value: &ValueRef) -> (Vec<ValueRef>, bool) {
     }
     let settings = SCHEMA_SETTINGS_ATTR_NAME;
     let output_type = SETTINGS_OUTPUT_KEY;
-    let path = format!("{}.{}", settings, output_type);
+    let path = format!("{settings}.{output_type}");
     let output_type_option = value.get_by_path(&path);
     if let Some(ref output_type) = output_type_option {
         if output_type.str_equal(SETTINGS_OUTPUT_IGNORE) {
@@ -198,7 +198,7 @@ impl ValueRef {
         let results = filter_results(self);
         let yaml_result = results
             .iter()
-            .map(|r| r.to_yaml_string().strip_suffix("\n").unwrap().to_string())
+            .map(|r| r.to_yaml_string().strip_suffix('\n').unwrap().to_string())
             .collect::<Vec<String>>()
             .join(YAML_STREAM_SEP);
         let mut list_result = ValueRef::list(None);

@@ -51,7 +51,7 @@ type kclvm_value_ref_t = ValueRef;
 /// TODO: more options on the function `yaml_stream`.
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_manifests_yaml_stream(
+pub unsafe extern "C" fn kclvm_manifests_yaml_stream(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,

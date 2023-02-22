@@ -171,13 +171,13 @@ impl ValueRef {
                         let ctx = Context::current_context_mut();
                         ctx.set_err_type(&ErrType::IntOverflow_TYPE);
 
-                        panic!("{}: A 32 bit integer overflow", v_i128);
+                        panic!("{v_i128}: A 32 bit integer overflow");
                     }
                     if int_64_overflow {
                         let ctx = Context::current_context_mut();
                         ctx.set_err_type(&ErrType::IntOverflow_TYPE);
 
-                        panic!("{}: A 64 bit integer overflow", v_i128);
+                        panic!("{v_i128}: A 64 bit integer overflow");
                     }
                 }
 
@@ -189,7 +189,7 @@ impl ValueRef {
                 let number_str = to_quantity(v.as_str()).to_string();
                 let v: i64 =
                     i64::from_str_radix(number_str.as_str(), base as u32).unwrap_or_else(|_| {
-                        panic!("invalid literal for int() with base {}: '{}'", base, self)
+                        panic!("invalid literal for int() with base {base}: '{self}'")
                     });
                 ValueRef::int(v)
             }
@@ -227,7 +227,7 @@ impl ValueRef {
             Value::bool_value(ref v) => ValueRef::float((*v as i64) as f64),
             Value::str_value(ref v) => {
                 let v: f64 = v.parse().unwrap_or_else(|_| {
-                    panic!("invalid literal for float() with base 10: '{}'", self)
+                    panic!("invalid literal for float() with base 10: '{self}'")
                 });
                 let float32_overflow = strict_range_check_i32 && (v as f32).is_infinite();
                 let float64_overflow = strict_range_check_i64 && (v).is_infinite();
@@ -243,7 +243,7 @@ impl ValueRef {
                 }
                 ValueRef::float(v)
             }
-            _ => panic!("invalid literal for float() with base 10: '{}'", self),
+            _ => panic!("invalid literal for float() with base 10: '{self}'"),
         }
     }
 

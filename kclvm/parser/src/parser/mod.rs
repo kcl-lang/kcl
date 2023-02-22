@@ -17,7 +17,6 @@ mod expr;
 mod int;
 mod module;
 mod precedence;
-mod schema;
 mod stmt;
 #[cfg(test)]
 mod tests;

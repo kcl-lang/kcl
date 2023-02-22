@@ -18,23 +18,12 @@ macro_rules! tri {
     };
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct JsonEncodeOptions {
     pub sort_keys: bool,
     pub indent: i64,
     pub ignore_private: bool,
     pub ignore_none: bool,
-}
-
-impl Default for JsonEncodeOptions {
-    fn default() -> Self {
-        Self {
-            sort_keys: false,
-            ignore_private: false,
-            ignore_none: false,
-            indent: 0,
-        }
-    }
 }
 
 struct JsonFormatter {

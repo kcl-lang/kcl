@@ -7,13 +7,13 @@ impl Type {
         match self {
             Type::any_type => KCL_TYPE_ANY.to_string(),
             Type::bool_type => BUILTIN_TYPE_BOOL.to_string(),
-            Type::bool_lit_type(ref v) => format!("{}({})", BUILTIN_TYPE_BOOL, v),
+            Type::bool_lit_type(ref v) => format!("{BUILTIN_TYPE_BOOL}({v})"),
             Type::int_type => BUILTIN_TYPE_INT.to_string(),
-            Type::int_lit_type(ref v) => format!("{}({})", BUILTIN_TYPE_INT, v),
+            Type::int_lit_type(ref v) => format!("{BUILTIN_TYPE_INT}({v})"),
             Type::float_type => BUILTIN_TYPE_FLOAT.to_string(),
-            Type::float_lit_type(ref v) => format!("{}({})", BUILTIN_TYPE_FLOAT, v),
+            Type::float_lit_type(ref v) => format!("{BUILTIN_TYPE_FLOAT}({v})"),
             Type::str_type => BUILTIN_TYPE_STR.to_string(),
-            Type::str_lit_type(ref v) => format!("{}({})", BUILTIN_TYPE_STR, v),
+            Type::str_lit_type(ref v) => format!("{BUILTIN_TYPE_STR}({v})"),
             Type::list_type(ref v) => format!("[{}]", v.elem_type.type_str()),
             Type::dict_type(ref v) => {
                 format!("{{{}:{}}}", v.key_type.type_str(), v.elem_type.type_str())

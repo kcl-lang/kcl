@@ -107,7 +107,7 @@ impl RealFileName {
             | RealFileName::Remapped {
                 local_path: _,
                 virtual_name: p,
-            } => &p,
+            } => p,
         }
     }
 
@@ -192,7 +192,7 @@ impl fmt::Display for FileNameDisplay<'_> {
             ProcMacroSourceCode(_) => write!(fmt, "<proc-macro source code>"),
             CfgSpec(_) => write!(fmt, "<cfgspec>"),
             CliCrateAttr(_) => write!(fmt, "<crate attribute>"),
-            Custom(ref s) => write!(fmt, "<{}>", s),
+            Custom(ref s) => write!(fmt, "<{s}>"),
             DocTest(ref path, _) => write!(fmt, "{}", path.display()),
             InlineAsm(_) => write!(fmt, "<inline asm>"),
         }
@@ -203,7 +203,7 @@ impl FileNameDisplay<'_> {
     pub fn to_string_lossy(&self) -> Cow<'_, str> {
         match self.inner {
             FileName::Real(ref inner) => inner.to_string_lossy(self.display_pref),
-            _ => Cow::from(format!("{}", self)),
+            _ => Cow::from(format!("{self}")),
         }
     }
 }
@@ -503,7 +503,7 @@ impl NonNarrowChar {
             0 => NonNarrowChar::ZeroWidth(pos),
             2 => NonNarrowChar::Wide(pos),
             4 => NonNarrowChar::Tab(pos),
-            _ => panic!("width {} given for non-narrow character", width),
+            _ => panic!("width {width} given for non-narrow character"),
         }
     }
 
@@ -762,11 +762,9 @@ impl SourceFile {
             begin.to_usize()
         };
 
-        if let Some(ref src) = self.src {
-            Some(Cow::from(get_until_newline(src, begin)))
-        } else {
-            None
-        }
+        self.src
+            .as_ref()
+            .map(|src| Cow::from(get_until_newline(src, begin)))
     }
 
     pub fn is_real_file(&self) -> bool {
@@ -964,7 +962,7 @@ fn normalize_newlines(src: &mut String, normalized_pos: &mut Vec<NormalizedPos>)
     // directly, let's rather steal the contents of `src`. This makes the code
     // safe even if a panic occurs.
 
-    let mut buf = std::mem::replace(src, String::new()).into_bytes();
+    let mut buf = std::mem::take(src).into_bytes();
     let mut gap_len = 0;
     let mut tail = buf.as_mut_slice();
     let mut cursor = 0;
