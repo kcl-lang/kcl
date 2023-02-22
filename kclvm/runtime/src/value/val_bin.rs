@@ -312,7 +312,7 @@ impl ValueRef {
                     let ch = a.chars().nth(index).unwrap();
                     Self::str(ch.to_string().as_ref())
                 } else {
-                    panic!("string index out of range: {}", b);
+                    panic!("string index out of range: {b}");
                 }
             }
             (Value::list_value(a), Value::int_value(b)) => {
@@ -325,7 +325,7 @@ impl ValueRef {
                 if index < a.values.len() {
                     a.values[index].clone()
                 } else {
-                    panic!("list index out of range: {}", b);
+                    panic!("list index out of range: {b}");
                 }
             }
             (Value::dict_value(a), Value::str_value(b)) => match a.values.get(b) {

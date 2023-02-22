@@ -1,4 +1,5 @@
 // Copyright 2021 The KCL Authors. All rights reserved.
+#![allow(clippy::missing_safety_doc)]
 
 use std::mem::transmute_copy;
 
@@ -42,7 +43,7 @@ pub type kclvm_float_t = f64;
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_context_set_import_names(
+pub unsafe extern "C" fn kclvm_context_set_import_names(
     p: *mut kclvm_context_t,
     import_names: *const kclvm_value_ref_t,
 ) {
@@ -171,7 +172,7 @@ pub extern "C" fn kclvm_value_Unit(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_Str(v: *const kclvm_char_t) -> *mut kclvm_value_ref_t {
+pub unsafe extern "C" fn kclvm_value_Str(v: *const kclvm_char_t) -> *mut kclvm_value_ref_t {
     unsafe {
         if v.is_null() || *v == '\0' as i8 {
             return new_mut_ptr(ValueRef::str(""));
@@ -228,7 +229,7 @@ pub extern "C" fn kclvm_value_List10(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_ListN(
+pub unsafe extern "C" fn kclvm_value_ListN(
     n: kclvm_int_t,
     elem_values: *const *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
@@ -258,7 +259,7 @@ pub extern "C" fn kclvm_value_Schema() -> *mut kclvm_value_ref_t {
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_schema_with_config(
+pub unsafe extern "C" fn kclvm_value_schema_with_config(
     schema_dict: *const kclvm_value_ref_t,
     config: *const kclvm_value_ref_t,
     config_meta: *const kclvm_value_ref_t,
@@ -316,7 +317,7 @@ pub extern "C" fn kclvm_value_schema_with_config(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_Function(
+pub unsafe extern "C" fn kclvm_value_Function(
     fn_ptr: *const u64,
     closure: *const kclvm_value_ref_t,
     external_name: *const kclvm_char_t,
@@ -328,13 +329,15 @@ pub extern "C" fn kclvm_value_Function(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_Function_using_ptr(fn_ptr: *const u64) -> *mut kclvm_value_ref_t {
+pub unsafe extern "C" fn kclvm_value_Function_using_ptr(
+    fn_ptr: *const u64,
+) -> *mut kclvm_value_ref_t {
     new_mut_ptr(ValueRef::func(fn_ptr as u64, 0, ValueRef::none(), "", ""))
 }
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_schema_function(
+pub unsafe extern "C" fn kclvm_value_schema_function(
     fn_ptr: *const u64,
     check_fn_ptr: *const u64,
     tpe: *const kclvm_char_t,
@@ -385,7 +388,7 @@ pub extern "C" fn kclvm_value_schema_function(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_from_json(s: *const kclvm_char_t) -> *mut kclvm_value_ref_t {
+pub unsafe extern "C" fn kclvm_value_from_json(s: *const kclvm_char_t) -> *mut kclvm_value_ref_t {
     if s.is_null() {
         return kclvm_value_Undefined();
     }
@@ -397,7 +400,7 @@ pub extern "C" fn kclvm_value_from_json(s: *const kclvm_char_t) -> *mut kclvm_va
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_to_json(p: *const kclvm_value_ref_t) -> *mut kclvm_buffer_t {
+pub unsafe extern "C" fn kclvm_value_to_json(p: *const kclvm_value_ref_t) -> *mut kclvm_buffer_t {
     let p = ptr_as_ref(p);
     let x = p.to_json();
     let buf = Buffer::new_with_buf(&x);
@@ -406,7 +409,9 @@ pub extern "C" fn kclvm_value_to_json(p: *const kclvm_value_ref_t) -> *mut kclvm
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_to_json_value(p: *const kclvm_value_ref_t) -> *mut kclvm_value_ref_t {
+pub unsafe extern "C" fn kclvm_value_to_json_value(
+    p: *const kclvm_value_ref_t,
+) -> *mut kclvm_value_ref_t {
     if p.is_null() {
         return kclvm_value_Str(std::ptr::null());
     }
@@ -419,7 +424,7 @@ pub extern "C" fn kclvm_value_to_json_value(p: *const kclvm_value_ref_t) -> *mut
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_to_json_value_with_null(
+pub unsafe extern "C" fn kclvm_value_to_json_value_with_null(
     p: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
     if p.is_null() {
@@ -434,7 +439,9 @@ pub extern "C" fn kclvm_value_to_json_value_with_null(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_plan_to_json(p: *const kclvm_value_ref_t) -> *mut kclvm_value_ref_t {
+pub unsafe extern "C" fn kclvm_value_plan_to_json(
+    p: *const kclvm_value_ref_t,
+) -> *mut kclvm_value_ref_t {
     let p = ptr_as_ref(p);
     let s = p.plan_to_json_string();
 
@@ -443,7 +450,9 @@ pub extern "C" fn kclvm_value_plan_to_json(p: *const kclvm_value_ref_t) -> *mut 
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_plan_to_yaml(p: *const kclvm_value_ref_t) -> *mut kclvm_value_ref_t {
+pub unsafe extern "C" fn kclvm_value_plan_to_yaml(
+    p: *const kclvm_value_ref_t,
+) -> *mut kclvm_value_ref_t {
     let p = ptr_as_ref(p);
     let s = p.plan_to_yaml_string();
 
@@ -452,7 +461,9 @@ pub extern "C" fn kclvm_value_plan_to_yaml(p: *const kclvm_value_ref_t) -> *mut 
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_to_yaml_value(p: *const kclvm_value_ref_t) -> *mut kclvm_value_ref_t {
+pub unsafe extern "C" fn kclvm_value_to_yaml_value(
+    p: *const kclvm_value_ref_t,
+) -> *mut kclvm_value_ref_t {
     if p.is_null() {
         return kclvm_value_Str(std::ptr::null());
     }
@@ -465,7 +476,9 @@ pub extern "C" fn kclvm_value_to_yaml_value(p: *const kclvm_value_ref_t) -> *mut
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_to_str_value(p: *const kclvm_value_ref_t) -> *mut kclvm_value_ref_t {
+pub unsafe extern "C" fn kclvm_value_to_str_value(
+    p: *const kclvm_value_ref_t,
+) -> *mut kclvm_value_ref_t {
     if p.is_null() {
         return kclvm_value_Str(std::ptr::null());
     }
@@ -482,7 +495,7 @@ pub extern "C" fn kclvm_value_to_str_value(p: *const kclvm_value_ref_t) -> *mut 
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_Bool_ptr(p: *const kclvm_value_ref_t) -> *const kclvm_bool_t {
+pub unsafe extern "C" fn kclvm_value_Bool_ptr(p: *const kclvm_value_ref_t) -> *const kclvm_bool_t {
     let p = ptr_as_ref(p);
     match &*p.rc.borrow() {
         Value::bool_value(ref v) => v as *const bool as *const kclvm_bool_t, // sizeof(bool) == sizeof(i8)
@@ -492,7 +505,7 @@ pub extern "C" fn kclvm_value_Bool_ptr(p: *const kclvm_value_ref_t) -> *const kc
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_Int_ptr(p: *const kclvm_value_ref_t) -> *const kclvm_int_t {
+pub unsafe extern "C" fn kclvm_value_Int_ptr(p: *const kclvm_value_ref_t) -> *const kclvm_int_t {
     let p = ptr_as_ref(p);
     match &*p.rc.borrow() {
         Value::int_value(ref v) => v as *const kclvm_int_t,
@@ -502,7 +515,9 @@ pub extern "C" fn kclvm_value_Int_ptr(p: *const kclvm_value_ref_t) -> *const kcl
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_Float_ptr(p: *const kclvm_value_ref_t) -> *const kclvm_float_t {
+pub unsafe extern "C" fn kclvm_value_Float_ptr(
+    p: *const kclvm_value_ref_t,
+) -> *const kclvm_float_t {
     let p = ptr_as_ref(p);
     match &*p.rc.borrow() {
         Value::float_value(ref v) => v as *const kclvm_float_t,
@@ -512,7 +527,7 @@ pub extern "C" fn kclvm_value_Float_ptr(p: *const kclvm_value_ref_t) -> *const k
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_Str_ptr(p: *const kclvm_value_ref_t) -> *const kclvm_char_t {
+pub unsafe extern "C" fn kclvm_value_Str_ptr(p: *const kclvm_value_ref_t) -> *const kclvm_char_t {
     let p = ptr_as_ref(p);
     match &*p.rc.borrow() {
         Value::str_value(ref v) => v.as_ptr() as *const i8,
@@ -522,21 +537,21 @@ pub extern "C" fn kclvm_value_Str_ptr(p: *const kclvm_value_ref_t) -> *const kcl
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_Str_len(p: *const kclvm_value_ref_t) -> kclvm_size_t {
+pub unsafe extern "C" fn kclvm_value_Str_len(p: *const kclvm_value_ref_t) -> kclvm_size_t {
     let p = ptr_as_ref(p);
     p.str_len() as kclvm_size_t
 }
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_Str_resize(p: *mut kclvm_value_ref_t, n: kclvm_size_t) {
+pub unsafe extern "C" fn kclvm_value_Str_resize(p: *mut kclvm_value_ref_t, n: kclvm_size_t) {
     let p = mut_ptr_as_ref(p);
     p.str_resize(n as usize)
 }
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_function_ptr(p: *const kclvm_value_ref_t) -> *const u64 {
+pub unsafe extern "C" fn kclvm_value_function_ptr(p: *const kclvm_value_ref_t) -> *const u64 {
     let p = ptr_as_ref(p);
     match &*p.rc.borrow() {
         Value::func_value(ref v) => v.fn_ptr as *const u64,
@@ -546,7 +561,7 @@ pub extern "C" fn kclvm_value_function_ptr(p: *const kclvm_value_ref_t) -> *cons
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_check_function_ptr(p: *const kclvm_value_ref_t) -> *const u64 {
+pub unsafe extern "C" fn kclvm_value_check_function_ptr(p: *const kclvm_value_ref_t) -> *const u64 {
     let p = ptr_as_ref(p);
     match &*p.rc.borrow() {
         Value::func_value(ref v) => v.check_fn_ptr as *const u64,
@@ -556,7 +571,9 @@ pub extern "C" fn kclvm_value_check_function_ptr(p: *const kclvm_value_ref_t) ->
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_function_is_external(p: *const kclvm_value_ref_t) -> kclvm_bool_t {
+pub unsafe extern "C" fn kclvm_value_function_is_external(
+    p: *const kclvm_value_ref_t,
+) -> kclvm_bool_t {
     let p = ptr_as_ref(p);
     match &*p.rc.borrow() {
         Value::func_value(ref v) => !v.external_name.is_empty() as kclvm_bool_t,
@@ -566,7 +583,7 @@ pub extern "C" fn kclvm_value_function_is_external(p: *const kclvm_value_ref_t) 
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_function_external_invoke(
+pub unsafe extern "C" fn kclvm_value_function_external_invoke(
     p: *const kclvm_value_ref_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -583,7 +600,7 @@ pub extern "C" fn kclvm_value_function_external_invoke(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_function_invoke(
+pub unsafe extern "C" fn kclvm_value_function_invoke(
     p: *const kclvm_value_ref_t,
     ctx: *mut kclvm_context_t,
     args: *mut kclvm_value_ref_t,
@@ -657,7 +674,7 @@ pub extern "C" fn kclvm_value_function_invoke(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_function_get_closure(
+pub unsafe extern "C" fn kclvm_value_function_get_closure(
     p: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
     let p = ptr_as_ref(p);
@@ -676,7 +693,7 @@ pub extern "C" fn kclvm_value_function_get_closure(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_kind(p: *const kclvm_value_ref_t) -> kclvm_kind_t {
+pub unsafe extern "C" fn kclvm_value_kind(p: *const kclvm_value_ref_t) -> kclvm_kind_t {
     let p = ptr_as_ref(p);
     p.kind()
 }
@@ -685,7 +702,9 @@ pub extern "C" fn kclvm_value_kind(p: *const kclvm_value_ref_t) -> kclvm_kind_t 
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_deep_copy(p: *const kclvm_value_ref_t) -> *mut kclvm_value_ref_t {
+pub unsafe extern "C" fn kclvm_value_deep_copy(
+    p: *const kclvm_value_ref_t,
+) -> *mut kclvm_value_ref_t {
     let p = ptr_as_ref(p);
     p.deep_copy().into_raw()
 }
@@ -694,7 +713,7 @@ pub extern "C" fn kclvm_value_deep_copy(p: *const kclvm_value_ref_t) -> *mut kcl
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_delete(p: *mut kclvm_value_ref_t) {
+pub unsafe extern "C" fn kclvm_value_delete(p: *mut kclvm_value_ref_t) {
     if p.is_null() {
         return;
     }
@@ -729,7 +748,7 @@ pub extern "C" fn kclvm_value_delete(p: *mut kclvm_value_ref_t) {
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_iter(p: *const kclvm_value_ref_t) -> *mut kclvm_iterator_t {
+pub unsafe extern "C" fn kclvm_value_iter(p: *const kclvm_value_ref_t) -> *mut kclvm_iterator_t {
     let p = ptr_as_ref(p);
     let iter = ValueIterator::from_value(p);
     Box::into_raw(Box::new(iter))
@@ -737,20 +756,22 @@ pub extern "C" fn kclvm_value_iter(p: *const kclvm_value_ref_t) -> *mut kclvm_it
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_iterator_delete(p: *mut kclvm_iterator_t) {
+pub unsafe extern "C" fn kclvm_iterator_delete(p: *mut kclvm_iterator_t) {
     free_mut_ptr(p);
 }
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_iterator_is_end(p: *mut kclvm_iterator_t) -> kclvm_bool_t {
+pub unsafe extern "C" fn kclvm_iterator_is_end(p: *mut kclvm_iterator_t) -> kclvm_bool_t {
     let p = ptr_as_ref(p);
     p.is_end() as kclvm_bool_t
 }
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_iterator_cur_key(p: *mut kclvm_iterator_t) -> *const kclvm_value_ref_t {
+pub unsafe extern "C" fn kclvm_iterator_cur_key(
+    p: *mut kclvm_iterator_t,
+) -> *const kclvm_value_ref_t {
     let p = ptr_as_ref(p);
     match p.key() {
         Some(x) => x,
@@ -760,7 +781,9 @@ pub extern "C" fn kclvm_iterator_cur_key(p: *mut kclvm_iterator_t) -> *const kcl
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_iterator_cur_value(p: *mut kclvm_iterator_t) -> *const kclvm_value_ref_t {
+pub unsafe extern "C" fn kclvm_iterator_cur_value(
+    p: *mut kclvm_iterator_t,
+) -> *const kclvm_value_ref_t {
     let p = mut_ptr_as_ref(p);
     match p.value() {
         Some(x) => x,
@@ -770,7 +793,7 @@ pub extern "C" fn kclvm_iterator_cur_value(p: *mut kclvm_iterator_t) -> *const k
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_iterator_next_value(
+pub unsafe extern "C" fn kclvm_iterator_next_value(
     p: *mut kclvm_iterator_t,
     host: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
@@ -789,21 +812,21 @@ pub extern "C" fn kclvm_iterator_next_value(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_list_len(p: *const kclvm_value_ref_t) -> kclvm_size_t {
+pub unsafe extern "C" fn kclvm_list_len(p: *const kclvm_value_ref_t) -> kclvm_size_t {
     let p = ptr_as_ref(p);
     p.len() as kclvm_size_t
 }
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_list_resize(p: *mut kclvm_value_ref_t, newsize: kclvm_size_t) {
+pub unsafe extern "C" fn kclvm_list_resize(p: *mut kclvm_value_ref_t, newsize: kclvm_size_t) {
     let p = mut_ptr_as_ref(p);
     p.list_resize(newsize as usize);
 }
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_list_clear(p: *mut kclvm_value_ref_t) {
+pub unsafe extern "C" fn kclvm_list_clear(p: *mut kclvm_value_ref_t) {
     let p = mut_ptr_as_ref(p);
     p.list_clear();
 }
@@ -811,7 +834,7 @@ pub extern "C" fn kclvm_list_clear(p: *mut kclvm_value_ref_t) {
 /// Return number of occurrences of the list value.
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_list_count(
+pub unsafe extern "C" fn kclvm_list_count(
     p: *const kclvm_value_ref_t,
     item: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
@@ -825,7 +848,7 @@ pub extern "C" fn kclvm_list_count(
 /// Return first index of the list value. Panic if the value is not present.
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_list_find(
+pub unsafe extern "C" fn kclvm_list_find(
     p: *const kclvm_value_ref_t,
     item: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
@@ -839,7 +862,7 @@ pub extern "C" fn kclvm_list_find(
 /// Insert object before index of the list value.
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_list_insert(
+pub unsafe extern "C" fn kclvm_list_insert(
     p: *mut kclvm_value_ref_t,
     index: *const kclvm_value_ref_t,
     value: *const kclvm_value_ref_t,
@@ -852,7 +875,7 @@ pub extern "C" fn kclvm_list_insert(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_list_get(
+pub unsafe extern "C" fn kclvm_list_get(
     p: *const kclvm_value_ref_t,
     i: kclvm_size_t,
 ) -> *const kclvm_value_ref_t {
@@ -865,7 +888,7 @@ pub extern "C" fn kclvm_list_get(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_list_get_option(
+pub unsafe extern "C" fn kclvm_list_get_option(
     p: *const kclvm_value_ref_t,
     i: kclvm_size_t,
 ) -> *const kclvm_value_ref_t {
@@ -878,7 +901,7 @@ pub extern "C" fn kclvm_list_get_option(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_list_set(
+pub unsafe extern "C" fn kclvm_list_set(
     p: *mut kclvm_value_ref_t,
     i: kclvm_size_t,
     v: *const kclvm_value_ref_t,
@@ -890,7 +913,7 @@ pub extern "C" fn kclvm_list_set(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_list_pop(p: *mut kclvm_value_ref_t) -> *const kclvm_value_ref_t {
+pub unsafe extern "C" fn kclvm_list_pop(p: *mut kclvm_value_ref_t) -> *const kclvm_value_ref_t {
     let p = mut_ptr_as_ref(p);
     match p.list_pop() {
         Some(x) => x.into_raw(),
@@ -900,7 +923,9 @@ pub extern "C" fn kclvm_list_pop(p: *mut kclvm_value_ref_t) -> *const kclvm_valu
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_list_pop_first(p: *mut kclvm_value_ref_t) -> *const kclvm_value_ref_t {
+pub unsafe extern "C" fn kclvm_list_pop_first(
+    p: *mut kclvm_value_ref_t,
+) -> *const kclvm_value_ref_t {
     let p = mut_ptr_as_ref(p);
     match p.list_pop_first() {
         Some(x) => x.into_raw(),
@@ -910,7 +935,7 @@ pub extern "C" fn kclvm_list_pop_first(p: *mut kclvm_value_ref_t) -> *const kclv
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_list_append(p: *mut kclvm_value_ref_t, v: *const kclvm_value_ref_t) {
+pub unsafe extern "C" fn kclvm_list_append(p: *mut kclvm_value_ref_t, v: *const kclvm_value_ref_t) {
     let p = mut_ptr_as_ref(p);
     let v = ptr_as_ref(v);
     p.list_append(v);
@@ -918,35 +943,38 @@ pub extern "C" fn kclvm_list_append(p: *mut kclvm_value_ref_t, v: *const kclvm_v
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_list_append_bool(p: *mut kclvm_value_ref_t, v: kclvm_bool_t) {
+pub unsafe extern "C" fn kclvm_list_append_bool(p: *mut kclvm_value_ref_t, v: kclvm_bool_t) {
     let p = mut_ptr_as_ref(p);
     p.list_append(&ValueRef::bool(v != 0));
 }
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_list_append_int(p: *mut kclvm_value_ref_t, v: kclvm_int_t) {
+pub unsafe extern "C" fn kclvm_list_append_int(p: *mut kclvm_value_ref_t, v: kclvm_int_t) {
     let p = mut_ptr_as_ref(p);
     p.list_append(&ValueRef::int(v));
 }
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_list_append_float(p: *mut kclvm_value_ref_t, v: kclvm_float_t) {
+pub unsafe extern "C" fn kclvm_list_append_float(p: *mut kclvm_value_ref_t, v: kclvm_float_t) {
     let p = mut_ptr_as_ref(p);
     p.list_append(&ValueRef::float(v));
 }
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_list_append_str(p: *mut kclvm_value_ref_t, v: *const kclvm_char_t) {
+pub unsafe extern "C" fn kclvm_list_append_str(p: *mut kclvm_value_ref_t, v: *const kclvm_char_t) {
     let p = mut_ptr_as_ref(p);
     p.list_append(&ValueRef::str(c2str(v)));
 }
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_list_append_unpack(p: *mut kclvm_value_ref_t, v: *const kclvm_value_ref_t) {
+pub unsafe extern "C" fn kclvm_list_append_unpack(
+    p: *mut kclvm_value_ref_t,
+    v: *const kclvm_value_ref_t,
+) {
     let p = mut_ptr_as_ref(p);
     let v = ptr_as_ref(v);
 
@@ -957,7 +985,7 @@ pub extern "C" fn kclvm_list_append_unpack(p: *mut kclvm_value_ref_t, v: *const 
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_list_remove_at(p: *mut kclvm_value_ref_t, i: kclvm_size_t) {
+pub unsafe extern "C" fn kclvm_list_remove_at(p: *mut kclvm_value_ref_t, i: kclvm_size_t) {
     let p = mut_ptr_as_ref(p);
     p.list_remove_at(i as usize);
 }
@@ -968,7 +996,7 @@ pub extern "C" fn kclvm_list_remove_at(p: *mut kclvm_value_ref_t, i: kclvm_size_
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_dict_len(p: *const kclvm_value_ref_t) -> kclvm_size_t {
+pub unsafe extern "C" fn kclvm_dict_len(p: *const kclvm_value_ref_t) -> kclvm_size_t {
     let p = ptr_as_ref(p);
     match &*p.rc.borrow() {
         Value::dict_value(ref dict) => dict.values.len() as kclvm_size_t,
@@ -978,14 +1006,14 @@ pub extern "C" fn kclvm_dict_len(p: *const kclvm_value_ref_t) -> kclvm_size_t {
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_dict_clear(p: *mut kclvm_value_ref_t) {
+pub unsafe extern "C" fn kclvm_dict_clear(p: *mut kclvm_value_ref_t) {
     let p = mut_ptr_as_ref(p);
     p.dict_clear();
 }
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_dict_get(
+pub unsafe extern "C" fn kclvm_dict_get(
     p: *const kclvm_value_ref_t,
     key: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
@@ -1000,7 +1028,7 @@ pub extern "C" fn kclvm_dict_get(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_dict_has_value(
+pub unsafe extern "C" fn kclvm_dict_has_value(
     p: *const kclvm_value_ref_t,
     key: *const kclvm_char_t,
 ) -> kclvm_bool_t {
@@ -1014,7 +1042,7 @@ pub extern "C" fn kclvm_dict_has_value(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_dict_get_value(
+pub unsafe extern "C" fn kclvm_dict_get_value(
     p: *const kclvm_value_ref_t,
     key: *const kclvm_char_t,
 ) -> *const kclvm_value_ref_t {
@@ -1028,7 +1056,7 @@ pub extern "C" fn kclvm_dict_get_value(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_dict_get_entry(
+pub unsafe extern "C" fn kclvm_dict_get_entry(
     p: *const kclvm_value_ref_t,
     key: *const kclvm_char_t,
 ) -> *const kclvm_value_ref_t {
@@ -1042,7 +1070,7 @@ pub extern "C" fn kclvm_dict_get_entry(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_dict_get_value_by_path(
+pub unsafe extern "C" fn kclvm_dict_get_value_by_path(
     p: *const kclvm_value_ref_t,
     path: *const kclvm_char_t,
 ) -> *const kclvm_value_ref_t {
@@ -1056,7 +1084,7 @@ pub extern "C" fn kclvm_dict_get_value_by_path(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_dict_set_value(
+pub unsafe extern "C" fn kclvm_dict_set_value(
     p: *mut kclvm_value_ref_t,
     key: *const kclvm_char_t,
     val: *const kclvm_value_ref_t,
@@ -1083,7 +1111,7 @@ pub extern "C" fn kclvm_dict_set_value(
 #[no_mangle]
 #[runtime_fn]
 /// Return all dict keys.
-pub extern "C" fn kclvm_dict_keys(p: *const kclvm_value_ref_t) -> *const kclvm_value_ref_t {
+pub unsafe extern "C" fn kclvm_dict_keys(p: *const kclvm_value_ref_t) -> *const kclvm_value_ref_t {
     let p = ptr_as_ref(p);
     let r = p.dict_keys();
     r.into_raw()
@@ -1092,7 +1120,9 @@ pub extern "C" fn kclvm_dict_keys(p: *const kclvm_value_ref_t) -> *const kclvm_v
 #[no_mangle]
 #[runtime_fn]
 /// Return all dict values.
-pub extern "C" fn kclvm_dict_values(p: *const kclvm_value_ref_t) -> *const kclvm_value_ref_t {
+pub unsafe extern "C" fn kclvm_dict_values(
+    p: *const kclvm_value_ref_t,
+) -> *const kclvm_value_ref_t {
     let p = ptr_as_ref(p);
     let r = p.dict_values();
     r.into_raw()
@@ -1100,7 +1130,7 @@ pub extern "C" fn kclvm_dict_values(p: *const kclvm_value_ref_t) -> *const kclvm
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_dict_insert(
+pub unsafe extern "C" fn kclvm_dict_insert(
     p: *mut kclvm_value_ref_t,
     key: *const kclvm_char_t,
     v: *const kclvm_value_ref_t,
@@ -1119,7 +1149,7 @@ pub extern "C" fn kclvm_dict_insert(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_dict_merge(
+pub unsafe extern "C" fn kclvm_dict_merge(
     p: *mut kclvm_value_ref_t,
     key: *const kclvm_char_t,
     v: *const kclvm_value_ref_t,
@@ -1151,7 +1181,7 @@ pub extern "C" fn kclvm_dict_merge(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_dict_insert_value(
+pub unsafe extern "C" fn kclvm_dict_insert_value(
     p: *mut kclvm_value_ref_t,
     key: *const kclvm_value_ref_t,
     v: *const kclvm_value_ref_t,
@@ -1172,7 +1202,7 @@ pub extern "C" fn kclvm_dict_insert_value(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_dict_update_key_value(
+pub unsafe extern "C" fn kclvm_dict_update_key_value(
     p: *mut kclvm_value_ref_t,
     key: *const kclvm_value_ref_t,
     v: *const kclvm_value_ref_t,
@@ -1186,7 +1216,7 @@ pub extern "C" fn kclvm_dict_update_key_value(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_dict_safe_insert(
+pub unsafe extern "C" fn kclvm_dict_safe_insert(
     p: *mut kclvm_value_ref_t,
     key: *const kclvm_char_t,
     v: *const kclvm_value_ref_t,
@@ -1201,7 +1231,10 @@ pub extern "C" fn kclvm_dict_safe_insert(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_dict_insert_unpack(p: *mut kclvm_value_ref_t, v: *const kclvm_value_ref_t) {
+pub unsafe extern "C" fn kclvm_dict_insert_unpack(
+    p: *mut kclvm_value_ref_t,
+    v: *const kclvm_value_ref_t,
+) {
     let p = mut_ptr_as_ref(p);
     let v = ptr_as_ref(v);
     p.dict_insert_unpack(v);
@@ -1209,7 +1242,7 @@ pub extern "C" fn kclvm_dict_insert_unpack(p: *mut kclvm_value_ref_t, v: *const 
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_default_collection_insert_int_pointer(
+pub unsafe extern "C" fn kclvm_default_collection_insert_int_pointer(
     p: *mut kclvm_value_ref_t,
     key: *const kclvm_char_t,
     ptr: *const u64,
@@ -1233,7 +1266,7 @@ pub extern "C" fn kclvm_default_collection_insert_int_pointer(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_default_collection_insert_value(
+pub unsafe extern "C" fn kclvm_default_collection_insert_value(
     p: *mut kclvm_value_ref_t,
     key: *const kclvm_char_t,
     value: *const kclvm_value_ref_t,
@@ -1256,14 +1289,14 @@ pub extern "C" fn kclvm_default_collection_insert_value(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_dict_remove(p: *mut kclvm_value_ref_t, key: *const kclvm_char_t) {
+pub unsafe extern "C" fn kclvm_dict_remove(p: *mut kclvm_value_ref_t, key: *const kclvm_char_t) {
     let p = mut_ptr_as_ref(p);
     p.dict_remove(c2str(key));
 }
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_dict_update(p: *mut kclvm_value_ref_t, v: *const kclvm_value_ref_t) {
+pub unsafe extern "C" fn kclvm_dict_update(p: *mut kclvm_value_ref_t, v: *const kclvm_value_ref_t) {
     let p = mut_ptr_as_ref(p);
     let v = ptr_as_ref(v);
     p.dict_update(v);
@@ -1277,7 +1310,7 @@ pub extern "C" fn kclvm_dict_update(p: *mut kclvm_value_ref_t, v: *const kclvm_v
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_is_truthy(p: *const kclvm_value_ref_t) -> kclvm_bool_t {
+pub unsafe extern "C" fn kclvm_value_is_truthy(p: *const kclvm_value_ref_t) -> kclvm_bool_t {
     let p = ptr_as_ref(p);
     p.is_truthy() as kclvm_bool_t
 }
@@ -1286,7 +1319,7 @@ pub extern "C" fn kclvm_value_is_truthy(p: *const kclvm_value_ref_t) -> kclvm_bo
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_len(p: *const kclvm_value_ref_t) -> kclvm_size_t {
+pub unsafe extern "C" fn kclvm_value_len(p: *const kclvm_value_ref_t) -> kclvm_size_t {
     let p = ptr_as_ref(p);
     p.len() as kclvm_size_t
 }
@@ -1295,7 +1328,7 @@ pub extern "C" fn kclvm_value_len(p: *const kclvm_value_ref_t) -> kclvm_size_t {
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_cmp_equal_to(
+pub unsafe extern "C" fn kclvm_value_cmp_equal_to(
     a: *const kclvm_value_ref_t,
     b: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
@@ -1309,7 +1342,7 @@ pub extern "C" fn kclvm_value_cmp_equal_to(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_cmp_not_equal_to(
+pub unsafe extern "C" fn kclvm_value_cmp_not_equal_to(
     a: *const kclvm_value_ref_t,
     b: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
@@ -1323,7 +1356,7 @@ pub extern "C" fn kclvm_value_cmp_not_equal_to(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_cmp_less_than(
+pub unsafe extern "C" fn kclvm_value_cmp_less_than(
     a: *const kclvm_value_ref_t,
     b: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
@@ -1337,7 +1370,7 @@ pub extern "C" fn kclvm_value_cmp_less_than(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_cmp_less_than_or_equal(
+pub unsafe extern "C" fn kclvm_value_cmp_less_than_or_equal(
     a: *const kclvm_value_ref_t,
     b: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
@@ -1348,7 +1381,7 @@ pub extern "C" fn kclvm_value_cmp_less_than_or_equal(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_cmp_greater_than(
+pub unsafe extern "C" fn kclvm_value_cmp_greater_than(
     a: *const kclvm_value_ref_t,
     b: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
@@ -1362,7 +1395,7 @@ pub extern "C" fn kclvm_value_cmp_greater_than(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_cmp_greater_than_or_equal(
+pub unsafe extern "C" fn kclvm_value_cmp_greater_than_or_equal(
     a: *const kclvm_value_ref_t,
     b: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
@@ -1375,7 +1408,7 @@ pub extern "C" fn kclvm_value_cmp_greater_than_or_equal(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_is(
+pub unsafe extern "C" fn kclvm_value_is(
     a: *const kclvm_value_ref_t,
     b: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
@@ -1389,7 +1422,7 @@ pub extern "C" fn kclvm_value_is(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_is_not(
+pub unsafe extern "C" fn kclvm_value_is_not(
     a: *const kclvm_value_ref_t,
     b: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
@@ -1403,7 +1436,7 @@ pub extern "C" fn kclvm_value_is_not(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_in(
+pub unsafe extern "C" fn kclvm_value_in(
     a: *const kclvm_value_ref_t,
     b: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
@@ -1414,7 +1447,7 @@ pub extern "C" fn kclvm_value_in(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_not_in(
+pub unsafe extern "C" fn kclvm_value_not_in(
     a: *const kclvm_value_ref_t,
     b: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
@@ -1425,7 +1458,7 @@ pub extern "C" fn kclvm_value_not_in(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_as(
+pub unsafe extern "C" fn kclvm_value_as(
     a: *const kclvm_value_ref_t,
     b: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
@@ -1440,28 +1473,36 @@ pub extern "C" fn kclvm_value_as(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_unary_plus(a: *const kclvm_value_ref_t) -> *mut kclvm_value_ref_t {
+pub unsafe extern "C" fn kclvm_value_unary_plus(
+    a: *const kclvm_value_ref_t,
+) -> *mut kclvm_value_ref_t {
     let a = ptr_as_ref(a);
     a.unary_plus().into_raw()
 }
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_unary_minus(a: *const kclvm_value_ref_t) -> *mut kclvm_value_ref_t {
+pub unsafe extern "C" fn kclvm_value_unary_minus(
+    a: *const kclvm_value_ref_t,
+) -> *mut kclvm_value_ref_t {
     let a = ptr_as_ref(a);
     a.unary_minus().into_raw()
 }
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_unary_not(a: *const kclvm_value_ref_t) -> *mut kclvm_value_ref_t {
+pub unsafe extern "C" fn kclvm_value_unary_not(
+    a: *const kclvm_value_ref_t,
+) -> *mut kclvm_value_ref_t {
     let a = ptr_as_ref(a);
     a.unary_not().into_raw()
 }
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_unary_l_not(a: *const kclvm_value_ref_t) -> *mut kclvm_value_ref_t {
+pub unsafe extern "C" fn kclvm_value_unary_l_not(
+    a: *const kclvm_value_ref_t,
+) -> *mut kclvm_value_ref_t {
     let a = ptr_as_ref(a);
     a.unary_l_not().into_raw()
 }
@@ -1470,7 +1511,7 @@ pub extern "C" fn kclvm_value_unary_l_not(a: *const kclvm_value_ref_t) -> *mut k
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_op_add(
+pub unsafe extern "C" fn kclvm_value_op_add(
     a: *const kclvm_value_ref_t,
     b: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
@@ -1481,7 +1522,7 @@ pub extern "C" fn kclvm_value_op_add(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_op_sub(
+pub unsafe extern "C" fn kclvm_value_op_sub(
     a: *const kclvm_value_ref_t,
     b: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
@@ -1492,7 +1533,7 @@ pub extern "C" fn kclvm_value_op_sub(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_op_mul(
+pub unsafe extern "C" fn kclvm_value_op_mul(
     a: *const kclvm_value_ref_t,
     b: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
@@ -1503,7 +1544,7 @@ pub extern "C" fn kclvm_value_op_mul(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_op_div(
+pub unsafe extern "C" fn kclvm_value_op_div(
     a: *const kclvm_value_ref_t,
     b: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
@@ -1514,7 +1555,7 @@ pub extern "C" fn kclvm_value_op_div(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_op_mod(
+pub unsafe extern "C" fn kclvm_value_op_mod(
     a: *const kclvm_value_ref_t,
     b: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
@@ -1525,7 +1566,7 @@ pub extern "C" fn kclvm_value_op_mod(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_op_pow(
+pub unsafe extern "C" fn kclvm_value_op_pow(
     a: *const kclvm_value_ref_t,
     b: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
@@ -1536,7 +1577,7 @@ pub extern "C" fn kclvm_value_op_pow(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_op_floor_div(
+pub unsafe extern "C" fn kclvm_value_op_floor_div(
     a: *const kclvm_value_ref_t,
     b: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
@@ -1547,7 +1588,7 @@ pub extern "C" fn kclvm_value_op_floor_div(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_op_bit_lshift(
+pub unsafe extern "C" fn kclvm_value_op_bit_lshift(
     a: *const kclvm_value_ref_t,
     b: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
@@ -1558,7 +1599,7 @@ pub extern "C" fn kclvm_value_op_bit_lshift(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_op_bit_rshift(
+pub unsafe extern "C" fn kclvm_value_op_bit_rshift(
     a: *const kclvm_value_ref_t,
     b: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
@@ -1569,7 +1610,7 @@ pub extern "C" fn kclvm_value_op_bit_rshift(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_op_bit_and(
+pub unsafe extern "C" fn kclvm_value_op_bit_and(
     a: *const kclvm_value_ref_t,
     b: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
@@ -1580,7 +1621,7 @@ pub extern "C" fn kclvm_value_op_bit_and(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_op_bit_xor(
+pub unsafe extern "C" fn kclvm_value_op_bit_xor(
     a: *const kclvm_value_ref_t,
     b: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
@@ -1591,7 +1632,7 @@ pub extern "C" fn kclvm_value_op_bit_xor(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_op_bit_or(
+pub unsafe extern "C" fn kclvm_value_op_bit_or(
     a: *const kclvm_value_ref_t,
     b: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
@@ -1604,7 +1645,7 @@ pub extern "C" fn kclvm_value_op_bit_or(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_op_aug_add(
+pub unsafe extern "C" fn kclvm_value_op_aug_add(
     a: *mut kclvm_value_ref_t,
     b: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
@@ -1615,7 +1656,7 @@ pub extern "C" fn kclvm_value_op_aug_add(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_op_aug_sub(
+pub unsafe extern "C" fn kclvm_value_op_aug_sub(
     a: *mut kclvm_value_ref_t,
     b: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
@@ -1626,7 +1667,7 @@ pub extern "C" fn kclvm_value_op_aug_sub(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_op_aug_mul(
+pub unsafe extern "C" fn kclvm_value_op_aug_mul(
     a: *mut kclvm_value_ref_t,
     b: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
@@ -1637,7 +1678,7 @@ pub extern "C" fn kclvm_value_op_aug_mul(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_op_aug_div(
+pub unsafe extern "C" fn kclvm_value_op_aug_div(
     a: *mut kclvm_value_ref_t,
     b: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
@@ -1648,7 +1689,7 @@ pub extern "C" fn kclvm_value_op_aug_div(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_op_aug_mod(
+pub unsafe extern "C" fn kclvm_value_op_aug_mod(
     a: *mut kclvm_value_ref_t,
     b: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
@@ -1659,7 +1700,7 @@ pub extern "C" fn kclvm_value_op_aug_mod(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_op_aug_pow(
+pub unsafe extern "C" fn kclvm_value_op_aug_pow(
     a: *mut kclvm_value_ref_t,
     b: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
@@ -1670,7 +1711,7 @@ pub extern "C" fn kclvm_value_op_aug_pow(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_op_aug_floor_div(
+pub unsafe extern "C" fn kclvm_value_op_aug_floor_div(
     a: *mut kclvm_value_ref_t,
     b: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
@@ -1681,7 +1722,7 @@ pub extern "C" fn kclvm_value_op_aug_floor_div(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_op_aug_bit_lshift(
+pub unsafe extern "C" fn kclvm_value_op_aug_bit_lshift(
     a: *mut kclvm_value_ref_t,
     b: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
@@ -1692,7 +1733,7 @@ pub extern "C" fn kclvm_value_op_aug_bit_lshift(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_op_aug_bit_rshift(
+pub unsafe extern "C" fn kclvm_value_op_aug_bit_rshift(
     a: *mut kclvm_value_ref_t,
     b: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
@@ -1703,7 +1744,7 @@ pub extern "C" fn kclvm_value_op_aug_bit_rshift(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_op_aug_bit_and(
+pub unsafe extern "C" fn kclvm_value_op_aug_bit_and(
     a: *mut kclvm_value_ref_t,
     b: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
@@ -1714,7 +1755,7 @@ pub extern "C" fn kclvm_value_op_aug_bit_and(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_op_aug_bit_xor(
+pub unsafe extern "C" fn kclvm_value_op_aug_bit_xor(
     a: *mut kclvm_value_ref_t,
     b: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
@@ -1725,7 +1766,7 @@ pub extern "C" fn kclvm_value_op_aug_bit_xor(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_op_aug_bit_or(
+pub unsafe extern "C" fn kclvm_value_op_aug_bit_or(
     a: *mut kclvm_value_ref_t,
     b: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
@@ -1736,7 +1777,7 @@ pub extern "C" fn kclvm_value_op_aug_bit_or(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_union(
+pub unsafe extern "C" fn kclvm_value_union(
     schema: *mut kclvm_value_ref_t,
     b: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
@@ -1777,7 +1818,7 @@ pub extern "C" fn kclvm_value_union(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_logic_and(
+pub unsafe extern "C" fn kclvm_value_logic_and(
     a: *const kclvm_value_ref_t,
     b: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
@@ -1788,7 +1829,7 @@ pub extern "C" fn kclvm_value_logic_and(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_logic_or(
+pub unsafe extern "C" fn kclvm_value_logic_or(
     a: *const kclvm_value_ref_t,
     b: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
@@ -1799,7 +1840,7 @@ pub extern "C" fn kclvm_value_logic_or(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_subscr(
+pub unsafe extern "C" fn kclvm_value_subscr(
     a: *const kclvm_value_ref_t,
     b: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
@@ -1810,7 +1851,7 @@ pub extern "C" fn kclvm_value_subscr(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_subscr_option(
+pub unsafe extern "C" fn kclvm_value_subscr_option(
     a: *const kclvm_value_ref_t,
     b: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
@@ -1821,7 +1862,7 @@ pub extern "C" fn kclvm_value_subscr_option(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_load_attr(
+pub unsafe extern "C" fn kclvm_value_load_attr(
     obj: *const kclvm_value_ref_t,
     key: *const kclvm_char_t,
 ) -> *const kclvm_value_ref_t {
@@ -1874,7 +1915,7 @@ pub extern "C" fn kclvm_value_load_attr(
             "startswith" => kclvm_builtin_str_startswith,
             "strip" => kclvm_builtin_str_strip,
             "title" => kclvm_builtin_str_title,
-            _ => panic!("str object attr '{}' not found", key),
+            _ => panic!("str object attr '{key}' not found"),
         };
         let closure = ValueRef::list(Some(&[p]));
         return new_mut_ptr(ValueRef::func(function as usize as u64, 0, closure, "", ""));
@@ -1883,7 +1924,7 @@ pub extern "C" fn kclvm_value_load_attr(
     else if p.is_func() {
         let function = match key {
             "instances" => kclvm_schema_instances,
-            _ => panic!("schema object attr '{}' not found", key),
+            _ => panic!("schema object attr '{key}' not found"),
         };
         let closure = ValueRef::list(Some(&[p]));
         return new_mut_ptr(ValueRef::func(function as usize as u64, 0, closure, "", ""));
@@ -1897,7 +1938,7 @@ pub extern "C" fn kclvm_value_load_attr(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_load_attr_option(
+pub unsafe extern "C" fn kclvm_value_load_attr_option(
     p: *const kclvm_value_ref_t,
     key: *const kclvm_char_t,
 ) -> *const kclvm_value_ref_t {
@@ -1911,7 +1952,10 @@ pub extern "C" fn kclvm_value_load_attr_option(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_remove_item(a: *mut kclvm_value_ref_t, b: *const kclvm_value_ref_t) {
+pub unsafe extern "C" fn kclvm_value_remove_item(
+    a: *mut kclvm_value_ref_t,
+    b: *const kclvm_value_ref_t,
+) {
     let a = mut_ptr_as_ref(a);
     let b = ptr_as_ref(b);
     if a.is_dict() {
@@ -1925,7 +1969,7 @@ pub extern "C" fn kclvm_value_remove_item(a: *mut kclvm_value_ref_t, b: *const k
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_slice(
+pub unsafe extern "C" fn kclvm_value_slice(
     x: *const kclvm_value_ref_t,
     a: *const kclvm_value_ref_t,
     b: *const kclvm_value_ref_t,
@@ -1940,7 +1984,7 @@ pub extern "C" fn kclvm_value_slice(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_slice_option(
+pub unsafe extern "C" fn kclvm_value_slice_option(
     x: *const kclvm_value_ref_t,
     a: *const kclvm_value_ref_t,
     b: *const kclvm_value_ref_t,
@@ -1960,7 +2004,7 @@ pub extern "C" fn kclvm_value_slice_option(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_schema_backtrack_cache(
+pub unsafe extern "C" fn kclvm_schema_backtrack_cache(
     schema: *const kclvm_value_ref_t,
     cache: *mut kclvm_value_ref_t,
     cal_map: *const kclvm_value_ref_t,
@@ -1977,8 +2021,8 @@ pub extern "C" fn kclvm_schema_backtrack_cache(
                 cache.dict_update_key_value(name, value);
             }
         } else if let (Some(cal_map_runtime_type_list), Some(cal_map_meta_line_list)) = (
-            cal_map.dict_get_value(&format!("{}_{}", name, CAL_MAP_RUNTIME_TYPE)),
-            cal_map.dict_get_value(&format!("{}_{}", name, CAL_MAP_META_LINE)),
+            cal_map.dict_get_value(&format!("{name}_{CAL_MAP_RUNTIME_TYPE}")),
+            cal_map.dict_get_value(&format!("{name}_{CAL_MAP_META_LINE}")),
         ) {
             if let (Some(cal_map_runtime_type), Some(cal_map_meta_line)) = (
                 cal_map_runtime_type_list.list_get(-1),
@@ -1999,7 +2043,7 @@ pub extern "C" fn kclvm_schema_backtrack_cache(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_schema_instances(
+pub unsafe extern "C" fn kclvm_schema_instances(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -2031,7 +2075,7 @@ pub extern "C" fn kclvm_schema_instances(
                     }
                 } else if v.is_dict() {
                     let runtime_type_attr_path =
-                        format!("{}.{}", SCHEMA_SETTINGS_ATTR_NAME, SETTINGS_SCHEMA_TYPE_KEY);
+                        format!("{SCHEMA_SETTINGS_ATTR_NAME}.{SETTINGS_SCHEMA_TYPE_KEY}");
                     let runtime_type =
                         if let Some(runtime_type) = v.get_by_path(&runtime_type_attr_path) {
                             runtime_type.as_str()
@@ -2062,7 +2106,7 @@ pub extern "C" fn kclvm_schema_instances(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_schema_value_check(
+pub unsafe extern "C" fn kclvm_schema_value_check(
     schema_value: *mut kclvm_value_ref_t,
     schema_config: *const kclvm_value_ref_t,
     _config_meta: *const kclvm_value_ref_t,
@@ -2100,14 +2144,14 @@ pub extern "C" fn kclvm_schema_value_check(
             schema_value.dict_update_entry(key.as_str(), &value.clone(), op, &-1);
         } else if !should_add_attr && is_not_in_schema {
             let schema_name = c2str(schema_name);
-            panic!("{}: No such member in the schema '{}'", key, schema_name);
+            panic!("{key}: No such member in the schema '{schema_name}'");
         }
     }
 }
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_schema_do_check_with_index_sign_attr(
+pub unsafe extern "C" fn kclvm_schema_do_check_with_index_sign_attr(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -2150,7 +2194,7 @@ pub extern "C" fn kclvm_schema_do_check_with_index_sign_attr(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_schema_optional_check(
+pub unsafe extern "C" fn kclvm_schema_optional_check(
     p: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let p = ptr_as_ref(p);
@@ -2164,7 +2208,7 @@ pub extern "C" fn kclvm_schema_optional_check(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_schema_default_settings(
+pub unsafe extern "C" fn kclvm_schema_default_settings(
     schema_value: *mut kclvm_value_ref_t,
     config_value: *const kclvm_value_ref_t,
     runtime_type: *const kclvm_char_t,
@@ -2177,7 +2221,7 @@ pub extern "C" fn kclvm_schema_default_settings(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_schema_assert(
+pub unsafe extern "C" fn kclvm_schema_assert(
     value: *const kclvm_value_ref_t,
     msg: *const kclvm_value_ref_t,
     config_meta: *const kclvm_value_ref_t,
@@ -2207,7 +2251,7 @@ pub extern "C" fn kclvm_schema_assert(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_schema_value_new(
+pub unsafe extern "C" fn kclvm_schema_value_new(
     ctx: *mut kclvm_context_t,
     args: *mut kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -2293,7 +2337,7 @@ pub extern "C" fn kclvm_schema_value_new(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_convert_collection_value(
+pub unsafe extern "C" fn kclvm_convert_collection_value(
     value: *const kclvm_value_ref_t,
     tpe: *const kclvm_char_t,
 ) -> *const kclvm_value_ref_t {
@@ -2305,7 +2349,7 @@ pub extern "C" fn kclvm_convert_collection_value(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_schema_get_value(
+pub unsafe extern "C" fn kclvm_schema_get_value(
     p: *const kclvm_value_ref_t,
     key: *const kclvm_char_t,
     config: *const kclvm_value_ref_t,
@@ -2399,7 +2443,7 @@ pub extern "C" fn kclvm_schema_get_value(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_config_attr_map(
+pub unsafe extern "C" fn kclvm_config_attr_map(
     value: *mut kclvm_value_ref_t,
     name: *const kclvm_char_t,
     type_str: *const kclvm_char_t,
@@ -2416,7 +2460,7 @@ pub extern "C" fn kclvm_config_attr_map(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_Decorator(
+pub unsafe extern "C" fn kclvm_value_Decorator(
     name: *const kclvm_char_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -2448,7 +2492,7 @@ pub extern "C" fn kclvm_value_Decorator(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_str_lower(
+pub unsafe extern "C" fn kclvm_builtin_str_lower(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -2463,7 +2507,7 @@ pub extern "C" fn kclvm_builtin_str_lower(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_str_upper(
+pub unsafe extern "C" fn kclvm_builtin_str_upper(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -2478,7 +2522,7 @@ pub extern "C" fn kclvm_builtin_str_upper(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_str_capitalize(
+pub unsafe extern "C" fn kclvm_builtin_str_capitalize(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -2493,7 +2537,7 @@ pub extern "C" fn kclvm_builtin_str_capitalize(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_str_count(
+pub unsafe extern "C" fn kclvm_builtin_str_count(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -2514,7 +2558,7 @@ pub extern "C" fn kclvm_builtin_str_count(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_str_endswith(
+pub unsafe extern "C" fn kclvm_builtin_str_endswith(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -2536,7 +2580,7 @@ pub extern "C" fn kclvm_builtin_str_endswith(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_str_find(
+pub unsafe extern "C" fn kclvm_builtin_str_find(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -2557,7 +2601,7 @@ pub extern "C" fn kclvm_builtin_str_find(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_str_format(
+pub unsafe extern "C" fn kclvm_builtin_str_format(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -2573,7 +2617,7 @@ pub extern "C" fn kclvm_builtin_str_format(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_str_index(
+pub unsafe extern "C" fn kclvm_builtin_str_index(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -2594,7 +2638,7 @@ pub extern "C" fn kclvm_builtin_str_index(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_str_isalnum(
+pub unsafe extern "C" fn kclvm_builtin_str_isalnum(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -2609,7 +2653,7 @@ pub extern "C" fn kclvm_builtin_str_isalnum(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_str_isalpha(
+pub unsafe extern "C" fn kclvm_builtin_str_isalpha(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -2624,7 +2668,7 @@ pub extern "C" fn kclvm_builtin_str_isalpha(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_str_isdigit(
+pub unsafe extern "C" fn kclvm_builtin_str_isdigit(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -2639,7 +2683,7 @@ pub extern "C" fn kclvm_builtin_str_isdigit(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_str_islower(
+pub unsafe extern "C" fn kclvm_builtin_str_islower(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -2654,7 +2698,7 @@ pub extern "C" fn kclvm_builtin_str_islower(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_str_isspace(
+pub unsafe extern "C" fn kclvm_builtin_str_isspace(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -2669,7 +2713,7 @@ pub extern "C" fn kclvm_builtin_str_isspace(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_str_istitle(
+pub unsafe extern "C" fn kclvm_builtin_str_istitle(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -2684,7 +2728,7 @@ pub extern "C" fn kclvm_builtin_str_istitle(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_str_isupper(
+pub unsafe extern "C" fn kclvm_builtin_str_isupper(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -2699,7 +2743,7 @@ pub extern "C" fn kclvm_builtin_str_isupper(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_str_join(
+pub unsafe extern "C" fn kclvm_builtin_str_join(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -2715,7 +2759,7 @@ pub extern "C" fn kclvm_builtin_str_join(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_str_lstrip(
+pub unsafe extern "C" fn kclvm_builtin_str_lstrip(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -2731,7 +2775,7 @@ pub extern "C" fn kclvm_builtin_str_lstrip(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_str_rstrip(
+pub unsafe extern "C" fn kclvm_builtin_str_rstrip(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -2747,7 +2791,7 @@ pub extern "C" fn kclvm_builtin_str_rstrip(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_str_replace(
+pub unsafe extern "C" fn kclvm_builtin_str_replace(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -2765,7 +2809,7 @@ pub extern "C" fn kclvm_builtin_str_replace(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_str_rfind(
+pub unsafe extern "C" fn kclvm_builtin_str_rfind(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -2786,7 +2830,7 @@ pub extern "C" fn kclvm_builtin_str_rfind(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_str_rindex(
+pub unsafe extern "C" fn kclvm_builtin_str_rindex(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -2808,7 +2852,7 @@ pub extern "C" fn kclvm_builtin_str_rindex(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_str_rsplit(
+pub unsafe extern "C" fn kclvm_builtin_str_rsplit(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -2834,7 +2878,7 @@ pub extern "C" fn kclvm_builtin_str_rsplit(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_str_split(
+pub unsafe extern "C" fn kclvm_builtin_str_split(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -2861,7 +2905,7 @@ pub extern "C" fn kclvm_builtin_str_split(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_str_splitlines(
+pub unsafe extern "C" fn kclvm_builtin_str_splitlines(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -2883,7 +2927,7 @@ pub extern "C" fn kclvm_builtin_str_splitlines(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_str_startswith(
+pub unsafe extern "C" fn kclvm_builtin_str_startswith(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -2905,7 +2949,7 @@ pub extern "C" fn kclvm_builtin_str_startswith(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_str_strip(
+pub unsafe extern "C" fn kclvm_builtin_str_strip(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -2921,7 +2965,7 @@ pub extern "C" fn kclvm_builtin_str_strip(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_builtin_str_title(
+pub unsafe extern "C" fn kclvm_builtin_str_title(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,

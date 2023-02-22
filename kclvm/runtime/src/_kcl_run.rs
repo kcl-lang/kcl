@@ -1,4 +1,5 @@
 // Copyright 2021 The KCL Authors. All rights reserved.
+#![allow(clippy::missing_safety_doc)]
 
 use crate::*;
 
@@ -39,7 +40,7 @@ pub type kclvm_float_t = f64;
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn _kcl_run(
+pub unsafe extern "C" fn _kcl_run(
     kclvm_main_ptr: u64, // main.k => kclvm_main
     option_len: kclvm_size_t,
     option_keys: *const *const kclvm_char_t,
@@ -119,7 +120,7 @@ pub extern "C" fn _kcl_run(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn _kcl_run_in_closure(
+unsafe fn _kcl_run_in_closure(
     kclvm_main_ptr: u64, // main.k => kclvm_main
     option_len: kclvm_size_t,
     option_keys: *const *const kclvm_char_t,

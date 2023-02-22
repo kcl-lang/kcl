@@ -991,7 +991,7 @@ impl FilePathMapping {
         // NOTE: We are iterating over the mapping entries from last to first
         //       because entries specified later on the command line should
         //       take precedence.
-        for &(ref from, ref to) in self.mapping.iter().rev() {
+        for (from, to) in self.mapping.iter().rev() {
             if let Ok(rest) = path.strip_prefix(from) {
                 return (to.join(rest), true);
             }

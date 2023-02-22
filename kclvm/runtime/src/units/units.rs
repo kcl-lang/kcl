@@ -1,6 +1,7 @@
 //! KCL units system module
 //!
 //! Copyright 2021 The KCL Authors. All rights reserved.
+#![allow(clippy::missing_safety_doc)]
 
 use crate::*;
 
@@ -46,7 +47,7 @@ pub const INVALID_UNITS: [&str; 4] = ["ni", "ui", "mi", "ki"];
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_units_to_n(
+pub unsafe extern "C" fn kclvm_units_to_n(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -64,7 +65,7 @@ pub extern "C" fn kclvm_units_to_n(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_units_to_u(
+pub unsafe extern "C" fn kclvm_units_to_u(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -82,7 +83,7 @@ pub extern "C" fn kclvm_units_to_u(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_units_to_m(
+pub unsafe extern "C" fn kclvm_units_to_m(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -100,7 +101,7 @@ pub extern "C" fn kclvm_units_to_m(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_units_to_K(
+pub unsafe extern "C" fn kclvm_units_to_K(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -120,7 +121,7 @@ pub extern "C" fn kclvm_units_to_K(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_units_to_M(
+pub unsafe extern "C" fn kclvm_units_to_M(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -140,7 +141,7 @@ pub extern "C" fn kclvm_units_to_M(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_units_to_G(
+pub unsafe extern "C" fn kclvm_units_to_G(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -160,7 +161,7 @@ pub extern "C" fn kclvm_units_to_G(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_units_to_T(
+pub unsafe extern "C" fn kclvm_units_to_T(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -180,7 +181,7 @@ pub extern "C" fn kclvm_units_to_T(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_units_to_P(
+pub unsafe extern "C" fn kclvm_units_to_P(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -200,7 +201,7 @@ pub extern "C" fn kclvm_units_to_P(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_units_to_Ki(
+pub unsafe extern "C" fn kclvm_units_to_Ki(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -220,7 +221,7 @@ pub extern "C" fn kclvm_units_to_Ki(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_units_to_Mi(
+pub unsafe extern "C" fn kclvm_units_to_Mi(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -240,7 +241,7 @@ pub extern "C" fn kclvm_units_to_Mi(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_units_to_Gi(
+pub unsafe extern "C" fn kclvm_units_to_Gi(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -260,7 +261,7 @@ pub extern "C" fn kclvm_units_to_Gi(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_units_to_Ti(
+pub unsafe extern "C" fn kclvm_units_to_Ti(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -280,7 +281,7 @@ pub extern "C" fn kclvm_units_to_Ti(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_units_to_Pi(
+pub unsafe extern "C" fn kclvm_units_to_Pi(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -390,7 +391,7 @@ pub fn cal_num(value: i64, unit: &str) -> f64 {
     }
     let exponent = EXPONENTS
         .get(unit)
-        .unwrap_or_else(|| panic!("invalid unit {}", unit));
+        .unwrap_or_else(|| panic!("invalid unit {unit}"));
     value as f64 * base.powf(*exponent as f64)
 }
 
@@ -402,13 +403,13 @@ pub fn real_uint_value(raw: i64, unit: &str) -> i128 {
 /// Validate the unit is valid
 pub fn validate_unit(unit: &str) {
     if unit.is_empty() || unit.len() > 2 {
-        panic!("Invalid suffix {}", unit);
+        panic!("Invalid suffix {unit}");
     }
     if INVALID_UNITS.contains(&unit) {
-        panic!("Invalid suffix {}", unit);
+        panic!("Invalid suffix {unit}");
     }
     if !EXPONENTS.contains_key(&unit[..1]) {
-        panic!("Invalid suffix {}", unit);
+        panic!("Invalid suffix {unit}");
     }
 }
 

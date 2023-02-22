@@ -22,7 +22,7 @@ pub const CAL_MAP_META_LINE: &str = "cal_map_meta_line";
 
 /// Get the schema runtime type use the schema name and pkgpath
 pub fn schema_runtime_type(name: &str, pkgpath: &str) -> String {
-    format!("{}.{}", pkgpath, name)
+    format!("{pkgpath}.{name}")
 }
 
 /// Construct a schema config meta dict using filename, line and column

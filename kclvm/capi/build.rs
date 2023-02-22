@@ -6,7 +6,7 @@ fn main() {
         .protoc_path(&protoc_bin_vendored::protoc_bin_path().unwrap())
         .out_dir("src/model")
         .include("../../internal/spec/gpyrpc")
-        .inputs(&["../../internal/spec/gpyrpc/gpyrpc.proto"])
+        .inputs(["../../internal/spec/gpyrpc/gpyrpc.proto"])
         .run()
         .expect("Running protoc failed.");
 }

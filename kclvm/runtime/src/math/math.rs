@@ -1,6 +1,7 @@
 //! KCL math system module
 //!
 //! Copyright 2021 The KCL Authors. All rights reserved.
+#![allow(clippy::missing_safety_doc)]
 
 extern crate num_integer;
 
@@ -15,7 +16,7 @@ type kclvm_value_ref_t = ValueRef;
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_math_ceil(
+pub unsafe extern "C" fn kclvm_math_ceil(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -34,7 +35,7 @@ pub extern "C" fn kclvm_math_ceil(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_math_factorial(
+pub unsafe extern "C" fn kclvm_math_factorial(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -72,7 +73,7 @@ pub extern "C" fn kclvm_math_factorial(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_math_floor(
+pub unsafe extern "C" fn kclvm_math_floor(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -91,7 +92,7 @@ pub extern "C" fn kclvm_math_floor(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_math_gcd(
+pub unsafe extern "C" fn kclvm_math_gcd(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -112,7 +113,7 @@ pub extern "C" fn kclvm_math_gcd(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_math_isfinite(
+pub unsafe extern "C" fn kclvm_math_isfinite(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -131,7 +132,7 @@ pub extern "C" fn kclvm_math_isfinite(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_math_isinf(
+pub unsafe extern "C" fn kclvm_math_isinf(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -150,7 +151,7 @@ pub extern "C" fn kclvm_math_isinf(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_math_isnan(
+pub unsafe extern "C" fn kclvm_math_isnan(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -169,7 +170,7 @@ pub extern "C" fn kclvm_math_isnan(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_math_modf(
+pub unsafe extern "C" fn kclvm_math_modf(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -199,7 +200,7 @@ pub extern "C" fn kclvm_math_modf(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_math_exp(
+pub unsafe extern "C" fn kclvm_math_exp(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -217,7 +218,7 @@ pub extern "C" fn kclvm_math_exp(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_math_expm1(
+pub unsafe extern "C" fn kclvm_math_expm1(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -235,7 +236,7 @@ pub extern "C" fn kclvm_math_expm1(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_math_log(
+pub unsafe extern "C" fn kclvm_math_log(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -257,7 +258,7 @@ pub extern "C" fn kclvm_math_log(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_math_log1p(
+pub unsafe extern "C" fn kclvm_math_log1p(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -275,7 +276,7 @@ pub extern "C" fn kclvm_math_log1p(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_math_log2(
+pub unsafe extern "C" fn kclvm_math_log2(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -293,7 +294,7 @@ pub extern "C" fn kclvm_math_log2(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_math_log10(
+pub unsafe extern "C" fn kclvm_math_log10(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -311,7 +312,7 @@ pub extern "C" fn kclvm_math_log10(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_math_pow(
+pub unsafe extern "C" fn kclvm_math_pow(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -343,7 +344,7 @@ pub extern "C" fn kclvm_math_pow(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_math_sqrt(
+pub unsafe extern "C" fn kclvm_math_sqrt(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,

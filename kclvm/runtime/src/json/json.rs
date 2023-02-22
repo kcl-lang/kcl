@@ -1,6 +1,7 @@
 //! KCL json system module
 //!
 //! Copyright 2021 The KCL Authors. All rights reserved.
+#![allow(clippy::missing_safety_doc)]
 
 use crate::*;
 
@@ -11,7 +12,7 @@ type kclvm_value_ref_t = ValueRef;
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_json_encode(
+pub unsafe extern "C" fn kclvm_json_encode(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -42,7 +43,7 @@ pub extern "C" fn kclvm_json_encode(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_json_decode(
+pub unsafe extern "C" fn kclvm_json_decode(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -60,7 +61,7 @@ pub extern "C" fn kclvm_json_decode(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_json_dump_to_file(
+pub unsafe extern "C" fn kclvm_json_dump_to_file(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,

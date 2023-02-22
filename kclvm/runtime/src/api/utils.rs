@@ -1,4 +1,5 @@
 // Copyright 2021 The KCL Authors. All rights reserved.
+#![allow(clippy::missing_safety_doc)]
 
 use crate::{kclvm_value_Undefined, Context, ValueRef};
 
@@ -23,16 +24,18 @@ pub fn free_mut_ptr<T>(p: *mut T) {
 
 /// Convert a const raw pointer to a immutable borrow.
 pub fn ptr_as_ref<'a, T>(p: *const T) -> &'a T {
-    if p.is_null() {
-        let v = kclvm_value_Undefined();
-        ptr_as_ref(v as *const T)
-    } else {
-        unsafe { &*p }
+    unsafe {
+        if p.is_null() {
+            let v = kclvm_value_Undefined();
+            ptr_as_ref(v as *const T)
+        } else {
+            &*p
+        }
     }
 }
 
 /// Convert a mutable raw pointer to a mutable borrow.
-pub fn mut_ptr_as_ref<'a, T>(p: *mut T) -> &'a mut T {
+pub unsafe fn mut_ptr_as_ref<'a, T>(p: *mut T) -> &'a mut T {
     assert!(!p.is_null());
 
     if p.is_null() {
@@ -70,17 +73,17 @@ pub fn convert_double_pointer_to_vec(data: &mut &mut i8, len: usize) -> Vec<Stri
 pub fn assert_panic<F: FnOnce() + std::panic::UnwindSafe>(msg: &str, func: F) {
     match std::panic::catch_unwind(func) {
         Ok(_v) => {
-            panic!("not panic, expect={}", msg);
+            panic!("not panic, expect={msg}");
         }
         Err(e) => match e.downcast::<String>() {
             Ok(v) => {
                 let got = v.to_string();
-                assert!(got.contains(msg), "expect={}, got={}", msg, got);
+                assert!(got.contains(msg), "expect={msg}, got={got}");
             }
             Err(e) => match e.downcast::<&str>() {
                 Ok(v) => {
                     let got = v.to_string();
-                    assert!(got.contains(msg), "expect={}, got={}", msg, got);
+                    assert!(got.contains(msg), "expect={msg}, got={got}");
                 }
                 _ => unreachable!(),
             },

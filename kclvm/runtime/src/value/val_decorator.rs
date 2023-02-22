@@ -45,16 +45,16 @@ impl DecoratorValue {
                 };
                 let mut msg = String::new();
                 if !version.is_empty() {
-                    let version = format!("since version {}", version);
+                    let version = format!("since version {version}");
                     msg.push_str(&version);
                 }
                 if !reason.is_empty() {
-                    let reason = format!(", {}", reason);
+                    let reason = format!(", {reason}");
                     msg.push_str(&reason);
                 }
                 if strict {
                     if is_schema_target || config_value.get_by_key(attr_name).is_some() {
-                        let mut err_msg = format!("{} was deprecated ", attr_name);
+                        let mut err_msg = format!("{attr_name} was deprecated ");
                         if !msg.is_empty() {
                             err_msg.push_str(&msg);
                         }
@@ -68,7 +68,7 @@ impl DecoratorValue {
                         panic!("{}", err_msg)
                     }
                 } else if is_schema_target || config_value.get_by_key(attr_name).is_some() {
-                    let mut err_msg = format!("{} was deprecated ", attr_name);
+                    let mut err_msg = format!("{attr_name} was deprecated ");
                     if !msg.is_empty() {
                         err_msg.push_str(&msg);
                     }
@@ -79,7 +79,7 @@ impl DecoratorValue {
                     ctx.set_warnning_message(err_msg.as_str());
                 } else {
                     let ctx = Context::current_context_mut();
-                    let err_msg = format!("{} was deprecated ", attr_name);
+                    let err_msg = format!("{attr_name} was deprecated ");
                     ctx.set_err_type(&ErrType::Deprecated_Warning_TYPE);
                     ctx.set_warnning_message(err_msg.as_str());
                 }

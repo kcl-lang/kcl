@@ -1,6 +1,7 @@
 //! KCL net system module
 //!
 //! Copyright 2021 The KCL Authors. All rights reserved.
+#![allow(clippy::missing_safety_doc)]
 
 use std::net::Ipv4Addr;
 use std::net::Ipv6Addr;
@@ -15,7 +16,7 @@ type kclvm_value_ref_t = ValueRef;
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_net_split_host_port(
+pub unsafe extern "C" fn kclvm_net_split_host_port(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -37,7 +38,7 @@ pub extern "C" fn kclvm_net_split_host_port(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_net_join_host_port(
+pub unsafe extern "C" fn kclvm_net_join_host_port(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -46,11 +47,11 @@ pub extern "C" fn kclvm_net_join_host_port(
 
     if let Some(host) = args.arg_i_str(0, None) {
         if let Some(port) = args.arg_i_int(1, None) {
-            let s = format!("{}:{}", host, port);
+            let s = format!("{host}:{port}");
             return ValueRef::str(s.as_ref()).into_raw();
         }
         if let Some(port) = args.arg_i_str(1, None) {
-            let s = format!("{}:{}", host, port);
+            let s = format!("{host}:{port}");
             return ValueRef::str(s.as_ref()).into_raw();
         }
     }
@@ -61,7 +62,7 @@ pub extern "C" fn kclvm_net_join_host_port(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_net_fqdn(
+pub unsafe extern "C" fn kclvm_net_fqdn(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -78,7 +79,7 @@ pub extern "C" fn kclvm_net_fqdn(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_net_parse_IP(
+pub unsafe extern "C" fn kclvm_net_parse_IP(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -90,7 +91,7 @@ pub extern "C" fn kclvm_net_parse_IP(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_net_to_IP4(
+pub unsafe extern "C" fn kclvm_net_to_IP4(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -102,7 +103,7 @@ pub extern "C" fn kclvm_net_to_IP4(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_net_to_IP16(
+pub unsafe extern "C" fn kclvm_net_to_IP16(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -114,7 +115,7 @@ pub extern "C" fn kclvm_net_to_IP16(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_net_IP_string(
+pub unsafe extern "C" fn kclvm_net_IP_string(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -123,11 +124,11 @@ pub extern "C" fn kclvm_net_IP_string(
 
     if let Some(ip) = args.arg_i_str(0, None) {
         if let Ok(addr) = Ipv4Addr::from_str(ip.as_ref()) {
-            let s = format!("{}", addr);
+            let s = format!("{addr}");
             return ValueRef::str(s.as_ref()).into_raw();
         }
         if let Ok(addr) = Ipv6Addr::from_str(ip.as_ref()) {
-            let s = format!("{}", addr);
+            let s = format!("{addr}");
             return ValueRef::str(s.as_ref()).into_raw();
         }
 
@@ -141,7 +142,7 @@ pub extern "C" fn kclvm_net_IP_string(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_net_is_IPv4(
+pub unsafe extern "C" fn kclvm_net_is_IPv4(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -166,7 +167,7 @@ pub extern "C" fn kclvm_net_is_IPv4(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_net_is_IP(
+pub unsafe extern "C" fn kclvm_net_is_IP(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -191,7 +192,7 @@ pub extern "C" fn kclvm_net_is_IP(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_net_is_loopback_IP(
+pub unsafe extern "C" fn kclvm_net_is_loopback_IP(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -218,7 +219,7 @@ pub extern "C" fn kclvm_net_is_loopback_IP(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_net_is_multicast_IP(
+pub unsafe extern "C" fn kclvm_net_is_multicast_IP(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -245,7 +246,7 @@ pub extern "C" fn kclvm_net_is_multicast_IP(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_net_is_interface_local_multicast_IP(
+pub unsafe extern "C" fn kclvm_net_is_interface_local_multicast_IP(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -272,7 +273,7 @@ pub extern "C" fn kclvm_net_is_interface_local_multicast_IP(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_net_is_link_local_multicast_IP(
+pub unsafe extern "C" fn kclvm_net_is_link_local_multicast_IP(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -300,7 +301,7 @@ pub extern "C" fn kclvm_net_is_link_local_multicast_IP(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_net_is_link_local_unicast_IP(
+pub unsafe extern "C" fn kclvm_net_is_link_local_unicast_IP(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -333,7 +334,7 @@ pub const fn Ipv6Addr_is_unicast_link_local(_self: &Ipv6Addr) -> bool {
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_net_is_global_unicast_IP(
+pub unsafe extern "C" fn kclvm_net_is_global_unicast_IP(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -398,7 +399,7 @@ const fn Ipv4Addr_is_benchmarking(_self: &std::net::Ipv4Addr) -> bool {
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_net_is_unspecified_IP(
+pub unsafe extern "C" fn kclvm_net_is_unspecified_IP(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,

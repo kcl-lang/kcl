@@ -8,7 +8,7 @@ use syn::{parse_macro_input, FnArg};
 pub fn runtime_fn(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let parsed_fn = parse_macro_input!(item as syn::ItemFn);
 
-    if std::env::var("kclvm_RUNTIME_GEN_API_SPEC").is_ok() {
+    if std::env::var("KCLVM_RUNTIME_GEN_API_SPEC").is_ok() {
         print_api_spec(&parsed_fn);
     }
 

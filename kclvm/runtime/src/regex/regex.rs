@@ -7,6 +7,7 @@
 //! regex.split(string: str, pattern: str, maxsplit: int = 0) -> [str]
 //!
 //! Copyright 2021 The KCL Authors. All rights reserved.
+#![allow(clippy::missing_safety_doc)]
 
 extern crate fancy_regex;
 
@@ -19,7 +20,7 @@ type kclvm_value_ref_t = ValueRef;
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_regex_match(
+pub unsafe extern "C" fn kclvm_regex_match(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -49,7 +50,7 @@ pub extern "C" fn kclvm_regex_match(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_regex_replace(
+pub unsafe extern "C" fn kclvm_regex_replace(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -74,7 +75,7 @@ pub extern "C" fn kclvm_regex_replace(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_regex_compile(
+pub unsafe extern "C" fn kclvm_regex_compile(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -94,7 +95,7 @@ pub extern "C" fn kclvm_regex_compile(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_regex_findall(
+pub unsafe extern "C" fn kclvm_regex_findall(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -133,7 +134,7 @@ pub extern "C" fn kclvm_regex_findall(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_regex_search(
+pub unsafe extern "C" fn kclvm_regex_search(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -157,7 +158,7 @@ pub extern "C" fn kclvm_regex_search(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_regex_split(
+pub unsafe extern "C" fn kclvm_regex_split(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,

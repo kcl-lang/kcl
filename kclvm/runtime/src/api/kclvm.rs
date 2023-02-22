@@ -445,7 +445,7 @@ impl ConfigEntryOperationKind {
                 ConfigEntryOperationKind::Override
             }
             x if x == ConfigEntryOperationKind::Insert as i32 => ConfigEntryOperationKind::Insert,
-            _ => panic!("Invalid AttrOpKind integer {}, expected 0, 1 or 2", v),
+            _ => panic!("Invalid AttrOpKind integer {v}, expected 0, 1 or 2"),
         }
     }
 }

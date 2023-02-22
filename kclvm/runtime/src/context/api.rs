@@ -1,4 +1,5 @@
 // Copyright 2021 The KCL Authors. All rights reserved.
+#![allow(clippy::missing_safety_doc)]
 
 use crate::*;
 use std::os::raw::c_char;
@@ -44,7 +45,7 @@ static mut _kclvm_context_current: u64 = 0;
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_context_current() -> *mut kclvm_context_t {
+pub unsafe extern "C" fn kclvm_context_current() -> *mut kclvm_context_t {
     unsafe {
         if _kclvm_context_current == 0 {
             _kclvm_context_current = kclvm_context_new() as u64;
@@ -55,7 +56,7 @@ pub extern "C" fn kclvm_context_current() -> *mut kclvm_context_t {
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_context_new() -> *mut kclvm_context_t {
+pub unsafe extern "C" fn kclvm_context_new() -> *mut kclvm_context_t {
     let p = Box::into_raw(Box::new(Context::new()));
     unsafe {
         _kclvm_context_current = p as u64;
@@ -65,7 +66,7 @@ pub extern "C" fn kclvm_context_new() -> *mut kclvm_context_t {
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_context_delete(p: *mut kclvm_context_t) {
+pub unsafe extern "C" fn kclvm_context_delete(p: *mut kclvm_context_t) {
     let ctx = mut_ptr_as_ref(p);
     for o in &ctx.objects {
         let ptr = (*o) as *mut kclvm_value_ref_t;
@@ -85,14 +86,14 @@ pub extern "C" fn kclvm_context_delete(p: *mut kclvm_context_t) {
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_context_main_begin_hook(p: *mut kclvm_context_t) {
+pub unsafe extern "C" fn kclvm_context_main_begin_hook(p: *mut kclvm_context_t) {
     let p = mut_ptr_as_ref(p);
     p.main_begin_hook();
 }
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_context_main_end_hook(
+pub unsafe extern "C" fn kclvm_context_main_end_hook(
     p: *mut kclvm_context_t,
     return_value: *mut kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
@@ -106,7 +107,7 @@ pub extern "C" fn kclvm_context_main_end_hook(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_context_set_kcl_location(
+pub unsafe extern "C" fn kclvm_context_set_kcl_location(
     p: *mut kclvm_context_t,
     filename: *const i8,
     line: i32,
@@ -122,7 +123,10 @@ pub extern "C" fn kclvm_context_set_kcl_location(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_context_set_kcl_pkgpath(p: *mut kclvm_context_t, pkgpath: *const i8) {
+pub unsafe extern "C" fn kclvm_context_set_kcl_pkgpath(
+    p: *mut kclvm_context_t,
+    pkgpath: *const i8,
+) {
     let p = mut_ptr_as_ref(p);
     if !pkgpath.is_null() {
         p.set_kcl_pkgpath(c2str(pkgpath));
@@ -131,7 +135,7 @@ pub extern "C" fn kclvm_context_set_kcl_pkgpath(p: *mut kclvm_context_t, pkgpath
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_context_set_kcl_filename(filename: *const i8) {
+pub unsafe extern "C" fn kclvm_context_set_kcl_filename(filename: *const i8) {
     let p = Context::current_context_mut();
     if !filename.is_null() {
         p.set_kcl_filename(c2str(filename));
@@ -140,7 +144,7 @@ pub extern "C" fn kclvm_context_set_kcl_filename(filename: *const i8) {
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_context_set_kcl_line_col(line: i32, col: i32) {
+pub unsafe extern "C" fn kclvm_context_set_kcl_line_col(line: i32, col: i32) {
     let p = Context::current_context_mut();
     p.set_kcl_line_col(line, col);
 }
@@ -151,7 +155,7 @@ pub extern "C" fn kclvm_context_set_kcl_line_col(line: i32, col: i32) {
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_context_put_type(p: *mut kclvm_context_t, typ: *const kclvm_type_t) {
+pub unsafe extern "C" fn kclvm_context_put_type(p: *mut kclvm_context_t, typ: *const kclvm_type_t) {
     let p = mut_ptr_as_ref(p);
     let typ = ptr_as_ref(typ);
 
@@ -160,7 +164,7 @@ pub extern "C" fn kclvm_context_put_type(p: *mut kclvm_context_t, typ: *const kc
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_context_clear_all_types(p: *mut kclvm_context_t) {
+pub unsafe extern "C" fn kclvm_context_clear_all_types(p: *mut kclvm_context_t) {
     let p = mut_ptr_as_ref(p);
     p.all_types.clear();
 }
@@ -171,7 +175,7 @@ pub extern "C" fn kclvm_context_clear_all_types(p: *mut kclvm_context_t) {
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_context_symbol_init(
+pub unsafe extern "C" fn kclvm_context_symbol_init(
     p: *mut kclvm_context_t,
     n: kclvm_size_t,
     symbol_names: *const *const kclvm_char_t,
@@ -193,7 +197,7 @@ pub extern "C" fn kclvm_context_symbol_init(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_context_symbol_num(p: *const kclvm_context_t) -> kclvm_size_t {
+pub unsafe extern "C" fn kclvm_context_symbol_num(p: *const kclvm_context_t) -> kclvm_size_t {
     let p = ptr_as_ref(p);
 
     p.symbol_names.len() as kclvm_size_t
@@ -201,7 +205,7 @@ pub extern "C" fn kclvm_context_symbol_num(p: *const kclvm_context_t) -> kclvm_s
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_context_symbol_name(
+pub unsafe extern "C" fn kclvm_context_symbol_name(
     p: *const kclvm_context_t,
     i: kclvm_size_t,
 ) -> *const kclvm_char_t {
@@ -214,7 +218,7 @@ pub extern "C" fn kclvm_context_symbol_name(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_context_symbol_value(
+pub unsafe extern "C" fn kclvm_context_symbol_value(
     p: *const kclvm_context_t,
     i: kclvm_size_t,
 ) -> *const kclvm_value_t {
@@ -231,7 +235,7 @@ pub extern "C" fn kclvm_context_symbol_value(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_context_args_get(
+pub unsafe extern "C" fn kclvm_context_args_get(
     _p: *const kclvm_context_t,
     _key: *const kclvm_char_t,
 ) -> *const kclvm_char_t {
@@ -245,7 +249,7 @@ pub extern "C" fn kclvm_context_args_get(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_context_args_set(
+pub unsafe extern "C" fn kclvm_context_args_set(
     _p: *mut kclvm_context_t,
     _key: *const kclvm_char_t,
     _value: *const kclvm_char_t,
@@ -257,7 +261,7 @@ pub extern "C" fn kclvm_context_args_set(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_context_args_clear(p: *mut kclvm_context_t) {
+pub unsafe extern "C" fn kclvm_context_args_clear(p: *mut kclvm_context_t) {
     let p = mut_ptr_as_ref(p);
     p.app_args.clear();
 }
@@ -268,35 +272,44 @@ pub extern "C" fn kclvm_context_args_clear(p: *mut kclvm_context_t) {
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_context_set_debug_mode(p: *mut kclvm_context_t, v: kclvm_bool_t) {
+pub unsafe extern "C" fn kclvm_context_set_debug_mode(p: *mut kclvm_context_t, v: kclvm_bool_t) {
     let p = mut_ptr_as_ref(p);
     p.cfg.debug_mode = v != 0;
 }
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_context_set_strict_range_check(p: *mut kclvm_context_t, v: kclvm_bool_t) {
+pub unsafe extern "C" fn kclvm_context_set_strict_range_check(
+    p: *mut kclvm_context_t,
+    v: kclvm_bool_t,
+) {
     let p = mut_ptr_as_ref(p);
     p.cfg.strict_range_check = v != 0;
 }
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_context_set_disable_none(p: *mut kclvm_context_t, v: kclvm_bool_t) {
+pub unsafe extern "C" fn kclvm_context_set_disable_none(p: *mut kclvm_context_t, v: kclvm_bool_t) {
     let p = mut_ptr_as_ref(p);
     p.cfg.disable_none = v != 0;
 }
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_context_set_disable_schema_check(p: *mut kclvm_context_t, v: kclvm_bool_t) {
+pub unsafe extern "C" fn kclvm_context_set_disable_schema_check(
+    p: *mut kclvm_context_t,
+    v: kclvm_bool_t,
+) {
     let p = mut_ptr_as_ref(p);
     p.cfg.disable_schema_check = v != 0;
 }
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_context_set_list_option_mode(p: *mut kclvm_context_t, v: kclvm_bool_t) {
+pub unsafe extern "C" fn kclvm_context_set_list_option_mode(
+    p: *mut kclvm_context_t,
+    v: kclvm_bool_t,
+) {
     let p = mut_ptr_as_ref(p);
     p.cfg.list_option_mode = v != 0;
 }
@@ -307,7 +320,7 @@ pub extern "C" fn kclvm_context_set_list_option_mode(p: *mut kclvm_context_t, v:
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_context_invoke(
+pub unsafe extern "C" fn kclvm_context_invoke(
     p: *mut kclvm_context_t,
     method: *const c_char,
     args: *const c_char,
@@ -330,7 +343,7 @@ pub extern "C" fn kclvm_context_invoke(
     result_json
 }
 
-fn _kclvm_context_invoke(
+unsafe fn _kclvm_context_invoke(
     ctx: *mut kclvm_context_t,
     method: &str,
     args: *const kclvm_value_ref_t,
@@ -355,7 +368,9 @@ fn _kclvm_context_invoke(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_context_pkgpath_is_imported(pkgpath: *const kclvm_char_t) -> kclvm_bool_t {
+pub unsafe extern "C" fn kclvm_context_pkgpath_is_imported(
+    pkgpath: *const kclvm_char_t,
+) -> kclvm_bool_t {
     let pkgpath = c2str(pkgpath);
     let ctx = Context::current_context_mut();
     let result = ctx.imported_pkgpath.contains(pkgpath);

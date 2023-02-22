@@ -52,7 +52,7 @@ impl ValueRef {
             Value::int_value(..) => String::from(BUILTIN_TYPE_INT),
             Value::float_value(..) => String::from(BUILTIN_TYPE_FLOAT),
             Value::unit_value(_, raw, suffix) => {
-                format!("{}({}{})", KCL_TYPE_NUMBER_MULTIPLY, raw, suffix)
+                format!("{KCL_TYPE_NUMBER_MULTIPLY}({raw}{suffix})")
             }
             Value::str_value(..) => String::from(BUILTIN_TYPE_STR),
             Value::list_value(..) => String::from(KCL_TYPE_LIST),
@@ -182,7 +182,7 @@ pub fn type_pack_and_check(value: &ValueRef, expected_types: Vec<&str>) -> Value
         }
     }
     if !checked {
-        panic!("expect {}, got {}", expected_type, value_tpe);
+        panic!("expect {expected_type}, got {value_tpe}");
     }
     convertted_value
 }
@@ -259,13 +259,13 @@ pub fn convert_collection_value(value: &ValueRef, tpe: &str) -> ValueRef {
             match ctx.import_names.get(&now_meta_info.kcl_file) {
                 Some(mapping) => {
                     if let Some(pkgpath) = mapping.get(pkgname) {
-                        schema_type_name = format!("{}.{}", pkgpath, name);
+                        schema_type_name = format!("{pkgpath}.{name}");
                     }
                 }
                 None => {
                     for (_, mapping) in &ctx.import_names {
                         if let Some(pkgpath) = mapping.get(pkgname) {
-                            schema_type_name = format!("{}.{}", pkgpath, name);
+                            schema_type_name = format!("{pkgpath}.{name}");
                             break;
                         }
                     }
@@ -431,7 +431,7 @@ pub fn check_number_multiplier_type(value: &ValueRef, tpe: &str) -> bool {
     if value.is_unit() {
         if is_number_multiplier_literal_type(tpe) {
             let (_, raw, suffix) = value.as_unit();
-            return format!("{}{}", raw, suffix) == tpe;
+            return format!("{raw}{suffix}") == tpe;
         }
         return tpe == NUMBER_MULTIPLIER_TYPE;
     }
@@ -624,17 +624,17 @@ pub fn separate_kv(expected_type: &str) -> (String, String) {
             stack.push(c)
         } else if c == ']' {
             if &stack[stack.len() - 1..] != "[" {
-                panic!("invalid type string {}", expected_type);
+                panic!("invalid type string {expected_type}");
             }
             stack.pop();
         } else if c == '}' {
             if &stack[stack.len() - 1..] != "{" {
-                panic!("invalid type string {}", expected_type);
+                panic!("invalid type string {expected_type}");
             }
             stack.pop();
         } else if c == ':' {
             if !stack.is_empty() {
-                panic!("invalid type string {}", expected_type);
+                panic!("invalid type string {expected_type}");
             }
             return (
                 expected_type[..n].to_string(),

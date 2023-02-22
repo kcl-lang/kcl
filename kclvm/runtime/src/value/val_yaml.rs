@@ -60,7 +60,7 @@ impl ValueRef {
             let json_value: JsonValue = JsonValue::deserialize(document)?;
             result.list_append(&ValueRef::parse_json(&json_value))
         }
-        if result.len() == 0 {
+        if result.is_empty() {
             // Empty result returns a empty dict.
             Ok(ValueRef::dict(None))
         } else if result.len() == 1 {

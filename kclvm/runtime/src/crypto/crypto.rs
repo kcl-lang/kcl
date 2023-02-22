@@ -1,6 +1,7 @@
 //! KCL crypto system module
 //!
 //! Copyright 2021 The KCL Authors. All rights reserved.
+#![allow(clippy::missing_safety_doc)]
 
 extern crate md5;
 extern crate sha1;
@@ -17,7 +18,7 @@ type kclvm_value_ref_t = ValueRef;
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_crypto_md5(
+pub unsafe extern "C" fn kclvm_crypto_md5(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -35,7 +36,7 @@ pub extern "C" fn kclvm_crypto_md5(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_crypto_sha1(
+pub unsafe extern "C" fn kclvm_crypto_sha1(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -53,7 +54,7 @@ pub extern "C" fn kclvm_crypto_sha1(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_crypto_sha224(
+pub unsafe extern "C" fn kclvm_crypto_sha224(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -69,7 +70,7 @@ pub extern "C" fn kclvm_crypto_sha224(
         use std::fmt::Write;
 
         for byte in result {
-            let _ = write!(&mut hex, "{:02x}", byte);
+            let _ = write!(&mut hex, "{byte:02x}");
         }
 
         return ValueRef::str(hex.as_ref()).into_raw();
@@ -81,7 +82,7 @@ pub extern "C" fn kclvm_crypto_sha224(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_crypto_sha256(
+pub unsafe extern "C" fn kclvm_crypto_sha256(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -97,7 +98,7 @@ pub extern "C" fn kclvm_crypto_sha256(
         use std::fmt::Write;
 
         for byte in result {
-            let _ = write!(&mut hex, "{:02x}", byte);
+            let _ = write!(&mut hex, "{byte:02x}");
         }
 
         return ValueRef::str(hex.as_ref()).into_raw();
@@ -109,7 +110,7 @@ pub extern "C" fn kclvm_crypto_sha256(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_crypto_sha384(
+pub unsafe extern "C" fn kclvm_crypto_sha384(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -125,7 +126,7 @@ pub extern "C" fn kclvm_crypto_sha384(
         use std::fmt::Write;
 
         for byte in result {
-            let _ = write!(&mut hex, "{:02x}", byte);
+            let _ = write!(&mut hex, "{byte:02x}");
         }
 
         return ValueRef::str(hex.as_ref()).into_raw();
@@ -137,7 +138,7 @@ pub extern "C" fn kclvm_crypto_sha384(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_crypto_sha512(
+pub unsafe extern "C" fn kclvm_crypto_sha512(
     _ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -153,7 +154,7 @@ pub extern "C" fn kclvm_crypto_sha512(
         use std::fmt::Write;
 
         for byte in result {
-            let _ = write!(&mut hex, "{:02x}", byte);
+            let _ = write!(&mut hex, "{byte:02x}");
         }
 
         return ValueRef::str(hex.as_ref()).into_raw();

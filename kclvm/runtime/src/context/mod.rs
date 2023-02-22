@@ -11,7 +11,7 @@ type kclvm_value_ref_t = crate::ValueRef;
 
 impl fmt::Display for PanicInfo {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 
@@ -45,7 +45,7 @@ impl PanicInfo {
             Err(_) => {
                 let mut panic_info = PanicInfo::default();
                 panic_info.__kcl_PanicInfo__ = true;
-                panic_info.message = format!("{}", s);
+                panic_info.message = s.to_string();
                 panic_info.err_type_code = crate::ErrType::CompileError_TYPE as i32;
                 panic_info
             }
@@ -263,7 +263,7 @@ impl crate::Context {
                 default_value = (*v).clone();
             }
 
-            let s = format!("  -D {}={}", name, default_value);
+            let s = format!("  -D {name}={default_value}");
             msg.push_str(s.as_str());
 
             // (required)
