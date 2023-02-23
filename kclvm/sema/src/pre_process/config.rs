@@ -308,70 +308,8 @@ fn unify_config_entries(
         }
     }
     let mut entries = vec![];
-    for (key, items) in bucket.iter_mut() {
-        if key == NAME_NONE_BUCKET_KEY {
-            entries.append(items);
-        } else {
-            let mut schema_index = None;
-            for (i, item) in items.iter().enumerate() {
-                if let ast::Expr::Schema(_) = item.node.value.node {
-                    schema_index = Some(i);
-                    break;
-                }
-            }
-            match schema_index {
-                Some(index) => {
-                    let mut merged_schema = items[index].as_ref().clone();
-                    for (i, item) in items.iter().enumerate() {
-                        match &item.node.value.node {
-                            ast::Expr::Schema(item_schema_expr) => {
-                                if let ast::Expr::Schema(schema_expr) =
-                                    &mut merged_schema.node.value.node
-                                {
-                                    if let ast::Expr::Config(schema_config) =
-                                        &mut schema_expr.config.node
-                                    {
-                                        if let ast::Expr::Config(config_expr) =
-                                            &item_schema_expr.config.node
-                                        {
-                                            if i < index {
-                                                let mut items = config_expr.items.clone();
-                                                items.append(&mut schema_config.items);
-                                                schema_config.items = items;
-                                            } else if i > index {
-                                                let mut items = config_expr.items.clone();
-                                                schema_config.items.append(&mut items);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            ast::Expr::Config(item_config_expr) => {
-                                if let ast::Expr::Schema(schema_expr) =
-                                    &mut merged_schema.node.value.node
-                                {
-                                    if let ast::Expr::Config(schema_config) =
-                                        &mut schema_expr.config.node
-                                    {
-                                        if i < index {
-                                            let mut items = item_config_expr.items.clone();
-                                            items.append(&mut schema_config.items);
-                                            schema_config.items = items;
-                                        } else if i > index {
-                                            let mut items = item_config_expr.items.clone();
-                                            schema_config.items.append(&mut items);
-                                        }
-                                    }
-                                }
-                            }
-                            _ => entries.push(item.clone()),
-                        }
-                    }
-                    entries.push(Box::new(merged_schema));
-                }
-                None => entries.append(items),
-            };
-        }
+    for (_, items) in bucket.iter_mut() {
+        entries.append(items);
     }
     // Unify config entries recursively.
     for entry in &mut entries {

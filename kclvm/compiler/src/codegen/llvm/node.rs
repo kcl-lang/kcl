@@ -1669,7 +1669,8 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
             self.dict_insert(dict_value, name.as_str(), value, 0, -1);
         }
         let pkgpath = self.native_global_string_value(&self.current_pkgpath());
-        let is_in_schema = self.schema_stack.borrow().len() > 0;
+        let is_in_schema =
+            self.schema_stack.borrow().len() > 0 || self.schema_expr_stack.borrow().len() > 0;
         Ok(self.build_call(
             &ApiFunc::kclvm_value_function_invoke.name(),
             &[
@@ -1895,6 +1896,9 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
 
     fn walk_schema_expr(&self, schema_expr: &'ctx ast::SchemaExpr) -> Self::Result {
         check_backtrack_stop!(self);
+        {
+            self.schema_expr_stack.borrow_mut().push(());
+        }
         let config_value = self
             .walk_expr(&schema_expr.config)
             .expect(kcl_error::COMPILE_ERROR_MSG);
@@ -1936,11 +1940,15 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         );
         // Check the required attributes only when the values of all attributes
         // in the final schema are solved.
-        let is_in_schema = self.schema_stack.borrow().len() > 0;
+        let is_in_schema =
+            self.schema_stack.borrow().len() > 0 || self.schema_expr_stack.borrow().len() > 0;
         if !is_in_schema {
             self.build_void_call(&ApiFunc::kclvm_schema_optional_check.name(), &[schema]);
         }
         utils::update_ctx_filename(self, &schema_expr.config);
+        {
+            self.schema_expr_stack.borrow_mut().pop();
+        }
         Ok(schema)
     }
 
