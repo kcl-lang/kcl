@@ -7,6 +7,9 @@ pub mod lint;
 pub mod run;
 mod settings;
 
+#[cfg(test)]
+mod tests;
+
 use lint::lint_command;
 use run::run_command;
 
