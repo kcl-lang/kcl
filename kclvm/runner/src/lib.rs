@@ -6,6 +6,7 @@ use kclvm_ast::{
     ast::{Module, Program},
     MAIN_PKG,
 };
+use kclvm_config::modfile::KCL_MOD_PATH_ENV;
 use kclvm_parser::load_program;
 use kclvm_query::apply_overrides;
 use kclvm_runtime::{PanicInfo, ValueRef};
@@ -74,10 +75,9 @@ pub fn exec_program(
 
     // Join work_path with k_file_path
     for (_, file) in k_files.iter().enumerate() {
-        // If the input file or path is a relative path,
-        // join with the work directory path and convert
-        // it to a absolute path.
-        if file.starts_with(".") {
+        // If the input file or path is a relative path and it is not a absolute path in the KCL module VFS,
+        // join with the work directory path and convert it to a absolute path.
+        if !file.starts_with(KCL_MOD_PATH_ENV) && !Path::new(file).is_absolute() {
             match Path::new(&work_dir).join(file).canonicalize() {
                 Ok(path) => kcl_paths.push(String::from(path.adjust_canonicalization())),
                 Err(_) => {

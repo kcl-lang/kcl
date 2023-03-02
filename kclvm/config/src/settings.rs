@@ -1,6 +1,43 @@
 // Copyright 2021 The KCL Authors. All rights reserved.
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
+
+/// Default settings file `kcl.yaml`
+pub const DEFAULT_SETTING_FILE: &str = "kcl.yaml";
+
+/// Readonly settings with the filepath.
+#[derive(Debug, Default, Clone)]
+pub struct SettingsPathBuf(Option<PathBuf>, SettingsFile);
+
+impl SettingsPathBuf {
+    /// New a settings with path and settings content.
+    #[inline]
+    pub fn new(path: Option<PathBuf>, settings: SettingsFile) -> Self {
+        Self(path, settings)
+    }
+
+    /// Get the output setting.
+    #[inline]
+    pub fn output(&self) -> Option<String> {
+        match &self.1.kcl_cli_configs {
+            Some(c) => c.output.clone(),
+            None => None,
+        }
+    }
+
+    /// Get the path.
+    #[inline]
+    pub fn path(&self) -> &Option<PathBuf> {
+        &self.0
+    }
+
+    /// Get the settings.
+    #[inline]
+    pub fn settings(&self) -> &SettingsFile {
+        &self.1
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SettingsFile {
@@ -45,6 +82,24 @@ impl SettingsFile {
         match &self.kcl_cli_configs {
             Some(c) => c.output.clone(),
             None => None,
+        }
+    }
+
+    /// Get the input setting.
+    #[inline]
+    pub fn input(&self) -> Vec<String> {
+        match &self.kcl_cli_configs {
+            Some(c) => match &c.file {
+                Some(file) => match &c.files {
+                    Some(files) if !files.is_empty() => files.clone(),
+                    _ => file.clone(),
+                },
+                None => match &c.files {
+                    Some(files) => files.clone(),
+                    None => vec![],
+                },
+            },
+            None => vec![],
         }
     }
 }

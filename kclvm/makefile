@@ -41,6 +41,10 @@ fmt:
 lint:
 	cargo clippy
 
+# Cargo clippy all packages witj auto ix
+fix:
+	cargo clippy --fix --allow-dirty
+
 # ------------------------
 # Tests
 # ------------------------

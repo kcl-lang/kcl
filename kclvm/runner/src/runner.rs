@@ -1,5 +1,5 @@
 use kclvm_ast::ast;
-use kclvm_config::settings::SettingsFile;
+use kclvm_config::settings::{SettingsFile, SettingsPathBuf};
 use kclvm_runtime::ValueRef;
 use serde::{Deserialize, Serialize};
 
@@ -97,6 +97,14 @@ impl From<SettingsFile> for ExecProgramArgs {
                 })
                 .collect();
         }
+        args
+    }
+}
+
+impl From<SettingsPathBuf> for ExecProgramArgs {
+    fn from(s: SettingsPathBuf) -> Self {
+        let mut args: ExecProgramArgs = s.settings().clone().into();
+        args.work_dir = s.path().clone().map(|p| p.to_string_lossy().to_string());
         args
     }
 }

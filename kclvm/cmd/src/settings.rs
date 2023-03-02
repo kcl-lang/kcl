@@ -1,11 +1,15 @@
+use std::path::PathBuf;
+
 use anyhow::Result;
 use clap::ArgMatches;
-use kclvm_config::settings::{load_file, merge_settings, SettingsFile};
+use kclvm_config::settings::{
+    load_file, merge_settings, SettingsFile, SettingsPathBuf, DEFAULT_SETTING_FILE,
+};
 use kclvm_error::Handler;
 use kclvm_runtime::PanicInfo;
 
 /// Build settings from arg matches.
-pub(crate) fn must_build_settings(matches: &ArgMatches) -> SettingsFile {
+pub(crate) fn must_build_settings(matches: &ArgMatches) -> SettingsPathBuf {
     match build_settings(matches) {
         Ok(settings) => settings,
         Err(err) => {
@@ -17,38 +21,61 @@ pub(crate) fn must_build_settings(matches: &ArgMatches) -> SettingsFile {
                     ..Default::default()
                 })
                 .abort_if_any_errors();
-            SettingsFile::default()
+            SettingsPathBuf::default()
         }
     }
 }
 
 /// Build settings from arg matches.
-pub(crate) fn build_settings(matches: &ArgMatches) -> Result<SettingsFile> {
+pub(crate) fn build_settings(matches: &ArgMatches) -> Result<SettingsPathBuf> {
     let files: Vec<&str> = match matches.values_of("input") {
         Some(files) => files.into_iter().collect::<Vec<&str>>(),
         None => vec![],
     };
-    let debug_mode = matches.occurrences_of("debug") > 0;
-    let disable_none = matches.occurrences_of("disable_none") > 0;
     let output = matches.value_of("output").map(|v| v.to_string());
 
+    let mut path = None;
     let mut settings = if let Some(files) = matches.values_of("setting") {
         let files: Vec<&str> = files.into_iter().collect::<Vec<&str>>();
         let mut settings = vec![];
-        for f in &files {
-            settings.push(load_file(f)?);
+        for file in &files {
+            let s = load_file(file)?;
+            if !s.input().is_empty() {
+                path = Some(
+                    PathBuf::from(file)
+                        .parent()
+                        .map(|p| p.to_path_buf())
+                        .ok_or(anyhow::anyhow!("The parent path of {file} is not found"))?,
+                )
+            }
+            settings.push(s);
         }
         merge_settings(&settings)
+    // If exists default kcl.yaml, load it.
+    } else if std::fs::metadata(DEFAULT_SETTING_FILE).is_ok() {
+        path = Some(
+            PathBuf::from(DEFAULT_SETTING_FILE)
+                .parent()
+                .map(|p| p.to_path_buf())
+                .ok_or(anyhow::anyhow!(
+                    "The parent path of {DEFAULT_SETTING_FILE} is not found"
+                ))?,
+        );
+        load_file(DEFAULT_SETTING_FILE)?
     } else {
-        SettingsFile::new()
+        SettingsFile::default()
     };
     if let Some(config) = &mut settings.kcl_cli_configs {
         if !files.is_empty() {
             config.files = Some(files.iter().map(|f| f.to_string()).collect());
         }
         config.output = output;
-        config.debug = Some(debug_mode);
-        config.disable_none = Some(disable_none);
+        if matches.occurrences_of("debug") > 0 {
+            config.debug = Some(true);
+        }
+        if matches.occurrences_of("disable_none") > 0 {
+            config.disable_none = Some(true);
+        }
     }
-    Ok(settings)
+    Ok(SettingsPathBuf::new(path, settings))
 }
