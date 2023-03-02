@@ -2,6 +2,7 @@ use kclvm_error::Diagnostic as KCLDiagnostic;
 use kclvm_error::Level;
 use kclvm_error::Message;
 use kclvm_error::Position as KCLPos;
+use kclvm_parser::LoadProgramOptions;
 use tower_lsp::lsp_types::*;
 
 /// Convert pos format
@@ -47,4 +48,9 @@ pub fn kcl_diag_to_lsp_diags(diag: &KCLDiagnostic, file_name: &str) -> Vec<Diagn
         .filter(|msg| msg.pos.filename == file_name)
         .map(|msg| kcl_msg_to_lsp_diags(msg, kcl_err_level_to_severity(diag.level)))
         .collect()
+}
+
+/// todo: get kcl project files
+pub fn get_project_stack(file: &str) -> (Vec<&str>, Option<LoadProgramOptions>) {
+    return (vec![file], None);
 }

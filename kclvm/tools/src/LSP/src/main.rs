@@ -1,12 +1,19 @@
 use chrono::{Local, TimeZone};
 use indexmap::IndexSet;
 use kclvm_tools::lint::lint_files;
-use kclvm_tools::util::lsp::kcl_diag_to_lsp_diags;
+use kclvm_tools::util::lsp::{get_project_stack, kcl_diag_to_lsp_diags};
+use semantic_token::{
+    get_imcomplete_semantic_tokens, imcomplete_semantic_tokens_to_semantic_tokens, LEGEND_TYPE,
+};
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
 
 use kclvm_error::Diagnostic as KCLDiagnostic;
+mod semantic_token;
+
+#[cfg(test)]
+mod tests;
 
 #[derive(Debug)]
 struct Backend {
@@ -26,6 +33,32 @@ impl LanguageServer for Backend {
                 text_document_sync: Some(TextDocumentSyncCapability::Kind(
                     TextDocumentSyncKind::FULL,
                 )),
+                semantic_tokens_provider: Some(
+                    SemanticTokensServerCapabilities::SemanticTokensRegistrationOptions(
+                        SemanticTokensRegistrationOptions {
+                            text_document_registration_options: {
+                                TextDocumentRegistrationOptions {
+                                    document_selector: Some(vec![DocumentFilter {
+                                        language: Some("KCL".to_string()),
+                                        scheme: Some("file".to_string()),
+                                        pattern: None,
+                                    }]),
+                                }
+                            },
+                            semantic_tokens_options: SemanticTokensOptions {
+                                work_done_progress_options: WorkDoneProgressOptions::default(),
+                                legend: SemanticTokensLegend {
+                                    token_types: LEGEND_TYPE.clone().into(),
+                                    token_modifiers: vec![],
+                                },
+                                range: Some(false),
+                                full: Some(SemanticTokensFullOptions::Bool(true)),
+                            },
+                            static_registration_options: StaticRegistrationOptions::default(),
+                        },
+                    ),
+                ),
+
                 ..ServerCapabilities::default()
             },
         })
@@ -76,6 +109,29 @@ impl LanguageServer for Backend {
         self.client
             .log_message(MessageType::INFO, "file closed!")
             .await;
+    }
+
+    async fn semantic_tokens_full(
+        &self,
+        params: SemanticTokensParams,
+    ) -> Result<Option<SemanticTokensResult>> {
+        let file = params.text_document.uri.path();
+        let (files, ops) = get_project_stack(file);
+
+        self.client
+            .log_message(
+                MessageType::INFO,
+                format!("semantic_token_full filename:{}", file),
+            )
+            .await;
+
+        let mut tokens = get_imcomplete_semantic_tokens(&files, ops, file);
+
+        let semantic_tokens = imcomplete_semantic_tokens_to_semantic_tokens(&mut tokens);
+        return Ok(Some(SemanticTokensResult::Tokens(SemanticTokens {
+            result_id: None,
+            data: semantic_tokens,
+        })));
     }
 }
 
