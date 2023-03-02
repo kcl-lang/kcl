@@ -1896,6 +1896,10 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
 
     fn walk_schema_expr(&self, schema_expr: &'ctx ast::SchemaExpr) -> Self::Result {
         check_backtrack_stop!(self);
+        // Check the required attributes only when the values of all attributes
+        // in the final schema are solved.
+        let is_in_schema =
+            self.schema_stack.borrow().len() > 0 || self.schema_expr_stack.borrow().len() > 0;
         {
             self.schema_expr_stack.borrow_mut().push(());
         }
@@ -1938,10 +1942,6 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
                 pkgpath,
             ],
         );
-        // Check the required attributes only when the values of all attributes
-        // in the final schema are solved.
-        let is_in_schema =
-            self.schema_stack.borrow().len() > 0 || self.schema_expr_stack.borrow().len() > 0;
         if !is_in_schema {
             self.build_void_call(&ApiFunc::kclvm_schema_optional_check.name(), &[schema]);
         }
