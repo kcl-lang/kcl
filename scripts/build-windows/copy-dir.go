@@ -3,16 +3,16 @@
 //go:build ingore
 // +build ingore
 
-//
 // Copy dir, support regexp.
 //
 // Example:
+//
 //	cpdir src dst
 //	cpdir src dst "\.go$"
 //
 // Help:
-//	cpdir -h
 //
+//	cpdir -h
 package main
 
 import (
