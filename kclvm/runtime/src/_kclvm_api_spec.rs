@@ -771,8 +771,8 @@
 // api-spec(llvm): declare void @kclvm_schema_do_check_with_index_sign_attr(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs, i64* %check_fn_ptr, %kclvm_char_t* %attr_name);
 
 // api-spec:       kclvm_schema_optional_check
-// api-spec(c):    kclvm_value_ref_t* kclvm_schema_optional_check(kclvm_value_ref_t* p);
-// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_schema_optional_check(%kclvm_value_ref_t* %p);
+// api-spec(c):    void kclvm_schema_optional_check(kclvm_value_ref_t* p);
+// api-spec(llvm): declare void @kclvm_schema_optional_check(%kclvm_value_ref_t* %p);
 
 // api-spec:       kclvm_schema_default_settings
 // api-spec(c):    void kclvm_schema_default_settings(kclvm_value_ref_t* schema_value, kclvm_value_ref_t* config_value, kclvm_char_t* runtime_type);

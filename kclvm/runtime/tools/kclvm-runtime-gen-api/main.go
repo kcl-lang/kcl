@@ -325,7 +325,7 @@ impl std::fmt::Display for ApiType {
 impl ApiType {
     #[allow(dead_code)]
     pub fn name(&self) -> String {
-        format!("{:?}", self)
+        format!("{self:?}")
     }
 }
 
@@ -339,14 +339,14 @@ pub enum ApiFunc {
 
 impl std::fmt::Display for ApiFunc {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 
 impl ApiFunc {
     #[allow(dead_code)]
     pub fn name(&self) -> String {
-        format!("{:?}", self)
+        format!("{self:?}")
     }
 }
 `
@@ -366,7 +366,7 @@ pub fn _kclvm_get_fn_ptr_by_name(name: &str) -> u64 {
 		{{- range $_, $spec := $specList -}}{{if (not $spec.IsType)}}
 		"{{$spec.Name}}" => crate::{{$spec.Name}} as *const () as u64,
 		{{- end}}{{end}}
-		_ => panic!("unknown {}", name),
+		_ => panic!("unknown {name}"),
 	}
 }
 `

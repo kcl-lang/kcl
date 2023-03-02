@@ -2194,16 +2194,13 @@ pub unsafe extern "C" fn kclvm_schema_do_check_with_index_sign_attr(
 
 #[no_mangle]
 #[runtime_fn]
-pub unsafe extern "C" fn kclvm_schema_optional_check(
-    p: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub unsafe extern "C" fn kclvm_schema_optional_check(p: *const kclvm_value_ref_t) {
     let p = ptr_as_ref(p);
 
-    let ctx = Context::current_context_mut();
+    let ctx = Context::current_context();
     if !ctx.cfg.disable_schema_check {
         p.schema_check_attr_optional(true);
     }
-    kclvm_value_None()
 }
 
 #[no_mangle]
