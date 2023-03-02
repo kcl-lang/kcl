@@ -15,7 +15,7 @@ pub mod event;
 /// use compiler_base_tools::test::task::TaskId;
 /// use compiler_base_tools::test::task::TaskInfo;
 /// use compiler_base_tools::test::task::TaskStatus;
-/// 
+///
 /// // 1. Define a custom task [`MyTask`].
 /// struct MyTask {
 ///     id: usize,

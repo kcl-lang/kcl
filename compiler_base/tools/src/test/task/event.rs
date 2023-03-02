@@ -1,4 +1,4 @@
-//! This file provides [`TaskEvent`], 
+//! This file provides [`TaskEvent`],
 //! which tells the logging system to display information.
 use std::time::Duration;
 
@@ -29,7 +29,7 @@ impl TaskEvent {
         self.tinfo.clone()
     }
 
-    /// Get [`TaskEventType`] 
+    /// Get [`TaskEventType`]
     pub fn ty(&self) -> TaskEventType {
         self.ty.clone()
     }

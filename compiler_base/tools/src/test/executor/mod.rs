@@ -31,7 +31,7 @@ mod tests;
 /// use compiler_base_tools::test::task::event::TaskEventType;
 /// use std::thread;
 /// use std::io;
-/// 
+///
 /// // 1. First, we need to prepare a method to display to the log.
 /// // Print the information.
 /// fn print_log(event: TaskEvent) -> io::Result<()> {
