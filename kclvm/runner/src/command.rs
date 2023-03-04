@@ -4,6 +4,9 @@ use std::env::consts::DLL_SUFFIX;
 use std::ffi::CString;
 use std::path::PathBuf;
 
+const KCLVM_LIB_LINK_PATH_ENV_VAR: &str = "KCLVM_LIB_LINK_PATH";
+const KCLVM_LIB_SHORT_NAME: &str = "kclvm_cli_cdylib";
+
 #[derive(Debug)]
 pub struct Command {
     executable_root: String,
@@ -18,6 +21,7 @@ impl Command {
 
     /// Get lld linker args
     fn lld_args(&self, lib_path: &str) -> Vec<CString> {
+        let lib_link_path = self.get_lib_link_path();
         #[cfg(target_os = "macos")]
         let args = vec![
             // Arch
@@ -28,9 +32,9 @@ impl Command {
             // Output dynamic libs `.dylib`.
             CString::new("-dylib").unwrap(),
             // Link relative path
+            CString::new(format!("-L{}", lib_link_path)).unwrap(),
             CString::new("-rpath").unwrap(),
-            CString::new(format!("{}/bin", self.executable_root)).unwrap(),
-            CString::new(format!("-L{}/bin", self.executable_root)).unwrap(),
+            CString::new(lib_link_path).unwrap(),
             // With the change from Catalina to Big Sur (11.0), Apple moved the location of
             // libraries. On Big Sur, it is required to pass the location of the System
             // library. The -lSystem option is still required for macOS 10.15.7 and
@@ -52,9 +56,9 @@ impl Command {
             // Output dynamic libs `.so`.
             CString::new("--shared").unwrap(),
             // Link relative path
+            CString::new(format!("-L{}", lib_link_path)).unwrap(),
             CString::new("-R").unwrap(),
-            CString::new(format!("{}/bin", self.executable_root)).unwrap(),
-            CString::new(format!("-L{}/bin", self.executable_root)).unwrap(),
+            CString::new(lib_link_path).unwrap(),
             // Link runtime libs.
             CString::new("-lkclvm_cli_cdylib").unwrap(),
             // Output lib path.
@@ -141,9 +145,10 @@ impl Command {
 
     // Add args for cc on unix os.
     pub(crate) fn unix_args(&self, libs: &[String], cmd: &mut std::process::Command) {
+        let path = self.get_lib_link_path();
         cmd.args(libs)
-            .arg(&format!("-Wl,-rpath,{}/bin", self.executable_root))
-            .arg(&format!("-L{}/bin", self.executable_root))
+            .arg(&format!("-Wl,-rpath,{}", &path))
+            .arg(&format!("-L{}", &path))
             .arg(&format!("-I{}/include", self.executable_root))
             .arg("-lkclvm_cli_cdylib");
     }
@@ -160,7 +165,7 @@ impl Command {
             .arg("/link")
             .arg("/NOENTRY")
             .arg("/NOLOGO")
-            .arg(format!(r#"/LIBPATH:"{}\bin""#, self.executable_root))
+            .arg(format!(r#"/LIBPATH:"{}""#, self.get_lib_link_path()))
             .arg("/DEFAULTLIB:msvcrt.lib")
             .arg("/DEFAULTLIB:libcmt.lib")
             .arg("/DLL")
@@ -185,6 +190,34 @@ impl Command {
 
         let p = p.parent().unwrap().parent().unwrap();
         p.to_str().unwrap().to_string()
+    }
+
+    /// Get KCLVM lib link path
+    pub(crate) fn get_lib_link_path(&self) -> String {
+        let mut default_path = None;
+        for folder in ["lib", "bin"] {
+            let path = std::path::Path::new(&self.executable_root)
+                .join(folder)
+                .join(&Self::get_lib_name());
+            if path.exists() {
+                default_path = Some(path.parent().unwrap().to_string_lossy().to_string());
+                break;
+            }
+        }
+        std::env::var(KCLVM_LIB_LINK_PATH_ENV_VAR)
+            .ok()
+            .or(default_path)
+            .unwrap_or(self.executable_root.clone())
+    }
+
+    /// Get KCLVM lib name
+    pub(crate) fn get_lib_name() -> String {
+        let suffix = Self::get_lib_suffix();
+        if Self::is_windows() {
+            format!("{KCLVM_LIB_SHORT_NAME}{suffix}")
+        } else {
+            format!("lib{KCLVM_LIB_SHORT_NAME}{suffix}")
+        }
     }
 
     /// Specifies the filename suffix used for shared libraries on this
