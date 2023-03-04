@@ -4,6 +4,7 @@ use std::env::consts::DLL_SUFFIX;
 use std::ffi::CString;
 use std::path::PathBuf;
 
+const KCLVM_CLI_BIN_PATH_ENV_VAR: &str = "KCLVM_CLI_BIN_PATH";
 const KCLVM_LIB_LINK_PATH_ENV_VAR: &str = "KCLVM_LIB_LINK_PATH";
 const KCLVM_LIB_SHORT_NAME: &str = "kclvm_cli_cdylib";
 
@@ -177,6 +178,9 @@ impl Command {
 
     /// Get the kclvm executable root.
     fn get_executable_root() -> String {
+        if let Ok(path) = std::env::var(KCLVM_CLI_BIN_PATH_ENV_VAR) {
+            return path;
+        }
         let kclvm_exe = if Self::is_windows() {
             "kclvm.exe"
         } else {
