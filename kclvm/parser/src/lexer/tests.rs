@@ -1,8 +1,9 @@
 use super::*;
 use crate::lexer::str_content_eval;
 use crate::session::ParseSession;
+use compiler_base_span::{span::new_byte_pos, FilePathMapping, SourceMap};
 use expect_test::{expect, Expect};
-use kclvm_span::{create_session_globals_then, BytePos, FilePathMapping, SourceMap};
+use kclvm_span::create_session_globals_then;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -14,7 +15,7 @@ fn check_lexing(src: &str, expect: Expect) {
     match sf.src.as_ref() {
         Some(src_from_sf) => {
             create_session_globals_then(|| {
-                let actual: String = parse_token_streams(sess, src_from_sf, BytePos::from_u32(0))
+                let actual: String = parse_token_streams(sess, src_from_sf, new_byte_pos(0))
                     .iter()
                     .map(|token| format!("{:?}\n", token))
                     .collect();
@@ -32,7 +33,7 @@ fn check_span(src: &str, expect: Expect) {
     let sess = &ParseSession::with_source_map(Arc::new(SourceMap::new(FilePathMapping::empty())));
 
     create_session_globals_then(move || {
-        let actual: String = parse_token_streams(sess, src, BytePos::from_u32(0))
+        let actual: String = parse_token_streams(sess, src, new_byte_pos(0))
             .iter()
             .map(|token| format!("{:?}\n", sm.span_to_snippet(token.span).unwrap()))
             .collect();
@@ -475,7 +476,7 @@ fn test_peek() {
     let mut sess = ParseSession::with_source_map(Arc::new(sm));
 
     create_session_globals_then(|| {
-        let stream = parse_token_streams(&mut sess, src, BytePos::from_u32(0));
+        let stream = parse_token_streams(&mut sess, src, new_byte_pos(0));
         let mut cursor = stream.cursor();
 
         let tok0 = cursor.next();

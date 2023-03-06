@@ -2,10 +2,11 @@ use crate::lexer::parse_token_streams;
 use crate::parse_file;
 use crate::parser::Parser;
 use crate::session::ParseSession;
+use compiler_base_span::span::new_byte_pos;
+use compiler_base_span::{FilePathMapping, SourceMap};
 use expect_test::{expect, Expect};
-use kclvm_span::{create_session_globals_then, BytePos, FilePathMapping, SourceMap};
+use kclvm_span::create_session_globals_then;
 use regex::Regex;
-use rustc_span::Pos;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -17,7 +18,7 @@ fn check_parsing_expr(src: &str, expect: Expect) {
     match sf.src.as_ref() {
         Some(src_from_sf) => {
             create_session_globals_then(|| {
-                let stream = parse_token_streams(sess, src_from_sf.as_str(), BytePos::from_u32(0));
+                let stream = parse_token_streams(sess, src_from_sf.as_str(), new_byte_pos(0));
                 let mut parser = Parser::new(sess, stream);
                 let expr = parser.parse_expr();
                 let actual = format!("{:?}\n", expr);
@@ -41,7 +42,7 @@ fn check_parsing_type(src: &str, expect: Expect) {
     let sess = &ParseSession::with_source_map(Arc::new(sm));
 
     create_session_globals_then(|| {
-        let stream = parse_token_streams(sess, src, BytePos::from_u32(0));
+        let stream = parse_token_streams(sess, src, new_byte_pos(0));
         let mut parser = Parser::new(sess, stream);
         let typ = parser.parse_type_annotation();
         let actual = format!("{:?}\n", typ);
@@ -55,7 +56,7 @@ fn check_type_str(src: &str, expect: Expect) {
     let sess = &ParseSession::with_source_map(Arc::new(sm));
 
     create_session_globals_then(|| {
-        let stream = parse_token_streams(sess, src, BytePos::from_u32(0));
+        let stream = parse_token_streams(sess, src, new_byte_pos(0));
         let mut parser = Parser::new(sess, stream);
         let typ = parser.parse_type_annotation();
         let actual = typ.node.to_string();

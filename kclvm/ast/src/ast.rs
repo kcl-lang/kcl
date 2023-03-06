@@ -38,8 +38,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use kclvm_span::Loc;
-use rustc_span::Pos;
+use compiler_base_span::Loc;
 
 use super::token;
 use crate::node_ref;
@@ -90,9 +89,9 @@ impl<T> Node<T> {
             node,
             filename: format!("{}", lo.file.name.prefer_remapped()),
             line: lo.line as u64,
-            column: lo.col.to_usize() as u64,
+            column: lo.col.0 as u64,
             end_line: hi.line as u64,
-            end_column: hi.col.to_usize() as u64,
+            end_column: hi.col.0 as u64,
         }
     }
 

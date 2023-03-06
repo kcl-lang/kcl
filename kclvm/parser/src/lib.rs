@@ -10,16 +10,15 @@ mod tests;
 extern crate kclvm_error;
 
 use crate::session::ParseSession;
+use compiler_base_span::span::new_byte_pos;
 use kclvm_ast::ast;
 use kclvm_error::bug;
 use kclvm_runtime::PanicInfo;
-use kclvm_span::{self, FilePathMapping, SourceMap};
 use kclvm_utils::path::PathPrefix;
 
+use compiler_base_span::{FilePathMapping, SourceMap};
 use lexer::parse_token_streams;
 use parser::Parser;
-use rustc_span::BytePos;
-use rustc_span::Pos;
 
 use std::error::Error;
 use std::fs::File;
@@ -149,7 +148,7 @@ pub fn parse_expr(src: &str) -> Option<ast::NodeRef<ast::Expr>> {
         let sess = &ParseSession::with_source_map(Arc::new(sm));
 
         let expr: Option<ast::NodeRef<ast::Expr>> = Some(create_session_globals_then(|| {
-            let stream = parse_token_streams(sess, src_from_sf.as_str(), BytePos::from_u32(0));
+            let stream = parse_token_streams(sess, src_from_sf.as_str(), new_byte_pos(0));
             let mut parser = Parser::new(sess, stream);
             parser.parse_expr()
         }));

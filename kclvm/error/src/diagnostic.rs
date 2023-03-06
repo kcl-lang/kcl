@@ -3,7 +3,6 @@ use std::hash::Hash;
 
 use indexmap::IndexSet;
 use kclvm_span::Loc;
-use rustc_span::Pos;
 use termcolor::{Color, ColorSpec};
 
 use crate::{ErrorKind, WarningKind};
@@ -90,7 +89,7 @@ impl From<Loc> for Position {
             line: loc.line as u64,
             column: if loc.col_display > 0 {
                 // Loc col is the (0-based) column offset.
-                Some(loc.col.to_usize() as u64 + 1)
+                Some(loc.col.0 as u64 + 1)
             } else {
                 None
             },
