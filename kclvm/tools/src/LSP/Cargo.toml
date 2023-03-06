@@ -24,6 +24,3 @@ kclvm-parser = {path = "../../../parser", version = "0.4.5"}
 kclvm-compiler = {path = "../../../compiler", version = "0.4.5"}
 kclvm-sema = {path = "../../../sema", version = "0.4.5"}
 kclvm-error = {path = "../../../error", version = "0.4.5"}
-
-[debug]
-incremental = true

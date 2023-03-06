@@ -10,15 +10,17 @@ def _find_default_dylib_path() -> str:
     _executable_root = os.path.dirname(os.environ.get("KCLVM_CLI_BIN_PATH") or sys.executable)
 
     pathList = [
+        f"{_executable_root}/lib/libkclvm_cli_cdylib.dylib",
+        f"{_executable_root}/lib/libkclvm_cli_cdylib.so",
         f"{_executable_root}/bin/libkclvm_cli_cdylib.dylib",
         f"{_executable_root}/bin/libkclvm_cli_cdylib.so",
-        f"{_executable_root}/bin/kclvm_cli_cdylib.dll",
+        f"{_executable_root}\\bin\\kclvm_cli_cdylib.dll",
         f"{os.path.dirname(__file__)}/../target/release/libkclvm_cli_cdylib.dylib",
         f"{os.path.dirname(__file__)}/../target/release/libkclvm_cli_cdylib.so",
-        f"{os.path.dirname(__file__)}/../target/release/kclvm_cli_cdylib.dll",
+        f"{os.path.dirname(__file__)}\\..\\target\\release\\kclvm_cli_cdylib.dll",
         f"{os.path.dirname(__file__)}/../target/debug/libkclvm_cli_cdylib.dylib",
         f"{os.path.dirname(__file__)}/../target/debug/libkclvm_cli_cdylib.so",
-        f"{os.path.dirname(__file__)}/../target/debug/kclvm_cli_cdylib.dll",
+        f"{os.path.dirname(__file__)}\\..\\target\\debug\\kclvm_cli_cdylib.dll",
     ]
 
     for s in pathList:
