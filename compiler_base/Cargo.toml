@@ -21,5 +21,6 @@ members = [
     "macros",
     "span",
     "error",
+    "parallel",
     "3rdparty/rustc_errors",
 ]
