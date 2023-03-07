@@ -1,5 +1,5 @@
 [package]
-name = "compiler_base_tools"
+name = "compiler_base_parallel"
 version = "0.0.1"
 edition = "2021"
 
@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 rand = "0.8.4"
+anyhow = "1.0.69"

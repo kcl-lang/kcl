@@ -7,14 +7,14 @@ pub mod event;
 /// # Example
 ///
 /// ```rust
-/// use compiler_base_tools::test::task::Task;
-/// use compiler_base_tools::test::task::FinishedTask;
+/// use compiler_base_parallel::task::Task;
+/// use compiler_base_parallel::task::FinishedTask;
 /// use std::sync::mpsc::channel;
 /// use std::sync::mpsc::Sender;
-/// use compiler_base_tools::test::task::TaskName;
-/// use compiler_base_tools::test::task::TaskId;
-/// use compiler_base_tools::test::task::TaskInfo;
-/// use compiler_base_tools::test::task::TaskStatus;
+/// use compiler_base_parallel::task::TaskName;
+/// use compiler_base_parallel::task::TaskId;
+/// use compiler_base_parallel::task::TaskInfo;
+/// use compiler_base_parallel::task::TaskStatus;
 ///
 /// // 1. Define a custom task [`MyTask`].
 /// struct MyTask {
@@ -271,7 +271,7 @@ mod test {
         thread,
     };
 
-    use crate::test::task::RunningTask;
+    use crate::task::RunningTask;
 
     use super::{FinishedTask, Task, TaskInfo, TaskStatus};
 

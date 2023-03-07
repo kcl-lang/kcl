@@ -2,16 +2,16 @@
 //! [`TimeoutExecutor`] is a [`Executor`] with a timeout queue that can monitor the timeout situation of [`Task`]s.
 use std::{
     collections::{HashMap, VecDeque},
-    io,
     sync::mpsc::{channel, RecvTimeoutError},
     time::{Duration, Instant},
 };
 
-use crate::test::task::{
+use crate::task::{
     event::TaskEvent, FinishedTask, RunningTask, Task, TaskId, TaskInfo, TaskStatus,
 };
 
 use super::{start_task, Executor};
+use anyhow::{Result, bail};
 
 /// [`TimeoutSituation`] is an internal structure for the timeout situation of a [`Task`].
 pub(crate) struct TimeoutSituation {
@@ -77,10 +77,10 @@ impl TimeoutExecutor {
 }
 
 impl Executor for TimeoutExecutor {
-    fn run_all_tasks<T, F>(mut self, tasks: Vec<T>, notify_what_happened: F) -> io::Result<()>
+    fn run_all_tasks<T, F>(mut self, tasks: Vec<T>, notify_what_happened: F) -> Result<()>
     where
         T: Task + Sync + Send + 'static,
-        F: Fn(TaskEvent) -> io::Result<()>,
+        F: Fn(TaskEvent) -> Result<()>,
     {
         // The channel for communication.
         let (tx, rx) = channel::<FinishedTask>();
@@ -160,10 +160,7 @@ impl Executor for TimeoutExecutor {
                 TaskStatus::Failed(_) => true,
                 TaskStatus::Bug(_) => {
                     std::mem::forget(rx);
-                    return Err(io::Error::new(
-                        io::ErrorKind::Other,
-                        "The task has completed, but the thread has failed",
-                    ));
+                    bail!("The task {} has completed, but the thread has failed", finished_task.tinfo());
                 }
                 _ => false,
             };

@@ -1,11 +1,11 @@
 //! This file provides everything to define a [`Executor`] that can execute [`crate::task::Task`].
 use std::{
-    io,
     sync::{mpsc::Sender, Arc, Mutex},
     thread::{self, JoinHandle},
 };
 
 use super::task::{event::TaskEvent, FinishedTask, Task};
+use anyhow::Result;
 
 pub mod timeout;
 
@@ -20,21 +20,22 @@ mod tests;
 /// # Examples
 ///
 /// ```rust
-/// use compiler_base_tools::test::task::TaskInfo;
-/// use compiler_base_tools::test::task::event::TaskEvent;
-/// use compiler_base_tools::test::task::Task;
-/// use compiler_base_tools::test::task::TaskStatus;
+/// use compiler_base_parallel::task::TaskInfo;
+/// use compiler_base_parallel::task::event::TaskEvent;
+/// use compiler_base_parallel::task::Task;
+/// use compiler_base_parallel::task::TaskStatus;
 /// use std::sync::mpsc::Sender;
 /// use std::sync::mpsc::channel;
-/// use compiler_base_tools::test::task::FinishedTask;
-/// use compiler_base_tools::test::executor::Executor;
-/// use compiler_base_tools::test::task::event::TaskEventType;
+/// use compiler_base_parallel::task::FinishedTask;
+/// use compiler_base_parallel::executor::Executor;
+/// use compiler_base_parallel::task::event::TaskEventType;
 /// use std::thread;
 /// use std::io;
+/// use anyhow::Result;
 ///
 /// // 1. First, we need to prepare a method to display to the log.
 /// // Print the information.
-/// fn print_log(event: TaskEvent) -> io::Result<()> {
+/// fn print_log(event: TaskEvent) -> Result<()> {
 ///     match event.ty() {
 ///         TaskEventType::Start => {
 ///             println!("Task {} start.", event.tinfo())
@@ -59,10 +60,10 @@ mod tests;
 ///
 /// // 3. Implement trait [`Executor`] for [`MyExec`].
 /// impl Executor for MyExec {
-///     fn run_all_tasks<T, F>(self, tasks: Vec<T>, _notify_what_happened: F) -> std::io::Result<()>
+///     fn run_all_tasks<T, F>(self, tasks: Vec<T>, _notify_what_happened: F) -> Result<()>
 ///     where
 ///         T: Task + Sync + Send + 'static,
-///         F: Fn(TaskEvent) -> std::io::Result<()>,
+///         F: Fn(TaskEvent) -> Result<()>,
 ///    {
 ///         // The channel for communication.
 ///         let (tx, rx) = channel::<FinishedTask>();
@@ -132,10 +133,10 @@ mod tests;
 pub trait Executor {
     /// [`run_all_tasks`] will execute all tasks concurrently.
     /// [`notify_what_happened`] is a notifier that receives [`TaskEvent`] to output the [`Task`] execution status in to the log.
-    fn run_all_tasks<T, F>(self, tasks: Vec<T>, notify_what_happened: F) -> io::Result<()>
+    fn run_all_tasks<T, F>(self, tasks: Vec<T>, notify_what_happened: F) -> Result<()>
     where
         T: Task + Sync + Send + 'static,
-        F: Fn(TaskEvent) -> io::Result<()>;
+        F: Fn(TaskEvent) -> Result<()>;
 
     /// The count for threads.
     fn concurrency_capacity(&self) -> usize;

@@ -11,8 +11,9 @@ mod test_timeout_executor {
     };
 
     use rand::Rng;
+    use anyhow::Result;
 
-    use crate::test::{
+    use crate::{
         executor::{timeout::TimeoutExecutor, Executor},
         task::{event::TaskEvent, FinishedTask, Task, TaskInfo, TaskStatus},
     };
@@ -51,7 +52,7 @@ mod test_timeout_executor {
     }
 
     /// Collect events triggered during task execution.
-    fn capture_events(event: TaskEvent, out: &mut Arc<Mutex<EventsCollector>>) -> io::Result<()> {
+    fn capture_events(event: TaskEvent, out: &mut Arc<Mutex<EventsCollector>>) -> Result<()> {
         writeln!(out.lock().unwrap(), "{}", event);
         Ok(())
     }
@@ -298,7 +299,7 @@ mod test_timeout_executor {
 
         events_collector.lock().unwrap().clean();
 
-        let result: Result<Result<(), std::io::Error>, Box<dyn std::any::Any + Send>> =
+        let result: Result<Result<(), anyhow::Error>, Box<dyn std::any::Any + Send>> =
             std::panic::catch_unwind(|| {
                 executor.run_all_tasks(tasks, |e| {
                     capture_events(e, &mut Arc::clone(&events_collector))
@@ -326,7 +327,7 @@ mod test_timeout_executor {
                 Err(err) => {
                     assert_eq!(
                         format!("{}", err),
-                        "The task has completed, but the thread has failed"
+                        format!("The task {} has completed, but the thread has failed", PanicAfterReturnTask { id: 0 }.info())
                     );
                 }
             },
