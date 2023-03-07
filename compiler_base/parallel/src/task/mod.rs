@@ -94,9 +94,9 @@ impl TaskInfo {
     }
 }
 
-impl Into<String> for TaskInfo {
-    fn into(self) -> String {
-        format!("{}", self)
+impl From<TaskInfo> for String {
+    fn from(info: TaskInfo) -> Self {
+        format!("{}", info)
     }
 }
 
@@ -148,16 +148,9 @@ impl std::fmt::Display for TaskName {
     }
 }
 
-impl TaskName {
-    /// New a [`TaskName`].
-    pub fn new(name: String) -> Self {
-        Self(name)
-    }
-}
-
-impl Into<String> for TaskName {
-    fn into(self) -> String {
-        self.0
+impl From<TaskName> for String {
+    fn from(task_name: TaskName) -> Self {
+        task_name.0
     }
 }
 

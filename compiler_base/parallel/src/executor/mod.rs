@@ -60,15 +60,16 @@ mod tests;
 ///
 /// // 3. Implement trait [`Executor`] for [`MyExec`].
 /// impl Executor for MyExec {
-///     fn run_all_tasks<T, F>(self, tasks: Vec<T>, _notify_what_happened: F) -> Result<()>
+///     fn run_all_tasks<T, F>(self, tasks: &[T], _notify_what_happened: F) -> Result<()>
 ///     where
-///         T: Task + Sync + Send + 'static,
+///         T: Task + Clone + Sync + Send + 'static,
 ///         F: Fn(TaskEvent) -> Result<()>,
 ///    {
 ///         // The channel for communication.
 ///         let (tx, rx) = channel::<FinishedTask>();
 ///
 ///         // Load all tasks into the thread and execute.
+///         let tasks = tasks.to_vec();
 ///         let mut threads = vec![];
 ///         let mut t_infos = vec![];
 ///         for t in tasks {
@@ -91,6 +92,7 @@ mod tests;
 /// }
 ///
 /// // 4. Define a custom task [`MyTask`] for test.
+/// #[derive(Clone)]
 /// struct MyTask {
 ///     id: usize,
 ///     name: String,
@@ -128,14 +130,14 @@ mod tests;
 ///     MyTask { id: 1, name:"MyTask1".to_string() },
 ///     MyTask { id: 2, name:"MyTask2".to_string() },
 /// ];
-/// my_exec.run_all_tasks(my_tasks, |x| print_log(x)).unwrap();
+/// my_exec.run_all_tasks(&my_tasks, |x| print_log(x)).unwrap();
 /// ```
 pub trait Executor {
     /// [`run_all_tasks`] will execute all tasks concurrently.
     /// [`notify_what_happened`] is a notifier that receives [`TaskEvent`] to output the [`Task`] execution status in to the log.
-    fn run_all_tasks<T, F>(self, tasks: Vec<T>, notify_what_happened: F) -> Result<()>
+    fn run_all_tasks<T, F>(self, tasks: &[T], notify_what_happened: F) -> Result<()>
     where
-        T: Task + Sync + Send + 'static,
+        T: Task + Clone + Sync + Send + 'static,
         F: Fn(TaskEvent) -> Result<()>;
 
     /// The count for threads.

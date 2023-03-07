@@ -77,15 +77,15 @@ impl TimeoutExecutor {
 }
 
 impl Executor for TimeoutExecutor {
-    fn run_all_tasks<T, F>(mut self, tasks: Vec<T>, notify_what_happened: F) -> Result<()>
+    fn run_all_tasks<T, F>(mut self, tasks: &[T], notify_what_happened: F) -> Result<()>
     where
-        T: Task + Sync + Send + 'static,
+        T: Task + Clone + Sync + Send + 'static,
         F: Fn(TaskEvent) -> Result<()>,
     {
         // The channel for communication.
         let (tx, rx) = channel::<FinishedTask>();
         // All the [`Task`]s are waiting to be loaded into the thread.
-        let mut waiting_tasks = VecDeque::from(tasks);
+        let mut waiting_tasks = VecDeque::from(tasks.to_vec());
         let mut running_tasks = HashMap::<TaskId, RunningTask>::default();
         let mut running_count = 0;
 

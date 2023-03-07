@@ -139,7 +139,7 @@ mod test_timeout_executor {
         events_collector.lock().unwrap().clean();
 
         executor
-            .run_all_tasks(tasks, |e| {
+            .run_all_tasks(&tasks, |e| {
                 capture_events(e, &mut Arc::clone(&events_collector))
             })
             .unwrap();
@@ -222,7 +222,7 @@ mod test_timeout_executor {
         let events_collector_tmp = Arc::clone(&events_collector);
         let handle = thread::spawn(move || {
             executor
-                .run_all_tasks(tasks, |e| {
+                .run_all_tasks(&tasks, |e| {
                     capture_events(e, &mut Arc::clone(&events_collector_tmp))
                 })
                 .unwrap();
@@ -298,7 +298,7 @@ mod test_timeout_executor {
 
         let result: Result<Result<(), anyhow::Error>, Box<dyn std::any::Any + Send>> =
             std::panic::catch_unwind(|| {
-                executor.run_all_tasks(tasks, |e| {
+                executor.run_all_tasks(&tasks, |e| {
                     capture_events(e, &mut Arc::clone(&events_collector))
                 })
             });
