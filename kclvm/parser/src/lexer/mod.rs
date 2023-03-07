@@ -534,10 +534,6 @@ impl<'a> Lexer<'a> {
                 None,
                 None,
             ),
-            _ => self.sess.struct_span_error(
-                &format!("invalid lit kind {:?}", kind),
-                self.span(start, self.pos),
-            ),
         }
     }
 

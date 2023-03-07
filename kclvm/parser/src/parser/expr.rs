@@ -125,7 +125,14 @@ impl<'a> Parser<'a> {
                 } else if self.token.is_keyword(kw::Is) && peek.is_keyword(kw::Not) {
                     BinOrCmpOp::Cmp(CmpOp::IsNot)
                 } else {
-                    panic!("unreachable")
+                    self.sess.struct_token_error(
+                        &[
+                            kw::Not.into(),
+                            kw::Is.into(),
+                            TokenKind::BinOpEq(BinOpToken::Plus).into(),
+                        ],
+                        self.token,
+                    )
                 }
             } else {
                 let result = BinOrCmpOp::try_from(self.token);
@@ -376,8 +383,13 @@ impl<'a> Parser<'a> {
                     expr_index += 1;
 
                     if colon_counter > 2 {
-                        self.sess
-                            .struct_token_error(&["expression".to_string()], self.token)
+                        self.sess.struct_token_error(
+                            &[
+                                "expression".to_string(),
+                                TokenKind::CloseDelim(DelimToken::Bracket).into(),
+                            ],
+                            self.token,
+                        )
                     }
                     exprs_consecutive -= 1
                 }
@@ -386,14 +398,15 @@ impl<'a> Parser<'a> {
                     if !is_slice && round == 1 {
                         // it just has one round for an array
                         self.sess
-                            .struct_compiler_bug("an list should have only one expr")
+                            .struct_span_error("A list should have only one expr", self.token.span)
                     }
 
                     exprs[expr_index] = Some(self.parse_expr());
                     exprs_consecutive += 1;
 
                     if exprs_consecutive > 1 {
-                        self.sess.struct_compiler_bug("consecutive exprs found.")
+                        self.sess
+                            .struct_span_error("Consecutive exprs found", self.token.span)
                     }
                 }
             }
@@ -402,7 +415,7 @@ impl<'a> Parser<'a> {
 
         if exprs.len() != 3 {
             self.sess
-                .struct_compiler_bug("an slice should have three exprs.")
+                .struct_span_error("A slice should have three exprs", self.token.span)
         }
 
         // RIGHT_BRACKETS
@@ -430,7 +443,7 @@ impl<'a> Parser<'a> {
         } else {
             if !(exprs[1].is_none() && exprs[2].is_none()) {
                 self.sess
-                    .struct_compiler_bug("an list should have only one expr.")
+                    .struct_span_error("A list should have only one expr", self.token.span)
             }
             Box::new(Node::node(
                 Expr::Subscript(Subscript {
@@ -836,7 +849,8 @@ impl<'a> Parser<'a> {
 
         if !generators.is_empty() {
             if items.len() > 1 {
-                self.sess.struct_compiler_bug("multiple items found.")
+                self.sess
+                    .struct_span_error("List multiple items found", self.token.span)
             }
 
             Box::new(Node::node(
@@ -1138,7 +1152,8 @@ impl<'a> Parser<'a> {
 
         if !generators.is_empty() {
             if items.len() > 1 {
-                self.sess.struct_compiler_bug("multiple entries found.")
+                self.sess
+                    .struct_span_error("Config multiple entries found", self.token.span)
             }
 
             Box::new(Node::node(
@@ -1568,9 +1583,14 @@ impl<'a> Parser<'a> {
                         this.bump();
                         ConfigEntryOperation::Insert
                     }
-                    _ => {
-                        panic!("invalid op: {:?}", this.token);
-                    }
+                    _ => this.sess.struct_token_error(
+                        &[
+                            TokenKind::Colon.into(),
+                            TokenKind::Assign.into(),
+                            TokenKind::BinOpEq(BinOpToken::Plus).into(),
+                        ],
+                        this.token,
+                    ),
                 };
 
                 let expr1 = this.parse_expr();
@@ -1772,7 +1792,7 @@ impl<'a> Parser<'a> {
                 let token_str = lt.symbol.as_str();
                 if token_str == "\n" {
                     self.sess
-                        .struct_span_error("cross line type is not supported.", self.token.span)
+                        .struct_span_error("Cross line type is not supported.", self.token.span)
                 }
 
                 s.push_str(&lt.symbol.as_str())
@@ -1821,7 +1841,7 @@ impl<'a> Parser<'a> {
                     args.push(Box::new(expr));
                     if has_keyword {
                         self.sess.struct_span_error(
-                            "positional argument follows keyword argument.",
+                            "Positional argument follows keyword argument.",
                             self.token.span,
                         )
                     }
