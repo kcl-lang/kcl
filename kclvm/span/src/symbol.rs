@@ -56,12 +56,12 @@ symbols! {
 ///
 /// ```
 /// use kclvm_span::*;
-/// use compiler_base_span::BytePos;
+/// use compiler_base_span::span::new_byte_pos;
 ///
 /// create_session_globals_then(||{
 ///     let ident = Ident::new(
 ///         Symbol::intern("identifier"),
-///         Span::new(BytePos(0), BytePos(10)),
+///         Span::new(new_byte_pos(0), new_byte_pos(10)),
 ///     );
 /// })
 /// ```

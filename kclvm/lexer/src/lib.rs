@@ -255,15 +255,11 @@ pub enum DocStyle {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum LiteralKind {
-    /// "12_u8", "0o100", "0b120i99"
+    /// "12", "0o100", "0b120199"
     Int { base: Base, empty_int: bool },
-    /// "12.34f32", "0b100.100"
+    /// "12.34", "0b100.100"
     Float { base: Base, empty_exponent: bool },
-    /// "'a'", "'\\'", "'''", "';"
-    Char { terminated: bool },
-    /// "b'a'", "b'\\'", "b'''", "b';"
-    Byte { terminated: bool },
-    /// ""abc"", ""abc"
+    /// ""abc"", "'abc'", "'''abc'''"
     Str {
         terminated: bool,
         triple_quoted: bool,

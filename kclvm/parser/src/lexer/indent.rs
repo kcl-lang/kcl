@@ -78,14 +78,14 @@ impl<'a> Lexer<'a> {
 
         // process indent at the end of the newline
         let mut cur_indent = self.indent_cxt.indents.last().unwrap();
-        let indet = IndentLevel { tabs, spaces };
-        let mut ordering = indet.cmp(cur_indent);
+        let indent = IndentLevel { tabs, spaces };
+        let mut ordering = indent.cmp(cur_indent);
 
         match ordering {
             Ok(order) => {
                 Some(match order {
                     Ordering::Greater => {
-                        self.indent_cxt.indents.push(indet);
+                        self.indent_cxt.indents.push(indent);
 
                         // For indent token, we ignore the length
                         let indent = Token::new(token::Indent, self.span(self.pos, self.pos));
@@ -114,14 +114,14 @@ impl<'a> Lexer<'a> {
                                             break;
                                         }
                                         Ordering::Greater => self.sess.struct_span_error(
-                                            "fatal: logic error on dedenting.",
+                                            &format!("Unindent {} does not match any outer indentation level", indent.spaces),
                                             self.span(self.pos, self.pos),
                                         ),
                                     }
 
                                     // update cur indent and ordering
                                     cur_indent = self.indent_cxt.indents.last().unwrap();
-                                    ordering = indet.cmp(cur_indent);
+                                    ordering = indent.cmp(cur_indent);
                                 }
                                 Err(msg) => self
                                     .sess

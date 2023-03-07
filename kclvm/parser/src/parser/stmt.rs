@@ -1,8 +1,6 @@
 #![allow(dead_code)]
 #![allow(unused_macros)]
 
-use core::panic;
-
 use compiler_base_span::{span::new_byte_pos, BytePos};
 use kclvm_ast::token::{DelimToken, LitKind, Token, TokenKind};
 use kclvm_ast::{ast::*, expr_as, node_ref};
@@ -276,7 +274,9 @@ impl<'a> Parser<'_> {
                         x.ctx = ExprContext::Store;
                         Box::new(Node::node_with_pos(x, expr.pos()))
                     }
-                    _ => panic!("invalid target: {:?}", expr.node),
+                    _ => self
+                        .sess
+                        .struct_token_error(&[TokenKind::ident_value()], self.token),
                 })
                 .collect();
 
@@ -701,9 +701,9 @@ impl<'a> Parser<'_> {
                 Expr::Call(x) => {
                     decorators.push(node_ref!(x, expr_pos));
                 }
-                _ => {
-                    panic!("invalid Decorator: {:?}", expr);
-                }
+                _ => self
+                    .sess
+                    .struct_token_error(&[TokenKind::ident_value()], self.token),
             };
 
             self.skip_newlines();
@@ -722,7 +722,6 @@ impl<'a> Parser<'_> {
         close_tokens: &[TokenKind],
         bump_close: bool,
     ) -> Option<NodeRef<Arguments>> {
-        debug_assert!(!close_tokens.is_empty());
         let mut has_open_token = false;
 
         let token = self.token;
@@ -904,7 +903,13 @@ impl<'a> Parser<'_> {
                     });
                     body_body.push(node_ref!(stmt, self.token_span_pos(token, self.prev_token)));
                 } else {
-                    self.sess.struct_compiler_bug("unreachable");
+                    self.sess.struct_span_error(
+                        &format!(
+                            "Expect a index signature or list expression here, got {}",
+                            Into::<String>::into(self.token)
+                        ),
+                        self.token.span,
+                    )
                 }
 
                 self.skip_newlines();
@@ -1385,12 +1390,12 @@ impl<'a> Parser<'_> {
         fn parse_expr(this: &mut Parser, src: &str, start_pos: BytePos) -> NodeRef<Expr> {
             use crate::lexer::parse_token_streams;
 
-            debug_assert!(src.starts_with("${"), "{}", src);
-            debug_assert!(src.ends_with('}'), "{}", src);
-
             let src = &src[2..src.len() - 1];
             if src.is_empty() {
-                panic!("string interpolation expression can not be empty")
+                this.sess.struct_span_error(
+                    "String interpolation expression can not be empty",
+                    this.token.span,
+                );
             }
 
             let start_pos = start_pos + new_byte_pos(2);
@@ -1427,7 +1432,10 @@ impl<'a> Parser<'_> {
                         .unwrap();
                     formatted_value.format_spec = Some(format_spec);
                 } else {
-                    panic!("invalid joined string spec");
+                    this.sess.struct_span_error(
+                        "Invalid joined string spec without #",
+                        parser.token.span,
+                    );
                 }
             }
 
@@ -1459,7 +1467,8 @@ impl<'a> Parser<'_> {
                     off = hi;
                     continue;
                 } else {
-                    panic!("invalid joined string");
+                    self.sess
+                        .struct_span_error("Invalid joined string", self.token.span);
                 }
             } else {
                 if off >= s.value.as_str().len() {

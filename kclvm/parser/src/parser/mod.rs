@@ -90,46 +90,14 @@ impl<'a> Parser<'a> {
 
     pub(crate) fn bump_keyword(&mut self, kw: Symbol) {
         if !self.token.is_keyword(kw) {
-            if let TokenKind::Ident(ident) = self.token.kind {
-                self.sess.struct_span_error(
-                    &format!(
-                        "bump keyword failed: expect={}, got={:?} # ident={}",
-                        kw.to_ident_string(),
-                        self.token,
-                        ident
-                    ),
-                    self.token.span,
-                );
-            } else {
-                self.sess.struct_span_error(
-                    &format!(
-                        "bump keyword failed: expect={}, {:?}",
-                        kw.to_ident_string(),
-                        self.token
-                    ),
-                    self.token.span,
-                );
-            }
+            self.sess.struct_token_error(&[kw.into()], self.token);
         }
         self.bump();
     }
 
     pub(crate) fn bump_token(&mut self, kind: TokenKind) {
         if self.token.kind != kind {
-            if let TokenKind::Ident(ident) = self.token.kind {
-                self.sess.struct_span_error(
-                    &format!(
-                        "bump token failed: expect={:?}, got={:?} # ident={}",
-                        kind, self.token, ident
-                    ),
-                    self.token.span,
-                );
-            } else {
-                self.sess.struct_span_error(
-                    &format!("bump token failed: expect={:?}, {:?}", kind, self.token),
-                    self.token.span,
-                );
-            }
+            self.sess.struct_token_error(&[kind.into()], self.token);
         }
         self.bump();
     }

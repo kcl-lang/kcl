@@ -1,6 +1,6 @@
 use kclvm_ast::token::Token;
 use kclvm_error::{Handler, ParseError, Position};
-use kclvm_runtime::{ErrType, PanicInfo};
+use kclvm_runtime::PanicInfo;
 use kclvm_span::{Loc, SourceMap, Span};
 use std::cell::RefCell;
 use std::sync::Arc;
@@ -60,17 +60,20 @@ impl ParseSession {
     pub fn struct_span_error(&self, msg: &str, span: Span) -> ! {
         let pos: Position = self.source_map.lookup_char_pos(span.lo()).into();
 
-        let mut panic_info = PanicInfo::default();
-
-        panic_info.__kcl_PanicInfo__ = true;
-        panic_info.message = format!("Invalid syntax: {}", msg);
-        panic_info.err_type_code = ErrType::CompileError_TYPE as i32;
-
+        let mut panic_info = PanicInfo::from(format!("Invalid syntax: {}", msg));
         panic_info.kcl_file = pos.filename.clone();
         panic_info.kcl_line = pos.line as i32;
         panic_info.kcl_col = pos.column.unwrap_or(0) as i32;
 
-        panic!("{}", panic_info.to_json_string())
+        if let Err(err_str) = self
+            .handler
+            .borrow_mut()
+            .add_panic_info(&panic_info)
+            .alert_if_any_errors()
+        {
+            panic!("{}", err_str);
+        }
+        panic!("{}", panic_info.to_json_string());
     }
 
     /// Struct and report an error based on a span and not abort the compiler process.
@@ -78,10 +81,5 @@ impl ParseSession {
         let pos: Position = self.source_map.lookup_char_pos(span.lo()).into();
 
         self.handler.borrow_mut().add_compile_error(msg, pos);
-    }
-
-    /// Report a compiler bug
-    pub fn struct_compiler_bug(&self, msg: &str) -> ! {
-        self.handler.borrow_mut().bug(msg)
     }
 }

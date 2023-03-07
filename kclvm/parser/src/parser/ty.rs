@@ -58,49 +58,43 @@ impl<'a> Parser<'_> {
                 self.sess.struct_token_loc(token, self.prev_token),
             ));
         }
-
         // lit: true/false
-        if self.token.is_keyword(kw::True) {
+        else if self.token.is_keyword(kw::True) {
             self.bump_keyword(kw::True);
             return Box::new(Node::node(
                 Type::Literal(ast::LiteralType::Bool(true)),
                 self.sess.struct_token_loc(token, self.prev_token),
             ));
-        }
-        if self.token.is_keyword(kw::False) {
+        } else if self.token.is_keyword(kw::False) {
             self.bump_keyword(kw::False);
             return Box::new(Node::node(
                 Type::Literal(ast::LiteralType::Bool(false)),
                 self.sess.struct_token_loc(token, self.prev_token),
             ));
         }
-
         // basic type
-        if self.token.is_keyword(sym::bool) {
+        else if self.token.is_keyword(sym::bool) {
             let t = Type::Basic(ast::BasicType::Bool);
             self.bump_keyword(sym::bool);
             return Box::new(Node::node(
                 t,
                 self.sess.struct_token_loc(token, self.prev_token),
             ));
-        }
-        if self.token.is_keyword(sym::int) {
+        } else if self.token.is_keyword(sym::int) {
             let t = Type::Basic(ast::BasicType::Int);
             self.bump_keyword(sym::int);
             return Box::new(Node::node(
                 t,
                 self.sess.struct_token_loc(token, self.prev_token),
             ));
-        }
-        if self.token.is_keyword(sym::float) {
+        } else if self.token.is_keyword(sym::float) {
             let t = Type::Basic(ast::BasicType::Float);
             self.bump_keyword(sym::float);
             return Box::new(Node::node(
                 t,
                 self.sess.struct_token_loc(token, self.prev_token),
             ));
-        }
-        if self.token.is_keyword(sym::str) {
+        } else if self.token.is_keyword(sym::str) {
             let t = Type::Basic(ast::BasicType::Str);
             self.bump_keyword(sym::str);
             return Box::new(Node::node(
@@ -119,9 +113,8 @@ impl<'a> Parser<'_> {
                 self.sess.struct_token_loc(token, self.prev_token),
             ));
         }
-
         // lit type
-        if let TokenKind::Literal(lit) = self.token.kind {
+        else if let TokenKind::Literal(lit) = self.token.kind {
             let t = match lit.kind {
                 token::LitKind::Bool => {
                     if lit.symbol == kw::True {
@@ -129,7 +122,8 @@ impl<'a> Parser<'_> {
                     } else if lit.symbol == kw::False {
                         ast::LiteralType::Bool(false)
                     } else {
-                        panic!("invalid lit type: {:?}", self.token);
+                        self.sess
+                            .struct_token_error(&[kw::True.into(), kw::False.into()], self.token);
                     }
                 }
                 token::LitKind::Integer => {
@@ -154,7 +148,8 @@ impl<'a> Parser<'_> {
                     } else if self.token.is_keyword(kw::False) {
                         ast::LiteralType::Bool(false)
                     } else {
-                        panic!("invalid lit type: {:?}", self.token);
+                        self.sess
+                            .struct_token_error(&[kw::True.into(), kw::False.into()], self.token);
                     }
                 }
             };
@@ -168,9 +163,8 @@ impl<'a> Parser<'_> {
                 self.sess.struct_token_loc(token, self.prev_token),
             ));
         }
-
         // [type]
-        if let TokenKind::OpenDelim(DelimToken::Bracket) = self.token.kind {
+        else if let TokenKind::OpenDelim(DelimToken::Bracket) = self.token.kind {
             self.bump_token(TokenKind::OpenDelim(DelimToken::Bracket));
 
             if let TokenKind::CloseDelim(DelimToken::Bracket) = self.token.kind {
@@ -195,9 +189,8 @@ impl<'a> Parser<'_> {
                 ));
             }
         }
-
         // {key:value}
-        if let TokenKind::OpenDelim(DelimToken::Brace) = self.token.kind {
+        else if let TokenKind::OpenDelim(DelimToken::Brace) = self.token.kind {
             self.bump_token(TokenKind::OpenDelim(DelimToken::Brace));
 
             let key_type = if let TokenKind::Colon = self.token.kind {
@@ -227,6 +220,22 @@ impl<'a> Parser<'_> {
             ));
         }
 
-        panic!("invalid type token: {:?}", self.token);
+        // Expect type tokens
+        self.sess.struct_token_error(
+            &[
+                kw::Any.into(),
+                sym::bool.into(),
+                sym::int.into(),
+                sym::float.into(),
+                sym::str.into(),
+                kw::True.into(),
+                kw::False.into(),
+                TokenKind::ident_value(),
+                TokenKind::literal_value(),
+                TokenKind::OpenDelim(DelimToken::Bracket).into(),
+                TokenKind::OpenDelim(DelimToken::Brace).into(),
+            ],
+            self.token,
+        );
     }
 }
