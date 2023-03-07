@@ -11,7 +11,7 @@ use crate::task::{
 };
 
 use super::{start_task, Executor};
-use anyhow::{Result, bail};
+use anyhow::{bail, Result};
 
 /// [`TimeoutSituation`] is an internal structure for the timeout situation of a [`Task`].
 pub(crate) struct TimeoutSituation {
@@ -160,7 +160,10 @@ impl Executor for TimeoutExecutor {
                 TaskStatus::Failed(_) => true,
                 TaskStatus::Bug(_) => {
                     std::mem::forget(rx);
-                    bail!("The task {} has completed, but the thread has failed", finished_task.tinfo());
+                    bail!(
+                        "The task {} has completed, but the thread has failed",
+                        finished_task.tinfo()
+                    );
                 }
                 _ => false,
             };

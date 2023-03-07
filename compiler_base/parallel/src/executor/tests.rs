@@ -10,8 +10,8 @@ mod test_timeout_executor {
         time::{Duration, Instant},
     };
 
-    use rand::Rng;
     use anyhow::Result;
+    use rand::Rng;
 
     use crate::{
         executor::{timeout::TimeoutExecutor, Executor},
@@ -327,7 +327,10 @@ mod test_timeout_executor {
                 Err(err) => {
                     assert_eq!(
                         format!("{}", err),
-                        format!("The task {} has completed, but the thread has failed", PanicAfterReturnTask { id: 0 }.info())
+                        format!(
+                            "The task {} has completed, but the thread has failed",
+                            PanicAfterReturnTask { id: 0 }.info()
+                        )
                     );
                 }
             },
