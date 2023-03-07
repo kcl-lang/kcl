@@ -60,6 +60,14 @@ pub trait Task {
     /// [`run`] will be executed of the [`Task`],
     /// and the result of the execution is communicated with other threads through the [`ch`] which is a [`Sender<FinishedTask>`],
     /// so [`run`] method does not need to return a value.
+    ///
+    /// Note: If the [`run`] method panics before returning the result through the [`ch`],
+    /// nothing will be output, and the outside world will not be able to get the running status of the task.
+    /// Therefore, when implementing the [`run`] method,
+    /// please try to handle the failure case as much as possible to ensure that all result can be sent to [`ch`].
+    ///
+    /// If you can not get the results properly and you are confident that all the possible results are returned through [`ch`],
+    /// please contact us, this maybe a bug.
     fn run(&self, ch: Sender<FinishedTask>);
 
     /// Return the [`TaskInfo`]
