@@ -290,6 +290,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "compiler_base_span"
+version = "0.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1616c7ca53a60881a4f1f2e3a30665cfb1f026d9d1b4101782028fc371354aa3"
+dependencies = [
+ "rustc_span",
+]
+
+[[package]]
 name = "const_fn"
 version = "0.4.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1014,9 +1023,9 @@ dependencies = [
 name = "kclvm-ast"
 version = "0.4.5"
 dependencies = [
+ "compiler_base_span",
  "kclvm-parser",
  "kclvm-span",
- "rustc_span",
  "serde",
  "serde_json",
 ]
@@ -1114,10 +1123,10 @@ version = "0.4.5"
 dependencies = [
  "annotate-snippets",
  "atty",
+ "compiler_base_span",
  "indexmap",
  "kclvm-runtime",
  "kclvm-span",
- "rustc_span",
  "termcolor",
  "termize",
  "tracing",
@@ -1148,6 +1157,7 @@ name = "kclvm-parser"
 version = "0.4.5"
 dependencies = [
  "bstr",
+ "compiler_base_span",
  "either",
  "enquote",
  "expect-test",
@@ -1161,9 +1171,7 @@ dependencies = [
  "kclvm-utils",
  "num-bigint",
  "regex",
- "rustc_data_structures",
  "rustc_lexer",
- "rustc_span",
  "serde",
  "serde_json",
  "tracing",
@@ -1266,8 +1274,8 @@ dependencies = [
 name = "kclvm-span"
 version = "0.4.5"
 dependencies = [
+ "compiler_base_span",
  "kclvm-macros",
- "rustc_span",
  "scoped-tls",
 ]
 
@@ -2123,7 +2131,9 @@ checksum = "dcf128d1287d2ea9d80910b5f1120d0b8eede3fbf1abe91c40d39ea7d51e6fda"
 
 [[package]]
 name = "rustc_data_structures"
-version = "0.0.0"
+version = "0.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c44a5f9188372885b2cafd1e0297755679e3fc451a6eccabba5ffd9b261d4c1e"
 dependencies = [
  "arrayvec",
  "bitflags",
@@ -2155,7 +2165,9 @@ dependencies = [
 
 [[package]]
 name = "rustc_span"
-version = "0.0.0"
+version = "0.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0ee78969130992735ace193e2c463da2bddd275e90e648871198312a7aed7baf"
 dependencies = [
  "cfg-if 0.1.10",
  "md-5",

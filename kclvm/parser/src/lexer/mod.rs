@@ -21,14 +21,13 @@ mod string;
 #[cfg(test)]
 mod tests;
 
+use compiler_base_span::{self, span::new_byte_pos, BytePos, Span};
 use kclvm_ast::ast::NumberBinarySuffix;
 use kclvm_ast::token::{self, CommentKind, Token, TokenKind};
 use kclvm_ast::token_stream::TokenStream;
 use kclvm_error::bug;
 use kclvm_lexer::Base;
 use kclvm_span::symbol::Symbol;
-use kclvm_span::{self, BytePos, Span};
-use rustc_span::Pos;
 pub(crate) use string::str_content_eval;
 
 use self::indent::IndentLevel;
@@ -179,7 +178,7 @@ impl<'a> Lexer<'a> {
 
             let start = self.pos;
             // update pos after token and indent handling
-            self.pos = self.pos + BytePos::from_usize(token.len);
+            self.pos = self.pos + new_byte_pos(token.len as u32);
 
             if let Some(kind) = self.lex_token(token, start) {
                 let span = self.span(start, self.pos);
@@ -226,7 +225,7 @@ impl<'a> Lexer<'a> {
             }
             // Literal
             kclvm_lexer::TokenKind::Literal { kind, suffix_start } => {
-                let suffix_start = start + BytePos::from_u32(suffix_start as u32);
+                let suffix_start = start + new_byte_pos(suffix_start as u32);
                 let (kind, symbol, suffix, raw) = self.lex_literal(start, suffix_start, kind);
                 token::Literal(token::Lit {
                     kind,
@@ -241,13 +240,13 @@ impl<'a> Lexer<'a> {
             // Binary op
             kclvm_lexer::TokenKind::Plus => token::BinOp(token::Plus),
             kclvm_lexer::TokenKind::Minus => {
-                let head = start + BytePos::from_u32(1);
-                let tail = start + BytePos::from_u32(2);
+                let head = start + new_byte_pos(1);
+                let tail = start + new_byte_pos(2);
                 if self.has_next_token(head, tail) {
                     let next_tkn = self.str_from_to(head, tail);
                     if next_tkn == ">" {
                         // waste '>' token
-                        self.pos = self.pos + BytePos::from_usize(1);
+                        self.pos = self.pos + new_byte_pos(1);
                         token::RArrow
                     } else {
                         token::BinOp(token::Minus)
@@ -438,7 +437,7 @@ impl<'a> Lexer<'a> {
 
                 let start_char = self.char_from(start);
                 let (is_raw, quote_char) = match start_char {
-                    'r' | 'R' => (true, self.char_from(start + BytePos::from_u32(1))),
+                    'r' | 'R' => (true, self.char_from(start + new_byte_pos(1))),
                     _ => (false, start_char),
                 };
 
@@ -455,10 +454,10 @@ impl<'a> Lexer<'a> {
                     1
                 };
 
-                let content_start = start + BytePos::from_u32(offset);
-                let mut content_end = suffix_start - BytePos::from_u32(offset);
+                let content_start = start + new_byte_pos(offset);
+                let mut content_end = suffix_start - new_byte_pos(offset);
                 if is_raw {
-                    content_end = content_end + BytePos::from_u32(1);
+                    content_end = content_end + new_byte_pos(1);
                 }
                 let string_content = self.str_from_to(content_start, content_end);
                 let value = match str_content_eval(
@@ -549,12 +548,12 @@ impl<'a> Lexer<'a> {
             Base::Hexadecimal => 16,
             _ => return,
         };
-        let s = self.str_from_to(content_start + BytePos::from_u32(2), content_end);
+        let s = self.str_from_to(content_start + new_byte_pos(2), content_end);
         for (idx, c) in s.char_indices() {
             let idx = idx as u32;
             if c != '_' && c.to_digit(base).is_none() {
-                let lo = content_start + BytePos::from_u32(2 + idx);
-                let hi = content_start + BytePos::from_u32(2 + idx + c.len_utf8() as u32);
+                let lo = content_start + new_byte_pos(2 + idx);
+                let hi = content_start + new_byte_pos(2 + idx + c.len_utf8() as u32);
 
                 self.sess.struct_span_error(
                     &format!(
@@ -598,7 +597,7 @@ impl<'a> Lexer<'a> {
 
     #[inline]
     fn src_index(&self, pos: BytePos) -> usize {
-        (pos - self.start_pos).to_usize()
+        (pos - self.start_pos).0 as usize
     }
 
     /// Char at `pos` in the source

@@ -24,6 +24,7 @@ mod ty;
 
 use crate::session::ParseSession;
 
+use compiler_base_span::span::new_byte_pos;
 use kclvm_ast::ast::{Comment, NodeRef};
 use kclvm_ast::token::{CommentKind, Token, TokenKind};
 use kclvm_ast::token_stream::{Cursor, TokenStream};
@@ -65,7 +66,6 @@ impl<'a> Parser<'a> {
         lo_tok: Token,
         hi_tok: Token,
     ) -> (String, u64, u64, u64, u64) {
-        use rustc_span::Pos;
         let lo = self.sess.source_map.lookup_char_pos(lo_tok.span.lo());
         let hi = self.sess.source_map.lookup_char_pos(hi_tok.span.hi());
 
@@ -73,9 +73,9 @@ impl<'a> Parser<'a> {
         (
             filename,
             lo.line as u64,
-            lo.col.to_usize() as u64,
+            lo.col.0 as u64,
             hi.line as u64,
-            hi.col.to_usize() as u64,
+            hi.col.0 as u64,
         )
     }
 
@@ -146,8 +146,6 @@ impl<'a> Parser<'a> {
         sess: &'a ParseSession,
         stream: TokenStream,
     ) -> (Vec<Token>, Vec<NodeRef<Comment>>) {
-        use rustc_span::BytePos;
-
         let mut comments = Vec::new();
         let mut non_comment_tokens = Vec::new();
 
@@ -155,7 +153,7 @@ impl<'a> Parser<'a> {
             let prev_token = if i == 0 {
                 Token {
                     kind: TokenKind::Dummy,
-                    span: kclvm_span::Span::new(BytePos(0), BytePos(0)),
+                    span: kclvm_span::Span::new(new_byte_pos(0), new_byte_pos(0)),
                 }
             } else {
                 stream[i - 1]
@@ -179,7 +177,6 @@ impl<'a> Parser<'a> {
                 match tok.kind {
                     TokenKind::DocComment(comment_kind) => match comment_kind {
                         CommentKind::Line(x) => {
-                            use rustc_span::Pos;
                             let lo = sess.source_map.lookup_char_pos(tok.span.lo());
                             let hi = sess.source_map.lookup_char_pos(tok.span.hi());
                             let filename: String = format!("{}", lo.file.name.prefer_remapped());
@@ -190,9 +187,9 @@ impl<'a> Parser<'a> {
                                 },
                                 filename,
                                 line: lo.line as u64,
-                                column: lo.col.to_usize() as u64,
+                                column: lo.col.0 as u64,
                                 end_line: hi.line as u64,
-                                end_column: hi.col.to_usize() as u64,
+                                end_column: hi.col.0 as u64,
                             };
 
                             comments.push(NodeRef::new(node));

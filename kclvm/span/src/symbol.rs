@@ -1,14 +1,11 @@
+use compiler_base_span::{Span, DUMMY_SP};
 use std::{
     fmt,
     hash::{Hash, Hasher},
 };
 
-use crate::{
-    span::{Span, DUMMY_SP},
-    with_session_globals,
-};
-
 use crate::session_globals::Interner;
+use crate::with_session_globals;
 
 // The proc macro code for this is in `kclvm_macros/src/symbols.rs`.
 symbols! {
@@ -59,7 +56,7 @@ symbols! {
 ///
 /// ```
 /// use kclvm_span::*;
-/// use rustc_span::BytePos;
+/// use compiler_base_span::BytePos;
 ///
 /// create_session_globals_then(||{
 ///     let ident = Ident::new(

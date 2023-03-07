@@ -3,6 +3,7 @@
 
 use core::panic;
 
+use compiler_base_span::{span::new_byte_pos, BytePos};
 use kclvm_ast::token::{DelimToken, LitKind, Token, TokenKind};
 use kclvm_ast::{ast::*, expr_as, node_ref};
 use kclvm_span::symbol::kw;
@@ -1359,7 +1360,7 @@ impl<'a> Parser<'_> {
     pub(crate) fn parse_joined_string(
         &mut self,
         s: &StringLit,
-        pos: rustc_span::BytePos,
+        pos: BytePos,
     ) -> Option<JoinedString> {
         // skip raw string
         if s.raw_value.starts_with(&['r', 'R']) {
@@ -1370,9 +1371,9 @@ impl<'a> Parser<'_> {
         }
 
         let start_pos = if s.is_long_string {
-            pos + rustc_span::BytePos(3)
+            pos + new_byte_pos(3)
         } else {
-            pos + rustc_span::BytePos(1)
+            pos + new_byte_pos(1)
         };
 
         let mut joined_value = JoinedString {
@@ -1381,11 +1382,7 @@ impl<'a> Parser<'_> {
             values: Vec::new(),
         };
 
-        fn parse_expr(
-            this: &mut Parser,
-            src: &str,
-            start_pos: rustc_span::BytePos,
-        ) -> NodeRef<Expr> {
+        fn parse_expr(this: &mut Parser, src: &str, start_pos: BytePos) -> NodeRef<Expr> {
             use crate::lexer::parse_token_streams;
 
             debug_assert!(src.starts_with("${"), "{}", src);
@@ -1396,7 +1393,7 @@ impl<'a> Parser<'_> {
                 panic!("string interpolation expression can not be empty")
             }
 
-            let start_pos = start_pos + rustc_span::BytePos(2);
+            let start_pos = start_pos + new_byte_pos(2);
 
             let stream = parse_token_streams(this.sess, src, start_pos);
 
@@ -1454,7 +1451,7 @@ impl<'a> Parser<'_> {
                         value: s0.to_string().replace("$$", "$"),
                     }));
 
-                    let s1_expr = parse_expr(self, s1, start_pos + rustc_span::BytePos(lo as u32));
+                    let s1_expr = parse_expr(self, s1, start_pos + new_byte_pos(lo as u32));
 
                     joined_value.values.push(s0_expr);
                     joined_value.values.push(s1_expr);

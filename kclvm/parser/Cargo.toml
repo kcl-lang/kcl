@@ -6,9 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rustc_span = { path = "../3rdparty/rustc_span" }
-rustc_data_structures = { path = "../3rdparty/rustc_data_structures" }
-
+compiler_base_span = "0.0.1"
 tracing = "0.1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1.0"
