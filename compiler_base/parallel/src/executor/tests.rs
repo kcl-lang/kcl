@@ -30,7 +30,7 @@ mod test_timeout_executor {
             .map(|t| TaskEvent::wait(t.info()))
             .collect();
 
-        let finished_tasks = tasks.clone();
+        let finished_tasks = tasks;
         let mut finished_events: Vec<TaskEvent> = finished_tasks
             .into_iter()
             .map(|t| {
@@ -66,8 +66,8 @@ mod test_timeout_executor {
     impl Task for MyTask {
         fn run(&self, ch: std::sync::mpsc::Sender<FinishedTask>) {
             ch.send(FinishedTask::new(
-                TaskInfo::new(self.id.into(), format!("Task").into()),
-                format!("Hello World").as_bytes().to_vec(),
+                TaskInfo::new(self.id.into(), "Task".to_string().into()),
+                "Hello World".to_string().as_bytes().to_vec(),
                 vec![],
                 TaskStatus::Finished,
             ))
@@ -106,7 +106,7 @@ mod test_timeout_executor {
     }
 
     #[cfg(not(target_os = "windows"))]
-    const NEW_LINE: &'static str = "\n";
+    const NEW_LINE: &str = "\n";
     #[cfg(target_os = "windows")]
     const NEW_LINE: &'static str = "\r\n";
 
@@ -256,8 +256,8 @@ mod test_timeout_executor {
         /// panic and return.
         fn run(&self, ch: std::sync::mpsc::Sender<FinishedTask>) {
             ch.send(FinishedTask::new(
-                TaskInfo::new(self.id.into(), format!("PanicAfterReturnTask").into()),
-                format!("Hello World").as_bytes().to_vec(),
+                TaskInfo::new(self.id.into(), "PanicAfterReturnTask".to_string().into()),
+                "Hello World".to_string().as_bytes().to_vec(),
                 vec![],
                 TaskStatus::Finished,
             ))
@@ -275,18 +275,15 @@ mod test_timeout_executor {
     /// the [`run_all_tasks`] will return an [`io::Error`].
     fn test_panic_after_return_tasks_executor() {
         let mut tasks = vec![PanicAfterReturnTask { id: 0 }];
-        let expected_events: Vec<TaskEvent> = tasks
+        let executor = TimeoutExecutor::new_with_thread_count(2);
+        let mut events_collector = Arc::new(Mutex::new(EventsCollector::default()));
+        tasks
             .clone()
             .into_iter()
             .map(|t| TaskEvent::wait(t.info()))
-            .collect();
-
-        let executor = TimeoutExecutor::new_with_thread_count(2);
-        let mut events_collector = Arc::new(Mutex::new(EventsCollector::default()));
-
-        expected_events.into_iter().for_each(|e| {
-            capture_events(e, &mut Arc::clone(&events_collector));
-        });
+            .for_each(|e| {
+                capture_events(e, &mut Arc::clone(&events_collector));
+            });
 
         let mut expected_events_strs: Vec<String> = events_collector
             .lock()
