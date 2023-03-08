@@ -139,9 +139,7 @@ impl<'a> Parser<'_> {
                     let v = lit.symbol.as_str().parse::<f64>().unwrap();
                     ast::LiteralType::Float(v)
                 }
-                token::LitKind::Str { .. } => {
-                    ast::LiteralType::Str(lit.symbol.as_str().to_string())
-                }
+                token::LitKind::Str { .. } => ast::LiteralType::Str(lit.symbol.as_str()),
                 _ => {
                     if self.token.is_keyword(kw::True) {
                         ast::LiteralType::Bool(true)

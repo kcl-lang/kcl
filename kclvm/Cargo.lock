@@ -290,10 +290,50 @@ dependencies = [
 ]
 
 [[package]]
+name = "compiler_base_error"
+version = "0.0.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "42fb2dab6f1cffab069d1b841bb11ecb4e32c5582bea35dc4d575bfa20d5517c"
+dependencies = [
+ "anyhow",
+ "compiler_base_macros",
+ "compiler_base_span 0.0.1",
+ "fluent",
+ "pretty_assertions",
+ "rustc_errors",
+ "rustc_span",
+ "termcolor",
+ "unic-langid",
+ "walkdir",
+]
+
+[[package]]
+name = "compiler_base_macros"
+version = "0.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c9e1cdc2aad3a38fae518f80e9bda866b6a01d8676c2c1bbc8b06aea3fcc1bb7"
+
+[[package]]
+name = "compiler_base_session"
+version = "0.0.12"
+dependencies = [
+ "anyhow",
+ "compiler_base_error",
+ "compiler_base_span 0.0.1",
+]
+
+[[package]]
 name = "compiler_base_span"
 version = "0.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1616c7ca53a60881a4f1f2e3a30665cfb1f026d9d1b4101782028fc371354aa3"
+dependencies = [
+ "rustc_span",
+]
+
+[[package]]
+name = "compiler_base_span"
+version = "0.0.2"
 dependencies = [
  "rustc_span",
 ]
@@ -529,6 +569,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "212d0f5754cb6769937f4501cc0e67f4f4483c8d2c3e1e922ee9edbe4ab4c7c0"
 
 [[package]]
+name = "displaydoc"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3bf95dc3f046b9da4f2d51833c0d3547d8564ef6910f5c1ed130306a75b92886"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "dissimilar"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -626,6 +677,50 @@ name = "fixedbitset"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0ce7134b9999ecaf8bcd65542e436736ef32ddca1b3e06094cb6ec5755203b80"
+
+[[package]]
+name = "fluent"
+version = "0.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "61f69378194459db76abd2ce3952b790db103ceb003008d3d50d97c41ff847a7"
+dependencies = [
+ "fluent-bundle",
+ "unic-langid",
+]
+
+[[package]]
+name = "fluent-bundle"
+version = "0.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e242c601dec9711505f6d5bbff5bedd4b61b2469f2e8bb8e57ee7c9747a87ffd"
+dependencies = [
+ "fluent-langneg",
+ "fluent-syntax",
+ "intl-memoizer",
+ "intl_pluralrules",
+ "rustc-hash",
+ "self_cell",
+ "smallvec",
+ "unic-langid",
+]
+
+[[package]]
+name = "fluent-langneg"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2c4ad0989667548f06ccd0e306ed56b61bd4d35458d54df5ec7587c0e8ed5e94"
+dependencies = [
+ "unic-langid",
+]
+
+[[package]]
+name = "fluent-syntax"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c0abed97648395c902868fee9026de96483933faa54ea3b40d652f7dfe61ca78"
+dependencies = [
+ "thiserror",
+]
 
 [[package]]
 name = "form_urlencoded"
@@ -905,6 +1000,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "intl-memoizer"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c310433e4a310918d6ed9243542a6b83ec1183df95dff8f23f87bb88a264a66f"
+dependencies = [
+ "type-map",
+ "unic-langid",
+]
+
+[[package]]
+name = "intl_pluralrules"
+version = "7.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "078ea7b7c29a2b4df841a7f6ac8775ff6074020c6776d48491ce2268e068f972"
+dependencies = [
+ "unic-langid",
+]
+
+[[package]]
 name = "io-lifetimes"
 version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -993,8 +1107,10 @@ dependencies = [
 name = "kclvm"
 version = "0.4.5"
 dependencies = [
+ "anyhow",
  "cc",
  "chrono",
+ "compiler_base_session",
  "fslock",
  "glob",
  "indexmap",
@@ -1015,7 +1131,6 @@ dependencies = [
  "libloading",
  "serde",
  "serde_json",
- "threadpool",
  "walkdir",
 ]
 
@@ -1023,7 +1138,7 @@ dependencies = [
 name = "kclvm-ast"
 version = "0.4.5"
 dependencies = [
- "compiler_base_span",
+ "compiler_base_span 0.0.2",
  "kclvm-parser",
  "kclvm-span",
  "serde",
@@ -1034,6 +1149,7 @@ dependencies = [
 name = "kclvm-ast-pretty"
 version = "0.4.5"
 dependencies = [
+ "compiler_base_session",
  "fancy-regex",
  "indexmap",
  "kclvm-ast",
@@ -1046,6 +1162,7 @@ dependencies = [
 name = "kclvm-capi"
 version = "0.4.5"
 dependencies = [
+ "compiler_base_session",
  "criterion",
  "kclvm-ast",
  "kclvm-error",
@@ -1069,6 +1186,7 @@ version = "0.4.5"
 dependencies = [
  "anyhow",
  "clap 3.2.23",
+ "compiler_base_session",
  "kclvm-capi",
  "kclvm-config",
  "kclvm-error",
@@ -1122,8 +1240,11 @@ name = "kclvm-error"
 version = "0.4.5"
 dependencies = [
  "annotate-snippets",
+ "anyhow",
  "atty",
- "compiler_base_span",
+ "compiler_base_error",
+ "compiler_base_session",
+ "compiler_base_span 0.0.2",
  "indexmap",
  "kclvm-runtime",
  "kclvm-span",
@@ -1157,7 +1278,9 @@ name = "kclvm-parser"
 version = "0.4.5"
 dependencies = [
  "bstr",
- "compiler_base_span",
+ "compiler_base_error",
+ "compiler_base_session",
+ "compiler_base_span 0.0.2",
  "either",
  "enquote",
  "expect-test",
@@ -1183,6 +1306,7 @@ name = "kclvm-query"
 version = "0.4.5"
 dependencies = [
  "anyhow",
+ "compiler_base_session",
  "kclvm-ast",
  "kclvm-ast-pretty",
  "kclvm-error",
@@ -1198,6 +1322,7 @@ dependencies = [
  "anyhow",
  "cc",
  "chrono",
+ "compiler_base_session",
  "criterion",
  "fslock",
  "glob",
@@ -1256,6 +1381,8 @@ dependencies = [
  "ahash",
  "bit-set",
  "bitflags",
+ "compiler_base_session",
+ "compiler_base_span 0.0.2",
  "criterion",
  "fancy-regex",
  "indexmap",
@@ -1274,7 +1401,7 @@ dependencies = [
 name = "kclvm-span"
 version = "0.4.5"
 dependencies = [
- "compiler_base_span",
+ "compiler_base_span 0.0.2",
  "kclvm-macros",
  "scoped-tls",
 ]
@@ -1284,6 +1411,7 @@ name = "kclvm-tools"
 version = "0.4.5"
 dependencies = [
  "anyhow",
+ "compiler_base_session",
  "criterion",
  "fancy-regex",
  "indexmap",
@@ -2155,6 +2283,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustc_errors"
+version = "0.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f36ca70968783a8242b8dca63f0ee9bfbba57174760deb5c9972d52d8562d5a0"
+dependencies = [
+ "termcolor",
+ "winapi",
+]
+
+[[package]]
 name = "rustc_lexer"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2234,6 +2372,12 @@ name = "scratch"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ddccb15bcce173023b3fedd9436f882a0739b8dfb45e4f6b6002bee5929f61b2"
+
+[[package]]
+name = "self_cell"
+version = "0.10.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1ef965a420fe14fdac7dd018862966a4c14094f900e1650bbc71ddd7d580c8af"
 
 [[package]]
 name = "semver"
@@ -2684,6 +2828,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "tinystr"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7ac3f5b6856e931e15e07b478e98c8045239829a65f9156d4fa7e7788197a5ef"
+dependencies = [
+ "displaydoc",
+]
+
+[[package]]
 name = "tinytemplate"
 version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2879,6 +3032,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "type-map"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b6d3364c5e96cb2ad1603037ab253ddd34d7fb72a58bdddf4b7350760fc69a46"
+dependencies = [
+ "rustc-hash",
+]
+
+[[package]]
 name = "typenum"
 version = "1.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2920,6 +3082,49 @@ dependencies = [
  "unic-char-property",
  "unic-char-range",
  "unic-ucd-version",
+]
+
+[[package]]
+name = "unic-langid"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "398f9ad7239db44fd0f80fe068d12ff22d78354080332a5077dc6f52f14dcf2f"
+dependencies = [
+ "unic-langid-impl",
+ "unic-langid-macros",
+]
+
+[[package]]
+name = "unic-langid-impl"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e35bfd2f2b8796545b55d7d3fd3e89a0613f68a0d1c8bc28cb7ff96b411a35ff"
+dependencies = [
+ "tinystr",
+]
+
+[[package]]
+name = "unic-langid-macros"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "055e618bf694161ffff0466d95cef3e1a5edc59f6ba1888e97801f2b4ebdc4fe"
+dependencies = [
+ "proc-macro-hack",
+ "tinystr",
+ "unic-langid-impl",
+ "unic-langid-macros-impl",
+]
+
+[[package]]
+name = "unic-langid-macros-impl"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1f5cdec05b907f4e2f6843f4354f4ce6a5bebe1a56df320a49134944477ce4d8"
+dependencies = [
+ "proc-macro-hack",
+ "quote",
+ "syn",
+ "unic-langid-impl",
 ]
 
 [[package]]

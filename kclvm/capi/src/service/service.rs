@@ -1,7 +1,9 @@
+use std::sync::Arc;
 use std::{path::Path, string::String, time::SystemTime};
 
 use crate::model::gpyrpc::*;
 
+use compiler_base_session::Session;
 use kclvm_parser::load_program;
 use kclvm_query::apply_overrides;
 use kclvm_query::override_file;
@@ -90,7 +92,8 @@ impl KclvmService {
 
         let kcl_paths_str = kcl_paths.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
         let mut result = ExecProgram_Result::default();
-        let mut program = load_program(&kcl_paths_str.as_slice(), Some(opts))?;
+        let sess = Arc::new(Session::default());
+        let mut program = load_program(sess, &kcl_paths_str.as_slice(), Some(opts))?;
 
         if let Err(err) = apply_overrides(
             &mut program,

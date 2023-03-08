@@ -5,11 +5,13 @@ use crate::pre_process::pre_process_program;
 use crate::resolver::resolve_program;
 use crate::resolver::scope::*;
 use crate::ty::Type;
+use compiler_base_session::Session;
 use kclvm_ast::ast;
 use kclvm_error::*;
 use kclvm_parser::{load_program, parse_program};
 use std::path::Path;
 use std::rc::Rc;
+use std::sync::Arc;
 
 #[test]
 fn test_scope() {
@@ -43,8 +45,13 @@ fn test_resolve_program() {
 
 #[test]
 fn test_pkg_init_in_schema_resolve() {
-    let mut program =
-        load_program(&["./src/resolver/test_data/pkg_init_in_schema.k"], None).unwrap();
+    let sess = Arc::new(Session::default());
+    let mut program = load_program(
+        sess.clone(),
+        &["./src/resolver/test_data/pkg_init_in_schema.k"],
+        None,
+    )
+    .unwrap();
     let scope = resolve_program(&mut program);
     assert_eq!(
         scope.pkgpaths(),
@@ -89,7 +96,9 @@ fn test_resolve_program_fail() {
 
 #[test]
 fn test_resolve_program_cycle_reference_fail() {
+    let sess = Arc::new(Session::default());
     let mut program = load_program(
+        sess.clone(),
         &["./src/resolver/test_fail_data/cycle_reference/file1.k"],
         None,
     )
@@ -112,8 +121,13 @@ fn test_resolve_program_cycle_reference_fail() {
 
 #[test]
 fn test_record_used_module() {
-    let mut program =
-        load_program(&["./src/resolver/test_data/record_used_module.k"], None).unwrap();
+    let sess = Arc::new(Session::default());
+    let mut program = load_program(
+        sess.clone(),
+        &["./src/resolver/test_data/record_used_module.k"],
+        None,
+    )
+    .unwrap();
     let scope = resolve_program(&mut program);
     let main_scope = scope
         .scope_map
@@ -135,7 +149,9 @@ fn test_record_used_module() {
 
 #[test]
 fn test_cannot_find_module() {
+    let sess = Arc::new(Session::default());
     let mut program = load_program(
+        sess.clone(),
         &["./src/resolver/test_fail_data/cannot_find_module.k"],
         None,
     )
@@ -224,7 +240,9 @@ fn test_resolve_program_module_optional_select_fail() {
 
 #[test]
 fn test_lint() {
-    let mut program = load_program(&["./src/resolver/test_data/lint.k"], None).unwrap();
+    let sess = Arc::new(Session::default());
+    let mut program =
+        load_program(sess.clone(), &["./src/resolver/test_data/lint.k"], None).unwrap();
     pre_process_program(&mut program);
     let mut resolver = Resolver::new(
         &program,

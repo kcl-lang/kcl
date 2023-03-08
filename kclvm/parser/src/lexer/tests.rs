@@ -1,11 +1,23 @@
 use super::*;
 use crate::lexer::str_content_eval;
 use crate::session::ParseSession;
+use compiler_base_error::diagnostic_handler::DiagnosticHandler;
+use compiler_base_session::Session;
 use compiler_base_span::{span::new_byte_pos, FilePathMapping, SourceMap};
 use expect_test::{expect, Expect};
 use kclvm_span::create_session_globals_then;
 use std::path::PathBuf;
 use std::sync::Arc;
+
+impl ParseSession {
+    #[inline]
+    pub(crate) fn with_source_map(sm: Arc<SourceMap>) -> Self {
+        Self(Arc::new(Session::new(
+            sm,
+            Arc::new(DiagnosticHandler::default()),
+        )))
+    }
+}
 
 fn check_lexing(src: &str, expect: Expect) {
     let sm = SourceMap::new(FilePathMapping::empty());

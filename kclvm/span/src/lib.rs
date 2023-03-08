@@ -13,7 +13,7 @@ pub mod symbol;
 #[cfg(test)]
 mod tests;
 
-pub use compiler_base_span::{FilePathMapping, Loc, SourceFile, SourceMap, Span};
+pub use compiler_base_span::{BytePos, FilePathMapping, Loc, SourceFile, SourceMap, Span};
 pub use session_globals::create_session_globals_then;
 use session_globals::with_session_globals;
 pub use symbol::{Ident, Symbol};

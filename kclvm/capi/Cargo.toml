@@ -8,6 +8,7 @@ protobuf = "3.1.0"
 serde_json = "1.0"
 serde_yaml = "0.9.2"
 protobuf-json-mapping = "3.1.0"
+compiler_base_session = {path = "../../compiler_base/session", version = "0.0.12"}
 serde = { version = "1", features = ["derive"] }
 
 kclvm-runner = {path = "../runner", version = "0.4.5"}

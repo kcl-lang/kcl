@@ -1,3 +1,6 @@
+use std::sync::Arc;
+
+use compiler_base_session::Session;
 use indexmap::IndexSet;
 use kclvm_error::{diagnostic::classification, Diagnostic, Handler};
 use kclvm_parser::{load_program, LoadProgramOptions};
@@ -59,7 +62,7 @@ pub fn lint_files(
     opts: Option<LoadProgramOptions>,
 ) -> (IndexSet<Diagnostic>, IndexSet<Diagnostic>) {
     // Parse AST program.
-    let mut program = match load_program(files, opts) {
+    let mut program = match load_program(Arc::new(Session::default()), files, opts) {
         Ok(p) => p,
         Err(err_str) => {
             return classification(

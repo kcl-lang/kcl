@@ -19,6 +19,8 @@ kclvm-ast = {path = "../ast", version = "0.4.5"}
 kclvm-runtime = {path = "../runtime", version = "0.4.5"}
 kclvm-error = {path = "../error", version = "0.4.5"}
 kclvm-span = {path = "../span", version = "0.4.5"}
+compiler_base_span = {path = "../../compiler_base/span", version = "0.0.2"}
+compiler_base_session = {path = "../../compiler_base/session", version = "0.0.12"}
 
 [dev-dependencies]
 kclvm-parser = {path = "../parser", version = "0.4.5"}
