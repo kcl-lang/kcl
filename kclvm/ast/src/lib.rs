@@ -1,5 +1,4 @@
 // Copyright 2021 The KCL Authors. All rights reserved.
-use crate::ast::*;
 
 pub mod ast;
 pub mod config;
@@ -43,20 +42,4 @@ macro_rules! stmt_as {
             None
         }
     };
-}
-
-/// Construct an AssignStmt node with assign_value as value
-pub fn build_assign_node(attr_name: &str, assign_value: NodeRef<Expr>) -> NodeRef<Stmt> {
-    let iden = node_ref!(Identifier {
-        names: vec![attr_name.to_string()],
-        pkgpath: String::new(),
-        ctx: ExprContext::Store
-    });
-
-    node_ref!(Stmt::Assign(AssignStmt {
-        value: assign_value,
-        targets: vec![iden],
-        type_annotation: None,
-        ty: None
-    }))
 }

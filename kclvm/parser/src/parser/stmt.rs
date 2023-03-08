@@ -125,7 +125,7 @@ impl<'a> Parser<'_> {
         &mut self,
         open_tok: TokenKind,
         close_tok: TokenKind,
-    ) -> Vec<Box<Node<Stmt>>> {
+    ) -> Vec<NodeRef<Stmt>> {
         let mut stmt_list = Vec::new();
 
         self.bump_token(open_tok);
@@ -259,6 +259,7 @@ impl<'a> Parser<'_> {
             }
         }
 
+        let stmt_end_token = self.prev_token;
         self.skip_newlines();
 
         if let Some(value) = value_or_target {
@@ -287,7 +288,7 @@ impl<'a> Parser<'_> {
                     type_annotation,
                     ty,
                 }),
-                self.token_span_pos(token, self.prev_token)
+                self.token_span_pos(token, stmt_end_token)
             ))
         } else {
             if targets.len() == 1 && type_annotation.is_some() && is_in_schema_stmt {
@@ -303,7 +304,7 @@ impl<'a> Parser<'_> {
                             is_optional: false,
                             decorators: Vec::new(),
                         }),
-                        self.token_span_pos(token, self.prev_token)
+                        self.token_span_pos(token, stmt_end_token)
                     ));
                 }
             }
@@ -1413,7 +1414,6 @@ impl<'a> Parser<'_> {
             // bump to the first token
             parser.bump();
 
-            let _token = parser.token;
             let expr = parser.parse_expr();
 
             let mut formatted_value = FormattedValue {
@@ -1457,7 +1457,9 @@ impl<'a> Parser<'_> {
 
                     let s1_expr = parse_expr(self, s1, start_pos + new_byte_pos(lo as u32));
 
-                    joined_value.values.push(s0_expr);
+                    if !s0.is_empty() {
+                        joined_value.values.push(s0_expr);
+                    }
                     joined_value.values.push(s1_expr);
 
                     off = hi;
