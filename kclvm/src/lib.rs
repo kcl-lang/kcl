@@ -2,10 +2,12 @@
 
 extern crate serde;
 
+use compiler_base_session::Session;
 pub use kclvm_capi::service::api::*;
 use kclvm_runner::exec_program;
 use kclvm_runner::runner::*;
 pub use kclvm_runtime::*;
+use std::sync::Arc;
 
 #[no_mangle]
 pub unsafe extern "C" fn kclvm_cli_run(args: *const i8, plugin_agent: *const i8) -> *const i8 {
@@ -44,7 +46,10 @@ pub unsafe extern "C" fn kclvm_cli_run(args: *const i8, plugin_agent: *const i8)
 }
 
 pub fn kclvm_cli_run_unsafe(args: *const i8, plugin_agent: *const i8) -> Result<String, String> {
-    let args = ExecProgramArgs::from_str(kclvm_runtime::c2str(args));
-    let plugin_agent = plugin_agent as u64;
-    exec_program(&args, plugin_agent).map(|r| r.json_result)
+    exec_program(
+        Arc::new(Session::default()),
+        &ExecProgramArgs::from_str(kclvm_runtime::c2str(args)),
+        plugin_agent as u64,
+    )
+    .map(|r| r.json_result)
 }

@@ -1,6 +1,6 @@
 [package]
 name = "compiler_base_session"
-version = "0.0.9"
+version = "0.0.12"
 edition = "2021"
 authors = ["zongzhe1024@163.com"]
 license = "Apache-2.0 OR MIT"
@@ -15,5 +15,5 @@ categories = ["command-line-utilities"]
 
 [dependencies]
 compiler_base_span = "0.0.1"
-compiler_base_error = "0.0.6"
+compiler_base_error = "0.0.8"
 anyhow = "1.0"

@@ -10,19 +10,17 @@ mod tests;
 extern crate kclvm_error;
 
 use crate::session::ParseSession;
+use compiler_base_session::Session;
 use compiler_base_span::span::new_byte_pos;
 use kclvm_ast::ast;
+use kclvm_config::modfile::KCL_FILE_SUFFIX;
 use kclvm_error::bug;
 use kclvm_runtime::PanicInfo;
+use kclvm_sema::plugin::PLUGIN_MODULE_PREFIX;
 use kclvm_utils::path::PathPrefix;
 
-use compiler_base_span::{FilePathMapping, SourceMap};
 use lexer::parse_token_streams;
 use parser::Parser;
-
-use std::error::Error;
-use std::fs::File;
-use std::io::BufReader;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -35,16 +33,9 @@ pub enum ParseMode {
     ParseComments,
 }
 
-/// Get the AST program from json file.
-pub fn parse_program_from_json_file(path: &str) -> Result<ast::Program, Box<dyn Error>> {
-    let file = File::open(path)?;
-    let reader = BufReader::new(file);
-    let u = serde_json::from_reader(reader)?;
-    Ok(u)
-}
-
+/// Parse a KCL file to the AST Program.
 pub fn parse_program(filename: &str) -> Result<ast::Program, String> {
-    let abspath = std::fs::canonicalize(&std::path::PathBuf::from(filename)).unwrap();
+    let abspath = std::fs::canonicalize(std::path::PathBuf::from(filename)).unwrap();
 
     let mut prog = ast::Program {
         root: abspath.parent().unwrap().adjust_canonicalization(),
@@ -66,11 +57,31 @@ pub fn parse_program(filename: &str) -> Result<ast::Program, String> {
     Ok(prog)
 }
 
+/// Parse a KCL file to the AST module.
+///
+/// TODO: We can remove the panic capture after the parser error recovery is completed.
+#[inline]
 pub fn parse_file(filename: &str, code: Option<String>) -> Result<ast::Module, String> {
+    let prev_hook = std::panic::take_hook();
+    std::panic::set_hook(Box::new(|_| {}));
+    let result = std::panic::catch_unwind(|| {
+        parse_file_with_session(Arc::new(Session::default()), filename, code)
+    });
+    std::panic::set_hook(prev_hook);
+    match result {
+        Ok(result) => result,
+        Err(err) => Err(kclvm_error::err_to_str(err)),
+    }
+}
+
+/// Parse a KCL file to the AST module and returns session.
+pub fn parse_file_with_session(
+    sess: Arc<Session>,
+    filename: &str,
+    code: Option<String>,
+) -> Result<ast::Module, String> {
     create_session_globals_then(move || {
-        let prev_hook = std::panic::take_hook();
-        std::panic::set_hook(Box::new(|_| {}));
-        let result = std::panic::catch_unwind(|| {
+        let result = {
             // Code source.
             let src = if let Some(s) = code {
                 s
@@ -87,9 +98,8 @@ pub fn parse_file(filename: &str, code: Option<String>) -> Result<ast::Module, S
             };
 
             // Build a source map to store file sources.
-            let sm = kclvm_span::SourceMap::new(FilePathMapping::empty());
-            let sf = sm.new_source_file(PathBuf::from(filename).into(), src.to_string());
-            let sess = &ParseSession::with_source_map(std::sync::Arc::new(sm));
+            let sf = sess.sm.new_source_file(PathBuf::from(filename).into(), src);
+            let parse_sess = &ParseSession::with_session(sess);
 
             let src_from_sf = match sf.src.as_ref() {
                 Some(src) => src,
@@ -102,19 +112,19 @@ pub fn parse_file(filename: &str, code: Option<String>) -> Result<ast::Module, S
             };
 
             // Lexer
-            let stream = lexer::parse_token_streams(sess, src_from_sf.as_str(), sf.start_pos);
+            let stream = lexer::parse_token_streams(parse_sess, src_from_sf.as_str(), sf.start_pos);
             // Parser
-            let mut p = parser::Parser::new(sess, stream);
+            let mut p = parser::Parser::new(parse_sess, stream);
             let mut m = p.parse_module();
             m.filename = filename.to_string();
             m.pkg = kclvm_ast::MAIN_PKG.to_string();
             m.name = kclvm_ast::MAIN_PKG.to_string();
 
             Ok(m)
-        });
-        std::panic::set_hook(prev_hook);
+        };
+
         match result {
-            Ok(result) => result,
+            Ok(result) => Ok(result),
             Err(err) => Err(kclvm_error::err_to_str(err)),
         }
     })
@@ -136,8 +146,10 @@ pub fn parse_expr(src: &str) -> Option<ast::NodeRef<ast::Expr>> {
     if src.is_empty() {
         None
     } else {
-        let sm = SourceMap::new(FilePathMapping::empty());
-        let sf = sm.new_source_file(PathBuf::from("").into(), src.to_string());
+        let sess = Arc::new(Session::default());
+        let sf = sess
+            .sm
+            .new_source_file(PathBuf::from("").into(), src.to_string());
         let src_from_sf = match sf.src.as_ref() {
             Some(src) => src,
             None => {
@@ -145,7 +157,7 @@ pub fn parse_expr(src: &str) -> Option<ast::NodeRef<ast::Expr>> {
             }
         };
 
-        let sess = &ParseSession::with_source_map(Arc::new(sm));
+        let sess = &&ParseSession::with_session(sess);
 
         let expr: Option<ast::NodeRef<ast::Expr>> = Some(create_session_globals_then(|| {
             let stream = parse_token_streams(sess, src_from_sf.as_str(), new_byte_pos(0));
@@ -169,18 +181,20 @@ pub struct LoadProgramOptions {
 }
 
 pub fn load_program(
+    sess: Arc<Session>,
     paths: &[&str],
     opts: Option<LoadProgramOptions>,
 ) -> Result<ast::Program, String> {
     // todo: support cache
     if let Some(opts) = opts {
-        Loader::new(paths, Some(opts)).load_main()
+        Loader::new(sess, paths, Some(opts)).load_main()
     } else {
-        Loader::new(paths, None).load_main()
+        Loader::new(sess, paths, None).load_main()
     }
 }
 
 struct Loader {
+    sess: Arc<Session>,
     paths: Vec<String>,
     opts: LoadProgramOptions,
 
@@ -193,8 +207,9 @@ struct Loader {
 }
 
 impl Loader {
-    fn new(paths: &[&str], opts: Option<LoadProgramOptions>) -> Self {
+    fn new(sess: Arc<Session>, paths: &[&str], opts: Option<LoadProgramOptions>) -> Self {
         Self {
+            sess,
             paths: paths.iter().map(|s| s.to_string()).collect(),
             opts: opts.unwrap_or_default(),
 
@@ -211,14 +226,9 @@ impl Loader {
     }
 
     fn _load_main(&mut self) -> Result<ast::Program, String> {
-        debug_assert!(!self.paths.is_empty());
-
         self.pkgroot = kclvm_config::modfile::get_pkg_root_from_paths(&self.paths)?;
 
         if !self.pkgroot.is_empty() {
-            debug_assert!(self.is_dir(self.pkgroot.as_str()));
-            debug_assert!(self.path_exist(self.pkgroot.as_str()));
-
             self.modfile = kclvm_config::modfile::load_mod_file(self.pkgroot.as_str());
         }
 
@@ -227,7 +237,6 @@ impl Loader {
         for s in &self.paths {
             let mut s = s.clone();
             if s.contains(kclvm_config::modfile::KCL_MOD_PATH_ENV) {
-                debug_assert!(!self.pkgroot.is_empty());
                 s = s.replace(
                     kclvm_config::modfile::KCL_MOD_PATH_ENV,
                     self.pkgroot.as_str(),
@@ -246,7 +255,7 @@ impl Loader {
         // get k files
         let mut k_files: Vec<String> = Vec::new();
         for (i, path) in path_list.iter().enumerate() {
-            if path.ends_with(".k") {
+            if path.ends_with(KCL_FILE_SUFFIX) {
                 k_files.push(path.to_string());
                 continue;
             }
@@ -269,14 +278,9 @@ impl Loader {
         }
 
         // check all file exists
-        for (i, filename) in (&k_files).iter().enumerate() {
+        for (i, filename) in k_files.iter().enumerate() {
             if i < self.opts.k_code_list.len() {
                 continue;
-            }
-
-            if !self.pkgroot.is_empty() {
-                debug_assert!(self.is_file(filename.as_str()));
-                debug_assert!(self.is_absolute(filename.as_str()), "filename={}", filename);
             }
 
             if !self.path_exist(filename.as_str()) {
@@ -290,14 +294,18 @@ impl Loader {
 
         // load module
         let mut pkg_files = Vec::new();
-        for (i, filename) in (&k_files).iter().enumerate() {
+        for (i, filename) in k_files.iter().enumerate() {
             // todo: add shared source map for all files
             if i < self.opts.k_code_list.len() {
-                let mut m = parse_file(filename, Some(self.opts.k_code_list[i].clone()))?;
+                let mut m = parse_file_with_session(
+                    self.sess.clone(),
+                    filename,
+                    Some(self.opts.k_code_list[i].clone()),
+                )?;
                 self.fix_rel_import_path(&mut m);
                 pkg_files.push(m)
             } else {
-                let mut m = parse_file(filename, None)?;
+                let mut m = parse_file_with_session(self.sess.clone(), filename, None)?;
                 self.fix_rel_import_path(&mut m);
                 pkg_files.push(m);
             }
@@ -366,10 +374,7 @@ impl Loader {
 
         let mut pkg_files = Vec::new();
         for filename in k_files {
-            debug_assert!(self.is_file(filename.as_str()));
-            debug_assert!(self.path_exist(filename.as_str()));
-
-            let mut m = parse_file(filename.as_str(), None)?;
+            let mut m = parse_file_with_session(self.sess.clone(), filename.as_str(), None)?;
 
             m.pkg = pkgpath.clone();
             m.name = "".to_string();
@@ -385,7 +390,7 @@ impl Loader {
             self.load_package(import_spec.path.to_string())?;
         }
 
-        return Ok(());
+        Ok(())
     }
 
     fn get_import_list(&self, pkg: &[ast::Module]) -> Vec<ast::ImportStmt> {
@@ -407,8 +412,6 @@ impl Loader {
     }
 
     fn get_pkg_kfile_list(&self, pkgpath: &str) -> Result<Vec<String>, String> {
-        debug_assert!(!pkgpath.is_empty());
-
         // plugin pkgs
         if self.is_plugin_pkg(pkgpath) {
             return Ok(Vec::new());
@@ -440,8 +443,8 @@ impl Loader {
             return self.get_dir_kfile_list(abspath.as_str());
         }
 
-        let as_k_path = abspath + ".k";
-        if std::path::Path::new((&as_k_path).as_str()).exists() {
+        let as_k_path = abspath + KCL_FILE_SUFFIX;
+        if std::path::Path::new((as_k_path).as_str()).exists() {
             return Ok(vec![as_k_path]);
         }
 
@@ -456,7 +459,12 @@ impl Loader {
 
         for path in std::fs::read_dir(dir).unwrap() {
             let path = path.unwrap();
-            if !path.file_name().to_str().unwrap().ends_with(".k") {
+            if !path
+                .file_name()
+                .to_str()
+                .unwrap()
+                .ends_with(KCL_FILE_SUFFIX)
+            {
                 continue;
             }
             if path.file_name().to_str().unwrap().ends_with("_test.k") {
@@ -480,15 +488,12 @@ impl Loader {
     }
 
     fn is_plugin_pkg(&self, pkgpath: &str) -> bool {
-        pkgpath.starts_with("kcl_plugin.")
+        pkgpath.starts_with(PLUGIN_MODULE_PREFIX)
     }
 }
 
 // utils
 impl Loader {
-    fn is_file(&self, path: &str) -> bool {
-        std::path::Path::new(path).is_file()
-    }
     fn is_dir(&self, path: &str) -> bool {
         std::path::Path::new(path).is_dir()
     }

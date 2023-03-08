@@ -7,6 +7,7 @@ use crate::temp_file;
 use crate::{execute, runner::ExecProgramArgs};
 use anyhow::Context;
 use anyhow::Result;
+use compiler_base_session::Session;
 use kclvm_ast::ast::{Module, Program};
 use kclvm_compiler::codegen::llvm::OBJECT_FILE_SUFFIX;
 use kclvm_config::settings::load_file;
@@ -17,6 +18,7 @@ use std::fs::create_dir_all;
 use std::panic::catch_unwind;
 use std::panic::set_hook;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use std::thread;
 use std::{
     collections::HashMap,
@@ -148,7 +150,12 @@ fn load_test_program(filename: String) -> Program {
 fn parse_program(test_kcl_case_path: &str) -> Program {
     let args = ExecProgramArgs::default();
     let opts = args.get_load_program_options();
-    load_program(&[test_kcl_case_path], Some(opts)).unwrap()
+    load_program(
+        Arc::new(Session::default()),
+        &[test_kcl_case_path],
+        Some(opts),
+    )
+    .unwrap()
 }
 
 /// Construct ast.Program by ast.Module and default configuration.
@@ -259,9 +266,9 @@ fn assemble_lib_for_test(
     args.k_filename_list.push(test_kcl_case_path.to_string());
     let files = args.get_files();
     let opts = args.get_load_program_options();
-
+    let sess = Arc::new(Session::default());
     // parse and resolve kcl
-    let mut program = load_program(&files, Some(opts)).unwrap();
+    let mut program = load_program(sess.clone(), &files, Some(opts)).unwrap();
 
     let scope = resolve_program(&mut program);
 
@@ -554,8 +561,9 @@ fn exec(file: &str) -> Result<String, String> {
     args.k_filename_list.push(file.to_string());
     let plugin_agent = 0;
     let opts = args.get_load_program_options();
+    let sess = Arc::new(Session::default());
     // Load AST program
-    let program = load_program(&[file], Some(opts)).unwrap();
+    let program = load_program(sess.clone(), &[file], Some(opts)).unwrap();
     // Resolve ATS, generate libs, link libs and execute.
     execute(program, plugin_agent, &args)
 }
@@ -567,7 +575,7 @@ fn exec_with_result_at(path: &str) {
     for (kcl_file, output_file) in kcl_files.iter().zip(&output_files) {
         let mut args = ExecProgramArgs::default();
         args.k_filename_list.push(kcl_file.to_string());
-        let result = exec_program(&args, 0).unwrap();
+        let result = exec_program(Arc::new(Session::default()), &args, 0).unwrap();
 
         #[cfg(not(target_os = "windows"))]
         let newline = "\n";
@@ -599,7 +607,9 @@ fn exec_with_err_result_at(path: &str) {
         for (kcl_file, output_json_file) in kcl_files.iter().zip(&output_files) {
             let mut args = ExecProgramArgs::default();
             args.k_filename_list.push(kcl_file.to_string());
-            let panic_info = PanicInfo::from_json_string(&exec_program(&args, 0).unwrap_err());
+            let panic_info = PanicInfo::from_json_string(
+                &exec_program(Arc::new(Session::default()), &args, 0).unwrap_err(),
+            );
             let expect_info: SimplePanicInfo =
                 serde_json::from_str(std::fs::read_to_string(output_json_file).unwrap().as_str())
                     .unwrap();

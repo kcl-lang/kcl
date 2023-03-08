@@ -10,11 +10,12 @@ mod settings;
 #[cfg(test)]
 mod tests;
 
+use anyhow::Result;
 use lint::lint_command;
 use run::run_command;
 
 /// Run the KCL main command.
-pub fn main() {
+pub fn main() -> Result<()> {
     let matches = clap_app!(kcl =>
         (@subcommand run =>
             (@arg input: ... "Sets the input file to use")
@@ -44,5 +45,7 @@ pub fn main() {
         run_command(matches)
     } else if let Some(matches) = matches.subcommand_matches("lint") {
         lint_command(matches)
+    } else {
+        Ok(())
     }
 }

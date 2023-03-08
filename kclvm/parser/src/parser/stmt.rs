@@ -1368,7 +1368,7 @@ impl<'a> Parser<'_> {
         pos: BytePos,
     ) -> Option<JoinedString> {
         // skip raw string
-        if s.raw_value.starts_with(&['r', 'R']) {
+        if s.raw_value.starts_with(['r', 'R']) {
             return None;
         }
         if !s.value.contains("${") {
@@ -1425,11 +1425,7 @@ impl<'a> Parser<'_> {
             if let TokenKind::Colon = parser.token.kind {
                 parser.bump();
                 if let TokenKind::DocComment(_) = parser.token.kind {
-                    let format_spec = parser
-                        .sess
-                        .source_map
-                        .span_to_snippet(parser.token.span)
-                        .unwrap();
+                    let format_spec = parser.sess.span_to_snippet(parser.token.span);
                     formatted_value.format_spec = Some(format_spec);
                 } else {
                     this.sess.struct_span_error(

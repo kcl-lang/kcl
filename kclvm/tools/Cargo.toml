@@ -10,6 +10,7 @@ indexmap = "1.0"
 fancy-regex = "0.7.1"
 walkdir = "2"
 anyhow = "1.0"
+compiler_base_session = {path = "../../compiler_base/session", version = "0.0.12"}
 
 rustc_lexer = "0.1.0"
 kclvm-ast = {path = "../ast", version = "0.4.5"}

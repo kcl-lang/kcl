@@ -45,7 +45,7 @@ pub struct Parser<'a> {
 
 impl<'a> Parser<'a> {
     pub fn new(sess: &'a ParseSession, stream: TokenStream) -> Self {
-        let (non_comment_tokens, comments) = Parser::split_token_stream(&sess, stream);
+        let (non_comment_tokens, comments) = Parser::split_token_stream(sess, stream);
 
         let mut parser = Parser {
             token: Token::dummy(),
@@ -66,8 +66,8 @@ impl<'a> Parser<'a> {
         lo_tok: Token,
         hi_tok: Token,
     ) -> (String, u64, u64, u64, u64) {
-        let lo = self.sess.source_map.lookup_char_pos(lo_tok.span.lo());
-        let hi = self.sess.source_map.lookup_char_pos(hi_tok.span.hi());
+        let lo = self.sess.lookup_char_pos(lo_tok.span.lo());
+        let hi = self.sess.lookup_char_pos(hi_tok.span.hi());
 
         let filename: String = format!("{}", lo.file.name.prefer_remapped());
         (
@@ -145,8 +145,8 @@ impl<'a> Parser<'a> {
                 match tok.kind {
                     TokenKind::DocComment(comment_kind) => match comment_kind {
                         CommentKind::Line(x) => {
-                            let lo = sess.source_map.lookup_char_pos(tok.span.lo());
-                            let hi = sess.source_map.lookup_char_pos(tok.span.hi());
+                            let lo = sess.lookup_char_pos(tok.span.lo());
+                            let hi = sess.lookup_char_pos(tok.span.hi());
                             let filename: String = format!("{}", lo.file.name.prefer_remapped());
 
                             let node = kclvm_ast::ast::Node {

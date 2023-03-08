@@ -213,7 +213,7 @@ impl Session {
     pub fn emit_stashed_diagnostics(&self) -> Result<&Self> {
         self.diag_handler
             .emit_stashed_diagnostics()
-            .with_context(|| "Internale Bug: Fail to display error diagnostic")?;
+            .with_context(|| "Internal Bug: Fail to display error diagnostic")?;
         Ok(self)
     }
 
@@ -330,6 +330,24 @@ impl Session {
     #[inline]
     pub fn diagnostics_count(&self) -> Result<usize> {
         self.diag_handler.diagnostics_count()
+    }
+}
+
+impl Default for Session {
+    /// New a default session with a empty source map.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use compiler_base_session::Session;
+    ///
+    /// assert_eq!(Session::default().diagnostics_count().unwrap(), 0);
+    /// ```
+    fn default() -> Self {
+        Self {
+            sm: Arc::new(SourceMap::new(FilePathMapping::empty())),
+            diag_handler: Arc::new(DiagnosticHandler::default()),
+        }
     }
 }
 

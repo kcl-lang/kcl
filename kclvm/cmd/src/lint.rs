@@ -1,3 +1,4 @@
+use anyhow::Result;
 use clap::ArgMatches;
 use kclvm_error::Handler;
 use kclvm_runner::ExecProgramArgs;
@@ -6,7 +7,7 @@ use kclvm_tools::lint::lint_files;
 use crate::settings::must_build_settings;
 
 /// Run the KCL main command.
-pub fn lint_command(matches: &ArgMatches) {
+pub fn lint_command(matches: &ArgMatches) -> Result<()> {
     let mut files: Vec<&str> = match matches.values_of("input") {
         Some(files) => files.into_iter().collect::<Vec<&str>>(),
         None => vec![],
@@ -27,4 +28,5 @@ pub fn lint_command(matches: &ArgMatches) {
         warning_handler.emit();
     }
     err_handler.abort_if_any_errors();
+    Ok(())
 }

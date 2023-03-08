@@ -1,85 +1,91 @@
+use compiler_base_session::Session;
 use kclvm_ast::token::Token;
-use kclvm_error::{Handler, ParseError, Position};
+use kclvm_error::{ParseError, Position};
 use kclvm_runtime::PanicInfo;
-use kclvm_span::{Loc, SourceMap, Span};
-use std::cell::RefCell;
+use kclvm_span::{BytePos, Loc, Span};
 use std::sync::Arc;
 
-pub struct ParseSession {
-    pub source_map: Arc<SourceMap>,
-    pub handler: RefCell<Handler>,
-}
+/// ParseSession represents the data associated with a parse session such as the
+/// source map and the error handler.
+pub struct ParseSession(pub Arc<Session>);
 
 impl ParseSession {
-    pub fn with_source_map(source_map: Arc<SourceMap>) -> Self {
-        let handler = Handler::with_source_map(source_map.clone()).into();
-        Self {
-            handler,
-            source_map,
-        }
+    /// New a parse session with the global session.
+    #[inline]
+    pub fn with_session(sess: Arc<Session>) -> Self {
+        Self(sess)
     }
 
-    // Struct an loc of first and last valid tokens in an expr, returns a loc tuple
+    /// Lookup char pos from span.
+    #[inline]
+    pub(crate) fn lookup_char_pos(&self, pos: BytePos) -> Loc {
+        self.0.sm.lookup_char_pos(pos)
+    }
+
+    /// Returns the source snippet as [String] corresponding to the given [Span].
+    #[inline]
+    pub fn span_to_snippet(&self, span: Span) -> String {
+        self.0.sm.span_to_snippet(span).unwrap()
+    }
+
+    /// Struct an loc of first and last valid tokens in an expr, returns a loc tuple
     pub fn struct_token_loc(&self, lot: Token, hit: Token) -> (Loc, Loc) {
         (
-            self.source_map.lookup_char_pos(lot.span.lo()),
-            self.source_map.lookup_char_pos(hit.span.hi()),
+            self.lookup_char_pos(lot.span.lo()),
+            self.lookup_char_pos(hit.span.hi()),
         )
     }
 
     /// Struct and report an error based on a token and abort the compiler process.
     pub fn struct_token_error(&self, expected: &[String], got: Token) -> ! {
-        let pos: Position = self.source_map.lookup_char_pos(got.span.lo()).into();
-        let err = ParseError::UnexpectedToken {
-            expected: expected.iter().map(|tok| tok.into()).collect(),
-            got: got.into(),
-        };
-        if let Err(err_str) = self
-            .handler
-            .borrow_mut()
-            .add_parse_error(err.clone(), pos)
-            .alert_if_any_errors()
-        {
-            panic!("{}", err_str);
-        }
-        panic!("{:?}", err);
+        self.struct_token_error_recovery(expected, got);
+        self.panic(
+            &ParseError::UnexpectedToken {
+                expected: expected.iter().map(|tok| tok.into()).collect(),
+                got: got.into(),
+                span: got.span,
+            }
+            .to_string(),
+            got.span,
+        );
     }
 
     /// Struct and report an error based on a token and not abort the compiler process.
     pub fn struct_token_error_recovery(&self, expected: &[String], got: Token) {
-        let pos: Position = self.source_map.lookup_char_pos(got.span.lo()).into();
         let err = ParseError::UnexpectedToken {
             expected: expected.iter().map(|tok| tok.into()).collect(),
             got: got.into(),
+            span: got.span,
         };
-
-        self.handler.borrow_mut().add_parse_error(err, pos);
+        self.0.add_err(err).unwrap();
     }
 
     /// Struct and report an error based on a span and abort the compiler process.
     pub fn struct_span_error(&self, msg: &str, span: Span) -> ! {
-        let pos: Position = self.source_map.lookup_char_pos(span.lo()).into();
-
-        let mut panic_info = PanicInfo::from(format!("Invalid syntax: {}", msg));
-        panic_info.kcl_file = pos.filename.clone();
-        panic_info.kcl_line = pos.line as i32;
-        panic_info.kcl_col = pos.column.unwrap_or(0) as i32;
-
-        if let Err(err_str) = self
-            .handler
-            .borrow_mut()
-            .add_panic_info(&panic_info)
-            .alert_if_any_errors()
-        {
-            panic!("{}", err_str);
-        }
-        panic!("{}", panic_info.to_json_string());
+        self.struct_span_error_recovery(msg, span);
+        self.panic(msg, span);
     }
 
     /// Struct and report an error based on a span and not abort the compiler process.
+    #[inline]
     pub fn struct_span_error_recovery(&self, msg: &str, span: Span) {
-        let pos: Position = self.source_map.lookup_char_pos(span.lo()).into();
+        self.0
+            .add_err(ParseError::Message {
+                message: msg.to_string(),
+                span,
+            })
+            .unwrap();
+    }
 
-        self.handler.borrow_mut().add_compile_error(msg, pos);
+    /// Parser panic with message and span.
+    ///
+    /// TODO: We can remove the panic capture after the parser error recovery is completed.
+    fn panic(&self, msg: &str, span: Span) -> ! {
+        let pos: Position = self.lookup_char_pos(span.lo()).into();
+        let mut panic_info = PanicInfo::from(format!("Invalid syntax: {msg}"));
+        panic_info.kcl_file = pos.filename.clone();
+        panic_info.kcl_line = pos.line as i32;
+        panic_info.kcl_col = pos.column.unwrap_or(0) as i32;
+        panic!("{}", panic_info.to_json_string());
     }
 }

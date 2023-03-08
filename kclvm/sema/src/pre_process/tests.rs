@@ -1,4 +1,7 @@
+use std::sync::Arc;
+
 use super::*;
+use compiler_base_session::Session;
 use indexmap::IndexMap;
 use kclvm_ast::path::get_attr_paths_from_config_expr;
 use kclvm_parser::{load_program, parse_file};
@@ -60,7 +63,9 @@ fn test_transform_multi_assign() {
 
 #[test]
 fn test_config_merge() {
+    let sess = Arc::new(Session::default());
     let mut program = load_program(
+        sess,
         &[
             "./src/pre_process/test_data/config_merge/def.k",
             "./src/pre_process/test_data/config_merge/config1.k",
@@ -104,8 +109,13 @@ fn test_config_merge() {
 
 #[test]
 fn test_config_override() {
-    let mut program =
-        load_program(&["./src/pre_process/test_data/config_override.k"], None).unwrap();
+    let sess = Arc::new(Session::default());
+    let mut program = load_program(
+        sess,
+        &["./src/pre_process/test_data/config_override.k"],
+        None,
+    )
+    .unwrap();
     merge_program(&mut program);
     let modules = program.pkgs.get_mut(kclvm_ast::MAIN_PKG).unwrap();
     assert_eq!(modules.len(), 1);

@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0"
 clap = "3.2.22"
+compiler_base_session = {path = "../../compiler_base/session", version = "0.0.12"}
 
 kclvm-capi = {path = "../capi",version = "0.4.5"}
 kclvm-runner = {path = "../runner", version = "0.4.5"}

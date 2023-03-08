@@ -1,7 +1,8 @@
-use std::{collections::HashMap, path::Path, time::SystemTime};
+use std::{collections::HashMap, path::Path, sync::Arc, time::SystemTime};
 
 use assembler::KclvmLibAssembler;
 use command::Command;
+use compiler_base_session::Session;
 use kclvm_ast::{
     ast::{Module, Program},
     MAIN_PKG,
@@ -54,16 +55,21 @@ pub mod tests;
 ///
 /// ```
 /// use kclvm_runner::{exec_program, ExecProgramArgs};
+/// use std::sync::Arc;
+/// use compiler_base_session::Session;
 ///
+/// // Create sessions
+/// let sess = Arc::new(Session::default());
 /// // Get default args
 /// let mut args = ExecProgramArgs::default();
 /// args.k_filename_list = vec!["./src/test_datas/init_check_order_0/main.k".to_string()];
 ///
 /// // Resolve ast, generate libs, link libs and execute.
 /// // Result is the kcl in json format.
-/// let result = exec_program(&args, 0).unwrap();
+/// let result = exec_program(sess, &args, 0).unwrap();
 /// ```
 pub fn exec_program(
+    sess: Arc<Session>,
     args: &ExecProgramArgs,
     plugin_agent: u64,
 ) -> Result<ExecProgramResult, String> {
@@ -95,7 +101,7 @@ pub fn exec_program(
 
     let kcl_paths_str = kcl_paths.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
 
-    let mut program = load_program(kcl_paths_str.as_slice(), Some(opts))?;
+    let mut program = load_program(sess.clone(), kcl_paths_str.as_slice(), Some(opts))?;
 
     if let Err(err) = apply_overrides(&mut program, &args.overrides, &[], args.print_override_ast) {
         return Err(err.to_string());
@@ -164,6 +170,11 @@ pub fn exec_program(
 /// use kclvm_runner::{execute, runner::ExecProgramArgs};
 /// use kclvm_parser::load_program;
 /// use kclvm_ast::ast::Program;
+/// use std::sync::Arc;
+/// use compiler_base_session::Session;
+///
+/// // Create sessions
+/// let sess = Arc::new(Session::default());
 /// // plugin_agent is the address of plugin.
 /// let plugin_agent = 0;
 /// // Get default args
@@ -172,7 +183,7 @@ pub fn exec_program(
 ///
 /// // Parse kcl file
 /// let kcl_path = "./src/test_datas/init_check_order_0/main.k";
-/// let prog = load_program(&[kcl_path], Some(opts)).unwrap();
+/// let prog = load_program(sess, &[kcl_path], Some(opts)).unwrap();
 ///     
 /// // Resolve ast, generate libs, link libs and execute.
 /// // Result is the kcl in json format.

@@ -3,6 +3,7 @@
 //!
 //! We can use `Handler` to create and emit diagnostics.
 
+use compiler_base_span::Span;
 use kclvm_runtime::{ErrType, PanicInfo};
 
 #[macro_use]
@@ -13,26 +14,22 @@ mod error;
 #[cfg(test)]
 mod tests;
 
-use std::{any::Any, sync::Arc};
-
+use anyhow::Result;
+use compiler_base_error::{
+    components::{CodeSnippet, Label},
+    Diagnostic as DiagnosticTrait, DiagnosticStyle,
+};
+use compiler_base_session::{Session, SessionDiagnostic};
 pub use diagnostic::{Diagnostic, DiagnosticId, Level, Message, Position, Style};
 pub use emitter::{Emitter, EmitterWriter};
 pub use error::*;
 use indexmap::IndexSet;
 use kclvm_span::SourceMap;
+use std::{any::Any, sync::Arc};
 
 /// A handler deals with errors and other compiler output.
 /// Certain errors (error, bug) may cause immediate exit,
 /// others log errors for later reporting.
-/// ```no_check
-/// use kclvm_error::{Handler, Position, ParseError};
-/// let mut handler = Handler::default();
-/// handler.add_parse_error(
-///     ParseError::unexpected_token(&["+", "-", "*", "/"], "//"),
-///     Position::dummy_pos(),
-/// );
-/// handler.abort_if_errors();
-/// ```
 pub struct Handler {
     /// The number of errors that have been emitted, including duplicates.
     ///
@@ -150,23 +147,6 @@ impl Handler {
         self
     }
 
-    /// Construct a parse error and put it into the handler diagnostic buffer
-    pub fn add_parse_error(&mut self, err: ParseError, pos: Position) -> &mut Self {
-        match err {
-            ParseError::UnexpectedToken { expected, got } => {
-                let message = format!("expect {:?} got {}", expected, got);
-                let diag = Diagnostic::new_with_code(
-                    Level::Error,
-                    &message,
-                    pos,
-                    Some(DiagnosticId::Error(E1001.kind)),
-                );
-                self.add_diagnostic(diag);
-            }
-        }
-        self
-    }
-
     /// Construct a type error and put it into the handler diagnostic buffer
     pub fn add_type_error(&mut self, msg: &str, pos: Position) -> &mut Self {
         let diag = Diagnostic::new_with_code(
@@ -269,43 +249,73 @@ impl Handler {
 
 #[derive(Debug, Clone)]
 pub enum ParseError {
-    UnexpectedToken { expected: Vec<String>, got: String },
+    UnexpectedToken {
+        expected: Vec<String>,
+        got: String,
+        span: Span,
+    },
+    Message {
+        message: String,
+        span: Span,
+    },
 }
 
 impl ParseError {
-    pub fn unexpected_token(expected: &[&str], got: &str) -> Self {
+    pub fn unexpected_token(expected: &[&str], got: &str, span: Span) -> Self {
         ParseError::UnexpectedToken {
             expected: expected
                 .iter()
                 .map(|v| v.to_string())
                 .collect::<Vec<String>>(),
             got: got.to_string(),
+            span,
+        }
+    }
+
+    // New a message parse error with span
+    pub fn message(message: String, span: Span) -> Self {
+        ParseError::Message { message, span }
+    }
+}
+
+impl ToString for ParseError {
+    fn to_string(&self) -> String {
+        match self {
+            ParseError::UnexpectedToken { expected, got, .. } => {
+                format!("unexpected one of {expected:?} got {got}")
+            }
+            ParseError::Message { message, .. } => message.to_string(),
         }
     }
 }
 
-/// Used as a return value to signify a fatal error occurred. (It is also
-/// used as the argument to panic at the moment, but that will eventually
-/// not be true.)
-#[derive(Copy, Clone, Debug)]
-#[must_use]
-pub struct FatalError;
-
-pub struct FatalErrorMarker;
-
-impl FatalError {
-    pub fn raise(self) -> ! {
-        std::panic::panic_any(Box::new(FatalErrorMarker))
+impl SessionDiagnostic for ParseError {
+    fn into_diagnostic(self, sess: &Session) -> Result<DiagnosticTrait<DiagnosticStyle>> {
+        let mut diag = DiagnosticTrait::<DiagnosticStyle>::new();
+        diag.append_component(Box::new(Label::Error(E1001.code.to_string())));
+        diag.append_component(Box::new(": invalid syntax".to_string()));
+        match self {
+            ParseError::UnexpectedToken {
+                expected,
+                got,
+                span,
+            } => {
+                let code_snippet = CodeSnippet::new(span, Arc::clone(&sess.sm));
+                diag.append_component(Box::new(code_snippet));
+                diag.append_component(Box::new(format!(
+                    "unexpected one of {expected:?} got {got}\n"
+                )));
+                Ok(diag)
+            }
+            ParseError::Message { message, span } => {
+                let code_snippet = CodeSnippet::new(span, Arc::clone(&sess.sm));
+                diag.append_component(Box::new(code_snippet));
+                diag.append_component(Box::new(format!(" {message}\n")));
+                Ok(diag)
+            }
+        }
     }
 }
-
-impl std::fmt::Display for FatalError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "fatal error")
-    }
-}
-
-impl std::error::Error for FatalError {}
 
 /// Convert an error to string.
 ///
