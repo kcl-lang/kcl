@@ -227,7 +227,6 @@ impl Loader {
 
     fn _load_main(&mut self) -> Result<ast::Program, String> {
         self.pkgroot = kclvm_config::modfile::get_pkg_root_from_paths(&self.paths)?;
-
         if !self.pkgroot.is_empty() {
             self.modfile = kclvm_config::modfile::load_mod_file(self.pkgroot.as_str());
         }

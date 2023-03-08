@@ -7,12 +7,11 @@ use kclvm_ast::{
     ast::{Module, Program},
     MAIN_PKG,
 };
-use kclvm_config::modfile::KCL_MOD_PATH_ENV;
+use kclvm_driver::canonicalize_input_files;
 use kclvm_parser::load_program;
 use kclvm_query::apply_overrides;
-use kclvm_runtime::{PanicInfo, ValueRef};
+use kclvm_runtime::ValueRef;
 use kclvm_sema::resolver::resolve_program;
-use kclvm_utils::path::PathPrefix;
 pub use runner::ExecProgramArgs;
 use runner::{ExecProgramResult, KclvmRunner, KclvmRunnerOptions};
 use tempfile::tempdir;
@@ -76,28 +75,8 @@ pub fn exec_program(
     // parse args from json string
     let opts = args.get_load_program_options();
     let k_files = &args.k_filename_list;
-    let mut kcl_paths = Vec::<String>::new();
     let work_dir = args.work_dir.clone().unwrap_or_default();
-
-    // Join work_path with k_file_path
-    for (_, file) in k_files.iter().enumerate() {
-        // If the input file or path is a relative path and it is not a absolute path in the KCL module VFS,
-        // join with the work directory path and convert it to a absolute path.
-        if !file.starts_with(KCL_MOD_PATH_ENV) && !Path::new(file).is_absolute() {
-            match Path::new(&work_dir).join(file).canonicalize() {
-                Ok(path) => kcl_paths.push(String::from(path.adjust_canonicalization())),
-                Err(_) => {
-                    return Err(PanicInfo::from_string(&format!(
-                        "Cannot find the kcl file, please check whether the file path {}",
-                        file
-                    ))
-                    .to_json_string())
-                }
-            }
-        } else {
-            kcl_paths.push(String::from(file))
-        }
-    }
+    let kcl_paths = canonicalize_input_files(k_files, work_dir)?;
 
     let kcl_paths_str = kcl_paths.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
 

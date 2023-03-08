@@ -1152,6 +1152,8 @@ dependencies = [
  "indexmap",
  "kclvm-ast",
  "kclvm-compiler",
+ "kclvm-config",
+ "kclvm-driver",
  "kclvm-error",
  "kclvm-parser",
  "kclvm-sema",
@@ -1187,6 +1189,7 @@ dependencies = [
  "kclvm-cmd",
  "kclvm-compiler",
  "kclvm-config",
+ "kclvm-driver",
  "kclvm-error",
  "kclvm-parser",
  "kclvm-query",
@@ -1305,6 +1308,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "kclvm-driver"
+version = "0.4.5"
+dependencies = [
+ "kclvm-ast",
+ "kclvm-config",
+ "kclvm-parser",
+ "kclvm-runtime",
+ "kclvm-utils",
+]
+
+[[package]]
 name = "kclvm-error"
 version = "0.4.5"
 dependencies = [
@@ -1404,6 +1418,7 @@ dependencies = [
  "kclvm-ast",
  "kclvm-compiler",
  "kclvm-config",
+ "kclvm-driver",
  "kclvm-error",
  "kclvm-parser",
  "kclvm-query",
@@ -1493,6 +1508,7 @@ dependencies = [
  "kclvm-ast",
  "kclvm-ast-pretty",
  "kclvm-config",
+ "kclvm-driver",
  "kclvm-error",
  "kclvm-parser",
  "kclvm-query",
