@@ -1,9 +1,9 @@
 #![allow(dead_code)]
 
-use crate::util;
 use anyhow::Result;
 use kclvm_error::Position;
-
+use kclvm_tools::util::get_kcl_files;
+use rustc_lexer;
 mod find_refs;
 mod go_to_def;
 mod word_map;
@@ -96,7 +96,7 @@ pub fn line_to_words(text: String) -> Vec<LineWord> {
 // Get all occurrences of the word in the entire path.
 pub fn match_word(path: String, name: String) -> Vec<Position> {
     let mut res = vec![];
-    let files = util::get_kcl_files(path, true);
+    let files = get_kcl_files(path, true);
     match files {
         Ok(files) => {
             // Searching in all files.

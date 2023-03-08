@@ -4,12 +4,11 @@ use std::path::Path;
 use walkdir::WalkDir;
 
 pub mod loader;
-pub mod lsp;
 #[cfg(test)]
 mod tests;
 
 /// Get kcl files from path.
-pub(crate) fn get_kcl_files<P: AsRef<Path>>(path: P, recursively: bool) -> Result<Vec<String>> {
+pub fn get_kcl_files<P: AsRef<Path>>(path: P, recursively: bool) -> Result<Vec<String>> {
     let mut files = vec![];
     for entry in WalkDir::new(path).into_iter().filter_map(|e| e.ok()) {
         let path = entry.path();

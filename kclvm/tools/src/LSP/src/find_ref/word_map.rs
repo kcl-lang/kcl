@@ -1,6 +1,7 @@
-use crate::langserver;
-use crate::util;
+use crate::find_ref;
+
 use kclvm_error::Position;
+use kclvm_tools::util::get_kcl_files;
 use std::collections::HashMap;
 
 // Record all occurrences of the name in a file
@@ -32,10 +33,10 @@ impl FileWordMap {
     // if text is missing, it will be read from the file system based on the filename
     pub fn build(&mut self, text: Option<String>) {
         self.clear();
-        let text = text.unwrap_or(langserver::read_file(&self.file_name).unwrap());
+        let text = text.unwrap_or(find_ref::read_file(&self.file_name).unwrap());
         let lines: Vec<&str> = text.lines().collect();
         for (li, line) in lines.into_iter().enumerate() {
-            let words = langserver::line_to_words(line.to_string());
+            let words = find_ref::line_to_words(line.to_string());
             words.iter().for_each(|x| {
                 self.word_map
                     .entry(x.word.clone())
@@ -100,7 +101,7 @@ impl WorkSpaceWordMap {
     // build & maintain the record map for each file under the path
     pub fn build(&mut self) {
         //TODO may use some cache from other component?
-        let files = util::get_kcl_files(&self.path, true);
+        let files = get_kcl_files(&self.path, true);
         match files {
             Ok(files) => {
                 for file in files.into_iter() {
