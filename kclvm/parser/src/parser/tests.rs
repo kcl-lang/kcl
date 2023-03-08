@@ -673,7 +673,7 @@ fn lambda_expr_3() {
     _a
 }"####,
         expect![[r#"
-        Node { node: Lambda(LambdaExpr { args: None, return_type_str: None, body: [Node { node: If(IfStmt { body: [Node { node: Assign(AssignStmt { targets: [Node { node: Identifier { names: ["_a"], pkgpath: "", ctx: Store }, filename: "", line: 3, column: 8, end_line: 3, end_column: 10 }], value: Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(1) }), filename: "", line: 3, column: 13, end_line: 3, end_column: 14 }, type_annotation: None, ty: None }), filename: "", line: 3, column: 8, end_line: 4, end_column: 0 }], cond: Node { node: NameConstantLit(NameConstantLit { value: True }), filename: "", line: 2, column: 7, end_line: 2, end_column: 11 }, orelse: [Node { node: Assign(AssignStmt { targets: [Node { node: Identifier { names: ["_a"], pkgpath: "", ctx: Store }, filename: "", line: 5, column: 8, end_line: 5, end_column: 10 }], value: Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(2) }), filename: "", line: 5, column: 13, end_line: 5, end_column: 14 }, type_annotation: None, ty: None }), filename: "", line: 5, column: 8, end_line: 6, end_column: 0 }] }), filename: "", line: 2, column: 4, end_line: 6, end_column: 4 }, Node { node: Expr(ExprStmt { exprs: [Node { node: Identifier(Identifier { names: ["_a"], pkgpath: "", ctx: Load }), filename: "", line: 6, column: 4, end_line: 6, end_column: 6 }] }), filename: "", line: 6, column: 4, end_line: 6, end_column: 6 }], return_ty: None }), filename: "", line: 1, column: 0, end_line: 7, end_column: 1 }
+        Node { node: Lambda(LambdaExpr { args: None, return_type_str: None, body: [Node { node: If(IfStmt { body: [Node { node: Assign(AssignStmt { targets: [Node { node: Identifier { names: ["_a"], pkgpath: "", ctx: Store }, filename: "", line: 3, column: 8, end_line: 3, end_column: 10 }], value: Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(1) }), filename: "", line: 3, column: 13, end_line: 3, end_column: 14 }, type_annotation: None, ty: None }), filename: "", line: 3, column: 8, end_line: 3, end_column: 14 }], cond: Node { node: NameConstantLit(NameConstantLit { value: True }), filename: "", line: 2, column: 7, end_line: 2, end_column: 11 }, orelse: [Node { node: Assign(AssignStmt { targets: [Node { node: Identifier { names: ["_a"], pkgpath: "", ctx: Store }, filename: "", line: 5, column: 8, end_line: 5, end_column: 10 }], value: Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(2) }), filename: "", line: 5, column: 13, end_line: 5, end_column: 14 }, type_annotation: None, ty: None }), filename: "", line: 5, column: 8, end_line: 5, end_column: 14 }] }), filename: "", line: 2, column: 4, end_line: 6, end_column: 4 }, Node { node: Expr(ExprStmt { exprs: [Node { node: Identifier(Identifier { names: ["_a"], pkgpath: "", ctx: Load }), filename: "", line: 6, column: 4, end_line: 6, end_column: 6 }] }), filename: "", line: 6, column: 4, end_line: 6, end_column: 6 }], return_ty: None }), filename: "", line: 1, column: 0, end_line: 7, end_column: 1 }
         "#]],
     );
 }
@@ -1057,13 +1057,18 @@ schema TestBool:
 
 #[test]
 fn test_parse_joined_string() {
-    // todo: fix joined_string
-    // check_type_stmt(
-    //     r####"a='${123+200}'"####,
-    //     expect![[r#"
-    //     sss
-    //     "#]],
-    // );
+    check_parsing_expr(
+        r####"'${123+200}'"####,
+        expect![[r#"
+        Node { node: JoinedString(JoinedString { is_long_string: false, values: [Node { node: FormattedValue(FormattedValue { is_long_string: false, value: Node { node: Binary(BinaryExpr { left: Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(123) }), filename: "", line: 1, column: 3, end_line: 1, end_column: 6 }, op: Bin(Add), right: Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(200) }), filename: "", line: 1, column: 7, end_line: 1, end_column: 10 } }), filename: "", line: 1, column: 3, end_line: 1, end_column: 10 }, format_spec: None }), filename: "", line: 1, column: 1, end_line: 1, end_column: 1 }], raw_value: "'${123+200}'" }), filename: "", line: 1, column: 0, end_line: 1, end_column: 12 }
+        "#]],
+    );
+    check_parsing_expr(
+        r####"'abc${a+1}cde'"####,
+        expect![[r#"
+        Node { node: JoinedString(JoinedString { is_long_string: false, values: [Node { node: StringLit(StringLit { is_long_string: false, raw_value: "abc", value: "abc" }), filename: "", line: 1, column: 1, end_line: 1, end_column: 1 }, Node { node: FormattedValue(FormattedValue { is_long_string: false, value: Node { node: Binary(BinaryExpr { left: Node { node: Identifier(Identifier { names: ["a"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 6, end_line: 1, end_column: 7 }, op: Bin(Add), right: Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(1) }), filename: "", line: 1, column: 8, end_line: 1, end_column: 9 } }), filename: "", line: 1, column: 6, end_line: 1, end_column: 9 }, format_spec: None }), filename: "", line: 1, column: 1, end_line: 1, end_column: 1 }, Node { node: StringLit(StringLit { is_long_string: false, raw_value: "cde", value: "cde" }), filename: "", line: 1, column: 1, end_line: 1, end_column: 1 }], raw_value: "'abc${a+1}cde'" }), filename: "", line: 1, column: 0, end_line: 1, end_column: 14 }
+        "#]],
+    );
 }
 
 #[test]

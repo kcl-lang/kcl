@@ -1,5 +1,22 @@
+use crate::node_ref;
 use crate::walker::MutSelfMutWalker;
-use crate::{ast, build_assign_node, node_ref, Identifier, Module, Node, NodeRef, SchemaStmt};
+use crate::{ast, ast::*};
+
+/// Construct an AssignStmt node with assign_value as value
+fn build_assign_node(attr_name: &str, assign_value: NodeRef<Expr>) -> NodeRef<Stmt> {
+    let iden = node_ref!(Identifier {
+        names: vec![attr_name.to_string()],
+        pkgpath: String::new(),
+        ctx: ExprContext::Store
+    });
+
+    node_ref!(Stmt::Assign(AssignStmt {
+        value: assign_value,
+        targets: vec![iden],
+        type_annotation: None,
+        ty: None
+    }))
+}
 
 fn get_dummy_assign_ast() -> ast::Node<ast::AssignStmt> {
     let filename = "main.k";

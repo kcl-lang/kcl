@@ -38,7 +38,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use compiler_base_span::Loc;
+use compiler_base_span::{Loc, Span};
 
 use super::token;
 use crate::node_ref;
@@ -123,6 +123,14 @@ impl<T> Node<T> {
         self.end_line = pos.3;
         self.end_column = pos.4;
     }
+}
+
+/// Spanned<T> is the span information that all AST nodes need to contain.
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Spanned<T> {
+    pub node: T,
+    #[serde(skip)]
+    pub span: Span,
 }
 
 impl TryInto<Node<Identifier>> for Node<Expr> {
@@ -224,7 +232,7 @@ impl Module {
         let mut stmts = Vec::new();
         for stmt in &self.body {
             if let Stmt::Schema(schema_stmt) = &stmt.node {
-                stmts.push(node_ref!(schema_stmt.clone()));
+                stmts.push(node_ref!(schema_stmt.clone(), stmt.pos()));
             }
         }
         return stmts;
