@@ -19,7 +19,7 @@ pub struct Diagnostic {
 /// line, and column location.
 ///
 /// A Position is valid if the line number is > 0.
-/// The line and column are both 1 based.
+/// The line is 1-based and the column is 0-based.
 #[derive(PartialEq, Clone, Eq, Hash, Debug, Default)]
 pub struct Position {
     pub filename: String,
@@ -89,7 +89,7 @@ impl From<Loc> for Position {
             line: loc.line as u64,
             column: if loc.col_display > 0 {
                 // Loc col is the (0-based) column offset.
-                Some(loc.col.0 as u64 + 1)
+                Some(loc.col.0 as u64)
             } else {
                 None
             },

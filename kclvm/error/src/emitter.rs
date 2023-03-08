@@ -188,6 +188,8 @@ impl Emitter for EmitterWriter {
                 buffer.push("  ".repeat(i) + &line_source);
                 if let Style::LineAndColumn = msg.style {
                     if let Some(column) = msg.pos.column {
+                        // The Position column is 0-based
+                        let column = column + 1;
                         let column_source = format!("{} ^", column);
                         let prefix_space = line_hint_len + column as usize - column_source.len();
                         let column_source = " ".repeat(prefix_space) + &column_source;
