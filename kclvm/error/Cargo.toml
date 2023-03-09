@@ -16,7 +16,6 @@ kclvm-runtime = {path = "../runtime", version = "0.4.5"}
 anyhow = "1.0"
 tracing = "0.1"
 atty = "0.2"
-termcolor = "1.0"
 annotate-snippets = { version = "0.9.0", default-features = false, features = ["color"] }
 termize = "0.1.1"
 indexmap = "1.0"

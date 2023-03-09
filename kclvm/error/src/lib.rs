@@ -153,17 +153,7 @@ impl Handler {
 
     /// Put a runtime panic info the handler diagnostic buffer.
     pub fn add_panic_info(&mut self, panic_info: &PanicInfo) -> &mut Self {
-        let diag = Diagnostic::new_with_code(
-            Level::Error,
-            &panic_info.message,
-            Position {
-                filename: panic_info.kcl_file.clone(),
-                line: panic_info.kcl_line as u64,
-                column: Some(panic_info.kcl_col as u64),
-            },
-            Some(DiagnosticId::Error(E2L23.kind)),
-        );
-        self.add_diagnostic(diag);
+        self.add_diagnostic(panic_info.clone().into());
 
         self
     }
@@ -216,12 +206,61 @@ impl Handler {
         self
     }
 
+    /// Classify diagnostics into errors and warnings.
+    pub fn classification(&self) -> (IndexSet<Diagnostic>, IndexSet<Diagnostic>) {
+        let (mut errs, mut warnings) = (IndexSet::new(), IndexSet::new());
+        for diag in &self.diagnostics {
+            if diag.level == Level::Error {
+                errs.insert(diag.clone());
+            } else if diag.level == Level::Warning {
+                warnings.insert(diag.clone());
+            } else {
+                continue;
+            }
+        }
+        (errs, warnings)
+    }
+
     /// Store a diagnostics
     #[inline]
     fn add_diagnostic(&mut self, diagnostic: Diagnostic) -> &mut Self {
         self.diagnostics.insert(diagnostic);
 
         self
+    }
+}
+
+impl From<PanicInfo> for Diagnostic {
+    fn from(panic_info: PanicInfo) -> Self {
+        let mut diag = Diagnostic::new_with_code(
+            Level::Error,
+            if panic_info.kcl_arg_msg.is_empty() {
+                &panic_info.message
+            } else {
+                &panic_info.kcl_arg_msg
+            },
+            Position {
+                filename: panic_info.kcl_file.clone(),
+                line: panic_info.kcl_line as u64,
+                column: None,
+            },
+            Some(DiagnosticId::Error(E3M38.kind)),
+        );
+        if panic_info.kcl_config_meta_file.is_empty() {
+            return diag;
+        }
+        let mut config_meta_diag = Diagnostic::new_with_code(
+            Level::Error,
+            &panic_info.kcl_config_meta_arg_msg,
+            Position {
+                filename: panic_info.kcl_config_meta_file.clone(),
+                line: panic_info.kcl_config_meta_line as u64,
+                column: Some(panic_info.kcl_config_meta_col as u64),
+            },
+            Some(DiagnosticId::Error(E3M38.kind)),
+        );
+        config_meta_diag.messages.append(&mut diag.messages);
+        config_meta_diag
     }
 }
 

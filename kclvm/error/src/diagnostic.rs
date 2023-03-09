@@ -1,9 +1,6 @@
+use kclvm_span::Loc;
 use std::fmt;
 use std::hash::Hash;
-
-use indexmap::IndexSet;
-use kclvm_span::Loc;
-use termcolor::{Color, ColorSpec};
 
 use crate::{ErrorKind, WarningKind};
 
@@ -156,22 +153,6 @@ impl Level {
             Level::Note => "note",
         }
     }
-
-    pub fn color(&self) -> ColorSpec {
-        let mut spec = ColorSpec::new();
-        match self {
-            Level::Error => {
-                spec.set_fg(Some(Color::Red)).set_intense(true);
-            }
-            Level::Warning => {
-                spec.set_fg(Some(Color::Yellow)).set_intense(cfg!(windows));
-            }
-            Level::Note => {
-                spec.set_fg(Some(Color::Green)).set_intense(true);
-            }
-        }
-        spec
-    }
 }
 
 impl fmt::Display for Level {
@@ -188,21 +169,4 @@ pub enum Style {
     Empty,
     LineAndColumn,
     Line,
-}
-
-/// Classify diagnostics into errors and warnings.
-pub fn classification(
-    diagnostics: &IndexSet<Diagnostic>,
-) -> (IndexSet<Diagnostic>, IndexSet<Diagnostic>) {
-    let (mut errs, mut warnings) = (IndexSet::new(), IndexSet::new());
-    for diag in diagnostics {
-        if diag.level == Level::Error {
-            errs.insert(diag.clone());
-        } else if diag.level == Level::Warning {
-            warnings.insert(diag.clone());
-        } else {
-            continue;
-        }
-    }
-    (errs, warnings)
 }

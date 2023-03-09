@@ -1254,7 +1254,6 @@ dependencies = [
  "indexmap",
  "kclvm-runtime",
  "kclvm-span",
- "termcolor",
  "termize",
  "tracing",
 ]

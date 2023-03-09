@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use compiler_base_session::Session;
 use indexmap::IndexSet;
-use kclvm_error::{diagnostic::classification, Diagnostic, Handler};
+use kclvm_error::{Diagnostic, Handler};
 use kclvm_parser::{load_program, LoadProgramOptions};
 use kclvm_runtime::PanicInfo;
 use kclvm_sema::resolver::resolve_program;
@@ -65,12 +65,10 @@ pub fn lint_files(
     let mut program = match load_program(Arc::new(Session::default()), files, opts) {
         Ok(p) => p,
         Err(err_str) => {
-            return classification(
-                &Handler::default()
-                    .add_panic_info(&PanicInfo::from(err_str))
-                    .diagnostics,
-            );
+            return Handler::default()
+                .add_panic_info(&PanicInfo::from(err_str))
+                .classification();
         }
     };
-    classification(&resolve_program(&mut program).handler.diagnostics)
+    resolve_program(&mut program).handler.classification()
 }
