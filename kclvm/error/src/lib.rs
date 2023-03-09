@@ -3,46 +3,39 @@
 //!
 //! We can use `Handler` to create and emit diagnostics.
 
-use compiler_base_span::Span;
-use kclvm_runtime::{ErrType, PanicInfo};
-
-#[macro_use]
-pub mod bug;
 pub mod diagnostic;
-mod emitter;
 mod error;
-#[cfg(test)]
-mod tests;
 
+use annotate_snippets::{
+    display_list::DisplayList,
+    display_list::FormatOptions,
+    snippet::{AnnotationType, Slice, Snippet, SourceAnnotation},
+};
 use anyhow::Result;
 use compiler_base_error::{
     components::{CodeSnippet, Label},
     Diagnostic as DiagnosticTrait, DiagnosticStyle,
 };
 use compiler_base_session::{Session, SessionDiagnostic};
-pub use diagnostic::{Diagnostic, DiagnosticId, Level, Message, Position, Style};
-pub use emitter::{Emitter, EmitterWriter};
-pub use error::*;
+use compiler_base_span::{span::new_byte_pos, Span};
 use indexmap::IndexSet;
-use kclvm_span::SourceMap;
+use kclvm_runtime::PanicInfo;
 use std::{any::Any, sync::Arc};
+
+pub use diagnostic::{Diagnostic, DiagnosticId, Level, Message, Position, Style};
+pub use error::*;
 
 /// A handler deals with errors and other compiler output.
 /// Certain errors (error, bug) may cause immediate exit,
 /// others log errors for later reporting.
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Handler {
-    /// The number of errors that have been emitted, including duplicates.
-    ///
-    /// This is not necessarily the count that's reported to the user once
-    /// compilation ends.
-    emitter: Box<dyn Emitter>,
     pub diagnostics: IndexSet<Diagnostic>,
 }
 
 impl Default for Handler {
     fn default() -> Self {
         Self {
-            emitter: Box::new(EmitterWriter::default()),
             diagnostics: Default::default(),
         }
     }
@@ -50,16 +43,8 @@ impl Default for Handler {
 
 impl Handler {
     /// New a handler using a emitter
-    pub fn new(emitter: Box<dyn Emitter>) -> Self {
+    pub fn new() -> Self {
         Self {
-            emitter,
-            diagnostics: Default::default(),
-        }
-    }
-
-    pub fn with_source_map(source_map: Arc<SourceMap>) -> Self {
-        Self {
-            emitter: Box::new(EmitterWriter::from_stderr(source_map)),
             diagnostics: Default::default(),
         }
     }
@@ -67,7 +52,7 @@ impl Handler {
     /// Panic program and report a bug
     #[inline]
     pub fn bug(&self, msg: &str) -> ! {
-        bug!("{}", msg)
+        compiler_base_macros::bug!("{}", msg)
     }
 
     #[inline]
@@ -78,59 +63,52 @@ impl Handler {
     }
 
     /// Emit all diagnostics and return whether has errors.
-    pub fn emit(&mut self) -> bool {
+    pub fn emit(&mut self) -> Result<bool> {
+        let sess = Session::default();
         for diag in &self.diagnostics {
-            self.emitter.emit_diagnostic(diag);
+            sess.add_err(diag.clone()).unwrap();
         }
-        self.has_errors()
-    }
-    /// Format and return all diagnostics msg.
-    pub fn format_diagnostic(&mut self) -> Vec<String> {
-        let mut dia_msgs = Vec::new();
-        for diag in &self.diagnostics {
-            dia_msgs.append(&mut self.emitter.format_diagnostic(diag));
-        }
-        dia_msgs
-    }
-
-    /// Emit all diagnostics and abort if has any errors.
-    pub fn abort_if_errors(&mut self) -> ! {
-        if self.emit() {
-            std::process::exit(1)
-        } else {
-            panic!("compiler internal error")
-        }
-    }
-
-    /// Emit all diagnostics and abort if has any errors.
-    pub fn abort_if_any_errors(&mut self) {
-        if self.emit() {
-            std::process::exit(1)
-        }
+        sess.emit_stashed_diagnostics()?;
+        Ok(self.has_errors())
     }
 
     /// Emit all diagnostics but do not abort and return the error json string format.
     #[inline]
-    pub fn alert_if_any_errors(&mut self) -> Result<(), String> {
+    pub fn alert_if_any_errors(&self) -> Result<(), String> {
         if self.has_errors() {
             for diag in &self.diagnostics {
-                let pos = diag.messages[0].pos.clone();
-                let message = diag.messages[0].message.clone();
+                if !diag.messages.is_empty() {
+                    let pos = diag.messages[0].pos.clone();
 
-                let mut panic_info = PanicInfo::default();
+                    let mut panic_info = PanicInfo::from(diag.messages[0].message.clone());
+                    panic_info.kcl_file = pos.filename.clone();
+                    panic_info.kcl_line = pos.line as i32;
+                    panic_info.kcl_col = pos.column.unwrap_or(0) as i32;
 
-                panic_info.__kcl_PanicInfo__ = true;
-                panic_info.message = message;
-                panic_info.err_type_code = ErrType::CompileError_TYPE as i32;
+                    if diag.messages.len() >= 2 {
+                        let pos = diag.messages[1].pos.clone();
+                        panic_info.kcl_config_meta_file = pos.filename.clone();
+                        panic_info.kcl_config_meta_line = pos.line as i32;
+                        panic_info.kcl_config_meta_col = pos.column.unwrap_or(0) as i32;
+                    }
 
-                panic_info.kcl_file = pos.filename.clone();
-                panic_info.kcl_line = pos.line as i32;
-                panic_info.kcl_col = pos.column.unwrap_or(0) as i32;
-
-                return Err(panic_info.to_json_string());
+                    return Err(panic_info.to_json_string());
+                }
             }
         }
         Ok(())
+    }
+
+    /// Emit all diagnostics and abort if has any errors.
+    pub fn abort_if_any_errors(&mut self) {
+        match self.emit() {
+            Ok(has_error) => {
+                if has_error {
+                    std::process::exit(1);
+                }
+            }
+            Err(err) => self.bug(&format!("{}", err.to_string())),
+        }
     }
 
     /// Construct a parse error and put it into the handler diagnostic buffer
@@ -261,6 +239,7 @@ pub enum ParseError {
 }
 
 impl ParseError {
+    /// New a unexpected token parse error with span and token information.
     pub fn unexpected_token(expected: &[&str], got: &str, span: Span) -> Self {
         ParseError::UnexpectedToken {
             expected: expected
@@ -272,7 +251,7 @@ impl ParseError {
         }
     }
 
-    // New a message parse error with span
+    /// New a message parse error with span.
     pub fn message(message: String, span: Span) -> Self {
         ParseError::Message { message, span }
     }
@@ -303,7 +282,7 @@ impl SessionDiagnostic for ParseError {
                 let code_snippet = CodeSnippet::new(span, Arc::clone(&sess.sm));
                 diag.append_component(Box::new(code_snippet));
                 diag.append_component(Box::new(format!(
-                    "unexpected one of {expected:?} got {got}\n"
+                    " expected one of {expected:?} got {got}\n"
                 )));
                 Ok(diag)
             }
@@ -314,6 +293,77 @@ impl SessionDiagnostic for ParseError {
                 Ok(diag)
             }
         }
+    }
+}
+
+impl SessionDiagnostic for Diagnostic {
+    fn into_diagnostic(self, _: &Session) -> Result<DiagnosticTrait<DiagnosticStyle>> {
+        let mut diag = DiagnosticTrait::<DiagnosticStyle>::new();
+        match self.code {
+            Some(id) => match id {
+                DiagnosticId::Error(error) => {
+                    diag.append_component(Box::new(Label::Error(E2L23.code.to_string())));
+                    diag.append_component(Box::new(format!(": {}", error.name())));
+                }
+                DiagnosticId::Warning(warning) => {
+                    diag.append_component(Box::new(Label::Warning(W1001.code.to_string())));
+                    diag.append_component(Box::new(format!(": {}", warning.name())));
+                }
+            },
+            None => match self.level {
+                Level::Error => {
+                    diag.append_component(Box::new(Label::Error(E2L23.code.to_string())));
+                }
+                Level::Warning => {
+                    diag.append_component(Box::new(Label::Warning(W1001.code.to_string())));
+                }
+                Level::Note => {
+                    diag.append_component(Box::new(Label::Note));
+                }
+            },
+        }
+        // Append a new line.
+        diag.append_component(Box::new(String::from("\n")));
+        for msg in &self.messages {
+            let sess = Session::new_with_file_and_code(&msg.pos.filename, None)?;
+            let source = sess.sm.lookup_source_file(new_byte_pos(0));
+            let line = source.get_line((msg.pos.line - 1) as usize);
+            let content = line
+                .as_ref()
+                .ok_or(anyhow::anyhow!("Failed to load source file"))?;
+            let snippet = Snippet {
+                title: None,
+                footer: vec![],
+                slices: vec![Slice {
+                    source: content,
+                    line_start: msg.pos.line as usize,
+                    origin: Some(&msg.pos.filename),
+                    annotations: vec![SourceAnnotation {
+                        range: match msg.pos.column {
+                            Some(column) => (column as usize, (column + 1) as usize),
+                            None => (0, 0),
+                        },
+                        label: &msg.message,
+                        annotation_type: AnnotationType::Error,
+                    }],
+                    fold: true,
+                }],
+                opt: FormatOptions {
+                    color: true,
+                    anonymized_line_numbers: false,
+                    margin: None,
+                },
+            };
+            let dl = DisplayList::from(snippet);
+            diag.append_component(Box::new(format!("{dl}\n")));
+            if let Some(note) = &msg.note {
+                diag.append_component(Box::new(Label::Note));
+                diag.append_component(Box::new(format!(": {}\n", note)));
+            }
+            // Append a new line.
+            diag.append_component(Box::new(String::from("\n")));
+        }
+        Ok(diag)
     }
 }
 

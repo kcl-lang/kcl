@@ -9,6 +9,7 @@ edition = "2021"
 compiler_base_span = {path = "../../compiler_base/span", version = "0.0.2"}
 compiler_base_session = {path = "../../compiler_base/session", version = "0.0.12"}
 compiler_base_error = "0.0.8"
+compiler_base_macros = "0.0.1"
 kclvm-span = {path = "../span", version = "0.4.5"}
 kclvm-runtime = {path = "../runtime", version = "0.4.5"}
 
@@ -16,6 +17,6 @@ anyhow = "1.0"
 tracing = "0.1"
 atty = "0.2"
 termcolor = "1.0"
-annotate-snippets = "0.8.0"
+annotate-snippets = { version = "0.9.0", default-features = false, features = ["color"] }
 termize = "0.1.1"
 indexmap = "1.0"

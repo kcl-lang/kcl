@@ -21,11 +21,11 @@ mod string;
 #[cfg(test)]
 mod tests;
 
+use compiler_base_macros::bug;
 use compiler_base_span::{self, span::new_byte_pos, BytePos, Span};
 use kclvm_ast::ast::NumberBinarySuffix;
 use kclvm_ast::token::{self, CommentKind, Token, TokenKind};
 use kclvm_ast::token_stream::TokenStream;
-use kclvm_error::bug;
 use kclvm_lexer::Base;
 use kclvm_span::symbol::Symbol;
 pub(crate) use string::str_content_eval;

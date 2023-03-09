@@ -82,10 +82,26 @@ fn test_pkg_init_in_schema_resolve() {
 
 #[test]
 fn test_resolve_program_fail() {
+    let cases = &[
+        "./src/resolver/test_fail_data/attr.k",
+        "./src/resolver/test_fail_data/cannot_find_module.k",
+        "./src/resolver/test_fail_data/config_expr.k",
+        "./src/resolver/test_fail_data/module_optional_select.k",
+        "./src/resolver/test_fail_data/unmatched_args.k",
+    ];
+    for case in cases {
+        let mut program = parse_program(case).unwrap();
+        let scope = resolve_program(&mut program);
+        assert!(scope.handler.diagnostics.len() > 0);
+    }
+}
+
+#[test]
+fn test_resolve_program_mismatch_type_fail() {
     let mut program = parse_program("./src/resolver/test_fail_data/config_expr.k").unwrap();
     let scope = resolve_program(&mut program);
-    assert_eq!(scope.diagnostics.len(), 1);
-    let diag = &scope.diagnostics[0];
+    assert_eq!(scope.handler.diagnostics.len(), 1);
+    let diag = &scope.handler.diagnostics[0];
     assert_eq!(diag.code, Some(DiagnosticId::Error(ErrorKind::TypeError)));
     assert_eq!(diag.messages.len(), 1);
     assert_eq!(
@@ -113,8 +129,8 @@ fn test_resolve_program_cycle_reference_fail() {
         "Module 'file2' imported but unused",
         "Module 'file1' imported but unused",
     ];
-    assert_eq!(scope.diagnostics.len(), err_messages.len());
-    for (diag, msg) in scope.diagnostics.iter().zip(err_messages.iter()) {
+    assert_eq!(scope.handler.diagnostics.len(), err_messages.len());
+    for (diag, msg) in scope.handler.diagnostics.iter().zip(err_messages.iter()) {
         assert_eq!(diag.messages[0].message, msg.to_string(),);
     }
 }
@@ -157,16 +173,16 @@ fn test_cannot_find_module() {
     )
     .unwrap();
     let scope = resolve_program(&mut program);
-    assert_eq!(scope.diagnostics[0].messages[0].pos.column, None);
+    assert_eq!(scope.handler.diagnostics[0].messages[0].pos.column, None);
 }
 
 #[test]
 fn test_resolve_program_illegal_attr_fail() {
     let mut program = parse_program("./src/resolver/test_fail_data/attr.k").unwrap();
     let scope = resolve_program(&mut program);
-    assert_eq!(scope.diagnostics.len(), 2);
+    assert_eq!(scope.handler.diagnostics.len(), 2);
     let expect_err_msg = "A attribute must be string type, got 'Data'";
-    let diag = &scope.diagnostics[0];
+    let diag = &scope.handler.diagnostics[0];
     assert_eq!(
         diag.code,
         Some(DiagnosticId::Error(ErrorKind::IllegalAttributeError))
@@ -174,7 +190,7 @@ fn test_resolve_program_illegal_attr_fail() {
     assert_eq!(diag.messages.len(), 1);
     assert_eq!(diag.messages[0].pos.line, 4);
     assert_eq!(diag.messages[0].message, expect_err_msg,);
-    let diag = &scope.diagnostics[1];
+    let diag = &scope.handler.diagnostics[1];
     assert_eq!(
         diag.code,
         Some(DiagnosticId::Error(ErrorKind::IllegalAttributeError))
@@ -188,9 +204,9 @@ fn test_resolve_program_illegal_attr_fail() {
 fn test_resolve_program_unmatched_args_fail() {
     let mut program = parse_program("./src/resolver/test_fail_data/unmatched_args.k").unwrap();
     let scope = resolve_program(&mut program);
-    assert_eq!(scope.diagnostics.len(), 2);
+    assert_eq!(scope.handler.diagnostics.len(), 2);
     let expect_err_msg = "\"Foo\" takes 1 positional argument but 3 were given";
-    let diag = &scope.diagnostics[0];
+    let diag = &scope.handler.diagnostics[0];
     assert_eq!(
         diag.code,
         Some(DiagnosticId::Error(ErrorKind::CompileError))
@@ -200,7 +216,7 @@ fn test_resolve_program_unmatched_args_fail() {
     assert_eq!(diag.messages[0].message, expect_err_msg);
 
     let expect_err_msg = "\"f\" takes 1 positional argument but 2 were given";
-    let diag = &scope.diagnostics[1];
+    let diag = &scope.handler.diagnostics[1];
     assert_eq!(
         diag.code,
         Some(DiagnosticId::Error(ErrorKind::CompileError))
@@ -215,10 +231,10 @@ fn test_resolve_program_module_optional_select_fail() {
     let mut program =
         parse_program("./src/resolver/test_fail_data/module_optional_select.k").unwrap();
     let scope = resolve_program(&mut program);
-    assert_eq!(scope.diagnostics.len(), 2);
+    assert_eq!(scope.handler.diagnostics.len(), 2);
     let expect_err_msg =
         "For the module type, the use of '?.log' is unnecessary and it can be modified as '.log'";
-    let diag = &scope.diagnostics[0];
+    let diag = &scope.handler.diagnostics[0];
     assert_eq!(
         diag.code,
         Some(DiagnosticId::Error(ErrorKind::CompileError))
@@ -228,7 +244,7 @@ fn test_resolve_program_module_optional_select_fail() {
     assert_eq!(diag.messages[0].message, expect_err_msg);
 
     let expect_err_msg = "Module 'math' imported but unused";
-    let diag = &scope.diagnostics[1];
+    let diag = &scope.handler.diagnostics[1];
     assert_eq!(
         diag.code,
         Some(DiagnosticId::Warning(WarningKind::UnusedImportWarning))

@@ -1750,10 +1750,9 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                                 column: None,
                             },
                         );
-                        handler.abort_if_errors()
-                    } else {
-                        result
+                        handler.abort_if_any_errors()
                     }
+                    result
                 }
             }
         }

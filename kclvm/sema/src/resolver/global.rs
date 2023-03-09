@@ -238,7 +238,10 @@ impl<'ctx> Resolver<'ctx> {
                                 .clone(),
                             style: Style::LineAndColumn,
                             message: format!("The variable '{}' is declared here firstly", name),
-                            note: Some(format!("change the variable name to '_{}'", name)),
+                            note: Some(format!(
+                                "change the variable name to '_{}' to make it mutable",
+                                name
+                            )),
                         },
                     ],
                 );
@@ -254,16 +257,20 @@ impl<'ctx> Resolver<'ctx> {
                             ErrorKind::TypeError,
                             &[
                                 Message {
+                                    pos: start.clone(),
+                                    style: Style::LineAndColumn,
+                                    message: format!(
+                                        "can not change the type of '{}' to {}",
+                                        name,
+                                        obj.ty.ty_str()
+                                    ),
+                                    note: None,
+                                },
+                                Message {
                                     pos: obj.start.clone(),
                                     style: Style::LineAndColumn,
                                     message: format!("expect {}", obj.ty.ty_str()),
                                     note: None,
-                                },
-                                Message {
-                                    pos: start.clone(),
-                                    style: Style::LineAndColumn,
-                                    message: format!("can not change the type of '{}'", name),
-                                    note: Some(format!("got {}", ty.ty_str())),
                                 },
                             ],
                         );
@@ -322,7 +329,10 @@ impl<'ctx> Resolver<'ctx> {
                             .clone(),
                         style: Style::LineAndColumn,
                         message: format!("The variable '{}' is declared here firstly", name),
-                        note: Some(format!("Change the variable name to '_{}'", name)),
+                        note: Some(format!(
+                            "change the variable name to '_{}' to make it mutable",
+                            name
+                        )),
                     },
                 ],
             );

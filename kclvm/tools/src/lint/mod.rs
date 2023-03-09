@@ -72,5 +72,5 @@ pub fn lint_files(
             );
         }
     };
-    classification(&resolve_program(&mut program).diagnostics)
+    classification(&resolve_program(&mut program).handler.diagnostics)
 }

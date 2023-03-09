@@ -146,7 +146,10 @@ impl<'ctx> MutSelfMutWalker<'ctx> for QualifiedIdentifierTransformer {
                         pos: self.global_names.get(name).unwrap().clone(),
                         style: Style::LineAndColumn,
                         message: format!("The variable '{}' is declared here firstly", name),
-                        note: None,
+                        note: Some(format!(
+                            "change the variable name to '_{}' to make it mutable",
+                            name
+                        )),
                     },
                 ],
             );

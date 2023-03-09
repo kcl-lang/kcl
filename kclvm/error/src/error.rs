@@ -18,6 +18,23 @@ macro_rules! register_errors {
     )
 }
 
+macro_rules! register_warnings {
+    ($($ecode:ident: $kind:expr, $message:expr,)*) => (
+        pub static WARNINGS: &[(&str, Warning)] = &[
+            $( (stringify!($ecode), Warning {
+                code: stringify!($ecode),
+                kind: $kind,
+                message: Some($message),
+            }), )*
+        ];
+        $(pub const $ecode: Warning = Warning {
+            code: stringify!($ecode),
+            kind: $kind,
+            message: Some($message),
+        };)*
+    )
+}
+
 // Error messages for EXXXX errors. Each message should start and end with a
 // new line.
 register_errors! {
@@ -29,6 +46,12 @@ register_errors! {
     E2L28: ErrorKind::UniqueKeyError, include_str!("./error_codes/E2L28.md"),
     E2D34: ErrorKind::IllegalInheritError, include_str!("./error_codes/E2D34.md"),
     E3M38: ErrorKind::EvaluationError, include_str!("./error_codes/E2D34.md"),
+}
+
+// Error messages for WXXXX errors. Each message should start and end with a
+// new line.
+register_warnings! {
+    W1001: WarningKind::CompilerWarning, include_str!("./warning_codes/W1001.md"),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -92,13 +115,14 @@ impl ErrorKind {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Warning {
     pub code: &'static str,
-    pub kind: ErrorKind,
+    pub kind: WarningKind,
     pub message: Option<&'static str>,
 }
 
 // Kind of KCL warning.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum WarningKind {
+    CompilerWarning,
     UnusedImportWarning,
     ReimportWarning,
     ImportPositionWarning,
