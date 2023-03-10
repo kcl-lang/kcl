@@ -804,6 +804,7 @@ impl<'a> Parser<'a> {
             if self.token.kind == TokenKind::Indent {
                 self.bump();
             } else if self.token.kind == TokenKind::CloseDelim(DelimToken::Bracket) {
+                // bump bracket close delim token `]`
                 self.bump();
                 return Box::new(Node::node(
                     Expr::List(ListExpr {
@@ -813,8 +814,16 @@ impl<'a> Parser<'a> {
                     self.sess.struct_token_loc(token, self.prev_token),
                 ));
             } else {
+                // If we don't find the indentation, skip and parse the next statement.
                 self.sess
-                    .struct_token_error_recovery(&[TokenKind::Indent.into()], self.token)
+                    .struct_token_error_recovery(&[TokenKind::Indent.into()], self.token);
+                return Box::new(Node::node(
+                    Expr::List(ListExpr {
+                        elts: vec![],
+                        ctx: ExprContext::Load,
+                    }),
+                    self.sess.struct_token_loc(token, self.token),
+                ));
             }
             true
         } else {
@@ -1119,8 +1128,13 @@ impl<'a> Parser<'a> {
                     self.sess.struct_token_loc(token, self.prev_token),
                 ));
             } else {
+                // If we don't find the indentation, skip and parse the next statement.
                 self.sess
-                    .struct_token_error_recovery(&[TokenKind::Indent.into()], self.token)
+                    .struct_token_error_recovery(&[TokenKind::Indent.into()], self.token);
+                return Box::new(Node::node(
+                    Expr::Config(ConfigExpr { items: vec![] }),
+                    self.sess.struct_token_loc(token, self.token),
+                ));
             }
             true
         } else {

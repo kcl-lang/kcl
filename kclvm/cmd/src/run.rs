@@ -22,7 +22,9 @@ pub fn run_command(matches: &ArgMatches) -> Result<()> {
             None => println!("{}", result.yaml_result),
         },
         Err(msg) => {
-            sess.add_err(<PanicInfo as Into<Diagnostic>>::into(PanicInfo::from(msg)))?;
+            if !sess.diag_handler.has_errors()? {
+                sess.add_err(<PanicInfo as Into<Diagnostic>>::into(PanicInfo::from(msg)))?;
+            }
             sess.emit_stashed_diagnostics_and_abort()?;
         }
     }
