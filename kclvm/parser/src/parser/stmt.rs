@@ -1137,7 +1137,7 @@ impl<'a> Parser<'_> {
         } else {
             if maybe_list_expr && !matches!(self.token.kind, TokenKind::Ident(_)) {
                 let list_expr = ListExpr {
-                    elts: self.parse_list_items(),
+                    elts: self.parse_list_items(false),
                     ctx: ExprContext::Load,
                 };
 
@@ -1185,7 +1185,7 @@ impl<'a> Parser<'_> {
                 self.bump();
             }
 
-            list_expr.elts.extend(self.parse_list_items());
+            list_expr.elts.extend(self.parse_list_items(false));
 
             self.bump_token(TokenKind::CloseDelim(DelimToken::Bracket));
             return (None, Some(list_expr));
@@ -1200,7 +1200,7 @@ impl<'a> Parser<'_> {
                     elts: vec![ident.unwrap()],
                     ctx: ExprContext::Load,
                 };
-                list_expr.elts.extend(self.parse_list_items());
+                list_expr.elts.extend(self.parse_list_items(true));
 
                 self.bump_token(TokenKind::CloseDelim(DelimToken::Bracket));
                 return (None, Some(list_expr));

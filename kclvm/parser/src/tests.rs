@@ -96,18 +96,18 @@ pub fn test_parse_expr_invalid() {
 }
 
 const PARSE_FILE_INVALID_TEST_CASES: &[&str] = &[
-    "a: int",                // No initial value error
-    "a -",                   // Invalid binary expression error
-    "a?: int",               // Invalid optional annotation error
-    "a: () = 1",             // Type annotation error
-    "if a not is b: a = 1",  // Logic operator error
-    "if True:\n  a=1\n b=2", // Indent error
-    "a[1::::]",              // List slice error
-    "a[1 a]",                // List index error
-    "{a ++ 1}",              // Config attribute operator error
-    "func(a=1,b)",           // Call argument error
-    "'${}'",                 // Empty string interpolation error
-    "'${a: jso}'",           // Invalid string interpolation format spec error
+    "a: int",                   // No initial value error
+    "a -",                      // Invalid binary expression error
+    "a?: int",                  // Invalid optional annotation error
+    "a: () = 1",                // Type annotation error
+    "if a not is not b: a = 1", // Logic operator error
+    "if True:\n  a=1\n b=2",    // Indent error
+    "a[1::::]",                 // List slice error
+    "a[1 a]",                   // List index error
+    "{a ++ 1}",                 // Config attribute operator error
+    "func(a=1,b)",              // Call argument error
+    "'${}'",                    // Empty string interpolation error
+    "'${a: jso}'",              // Invalid string interpolation format spec error
 ];
 
 #[test]

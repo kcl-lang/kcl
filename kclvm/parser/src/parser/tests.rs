@@ -1038,19 +1038,16 @@ fn test_type_str() {
 }
 
 #[test]
-fn test_parse_if_stmt() {
+fn test_parse_schema_stmt() {
     check_parsing_file_ast_json(
         "hello.k",
         r####"
 schema TestBool:
     []
-    [1
-    2,
-    ]
     [str    ]: int
         "####,
         expect![[r#"
-        {"filename":"hello.k","pkg":"__main__","doc":"","name":"__main__","body":[{"node":{"Schema":{"doc":"","name":{"node":"TestBool","filename":"hello.k","line":2,"column":7,"end_line":2,"end_column":15},"parent_name":null,"for_host_name":null,"is_mixin":false,"is_protocol":false,"args":null,"mixins":[],"body":[{"node":{"Expr":{"exprs":[{"node":{"List":{"elts":[],"ctx":"Load"}},"filename":"hello.k","line":3,"column":4,"end_line":3,"end_column":6}]}},"filename":"hello.k","line":3,"column":4,"end_line":3,"end_column":6},{"node":{"Expr":{"exprs":[{"node":{"List":{"elts":[{"node":{"NumberLit":{"binary_suffix":null,"value":{"Int":1}}},"filename":"hello.k","line":4,"column":5,"end_line":4,"end_column":6},{"node":{"NumberLit":{"binary_suffix":null,"value":{"Int":2}}},"filename":"hello.k","line":5,"column":4,"end_line":5,"end_column":5}],"ctx":"Load"}},"filename":"hello.k","line":4,"column":4,"end_line":6,"end_column":5}]}},"filename":"hello.k","line":4,"column":4,"end_line":6,"end_column":5}],"decorators":[],"checks":[],"index_signature":{"node":{"key_name":null,"key_type":{"node":"str","filename":"hello.k","line":7,"column":5,"end_line":7,"end_column":8},"value_type":{"node":"int","filename":"hello.k","line":7,"column":15,"end_line":7,"end_column":18},"value":null,"any_other":false,"value_ty":{"node":{"Basic":"Int"},"filename":"hello.k","line":7,"column":15,"end_line":7,"end_column":18}},"filename":"hello.k","line":7,"column":4,"end_line":8,"end_column":0}}},"filename":"hello.k","line":2,"column":0,"end_line":8,"end_column":8}],"comments":[]}
+        {"filename":"hello.k","pkg":"__main__","doc":"","name":"__main__","body":[{"node":{"Schema":{"doc":"","name":{"node":"TestBool","filename":"hello.k","line":2,"column":7,"end_line":2,"end_column":15},"parent_name":null,"for_host_name":null,"is_mixin":false,"is_protocol":false,"args":null,"mixins":[],"body":[{"node":{"Expr":{"exprs":[{"node":{"List":{"elts":[],"ctx":"Load"}},"filename":"hello.k","line":3,"column":4,"end_line":3,"end_column":6}]}},"filename":"hello.k","line":3,"column":4,"end_line":3,"end_column":6}],"decorators":[],"checks":[],"index_signature":{"node":{"key_name":null,"key_type":{"node":"str","filename":"hello.k","line":4,"column":5,"end_line":4,"end_column":8},"value_type":{"node":"int","filename":"hello.k","line":4,"column":15,"end_line":4,"end_column":18},"value":null,"any_other":false,"value_ty":{"node":{"Basic":"Int"},"filename":"hello.k","line":4,"column":15,"end_line":4,"end_column":18}},"filename":"hello.k","line":4,"column":4,"end_line":5,"end_column":0}}},"filename":"hello.k","line":2,"column":0,"end_line":5,"end_column":8}],"comments":[]}
         "#]],
     );
 }
@@ -1164,6 +1161,66 @@ fn expr_with_bracket3() {
 }
 
 #[test]
+fn expr_with_bracket4() {
+    check_parsing_expr(
+        r####"[2,3"####,
+        expect![[r#"
+        Node { node: List(ListExpr { elts: [Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(2) }), filename: "", line: 1, column: 1, end_line: 1, end_column: 2 }, Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(3) }), filename: "", line: 1, column: 3, end_line: 1, end_column: 4 }], ctx: Load }), filename: "", line: 1, column: 0, end_line: 1, end_column: 4 }
+        "#]],
+    );
+}
+
+#[test]
+fn expr_with_bracket5() {
+    check_parsing_expr(
+        r####"["####,
+        expect![[r#"
+        Node { node: List(ListExpr { elts: [], ctx: Load }), filename: "", line: 1, column: 0, end_line: 1, end_column: 1 }
+        "#]],
+    );
+}
+
+#[test]
+fn expr_with_bracket6() {
+    check_parsing_expr(
+        r####"[
+    1
+    2,
+]
+        "####,
+        expect![[r#"
+        Node { node: List(ListExpr { elts: [Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(1) }), filename: "", line: 2, column: 4, end_line: 2, end_column: 5 }, Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(2) }), filename: "", line: 3, column: 4, end_line: 3, end_column: 5 }], ctx: Load }), filename: "", line: 1, column: 0, end_line: 4, end_column: 1 }
+        "#]],
+    );
+}
+
+#[test]
+fn expr_with_bracket7() {
+    check_parsing_expr(
+        r####"[
+    1,2,
+]
+        "####,
+        expect![[r#"
+        Node { node: List(ListExpr { elts: [Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(1) }), filename: "", line: 2, column: 4, end_line: 2, end_column: 5 }, Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(2) }), filename: "", line: 2, column: 6, end_line: 2, end_column: 7 }], ctx: Load }), filename: "", line: 1, column: 0, end_line: 3, end_column: 1 }
+        "#]],
+    );
+}
+
+#[test]
+fn expr_with_bracket8() {
+    check_parsing_expr(
+        r####"[
+    1,2,
+
+        "####,
+        expect![[r#"
+        Node { node: List(ListExpr { elts: [Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(1) }), filename: "", line: 2, column: 4, end_line: 2, end_column: 5 }, Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(2) }), filename: "", line: 2, column: 6, end_line: 2, end_column: 7 }], ctx: Load }), filename: "", line: 1, column: 0, end_line: 4, end_column: 8 }
+        "#]],
+    );
+}
+
+#[test]
 fn expr_with_brace1() {
     check_parsing_expr(
         r####"{a=2}"####,
@@ -1229,6 +1286,40 @@ fn expr_with_delim5() {
         r####"({a=[2}"####,
         expect![[r#"
         Node { node: Paren(ParenExpr { expr: Node { node: Config(ConfigExpr { items: [Node { node: ConfigEntry { key: Some(Node { node: Identifier(Identifier { names: ["a"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 2, end_line: 1, end_column: 3 }), value: Node { node: List(ListExpr { elts: [Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(2) }), filename: "", line: 1, column: 5, end_line: 1, end_column: 6 }], ctx: Load }), filename: "", line: 1, column: 4, end_line: 1, end_column: 7 }, operation: Override, insert_index: -1 }, filename: "", line: 1, column: 2, end_line: 1, end_column: 7 }] }), filename: "", line: 1, column: 1, end_line: 1, end_column: 7 } }), filename: "", line: 1, column: 0, end_line: 1, end_column: 7 }
+        "#]],
+    );
+}
+
+#[test]
+fn expr_with_delim6() {
+    check_parsing_expr(
+        r####"{"####,
+        expect![[r#"
+        Node { node: Config(ConfigExpr { items: [] }), filename: "", line: 1, column: 0, end_line: 1, end_column: 1 }
+        "#]],
+    );
+}
+
+#[test]
+fn expr_with_delim7() {
+    check_parsing_expr(
+        r####"{
+    a = 1
+}"####,
+        expect![[r#"
+        Node { node: Config(ConfigExpr { items: [Node { node: ConfigEntry { key: Some(Node { node: Identifier(Identifier { names: ["a"], pkgpath: "", ctx: Load }), filename: "", line: 2, column: 4, end_line: 2, end_column: 5 }), value: Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(1) }), filename: "", line: 2, column: 8, end_line: 2, end_column: 9 }, operation: Override, insert_index: -1 }, filename: "", line: 2, column: 4, end_line: 2, end_column: 9 }] }), filename: "", line: 1, column: 0, end_line: 3, end_column: 1 }
+        "#]],
+    );
+}
+
+#[test]
+fn expr_with_delim8() {
+    check_parsing_expr(
+        r####"{
+    a = 1
+"####,
+        expect![[r#"
+        Node { node: Config(ConfigExpr { items: [Node { node: ConfigEntry { key: Some(Node { node: Identifier(Identifier { names: ["a"], pkgpath: "", ctx: Load }), filename: "", line: 2, column: 4, end_line: 2, end_column: 5 }), value: Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(1) }), filename: "", line: 2, column: 8, end_line: 2, end_column: 9 }, operation: Override, insert_index: -1 }, filename: "", line: 2, column: 4, end_line: 2, end_column: 9 }] }), filename: "", line: 1, column: 0, end_line: 2, end_column: 10 }
         "#]],
     );
 }
