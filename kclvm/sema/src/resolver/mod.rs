@@ -84,7 +84,7 @@ impl<'ctx> Resolver<'ctx> {
         ProgramScope {
             scope_map: self.scope_map.clone(),
             import_names: self.ctx.import_names.clone(),
-            diagnostics: self.handler.diagnostics.clone(),
+            handler: self.handler.clone(),
         }
     }
 
@@ -92,7 +92,7 @@ impl<'ctx> Resolver<'ctx> {
         let mut scope = self.check(pkgpath);
         self.lint_check_scope_map();
         for diag in &self.linter.handler.diagnostics {
-            scope.diagnostics.insert(diag.clone());
+            scope.handler.diagnostics.insert(diag.clone());
         }
         scope
     }

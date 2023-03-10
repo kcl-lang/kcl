@@ -1,11 +1,11 @@
 use std::collections::HashSet;
 
+use compiler_base_macros::bug;
 use kclvm_ast::{
     ast::{self, CallExpr},
     token::{DelimToken, TokenKind},
     walker::MutSelfTypedResultWalker,
 };
-use kclvm_error::bug;
 
 use super::{Indentation, Printer};
 

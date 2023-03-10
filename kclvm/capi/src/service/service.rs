@@ -93,7 +93,7 @@ impl KclvmService {
         let kcl_paths_str = kcl_paths.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
         let mut result = ExecProgram_Result::default();
         let sess = Arc::new(Session::default());
-        let mut program = load_program(sess, &kcl_paths_str.as_slice(), Some(opts))?;
+        let mut program = load_program(sess.clone(), &kcl_paths_str.as_slice(), Some(opts))?;
 
         if let Err(err) = apply_overrides(
             &mut program,
@@ -105,7 +105,7 @@ impl KclvmService {
         }
 
         let start_time = SystemTime::now();
-        let exec_result = kclvm_runner::execute(program, self.plugin_agent, &native_args);
+        let exec_result = kclvm_runner::execute(sess, program, self.plugin_agent, &native_args);
         let escape_time = match SystemTime::now().duration_since(start_time) {
             Ok(dur) => dur.as_secs_f32(),
             Err(err) => return Err(err.to_string()),

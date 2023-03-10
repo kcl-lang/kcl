@@ -25,7 +25,7 @@ pub fn lint_command(matches: &ArgMatches) -> Result<()> {
     (err_handler.diagnostics, warning_handler.diagnostics) =
         lint_files(&files, Some(args.get_load_program_options()));
     if matches.occurrences_of("emit_warning") > 0 {
-        warning_handler.emit();
+        warning_handler.emit()?;
     }
     err_handler.abort_if_any_errors();
     Ok(())

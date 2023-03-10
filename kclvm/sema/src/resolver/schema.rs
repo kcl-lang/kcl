@@ -7,7 +7,7 @@ use crate::resolver::Resolver;
 use crate::ty::{Decorator, DecoratorTarget, TypeKind};
 use kclvm_ast::ast;
 use kclvm_ast::walker::MutSelfTypedResultWalker;
-use kclvm_error::Position;
+use kclvm_error::{ErrorKind, Message, Position, Style};
 
 use super::node::ResolvedResult;
 use super::scope::{ScopeKind, ScopeObject, ScopeObjectKind};
@@ -18,7 +18,20 @@ impl<'ctx> Resolver<'ctx> {
         schema_stmt: &'ctx ast::SchemaStmt,
     ) -> ResolvedResult {
         let ty = self.lookup_type_from_scope(&schema_stmt.name.node, schema_stmt.name.get_pos());
-        let scope_ty = ty.into_schema_type();
+        let scope_ty = if ty.is_schema() {
+            ty.into_schema_type()
+        } else {
+            self.handler.add_error(
+                ErrorKind::TypeError,
+                &[Message {
+                    pos: schema_stmt.get_pos(),
+                    style: Style::LineAndColumn,
+                    message: format!("expect schema type, got {}", ty.ty_str()),
+                    note: None,
+                }],
+            );
+            return ty;
+        };
         self.ctx.schema = Some(Rc::new(RefCell::new(scope_ty.clone())));
         let (start, end) = schema_stmt.get_span_pos();
         self.do_parameters_check(&schema_stmt.args);
@@ -92,7 +105,20 @@ impl<'ctx> Resolver<'ctx> {
 
     pub(crate) fn resolve_rule_stmt(&mut self, rule_stmt: &'ctx ast::RuleStmt) -> ResolvedResult {
         let ty = self.lookup_type_from_scope(&rule_stmt.name.node, rule_stmt.name.get_pos());
-        let scope_ty = ty.into_schema_type();
+        let scope_ty = if ty.is_schema() {
+            ty.into_schema_type()
+        } else {
+            self.handler.add_error(
+                ErrorKind::TypeError,
+                &[Message {
+                    pos: rule_stmt.get_pos(),
+                    style: Style::LineAndColumn,
+                    message: format!("expect rule type, got {}", ty.ty_str()),
+                    note: None,
+                }],
+            );
+            return ty;
+        };
         self.ctx.schema = Some(Rc::new(RefCell::new(scope_ty.clone())));
         let (start, end) = rule_stmt.get_span_pos();
         self.do_parameters_check(&rule_stmt.args);

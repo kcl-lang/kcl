@@ -563,11 +563,7 @@ impl<'a> Parser<'a> {
                 }
             }
             _ => self.sess.struct_token_error(
-                &[
-                    TokenKind::ident_value(),
-                    TokenKind::literal_value(),
-                    TokenKind::OpenDelim(DelimToken::NoDelim).into(),
-                ],
+                &[TokenKind::ident_value(), TokenKind::literal_value()],
                 self.token,
             ),
         }
@@ -769,11 +765,7 @@ impl<'a> Parser<'a> {
                 }
             }
             _ => self.sess.struct_token_error(
-                &[
-                    TokenKind::ident_value(),
-                    TokenKind::literal_value(),
-                    TokenKind::OpenDelim(DelimToken::NoDelim).into(),
-                ],
+                &[TokenKind::ident_value(), TokenKind::literal_value()],
                 self.token,
             ),
         }

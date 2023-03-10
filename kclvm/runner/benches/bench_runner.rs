@@ -1,8 +1,10 @@
 use std::path::Path;
+use std::sync::Arc;
 
 use criterion::{criterion_group, criterion_main, Criterion};
 use walkdir::WalkDir;
 
+use compiler_base_session::Session;
 use kclvm_parser::load_program;
 use kclvm_runner::{execute, runner::ExecProgramArgs};
 
@@ -34,7 +36,7 @@ fn exec(file: &str) -> Result<String, String> {
     let plugin_agent = 0;
     let opts = args.get_load_program_options();
     // Load AST program
-    let program = load_program(&[file], Some(opts)).unwrap();
+    let program = load_program(Arc::new(Session::default()), &[file], Some(opts)).unwrap();
     // Resolve ATS, generate libs, link libs and execute.
     execute(program, plugin_agent, &args)
 }

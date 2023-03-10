@@ -8,4 +8,4 @@ pub mod resolver;
 pub mod ty;
 
 #[macro_use]
-extern crate kclvm_error;
+extern crate compiler_base_macros;

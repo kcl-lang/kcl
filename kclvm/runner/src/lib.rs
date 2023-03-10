@@ -108,7 +108,7 @@ pub fn exec_program(
     }
 
     let start_time = SystemTime::now();
-    let exec_result = execute(program, plugin_agent, args);
+    let exec_result = execute(sess, program, plugin_agent, args);
     let escape_time = match SystemTime::now().duration_since(start_time) {
         Ok(dur) => dur.as_secs_f32(),
         Err(err) => return Err(err.to_string()),
@@ -183,20 +183,21 @@ pub fn exec_program(
 ///
 /// // Parse kcl file
 /// let kcl_path = "./src/test_datas/init_check_order_0/main.k";
-/// let prog = load_program(sess, &[kcl_path], Some(opts)).unwrap();
+/// let prog = load_program(sess.clone(), &[kcl_path], Some(opts)).unwrap();
 ///     
 /// // Resolve ast, generate libs, link libs and execute.
 /// // Result is the kcl in json format.
-/// let result = execute(prog, plugin_agent, &args).unwrap();
+/// let result = execute(sess, prog, plugin_agent, &args).unwrap();
 /// ```
 pub fn execute(
+    sess: Arc<Session>,
     mut program: Program,
     plugin_agent: u64,
     args: &ExecProgramArgs,
 ) -> Result<String, String> {
     // Resolve ast
     let scope = resolve_program(&mut program);
-    scope.alert_scope_diagnostics()?;
+    scope.alert_scope_diagnostics_with_session(sess)?;
 
     // Create a temp entry file and the temp dir will be delete automatically
     let temp_dir = tempdir().unwrap();
@@ -254,7 +255,12 @@ pub fn execute_module(mut m: Module) -> Result<String, String> {
         cmd_overrides: vec![],
     };
 
-    execute(prog, 0, &ExecProgramArgs::default())
+    execute(
+        Arc::new(Session::default()),
+        prog,
+        0,
+        &ExecProgramArgs::default(),
+    )
 }
 
 /// Clean all the tmp files generated during lib generating and linking.

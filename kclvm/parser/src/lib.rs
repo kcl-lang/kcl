@@ -10,11 +10,11 @@ mod tests;
 extern crate kclvm_error;
 
 use crate::session::ParseSession;
+use compiler_base_macros::bug;
 use compiler_base_session::Session;
 use compiler_base_span::span::new_byte_pos;
 use kclvm_ast::ast;
 use kclvm_config::modfile::KCL_FILE_SUFFIX;
-use kclvm_error::bug;
 use kclvm_runtime::PanicInfo;
 use kclvm_sema::plugin::PLUGIN_MODULE_PREFIX;
 use kclvm_utils::path::PathPrefix;

@@ -1,3 +1,4 @@
+use compiler_base_macros::bug;
 use indexmap::IndexMap;
 use kclvm_ast::ast::{self, Program};
 use kclvm_compiler::codegen::{
@@ -5,7 +6,6 @@ use kclvm_compiler::codegen::{
     EmitOptions,
 };
 use kclvm_config::cache::{load_pkg_cache, save_pkg_cache, CacheOption};
-use kclvm_error::bug;
 use kclvm_sema::resolver::scope::ProgramScope;
 use std::{
     collections::HashMap,

@@ -215,7 +215,7 @@ fn execute_for_test(kcl_path: &String) -> String {
     // Parse kcl file
     let program = load_test_program(kcl_path.to_string());
     // Generate libs, link libs and execute.
-    execute(program, plugin_agent, &args).unwrap()
+    execute(Arc::new(Session::default()), program, plugin_agent, &args).unwrap()
 }
 
 fn gen_assembler(entry_file: &str, test_kcl_case_path: &str) -> KclvmAssembler {
@@ -565,7 +565,7 @@ fn exec(file: &str) -> Result<String, String> {
     // Load AST program
     let program = load_program(sess.clone(), &[file], Some(opts)).unwrap();
     // Resolve ATS, generate libs, link libs and execute.
-    execute(program, plugin_agent, &args)
+    execute(sess, program, plugin_agent, &args)
 }
 
 /// Run all kcl files at path and compare the exec result with the expect output.

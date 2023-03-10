@@ -1,9 +1,9 @@
+use compiler_base_session::Session;
 use indexmap::IndexMap;
-use indexmap::IndexSet;
 use kclvm_ast::{ast, MAIN_PKG};
-use kclvm_error::Diagnostic;
 use kclvm_error::Handler;
 
+use std::sync::Arc;
 use std::{
     cell::RefCell,
     rc::{Rc, Weak},
@@ -199,7 +199,7 @@ impl Scope {
 pub struct ProgramScope {
     pub scope_map: IndexMap<String, Rc<RefCell<Scope>>>,
     pub import_names: IndexMap<String, IndexMap<String, String>>,
-    pub diagnostics: IndexSet<Diagnostic>,
+    pub handler: Handler,
 }
 
 impl ProgramScope {
@@ -217,13 +217,19 @@ impl ProgramScope {
 
     /// Return diagnostic json string but do not abort if exist any diagnostic.
     pub fn alert_scope_diagnostics(&self) -> Result<(), String> {
-        if !self.diagnostics.is_empty() {
-            let mut err_handler = Handler::default();
-            err_handler.diagnostics = self.diagnostics.clone();
-            err_handler.alert_if_any_errors()
+        if !self.handler.diagnostics.is_empty() {
+            self.handler.alert_if_any_errors()
         } else {
             Ok(())
         }
+    }
+
+    /// Return diagnostic json using session string but do not abort if exist any diagnostic.
+    pub fn alert_scope_diagnostics_with_session(&self, sess: Arc<Session>) -> Result<(), String> {
+        for diag in &self.handler.diagnostics {
+            sess.add_err(diag.clone()).unwrap();
+        }
+        self.alert_scope_diagnostics()
     }
 }
 
