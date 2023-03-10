@@ -1,7 +1,7 @@
 use anyhow::Result;
 use clap::ArgMatches;
 use compiler_base_session::Session;
-use kclvm_error::Handler;
+use kclvm_error::Diagnostic;
 use kclvm_runner::exec_program;
 use kclvm_runtime::PanicInfo;
 use std::sync::Arc;
@@ -22,13 +22,8 @@ pub fn run_command(matches: &ArgMatches) -> Result<()> {
             None => println!("{}", result.yaml_result),
         },
         Err(msg) => {
-            if sess.diag_handler.has_errors()? {
-                sess.emit_stashed_diagnostics_and_abort()?;
-            } else {
-                Handler::default()
-                    .add_panic_info(&PanicInfo::from(msg))
-                    .abort_if_any_errors();
-            }
+            sess.add_err(<PanicInfo as Into<Diagnostic>>::into(PanicInfo::from(msg)))?;
+            sess.emit_stashed_diagnostics_and_abort()?;
         }
     }
     Ok(())

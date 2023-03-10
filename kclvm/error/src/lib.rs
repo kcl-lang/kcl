@@ -296,11 +296,28 @@ impl ParseError {
     }
 }
 
+impl ParseError {
+    /// Convert a parse error into a error diagnostic.
+    pub fn into_diag(self, sess: &Session) -> Result<Diagnostic> {
+        let span = match self {
+            ParseError::UnexpectedToken { span, .. } => span,
+            ParseError::Message { span, .. } => span,
+        };
+        let loc = sess.sm.lookup_char_pos(span.lo());
+        Ok(Diagnostic::new_with_code(
+            Level::Error,
+            &self.to_string(),
+            loc.into(),
+            Some(DiagnosticId::Error(ErrorKind::InvalidSyntax)),
+        ))
+    }
+}
+
 impl ToString for ParseError {
     fn to_string(&self) -> String {
         match self {
             ParseError::UnexpectedToken { expected, got, .. } => {
-                format!("unexpected one of {expected:?} got {got}")
+                format!("expected one of {expected:?} got {got}")
             }
             ParseError::Message { message, .. } => message.to_string(),
         }
@@ -311,18 +328,12 @@ impl SessionDiagnostic for ParseError {
     fn into_diagnostic(self, sess: &Session) -> Result<DiagnosticTrait<DiagnosticStyle>> {
         let mut diag = DiagnosticTrait::<DiagnosticStyle>::new();
         diag.append_component(Box::new(Label::Error(E1001.code.to_string())));
-        diag.append_component(Box::new(": invalid syntax".to_string()));
+        diag.append_component(Box::new(": invalid syntax\n".to_string()));
         match self {
-            ParseError::UnexpectedToken {
-                expected,
-                got,
-                span,
-            } => {
+            ParseError::UnexpectedToken { span, .. } => {
                 let code_snippet = CodeSnippet::new(span, Arc::clone(&sess.sm));
                 diag.append_component(Box::new(code_snippet));
-                diag.append_component(Box::new(format!(
-                    " expected one of {expected:?} got {got}\n"
-                )));
+                diag.append_component(Box::new(format!(" {}\n", self.to_string())));
                 Ok(diag)
             }
             ParseError::Message { message, span } => {
@@ -379,10 +390,17 @@ impl SessionDiagnostic for Diagnostic {
                                     origin: Some(&msg.pos.filename),
                                     annotations: vec![SourceAnnotation {
                                         range: match msg.pos.column {
-                                            Some(column) => {
-                                                (column as usize, (column + 1) as usize)
+                                            Some(column) if content.len() >= 1 => {
+                                                let column = column as usize;
+                                                // If the position exceeds the length of the content,
+                                                // put the annotation at the end of the line.
+                                                if column >= content.len() {
+                                                    (content.len() - 1, content.len())
+                                                } else {
+                                                    (column, column + 1)
+                                                }
                                             }
-                                            None => (0, 0),
+                                            _ => (0, 0),
                                         },
                                         label: &msg.message,
                                         annotation_type: AnnotationType::Error,

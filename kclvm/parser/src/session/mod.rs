@@ -51,13 +51,13 @@ impl ParseSession {
     }
 
     /// Struct and report an error based on a token and not abort the compiler process.
+    #[inline]
     pub fn struct_token_error_recovery(&self, expected: &[String], got: Token) {
-        let err = ParseError::UnexpectedToken {
+        self.add_parse_err(ParseError::UnexpectedToken {
             expected: expected.iter().map(|tok| tok.into()).collect(),
             got: got.into(),
             span: got.span,
-        };
-        self.0.add_err(err).unwrap();
+        });
     }
 
     /// Struct and report an error based on a span and abort the compiler process.
@@ -69,12 +69,16 @@ impl ParseSession {
     /// Struct and report an error based on a span and not abort the compiler process.
     #[inline]
     pub fn struct_span_error_recovery(&self, msg: &str, span: Span) {
-        self.0
-            .add_err(ParseError::Message {
-                message: msg.to_string(),
-                span,
-            })
-            .unwrap();
+        self.add_parse_err(ParseError::Message {
+            message: msg.to_string(),
+            span,
+        });
+    }
+
+    /// Add a error into the session.
+    #[inline]
+    fn add_parse_err(&self, err: ParseError) {
+        self.0.add_err(err.into_diag(&self.0).unwrap()).unwrap();
     }
 
     /// Parser panic with message and span.

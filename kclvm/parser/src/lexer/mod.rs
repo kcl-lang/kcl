@@ -383,7 +383,7 @@ impl<'a> Lexer<'a> {
                     // error recovery
                     token::OpenDelim(token::Brace) => {
                         self.sess.struct_span_error_recovery(
-                            "error nesting on close bracket",
+                            "mismatched closing delimiter",
                             self.span(start, self.pos),
                         );
                         token::CloseDelim(token::Brace)
@@ -391,7 +391,7 @@ impl<'a> Lexer<'a> {
                     // error recovery
                     token::OpenDelim(token::Paren) => {
                         self.sess.struct_span_error_recovery(
-                            "error nesting on close bracket",
+                            "mismatched closing delimiter",
                             self.span(start, self.pos),
                         );
                         token::CloseDelim(token::Paren)
@@ -402,7 +402,7 @@ impl<'a> Lexer<'a> {
                 // error recovery
                 None => {
                     self.sess.struct_span_error_recovery(
-                        "error nesting on close bracket",
+                        "mismatched closing delimiter",
                         self.span(start, self.pos),
                     );
                     token::CloseDelim(token::Bracket)
@@ -469,7 +469,7 @@ impl<'a> Lexer<'a> {
                 ) {
                     Some(v) => v,
                     None => self.sess.struct_span_error(
-                        "Invalid string syntax",
+                        "invalid string syntax",
                         self.span(content_start, self.pos),
                     ),
                 };
@@ -625,39 +625,6 @@ impl<'a> Lexer<'a> {
     }
 
     fn eof(&mut self, buf: &mut TokenStreamBuilder) {
-        let start = self.pos;
-
-        if !self.indent_cxt.delims.is_empty() {
-            self.sess.struct_span_error_recovery(
-                "Unclosed nesting at the end of the file",
-                self.span(start, self.pos),
-            );
-
-            // Add CloseDelims
-            while !self.indent_cxt.delims.is_empty() {
-                match self.indent_cxt.delims.pop() {
-                    Some(token::OpenDelim(token::Paren)) => buf.push(Token::new(
-                        token::CloseDelim(token::Paren),
-                        self.span(self.pos, self.pos),
-                    )),
-                    Some(token::OpenDelim(token::Brace)) => buf.push(Token::new(
-                        token::CloseDelim(token::Brace),
-                        self.span(self.pos, self.pos),
-                    )),
-                    Some(token::OpenDelim(token::Bracket)) => buf.push(Token::new(
-                        token::CloseDelim(token::Bracket),
-                        self.span(self.pos, self.pos),
-                    )),
-                    _ => {
-                        self.sess.struct_span_error_recovery(
-                            "Unknown delim at the end of the file",
-                            self.span(start, self.pos),
-                        );
-                    }
-                }
-            }
-        }
-
         if !self.indent_cxt.new_line_beginning {
             self.indent_cxt.new_line_beginning = true;
             buf.push(Token::new(token::Newline, self.span(self.pos, self.pos)));
