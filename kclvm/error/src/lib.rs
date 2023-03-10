@@ -66,7 +66,7 @@ impl Handler {
     pub fn emit(&mut self) -> Result<bool> {
         let sess = Session::default();
         for diag in &self.diagnostics {
-            sess.add_err(diag.clone()).unwrap();
+            sess.add_err(diag.clone())?;
         }
         sess.emit_stashed_diagnostics()?;
         Ok(self.has_errors())
@@ -364,37 +364,47 @@ impl SessionDiagnostic for Diagnostic {
         // Append a new line.
         diag.append_component(Box::new(String::from("\n")));
         for msg in &self.messages {
-            let sess = Session::new_with_file_and_code(&msg.pos.filename, None)?;
-            let source = sess.sm.lookup_source_file(new_byte_pos(0));
-            let line = source.get_line((msg.pos.line - 1) as usize);
-            let content = line
-                .as_ref()
-                .ok_or(anyhow::anyhow!("Failed to load source file"))?;
-            let snippet = Snippet {
-                title: None,
-                footer: vec![],
-                slices: vec![Slice {
-                    source: content,
-                    line_start: msg.pos.line as usize,
-                    origin: Some(&msg.pos.filename),
-                    annotations: vec![SourceAnnotation {
-                        range: match msg.pos.column {
-                            Some(column) => (column as usize, (column + 1) as usize),
-                            None => (0, 0),
-                        },
-                        label: &msg.message,
-                        annotation_type: AnnotationType::Error,
-                    }],
-                    fold: true,
-                }],
-                opt: FormatOptions {
-                    color: true,
-                    anonymized_line_numbers: false,
-                    margin: None,
-                },
+            match Session::new_with_file_and_code(&msg.pos.filename, None) {
+                Ok(sess) => {
+                    let source = sess.sm.lookup_source_file(new_byte_pos(0));
+                    let line = source.get_line((msg.pos.line - 1) as usize);
+                    match line.as_ref() {
+                        Some(content) => {
+                            let snippet = Snippet {
+                                title: None,
+                                footer: vec![],
+                                slices: vec![Slice {
+                                    source: content,
+                                    line_start: msg.pos.line as usize,
+                                    origin: Some(&msg.pos.filename),
+                                    annotations: vec![SourceAnnotation {
+                                        range: match msg.pos.column {
+                                            Some(column) => {
+                                                (column as usize, (column + 1) as usize)
+                                            }
+                                            None => (0, 0),
+                                        },
+                                        label: &msg.message,
+                                        annotation_type: AnnotationType::Error,
+                                    }],
+                                    fold: true,
+                                }],
+                                opt: FormatOptions {
+                                    color: true,
+                                    anonymized_line_numbers: false,
+                                    margin: None,
+                                },
+                            };
+                            let dl = DisplayList::from(snippet);
+                            diag.append_component(Box::new(format!("{dl}\n")));
+                        }
+                        None => {
+                            diag.append_component(Box::new(format!("{}\n", msg.message)));
+                        }
+                    };
+                }
+                Err(_) => diag.append_component(Box::new(format!("{}\n", msg.message))),
             };
-            let dl = DisplayList::from(snippet);
-            diag.append_component(Box::new(format!("{dl}\n")));
             if let Some(note) = &msg.note {
                 diag.append_component(Box::new(Label::Note));
                 diag.append_component(Box::new(format!(": {}\n", note)));
