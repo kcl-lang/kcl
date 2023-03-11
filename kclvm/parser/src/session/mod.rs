@@ -1,3 +1,5 @@
+use anyhow::Result;
+use compiler_base_macros::bug;
 use compiler_base_session::Session;
 use kclvm_ast::token::Token;
 use kclvm_error::{ParseError, Position};
@@ -78,7 +80,16 @@ impl ParseSession {
     /// Add a error into the session.
     #[inline]
     fn add_parse_err(&self, err: ParseError) {
-        self.0.add_err(err.into_diag(&self.0).unwrap()).unwrap();
+        let add_error = || -> Result<()> {
+            self.0.add_err(err.into_diag(&self.0)?)?;
+            Ok(())
+        };
+        if let Err(err) = add_error() {
+            bug!(
+                "compiler session internal error occurs: {}",
+                err.to_string()
+            )
+        }
     }
 
     /// Parser panic with message and span.

@@ -1313,6 +1313,7 @@ dependencies = [
 name = "kclvm-parser"
 version = "0.4.5"
 dependencies = [
+ "anyhow",
  "bstr",
  "compiler_base_error",
  "compiler_base_macros",
