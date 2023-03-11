@@ -882,13 +882,13 @@ impl<'a> Parser<'a> {
     /// Syntax:
     /// list_items: expr ((COMMA [NEWLINE] | NEWLINE) expr)* [COMMA] [NEWLINE]
     pub(crate) fn parse_list_items(&mut self, has_newline: bool) -> Vec<NodeRef<Expr>> {
-        let is_terminal_token = |token: &kclvm_ast::token::Token| match &token.kind {
+        let is_terminator = |token: &kclvm_ast::token::Token| match &token.kind {
             TokenKind::CloseDelim(DelimToken::Bracket) | TokenKind::Dedent | TokenKind::Eof => true,
             TokenKind::Newline if !has_newline => true,
             _ => token.is_keyword(kw::For),
         };
 
-        if is_terminal_token(&self.token) {
+        if is_terminator(&self.token) {
             return Vec::new();
         }
 
@@ -900,7 +900,7 @@ impl<'a> Parser<'a> {
             self.skip_newlines();
         }
         loop {
-            if is_terminal_token(&self.token) {
+            if is_terminator(&self.token) {
                 break;
             }
             if let TokenKind::Comma = self.token.kind {
@@ -1190,13 +1190,13 @@ impl<'a> Parser<'a> {
     /// Syntax:
     /// config_entries: config_entry ((COMMA [NEWLINE] | NEWLINE) config_entry)* [COMMA] [NEWLINE]
     fn parse_config_entries(&mut self, has_newline: bool) -> Vec<NodeRef<ConfigEntry>> {
-        let is_terminal_token = |token: &kclvm_ast::token::Token| match &token.kind {
+        let is_terminator = |token: &kclvm_ast::token::Token| match &token.kind {
             TokenKind::CloseDelim(DelimToken::Brace) | TokenKind::Dedent | TokenKind::Eof => true,
             TokenKind::Newline if !has_newline => true,
             _ => token.is_keyword(kw::For),
         };
 
-        if is_terminal_token(&self.token) {
+        if is_terminator(&self.token) {
             return Vec::new();
         }
 
@@ -1209,7 +1209,7 @@ impl<'a> Parser<'a> {
         }
 
         loop {
-            if is_terminal_token(&self.token) {
+            if is_terminator(&self.token) {
                 break;
             }
             if let TokenKind::Comma = self.token.kind {
