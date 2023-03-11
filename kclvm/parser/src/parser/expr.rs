@@ -1266,14 +1266,17 @@ impl<'a> Parser<'a> {
                         TokenKind::BinOpEq(BinOpToken::Plus) => {
                             operation = ConfigEntryOperation::Insert;
                         }
-                        _ => self.sess.struct_token_error(
-                            &[
-                                TokenKind::Colon.into(),
-                                TokenKind::Assign.into(),
-                                TokenKind::BinOpEq(BinOpToken::Plus).into(),
-                            ],
-                            self.token,
-                        ),
+                        _ => {
+                            self.sess.struct_token_error_recovery(
+                                &[
+                                    TokenKind::Colon.into(),
+                                    TokenKind::Assign.into(),
+                                    TokenKind::BinOpEq(BinOpToken::Plus).into(),
+                                ],
+                                self.token,
+                            );
+                            operation = ConfigEntryOperation::Override;
+                        }
                     }
                     self.bump();
                     value = self.parse_expr();

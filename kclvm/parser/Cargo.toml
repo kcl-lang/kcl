@@ -33,3 +33,4 @@ kclvm-utils = {path = "../utils", version = "0.4.5"}
 
 [dev-dependencies]
 expect-test = "1.0"
+insta = "1.8.0"
