@@ -157,7 +157,7 @@ impl Executor for TimeoutExecutor {
             running_task.join(&mut finished_task);
 
             let fail = match finished_task.status() {
-                TaskStatus::Failed(_) => true,
+                // Only a bug will stop the testing process immediately,
                 TaskStatus::Bug(_) => {
                     std::mem::forget(rx);
                     bail!(

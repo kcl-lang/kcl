@@ -1,6 +1,9 @@
 //! This file provides everything to define a [`Task`] that an [`crate::executor::Executor`] can execute.
 use std::{fmt, sync::mpsc::Sender, thread};
+
+use serde::{Deserialize, Serialize};
 pub mod event;
+pub mod reporter;
 
 /// [`Task`] is the unit that [`crate::executor::Executor`] can execute concurrently.
 ///
@@ -74,7 +77,7 @@ pub trait Task {
     fn info(&self) -> TaskInfo;
 }
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub struct TaskInfo {
     tid: TaskId,
     tname: TaskName,
@@ -106,7 +109,7 @@ impl std::fmt::Display for TaskInfo {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 /// The ID for the [`Task`].
 /// [`TaskId`] will be used as the key of the [`HashMap`], [`TaskId`] is a type alias of [`usize`].
 /// so [`TaskID`] should be unique to each [`Task`].
@@ -131,7 +134,7 @@ impl std::fmt::Display for TaskId {
     }
 }
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 /// The name for the [`Task`].
 /// [`TaskName`] will be used to log displaying, [`TaskName`] is a type alias of [`String`].
 pub struct TaskName(String);
@@ -154,7 +157,7 @@ impl From<TaskName> for String {
     }
 }
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 /// [`TaskStatus`] is the execution status of [`Task`] and is part of the result returned.
 /// At present, it mainly includes three parts:
 /// - [`TaskStatus::Finished`]: The [`Task`] has been finished.
@@ -172,7 +175,26 @@ pub enum TaskStatus {
     Bug(String),
 }
 
-#[derive(Clone)]
+impl std::fmt::Display for TaskStatus {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            TaskStatus::Finished => {
+                write!(f, "{}", "finished")
+            }
+            TaskStatus::Waiting => {
+                write!(f, "{}", "waiting")
+            }
+            TaskStatus::Failed(reason) => {
+                write!(f, "{}:{}", "failed", reason)
+            }
+            TaskStatus::Bug(reason) => {
+                write!(f, "{}:{}", "bug", reason)
+            }
+        }
+    }
+}
+
+#[derive(Clone, Serialize, Deserialize)]
 /// [`FinishedTask`] represents the execution result of the [`Task`].
 pub struct FinishedTask {
     tinfo: TaskInfo,
@@ -194,10 +216,11 @@ impl std::fmt::Display for FinishedTask {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "{} finished\nstdout:{}\nstderr:{}\n",
+            "{} finished\nstdout:\n{}\nstderr:\n{}\nstatus:{}",
             self.tinfo(),
             String::from_utf8_lossy(&self.stdout()),
-            String::from_utf8_lossy(&self.stderr())
+            String::from_utf8_lossy(&self.stderr()),
+            self.status
         )
     }
 }
@@ -233,9 +256,25 @@ impl FinishedTask {
         self.stderr.clone()
     }
 
-    /// find a bug and set status.
+    /// Find a bug and set status.
     pub fn find_bug(&mut self, info: String) {
         self.status = TaskStatus::Bug(info)
+    }
+
+    /// Display the short message for [`FinishedTask`].
+    pub fn short_msg(&self) -> String {
+        format!("{} finished, status:{}\n", self.tinfo(), self.status)
+    }
+
+    /// Display the detailed message for [`FinishedTask`].
+    pub fn details(&self) -> String {
+        format!(
+            "\n{} finished\nstdout:{}\nstderr:{}\nstatus:{}\n",
+            self.tinfo(),
+            String::from_utf8_lossy(&self.stdout()),
+            String::from_utf8_lossy(&self.stderr()),
+            self.status
+        )
     }
 }
 

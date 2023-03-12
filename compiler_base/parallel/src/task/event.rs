@@ -2,9 +2,11 @@
 //! which tells the logging system to display information.
 use std::time::Duration;
 
+use serde::{Deserialize, Serialize};
+
 use super::{FinishedTask, TaskInfo};
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 /// [`TaskEvent`] is an event that triggers the log displaying.
 pub struct TaskEvent {
     tinfo: TaskInfo,
@@ -34,6 +36,14 @@ impl TaskEvent {
         self.ty.clone()
     }
 
+    /// New a [`TaskEvent`] with [TaskEventType::Start].
+    pub fn start(tinfo: TaskInfo) -> Self {
+        Self {
+            tinfo,
+            ty: TaskEventType::Start,
+        }
+    }
+
     /// New a [`TaskEvent`] with [TaskEventType::Wait].
     pub fn wait(tinfo: TaskInfo) -> Self {
         Self {
@@ -59,7 +69,7 @@ impl TaskEvent {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 /// [`TaskEventType`] is the event type of [`TaskEvent`].
 pub enum TaskEventType {
     Start,
@@ -71,10 +81,10 @@ pub enum TaskEventType {
 impl std::fmt::Display for TaskEventType {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            TaskEventType::Start => write!(f, "Start"),
-            TaskEventType::Wait => write!(f, "Waiting"),
-            TaskEventType::Timeout(t) => write!(f, "Timeout {}s", t.as_secs()),
-            TaskEventType::Finished(ft) => write!(f, "Finished {}", ft),
+            TaskEventType::Start => write!(f, "start"),
+            TaskEventType::Wait => write!(f, "waiting"),
+            TaskEventType::Timeout(t) => write!(f, "timeout {}s", t.as_secs()),
+            TaskEventType::Finished(ft) => write!(f, "finished {}", ft),
         }
     }
 }

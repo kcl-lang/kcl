@@ -15,7 +15,14 @@ mod test_timeout_executor {
 
     use crate::{
         executor::{timeout::TimeoutExecutor, Executor},
-        task::{event::TaskEvent, FinishedTask, Task, TaskInfo, TaskStatus},
+        task::{
+            event::TaskEvent,
+            reporter::{
+                file_reporter_init, report_event, report_event_details, report_event_short_message,
+                std_reporter_init,
+            },
+            FinishedTask, Task, TaskInfo, TaskStatus,
+        },
     };
 
     /// Prepare the expected events with stdout in the unit tests.
