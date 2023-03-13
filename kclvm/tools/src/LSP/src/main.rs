@@ -1,163 +1,71 @@
-use chrono::{Local, TimeZone};
-use indexmap::IndexSet;
-use kclvm_tools::lint::lint_files;
-use kclvm_tools::util::lsp::kcl_diag_to_lsp_diags;
-use tower_lsp::jsonrpc::Result;
-use tower_lsp::lsp_types::*;
-use tower_lsp::{Client, LanguageServer, LspService, Server};
+use config::Config;
+use lsp_server::Connection;
+use state::LanguageServerState;
 
-use kclvm_error::Diagnostic as KCLDiagnostic;
+mod analysis;
+mod capabilities;
+mod config;
+mod db;
+mod dispatcher;
+mod from_lsp;
+mod notification;
+mod state;
+mod to_lsp;
+mod util;
 
-#[derive(Debug)]
-struct Backend {
-    client: Client,
+use crate::util::from_json;
+
+/// Runs the main loop of the language server. This will receive requests and handle them.
+pub fn main_loop(connection: Connection, config: Config) -> anyhow::Result<()> {
+    LanguageServerState::new(connection.sender, config).run(connection.receiver)
 }
 
-struct TextDocumentItem {
-    uri: Url,
+/// Main entry point for the language server
+pub fn run_server() -> anyhow::Result<()> {
+    // Setup IO connections
+    let (connection, io_threads) = lsp_server::Connection::stdio();
+    // Wait for a client to connect
+    let (initialize_id, initialize_params) = connection.initialize_start()?;
+
+    let initialize_params =
+        from_json::<lsp_types::InitializeParams>("InitializeParams", initialize_params)?;
+
+    let server_capabilities = capabilities::server_capabilities(&initialize_params.capabilities);
+
+    let initialize_result = lsp_types::InitializeResult {
+        capabilities: server_capabilities,
+        server_info: Some(lsp_types::ServerInfo {
+            name: String::from("kcl-language-server"),
+            version: None,
+        }),
+    };
+
+    let initialize_result = serde_json::to_value(initialize_result)
+        .map_err(|_| anyhow::anyhow!("Initialize result error"))?;
+
+    connection.initialize_finish(initialize_id, initialize_result)?;
+
+    let config = Config::default();
+    main_loop(connection, config)?;
+    io_threads.join()?;
+    Ok(())
 }
 
-#[tower_lsp::async_trait]
-impl LanguageServer for Backend {
-    async fn initialize(&self, _: InitializeParams) -> Result<InitializeResult> {
-        Ok(InitializeResult {
-            server_info: None,
-            capabilities: ServerCapabilities {
-                text_document_sync: Some(TextDocumentSyncCapability::Kind(
-                    TextDocumentSyncKind::FULL,
-                )),
-                ..ServerCapabilities::default()
-            },
-        })
-    }
-
-    async fn initialized(&self, _: InitializedParams) {
-        self.client
-            .log_message(MessageType::INFO, "initialized!")
-            .await;
-    }
-
-    async fn shutdown(&self) -> Result<()> {
-        Ok(())
-    }
-
-    async fn did_open(&self, params: DidOpenTextDocumentParams) {
-        self.client
-            .log_message(MessageType::INFO, "file opened!")
-            .await;
-        self.on_change(TextDocumentItem {
-            uri: params.text_document.uri,
-        })
-        .await
-    }
-
-    async fn did_change(&self, params: DidChangeTextDocumentParams) {
-        self.on_change(TextDocumentItem {
-            uri: params.text_document.uri,
-        })
-        .await;
-        self.client
-            .log_message(MessageType::INFO, "file changed!")
-            .await;
-    }
-
-    async fn did_save(&self, params: DidSaveTextDocumentParams) {
-        self.on_change(TextDocumentItem {
-            uri: params.text_document.uri,
-        })
-        .await;
-
-        self.client
-            .log_message(MessageType::INFO, "file saved!")
-            .await;
-    }
-
-    async fn did_close(&self, _: DidCloseTextDocumentParams) {
-        self.client
-            .log_message(MessageType::INFO, "file closed!")
-            .await;
-    }
+#[derive(Copy, Debug, Clone, PartialEq, Eq)]
+pub enum ExitStatus {
+    Success,
+    Error,
 }
 
-impl Backend {
-    async fn on_change(&self, params: TextDocumentItem) {
-        self.client
-            .log_message(
-                MessageType::INFO,
-                format!(
-                    "Get request: {} ",
-                    Local
-                        .timestamp_millis_opt(Local::now().timestamp_millis())
-                        .unwrap()
-                ),
-            )
-            .await;
-        let uri = params.uri.clone();
-        let file_name = uri.path();
-        self.client
-            .log_message(MessageType::INFO, "on change")
-            .await;
-
-        self.client
-            .log_message(
-                MessageType::INFO,
-                format!(
-                    "Start lint: {} ",
-                    Local
-                        .timestamp_millis_opt(Local::now().timestamp_millis())
-                        .unwrap()
-                ),
-            )
-            .await;
-
-        let (errors, warnings) = lint_files(&[file_name], None);
-
-        self.client
-            .log_message(
-                MessageType::INFO,
-                format!(
-                    "End lint: {} ",
-                    Local
-                        .timestamp_millis_opt(Local::now().timestamp_millis())
-                        .unwrap()
-                ),
-            )
-            .await;
-        let diags: IndexSet<KCLDiagnostic> = errors
-            .iter()
-            .chain(warnings.iter())
-            .cloned()
-            .collect::<IndexSet<KCLDiagnostic>>();
-
-        let diagnostics = diags
-            .iter()
-            .map(|diag| kcl_diag_to_lsp_diags(diag, file_name))
-            .flatten()
-            .collect::<Vec<Diagnostic>>();
-
-        self.client
-            .publish_diagnostics(params.uri.clone(), diagnostics, None)
-            .await;
-        self.client
-            .log_message(
-                MessageType::INFO,
-                format!(
-                    "Response to client: {} ",
-                    Local
-                        .timestamp_millis_opt(Local::now().timestamp_millis())
-                        .unwrap()
-                ),
-            )
-            .await;
-    }
-}
-
-#[tokio::main]
-async fn main() {
-    let stdin = tokio::io::stdin();
-    let stdout = tokio::io::stdout();
-
-    let (service, socket) = LspService::new(|client| Backend { client });
-
-    Server::new(stdin, stdout, socket).serve(service).await;
+/// Main entry point for the `kcl-language-server` executable.
+fn main() -> Result<(), anyhow::Error> {
+    let status: Result<ExitStatus, anyhow::Error> = {
+        run_server().map_err(|e| anyhow::anyhow!("{}", e))?;
+        Ok(ExitStatus::Success)
+    };
+    match status.unwrap() {
+        ExitStatus::Success => {}
+        ExitStatus::Error => std::process::exit(1),
+    };
+    Ok(())
 }

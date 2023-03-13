@@ -1,5 +1,5 @@
-use crate::langserver;
-use crate::langserver::LineWord;
+use crate::find_ref;
+use crate::find_ref::LineWord;
 use kclvm_error::Position;
 
 #[cfg(test)]
@@ -10,7 +10,7 @@ mod tests {
     use std::{collections::HashMap, hash::Hash};
 
     fn check_line_to_words(code: &str, expect: Vec<LineWord>) {
-        assert_eq!(langserver::line_to_words(code.to_string()), expect);
+        assert_eq!(find_ref::line_to_words(code.to_string()), expect);
     }
 
     fn test_eq_list<T>(a: &[T], b: &[T]) -> bool
@@ -93,7 +93,7 @@ mod tests {
         // use std::env;
         // let parent_path = env::current_dir().unwrap();
         // println!("The current directory is {}", parent_path.display());
-        let path_prefix = "./src/langserver/".to_string();
+        let path_prefix = "./src/find_ref/".to_string();
         let datas = vec![
             Position {
                 filename: (path_prefix.clone() + "test_data/inherit.k"),
@@ -135,14 +135,14 @@ mod tests {
             None,
         ];
         for i in 0..datas.len() {
-            assert_eq!(langserver::word_at_pos(datas[i].clone()), expect[i]);
+            assert_eq!(find_ref::word_at_pos(datas[i].clone()), expect[i]);
         }
     }
 
     fn test_word_workspace() -> String {
         Path::new(".")
             .join("src")
-            .join("langserver")
+            .join("find_ref")
             .join("test_data")
             .join("test_word_workspace")
             .display()
@@ -181,7 +181,7 @@ mod tests {
         ]];
         for i in 0..datas.len() {
             assert!(test_eq_list(
-                &langserver::match_word(path.clone(), datas[i].clone()),
+                &find_ref::match_word(path.clone(), datas[i].clone()),
                 &except[i]
             ));
         }
@@ -190,7 +190,7 @@ mod tests {
     fn test_word_workspace_map() -> String {
         Path::new(".")
             .join("src")
-            .join("langserver")
+            .join("find_ref")
             .join("test_data")
             .join("test_word_workspace_map")
             .display()
@@ -200,7 +200,7 @@ mod tests {
     #[test]
     fn test_word_map() {
         let path = test_word_workspace_map();
-        let mut mp = langserver::word_map::WorkSpaceWordMap::new(path);
+        let mut mp = find_ref::word_map::WorkSpaceWordMap::new(path);
         mp.build();
         let _res = fs::rename(
             Path::new(&test_word_workspace_map())
