@@ -2,8 +2,9 @@ use parking_lot::RwLockReadGuard;
 use ra_ap_vfs::{FileId, Vfs};
 use serde::{de::DeserializeOwned, Serialize};
 
+#[allow(unused)]
 /// Deserializes a `T` from a json value.
-pub fn from_json<T: DeserializeOwned>(
+pub(crate) fn from_json<T: DeserializeOwned>(
     what: &'static str,
     json: serde_json::Value,
 ) -> anyhow::Result<T> {
@@ -12,7 +13,7 @@ pub fn from_json<T: DeserializeOwned>(
 }
 
 /// Converts the `T` to a json value
-pub fn to_json<T: Serialize>(value: T) -> anyhow::Result<serde_json::Value> {
+pub(crate) fn to_json<T: Serialize>(value: T) -> anyhow::Result<serde_json::Value> {
     serde_json::to_value(value).map_err(|e| anyhow::anyhow!("could not serialize to json: {}", e))
 }
 

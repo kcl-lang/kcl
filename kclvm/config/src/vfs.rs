@@ -57,7 +57,7 @@ pub fn fix_import_path(root: &str, filepath: &str, import_path: &str) -> String 
             dirpath.to_str().unwrap().to_string()
         };
 
-        let pkgpath = pkgpath.replace('/', ".").replace('\\', ".");
+        let pkgpath = pkgpath.replace(['/', '\\'], ".");
         pkgpath.trim_end_matches('.').to_string()
     };
 

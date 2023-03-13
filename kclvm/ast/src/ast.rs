@@ -652,9 +652,9 @@ pub enum QuantOperation {
     Map,
 }
 
-impl Into<String> for QuantOperation {
-    fn into(self) -> String {
-        let s = match self {
+impl From<QuantOperation> for String {
+    fn from(val: QuantOperation) -> Self {
+        let s = match val {
             QuantOperation::All => "all",
             QuantOperation::Any => "any",
             QuantOperation::Filter => "filter",

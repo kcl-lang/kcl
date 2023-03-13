@@ -19,6 +19,7 @@ pub(crate) type RequestHandler = fn(&mut LanguageServerState, lsp_server::Respon
 
 /// A `Task` is something that is send from async tasks to the entry point for processing. This
 /// enables synchronizing resources like the connection with the client.
+#[allow(unused)]
 #[derive(Debug)]
 pub(crate) enum Task {
     Response(Response),
@@ -40,7 +41,7 @@ pub(crate) struct LanguageServerState {
     pub(crate) request_queue: lsp_server::ReqQueue<(String, Instant), RequestHandler>,
 
     /// The configuration passed by the client
-    pub config: Config,
+    pub _config: Config,
 
     /// Thread pool for async execution
     pub thread_pool: threadpool::ThreadPool,
@@ -55,7 +56,7 @@ pub(crate) struct LanguageServerState {
     pub vfs: Arc<RwLock<Vfs>>,
 
     /// Holds the state of the analysis process
-    pub analysis: Analysis,
+    pub _analysis: Analysis,
 
     /// True if the client requested that we shut down
     pub shutdown_requested: bool,
@@ -77,16 +78,15 @@ pub(crate) struct LanguageServerSnapshot {
 impl LanguageServerState {
     pub fn new(sender: Sender<lsp_server::Message>, config: Config) -> Self {
         let (task_sender, task_receiver) = unbounded::<Task>();
-        let mut analysis = Analysis::default();
         LanguageServerState {
             sender,
             request_queue: ReqQueue::default(),
-            config,
+            _config: config,
             vfs: Arc::new(RwLock::new(Default::default())),
             thread_pool: threadpool::ThreadPool::default(),
             task_sender,
             task_receiver,
-            analysis,
+            _analysis: Analysis::default(),
             shutdown_requested: false,
         }
     }
