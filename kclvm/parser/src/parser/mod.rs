@@ -90,14 +90,16 @@ impl<'a> Parser<'a> {
 
     pub(crate) fn bump_keyword(&mut self, kw: Symbol) {
         if !self.token.is_keyword(kw) {
-            self.sess.struct_token_error(&[kw.into()], self.token);
+            self.sess
+                .struct_token_error_recovery(&[kw.into()], self.token);
         }
         self.bump();
     }
 
     pub(crate) fn bump_token(&mut self, kind: TokenKind) {
         if self.token.kind != kind {
-            self.sess.struct_token_error(&[kind.into()], self.token);
+            self.sess
+                .struct_token_error_recovery(&[kind.into()], self.token);
         }
         self.bump();
     }
