@@ -304,9 +304,9 @@ dependencies = [
 
 [[package]]
 name = "compiler_base_error"
-version = "0.0.8"
+version = "0.0.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "42fb2dab6f1cffab069d1b841bb11ecb4e32c5582bea35dc4d575bfa20d5517c"
+checksum = "3a26baf92ec0548418efaa8f24124cec069c40107af267a58c017c857b1cd136"
 dependencies = [
  "anyhow",
  "compiler_base_macros",
@@ -328,7 +328,7 @@ checksum = "c9e1cdc2aad3a38fae518f80e9bda866b6a01d8676c2c1bbc8b06aea3fcc1bb7"
 
 [[package]]
 name = "compiler_base_session"
-version = "0.0.12"
+version = "0.0.13"
 dependencies = [
  "anyhow",
  "compiler_base_error",
