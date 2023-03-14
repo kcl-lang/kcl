@@ -21,7 +21,7 @@ fn check_parsing_expr(src: &str, expect: Expect) {
                 let stream = parse_token_streams(sess, src_from_sf.as_str(), new_byte_pos(0));
                 let mut parser = Parser::new(sess, stream);
                 let expr = parser.parse_expr();
-                let actual = format!("{:?}\n", expr);
+                let actual = format!("{expr:?}\n");
                 expect.assert_eq(&actual)
             });
         }
@@ -32,7 +32,7 @@ fn check_parsing_expr(src: &str, expect: Expect) {
 fn check_parsing_file_ast_json(filename: &str, src: &str, expect: Expect) {
     let m = crate::parse_file(filename, Some(src.into())).unwrap();
     let actual = serde_json::ser::to_string(&m).unwrap();
-    let actual = format!("{}\n", actual);
+    let actual = format!("{actual}\n");
     expect.assert_eq(&actual)
 }
 
@@ -45,7 +45,7 @@ fn check_parsing_type(src: &str, expect: Expect) {
         let stream = parse_token_streams(sess, src, new_byte_pos(0));
         let mut parser = Parser::new(sess, stream);
         let typ = parser.parse_type_annotation();
-        let actual = format!("{:?}\n", typ);
+        let actual = format!("{typ:?}\n");
         expect.assert_eq(&actual)
     });
 }
@@ -1197,7 +1197,7 @@ fn test_parse_file() {
         "testdata/hello_win.k",
     ];
     for filename in filenames {
-        let code = std::fs::read_to_string(&filename).unwrap();
+        let code = std::fs::read_to_string(filename).unwrap();
         let expect = std::fs::read_to_string(filename.to_string() + ".json").unwrap();
         check_parsing_module(
             filename.trim_start_matches("testdata/"),

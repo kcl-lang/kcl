@@ -51,5 +51,6 @@ pub fn kclvm_cli_run_unsafe(args: *const i8, plugin_agent: *const i8) -> Result<
         &ExecProgramArgs::from_str(kclvm_runtime::c2str(args)),
         plugin_agent as u64,
     )
+    .map_err(|e| PanicInfo::from(e).to_json_string())
     .map(|r| r.json_result)
 }

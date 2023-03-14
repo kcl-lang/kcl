@@ -22,6 +22,7 @@ kclvm-span = {path = "../span", version = "0.4.5"}
 compiler_base_span = {path = "../../compiler_base/span", version = "0.0.2"}
 compiler_base_session = {path = "../../compiler_base/session"}
 compiler_base_macros = "0.0.1"
+compiler_base_error = "0.0.8"
 
 [dev-dependencies]
 kclvm-parser = {path = "../parser", version = "0.4.5"}

@@ -409,13 +409,22 @@ impl<'a> Lexer<'a> {
                 }
             },
             kclvm_lexer::TokenKind::LineContinue => return None,
-            kclvm_lexer::TokenKind::InvalidLineContinue => self.sess.struct_span_error(
-                "unexpected character after line continuation character",
-                self.span(start, self.pos),
-            ),
-            _ => self
-                .sess
-                .struct_span_error("unknown start of token", self.span(start, self.pos)),
+            kclvm_lexer::TokenKind::InvalidLineContinue => {
+                // If we encounter an illegal line continuation character,
+                // we will restore it to a normal line continuation character.
+                self.sess.struct_span_error_recovery(
+                    "unexpected character after line continuation character",
+                    self.span(start, self.pos),
+                );
+                return None;
+            }
+            _ => {
+                self.sess.struct_span_error_recovery(
+                    "unknown start of token",
+                    self.span(start, self.pos),
+                );
+                return None;
+            }
         })
     }
 
@@ -431,8 +440,10 @@ impl<'a> Lexer<'a> {
                 triple_quoted,
             } => {
                 if !terminated {
-                    self.sess
-                        .struct_span_error("unterminated string", self.span(start, self.pos))
+                    self.sess.struct_span_error_recovery(
+                        "unterminated string",
+                        self.span(start, self.pos),
+                    )
                 }
 
                 let start_char = self.char_from(start);
@@ -440,9 +451,8 @@ impl<'a> Lexer<'a> {
                     'r' | 'R' => (true, self.char_from(start + new_byte_pos(1))),
                     _ => (false, start_char),
                 };
-
-                // cut offset before validation
-                let offset = if triple_quoted {
+                // Cut offset before validation.
+                let offset: u32 = if triple_quoted {
                     if is_raw {
                         4
                     } else {
@@ -459,19 +469,34 @@ impl<'a> Lexer<'a> {
                 if is_raw {
                     content_end = content_end + new_byte_pos(1);
                 }
-                let string_content = self.str_from_to(content_start, content_end);
-                let value = match str_content_eval(
-                    string_content,
-                    quote_char,
-                    triple_quoted,
-                    false,
-                    is_raw,
-                ) {
-                    Some(v) => v,
-                    None => self.sess.struct_span_error(
+                // For unclosed quote string, cut offset of the string content.
+                if !terminated {
+                    content_end = content_end + new_byte_pos(if triple_quoted { 3 } else { 1 })
+                }
+                // If start > end, it is a invalid string content.
+                let value = if content_start > content_end {
+                    // If get an error string from the eval process,
+                    // directly return an empty string.
+                    self.sess.struct_span_error_recovery(
                         "invalid string syntax",
                         self.span(content_start, self.pos),
-                    ),
+                    );
+                    "".to_string()
+                } else {
+                    let string_content = self.str_from_to(content_start, content_end);
+                    match str_content_eval(string_content, quote_char, triple_quoted, false, is_raw)
+                    {
+                        Some(v) => v,
+                        None => {
+                            // If get an error string from the eval process,
+                            // directly return an empty string.
+                            self.sess.struct_span_error_recovery(
+                                "invalid string syntax",
+                                self.span(content_start, self.pos),
+                            );
+                            "".to_string()
+                        }
+                    }
                 };
 
                 (
@@ -486,33 +511,36 @@ impl<'a> Lexer<'a> {
             }
             kclvm_lexer::LiteralKind::Int { base, empty_int } => {
                 if empty_int {
-                    self.sess.struct_span_error(
+                    self.sess.struct_span_error_recovery(
                         "no valid digits found for number",
                         self.span(start, self.pos),
-                    )
+                    );
+                    // If it is a empty int, returns number 0.
+                    (token::Integer, Symbol::intern("0"), None, None)
                 } else {
-                    self.validate_literal_int(base, start, suffix_start);
+                    let symbol = if self.validate_literal_int(base, start, suffix_start) {
+                        self.symbol_from_to(start, suffix_start)
+                    } else {
+                        Symbol::intern("0")
+                    };
 
                     let suffix = if suffix_start < self.pos {
                         let suffix_str = self.str_from(suffix_start);
                         // int binary suffix
                         if !NumberBinarySuffix::all_names().contains(&suffix_str) {
-                            self.sess.struct_span_error(
+                            self.sess.struct_span_error_recovery(
                                 "invalid int binary suffix",
                                 self.span(start, self.pos),
-                            )
+                            );
+                            None
+                        } else {
+                            Some(Symbol::intern(suffix_str))
                         }
-                        Some(Symbol::intern(suffix_str))
                     } else {
                         None
                     };
 
-                    (
-                        token::Integer,
-                        self.symbol_from_to(start, suffix_start),
-                        suffix,
-                        None,
-                    )
+                    (token::Integer, symbol, suffix, None)
                 }
             }
 
@@ -520,13 +548,12 @@ impl<'a> Lexer<'a> {
                 base,
                 empty_exponent,
             } => {
-                self.validate_literal_float(base, start, empty_exponent);
-                (
-                    token::Float,
-                    self.symbol_from_to(start, suffix_start),
-                    None,
-                    None,
-                )
+                let symbol = if self.validate_literal_float(base, start, empty_exponent) {
+                    self.symbol_from_to(start, suffix_start)
+                } else {
+                    Symbol::intern("0")
+                };
+                (token::Float, symbol, None, None)
             }
             kclvm_lexer::LiteralKind::Bool { terminated: _ } => (
                 token::Bool,
@@ -537,12 +564,17 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn validate_literal_int(&self, base: Base, content_start: BytePos, content_end: BytePos) {
+    fn validate_literal_int(
+        &self,
+        base: Base,
+        content_start: BytePos,
+        content_end: BytePos,
+    ) -> bool {
         let base = match base {
             Base::Binary => 2,
             Base::Octal => 8,
             Base::Hexadecimal => 16,
-            _ => return,
+            Base::Decimal => return true,
         };
         let s = self.str_from_to(content_start + new_byte_pos(2), content_end);
         for (idx, c) in s.char_indices() {
@@ -551,39 +583,36 @@ impl<'a> Lexer<'a> {
                 let lo = content_start + new_byte_pos(2 + idx);
                 let hi = content_start + new_byte_pos(2 + idx + c.len_utf8() as u32);
 
-                self.sess.struct_span_error(
-                    &format!(
-                        "invalid digit for a base {} literal, start: {}, stop: {}",
-                        base, lo, hi
-                    ),
+                self.sess.struct_span_error_recovery(
+                    &format!("invalid digit for a base {base} literal, start: {lo}, stop: {hi}"),
                     self.span(lo, self.pos),
-                )
+                );
+                return false;
             }
         }
+        true
     }
 
-    fn validate_literal_float(&self, base: Base, start: BytePos, empty_exponent: bool) {
+    fn validate_literal_float(&self, base: Base, start: BytePos, empty_exponent: bool) -> bool {
         if empty_exponent {
-            self.sess.struct_span_error(
+            self.sess.struct_span_error_recovery(
                 "expected at least one digit in exponent",
                 self.span(start, self.pos),
-            )
-        }
-
-        match base {
-            kclvm_lexer::Base::Hexadecimal => self.sess.struct_span_error(
-                "hexadecimal float literal is not supported",
-                self.span(start, self.pos),
-            ),
-            kclvm_lexer::Base::Octal => self.sess.struct_span_error(
-                "octal float literal is not supported",
-                self.span(start, self.pos),
-            ),
-            kclvm_lexer::Base::Binary => self.sess.struct_span_error(
-                "binary float literal is not supported",
-                self.span(start, self.pos),
-            ),
-            _ => (),
+            );
+            false
+        } else {
+            match base {
+                kclvm_lexer::Base::Hexadecimal
+                | kclvm_lexer::Base::Octal
+                | kclvm_lexer::Base::Binary => {
+                    self.sess.struct_span_error_recovery(
+                        &format!("{} float literal is not supported", base.describe()),
+                        self.span(start, self.pos),
+                    );
+                    false
+                }
+                _ => true,
+            }
         }
     }
 
@@ -613,11 +642,7 @@ impl<'a> Lexer<'a> {
     }
 
     fn has_next_token(&self, start: BytePos, end: BytePos) -> bool {
-        if self.src_index(start) > self.src_index(end) || self.src_index(end) > self.src.len() {
-            false
-        } else {
-            true
-        }
+        !(self.src_index(start) > self.src_index(end) || self.src_index(end) > self.src.len())
     }
 
     fn symbol_from_to(&self, start: BytePos, end: BytePos) -> Symbol {

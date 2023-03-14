@@ -65,7 +65,14 @@ pub fn parse_file(filename: &str, code: Option<String>) -> Result<ast::Module, S
     let prev_hook = std::panic::take_hook();
     std::panic::set_hook(Box::new(|_| {}));
     let result = std::panic::catch_unwind(|| {
-        parse_file_with_session(Arc::new(Session::default()), filename, code)
+        let sess = Arc::new(Session::default());
+        let result = parse_file_with_session(sess.clone(), filename, code);
+        if sess.diag_handler.has_errors().map_err(|e| e.to_string())? {
+            // TODO: emit sess diags to string.
+            Err(format!("{:?}", sess.diag_handler))
+        } else {
+            result
+        }
     });
     std::panic::set_hook(prev_hook);
     match result {
@@ -90,8 +97,7 @@ pub fn parse_file_with_session(
                     Ok(src) => src,
                     Err(err) => {
                         return Err(format!(
-                            "Failed to load KCL file '{}'. Because '{}'",
-                            filename, err
+                            "Failed to load KCL file '{filename}'. Because '{err}'"
                         ));
                     }
                 }
@@ -105,8 +111,7 @@ pub fn parse_file_with_session(
                 Some(src) => src,
                 None => {
                     return Err(format!(
-                        "Internal Bug: Failed to load KCL file '{}'.",
-                        filename
+                        "Internal Bug: Failed to load KCL file '{filename}'."
                     ));
                 }
             };

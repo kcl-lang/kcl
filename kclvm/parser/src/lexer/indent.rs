@@ -77,7 +77,7 @@ impl<'a> Lexer<'a> {
         self.indent_cxt.spaces = 0;
 
         // process indent at the end of the newline
-        let mut cur_indent = self.indent_cxt.indents.last().unwrap();
+        let mut cur_indent = self.last_indent();
         let indent = IndentLevel { tabs, spaces };
         let mut ordering = indent.cmp(cur_indent);
 
@@ -113,19 +113,26 @@ impl<'a> Lexer<'a> {
                                             // Proper indent level found.
                                             break;
                                         }
-                                        Ordering::Greater => self.sess.struct_span_error(
-                                            &format!("Unindent {} does not match any outer indentation level", indent.spaces),
+                                        Ordering::Greater => {
+                                            self.sess.struct_span_error_recovery(
+                                            &format!("unindent {} does not match any outer indentation level", indent.spaces),
                                             self.span(self.pos, self.pos),
-                                        ),
+                                        );
+                                            break;
+                                        }
                                     }
 
                                     // update cur indent and ordering
-                                    cur_indent = self.indent_cxt.indents.last().unwrap();
+                                    cur_indent = self.last_indent();
                                     ordering = indent.cmp(cur_indent);
                                 }
-                                Err(msg) => self
-                                    .sess
-                                    .struct_span_error(msg, self.span(self.pos, self.pos)),
+                                Err(msg) => {
+                                    self.sess.struct_span_error_recovery(
+                                        msg,
+                                        self.span(self.pos, self.pos),
+                                    );
+                                    break;
+                                }
                             }
                         }
 
@@ -134,9 +141,23 @@ impl<'a> Lexer<'a> {
                     _ => return None,
                 })
             }
-            Err(msg) => self
-                .sess
-                .struct_span_error(msg, self.span(self.pos, self.pos)),
+            Err(msg) => {
+                self.sess
+                    .struct_span_error_recovery(msg, self.span(self.pos, self.pos));
+                None
+            }
         }
+    }
+
+    /// Get the last indent, if not exists, return a default level for error recovery.
+    fn last_indent(&mut self) -> &IndentLevel {
+        if self.indent_cxt.indents.is_empty() {
+            self.sess.struct_span_error_recovery(
+                "mismatched indent level",
+                self.span(self.pos, self.pos),
+            );
+            self.indent_cxt.indents.push(IndentLevel::default());
+        }
+        self.indent_cxt.indents.last().unwrap()
     }
 }

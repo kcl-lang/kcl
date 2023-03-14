@@ -29,7 +29,7 @@ fn check_lexing(src: &str, expect: Expect) {
             create_session_globals_then(|| {
                 let actual: String = parse_token_streams(sess, src_from_sf, new_byte_pos(0))
                     .iter()
-                    .map(|token| format!("{:?}\n", token))
+                    .map(|token| format!("{token:?}\n"))
                     .collect();
                 expect.assert_eq(&actual)
             });
@@ -76,8 +76,7 @@ fn test_str_content_eval() {
         assert_eq!(
             str_content_eval(input, quote_char, triple_quoted, is_bytes, is_raw),
             expected,
-            "test failed, input: {}",
-            input
+            "test failed, input: {input}"
         )
     }
 }
@@ -493,13 +492,13 @@ fn test_peek() {
 
         let tok0 = cursor.next();
         assert_eq!(
-            format!("{:?}", tok0),
+            format!("{tok0:?}"),
             "Some(Token { kind: Newline, span: Span { base_or_index: 0, len_or_tag: 1 } })"
         );
 
         let peek = cursor.peek();
         assert_eq!(
-            format!("{:?}", peek),
+            format!("{peek:?}"),
            "Some(Token { kind: Ident(Symbol(SymbolIndex { idx: 42 })), span: Span { base_or_index: 1, len_or_tag: 1 } })"
         );
     });

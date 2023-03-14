@@ -1,0 +1,49 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 26
+expression: "crate::tests::parsing_expr_string(r#\"'a' + \\1\n'b'\n\"#)"
+---
+Node {
+    node: Binary(
+        BinaryExpr {
+            left: Node {
+                node: StringLit(
+                    StringLit {
+                        is_long_string: false,
+                        raw_value: "'a'",
+                        value: "a",
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 0,
+                end_line: 1,
+                end_column: 3,
+            },
+            op: Bin(
+                Add,
+            ),
+            right: Node {
+                node: NumberLit(
+                    NumberLit {
+                        binary_suffix: None,
+                        value: Int(
+                            1,
+                        ),
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 7,
+                end_line: 1,
+                end_column: 8,
+            },
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 8,
+}
+

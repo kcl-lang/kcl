@@ -1455,6 +1455,7 @@ dependencies = [
  "ahash",
  "bit-set",
  "bitflags",
+ "compiler_base_error",
  "compiler_base_macros",
  "compiler_base_session",
  "compiler_base_span 0.0.2",
