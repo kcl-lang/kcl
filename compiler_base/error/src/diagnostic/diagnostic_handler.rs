@@ -261,7 +261,6 @@ impl DiagnosticHandler {
     /// # Examples
     ///
     /// ```rust
-    ///
     /// use compiler_base_error::DiagnosticStyle;
     /// use compiler_base_error::diagnostic_handler::DiagnosticHandler;
     /// use compiler_base_error::Diagnostic;
@@ -281,6 +280,34 @@ impl DiagnosticHandler {
     pub fn emit_all_diags_into_string(&mut self) -> Result<Vec<Result<String>>> {
         match self.handler_inner.lock() {
             Ok(inner) => Ok(inner.emit_all_diags_into_string()),
+            Err(_) => bail!("Emit Diagnostics Failed."),
+        }
+    }
+
+    /// Emit the [`index`]th diagnostics into strings and return.
+    /// 
+    /// # Examples
+    /// 
+    /// ```rust
+    /// use compiler_base_error::DiagnosticStyle;
+    /// use compiler_base_error::diagnostic_handler::DiagnosticHandler;
+    /// use compiler_base_error::Diagnostic;
+    /// use compiler_base_error::components::Label;
+    ///
+    /// let mut diag_1 = Diagnostic::<DiagnosticStyle>::new();
+    /// diag_1.append_component(Box::new(Label::Note));
+    ///
+    /// let mut diag_handler = DiagnosticHandler::default();
+    ///
+    /// assert_eq!(diag_handler.diagnostics_count().unwrap(), 0);
+    ///
+    /// diag_handler.add_err_diagnostic(diag_1);
+    /// assert_eq!(diag_handler.diagnostics_count().unwrap(), 1);
+    /// assert_eq!(diag_handler.emit_nth_diag_into_string(0).unwrap().unwrap().unwrap(), "note");
+    /// ```
+    pub fn emit_nth_diag_into_string(&mut self, index: usize) -> Result<Option<Result<String>>> {
+        match self.handler_inner.lock() {
+            Ok(inner) => Ok(inner.emit_nth_diag_into_string(index)),
             Err(_) => bail!("Emit Diagnostics Failed."),
         }
     }
@@ -622,6 +649,11 @@ impl DiagnosticHandlerInner {
             .iter()
             .map(|d| Ok(emit_diagnostic_to_uncolored_text(d)?))
             .collect()
+    }
+
+    /// Emit the [`index`]th diagnostic into string and return.
+    pub(crate) fn emit_nth_diag_into_string(&self, index: usize) -> Option<Result<String>> {
+        self.diagnostics.get(index).map(|d|emit_diagnostic_to_uncolored_text(d))
     }
 
     /// Emit the diagnostic messages generated from error to to terminal stderr.
