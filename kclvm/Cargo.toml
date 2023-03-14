@@ -30,7 +30,7 @@ fslock = "0.2.1"
 libloading = "0.7.3"
 chrono = "0.4.19"
 anyhow = "1.0"
-compiler_base_session = {path = "../compiler_base/session", version = "0.0.12"}
+compiler_base_session = {path = "../compiler_base/session"}
 
 kclvm-capi = {path = "./capi",version = "0.4.5"}
 kclvm-cmd = {path = "./cmd",version = "0.4.5"}

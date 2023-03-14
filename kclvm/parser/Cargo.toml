@@ -7,8 +7,8 @@ edition = "2021"
 
 [dependencies]
 compiler_base_span = {path = "../../compiler_base/span", version = "0.0.2"}
-compiler_base_session = {path = "../../compiler_base/session", version = "0.0.12"}
-compiler_base_error = "0.0.8"
+compiler_base_session = {path = "../../compiler_base/session"}
+compiler_base_error = "0.0.10"
 compiler_base_macros = "0.0.1"
 tracing = "0.1"
 serde = { version = "1", features = ["derive"] }
