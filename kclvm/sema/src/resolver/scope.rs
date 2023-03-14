@@ -1,7 +1,7 @@
 use compiler_base_session::Session;
 use indexmap::IndexMap;
 use kclvm_ast::{ast, MAIN_PKG};
-use kclvm_error::Handler;
+use kclvm_error::{ErrorKind, Handler};
 use std::sync::Arc;
 use std::{
     cell::RefCell,
@@ -222,22 +222,23 @@ impl ProgramScope {
 
     /// Return diagnostic json using session string but do not abort if exist any diagnostic.
     pub fn alert_scope_diagnostics_with_session(&self, sess: Arc<Session>) -> Result<(), String> {
-        // Add resolve errors into session
-        for diag in &self.handler.diagnostics {
-            sess.add_err(diag.clone()).map_err(|err| err.to_string())?;
-        }
-        // If has syntax error but not resolve error, returns syntax errors.
-        if self.handler.diagnostics.is_empty()
-            && sess
-                .diag_handler
-                .has_errors()
-                .map_err(|err| err.to_string())?
-        {
-            // TODO: emit sess diags to string.
-            Err(format!("{:?}", sess.diag_handler))
-        } else {
-            self.alert_scope_diagnostics()
-        }
+        let emit_error = || -> anyhow::Result<()> {
+            // Add resolve errors into session
+            for diag in &self.handler.diagnostics {
+                sess.add_err(diag.clone())?;
+            }
+            // If has syntax error but not resolve error, returns syntax errors.
+            let result = if self.handler.diagnostics.is_empty() && sess.diag_handler.has_errors()? {
+                let err = sess
+                    .emit_nth_diag_into_string(0)?
+                    .unwrap_or(Ok(ErrorKind::CompileError.name()))?;
+                Err(err)
+            } else {
+                self.alert_scope_diagnostics()
+            };
+            result.map_err(|e| anyhow::anyhow!(e))
+        };
+        emit_error().map_err(|e| e.to_string())
     }
 }
 

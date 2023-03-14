@@ -15,6 +15,7 @@ use compiler_base_session::Session;
 use compiler_base_span::span::new_byte_pos;
 use kclvm_ast::ast;
 use kclvm_config::modfile::KCL_FILE_SUFFIX;
+use kclvm_error::ErrorKind;
 use kclvm_runtime::PanicInfo;
 use kclvm_sema::plugin::PLUGIN_MODULE_PREFIX;
 use kclvm_utils::path::PathPrefix;
@@ -68,8 +69,12 @@ pub fn parse_file(filename: &str, code: Option<String>) -> Result<ast::Module, S
         let sess = Arc::new(Session::default());
         let result = parse_file_with_session(sess.clone(), filename, code);
         if sess.diag_handler.has_errors().map_err(|e| e.to_string())? {
-            // TODO: emit sess diags to string.
-            Err(format!("{:?}", sess.diag_handler))
+            let err = sess
+                .emit_nth_diag_into_string(0)
+                .map_err(|e| e.to_string())?
+                .unwrap_or(Ok(ErrorKind::InvalidSyntax.name()))
+                .map_err(|e| e.to_string())?;
+            Err(err)
         } else {
             result
         }
