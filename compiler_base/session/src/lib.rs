@@ -210,6 +210,7 @@ impl Session {
     /// // 5. Emit the error diagnostic.
     /// assert_eq!(sess.emit_all_diags_into_string().unwrap().get(0).unwrap().as_ref().unwrap(), "error[error]");
     /// ```
+    #[inline]
     pub fn emit_all_diags_into_string(&self) -> Result<Vec<Result<String>>> {
         self.diag_handler.emit_all_diags_into_string()
     }
@@ -249,6 +250,7 @@ impl Session {
     /// // 5. Emit the error diagnostic.
     /// assert_eq!(sess.emit_nth_diag_into_string(0).unwrap().unwrap().unwrap(), "error[error]");
     /// ```
+    #[inline]
     pub fn emit_nth_diag_into_string(&self, index: usize) -> Result<Option<Result<String>>> {
         self.diag_handler.emit_nth_diag_into_string(index)
     }
