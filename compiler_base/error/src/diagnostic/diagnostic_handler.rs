@@ -285,9 +285,9 @@ impl DiagnosticHandler {
     }
 
     /// Emit the [`index`]th diagnostics into strings and return.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```rust
     /// use compiler_base_error::DiagnosticStyle;
     /// use compiler_base_error::diagnostic_handler::DiagnosticHandler;
@@ -653,7 +653,9 @@ impl DiagnosticHandlerInner {
 
     /// Emit the [`index`]th diagnostic into string and return.
     pub(crate) fn emit_nth_diag_into_string(&self, index: usize) -> Option<Result<String>> {
-        self.diagnostics.get(index).map(|d|emit_diagnostic_to_uncolored_text(d))
+        self.diagnostics
+            .get(index)
+            .map(|d| emit_diagnostic_to_uncolored_text(d))
     }
 
     /// Emit the diagnostic messages generated from error to to terminal stderr.
