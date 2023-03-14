@@ -10,8 +10,8 @@
 //! For more information about template loader, see doc in "compiler_base/error/src/diagnostic/diagnostic_message.rs".
 
 use crate::{
-    diagnostic::diagnostic_message::TemplateLoader, Diagnostic, DiagnosticStyle, Emitter,
-    EmitterWriter,
+    diagnostic::diagnostic_message::TemplateLoader, emit_diagnostic_to_uncolored_text,
+    emitter::EmitResultText, Diagnostic, DiagnosticStyle, Emitter, EmitterWriter,
 };
 use anyhow::{bail, Context, Result};
 use compiler_base_span::fatal_error::FatalError;
@@ -253,6 +253,35 @@ impl DiagnosticHandler {
         match self.handler_inner.lock() {
             Ok(inner) => Ok(inner.diagnostics_count()),
             Err(_) => bail!("Diagnostics Counts Failed."),
+        }
+    }
+
+    /// Emit all the diagnostics into strings and return.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    ///
+    /// use compiler_base_error::DiagnosticStyle;
+    /// use compiler_base_error::diagnostic_handler::DiagnosticHandler;
+    /// use compiler_base_error::Diagnostic;
+    /// use compiler_base_error::components::Label;
+    ///
+    /// let mut diag_1 = Diagnostic::<DiagnosticStyle>::new();
+    /// diag_1.append_component(Box::new(Label::Note));
+    ///
+    /// let mut diag_handler = DiagnosticHandler::default();
+    ///
+    /// assert_eq!(diag_handler.diagnostics_count().unwrap(), 0);
+    ///
+    /// diag_handler.add_err_diagnostic(diag_1);
+    /// assert_eq!(diag_handler.diagnostics_count().unwrap(), 1);
+    /// assert_eq!(diag_handler.emit_all_diags_into_string().unwrap().get(0).unwrap().as_ref().unwrap(), "note");
+    /// ```
+    pub fn emit_all_diags_into_string(&mut self) -> Result<Vec<Result<String>>> {
+        match self.handler_inner.lock() {
+            Ok(inner) => Ok(inner.emit_all_diags_into_string()),
+            Err(_) => bail!("Emit Diagnostics Failed."),
         }
     }
 
@@ -585,6 +614,14 @@ impl DiagnosticHandlerInner {
     #[inline]
     pub(crate) fn diagnostics_count(&self) -> usize {
         self.diagnostics.len()
+    }
+
+    /// Emit all the diagnostics into strings and return.
+    pub(crate) fn emit_all_diags_into_string(&self) -> Vec<Result<String>> {
+        self.diagnostics
+            .iter()
+            .map(|d| Ok(emit_diagnostic_to_uncolored_text(d)?))
+            .collect()
     }
 
     /// Emit the diagnostic messages generated from error to to terminal stderr.

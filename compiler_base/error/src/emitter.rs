@@ -447,7 +447,7 @@ pub fn emit_diagnostic_to_uncolored_text(diag: &Diagnostic<DiagnosticStyle>) -> 
 
 /// Used to save the result of emit into a [`String`],
 /// because trait [`Write`] and [`Send`] cannot be directly implemented by [`String`].
-struct EmitResultText {
+pub(crate) struct EmitResultText {
     test_res: String,
 }
 
