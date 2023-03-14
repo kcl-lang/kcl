@@ -277,7 +277,7 @@ impl DiagnosticHandler {
     /// assert_eq!(diag_handler.diagnostics_count().unwrap(), 1);
     /// assert_eq!(diag_handler.emit_all_diags_into_string().unwrap().get(0).unwrap().as_ref().unwrap(), "note");
     /// ```
-    pub fn emit_all_diags_into_string(&mut self) -> Result<Vec<Result<String>>> {
+    pub fn emit_all_diags_into_string(&self) -> Result<Vec<Result<String>>> {
         match self.handler_inner.lock() {
             Ok(inner) => Ok(inner.emit_all_diags_into_string()),
             Err(_) => bail!("Emit Diagnostics Failed."),
@@ -305,7 +305,7 @@ impl DiagnosticHandler {
     /// assert_eq!(diag_handler.diagnostics_count().unwrap(), 1);
     /// assert_eq!(diag_handler.emit_nth_diag_into_string(0).unwrap().unwrap().unwrap(), "note");
     /// ```
-    pub fn emit_nth_diag_into_string(&mut self, index: usize) -> Result<Option<Result<String>>> {
+    pub fn emit_nth_diag_into_string(&self, index: usize) -> Result<Option<Result<String>>> {
         match self.handler_inner.lock() {
             Ok(inner) => Ok(inner.emit_nth_diag_into_string(index)),
             Err(_) => bail!("Emit Diagnostics Failed."),
