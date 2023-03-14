@@ -187,9 +187,9 @@ impl fmt::Display for Symbol {
     }
 }
 
-impl Into<String> for Symbol {
-    fn into(self) -> String {
-        self.as_str().to_string()
+impl From<Symbol> for String {
+    fn from(val: Symbol) -> Self {
+        val.as_str()
     }
 }
 

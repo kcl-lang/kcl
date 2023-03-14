@@ -13,7 +13,7 @@ fn stack_link_lld() {
     use std::process::Command;
 
     let cxxflags = Command::new("llvm-config")
-        .args(&["--cxxflags"])
+        .args(["--cxxflags"])
         .output()
         .expect("could not execute llvm-config");
 
@@ -34,7 +34,7 @@ fn stack_link_lld() {
     build.compile("liblinker.a");
 
     let libdir = Command::new("llvm-config")
-        .args(&["--libdir"])
+        .args(["--libdir"])
         .output()
         .unwrap();
     let libdir = String::from_utf8(libdir.stdout).unwrap();
@@ -59,7 +59,7 @@ fn stack_link_lld() {
     }
 
     let output = Command::new("git")
-        .args(&["describe", "--tags"])
+        .args(["describe", "--tags"])
         .output()
         .unwrap();
     let git_hash = String::from_utf8(output.stdout).unwrap();

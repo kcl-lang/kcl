@@ -122,9 +122,9 @@ pub enum LitKind {
     Err,
 }
 
-impl Into<String> for LitKind {
-    fn into(self) -> String {
-        let s = match self {
+impl From<LitKind> for String {
+    fn from(val: LitKind) -> Self {
+        let s = match val {
             Bool => "bool",
             Integer => "int",
             Float => "float",
@@ -203,9 +203,9 @@ impl TokenKind {
     }
 }
 
-impl Into<String> for TokenKind {
-    fn into(self) -> String {
-        let s = match self {
+impl From<TokenKind> for String {
+    fn from(val: TokenKind) -> Self {
+        let s = match val {
             UnaryOp(unary_op) => match unary_op {
                 UTilde => "~",
                 UNot => "not",
@@ -296,18 +296,18 @@ pub struct Token {
     pub span: Span,
 }
 
-impl Into<String> for Token {
-    fn into(self) -> String {
-        match self.kind {
+impl From<Token> for String {
+    fn from(val: Token) -> Self {
+        match val.kind {
             Literal(lk) => {
-                let sym = lk.symbol.as_str().to_string();
+                let sym = lk.symbol.as_str();
 
                 match lk.suffix {
                     Some(suf) => sym + &suf.as_str(),
                     _other_none => sym,
                 }
             }
-            _ => self.kind.into(),
+            _ => val.kind.into(),
         }
     }
 }

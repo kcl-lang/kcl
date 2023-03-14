@@ -1156,10 +1156,8 @@ pub trait MutSelfWalker {
     }
     fn walk_arguments(&mut self, arguments: &ast::Arguments) {
         walk_list!(self, walk_identifier, arguments.args);
-        for default in &arguments.defaults {
-            if let Some(d) = default {
-                self.walk_expr(&d.node)
-            }
+        for default in arguments.defaults.iter().flatten() {
+            self.walk_expr(&default.node)
         }
     }
     fn walk_compare(&mut self, compare: &ast::Compare) {

@@ -13,8 +13,6 @@ mod state;
 mod to_lsp;
 mod util;
 
-use crate::util::from_json;
-
 /// Runs the main loop of the language server. This will receive requests and handle them.
 pub fn main_loop(connection: Connection, config: Config) -> anyhow::Result<()> {
     LanguageServerState::new(connection.sender, config).run(connection.receiver)
@@ -28,7 +26,7 @@ pub fn run_server() -> anyhow::Result<()> {
     let (initialize_id, initialize_params) = connection.initialize_start()?;
 
     let initialize_params =
-        from_json::<lsp_types::InitializeParams>("InitializeParams", initialize_params)?;
+        util::from_json::<lsp_types::InitializeParams>("InitializeParams", initialize_params)?;
 
     let server_capabilities = capabilities::server_capabilities(&initialize_params.capabilities);
 

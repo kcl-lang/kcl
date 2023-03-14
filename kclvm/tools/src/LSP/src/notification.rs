@@ -2,11 +2,7 @@ use std::fs;
 
 use lsp_types::notification::{DidChangeTextDocument, DidOpenTextDocument, DidSaveTextDocument};
 
-use crate::{
-    dispatcher::NotificationDispatcher, from_lsp, state::LanguageServerState, util::get_file_name,
-};
-
-use ra_ap_vfs::FileId;
+use crate::{dispatcher::NotificationDispatcher, from_lsp, state::LanguageServerState};
 
 impl LanguageServerState {
     pub fn on_notification(
@@ -65,7 +61,7 @@ impl LanguageServerState {
     ) -> anyhow::Result<()> {
         let lsp_types::DidChangeTextDocumentParams {
             text_document,
-            content_changes,
+            content_changes: _,
         } = params;
 
         let path = from_lsp::abs_path(&text_document.uri)?;

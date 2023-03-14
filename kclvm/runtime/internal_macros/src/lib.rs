@@ -19,7 +19,6 @@ pub fn runtime_fn(_attr: TokenStream, item: TokenStream) -> TokenStream {
 }
 
 // ----------------------------------------------------------------------------
-
 #[derive(Debug)]
 enum TargetName {
     C,

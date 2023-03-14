@@ -42,13 +42,12 @@ impl PanicInfo {
         let result = serde_json::from_str(s);
         match result {
             Ok(res) => res,
-            Err(_) => {
-                let mut panic_info = PanicInfo::default();
-                panic_info.__kcl_PanicInfo__ = true;
-                panic_info.message = s.to_string();
-                panic_info.err_type_code = crate::ErrType::CompileError_TYPE as i32;
-                panic_info
-            }
+            Err(_) => PanicInfo {
+                __kcl_PanicInfo__: true,
+                message: s.to_string(),
+                err_type_code: crate::ErrType::CompileError_TYPE as i32,
+                ..Default::default()
+            },
         }
     }
 }
