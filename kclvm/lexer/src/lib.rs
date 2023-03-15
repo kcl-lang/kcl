@@ -282,7 +282,7 @@ pub enum Base {
 }
 
 impl Base {
-    // Returns the description string of the numeric literal base.
+    /// Returns the description string of the numeric literal base.
     pub fn describe(&self) -> &'static str {
         match self {
             Base::Binary => "binary",
