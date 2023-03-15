@@ -304,6 +304,24 @@ dependencies = [
 
 [[package]]
 name = "compiler_base_error"
+version = "0.0.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "42fb2dab6f1cffab069d1b841bb11ecb4e32c5582bea35dc4d575bfa20d5517c"
+dependencies = [
+ "anyhow",
+ "compiler_base_macros",
+ "compiler_base_span 0.0.1",
+ "fluent",
+ "pretty_assertions",
+ "rustc_errors",
+ "rustc_span",
+ "termcolor",
+ "unic-langid",
+ "walkdir",
+]
+
+[[package]]
+name = "compiler_base_error"
 version = "0.0.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3a26baf92ec0548418efaa8f24124cec069c40107af267a58c017c857b1cd136"
@@ -331,7 +349,7 @@ name = "compiler_base_session"
 version = "0.0.13"
 dependencies = [
  "anyhow",
- "compiler_base_error",
+ "compiler_base_error 0.0.10",
  "compiler_base_span 0.0.1",
 ]
 
@@ -1311,7 +1329,7 @@ dependencies = [
  "annotate-snippets",
  "anyhow",
  "atty",
- "compiler_base_error",
+ "compiler_base_error 0.0.10",
  "compiler_base_macros",
  "compiler_base_session",
  "compiler_base_span 0.0.2",
@@ -1348,7 +1366,7 @@ version = "0.4.5"
 dependencies = [
  "anyhow",
  "bstr",
- "compiler_base_error",
+ "compiler_base_error 0.0.10",
  "compiler_base_macros",
  "compiler_base_session",
  "compiler_base_span 0.0.2",
@@ -1453,8 +1471,10 @@ name = "kclvm-sema"
 version = "0.4.5"
 dependencies = [
  "ahash",
+ "anyhow",
  "bit-set",
  "bitflags",
+ "compiler_base_error 0.0.8",
  "compiler_base_macros",
  "compiler_base_session",
  "compiler_base_span 0.0.2",

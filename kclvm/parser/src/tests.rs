@@ -28,7 +28,7 @@ pub(crate) fn parsing_expr_string(src: &str) -> String {
             let stream = parse_token_streams(sess, src_from_sf.as_str(), new_byte_pos(0));
             let mut parser = Parser::new(sess, stream);
             let expr = parser.parse_expr();
-            format!("{:#?}\n", expr)
+            format!("{expr:#?}\n")
         }),
         None => "".to_string(),
     }
@@ -55,7 +55,7 @@ pub fn test_parse_expr_invalid() {
     for case in PARSE_EXPR_INVALID_TEST_CASES {
         set_hook(Box::new(|_| {}));
         let result = catch_unwind(|| {
-            parse_expr(&case);
+            parse_expr(case);
         });
         check_result_panic_info(result);
     }
@@ -67,7 +67,7 @@ const PARSE_FILE_INVALID_TEST_CASES: &[&str] = &[
     "a?: int",                  // Invalid optional annotation error
     "a: () = 1",                // Type annotation error
     "if a not is not b: a = 1", // Logic operator error
-    "if True:\n  a=1\n b=2",    // Indent error
+    "if True:\n  a=1\n b=2",    // Indent error with recovery
     "a[1::::]",                 // List slice error
     "a[1 a]",                   // List index error
     "{a ++ 1}",                 // Config attribute operator error
@@ -80,6 +80,6 @@ const PARSE_FILE_INVALID_TEST_CASES: &[&str] = &[
 pub fn test_parse_file_invalid() {
     for case in PARSE_FILE_INVALID_TEST_CASES {
         let result = parse_file("test.k", Some((&case).to_string()));
-        assert!(result.is_err(), "case: {}, result {:?}", case, result)
+        assert!(result.is_err(), "case: {case}, result {result:?}");
     }
 }

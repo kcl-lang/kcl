@@ -221,9 +221,17 @@ impl Handler {
         (errs, warnings)
     }
 
-    /// Store a diagnostics
+    /// Store a diagnostics into the handler.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use kclvm_error::*;
+    /// let mut handler = Handler::default();
+    /// handler.add_diagnostic(Diagnostic::new_with_code(Level::Error, "error message", Position::dummy_pos(), Some(DiagnosticId::Error(E1001.kind))));
+    /// ```
     #[inline]
-    fn add_diagnostic(&mut self, diagnostic: Diagnostic) -> &mut Self {
+    pub fn add_diagnostic(&mut self, diagnostic: Diagnostic) -> &mut Self {
         self.diagnostics.insert(diagnostic);
 
         self

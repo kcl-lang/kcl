@@ -119,7 +119,11 @@ impl<'a> Parser<'a> {
             }
 
             let op = if use_peek_op {
-                let peek = self.cursor.peek().unwrap();
+                // If no peek is found, a dummy token is returned for error recovery.
+                let peek = match self.cursor.peek() {
+                    Some(peek) => peek,
+                    None => kclvm_ast::token::Token::dummy(),
+                };
                 if self.token.is_keyword(kw::Not) && peek.is_keyword(kw::In) {
                     BinOrCmpOp::Cmp(CmpOp::NotIn)
                 } else if self.token.is_keyword(kw::Is) && peek.is_keyword(kw::Not) {
@@ -479,7 +483,7 @@ impl<'a> Parser<'a> {
             TokenKind::Ident(_) => {
                 // None
                 if self.token.is_keyword(kw::None) {
-                    return self.parse_constant_expr(token::None);
+                    self.parse_constant_expr(token::None)
                 }
                 // Undefined
                 else if self.token.is_keyword(kw::Undefined) {
@@ -1990,7 +1994,7 @@ impl<'a> Parser<'a> {
         let ident = self.token.ident();
         match ident {
             Some(id) => {
-                names.push(id.as_str().to_string());
+                names.push(id.as_str());
                 self.bump();
             }
             None => self
@@ -2088,10 +2092,8 @@ impl<'a> Parser<'a> {
 
         let (is_long_string, raw_value, value) = match lk.kind {
             token::LitKind::Str { is_long_string, .. } => {
-                let value = lk.symbol.as_str().to_string();
-                let raw_value = lk
-                    .raw
-                    .map_or("".to_string(), |raw| raw.as_str().to_string());
+                let value = lk.symbol.as_str();
+                let raw_value = lk.raw.map_or("".to_string(), |raw| raw.as_str());
                 (is_long_string, raw_value, value)
             }
             _ => self.sess.struct_token_error(

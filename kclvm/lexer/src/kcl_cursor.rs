@@ -6,6 +6,7 @@
 //! and enable implemente Cursor structs in different crate.
 
 use crate::cursor::DOLLAR_CHAR;
+use crate::cursor::EOF_CHAR;
 use crate::Cursor;
 use crate::DocStyle;
 use crate::ICommentCursor;
@@ -45,7 +46,7 @@ impl<'a> IStringCursor for Cursor<'a> {
             'r' | 'R' => match self.peek() {
                 '\'' | '\"' => {
                     // R string
-                    let quote = self.bump().unwrap();
+                    let quote = self.bump().unwrap_or(EOF_CHAR);
                     self.eat_quoted_string(quote)
                 }
                 _ => Unknown,
@@ -107,6 +108,9 @@ impl<'a> Cursor<'a> {
                         };
                     }
                 }
+                // If we encounter an unclosed single quote string,
+                // we end at the newline characters '\r' or '\n'.
+                '\r' | '\n' if !triple_quoted => break,
                 _ => (),
             }
         }

@@ -105,10 +105,9 @@ fn parse_octet(first: char, chars: &mut std::iter::Peekable<Chars>) -> char {
     octet_content.push(first);
     while octet_content.len() < 3 {
         let next_char = chars.next();
-        if let Some('0'..='7') = next_char {
-            octet_content.push(next_char.unwrap())
-        } else {
-            break;
+        match next_char {
+            Some(o @ '0'..='7') => octet_content.push(o),
+            _ => break,
         }
     }
     let value = u32::from_str_radix(&octet_content, 8).unwrap();

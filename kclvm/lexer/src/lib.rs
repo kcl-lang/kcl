@@ -281,6 +281,18 @@ pub enum Base {
     Decimal,
 }
 
+impl Base {
+    /// Returns the description string of the numeric literal base.
+    pub fn describe(&self) -> &'static str {
+        match self {
+            Base::Binary => "binary",
+            Base::Octal => "octal",
+            Base::Hexadecimal => "hexadecimal",
+            Base::Decimal => "decimal",
+        }
+    }
+}
+
 /// Parses the first token from the provided input string.
 pub fn first_token(input: &str) -> Token {
     debug_assert!(!input.is_empty());
@@ -387,7 +399,7 @@ pub fn is_whitespace(c: char) -> bool {
 
 impl<'a> ITokenCursor for Cursor<'a> {
     fn token(&mut self) -> Token {
-        let char = self.bump().unwrap();
+        let char = self.bump().unwrap_or(EOF_CHAR);
 
         let token_kind = match char {
             // Comment or block comment, or a simple token

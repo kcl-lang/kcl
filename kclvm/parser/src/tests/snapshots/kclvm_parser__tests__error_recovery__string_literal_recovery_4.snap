@@ -1,0 +1,20 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 7
+expression: "crate::tests::parsing_expr_string(\"r''abc'\")"
+---
+Node {
+    node: StringLit(
+        StringLit {
+            is_long_string: false,
+            raw_value: "r''",
+            value: "",
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 3,
+}
+

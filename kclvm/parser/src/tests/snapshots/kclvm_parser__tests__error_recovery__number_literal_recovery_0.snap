@@ -1,0 +1,21 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 8
+expression: "crate::tests::parsing_expr_string(\"00\")"
+---
+Node {
+    node: NumberLit(
+        NumberLit {
+            binary_suffix: None,
+            value: Int(
+                0,
+            ),
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 2,
+}
+
