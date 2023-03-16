@@ -109,8 +109,8 @@ impl<'a> Cursor<'a> {
                     }
                 }
                 // If we encounter an unclosed single quote string,
-                // we end at the newline characters '\r' or '\n'.
-                '\r' | '\n' if !triple_quoted => break,
+                // we end at the eof and newline characters '\r' or '\n'.
+                _ if !triple_quoted && matches!(self.peek(), '\r' | '\n' | EOF_CHAR) => break,
                 _ => (),
             }
         }
