@@ -2,8 +2,8 @@
 
 extern crate serde;
 
-use compiler_base_session::Session;
 pub use kclvm_capi::service::api::*;
+use kclvm_parser::ParseSession;
 use kclvm_runner::exec_program;
 use kclvm_runner::runner::*;
 pub use kclvm_runtime::*;
@@ -47,7 +47,7 @@ pub unsafe extern "C" fn kclvm_cli_run(args: *const i8, plugin_agent: *const i8)
 
 pub fn kclvm_cli_run_unsafe(args: *const i8, plugin_agent: *const i8) -> Result<String, String> {
     exec_program(
-        Arc::new(Session::default()),
+        Arc::new(ParseSession::default()),
         &ExecProgramArgs::from_str(kclvm_runtime::c2str(args)),
         plugin_agent as u64,
     )

@@ -105,9 +105,16 @@ impl std::fmt::Display for ErrorKind {
 }
 
 impl ErrorKind {
-    #[allow(dead_code)]
+    /// Returns the error name.
     pub fn name(&self) -> String {
-        return format!("{:?}", self);
+        format!("{self:?}")
+    }
+    /// Returns the error code.
+    pub fn code(&self) -> String {
+        match ERRORS.iter().find(|&error_pair| error_pair.1.kind == *self) {
+            Some(r) => r.0.to_string(),
+            None => E1001.code.to_string(),
+        }
     }
 }
 
@@ -178,7 +185,18 @@ impl std::fmt::Display for WarningKind {
 /// }
 /// ```
 impl WarningKind {
+    /// Returns the warning name.
     pub fn name(&self) -> String {
-        return format!("{:?}", self);
+        format!("{self:?}")
+    }
+    /// Returns the warning code.
+    pub fn code(&self) -> String {
+        match WARNINGS
+            .iter()
+            .find(|&error_pair| error_pair.1.kind == *self)
+        {
+            Some(r) => r.0.to_string(),
+            None => W1001.code.to_string(),
+        }
     }
 }

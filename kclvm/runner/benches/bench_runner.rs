@@ -4,8 +4,7 @@ use std::sync::Arc;
 use criterion::{criterion_group, criterion_main, Criterion};
 use walkdir::WalkDir;
 
-use compiler_base_session::Session;
-use kclvm_parser::load_program;
+use kclvm_parser::{load_program, ParseSession};
 use kclvm_runner::{execute, runner::ExecProgramArgs};
 
 const EXEC_DATA_PATH: &str = "./src/exec_data/";
@@ -35,10 +34,11 @@ fn exec(file: &str) -> Result<String, String> {
     args.k_filename_list.push(file.to_string());
     let plugin_agent = 0;
     let opts = args.get_load_program_options();
+    let sess = Arc::new(ParseSession::default());
     // Load AST program
-    let program = load_program(Arc::new(Session::default()), &[file], Some(opts)).unwrap();
+    let program = load_program(sess.clone(), &[file], Some(opts)).unwrap();
     // Resolve ATS, generate libs, link libs and execute.
-    execute(program, plugin_agent, &args)
+    execute(sess, program, plugin_agent, &args)
 }
 
 /// Get kcl files from path.

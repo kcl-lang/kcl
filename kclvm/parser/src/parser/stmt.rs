@@ -12,7 +12,7 @@ use super::Parser;
 /// Parser uses `parse_exprlist` and `parse_expr` in [`kclvm_parser::parser::expr`]
 /// to get a expression node, and then concretize it into the specified expression node,
 /// and then assemble it into the corresponding statement node.
-impl<'a> Parser<'_> {
+impl<'a> Parser<'a> {
     /// Syntax:
     /// statement: simple_stmt | compound_stmt
     /// simple_stmt: (assign_stmt | expr_stmt | assert_stmt | import_stmt | type_alias_stmt) NEWLINE

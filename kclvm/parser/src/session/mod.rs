@@ -1,21 +1,22 @@
 use anyhow::Result;
 use compiler_base_macros::bug;
 use compiler_base_session::Session;
+use indexmap::IndexSet;
 use kclvm_ast::token::Token;
-use kclvm_error::{ParseError, Position};
+use kclvm_error::{Diagnostic, Handler, ParseError, Position};
 use kclvm_runtime::PanicInfo;
 use kclvm_span::{BytePos, Loc, Span};
-use std::sync::Arc;
-
+use std::{cell::RefCell, sync::Arc};
 /// ParseSession represents the data associated with a parse session such as the
 /// source map and the error handler.
-pub struct ParseSession(pub Arc<Session>);
+#[derive(Default, Clone)]
+pub struct ParseSession(pub Arc<Session>, pub RefCell<Handler>);
 
 impl ParseSession {
     /// New a parse session with the global session.
     #[inline]
     pub fn with_session(sess: Arc<Session>) -> Self {
-        Self(sess)
+        Self(sess, RefCell::new(Handler::default()))
     }
 
     /// Lookup char pos from span.
@@ -81,7 +82,8 @@ impl ParseSession {
     #[inline]
     fn add_parse_err(&self, err: ParseError) {
         let add_error = || -> Result<()> {
-            self.0.add_err(err.into_diag(&self.0)?)?;
+            self.0.add_err(err.clone().into_diag(&self.0)?)?;
+            self.1.borrow_mut().add_diagnostic(err.into_diag(&self.0)?);
             Ok(())
         };
         if let Err(err) = add_error() {
@@ -90,6 +92,19 @@ impl ParseSession {
                 err.to_string()
             )
         }
+    }
+
+    /// Append diagnostics into the parse session.
+    pub fn append_diagnostic(&self, diagnostics: IndexSet<Diagnostic>) -> &Self {
+        for diagnostic in diagnostics {
+            self.1.borrow_mut().add_diagnostic(diagnostic);
+        }
+        self
+    }
+
+    /// Classify diagnostics into errors and warnings.
+    pub fn classification(&self) -> (IndexSet<Diagnostic>, IndexSet<Diagnostic>) {
+        self.1.borrow().classification()
     }
 
     /// Parser panic with message and span.

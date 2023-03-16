@@ -3,7 +3,7 @@ use kclvm_ast::{token::LitKind, token::TokenKind};
 
 use super::Parser;
 
-impl<'a> Parser<'_> {
+impl<'a> Parser<'a> {
     /// Syntax:
     /// start: (NEWLINE | statement)*
     pub fn parse_module(&mut self) -> Module {

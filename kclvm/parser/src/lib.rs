@@ -9,7 +9,7 @@ mod tests;
 
 extern crate kclvm_error;
 
-use crate::session::ParseSession;
+pub use crate::session::ParseSession;
 use compiler_base_macros::bug;
 use compiler_base_session::Session;
 use compiler_base_span::span::new_byte_pos;
@@ -66,10 +66,16 @@ pub fn parse_file(filename: &str, code: Option<String>) -> Result<ast::Module, S
     let prev_hook = std::panic::take_hook();
     std::panic::set_hook(Box::new(|_| {}));
     let result = std::panic::catch_unwind(|| {
-        let sess = Arc::new(Session::default());
+        let sess = Arc::new(ParseSession::default());
         let result = parse_file_with_session(sess.clone(), filename, code);
-        if sess.diag_handler.has_errors().map_err(|e| e.to_string())? {
+        if sess
+            .0
+            .diag_handler
+            .has_errors()
+            .map_err(|e| e.to_string())?
+        {
             let err = sess
+                .0
                 .emit_nth_diag_into_string(0)
                 .map_err(|e| e.to_string())?
                 .unwrap_or(Ok(ErrorKind::InvalidSyntax.name()))
@@ -88,7 +94,7 @@ pub fn parse_file(filename: &str, code: Option<String>) -> Result<ast::Module, S
 
 /// Parse a KCL file to the AST module and returns session.
 pub fn parse_file_with_session(
-    sess: Arc<Session>,
+    sess: Arc<ParseSession>,
     filename: &str,
     code: Option<String>,
 ) -> Result<ast::Module, String> {
@@ -109,8 +115,10 @@ pub fn parse_file_with_session(
             };
 
             // Build a source map to store file sources.
-            let sf = sess.sm.new_source_file(PathBuf::from(filename).into(), src);
-            let parse_sess = &ParseSession::with_session(sess);
+            let sf = sess
+                .0
+                .sm
+                .new_source_file(PathBuf::from(filename).into(), src);
 
             let src_from_sf = match sf.src.as_ref() {
                 Some(src) => src,
@@ -122,9 +130,9 @@ pub fn parse_file_with_session(
             };
 
             // Lexer
-            let stream = lexer::parse_token_streams(parse_sess, src_from_sf.as_str(), sf.start_pos);
+            let stream = lexer::parse_token_streams(&sess, src_from_sf.as_str(), sf.start_pos);
             // Parser
-            let mut p = parser::Parser::new(parse_sess, stream);
+            let mut p = parser::Parser::new(&sess, stream);
             let mut m = p.parse_module();
             m.filename = filename.to_string();
             m.pkg = kclvm_ast::MAIN_PKG.to_string();
@@ -191,7 +199,7 @@ pub struct LoadProgramOptions {
 }
 
 pub fn load_program(
-    sess: Arc<Session>,
+    sess: Arc<ParseSession>,
     paths: &[&str],
     opts: Option<LoadProgramOptions>,
 ) -> Result<ast::Program, String> {
@@ -204,7 +212,7 @@ pub fn load_program(
 }
 
 struct Loader {
-    sess: Arc<Session>,
+    sess: Arc<ParseSession>,
     paths: Vec<String>,
     opts: LoadProgramOptions,
 
@@ -217,7 +225,7 @@ struct Loader {
 }
 
 impl Loader {
-    fn new(sess: Arc<Session>, paths: &[&str], opts: Option<LoadProgramOptions>) -> Self {
+    fn new(sess: Arc<ParseSession>, paths: &[&str], opts: Option<LoadProgramOptions>) -> Self {
         Self {
             sess,
             paths: paths.iter().map(|s| s.to_string()).collect(),

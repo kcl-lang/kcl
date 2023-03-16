@@ -2,13 +2,12 @@ use std::{collections::HashMap, path::Path, sync::Arc, time::SystemTime};
 
 use assembler::KclvmLibAssembler;
 use command::Command;
-use compiler_base_session::Session;
 use kclvm_ast::{
     ast::{Module, Program},
     MAIN_PKG,
 };
 use kclvm_driver::canonicalize_input_files;
-use kclvm_parser::load_program;
+use kclvm_parser::{load_program, ParseSession};
 use kclvm_query::apply_overrides;
 use kclvm_runtime::ValueRef;
 use kclvm_sema::resolver::resolve_program;
@@ -54,11 +53,11 @@ pub mod tests;
 ///
 /// ```
 /// use kclvm_runner::{exec_program, ExecProgramArgs};
+/// use kclvm_parser::ParseSession;
 /// use std::sync::Arc;
-/// use compiler_base_session::Session;
 ///
 /// // Create sessions
-/// let sess = Arc::new(Session::default());
+/// let sess = Arc::new(ParseSession::default());
 /// // Get default args
 /// let mut args = ExecProgramArgs::default();
 /// args.k_filename_list = vec!["./src/test_datas/init_check_order_0/main.k".to_string()];
@@ -68,7 +67,7 @@ pub mod tests;
 /// let result = exec_program(sess, &args, 0).unwrap();
 /// ```
 pub fn exec_program(
-    sess: Arc<Session>,
+    sess: Arc<ParseSession>,
     args: &ExecProgramArgs,
     plugin_agent: u64,
 ) -> Result<ExecProgramResult, String> {
@@ -147,13 +146,12 @@ pub fn exec_program(
 ///
 /// ```
 /// use kclvm_runner::{execute, runner::ExecProgramArgs};
-/// use kclvm_parser::load_program;
+/// use kclvm_parser::{load_program, ParseSession};
 /// use kclvm_ast::ast::Program;
 /// use std::sync::Arc;
-/// use compiler_base_session::Session;
 ///
 /// // Create sessions
-/// let sess = Arc::new(Session::default());
+/// let sess = Arc::new(ParseSession::default());
 /// // plugin_agent is the address of plugin.
 /// let plugin_agent = 0;
 /// // Get default args
@@ -169,14 +167,14 @@ pub fn exec_program(
 /// let result = execute(sess, prog, plugin_agent, &args).unwrap();
 /// ```
 pub fn execute(
-    sess: Arc<Session>,
+    sess: Arc<ParseSession>,
     mut program: Program,
     plugin_agent: u64,
     args: &ExecProgramArgs,
 ) -> Result<String, String> {
     // Resolve ast
     let scope = resolve_program(&mut program);
-    scope.alert_scope_diagnostics_with_session(sess)?;
+    scope.alert_scope_diagnostics_with_session(sess.0.clone())?;
 
     // Create a temp entry file and the temp dir will be delete automatically
     let temp_dir = tempdir().unwrap();
@@ -235,7 +233,7 @@ pub fn execute_module(mut m: Module) -> Result<String, String> {
     };
 
     execute(
-        Arc::new(Session::default()),
+        Arc::new(ParseSession::default()),
         prog,
         0,
         &ExecProgramArgs::default(),
