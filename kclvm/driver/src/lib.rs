@@ -1,9 +1,17 @@
 use kclvm_ast::ast;
-use kclvm_config::{modfile::KCL_MOD_PATH_ENV, settings::{build_settings_pathbuf, DEFAULT_SETTING_FILE}};
+use kclvm_config::{
+    modfile::KCL_MOD_PATH_ENV,
+    settings::{build_settings_pathbuf, DEFAULT_SETTING_FILE},
+};
 use kclvm_parser::LoadProgramOptions;
 use kclvm_runtime::PanicInfo;
 use kclvm_utils::path::PathPrefix;
-use std::{path::{Path, PathBuf}, fs::read_dir, io::{ErrorKind, self}, ffi::OsString};
+use std::{
+    ffi::OsString,
+    fs::read_dir,
+    io::{self, ErrorKind},
+    path::{Path, PathBuf},
+};
 
 /// Normalize input files with the working directory and replace ${KCL_MOD} with the module root path.
 pub fn canonicalize_input_files(
@@ -31,7 +39,6 @@ pub fn canonicalize_input_files(
     }
     return Ok(kcl_paths);
 }
-
 
 /// Get compile uint(files and options) from a single file
 pub fn lookup_compile_unit(file: &str) -> (Vec<String>, Option<LoadProgramOptions>) {
