@@ -4,6 +4,7 @@ use crate::to_lsp::{kcl_diag_to_lsp_diags, url};
 use crate::util::{get_file_name, to_json};
 use crossbeam_channel::{select, unbounded, Receiver, Sender};
 use indexmap::IndexSet;
+use kclvm_driver::lookup_compile_unit;
 use kclvm_error::Diagnostic as KCLDiagnostic;
 use kclvm_tools::lint::lint_files;
 use lsp_server::{ReqQueue, Response};
@@ -116,7 +117,7 @@ impl LanguageServerState {
     /// Handles an event from one of the many sources that the language server subscribes to.
     fn handle_event(&mut self, event: Event) -> anyhow::Result<()> {
         let start_time = Instant::now();
-        // Process the incoming event
+        // 1. Process the incoming event
         match event {
             Event::Task(task) => self.handle_task(task)?,
             Event::Lsp(msg) => match msg {
@@ -128,15 +129,17 @@ impl LanguageServerState {
         };
         let mut snapshot = self.snapshot();
         // todo: Process any changes to the vfs, Notify the database about this change and apply change(recompile)
-        // let state_changed = self.process_vfs_changes();
+        // 2. Process changes
+        // let state_changed:bool = self.process_vfs_changes();
+
+        // todo: handle diagenostics if state_changed
+        // 3. Handle Diagnostics
         let task_sender = self.task_sender.clone();
-        if self.vfs.read().has_changes() {
-            let sender = self.sender.clone();
-            // Spawn the diagnostics in the threadpool
-            self.thread_pool.execute(move || {
-                let _result = handle_diagnostics(snapshot, task_sender);
-            });
-        }
+        let sender = self.sender.clone();
+        // Spawn the diagnostics in the threadpool
+        self.thread_pool.execute(move || {
+            let _result = handle_diagnostics(snapshot, task_sender);
+        });
 
         Ok(())
     }
@@ -268,7 +271,10 @@ fn handle_diagnostics(
         };
         let file_str = filename.as_str();
 
-        let (errors, warnings) = lint_files(&[file_str], None);
+        let (files, cfg) = lookup_compile_unit(file_str);
+        let files: Vec<&str> = files.iter().map(|s| s.as_str()).collect();
+
+        let (errors, warnings) = lint_files(&files, cfg);
 
         let diags: IndexSet<KCLDiagnostic> = errors
             .iter()

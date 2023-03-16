@@ -5,7 +5,7 @@ extern crate clap;
 
 pub mod lint;
 pub mod run;
-mod settings;
+pub mod settings;
 
 #[cfg(test)]
 mod tests;

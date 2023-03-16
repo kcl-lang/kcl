@@ -231,3 +231,56 @@ mod settings_test {
         Ok(())
     }
 }
+
+/// Build SettingsPathBuf from args.
+pub fn build_settings_pathbuf(
+    files: &[&str],
+    output: Option<String>,
+    setting_files: Option<Vec<&str>>,
+    debug: bool,
+    disable_none: bool,
+) -> Result<SettingsPathBuf> {
+    let mut path = None;
+    let mut settings = if let Some(files) = setting_files {
+        let mut settings = vec![];
+        for file in &files {
+            let s = load_file(file)?;
+            if !s.input().is_empty() {
+                path = Some(
+                    PathBuf::from(file)
+                        .parent()
+                        .map(|p| p.to_path_buf())
+                        .ok_or(anyhow::anyhow!("The parent path of {file} is not found"))?,
+                )
+            }
+            settings.push(s);
+        }
+        merge_settings(&settings)
+    // If exists default kcl.yaml, load it.
+    } else if std::fs::metadata(DEFAULT_SETTING_FILE).is_ok() {
+        path = Some(
+            PathBuf::from(DEFAULT_SETTING_FILE)
+                .parent()
+                .map(|p| p.to_path_buf())
+                .ok_or(anyhow::anyhow!(
+                    "The parent path of {DEFAULT_SETTING_FILE} is not found"
+                ))?,
+        );
+        load_file(DEFAULT_SETTING_FILE)?
+    } else {
+        SettingsFile::default()
+    };
+    if let Some(config) = &mut settings.kcl_cli_configs {
+        if !files.is_empty() {
+            config.files = Some(files.iter().map(|f| f.to_string()).collect());
+        }
+        config.output = output;
+        if debug {
+            config.debug = Some(true);
+        }
+        if disable_none {
+            config.disable_none = Some(true);
+        }
+    }
+    Ok(SettingsPathBuf::new(path, settings))
+}
