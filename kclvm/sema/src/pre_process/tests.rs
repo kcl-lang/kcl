@@ -1,10 +1,9 @@
 use std::sync::Arc;
 
 use super::*;
-use compiler_base_session::Session;
 use indexmap::IndexMap;
 use kclvm_ast::path::get_attr_paths_from_config_expr;
-use kclvm_parser::{load_program, parse_file};
+use kclvm_parser::{load_program, parse_file, ParseSession};
 
 #[test]
 fn test_fix_qualified_identifier() {
@@ -63,7 +62,7 @@ fn test_transform_multi_assign() {
 
 #[test]
 fn test_config_merge() {
-    let sess = Arc::new(Session::default());
+    let sess = Arc::new(ParseSession::default());
     let mut program = load_program(
         sess,
         &[
@@ -109,7 +108,7 @@ fn test_config_merge() {
 
 #[test]
 fn test_config_override() {
-    let sess = Arc::new(Session::default());
+    let sess = Arc::new(ParseSession::default());
     let mut program = load_program(
         sess,
         &["./src/pre_process/test_data/config_override.k"],

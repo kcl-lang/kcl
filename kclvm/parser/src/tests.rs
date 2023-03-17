@@ -35,15 +35,14 @@ pub(crate) fn parsing_expr_string(src: &str) -> String {
 }
 
 pub fn check_result_panic_info(result: Result<(), Box<dyn Any + Send>>) {
-    match result {
-        Err(e) => match e.downcast::<String>() {
+    if let Err(e) = result {
+        match e.downcast::<String>() {
             Ok(_v) => {
                 let got = _v.to_string();
                 let _u: PanicInfo = serde_json::from_str(&got).unwrap();
             }
             _ => unreachable!(),
-        },
-        _ => {}
+        }
     };
 }
 

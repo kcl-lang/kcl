@@ -8,7 +8,7 @@ use kclvm_ast::token::{BinOpToken, DelimToken, TokenKind};
 use kclvm_ast::{ast, expr_as};
 use kclvm_span::symbol::{kw, sym};
 
-impl<'a> Parser<'_> {
+impl<'a> Parser<'a> {
     /// Syntax:
     ///
     /// type: type_element (OR type_element)*

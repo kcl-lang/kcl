@@ -7,6 +7,8 @@ parse_expr_snapshot! { string_literal_recovery_3, "r'''abc" }
 parse_expr_snapshot! { string_literal_recovery_4, "r''abc'" }
 parse_expr_snapshot! { string_literal_recovery_5, "'" }
 parse_expr_snapshot! { string_literal_recovery_6, "'''" }
+parse_expr_snapshot! { string_literal_recovery_7, "'\n" }
+parse_expr_snapshot! { string_literal_recovery_8, "r'abc\n" }
 parse_expr_snapshot! { number_literal_recovery_0, "00" }
 parse_expr_snapshot! { number_literal_recovery_1, "00a" }
 parse_expr_snapshot! { number_literal_recovery_2, "0x112.3" }

@@ -5,17 +5,19 @@ use compiler_base_error::diagnostic_handler::DiagnosticHandler;
 use compiler_base_session::Session;
 use compiler_base_span::{span::new_byte_pos, FilePathMapping, SourceMap};
 use expect_test::{expect, Expect};
+use kclvm_error::Handler;
 use kclvm_span::create_session_globals_then;
+use std::cell::RefCell;
 use std::path::PathBuf;
 use std::sync::Arc;
 
 impl ParseSession {
     #[inline]
     pub(crate) fn with_source_map(sm: Arc<SourceMap>) -> Self {
-        Self(Arc::new(Session::new(
-            sm,
-            Arc::new(DiagnosticHandler::default()),
-        )))
+        Self(
+            Arc::new(Session::new(sm, Arc::new(DiagnosticHandler::default()))),
+            RefCell::new(Handler::default()),
+        )
     }
 }
 
@@ -484,10 +486,10 @@ fn test_peek() {
     let src = "\na=1";
     let sm = SourceMap::new(FilePathMapping::empty());
     sm.new_source_file(PathBuf::from("").into(), src.to_string());
-    let mut sess = ParseSession::with_source_map(Arc::new(sm));
+    let sess = ParseSession::with_source_map(Arc::new(sm));
 
     create_session_globals_then(|| {
-        let stream = parse_token_streams(&mut sess, src, new_byte_pos(0));
+        let stream = parse_token_streams(&sess, src, new_byte_pos(0));
         let mut cursor = stream.cursor();
 
         let tok0 = cursor.next();

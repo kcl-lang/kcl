@@ -28,17 +28,9 @@ pub use error::*;
 /// A handler deals with errors and other compiler output.
 /// Certain errors (error, bug) may cause immediate exit,
 /// others log errors for later reporting.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct Handler {
     pub diagnostics: IndexSet<Diagnostic>,
-}
-
-impl Default for Handler {
-    fn default() -> Self {
-        Self {
-            diagnostics: Default::default(),
-        }
-    }
 }
 
 impl Handler {
@@ -107,13 +99,13 @@ impl Handler {
                     std::process::exit(1);
                 }
             }
-            Err(err) => self.bug(&format!("{}", err.to_string())),
+            Err(err) => self.bug(&format!("{err}")),
         }
     }
 
     /// Construct a parse error and put it into the handler diagnostic buffer
     pub fn add_syntex_error(&mut self, msg: &str, pos: Position) -> &mut Self {
-        let message = format!("Invalid syntax: {}", msg);
+        let message = format!("Invalid syntax: {msg}");
         let diag = Diagnostic::new_with_code(
             Level::Error,
             &message,
@@ -360,11 +352,11 @@ impl SessionDiagnostic for Diagnostic {
         match self.code {
             Some(id) => match id {
                 DiagnosticId::Error(error) => {
-                    diag.append_component(Box::new(Label::Error(E2L23.code.to_string())));
+                    diag.append_component(Box::new(Label::Error(error.code())));
                     diag.append_component(Box::new(format!(": {}", error.name())));
                 }
                 DiagnosticId::Warning(warning) => {
-                    diag.append_component(Box::new(Label::Warning(W1001.code.to_string())));
+                    diag.append_component(Box::new(Label::Warning(warning.code())));
                     diag.append_component(Box::new(format!(": {}", warning.name())));
                 }
             },
@@ -433,7 +425,7 @@ impl SessionDiagnostic for Diagnostic {
             };
             if let Some(note) = &msg.note {
                 diag.append_component(Box::new(Label::Note));
-                diag.append_component(Box::new(format!(": {}\n", note)));
+                diag.append_component(Box::new(format!(": {note}\n")));
             }
             // Append a new line.
             diag.append_component(Box::new(String::from("\n")));

@@ -5,9 +5,9 @@ use crate::pre_process::pre_process_program;
 use crate::resolver::resolve_program;
 use crate::resolver::scope::*;
 use crate::ty::Type;
-use compiler_base_session::Session;
 use kclvm_ast::ast;
 use kclvm_error::*;
+use kclvm_parser::ParseSession;
 use kclvm_parser::{load_program, parse_program};
 use std::path::Path;
 use std::rc::Rc;
@@ -45,7 +45,7 @@ fn test_resolve_program() {
 
 #[test]
 fn test_pkg_init_in_schema_resolve() {
-    let sess = Arc::new(Session::default());
+    let sess = Arc::new(ParseSession::default());
     let mut program = load_program(
         sess.clone(),
         &["./src/resolver/test_data/pkg_init_in_schema.k"],
@@ -112,7 +112,7 @@ fn test_resolve_program_mismatch_type_fail() {
 
 #[test]
 fn test_resolve_program_cycle_reference_fail() {
-    let sess = Arc::new(Session::default());
+    let sess = Arc::new(ParseSession::default());
     let mut program = load_program(
         sess.clone(),
         &["./src/resolver/test_fail_data/cycle_reference/file1.k"],
@@ -137,7 +137,7 @@ fn test_resolve_program_cycle_reference_fail() {
 
 #[test]
 fn test_record_used_module() {
-    let sess = Arc::new(Session::default());
+    let sess = Arc::new(ParseSession::default());
     let mut program = load_program(
         sess.clone(),
         &["./src/resolver/test_data/record_used_module.k"],
@@ -165,7 +165,7 @@ fn test_record_used_module() {
 
 #[test]
 fn test_cannot_find_module() {
-    let sess = Arc::new(Session::default());
+    let sess = Arc::new(ParseSession::default());
     let mut program = load_program(
         sess.clone(),
         &["./src/resolver/test_fail_data/cannot_find_module.k"],
@@ -256,7 +256,7 @@ fn test_resolve_program_module_optional_select_fail() {
 
 #[test]
 fn test_lint() {
-    let sess = Arc::new(Session::default());
+    let sess = Arc::new(ParseSession::default());
     let mut program =
         load_program(sess.clone(), &["./src/resolver/test_data/lint.k"], None).unwrap();
     pre_process_program(&mut program);

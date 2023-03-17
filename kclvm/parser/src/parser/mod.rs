@@ -144,8 +144,8 @@ impl<'a> Parser<'a> {
 
             // split comments
             if matches!(tok.kind, TokenKind::DocComment(_)) {
-                match tok.kind {
-                    TokenKind::DocComment(comment_kind) => match comment_kind {
+                if let TokenKind::DocComment(comment_kind) = tok.kind {
+                    match comment_kind {
                         CommentKind::Line(x) => {
                             let lo = sess.lookup_char_pos(tok.span.lo());
                             let hi = sess.lookup_char_pos(tok.span.hi());
@@ -164,8 +164,7 @@ impl<'a> Parser<'a> {
 
                             comments.push(NodeRef::new(node));
                         }
-                    },
-                    _ => (),
+                    }
                 }
                 continue;
             }

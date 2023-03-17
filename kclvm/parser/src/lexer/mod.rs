@@ -439,18 +439,20 @@ impl<'a> Lexer<'a> {
                 terminated,
                 triple_quoted,
             } => {
+                let start_char = self.char_from(start);
+                let (is_raw, quote_char_pos, quote_char) = match start_char {
+                    'r' | 'R' => {
+                        let pos = start + new_byte_pos(1);
+                        (true, pos, self.char_from(pos))
+                    }
+                    _ => (false, start, start_char),
+                };
                 if !terminated {
                     self.sess.struct_span_error_recovery(
                         "unterminated string",
-                        self.span(start, self.pos),
+                        self.span(quote_char_pos, self.pos),
                     )
                 }
-
-                let start_char = self.char_from(start);
-                let (is_raw, quote_char) = match start_char {
-                    'r' | 'R' => (true, self.char_from(start + new_byte_pos(1))),
-                    _ => (false, start_char),
-                };
                 // Cut offset before validation.
                 let offset: u32 = if triple_quoted {
                     if is_raw {

@@ -21,6 +21,7 @@ bstr = "0.2.16"
 num-bigint = "0.4"
 regex = "1.7.0"
 anyhow = "1.0"
+indexmap = "1.0"
 
 kclvm-lexer = {path = "../lexer", version = "0.4.5"}
 kclvm-ast = {path = "../ast", version = "0.4.5"}
