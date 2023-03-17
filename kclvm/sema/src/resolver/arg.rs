@@ -4,7 +4,7 @@ use indexmap::IndexSet;
 use kclvm_ast::ast;
 use std::rc::Rc;
 
-use crate::resolver::pos::GetPos;
+use kclvm_ast::pos::GetPos;
 
 impl<'ctx> Resolver<'ctx> {
     fn get_func_name(&mut self, func: &ast::Expr) -> String {

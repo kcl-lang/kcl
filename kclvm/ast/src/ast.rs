@@ -41,7 +41,9 @@ use std::collections::HashMap;
 use compiler_base_span::{Loc, Span};
 
 use super::token;
-use crate::node_ref;
+use crate::{node_ref, pos::ContainsPos};
+use kclvm_error::Position;
+
 /// Node is the file, line and column number information
 /// that all AST nodes need to contain.
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -213,6 +215,17 @@ impl Program {
             None => vec![],
         }
     }
+
+    pub fn pos_to_stmt(&self, pos: &Position) -> Option<Node<Stmt>> {
+        for (_, v) in &self.pkgs {
+            for m in v {
+                if m.filename == pos.filename {
+                    return m.pos_to_stmt(pos);
+                }
+            }
+        }
+        None
+    }
 }
 
 /// Module is an abstract syntax tree for a single KCL file.
@@ -236,6 +249,15 @@ impl Module {
             }
         }
         return stmts;
+    }
+
+    pub fn pos_to_stmt(&self, pos: &Position) -> Option<Node<Stmt>> {
+        for stmt in &self.body {
+            if stmt.contains_pos(pos) {
+                return Some(*stmt.clone());
+            }
+        }
+        None
     }
 }
 

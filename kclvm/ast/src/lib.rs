@@ -6,6 +6,7 @@ pub mod path;
 pub mod token;
 pub mod token_stream;
 pub mod walker;
+pub mod pos;
 
 #[cfg(test)]
 mod tests;

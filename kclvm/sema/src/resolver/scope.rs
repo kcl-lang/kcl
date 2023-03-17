@@ -8,7 +8,7 @@ use std::{
     rc::{Rc, Weak},
 };
 
-use crate::resolver::pos::ContainsPos;
+use kclvm_ast::pos::ContainsPos;
 use crate::resolver::Resolver;
 use crate::ty::Type;
 use crate::{builtin::BUILTIN_FUNCTIONS, ty::TypeInferMethods};

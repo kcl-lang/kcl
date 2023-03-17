@@ -1,4 +1,4 @@
-use crate::resolver::pos::GetPos;
+use kclvm_ast::pos::GetPos;
 use crate::resolver::Resolver;
 use kclvm_ast::ast;
 use kclvm_error::*;

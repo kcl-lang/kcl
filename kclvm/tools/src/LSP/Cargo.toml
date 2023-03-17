@@ -19,14 +19,14 @@ log = "0.4.14"
 im-rc = "15.0.0"
 rustc_lexer = "0.1.0"
 
-kclvm-ast = {path = "../../../ast", version = "0.4.5"}
 kclvm-tools = {path = "../../../tools"}
-kclvm-parser = {path = "../../../parser", version = "0.4.5"}
-kclvm-compiler = {path = "../../../compiler", version = "0.4.5"}
-kclvm-sema = {path = "../../../sema", version = "0.4.5"}
 kclvm-error = {path = "../../../error", version = "0.4.5"}
 kclvm-config ={ path = "../../../config", version = "0.4.5"}
 kclvm-driver = {path = "../../../driver", version =  "0.4.5"}
+kclvm-parser = {path = "../../../parser", version =  "0.4.5"}
+kclvm-sema = {path = "../../../sema", version =  "0.4.5"}
+kclvm-ast = {path = "../../../ast", version =  "0.4.5"}
+compiler_base_session = {path = "../../../../compiler_base/session"}
 
 lsp-server = { version = "0.6.0", default-features = false }
 anyhow = { version = "1.0", default-features = false, features=["std"] }

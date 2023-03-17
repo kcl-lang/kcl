@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use crate::builtin::BUILTIN_DECORATORS;
-use crate::resolver::pos::GetPos;
+use kclvm_ast::pos::GetPos;
 use crate::resolver::Resolver;
 use crate::ty::{Decorator, DecoratorTarget, TypeKind};
 use kclvm_ast::ast;

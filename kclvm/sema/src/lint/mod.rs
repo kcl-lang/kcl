@@ -72,7 +72,7 @@
 //! In addition to calling the self.pass.check_* function, the original walk method in MutSelfWalker
 //! should be copied here so that it can continue to traverse the child nodes.
 
-use crate::resolver::pos::GetPos;
+use kclvm_ast::pos::GetPos;
 use crate::resolver::{scope::Scope, Resolver};
 use kclvm_error::{Handler, Position};
 mod combinedlintpass;

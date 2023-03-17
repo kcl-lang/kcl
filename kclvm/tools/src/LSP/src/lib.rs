@@ -8,3 +8,6 @@ mod notification;
 mod state;
 mod to_lsp;
 mod util;
+
+mod goto_def;
+mod request;

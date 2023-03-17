@@ -1,5 +1,6 @@
-use kclvm_ast::ast;
 use kclvm_error::Position;
+
+use crate::ast;
 
 pub trait ContainsPos {
     /// Check if current scope or node contains a position.

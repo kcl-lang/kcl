@@ -13,7 +13,7 @@ use kclvm_ast::walker::MutSelfTypedResultWalker;
 use kclvm_error::*;
 
 use super::scope::{ScopeObject, ScopeObjectKind};
-use crate::resolver::pos::GetPos;
+use kclvm_ast::pos::GetPos;
 
 const MAX_SCOPE_SCAN_COUNT: usize = 3;
 pub const MIXIN_SUFFIX: &str = "Mixin";

@@ -7,7 +7,8 @@ use super::{
 };
 use crate::ty::SchemaType;
 use crate::ty::{Type, TypeKind};
-use crate::{resolver::pos::GetPos, ty::sup};
+use crate::ty::sup;
+use kclvm_ast::pos::GetPos;
 use kclvm_ast::ast;
 use kclvm_error::{ErrorKind, Message, Position, Style};
 

@@ -11,7 +11,7 @@ use kclvm_error::*;
 use std::{cell::RefCell, path::Path, rc::Rc};
 
 use super::scope::{Scope, ScopeKind, ScopeObject, ScopeObjectKind};
-use crate::resolver::pos::GetPos;
+use kclvm_ast::pos::GetPos;
 
 impl<'ctx> Resolver<'ctx> {
     /// Check import error

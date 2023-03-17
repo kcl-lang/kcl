@@ -144,29 +144,6 @@ impl LanguageServerState {
         Ok(())
     }
 
-    /// Handles a language server protocol request
-    pub(super) fn on_request(
-        &mut self,
-        request: lsp_server::Request,
-        request_received: Instant,
-    ) -> anyhow::Result<()> {
-        self.register_request(&request, request_received);
-        // If a shutdown was requested earlier, immediately respond with an error
-        if self.shutdown_requested {
-            self.respond(lsp_server::Response::new_err(
-                request.id,
-                lsp_server::ErrorCode::InvalidRequest as i32,
-                "shutdown was requested".to_owned(),
-            ));
-            return Ok(());
-        }
-        self.log_message(format!(
-            "on request {:?}, but not implement, nothing todo",
-            request.method
-        ));
-        Ok(())
-    }
-
     /// Processes any and all changes that have been applied to the virtual filesystem. Generates
     /// an `AnalysisChange` and applies it if there are changes. True is returned if things changed,
     /// otherwise false.
@@ -227,7 +204,11 @@ impl LanguageServerState {
     /// Registers a request with the server. We register all these request to make sure they all get
     /// handled and so we can measure the time it takes for them to complete from the point of view
     /// of the client.
-    fn register_request(&mut self, request: &lsp_server::Request, request_received: Instant) {
+    pub(crate) fn register_request(
+        &mut self,
+        request: &lsp_server::Request,
+        request_received: Instant,
+    ) {
         self.request_queue.incoming.register(
             request.id.clone(),
             (request.method.clone(), request_received),
@@ -296,5 +277,14 @@ fn handle_diagnostics(
             })?,
         }))?;
     }
+    Ok(())
+}
+
+pub(crate) fn log_message(message: String, sender: &Sender<Task>) -> anyhow::Result<()> {
+    let typ = lsp_types::MessageType::INFO;
+    sender.send(Task::Notify(lsp_server::Notification::new(
+        lsp_types::notification::LogMessage::METHOD.to_string(),
+        lsp_types::LogMessageParams { typ, message },
+    )))?;
     Ok(())
 }

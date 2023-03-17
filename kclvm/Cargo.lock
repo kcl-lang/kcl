@@ -1163,13 +1163,13 @@ dependencies = [
  "anyhow",
  "chrono",
  "chumsky",
+ "compiler_base_session",
  "crossbeam-channel",
  "dashmap",
  "env_logger",
  "im-rc",
  "indexmap",
  "kclvm-ast",
- "kclvm-compiler",
  "kclvm-config",
  "kclvm-driver",
  "kclvm-error",
@@ -1228,6 +1228,7 @@ name = "kclvm-ast"
 version = "0.4.5"
 dependencies = [
  "compiler_base_span 0.0.2",
+ "kclvm-error",
  "kclvm-parser",
  "kclvm-span",
  "serde",

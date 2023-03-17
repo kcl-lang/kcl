@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use crate::resolver::pos::GetPos;
+use kclvm_ast::pos::GetPos;
 use crate::resolver::Resolver;
 use crate::ty::parser::parse_type_str;
 use crate::ty::{assignable_to, SchemaType, Type, TypeKind};
