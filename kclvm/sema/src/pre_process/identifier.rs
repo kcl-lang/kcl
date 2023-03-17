@@ -1,6 +1,6 @@
 use crate::info::is_private_field;
-use kclvm_ast::pos::GetPos;
 use indexmap::{IndexMap, IndexSet};
+use kclvm_ast::pos::GetPos;
 use kclvm_ast::walker::MutSelfMutWalker;
 use kclvm_ast::{ast, walk_if_mut, walk_list_mut};
 use kclvm_error::*;

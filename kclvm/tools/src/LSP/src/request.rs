@@ -1,16 +1,12 @@
-use std::{sync::Arc, time::Instant};
+use std::time::Instant;
 
-use compiler_base_session::Session;
 use crossbeam_channel::Sender;
-use kclvm_driver::lookup_compile_unit;
-use kclvm_parser::load_program;
-use kclvm_sema::resolver::resolve_program;
 
 use crate::{
     dispatcher::RequestDispatcher,
-    from_lsp::kcl_pos,
     goto_def::goto_definition,
     state::{log_message, LanguageServerSnapshot, LanguageServerState, Task},
+    util::{parse_param_and_compile, Param},
 };
 
 impl LanguageServerState {
@@ -49,25 +45,17 @@ impl LanguageServerState {
     }
 }
 
+/// Find definition of location.
+/// Response can be single location, multiple Locations ,a link or None
 pub(crate) fn handle_goto_definition(
     _snapshot: LanguageServerSnapshot,
     params: lsp_types::GotoDefinitionParams,
     sender: Sender<Task>,
 ) -> anyhow::Result<Option<lsp_types::GotoDefinitionResponse>> {
-    let file = params
-        .text_document_position_params
-        .text_document
-        .uri
-        .path();
-    let pos = params.text_document_position_params.position;
-    let kcl_pos = kcl_pos(file, pos);
-
-    let (files, cfg) = lookup_compile_unit(file);
-    let files: Vec<&str> = files.iter().map(|s| s.as_str()).collect();
-
-    let mut program = load_program(Arc::new(Session::default()), &files, cfg).unwrap();
-    let prog_scope = resolve_program(&mut program);
-
+    let (kcl_pos, program, prog_scope) = parse_param_and_compile(Param {
+        url: params.text_document_position_params.text_document.uri,
+        pos: params.text_document_position_params.position,
+    });
     let res = goto_definition(program, kcl_pos, prog_scope);
     if res.is_none() {
         log_message("Definition not found".to_string(), &sender)?;

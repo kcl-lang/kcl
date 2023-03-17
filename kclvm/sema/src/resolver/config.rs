@@ -5,11 +5,11 @@ use super::{
     scope::{ScopeKind, ScopeObject, ScopeObjectKind},
     Resolver,
 };
+use crate::ty::sup;
 use crate::ty::SchemaType;
 use crate::ty::{Type, TypeKind};
-use crate::ty::sup;
-use kclvm_ast::pos::GetPos;
 use kclvm_ast::ast;
+use kclvm_ast::pos::GetPos;
 use kclvm_error::{ErrorKind, Message, Position, Style};
 
 /// Config Expr type check state.

@@ -12,6 +12,8 @@ mod goto_def;
 mod notification;
 mod request;
 mod state;
+#[cfg(test)]
+mod tests;
 mod to_lsp;
 mod util;
 

@@ -1,11 +1,11 @@
 use std::rc::Rc;
 
-use kclvm_ast::pos::GetPos;
 use crate::resolver::Resolver;
 use crate::ty::parser::parse_type_str;
 use crate::ty::{assignable_to, SchemaType, Type, TypeKind};
 use indexmap::IndexMap;
 use kclvm_ast::ast;
+use kclvm_ast::pos::GetPos;
 use kclvm_error::*;
 
 use super::node::ResolvedResult;

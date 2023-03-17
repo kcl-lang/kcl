@@ -1,10 +1,6 @@
 use anyhow::Result;
-use kclvm_config::{
-    modfile::KCL_FILE_SUFFIX,
-};
-use std::{
-    path::Path,
-};
+use kclvm_config::modfile::KCL_FILE_SUFFIX;
+use std::path::Path;
 use walkdir::WalkDir;
 
 pub mod loader;

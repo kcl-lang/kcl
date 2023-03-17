@@ -215,7 +215,7 @@ impl Program {
             None => vec![],
         }
     }
-
+    /// Get stmt on position
     pub fn pos_to_stmt(&self, pos: &Position) -> Option<Node<Stmt>> {
         for (_, v) in &self.pkgs {
             for m in v {
@@ -251,6 +251,7 @@ impl Module {
         return stmts;
     }
 
+    /// Get stmt on position
     pub fn pos_to_stmt(&self, pos: &Position) -> Option<Node<Stmt>> {
         for stmt in &self.body {
             if stmt.contains_pos(pos) {

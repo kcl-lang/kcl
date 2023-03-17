@@ -7,6 +7,7 @@ use toml;
 
 pub const KCL_MOD_FILE: &str = "kcl.mod";
 pub const KCL_FILE_SUFFIX: &str = ".k";
+pub const KCL_FILE_EXTENSION: &str = "k";
 pub const KCL_MOD_PATH_ENV: &str = "${KCL_MOD}";
 
 #[allow(dead_code)]
