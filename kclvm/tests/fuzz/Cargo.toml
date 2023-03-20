@@ -9,7 +9,7 @@ edition = "2018"
 cargo-fuzz = true
 
 [dependencies]
-kclvm-runtime = {path = "../../runtime", version = "0.4.5"}
+kclvm-runtime = {path = "../../runtime"}
 kclvm-parser = {path="../../parser", version="0.1.0"}
 libfuzzer-sys = { version = "0.4.0", features = ["arbitrary-derive"] }
 arbitrary = { version = "1", features = ["derive"] }

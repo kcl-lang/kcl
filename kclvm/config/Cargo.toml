@@ -1,6 +1,6 @@
 [package]
 name = "kclvm-config"
-version = "0.4.5"
+version = "0.4.6"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -19,5 +19,5 @@ fslock = "0.2.1"
 pathdiff = "0.2.1"
 anyhow = "1.0"
 
-kclvm-version = {path = "../version", version = "0.4.5"}
-kclvm-utils = {path = "../utils", version = "0.4.5"}
+kclvm-version = {path = "../version"}
+kclvm-utils = {path = "../utils"}

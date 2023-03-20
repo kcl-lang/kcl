@@ -1,6 +1,6 @@
 [package]
 name = "kclvm-runner"
-version = "0.4.5"
+version = "0.4.6"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -26,20 +26,20 @@ cc = "1.0"
 compiler_base_session = {path = "../../compiler_base/session"}
 compiler_base_macros = "0.0.1"
 
-kclvm-ast = {path = "../ast", version = "0.4.5"}
-kclvm-parser = {path = "../parser", version = "0.4.5"}
-kclvm-compiler = {path = "../compiler", version = "0.4.5"}
-kclvm-config = {path = "../config", version = "0.4.5"}
-kclvm-runtime = {path = "../runtime", version = "0.4.5"}
-kclvm-sema = {path = "../sema", version = "0.4.5"}
-kclvm-version = {path = "../version", version = "0.4.5"}
-kclvm-error = {path = "../error", version="0.4.5"}
-kclvm-query = {path = "../query", version="0.4.5"}
-kclvm-utils = {path = "../utils", version="0.4.5"}
-kclvm-driver = {path = "../driver", version="0.4.5"}
+kclvm-ast = {path = "../ast"}
+kclvm-parser = {path = "../parser"}
+kclvm-compiler = {path = "../compiler"}
+kclvm-config = {path = "../config"}
+kclvm-runtime = {path = "../runtime"}
+kclvm-sema = {path = "../sema"}
+kclvm-version = {path = "../version"}
+kclvm-error = {path = "../error", version="0.4.6"}
+kclvm-query = {path = "../query", version="0.4.6"}
+kclvm-utils = {path = "../utils", version="0.4.6"}
+kclvm-driver = {path = "../driver", version="0.4.6"}
 
 [dev-dependencies]
-kclvm-parser = {path = "../parser", version = "0.4.5"}
+kclvm-parser = {path = "../parser"}
 criterion = "0.3"
 
 [[bench]]
