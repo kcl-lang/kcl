@@ -13,7 +13,7 @@ use std::{
 
 /// Convert pos format
 /// The position in lsp protocol is different with position in ast node whose line number is 1 based.
-pub fn kcl_pos_to_lsp_pos(pos: &KCLPos) -> Position {
+pub fn lsp_pos(pos: &KCLPos) -> Position {
     Position {
         line: pos.line as u32 - 1,
         character: pos.column.unwrap_or(0) as u32,
@@ -23,8 +23,8 @@ pub fn kcl_pos_to_lsp_pos(pos: &KCLPos) -> Position {
 /// Convert KCL Message to LSP Diagnostic
 fn kcl_msg_to_lsp_diags(msg: &Message, severity: DiagnosticSeverity) -> Diagnostic {
     let kcl_pos = msg.pos.clone();
-    let start_position = kcl_pos_to_lsp_pos(&kcl_pos);
-    let end_position = kcl_pos_to_lsp_pos(&kcl_pos);
+    let start_position = lsp_pos(&kcl_pos);
+    let end_position = lsp_pos(&kcl_pos);
     Diagnostic {
         range: Range::new(start_position, end_position),
         severity: Some(severity),

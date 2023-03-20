@@ -1,6 +1,16 @@
+use std::sync::Arc;
+
+use kclvm_ast::ast::Program;
+use kclvm_driver::lookup_compile_unit;
+use kclvm_error::Position as KCLPos;
+use kclvm_parser::{load_program, ParseSession};
+use kclvm_sema::resolver::{resolve_program, scope::ProgramScope};
+use lsp_types::{Position, Url};
 use parking_lot::RwLockReadGuard;
 use ra_ap_vfs::{FileId, Vfs};
 use serde::{de::DeserializeOwned, Serialize};
+
+use crate::from_lsp::kcl_pos;
 
 #[allow(unused)]
 /// Deserializes a `T` from a json value.
@@ -30,4 +40,20 @@ pub fn get_file_name(vfs: RwLockReadGuard<Vfs>, file_id: FileId) -> anyhow::Resu
             vfs.file_path(file_id)
         ))
     }
+}
+
+pub(crate) struct Param {
+    pub url: Url,
+    pub pos: Position,
+}
+
+pub(crate) fn parse_param_and_compile(param: Param) -> (KCLPos, Program, ProgramScope) {
+    let file = param.url.path();
+    let kcl_pos = kcl_pos(file, param.pos);
+    let (files, cfg) = lookup_compile_unit(file);
+    let files: Vec<&str> = files.iter().map(|s| s.as_str()).collect();
+
+    let mut program = load_program(Arc::new(ParseSession::default()), &files, cfg).unwrap();
+    let prog_scope = resolve_program(&mut program);
+    (kcl_pos, program, prog_scope)
 }

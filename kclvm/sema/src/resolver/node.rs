@@ -1,10 +1,9 @@
-use std::rc::Rc;
-
-use crate::resolver::pos::GetPos;
 use indexmap::IndexMap;
 use kclvm_ast::ast;
+use kclvm_ast::pos::GetPos;
 use kclvm_ast::walker::MutSelfTypedResultWalker;
 use kclvm_error::*;
+use std::rc::Rc;
 
 use crate::ty::{
     sup, DecoratorTarget, Parameter, Type, TypeInferMethods, TypeKind, RESERVED_TYPE_IDENTIFIERS,

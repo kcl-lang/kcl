@@ -8,7 +8,6 @@ mod import;
 mod r#loop;
 mod node;
 mod para;
-pub mod pos;
 mod schema;
 pub mod scope;
 mod ty;

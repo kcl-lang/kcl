@@ -3,9 +3,8 @@ use std::rc::Rc;
 use crate::resolver::Resolver;
 use crate::ty::{sup, Type, TypeKind};
 use kclvm_ast::ast;
+use kclvm_ast::pos::GetPos;
 use kclvm_error::Position;
-
-use crate::resolver::pos::GetPos;
 
 impl<'ctx> Resolver<'ctx> {
     /// Do loop type check including quant and comp for expression.
