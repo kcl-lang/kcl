@@ -457,7 +457,7 @@ mod test_validater {
 
                 let result = panic::catch_unwind(|| validate(opt));
 
-                let mut expect: PanicInfo = serde_json::from_str(&expected_err_msg).unwrap();
+                let expect: PanicInfo = serde_json::from_str(&expected_err_msg).unwrap();
 
                 #[cfg(target_os = "windows")]
                 path_to_windows(&mut expect);

@@ -1,5 +1,8 @@
 use kclvm_ast::ast;
-use kclvm_config::settings::{SettingsFile, SettingsPathBuf};
+use kclvm_config::{
+    modfile::get_vendor_home,
+    settings::{SettingsFile, SettingsPathBuf},
+};
 use kclvm_runtime::ValueRef;
 use serde::{Deserialize, Serialize};
 
@@ -67,6 +70,7 @@ impl ExecProgramArgs {
     pub fn get_load_program_options(&self) -> kclvm_parser::LoadProgramOptions {
         kclvm_parser::LoadProgramOptions {
             work_dir: self.work_dir.clone().unwrap_or_else(|| "".to_string()),
+            vendor_dirs: vec![get_vendor_home()],
             k_code_list: self.k_code_list.clone(),
             cmd_args: self.args.clone(),
             cmd_overrides: self.overrides.clone(),

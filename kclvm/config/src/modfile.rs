@@ -2,13 +2,31 @@
 
 use kclvm_utils::path::PathPrefix;
 use serde::Deserialize;
-use std::io::Read;
+use std::{env, io::Read};
 use toml;
 
 pub const KCL_MOD_FILE: &str = "kcl.mod";
 pub const KCL_FILE_SUFFIX: &str = ".k";
 pub const KCL_FILE_EXTENSION: &str = "k";
 pub const KCL_MOD_PATH_ENV: &str = "${KCL_MOD}";
+pub const VENDOR_HOME: &str = "VENDOR_HOME";
+
+/// Get the path holding the external kcl packet.
+/// From the environment variable VENDOR_HOME.
+/// If `VENDOR_HOME` is not present, then the user root string is returned.
+/// If the user root directory cannot be found, an empty string will be returned.
+pub fn get_vendor_home() -> String {
+    match env::var(VENDOR_HOME) {
+        Ok(path) => path,
+        Err(_) => {
+            if let Some(home_dir) = dirs::home_dir() {
+                return home_dir.display().to_string();
+            } else {
+                return String::default();
+            }
+        }
+    }
+}
 
 #[allow(dead_code)]
 #[derive(Default, Deserialize)]
