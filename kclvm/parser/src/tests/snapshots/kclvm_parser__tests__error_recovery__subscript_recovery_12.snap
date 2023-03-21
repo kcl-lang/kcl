@@ -1,0 +1,95 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 96
+expression: "crate::tests::parsing_expr_string(r#\"[0].?[0]\"#)"
+---
+Node {
+    node: Subscript(
+        Subscript {
+            value: Node {
+                node: Selector(
+                    SelectorExpr {
+                        value: Node {
+                            node: List(
+                                ListExpr {
+                                    elts: [
+                                        Node {
+                                            node: NumberLit(
+                                                NumberLit {
+                                                    binary_suffix: None,
+                                                    value: Int(
+                                                        0,
+                                                    ),
+                                                },
+                                            ),
+                                            filename: "",
+                                            line: 1,
+                                            column: 1,
+                                            end_line: 1,
+                                            end_column: 2,
+                                        },
+                                    ],
+                                    ctx: Load,
+                                },
+                            ),
+                            filename: "",
+                            line: 1,
+                            column: 0,
+                            end_line: 1,
+                            end_column: 3,
+                        },
+                        attr: Node {
+                            node: Identifier {
+                                names: [
+                                    "",
+                                ],
+                                pkgpath: "",
+                                ctx: Load,
+                            },
+                            filename: "",
+                            line: 1,
+                            column: 4,
+                            end_line: 1,
+                            end_column: 4,
+                        },
+                        ctx: Load,
+                        has_question: false,
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 3,
+                end_line: 1,
+                end_column: 4,
+            },
+            index: Some(
+                Node {
+                    node: NumberLit(
+                        NumberLit {
+                            binary_suffix: None,
+                            value: Int(
+                                0,
+                            ),
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 6,
+                    end_line: 1,
+                    end_column: 7,
+                },
+            ),
+            lower: None,
+            upper: None,
+            step: None,
+            ctx: Load,
+            has_question: true,
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 4,
+    end_line: 1,
+    end_column: 8,
+}
+

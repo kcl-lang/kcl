@@ -117,6 +117,7 @@ pub trait TypedResultWalker<'ctx>: Sized {
     fn walk_joined_string(&self, joined_string: &'ctx ast::JoinedString) -> Self::Result;
     fn walk_formatted_value(&self, formatted_value: &'ctx ast::FormattedValue) -> Self::Result;
     fn walk_comment(&self, comment: &'ctx ast::Comment) -> Self::Result;
+    fn walk_missing_expr(&self, missing_expr: &'ctx ast::MissingExpr) -> Self::Result;
 }
 
 /// Each method of the `MutSelfTypedResultWalker` trait returns a typed result.
@@ -209,6 +210,7 @@ pub trait MutSelfTypedResultWalker<'ctx>: Sized {
             ast::Expr::FormattedValue(formatted_value) => {
                 self.walk_formatted_value(formatted_value)
             }
+            ast::Expr::Missing(miss_expr) => self.walk_missing_expr(miss_expr),
         }
     }
     fn walk_quant_expr(&mut self, quant_expr: &'ctx ast::QuantExpr) -> Self::Result;
@@ -250,6 +252,7 @@ pub trait MutSelfTypedResultWalker<'ctx>: Sized {
     fn walk_joined_string(&mut self, joined_string: &'ctx ast::JoinedString) -> Self::Result;
     fn walk_formatted_value(&mut self, formatted_value: &'ctx ast::FormattedValue) -> Self::Result;
     fn walk_comment(&mut self, comment: &'ctx ast::Comment) -> Self::Result;
+    fn walk_missing_expr(&mut self, missing_expr: &'ctx ast::MissingExpr) -> Self::Result;
 }
 
 /// Each method of the `MutSelfMutWalker` trait returns void type.
@@ -454,6 +457,10 @@ pub trait MutSelfMutWalker<'ctx> {
         // Nothing to do.
         let _ = comment;
     }
+    fn walk_missing_expr(&mut self, missing_expr: &'ctx mut ast::MissingExpr) {
+        // Nothing to do.
+        let _ = missing_expr;
+    }
     fn walk_module(&mut self, module: &'ctx mut ast::Module) {
         walk_list_mut!(self, walk_stmt, module.body)
     }
@@ -512,6 +519,7 @@ pub trait MutSelfMutWalker<'ctx> {
             ast::Expr::FormattedValue(formatted_value) => {
                 self.walk_formatted_value(formatted_value)
             }
+            ast::Expr::Missing(missing_expr) => self.walk_missing_expr(missing_expr),
         }
     }
 }
@@ -646,6 +654,7 @@ pub trait Walker<'ctx>: TypedResultWalker<'ctx> {
     fn walk_comment(&mut self, comment: &'ctx ast::Comment) {
         walk_comment(self, comment);
     }
+    fn walk_missing_expr(&mut self, missing_expr: &'ctx ast::MissingExpr);
     fn walk_module(&mut self, module: &'ctx ast::Module) {
         walk_module(self, module);
     }
@@ -693,6 +702,7 @@ pub fn walk_expr<'ctx, V: Walker<'ctx>>(walker: &mut V, expr: &'ctx ast::Expr) {
         }
         ast::Expr::JoinedString(joined_string) => walker.walk_joined_string(joined_string),
         ast::Expr::FormattedValue(formatted_value) => walker.walk_formatted_value(formatted_value),
+        ast::Expr::Missing(missing_expr) => walker.walk_missing_expr(missing_expr),
     }
 }
 
@@ -1189,6 +1199,10 @@ pub trait MutSelfWalker {
         // Nothing to do.
         let _ = comment;
     }
+    fn walk_missing_expr(&mut self, missing_expr: &ast::MissingExpr) {
+        // Nothing to do.
+        let _ = missing_expr;
+    }
     fn walk_module(&mut self, module: &ast::Module) {
         walk_list!(self, walk_stmt, module.body)
     }
@@ -1247,6 +1261,7 @@ pub trait MutSelfWalker {
             ast::Expr::FormattedValue(formatted_value) => {
                 self.walk_formatted_value(formatted_value)
             }
+            ast::Expr::Missing(missing_expr) => self.walk_missing_expr(missing_expr),
         }
     }
 }

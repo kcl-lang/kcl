@@ -1,0 +1,47 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 100
+expression: "crate::tests::parsing_expr_string(r#\"''.\"#)"
+---
+Node {
+    node: Selector(
+        SelectorExpr {
+            value: Node {
+                node: StringLit(
+                    StringLit {
+                        is_long_string: false,
+                        raw_value: "''",
+                        value: "",
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 0,
+                end_line: 1,
+                end_column: 2,
+            },
+            attr: Node {
+                node: Identifier {
+                    names: [
+                        "",
+                    ],
+                    pkgpath: "",
+                    ctx: Load,
+                },
+                filename: "",
+                line: 1,
+                column: 3,
+                end_line: 1,
+                end_column: 3,
+            },
+            ctx: Load,
+            has_question: false,
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 2,
+    end_line: 1,
+    end_column: 3,
+}
+

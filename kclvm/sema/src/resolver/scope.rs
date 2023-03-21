@@ -287,6 +287,7 @@ impl<'ctx> Resolver<'ctx> {
             children.push(Rc::clone(&scope));
             // Deref self.scope
         }
+        self.scope_level += 1;
         self.scope = Rc::clone(&scope);
     }
 
@@ -297,6 +298,7 @@ impl<'ctx> Resolver<'ctx> {
             Some(parent) => parent.upgrade().unwrap(),
             None => bug!("the scope parent is empty, can't leave the scope"),
         };
+        self.scope_level -= 1;
         self.scope = Rc::clone(&parent);
     }
 

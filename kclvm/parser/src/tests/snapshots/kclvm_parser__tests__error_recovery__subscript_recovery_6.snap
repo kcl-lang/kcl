@@ -1,0 +1,87 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 90
+expression: "crate::tests::parsing_expr_string(r#\"[][a:b:c:d]\"#)"
+---
+Node {
+    node: Subscript(
+        Subscript {
+            value: Node {
+                node: List(
+                    ListExpr {
+                        elts: [],
+                        ctx: Load,
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 0,
+                end_line: 1,
+                end_column: 2,
+            },
+            index: None,
+            lower: Some(
+                Node {
+                    node: Identifier(
+                        Identifier {
+                            names: [
+                                "a",
+                            ],
+                            pkgpath: "",
+                            ctx: Load,
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 3,
+                    end_line: 1,
+                    end_column: 4,
+                },
+            ),
+            upper: Some(
+                Node {
+                    node: Identifier(
+                        Identifier {
+                            names: [
+                                "b",
+                            ],
+                            pkgpath: "",
+                            ctx: Load,
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 5,
+                    end_line: 1,
+                    end_column: 6,
+                },
+            ),
+            step: Some(
+                Node {
+                    node: Identifier(
+                        Identifier {
+                            names: [
+                                "c",
+                            ],
+                            pkgpath: "",
+                            ctx: Load,
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 7,
+                    end_line: 1,
+                    end_column: 8,
+                },
+            ),
+            ctx: Load,
+            has_question: false,
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 2,
+    end_line: 1,
+    end_column: 8,
+}
+

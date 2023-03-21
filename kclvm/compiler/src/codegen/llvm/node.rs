@@ -1224,6 +1224,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
             ast::Expr::FormattedValue(formatted_value) => {
                 self.walk_formatted_value(formatted_value)
             }
+            ast::Expr::Missing(missing_expr) => self.walk_missing_expr(missing_expr),
         }
     }
 
@@ -2222,6 +2223,12 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
     fn walk_comment(&self, _comment: &'ctx ast::Comment) -> Self::Result {
         // Nothing to do
         self.ok_result()
+    }
+
+    fn walk_missing_expr(&self, _missing_expr: &'ctx ast::MissingExpr) -> Self::Result {
+        Err(kcl_error::KCLError::new(
+            "compile error: missing expression",
+        ))
     }
 
     fn walk_module(&self, module: &'ctx ast::Module) -> Self::Result {

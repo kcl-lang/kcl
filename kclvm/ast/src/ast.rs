@@ -153,6 +153,24 @@ impl TryInto<Node<Identifier>> for Node<Expr> {
     }
 }
 
+impl Node<Expr> {
+    /// Into a missing identifier.
+    pub fn into_missing_identifier(&self) -> Node<Identifier> {
+        Node {
+            node: Identifier {
+                names: vec![],
+                pkgpath: String::new(),
+                ctx: ExprContext::Load,
+            },
+            filename: self.filename.clone(),
+            line: self.line,
+            column: self.column,
+            end_line: self.end_line,
+            end_column: self.end_column,
+        }
+    }
+}
+
 impl TryInto<Node<SchemaExpr>> for Node<Expr> {
     type Error = &'static str;
 
@@ -418,7 +436,9 @@ impl SchemaStmt {
         fn loop_body(body: &[NodeRef<Stmt>], attr_list: &mut Vec<(u64, u64, String)>) {
             for stmt in body {
                 match &stmt.node {
-                    Stmt::Unification(unification_stmt) => {
+                    Stmt::Unification(unification_stmt)
+                        if !unification_stmt.target.node.names.is_empty() =>
+                    {
                         attr_list.push((
                             unification_stmt.target.line,
                             unification_stmt.target.column,
@@ -427,19 +447,23 @@ impl SchemaStmt {
                     }
                     Stmt::Assign(assign_stmt) => {
                         for target in &assign_stmt.targets {
-                            attr_list.push((
-                                target.line,
-                                target.column,
-                                target.node.names[0].to_string(),
-                            ));
+                            if !target.node.names.is_empty() {
+                                attr_list.push((
+                                    target.line,
+                                    target.column,
+                                    target.node.names[0].to_string(),
+                                ));
+                            }
                         }
                     }
                     Stmt::AugAssign(aug_assign_stmt) => {
-                        attr_list.push((
-                            aug_assign_stmt.target.line,
-                            aug_assign_stmt.target.column,
-                            aug_assign_stmt.target.node.names[0].to_string(),
-                        ));
+                        if !aug_assign_stmt.target.node.names.is_empty() {
+                            attr_list.push((
+                                aug_assign_stmt.target.line,
+                                aug_assign_stmt.target.column,
+                                aug_assign_stmt.target.node.names[0].to_string(),
+                            ));
+                        }
                     }
                     Stmt::If(if_stmt) => {
                         loop_body(&if_stmt.body, attr_list);
@@ -555,6 +579,8 @@ pub enum Expr {
     NameConstantLit(NameConstantLit),
     JoinedString(JoinedString),
     FormattedValue(FormattedValue),
+    /// A place holder for expression parse error.
+    Missing(MissingExpr),
 }
 
 /// Identifier, e.g.
@@ -1100,6 +1126,10 @@ pub struct FormattedValue {
     pub value: NodeRef<Expr>,
     pub format_spec: Option<String>,
 }
+
+/// MissingExpr placeholder for error recovery.
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct MissingExpr;
 
 /// Comment, e.g.
 /// ```kcl

@@ -65,7 +65,7 @@ fn check_type_str(src: &str, expect: Expect) {
 }
 
 fn check_parsing_module(filename: &str, src: &str, expect: &str) {
-    let m = crate::parse_file(filename, Some(src.to_string())).expect(&format!("{}", filename));
+    let m = crate::parse_file(filename, Some(src.to_string())).expect(filename);
     let actual = format!("{}\n", serde_json::ser::to_string(&m).unwrap());
     assert_eq!(actual.trim(), expect.trim());
 }

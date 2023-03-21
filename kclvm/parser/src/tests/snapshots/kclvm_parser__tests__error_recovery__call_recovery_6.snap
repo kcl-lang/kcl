@@ -1,0 +1,74 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 118
+expression: "crate::tests::parsing_expr_string(r#\"a(a-1.b=1)\"#)"
+---
+Node {
+    node: Call(
+        CallExpr {
+            func: Node {
+                node: Identifier(
+                    Identifier {
+                        names: [
+                            "a",
+                        ],
+                        pkgpath: "",
+                        ctx: Load,
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 0,
+                end_line: 1,
+                end_column: 1,
+            },
+            args: [],
+            keywords: [
+                Node {
+                    node: Keyword {
+                        arg: Node {
+                            node: Identifier {
+                                names: [],
+                                pkgpath: "",
+                                ctx: Load,
+                            },
+                            filename: "",
+                            line: 1,
+                            column: 2,
+                            end_line: 1,
+                            end_column: 7,
+                        },
+                        value: Some(
+                            Node {
+                                node: NumberLit(
+                                    NumberLit {
+                                        binary_suffix: None,
+                                        value: Int(
+                                            1,
+                                        ),
+                                    },
+                                ),
+                                filename: "",
+                                line: 1,
+                                column: 8,
+                                end_line: 1,
+                                end_column: 9,
+                            },
+                        ),
+                    },
+                    filename: "",
+                    line: 1,
+                    column: 2,
+                    end_line: 1,
+                    end_column: 9,
+                },
+            ],
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 10,
+}
+

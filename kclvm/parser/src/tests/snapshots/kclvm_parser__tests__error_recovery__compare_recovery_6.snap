@@ -1,0 +1,77 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 78
+expression: "crate::tests::parsing_expr_string(r#\"<a >+ b\"#)"
+---
+Node {
+    node: Compare(
+        Compare {
+            left: Node {
+                node: Missing(
+                    MissingExpr,
+                ),
+                filename: "",
+                line: 1,
+                column: 0,
+                end_line: 1,
+                end_column: 1,
+            },
+            ops: [
+                Lt,
+                Gt,
+            ],
+            comparators: [
+                Node {
+                    node: Identifier(
+                        Identifier {
+                            names: [
+                                "a",
+                            ],
+                            pkgpath: "",
+                            ctx: Load,
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 1,
+                    end_line: 1,
+                    end_column: 2,
+                },
+                Node {
+                    node: Unary(
+                        UnaryExpr {
+                            op: UAdd,
+                            operand: Node {
+                                node: Identifier(
+                                    Identifier {
+                                        names: [
+                                            "b",
+                                        ],
+                                        pkgpath: "",
+                                        ctx: Load,
+                                    },
+                                ),
+                                filename: "",
+                                line: 1,
+                                column: 6,
+                                end_line: 1,
+                                end_column: 7,
+                            },
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 4,
+                    end_line: 1,
+                    end_column: 7,
+                },
+            ],
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 7,
+}
+

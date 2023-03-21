@@ -38,6 +38,9 @@ impl<'a> Parser<'a> {
             return Some(stmt);
         }
 
+        self.sess
+            .struct_span_error("expected statement", self.token.span);
+
         None
     }
 
@@ -115,8 +118,15 @@ impl<'a> Parser<'a> {
             return self.parse_expr_stmt();
         }
 
-        // expr or assign
-        self.parse_expr_or_assign_stmt(false)
+        if matches!(
+            self.token.kind,
+            TokenKind::Ident(_) | TokenKind::Literal(_) | TokenKind::OpenDelim(_)
+        ) {
+            // expr or assign
+            self.parse_expr_or_assign_stmt(false)
+        } else {
+            None
+        }
     }
 
     /// Syntax:
@@ -137,6 +147,11 @@ impl<'a> Parser<'a> {
 
             if let Some(stmt) = self.parse_stmt() {
                 stmt_list.push(stmt);
+            } else {
+                // Error recovery from panic mode: Once an error is detected (the statement is None),
+                // the symbols in the input are continuously discarded (one symbol at a time), until the
+                // "synchronous lexical unit" is found (the statement start token e.g., import, schema, etc).
+                self.bump();
             }
         }
 
@@ -260,7 +275,6 @@ impl<'a> Parser<'a> {
         }
 
         let stmt_end_token = self.prev_token;
-        self.skip_newlines();
 
         if let Some(value) = value_or_target {
             let mut pos = targets[0].pos();
@@ -275,11 +289,15 @@ impl<'a> Parser<'a> {
                         x.ctx = ExprContext::Store;
                         Box::new(Node::node_with_pos(x, expr.pos()))
                     }
-                    _ => self
-                        .sess
-                        .struct_token_error(&[TokenKind::ident_value()], self.token),
+                    _ => {
+                        self.sess
+                            .struct_token_error(&[TokenKind::ident_value()], self.token);
+                        Box::new(expr.into_missing_identifier())
+                    }
                 })
                 .collect();
+
+            self.skip_newlines();
 
             Some(node_ref!(
                 Stmt::Assign(AssignStmt {
@@ -293,6 +311,7 @@ impl<'a> Parser<'a> {
         } else {
             if targets.len() == 1 && type_annotation.is_some() && is_in_schema_stmt {
                 if let Expr::Identifier(target) = &targets[0].node {
+                    self.skip_newlines();
                     return Some(node_ref!(
                         Stmt::SchemaAttr(SchemaAttr {
                             doc: "".to_string(),
@@ -308,7 +327,7 @@ impl<'a> Parser<'a> {
                     ));
                 }
             }
-            if type_annotation.is_none() {
+            if type_annotation.is_none() && !targets.is_empty() {
                 let mut pos = targets[0].pos();
                 pos.3 = targets.last().unwrap().end_line;
                 pos.4 = targets.last().unwrap().end_column;
@@ -320,10 +339,13 @@ impl<'a> Parser<'a> {
                     pos,
                 ));
 
+                self.skip_newlines();
+
                 Some(t)
             } else {
                 self.sess
-                    .struct_token_error(&[TokenKind::Assign.into()], self.token)
+                    .struct_token_error(&[TokenKind::Assign.into()], self.token);
+                None
             }
         }
     }
@@ -906,7 +928,7 @@ impl<'a> Parser<'a> {
                 } else {
                     self.sess.struct_span_error(
                         &format!(
-                            "Expect a index signature or list expression here, got {}",
+                            "expected a index signature or list expression here, got {}",
                             Into::<String>::into(self.token)
                         ),
                         self.token.span,
@@ -1394,7 +1416,7 @@ impl<'a> Parser<'a> {
             let src = &src[2..src.len() - 1];
             if src.is_empty() {
                 this.sess.struct_span_error(
-                    "String interpolation expression can not be empty",
+                    "string interpolation expression can not be empty",
                     this.token.span,
                 );
             }
@@ -1429,7 +1451,7 @@ impl<'a> Parser<'a> {
                     formatted_value.format_spec = Some(format_spec);
                 } else {
                     this.sess.struct_span_error(
-                        "Invalid joined string spec without #",
+                        "invalid joined string spec without #",
                         parser.token.span,
                     );
                 }
@@ -1466,7 +1488,15 @@ impl<'a> Parser<'a> {
                     continue;
                 } else {
                     self.sess
-                        .struct_span_error("Invalid joined string", self.token.span);
+                        .struct_span_error("invalid joined string", self.token.span);
+                    joined_value
+                        .values
+                        .push(node_ref!(Expr::StringLit(StringLit {
+                            is_long_string: false,
+                            raw_value: data[off..].to_string(),
+                            value: data[off..].to_string(),
+                        })));
+                    break;
                 }
             } else {
                 if off >= s.value.as_str().len() {

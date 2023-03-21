@@ -17,6 +17,7 @@ impl<'ctx> Resolver<'ctx> {
         &mut self,
         schema_stmt: &'ctx ast::SchemaStmt,
     ) -> ResolvedResult {
+        self.resolve_unique_key(&schema_stmt.name.node, &schema_stmt.name.get_pos());
         let ty = self.lookup_type_from_scope(&schema_stmt.name.node, schema_stmt.name.get_pos());
         let scope_ty = if ty.is_schema() {
             ty.into_schema_type()
@@ -26,7 +27,7 @@ impl<'ctx> Resolver<'ctx> {
                 &[Message {
                     pos: schema_stmt.get_pos(),
                     style: Style::LineAndColumn,
-                    message: format!("expect schema type, got {}", ty.ty_str()),
+                    message: format!("expected schema type, got {}", ty.ty_str()),
                     note: None,
                 }],
             );
@@ -104,6 +105,7 @@ impl<'ctx> Resolver<'ctx> {
     }
 
     pub(crate) fn resolve_rule_stmt(&mut self, rule_stmt: &'ctx ast::RuleStmt) -> ResolvedResult {
+        self.resolve_unique_key(&rule_stmt.name.node, &rule_stmt.name.get_pos());
         let ty = self.lookup_type_from_scope(&rule_stmt.name.node, rule_stmt.name.get_pos());
         let scope_ty = if ty.is_schema() {
             ty.into_schema_type()
@@ -113,7 +115,7 @@ impl<'ctx> Resolver<'ctx> {
                 &[Message {
                     pos: rule_stmt.get_pos(),
                     style: Style::LineAndColumn,
-                    message: format!("expect rule type, got {}", ty.ty_str()),
+                    message: format!("expected rule type, got {}", ty.ty_str()),
                     note: None,
                 }],
             );

@@ -10,6 +10,8 @@
 //! KCL syntax elements can be simply divided into statements, expressions and tokens,
 //! in which statement consists of expressions and tokens. In expression, operand is the most
 //! complex part to enable all kinds of ident, constant, list, dict, config exprs.
+//!
+//! The parser error recovery strategy design is [here](https://github.com/KusionStack/KCLVM/issues/420).
 
 #![macro_use]
 
@@ -90,16 +92,14 @@ impl<'a> Parser<'a> {
 
     pub(crate) fn bump_keyword(&mut self, kw: Symbol) {
         if !self.token.is_keyword(kw) {
-            self.sess
-                .struct_token_error_recovery(&[kw.into()], self.token);
+            self.sess.struct_token_error(&[kw.into()], self.token);
         }
         self.bump();
     }
 
     pub(crate) fn bump_token(&mut self, kind: TokenKind) {
         if self.token.kind != kind {
-            self.sess
-                .struct_token_error_recovery(&[kind.into()], self.token);
+            self.sess.struct_token_error(&[kind.into()], self.token);
         }
         self.bump();
     }

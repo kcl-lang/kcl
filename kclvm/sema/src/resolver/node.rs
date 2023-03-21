@@ -5,6 +5,7 @@ use kclvm_ast::walker::MutSelfTypedResultWalker;
 use kclvm_error::*;
 use std::rc::Rc;
 
+use crate::info::is_private_field;
 use crate::ty::{
     sup, DecoratorTarget, Parameter, Type, TypeInferMethods, TypeKind, RESERVED_TYPE_IDENTIFIERS,
 };
@@ -53,10 +54,15 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 unification_stmt.target.get_pos(),
             );
         }
+        let (start, end) = unification_stmt.value.get_span_pos();
+        if names.is_empty() {
+            self.handler
+                .add_compile_error("missing target in the unification statement", start);
+            return self.any_ty();
+        }
         self.ctx.l_value = true;
         let expected_ty = self.walk_identifier_expr(&unification_stmt.target);
         self.ctx.l_value = false;
-        let (start, end) = unification_stmt.value.get_span_pos();
         let obj = self.new_config_expr_context_item(&names[0], expected_ty.clone(), start, end);
         let init_stack_depth = self.switch_config_expr_context(Some(obj));
         let ty = self.walk_schema_expr(&unification_stmt.value.node);
@@ -118,8 +124,20 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
         let mut value_ty = self.any_ty();
         let start = assign_stmt.targets[0].get_pos();
         let end = assign_stmt.value.get_pos();
+        let is_config = matches!(assign_stmt.value.node, ast::Expr::Schema(_));
         for target in &assign_stmt.targets {
+            // For invalid syntax assign statement, we just skip it
+            // and show a syntax error only.
+            if target.node.names.is_empty() {
+                continue;
+            }
             let name = &target.node.names[0];
+            // Add global names.
+            if (is_private_field(name) || is_config || !self.contains_global_name(name))
+                && self.scope_level == 0
+            {
+                self.insert_global_name(name, &target.get_pos());
+            }
             if target.node.names.len() == 1 {
                 self.ctx.l_value = true;
                 let expected_ty = self.walk_identifier_expr(target);
@@ -170,6 +188,41 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
 
     fn walk_aug_assign_stmt(&mut self, aug_assign_stmt: &'ctx ast::AugAssignStmt) -> Self::Result {
         self.ctx.l_value = false;
+        if !aug_assign_stmt.target.node.names.is_empty() {
+            let is_config = matches!(aug_assign_stmt.value.node, ast::Expr::Schema(_));
+            let name = &aug_assign_stmt.target.node.names[0];
+            // Add global names.
+            if is_private_field(name) || is_config || !self.contains_global_name(name) {
+                if self.scope_level == 0 {
+                    self.insert_global_name(name, &aug_assign_stmt.target.get_pos());
+                }
+            } else {
+                println!(
+                    "asd: {:?} {} {}",
+                    name,
+                    self.contains_global_name(name),
+                    self.scope_level
+                );
+                let mut msgs = vec![Message {
+                    pos: aug_assign_stmt.target.get_pos(),
+                    style: Style::LineAndColumn,
+                    message: format!("Immutable variable '{}' is modified during compiling", name),
+                    note: None,
+                }];
+                if let Some(pos) = self.get_global_name_pos(name) {
+                    msgs.push(Message {
+                        pos: pos.clone(),
+                        style: Style::LineAndColumn,
+                        message: format!("The variable '{}' is declared here firstly", name),
+                        note: Some(format!(
+                            "change the variable name to '_{}' to make it mutable",
+                            name
+                        )),
+                    })
+                }
+                self.handler.add_error(ErrorKind::ImmutableError, &msgs);
+            }
+        }
         let left_ty = self.walk_identifier_expr(&aug_assign_stmt.target);
         let right_ty = self.expr(&aug_assign_stmt.value);
         let op = match aug_assign_stmt.op.clone().try_into() {
@@ -228,6 +281,9 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             let (mut key_name, mut val_name) = (None, None);
             let mut target_node = None;
             for (i, target) in quant_expr.variables.iter().enumerate() {
+                if target.node.names.is_empty() {
+                    continue;
+                }
                 target_node = Some(target);
                 let name = &target.node.names[0];
                 if i == 0 {
@@ -649,6 +705,9 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
         let (mut key_name, mut val_name) = (None, None);
         let mut target_node = None;
         for (i, target) in comp_clause.targets.iter().enumerate() {
+            if target.node.names.is_empty() {
+                continue;
+            }
             target_node = Some(target);
             let name = &target.node.names[0];
             if i == 0 {
@@ -940,15 +999,17 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
         // Nothing to do.
         self.any_ty()
     }
+
+    fn walk_missing_expr(&mut self, _missing_expr: &'ctx ast::MissingExpr) -> Self::Result {
+        // Nothing to do.
+        self.any_ty()
+    }
 }
 
 impl<'ctx> Resolver<'ctx> {
     #[inline]
     pub fn stmts(&mut self, stmts: &'ctx [ast::NodeRef<ast::Stmt>]) -> ResolvedResult {
-        let stmt_types: Vec<TypeRef> = stmts
-            .iter()
-            .map(|stmt| self.walk_stmt(&stmt.node))
-            .collect();
+        let stmt_types: Vec<TypeRef> = stmts.iter().map(|stmt| self.stmt(&stmt)).collect();
         match stmt_types.last() {
             Some(ty) => ty.clone(),
             _ => self.any_ty(),

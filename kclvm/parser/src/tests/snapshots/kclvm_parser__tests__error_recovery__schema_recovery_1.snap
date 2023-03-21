@@ -1,0 +1,90 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 120
+expression: "crate::tests::parsing_expr_string(r#\"s {a=1\"#)"
+---
+Node {
+    node: Schema(
+        SchemaExpr {
+            name: Node {
+                node: Identifier {
+                    names: [
+                        "s",
+                    ],
+                    pkgpath: "",
+                    ctx: Load,
+                },
+                filename: "",
+                line: 1,
+                column: 0,
+                end_line: 1,
+                end_column: 1,
+            },
+            args: [],
+            kwargs: [],
+            config: Node {
+                node: Config(
+                    ConfigExpr {
+                        items: [
+                            Node {
+                                node: ConfigEntry {
+                                    key: Some(
+                                        Node {
+                                            node: Identifier(
+                                                Identifier {
+                                                    names: [
+                                                        "a",
+                                                    ],
+                                                    pkgpath: "",
+                                                    ctx: Load,
+                                                },
+                                            ),
+                                            filename: "",
+                                            line: 1,
+                                            column: 3,
+                                            end_line: 1,
+                                            end_column: 4,
+                                        },
+                                    ),
+                                    value: Node {
+                                        node: NumberLit(
+                                            NumberLit {
+                                                binary_suffix: None,
+                                                value: Int(
+                                                    1,
+                                                ),
+                                            },
+                                        ),
+                                        filename: "",
+                                        line: 1,
+                                        column: 5,
+                                        end_line: 1,
+                                        end_column: 6,
+                                    },
+                                    operation: Override,
+                                    insert_index: -1,
+                                },
+                                filename: "",
+                                line: 1,
+                                column: 3,
+                                end_line: 1,
+                                end_column: 6,
+                            },
+                        ],
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 2,
+                end_line: 1,
+                end_column: 6,
+            },
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 6,
+}
+

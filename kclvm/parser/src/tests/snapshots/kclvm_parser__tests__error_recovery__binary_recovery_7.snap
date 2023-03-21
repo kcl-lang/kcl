@@ -1,0 +1,52 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 70
+expression: "crate::tests::parsing_expr_string(r#\"a +is b\"#)"
+---
+Node {
+    node: Binary(
+        BinaryExpr {
+            left: Node {
+                node: Identifier(
+                    Identifier {
+                        names: [
+                            "a",
+                        ],
+                        pkgpath: "",
+                        ctx: Load,
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 0,
+                end_line: 1,
+                end_column: 1,
+            },
+            op: Bin(
+                Add,
+            ),
+            right: Node {
+                node: Identifier(
+                    Identifier {
+                        names: [
+                            "is",
+                        ],
+                        pkgpath: "",
+                        ctx: Load,
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 3,
+                end_line: 1,
+                end_column: 5,
+            },
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 5,
+}
+

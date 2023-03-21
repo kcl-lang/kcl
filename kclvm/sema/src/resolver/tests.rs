@@ -87,12 +87,16 @@ fn test_resolve_program_fail() {
         "./src/resolver/test_fail_data/cannot_find_module.k",
         "./src/resolver/test_fail_data/config_expr.k",
         "./src/resolver/test_fail_data/module_optional_select.k",
+        "./src/resolver/test_fail_data/mutable_error_0.k",
+        "./src/resolver/test_fail_data/mutable_error_1.k",
+        "./src/resolver/test_fail_data/unique_key_error_0.k",
+        "./src/resolver/test_fail_data/unique_key_error_1.k",
         "./src/resolver/test_fail_data/unmatched_args.k",
     ];
     for case in cases {
         let mut program = parse_program(case).unwrap();
         let scope = resolve_program(&mut program);
-        assert!(scope.handler.diagnostics.len() > 0);
+        assert!(scope.handler.diagnostics.len() > 0, "{}", case);
     }
 }
 
@@ -106,7 +110,7 @@ fn test_resolve_program_mismatch_type_fail() {
     assert_eq!(diag.messages.len(), 1);
     assert_eq!(
         diag.messages[0].message,
-        "expect int, got {str(key):int(1)}"
+        "expected int, got {str(key):int(1)}"
     );
 }
 

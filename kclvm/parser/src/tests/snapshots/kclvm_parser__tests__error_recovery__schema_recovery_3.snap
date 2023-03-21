@@ -1,0 +1,49 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 122
+expression: "crate::tests::parsing_expr_string(r#\"s?.a {a=1}\"#)"
+---
+Node {
+    node: Selector(
+        SelectorExpr {
+            value: Node {
+                node: Identifier(
+                    Identifier {
+                        names: [
+                            "s",
+                        ],
+                        pkgpath: "",
+                        ctx: Load,
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 0,
+                end_line: 1,
+                end_column: 1,
+            },
+            attr: Node {
+                node: Identifier {
+                    names: [
+                        "a",
+                    ],
+                    pkgpath: "",
+                    ctx: Load,
+                },
+                filename: "",
+                line: 1,
+                column: 3,
+                end_line: 1,
+                end_column: 4,
+            },
+            ctx: Load,
+            has_question: true,
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 1,
+    end_line: 1,
+    end_column: 4,
+}
+

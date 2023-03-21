@@ -13,36 +13,16 @@ struct QualifiedIdentifierTransformer {
     pub global_names: IndexMap<String, Position>,
     pub local_vars: IndexSet<String>,
     pub scope_level: usize,
-    pub handler: Handler,
 }
 
 impl<'ctx> MutSelfMutWalker<'ctx> for QualifiedIdentifierTransformer {
     fn walk_rule_stmt(&mut self, rule_stmt: &'ctx mut ast::RuleStmt) {
         let name = &rule_stmt.name.node;
-        if !self.global_names.contains_key(name) {
-            if self.scope_level == 0 {
-                self.global_names
-                    .insert(name.to_string(), rule_stmt.name.get_pos());
-            }
-        } else {
-            self.handler.add_error(
-                ErrorKind::UniqueKeyError,
-                &[
-                    Message {
-                        pos: rule_stmt.name.get_pos(),
-                        style: Style::LineAndColumn,
-                        message: format!("Unique key error name '{}'", name),
-                        note: None,
-                    },
-                    Message {
-                        pos: self.global_names.get(name).unwrap().clone(),
-                        style: Style::LineAndColumn,
-                        message: format!("The variable '{}' is declared here firstly", name),
-                        note: None,
-                    },
-                ],
-            );
+        if !self.global_names.contains_key(name) && self.scope_level == 0 {
+            self.global_names
+                .insert(name.to_string(), rule_stmt.name.get_pos());
         }
+
         walk_list_mut!(self, walk_identifier, rule_stmt.parent_rules);
         walk_list_mut!(self, walk_call_expr, rule_stmt.decorators);
         walk_if_mut!(self, walk_arguments, rule_stmt.args);
@@ -53,29 +33,9 @@ impl<'ctx> MutSelfMutWalker<'ctx> for QualifiedIdentifierTransformer {
     }
     fn walk_schema_stmt(&mut self, schema_stmt: &'ctx mut ast::SchemaStmt) {
         let name = &schema_stmt.name.node;
-        if !self.global_names.contains_key(name) {
-            if self.scope_level == 0 {
-                self.global_names
-                    .insert(name.to_string(), schema_stmt.name.get_pos());
-            }
-        } else {
-            self.handler.add_error(
-                ErrorKind::UniqueKeyError,
-                &[
-                    Message {
-                        pos: schema_stmt.name.get_pos(),
-                        style: Style::LineAndColumn,
-                        message: format!("Unique key error name '{}'", name),
-                        note: None,
-                    },
-                    Message {
-                        pos: self.global_names.get(name).unwrap().clone(),
-                        style: Style::LineAndColumn,
-                        message: format!("The variable '{}' is declared here firstly", name),
-                        note: None,
-                    },
-                ],
-            );
+        if !self.global_names.contains_key(name) && self.scope_level == 0 {
+            self.global_names
+                .insert(name.to_string(), schema_stmt.name.get_pos());
         }
         walk_if_mut!(self, walk_identifier, schema_stmt.parent_name);
         walk_if_mut!(self, walk_identifier, schema_stmt.for_host_name);
@@ -94,67 +54,29 @@ impl<'ctx> MutSelfMutWalker<'ctx> for QualifiedIdentifierTransformer {
     fn walk_assign_stmt(&mut self, assign_stmt: &'ctx mut ast::AssignStmt) {
         let is_config = matches!(assign_stmt.value.node, ast::Expr::Schema(_));
         for target in &assign_stmt.targets {
-            let name = &target.node.names[0];
-            if is_private_field(name) || !self.global_names.contains_key(name) || is_config {
-                if self.scope_level == 0 {
+            if !target.node.names.is_empty() {
+                let name = &target.node.names[0];
+                if (is_private_field(name) || !self.global_names.contains_key(name) || is_config)
+                    && self.scope_level == 0
+                {
                     self.global_names.insert(name.to_string(), target.get_pos());
                 }
-            } else {
-                self.handler.add_error(
-                    ErrorKind::UniqueKeyError,
-                    &[
-                        Message {
-                            pos: target.get_pos(),
-                            style: Style::LineAndColumn,
-                            message: format!("Unique key error name '{}'", name),
-                            note: None,
-                        },
-                        Message {
-                            pos: self.global_names.get(name).unwrap().clone(),
-                            style: Style::LineAndColumn,
-                            message: format!("The variable '{}' is declared here firstly", name),
-                            note: None,
-                        },
-                    ],
-                );
             }
         }
         self.walk_expr(&mut assign_stmt.value.node);
     }
     fn walk_aug_assign_stmt(&mut self, aug_assign_stmt: &'ctx mut ast::AugAssignStmt) {
         let is_config = matches!(aug_assign_stmt.value.node, ast::Expr::Schema(_));
+        if aug_assign_stmt.target.node.names.is_empty() {
+            return;
+        }
         let name = &aug_assign_stmt.target.node.names[0];
         if is_private_field(name) || !self.global_names.contains_key(name) || is_config {
             if self.scope_level == 0 {
                 self.global_names
                     .insert(name.to_string(), aug_assign_stmt.target.get_pos());
             }
-        } else {
-            self.handler.add_error(
-                ErrorKind::ImmutableError,
-                &[
-                    Message {
-                        pos: aug_assign_stmt.target.get_pos(),
-                        style: Style::LineAndColumn,
-                        message: format!(
-                            "Immutable variable '{}' is modified during compiling",
-                            name
-                        ),
-                        note: None,
-                    },
-                    Message {
-                        pos: self.global_names.get(name).unwrap().clone(),
-                        style: Style::LineAndColumn,
-                        message: format!("The variable '{}' is declared here firstly", name),
-                        note: Some(format!(
-                            "change the variable name to '_{}' to make it mutable",
-                            name
-                        )),
-                    },
-                ],
-            );
         }
-
         self.walk_expr(&mut aug_assign_stmt.value.node);
     }
     fn walk_schema_expr(&mut self, schema_expr: &'ctx mut ast::SchemaExpr) {
@@ -173,7 +95,9 @@ impl<'ctx> MutSelfMutWalker<'ctx> for QualifiedIdentifierTransformer {
     fn walk_list_comp(&mut self, list_comp: &'ctx mut ast::ListComp) {
         for gen in &mut list_comp.generators {
             for target in &gen.node.targets {
-                self.local_vars.insert(target.node.names[0].to_string());
+                if !target.node.names.is_empty() {
+                    self.local_vars.insert(target.node.names[0].to_string());
+                }
             }
         }
         self.walk_expr(&mut list_comp.elt.node);
@@ -183,7 +107,9 @@ impl<'ctx> MutSelfMutWalker<'ctx> for QualifiedIdentifierTransformer {
     fn walk_dict_comp(&mut self, dict_comp: &'ctx mut ast::DictComp) {
         for gen in &dict_comp.generators {
             for target in &gen.node.targets {
-                self.local_vars.insert(target.node.names[0].to_string());
+                if !target.node.names.is_empty() {
+                    self.local_vars.insert(target.node.names[0].to_string());
+                }
             }
         }
         if let Some(key) = dict_comp.entry.key.as_deref_mut() {
@@ -195,7 +121,9 @@ impl<'ctx> MutSelfMutWalker<'ctx> for QualifiedIdentifierTransformer {
     }
     fn walk_quant_expr(&mut self, quant_expr: &'ctx mut ast::QuantExpr) {
         for target in &quant_expr.variables {
-            self.local_vars.insert(target.node.names[0].to_string());
+            if !target.node.names.is_empty() {
+                self.local_vars.insert(target.node.names[0].to_string());
+            }
         }
         self.walk_expr(&mut quant_expr.target.node);
         self.walk_expr(&mut quant_expr.test.node);
@@ -289,7 +217,6 @@ pub fn fix_qualified_identifier<'ctx>(
         ..Default::default()
     };
     global_names_walker.walk_module(module);
-    global_names_walker.handler.abort_if_any_errors();
 }
 
 /// Fix AST raw identifier prefix `$`, e.g., $filter -> filter

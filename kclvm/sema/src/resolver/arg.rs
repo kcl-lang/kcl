@@ -36,16 +36,21 @@ impl<'ctx> Resolver<'ctx> {
         let mut kwarg_types: Vec<(String, Rc<Type>)> = vec![];
         let mut check_table: IndexSet<String> = IndexSet::default();
         for kw in kwargs {
-            let arg_name = &kw.node.arg.node.names[0];
-            if check_table.contains(arg_name) {
-                self.handler.add_compile_error(
-                    &format!("{} has duplicated keyword argument {}", func_name, arg_name),
-                    kw.get_pos(),
-                );
+            if !kw.node.arg.node.names.is_empty() {
+                let arg_name = &kw.node.arg.node.names[0];
+                if check_table.contains(arg_name) {
+                    self.handler.add_compile_error(
+                        &format!("{} has duplicated keyword argument {}", func_name, arg_name),
+                        kw.get_pos(),
+                    );
+                }
+                check_table.insert(arg_name.to_string());
+                let arg_value_type = self.expr_or_any_type(&kw.node.value);
+                kwarg_types.push((arg_name.to_string(), arg_value_type.clone()));
+            } else {
+                self.handler
+                    .add_compile_error("missing argument", kw.get_pos());
             }
-            check_table.insert(arg_name.to_string());
-            let arg_value_type = self.expr_or_any_type(&kw.node.value);
-            kwarg_types.push((arg_name.to_string(), arg_value_type.clone()));
         }
         if !params.is_empty() {
             for (i, ty) in arg_types.iter().enumerate() {

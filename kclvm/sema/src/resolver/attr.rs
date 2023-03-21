@@ -97,8 +97,18 @@ impl<'ctx> Resolver<'ctx> {
             }
         };
         if !result {
-            self.handler
-                .add_type_error(&format!("{} has no attribute {}", obj.ty_str(), attr), pos);
+            self.handler.add_type_error(
+                &format!(
+                    "{} has no attribute {}",
+                    obj.ty_str(),
+                    if attr.is_empty() {
+                        "[missing name]"
+                    } else {
+                        attr
+                    }
+                ),
+                pos,
+            );
         }
         return_ty
     }

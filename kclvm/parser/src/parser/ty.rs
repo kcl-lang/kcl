@@ -124,6 +124,7 @@ impl<'a> Parser<'a> {
                     } else {
                         self.sess
                             .struct_token_error(&[kw::True.into(), kw::False.into()], self.token);
+                        ast::LiteralType::Bool(false)
                     }
                 }
                 token::LitKind::Integer => {
@@ -148,6 +149,7 @@ impl<'a> Parser<'a> {
                     } else {
                         self.sess
                             .struct_token_error(&[kw::True.into(), kw::False.into()], self.token);
+                        ast::LiteralType::Bool(false)
                     }
                 }
             };
@@ -235,5 +237,9 @@ impl<'a> Parser<'a> {
             ],
             self.token,
         );
+        Box::new(Node::node(
+            Type::Any,
+            self.sess.struct_token_loc(token, self.prev_token),
+        ))
     }
 }

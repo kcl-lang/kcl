@@ -1,0 +1,91 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 123
+expression: "crate::tests::parsing_expr_string(r#\"s. {a=1}\"#)"
+---
+Node {
+    node: Schema(
+        SchemaExpr {
+            name: Node {
+                node: Identifier {
+                    names: [
+                        "s",
+                        "",
+                    ],
+                    pkgpath: "",
+                    ctx: Load,
+                },
+                filename: "",
+                line: 1,
+                column: 0,
+                end_line: 1,
+                end_column: 2,
+            },
+            args: [],
+            kwargs: [],
+            config: Node {
+                node: Config(
+                    ConfigExpr {
+                        items: [
+                            Node {
+                                node: ConfigEntry {
+                                    key: Some(
+                                        Node {
+                                            node: Identifier(
+                                                Identifier {
+                                                    names: [
+                                                        "a",
+                                                    ],
+                                                    pkgpath: "",
+                                                    ctx: Load,
+                                                },
+                                            ),
+                                            filename: "",
+                                            line: 1,
+                                            column: 4,
+                                            end_line: 1,
+                                            end_column: 5,
+                                        },
+                                    ),
+                                    value: Node {
+                                        node: NumberLit(
+                                            NumberLit {
+                                                binary_suffix: None,
+                                                value: Int(
+                                                    1,
+                                                ),
+                                            },
+                                        ),
+                                        filename: "",
+                                        line: 1,
+                                        column: 6,
+                                        end_line: 1,
+                                        end_column: 7,
+                                    },
+                                    operation: Override,
+                                    insert_index: -1,
+                                },
+                                filename: "",
+                                line: 1,
+                                column: 4,
+                                end_line: 1,
+                                end_column: 7,
+                            },
+                        ],
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 3,
+                end_line: 1,
+                end_column: 8,
+            },
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 8,
+}
+

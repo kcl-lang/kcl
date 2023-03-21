@@ -786,6 +786,10 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
         self.writeln(&comment.text);
         self.fill("");
     }
+
+    fn walk_missing_expr(&mut self, _missing_expr: &'ctx ast::MissingExpr) -> Self::Result {
+        // Nothing to do
+    }
 }
 
 impl<'p> Printer<'p> {
