@@ -1,0 +1,28 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 56
+expression: "crate::tests::parsing_expr_string(r#\"!!a\"#)"
+---
+Node {
+    node: Unary(
+        UnaryExpr {
+            op: Not,
+            operand: Node {
+                node: Missing(
+                    MissingExpr,
+                ),
+                filename: "",
+                line: 1,
+                column: 0,
+                end_line: 1,
+                end_column: 2,
+            },
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 1,
+}
+

@@ -3,8 +3,7 @@ use compiler_base_macros::bug;
 use compiler_base_session::Session;
 use indexmap::IndexSet;
 use kclvm_ast::token::Token;
-use kclvm_error::{Diagnostic, Handler, ParseError, Position};
-use kclvm_runtime::PanicInfo;
+use kclvm_error::{Diagnostic, Handler, ParseError};
 use kclvm_span::{BytePos, Loc, Span};
 use std::{cell::RefCell, sync::Arc};
 /// ParseSession represents the data associated with a parse session such as the
@@ -39,23 +38,9 @@ impl ParseSession {
         )
     }
 
-    /// Struct and report an error based on a token and abort the compiler process.
-    pub fn struct_token_error(&self, expected: &[String], got: Token) -> ! {
-        self.struct_token_error_recovery(expected, got);
-        self.panic(
-            &ParseError::UnexpectedToken {
-                expected: expected.iter().map(|tok| tok.into()).collect(),
-                got: got.into(),
-                span: got.span,
-            }
-            .to_string(),
-            got.span,
-        );
-    }
-
     /// Struct and report an error based on a token and not abort the compiler process.
     #[inline]
-    pub fn struct_token_error_recovery(&self, expected: &[String], got: Token) {
+    pub fn struct_token_error(&self, expected: &[String], got: Token) {
         self.add_parse_err(ParseError::UnexpectedToken {
             expected: expected.iter().map(|tok| tok.into()).collect(),
             got: got.into(),
@@ -63,15 +48,9 @@ impl ParseSession {
         });
     }
 
-    /// Struct and report an error based on a span and abort the compiler process.
-    pub fn struct_span_error(&self, msg: &str, span: Span) -> ! {
-        self.struct_span_error_recovery(msg, span);
-        self.panic(msg, span);
-    }
-
     /// Struct and report an error based on a span and not abort the compiler process.
     #[inline]
-    pub fn struct_span_error_recovery(&self, msg: &str, span: Span) {
+    pub fn struct_span_error(&self, msg: &str, span: Span) {
         self.add_parse_err(ParseError::Message {
             message: msg.to_string(),
             span,
@@ -105,17 +84,5 @@ impl ParseSession {
     /// Classify diagnostics into errors and warnings.
     pub fn classification(&self) -> (IndexSet<Diagnostic>, IndexSet<Diagnostic>) {
         self.1.borrow().classification()
-    }
-
-    /// Parser panic with message and span.
-    ///
-    /// TODO: We can remove the panic capture after the parser error recovery is completed.
-    fn panic(&self, msg: &str, span: Span) -> ! {
-        let pos: Position = self.lookup_char_pos(span.lo()).into();
-        let mut panic_info = PanicInfo::from(format!("Invalid syntax: {msg}"));
-        panic_info.kcl_file = pos.filename.clone();
-        panic_info.kcl_line = pos.line as i32;
-        panic_info.kcl_col = pos.column.unwrap_or(0) as i32;
-        panic!("{}", panic_info.to_json_string());
     }
 }

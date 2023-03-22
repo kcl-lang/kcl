@@ -1,0 +1,58 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 60
+expression: "crate::tests::parsing_expr_string(r#\"--i\"#)"
+---
+Node {
+    node: Binary(
+        BinaryExpr {
+            left: Node {
+                node: Unary(
+                    UnaryExpr {
+                        op: USub,
+                        operand: Node {
+                            node: Missing(
+                                MissingExpr,
+                            ),
+                            filename: "",
+                            line: 1,
+                            column: 0,
+                            end_line: 1,
+                            end_column: 2,
+                        },
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 0,
+                end_line: 1,
+                end_column: 1,
+            },
+            op: Bin(
+                Sub,
+            ),
+            right: Node {
+                node: Identifier(
+                    Identifier {
+                        names: [
+                            "i",
+                        ],
+                        pkgpath: "",
+                        ctx: Load,
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 2,
+                end_line: 1,
+                end_column: 3,
+            },
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 3,
+}
+

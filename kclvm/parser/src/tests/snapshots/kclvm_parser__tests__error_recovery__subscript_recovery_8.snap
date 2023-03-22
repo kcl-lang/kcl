@@ -1,0 +1,53 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 92
+expression: "crate::tests::parsing_expr_string(r#\"[][][]\"#)"
+---
+Node {
+    node: Subscript(
+        Subscript {
+            value: Node {
+                node: Subscript(
+                    Subscript {
+                        value: Node {
+                            node: List(
+                                ListExpr {
+                                    elts: [],
+                                    ctx: Load,
+                                },
+                            ),
+                            filename: "",
+                            line: 1,
+                            column: 0,
+                            end_line: 1,
+                            end_column: 2,
+                        },
+                        index: None,
+                        lower: None,
+                        upper: None,
+                        step: None,
+                        ctx: Load,
+                        has_question: false,
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 2,
+                end_line: 1,
+                end_column: 4,
+            },
+            index: None,
+            lower: None,
+            upper: None,
+            step: None,
+            ctx: Load,
+            has_question: false,
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 4,
+    end_line: 1,
+    end_column: 6,
+}
+

@@ -1,0 +1,76 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 108
+expression: "crate::tests::parsing_expr_string(r#\"a?.b?.c?\"#)"
+---
+Node {
+    node: Selector(
+        SelectorExpr {
+            value: Node {
+                node: Selector(
+                    SelectorExpr {
+                        value: Node {
+                            node: Identifier(
+                                Identifier {
+                                    names: [
+                                        "a",
+                                    ],
+                                    pkgpath: "",
+                                    ctx: Load,
+                                },
+                            ),
+                            filename: "",
+                            line: 1,
+                            column: 0,
+                            end_line: 1,
+                            end_column: 1,
+                        },
+                        attr: Node {
+                            node: Identifier {
+                                names: [
+                                    "b",
+                                ],
+                                pkgpath: "",
+                                ctx: Load,
+                            },
+                            filename: "",
+                            line: 1,
+                            column: 3,
+                            end_line: 1,
+                            end_column: 4,
+                        },
+                        ctx: Load,
+                        has_question: true,
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 1,
+                end_line: 1,
+                end_column: 4,
+            },
+            attr: Node {
+                node: Identifier {
+                    names: [
+                        "c",
+                    ],
+                    pkgpath: "",
+                    ctx: Load,
+                },
+                filename: "",
+                line: 1,
+                column: 6,
+                end_line: 1,
+                end_column: 7,
+            },
+            ctx: Load,
+            has_question: true,
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 4,
+    end_line: 1,
+    end_column: 7,
+}
+

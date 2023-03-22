@@ -236,7 +236,13 @@ impl<'a> Lexer<'a> {
             }
             // Unary op
             kclvm_lexer::TokenKind::Tilde => token::UnaryOp(token::UTilde),
-            kclvm_lexer::TokenKind::Bang => token::UnaryOp(token::UNot),
+            kclvm_lexer::TokenKind::Bang => {
+                self.sess.struct_span_error(
+                    "invalid token '!', consider using 'not'",
+                    self.span(start, self.pos),
+                );
+                token::UnaryOp(token::UNot)
+            }
             // Binary op
             kclvm_lexer::TokenKind::Plus => token::BinOp(token::Plus),
             kclvm_lexer::TokenKind::Minus => {
@@ -306,7 +312,7 @@ impl<'a> Lexer<'a> {
                     token::OpenDelim(token::Paren) => token::CloseDelim(token::Paren),
                     // error recovery
                     token::OpenDelim(token::Brace) => {
-                        self.sess.struct_span_error_recovery(
+                        self.sess.struct_span_error(
                             "error nesting on close paren",
                             self.span(start, self.pos),
                         );
@@ -314,7 +320,7 @@ impl<'a> Lexer<'a> {
                     }
                     // error recovery
                     token::OpenDelim(token::Bracket) => {
-                        self.sess.struct_span_error_recovery(
+                        self.sess.struct_span_error(
                             "error nesting on close paren",
                             self.span(start, self.pos),
                         );
@@ -325,7 +331,7 @@ impl<'a> Lexer<'a> {
                 },
                 // error recovery
                 None => {
-                    self.sess.struct_span_error_recovery(
+                    self.sess.struct_span_error(
                         "error nesting on close paren",
                         self.span(start, self.pos),
                     );
@@ -343,7 +349,7 @@ impl<'a> Lexer<'a> {
                     token::OpenDelim(token::Brace) => token::CloseDelim(token::Brace),
                     // error recovery
                     token::OpenDelim(token::Paren) => {
-                        self.sess.struct_span_error_recovery(
+                        self.sess.struct_span_error(
                             "error nesting on close brace",
                             self.span(start, self.pos),
                         );
@@ -351,7 +357,7 @@ impl<'a> Lexer<'a> {
                     }
                     // error recovery
                     token::OpenDelim(token::Bracket) => {
-                        self.sess.struct_span_error_recovery(
+                        self.sess.struct_span_error(
                             "error nesting on close brace",
                             self.span(start, self.pos),
                         );
@@ -362,7 +368,7 @@ impl<'a> Lexer<'a> {
                 },
                 // error recovery
                 None => {
-                    self.sess.struct_span_error_recovery(
+                    self.sess.struct_span_error(
                         "error nesting on close brace",
                         self.span(start, self.pos),
                     );
@@ -382,7 +388,7 @@ impl<'a> Lexer<'a> {
                     token::OpenDelim(token::Bracket) => token::CloseDelim(token::Bracket),
                     // error recovery
                     token::OpenDelim(token::Brace) => {
-                        self.sess.struct_span_error_recovery(
+                        self.sess.struct_span_error(
                             "mismatched closing delimiter",
                             self.span(start, self.pos),
                         );
@@ -390,7 +396,7 @@ impl<'a> Lexer<'a> {
                     }
                     // error recovery
                     token::OpenDelim(token::Paren) => {
-                        self.sess.struct_span_error_recovery(
+                        self.sess.struct_span_error(
                             "mismatched closing delimiter",
                             self.span(start, self.pos),
                         );
@@ -401,7 +407,7 @@ impl<'a> Lexer<'a> {
                 },
                 // error recovery
                 None => {
-                    self.sess.struct_span_error_recovery(
+                    self.sess.struct_span_error(
                         "mismatched closing delimiter",
                         self.span(start, self.pos),
                     );
@@ -412,17 +418,15 @@ impl<'a> Lexer<'a> {
             kclvm_lexer::TokenKind::InvalidLineContinue => {
                 // If we encounter an illegal line continuation character,
                 // we will restore it to a normal line continuation character.
-                self.sess.struct_span_error_recovery(
+                self.sess.struct_span_error(
                     "unexpected character after line continuation character",
                     self.span(start, self.pos),
                 );
                 return None;
             }
             _ => {
-                self.sess.struct_span_error_recovery(
-                    "unknown start of token",
-                    self.span(start, self.pos),
-                );
+                self.sess
+                    .struct_span_error("unknown start of token", self.span(start, self.pos));
                 return None;
             }
         })
@@ -448,7 +452,7 @@ impl<'a> Lexer<'a> {
                     _ => (false, start, start_char),
                 };
                 if !terminated {
-                    self.sess.struct_span_error_recovery(
+                    self.sess.struct_span_error(
                         "unterminated string",
                         self.span(quote_char_pos, self.pos),
                     )
@@ -479,7 +483,7 @@ impl<'a> Lexer<'a> {
                 let value = if content_start > content_end {
                     // If get an error string from the eval process,
                     // directly return an empty string.
-                    self.sess.struct_span_error_recovery(
+                    self.sess.struct_span_error(
                         "invalid string syntax",
                         self.span(content_start, self.pos),
                     );
@@ -492,7 +496,7 @@ impl<'a> Lexer<'a> {
                         None => {
                             // If get an error string from the eval process,
                             // directly return an empty string.
-                            self.sess.struct_span_error_recovery(
+                            self.sess.struct_span_error(
                                 "invalid string syntax",
                                 self.span(content_start, self.pos),
                             );
@@ -513,7 +517,7 @@ impl<'a> Lexer<'a> {
             }
             kclvm_lexer::LiteralKind::Int { base, empty_int } => {
                 if empty_int {
-                    self.sess.struct_span_error_recovery(
+                    self.sess.struct_span_error(
                         "no valid digits found for number",
                         self.span(start, self.pos),
                     );
@@ -530,7 +534,7 @@ impl<'a> Lexer<'a> {
                         let suffix_str = self.str_from(suffix_start);
                         // int binary suffix
                         if !NumberBinarySuffix::all_names().contains(&suffix_str) {
-                            self.sess.struct_span_error_recovery(
+                            self.sess.struct_span_error(
                                 "invalid int binary suffix",
                                 self.span(start, self.pos),
                             );
@@ -585,7 +589,7 @@ impl<'a> Lexer<'a> {
                 let lo = content_start + new_byte_pos(2 + idx);
                 let hi = content_start + new_byte_pos(2 + idx + c.len_utf8() as u32);
 
-                self.sess.struct_span_error_recovery(
+                self.sess.struct_span_error(
                     &format!("invalid digit for a base {base} literal, start: {lo}, stop: {hi}"),
                     self.span(lo, self.pos),
                 );
@@ -597,7 +601,7 @@ impl<'a> Lexer<'a> {
 
     fn validate_literal_float(&self, base: Base, start: BytePos, empty_exponent: bool) -> bool {
         if empty_exponent {
-            self.sess.struct_span_error_recovery(
+            self.sess.struct_span_error(
                 "expected at least one digit in exponent",
                 self.span(start, self.pos),
             );
@@ -607,7 +611,7 @@ impl<'a> Lexer<'a> {
                 kclvm_lexer::Base::Hexadecimal
                 | kclvm_lexer::Base::Octal
                 | kclvm_lexer::Base::Binary => {
-                    self.sess.struct_span_error_recovery(
+                    self.sess.struct_span_error(
                         &format!("{} float literal is not supported", base.describe()),
                         self.span(start, self.pos),
                     );

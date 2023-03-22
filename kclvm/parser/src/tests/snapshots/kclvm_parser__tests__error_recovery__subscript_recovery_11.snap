@@ -1,0 +1,35 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 95
+expression: "crate::tests::parsing_expr_string(r#\"[0]??[0]\"#)"
+---
+Node {
+    node: List(
+        ListExpr {
+            elts: [
+                Node {
+                    node: NumberLit(
+                        NumberLit {
+                            binary_suffix: None,
+                            value: Int(
+                                0,
+                            ),
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 1,
+                    end_line: 1,
+                    end_column: 2,
+                },
+            ],
+            ctx: Load,
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 3,
+}
+

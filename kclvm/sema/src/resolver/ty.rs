@@ -95,7 +95,7 @@ impl<'ctx> Resolver<'ctx> {
             let mut msgs = vec![Message {
                 pos,
                 style: Style::LineAndColumn,
-                message: format!("expect {}, got {}", expected_ty.ty_str(), ty.ty_str(),),
+                message: format!("expected {}, got {}", expected_ty.ty_str(), ty.ty_str(),),
                 note: None,
             }];
 
@@ -192,6 +192,11 @@ impl<'ctx> Resolver<'ctx> {
                 } else {
                     ty_str.split('.').collect()
                 };
+                if names.is_empty() {
+                    self.handler
+                        .add_compile_error("missing type annotation", pos.clone());
+                    return self.any_ty();
+                }
                 let mut pkgpath = "".to_string();
                 let name = names[0];
                 if names.len() > 1 && !self.ctx.local_vars.contains(&name.to_string()) {

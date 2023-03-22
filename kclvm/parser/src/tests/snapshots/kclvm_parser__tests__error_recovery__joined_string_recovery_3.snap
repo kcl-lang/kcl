@@ -1,0 +1,35 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 129
+expression: "crate::tests::parsing_expr_string(r#\"'${a'\"#)"
+---
+Node {
+    node: JoinedString(
+        JoinedString {
+            is_long_string: false,
+            values: [
+                Node {
+                    node: StringLit(
+                        StringLit {
+                            is_long_string: false,
+                            raw_value: "${a",
+                            value: "${a",
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 1,
+                    end_line: 1,
+                    end_column: 1,
+                },
+            ],
+            raw_value: "'${a'",
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 5,
+}
+

@@ -1,5 +1,6 @@
 use crate::resolver::Resolver;
 use crate::ty::TypeKind;
+use indexmap::IndexMap;
 use kclvm_error::*;
 
 use super::node::ResolvedResult;
@@ -83,7 +84,7 @@ impl<'ctx> Resolver<'ctx> {
                     self.lookup_type_from_scope(name, pos)
                 }
             }
-        } else {
+        } else if !names.is_empty() {
             // Lookup pkgpath scope object and record it as "used". When enter child scope, e.g., in a schema scope, cant find module object.
             // It should be recursively search whole scope to lookup scope object, not the current scope.element.
             if !pkgpath.is_empty() {
@@ -111,6 +112,65 @@ impl<'ctx> Resolver<'ctx> {
                 ty = self.load_attr(ty, name, pos.clone())
             }
             ty
+        } else {
+            self.handler
+                .add_compile_error("missing variable", pos.clone());
+            self.any_ty()
+        }
+    }
+
+    /// Resolve an unique key in the current package.
+    pub(crate) fn resolve_unique_key(&mut self, name: &str, pos: &Position) {
+        if !self.contains_global_name(name) && self.scope_level == 0 {
+            self.insert_global_name(name, pos);
+        } else {
+            let mut msgs = vec![Message {
+                pos: pos.clone(),
+                style: Style::LineAndColumn,
+                message: format!("Unique key error name '{}'", name),
+                note: None,
+            }];
+            if let Some(pos) = self.get_global_name_pos(name) {
+                msgs.push(Message {
+                    pos: pos.clone(),
+                    style: Style::LineAndColumn,
+                    message: format!("The variable '{}' is declared here", name),
+                    note: None,
+                });
+            }
+            self.handler.add_error(ErrorKind::UniqueKeyError, &msgs);
+        }
+    }
+
+    /// Insert global name in the current package.
+    pub(crate) fn insert_global_name(&mut self, name: &str, pos: &Position) {
+        match self.ctx.global_names.get_mut(&self.ctx.pkgpath) {
+            Some(mapping) => {
+                mapping.insert(name.to_string(), pos.clone());
+            }
+            None => {
+                let mut mapping = IndexMap::default();
+                mapping.insert(name.to_string(), pos.clone());
+                self.ctx
+                    .global_names
+                    .insert(self.ctx.pkgpath.clone(), mapping);
+            }
+        }
+    }
+
+    /// Whether contains global name in the current package.
+    pub(crate) fn contains_global_name(&mut self, name: &str) -> bool {
+        match self.ctx.global_names.get_mut(&self.ctx.pkgpath) {
+            Some(mapping) => mapping.contains_key(name),
+            None => false,
+        }
+    }
+
+    /// Get global name position in the current package.
+    pub(crate) fn get_global_name_pos(&mut self, name: &str) -> Option<&Position> {
+        match self.ctx.global_names.get_mut(&self.ctx.pkgpath) {
+            Some(mapping) => mapping.get(name),
+            None => None,
         }
     }
 }

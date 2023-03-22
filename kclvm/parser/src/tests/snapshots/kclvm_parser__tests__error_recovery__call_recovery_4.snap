@@ -1,0 +1,93 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 116
+expression: "crate::tests::parsing_expr_string(r#\"a(a.ba=1,2)\"#)"
+---
+Node {
+    node: Call(
+        CallExpr {
+            func: Node {
+                node: Identifier(
+                    Identifier {
+                        names: [
+                            "a",
+                        ],
+                        pkgpath: "",
+                        ctx: Load,
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 0,
+                end_line: 1,
+                end_column: 1,
+            },
+            args: [
+                Node {
+                    node: NumberLit(
+                        NumberLit {
+                            binary_suffix: None,
+                            value: Int(
+                                2,
+                            ),
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 9,
+                    end_line: 1,
+                    end_column: 10,
+                },
+            ],
+            keywords: [
+                Node {
+                    node: Keyword {
+                        arg: Node {
+                            node: Identifier {
+                                names: [
+                                    "a",
+                                    "ba",
+                                ],
+                                pkgpath: "",
+                                ctx: Load,
+                            },
+                            filename: "",
+                            line: 1,
+                            column: 2,
+                            end_line: 1,
+                            end_column: 6,
+                        },
+                        value: Some(
+                            Node {
+                                node: NumberLit(
+                                    NumberLit {
+                                        binary_suffix: None,
+                                        value: Int(
+                                            1,
+                                        ),
+                                    },
+                                ),
+                                filename: "",
+                                line: 1,
+                                column: 7,
+                                end_line: 1,
+                                end_column: 8,
+                            },
+                        ),
+                    },
+                    filename: "",
+                    line: 1,
+                    column: 2,
+                    end_line: 1,
+                    end_column: 8,
+                },
+            ],
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 11,
+}
+

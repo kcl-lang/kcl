@@ -211,6 +211,11 @@ impl<'ctx> Resolver<'ctx> {
         unique_check: bool,
     ) {
         for target in &assign_stmt.targets {
+            if target.node.names.is_empty() {
+                self.handler
+                    .add_compile_error("missing target in the assign statement", target.get_pos());
+                continue;
+            }
             let name = &target.node.names[0];
             let (start, end) = target.get_span_pos();
             if self.contains_object(name) && !is_private_field(name) && unique_check {
@@ -237,7 +242,7 @@ impl<'ctx> Resolver<'ctx> {
                                 .start
                                 .clone(),
                             style: Style::LineAndColumn,
-                            message: format!("The variable '{}' is declared here firstly", name),
+                            message: format!("The variable '{}' is declared here", name),
                             note: Some(format!(
                                 "change the variable name to '_{}' to make it mutable",
                                 name
@@ -269,7 +274,7 @@ impl<'ctx> Resolver<'ctx> {
                                 Message {
                                     pos: obj.start.clone(),
                                     style: Style::LineAndColumn,
-                                    message: format!("expect {}", obj.ty.ty_str()),
+                                    message: format!("expected {}", obj.ty.ty_str()),
                                     note: None,
                                 },
                             ],
@@ -302,6 +307,9 @@ impl<'ctx> Resolver<'ctx> {
         unique_check: bool,
     ) {
         let target = &unification_stmt.target;
+        if target.node.names.is_empty() {
+            return;
+        }
         let name = &target.node.names[0];
         let (start, end) = target.get_span_pos();
         if self.contains_object(name) && !is_private_field(name) && unique_check {
@@ -328,7 +336,7 @@ impl<'ctx> Resolver<'ctx> {
                             .start
                             .clone(),
                         style: Style::LineAndColumn,
-                        message: format!("The variable '{}' is declared here firstly", name),
+                        message: format!("The variable '{}' is declared here", name),
                         note: Some(format!(
                             "change the variable name to '_{}' to make it mutable",
                             name

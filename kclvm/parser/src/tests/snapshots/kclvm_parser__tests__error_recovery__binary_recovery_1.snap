@@ -1,0 +1,54 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 64
+expression: "crate::tests::parsing_expr_string(r#\"a is is not b\"#)"
+---
+Node {
+    node: Compare(
+        Compare {
+            left: Node {
+                node: Identifier(
+                    Identifier {
+                        names: [
+                            "a",
+                        ],
+                        pkgpath: "",
+                        ctx: Load,
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 0,
+                end_line: 1,
+                end_column: 1,
+            },
+            ops: [
+                Is,
+            ],
+            comparators: [
+                Node {
+                    node: Identifier(
+                        Identifier {
+                            names: [
+                                "is",
+                            ],
+                            pkgpath: "",
+                            ctx: Load,
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 5,
+                    end_line: 1,
+                    end_column: 7,
+                },
+            ],
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 7,
+}
+

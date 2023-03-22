@@ -110,7 +110,9 @@ impl ConfigMergeTransformer {
             for (module_id, module) in modules.iter_mut().enumerate() {
                 for (i, stmt) in module.body.iter_mut().enumerate() {
                     match &mut stmt.node {
-                        ast::Stmt::Unification(unification_stmt) => {
+                        ast::Stmt::Unification(unification_stmt)
+                            if !unification_stmt.target.node.names.is_empty() =>
+                        {
                             let name = &unification_stmt.target.node.names[0];
                             match name_declaration_mapping.get_mut(name) {
                                 Some(declarations) => declarations.push((

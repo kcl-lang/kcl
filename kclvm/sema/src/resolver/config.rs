@@ -392,7 +392,7 @@ impl<'ctx> Resolver<'ctx> {
             let op = &item.node.operation;
             let mut stack_depth: usize = 0;
             self.check_config_entry(key, value);
-            stack_depth += self.switch_config_expr_context_by_key(key) as usize;
+            stack_depth += self.switch_config_expr_context_by_key(key);
             let mut has_insert_index = false;
             let val_ty = match key {
                 Some(key) => match &key.node {
