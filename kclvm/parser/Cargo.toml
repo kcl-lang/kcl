@@ -1,6 +1,6 @@
 [package]
 name = "kclvm-parser"
-version = "0.4.5"
+version = "0.4.6"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -23,14 +23,14 @@ regex = "1.7.0"
 anyhow = "1.0"
 indexmap = "1.0"
 
-kclvm-lexer = {path = "../lexer", version = "0.4.5"}
-kclvm-ast = {path = "../ast", version = "0.4.5"}
-kclvm-span = {path = "../span", version = "0.4.5"}
-kclvm-error = {path = "../error", version = "0.4.5"}
-kclvm-config = {path = "../config", version = "0.4.5"}
-kclvm-sema = {path = "../sema", version = "0.4.5"}
-kclvm-runtime = {path = "../runtime", version = "0.4.5"}
-kclvm-utils = {path = "../utils", version = "0.4.5"}
+kclvm-lexer = {path = "../lexer"}
+kclvm-ast = {path = "../ast"}
+kclvm-span = {path = "../span"}
+kclvm-error = {path = "../error"}
+kclvm-config = {path = "../config"}
+kclvm-sema = {path = "../sema"}
+kclvm-runtime = {path = "../runtime"}
+kclvm-utils = {path = "../utils"}
 
 
 [dev-dependencies]
