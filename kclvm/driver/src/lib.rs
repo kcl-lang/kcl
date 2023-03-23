@@ -19,6 +19,8 @@ pub fn canonicalize_input_files(
     work_dir: String,
 ) -> Result<Vec<String>, String> {
     let mut kcl_paths = Vec::<String>::new();
+
+    // The first traversal changes the relative path to an absolute path
     for (_, file) in k_files.iter().enumerate() {
         // If the input file or path is a relative path and it is not a absolute path in the KCL module VFS,
         // join with the work directory path and convert it to a absolute path.
@@ -37,6 +39,21 @@ pub fn canonicalize_input_files(
             kcl_paths.push(String::from(file))
         }
     }
+
+    // Get the root path of the project
+    let pkgroot = kclvm_config::modfile::get_pkg_root_from_paths(&kcl_paths)?;
+
+    // The second traversal replaces ${KCL_MOD} with the project root path
+    kcl_paths = kcl_paths
+        .iter()
+        .map(|file| {
+            if file.contains(KCL_MOD_PATH_ENV) {
+                file.replace(KCL_MOD_PATH_ENV, pkgroot.as_str())
+            } else {
+                file.clone()
+            }
+        })
+        .collect();
     return Ok(kcl_paths);
 }
 

@@ -201,6 +201,8 @@ pub struct ProgramScope {
     pub handler: Handler,
 }
 
+unsafe impl Send for ProgramScope {}
+
 impl ProgramScope {
     /// Get all package paths.
     #[inline]

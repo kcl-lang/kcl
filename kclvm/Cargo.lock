@@ -1082,6 +1082,7 @@ dependencies = [
  "parking_lot 0.12.1",
  "ra_ap_vfs",
  "ropey",
+ "rustc-hash",
  "rustc_lexer",
  "salsa",
  "serde",

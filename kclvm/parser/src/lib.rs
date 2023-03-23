@@ -253,12 +253,6 @@ impl Loader {
         let mut path_list = Vec::new();
         for s in &self.paths {
             let mut s = s.clone();
-            if s.contains(kclvm_config::modfile::KCL_MOD_PATH_ENV) {
-                s = s.replace(
-                    kclvm_config::modfile::KCL_MOD_PATH_ENV,
-                    self.pkgroot.as_str(),
-                );
-            }
             if !self.pkgroot.is_empty() && !self.is_absolute(s.as_str()) {
                 let p = std::path::Path::new(s.as_str());
                 if let Ok(x) = std::fs::canonicalize(p) {
@@ -312,7 +306,6 @@ impl Loader {
         // load module
         let mut pkg_files = Vec::new();
         for (i, filename) in k_files.iter().enumerate() {
-            // todo: add shared source map for all files
             if i < self.opts.k_code_list.len() {
                 let mut m = parse_file_with_session(
                     self.sess.clone(),

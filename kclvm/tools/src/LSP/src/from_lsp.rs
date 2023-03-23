@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 use kclvm_error::Position as KCLPos;
 use lsp_types::{Position, Url};
 use ra_ap_vfs::AbsPathBuf;
@@ -23,4 +25,28 @@ pub(crate) fn kcl_pos(file: &str, pos: Position) -> KCLPos {
             Some(pos.character as u64)
         },
     }
+}
+
+/// Converts the given lsp range to `Range`
+pub(crate) fn text_range(text: &String, range: lsp_types::Range) -> Range<usize> {
+    let mut lines_length = vec![];
+    let lines_text: Vec<&str> = text.split('\n').collect();
+    let mut pre_total_length = 0;
+    // range line base-zeror
+    for i in 0..range.end.line + 1 {
+        let i = i as usize;
+        if i < lines_text.len() {
+            let line = lines_text.get(i).unwrap();
+            lines_length.push(pre_total_length);
+            pre_total_length += line.len() + "\n".len();
+        } else {
+            lines_length.push(pre_total_length);
+        }
+    }
+
+    let start =
+        lines_length.get(range.start.line as usize).unwrap() + range.start.character as usize;
+    let end = lines_length.get(range.end.line as usize).unwrap() + range.end.character as usize;
+
+    Range { start, end }
 }
