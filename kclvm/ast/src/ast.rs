@@ -44,6 +44,20 @@ use super::token;
 use crate::{node_ref, pos::ContainsPos};
 use kclvm_error::Position;
 
+pub struct Pos(String, u64, u64, u64, u64);
+
+impl From<(String, u64, u64, u64, u64)> for Pos {
+    fn from(value: (String, u64, u64, u64, u64)) -> Self {
+        Self(value.0, value.1, value.2, value.3, value.4)
+    }
+}
+
+impl Into<(String, u64, u64, u64, u64)> for Pos {
+    fn into(self) -> (String, u64, u64, u64, u64) {
+        (self.0, self.1, self.2, self.3, self.4)
+    }
+}
+
 /// Node is the file, line and column number information
 /// that all AST nodes need to contain.
 #[derive(Serialize, Deserialize, Debug, Clone)]

@@ -335,7 +335,7 @@ impl Loader {
 
         // load imported packages
         for import_spec in import_list {
-            self.load_package(&pkgroot, import_spec.path.to_string())?;
+            self.load_package(&pkgroot, import_spec.0, import_spec.1)?;
         }
 
         // Ok
@@ -360,7 +360,12 @@ impl Loader {
         }
     }
 
-    fn load_package(&mut self, pkgroot: &str, pkgpath: String) -> Result<(), String> {
+    fn load_package(
+        &mut self,
+        pkgroot: &str,
+        pkgpath: String,
+        pos: ast::Pos,
+    ) -> Result<(), String> {
         if pkgpath.is_empty() {
             return Ok(());
         }
@@ -389,10 +394,13 @@ impl Loader {
         let is_external = self.is_external_pkg(&pkgpath)?;
 
         if is_external.is_some() && is_internal.is_some() {
-            return Err(PanicInfo::from(format!(
-                "the `{}` is found multiple times in the current package and vendor package",
-                pkgpath
-            ))
+            return Err(PanicInfo::from_ast_pos(
+                format!(
+                    "the `{}` is found multiple times in the current package and vendor package",
+                    pkgpath
+                ),
+                pos.into(),
+            )
             .to_json_string());
         }
 
@@ -412,8 +420,11 @@ impl Loader {
                     )?,
                 ),
                 None => {
-                    return Err(PanicInfo::from(format!("Package `{}` not found.", pkgpath))
-                        .to_json_string());
+                    return Err(PanicInfo::from_ast_pos(
+                        format!("pkgpath {} not found in the program", pkgpath),
+                        pos.into(),
+                    )
+                    .to_json_string());
                 }
             },
         };
@@ -438,13 +449,13 @@ impl Loader {
         self.pkgs.insert(origin_pkg_path, pkg_files);
 
         for import_spec in import_list {
-            self.load_package(&pkgroot, import_spec.path.to_string())?;
+            self.load_package(&pkgroot, import_spec.0, import_spec.1)?;
         }
 
         Ok(())
     }
 
-    fn get_import_list(&self, pkgroot: &str, pkg: &[ast::Module]) -> Vec<ast::ImportStmt> {
+    fn get_import_list(&self, pkgroot: &str, pkg: &[ast::Module]) -> Vec<(String, ast::Pos)> {
         let mut import_list = Vec::new();
         for m in pkg {
             for stmt in &m.body {
@@ -455,7 +466,7 @@ impl Loader {
                         &m.filename,
                         import_spec.path.as_str(),
                     );
-                    import_list.push(import_spec);
+                    import_list.push((import_spec.path, stmt.pos().into()));
                 }
             }
         }

@@ -251,7 +251,7 @@ pub fn test_import_vendor_without_vendor_home() {
         }
         Err(err) => {
             let result: PanicInfo = serde_json::from_str(&err).unwrap();
-            assert_eq!(result.message, "Package `assign` not found.");
+            assert_eq!(result.message, "pkgpath assign not found in the program");
         }
     }
 }
