@@ -9,14 +9,14 @@ pub const KCL_MOD_FILE: &str = "kcl.mod";
 pub const KCL_FILE_SUFFIX: &str = ".k";
 pub const KCL_FILE_EXTENSION: &str = "k";
 pub const KCL_MOD_PATH_ENV: &str = "${KCL_MOD}";
-pub const VENDOR_HOME: &str = "VENDOR_HOME";
+pub const KCLVM_VENDOR_HOME: &str = "KCLVM_VENDOR_HOME";
 
 /// Get the path holding the external kcl packet.
-/// From the environment variable VENDOR_HOME.
-/// If `VENDOR_HOME` is not present, then the user root string is returned.
+/// From the environment variable KCLVM_VENDOR_HOME.
+/// If `KCLVM_VENDOR_HOME` is not present, then the user root string is returned.
 /// If the user root directory cannot be found, an empty string will be returned.
 pub fn get_vendor_home() -> String {
-    match env::var(VENDOR_HOME) {
+    match env::var(KCLVM_VENDOR_HOME) {
         Ok(path) => path,
         Err(_) => {
             if let Some(home_dir) = dirs::home_dir() {
