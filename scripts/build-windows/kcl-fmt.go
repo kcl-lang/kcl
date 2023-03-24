@@ -58,12 +58,13 @@ func Install_Kclvm() {
 		os.Exit(1)
 	}
 
-	cmd = exec.Command("cmd", "/C", "python3", "-c", "import pkgutil; print(bool(pkgutil.find_loader('kclvm')))")
+	cmd = exec.Command("cmd", "/C", "python3", "-c", "\"import pkgutil;print(bool(pkgutil.find_loader('kclvm')))\"")
 	var out bytes.Buffer
 	cmd.Stdout = &out
+	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		fmt.Fprintln(os.Stderr, "Pip install kclvm falied ", err)
+		fmt.Fprintln(os.Stderr, "check python3 kclvm failed: ", err)
 		os.Exit(1)
 	}
 
@@ -76,6 +77,7 @@ func Install_Kclvm() {
 
 	// Install kclvm module using pip
 	cmd = exec.Command("cmd", "/C", "python3", "-m", "pip", "install", "-U", "kclvm", "--user")
+	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
 		fmt.Fprintln(os.Stderr, "Pip install kclvm falied ", err)
