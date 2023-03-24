@@ -1,6 +1,6 @@
-use std::{cell::RefCell, collections::HashMap};
-
 use crate::symbol::Symbol;
+use parking_lot::Mutex;
+use std::collections::HashMap;
 
 /// Per-session global variables: this struct is stored in thread-local storage
 /// in such a way that it is accessible without any kind of handle to all
@@ -54,7 +54,7 @@ where
 scoped_tls::scoped_thread_local!(static SESSION_GLOBALS: SessionGlobals);
 
 #[derive(Debug)]
-pub struct Interner(RefCell<InternerInner>);
+pub struct Interner(Mutex<InternerInner>);
 
 // This type is private to prevent accidentally constructing more than one
 // `Interner` on the same thread, which makes it easy to mixup `Symbol`s
@@ -67,13 +67,13 @@ struct InternerInner {
 
 impl Default for Interner {
     fn default() -> Self {
-        Interner(RefCell::new(InternerInner::default()))
+        Interner(Mutex::new(InternerInner::default()))
     }
 }
 
 impl Interner {
     pub fn prefill(init: &[&'static str]) -> Self {
-        Interner(RefCell::new(InternerInner {
+        Interner(Mutex::new(InternerInner {
             strings: init.iter().map(|s| s.to_string()).collect(),
             names: init
                 .iter()
@@ -85,7 +85,7 @@ impl Interner {
 
     #[inline]
     pub fn intern(&self, string: &str) -> Symbol {
-        let mut inner = self.0.borrow_mut();
+        let mut inner = self.0.lock();
         if let Some(&name) = inner.names.get(string) {
             return name;
         }
@@ -101,6 +101,6 @@ impl Interner {
     // Get the symbol as a string. `Symbol::as_str()` should be used in
     // preference to this function.
     pub fn get(&self, symbol: Symbol) -> String {
-        self.0.borrow().strings[symbol.0.idx as usize].clone()
+        self.0.lock().strings[symbol.0.idx as usize].clone()
     }
 }
