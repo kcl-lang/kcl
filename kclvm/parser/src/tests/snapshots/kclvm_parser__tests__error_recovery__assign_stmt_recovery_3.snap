@@ -1,0 +1,85 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 148
+expression: "crate::tests::parsing_module_string(r#\"a: a = 1\"#)"
+---
+Module {
+    filename: "",
+    pkg: "",
+    doc: "",
+    name: "",
+    body: [
+        Node {
+            node: Assign(
+                AssignStmt {
+                    targets: [
+                        Node {
+                            node: Identifier {
+                                names: [
+                                    "a",
+                                ],
+                                pkgpath: "",
+                                ctx: Store,
+                            },
+                            filename: "",
+                            line: 1,
+                            column: 0,
+                            end_line: 1,
+                            end_column: 1,
+                        },
+                    ],
+                    value: Node {
+                        node: NumberLit(
+                            NumberLit {
+                                binary_suffix: None,
+                                value: Int(
+                                    1,
+                                ),
+                            },
+                        ),
+                        filename: "",
+                        line: 1,
+                        column: 7,
+                        end_line: 1,
+                        end_column: 8,
+                    },
+                    type_annotation: Some(
+                        Node {
+                            node: "a",
+                            filename: "",
+                            line: 1,
+                            column: 3,
+                            end_line: 1,
+                            end_column: 4,
+                        },
+                    ),
+                    ty: Some(
+                        Node {
+                            node: Named(
+                                Identifier {
+                                    names: [
+                                        "a",
+                                    ],
+                                    pkgpath: "",
+                                    ctx: Load,
+                                },
+                            ),
+                            filename: "",
+                            line: 1,
+                            column: 3,
+                            end_line: 1,
+                            end_column: 4,
+                        },
+                    ),
+                },
+            ),
+            filename: "",
+            line: 1,
+            column: 0,
+            end_line: 1,
+            end_column: 8,
+        },
+    ],
+    comments: [],
+}
+

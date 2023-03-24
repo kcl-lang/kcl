@@ -1,0 +1,43 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 153
+expression: "crate::tests::parsing_module_string(r#\"a: () = 0\"#)"
+---
+Module {
+    filename: "",
+    pkg: "",
+    doc: "",
+    name: "",
+    body: [
+        Node {
+            node: Expr(
+                ExprStmt {
+                    exprs: [
+                        Node {
+                            node: NumberLit(
+                                NumberLit {
+                                    binary_suffix: None,
+                                    value: Int(
+                                        0,
+                                    ),
+                                },
+                            ),
+                            filename: "",
+                            line: 1,
+                            column: 8,
+                            end_line: 1,
+                            end_column: 9,
+                        },
+                    ],
+                },
+            ),
+            filename: "",
+            line: 1,
+            column: 8,
+            end_line: 1,
+            end_column: 9,
+        },
+    ],
+    comments: [],
+}
+

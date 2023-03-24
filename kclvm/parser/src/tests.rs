@@ -22,6 +22,16 @@ macro_rules! parse_expr_snapshot {
     };
 }
 
+#[macro_export]
+macro_rules! parse_module_snapshot {
+    ($name:ident, $src:expr) => {
+        #[test]
+        fn $name() {
+            insta::assert_snapshot!($crate::tests::parsing_module_string($src));
+        }
+    };
+}
+
 pub(crate) fn parsing_expr_string(src: &str) -> String {
     let sm = SourceMap::new(FilePathMapping::empty());
     let sf = sm.new_source_file(PathBuf::from("").into(), src.to_string());
@@ -33,6 +43,22 @@ pub(crate) fn parsing_expr_string(src: &str) -> String {
             let mut parser = Parser::new(sess, stream);
             let expr = parser.parse_expr();
             format!("{expr:#?}\n")
+        }),
+        None => "".to_string(),
+    }
+}
+
+pub(crate) fn parsing_module_string(src: &str) -> String {
+    let sm = SourceMap::new(FilePathMapping::empty());
+    let sf = sm.new_source_file(PathBuf::from("").into(), src.to_string());
+    let sess = &ParseSession::with_source_map(Arc::new(sm));
+
+    match sf.src.as_ref() {
+        Some(src_from_sf) => create_session_globals_then(|| {
+            let stream = parse_token_streams(sess, src_from_sf.as_str(), new_byte_pos(0));
+            let mut parser = Parser::new(sess, stream);
+            let module = parser.parse_module();
+            format!("{module:#?}\n")
         }),
         None => "".to_string(),
     }

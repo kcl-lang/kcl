@@ -1,0 +1,73 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 151
+expression: "crate::tests::parsing_module_string(r#\"a() = b. = c\"#)"
+---
+Module {
+    filename: "",
+    pkg: "",
+    doc: "",
+    name: "",
+    body: [
+        Node {
+            node: Assign(
+                AssignStmt {
+                    targets: [
+                        Node {
+                            node: Identifier {
+                                names: [],
+                                pkgpath: "",
+                                ctx: Load,
+                            },
+                            filename: "",
+                            line: 1,
+                            column: 0,
+                            end_line: 1,
+                            end_column: 3,
+                        },
+                        Node {
+                            node: Identifier {
+                                names: [
+                                    "b",
+                                    "",
+                                ],
+                                pkgpath: "",
+                                ctx: Store,
+                            },
+                            filename: "",
+                            line: 1,
+                            column: 6,
+                            end_line: 1,
+                            end_column: 8,
+                        },
+                    ],
+                    value: Node {
+                        node: Identifier(
+                            Identifier {
+                                names: [
+                                    "c",
+                                ],
+                                pkgpath: "",
+                                ctx: Load,
+                            },
+                        ),
+                        filename: "",
+                        line: 1,
+                        column: 11,
+                        end_line: 1,
+                        end_column: 12,
+                    },
+                    type_annotation: None,
+                    ty: None,
+                },
+            ),
+            filename: "",
+            line: 1,
+            column: 0,
+            end_line: 1,
+            end_column: 12,
+        },
+    ],
+    comments: [],
+}
+

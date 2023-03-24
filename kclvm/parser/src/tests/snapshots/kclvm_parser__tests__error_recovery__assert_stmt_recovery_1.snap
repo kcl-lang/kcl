@@ -1,0 +1,45 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 157
+expression: "crate::tests::parsing_module_string(r#\"assert a.\"#)"
+---
+Module {
+    filename: "",
+    pkg: "",
+    doc: "",
+    name: "",
+    body: [
+        Node {
+            node: Assert(
+                AssertStmt {
+                    test: Node {
+                        node: Identifier(
+                            Identifier {
+                                names: [
+                                    "a",
+                                    "",
+                                ],
+                                pkgpath: "",
+                                ctx: Load,
+                            },
+                        ),
+                        filename: "",
+                        line: 1,
+                        column: 7,
+                        end_line: 1,
+                        end_column: 9,
+                    },
+                    if_cond: None,
+                    msg: None,
+                },
+            ),
+            filename: "",
+            line: 1,
+            column: 0,
+            end_line: 1,
+            end_column: 9,
+        },
+    ],
+    comments: [],
+}
+

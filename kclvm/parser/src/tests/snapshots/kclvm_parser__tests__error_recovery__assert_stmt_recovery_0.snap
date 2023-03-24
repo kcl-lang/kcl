@@ -1,0 +1,38 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 156
+expression: "crate::tests::parsing_module_string(r#\"assert\"#)"
+---
+Module {
+    filename: "",
+    pkg: "",
+    doc: "",
+    name: "",
+    body: [
+        Node {
+            node: Assert(
+                AssertStmt {
+                    test: Node {
+                        node: Missing(
+                            MissingExpr,
+                        ),
+                        filename: "",
+                        line: 1,
+                        column: 0,
+                        end_line: 1,
+                        end_column: 6,
+                    },
+                    if_cond: None,
+                    msg: None,
+                },
+            ),
+            filename: "",
+            line: 1,
+            column: 0,
+            end_line: 1,
+            end_column: 6,
+        },
+    ],
+    comments: [],
+}
+

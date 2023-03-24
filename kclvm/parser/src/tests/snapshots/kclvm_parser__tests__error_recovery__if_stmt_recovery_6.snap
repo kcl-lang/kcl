@@ -1,0 +1,68 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 180
+expression: "crate::tests::parsing_module_string(r#\"if else\"#)"
+---
+Module {
+    filename: "",
+    pkg: "",
+    doc: "",
+    name: "",
+    body: [
+        Node {
+            node: If(
+                IfStmt {
+                    body: [
+                        Node {
+                            node: Expr(
+                                ExprStmt {
+                                    exprs: [
+                                        Node {
+                                            node: Missing(
+                                                MissingExpr,
+                                            ),
+                                            filename: "",
+                                            line: 1,
+                                            column: 7,
+                                            end_line: 1,
+                                            end_column: 7,
+                                        },
+                                    ],
+                                },
+                            ),
+                            filename: "",
+                            line: 1,
+                            column: 7,
+                            end_line: 1,
+                            end_column: 7,
+                        },
+                    ],
+                    cond: Node {
+                        node: Identifier(
+                            Identifier {
+                                names: [
+                                    "else",
+                                ],
+                                pkgpath: "",
+                                ctx: Load,
+                            },
+                        ),
+                        filename: "",
+                        line: 1,
+                        column: 3,
+                        end_line: 1,
+                        end_column: 7,
+                    },
+                    orelse: [],
+                },
+            ),
+            filename: "",
+            line: 1,
+            column: 0,
+            end_line: 1,
+            end_column: 7,
+        },
+    ],
+    comments: [],
+}
+

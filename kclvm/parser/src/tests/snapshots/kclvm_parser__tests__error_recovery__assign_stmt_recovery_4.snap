@@ -1,0 +1,14 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 149
+expression: "crate::tests::parsing_module_string(r#\"a:\"#)"
+---
+Module {
+    filename: "",
+    pkg: "",
+    doc: "",
+    name: "",
+    body: [],
+    comments: [],
+}
+

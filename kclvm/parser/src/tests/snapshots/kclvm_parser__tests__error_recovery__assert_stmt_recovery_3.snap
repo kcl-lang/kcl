@@ -1,0 +1,113 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 159
+expression: "crate::tests::parsing_module_string(r#\"assert True if data else 'msg'\"#)"
+---
+Module {
+    filename: "",
+    pkg: "",
+    doc: "",
+    name: "",
+    body: [
+        Node {
+            node: Assert(
+                AssertStmt {
+                    test: Node {
+                        node: NameConstantLit(
+                            NameConstantLit {
+                                value: True,
+                            },
+                        ),
+                        filename: "",
+                        line: 1,
+                        column: 7,
+                        end_line: 1,
+                        end_column: 11,
+                    },
+                    if_cond: Some(
+                        Node {
+                            node: Identifier(
+                                Identifier {
+                                    names: [
+                                        "data",
+                                    ],
+                                    pkgpath: "",
+                                    ctx: Load,
+                                },
+                            ),
+                            filename: "",
+                            line: 1,
+                            column: 15,
+                            end_line: 1,
+                            end_column: 19,
+                        },
+                    ),
+                    msg: None,
+                },
+            ),
+            filename: "",
+            line: 1,
+            column: 0,
+            end_line: 1,
+            end_column: 19,
+        },
+        Node {
+            node: Expr(
+                ExprStmt {
+                    exprs: [
+                        Node {
+                            node: Identifier(
+                                Identifier {
+                                    names: [
+                                        "else",
+                                    ],
+                                    pkgpath: "",
+                                    ctx: Load,
+                                },
+                            ),
+                            filename: "",
+                            line: 1,
+                            column: 20,
+                            end_line: 1,
+                            end_column: 24,
+                        },
+                    ],
+                },
+            ),
+            filename: "",
+            line: 1,
+            column: 20,
+            end_line: 1,
+            end_column: 24,
+        },
+        Node {
+            node: Expr(
+                ExprStmt {
+                    exprs: [
+                        Node {
+                            node: StringLit(
+                                StringLit {
+                                    is_long_string: false,
+                                    raw_value: "'msg'",
+                                    value: "msg",
+                                },
+                            ),
+                            filename: "",
+                            line: 1,
+                            column: 25,
+                            end_line: 1,
+                            end_column: 30,
+                        },
+                    ],
+                },
+            ),
+            filename: "",
+            line: 1,
+            column: 25,
+            end_line: 1,
+            end_column: 30,
+        },
+    ],
+    comments: [],
+}
+

@@ -1,0 +1,45 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 208
+expression: "crate::tests::parsing_module_string(r#\"schema A:\na: \"#)"
+---
+Module {
+    filename: "",
+    pkg: "",
+    doc: "",
+    name: "",
+    body: [
+        Node {
+            node: Schema(
+                SchemaStmt {
+                    doc: "",
+                    name: Node {
+                        node: "A",
+                        filename: "",
+                        line: 1,
+                        column: 7,
+                        end_line: 1,
+                        end_column: 8,
+                    },
+                    parent_name: None,
+                    for_host_name: None,
+                    is_mixin: false,
+                    is_protocol: false,
+                    args: None,
+                    mixins: [],
+                    body: [],
+                    decorators: [],
+                    checks: [],
+                    index_signature: None,
+                },
+            ),
+            filename: "",
+            line: 1,
+            column: 0,
+            end_line: 2,
+            end_column: 0,
+        },
+    ],
+    comments: [],
+}
+

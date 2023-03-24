@@ -1,0 +1,54 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 154
+expression: "crate::tests::parsing_module_string(r#\"a ++= 1\"#)"
+---
+Module {
+    filename: "",
+    pkg: "",
+    doc: "",
+    name: "",
+    body: [
+        Node {
+            node: AugAssign(
+                AugAssignStmt {
+                    target: Node {
+                        node: Identifier {
+                            names: [],
+                            pkgpath: "",
+                            ctx: Store,
+                        },
+                        filename: "",
+                        line: 1,
+                        column: 0,
+                        end_line: 1,
+                        end_column: 3,
+                    },
+                    value: Node {
+                        node: NumberLit(
+                            NumberLit {
+                                binary_suffix: None,
+                                value: Int(
+                                    1,
+                                ),
+                            },
+                        ),
+                        filename: "",
+                        line: 1,
+                        column: 6,
+                        end_line: 1,
+                        end_column: 7,
+                    },
+                    op: Add,
+                },
+            ),
+            filename: "",
+            line: 1,
+            column: 0,
+            end_line: 1,
+            end_column: 7,
+        },
+    ],
+    comments: [],
+}
+

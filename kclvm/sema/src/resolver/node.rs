@@ -1018,10 +1018,7 @@ impl<'ctx> Resolver<'ctx> {
 
     #[inline]
     pub fn exprs(&mut self, exprs: &'ctx [ast::NodeRef<ast::Expr>]) -> Vec<ResolvedResult> {
-        exprs
-            .iter()
-            .map(|expr| self.walk_expr(&expr.node))
-            .collect()
+        exprs.iter().map(|expr| self.expr(&expr)).collect()
     }
 
     #[inline]
