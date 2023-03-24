@@ -1,8 +1,9 @@
-use std::fs;
-
 use lsp_types::notification::{DidChangeTextDocument, DidOpenTextDocument, DidSaveTextDocument};
 
-use crate::{dispatcher::NotificationDispatcher, from_lsp, state::LanguageServerState};
+use crate::{
+    dispatcher::NotificationDispatcher, from_lsp, state::LanguageServerState,
+    util::apply_document_changes,
+};
 
 impl LanguageServerState {
     pub fn on_notification(
@@ -40,17 +41,11 @@ impl LanguageServerState {
     ) -> anyhow::Result<()> {
         let lsp_types::DidSaveTextDocumentParams {
             text_document,
-            text,
+            text: _,
         } = params;
 
         let path = from_lsp::abs_path(&text_document.uri)?;
         self.log_message(format!("on did save file: {:?}", path));
-
-        let vfs = &mut *self.vfs.write();
-
-        let contents = text.unwrap_or("".to_string()).into_bytes();
-
-        vfs.set_file_contents(path.into(), Some(contents.clone()));
         Ok(())
     }
 
@@ -61,7 +56,7 @@ impl LanguageServerState {
     ) -> anyhow::Result<()> {
         let lsp_types::DidChangeTextDocumentParams {
             text_document,
-            content_changes: _,
+            content_changes,
         } = params;
 
         let path = from_lsp::abs_path(&text_document.uri)?;
@@ -72,18 +67,9 @@ impl LanguageServerState {
             .file_id(&path.clone().into())
             .ok_or(anyhow::anyhow!("Already checked that the file_id exists!"))?;
 
-        let vfspath = vfs.file_path(file_id);
-        let filename = vfspath
-            .as_path()
-            .ok_or(anyhow::anyhow!("Already checked that the file_id exists!"))?
-            .as_ref()
-            .to_str()
-            .ok_or(anyhow::anyhow!("Already checked that the file_id exists!"))?;
-
-        // todo: Update the u8 array directly based on `content_changes` instead of
-        // reading the file from the file system.
-        let contents = fs::read(filename)?;
-        vfs.set_file_contents(path.into(), Some(contents.clone()));
+        let mut text = String::from_utf8(vfs.file_contents(file_id).to_vec())?;
+        apply_document_changes(&mut text, content_changes);
+        vfs.set_file_contents(path.into(), Some(text.into_bytes()));
 
         Ok(())
     }

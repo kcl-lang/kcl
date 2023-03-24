@@ -1,10 +1,3 @@
-// #[salsa::database(
-//     SourceDatabaseStorage,
-//     DefDatabaseStorage,
-//     AstDatabaseStorage,
-//     InternDatabaseStorage
-// )]
-#[derive(Default)]
-pub(crate) struct AnalysisDatabase {
-    // storage: salsa::Storage<Self>,
-}
+/// Holds the result of the compile
+#[derive(Default, Clone)]
+pub(crate) struct AnalysisDatabase {}

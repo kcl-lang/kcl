@@ -4,6 +4,7 @@ use crossbeam_channel::Sender;
 
 use crate::{
     dispatcher::RequestDispatcher,
+    from_lsp::kcl_pos,
     goto_def::goto_definition,
     state::{log_message, LanguageServerSnapshot, LanguageServerState, Task},
     util::{parse_param_and_compile, Param},
@@ -45,17 +46,26 @@ impl LanguageServerState {
     }
 }
 
-/// Find definition of location.
-/// Response can be single location, multiple Locations ,a link or None
+/// Called when a `GotoDefinition` request was received.
 pub(crate) fn handle_goto_definition(
-    _snapshot: LanguageServerSnapshot,
+    snapshot: LanguageServerSnapshot,
     params: lsp_types::GotoDefinitionParams,
     sender: Sender<Task>,
 ) -> anyhow::Result<Option<lsp_types::GotoDefinitionResponse>> {
-    let (kcl_pos, program, prog_scope) = parse_param_and_compile(Param {
-        url: params.text_document_position_params.text_document.uri,
-        pos: params.text_document_position_params.position,
-    });
+    let file = params
+        .text_document_position_params
+        .text_document
+        .uri
+        .path();
+
+    let (program, prog_scope, _) = parse_param_and_compile(
+        Param {
+            file: file.to_string(),
+        },
+        Some(snapshot.vfs.clone()),
+    )
+    .unwrap();
+    let kcl_pos = kcl_pos(file, params.text_document_position_params.position);
     let res = goto_definition(program, kcl_pos, prog_scope);
     if res.is_none() {
         log_message("Definition not found".to_string(), &sender)?;

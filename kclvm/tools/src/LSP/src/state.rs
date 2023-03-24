@@ -1,12 +1,7 @@
-use crate::analysis::Analysis;
 use crate::config::Config;
 use crate::to_lsp::{kcl_diag_to_lsp_diags, url};
-use crate::util::{get_file_name, to_json};
+use crate::util::{get_file_name, parse_param_and_compile, to_json, Param};
 use crossbeam_channel::{select, unbounded, Receiver, Sender};
-use indexmap::IndexSet;
-use kclvm_driver::lookup_compile_unit;
-use kclvm_error::Diagnostic as KCLDiagnostic;
-use kclvm_tools::lint::lint_files;
 use lsp_server::{ReqQueue, Response};
 use lsp_types::{
     notification::{Notification, PublishDiagnostics},
@@ -56,9 +51,6 @@ pub(crate) struct LanguageServerState {
     /// The virtual filesystem that holds all the file contents
     pub vfs: Arc<RwLock<Vfs>>,
 
-    /// Holds the state of the analysis process
-    pub _analysis: Analysis,
-
     /// True if the client requested that we shut down
     pub shutdown_requested: bool,
 }
@@ -68,11 +60,6 @@ pub(crate) struct LanguageServerState {
 pub(crate) struct LanguageServerSnapshot {
     /// The virtual filesystem that holds all the file contents
     pub vfs: Arc<RwLock<Vfs>>,
-    // /// Holds the state of the analysis process
-    // pub analysis: AnalysisSnapshot,
-
-    // /// All the packages known to the server
-    // pub packages: Arc<Vec<Package>>,
 }
 
 #[allow(unused)]
@@ -87,7 +74,6 @@ impl LanguageServerState {
             thread_pool: threadpool::ThreadPool::default(),
             task_sender,
             task_receiver,
-            _analysis: Analysis::default(),
             shutdown_requested: false,
         }
     }
@@ -127,15 +113,14 @@ impl LanguageServerState {
                 _ => {}
             },
         };
-        let mut snapshot = self.snapshot();
-        // todo: Process any changes to the vfs, Notify the database about this change and apply change(recompile)
-        // 2. Process changes
-        // let state_changed:bool = self.process_vfs_changes();
 
-        // todo: handle diagenostics if state_changed
+        // 2. Process changes
+        // Todo: recompile and store result in db. Handle request and push diagnostis with db
+        // let state_changed: bool = self.process_vfs_changes();
+
         // 3. Handle Diagnostics
+        let mut snapshot = self.snapshot();
         let task_sender = self.task_sender.clone();
-        let sender = self.sender.clone();
         // Spawn the diagnostics in the threadpool
         self.thread_pool.execute(move || {
             let _result = handle_diagnostics(snapshot, task_sender);
@@ -148,7 +133,6 @@ impl LanguageServerState {
     /// an `AnalysisChange` and applies it if there are changes. True is returned if things changed,
     /// otherwise false.
     pub fn process_vfs_changes(&mut self) -> bool {
-        self.log_message("process_vfs_changes".to_string());
         // Get all the changes since the last time we processed
         let changed_files = {
             let mut vfs = self.vfs.write();
@@ -157,19 +141,13 @@ impl LanguageServerState {
         if changed_files.is_empty() {
             return false;
         }
+        self.log_message("process_vfs_changes".to_string());
 
         // Construct an AnalysisChange to apply to the analysis
         let vfs = self.vfs.read();
         for file in changed_files {
-            // Convert the contents of the file to a string
-            let bytes = vfs.file_contents(file.file_id).to_vec();
-            let text: Option<Arc<str>> = String::from_utf8(bytes).ok().map(Arc::from);
-
-            // todo: Notify the database about this change
-            // analysis_change.change_file(FileId(file.file_id.0), text);
+            // todo: recompile and record context
         }
-        // todo: Apply the change(recompile)
-        // self.analysis.apply_change(analysis_change);
         true
     }
 
@@ -218,8 +196,6 @@ impl LanguageServerState {
     pub fn snapshot(&self) -> LanguageServerSnapshot {
         LanguageServerSnapshot {
             vfs: self.vfs.clone(),
-            // analysis: self.analysis.snapshot(),
-            // packages: self.packages.clone(),
         }
     }
 
@@ -233,8 +209,7 @@ impl LanguageServerState {
     }
 }
 
-// todo: The changeed files should be recompiled during `process_vfs_changes` and updated diagnostics in db.
-// `handle_diagnostics` only gets diag from db and converts them to lsp diagnostics.
+// todo: `handle_diagnostics` only gets diag from db and converts them to lsp diagnostics.
 fn handle_diagnostics(
     snapshot: LanguageServerSnapshot,
     sender: Sender<Task>,
@@ -250,22 +225,17 @@ fn handle_diagnostics(
             let uri = url(&snapshot, file.file_id)?;
             (filename, uri)
         };
-        let file_str = filename.as_str();
-
-        let (files, cfg) = lookup_compile_unit(file_str);
-        let files: Vec<&str> = files.iter().map(|s| s.as_str()).collect();
-
-        let (errors, warnings) = lint_files(&files, cfg);
-
-        let diags: IndexSet<KCLDiagnostic> = errors
-            .iter()
-            .chain(warnings.iter())
-            .cloned()
-            .collect::<IndexSet<KCLDiagnostic>>();
+        let (_, _, diags) = parse_param_and_compile(
+            Param {
+                file: filename.clone(),
+            },
+            Some(snapshot.vfs.clone()),
+        )
+        .unwrap();
 
         let diagnostics = diags
             .iter()
-            .map(|diag| kcl_diag_to_lsp_diags(diag, file_str))
+            .map(|diag| kcl_diag_to_lsp_diags(diag, filename.as_str()))
             .flatten()
             .collect::<Vec<Diagnostic>>();
         sender.send(Task::Notify(lsp_server::Notification {
