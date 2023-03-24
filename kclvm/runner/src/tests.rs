@@ -399,8 +399,22 @@ fn test_gen_libs_parallel() {
         }
     });
 
+    let gen_lib_3 = thread::spawn(|| {
+        for _ in 0..9 {
+            test_gen_libs();
+        }
+    });
+
+    let gen_lib_4 = thread::spawn(|| {
+        for _ in 0..9 {
+            test_gen_libs();
+        }
+    });
+
     gen_lib_1.join().unwrap();
     gen_lib_2.join().unwrap();
+    gen_lib_3.join().unwrap();
+    gen_lib_4.join().unwrap();
 }
 
 #[test]

@@ -10,3 +10,4 @@ compiler_base_span = {path = "../../compiler_base/span", version = "0.0.2"}
 
 kclvm-macros = { path = "../macros" }
 scoped-tls = "1.0"
+parking_lot = "0.11"

@@ -1416,6 +1416,7 @@ version = "0.4.6"
 dependencies = [
  "compiler_base_span 0.0.2",
  "kclvm-macros",
+ "parking_lot 0.11.2",
  "scoped-tls",
 ]
 
