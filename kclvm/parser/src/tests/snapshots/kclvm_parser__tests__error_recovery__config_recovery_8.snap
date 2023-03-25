@@ -1,6 +1,6 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 62
+assertion_line: 66
 expression: "crate::tests::parsing_expr_string(\"{a = 1 ~ b = 2}\")"
 ---
 Node {
@@ -55,18 +55,30 @@ Node {
                     node: ConfigEntry {
                         key: Some(
                             Node {
-                                node: Identifier(
-                                    Identifier {
-                                        names: [
-                                            "b",
-                                        ],
-                                        pkgpath: "",
-                                        ctx: Load,
+                                node: Unary(
+                                    UnaryExpr {
+                                        op: Invert,
+                                        operand: Node {
+                                            node: Identifier(
+                                                Identifier {
+                                                    names: [
+                                                        "b",
+                                                    ],
+                                                    pkgpath: "",
+                                                    ctx: Load,
+                                                },
+                                            ),
+                                            filename: "",
+                                            line: 1,
+                                            column: 9,
+                                            end_line: 1,
+                                            end_column: 10,
+                                        },
                                     },
                                 ),
                                 filename: "",
                                 line: 1,
-                                column: 9,
+                                column: 7,
                                 end_line: 1,
                                 end_column: 10,
                             },
@@ -91,7 +103,7 @@ Node {
                     },
                     filename: "",
                     line: 1,
-                    column: 9,
+                    column: 7,
                     end_line: 1,
                     end_column: 14,
                 },

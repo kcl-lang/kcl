@@ -1,6 +1,6 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 46
+assertion_line: 48
 expression: "crate::tests::parsing_expr_string(\"[0 1]\")"
 ---
 Node {
@@ -21,6 +21,21 @@ Node {
                     column: 1,
                     end_line: 1,
                     end_column: 2,
+                },
+                Node {
+                    node: NumberLit(
+                        NumberLit {
+                            binary_suffix: None,
+                            value: Int(
+                                1,
+                            ),
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 3,
+                    end_line: 1,
+                    end_column: 4,
                 },
             ],
             ctx: Load,

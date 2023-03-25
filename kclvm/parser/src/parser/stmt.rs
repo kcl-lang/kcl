@@ -1257,6 +1257,7 @@ impl<'a> Parser<'a> {
 
             self.bump_token(TokenKind::Indent);
             while self.token.kind != TokenKind::Dedent {
+                let marker = self.mark();
                 if matches!(self.token.kind, TokenKind::Eof) {
                     self.sess
                         .struct_token_error(&[TokenKind::Newline.into()], self.token);
@@ -1268,13 +1269,8 @@ impl<'a> Parser<'a> {
                 let check_expr = expr_as!(expr, Expr::Check).unwrap();
                 check_expr_list.push(node_ref!(check_expr, expr_pos));
 
-                if !matches!(self.token.kind, TokenKind::Newline) {
-                    self.sess
-                        .struct_token_error(&[TokenKind::Newline.into()], self.token);
-                    self.bump();
-                }
-
                 self.skip_newlines();
+                self.drop(marker);
             }
             self.bump_token(TokenKind::Dedent);
         }
@@ -1395,6 +1391,7 @@ impl<'a> Parser<'a> {
 
         let mut check_expr_list = vec![];
         while self.token.kind != TokenKind::Dedent {
+            let marker = self.mark();
             if matches!(self.token.kind, TokenKind::Eof) {
                 self.sess
                     .struct_token_error(&[TokenKind::Newline.into()], self.token);
@@ -1406,13 +1403,8 @@ impl<'a> Parser<'a> {
             let check_expr = expr_as!(expr, Expr::Check).unwrap();
             check_expr_list.push(node_ref!(check_expr, expr_pos));
 
-            if !matches!(self.token.kind, TokenKind::Newline) {
-                self.sess
-                    .struct_token_error(&[TokenKind::Newline.into()], self.token);
-                self.bump();
-            }
-
             self.skip_newlines();
+            self.drop(marker);
         }
         self.bump_token(TokenKind::Dedent);
 

@@ -1,6 +1,6 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 60
+assertion_line: 64
 expression: "crate::tests::parsing_expr_string(\"{a = 1 b = 2}\")"
 ---
 Node {
@@ -55,14 +55,20 @@ Node {
                     node: ConfigEntry {
                         key: Some(
                             Node {
-                                node: Missing(
-                                    MissingExpr,
+                                node: Identifier(
+                                    Identifier {
+                                        names: [
+                                            "b",
+                                        ],
+                                        pkgpath: "",
+                                        ctx: Load,
+                                    },
                                 ),
                                 filename: "",
                                 line: 1,
                                 column: 7,
                                 end_line: 1,
-                                end_column: 10,
+                                end_column: 8,
                             },
                         ),
                         value: Node {
@@ -85,7 +91,7 @@ Node {
                     },
                     filename: "",
                     line: 1,
-                    column: 9,
+                    column: 7,
                     end_line: 1,
                     end_column: 12,
                 },

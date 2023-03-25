@@ -50,6 +50,8 @@ parse_expr_snapshot! { list_recovery_7, "[0,, 1" }
 parse_expr_snapshot! { list_recovery_8, "[0 ~ 1" }
 parse_expr_snapshot! { list_recovery_9, "[*a, **b]" }
 parse_expr_snapshot! { list_recovery_10, "[**a, *b" }
+parse_expr_snapshot! { list_recovery_11, "[if True: a, b]" }
+parse_expr_snapshot! { list_recovery_12, "[if True: **a, b]" }
 parse_expr_snapshot! { config_recovery_0, "{" }
 parse_expr_snapshot! { config_recovery_1, "{a = 1" }
 parse_expr_snapshot! { config_recovery_2, "{a = 1, b = 2" }
@@ -64,6 +66,8 @@ parse_expr_snapshot! { config_recovery_7, "{a = 1,, b = 2}" }
 parse_expr_snapshot! { config_recovery_8, "{a = 1 ~ b = 2}" }
 parse_expr_snapshot! { config_recovery_9, "{*a, **b}" }
 parse_expr_snapshot! { config_recovery_10, "{**a, *b}" }
+parse_expr_snapshot! { config_recovery_11, "{if True: a = , b = 2}" }
+parse_expr_snapshot! { config_recovery_12, "{if True: *a, b = 2}" }
 parse_expr_snapshot! { unary_recovery_0, r#"!a"# }
 parse_expr_snapshot! { unary_recovery_1, r#"!!a"# }
 parse_expr_snapshot! { unary_recovery_2, r#"not (!a)"# }

@@ -464,8 +464,11 @@ impl<'a> Parser<'a> {
             ))
         } else {
             if exprs[0].is_none() {
-                self.sess
-                    .struct_span_error("expected expression", self.token.span)
+                let token_str: String = self.token.into();
+                self.sess.struct_span_error(
+                    &format!("expected expression got {}", token_str),
+                    self.token.span,
+                )
             }
             if !(exprs[1].is_none() && exprs[2].is_none()) {
                 self.sess
@@ -942,11 +945,6 @@ impl<'a> Parser<'a> {
             TokenKind::Newline if !has_newline => true,
             _ => token.is_keyword(kw::For),
         };
-        let is_item_separator = |token: &kclvm_ast::token::Token| match &token.kind {
-            TokenKind::Comma => true,
-            TokenKind::Newline if has_newline => true,
-            _ => false,
-        };
 
         if is_terminator(&self.token) {
             return Vec::new();
@@ -954,12 +952,6 @@ impl<'a> Parser<'a> {
 
         let mut items = vec![self.parse_list_item()];
 
-        if !is_item_separator(&self.token) && !is_terminator(&self.token) {
-            self.sess
-                .struct_token_error(&[TokenKind::Comma.into()], self.token);
-            // TODO: use list item token set to decide whether to drop token.
-            self.bump();
-        }
         if let TokenKind::Comma = self.token.kind {
             self.bump();
         }
@@ -967,16 +959,18 @@ impl<'a> Parser<'a> {
             self.skip_newlines();
         }
         loop {
+            let marker = self.mark();
             if is_terminator(&self.token) {
                 break;
             }
 
-            items.push(self.parse_list_item());
-
-            if !is_item_separator(&self.token) && !is_terminator(&self.token) {
+            let item = self.parse_list_item();
+            if matches!(item.node, Expr::Missing(_)) {
                 self.sess
                     .struct_token_error(&[TokenKind::Comma.into()], self.token);
                 self.bump();
+            } else {
+                items.push(item);
             }
 
             if let TokenKind::Comma = self.token.kind {
@@ -985,6 +979,7 @@ impl<'a> Parser<'a> {
             if has_newline {
                 self.skip_newlines();
             }
+            self.drop(marker);
         }
         items
     }
@@ -1263,11 +1258,6 @@ impl<'a> Parser<'a> {
             TokenKind::Newline if !has_newline => true,
             _ => token.is_keyword(kw::For),
         };
-        let is_item_separator = |token: &kclvm_ast::token::Token| match &token.kind {
-            TokenKind::Comma => true,
-            TokenKind::Newline if has_newline => true,
-            _ => false,
-        };
 
         if is_terminator(&self.token) {
             return Vec::new();
@@ -1275,12 +1265,6 @@ impl<'a> Parser<'a> {
 
         let mut entries = vec![self.parse_config_entry()];
 
-        if !is_item_separator(&self.token) && !is_terminator(&self.token) {
-            self.sess
-                .struct_token_error(&[TokenKind::Comma.into()], self.token);
-            // TODO: use config item token set to decide whether to drop token.
-            self.bump();
-        }
         if let TokenKind::Comma = self.token.kind {
             self.bump();
         }
@@ -1289,23 +1273,22 @@ impl<'a> Parser<'a> {
         }
 
         loop {
+            let marker = self.mark();
+
             if is_terminator(&self.token) {
                 break;
             }
 
             entries.push(self.parse_config_entry());
 
-            if !is_item_separator(&self.token) && !is_terminator(&self.token) {
-                self.sess
-                    .struct_token_error(&[TokenKind::Comma.into()], self.token);
-                self.bump();
-            }
             if let TokenKind::Comma = self.token.kind {
                 self.bump();
             }
             if has_newline {
                 self.skip_newlines();
             }
+
+            self.drop(marker);
         }
 
         entries
@@ -1606,6 +1589,7 @@ impl<'a> Parser<'a> {
             body: &mut ConfigIfEntryExpr,
             need_skip_newlines: bool,
         ) -> bool {
+            let marker = this.mark();
             if need_skip_newlines {
                 if let TokenKind::Dedent = this.token.kind {
                     return false;
@@ -1717,7 +1701,7 @@ impl<'a> Parser<'a> {
                     pos
                 ));
             }
-
+            this.drop(marker);
             true
         }
 
@@ -1867,6 +1851,8 @@ impl<'a> Parser<'a> {
             if let Some(stmt) = self.parse_stmt() {
                 stmt_list.push(stmt);
                 self.skip_newlines();
+            } else {
+                self.bump();
             }
         }
 

@@ -1,6 +1,6 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 47
+assertion_line: 49
 expression: "crate::tests::parsing_expr_string(\"[0,, 1\")"
 ---
 Node {
@@ -21,16 +21,6 @@ Node {
                     column: 1,
                     end_line: 1,
                     end_column: 2,
-                },
-                Node {
-                    node: Missing(
-                        MissingExpr,
-                    ),
-                    filename: "",
-                    line: 1,
-                    column: 2,
-                    end_line: 1,
-                    end_column: 4,
                 },
                 Node {
                     node: NumberLit(
