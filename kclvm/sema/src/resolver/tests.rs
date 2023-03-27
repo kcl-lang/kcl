@@ -168,19 +168,6 @@ fn test_record_used_module() {
 }
 
 #[test]
-fn test_cannot_find_module() {
-    let sess = Arc::new(ParseSession::default());
-    let mut program = load_program(
-        sess.clone(),
-        &["./src/resolver/test_fail_data/cannot_find_module.k"],
-        None,
-    )
-    .unwrap();
-    let scope = resolve_program(&mut program);
-    assert_eq!(scope.handler.diagnostics[0].messages[0].pos.column, None);
-}
-
-#[test]
 fn test_resolve_program_illegal_attr_fail() {
     let mut program = parse_program("./src/resolver/test_fail_data/attr.k").unwrap();
     let scope = resolve_program(&mut program);

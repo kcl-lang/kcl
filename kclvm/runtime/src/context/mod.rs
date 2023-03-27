@@ -58,6 +58,17 @@ impl From<String> for PanicInfo {
     }
 }
 
+impl PanicInfo {
+    /// New a [`PanicInfo`] from error message [`value`] and the position that error occur.
+    pub fn from_ast_pos(value: String, pos: (String, u64, u64, u64, u64)) -> Self {
+        let mut panic_info = Self::from_string(&value);
+        panic_info.kcl_file = pos.0;
+        panic_info.kcl_line = pos.1 as i32;
+        panic_info.kcl_col = pos.2 as i32;
+        panic_info
+    }
+}
+
 impl From<&str> for PanicInfo {
     fn from(value: &str) -> Self {
         Self::from_string(value)
