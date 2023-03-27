@@ -32,8 +32,8 @@ chrono = "0.4.19"
 anyhow = "1.0"
 compiler_base_session = {path = "../compiler_base/session"}
 
-kclvm-capi = {path = "./capi",version = "0.4.6"}
-kclvm-cmd = {path = "./cmd",version = "0.4.6"}
+kclvm-capi = {path = "./capi"}
+kclvm-cmd = {path = "./cmd"}
 kclvm-ast = {path = "./ast"}
 kclvm-runner = {path = "./runner"}
 kclvm-parser = {path = "./parser"}
