@@ -1174,14 +1174,18 @@ dependencies = [
 name = "kclvm-capi"
 version = "0.4.6"
 dependencies = [
+ "anyhow",
  "compiler_base_session",
  "criterion",
+ "indexmap",
  "kclvm-ast",
+ "kclvm-ast-pretty",
  "kclvm-error",
  "kclvm-parser",
  "kclvm-query",
  "kclvm-runner",
  "kclvm-runtime",
+ "kclvm-sema",
  "kclvm-tools",
  "protobuf",
  "protobuf-codegen",
@@ -1337,6 +1341,7 @@ dependencies = [
  "anyhow",
  "compiler_base_macros",
  "compiler_base_session",
+ "indexmap",
  "kclvm-ast",
  "kclvm-ast-pretty",
  "kclvm-error",
@@ -1371,7 +1376,6 @@ dependencies = [
  "kclvm-version",
  "libc",
  "libloading",
- "lld_rs",
  "once_cell",
  "serde",
  "serde_json",
@@ -1530,19 +1534,6 @@ name = "linux-raw-sys"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f051f77a7c8e6957c0696eac88f26b0117e54f52d3fc682ab19397a8812846a4"
-
-[[package]]
-name = "lld_rs"
-version = "120.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7d477b708e322cd1576c63550da05362db629d480e4f94bb1e1052863e1a8e15"
-dependencies = [
- "cc",
- "lazy_static",
- "libc",
- "regex",
- "semver 0.9.0",
-]
 
 [[package]]
 name = "llvm-sys"

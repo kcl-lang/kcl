@@ -96,6 +96,7 @@ service KclvmService {
 	rpc EvalCode(EvalCode_Args) returns(EvalCode_Result);
 	rpc ResolveCode(ResolveCode_Args) returns(ResolveCode_Result);
 	rpc GetSchemaType(GetSchemaType_Args) returns(GetSchemaType_Result);
+	rpc GetSchemaTypeMapping(GetSchemaTypeMapping_Args) returns(GetSchemaTypeMapping_Result);
 	rpc ValidateCode(ValidateCode_Args) returns(ValidateCode_Result);
 	rpc SpliceCode(SpliceCode_Args) returns(SpliceCode_Result);
 
@@ -245,6 +246,15 @@ message GetSchemaType_Args {
 }
 message GetSchemaType_Result {
 	repeated KclType schema_type_list = 1;
+}
+
+message GetSchemaTypeMapping_Args {
+	string file = 1;
+	string code = 2;
+	string schema_name = 3; // emtry is all
+}
+message GetSchemaTypeMapping_Result {
+	map<string, KclType> schema_type_mapping = 1;
 }
 
 message ValidateCode_Args {

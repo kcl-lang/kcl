@@ -23,7 +23,6 @@ tempfile = "3.3.0"
 anyhow = "1.0"
 once_cell = "1.10"
 cc = "1.0"
-lld_rs = "120.0.1"
 compiler_base_session = {path = "../../compiler_base/session"}
 compiler_base_macros = "0.0.1"
 
@@ -34,10 +33,10 @@ kclvm-config = {path = "../config"}
 kclvm-runtime = {path = "../runtime"}
 kclvm-sema = {path = "../sema"}
 kclvm-version = {path = "../version"}
-kclvm-error = {path = "../error", version="0.4.6"}
-kclvm-query = {path = "../query", version="0.4.6"}
-kclvm-utils = {path = "../utils", version="0.4.6"}
-kclvm-driver = {path = "../driver", version="0.4.6"}
+kclvm-error = {path = "../error"}
+kclvm-query = {path = "../query"}
+kclvm-utils = {path = "../utils"}
+kclvm-driver = {path = "../driver"}
 
 [dev-dependencies]
 kclvm-parser = {path = "../parser"}

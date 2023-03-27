@@ -12,8 +12,7 @@ type kclvm_service = KclvmService;
 /// Create an instance of KclvmService and return its pointer
 #[no_mangle]
 pub extern "C" fn kclvm_service_new(plugin_agent: u64) -> *mut kclvm_service {
-    let mut serv = KclvmService::default();
-    serv.plugin_agent = plugin_agent;
+    let serv = KclvmService { plugin_agent };
     Box::into_raw(Box::new(serv))
 }
 
@@ -86,7 +85,8 @@ pub(crate) fn _kclvm_get_service_fn_ptr_by_name(name: &str) -> u64 {
         "KclvmService.Ping" => ping as *const () as u64,
         "KclvmService.ExecProgram" => exec_program as *const () as u64,
         "KclvmService.OverrideFile" => override_file as *const () as u64,
-        _ => panic!("unknown method name : {}", name),
+        "KclvmService.GetSchemaTypeMapping" => get_schema_type_mapping as *const () as u64,
+        _ => panic!("unknown method name : {name}"),
     }
 }
 
@@ -126,7 +126,7 @@ pub(crate) fn exec_program(serv: &mut KclvmService, args: &[u8]) -> *const c_cha
             Ok(bytes) => bytes,
             Err(err) => panic!("{}", err.to_string()),
         },
-        Err(err) => panic!("{}", err.clone()),
+        Err(err) => panic!("{}", err),
     };
     CString::new(result_byte).unwrap().into_raw()
 }
@@ -156,7 +156,29 @@ pub(crate) fn override_file(serv: &mut KclvmService, args: &[u8]) -> *const c_ch
             Ok(bytes) => bytes,
             Err(err) => panic!("{}", err.to_string()),
         },
-        Err(err) => panic!("{}", err.clone()),
+        Err(err) => panic!("{}", err),
+    };
+    CString::new(result_byte).unwrap().into_raw()
+}
+
+/// Get schema types from a kcl file or code.
+///
+/// # Parameters
+/// file: [&str]. The kcl filename.
+///
+/// code: [Option<&str>]. The kcl code string
+///
+/// schema_name: [Option<&str>]. The schema name, when the schema name is empty, all schemas are returned.
+pub(crate) fn get_schema_type_mapping(serv: &mut KclvmService, args: &[u8]) -> *const c_char {
+    let serv_ref = unsafe { mut_ptr_as_ref(serv) };
+    let args = GetSchemaTypeMapping_Args::parse_from_bytes(args).unwrap();
+    let res = serv_ref.get_schema_type_mapping(&args);
+    let result_byte = match res {
+        Ok(res) => match res.write_to_bytes() {
+            Ok(bytes) => bytes,
+            Err(err) => panic!("{err}"),
+        },
+        Err(err) => panic!("{err}"),
     };
     CString::new(result_byte).unwrap().into_raw()
 }

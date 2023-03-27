@@ -135,6 +135,6 @@ appConfigurationUnification: AppConfiguration {
 fn test_parse_override_spec_invalid() {
     let specs = vec![":a:", "=a=", ":a", "a-1"];
     for spec in specs {
-        assert!(parse_override_spec(spec).is_err(), "{} test failed", spec);
+        assert!(parse_override_spec(spec).is_err(), "{spec} test failed");
     }
 }

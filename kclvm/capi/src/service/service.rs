@@ -1,28 +1,25 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::{path::Path, string::String, time::SystemTime};
 
 use crate::model::gpyrpc::*;
 
 use kclvm_parser::{load_program, ParseSession};
-use kclvm_query::apply_overrides;
-use kclvm_query::override_file;
+use kclvm_query::{apply_overrides, get_schema_type, override_file};
 use kclvm_runtime::ValueRef;
 use protobuf_json_mapping::print_to_string_with_options;
 use protobuf_json_mapping::PrintOptions;
 
+use super::ty::kcl_schema_ty_to_pb_ty;
+
 /// Specific implementation of calling service
+#[derive(Default)]
 pub struct KclvmService {
     pub plugin_agent: u64,
 }
 
-impl Default for KclvmService {
-    fn default() -> Self {
-        Self { plugin_agent: 0 }
-    }
-}
-
 impl KclvmService {
-    /// Ping KclvmService ,return the same value as the parameter
+    /// Ping KclvmService, return the same value as the parameter
     ///
     /// # Examples
     ///
@@ -82,7 +79,7 @@ impl KclvmService {
         let k_files = &native_args.k_filename_list;
         let mut kcl_paths = Vec::<String>::new();
         // join work_path with k_fiel_path
-        for (_, file) in k_files.into_iter().enumerate() {
+        for (_, file) in k_files.iter().enumerate() {
             match Path::new(args.work_dir.as_str()).join(file).to_str() {
                 Some(str) => kcl_paths.push(String::from(str)),
                 None => (),
@@ -92,7 +89,7 @@ impl KclvmService {
         let kcl_paths_str = kcl_paths.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
         let mut result = ExecProgram_Result::default();
         let sess = Arc::new(ParseSession::default());
-        let mut program = load_program(sess.clone(), &kcl_paths_str.as_slice(), Some(opts))?;
+        let mut program = load_program(sess.clone(), kcl_paths_str.as_slice(), Some(opts))?;
 
         if let Err(err) = apply_overrides(
             &mut program,
@@ -169,5 +166,64 @@ impl KclvmService {
                 result,
                 ..Default::default()
             })
+    }
+
+    /// Service for getting the schema mapping.
+    ///
+    /// # Examples
+    /// ```
+    /// use kclvm_capi::service::service::KclvmService;
+    /// use kclvm_capi::model::gpyrpc::*;
+    /// let serv = KclvmService::default();
+    /// let file = "schema.k".to_string();
+    /// let code = r#"
+    /// schema Person:
+    ///     name: str
+    ///     age: int
+    ///
+    /// person = Person {
+    ///     name = "Alice"
+    ///     age = 18
+    /// }
+    /// "#.to_string();
+    /// let args = &OverrideFile_Args {
+    ///     file: "./src/testdata/test.k".to_string(),
+    ///     specs: vec!["alice.age=18".to_string()],
+    ///     import_paths: vec![],
+    ///     ..Default::default()
+    /// };
+    /// let result = serv.get_schema_type_mapping(&GetSchemaTypeMapping_Args {
+    ///     file,
+    ///     code,
+    ///     ..Default::default()
+    /// }).unwrap();
+    /// assert_eq!(result.schema_type_mapping.len(), 2);
+    /// ```
+    pub fn get_schema_type_mapping(
+        &self,
+        args: &GetSchemaTypeMapping_Args,
+    ) -> anyhow::Result<GetSchemaTypeMapping_Result> {
+        let mut type_mapping = HashMap::new();
+        for (k, schema_ty) in get_schema_type(
+            &args.file,
+            if args.code.is_empty() {
+                None
+            } else {
+                Some(&args.code)
+            },
+            if args.schema_name.is_empty() {
+                None
+            } else {
+                Some(&args.schema_name)
+            },
+            Default::default(),
+        )? {
+            type_mapping.insert(k, kcl_schema_ty_to_pb_ty(&schema_ty));
+        }
+
+        Ok(GetSchemaTypeMapping_Result {
+            schema_type_mapping: type_mapping,
+            ..Default::default()
+        })
     }
 }
