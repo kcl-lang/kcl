@@ -4,6 +4,7 @@
 //! input file name, and according to the ast::OverrideSpec transforms the nodes in the
 //! AST, recursively modifying or deleting the values of the nodes in the AST.
 pub mod r#override;
+pub mod query;
 
 #[cfg(test)]
 mod tests;
@@ -14,6 +15,7 @@ use kclvm_ast::ast;
 use kclvm_ast_pretty::print_ast_module;
 use kclvm_parser::parse_file;
 
+pub use query::{get_schema_type, GetSchemaOption};
 pub use r#override::{apply_override_on_module, apply_overrides};
 
 use self::r#override::parse_override_spec;
@@ -94,7 +96,7 @@ pub fn override_file(file: &str, specs: &[String], import_paths: &[String]) -> R
     // Print AST module.
     if result {
         let code_str = print_ast_module(&module);
-        std::fs::write(file, &code_str)?
+        std::fs::write(file, code_str)?
     }
     Ok(result)
 }

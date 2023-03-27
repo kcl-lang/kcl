@@ -4650,6 +4650,306 @@ impl ::protobuf::reflect::ProtobufValue for GetSchemaType_Result {
 }
 
 #[derive(PartialEq,Clone,Default,Debug)]
+// @@protoc_insertion_point(message:gpyrpc.GetSchemaTypeMapping_Args)
+pub struct GetSchemaTypeMapping_Args {
+    // message fields
+    // @@protoc_insertion_point(field:gpyrpc.GetSchemaTypeMapping_Args.file)
+    pub file: ::std::string::String,
+    // @@protoc_insertion_point(field:gpyrpc.GetSchemaTypeMapping_Args.code)
+    pub code: ::std::string::String,
+    // @@protoc_insertion_point(field:gpyrpc.GetSchemaTypeMapping_Args.schema_name)
+    pub schema_name: ::std::string::String,
+    // special fields
+    // @@protoc_insertion_point(special_field:gpyrpc.GetSchemaTypeMapping_Args.special_fields)
+    pub special_fields: ::protobuf::SpecialFields,
+}
+
+impl<'a> ::std::default::Default for &'a GetSchemaTypeMapping_Args {
+    fn default() -> &'a GetSchemaTypeMapping_Args {
+        <GetSchemaTypeMapping_Args as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl GetSchemaTypeMapping_Args {
+    pub fn new() -> GetSchemaTypeMapping_Args {
+        ::std::default::Default::default()
+    }
+
+    fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
+        let mut fields = ::std::vec::Vec::with_capacity(3);
+        let mut oneofs = ::std::vec::Vec::with_capacity(0);
+        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
+            "file",
+            |m: &GetSchemaTypeMapping_Args| { &m.file },
+            |m: &mut GetSchemaTypeMapping_Args| { &mut m.file },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
+            "code",
+            |m: &GetSchemaTypeMapping_Args| { &m.code },
+            |m: &mut GetSchemaTypeMapping_Args| { &mut m.code },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
+            "schema_name",
+            |m: &GetSchemaTypeMapping_Args| { &m.schema_name },
+            |m: &mut GetSchemaTypeMapping_Args| { &mut m.schema_name },
+        ));
+        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<GetSchemaTypeMapping_Args>(
+            "GetSchemaTypeMapping_Args",
+            fields,
+            oneofs,
+        )
+    }
+}
+
+impl ::protobuf::Message for GetSchemaTypeMapping_Args {
+    const NAME: &'static str = "GetSchemaTypeMapping_Args";
+
+    fn is_initialized(&self) -> bool {
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::Result<()> {
+        while let Some(tag) = is.read_raw_tag_or_eof()? {
+            match tag {
+                10 => {
+                    self.file = is.read_string()?;
+                },
+                18 => {
+                    self.code = is.read_string()?;
+                },
+                26 => {
+                    self.schema_name = is.read_string()?;
+                },
+                tag => {
+                    ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u64 {
+        let mut my_size = 0;
+        if !self.file.is_empty() {
+            my_size += ::protobuf::rt::string_size(1, &self.file);
+        }
+        if !self.code.is_empty() {
+            my_size += ::protobuf::rt::string_size(2, &self.code);
+        }
+        if !self.schema_name.is_empty() {
+            my_size += ::protobuf::rt::string_size(3, &self.schema_name);
+        }
+        my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
+        self.special_fields.cached_size().set(my_size as u32);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
+        if !self.file.is_empty() {
+            os.write_string(1, &self.file)?;
+        }
+        if !self.code.is_empty() {
+            os.write_string(2, &self.code)?;
+        }
+        if !self.schema_name.is_empty() {
+            os.write_string(3, &self.schema_name)?;
+        }
+        os.write_unknown_fields(self.special_fields.unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn special_fields(&self) -> &::protobuf::SpecialFields {
+        &self.special_fields
+    }
+
+    fn mut_special_fields(&mut self) -> &mut ::protobuf::SpecialFields {
+        &mut self.special_fields
+    }
+
+    fn new() -> GetSchemaTypeMapping_Args {
+        GetSchemaTypeMapping_Args::new()
+    }
+
+    fn clear(&mut self) {
+        self.file.clear();
+        self.code.clear();
+        self.schema_name.clear();
+        self.special_fields.clear();
+    }
+
+    fn default_instance() -> &'static GetSchemaTypeMapping_Args {
+        static instance: GetSchemaTypeMapping_Args = GetSchemaTypeMapping_Args {
+            file: ::std::string::String::new(),
+            code: ::std::string::String::new(),
+            schema_name: ::std::string::String::new(),
+            special_fields: ::protobuf::SpecialFields::new(),
+        };
+        &instance
+    }
+}
+
+impl ::protobuf::MessageFull for GetSchemaTypeMapping_Args {
+    fn descriptor() -> ::protobuf::reflect::MessageDescriptor {
+        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::Lazy::new();
+        descriptor.get(|| file_descriptor().message_by_package_relative_name("GetSchemaTypeMapping_Args").unwrap()).clone()
+    }
+}
+
+impl ::std::fmt::Display for GetSchemaTypeMapping_Args {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for GetSchemaTypeMapping_Args {
+    type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
+}
+
+#[derive(PartialEq,Clone,Default,Debug)]
+// @@protoc_insertion_point(message:gpyrpc.GetSchemaTypeMapping_Result)
+pub struct GetSchemaTypeMapping_Result {
+    // message fields
+    // @@protoc_insertion_point(field:gpyrpc.GetSchemaTypeMapping_Result.schema_type_mapping)
+    pub schema_type_mapping: ::std::collections::HashMap<::std::string::String, KclType>,
+    // special fields
+    // @@protoc_insertion_point(special_field:gpyrpc.GetSchemaTypeMapping_Result.special_fields)
+    pub special_fields: ::protobuf::SpecialFields,
+}
+
+impl<'a> ::std::default::Default for &'a GetSchemaTypeMapping_Result {
+    fn default() -> &'a GetSchemaTypeMapping_Result {
+        <GetSchemaTypeMapping_Result as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl GetSchemaTypeMapping_Result {
+    pub fn new() -> GetSchemaTypeMapping_Result {
+        ::std::default::Default::default()
+    }
+
+    fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
+        let mut fields = ::std::vec::Vec::with_capacity(1);
+        let mut oneofs = ::std::vec::Vec::with_capacity(0);
+        fields.push(::protobuf::reflect::rt::v2::make_map_simpler_accessor::<_, _, _>(
+            "schema_type_mapping",
+            |m: &GetSchemaTypeMapping_Result| { &m.schema_type_mapping },
+            |m: &mut GetSchemaTypeMapping_Result| { &mut m.schema_type_mapping },
+        ));
+        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<GetSchemaTypeMapping_Result>(
+            "GetSchemaTypeMapping_Result",
+            fields,
+            oneofs,
+        )
+    }
+}
+
+impl ::protobuf::Message for GetSchemaTypeMapping_Result {
+    const NAME: &'static str = "GetSchemaTypeMapping_Result";
+
+    fn is_initialized(&self) -> bool {
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::Result<()> {
+        while let Some(tag) = is.read_raw_tag_or_eof()? {
+            match tag {
+                10 => {
+                    let len = is.read_raw_varint32()?;
+                    let old_limit = is.push_limit(len as u64)?;
+                    let mut key = ::std::default::Default::default();
+                    let mut value = ::std::default::Default::default();
+                    while let Some(tag) = is.read_raw_tag_or_eof()? {
+                        match tag {
+                            10 => key = is.read_string()?,
+                            18 => value = is.read_message()?,
+                            _ => ::protobuf::rt::skip_field_for_tag(tag, is)?,
+                        };
+                    }
+                    is.pop_limit(old_limit);
+                    self.schema_type_mapping.insert(key, value);
+                },
+                tag => {
+                    ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u64 {
+        let mut my_size = 0;
+        for (k, v) in &self.schema_type_mapping {
+            let mut entry_size = 0;
+            entry_size += ::protobuf::rt::string_size(1, &k);
+            let len = v.compute_size();
+            entry_size += 1 + ::protobuf::rt::compute_raw_varint64_size(len) + len;
+            my_size += 1 + ::protobuf::rt::compute_raw_varint64_size(entry_size) + entry_size
+        };
+        my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
+        self.special_fields.cached_size().set(my_size as u32);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
+        for (k, v) in &self.schema_type_mapping {
+            let mut entry_size = 0;
+            entry_size += ::protobuf::rt::string_size(1, &k);
+            let len = v.cached_size() as u64;
+            entry_size += 1 + ::protobuf::rt::compute_raw_varint64_size(len) + len;
+            os.write_raw_varint32(10)?; // Tag.
+            os.write_raw_varint32(entry_size as u32)?;
+            os.write_string(1, &k)?;
+            ::protobuf::rt::write_message_field_with_cached_size(2, v, os)?;
+        };
+        os.write_unknown_fields(self.special_fields.unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn special_fields(&self) -> &::protobuf::SpecialFields {
+        &self.special_fields
+    }
+
+    fn mut_special_fields(&mut self) -> &mut ::protobuf::SpecialFields {
+        &mut self.special_fields
+    }
+
+    fn new() -> GetSchemaTypeMapping_Result {
+        GetSchemaTypeMapping_Result::new()
+    }
+
+    fn clear(&mut self) {
+        self.schema_type_mapping.clear();
+        self.special_fields.clear();
+    }
+
+    fn default_instance() -> &'static GetSchemaTypeMapping_Result {
+        static instance: ::protobuf::rt::Lazy<GetSchemaTypeMapping_Result> = ::protobuf::rt::Lazy::new();
+        instance.get(GetSchemaTypeMapping_Result::new)
+    }
+}
+
+impl ::protobuf::MessageFull for GetSchemaTypeMapping_Result {
+    fn descriptor() -> ::protobuf::reflect::MessageDescriptor {
+        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::Lazy::new();
+        descriptor.get(|| file_descriptor().message_by_package_relative_name("GetSchemaTypeMapping_Result").unwrap()).clone()
+    }
+}
+
+impl ::std::fmt::Display for GetSchemaTypeMapping_Result {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for GetSchemaTypeMapping_Result {
+    type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
+}
+
+#[derive(PartialEq,Clone,Default,Debug)]
 // @@protoc_insertion_point(message:gpyrpc.ValidateCode_Args)
 pub struct ValidateCode_Args {
     // message fields
@@ -8155,63 +8455,70 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     _Args\x12\x12\n\x04file\x18\x01\x20\x01(\tR\x04file\x12\x12\n\x04code\
     \x18\x02\x20\x01(\tR\x04code\x12\x1f\n\x0bschema_name\x18\x03\x20\x01(\t\
     R\nschemaName\"Q\n\x14GetSchemaType_Result\x129\n\x10schema_type_list\
-    \x18\x01\x20\x03(\x0b2\x0f.gpyrpc.KclTypeR\x0eschemaTypeList\"\x92\x01\n\
-    \x11ValidateCode_Args\x12\x12\n\x04data\x18\x01\x20\x01(\tR\x04data\x12\
-    \x12\n\x04code\x18\x02\x20\x01(\tR\x04code\x12\x16\n\x06schema\x18\x03\
-    \x20\x01(\tR\x06schema\x12%\n\x0eattribute_name\x18\x04\x20\x01(\tR\ratt\
-    ributeName\x12\x16\n\x06format\x18\x05\x20\x01(\tR\x06format\"P\n\x13Val\
-    idateCode_Result\x12\x18\n\x07success\x18\x01\x20\x01(\x08R\x07success\
-    \x12\x1f\n\x0berr_message\x18\x02\x20\x01(\tR\nerrMessage\"9\n\x0bCodeSn\
-    ippet\x12\x16\n\x06schema\x18\x01\x20\x01(\tR\x06schema\x12\x12\n\x04rul\
-    e\x18\x02\x20\x01(\tR\x04rule\"J\n\x0fSpliceCode_Args\x127\n\x0ccodeSnip\
-    pets\x18\x01\x20\x03(\x0b2\x13.gpyrpc.CodeSnippetR\x0ccodeSnippets\"3\n\
-    \x11SpliceCode_Result\x12\x1e\n\nspliceCode\x18\x01\x20\x01(\tR\nspliceC\
-    ode\"R\n\x08Position\x12\x12\n\x04line\x18\x01\x20\x01(\x03R\x04line\x12\
-    \x16\n\x06column\x18\x02\x20\x01(\x03R\x06column\x12\x1a\n\x08filename\
-    \x18\x03\x20\x01(\tR\x08filename\"[\n\rComplete_Args\x12\"\n\x03pos\x18\
-    \x01\x20\x01(\x0b2\x10.gpyrpc.PositionR\x03pos\x12\x12\n\x04name\x18\x02\
-    \x20\x01(\tR\x04name\x12\x12\n\x04code\x18\x03\x20\x01(\tR\x04code\"7\n\
-    \x0fComplete_Result\x12$\n\rcompleteItems\x18\x01\x20\x01(\tR\rcompleteI\
-    tems\"F\n\x0cGoToDef_Args\x12\"\n\x03pos\x18\x01\x20\x01(\x0b2\x10.gpyrp\
-    c.PositionR\x03pos\x12\x12\n\x04code\x18\x02\x20\x01(\tR\x04code\".\n\
-    \x0eGoToDef_Result\x12\x1c\n\tlocations\x18\x01\x20\x01(\tR\tlocations\"\
-    =\n\x13DocumentSymbol_Args\x12\x12\n\x04file\x18\x01\x20\x01(\tR\x04file\
-    \x12\x12\n\x04code\x18\x02\x20\x01(\tR\x04code\"/\n\x15DocumentSymbol_Re\
-    sult\x12\x16\n\x06symbol\x18\x01\x20\x01(\tR\x06symbol\"D\n\nHover_Args\
-    \x12\"\n\x03pos\x18\x01\x20\x01(\x0b2\x10.gpyrpc.PositionR\x03pos\x12\
-    \x12\n\x04code\x18\x02\x20\x01(\tR\x04code\"0\n\x0cHover_Result\x12\x20\
-    \n\x0bhoverResult\x18\x01\x20\x01(\tR\x0bhoverResult\"\x99\x01\n\x11List\
-    DepFiles_Args\x12\x19\n\x08work_dir\x18\x01\x20\x01(\tR\x07workDir\x12\
-    \x20\n\x0cuse_abs_path\x18\x02\x20\x01(\x08R\nuseAbsPath\x12\x1f\n\x0bin\
-    clude_all\x18\x03\x20\x01(\x08R\nincludeAll\x12&\n\x0fuse_fast_parser\
-    \x18\x04\x20\x01(\x08R\ruseFastParser\"_\n\x13ListDepFiles_Result\x12\
-    \x18\n\x07pkgroot\x18\x01\x20\x01(\tR\x07pkgroot\x12\x18\n\x07pkgpath\
-    \x18\x02\x20\x01(\tR\x07pkgpath\x12\x14\n\x05files\x18\x03\x20\x03(\tR\
-    \x05files\"I\n\x16LoadSettingsFiles_Args\x12\x19\n\x08work_dir\x18\x01\
-    \x20\x01(\tR\x07workDir\x12\x14\n\x05files\x18\x02\x20\x03(\tR\x05files\
-    \"\x8c\x01\n\x18LoadSettingsFiles_Result\x129\n\x0fkcl_cli_configs\x18\
-    \x01\x20\x01(\x0b2\x11.gpyrpc.CliConfigR\rkclCliConfigs\x125\n\x0bkcl_op\
-    tions\x18\x02\x20\x03(\x0b2\x14.gpyrpc.KeyValuePairR\nkclOptions\"\xfd\
-    \x01\n\tCliConfig\x12\x14\n\x05files\x18\x01\x20\x03(\tR\x05files\x12\
-    \x16\n\x06output\x18\x02\x20\x01(\tR\x06output\x12\x1c\n\toverrides\x18\
-    \x03\x20\x03(\tR\toverrides\x12#\n\rpath_selector\x18\x04\x20\x03(\tR\
-    \x0cpathSelector\x12,\n\x12strict_range_check\x18\x05\x20\x01(\x08R\x10s\
-    trictRangeCheck\x12!\n\x0cdisable_none\x18\x06\x20\x01(\x08R\x0bdisableN\
-    one\x12\x18\n\x07verbose\x18\x07\x20\x01(\x03R\x07verbose\x12\x14\n\x05d\
-    ebug\x18\x08\x20\x01(\x08R\x05debug\"6\n\x0cKeyValuePair\x12\x10\n\x03ke\
-    y\x18\x01\x20\x01(\tR\x03key\x12\x14\n\x05value\x18\x02\x20\x01(\tR\x05v\
-    alue\"\xe5\x03\n\x07KclType\x12\x12\n\x04type\x18\x01\x20\x01(\tR\x04typ\
-    e\x120\n\x0bunion_types\x18\x02\x20\x03(\x0b2\x0f.gpyrpc.KclTypeR\nunion\
-    Types\x12\x18\n\x07default\x18\x03\x20\x01(\tR\x07default\x12\x1f\n\x0bs\
-    chema_name\x18\x04\x20\x01(\tR\nschemaName\x12\x1d\n\nschema_doc\x18\x05\
-    \x20\x01(\tR\tschemaDoc\x12?\n\nproperties\x18\x06\x20\x03(\x0b2\x1f.gpy\
-    rpc.KclType.PropertiesEntryR\nproperties\x12\x1a\n\x08required\x18\x07\
-    \x20\x03(\tR\x08required\x12!\n\x03key\x18\x08\x20\x01(\x0b2\x0f.gpyrpc.\
-    KclTypeR\x03key\x12#\n\x04item\x18\t\x20\x01(\x0b2\x0f.gpyrpc.KclTypeR\
-    \x04item\x12\x12\n\x04line\x18\n\x20\x01(\x05R\x04line\x121\n\ndecorator\
-    s\x18\x0b\x20\x03(\x0b2\x11.gpyrpc.DecoratorR\ndecorators\x1aN\n\x0fProp\
-    ertiesEntry\x12\x10\n\x03key\x18\x01\x20\x01(\tR\x03key\x12%\n\x05value\
-    \x18\x02\x20\x01(\x0b2\x0f.gpyrpc.KclTypeR\x05value:\x028\x01\"\xb7\x01\
+    \x18\x01\x20\x03(\x0b2\x0f.gpyrpc.KclTypeR\x0eschemaTypeList\"d\n\x19Get\
+    SchemaTypeMapping_Args\x12\x12\n\x04file\x18\x01\x20\x01(\tR\x04file\x12\
+    \x12\n\x04code\x18\x02\x20\x01(\tR\x04code\x12\x1f\n\x0bschema_name\x18\
+    \x03\x20\x01(\tR\nschemaName\"\xe0\x01\n\x1bGetSchemaTypeMapping_Result\
+    \x12j\n\x13schema_type_mapping\x18\x01\x20\x03(\x0b2:.gpyrpc.GetSchemaTy\
+    peMapping_Result.SchemaTypeMappingEntryR\x11schemaTypeMapping\x1aU\n\x16\
+    SchemaTypeMappingEntry\x12\x10\n\x03key\x18\x01\x20\x01(\tR\x03key\x12%\
+    \n\x05value\x18\x02\x20\x01(\x0b2\x0f.gpyrpc.KclTypeR\x05value:\x028\x01\
+    \"\x92\x01\n\x11ValidateCode_Args\x12\x12\n\x04data\x18\x01\x20\x01(\tR\
+    \x04data\x12\x12\n\x04code\x18\x02\x20\x01(\tR\x04code\x12\x16\n\x06sche\
+    ma\x18\x03\x20\x01(\tR\x06schema\x12%\n\x0eattribute_name\x18\x04\x20\
+    \x01(\tR\rattributeName\x12\x16\n\x06format\x18\x05\x20\x01(\tR\x06forma\
+    t\"P\n\x13ValidateCode_Result\x12\x18\n\x07success\x18\x01\x20\x01(\x08R\
+    \x07success\x12\x1f\n\x0berr_message\x18\x02\x20\x01(\tR\nerrMessage\"9\
+    \n\x0bCodeSnippet\x12\x16\n\x06schema\x18\x01\x20\x01(\tR\x06schema\x12\
+    \x12\n\x04rule\x18\x02\x20\x01(\tR\x04rule\"J\n\x0fSpliceCode_Args\x127\
+    \n\x0ccodeSnippets\x18\x01\x20\x03(\x0b2\x13.gpyrpc.CodeSnippetR\x0ccode\
+    Snippets\"3\n\x11SpliceCode_Result\x12\x1e\n\nspliceCode\x18\x01\x20\x01\
+    (\tR\nspliceCode\"R\n\x08Position\x12\x12\n\x04line\x18\x01\x20\x01(\x03\
+    R\x04line\x12\x16\n\x06column\x18\x02\x20\x01(\x03R\x06column\x12\x1a\n\
+    \x08filename\x18\x03\x20\x01(\tR\x08filename\"[\n\rComplete_Args\x12\"\n\
+    \x03pos\x18\x01\x20\x01(\x0b2\x10.gpyrpc.PositionR\x03pos\x12\x12\n\x04n\
+    ame\x18\x02\x20\x01(\tR\x04name\x12\x12\n\x04code\x18\x03\x20\x01(\tR\
+    \x04code\"7\n\x0fComplete_Result\x12$\n\rcompleteItems\x18\x01\x20\x01(\
+    \tR\rcompleteItems\"F\n\x0cGoToDef_Args\x12\"\n\x03pos\x18\x01\x20\x01(\
+    \x0b2\x10.gpyrpc.PositionR\x03pos\x12\x12\n\x04code\x18\x02\x20\x01(\tR\
+    \x04code\".\n\x0eGoToDef_Result\x12\x1c\n\tlocations\x18\x01\x20\x01(\tR\
+    \tlocations\"=\n\x13DocumentSymbol_Args\x12\x12\n\x04file\x18\x01\x20\
+    \x01(\tR\x04file\x12\x12\n\x04code\x18\x02\x20\x01(\tR\x04code\"/\n\x15D\
+    ocumentSymbol_Result\x12\x16\n\x06symbol\x18\x01\x20\x01(\tR\x06symbol\"\
+    D\n\nHover_Args\x12\"\n\x03pos\x18\x01\x20\x01(\x0b2\x10.gpyrpc.Position\
+    R\x03pos\x12\x12\n\x04code\x18\x02\x20\x01(\tR\x04code\"0\n\x0cHover_Res\
+    ult\x12\x20\n\x0bhoverResult\x18\x01\x20\x01(\tR\x0bhoverResult\"\x99\
+    \x01\n\x11ListDepFiles_Args\x12\x19\n\x08work_dir\x18\x01\x20\x01(\tR\
+    \x07workDir\x12\x20\n\x0cuse_abs_path\x18\x02\x20\x01(\x08R\nuseAbsPath\
+    \x12\x1f\n\x0binclude_all\x18\x03\x20\x01(\x08R\nincludeAll\x12&\n\x0fus\
+    e_fast_parser\x18\x04\x20\x01(\x08R\ruseFastParser\"_\n\x13ListDepFiles_\
+    Result\x12\x18\n\x07pkgroot\x18\x01\x20\x01(\tR\x07pkgroot\x12\x18\n\x07\
+    pkgpath\x18\x02\x20\x01(\tR\x07pkgpath\x12\x14\n\x05files\x18\x03\x20\
+    \x03(\tR\x05files\"I\n\x16LoadSettingsFiles_Args\x12\x19\n\x08work_dir\
+    \x18\x01\x20\x01(\tR\x07workDir\x12\x14\n\x05files\x18\x02\x20\x03(\tR\
+    \x05files\"\x8c\x01\n\x18LoadSettingsFiles_Result\x129\n\x0fkcl_cli_conf\
+    igs\x18\x01\x20\x01(\x0b2\x11.gpyrpc.CliConfigR\rkclCliConfigs\x125\n\
+    \x0bkcl_options\x18\x02\x20\x03(\x0b2\x14.gpyrpc.KeyValuePairR\nkclOptio\
+    ns\"\xfd\x01\n\tCliConfig\x12\x14\n\x05files\x18\x01\x20\x03(\tR\x05file\
+    s\x12\x16\n\x06output\x18\x02\x20\x01(\tR\x06output\x12\x1c\n\toverrides\
+    \x18\x03\x20\x03(\tR\toverrides\x12#\n\rpath_selector\x18\x04\x20\x03(\t\
+    R\x0cpathSelector\x12,\n\x12strict_range_check\x18\x05\x20\x01(\x08R\x10\
+    strictRangeCheck\x12!\n\x0cdisable_none\x18\x06\x20\x01(\x08R\x0bdisable\
+    None\x12\x18\n\x07verbose\x18\x07\x20\x01(\x03R\x07verbose\x12\x14\n\x05\
+    debug\x18\x08\x20\x01(\x08R\x05debug\"6\n\x0cKeyValuePair\x12\x10\n\x03k\
+    ey\x18\x01\x20\x01(\tR\x03key\x12\x14\n\x05value\x18\x02\x20\x01(\tR\x05\
+    value\"\xe5\x03\n\x07KclType\x12\x12\n\x04type\x18\x01\x20\x01(\tR\x04ty\
+    pe\x120\n\x0bunion_types\x18\x02\x20\x03(\x0b2\x0f.gpyrpc.KclTypeR\nunio\
+    nTypes\x12\x18\n\x07default\x18\x03\x20\x01(\tR\x07default\x12\x1f\n\x0b\
+    schema_name\x18\x04\x20\x01(\tR\nschemaName\x12\x1d\n\nschema_doc\x18\
+    \x05\x20\x01(\tR\tschemaDoc\x12?\n\nproperties\x18\x06\x20\x03(\x0b2\x1f\
+    .gpyrpc.KclType.PropertiesEntryR\nproperties\x12\x1a\n\x08required\x18\
+    \x07\x20\x03(\tR\x08required\x12!\n\x03key\x18\x08\x20\x01(\x0b2\x0f.gpy\
+    rpc.KclTypeR\x03key\x12#\n\x04item\x18\t\x20\x01(\x0b2\x0f.gpyrpc.KclTyp\
+    eR\x04item\x12\x12\n\x04line\x18\n\x20\x01(\x05R\x04line\x121\n\ndecorat\
+    ors\x18\x0b\x20\x03(\x0b2\x11.gpyrpc.DecoratorR\ndecorators\x1aN\n\x0fPr\
+    opertiesEntry\x12\x10\n\x03key\x18\x01\x20\x01(\tR\x03key\x12%\n\x05valu\
+    e\x18\x02\x20\x01(\x0b2\x0f.gpyrpc.KclTypeR\x05value:\x028\x01\"\xb7\x01\
     \n\tDecorator\x12\x12\n\x04name\x18\x01\x20\x01(\tR\x04name\x12\x1c\n\ta\
     rguments\x18\x02\x20\x03(\tR\targuments\x12;\n\x08keywords\x18\x03\x20\
     \x03(\x0b2\x1f.gpyrpc.Decorator.KeywordsEntryR\x08keywords\x1a;\n\rKeywo\
@@ -8219,7 +8526,7 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     \x18\x02\x20\x01(\tR\x05value:\x028\x012\x82\x01\n\x0eBuiltinService\x12\
     .\n\x04Ping\x12\x11.gpyrpc.Ping_Args\x1a\x13.gpyrpc.Ping_Result\x12@\n\n\
     ListMethod\x12\x17.gpyrpc.ListMethod_Args\x1a\x19.gpyrpc.ListMethod_Resu\
-    lt2\xb4\x0b\n\x0cKclvmService\x12.\n\x04Ping\x12\x11.gpyrpc.Ping_Args\
+    lt2\x94\x0c\n\x0cKclvmService\x12.\n\x04Ping\x12\x11.gpyrpc.Ping_Args\
     \x1a\x13.gpyrpc.Ping_Result\x12X\n\x12ParseFile_LarkTree\x12\x1f.gpyrpc.\
     ParseFile_LarkTree_Args\x1a!.gpyrpc.ParseFile_LarkTree_Result\x12I\n\rPa\
     rseFile_AST\x12\x1a.gpyrpc.ParseFile_AST_Args\x1a\x1c.gpyrpc.ParseFile_A\
@@ -8235,17 +8542,18 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     \x12\x15.gpyrpc.EvalCode_Args\x1a\x17.gpyrpc.EvalCode_Result\x12C\n\x0bR\
     esolveCode\x12\x18.gpyrpc.ResolveCode_Args\x1a\x1a.gpyrpc.ResolveCode_Re\
     sult\x12I\n\rGetSchemaType\x12\x1a.gpyrpc.GetSchemaType_Args\x1a\x1c.gpy\
-    rpc.GetSchemaType_Result\x12F\n\x0cValidateCode\x12\x19.gpyrpc.ValidateC\
-    ode_Args\x1a\x1b.gpyrpc.ValidateCode_Result\x12@\n\nSpliceCode\x12\x17.g\
-    pyrpc.SpliceCode_Args\x1a\x19.gpyrpc.SpliceCode_Result\x12:\n\x08Complet\
-    e\x12\x15.gpyrpc.Complete_Args\x1a\x17.gpyrpc.Complete_Result\x127\n\x07\
-    GoToDef\x12\x14.gpyrpc.GoToDef_Args\x1a\x16.gpyrpc.GoToDef_Result\x12L\n\
-    \x0eDocumentSymbol\x12\x1b.gpyrpc.DocumentSymbol_Args\x1a\x1d.gpyrpc.Doc\
-    umentSymbol_Result\x121\n\x05Hover\x12\x12.gpyrpc.Hover_Args\x1a\x14.gpy\
-    rpc.Hover_Result\x12F\n\x0cListDepFiles\x12\x19.gpyrpc.ListDepFiles_Args\
-    \x1a\x1b.gpyrpc.ListDepFiles_Result\x12U\n\x11LoadSettingsFiles\x12\x1e.\
-    gpyrpc.LoadSettingsFiles_Args\x1a\x20.gpyrpc.LoadSettingsFiles_Resultb\
-    \x06proto3\
+    rpc.GetSchemaType_Result\x12^\n\x14GetSchemaTypeMapping\x12!.gpyrpc.GetS\
+    chemaTypeMapping_Args\x1a#.gpyrpc.GetSchemaTypeMapping_Result\x12F\n\x0c\
+    ValidateCode\x12\x19.gpyrpc.ValidateCode_Args\x1a\x1b.gpyrpc.ValidateCod\
+    e_Result\x12@\n\nSpliceCode\x12\x17.gpyrpc.SpliceCode_Args\x1a\x19.gpyrp\
+    c.SpliceCode_Result\x12:\n\x08Complete\x12\x15.gpyrpc.Complete_Args\x1a\
+    \x17.gpyrpc.Complete_Result\x127\n\x07GoToDef\x12\x14.gpyrpc.GoToDef_Arg\
+    s\x1a\x16.gpyrpc.GoToDef_Result\x12L\n\x0eDocumentSymbol\x12\x1b.gpyrpc.\
+    DocumentSymbol_Args\x1a\x1d.gpyrpc.DocumentSymbol_Result\x121\n\x05Hover\
+    \x12\x12.gpyrpc.Hover_Args\x1a\x14.gpyrpc.Hover_Result\x12F\n\x0cListDep\
+    Files\x12\x19.gpyrpc.ListDepFiles_Args\x1a\x1b.gpyrpc.ListDepFiles_Resul\
+    t\x12U\n\x11LoadSettingsFiles\x12\x1e.gpyrpc.LoadSettingsFiles_Args\x1a\
+    \x20.gpyrpc.LoadSettingsFiles_Resultb\x06proto3\
 ";
 
 /// `FileDescriptorProto` object which was a source for this generated file
@@ -8265,7 +8573,7 @@ pub fn file_descriptor() -> &'static ::protobuf::reflect::FileDescriptor {
             let mut deps = ::std::vec::Vec::with_capacity(2);
             deps.push(::protobuf::well_known_types::any::file_descriptor().clone());
             deps.push(::protobuf::descriptor::file_descriptor().clone());
-            let mut messages = ::std::vec::Vec::with_capacity(55);
+            let mut messages = ::std::vec::Vec::with_capacity(57);
             messages.push(CmdArgSpec::generated_message_descriptor_data());
             messages.push(CmdOverrideSpec::generated_message_descriptor_data());
             messages.push(RestResponse::generated_message_descriptor_data());
@@ -8299,6 +8607,8 @@ pub fn file_descriptor() -> &'static ::protobuf::reflect::FileDescriptor {
             messages.push(ResolveCode_Result::generated_message_descriptor_data());
             messages.push(GetSchemaType_Args::generated_message_descriptor_data());
             messages.push(GetSchemaType_Result::generated_message_descriptor_data());
+            messages.push(GetSchemaTypeMapping_Args::generated_message_descriptor_data());
+            messages.push(GetSchemaTypeMapping_Result::generated_message_descriptor_data());
             messages.push(ValidateCode_Args::generated_message_descriptor_data());
             messages.push(ValidateCode_Result::generated_message_descriptor_data());
             messages.push(CodeSnippet::generated_message_descriptor_data());
