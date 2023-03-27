@@ -44,23 +44,10 @@ chmod +x $kclvm_install_dir/bin/kcl-vet
 
 set +x
 
-# build kclvm-cli
+# build kclvm
 
 cd $topdir/kclvm
 cargo build --release
-
-touch $kclvm_install_dir/bin/kclvm_cli
-rm $kclvm_install_dir/bin/kclvm_cli
-cp ./target/release/kclvm_cli $kclvm_install_dir/bin/kclvm_cli
-
-# build kcl LSP server
-
-cd $topdir/kclvm/tools/src/LSP
-cargo build --release
-
-touch $kclvm_install_dir/bin/kcl-language-server
-rm $kclvm_install_dir/bin/kcl-language-server
-cp $topdir/kclvm/target/release/kcl-language-server $kclvm_install_dir/bin/kcl-language-server
 
 # Switch dll file extension according to os.
 dll_extension="so"
@@ -82,6 +69,24 @@ if [ -e $topdir/kclvm/target/release/libkclvm_cli_cdylib.$dll_extension ]; then
     rm $kclvm_install_dir/bin/libkclvm_cli_cdylib.$dll_extension
     cp $topdir/kclvm/target/release/libkclvm_cli_cdylib.$dll_extension $kclvm_install_dir/bin/libkclvm_cli_cdylib.$dll_extension
 fi
+
+# build kcl LSP server
+
+cd $topdir/kclvm/tools/src/LSP
+cargo build --release
+
+touch $kclvm_install_dir/bin/kcl-language-server
+rm $kclvm_install_dir/bin/kcl-language-server
+cp $topdir/kclvm/target/release/kcl-language-server $kclvm_install_dir/bin/kcl-language-server
+
+
+cd $topdir/kclvm_cli
+cargo build --release
+
+touch $kclvm_install_dir/bin/kclvm_cli
+rm $kclvm_install_dir/bin/kclvm_cli
+cp ./target/release/kclvm_cli $kclvm_install_dir/bin/kclvm_cli
+
 
 # Copy KCLVM C API header
 cd $topdir/kclvm/runtime
