@@ -1,0 +1,56 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 172
+expression: "crate::tests::parsing_module_string(r#\"type pkg_path = \"#)"
+---
+Module {
+    filename: "",
+    pkg: "",
+    doc: "",
+    name: "",
+    body: [
+        Node {
+            node: TypeAlias(
+                TypeAliasStmt {
+                    type_name: Node {
+                        node: Identifier {
+                            names: [
+                                "pkg_path",
+                            ],
+                            pkgpath: "",
+                            ctx: Load,
+                        },
+                        filename: "",
+                        line: 1,
+                        column: 5,
+                        end_line: 1,
+                        end_column: 13,
+                    },
+                    type_value: Node {
+                        node: "any",
+                        filename: "",
+                        line: 1,
+                        column: 16,
+                        end_line: 1,
+                        end_column: 15,
+                    },
+                    ty: Node {
+                        node: Any,
+                        filename: "",
+                        line: 1,
+                        column: 16,
+                        end_line: 1,
+                        end_column: 15,
+                    },
+                },
+            ),
+            filename: "",
+            line: 1,
+            column: 5,
+            end_line: 1,
+            end_column: 15,
+        },
+    ],
+    comments: [],
+}
+

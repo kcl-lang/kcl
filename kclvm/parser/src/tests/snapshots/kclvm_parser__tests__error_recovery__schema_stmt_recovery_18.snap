@@ -1,0 +1,88 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 210
+expression: "crate::tests::parsing_module_string(r#\"\nschema A:\n    a: int\"#)"
+---
+Module {
+    filename: "",
+    pkg: "",
+    doc: "",
+    name: "",
+    body: [
+        Node {
+            node: Schema(
+                SchemaStmt {
+                    doc: "",
+                    name: Node {
+                        node: "A",
+                        filename: "",
+                        line: 2,
+                        column: 7,
+                        end_line: 2,
+                        end_column: 8,
+                    },
+                    parent_name: None,
+                    for_host_name: None,
+                    is_mixin: false,
+                    is_protocol: false,
+                    args: None,
+                    mixins: [],
+                    body: [
+                        Node {
+                            node: SchemaAttr(
+                                SchemaAttr {
+                                    doc: "",
+                                    name: Node {
+                                        node: "a",
+                                        filename: "",
+                                        line: 3,
+                                        column: 4,
+                                        end_line: 3,
+                                        end_column: 5,
+                                    },
+                                    type_str: Node {
+                                        node: "int",
+                                        filename: "",
+                                        line: 3,
+                                        column: 7,
+                                        end_line: 3,
+                                        end_column: 10,
+                                    },
+                                    op: None,
+                                    value: None,
+                                    is_optional: false,
+                                    decorators: [],
+                                    ty: Node {
+                                        node: Basic(
+                                            Int,
+                                        ),
+                                        filename: "",
+                                        line: 3,
+                                        column: 7,
+                                        end_line: 3,
+                                        end_column: 10,
+                                    },
+                                },
+                            ),
+                            filename: "",
+                            line: 3,
+                            column: 4,
+                            end_line: 3,
+                            end_column: 10,
+                        },
+                    ],
+                    decorators: [],
+                    checks: [],
+                    index_signature: None,
+                },
+            ),
+            filename: "",
+            line: 2,
+            column: 0,
+            end_line: 3,
+            end_column: 10,
+        },
+    ],
+    comments: [],
+}
+

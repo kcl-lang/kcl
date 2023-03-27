@@ -1,0 +1,88 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 50
+expression: "crate::tests::parsing_expr_string(\"[**a, *b\")"
+---
+Node {
+    node: List(
+        ListExpr {
+            elts: [
+                Node {
+                    node: Binary(
+                        BinaryExpr {
+                            left: Node {
+                                node: Missing(
+                                    MissingExpr,
+                                ),
+                                filename: "",
+                                line: 1,
+                                column: 0,
+                                end_line: 1,
+                                end_column: 3,
+                            },
+                            op: Bin(
+                                Pow,
+                            ),
+                            right: Node {
+                                node: Identifier(
+                                    Identifier {
+                                        names: [
+                                            "a",
+                                        ],
+                                        pkgpath: "",
+                                        ctx: Load,
+                                    },
+                                ),
+                                filename: "",
+                                line: 1,
+                                column: 3,
+                                end_line: 1,
+                                end_column: 4,
+                            },
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 1,
+                    end_line: 1,
+                    end_column: 4,
+                },
+                Node {
+                    node: Starred(
+                        StarredExpr {
+                            value: Node {
+                                node: Identifier(
+                                    Identifier {
+                                        names: [
+                                            "b",
+                                        ],
+                                        pkgpath: "",
+                                        ctx: Load,
+                                    },
+                                ),
+                                filename: "",
+                                line: 1,
+                                column: 7,
+                                end_line: 1,
+                                end_column: 8,
+                            },
+                            ctx: Load,
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 6,
+                    end_line: 1,
+                    end_column: 8,
+                },
+            ],
+            ctx: Load,
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 8,
+}
+

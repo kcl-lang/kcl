@@ -1,0 +1,111 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 178
+expression: "crate::tests::parsing_module_string(r#\"if True: else: b = 2\"#)"
+---
+Module {
+    filename: "",
+    pkg: "",
+    doc: "",
+    name: "",
+    body: [
+        Node {
+            node: If(
+                IfStmt {
+                    body: [
+                        Node {
+                            node: Assign(
+                                AssignStmt {
+                                    targets: [
+                                        Node {
+                                            node: Identifier {
+                                                names: [
+                                                    "else",
+                                                ],
+                                                pkgpath: "",
+                                                ctx: Store,
+                                            },
+                                            filename: "",
+                                            line: 1,
+                                            column: 9,
+                                            end_line: 1,
+                                            end_column: 13,
+                                        },
+                                    ],
+                                    value: Node {
+                                        node: NumberLit(
+                                            NumberLit {
+                                                binary_suffix: None,
+                                                value: Int(
+                                                    2,
+                                                ),
+                                            },
+                                        ),
+                                        filename: "",
+                                        line: 1,
+                                        column: 19,
+                                        end_line: 1,
+                                        end_column: 20,
+                                    },
+                                    type_annotation: Some(
+                                        Node {
+                                            node: "b",
+                                            filename: "",
+                                            line: 1,
+                                            column: 15,
+                                            end_line: 1,
+                                            end_column: 16,
+                                        },
+                                    ),
+                                    ty: Some(
+                                        Node {
+                                            node: Named(
+                                                Identifier {
+                                                    names: [
+                                                        "b",
+                                                    ],
+                                                    pkgpath: "",
+                                                    ctx: Load,
+                                                },
+                                            ),
+                                            filename: "",
+                                            line: 1,
+                                            column: 15,
+                                            end_line: 1,
+                                            end_column: 16,
+                                        },
+                                    ),
+                                },
+                            ),
+                            filename: "",
+                            line: 1,
+                            column: 9,
+                            end_line: 1,
+                            end_column: 20,
+                        },
+                    ],
+                    cond: Node {
+                        node: NameConstantLit(
+                            NameConstantLit {
+                                value: True,
+                            },
+                        ),
+                        filename: "",
+                        line: 1,
+                        column: 3,
+                        end_line: 1,
+                        end_column: 7,
+                    },
+                    orelse: [],
+                },
+            ),
+            filename: "",
+            line: 1,
+            column: 0,
+            end_line: 1,
+            end_column: 20,
+        },
+    ],
+    comments: [],
+}
+

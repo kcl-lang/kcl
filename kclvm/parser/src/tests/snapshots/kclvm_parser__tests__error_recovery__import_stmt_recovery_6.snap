@@ -1,0 +1,59 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 166
+expression: "crate::tests::parsing_module_string(r#\"import pkg_path as 'data'\"#)"
+---
+Module {
+    filename: "",
+    pkg: "",
+    doc: "",
+    name: "",
+    body: [
+        Node {
+            node: Import(
+                ImportStmt {
+                    path: "pkg_path",
+                    rawpath: "pkg_path",
+                    name: "",
+                    asname: Some(
+                        "",
+                    ),
+                },
+            ),
+            filename: "",
+            line: 1,
+            column: 0,
+            end_line: 1,
+            end_column: 18,
+        },
+        Node {
+            node: Expr(
+                ExprStmt {
+                    exprs: [
+                        Node {
+                            node: StringLit(
+                                StringLit {
+                                    is_long_string: false,
+                                    raw_value: "'data'",
+                                    value: "data",
+                                },
+                            ),
+                            filename: "",
+                            line: 1,
+                            column: 19,
+                            end_line: 1,
+                            end_column: 25,
+                        },
+                    ],
+                },
+            ),
+            filename: "",
+            line: 1,
+            column: 19,
+            end_line: 1,
+            end_column: 25,
+        },
+    ],
+    comments: [],
+}
+

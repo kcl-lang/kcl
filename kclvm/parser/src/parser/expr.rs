@@ -464,8 +464,11 @@ impl<'a> Parser<'a> {
             ))
         } else {
             if exprs[0].is_none() {
-                self.sess
-                    .struct_span_error("expected expression", self.token.span)
+                let token_str: String = self.token.into();
+                self.sess.struct_span_error(
+                    &format!("expected expression got {}", token_str),
+                    self.token.span,
+                )
             }
             if !(exprs[1].is_none() && exprs[2].is_none()) {
                 self.sess
@@ -582,7 +585,7 @@ impl<'a> Parser<'a> {
                     // paren expr
                     DelimToken::Paren => self.parse_paren_expr(),
                     // list expr or list comp
-                    DelimToken::Bracket => self.parse_list_expr(),
+                    DelimToken::Bracket => self.parse_list_expr(true),
                     // dict expr or dict comp
                     DelimToken::Brace => self.parse_config_expr(),
                     _ => {
@@ -802,7 +805,7 @@ impl<'a> Parser<'a> {
                 // list expr, dict expr, paren expr
                 match dt {
                     // list expr or list comp
-                    DelimToken::Bracket => self.parse_list_expr(),
+                    DelimToken::Bracket => self.parse_list_expr(true),
                     // dict expr or dict comp
                     DelimToken::Brace => self.parse_config_expr(),
                     _ => {
@@ -830,10 +833,16 @@ impl<'a> Parser<'a> {
     /// Syntax:
     /// list_expr: LEFT_BRACKETS [list_items | NEWLINE _INDENT list_items _DEDENT] RIGHT_BRACKETS
     /// list_comp: LEFT_BRACKETS (expr comp_clause+ | NEWLINE _INDENT expr comp_clause+ _DEDENT) RIGHT_BRACKETS
-    fn parse_list_expr(&mut self) -> NodeRef<Expr> {
-        let token = self.token;
-        // LEFT_BRACKETS
-        self.bump();
+    pub(crate) fn parse_list_expr(&mut self, bump_left_brackets: bool) -> NodeRef<Expr> {
+        // List expr start token
+        let token = if bump_left_brackets {
+            // LEFT_BRACKETS
+            let token = self.token;
+            self.bump();
+            token
+        } else {
+            self.prev_token
+        };
 
         // try RIGHT_BRACKETS: empty config
         if let TokenKind::CloseDelim(DelimToken::Bracket) = self.token.kind {
@@ -942,6 +951,7 @@ impl<'a> Parser<'a> {
         }
 
         let mut items = vec![self.parse_list_item()];
+
         if let TokenKind::Comma = self.token.kind {
             self.bump();
         }
@@ -949,16 +959,19 @@ impl<'a> Parser<'a> {
             self.skip_newlines();
         }
         loop {
+            let marker = self.mark();
             if is_terminator(&self.token) {
                 break;
             }
-            if let TokenKind::Comma = self.token.kind {
+
+            let item = self.parse_list_item();
+            if matches!(item.node, Expr::Missing(_)) {
+                self.sess
+                    .struct_token_error(&[TokenKind::Comma.into()], self.token);
                 self.bump();
+            } else {
+                items.push(item);
             }
-            if has_newline {
-                self.skip_newlines();
-            }
-            items.push(self.parse_list_item());
 
             if let TokenKind::Comma = self.token.kind {
                 self.bump();
@@ -966,6 +979,7 @@ impl<'a> Parser<'a> {
             if has_newline {
                 self.skip_newlines();
             }
+            self.drop(marker);
         }
         items
     }
@@ -1250,6 +1264,7 @@ impl<'a> Parser<'a> {
         }
 
         let mut entries = vec![self.parse_config_entry()];
+
         if let TokenKind::Comma = self.token.kind {
             self.bump();
         }
@@ -1258,14 +1273,10 @@ impl<'a> Parser<'a> {
         }
 
         loop {
+            let marker = self.mark();
+
             if is_terminator(&self.token) {
                 break;
-            }
-            if let TokenKind::Comma = self.token.kind {
-                self.bump();
-            }
-            if has_newline {
-                self.skip_newlines();
             }
 
             entries.push(self.parse_config_entry());
@@ -1276,6 +1287,8 @@ impl<'a> Parser<'a> {
             if has_newline {
                 self.skip_newlines();
             }
+
+            self.drop(marker);
         }
 
         entries
@@ -1576,6 +1589,7 @@ impl<'a> Parser<'a> {
             body: &mut ConfigIfEntryExpr,
             need_skip_newlines: bool,
         ) -> bool {
+            let marker = this.mark();
             if need_skip_newlines {
                 if let TokenKind::Dedent = this.token.kind {
                     return false;
@@ -1687,7 +1701,7 @@ impl<'a> Parser<'a> {
                     pos
                 ));
             }
-
+            this.drop(marker);
             true
         }
 
@@ -1837,6 +1851,8 @@ impl<'a> Parser<'a> {
             if let Some(stmt) = self.parse_stmt() {
                 stmt_list.push(stmt);
                 self.skip_newlines();
+            } else {
+                self.bump();
             }
         }
 
@@ -2017,7 +2033,7 @@ impl<'a> Parser<'a> {
 
     /// ~~~ Id
 
-    fn parse_identifier(&mut self) -> NodeRef<Identifier> {
+    pub(crate) fn parse_identifier(&mut self) -> NodeRef<Identifier> {
         let token = self.token;
         let mut names = Vec::new();
         let ident = self.token.ident();
@@ -2209,11 +2225,28 @@ impl<'a> Parser<'a> {
     }
 
     #[inline]
-    fn missing_expr(&self) -> NodeRef<Expr> {
+    pub(crate) fn missing_expr(&self) -> NodeRef<Expr> {
         Box::new(Node::node(
             Expr::Missing(MissingExpr),
             // The text range of missing expression is zero.
             self.sess.struct_token_loc(self.prev_token, self.token),
         ))
+    }
+
+    /// Cast an expression into an identifier, else
+    /// store an error `expected identifier.
+    #[inline]
+    pub(crate) fn expr_as_identifier(
+        &mut self,
+        expr: NodeRef<Expr>,
+        token: kclvm_ast::token::Token,
+    ) -> Identifier {
+        if let Expr::Identifier(x) = expr.node {
+            x
+        } else {
+            self.sess
+                .struct_span_error("expected identifier", token.span);
+            expr.into_missing_identifier().node
+        }
     }
 }

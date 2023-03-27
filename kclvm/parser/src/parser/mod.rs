@@ -32,6 +32,8 @@ use kclvm_ast::token::{CommentKind, Token, TokenKind};
 use kclvm_ast::token_stream::{Cursor, TokenStream};
 use kclvm_span::symbol::Symbol;
 
+/// The parser is built on top of the [`kclvm_parser::lexer`], and ordering KCL tokens
+/// [`kclvm_ast::token`] to KCL ast nodes [`kclvm_ast::ast`].
 pub struct Parser<'a> {
     /// The current token.
     pub token: Token,
@@ -44,6 +46,12 @@ pub struct Parser<'a> {
     /// parse-time session
     pub sess: &'a ParseSession,
 }
+
+/// The DropMarker is used to mark whether to discard the token Mark whether to discard the token.
+/// The principle is to store the index of the token in the token stream. When there is no index
+/// change during the parse process, it is discarded and an error is output
+#[derive(Debug, Default, Clone, Copy)]
+pub(crate) struct DropMarker(usize);
 
 impl<'a> Parser<'a> {
     pub fn new(sess: &'a ParseSession, stream: TokenStream) -> Self {
@@ -107,6 +115,26 @@ impl<'a> Parser<'a> {
     pub(crate) fn skip_newlines(&mut self) {
         while let TokenKind::Newline = self.token.kind {
             self.bump();
+        }
+    }
+
+    /// Mark the token index.
+    pub(crate) fn mark(&mut self) -> DropMarker {
+        DropMarker(self.cursor.index())
+    }
+
+    /// Decide to discard token according to the current index.
+    pub(crate) fn drop(&mut self, marker: DropMarker) -> bool {
+        if marker.0 == self.cursor.index() {
+            let token_str: String = self.token.into();
+            self.sess.struct_span_error(
+                &format!("expected expression got {}", token_str),
+                self.token.span,
+            );
+            self.bump();
+            true
+        } else {
+            false
         }
     }
 }

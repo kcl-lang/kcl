@@ -1,0 +1,30 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 160
+expression: "crate::tests::parsing_module_string(r#\"import\"#)"
+---
+Module {
+    filename: "",
+    pkg: "",
+    doc: "",
+    name: "",
+    body: [
+        Node {
+            node: Import(
+                ImportStmt {
+                    path: "",
+                    rawpath: "",
+                    name: "",
+                    asname: None,
+                },
+            ),
+            filename: "",
+            line: 1,
+            column: 0,
+            end_line: 1,
+            end_column: 6,
+        },
+    ],
+    comments: [],
+}
+

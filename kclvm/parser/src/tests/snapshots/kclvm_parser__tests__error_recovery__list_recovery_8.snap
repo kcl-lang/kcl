@@ -1,0 +1,62 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 50
+expression: "crate::tests::parsing_expr_string(\"[0 ~ 1\")"
+---
+Node {
+    node: List(
+        ListExpr {
+            elts: [
+                Node {
+                    node: NumberLit(
+                        NumberLit {
+                            binary_suffix: None,
+                            value: Int(
+                                0,
+                            ),
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 1,
+                    end_line: 1,
+                    end_column: 2,
+                },
+                Node {
+                    node: Unary(
+                        UnaryExpr {
+                            op: Invert,
+                            operand: Node {
+                                node: NumberLit(
+                                    NumberLit {
+                                        binary_suffix: None,
+                                        value: Int(
+                                            1,
+                                        ),
+                                    },
+                                ),
+                                filename: "",
+                                line: 1,
+                                column: 5,
+                                end_line: 1,
+                                end_column: 6,
+                            },
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 3,
+                    end_line: 1,
+                    end_column: 6,
+                },
+            ],
+            ctx: Load,
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 6,
+}
+

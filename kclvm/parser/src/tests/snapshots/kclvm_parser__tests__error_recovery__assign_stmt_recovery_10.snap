@@ -1,0 +1,54 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 155
+expression: "crate::tests::parsing_module_string(r#\"a[0] -= 1\"#)"
+---
+Module {
+    filename: "",
+    pkg: "",
+    doc: "",
+    name: "",
+    body: [
+        Node {
+            node: AugAssign(
+                AugAssignStmt {
+                    target: Node {
+                        node: Identifier {
+                            names: [],
+                            pkgpath: "",
+                            ctx: Store,
+                        },
+                        filename: "",
+                        line: 1,
+                        column: 1,
+                        end_line: 1,
+                        end_column: 4,
+                    },
+                    value: Node {
+                        node: NumberLit(
+                            NumberLit {
+                                binary_suffix: None,
+                                value: Int(
+                                    1,
+                                ),
+                            },
+                        ),
+                        filename: "",
+                        line: 1,
+                        column: 8,
+                        end_line: 1,
+                        end_column: 9,
+                    },
+                    op: Sub,
+                },
+            ),
+            filename: "",
+            line: 1,
+            column: 0,
+            end_line: 1,
+            end_column: 9,
+        },
+    ],
+    comments: [],
+}
+

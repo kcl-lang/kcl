@@ -59,7 +59,7 @@ impl<'a> Parser<'a> {
 
         // if ...
         if self.token.is_keyword(kw::If) {
-            return self.parse_if_stmt();
+            return Some(self.parse_if_stmt());
         }
 
         // @decorators
@@ -70,17 +70,14 @@ impl<'a> Parser<'a> {
         };
 
         // schema/mixin/protocol/rule ...
-        if self.token.is_keyword(kw::Schema) {
-            return self.parse_schema_stmt(decorators);
-        }
-        if self.token.is_keyword(kw::Mixin) {
-            return self.parse_schema_stmt(decorators);
-        }
-        if self.token.is_keyword(kw::Protocol) {
-            return self.parse_schema_stmt(decorators);
+        if self.token.is_keyword(kw::Schema)
+            || self.token.is_keyword(kw::Mixin)
+            || self.token.is_keyword(kw::Protocol)
+        {
+            return Some(self.parse_schema_stmt(decorators));
         }
         if self.token.is_keyword(kw::Rule) {
-            return self.parse_rule_stmt(decorators);
+            return Some(self.parse_rule_stmt(decorators));
         }
 
         None
@@ -101,21 +98,21 @@ impl<'a> Parser<'a> {
 
         // import ...
         if self.token.is_keyword(kw::Import) {
-            return self.parse_import_stmt();
+            return Some(self.parse_import_stmt());
         }
 
         // type ...
         if self.token.is_keyword(kw::Type) {
-            return self.parse_type_alias_stmt();
+            return Some(self.parse_type_alias_stmt());
         }
         // assert ...
         if self.token.is_keyword(kw::Assert) {
-            return self.parse_assert_stmt();
+            return Some(self.parse_assert_stmt());
         }
 
         // unary expr
         if let TokenKind::UnaryOp(_) = self.token.kind {
-            return self.parse_expr_stmt();
+            return Some(self.parse_expr_stmt());
         }
 
         if matches!(
@@ -161,7 +158,7 @@ impl<'a> Parser<'a> {
 
     /// Syntax:
     /// test: if_expr | simple_expr
-    fn parse_expr_stmt(&mut self) -> Option<NodeRef<Stmt>> {
+    fn parse_expr_stmt(&mut self) -> NodeRef<Stmt> {
         let token = self.token;
         let expr = vec![self.parse_expr()];
 
@@ -171,7 +168,7 @@ impl<'a> Parser<'a> {
         );
 
         self.skip_newlines();
-        Some(stmt)
+        stmt
     }
 
     /// Syntax:
@@ -203,7 +200,7 @@ impl<'a> Parser<'a> {
                 if let Type::Named(ref identifier) = typ.node {
                     let identifier = node_ref!(Expr::Identifier(identifier.clone()), typ.pos());
                     let schema_expr = self.parse_schema_expr(*identifier, token);
-                    let mut ident = expr_as!(targets[0].clone(), Expr::Identifier).unwrap();
+                    let mut ident = self.expr_as_identifier(targets[0].clone(), token);
                     ident.ctx = ExprContext::Store;
                     let unification_stmt = UnificationStmt {
                         target: Box::new(Node::node_with_pos(ident, targets[0].pos())),
@@ -222,7 +219,7 @@ impl<'a> Parser<'a> {
             self.bump_token(self.token.kind);
 
             let value = self.parse_expr();
-            let mut ident = expr_as!(targets[0].clone(), Expr::Identifier).unwrap();
+            let mut ident = self.expr_as_identifier(targets[0].clone(), token);
             ident.ctx = ExprContext::Store;
 
             let t = node_ref!(
@@ -352,7 +349,7 @@ impl<'a> Parser<'a> {
 
     /// Syntax:
     /// assert_stmt: ASSERT simple_expr (IF simple_expr)? (COMMA test)?
-    fn parse_assert_stmt(&mut self) -> Option<NodeRef<Stmt>> {
+    fn parse_assert_stmt(&mut self) -> NodeRef<Stmt> {
         let token = self.token;
         self.bump_keyword(kw::Assert);
 
@@ -382,12 +379,12 @@ impl<'a> Parser<'a> {
 
         self.skip_newlines();
 
-        Some(t)
+        t
     }
 
     /// Syntax:
     /// import_stmt: IMPORT dot_name (AS NAME)?
-    fn parse_import_stmt(&mut self) -> Option<NodeRef<Stmt>> {
+    fn parse_import_stmt(&mut self) -> NodeRef<Stmt> {
         let token = self.token;
         self.bump_keyword(kw::Import);
 
@@ -400,11 +397,10 @@ impl<'a> Parser<'a> {
             leading_dot.push(".".to_string());
             self.bump_token(TokenKind::Dot);
         }
-
-        let dot_name = expr_as!(self.parse_identifier_expr(), Expr::Identifier).unwrap();
+        let dot_name = self.parse_identifier().node;
         let asname = if self.token.is_keyword(kw::As) {
             self.bump_keyword(kw::As);
-            let ident = expr_as!(self.parse_identifier_expr(), Expr::Identifier).unwrap();
+            let ident = self.parse_identifier().node;
             Some(ident.names.join("."))
         } else {
             None
@@ -433,16 +429,17 @@ impl<'a> Parser<'a> {
 
         self.skip_newlines();
 
-        Some(t)
+        t
     }
 
     /// Syntax:
     /// type_alias_stmt: "type" NAME ASSIGN type
-    fn parse_type_alias_stmt(&mut self) -> Option<NodeRef<Stmt>> {
+    fn parse_type_alias_stmt(&mut self) -> NodeRef<Stmt> {
         self.bump_keyword(kw::Type);
 
         let type_name_pos = self.token;
-        let type_name = expr_as!(self.parse_expr(), Expr::Identifier).unwrap();
+        let expr = self.parse_expr();
+        let type_name = self.expr_as_identifier(expr, type_name_pos);
         let type_name_end = self.prev_token;
 
         self.bump_token(TokenKind::Assign);
@@ -453,14 +450,14 @@ impl<'a> Parser<'a> {
 
         self.skip_newlines();
 
-        Some(node_ref!(
+        node_ref!(
             Stmt::TypeAlias(TypeAliasStmt {
                 type_name: node_ref!(type_name, self.token_span_pos(type_name_pos, type_name_end)),
                 type_value: node_ref!(typ.node.to_string(), self.token_span_pos(typ_pos, typ_end)),
                 ty: typ,
             }),
             self.token_span_pos(type_name_pos, typ_end)
-        ))
+        )
     }
 
     /// Syntax:
@@ -468,7 +465,7 @@ impl<'a> Parser<'a> {
     /// execution_block: if_simple_stmt | NEWLINE _INDENT schema_init_stmt+ _DEDENT
     /// if_simple_stmt: (simple_assign_stmt | unification_stmt | expr_stmt | assert_stmt) NEWLINE
     /// schema_init_stmt: if_simple_stmt | if_stmt
-    fn parse_if_stmt(&mut self) -> Option<NodeRef<Stmt>> {
+    fn parse_if_stmt(&mut self) -> NodeRef<Stmt> {
         let token = self.token;
 
         // if
@@ -480,9 +477,13 @@ impl<'a> Parser<'a> {
             self.bump_token(TokenKind::Colon);
 
             let body = if self.token.kind != TokenKind::Newline {
-                vec![self
-                    .parse_expr_or_assign_stmt(false)
-                    .expect("invalid if_stmt")]
+                if let Some(stmt) = self.parse_expr_or_assign_stmt(false) {
+                    vec![stmt]
+                } else {
+                    // Error recovery from panic mode: Once an error is detected (the statement is None).
+                    self.bump();
+                    vec![]
+                }
             } else {
                 self.skip_newlines();
                 self.parse_block_stmt_list(TokenKind::Indent, TokenKind::Dedent)
@@ -510,9 +511,13 @@ impl<'a> Parser<'a> {
             self.bump_token(TokenKind::Colon);
 
             let body = if self.token.kind != TokenKind::Newline {
-                vec![self
-                    .parse_expr_or_assign_stmt(false)
-                    .expect("invalid if_stmt")]
+                if let Some(stmt) = self.parse_expr_or_assign_stmt(false) {
+                    vec![stmt]
+                } else {
+                    // Error recovery from panic mode: Once an error is detected (the statement is None).
+                    self.bump();
+                    vec![]
+                }
             } else {
                 self.skip_newlines();
                 self.parse_block_stmt_list(TokenKind::Indent, TokenKind::Dedent)
@@ -540,9 +545,13 @@ impl<'a> Parser<'a> {
             self.bump_token(TokenKind::Colon);
 
             let else_body = if self.token.kind != TokenKind::Newline {
-                vec![self
-                    .parse_expr_or_assign_stmt(false)
-                    .expect("invalid if_stmt")]
+                if let Some(stmt) = self.parse_expr_or_assign_stmt(false) {
+                    vec![stmt]
+                } else {
+                    // Error recovery from panic mode: Once an error is detected (the statement is None).
+                    self.bump();
+                    vec![]
+                }
             } else {
                 self.skip_newlines();
                 self.parse_block_stmt_list(TokenKind::Indent, TokenKind::Dedent)
@@ -566,7 +575,7 @@ impl<'a> Parser<'a> {
 
         self.skip_newlines();
 
-        Some(t)
+        t
     }
 
     /// Syntax:
@@ -574,10 +583,7 @@ impl<'a> Parser<'a> {
     ///   [LEFT_BRACKETS [schema_arguments] RIGHT_BRACKETS]
     ///   [LEFT_PARENTHESES identifier (COMMA identifier)* RIGHT_PARENTHESES]
     ///   [for_host] COLON NEWLINE [schema_body]
-    fn parse_schema_stmt(
-        &mut self,
-        decorators: Option<Vec<NodeRef<CallExpr>>>,
-    ) -> Option<NodeRef<Stmt>> {
+    fn parse_schema_stmt(&mut self, decorators: Option<Vec<NodeRef<CallExpr>>>) -> NodeRef<Stmt> {
         let token = self.token;
 
         // schema decorators
@@ -602,9 +608,9 @@ impl<'a> Parser<'a> {
         }
 
         // schema Name
-        let name_expr = self.parse_identifier_expr();
+        let name_expr = self.parse_identifier();
         let name_pos = name_expr.pos();
-        let name = expr_as!(name_expr, Expr::Identifier).unwrap();
+        let name = name_expr.node;
         let name = node_ref!(name.names.join("."), name_pos);
 
         if name
@@ -633,9 +639,9 @@ impl<'a> Parser<'a> {
         // schema Name [args...](Base)
         let parent_name = if let TokenKind::OpenDelim(DelimToken::Paren) = self.token.kind {
             self.bump_token(TokenKind::OpenDelim(DelimToken::Paren));
-            let expr = self.parse_identifier_expr();
+            let expr = self.parse_identifier();
             let expr_pos = expr.pos();
-            let base_schema_name = expr_as!(expr, Expr::Identifier).unwrap();
+            let base_schema_name = expr.node;
             self.bump_token(TokenKind::CloseDelim(DelimToken::Paren));
             Some(node_ref!(base_schema_name, expr_pos))
         } else {
@@ -645,9 +651,10 @@ impl<'a> Parser<'a> {
         // schema Name [args...](Base) for SomeProtocol
         let for_host_name = if self.token.is_keyword(kw::For) {
             self.bump_keyword(kw::For);
+            let token = self.token;
             let expr = self.parse_expr();
             let expr_pos = expr.pos();
-            let ident = expr_as!(expr, Expr::Identifier).unwrap();
+            let ident = self.expr_as_identifier(expr, token);
             Some(node_ref!(ident, expr_pos))
         } else {
             None
@@ -662,7 +669,7 @@ impl<'a> Parser<'a> {
 
             let pos = self.token_span_pos(token, self.prev_token);
 
-            Some(node_ref!(
+            node_ref!(
                 Stmt::Schema(SchemaStmt {
                     doc: body.doc,
                     name,
@@ -678,10 +685,10 @@ impl<'a> Parser<'a> {
                     index_signature: body.index_signature,
                 }),
                 pos
-            ))
+            )
         } else {
             let pos = self.token_span_pos(token, self.prev_token);
-            Some(node_ref!(
+            node_ref!(
                 Stmt::Schema(SchemaStmt {
                     doc: "".to_string(),
                     name,
@@ -697,7 +704,7 @@ impl<'a> Parser<'a> {
                     index_signature: None,
                 }),
                 pos
-            ))
+            )
         }
     }
 
@@ -781,8 +788,17 @@ impl<'a> Parser<'a> {
                 break;
             }
 
+            if matches!(self.token.kind, TokenKind::Newline | TokenKind::Eof) {
+                let expect_tokens: Vec<String> = close_tokens
+                    .iter()
+                    .map(|t| <kclvm_ast::token::TokenKind as Into<String>>::into(*t))
+                    .collect();
+                self.sess.struct_token_error(&expect_tokens, self.token);
+                break;
+            }
+
             let name_pos = self.token;
-            let name = expr_as!(self.parse_identifier_expr(), Expr::Identifier).unwrap();
+            let name = self.parse_identifier().node;
             let name_end = self.prev_token;
 
             let name = node_ref!(name, self.token_span_pos(name_pos, name_end));
@@ -873,21 +889,18 @@ impl<'a> Parser<'a> {
             if self.token.kind == TokenKind::Dedent || self.token.is_keyword(kw::Check) {
                 break;
             }
-
             // assert stmt
-            if self.token.is_keyword(kw::Assert) {
-                body_body.push(self.parse_assert_stmt().unwrap());
+            else if self.token.is_keyword(kw::Assert) {
+                body_body.push(self.parse_assert_stmt());
                 continue;
             }
-
             // if stmt
-            if self.token.is_keyword(kw::If) {
-                body_body.push(self.parse_if_stmt().unwrap());
+            else if self.token.is_keyword(kw::If) {
+                body_body.push(self.parse_if_stmt());
                 continue;
             }
-
             // schema_attribute_stmt
-            if let TokenKind::At = self.token.kind {
+            else if let TokenKind::At = self.token.kind {
                 let token = self.token;
                 let attr = self.parse_schema_attribute();
                 body_body.push(node_ref!(
@@ -919,10 +932,7 @@ impl<'a> Parser<'a> {
                         Some(node_ref!(x, self.token_span_pos(token, self.prev_token)));
                 } else if let Some(list_expr) = or_list_expr {
                     let stmt = Stmt::Expr(ExprStmt {
-                        exprs: vec![node_ref!(
-                            Expr::List(list_expr),
-                            self.token_span_pos(token, self.prev_token)
-                        )],
+                        exprs: vec![list_expr],
                     });
                     body_body.push(node_ref!(stmt, self.token_span_pos(token, self.prev_token)));
                 } else {
@@ -974,6 +984,9 @@ impl<'a> Parser<'a> {
                 }
 
                 body_body.push(x);
+            } else {
+                // Error recovery from panic mode: Once an error is detected (the statement is None).
+                self.bump();
             }
         }
 
@@ -1040,9 +1053,9 @@ impl<'a> Parser<'a> {
             ) {
                 break;
             }
-            let expr = self.parse_identifier_expr();
+            let expr = self.parse_identifier();
             let expr_pos = expr.pos();
-            let ident = expr_as!(expr, Expr::Identifier).unwrap();
+            let ident = expr.node;
             mixins.push(node_ref!(ident, expr_pos));
             if let TokenKind::Comma = self.token.kind {
                 self.bump();
@@ -1082,10 +1095,10 @@ impl<'a> Parser<'a> {
             Vec::new()
         };
 
-        let name_expr = self.parse_identifier_expr();
+        let name_expr = self.parse_identifier();
 
         let name_pos = name_expr.pos();
-        let name = expr_as!(name_expr, Expr::Identifier).unwrap();
+        let name = name_expr.node;
         let name = node_ref!(name.names.join("."), name_pos.clone());
 
         let is_optional = if let TokenKind::Question = self.token.kind {
@@ -1134,54 +1147,64 @@ impl<'a> Parser<'a> {
     ///   COLON type [ASSIGN test] NEWLINE
     fn parse_schema_index_signature_or_list(
         &mut self,
-    ) -> (Option<SchemaIndexSignature>, Option<ListExpr>) {
-        //let mut list_elts: Vec<NodeRef<Expr>> = Vec::new();
-        let mut maybe_list_expr = true;
-
+    ) -> (Option<SchemaIndexSignature>, Option<NodeRef<Expr>>) {
         self.bump_token(TokenKind::OpenDelim(DelimToken::Bracket));
-        let any_other = if let TokenKind::DotDotDot = self.token.kind {
-            maybe_list_expr = false;
-            self.bump();
-            true
-        } else {
-            false
+        let peek_token_kind = match self.cursor.peek() {
+            Some(token) => token.kind,
+            None => TokenKind::Eof,
         };
+        let peek2_token_kind = match self.cursor.peek2() {
+            Some(token) => token.kind,
+            None => TokenKind::Eof,
+        };
+        match (self.token.kind, peek_token_kind) {
+            // Maybe a list expr or a list comp.
+            (TokenKind::Newline | TokenKind::CloseDelim(DelimToken::Bracket), _) => {
+                (None, Some(self.parse_list_expr(false)))
+            }
+            (TokenKind::Ident(_), _)
+                if !matches!(peek_token_kind, TokenKind::Colon)
+                    && !matches!(peek2_token_kind, TokenKind::Colon) =>
+            {
+                (None, Some(self.parse_list_expr(false)))
+            }
+            // Maybe a schema index signature.
+            (TokenKind::DotDotDot, _) if matches!(peek_token_kind, TokenKind::Ident(_)) => {
+                (Some(self.parse_schema_index_signature()), None)
+            }
+            (TokenKind::Ident(_), _) => (Some(self.parse_schema_index_signature()), None),
+            _ => (None, None),
+        }
+    }
 
-        self.skip_newlines();
-
-        let mut ident = None;
-        let (key_name, key_type, any_other) = if any_other {
+    /// Syntax:
+    /// schema_index_signature:
+    ///   LEFT_BRACKETS [NAME COLON] [ELLIPSIS] basic_type RIGHT_BRACKETS
+    ///   COLON type [ASSIGN test] NEWLINE
+    fn parse_schema_index_signature(&mut self) -> SchemaIndexSignature {
+        let (key_name, key_type, any_other) = if matches!(self.token.kind, TokenKind::DotDotDot) {
+            // bump token `...`
+            self.bump();
             let key_type = {
                 let typ = self.parse_type_annotation();
                 node_ref!(typ.node.to_string(), typ.pos())
             };
-            (None, key_type, any_other)
+            (None, key_type, true)
         } else {
-            if maybe_list_expr && !matches!(self.token.kind, TokenKind::Ident(_)) {
-                let list_expr = ListExpr {
-                    elts: self.parse_list_items(false),
-                    ctx: ExprContext::Load,
-                };
+            let token = self.token;
+            let expr = self.parse_identifier_expr();
+            let ident = self.expr_as_identifier(expr.clone(), token);
+            let pos = expr.pos();
+            let key_name = ident.names.join(".");
 
-                self.bump_token(TokenKind::CloseDelim(DelimToken::Bracket));
-                return (None, Some(list_expr));
-            }
-
-            ident = Some(self.parse_identifier_expr());
             if let TokenKind::CloseDelim(DelimToken::Bracket) = self.token.kind {
                 let key_type = {
-                    let pos = ident.clone().unwrap().pos();
-                    let ident_node = expr_as!(ident.clone().unwrap(), Expr::Identifier).unwrap();
-                    let typ = node_ref!(Type::Named(ident_node), pos);
+                    let typ = node_ref!(Type::Named(ident), pos);
                     node_ref!(typ.node.to_string(), typ.pos())
                 };
                 (None, key_type, false)
             } else {
-                maybe_list_expr = false;
-
                 self.bump_token(TokenKind::Colon);
-                let ident = expr_as!(ident.clone().unwrap(), Expr::Identifier).unwrap();
-                let key_name = ident.names.join(".");
                 let any_other = if let TokenKind::DotDotDot = self.token.kind {
                     self.bump();
                     true
@@ -1196,39 +1219,7 @@ impl<'a> Parser<'a> {
             }
         };
 
-        if maybe_list_expr && !matches!(self.token.kind, TokenKind::CloseDelim(DelimToken::Bracket))
-        {
-            let mut list_expr = ListExpr {
-                elts: vec![ident.unwrap()],
-                ctx: ExprContext::Load,
-            };
-
-            if let TokenKind::Comma = self.token.kind {
-                self.bump();
-            }
-
-            list_expr.elts.extend(self.parse_list_items(false));
-
-            self.bump_token(TokenKind::CloseDelim(DelimToken::Bracket));
-            return (None, Some(list_expr));
-        }
-
         self.bump_token(TokenKind::CloseDelim(DelimToken::Bracket));
-
-        // must list
-        if maybe_list_expr {
-            if let TokenKind::Newline = self.token.kind {
-                let mut list_expr = ListExpr {
-                    elts: vec![ident.unwrap()],
-                    ctx: ExprContext::Load,
-                };
-                list_expr.elts.extend(self.parse_list_items(true));
-
-                self.bump_token(TokenKind::CloseDelim(DelimToken::Bracket));
-                return (None, Some(list_expr));
-            }
-        }
-
         self.bump_token(TokenKind::Colon);
 
         let typ = self.parse_type_annotation();
@@ -1243,16 +1234,14 @@ impl<'a> Parser<'a> {
 
         self.skip_newlines();
 
-        let index_sig = SchemaIndexSignature {
+        SchemaIndexSignature {
             key_name,
             key_type,
             value_type,
             value_ty: typ,
             value,
             any_other,
-        };
-
-        (Some(index_sig), None)
+        }
     }
 
     /// Syntax:
@@ -1268,11 +1257,20 @@ impl<'a> Parser<'a> {
 
             self.bump_token(TokenKind::Indent);
             while self.token.kind != TokenKind::Dedent {
+                let marker = self.mark();
+                if matches!(self.token.kind, TokenKind::Eof) {
+                    self.sess
+                        .struct_token_error(&[TokenKind::Newline.into()], self.token);
+                    break;
+                }
+
                 let expr = self.parse_check_expr();
                 let expr_pos = expr.pos();
                 let check_expr = expr_as!(expr, Expr::Check).unwrap();
                 check_expr_list.push(node_ref!(check_expr, expr_pos));
+
                 self.skip_newlines();
+                self.drop(marker);
             }
             self.bump_token(TokenKind::Dedent);
         }
@@ -1283,10 +1281,7 @@ impl<'a> Parser<'a> {
     /// Syntax:
     /// rule_stmt: [decorators] RULE NAME [LEFT_BRACKETS [schema_arguments] RIGHT_BRACKETS] [LEFT_PARENTHESES identifier (COMMA identifier)* RIGHT_PARENTHESES] [for_host] COLON NEWLINE [rule_body]
     /// rule_body: _INDENT (string NEWLINE)* check_expr+ _DEDENT
-    fn parse_rule_stmt(
-        &mut self,
-        decorators: Option<Vec<NodeRef<CallExpr>>>,
-    ) -> Option<NodeRef<Stmt>> {
+    fn parse_rule_stmt(&mut self, decorators: Option<Vec<NodeRef<CallExpr>>>) -> NodeRef<Stmt> {
         let token = self.token;
         self.bump_keyword(kw::Rule);
 
@@ -1319,18 +1314,53 @@ impl<'a> Parser<'a> {
                     self.bump();
                     break;
                 }
+
+                if matches!(self.token.kind, TokenKind::Newline | TokenKind::Eof) {
+                    self.sess.struct_token_error(
+                        &[
+                            TokenKind::CloseDelim(DelimToken::Paren).into(),
+                            TokenKind::Comma.into(),
+                        ],
+                        self.token,
+                    );
+                    break;
+                }
+
+                let token = self.token;
                 let expr = self.parse_expr();
                 let expr_pos = expr.pos();
-                let rule_name = expr_as!(expr, Expr::Identifier).unwrap();
+                let rule_name = self.expr_as_identifier(expr, token);
                 parent_rules.push(node_ref!(rule_name, expr_pos));
+
+                if !matches!(
+                    self.token.kind,
+                    TokenKind::Comma
+                        | TokenKind::CloseDelim(DelimToken::Paren)
+                        | TokenKind::Newline
+                        | TokenKind::Eof
+                ) {
+                    self.sess.struct_token_error(
+                        &[
+                            TokenKind::Comma.into(),
+                            TokenKind::CloseDelim(DelimToken::Paren).into(),
+                        ],
+                        self.token,
+                    );
+                    self.bump();
+                }
+
+                if matches!(self.token.kind, TokenKind::Comma) {
+                    self.bump()
+                }
             }
         }
 
         let for_host_name = if self.token.is_keyword(kw::For) {
             self.bump_keyword(kw::For);
+            let token = self.token;
             let expr = self.parse_expr();
             let expr_pos = expr.pos();
-            let ident = expr_as!(expr, Expr::Identifier).unwrap();
+            let ident = self.expr_as_identifier(expr, token);
             Some(node_ref!(ident, expr_pos))
         } else {
             None
@@ -1361,17 +1391,26 @@ impl<'a> Parser<'a> {
 
         let mut check_expr_list = vec![];
         while self.token.kind != TokenKind::Dedent {
+            let marker = self.mark();
+            if matches!(self.token.kind, TokenKind::Eof) {
+                self.sess
+                    .struct_token_error(&[TokenKind::Newline.into()], self.token);
+                break;
+            }
+
             let expr = self.parse_check_expr();
             let expr_pos = expr.pos();
             let check_expr = expr_as!(expr, Expr::Check).unwrap();
             check_expr_list.push(node_ref!(check_expr, expr_pos));
+
             self.skip_newlines();
+            self.drop(marker);
         }
         self.bump_token(TokenKind::Dedent);
 
         let pos = self.token_span_pos(token, self.prev_token);
 
-        Some(node_ref!(
+        node_ref!(
             Stmt::Rule(RuleStmt {
                 doc: body_doc,
                 name,
@@ -1382,7 +1421,7 @@ impl<'a> Parser<'a> {
                 for_host_name,
             }),
             pos
-        ))
+        )
     }
 
     pub(crate) fn parse_joined_string(
