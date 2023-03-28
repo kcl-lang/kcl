@@ -251,7 +251,7 @@ fn clean_tmp_files(temp_entry_file: &String, lib_suffix: &String) {
 fn remove_file(file: &str) {
     if Path::new(&file).exists() {
         std::fs::remove_file(&file)
-            .unwrap_or_else(|err| panic!("{} not found, defailts: {}", file, err));
+            .unwrap_or_else(|err| panic!("{file} not found, details: {err}"));
     }
 }
 
@@ -260,6 +260,6 @@ fn temp_file(dir: &str) -> String {
     let timestamp = chrono::Local::now().timestamp_nanos();
     let id = std::process::id();
     let file = format!("{}_{}", id, timestamp);
-    std::fs::create_dir_all(dir).unwrap_or_else(|_| panic!("{} not found", dir));
+    std::fs::create_dir_all(dir).unwrap_or_else(|err| panic!("{dir} not found, details: {err}"));
     Path::new(dir).join(file).to_str().unwrap().to_string()
 }
