@@ -1,0 +1,31 @@
+{
+    "tinfo": {
+        "tid": 0,
+        "tname": "finished_event_task"
+    },
+    "ty": {
+        "Finished": {
+            "tinfo": {
+                "tid": 0,
+                "tname": "finished_event_task"
+            },
+            "stdout": [
+                115,
+                116,
+                100,
+                111,
+                117,
+                116
+            ],
+            "stderr": [
+                115,
+                116,
+                100,
+                101,
+                114,
+                114
+            ],
+            "status": "Finished"
+        }
+    }
+}

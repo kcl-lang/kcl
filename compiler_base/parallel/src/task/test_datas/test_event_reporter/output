@@ -1,0 +1,33 @@
+[2023-03-28][13:54:46][start_event_task][INFO] 
+tname:start_event_task tid:0 start
+[2023-03-28][13:54:46][wait_event_task][INFO] 
+tname:wait_event_task tid:0 waiting
+[2023-03-28][13:54:46][timeout_event_task][WARN] It's been running for over 10 seconds
+[2023-03-28][13:54:46][finished_event_task][INFO] 
+tname:finished_event_task tid:0 finished
+stdout:
+stdout
+stderr:
+stderr
+status:finished
+[2023-03-28][13:54:46][finished_event_task][INFO] 
+tname:finished_event_task tid:0 finished
+stdout:
+stdout
+stderr:
+stderr
+status:waiting
+[2023-03-28][13:54:46][finished_event_task][ERROR] 
+tname:finished_event_task tid:0 finished
+stdout:
+stdout
+stderr:
+stderr
+status:failed:The task failed.
+[2023-03-28][13:54:46][finished_event_task][ERROR] 
+tname:finished_event_task tid:0 finished
+stdout:
+stdout
+stderr:
+stderr
+status:bug:The message output when bugs.
