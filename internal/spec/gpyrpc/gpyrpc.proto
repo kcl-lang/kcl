@@ -242,7 +242,7 @@ message ResolveCode_Result {
 message GetSchemaType_Args {
 	string file = 1;
 	string code = 2;
-	string schema_name = 3; // emtry is all
+	string schema_name = 3;
 }
 message GetSchemaType_Result {
 	repeated KclType schema_type_list = 1;
@@ -251,7 +251,7 @@ message GetSchemaType_Result {
 message GetSchemaTypeMapping_Args {
 	string file = 1;
 	string code = 2;
-	string schema_name = 3; // emtry is all
+	string schema_name = 3;
 }
 message GetSchemaTypeMapping_Result {
 	map<string, KclType> schema_type_mapping = 1;

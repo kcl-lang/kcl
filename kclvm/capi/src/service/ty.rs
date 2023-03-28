@@ -48,8 +48,7 @@ pub(crate) fn kcl_schema_ty_to_pb_ty(schema_ty: &SchemaType) -> KclType {
                 ..Default::default()
             })
             .collect(),
-        ..Default::default() //
-                             // required: list(sorted(get_schema_type_obj_required_attributes(schema_type_obj))),
+        ..Default::default()
     }
 }
 
