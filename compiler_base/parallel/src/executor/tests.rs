@@ -246,7 +246,7 @@ mod test_timeout_executor {
                             .lock()
                             .unwrap()
                             .events_str,
-                        "tname:PanicTask tid:0 event:Waiting\ntname:PanicTask tid:0 event:Timeout 59s\n");
+                        "tname:PanicTask tid:0 event:waiting\ntname:PanicTask tid:0 event:timeout 59s\n");
                 handle.thread().unpark();
             }
         }
