@@ -12,9 +12,6 @@ crate-type = [
 path = "src/lib.rs"
 name = "kclvm_cli_cdylib"
 
-[[bin]]
-path = "src/main.rs"
-name = "kclvm_cli"
 
 [build-dependencies]
 cc = "1.0"
@@ -29,7 +26,7 @@ indexmap = "1.0"
 fslock = "0.2.1"
 libloading = "0.7.3"
 chrono = "0.4.19"
-anyhow = "1.0"
+anyhow = { version = "1.0.70", features = ["backtrace"] }
 compiler_base_session = {path = "../compiler_base/session"}
 
 kclvm-capi = {path = "./capi"}

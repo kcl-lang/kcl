@@ -5,6 +5,7 @@ setlocal
 cd %~dp0
 
 :: install kclvm-cli
+call .\\build_kclvm_dll.bat
 call .\\build_kclvm_cli.bat
 call .\\build_kcl_lsp_server.bat
 

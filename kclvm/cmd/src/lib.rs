@@ -15,7 +15,7 @@ use lint::lint_command;
 use run::run_command;
 
 /// Run the KCL main command.
-pub fn main() -> Result<()> {
+pub fn main(args: &[&str]) -> Result<()> {
     let matches = clap_app!(kcl =>
         (@subcommand run =>
             (@arg input: ... "Sets the input file to use")
@@ -40,7 +40,8 @@ pub fn main() -> Result<()> {
         )
     )
     .arg_required_else_help(true)
-    .get_matches();
+    .get_matches_from(args);
+
     if let Some(matches) = matches.subcommand_matches("run") {
         run_command(matches)
     } else if let Some(matches) = matches.subcommand_matches("lint") {
