@@ -1360,286 +1360,6 @@ impl ::protobuf::reflect::ProtobufValue for ListMethod_Result {
 }
 
 #[derive(PartialEq,Clone,Default,Debug)]
-// @@protoc_insertion_point(message:gpyrpc.ParseFile_LarkTree_Args)
-pub struct ParseFile_LarkTree_Args {
-    // message fields
-    // @@protoc_insertion_point(field:gpyrpc.ParseFile_LarkTree_Args.filename)
-    pub filename: ::std::string::String,
-    // @@protoc_insertion_point(field:gpyrpc.ParseFile_LarkTree_Args.source_code)
-    pub source_code: ::std::string::String,
-    // @@protoc_insertion_point(field:gpyrpc.ParseFile_LarkTree_Args.ignore_file_line)
-    pub ignore_file_line: bool,
-    // special fields
-    // @@protoc_insertion_point(special_field:gpyrpc.ParseFile_LarkTree_Args.special_fields)
-    pub special_fields: ::protobuf::SpecialFields,
-}
-
-impl<'a> ::std::default::Default for &'a ParseFile_LarkTree_Args {
-    fn default() -> &'a ParseFile_LarkTree_Args {
-        <ParseFile_LarkTree_Args as ::protobuf::Message>::default_instance()
-    }
-}
-
-impl ParseFile_LarkTree_Args {
-    pub fn new() -> ParseFile_LarkTree_Args {
-        ::std::default::Default::default()
-    }
-
-    fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
-        let mut fields = ::std::vec::Vec::with_capacity(3);
-        let mut oneofs = ::std::vec::Vec::with_capacity(0);
-        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
-            "filename",
-            |m: &ParseFile_LarkTree_Args| { &m.filename },
-            |m: &mut ParseFile_LarkTree_Args| { &mut m.filename },
-        ));
-        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
-            "source_code",
-            |m: &ParseFile_LarkTree_Args| { &m.source_code },
-            |m: &mut ParseFile_LarkTree_Args| { &mut m.source_code },
-        ));
-        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
-            "ignore_file_line",
-            |m: &ParseFile_LarkTree_Args| { &m.ignore_file_line },
-            |m: &mut ParseFile_LarkTree_Args| { &mut m.ignore_file_line },
-        ));
-        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<ParseFile_LarkTree_Args>(
-            "ParseFile_LarkTree_Args",
-            fields,
-            oneofs,
-        )
-    }
-}
-
-impl ::protobuf::Message for ParseFile_LarkTree_Args {
-    const NAME: &'static str = "ParseFile_LarkTree_Args";
-
-    fn is_initialized(&self) -> bool {
-        true
-    }
-
-    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::Result<()> {
-        while let Some(tag) = is.read_raw_tag_or_eof()? {
-            match tag {
-                10 => {
-                    self.filename = is.read_string()?;
-                },
-                18 => {
-                    self.source_code = is.read_string()?;
-                },
-                24 => {
-                    self.ignore_file_line = is.read_bool()?;
-                },
-                tag => {
-                    ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
-                },
-            };
-        }
-        ::std::result::Result::Ok(())
-    }
-
-    // Compute sizes of nested messages
-    #[allow(unused_variables)]
-    fn compute_size(&self) -> u64 {
-        let mut my_size = 0;
-        if !self.filename.is_empty() {
-            my_size += ::protobuf::rt::string_size(1, &self.filename);
-        }
-        if !self.source_code.is_empty() {
-            my_size += ::protobuf::rt::string_size(2, &self.source_code);
-        }
-        if self.ignore_file_line != false {
-            my_size += 1 + 1;
-        }
-        my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
-        self.special_fields.cached_size().set(my_size as u32);
-        my_size
-    }
-
-    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
-        if !self.filename.is_empty() {
-            os.write_string(1, &self.filename)?;
-        }
-        if !self.source_code.is_empty() {
-            os.write_string(2, &self.source_code)?;
-        }
-        if self.ignore_file_line != false {
-            os.write_bool(3, self.ignore_file_line)?;
-        }
-        os.write_unknown_fields(self.special_fields.unknown_fields())?;
-        ::std::result::Result::Ok(())
-    }
-
-    fn special_fields(&self) -> &::protobuf::SpecialFields {
-        &self.special_fields
-    }
-
-    fn mut_special_fields(&mut self) -> &mut ::protobuf::SpecialFields {
-        &mut self.special_fields
-    }
-
-    fn new() -> ParseFile_LarkTree_Args {
-        ParseFile_LarkTree_Args::new()
-    }
-
-    fn clear(&mut self) {
-        self.filename.clear();
-        self.source_code.clear();
-        self.ignore_file_line = false;
-        self.special_fields.clear();
-    }
-
-    fn default_instance() -> &'static ParseFile_LarkTree_Args {
-        static instance: ParseFile_LarkTree_Args = ParseFile_LarkTree_Args {
-            filename: ::std::string::String::new(),
-            source_code: ::std::string::String::new(),
-            ignore_file_line: false,
-            special_fields: ::protobuf::SpecialFields::new(),
-        };
-        &instance
-    }
-}
-
-impl ::protobuf::MessageFull for ParseFile_LarkTree_Args {
-    fn descriptor() -> ::protobuf::reflect::MessageDescriptor {
-        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::Lazy::new();
-        descriptor.get(|| file_descriptor().message_by_package_relative_name("ParseFile_LarkTree_Args").unwrap()).clone()
-    }
-}
-
-impl ::std::fmt::Display for ParseFile_LarkTree_Args {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        ::protobuf::text_format::fmt(self, f)
-    }
-}
-
-impl ::protobuf::reflect::ProtobufValue for ParseFile_LarkTree_Args {
-    type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
-}
-
-#[derive(PartialEq,Clone,Default,Debug)]
-// @@protoc_insertion_point(message:gpyrpc.ParseFile_LarkTree_Result)
-pub struct ParseFile_LarkTree_Result {
-    // message fields
-    // @@protoc_insertion_point(field:gpyrpc.ParseFile_LarkTree_Result.lark_tree_json)
-    pub lark_tree_json: ::std::string::String,
-    // special fields
-    // @@protoc_insertion_point(special_field:gpyrpc.ParseFile_LarkTree_Result.special_fields)
-    pub special_fields: ::protobuf::SpecialFields,
-}
-
-impl<'a> ::std::default::Default for &'a ParseFile_LarkTree_Result {
-    fn default() -> &'a ParseFile_LarkTree_Result {
-        <ParseFile_LarkTree_Result as ::protobuf::Message>::default_instance()
-    }
-}
-
-impl ParseFile_LarkTree_Result {
-    pub fn new() -> ParseFile_LarkTree_Result {
-        ::std::default::Default::default()
-    }
-
-    fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
-        let mut fields = ::std::vec::Vec::with_capacity(1);
-        let mut oneofs = ::std::vec::Vec::with_capacity(0);
-        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
-            "lark_tree_json",
-            |m: &ParseFile_LarkTree_Result| { &m.lark_tree_json },
-            |m: &mut ParseFile_LarkTree_Result| { &mut m.lark_tree_json },
-        ));
-        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<ParseFile_LarkTree_Result>(
-            "ParseFile_LarkTree_Result",
-            fields,
-            oneofs,
-        )
-    }
-}
-
-impl ::protobuf::Message for ParseFile_LarkTree_Result {
-    const NAME: &'static str = "ParseFile_LarkTree_Result";
-
-    fn is_initialized(&self) -> bool {
-        true
-    }
-
-    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::Result<()> {
-        while let Some(tag) = is.read_raw_tag_or_eof()? {
-            match tag {
-                10 => {
-                    self.lark_tree_json = is.read_string()?;
-                },
-                tag => {
-                    ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
-                },
-            };
-        }
-        ::std::result::Result::Ok(())
-    }
-
-    // Compute sizes of nested messages
-    #[allow(unused_variables)]
-    fn compute_size(&self) -> u64 {
-        let mut my_size = 0;
-        if !self.lark_tree_json.is_empty() {
-            my_size += ::protobuf::rt::string_size(1, &self.lark_tree_json);
-        }
-        my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
-        self.special_fields.cached_size().set(my_size as u32);
-        my_size
-    }
-
-    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
-        if !self.lark_tree_json.is_empty() {
-            os.write_string(1, &self.lark_tree_json)?;
-        }
-        os.write_unknown_fields(self.special_fields.unknown_fields())?;
-        ::std::result::Result::Ok(())
-    }
-
-    fn special_fields(&self) -> &::protobuf::SpecialFields {
-        &self.special_fields
-    }
-
-    fn mut_special_fields(&mut self) -> &mut ::protobuf::SpecialFields {
-        &mut self.special_fields
-    }
-
-    fn new() -> ParseFile_LarkTree_Result {
-        ParseFile_LarkTree_Result::new()
-    }
-
-    fn clear(&mut self) {
-        self.lark_tree_json.clear();
-        self.special_fields.clear();
-    }
-
-    fn default_instance() -> &'static ParseFile_LarkTree_Result {
-        static instance: ParseFile_LarkTree_Result = ParseFile_LarkTree_Result {
-            lark_tree_json: ::std::string::String::new(),
-            special_fields: ::protobuf::SpecialFields::new(),
-        };
-        &instance
-    }
-}
-
-impl ::protobuf::MessageFull for ParseFile_LarkTree_Result {
-    fn descriptor() -> ::protobuf::reflect::MessageDescriptor {
-        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::Lazy::new();
-        descriptor.get(|| file_descriptor().message_by_package_relative_name("ParseFile_LarkTree_Result").unwrap()).clone()
-    }
-}
-
-impl ::std::fmt::Display for ParseFile_LarkTree_Result {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        ::protobuf::text_format::fmt(self, f)
-    }
-}
-
-impl ::protobuf::reflect::ProtobufValue for ParseFile_LarkTree_Result {
-    type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
-}
-
-#[derive(PartialEq,Clone,Default,Debug)]
 // @@protoc_insertion_point(message:gpyrpc.ParseFile_AST_Args)
 pub struct ParseFile_AST_Args {
     // message fields
@@ -1785,6 +1505,8 @@ pub struct ParseFile_AST_Result {
     // message fields
     // @@protoc_insertion_point(field:gpyrpc.ParseFile_AST_Result.ast_json)
     pub ast_json: ::std::string::String,
+    // @@protoc_insertion_point(field:gpyrpc.ParseFile_AST_Result.kcl_err)
+    pub kcl_err: ::protobuf::MessageField<KclError>,
     // special fields
     // @@protoc_insertion_point(special_field:gpyrpc.ParseFile_AST_Result.special_fields)
     pub special_fields: ::protobuf::SpecialFields,
@@ -1802,12 +1524,17 @@ impl ParseFile_AST_Result {
     }
 
     fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
-        let mut fields = ::std::vec::Vec::with_capacity(1);
+        let mut fields = ::std::vec::Vec::with_capacity(2);
         let mut oneofs = ::std::vec::Vec::with_capacity(0);
         fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
             "ast_json",
             |m: &ParseFile_AST_Result| { &m.ast_json },
             |m: &mut ParseFile_AST_Result| { &mut m.ast_json },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_message_field_accessor::<_, KclError>(
+            "kcl_err",
+            |m: &ParseFile_AST_Result| { &m.kcl_err },
+            |m: &mut ParseFile_AST_Result| { &mut m.kcl_err },
         ));
         ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<ParseFile_AST_Result>(
             "ParseFile_AST_Result",
@@ -1830,6 +1557,9 @@ impl ::protobuf::Message for ParseFile_AST_Result {
                 10 => {
                     self.ast_json = is.read_string()?;
                 },
+                18 => {
+                    ::protobuf::rt::read_singular_message_into_field(is, &mut self.kcl_err)?;
+                },
                 tag => {
                     ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
                 },
@@ -1845,6 +1575,10 @@ impl ::protobuf::Message for ParseFile_AST_Result {
         if !self.ast_json.is_empty() {
             my_size += ::protobuf::rt::string_size(1, &self.ast_json);
         }
+        if let Some(v) = self.kcl_err.as_ref() {
+            let len = v.compute_size();
+            my_size += 1 + ::protobuf::rt::compute_raw_varint64_size(len) + len;
+        }
         my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
         self.special_fields.cached_size().set(my_size as u32);
         my_size
@@ -1853,6 +1587,9 @@ impl ::protobuf::Message for ParseFile_AST_Result {
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
         if !self.ast_json.is_empty() {
             os.write_string(1, &self.ast_json)?;
+        }
+        if let Some(v) = self.kcl_err.as_ref() {
+            ::protobuf::rt::write_message_field_with_cached_size(2, v, os)?;
         }
         os.write_unknown_fields(self.special_fields.unknown_fields())?;
         ::std::result::Result::Ok(())
@@ -1872,12 +1609,14 @@ impl ::protobuf::Message for ParseFile_AST_Result {
 
     fn clear(&mut self) {
         self.ast_json.clear();
+        self.kcl_err.clear();
         self.special_fields.clear();
     }
 
     fn default_instance() -> &'static ParseFile_AST_Result {
         static instance: ParseFile_AST_Result = ParseFile_AST_Result {
             ast_json: ::std::string::String::new(),
+            kcl_err: ::protobuf::MessageField::none(),
             special_fields: ::protobuf::SpecialFields::new(),
         };
         &instance
@@ -2029,6 +1768,8 @@ pub struct ParseProgram_AST_Result {
     // message fields
     // @@protoc_insertion_point(field:gpyrpc.ParseProgram_AST_Result.ast_json)
     pub ast_json: ::std::string::String,
+    // @@protoc_insertion_point(field:gpyrpc.ParseProgram_AST_Result.kcl_err)
+    pub kcl_err: ::protobuf::MessageField<KclError>,
     // special fields
     // @@protoc_insertion_point(special_field:gpyrpc.ParseProgram_AST_Result.special_fields)
     pub special_fields: ::protobuf::SpecialFields,
@@ -2046,12 +1787,17 @@ impl ParseProgram_AST_Result {
     }
 
     fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
-        let mut fields = ::std::vec::Vec::with_capacity(1);
+        let mut fields = ::std::vec::Vec::with_capacity(2);
         let mut oneofs = ::std::vec::Vec::with_capacity(0);
         fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
             "ast_json",
             |m: &ParseProgram_AST_Result| { &m.ast_json },
             |m: &mut ParseProgram_AST_Result| { &mut m.ast_json },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_message_field_accessor::<_, KclError>(
+            "kcl_err",
+            |m: &ParseProgram_AST_Result| { &m.kcl_err },
+            |m: &mut ParseProgram_AST_Result| { &mut m.kcl_err },
         ));
         ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<ParseProgram_AST_Result>(
             "ParseProgram_AST_Result",
@@ -2074,6 +1820,9 @@ impl ::protobuf::Message for ParseProgram_AST_Result {
                 10 => {
                     self.ast_json = is.read_string()?;
                 },
+                18 => {
+                    ::protobuf::rt::read_singular_message_into_field(is, &mut self.kcl_err)?;
+                },
                 tag => {
                     ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
                 },
@@ -2089,6 +1838,10 @@ impl ::protobuf::Message for ParseProgram_AST_Result {
         if !self.ast_json.is_empty() {
             my_size += ::protobuf::rt::string_size(1, &self.ast_json);
         }
+        if let Some(v) = self.kcl_err.as_ref() {
+            let len = v.compute_size();
+            my_size += 1 + ::protobuf::rt::compute_raw_varint64_size(len) + len;
+        }
         my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
         self.special_fields.cached_size().set(my_size as u32);
         my_size
@@ -2097,6 +1850,9 @@ impl ::protobuf::Message for ParseProgram_AST_Result {
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
         if !self.ast_json.is_empty() {
             os.write_string(1, &self.ast_json)?;
+        }
+        if let Some(v) = self.kcl_err.as_ref() {
+            ::protobuf::rt::write_message_field_with_cached_size(2, v, os)?;
         }
         os.write_unknown_fields(self.special_fields.unknown_fields())?;
         ::std::result::Result::Ok(())
@@ -2116,12 +1872,14 @@ impl ::protobuf::Message for ParseProgram_AST_Result {
 
     fn clear(&mut self) {
         self.ast_json.clear();
+        self.kcl_err.clear();
         self.special_fields.clear();
     }
 
     fn default_instance() -> &'static ParseProgram_AST_Result {
         static instance: ParseProgram_AST_Result = ParseProgram_AST_Result {
             ast_json: ::std::string::String::new(),
+            kcl_err: ::protobuf::MessageField::none(),
             special_fields: ::protobuf::SpecialFields::new(),
         };
         &instance
@@ -3238,8 +2996,8 @@ impl ::protobuf::reflect::ProtobufValue for FormatPath_Args {
 // @@protoc_insertion_point(message:gpyrpc.FormatPath_Result)
 pub struct FormatPath_Result {
     // message fields
-    // @@protoc_insertion_point(field:gpyrpc.FormatPath_Result.changedPaths)
-    pub changedPaths: ::std::vec::Vec<::std::string::String>,
+    // @@protoc_insertion_point(field:gpyrpc.FormatPath_Result.changed_paths)
+    pub changed_paths: ::std::vec::Vec<::std::string::String>,
     // special fields
     // @@protoc_insertion_point(special_field:gpyrpc.FormatPath_Result.special_fields)
     pub special_fields: ::protobuf::SpecialFields,
@@ -3260,9 +3018,9 @@ impl FormatPath_Result {
         let mut fields = ::std::vec::Vec::with_capacity(1);
         let mut oneofs = ::std::vec::Vec::with_capacity(0);
         fields.push(::protobuf::reflect::rt::v2::make_vec_simpler_accessor::<_, _>(
-            "changedPaths",
-            |m: &FormatPath_Result| { &m.changedPaths },
-            |m: &mut FormatPath_Result| { &mut m.changedPaths },
+            "changed_paths",
+            |m: &FormatPath_Result| { &m.changed_paths },
+            |m: &mut FormatPath_Result| { &mut m.changed_paths },
         ));
         ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<FormatPath_Result>(
             "FormatPath_Result",
@@ -3283,7 +3041,7 @@ impl ::protobuf::Message for FormatPath_Result {
         while let Some(tag) = is.read_raw_tag_or_eof()? {
             match tag {
                 10 => {
-                    self.changedPaths.push(is.read_string()?);
+                    self.changed_paths.push(is.read_string()?);
                 },
                 tag => {
                     ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
@@ -3297,7 +3055,7 @@ impl ::protobuf::Message for FormatPath_Result {
     #[allow(unused_variables)]
     fn compute_size(&self) -> u64 {
         let mut my_size = 0;
-        for value in &self.changedPaths {
+        for value in &self.changed_paths {
             my_size += ::protobuf::rt::string_size(1, &value);
         };
         my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
@@ -3306,7 +3064,7 @@ impl ::protobuf::Message for FormatPath_Result {
     }
 
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
-        for v in &self.changedPaths {
+        for v in &self.changed_paths {
             os.write_string(1, &v)?;
         };
         os.write_unknown_fields(self.special_fields.unknown_fields())?;
@@ -3326,13 +3084,13 @@ impl ::protobuf::Message for FormatPath_Result {
     }
 
     fn clear(&mut self) {
-        self.changedPaths.clear();
+        self.changed_paths.clear();
         self.special_fields.clear();
     }
 
     fn default_instance() -> &'static FormatPath_Result {
         static instance: FormatPath_Result = FormatPath_Result {
-            changedPaths: ::std::vec::Vec::new(),
+            changed_paths: ::std::vec::Vec::new(),
             special_fields: ::protobuf::SpecialFields::new(),
         };
         &instance
@@ -3360,8 +3118,8 @@ impl ::protobuf::reflect::ProtobufValue for FormatPath_Result {
 // @@protoc_insertion_point(message:gpyrpc.LintPath_Args)
 pub struct LintPath_Args {
     // message fields
-    // @@protoc_insertion_point(field:gpyrpc.LintPath_Args.path)
-    pub path: ::std::string::String,
+    // @@protoc_insertion_point(field:gpyrpc.LintPath_Args.paths)
+    pub paths: ::std::vec::Vec<::std::string::String>,
     // special fields
     // @@protoc_insertion_point(special_field:gpyrpc.LintPath_Args.special_fields)
     pub special_fields: ::protobuf::SpecialFields,
@@ -3381,10 +3139,10 @@ impl LintPath_Args {
     fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
         let mut fields = ::std::vec::Vec::with_capacity(1);
         let mut oneofs = ::std::vec::Vec::with_capacity(0);
-        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
-            "path",
-            |m: &LintPath_Args| { &m.path },
-            |m: &mut LintPath_Args| { &mut m.path },
+        fields.push(::protobuf::reflect::rt::v2::make_vec_simpler_accessor::<_, _>(
+            "paths",
+            |m: &LintPath_Args| { &m.paths },
+            |m: &mut LintPath_Args| { &mut m.paths },
         ));
         ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<LintPath_Args>(
             "LintPath_Args",
@@ -3405,7 +3163,7 @@ impl ::protobuf::Message for LintPath_Args {
         while let Some(tag) = is.read_raw_tag_or_eof()? {
             match tag {
                 10 => {
-                    self.path = is.read_string()?;
+                    self.paths.push(is.read_string()?);
                 },
                 tag => {
                     ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
@@ -3419,18 +3177,18 @@ impl ::protobuf::Message for LintPath_Args {
     #[allow(unused_variables)]
     fn compute_size(&self) -> u64 {
         let mut my_size = 0;
-        if !self.path.is_empty() {
-            my_size += ::protobuf::rt::string_size(1, &self.path);
-        }
+        for value in &self.paths {
+            my_size += ::protobuf::rt::string_size(1, &value);
+        };
         my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
         self.special_fields.cached_size().set(my_size as u32);
         my_size
     }
 
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
-        if !self.path.is_empty() {
-            os.write_string(1, &self.path)?;
-        }
+        for v in &self.paths {
+            os.write_string(1, &v)?;
+        };
         os.write_unknown_fields(self.special_fields.unknown_fields())?;
         ::std::result::Result::Ok(())
     }
@@ -3448,13 +3206,13 @@ impl ::protobuf::Message for LintPath_Args {
     }
 
     fn clear(&mut self) {
-        self.path.clear();
+        self.paths.clear();
         self.special_fields.clear();
     }
 
     fn default_instance() -> &'static LintPath_Args {
         static instance: LintPath_Args = LintPath_Args {
-            path: ::std::string::String::new(),
+            paths: ::std::vec::Vec::new(),
             special_fields: ::protobuf::SpecialFields::new(),
         };
         &instance
@@ -5284,391 +5042,6 @@ impl ::protobuf::reflect::ProtobufValue for ValidateCode_Result {
 }
 
 #[derive(PartialEq,Clone,Default,Debug)]
-// @@protoc_insertion_point(message:gpyrpc.CodeSnippet)
-pub struct CodeSnippet {
-    // message fields
-    // @@protoc_insertion_point(field:gpyrpc.CodeSnippet.schema)
-    pub schema: ::std::string::String,
-    // @@protoc_insertion_point(field:gpyrpc.CodeSnippet.rule)
-    pub rule: ::std::string::String,
-    // special fields
-    // @@protoc_insertion_point(special_field:gpyrpc.CodeSnippet.special_fields)
-    pub special_fields: ::protobuf::SpecialFields,
-}
-
-impl<'a> ::std::default::Default for &'a CodeSnippet {
-    fn default() -> &'a CodeSnippet {
-        <CodeSnippet as ::protobuf::Message>::default_instance()
-    }
-}
-
-impl CodeSnippet {
-    pub fn new() -> CodeSnippet {
-        ::std::default::Default::default()
-    }
-
-    fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
-        let mut fields = ::std::vec::Vec::with_capacity(2);
-        let mut oneofs = ::std::vec::Vec::with_capacity(0);
-        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
-            "schema",
-            |m: &CodeSnippet| { &m.schema },
-            |m: &mut CodeSnippet| { &mut m.schema },
-        ));
-        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
-            "rule",
-            |m: &CodeSnippet| { &m.rule },
-            |m: &mut CodeSnippet| { &mut m.rule },
-        ));
-        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<CodeSnippet>(
-            "CodeSnippet",
-            fields,
-            oneofs,
-        )
-    }
-}
-
-impl ::protobuf::Message for CodeSnippet {
-    const NAME: &'static str = "CodeSnippet";
-
-    fn is_initialized(&self) -> bool {
-        true
-    }
-
-    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::Result<()> {
-        while let Some(tag) = is.read_raw_tag_or_eof()? {
-            match tag {
-                10 => {
-                    self.schema = is.read_string()?;
-                },
-                18 => {
-                    self.rule = is.read_string()?;
-                },
-                tag => {
-                    ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
-                },
-            };
-        }
-        ::std::result::Result::Ok(())
-    }
-
-    // Compute sizes of nested messages
-    #[allow(unused_variables)]
-    fn compute_size(&self) -> u64 {
-        let mut my_size = 0;
-        if !self.schema.is_empty() {
-            my_size += ::protobuf::rt::string_size(1, &self.schema);
-        }
-        if !self.rule.is_empty() {
-            my_size += ::protobuf::rt::string_size(2, &self.rule);
-        }
-        my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
-        self.special_fields.cached_size().set(my_size as u32);
-        my_size
-    }
-
-    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
-        if !self.schema.is_empty() {
-            os.write_string(1, &self.schema)?;
-        }
-        if !self.rule.is_empty() {
-            os.write_string(2, &self.rule)?;
-        }
-        os.write_unknown_fields(self.special_fields.unknown_fields())?;
-        ::std::result::Result::Ok(())
-    }
-
-    fn special_fields(&self) -> &::protobuf::SpecialFields {
-        &self.special_fields
-    }
-
-    fn mut_special_fields(&mut self) -> &mut ::protobuf::SpecialFields {
-        &mut self.special_fields
-    }
-
-    fn new() -> CodeSnippet {
-        CodeSnippet::new()
-    }
-
-    fn clear(&mut self) {
-        self.schema.clear();
-        self.rule.clear();
-        self.special_fields.clear();
-    }
-
-    fn default_instance() -> &'static CodeSnippet {
-        static instance: CodeSnippet = CodeSnippet {
-            schema: ::std::string::String::new(),
-            rule: ::std::string::String::new(),
-            special_fields: ::protobuf::SpecialFields::new(),
-        };
-        &instance
-    }
-}
-
-impl ::protobuf::MessageFull for CodeSnippet {
-    fn descriptor() -> ::protobuf::reflect::MessageDescriptor {
-        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::Lazy::new();
-        descriptor.get(|| file_descriptor().message_by_package_relative_name("CodeSnippet").unwrap()).clone()
-    }
-}
-
-impl ::std::fmt::Display for CodeSnippet {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        ::protobuf::text_format::fmt(self, f)
-    }
-}
-
-impl ::protobuf::reflect::ProtobufValue for CodeSnippet {
-    type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
-}
-
-#[derive(PartialEq,Clone,Default,Debug)]
-// @@protoc_insertion_point(message:gpyrpc.SpliceCode_Args)
-pub struct SpliceCode_Args {
-    // message fields
-    // @@protoc_insertion_point(field:gpyrpc.SpliceCode_Args.codeSnippets)
-    pub codeSnippets: ::std::vec::Vec<CodeSnippet>,
-    // special fields
-    // @@protoc_insertion_point(special_field:gpyrpc.SpliceCode_Args.special_fields)
-    pub special_fields: ::protobuf::SpecialFields,
-}
-
-impl<'a> ::std::default::Default for &'a SpliceCode_Args {
-    fn default() -> &'a SpliceCode_Args {
-        <SpliceCode_Args as ::protobuf::Message>::default_instance()
-    }
-}
-
-impl SpliceCode_Args {
-    pub fn new() -> SpliceCode_Args {
-        ::std::default::Default::default()
-    }
-
-    fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
-        let mut fields = ::std::vec::Vec::with_capacity(1);
-        let mut oneofs = ::std::vec::Vec::with_capacity(0);
-        fields.push(::protobuf::reflect::rt::v2::make_vec_simpler_accessor::<_, _>(
-            "codeSnippets",
-            |m: &SpliceCode_Args| { &m.codeSnippets },
-            |m: &mut SpliceCode_Args| { &mut m.codeSnippets },
-        ));
-        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<SpliceCode_Args>(
-            "SpliceCode_Args",
-            fields,
-            oneofs,
-        )
-    }
-}
-
-impl ::protobuf::Message for SpliceCode_Args {
-    const NAME: &'static str = "SpliceCode_Args";
-
-    fn is_initialized(&self) -> bool {
-        true
-    }
-
-    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::Result<()> {
-        while let Some(tag) = is.read_raw_tag_or_eof()? {
-            match tag {
-                10 => {
-                    self.codeSnippets.push(is.read_message()?);
-                },
-                tag => {
-                    ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
-                },
-            };
-        }
-        ::std::result::Result::Ok(())
-    }
-
-    // Compute sizes of nested messages
-    #[allow(unused_variables)]
-    fn compute_size(&self) -> u64 {
-        let mut my_size = 0;
-        for value in &self.codeSnippets {
-            let len = value.compute_size();
-            my_size += 1 + ::protobuf::rt::compute_raw_varint64_size(len) + len;
-        };
-        my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
-        self.special_fields.cached_size().set(my_size as u32);
-        my_size
-    }
-
-    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
-        for v in &self.codeSnippets {
-            ::protobuf::rt::write_message_field_with_cached_size(1, v, os)?;
-        };
-        os.write_unknown_fields(self.special_fields.unknown_fields())?;
-        ::std::result::Result::Ok(())
-    }
-
-    fn special_fields(&self) -> &::protobuf::SpecialFields {
-        &self.special_fields
-    }
-
-    fn mut_special_fields(&mut self) -> &mut ::protobuf::SpecialFields {
-        &mut self.special_fields
-    }
-
-    fn new() -> SpliceCode_Args {
-        SpliceCode_Args::new()
-    }
-
-    fn clear(&mut self) {
-        self.codeSnippets.clear();
-        self.special_fields.clear();
-    }
-
-    fn default_instance() -> &'static SpliceCode_Args {
-        static instance: SpliceCode_Args = SpliceCode_Args {
-            codeSnippets: ::std::vec::Vec::new(),
-            special_fields: ::protobuf::SpecialFields::new(),
-        };
-        &instance
-    }
-}
-
-impl ::protobuf::MessageFull for SpliceCode_Args {
-    fn descriptor() -> ::protobuf::reflect::MessageDescriptor {
-        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::Lazy::new();
-        descriptor.get(|| file_descriptor().message_by_package_relative_name("SpliceCode_Args").unwrap()).clone()
-    }
-}
-
-impl ::std::fmt::Display for SpliceCode_Args {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        ::protobuf::text_format::fmt(self, f)
-    }
-}
-
-impl ::protobuf::reflect::ProtobufValue for SpliceCode_Args {
-    type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
-}
-
-#[derive(PartialEq,Clone,Default,Debug)]
-// @@protoc_insertion_point(message:gpyrpc.SpliceCode_Result)
-pub struct SpliceCode_Result {
-    // message fields
-    // @@protoc_insertion_point(field:gpyrpc.SpliceCode_Result.spliceCode)
-    pub spliceCode: ::std::string::String,
-    // special fields
-    // @@protoc_insertion_point(special_field:gpyrpc.SpliceCode_Result.special_fields)
-    pub special_fields: ::protobuf::SpecialFields,
-}
-
-impl<'a> ::std::default::Default for &'a SpliceCode_Result {
-    fn default() -> &'a SpliceCode_Result {
-        <SpliceCode_Result as ::protobuf::Message>::default_instance()
-    }
-}
-
-impl SpliceCode_Result {
-    pub fn new() -> SpliceCode_Result {
-        ::std::default::Default::default()
-    }
-
-    fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
-        let mut fields = ::std::vec::Vec::with_capacity(1);
-        let mut oneofs = ::std::vec::Vec::with_capacity(0);
-        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
-            "spliceCode",
-            |m: &SpliceCode_Result| { &m.spliceCode },
-            |m: &mut SpliceCode_Result| { &mut m.spliceCode },
-        ));
-        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<SpliceCode_Result>(
-            "SpliceCode_Result",
-            fields,
-            oneofs,
-        )
-    }
-}
-
-impl ::protobuf::Message for SpliceCode_Result {
-    const NAME: &'static str = "SpliceCode_Result";
-
-    fn is_initialized(&self) -> bool {
-        true
-    }
-
-    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::Result<()> {
-        while let Some(tag) = is.read_raw_tag_or_eof()? {
-            match tag {
-                10 => {
-                    self.spliceCode = is.read_string()?;
-                },
-                tag => {
-                    ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
-                },
-            };
-        }
-        ::std::result::Result::Ok(())
-    }
-
-    // Compute sizes of nested messages
-    #[allow(unused_variables)]
-    fn compute_size(&self) -> u64 {
-        let mut my_size = 0;
-        if !self.spliceCode.is_empty() {
-            my_size += ::protobuf::rt::string_size(1, &self.spliceCode);
-        }
-        my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
-        self.special_fields.cached_size().set(my_size as u32);
-        my_size
-    }
-
-    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
-        if !self.spliceCode.is_empty() {
-            os.write_string(1, &self.spliceCode)?;
-        }
-        os.write_unknown_fields(self.special_fields.unknown_fields())?;
-        ::std::result::Result::Ok(())
-    }
-
-    fn special_fields(&self) -> &::protobuf::SpecialFields {
-        &self.special_fields
-    }
-
-    fn mut_special_fields(&mut self) -> &mut ::protobuf::SpecialFields {
-        &mut self.special_fields
-    }
-
-    fn new() -> SpliceCode_Result {
-        SpliceCode_Result::new()
-    }
-
-    fn clear(&mut self) {
-        self.spliceCode.clear();
-        self.special_fields.clear();
-    }
-
-    fn default_instance() -> &'static SpliceCode_Result {
-        static instance: SpliceCode_Result = SpliceCode_Result {
-            spliceCode: ::std::string::String::new(),
-            special_fields: ::protobuf::SpecialFields::new(),
-        };
-        &instance
-    }
-}
-
-impl ::protobuf::MessageFull for SpliceCode_Result {
-    fn descriptor() -> ::protobuf::reflect::MessageDescriptor {
-        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::Lazy::new();
-        descriptor.get(|| file_descriptor().message_by_package_relative_name("SpliceCode_Result").unwrap()).clone()
-    }
-}
-
-impl ::std::fmt::Display for SpliceCode_Result {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        ::protobuf::text_format::fmt(self, f)
-    }
-}
-
-impl ::protobuf::reflect::ProtobufValue for SpliceCode_Result {
-    type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
-}
-
-#[derive(PartialEq,Clone,Default,Debug)]
 // @@protoc_insertion_point(message:gpyrpc.Position)
 pub struct Position {
     // message fields
@@ -5823,1075 +5196,6 @@ impl ::std::fmt::Display for Position {
 }
 
 impl ::protobuf::reflect::ProtobufValue for Position {
-    type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
-}
-
-#[derive(PartialEq,Clone,Default,Debug)]
-// @@protoc_insertion_point(message:gpyrpc.Complete_Args)
-pub struct Complete_Args {
-    // message fields
-    // @@protoc_insertion_point(field:gpyrpc.Complete_Args.pos)
-    pub pos: ::protobuf::MessageField<Position>,
-    // @@protoc_insertion_point(field:gpyrpc.Complete_Args.name)
-    pub name: ::std::string::String,
-    // @@protoc_insertion_point(field:gpyrpc.Complete_Args.code)
-    pub code: ::std::string::String,
-    // special fields
-    // @@protoc_insertion_point(special_field:gpyrpc.Complete_Args.special_fields)
-    pub special_fields: ::protobuf::SpecialFields,
-}
-
-impl<'a> ::std::default::Default for &'a Complete_Args {
-    fn default() -> &'a Complete_Args {
-        <Complete_Args as ::protobuf::Message>::default_instance()
-    }
-}
-
-impl Complete_Args {
-    pub fn new() -> Complete_Args {
-        ::std::default::Default::default()
-    }
-
-    fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
-        let mut fields = ::std::vec::Vec::with_capacity(3);
-        let mut oneofs = ::std::vec::Vec::with_capacity(0);
-        fields.push(::protobuf::reflect::rt::v2::make_message_field_accessor::<_, Position>(
-            "pos",
-            |m: &Complete_Args| { &m.pos },
-            |m: &mut Complete_Args| { &mut m.pos },
-        ));
-        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
-            "name",
-            |m: &Complete_Args| { &m.name },
-            |m: &mut Complete_Args| { &mut m.name },
-        ));
-        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
-            "code",
-            |m: &Complete_Args| { &m.code },
-            |m: &mut Complete_Args| { &mut m.code },
-        ));
-        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<Complete_Args>(
-            "Complete_Args",
-            fields,
-            oneofs,
-        )
-    }
-}
-
-impl ::protobuf::Message for Complete_Args {
-    const NAME: &'static str = "Complete_Args";
-
-    fn is_initialized(&self) -> bool {
-        true
-    }
-
-    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::Result<()> {
-        while let Some(tag) = is.read_raw_tag_or_eof()? {
-            match tag {
-                10 => {
-                    ::protobuf::rt::read_singular_message_into_field(is, &mut self.pos)?;
-                },
-                18 => {
-                    self.name = is.read_string()?;
-                },
-                26 => {
-                    self.code = is.read_string()?;
-                },
-                tag => {
-                    ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
-                },
-            };
-        }
-        ::std::result::Result::Ok(())
-    }
-
-    // Compute sizes of nested messages
-    #[allow(unused_variables)]
-    fn compute_size(&self) -> u64 {
-        let mut my_size = 0;
-        if let Some(v) = self.pos.as_ref() {
-            let len = v.compute_size();
-            my_size += 1 + ::protobuf::rt::compute_raw_varint64_size(len) + len;
-        }
-        if !self.name.is_empty() {
-            my_size += ::protobuf::rt::string_size(2, &self.name);
-        }
-        if !self.code.is_empty() {
-            my_size += ::protobuf::rt::string_size(3, &self.code);
-        }
-        my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
-        self.special_fields.cached_size().set(my_size as u32);
-        my_size
-    }
-
-    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
-        if let Some(v) = self.pos.as_ref() {
-            ::protobuf::rt::write_message_field_with_cached_size(1, v, os)?;
-        }
-        if !self.name.is_empty() {
-            os.write_string(2, &self.name)?;
-        }
-        if !self.code.is_empty() {
-            os.write_string(3, &self.code)?;
-        }
-        os.write_unknown_fields(self.special_fields.unknown_fields())?;
-        ::std::result::Result::Ok(())
-    }
-
-    fn special_fields(&self) -> &::protobuf::SpecialFields {
-        &self.special_fields
-    }
-
-    fn mut_special_fields(&mut self) -> &mut ::protobuf::SpecialFields {
-        &mut self.special_fields
-    }
-
-    fn new() -> Complete_Args {
-        Complete_Args::new()
-    }
-
-    fn clear(&mut self) {
-        self.pos.clear();
-        self.name.clear();
-        self.code.clear();
-        self.special_fields.clear();
-    }
-
-    fn default_instance() -> &'static Complete_Args {
-        static instance: Complete_Args = Complete_Args {
-            pos: ::protobuf::MessageField::none(),
-            name: ::std::string::String::new(),
-            code: ::std::string::String::new(),
-            special_fields: ::protobuf::SpecialFields::new(),
-        };
-        &instance
-    }
-}
-
-impl ::protobuf::MessageFull for Complete_Args {
-    fn descriptor() -> ::protobuf::reflect::MessageDescriptor {
-        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::Lazy::new();
-        descriptor.get(|| file_descriptor().message_by_package_relative_name("Complete_Args").unwrap()).clone()
-    }
-}
-
-impl ::std::fmt::Display for Complete_Args {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        ::protobuf::text_format::fmt(self, f)
-    }
-}
-
-impl ::protobuf::reflect::ProtobufValue for Complete_Args {
-    type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
-}
-
-#[derive(PartialEq,Clone,Default,Debug)]
-// @@protoc_insertion_point(message:gpyrpc.Complete_Result)
-pub struct Complete_Result {
-    // message fields
-    // @@protoc_insertion_point(field:gpyrpc.Complete_Result.completeItems)
-    pub completeItems: ::std::string::String,
-    // special fields
-    // @@protoc_insertion_point(special_field:gpyrpc.Complete_Result.special_fields)
-    pub special_fields: ::protobuf::SpecialFields,
-}
-
-impl<'a> ::std::default::Default for &'a Complete_Result {
-    fn default() -> &'a Complete_Result {
-        <Complete_Result as ::protobuf::Message>::default_instance()
-    }
-}
-
-impl Complete_Result {
-    pub fn new() -> Complete_Result {
-        ::std::default::Default::default()
-    }
-
-    fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
-        let mut fields = ::std::vec::Vec::with_capacity(1);
-        let mut oneofs = ::std::vec::Vec::with_capacity(0);
-        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
-            "completeItems",
-            |m: &Complete_Result| { &m.completeItems },
-            |m: &mut Complete_Result| { &mut m.completeItems },
-        ));
-        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<Complete_Result>(
-            "Complete_Result",
-            fields,
-            oneofs,
-        )
-    }
-}
-
-impl ::protobuf::Message for Complete_Result {
-    const NAME: &'static str = "Complete_Result";
-
-    fn is_initialized(&self) -> bool {
-        true
-    }
-
-    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::Result<()> {
-        while let Some(tag) = is.read_raw_tag_or_eof()? {
-            match tag {
-                10 => {
-                    self.completeItems = is.read_string()?;
-                },
-                tag => {
-                    ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
-                },
-            };
-        }
-        ::std::result::Result::Ok(())
-    }
-
-    // Compute sizes of nested messages
-    #[allow(unused_variables)]
-    fn compute_size(&self) -> u64 {
-        let mut my_size = 0;
-        if !self.completeItems.is_empty() {
-            my_size += ::protobuf::rt::string_size(1, &self.completeItems);
-        }
-        my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
-        self.special_fields.cached_size().set(my_size as u32);
-        my_size
-    }
-
-    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
-        if !self.completeItems.is_empty() {
-            os.write_string(1, &self.completeItems)?;
-        }
-        os.write_unknown_fields(self.special_fields.unknown_fields())?;
-        ::std::result::Result::Ok(())
-    }
-
-    fn special_fields(&self) -> &::protobuf::SpecialFields {
-        &self.special_fields
-    }
-
-    fn mut_special_fields(&mut self) -> &mut ::protobuf::SpecialFields {
-        &mut self.special_fields
-    }
-
-    fn new() -> Complete_Result {
-        Complete_Result::new()
-    }
-
-    fn clear(&mut self) {
-        self.completeItems.clear();
-        self.special_fields.clear();
-    }
-
-    fn default_instance() -> &'static Complete_Result {
-        static instance: Complete_Result = Complete_Result {
-            completeItems: ::std::string::String::new(),
-            special_fields: ::protobuf::SpecialFields::new(),
-        };
-        &instance
-    }
-}
-
-impl ::protobuf::MessageFull for Complete_Result {
-    fn descriptor() -> ::protobuf::reflect::MessageDescriptor {
-        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::Lazy::new();
-        descriptor.get(|| file_descriptor().message_by_package_relative_name("Complete_Result").unwrap()).clone()
-    }
-}
-
-impl ::std::fmt::Display for Complete_Result {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        ::protobuf::text_format::fmt(self, f)
-    }
-}
-
-impl ::protobuf::reflect::ProtobufValue for Complete_Result {
-    type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
-}
-
-#[derive(PartialEq,Clone,Default,Debug)]
-// @@protoc_insertion_point(message:gpyrpc.GoToDef_Args)
-pub struct GoToDef_Args {
-    // message fields
-    // @@protoc_insertion_point(field:gpyrpc.GoToDef_Args.pos)
-    pub pos: ::protobuf::MessageField<Position>,
-    // @@protoc_insertion_point(field:gpyrpc.GoToDef_Args.code)
-    pub code: ::std::string::String,
-    // special fields
-    // @@protoc_insertion_point(special_field:gpyrpc.GoToDef_Args.special_fields)
-    pub special_fields: ::protobuf::SpecialFields,
-}
-
-impl<'a> ::std::default::Default for &'a GoToDef_Args {
-    fn default() -> &'a GoToDef_Args {
-        <GoToDef_Args as ::protobuf::Message>::default_instance()
-    }
-}
-
-impl GoToDef_Args {
-    pub fn new() -> GoToDef_Args {
-        ::std::default::Default::default()
-    }
-
-    fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
-        let mut fields = ::std::vec::Vec::with_capacity(2);
-        let mut oneofs = ::std::vec::Vec::with_capacity(0);
-        fields.push(::protobuf::reflect::rt::v2::make_message_field_accessor::<_, Position>(
-            "pos",
-            |m: &GoToDef_Args| { &m.pos },
-            |m: &mut GoToDef_Args| { &mut m.pos },
-        ));
-        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
-            "code",
-            |m: &GoToDef_Args| { &m.code },
-            |m: &mut GoToDef_Args| { &mut m.code },
-        ));
-        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<GoToDef_Args>(
-            "GoToDef_Args",
-            fields,
-            oneofs,
-        )
-    }
-}
-
-impl ::protobuf::Message for GoToDef_Args {
-    const NAME: &'static str = "GoToDef_Args";
-
-    fn is_initialized(&self) -> bool {
-        true
-    }
-
-    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::Result<()> {
-        while let Some(tag) = is.read_raw_tag_or_eof()? {
-            match tag {
-                10 => {
-                    ::protobuf::rt::read_singular_message_into_field(is, &mut self.pos)?;
-                },
-                18 => {
-                    self.code = is.read_string()?;
-                },
-                tag => {
-                    ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
-                },
-            };
-        }
-        ::std::result::Result::Ok(())
-    }
-
-    // Compute sizes of nested messages
-    #[allow(unused_variables)]
-    fn compute_size(&self) -> u64 {
-        let mut my_size = 0;
-        if let Some(v) = self.pos.as_ref() {
-            let len = v.compute_size();
-            my_size += 1 + ::protobuf::rt::compute_raw_varint64_size(len) + len;
-        }
-        if !self.code.is_empty() {
-            my_size += ::protobuf::rt::string_size(2, &self.code);
-        }
-        my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
-        self.special_fields.cached_size().set(my_size as u32);
-        my_size
-    }
-
-    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
-        if let Some(v) = self.pos.as_ref() {
-            ::protobuf::rt::write_message_field_with_cached_size(1, v, os)?;
-        }
-        if !self.code.is_empty() {
-            os.write_string(2, &self.code)?;
-        }
-        os.write_unknown_fields(self.special_fields.unknown_fields())?;
-        ::std::result::Result::Ok(())
-    }
-
-    fn special_fields(&self) -> &::protobuf::SpecialFields {
-        &self.special_fields
-    }
-
-    fn mut_special_fields(&mut self) -> &mut ::protobuf::SpecialFields {
-        &mut self.special_fields
-    }
-
-    fn new() -> GoToDef_Args {
-        GoToDef_Args::new()
-    }
-
-    fn clear(&mut self) {
-        self.pos.clear();
-        self.code.clear();
-        self.special_fields.clear();
-    }
-
-    fn default_instance() -> &'static GoToDef_Args {
-        static instance: GoToDef_Args = GoToDef_Args {
-            pos: ::protobuf::MessageField::none(),
-            code: ::std::string::String::new(),
-            special_fields: ::protobuf::SpecialFields::new(),
-        };
-        &instance
-    }
-}
-
-impl ::protobuf::MessageFull for GoToDef_Args {
-    fn descriptor() -> ::protobuf::reflect::MessageDescriptor {
-        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::Lazy::new();
-        descriptor.get(|| file_descriptor().message_by_package_relative_name("GoToDef_Args").unwrap()).clone()
-    }
-}
-
-impl ::std::fmt::Display for GoToDef_Args {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        ::protobuf::text_format::fmt(self, f)
-    }
-}
-
-impl ::protobuf::reflect::ProtobufValue for GoToDef_Args {
-    type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
-}
-
-#[derive(PartialEq,Clone,Default,Debug)]
-// @@protoc_insertion_point(message:gpyrpc.GoToDef_Result)
-pub struct GoToDef_Result {
-    // message fields
-    // @@protoc_insertion_point(field:gpyrpc.GoToDef_Result.locations)
-    pub locations: ::std::string::String,
-    // special fields
-    // @@protoc_insertion_point(special_field:gpyrpc.GoToDef_Result.special_fields)
-    pub special_fields: ::protobuf::SpecialFields,
-}
-
-impl<'a> ::std::default::Default for &'a GoToDef_Result {
-    fn default() -> &'a GoToDef_Result {
-        <GoToDef_Result as ::protobuf::Message>::default_instance()
-    }
-}
-
-impl GoToDef_Result {
-    pub fn new() -> GoToDef_Result {
-        ::std::default::Default::default()
-    }
-
-    fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
-        let mut fields = ::std::vec::Vec::with_capacity(1);
-        let mut oneofs = ::std::vec::Vec::with_capacity(0);
-        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
-            "locations",
-            |m: &GoToDef_Result| { &m.locations },
-            |m: &mut GoToDef_Result| { &mut m.locations },
-        ));
-        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<GoToDef_Result>(
-            "GoToDef_Result",
-            fields,
-            oneofs,
-        )
-    }
-}
-
-impl ::protobuf::Message for GoToDef_Result {
-    const NAME: &'static str = "GoToDef_Result";
-
-    fn is_initialized(&self) -> bool {
-        true
-    }
-
-    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::Result<()> {
-        while let Some(tag) = is.read_raw_tag_or_eof()? {
-            match tag {
-                10 => {
-                    self.locations = is.read_string()?;
-                },
-                tag => {
-                    ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
-                },
-            };
-        }
-        ::std::result::Result::Ok(())
-    }
-
-    // Compute sizes of nested messages
-    #[allow(unused_variables)]
-    fn compute_size(&self) -> u64 {
-        let mut my_size = 0;
-        if !self.locations.is_empty() {
-            my_size += ::protobuf::rt::string_size(1, &self.locations);
-        }
-        my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
-        self.special_fields.cached_size().set(my_size as u32);
-        my_size
-    }
-
-    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
-        if !self.locations.is_empty() {
-            os.write_string(1, &self.locations)?;
-        }
-        os.write_unknown_fields(self.special_fields.unknown_fields())?;
-        ::std::result::Result::Ok(())
-    }
-
-    fn special_fields(&self) -> &::protobuf::SpecialFields {
-        &self.special_fields
-    }
-
-    fn mut_special_fields(&mut self) -> &mut ::protobuf::SpecialFields {
-        &mut self.special_fields
-    }
-
-    fn new() -> GoToDef_Result {
-        GoToDef_Result::new()
-    }
-
-    fn clear(&mut self) {
-        self.locations.clear();
-        self.special_fields.clear();
-    }
-
-    fn default_instance() -> &'static GoToDef_Result {
-        static instance: GoToDef_Result = GoToDef_Result {
-            locations: ::std::string::String::new(),
-            special_fields: ::protobuf::SpecialFields::new(),
-        };
-        &instance
-    }
-}
-
-impl ::protobuf::MessageFull for GoToDef_Result {
-    fn descriptor() -> ::protobuf::reflect::MessageDescriptor {
-        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::Lazy::new();
-        descriptor.get(|| file_descriptor().message_by_package_relative_name("GoToDef_Result").unwrap()).clone()
-    }
-}
-
-impl ::std::fmt::Display for GoToDef_Result {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        ::protobuf::text_format::fmt(self, f)
-    }
-}
-
-impl ::protobuf::reflect::ProtobufValue for GoToDef_Result {
-    type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
-}
-
-#[derive(PartialEq,Clone,Default,Debug)]
-// @@protoc_insertion_point(message:gpyrpc.DocumentSymbol_Args)
-pub struct DocumentSymbol_Args {
-    // message fields
-    // @@protoc_insertion_point(field:gpyrpc.DocumentSymbol_Args.file)
-    pub file: ::std::string::String,
-    // @@protoc_insertion_point(field:gpyrpc.DocumentSymbol_Args.code)
-    pub code: ::std::string::String,
-    // special fields
-    // @@protoc_insertion_point(special_field:gpyrpc.DocumentSymbol_Args.special_fields)
-    pub special_fields: ::protobuf::SpecialFields,
-}
-
-impl<'a> ::std::default::Default for &'a DocumentSymbol_Args {
-    fn default() -> &'a DocumentSymbol_Args {
-        <DocumentSymbol_Args as ::protobuf::Message>::default_instance()
-    }
-}
-
-impl DocumentSymbol_Args {
-    pub fn new() -> DocumentSymbol_Args {
-        ::std::default::Default::default()
-    }
-
-    fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
-        let mut fields = ::std::vec::Vec::with_capacity(2);
-        let mut oneofs = ::std::vec::Vec::with_capacity(0);
-        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
-            "file",
-            |m: &DocumentSymbol_Args| { &m.file },
-            |m: &mut DocumentSymbol_Args| { &mut m.file },
-        ));
-        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
-            "code",
-            |m: &DocumentSymbol_Args| { &m.code },
-            |m: &mut DocumentSymbol_Args| { &mut m.code },
-        ));
-        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<DocumentSymbol_Args>(
-            "DocumentSymbol_Args",
-            fields,
-            oneofs,
-        )
-    }
-}
-
-impl ::protobuf::Message for DocumentSymbol_Args {
-    const NAME: &'static str = "DocumentSymbol_Args";
-
-    fn is_initialized(&self) -> bool {
-        true
-    }
-
-    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::Result<()> {
-        while let Some(tag) = is.read_raw_tag_or_eof()? {
-            match tag {
-                10 => {
-                    self.file = is.read_string()?;
-                },
-                18 => {
-                    self.code = is.read_string()?;
-                },
-                tag => {
-                    ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
-                },
-            };
-        }
-        ::std::result::Result::Ok(())
-    }
-
-    // Compute sizes of nested messages
-    #[allow(unused_variables)]
-    fn compute_size(&self) -> u64 {
-        let mut my_size = 0;
-        if !self.file.is_empty() {
-            my_size += ::protobuf::rt::string_size(1, &self.file);
-        }
-        if !self.code.is_empty() {
-            my_size += ::protobuf::rt::string_size(2, &self.code);
-        }
-        my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
-        self.special_fields.cached_size().set(my_size as u32);
-        my_size
-    }
-
-    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
-        if !self.file.is_empty() {
-            os.write_string(1, &self.file)?;
-        }
-        if !self.code.is_empty() {
-            os.write_string(2, &self.code)?;
-        }
-        os.write_unknown_fields(self.special_fields.unknown_fields())?;
-        ::std::result::Result::Ok(())
-    }
-
-    fn special_fields(&self) -> &::protobuf::SpecialFields {
-        &self.special_fields
-    }
-
-    fn mut_special_fields(&mut self) -> &mut ::protobuf::SpecialFields {
-        &mut self.special_fields
-    }
-
-    fn new() -> DocumentSymbol_Args {
-        DocumentSymbol_Args::new()
-    }
-
-    fn clear(&mut self) {
-        self.file.clear();
-        self.code.clear();
-        self.special_fields.clear();
-    }
-
-    fn default_instance() -> &'static DocumentSymbol_Args {
-        static instance: DocumentSymbol_Args = DocumentSymbol_Args {
-            file: ::std::string::String::new(),
-            code: ::std::string::String::new(),
-            special_fields: ::protobuf::SpecialFields::new(),
-        };
-        &instance
-    }
-}
-
-impl ::protobuf::MessageFull for DocumentSymbol_Args {
-    fn descriptor() -> ::protobuf::reflect::MessageDescriptor {
-        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::Lazy::new();
-        descriptor.get(|| file_descriptor().message_by_package_relative_name("DocumentSymbol_Args").unwrap()).clone()
-    }
-}
-
-impl ::std::fmt::Display for DocumentSymbol_Args {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        ::protobuf::text_format::fmt(self, f)
-    }
-}
-
-impl ::protobuf::reflect::ProtobufValue for DocumentSymbol_Args {
-    type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
-}
-
-#[derive(PartialEq,Clone,Default,Debug)]
-// @@protoc_insertion_point(message:gpyrpc.DocumentSymbol_Result)
-pub struct DocumentSymbol_Result {
-    // message fields
-    // @@protoc_insertion_point(field:gpyrpc.DocumentSymbol_Result.symbol)
-    pub symbol: ::std::string::String,
-    // special fields
-    // @@protoc_insertion_point(special_field:gpyrpc.DocumentSymbol_Result.special_fields)
-    pub special_fields: ::protobuf::SpecialFields,
-}
-
-impl<'a> ::std::default::Default for &'a DocumentSymbol_Result {
-    fn default() -> &'a DocumentSymbol_Result {
-        <DocumentSymbol_Result as ::protobuf::Message>::default_instance()
-    }
-}
-
-impl DocumentSymbol_Result {
-    pub fn new() -> DocumentSymbol_Result {
-        ::std::default::Default::default()
-    }
-
-    fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
-        let mut fields = ::std::vec::Vec::with_capacity(1);
-        let mut oneofs = ::std::vec::Vec::with_capacity(0);
-        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
-            "symbol",
-            |m: &DocumentSymbol_Result| { &m.symbol },
-            |m: &mut DocumentSymbol_Result| { &mut m.symbol },
-        ));
-        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<DocumentSymbol_Result>(
-            "DocumentSymbol_Result",
-            fields,
-            oneofs,
-        )
-    }
-}
-
-impl ::protobuf::Message for DocumentSymbol_Result {
-    const NAME: &'static str = "DocumentSymbol_Result";
-
-    fn is_initialized(&self) -> bool {
-        true
-    }
-
-    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::Result<()> {
-        while let Some(tag) = is.read_raw_tag_or_eof()? {
-            match tag {
-                10 => {
-                    self.symbol = is.read_string()?;
-                },
-                tag => {
-                    ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
-                },
-            };
-        }
-        ::std::result::Result::Ok(())
-    }
-
-    // Compute sizes of nested messages
-    #[allow(unused_variables)]
-    fn compute_size(&self) -> u64 {
-        let mut my_size = 0;
-        if !self.symbol.is_empty() {
-            my_size += ::protobuf::rt::string_size(1, &self.symbol);
-        }
-        my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
-        self.special_fields.cached_size().set(my_size as u32);
-        my_size
-    }
-
-    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
-        if !self.symbol.is_empty() {
-            os.write_string(1, &self.symbol)?;
-        }
-        os.write_unknown_fields(self.special_fields.unknown_fields())?;
-        ::std::result::Result::Ok(())
-    }
-
-    fn special_fields(&self) -> &::protobuf::SpecialFields {
-        &self.special_fields
-    }
-
-    fn mut_special_fields(&mut self) -> &mut ::protobuf::SpecialFields {
-        &mut self.special_fields
-    }
-
-    fn new() -> DocumentSymbol_Result {
-        DocumentSymbol_Result::new()
-    }
-
-    fn clear(&mut self) {
-        self.symbol.clear();
-        self.special_fields.clear();
-    }
-
-    fn default_instance() -> &'static DocumentSymbol_Result {
-        static instance: DocumentSymbol_Result = DocumentSymbol_Result {
-            symbol: ::std::string::String::new(),
-            special_fields: ::protobuf::SpecialFields::new(),
-        };
-        &instance
-    }
-}
-
-impl ::protobuf::MessageFull for DocumentSymbol_Result {
-    fn descriptor() -> ::protobuf::reflect::MessageDescriptor {
-        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::Lazy::new();
-        descriptor.get(|| file_descriptor().message_by_package_relative_name("DocumentSymbol_Result").unwrap()).clone()
-    }
-}
-
-impl ::std::fmt::Display for DocumentSymbol_Result {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        ::protobuf::text_format::fmt(self, f)
-    }
-}
-
-impl ::protobuf::reflect::ProtobufValue for DocumentSymbol_Result {
-    type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
-}
-
-#[derive(PartialEq,Clone,Default,Debug)]
-// @@protoc_insertion_point(message:gpyrpc.Hover_Args)
-pub struct Hover_Args {
-    // message fields
-    // @@protoc_insertion_point(field:gpyrpc.Hover_Args.pos)
-    pub pos: ::protobuf::MessageField<Position>,
-    // @@protoc_insertion_point(field:gpyrpc.Hover_Args.code)
-    pub code: ::std::string::String,
-    // special fields
-    // @@protoc_insertion_point(special_field:gpyrpc.Hover_Args.special_fields)
-    pub special_fields: ::protobuf::SpecialFields,
-}
-
-impl<'a> ::std::default::Default for &'a Hover_Args {
-    fn default() -> &'a Hover_Args {
-        <Hover_Args as ::protobuf::Message>::default_instance()
-    }
-}
-
-impl Hover_Args {
-    pub fn new() -> Hover_Args {
-        ::std::default::Default::default()
-    }
-
-    fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
-        let mut fields = ::std::vec::Vec::with_capacity(2);
-        let mut oneofs = ::std::vec::Vec::with_capacity(0);
-        fields.push(::protobuf::reflect::rt::v2::make_message_field_accessor::<_, Position>(
-            "pos",
-            |m: &Hover_Args| { &m.pos },
-            |m: &mut Hover_Args| { &mut m.pos },
-        ));
-        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
-            "code",
-            |m: &Hover_Args| { &m.code },
-            |m: &mut Hover_Args| { &mut m.code },
-        ));
-        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<Hover_Args>(
-            "Hover_Args",
-            fields,
-            oneofs,
-        )
-    }
-}
-
-impl ::protobuf::Message for Hover_Args {
-    const NAME: &'static str = "Hover_Args";
-
-    fn is_initialized(&self) -> bool {
-        true
-    }
-
-    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::Result<()> {
-        while let Some(tag) = is.read_raw_tag_or_eof()? {
-            match tag {
-                10 => {
-                    ::protobuf::rt::read_singular_message_into_field(is, &mut self.pos)?;
-                },
-                18 => {
-                    self.code = is.read_string()?;
-                },
-                tag => {
-                    ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
-                },
-            };
-        }
-        ::std::result::Result::Ok(())
-    }
-
-    // Compute sizes of nested messages
-    #[allow(unused_variables)]
-    fn compute_size(&self) -> u64 {
-        let mut my_size = 0;
-        if let Some(v) = self.pos.as_ref() {
-            let len = v.compute_size();
-            my_size += 1 + ::protobuf::rt::compute_raw_varint64_size(len) + len;
-        }
-        if !self.code.is_empty() {
-            my_size += ::protobuf::rt::string_size(2, &self.code);
-        }
-        my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
-        self.special_fields.cached_size().set(my_size as u32);
-        my_size
-    }
-
-    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
-        if let Some(v) = self.pos.as_ref() {
-            ::protobuf::rt::write_message_field_with_cached_size(1, v, os)?;
-        }
-        if !self.code.is_empty() {
-            os.write_string(2, &self.code)?;
-        }
-        os.write_unknown_fields(self.special_fields.unknown_fields())?;
-        ::std::result::Result::Ok(())
-    }
-
-    fn special_fields(&self) -> &::protobuf::SpecialFields {
-        &self.special_fields
-    }
-
-    fn mut_special_fields(&mut self) -> &mut ::protobuf::SpecialFields {
-        &mut self.special_fields
-    }
-
-    fn new() -> Hover_Args {
-        Hover_Args::new()
-    }
-
-    fn clear(&mut self) {
-        self.pos.clear();
-        self.code.clear();
-        self.special_fields.clear();
-    }
-
-    fn default_instance() -> &'static Hover_Args {
-        static instance: Hover_Args = Hover_Args {
-            pos: ::protobuf::MessageField::none(),
-            code: ::std::string::String::new(),
-            special_fields: ::protobuf::SpecialFields::new(),
-        };
-        &instance
-    }
-}
-
-impl ::protobuf::MessageFull for Hover_Args {
-    fn descriptor() -> ::protobuf::reflect::MessageDescriptor {
-        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::Lazy::new();
-        descriptor.get(|| file_descriptor().message_by_package_relative_name("Hover_Args").unwrap()).clone()
-    }
-}
-
-impl ::std::fmt::Display for Hover_Args {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        ::protobuf::text_format::fmt(self, f)
-    }
-}
-
-impl ::protobuf::reflect::ProtobufValue for Hover_Args {
-    type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
-}
-
-#[derive(PartialEq,Clone,Default,Debug)]
-// @@protoc_insertion_point(message:gpyrpc.Hover_Result)
-pub struct Hover_Result {
-    // message fields
-    // @@protoc_insertion_point(field:gpyrpc.Hover_Result.hoverResult)
-    pub hoverResult: ::std::string::String,
-    // special fields
-    // @@protoc_insertion_point(special_field:gpyrpc.Hover_Result.special_fields)
-    pub special_fields: ::protobuf::SpecialFields,
-}
-
-impl<'a> ::std::default::Default for &'a Hover_Result {
-    fn default() -> &'a Hover_Result {
-        <Hover_Result as ::protobuf::Message>::default_instance()
-    }
-}
-
-impl Hover_Result {
-    pub fn new() -> Hover_Result {
-        ::std::default::Default::default()
-    }
-
-    fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
-        let mut fields = ::std::vec::Vec::with_capacity(1);
-        let mut oneofs = ::std::vec::Vec::with_capacity(0);
-        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
-            "hoverResult",
-            |m: &Hover_Result| { &m.hoverResult },
-            |m: &mut Hover_Result| { &mut m.hoverResult },
-        ));
-        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<Hover_Result>(
-            "Hover_Result",
-            fields,
-            oneofs,
-        )
-    }
-}
-
-impl ::protobuf::Message for Hover_Result {
-    const NAME: &'static str = "Hover_Result";
-
-    fn is_initialized(&self) -> bool {
-        true
-    }
-
-    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::Result<()> {
-        while let Some(tag) = is.read_raw_tag_or_eof()? {
-            match tag {
-                10 => {
-                    self.hoverResult = is.read_string()?;
-                },
-                tag => {
-                    ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
-                },
-            };
-        }
-        ::std::result::Result::Ok(())
-    }
-
-    // Compute sizes of nested messages
-    #[allow(unused_variables)]
-    fn compute_size(&self) -> u64 {
-        let mut my_size = 0;
-        if !self.hoverResult.is_empty() {
-            my_size += ::protobuf::rt::string_size(1, &self.hoverResult);
-        }
-        my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
-        self.special_fields.cached_size().set(my_size as u32);
-        my_size
-    }
-
-    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
-        if !self.hoverResult.is_empty() {
-            os.write_string(1, &self.hoverResult)?;
-        }
-        os.write_unknown_fields(self.special_fields.unknown_fields())?;
-        ::std::result::Result::Ok(())
-    }
-
-    fn special_fields(&self) -> &::protobuf::SpecialFields {
-        &self.special_fields
-    }
-
-    fn mut_special_fields(&mut self) -> &mut ::protobuf::SpecialFields {
-        &mut self.special_fields
-    }
-
-    fn new() -> Hover_Result {
-        Hover_Result::new()
-    }
-
-    fn clear(&mut self) {
-        self.hoverResult.clear();
-        self.special_fields.clear();
-    }
-
-    fn default_instance() -> &'static Hover_Result {
-        static instance: Hover_Result = Hover_Result {
-            hoverResult: ::std::string::String::new(),
-            special_fields: ::protobuf::SpecialFields::new(),
-        };
-        &instance
-    }
-}
-
-impl ::protobuf::MessageFull for Hover_Result {
-    fn descriptor() -> ::protobuf::reflect::MessageDescriptor {
-        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::Lazy::new();
-        descriptor.get(|| file_descriptor().message_by_package_relative_name("Hover_Result").unwrap()).clone()
-    }
-}
-
-impl ::std::fmt::Display for Hover_Result {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        ::protobuf::text_format::fmt(self, f)
-    }
-}
-
-impl ::protobuf::reflect::ProtobufValue for Hover_Result {
     type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
 }
 
@@ -8411,85 +6715,66 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     \x05value\x18\x01\x20\x01(\tR\x05value\"#\n\x0bPing_Result\x12\x14\n\x05\
     value\x18\x01\x20\x01(\tR\x05value\"\x11\n\x0fListMethod_Args\"=\n\x11Li\
     stMethod_Result\x12(\n\x10method_name_list\x18\x01\x20\x03(\tR\x0emethod\
-    NameList\"\x80\x01\n\x17ParseFile_LarkTree_Args\x12\x1a\n\x08filename\
-    \x18\x01\x20\x01(\tR\x08filename\x12\x1f\n\x0bsource_code\x18\x02\x20\
-    \x01(\tR\nsourceCode\x12(\n\x10ignore_file_line\x18\x03\x20\x01(\x08R\
-    \x0eignoreFileLine\"A\n\x19ParseFile_LarkTree_Result\x12$\n\x0elark_tree\
-    _json\x18\x01\x20\x01(\tR\x0clarkTreeJson\"Q\n\x12ParseFile_AST_Args\x12\
-    \x1a\n\x08filename\x18\x01\x20\x01(\tR\x08filename\x12\x1f\n\x0bsource_c\
-    ode\x18\x02\x20\x01(\tR\nsourceCode\"1\n\x14ParseFile_AST_Result\x12\x19\
-    \n\x08ast_json\x18\x01\x20\x01(\tR\x07astJson\"?\n\x15ParseProgram_AST_A\
-    rgs\x12&\n\x0fk_filename_list\x18\x01\x20\x03(\tR\rkFilenameList\"4\n\
-    \x17ParseProgram_AST_Result\x12\x19\n\x08ast_json\x18\x01\x20\x01(\tR\
-    \x07astJson\"\x89\x04\n\x10ExecProgram_Args\x12\x19\n\x08work_dir\x18\
-    \x01\x20\x01(\tR\x07workDir\x12&\n\x0fk_filename_list\x18\x02\x20\x03(\t\
-    R\rkFilenameList\x12\x1e\n\x0bk_code_list\x18\x03\x20\x03(\tR\tkCodeList\
-    \x12&\n\x04args\x18\x04\x20\x03(\x0b2\x12.gpyrpc.CmdArgSpecR\x04args\x12\
-    5\n\toverrides\x18\x05\x20\x03(\x0b2\x17.gpyrpc.CmdOverrideSpecR\toverri\
-    des\x12.\n\x13disable_yaml_result\x18\x06\x20\x01(\x08R\x11disableYamlRe\
-    sult\x12,\n\x12print_override_ast\x18\x07\x20\x01(\x08R\x10printOverride\
-    Ast\x12,\n\x12strict_range_check\x18\x08\x20\x01(\x08R\x10strictRangeChe\
-    ck\x12!\n\x0cdisable_none\x18\t\x20\x01(\x08R\x0bdisableNone\x12\x18\n\
-    \x07verbose\x18\n\x20\x01(\x05R\x07verbose\x12\x14\n\x05debug\x18\x0b\
-    \x20\x01(\x05R\x05debug\x12\x1b\n\tsort_keys\x18\x0c\x20\x01(\x08R\x08so\
-    rtKeys\x127\n\x18include_schema_type_path\x18\r\x20\x01(\x08R\x15include\
-    SchemaTypePath\"y\n\x12ExecProgram_Result\x12\x1f\n\x0bjson_result\x18\
-    \x01\x20\x01(\tR\njsonResult\x12\x1f\n\x0byaml_result\x18\x02\x20\x01(\t\
-    R\nyamlResult\x12!\n\x0cescaped_time\x18e\x20\x01(\tR\x0bescapedTime\"3\
-    \n\x10ResetPlugin_Args\x12\x1f\n\x0bplugin_root\x18\x01\x20\x01(\tR\nplu\
-    ginRoot\"\x14\n\x12ResetPlugin_Result\")\n\x0fFormatCode_Args\x12\x16\n\
-    \x06source\x18\x01\x20\x01(\tR\x06source\"1\n\x11FormatCode_Result\x12\
-    \x1c\n\tformatted\x18\x01\x20\x01(\x0cR\tformatted\"%\n\x0fFormatPath_Ar\
-    gs\x12\x12\n\x04path\x18\x01\x20\x01(\tR\x04path\"7\n\x11FormatPath_Resu\
-    lt\x12\"\n\x0cchangedPaths\x18\x01\x20\x03(\tR\x0cchangedPaths\"#\n\rLin\
-    tPath_Args\x12\x12\n\x04path\x18\x01\x20\x01(\tR\x04path\"+\n\x0fLintPat\
-    h_Result\x12\x18\n\x07results\x18\x01\x20\x03(\tR\x07results\"`\n\x11Ove\
-    rrideFile_Args\x12\x12\n\x04file\x18\x01\x20\x01(\tR\x04file\x12\x14\n\
-    \x05specs\x18\x02\x20\x03(\tR\x05specs\x12!\n\x0cimport_paths\x18\x03\
-    \x20\x03(\tR\x0bimportPaths\"-\n\x13OverrideFile_Result\x12\x16\n\x06res\
-    ult\x18\x01\x20\x01(\x08R\x06result\"#\n\rEvalCode_Args\x12\x12\n\x04cod\
-    e\x18\x01\x20\x01(\tR\x04code\"2\n\x0fEvalCode_Result\x12\x1f\n\x0bjson_\
-    result\x18\x02\x20\x01(\tR\njsonResult\"&\n\x10ResolveCode_Args\x12\x12\
-    \n\x04code\x18\x01\x20\x01(\tR\x04code\".\n\x12ResolveCode_Result\x12\
-    \x18\n\x07success\x18\x01\x20\x01(\x08R\x07success\"]\n\x12GetSchemaType\
-    _Args\x12\x12\n\x04file\x18\x01\x20\x01(\tR\x04file\x12\x12\n\x04code\
-    \x18\x02\x20\x01(\tR\x04code\x12\x1f\n\x0bschema_name\x18\x03\x20\x01(\t\
-    R\nschemaName\"Q\n\x14GetSchemaType_Result\x129\n\x10schema_type_list\
-    \x18\x01\x20\x03(\x0b2\x0f.gpyrpc.KclTypeR\x0eschemaTypeList\"d\n\x19Get\
-    SchemaTypeMapping_Args\x12\x12\n\x04file\x18\x01\x20\x01(\tR\x04file\x12\
-    \x12\n\x04code\x18\x02\x20\x01(\tR\x04code\x12\x1f\n\x0bschema_name\x18\
-    \x03\x20\x01(\tR\nschemaName\"\xe0\x01\n\x1bGetSchemaTypeMapping_Result\
-    \x12j\n\x13schema_type_mapping\x18\x01\x20\x03(\x0b2:.gpyrpc.GetSchemaTy\
-    peMapping_Result.SchemaTypeMappingEntryR\x11schemaTypeMapping\x1aU\n\x16\
-    SchemaTypeMappingEntry\x12\x10\n\x03key\x18\x01\x20\x01(\tR\x03key\x12%\
-    \n\x05value\x18\x02\x20\x01(\x0b2\x0f.gpyrpc.KclTypeR\x05value:\x028\x01\
-    \"\x92\x01\n\x11ValidateCode_Args\x12\x12\n\x04data\x18\x01\x20\x01(\tR\
-    \x04data\x12\x12\n\x04code\x18\x02\x20\x01(\tR\x04code\x12\x16\n\x06sche\
-    ma\x18\x03\x20\x01(\tR\x06schema\x12%\n\x0eattribute_name\x18\x04\x20\
-    \x01(\tR\rattributeName\x12\x16\n\x06format\x18\x05\x20\x01(\tR\x06forma\
-    t\"P\n\x13ValidateCode_Result\x12\x18\n\x07success\x18\x01\x20\x01(\x08R\
-    \x07success\x12\x1f\n\x0berr_message\x18\x02\x20\x01(\tR\nerrMessage\"9\
-    \n\x0bCodeSnippet\x12\x16\n\x06schema\x18\x01\x20\x01(\tR\x06schema\x12\
-    \x12\n\x04rule\x18\x02\x20\x01(\tR\x04rule\"J\n\x0fSpliceCode_Args\x127\
-    \n\x0ccodeSnippets\x18\x01\x20\x03(\x0b2\x13.gpyrpc.CodeSnippetR\x0ccode\
-    Snippets\"3\n\x11SpliceCode_Result\x12\x1e\n\nspliceCode\x18\x01\x20\x01\
-    (\tR\nspliceCode\"R\n\x08Position\x12\x12\n\x04line\x18\x01\x20\x01(\x03\
-    R\x04line\x12\x16\n\x06column\x18\x02\x20\x01(\x03R\x06column\x12\x1a\n\
-    \x08filename\x18\x03\x20\x01(\tR\x08filename\"[\n\rComplete_Args\x12\"\n\
-    \x03pos\x18\x01\x20\x01(\x0b2\x10.gpyrpc.PositionR\x03pos\x12\x12\n\x04n\
-    ame\x18\x02\x20\x01(\tR\x04name\x12\x12\n\x04code\x18\x03\x20\x01(\tR\
-    \x04code\"7\n\x0fComplete_Result\x12$\n\rcompleteItems\x18\x01\x20\x01(\
-    \tR\rcompleteItems\"F\n\x0cGoToDef_Args\x12\"\n\x03pos\x18\x01\x20\x01(\
-    \x0b2\x10.gpyrpc.PositionR\x03pos\x12\x12\n\x04code\x18\x02\x20\x01(\tR\
-    \x04code\".\n\x0eGoToDef_Result\x12\x1c\n\tlocations\x18\x01\x20\x01(\tR\
-    \tlocations\"=\n\x13DocumentSymbol_Args\x12\x12\n\x04file\x18\x01\x20\
-    \x01(\tR\x04file\x12\x12\n\x04code\x18\x02\x20\x01(\tR\x04code\"/\n\x15D\
-    ocumentSymbol_Result\x12\x16\n\x06symbol\x18\x01\x20\x01(\tR\x06symbol\"\
-    D\n\nHover_Args\x12\"\n\x03pos\x18\x01\x20\x01(\x0b2\x10.gpyrpc.Position\
-    R\x03pos\x12\x12\n\x04code\x18\x02\x20\x01(\tR\x04code\"0\n\x0cHover_Res\
-    ult\x12\x20\n\x0bhoverResult\x18\x01\x20\x01(\tR\x0bhoverResult\"\x99\
-    \x01\n\x11ListDepFiles_Args\x12\x19\n\x08work_dir\x18\x01\x20\x01(\tR\
-    \x07workDir\x12\x20\n\x0cuse_abs_path\x18\x02\x20\x01(\x08R\nuseAbsPath\
+    NameList\"Q\n\x12ParseFile_AST_Args\x12\x1a\n\x08filename\x18\x01\x20\
+    \x01(\tR\x08filename\x12\x1f\n\x0bsource_code\x18\x02\x20\x01(\tR\nsourc\
+    eCode\"\\\n\x14ParseFile_AST_Result\x12\x19\n\x08ast_json\x18\x01\x20\
+    \x01(\tR\x07astJson\x12)\n\x07kcl_err\x18\x02\x20\x01(\x0b2\x10.gpyrpc.K\
+    clErrorR\x06kclErr\"?\n\x15ParseProgram_AST_Args\x12&\n\x0fk_filename_li\
+    st\x18\x01\x20\x03(\tR\rkFilenameList\"_\n\x17ParseProgram_AST_Result\
+    \x12\x19\n\x08ast_json\x18\x01\x20\x01(\tR\x07astJson\x12)\n\x07kcl_err\
+    \x18\x02\x20\x01(\x0b2\x10.gpyrpc.KclErrorR\x06kclErr\"\x89\x04\n\x10Exe\
+    cProgram_Args\x12\x19\n\x08work_dir\x18\x01\x20\x01(\tR\x07workDir\x12&\
+    \n\x0fk_filename_list\x18\x02\x20\x03(\tR\rkFilenameList\x12\x1e\n\x0bk_\
+    code_list\x18\x03\x20\x03(\tR\tkCodeList\x12&\n\x04args\x18\x04\x20\x03(\
+    \x0b2\x12.gpyrpc.CmdArgSpecR\x04args\x125\n\toverrides\x18\x05\x20\x03(\
+    \x0b2\x17.gpyrpc.CmdOverrideSpecR\toverrides\x12.\n\x13disable_yaml_resu\
+    lt\x18\x06\x20\x01(\x08R\x11disableYamlResult\x12,\n\x12print_override_a\
+    st\x18\x07\x20\x01(\x08R\x10printOverrideAst\x12,\n\x12strict_range_chec\
+    k\x18\x08\x20\x01(\x08R\x10strictRangeCheck\x12!\n\x0cdisable_none\x18\t\
+    \x20\x01(\x08R\x0bdisableNone\x12\x18\n\x07verbose\x18\n\x20\x01(\x05R\
+    \x07verbose\x12\x14\n\x05debug\x18\x0b\x20\x01(\x05R\x05debug\x12\x1b\n\
+    \tsort_keys\x18\x0c\x20\x01(\x08R\x08sortKeys\x127\n\x18include_schema_t\
+    ype_path\x18\r\x20\x01(\x08R\x15includeSchemaTypePath\"y\n\x12ExecProgra\
+    m_Result\x12\x1f\n\x0bjson_result\x18\x01\x20\x01(\tR\njsonResult\x12\
+    \x1f\n\x0byaml_result\x18\x02\x20\x01(\tR\nyamlResult\x12!\n\x0cescaped_\
+    time\x18e\x20\x01(\tR\x0bescapedTime\"3\n\x10ResetPlugin_Args\x12\x1f\n\
+    \x0bplugin_root\x18\x01\x20\x01(\tR\npluginRoot\"\x14\n\x12ResetPlugin_R\
+    esult\")\n\x0fFormatCode_Args\x12\x16\n\x06source\x18\x01\x20\x01(\tR\
+    \x06source\"1\n\x11FormatCode_Result\x12\x1c\n\tformatted\x18\x01\x20\
+    \x01(\x0cR\tformatted\"%\n\x0fFormatPath_Args\x12\x12\n\x04path\x18\x01\
+    \x20\x01(\tR\x04path\"8\n\x11FormatPath_Result\x12#\n\rchanged_paths\x18\
+    \x01\x20\x03(\tR\x0cchangedPaths\"%\n\rLintPath_Args\x12\x14\n\x05paths\
+    \x18\x01\x20\x03(\tR\x05paths\"+\n\x0fLintPath_Result\x12\x18\n\x07resul\
+    ts\x18\x01\x20\x03(\tR\x07results\"`\n\x11OverrideFile_Args\x12\x12\n\
+    \x04file\x18\x01\x20\x01(\tR\x04file\x12\x14\n\x05specs\x18\x02\x20\x03(\
+    \tR\x05specs\x12!\n\x0cimport_paths\x18\x03\x20\x03(\tR\x0bimportPaths\"\
+    -\n\x13OverrideFile_Result\x12\x16\n\x06result\x18\x01\x20\x01(\x08R\x06\
+    result\"#\n\rEvalCode_Args\x12\x12\n\x04code\x18\x01\x20\x01(\tR\x04code\
+    \"2\n\x0fEvalCode_Result\x12\x1f\n\x0bjson_result\x18\x02\x20\x01(\tR\nj\
+    sonResult\"&\n\x10ResolveCode_Args\x12\x12\n\x04code\x18\x01\x20\x01(\tR\
+    \x04code\".\n\x12ResolveCode_Result\x12\x18\n\x07success\x18\x01\x20\x01\
+    (\x08R\x07success\"]\n\x12GetSchemaType_Args\x12\x12\n\x04file\x18\x01\
+    \x20\x01(\tR\x04file\x12\x12\n\x04code\x18\x02\x20\x01(\tR\x04code\x12\
+    \x1f\n\x0bschema_name\x18\x03\x20\x01(\tR\nschemaName\"Q\n\x14GetSchemaT\
+    ype_Result\x129\n\x10schema_type_list\x18\x01\x20\x03(\x0b2\x0f.gpyrpc.K\
+    clTypeR\x0eschemaTypeList\"d\n\x19GetSchemaTypeMapping_Args\x12\x12\n\
+    \x04file\x18\x01\x20\x01(\tR\x04file\x12\x12\n\x04code\x18\x02\x20\x01(\
+    \tR\x04code\x12\x1f\n\x0bschema_name\x18\x03\x20\x01(\tR\nschemaName\"\
+    \xe0\x01\n\x1bGetSchemaTypeMapping_Result\x12j\n\x13schema_type_mapping\
+    \x18\x01\x20\x03(\x0b2:.gpyrpc.GetSchemaTypeMapping_Result.SchemaTypeMap\
+    pingEntryR\x11schemaTypeMapping\x1aU\n\x16SchemaTypeMappingEntry\x12\x10\
+    \n\x03key\x18\x01\x20\x01(\tR\x03key\x12%\n\x05value\x18\x02\x20\x01(\
+    \x0b2\x0f.gpyrpc.KclTypeR\x05value:\x028\x01\"\x92\x01\n\x11ValidateCode\
+    _Args\x12\x12\n\x04data\x18\x01\x20\x01(\tR\x04data\x12\x12\n\x04code\
+    \x18\x02\x20\x01(\tR\x04code\x12\x16\n\x06schema\x18\x03\x20\x01(\tR\x06\
+    schema\x12%\n\x0eattribute_name\x18\x04\x20\x01(\tR\rattributeName\x12\
+    \x16\n\x06format\x18\x05\x20\x01(\tR\x06format\"P\n\x13ValidateCode_Resu\
+    lt\x12\x18\n\x07success\x18\x01\x20\x01(\x08R\x07success\x12\x1f\n\x0ber\
+    r_message\x18\x02\x20\x01(\tR\nerrMessage\"R\n\x08Position\x12\x12\n\x04\
+    line\x18\x01\x20\x01(\x03R\x04line\x12\x16\n\x06column\x18\x02\x20\x01(\
+    \x03R\x06column\x12\x1a\n\x08filename\x18\x03\x20\x01(\tR\x08filename\"\
+    \x99\x01\n\x11ListDepFiles_Args\x12\x19\n\x08work_dir\x18\x01\x20\x01(\t\
+    R\x07workDir\x12\x20\n\x0cuse_abs_path\x18\x02\x20\x01(\x08R\nuseAbsPath\
     \x12\x1f\n\x0binclude_all\x18\x03\x20\x01(\x08R\nincludeAll\x12&\n\x0fus\
     e_fast_parser\x18\x04\x20\x01(\x08R\ruseFastParser\"_\n\x13ListDepFiles_\
     Result\x12\x18\n\x07pkgroot\x18\x01\x20\x01(\tR\x07pkgroot\x12\x18\n\x07\
@@ -8526,34 +6811,26 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     \x18\x02\x20\x01(\tR\x05value:\x028\x012\x82\x01\n\x0eBuiltinService\x12\
     .\n\x04Ping\x12\x11.gpyrpc.Ping_Args\x1a\x13.gpyrpc.Ping_Result\x12@\n\n\
     ListMethod\x12\x17.gpyrpc.ListMethod_Args\x1a\x19.gpyrpc.ListMethod_Resu\
-    lt2\x94\x0c\n\x0cKclvmService\x12.\n\x04Ping\x12\x11.gpyrpc.Ping_Args\
-    \x1a\x13.gpyrpc.Ping_Result\x12X\n\x12ParseFile_LarkTree\x12\x1f.gpyrpc.\
-    ParseFile_LarkTree_Args\x1a!.gpyrpc.ParseFile_LarkTree_Result\x12I\n\rPa\
-    rseFile_AST\x12\x1a.gpyrpc.ParseFile_AST_Args\x1a\x1c.gpyrpc.ParseFile_A\
-    ST_Result\x12R\n\x10ParseProgram_AST\x12\x1d.gpyrpc.ParseProgram_AST_Arg\
-    s\x1a\x1f.gpyrpc.ParseProgram_AST_Result\x12C\n\x0bExecProgram\x12\x18.g\
-    pyrpc.ExecProgram_Args\x1a\x1a.gpyrpc.ExecProgram_Result\x12C\n\x0bReset\
-    Plugin\x12\x18.gpyrpc.ResetPlugin_Args\x1a\x1a.gpyrpc.ResetPlugin_Result\
-    \x12@\n\nFormatCode\x12\x17.gpyrpc.FormatCode_Args\x1a\x19.gpyrpc.Format\
-    Code_Result\x12@\n\nFormatPath\x12\x17.gpyrpc.FormatPath_Args\x1a\x19.gp\
-    yrpc.FormatPath_Result\x12:\n\x08LintPath\x12\x15.gpyrpc.LintPath_Args\
-    \x1a\x17.gpyrpc.LintPath_Result\x12F\n\x0cOverrideFile\x12\x19.gpyrpc.Ov\
-    errideFile_Args\x1a\x1b.gpyrpc.OverrideFile_Result\x12:\n\x08EvalCode\
-    \x12\x15.gpyrpc.EvalCode_Args\x1a\x17.gpyrpc.EvalCode_Result\x12C\n\x0bR\
-    esolveCode\x12\x18.gpyrpc.ResolveCode_Args\x1a\x1a.gpyrpc.ResolveCode_Re\
-    sult\x12I\n\rGetSchemaType\x12\x1a.gpyrpc.GetSchemaType_Args\x1a\x1c.gpy\
-    rpc.GetSchemaType_Result\x12^\n\x14GetSchemaTypeMapping\x12!.gpyrpc.GetS\
-    chemaTypeMapping_Args\x1a#.gpyrpc.GetSchemaTypeMapping_Result\x12F\n\x0c\
-    ValidateCode\x12\x19.gpyrpc.ValidateCode_Args\x1a\x1b.gpyrpc.ValidateCod\
-    e_Result\x12@\n\nSpliceCode\x12\x17.gpyrpc.SpliceCode_Args\x1a\x19.gpyrp\
-    c.SpliceCode_Result\x12:\n\x08Complete\x12\x15.gpyrpc.Complete_Args\x1a\
-    \x17.gpyrpc.Complete_Result\x127\n\x07GoToDef\x12\x14.gpyrpc.GoToDef_Arg\
-    s\x1a\x16.gpyrpc.GoToDef_Result\x12L\n\x0eDocumentSymbol\x12\x1b.gpyrpc.\
-    DocumentSymbol_Args\x1a\x1d.gpyrpc.DocumentSymbol_Result\x121\n\x05Hover\
-    \x12\x12.gpyrpc.Hover_Args\x1a\x14.gpyrpc.Hover_Result\x12F\n\x0cListDep\
-    Files\x12\x19.gpyrpc.ListDepFiles_Args\x1a\x1b.gpyrpc.ListDepFiles_Resul\
-    t\x12U\n\x11LoadSettingsFiles\x12\x1e.gpyrpc.LoadSettingsFiles_Args\x1a\
-    \x20.gpyrpc.LoadSettingsFiles_Resultb\x06proto3\
+    lt2\xbd\x08\n\x0cKclvmService\x12.\n\x04Ping\x12\x11.gpyrpc.Ping_Args\
+    \x1a\x13.gpyrpc.Ping_Result\x12I\n\rParseFile_AST\x12\x1a.gpyrpc.ParseFi\
+    le_AST_Args\x1a\x1c.gpyrpc.ParseFile_AST_Result\x12R\n\x10ParseProgram_A\
+    ST\x12\x1d.gpyrpc.ParseProgram_AST_Args\x1a\x1f.gpyrpc.ParseProgram_AST_\
+    Result\x12C\n\x0bExecProgram\x12\x18.gpyrpc.ExecProgram_Args\x1a\x1a.gpy\
+    rpc.ExecProgram_Result\x12@\n\nFormatCode\x12\x17.gpyrpc.FormatCode_Args\
+    \x1a\x19.gpyrpc.FormatCode_Result\x12@\n\nFormatPath\x12\x17.gpyrpc.Form\
+    atPath_Args\x1a\x19.gpyrpc.FormatPath_Result\x12:\n\x08LintPath\x12\x15.\
+    gpyrpc.LintPath_Args\x1a\x17.gpyrpc.LintPath_Result\x12F\n\x0cOverrideFi\
+    le\x12\x19.gpyrpc.OverrideFile_Args\x1a\x1b.gpyrpc.OverrideFile_Result\
+    \x12:\n\x08EvalCode\x12\x15.gpyrpc.EvalCode_Args\x1a\x17.gpyrpc.EvalCode\
+    _Result\x12C\n\x0bResolveCode\x12\x18.gpyrpc.ResolveCode_Args\x1a\x1a.gp\
+    yrpc.ResolveCode_Result\x12I\n\rGetSchemaType\x12\x1a.gpyrpc.GetSchemaTy\
+    pe_Args\x1a\x1c.gpyrpc.GetSchemaType_Result\x12^\n\x14GetSchemaTypeMappi\
+    ng\x12!.gpyrpc.GetSchemaTypeMapping_Args\x1a#.gpyrpc.GetSchemaTypeMappin\
+    g_Result\x12F\n\x0cValidateCode\x12\x19.gpyrpc.ValidateCode_Args\x1a\x1b\
+    .gpyrpc.ValidateCode_Result\x12F\n\x0cListDepFiles\x12\x19.gpyrpc.ListDe\
+    pFiles_Args\x1a\x1b.gpyrpc.ListDepFiles_Result\x12U\n\x11LoadSettingsFil\
+    es\x12\x1e.gpyrpc.LoadSettingsFiles_Args\x1a\x20.gpyrpc.LoadSettingsFile\
+    s_Resultb\x06proto3\
 ";
 
 /// `FileDescriptorProto` object which was a source for this generated file
@@ -8573,7 +6850,7 @@ pub fn file_descriptor() -> &'static ::protobuf::reflect::FileDescriptor {
             let mut deps = ::std::vec::Vec::with_capacity(2);
             deps.push(::protobuf::well_known_types::any::file_descriptor().clone());
             deps.push(::protobuf::descriptor::file_descriptor().clone());
-            let mut messages = ::std::vec::Vec::with_capacity(57);
+            let mut messages = ::std::vec::Vec::with_capacity(44);
             messages.push(CmdArgSpec::generated_message_descriptor_data());
             messages.push(CmdOverrideSpec::generated_message_descriptor_data());
             messages.push(RestResponse::generated_message_descriptor_data());
@@ -8583,8 +6860,6 @@ pub fn file_descriptor() -> &'static ::protobuf::reflect::FileDescriptor {
             messages.push(Ping_Result::generated_message_descriptor_data());
             messages.push(ListMethod_Args::generated_message_descriptor_data());
             messages.push(ListMethod_Result::generated_message_descriptor_data());
-            messages.push(ParseFile_LarkTree_Args::generated_message_descriptor_data());
-            messages.push(ParseFile_LarkTree_Result::generated_message_descriptor_data());
             messages.push(ParseFile_AST_Args::generated_message_descriptor_data());
             messages.push(ParseFile_AST_Result::generated_message_descriptor_data());
             messages.push(ParseProgram_AST_Args::generated_message_descriptor_data());
@@ -8611,18 +6886,7 @@ pub fn file_descriptor() -> &'static ::protobuf::reflect::FileDescriptor {
             messages.push(GetSchemaTypeMapping_Result::generated_message_descriptor_data());
             messages.push(ValidateCode_Args::generated_message_descriptor_data());
             messages.push(ValidateCode_Result::generated_message_descriptor_data());
-            messages.push(CodeSnippet::generated_message_descriptor_data());
-            messages.push(SpliceCode_Args::generated_message_descriptor_data());
-            messages.push(SpliceCode_Result::generated_message_descriptor_data());
             messages.push(Position::generated_message_descriptor_data());
-            messages.push(Complete_Args::generated_message_descriptor_data());
-            messages.push(Complete_Result::generated_message_descriptor_data());
-            messages.push(GoToDef_Args::generated_message_descriptor_data());
-            messages.push(GoToDef_Result::generated_message_descriptor_data());
-            messages.push(DocumentSymbol_Args::generated_message_descriptor_data());
-            messages.push(DocumentSymbol_Result::generated_message_descriptor_data());
-            messages.push(Hover_Args::generated_message_descriptor_data());
-            messages.push(Hover_Result::generated_message_descriptor_data());
             messages.push(ListDepFiles_Args::generated_message_descriptor_data());
             messages.push(ListDepFiles_Result::generated_message_descriptor_data());
             messages.push(LoadSettingsFiles_Args::generated_message_descriptor_data());

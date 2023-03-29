@@ -1212,6 +1212,8 @@ dependencies = [
  "indexmap",
  "kclvm-ast",
  "kclvm-ast-pretty",
+ "kclvm-config",
+ "kclvm-driver",
  "kclvm-error",
  "kclvm-parser",
  "kclvm-query",
@@ -1226,6 +1228,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml 0.9.19",
+ "tempfile",
 ]
 
 [[package]]

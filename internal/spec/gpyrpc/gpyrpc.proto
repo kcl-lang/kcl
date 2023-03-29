@@ -80,13 +80,10 @@ service BuiltinService {
 service KclvmService {
 	rpc Ping(Ping_Args) returns(Ping_Result);
 
-	rpc ParseFile_LarkTree(ParseFile_LarkTree_Args) returns(ParseFile_LarkTree_Result);
 	rpc ParseFile_AST(ParseFile_AST_Args) returns(ParseFile_AST_Result);
 	rpc ParseProgram_AST(ParseProgram_AST_Args) returns(ParseProgram_AST_Result);
 
 	rpc ExecProgram(ExecProgram_Args) returns(ExecProgram_Result);
-
-	rpc ResetPlugin(ResetPlugin_Args) returns(ResetPlugin_Result);
 
 	rpc FormatCode(FormatCode_Args) returns(FormatCode_Result);
 	rpc FormatPath(FormatPath_Args) returns(FormatPath_Result);
@@ -98,12 +95,6 @@ service KclvmService {
 	rpc GetSchemaType(GetSchemaType_Args) returns(GetSchemaType_Result);
 	rpc GetSchemaTypeMapping(GetSchemaTypeMapping_Args) returns(GetSchemaTypeMapping_Result);
 	rpc ValidateCode(ValidateCode_Args) returns(ValidateCode_Result);
-	rpc SpliceCode(SpliceCode_Args) returns(SpliceCode_Result);
-
-	rpc Complete(Complete_Args) returns(Complete_Result);
-	rpc GoToDef(GoToDef_Args) returns(GoToDef_Result);
-	rpc DocumentSymbol(DocumentSymbol_Args) returns(DocumentSymbol_Result);
-	rpc Hover(Hover_Args) returns(Hover_Result);
 
 	rpc ListDepFiles(ListDepFiles_Args) returns(ListDepFiles_Result);
 	rpc LoadSettingsFiles(LoadSettingsFiles_Args) returns(LoadSettingsFiles_Result);
@@ -123,21 +114,13 @@ message ListMethod_Result {
 	repeated string method_name_list = 1;
 }
 
-message ParseFile_LarkTree_Args {
-	string filename = 1;
-	string source_code = 2;
-	bool ignore_file_line = 3;
-}
-message ParseFile_LarkTree_Result {
-	string lark_tree_json = 1;
-}
-
 message ParseFile_AST_Args {
 	string filename = 1;
 	string source_code = 2;
 }
 message ParseFile_AST_Result {
 	string ast_json = 1; // json value
+	KclError kcl_err = 2;
 }
 
 message ParseProgram_AST_Args {
@@ -145,6 +128,7 @@ message ParseProgram_AST_Args {
 }
 message ParseProgram_AST_Result {
 	string ast_json = 1; // json value
+	KclError kcl_err = 2;
 }
 
 message ExecProgram_Args {
@@ -203,11 +187,11 @@ message FormatPath_Args {
 }
 
 message FormatPath_Result {
-	repeated string changedPaths = 1;
+	repeated string changed_paths = 1;
 }
 
 message LintPath_Args {
-	string path = 1;
+	repeated string paths = 1;
 }
 
 message LintPath_Result {
@@ -270,60 +254,10 @@ message ValidateCode_Result {
 	string err_message = 2;
 }
 
-message CodeSnippet {
-    string schema = 1;
-    string rule = 2;
-}
-
-message SpliceCode_Args {
-	repeated CodeSnippet codeSnippets = 1;
-}
-
-message SpliceCode_Result {
-	string spliceCode = 1;
-}
-
 message Position {
 	int64 line = 1;
 	int64 column = 2;
 	string filename = 3;
-}
-
-message Complete_Args {
-	Position pos = 1;
-	string name = 2;
-	string code = 3;
-}
-
-message Complete_Result {
-	string completeItems = 1;
-}
-
-message GoToDef_Args {
-	Position pos = 1;
-	string code = 2;
-}
-
-message GoToDef_Result {
-	string locations = 1;
-}
-
-message DocumentSymbol_Args {
-	string file = 1;
-	string code = 2;
-}
-
-message DocumentSymbol_Result {
-	string symbol = 1;
-}
-
-message Hover_Args {
-	Position pos = 1;
-	string code = 2;
-}
-
-message Hover_Result {
-	string hoverResult = 1;
 }
 
 message ListDepFiles_Args {

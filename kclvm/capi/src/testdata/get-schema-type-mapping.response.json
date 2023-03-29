@@ -1,0 +1,78 @@
+{
+    "schema_type_mapping": {
+        "person": {
+            "type": "schema",
+            "union_types": [],
+            "default": "",
+            "schema_name": "Person",
+            "schema_doc": "",
+            "properties": {
+                "age": {
+                    "type": "int",
+                    "union_types": [],
+                    "default": "",
+                    "schema_name": "",
+                    "schema_doc": "",
+                    "properties": {},
+                    "required": [],
+                    "line": 2,
+                    "decorators": []
+                },
+                "name": {
+                    "type": "str",
+                    "union_types": [],
+                    "default": "",
+                    "schema_name": "",
+                    "schema_doc": "",
+                    "properties": {},
+                    "required": [],
+                    "line": 1,
+                    "decorators": []
+                }
+            },
+            "required": [
+                "name",
+                "age"
+            ],
+            "line": 0,
+            "decorators": []
+        },
+        "Person": {
+            "type": "schema",
+            "union_types": [],
+            "default": "",
+            "schema_name": "Person",
+            "schema_doc": "",
+            "properties": {
+                "name": {
+                    "type": "str",
+                    "union_types": [],
+                    "default": "",
+                    "schema_name": "",
+                    "schema_doc": "",
+                    "properties": {},
+                    "required": [],
+                    "line": 1,
+                    "decorators": []
+                },
+                "age": {
+                    "type": "int",
+                    "union_types": [],
+                    "default": "",
+                    "schema_name": "",
+                    "schema_doc": "",
+                    "properties": {},
+                    "required": [],
+                    "line": 2,
+                    "decorators": []
+                }
+            },
+            "required": [
+                "name",
+                "age"
+            ],
+            "line": 0,
+            "decorators": []
+        }
+    }
+}

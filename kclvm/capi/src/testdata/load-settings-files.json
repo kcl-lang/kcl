@@ -1,0 +1,6 @@
+{
+    "work_dir": "./src/testdata/settings",
+	"files":[
+		"./src/testdata/settings/kcl.yaml"
+	]
+}
