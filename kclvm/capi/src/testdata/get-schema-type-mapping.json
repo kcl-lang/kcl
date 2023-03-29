@@ -1,0 +1,4 @@
+{
+	"file": "schema.k",
+	"code": "schema Person:\n    name: str\n    age: int\n\nperson = Person {\n    name = \"Alice\"\n    age = 18\n}\n"
+}

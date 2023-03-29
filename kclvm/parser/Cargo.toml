@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-compiler_base_span = {path = "../../compiler_base/span", version = "0.0.2"}
+compiler_base_span = {path = "../../compiler_base/span"}
 compiler_base_session = {path = "../../compiler_base/session"}
 compiler_base_error = "0.0.10"
 compiler_base_macros = "0.0.1"

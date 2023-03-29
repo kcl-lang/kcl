@@ -30,6 +30,22 @@ pub extern "C" fn kclvm_service_free_string(res: *mut c_char) {
     }
 }
 
+macro_rules! call {
+    ($serv:expr, $args:expr, $arg_name:ident, $serv_name:ident) => {{
+        let serv_ref = unsafe { mut_ptr_as_ref($serv) };
+        let args = $arg_name::parse_from_bytes($args).unwrap();
+        let res = serv_ref.$serv_name(&args);
+        let result_byte = match res {
+            Ok(res) => match res.write_to_bytes() {
+                Ok(bytes) => bytes,
+                Err(err) => panic!("{err}"),
+            },
+            Err(err) => panic!("{err}"),
+        };
+        CString::new(result_byte).unwrap().into_raw()
+    }};
+}
+
 /// Call kclvm service by C API
 ///
 /// # Parameters
@@ -58,7 +74,7 @@ pub extern "C" fn kclvm_service_call(
     let result = std::panic::catch_unwind(|| {
         let args = unsafe { std::ffi::CStr::from_ptr(args) }.to_bytes();
         let call = c2str(call);
-        let call = _kclvm_get_service_fn_ptr_by_name(call);
+        let call = kclvm_get_service_fn_ptr_by_name(call);
         if call == 0 {
             panic!("null fn ptr");
         }
@@ -80,12 +96,17 @@ pub extern "C" fn kclvm_service_call(
     }
 }
 
-pub(crate) fn _kclvm_get_service_fn_ptr_by_name(name: &str) -> u64 {
+pub(crate) fn kclvm_get_service_fn_ptr_by_name(name: &str) -> u64 {
     match name {
         "KclvmService.Ping" => ping as *const () as u64,
         "KclvmService.ExecProgram" => exec_program as *const () as u64,
         "KclvmService.OverrideFile" => override_file as *const () as u64,
         "KclvmService.GetSchemaTypeMapping" => get_schema_type_mapping as *const () as u64,
+        "KclvmService.FormatCode" => format_code as *const () as u64,
+        "KclvmService.FormatPath" => format_path as *const () as u64,
+        "KclvmService.LintPath" => lint_path as *const () as u64,
+        "KclvmService.ValidateCode" => validate_code as *const () as u64,
+        "KclvmService.LoadSettingsFiles" => load_settings_files as *const () as u64,
         _ => panic!("unknown method name : {name}"),
     }
 }
@@ -93,12 +114,7 @@ pub(crate) fn _kclvm_get_service_fn_ptr_by_name(name: &str) -> u64 {
 /// ping is used to test whether kclvm service is successfully imported
 /// arguments and return results should be consistent
 pub(crate) fn ping(serv: *mut KclvmService, args: &[u8]) -> *const c_char {
-    let serv_ref = unsafe { mut_ptr_as_ref(serv) };
-    let args = Ping_Args::parse_from_bytes(args).unwrap();
-    let res = serv_ref.ping(&args);
-    CString::new(res.write_to_bytes().unwrap())
-        .unwrap()
-        .into_raw()
+    call!(serv, args, Ping_Args, ping)
 }
 
 /// exec_program provides users with the ability to execute KCL code
@@ -118,17 +134,7 @@ pub(crate) fn ping(serv: *mut KclvmService, args: &[u8]) -> *const c_char {
 /// result: [*const c_char]
 ///     Result of the call serialized as protobuf byte sequence
 pub(crate) fn exec_program(serv: &mut KclvmService, args: &[u8]) -> *const c_char {
-    let serv_ref = unsafe { mut_ptr_as_ref(serv) };
-    let args = ExecProgram_Args::parse_from_bytes(args).unwrap();
-    let res = serv_ref.exec_program(&args);
-    let result_byte = match res {
-        Ok(res) => match res.write_to_bytes() {
-            Ok(bytes) => bytes,
-            Err(err) => panic!("{}", err.to_string()),
-        },
-        Err(err) => panic!("{}", err),
-    };
-    CString::new(result_byte).unwrap().into_raw()
+    call!(serv, args, ExecProgram_Args, exec_program)
 }
 
 /// override_file enable users override existing KCL file with specific KCl code
@@ -148,17 +154,7 @@ pub(crate) fn exec_program(serv: &mut KclvmService, args: &[u8]) -> *const c_cha
 /// result: [*const c_char]
 ///     Result of the call serialized as protobuf byte sequence
 pub(crate) fn override_file(serv: &mut KclvmService, args: &[u8]) -> *const c_char {
-    let serv_ref = unsafe { mut_ptr_as_ref(serv) };
-    let args = OverrideFile_Args::parse_from_bytes(args).unwrap();
-    let res = serv_ref.override_file(&args);
-    let result_byte = match res {
-        Ok(res) => match res.write_to_bytes() {
-            Ok(bytes) => bytes,
-            Err(err) => panic!("{}", err.to_string()),
-        },
-        Err(err) => panic!("{}", err),
-    };
-    CString::new(result_byte).unwrap().into_raw()
+    call!(serv, args, OverrideFile_Args, override_file)
 }
 
 /// Get schema types from a kcl file or code.
@@ -170,15 +166,39 @@ pub(crate) fn override_file(serv: &mut KclvmService, args: &[u8]) -> *const c_ch
 ///
 /// schema_name: [Option<&str>]. The schema name, when the schema name is empty, all schemas are returned.
 pub(crate) fn get_schema_type_mapping(serv: &mut KclvmService, args: &[u8]) -> *const c_char {
-    let serv_ref = unsafe { mut_ptr_as_ref(serv) };
-    let args = GetSchemaTypeMapping_Args::parse_from_bytes(args).unwrap();
-    let res = serv_ref.get_schema_type_mapping(&args);
-    let result_byte = match res {
-        Ok(res) => match res.write_to_bytes() {
-            Ok(bytes) => bytes,
-            Err(err) => panic!("{err}"),
-        },
-        Err(err) => panic!("{err}"),
-    };
-    CString::new(result_byte).unwrap().into_raw()
+    call!(
+        serv,
+        args,
+        GetSchemaTypeMapping_Args,
+        get_schema_type_mapping
+    )
+}
+
+/// Service for formatting a code source and returns the formatted source and
+/// whether the source is changed.
+pub(crate) fn format_code(serv: &mut KclvmService, args: &[u8]) -> *const c_char {
+    call!(serv, args, FormatCode_Args, format_code)
+}
+
+/// Service for formatting kcl file or directory path contains kcl files and
+/// returns the changed file paths.
+pub(crate) fn format_path(serv: &mut KclvmService, args: &[u8]) -> *const c_char {
+    call!(serv, args, FormatPath_Args, format_path)
+}
+
+/// Service for KCL Lint API, check a set of files, skips execute,
+/// returns error message including errors and warnings.
+pub(crate) fn lint_path(serv: &mut KclvmService, args: &[u8]) -> *const c_char {
+    call!(serv, args, LintPath_Args, lint_path)
+}
+
+/// Service for validating the data string using the schema code string, when the parameter
+/// `schema` is omitted, use the first schema appeared in the kcl code.
+pub(crate) fn validate_code(serv: &mut KclvmService, args: &[u8]) -> *const c_char {
+    call!(serv, args, ValidateCode_Args, validate_code)
+}
+
+/// Service for building setting file config from args.
+pub(crate) fn load_settings_files(serv: &mut KclvmService, args: &[u8]) -> *const c_char {
+    call!(serv, args, LoadSettingsFiles_Args, load_settings_files)
 }

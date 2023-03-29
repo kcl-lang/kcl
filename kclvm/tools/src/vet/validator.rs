@@ -65,7 +65,7 @@
 //!         age > 10
 //! ```
 use super::expr_builder::ExprBuilder;
-use crate::util::loader::LoaderKind;
+pub use crate::util::loader::LoaderKind;
 use kclvm_ast::{
     ast::{AssignStmt, Expr, ExprContext, Identifier, Module, Node, NodeRef, SchemaStmt, Stmt},
     node_ref,

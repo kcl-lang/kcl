@@ -1,0 +1,5 @@
+kcl_cli_configs:
+  strict_range_check: true
+kcl_options:
+  - key: key
+    value: value

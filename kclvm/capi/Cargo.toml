@@ -12,8 +12,11 @@ compiler_base_session = {path = "../../compiler_base/session"}
 serde = { version = "1", features = ["derive"] }
 anyhow = "1.0"
 indexmap = "1.0"
+tempfile = "3.3.0"
 
 kclvm-runner = {path = "../runner"}
+kclvm-config = {path = "../config"}
+kclvm-driver = {path = "../driver"}
 kclvm-error = {path = "../error"}
 kclvm-parser = {path = "../parser"}
 kclvm-sema = {path = "../sema"}

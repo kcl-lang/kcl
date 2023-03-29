@@ -6,6 +6,8 @@ use kclvm_config::{
 use kclvm_runtime::ValueRef;
 use serde::{Deserialize, Serialize};
 
+const RESULT_SIZE: usize = 2048 * 2048;
+
 #[allow(non_camel_case_types)]
 pub type kclvm_char_t = i8;
 #[allow(non_camel_case_types)]
@@ -241,11 +243,11 @@ impl KclvmRunner {
         let list_option_mode = 0; // todo
         let debug_mode = args.debug as i32;
 
-        let mut result = vec![0u8; 1024 * 1024];
+        let mut result = vec![0u8; RESULT_SIZE];
         let result_buffer_len = result.len() as i32 - 1;
         let result_buffer = result.as_mut_ptr() as *mut i8;
 
-        let mut warn_data = vec![0u8; 1024 * 1024];
+        let mut warn_data = vec![0u8; RESULT_SIZE];
         let warn_buffer_len = warn_data.len() as i32 - 1;
         let warn_buffer = warn_data.as_mut_ptr() as *mut i8;
 

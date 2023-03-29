@@ -1,0 +1,18 @@
+{
+    "kcl_cli_configs": {
+        "files": [],
+        "output": "",
+        "overrides": [],
+        "path_selector": [],
+        "strict_range_check": true,
+        "disable_none": false,
+        "verbose": "0",
+        "debug": false
+    },
+    "kcl_options": [
+        {
+            "key": "key",
+            "value": "value"
+        }
+    ]
+}
