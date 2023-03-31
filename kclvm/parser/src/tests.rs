@@ -329,3 +329,89 @@ fn test_import_vendor_without_kclmod_and_same_name() {
         }
     }
 }
+
+#[test]
+fn test_import_vendor_by_external_arguments() {
+    let vendor = set_vendor_home();
+    let sm = SourceMap::new(FilePathMapping::empty());
+    let sess = Arc::new(ParseSession::with_source_map(Arc::new(sm)));
+
+    let external_dir = &PathBuf::from(".")
+        .join("testdata")
+        .join("test_vendor")
+        .canonicalize()
+        .unwrap();
+
+    let test_cases = vec![
+        (
+            "import_by_external_assign.k",
+            "assign",
+            vec!["__main__", "assign"],
+        ),
+        (
+            "import_by_external_config_expr.k",
+            "config_expr",
+            vec!["__main__", "config_expr"],
+        ),
+        (
+            "import_by_external_nested_vendor.k",
+            "nested_vendor",
+            vec![
+                "__main__",
+                "nested_vendor",
+                "vendor_subpkg",
+                "sub.sub2",
+                "sub.sub1",
+                "sub.sub",
+                "sub",
+            ],
+        ),
+        (
+            "import_by_external_vendor_subpkg.k",
+            "vendor_subpkg",
+            vec![
+                "__main__",
+                "vendor_subpkg",
+                "sub.sub1",
+                "sub.sub2",
+                "sub.sub",
+                "sub",
+            ],
+        ),
+    ];
+
+    let dir = &PathBuf::from(".")
+        .join("testdata_without_kclmod")
+        .canonicalize()
+        .unwrap();
+
+    test_cases
+        .into_iter()
+        .for_each(|(test_case_name, dep_name, pkgs)| {
+            let mut opts = LoadProgramOptions::default();
+            opts.package_maps.insert(
+                dep_name.to_string(),
+                external_dir.join(dep_name).display().to_string(),
+            );
+            let test_case_path = dir.join(test_case_name).display().to_string();
+            let m = load_program(sess.clone(), &[&test_case_path], None).unwrap();
+
+            assert_eq!(m.pkgs.len(), pkgs.len());
+            m.pkgs.into_iter().for_each(|(name, modules)| {
+                assert!(pkgs.contains(&name.as_str()));
+                for pkg in pkgs.clone() {
+                    if name == pkg {
+                        if name == "__main__" {
+                            assert_eq!(modules.len(), 1);
+                            assert_eq!(modules.get(0).unwrap().filename, test_case_path);
+                        } else {
+                            modules.into_iter().for_each(|module| {
+                                assert!(module.filename.contains(&vendor));
+                            });
+                        }
+                        break;
+                    }
+                }
+            });
+        });
+}

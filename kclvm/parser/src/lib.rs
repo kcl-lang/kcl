@@ -182,6 +182,7 @@ pub struct LoadProgramOptions {
     pub work_dir: String,
     pub k_code_list: Vec<String>,
     pub vendor_dirs: Vec<String>,
+    pub package_maps: HashMap<String, String>,
 
     pub cmd_args: Vec<ast::CmdArgSpec>,
     pub cmd_overrides: Vec<ast::OverrideSpec>,
@@ -199,6 +200,7 @@ impl Default for LoadProgramOptions {
             work_dir: Default::default(),
             k_code_list: Default::default(),
             vendor_dirs: vec![get_vendor_home()],
+            package_maps: Default::default(),
             cmd_args: Default::default(),
             cmd_overrides: Default::default(),
             mode: ParseMode::ParseComments,
@@ -576,15 +578,16 @@ impl Loader {
     /// Look for [`pkgpath`] in the external package's home.
     /// If found, return to the [`pkgroot`]， else return [`None`]
     fn is_external_pkg(&self, pkgpath: &str) -> Result<Option<String>, String> {
-        let root_path = match self.pkg_exists(self.opts.vendor_dirs.clone(), pkgpath) {
-            Some(path) => path,
-            None => return Ok(None),
-        };
+        let pkg_name = self.parse_external_pkg_name(pkgpath)?;
 
-        let pathbuf = PathBuf::from(root_path);
-        let rootpkg = pathbuf
-            .join(self.parse_external_pkg_name(pkgpath)?)
-            .join(KCL_MOD_FILE);
+        let rootpkg = if let Some(root) = self.opts.package_maps.get(&pkg_name) {
+            PathBuf::from(root).join(KCL_MOD_FILE)
+        } else {
+            match self.pkg_exists(self.opts.vendor_dirs.clone(), pkgpath) {
+                Some(path) => PathBuf::from(path).join(pkg_name).join(KCL_MOD_FILE),
+                None => return Ok(None),
+            }
+        };
 
         if rootpkg.exists() {
             return Ok(Some(

@@ -1,7 +1,7 @@
 // Copyright 2021 The KCL Authors. All rights reserved.
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
+use std::{collections::HashMap, path::PathBuf};
 
 /// Default settings file `kcl.yaml`
 pub const DEFAULT_SETTING_FILE: &str = "kcl.yaml";
@@ -56,6 +56,7 @@ pub struct Config {
     pub disable_none: Option<bool>,
     pub verbose: Option<u32>,
     pub debug: Option<bool>,
+    pub package_maps: Option<HashMap<String, String>>,
 }
 
 impl SettingsFile {
@@ -71,6 +72,7 @@ impl SettingsFile {
                 disable_none: Some(false),
                 verbose: Some(0),
                 debug: Some(false),
+                package_maps: Some(HashMap::default()),
             }),
             kcl_options: Some(vec![]),
         }
@@ -157,6 +159,7 @@ pub fn merge_settings(settings: &[SettingsFile]) -> SettingsFile {
                 set_if!(result_kcl_cli_configs, disable_none, kcl_cli_configs);
                 set_if!(result_kcl_cli_configs, verbose, kcl_cli_configs);
                 set_if!(result_kcl_cli_configs, debug, kcl_cli_configs);
+                set_if!(result_kcl_cli_configs, package_maps, kcl_cli_configs);
             }
         }
         if let Some(kcl_options) = &setting.kcl_options {
