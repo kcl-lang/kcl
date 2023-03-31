@@ -1111,7 +1111,7 @@ impl<'a> Parser<'a> {
         self.bump_token(TokenKind::Colon);
 
         let typ = self.parse_type_annotation();
-        let type_str = node_ref!(typ.node.to_string(), name_pos);
+        let type_str = node_ref!(typ.node.to_string(), typ.pos());
 
         let op = if self.token.kind == TokenKind::Assign {
             self.bump_token(TokenKind::Assign);
