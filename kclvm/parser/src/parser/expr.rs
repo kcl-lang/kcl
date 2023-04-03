@@ -49,11 +49,12 @@ impl<'a> Parser<'a> {
     /// Syntax:
     /// test: if_expr | simple_expr
     pub(crate) fn parse_expr(&mut self) -> NodeRef<Expr> {
+        let token = self.token;
         let operand = self.parse_simple_expr();
 
         // try if expr
         if self.token.is_keyword(kw::If) {
-            return self.parse_if_expr(operand);
+            return self.parse_if_expr(operand, token);
         }
 
         operand
@@ -199,8 +200,11 @@ impl<'a> Parser<'a> {
     /// Syntax:
     /// if_expr: simple_expr IF simple_expr ELSE test
     /// test: if_expr | simple_expr
-    fn parse_if_expr(&mut self, body: NodeRef<Expr>) -> NodeRef<Expr> {
-        let token = self.token;
+    fn parse_if_expr(
+        &mut self,
+        body: NodeRef<Expr>,
+        token: kclvm_ast::token::Token,
+    ) -> NodeRef<Expr> {
         if self.token.is_keyword(kw::If) {
             self.bump();
             let cond = self.parse_simple_expr();
