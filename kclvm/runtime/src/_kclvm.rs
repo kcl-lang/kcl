@@ -75,6 +75,8 @@ pub enum ApiFunc {
     kclvm_builtin_str_join,
     kclvm_builtin_str_lower,
     kclvm_builtin_str_lstrip,
+    kclvm_builtin_str_removeprefix,
+    kclvm_builtin_str_removesuffix,
     kclvm_builtin_str_replace,
     kclvm_builtin_str_rfind,
     kclvm_builtin_str_rindex,

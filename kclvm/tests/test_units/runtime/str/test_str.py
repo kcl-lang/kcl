@@ -521,6 +521,76 @@ class BaseTest(unittest.TestCase):
 
         # self.checkraises(TypeError, 'hello', 'capitalize', 42)
 
+    def test_removeprefix(self):
+        self.checkequal("a ", " aa ", "removeprefix", " a")
+        self.checkequal(" ", " aa ", "removeprefix", " aa")
+        self.checkequal("", " aa ", "removeprefix", " aa ")
+
+        s = 'foobarfoo'
+        s_ref='foobarfoo'
+
+        self.checkequal(s_ref[1:], s, "removeprefix", "f")
+        self.checkequal(s_ref[2:], s, "removeprefix", "fo")
+        self.checkequal(s_ref[3:], s, "removeprefix", "foo")
+
+        self.checkequal(s_ref, s, "removeprefix", "")
+        self.checkequal(s_ref, s, "removeprefix", "bar")
+        self.checkequal(s_ref, s, "removeprefix", "lol")
+        self.checkequal(s_ref, s, "removeprefix", "_foo")
+        self.checkequal(s_ref, s, "removeprefix", "-foo")
+        self.checkequal(s_ref, s, "removeprefix", "afoo")
+        self.checkequal(s_ref, s, "removeprefix", "*foo")
+
+        s_uc = '😱foobarfoo🖖'
+        s_ref_uc = '😱foobarfoo🖖'
+
+        self.checkequal(s_ref_uc[1:], s_uc, "removeprefix", "😱")
+        self.checkequal(s_ref_uc[3:], s_uc, "removeprefix", "😱fo")
+        self.checkequal(s_ref_uc[4:], s_uc, "removeprefix", "😱foo")
+
+        self.checkequal(s_ref_uc, s_uc, "removeprefix", "🖖")
+        self.checkequal(s_ref_uc, s_uc, "removeprefix", "foo")
+        self.checkequal(s_ref_uc, s_uc, "removeprefix", " ")
+        self.checkequal(s_ref_uc, s_uc, "removeprefix", "_😱")
+        self.checkequal(s_ref_uc, s_uc, "removeprefix", " 😱")
+        self.checkequal(s_ref_uc, s_uc, "removeprefix", "-😱")
+        self.checkequal(s_ref_uc, s_uc, "removeprefix", "#😱")
+
+    def test_removesuffix(self):
+        self.checkequal(" a", " aa ", "removesuffix", "a ")
+        self.checkequal(" ", " aa ", "removesuffix", "aa ")
+        self.checkequal("", " aa ", "removesuffix", " aa ")
+
+        s = 'foobarfoo'
+        s_ref='foobarfoo'
+
+        self.checkequal(s_ref[:-1], s, "removesuffix", "o")
+        self.checkequal(s_ref[:-2], s, "removesuffix", "oo")
+        self.checkequal(s_ref[:-3], s, "removesuffix", "foo")
+
+        self.checkequal(s_ref, s, "removesuffix", "")
+        self.checkequal(s_ref, s, "removesuffix", "bar")
+        self.checkequal(s_ref, s, "removesuffix", "lol")
+        self.checkequal(s_ref, s, "removesuffix", "_foo")
+        self.checkequal(s_ref, s, "removesuffix", "-foo")
+        self.checkequal(s_ref, s, "removesuffix", "afoo")
+        self.checkequal(s_ref, s, "removesuffix", "*foo")
+
+        s_uc = '😱foobarfoo🖖'
+        s_ref_uc = '😱foobarfoo🖖'
+
+        self.checkequal(s_ref_uc[:-1], s_uc, "removesuffix", "🖖")
+        self.checkequal(s_ref_uc[:-3], s_uc, "removesuffix", "oo🖖")
+        self.checkequal(s_ref_uc[:-4], s_uc, "removesuffix", "foo🖖")
+
+        self.checkequal(s_ref_uc, s_uc, "removesuffix", "😱")
+        self.checkequal(s_ref_uc, s_uc, "removesuffix", "foo")
+        self.checkequal(s_ref_uc, s_uc, "removesuffix", " ")
+        self.checkequal(s_ref_uc, s_uc, "removesuffix", "🖖_")
+        self.checkequal(s_ref_uc, s_uc, "removesuffix", "🖖 ")
+        self.checkequal(s_ref_uc, s_uc, "removesuffix", "🖖-")
+        self.checkequal(s_ref_uc, s_uc, "removesuffix", "🖖#")
+
     def test_additional_split(self):
         self.checkequal(
             ["this", "is", "the", "split", "function"],

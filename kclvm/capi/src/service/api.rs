@@ -46,7 +46,7 @@ macro_rules! call {
     }};
 }
 
-/// Call kclvm service by C API
+/// Call kclvm service by C API. **Note that it is not thread safe.**
 ///
 /// # Parameters
 ///

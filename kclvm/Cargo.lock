@@ -1221,6 +1221,7 @@ dependencies = [
  "kclvm-runtime",
  "kclvm-sema",
  "kclvm-tools",
+ "once_cell",
  "protobuf",
  "protobuf-codegen",
  "protobuf-json-mapping",

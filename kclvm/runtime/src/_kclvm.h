@@ -178,6 +178,10 @@ kclvm_value_ref_t* kclvm_builtin_str_lower(kclvm_context_t* _ctx, kclvm_value_re
 
 kclvm_value_ref_t* kclvm_builtin_str_lstrip(kclvm_context_t* _ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
 
+kclvm_value_ref_t* kclvm_builtin_str_removeprefix(kclvm_context_t* _ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
+
+kclvm_value_ref_t* kclvm_builtin_str_removesuffix(kclvm_context_t* _ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
+
 kclvm_value_ref_t* kclvm_builtin_str_replace(kclvm_context_t* _ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
 
 kclvm_value_ref_t* kclvm_builtin_str_rfind(kclvm_context_t* _ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
