@@ -878,6 +878,14 @@
 // api-spec(c):    kclvm_value_ref_t* kclvm_builtin_str_replace(kclvm_context_t* _ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_str_replace(%kclvm_context_t* %_ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
 
+// api-spec:       kclvm_builtin_str_removeprefix
+// api-spec(c):    kclvm_value_ref_t* kclvm_builtin_str_removeprefix(kclvm_context_t* _ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_str_removeprefix(%kclvm_context_t* %_ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+
+// api-spec:       kclvm_builtin_str_removesuffix
+// api-spec(c):    kclvm_value_ref_t* kclvm_builtin_str_removesuffix(kclvm_context_t* _ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_str_removesuffix(%kclvm_context_t* %_ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+
 // api-spec:       kclvm_builtin_str_rfind
 // api-spec(c):    kclvm_value_ref_t* kclvm_builtin_str_rfind(kclvm_context_t* _ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_str_rfind(%kclvm_context_t* %_ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);

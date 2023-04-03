@@ -54,6 +54,12 @@ pub fn _kclvm_get_fn_ptr_by_name(name: &str) -> u64 {
         "kclvm_builtin_str_join" => crate::kclvm_builtin_str_join as *const () as u64,
         "kclvm_builtin_str_lower" => crate::kclvm_builtin_str_lower as *const () as u64,
         "kclvm_builtin_str_lstrip" => crate::kclvm_builtin_str_lstrip as *const () as u64,
+        "kclvm_builtin_str_removeprefix" => {
+            crate::kclvm_builtin_str_removeprefix as *const () as u64
+        }
+        "kclvm_builtin_str_removesuffix" => {
+            crate::kclvm_builtin_str_removesuffix as *const () as u64
+        }
         "kclvm_builtin_str_replace" => crate::kclvm_builtin_str_replace as *const () as u64,
         "kclvm_builtin_str_rfind" => crate::kclvm_builtin_str_rfind as *const () as u64,
         "kclvm_builtin_str_rindex" => crate::kclvm_builtin_str_rindex as *const () as u64,

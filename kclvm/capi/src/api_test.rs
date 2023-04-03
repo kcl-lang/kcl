@@ -4,9 +4,14 @@ use protobuf::MessageFull;
 use crate::model::gpyrpc::*;
 use crate::service::api::*;
 use crate::service::util::*;
+use once_cell::sync::Lazy;
 use std::ffi::{CStr, CString};
 use std::fs;
 use std::path::Path;
+use std::sync::Mutex;
+
+static TEST_MUTEX: Lazy<Mutex<i32>> = Lazy::new(|| Mutex::new(0i32));
+
 const TEST_DATA_PATH: &str = "./src/testdata";
 
 #[test]
@@ -111,6 +116,7 @@ where
     A: MessageFull,
     R: MessageFull,
 {
+    let _test_lock = TEST_MUTEX.lock().unwrap();
     let serv = kclvm_service_new(0);
     let input_path = Path::new(TEST_DATA_PATH).join(input);
     let input = fs::read_to_string(&input_path)

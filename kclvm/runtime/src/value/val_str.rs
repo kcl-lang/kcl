@@ -512,6 +512,36 @@ impl ValueRef {
         }
     }
 
+    /// If the string starts with the prefix string, return string[len(prefix):].
+    /// Otherwise, return a copy of the original string.
+    pub fn str_removeprefix(&self, prefix: &ValueRef) -> ValueRef {
+        match &*self.rc.borrow() {
+            Value::str_value(ref v) => {
+                let prefix = prefix.as_str();
+                match v.strip_prefix(&prefix) {
+                    Some(r) => ValueRef::str(r),
+                    None => ValueRef::str(v),
+                }
+            }
+            _ => panic!("Invalid str object in str_rstrip"),
+        }
+    }
+
+    /// If the string ends with the suffix string and that suffix is not empty, return string[:-len(suffix)].
+    /// Otherwise, return a copy of the original string.
+    pub fn str_removesuffix(&self, suffix: &ValueRef) -> ValueRef {
+        match &*self.rc.borrow() {
+            Value::str_value(ref v) => {
+                let suffix = suffix.as_str();
+                match v.strip_suffix(&suffix) {
+                    Some(r) => ValueRef::str(r),
+                    None => ValueRef::str(v),
+                }
+            }
+            _ => panic!("Invalid str object in str_removesuffix"),
+        }
+    }
+
     pub fn str_split(&self, sep: Option<&ValueRef>, maxsplit: Option<&ValueRef>) -> ValueRef {
         let sep = adjust_parameter(sep);
         let maxsplit = adjust_parameter(maxsplit);

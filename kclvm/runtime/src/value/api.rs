@@ -1907,6 +1907,8 @@ pub unsafe extern "C" fn kclvm_value_load_attr(
             "lstrip" => kclvm_builtin_str_lstrip,
             "rstrip" => kclvm_builtin_str_rstrip,
             "replace" => kclvm_builtin_str_replace,
+            "removeprefix" => kclvm_builtin_str_removeprefix,
+            "removesuffix" => kclvm_builtin_str_removesuffix,
             "rfind" => kclvm_builtin_str_rfind,
             "rindex" => kclvm_builtin_str_rindex,
             "rsplit" => kclvm_builtin_str_rsplit,
@@ -2801,6 +2803,42 @@ pub unsafe extern "C" fn kclvm_builtin_str_replace(
         val.str_replace(&old, &new, count.as_ref()).into_raw()
     } else {
         panic!("invalid self value in str_replace");
+    }
+}
+
+/// If the string starts with the prefix string, return string[len(prefix):].
+/// Otherwise, return a copy of the original string.
+#[no_mangle]
+#[runtime_fn]
+pub unsafe extern "C" fn kclvm_builtin_str_removeprefix(
+    _ctx: *mut kclvm_context_t,
+    args: *const kclvm_value_ref_t,
+    _kwargs: *const kclvm_value_ref_t,
+) -> *const kclvm_value_ref_t {
+    let args = ptr_as_ref(args);
+    if let Some(val) = args.pop_arg_first() {
+        let prefix = args.arg_i(0).unwrap();
+        val.str_removeprefix(&prefix).into_raw()
+    } else {
+        panic!("invalid self value in str_removeprefix");
+    }
+}
+
+/// If the string ends with the suffix string and that suffix is not empty, return string[:-len(suffix)].
+/// Otherwise, return a copy of the original string.
+#[no_mangle]
+#[runtime_fn]
+pub unsafe extern "C" fn kclvm_builtin_str_removesuffix(
+    _ctx: *mut kclvm_context_t,
+    args: *const kclvm_value_ref_t,
+    _kwargs: *const kclvm_value_ref_t,
+) -> *const kclvm_value_ref_t {
+    let args = ptr_as_ref(args);
+    if let Some(val) = args.pop_arg_first() {
+        let suffix = args.arg_i(0).unwrap();
+        val.str_removesuffix(&suffix).into_raw()
+    } else {
+        panic!("invalid self value in str_removesuffix");
     }
 }
 
