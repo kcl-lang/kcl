@@ -330,7 +330,7 @@ fn if_expr() {
     check_parsing_expr(
         r####"1 if true else 2"####,
         expect![[r#"
-        Node { node: If(IfExpr { body: Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(1) }), filename: "", line: 1, column: 0, end_line: 1, end_column: 1 }, cond: Node { node: Identifier(Identifier { names: ["true"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 5, end_line: 1, end_column: 9 }, orelse: Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(2) }), filename: "", line: 1, column: 15, end_line: 1, end_column: 16 } }), filename: "", line: 1, column: 2, end_line: 1, end_column: 16 }
+        Node { node: If(IfExpr { body: Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(1) }), filename: "", line: 1, column: 0, end_line: 1, end_column: 1 }, cond: Node { node: Identifier(Identifier { names: ["true"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 5, end_line: 1, end_column: 9 }, orelse: Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(2) }), filename: "", line: 1, column: 15, end_line: 1, end_column: 16 } }), filename: "", line: 1, column: 0, end_line: 1, end_column: 16 }
         "#]],
     );
 }
