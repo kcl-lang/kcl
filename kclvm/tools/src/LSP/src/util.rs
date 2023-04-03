@@ -60,14 +60,13 @@ pub(crate) fn parse_param_and_compile(
         let mut k_code_list = load_files_code_from_vfs(&files, vfs)?;
         opt.k_code_list.append(&mut k_code_list);
     }
-    let mut program = load_program(Arc::new(ParseSession::default()), &files, Some(opt)).unwrap();
-    let prog_scope = resolve_program(&mut program);
 
-    Ok((
-        program,
-        prog_scope.clone(),
-        prog_scope.handler.diagnostics.clone(),
-    ))
+    let sess = Arc::new(ParseSession::default());
+    let mut program = load_program(sess.clone(), &files, Some(opt)).unwrap();
+    let prog_scope = resolve_program(&mut program);
+    sess.append_diagnostic(prog_scope.handler.diagnostics.clone());
+    let diags = sess.1.borrow().diagnostics.clone();
+    Ok((program, prog_scope.clone(), diags))
 }
 
 /// Update text with TextDocumentContentChangeEvent param

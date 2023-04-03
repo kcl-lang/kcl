@@ -1,13 +1,34 @@
 use std::path::PathBuf;
 
 use indexmap::IndexSet;
-use kclvm_error::Position as KCLPos;
+use kclvm_error::ErrorKind::InvalidSyntax;
+use kclvm_error::ErrorKind::TypeError;
+use kclvm_error::{DiagnosticId, Position as KCLPos};
 use lsp_types::{Position, Range, TextDocumentContentChangeEvent};
 
 use crate::{
     goto_def::goto_definition,
     util::{apply_document_changes, parse_param_and_compile, Param},
 };
+
+#[test]
+fn diagnostics_test() {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let mut test_file = path.clone();
+    test_file.push("src/test_data/diagnostics.k");
+    let file = test_file.to_str().unwrap();
+
+    let (_, _, diags) = parse_param_and_compile(
+        Param {
+            file: file.to_string(),
+        },
+        None,
+    )
+    .unwrap();
+    assert_eq!(diags.len(), 2);
+    assert_eq!(diags[0].code, Some(DiagnosticId::Error(InvalidSyntax)));
+    assert_eq!(diags[1].code, Some(DiagnosticId::Error(TypeError)));
+}
 
 #[test]
 fn goto_def_test() {
