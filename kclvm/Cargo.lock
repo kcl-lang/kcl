@@ -1293,11 +1293,13 @@ dependencies = [
 name = "kclvm-driver"
 version = "0.4.6"
 dependencies = [
+ "anyhow",
  "kclvm-ast",
  "kclvm-config",
  "kclvm-parser",
  "kclvm-runtime",
  "kclvm-utils",
+ "walkdir",
 ]
 
 [[package]]

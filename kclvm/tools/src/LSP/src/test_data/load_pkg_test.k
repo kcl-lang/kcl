@@ -1,0 +1,2 @@
+schema Person:
+    age: int

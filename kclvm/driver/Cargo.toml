@@ -11,3 +11,5 @@ kclvm-runtime ={ path = "../runtime"}
 kclvm-utils ={ path = "../utils"}
 kclvm-parser ={ path = "../parser"}
 kclvm-ast ={ path = "../ast"}
+walkdir = "2"
+anyhow = { version = "1.0.70", features = ["backtrace"] }
