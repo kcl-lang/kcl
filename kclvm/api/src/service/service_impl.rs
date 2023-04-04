@@ -35,7 +35,7 @@ impl KclvmServiceImpl {
     /// # Examples
     ///
     /// ```
-    /// use kclvm_api::service::KclvmServiceImpl;
+    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
     /// use kclvm_api::gpyrpc::*;
     /// let serv = KclvmServiceImpl::default();
     /// let args = &PingArgs {
@@ -57,7 +57,7 @@ impl KclvmServiceImpl {
     /// # Examples
     ///
     /// ```
-    /// use kclvm_api::service::KclvmServiceImpl;
+    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
     /// use kclvm_api::gpyrpc::*;
     /// use std::path::Path;
     ///
@@ -93,7 +93,7 @@ impl KclvmServiceImpl {
     /// # Examples
     ///
     /// ```
-    /// use kclvm_api::service::KclvmServiceImpl;
+    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
     /// use kclvm_api::gpyrpc::*;
     ///
     /// let serv = KclvmServiceImpl::default();
@@ -128,7 +128,7 @@ impl KclvmServiceImpl {
     /// # Examples
     ///
     /// ```
-    /// use kclvm_api::service::KclvmServiceImpl;
+    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
     /// use kclvm_api::gpyrpc::*;
     ///
     /// let serv = KclvmServiceImpl::default();
@@ -183,7 +183,7 @@ impl KclvmServiceImpl {
     /// # Examples
     ///
     /// ```
-    /// use kclvm_api::service::KclvmServiceImpl;
+    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
     /// use kclvm_api::gpyrpc::*;
     ///
     /// let serv = KclvmServiceImpl::default();
@@ -216,7 +216,7 @@ impl KclvmServiceImpl {
     /// # Examples
     ///
     /// ```
-    /// use kclvm_api::service::KclvmServiceImpl;
+    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
     /// use kclvm_api::gpyrpc::*;
     ///
     /// let serv = KclvmServiceImpl::default();
@@ -250,7 +250,7 @@ impl KclvmServiceImpl {
     /// # Examples
     ///
     /// ```
-    /// use kclvm_api::service::KclvmServiceImpl;
+    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
     /// use kclvm_api::gpyrpc::*;
     ///
     /// let serv = KclvmServiceImpl::default();
@@ -287,7 +287,7 @@ impl KclvmServiceImpl {
     /// # Examples
     ///
     /// ```
-    /// use kclvm_api::service::KclvmServiceImpl;
+    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
     /// use kclvm_api::gpyrpc::*;
     ///
     /// let serv = KclvmServiceImpl::default();
@@ -343,7 +343,7 @@ impl KclvmServiceImpl {
     /// # Examples
     ///
     /// ```
-    /// use kclvm_api::service::KclvmServiceImpl;
+    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
     /// use kclvm_api::gpyrpc::*;
     ///
     /// let serv = KclvmServiceImpl::default();

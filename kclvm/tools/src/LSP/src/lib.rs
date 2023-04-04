@@ -1,4 +1,5 @@
 mod analysis;
+mod completion;
 mod config;
 mod db;
 mod dispatcher;

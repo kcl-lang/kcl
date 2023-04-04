@@ -28,7 +28,7 @@ pub(crate) fn kcl_pos(file: &str, pos: Position) -> KCLPos {
 }
 
 /// Converts the given lsp range to `Range`
-pub(crate) fn text_range(text: &String, range: lsp_types::Range) -> Range<usize> {
+pub(crate) fn text_range(text: &str, range: lsp_types::Range) -> Range<usize> {
     let mut lines_length = vec![];
     let lines_text: Vec<&str> = text.split('\n').collect();
     let mut pre_total_length = 0;

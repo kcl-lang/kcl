@@ -1,7 +1,7 @@
 use crate::find_ref;
 
+use kclvm_driver::get_kcl_files;
 use kclvm_error::Position;
-use kclvm_tools::util::get_kcl_files;
 use std::collections::HashMap;
 
 // Record all occurrences of the name in a file
@@ -44,7 +44,7 @@ impl FileWordMap {
                     .push(Position {
                         filename: self.file_name.clone(),
                         line: li as u64,
-                        column: Some(x.startpos as u64),
+                        column: Some(x.startpos),
                     })
             });
         }
@@ -101,16 +101,12 @@ impl WorkSpaceWordMap {
     // build & maintain the record map for each file under the path
     pub fn build(&mut self) {
         //TODO may use some cache from other component?
-        let files = get_kcl_files(&self.path, true);
-        match files {
-            Ok(files) => {
-                for file in files.into_iter() {
-                    self.file_map
-                        .insert(file.clone(), FileWordMap::new(file.clone()));
-                    self.file_map.get_mut(&file).unwrap().build(None);
-                }
+        if let Ok(files) = get_kcl_files(&self.path, true) {
+            for file in files.into_iter() {
+                self.file_map
+                    .insert(file.clone(), FileWordMap::new(file.clone()));
+                self.file_map.get_mut(&file).unwrap().build(None);
             }
-            Err(_) => {}
         }
     }
 
@@ -118,12 +114,8 @@ impl WorkSpaceWordMap {
     pub fn get(self, name: &String) -> Option<Vec<Position>> {
         let mut words = Vec::new();
         for (_, mp) in self.file_map.iter() {
-            match mp.get(name) {
-                Some(file_words) => {
-                    // words.extend(file_words.into_iter());
-                    words.extend_from_slice(file_words);
-                }
-                None => {}
+            if let Some(file_words) = mp.get(name) {
+                words.extend_from_slice(file_words);
             }
         }
         Some(words)

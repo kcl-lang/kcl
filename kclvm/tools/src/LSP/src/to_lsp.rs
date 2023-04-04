@@ -25,6 +25,7 @@ fn kcl_msg_to_lsp_diags(msg: &Message, severity: DiagnosticSeverity) -> Diagnost
     let kcl_pos = msg.pos.clone();
     let start_position = lsp_pos(&kcl_pos);
     let end_position = lsp_pos(&kcl_pos);
+
     Diagnostic {
         range: Range::new(start_position, end_position),
         severity: Some(severity),

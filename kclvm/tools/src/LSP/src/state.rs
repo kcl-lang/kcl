@@ -235,8 +235,7 @@ fn handle_diagnostics(
 
         let diagnostics = diags
             .iter()
-            .map(|diag| kcl_diag_to_lsp_diags(diag, filename.as_str()))
-            .flatten()
+            .flat_map(|diag| kcl_diag_to_lsp_diags(diag, filename.as_str()))
             .collect::<Vec<Diagnostic>>();
         sender.send(Task::Notify(lsp_server::Notification {
             method: PublishDiagnostics::METHOD.to_owned(),

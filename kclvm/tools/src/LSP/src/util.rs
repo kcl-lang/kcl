@@ -1,9 +1,11 @@
 use std::{fs, sync::Arc};
 
 use indexmap::IndexSet;
-use kclvm_ast::ast::Program;
+use kclvm_ast::ast::{ConfigEntry, Expr, Identifier, Node, NodeRef, Program, Stmt, Type};
+use kclvm_ast::pos::ContainsPos;
 use kclvm_driver::lookup_compile_unit;
 use kclvm_error::Diagnostic;
+use kclvm_error::Position as KCLPos;
 use kclvm_parser::{load_program, ParseSession};
 use kclvm_sema::resolver::{resolve_program, scope::ProgramScope};
 use lsp_types::Url;
@@ -65,7 +67,7 @@ pub(crate) fn parse_param_and_compile(
     let prog_scope = resolve_program(&mut program);
     sess.append_diagnostic(prog_scope.handler.diagnostics.clone());
     let diags = sess.1.borrow().diagnostics.clone();
-    Ok((program, prog_scope.clone(), diags))
+    Ok((program, prog_scope, diags))
 }
 
 /// Update text with TextDocumentContentChangeEvent param
@@ -76,7 +78,7 @@ pub(crate) fn apply_document_changes(
     for change in content_changes {
         match change.range {
             Some(range) => {
-                let range = from_lsp::text_range(&old_text, range);
+                let range = from_lsp::text_range(old_text, range);
                 old_text.replace_range(range, &change.text);
             }
             None => {
@@ -108,4 +110,474 @@ fn load_files_code_from_vfs(files: &[&str], vfs: Arc<RwLock<Vfs>>) -> anyhow::Re
         }
     }
     Ok(res)
+}
+
+macro_rules! walk_if_contains {
+    ($expr: expr, $pos: expr, $schema_def: expr) => {
+        if $expr.contains_pos($pos) {
+            return inner_most_expr(&$expr, &$pos, $schema_def);
+        }
+    };
+}
+
+macro_rules! walk_if_contains_with_new_expr {
+    ($expr: expr, $pos: expr, $schema_def: expr, $kind: expr) => {
+        if $expr.contains_pos($pos) {
+            walk_if_contains!(
+                Node::node_with_pos(
+                    $kind($expr.node.clone()),
+                    (
+                        $expr.filename.clone(),
+                        $expr.line,
+                        $expr.column,
+                        $expr.end_line,
+                        $expr.end_column,
+                    ),
+                ),
+                $pos,
+                $schema_def
+            );
+        }
+    };
+}
+
+macro_rules! walk_option_if_contains {
+    ($opt: expr, $pos: expr, $schema_def: expr) => {
+        if let Some(expr) = &$opt {
+            walk_if_contains!(expr, $pos, $schema_def)
+        }
+    };
+}
+
+macro_rules! walk_list_if_contains {
+    ($list: expr, $pos: expr, $schema_def: expr) => {
+        for elem in &$list {
+            walk_if_contains!(elem, $pos, $schema_def)
+        }
+    };
+}
+
+/// Recursively finds the inner most expr and its schema_def expr if in a schema expr(e.g., schema_attr and schema_expr)
+/// in a stmt according to the position.
+pub(crate) fn inner_most_expr_in_stmt(
+    stmt: &Stmt,
+    pos: &KCLPos,
+    schema_def: Option<Node<Expr>>,
+) -> (Option<Node<Expr>>, Option<Node<Expr>>) {
+    match stmt {
+        Stmt::Assign(assign_stmt) => {
+            if let Some(ty) = &assign_stmt.type_annotation {
+                // build a temp identifier with string
+                return (
+                    Some(Node::node_with_pos(
+                        Expr::Identifier(Identifier {
+                            names: vec![ty.node.clone()],
+                            pkgpath: "".to_string(),
+                            ctx: kclvm_ast::ast::ExprContext::Load,
+                        }),
+                        (
+                            ty.filename.clone(),
+                            ty.line,
+                            ty.column,
+                            ty.end_line,
+                            ty.end_column,
+                        ),
+                    )),
+                    schema_def,
+                );
+            }
+            walk_if_contains!(assign_stmt.value, pos, schema_def);
+
+            for expr in &assign_stmt.targets {
+                walk_if_contains_with_new_expr!(expr, pos, schema_def, Expr::Identifier);
+            }
+            (None, schema_def)
+        }
+        Stmt::TypeAlias(type_alias_stmt) => {
+            walk_if_contains_with_new_expr!(
+                type_alias_stmt.type_name,
+                pos,
+                schema_def,
+                Expr::Identifier
+            );
+            (None, schema_def)
+        }
+        Stmt::Expr(expr_stmt) => {
+            walk_list_if_contains!(expr_stmt.exprs, pos, schema_def);
+            (None, schema_def)
+        }
+        Stmt::Unification(unification_stmt) => {
+            walk_if_contains_with_new_expr!(
+                unification_stmt.target,
+                pos,
+                schema_def,
+                Expr::Identifier
+            );
+
+            walk_if_contains_with_new_expr!(unification_stmt.value, pos, schema_def, Expr::Schema);
+
+            (None, schema_def)
+        }
+        Stmt::AugAssign(aug_assign_stmt) => {
+            walk_if_contains!(aug_assign_stmt.value, pos, schema_def);
+            walk_if_contains_with_new_expr!(
+                aug_assign_stmt.target,
+                pos,
+                schema_def,
+                Expr::Identifier
+            );
+            (None, schema_def)
+        }
+        Stmt::Assert(assert_stmt) => {
+            walk_if_contains!(assert_stmt.test, pos, schema_def);
+            walk_option_if_contains!(assert_stmt.if_cond, pos, schema_def);
+            walk_option_if_contains!(assert_stmt.msg, pos, schema_def);
+            (None, schema_def)
+        }
+        Stmt::If(if_stmt) => {
+            walk_if_contains!(if_stmt.cond, pos, schema_def);
+            for stmt in &if_stmt.body {
+                if stmt.contains_pos(pos) {
+                    return inner_most_expr_in_stmt(&stmt.node, pos, schema_def);
+                }
+            }
+            for stmt in &if_stmt.orelse {
+                if stmt.contains_pos(pos) {
+                    return inner_most_expr_in_stmt(&stmt.node, pos, schema_def);
+                }
+            }
+            (None, schema_def)
+        }
+        Stmt::Schema(schema_stmt) => {
+            walk_if_contains!(
+                Node::node_with_pos(
+                    Expr::Identifier(Identifier {
+                        names: vec![schema_stmt.name.node.clone()],
+                        pkgpath: "".to_string(),
+                        ctx: kclvm_ast::ast::ExprContext::Load,
+                    }),
+                    (
+                        schema_stmt.name.filename.clone(),
+                        schema_stmt.name.line,
+                        schema_stmt.name.column,
+                        schema_stmt.name.end_line,
+                        schema_stmt.name.end_column,
+                    ),
+                ),
+                pos,
+                schema_def
+            );
+            if let Some(parent_id) = &schema_stmt.parent_name {
+                walk_if_contains_with_new_expr!(parent_id, pos, schema_def, Expr::Identifier);
+            }
+            if let Some(host) = &schema_stmt.for_host_name {
+                walk_if_contains_with_new_expr!(host, pos, schema_def, Expr::Identifier);
+            }
+            for mixin in &schema_stmt.mixins {
+                walk_if_contains_with_new_expr!(mixin, pos, schema_def, Expr::Identifier);
+            }
+            for stmt in &schema_stmt.body {
+                if stmt.contains_pos(pos) {
+                    return inner_most_expr_in_stmt(&stmt.node, pos, schema_def);
+                }
+            }
+            for decorator in &schema_stmt.decorators {
+                walk_if_contains_with_new_expr!(decorator, pos, schema_def, Expr::Call);
+            }
+            for check in &schema_stmt.checks {
+                walk_if_contains_with_new_expr!(check, pos, schema_def, Expr::Check);
+            }
+            (None, schema_def)
+        }
+        Stmt::SchemaAttr(schema_attr_expr) => {
+            if schema_attr_expr.ty.contains_pos(pos) {
+                return (
+                    build_identifier_from_ty_string(&schema_attr_expr.ty, pos),
+                    schema_def,
+                );
+            }
+            walk_option_if_contains!(schema_attr_expr.value, pos, schema_def);
+            for decorator in &schema_attr_expr.decorators {
+                walk_if_contains_with_new_expr!(decorator, pos, schema_def, Expr::Call);
+            }
+            (None, schema_def)
+        }
+        Stmt::Rule(rule_stmt) => {
+            for parent_id in &rule_stmt.parent_rules {
+                walk_if_contains_with_new_expr!(parent_id, pos, schema_def, Expr::Identifier);
+            }
+            for decorator in &rule_stmt.decorators {
+                walk_if_contains_with_new_expr!(decorator, pos, schema_def, Expr::Call);
+            }
+            for check in &rule_stmt.checks {
+                walk_if_contains_with_new_expr!(check, pos, schema_def, Expr::Check);
+            }
+            (None, schema_def)
+        }
+        Stmt::Import(_) => (None, schema_def),
+    }
+}
+
+/// Recursively finds the inner most expr and its schema_def expr if in a schema expr(e.g., schema_attr in schema_expr)
+/// in a expr according to the position.
+pub(crate) fn inner_most_expr(
+    expr: &Node<Expr>,
+    pos: &KCLPos,
+    schema_def: Option<Node<Expr>>,
+) -> (Option<Node<Expr>>, Option<Node<Expr>>) {
+    if !expr.contains_pos(pos) {
+        return (None, None);
+    }
+    match &expr.node {
+        Expr::Identifier(_) => (Some(expr.clone()), schema_def),
+        Expr::Selector(select_expr) => {
+            walk_if_contains_with_new_expr!(select_expr.attr, pos, schema_def, Expr::Identifier);
+            walk_if_contains!(select_expr.value, pos, schema_def);
+            (Some(expr.clone()), schema_def)
+        }
+        Expr::Schema(schema_expr) => {
+            walk_if_contains_with_new_expr!(schema_expr.name, pos, schema_def, Expr::Identifier);
+            walk_list_if_contains!(schema_expr.args, pos, schema_def);
+
+            for kwargs in &schema_expr.kwargs {
+                walk_if_contains_with_new_expr!(kwargs, pos, schema_def, Expr::Keyword);
+            }
+            if schema_expr.config.contains_pos(pos) {
+                return inner_most_expr(&schema_expr.config, pos, Some(expr.clone()));
+            }
+            (Some(expr.clone()), schema_def)
+        }
+        Expr::Config(config_expr) => {
+            for item in &config_expr.items {
+                if item.contains_pos(pos) {
+                    return inner_most_expr_in_config_entry(item, pos, schema_def);
+                }
+            }
+            (Some(expr.clone()), schema_def)
+        }
+        Expr::Unary(unary_expr) => {
+            walk_if_contains!(unary_expr.operand, pos, schema_def);
+            (Some(expr.clone()), schema_def)
+        }
+        Expr::Binary(binary_expr) => {
+            walk_if_contains!(binary_expr.left, pos, schema_def);
+            walk_if_contains!(binary_expr.right, pos, schema_def);
+            (Some(expr.clone()), schema_def)
+        }
+        Expr::If(if_expr) => {
+            walk_if_contains!(if_expr.body, pos, schema_def);
+            walk_if_contains!(if_expr.cond, pos, schema_def);
+            walk_if_contains!(if_expr.orelse, pos, schema_def);
+            (Some(expr.clone()), schema_def)
+        }
+        Expr::Call(call_expr) => {
+            walk_list_if_contains!(call_expr.args, pos, schema_def);
+            for keyword in &call_expr.keywords {
+                walk_if_contains_with_new_expr!(keyword, pos, schema_def, Expr::Keyword);
+            }
+            walk_if_contains!(call_expr.func, pos, schema_def);
+            (Some(expr.clone()), schema_def)
+        }
+        Expr::Paren(paren_expr) => {
+            walk_if_contains!(paren_expr.expr, pos, schema_def);
+            (Some(expr.clone()), schema_def)
+        }
+        Expr::Quant(quant_expr) => {
+            walk_if_contains!(quant_expr.target, pos, schema_def);
+            for var in &quant_expr.variables {
+                walk_if_contains_with_new_expr!(var, pos, schema_def, Expr::Identifier);
+            }
+            walk_if_contains!(quant_expr.test, pos, schema_def);
+            walk_option_if_contains!(quant_expr.if_cond, pos, schema_def);
+            (Some(expr.clone()), schema_def)
+        }
+        Expr::List(list_expr) => {
+            walk_list_if_contains!(list_expr.elts, pos, schema_def);
+            (Some(expr.clone()), schema_def)
+        }
+        Expr::ListIfItem(list_if_item_expr) => {
+            walk_if_contains!(list_if_item_expr.if_cond, pos, schema_def);
+            walk_list_if_contains!(list_if_item_expr.exprs, pos, schema_def);
+            walk_option_if_contains!(list_if_item_expr.orelse, pos, schema_def);
+            (Some(expr.clone()), schema_def)
+        }
+        Expr::ListComp(list_comp_expr) => {
+            walk_if_contains!(list_comp_expr.elt, pos, schema_def);
+            for comp_clause in &list_comp_expr.generators {
+                walk_if_contains_with_new_expr!(comp_clause, pos, schema_def, Expr::CompClause);
+            }
+            (Some(expr.clone()), schema_def)
+        }
+        Expr::Starred(starred_exor) => {
+            walk_if_contains!(starred_exor.value, pos, schema_def);
+            (Some(expr.clone()), schema_def)
+        }
+        Expr::DictComp(_) => (Some(expr.clone()), schema_def),
+        Expr::ConfigIfEntry(config_if_entry_expr) => {
+            walk_if_contains!(config_if_entry_expr.if_cond, pos, schema_def);
+            for item in &config_if_entry_expr.items {
+                if item.contains_pos(pos) {
+                    return inner_most_expr_in_config_entry(item, pos, schema_def);
+                }
+            }
+            walk_option_if_contains!(config_if_entry_expr.orelse, pos, schema_def);
+            (Some(expr.clone()), schema_def)
+        }
+        Expr::CompClause(comp_clause) => {
+            for target in &comp_clause.targets {
+                walk_if_contains_with_new_expr!(target, pos, schema_def, Expr::Identifier);
+            }
+            walk_if_contains!(comp_clause.iter, pos, schema_def);
+            walk_list_if_contains!(comp_clause.ifs, pos, schema_def);
+            (Some(expr.clone()), schema_def)
+        }
+        Expr::Check(check_expr) => {
+            walk_if_contains!(check_expr.test, pos, schema_def);
+            walk_option_if_contains!(check_expr.if_cond, pos, schema_def);
+            walk_option_if_contains!(check_expr.msg, pos, schema_def);
+            (Some(expr.clone()), schema_def)
+        }
+        Expr::Lambda(lambda_expr) => {
+            if let Some(args) = &lambda_expr.args {
+                walk_if_contains_with_new_expr!(args, pos, schema_def, Expr::Arguments);
+            }
+            for stmt in &lambda_expr.body {
+                if stmt.contains_pos(pos) {
+                    return inner_most_expr_in_stmt(&stmt.node, pos, schema_def);
+                }
+            }
+
+            (Some(expr.clone()), schema_def)
+        }
+        Expr::Subscript(subscript_expr) => {
+            walk_if_contains!(subscript_expr.value, pos, schema_def);
+            walk_option_if_contains!(subscript_expr.index, pos, schema_def);
+            walk_option_if_contains!(subscript_expr.lower, pos, schema_def);
+            walk_option_if_contains!(subscript_expr.upper, pos, schema_def);
+            walk_option_if_contains!(subscript_expr.step, pos, schema_def);
+            (Some(expr.clone()), schema_def)
+        }
+        Expr::Keyword(keyword) => {
+            walk_if_contains_with_new_expr!(keyword.arg, pos, schema_def, Expr::Identifier);
+            walk_option_if_contains!(keyword.value, pos, schema_def);
+            (Some(expr.clone()), schema_def)
+        }
+        Expr::Arguments(argument) => {
+            for arg in &argument.args {
+                walk_if_contains_with_new_expr!(arg, pos, schema_def, Expr::Identifier);
+            }
+            for default in &argument.defaults {
+                walk_option_if_contains!(default, pos, schema_def);
+            }
+            for ty in argument.type_annotation_list.iter().flatten() {
+                if ty.contains_pos(pos) {
+                    return (Some(build_identifier_from_string(ty)), schema_def);
+                }
+            }
+            (Some(expr.clone()), schema_def)
+        }
+        Expr::Compare(compare_expr) => {
+            walk_if_contains!(compare_expr.left, pos, schema_def);
+            walk_list_if_contains!(compare_expr.comparators, pos, schema_def);
+            (Some(expr.clone()), schema_def)
+        }
+        Expr::NumberLit(_) => (Some(expr.clone()), schema_def),
+        Expr::StringLit(_) => (Some(expr.clone()), schema_def),
+        Expr::NameConstantLit(_) => (Some(expr.clone()), schema_def),
+        Expr::JoinedString(joined_string) => {
+            walk_list_if_contains!(joined_string.values, pos, schema_def);
+            (Some(expr.clone()), schema_def)
+        }
+        Expr::FormattedValue(formatted_value) => {
+            walk_if_contains!(formatted_value.value, pos, schema_def);
+            (Some(expr.clone()), schema_def)
+        }
+        Expr::Missing(_) => (Some(expr.clone()), schema_def),
+    }
+}
+
+fn inner_most_expr_in_config_entry(
+    config_entry: &Node<ConfigEntry>,
+    pos: &KCLPos,
+    schema_def: Option<Node<Expr>>,
+) -> (Option<Node<Expr>>, Option<Node<Expr>>) {
+    if let Some(key) = &config_entry.node.key {
+        if key.contains_pos(pos) {
+            return inner_most_expr(key, pos, schema_def);
+        }
+    }
+    if config_entry.node.value.contains_pos(pos) {
+        inner_most_expr(&config_entry.node.value, pos, None)
+    } else {
+        (None, None)
+    }
+}
+
+/// Build a temp identifier expr with string
+fn build_identifier_from_string(s: &NodeRef<String>) -> Node<Expr> {
+    Node::node_with_pos(
+        Expr::Identifier(Identifier {
+            names: vec![s.node.clone()],
+            pkgpath: "".to_string(),
+            ctx: kclvm_ast::ast::ExprContext::Load,
+        }),
+        (
+            s.filename.clone(),
+            s.line,
+            s.column,
+            s.end_line,
+            s.end_column,
+        ),
+    )
+}
+
+/// Build a temp identifier expr with string
+fn build_identifier_from_ty_string(ty: &NodeRef<Type>, pos: &KCLPos) -> Option<Node<Expr>> {
+    if !ty.contains_pos(pos) {
+        return None;
+    }
+    match &ty.node {
+        Type::Any => None,
+        Type::Named(id) => Some(Node::node_with_pos(
+            Expr::Identifier(id.clone()),
+            (
+                ty.filename.clone(),
+                ty.line,
+                ty.column,
+                ty.end_line,
+                ty.end_column,
+            ),
+        )),
+        Type::Basic(_) => None,
+        Type::List(list_ty) => {
+            if let Some(inner) = &list_ty.inner_type {
+                if inner.contains_pos(pos) {
+                    return build_identifier_from_ty_string(inner, pos);
+                }
+            }
+            None
+        }
+        Type::Dict(dict_ty) => {
+            if let Some(key_ty) = &dict_ty.key_type {
+                if key_ty.contains_pos(pos) {
+                    return build_identifier_from_ty_string(key_ty, pos);
+                }
+            }
+            if let Some(value_ty) = &dict_ty.value_type {
+                if value_ty.contains_pos(pos) {
+                    return build_identifier_from_ty_string(value_ty, pos);
+                }
+            }
+            None
+        }
+        Type::Union(union_ty) => {
+            for ty in &union_ty.type_elements {
+                if ty.contains_pos(pos) {
+                    return build_identifier_from_ty_string(ty, pos);
+                }
+            }
+            None
+        }
+        Type::Literal(_) => None,
+    }
 }

@@ -1,6 +1,5 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 177
 expression: "crate::tests::parsing_module_string(r#\"if True: a = 1 else b = 2\"#)"
 ---
 Module {
@@ -83,7 +82,7 @@ Module {
                                             },
                                             filename: "",
                                             line: 1,
-                                            column: 20,
+                                            column: 22,
                                             end_line: 1,
                                             end_column: 23,
                                         },

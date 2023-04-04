@@ -1,6 +1,5 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 248
 expression: "crate::tests::parsing_module_string(r#\"\nrule A:\n    @\n\"#)"
 ---
 Module {
@@ -53,7 +52,7 @@ Module {
                                     ),
                                     filename: "",
                                     line: 3,
-                                    column: 4,
+                                    column: 5,
                                     end_line: 3,
                                     end_column: 6,
                                 },
