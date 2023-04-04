@@ -16,6 +16,16 @@ Node {
                                         names: [
                                             "a",
                                         ],
+                                        pos: [
+                                            Node {
+                                                node: (),
+                                                filename: "",
+                                                line: 1,
+                                                column: 1,
+                                                end_line: 1,
+                                                end_column: 2,
+                                            },
+                                        ],
                                         pkgpath: "",
                                         ctx: Load,
                                     },
@@ -59,6 +69,16 @@ Node {
                                     Identifier {
                                         names: [
                                             "b",
+                                        ],
+                                        pos: [
+                                            Node {
+                                                node: (),
+                                                filename: "",
+                                                line: 1,
+                                                column: 7,
+                                                end_line: 1,
+                                                end_column: 8,
+                                            },
                                         ],
                                         pkgpath: "",
                                         ctx: Load,

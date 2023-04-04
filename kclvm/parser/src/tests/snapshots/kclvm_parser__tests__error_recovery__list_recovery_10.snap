@@ -1,6 +1,6 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 50
+assertion_line: 52
 expression: "crate::tests::parsing_expr_string(\"[**a, *b\")"
 ---
 Node {
@@ -29,6 +29,16 @@ Node {
                                         names: [
                                             "a",
                                         ],
+                                        pos: [
+                                            Node {
+                                                node: (),
+                                                filename: "",
+                                                line: 1,
+                                                column: 3,
+                                                end_line: 1,
+                                                end_column: 4,
+                                            },
+                                        ],
                                         pkgpath: "",
                                         ctx: Load,
                                     },
@@ -55,6 +65,16 @@ Node {
                                     Identifier {
                                         names: [
                                             "b",
+                                        ],
+                                        pos: [
+                                            Node {
+                                                node: (),
+                                                filename: "",
+                                                line: 1,
+                                                column: 7,
+                                                end_line: 1,
+                                                end_column: 8,
+                                            },
                                         ],
                                         pkgpath: "",
                                         ctx: Load,

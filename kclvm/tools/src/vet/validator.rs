@@ -214,6 +214,7 @@ fn build_assign(attr_name: &str, node: NodeRef<Expr>) -> NodeRef<Stmt> {
     node_ref!(Stmt::Assign(AssignStmt {
         targets: vec![node_ref!(Identifier {
             names: vec![attr_name.to_string()],
+            pos: vec![node_ref!(())],
             pkgpath: String::new(),
             ctx: ExprContext::Store,
         })],

@@ -1,6 +1,6 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 175
+assertion_line: 179
 expression: "crate::tests::parsing_module_string(r#\"if True: a = 1 else if b = 2\"#)"
 ---
 Module {
@@ -21,6 +21,16 @@ Module {
                                             node: Identifier {
                                                 names: [
                                                     "a",
+                                                ],
+                                                pos: [
+                                                    Node {
+                                                        node: (),
+                                                        filename: "",
+                                                        line: 1,
+                                                        column: 9,
+                                                        end_line: 1,
+                                                        end_column: 10,
+                                                    },
                                                 ],
                                                 pkgpath: "",
                                                 ctx: Store,
@@ -79,6 +89,16 @@ Module {
                                             node: Identifier {
                                                 names: [
                                                     "b",
+                                                ],
+                                                pos: [
+                                                    Node {
+                                                        node: (),
+                                                        filename: "",
+                                                        line: 1,
+                                                        column: 23,
+                                                        end_line: 1,
+                                                        end_column: 24,
+                                                    },
                                                 ],
                                                 pkgpath: "",
                                                 ctx: Store,

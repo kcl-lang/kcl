@@ -1,6 +1,6 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 200
+assertion_line: 204
 expression: "crate::tests::parsing_module_string(r#\"schema A:\n[str]: ''= \"#)"
 ---
 Module {
@@ -46,6 +46,7 @@ Module {
                         Node {
                             node: Identifier {
                                 names: [],
+                                pos: [],
                                 pkgpath: "",
                                 ctx: Load,
                             },

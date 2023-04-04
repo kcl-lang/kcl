@@ -1,6 +1,6 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 83
+assertion_line: 99
 expression: "crate::tests::parsing_expr_string(r#\"if True else\"#)"
 ---
 Node {
@@ -8,6 +8,16 @@ Node {
         Identifier {
             names: [
                 "if",
+            ],
+            pos: [
+                Node {
+                    node: (),
+                    filename: "",
+                    line: 1,
+                    column: 0,
+                    end_line: 1,
+                    end_column: 2,
+                },
             ],
             pkgpath: "",
             ctx: Load,

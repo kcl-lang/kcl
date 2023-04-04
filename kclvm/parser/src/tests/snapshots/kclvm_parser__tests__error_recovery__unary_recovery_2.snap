@@ -1,6 +1,6 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 57
+assertion_line: 73
 expression: "crate::tests::parsing_expr_string(r#\"not (!a)\"#)"
 ---
 Node {
@@ -19,6 +19,16 @@ Node {
                                             Identifier {
                                                 names: [
                                                     "a",
+                                                ],
+                                                pos: [
+                                                    Node {
+                                                        node: (),
+                                                        filename: "",
+                                                        line: 1,
+                                                        column: 6,
+                                                        end_line: 1,
+                                                        end_column: 7,
+                                                    },
                                                 ],
                                                 pkgpath: "",
                                                 ctx: Load,

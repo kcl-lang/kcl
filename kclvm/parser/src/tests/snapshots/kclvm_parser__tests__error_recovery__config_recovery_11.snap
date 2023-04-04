@@ -35,6 +35,16 @@ Node {
                                                                 names: [
                                                                     "a",
                                                                 ],
+                                                                pos: [
+                                                                    Node {
+                                                                        node: (),
+                                                                        filename: "",
+                                                                        line: 1,
+                                                                        column: 10,
+                                                                        end_line: 1,
+                                                                        end_column: 11,
+                                                                    },
+                                                                ],
                                                                 pkgpath: "",
                                                                 ctx: Load,
                                                             },
@@ -73,6 +83,16 @@ Node {
                                                             Identifier {
                                                                 names: [
                                                                     "b",
+                                                                ],
+                                                                pos: [
+                                                                    Node {
+                                                                        node: (),
+                                                                        filename: "",
+                                                                        line: 1,
+                                                                        column: 16,
+                                                                        end_line: 1,
+                                                                        end_column: 17,
+                                                                    },
                                                                 ],
                                                                 pkgpath: "",
                                                                 ctx: Load,

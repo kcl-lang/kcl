@@ -6,6 +6,7 @@ use crate::{ast, ast::*};
 fn build_assign_node(attr_name: &str, assign_value: NodeRef<Expr>) -> NodeRef<Stmt> {
     let iden = node_ref!(Identifier {
         names: vec![attr_name.to_string()],
+        pos: vec![node_ref!(())],
         pkgpath: String::new(),
         ctx: ExprContext::Store
     });
@@ -29,6 +30,7 @@ fn get_dummy_assign_ast() -> ast::Node<ast::AssignStmt> {
             targets: vec![Box::new(ast::Node::new(
                 ast::Identifier {
                     names: vec![String::from("a")],
+                    pos: vec![node_ref!(())],
                     pkgpath: String::from(filename),
                     ctx: ast::ExprContext::Load,
                 },
@@ -72,6 +74,7 @@ fn get_dummy_assign_binary_ast() -> ast::Node<ast::AssignStmt> {
             targets: vec![Box::new(ast::Node::new(
                 ast::Identifier {
                     names: vec![String::from("a")],
+                    pos: vec![node_ref!(())],
                     pkgpath: String::from(filename),
                     ctx: ast::ExprContext::Load,
                 },
@@ -87,6 +90,7 @@ fn get_dummy_assign_binary_ast() -> ast::Node<ast::AssignStmt> {
                     left: Box::new(ast::Node::new(
                         ast::Expr::Identifier(ast::Identifier {
                             names: vec![String::from("a")],
+                            pos: vec![node_ref!(())],
                             pkgpath: String::from(filename),
                             ctx: ast::ExprContext::Load,
                         }),
@@ -99,6 +103,7 @@ fn get_dummy_assign_binary_ast() -> ast::Node<ast::AssignStmt> {
                     right: Box::new(ast::Node::new(
                         ast::Expr::Identifier(ast::Identifier {
                             names: vec![String::from("a")],
+                            pos: vec![node_ref!(())],
                             pkgpath: String::from(filename),
                             ctx: ast::ExprContext::Load,
                         }),
@@ -236,6 +241,7 @@ fn test_filter_schema_with_mult_schema() {
 fn test_build_assign_stmt() {
     let test_expr = node_ref!(ast::Expr::Identifier(Identifier {
         names: vec!["name1".to_string(), "name2".to_string()],
+        pos: vec![node_ref!(())],
         pkgpath: "test".to_string(),
         ctx: ast::ExprContext::Load
     }));

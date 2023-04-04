@@ -1,6 +1,6 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 174
+assertion_line: 178
 expression: "crate::tests::parsing_module_string(r#\"if True a = 1\"#)"
 ---
 Module {
@@ -20,6 +20,7 @@ Module {
                                         Node {
                                             node: Identifier {
                                                 names: [],
+                                                pos: [],
                                                 pkgpath: "",
                                                 ctx: Load,
                                             },

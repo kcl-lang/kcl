@@ -1,6 +1,6 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 222
+assertion_line: 226
 expression: "crate::tests::parsing_module_string(r#\"@deprecated(a,\nschema A:\n    a: \"#)"
 ---
 Module {
@@ -78,6 +78,16 @@ Module {
                                             names: [
                                                 "deprecated",
                                             ],
+                                            pos: [
+                                                Node {
+                                                    node: (),
+                                                    filename: "",
+                                                    line: 1,
+                                                    column: 1,
+                                                    end_line: 1,
+                                                    end_column: 11,
+                                                },
+                                            ],
                                             pkgpath: "",
                                             ctx: Load,
                                         },
@@ -94,6 +104,16 @@ Module {
                                             Identifier {
                                                 names: [
                                                     "a",
+                                                ],
+                                                pos: [
+                                                    Node {
+                                                        node: (),
+                                                        filename: "",
+                                                        line: 1,
+                                                        column: 12,
+                                                        end_line: 1,
+                                                        end_column: 13,
+                                                    },
                                                 ],
                                                 pkgpath: "",
                                                 ctx: Load,

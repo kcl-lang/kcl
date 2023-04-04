@@ -1,6 +1,6 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 96
+assertion_line: 112
 expression: "crate::tests::parsing_expr_string(r#\"[0].?[0]\"#)"
 ---
 Node {
@@ -42,6 +42,16 @@ Node {
                             node: Identifier {
                                 names: [
                                     "",
+                                ],
+                                pos: [
+                                    Node {
+                                        node: (),
+                                        filename: "",
+                                        line: 1,
+                                        column: 4,
+                                        end_line: 1,
+                                        end_column: 5,
+                                    },
                                 ],
                                 pkgpath: "",
                                 ctx: Load,

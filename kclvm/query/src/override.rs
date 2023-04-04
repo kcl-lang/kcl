@@ -111,8 +111,11 @@ pub fn apply_override_on_module(
     let target_id = ss[0];
     let field = ss[1..].join(".");
     let value = &o.field_value;
+    let names: Vec<String> = field.split('.').map(|s| s.to_string()).collect();
+    let length = names.len();
     let key = ast::Identifier {
-        names: field.split('.').map(|s| s.to_string()).collect(),
+        names,
+        pos: vec![Box::new(ast::Node::dummy_node(())); length],
         ctx: ast::ExprContext::Store,
         pkgpath: "".to_string(),
     };

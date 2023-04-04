@@ -13,15 +13,19 @@ impl ConfigNestAttrTransformer {
             if let ast::Expr::Identifier(identifier) = &mut key.node {
                 if identifier.names.len() > 1 {
                     let mut names = identifier.names.clone();
+                    let mut pos = identifier.pos.clone();
                     let names = &mut names[1..];
+                    let pos = &mut pos[1..];
                     names.reverse();
                     identifier.names = vec![identifier.names[0].clone()];
+                    identifier.pos = vec![identifier.pos[0].clone()];
 
                     let mut value = config_entry.node.value.clone();
                     for (i, name) in names.iter().enumerate() {
                         let is_last_item = i == 0;
                         let name_node = ast::Identifier {
                             names: vec![name.clone()],
+                            pos: vec![pos[i].clone()],
                             pkgpath: "".to_string(),
                             ctx: ast::ExprContext::Load,
                         };

@@ -1,6 +1,6 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 216
+assertion_line: 220
 expression: "crate::tests::parsing_module_string(r#\"@deprecated(\nschema A:\n    a: \"#)"
 ---
 Module {
@@ -77,6 +77,16 @@ Module {
                                         Identifier {
                                             names: [
                                                 "deprecated",
+                                            ],
+                                            pos: [
+                                                Node {
+                                                    node: (),
+                                                    filename: "",
+                                                    line: 1,
+                                                    column: 1,
+                                                    end_line: 1,
+                                                    end_column: 11,
+                                                },
                                             ],
                                             pkgpath: "",
                                             ctx: Load,

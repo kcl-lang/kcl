@@ -1,6 +1,6 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 102
+assertion_line: 118
 expression: "crate::tests::parsing_expr_string(r#\"''.lower().\"#)"
 ---
 Node {
@@ -30,6 +30,16 @@ Node {
                                         node: Identifier {
                                             names: [
                                                 "lower",
+                                            ],
+                                            pos: [
+                                                Node {
+                                                    node: (),
+                                                    filename: "",
+                                                    line: 1,
+                                                    column: 3,
+                                                    end_line: 1,
+                                                    end_column: 8,
+                                                },
                                             ],
                                             pkgpath: "",
                                             ctx: Load,
@@ -64,6 +74,16 @@ Node {
                 node: Identifier {
                     names: [
                         "",
+                    ],
+                    pos: [
+                        Node {
+                            node: (),
+                            filename: "",
+                            line: 1,
+                            column: 11,
+                            end_line: 1,
+                            end_column: 11,
+                        },
                     ],
                     pkgpath: "",
                     ctx: Load,

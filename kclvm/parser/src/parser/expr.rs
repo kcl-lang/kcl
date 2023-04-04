@@ -2040,17 +2040,26 @@ impl<'a> Parser<'a> {
     pub(crate) fn parse_identifier(&mut self) -> NodeRef<Identifier> {
         let token = self.token;
         let mut names = Vec::new();
+        let mut pos = Vec::new();
         let ident = self.token.ident();
         match ident {
             Some(id) => {
                 names.push(id.as_str());
+                pos.push(Box::new(Node::node(
+                    (),
+                    self.sess.struct_token_loc(self.token, self.token),
+                )));
                 self.bump();
             }
             None => {
                 {
                     self.sess
                         .struct_token_error(&[TokenKind::ident_value()], self.token);
-                    names.push("".to_string())
+                    names.push("".to_string());
+                    pos.push(Box::new(Node::node(
+                        (),
+                        self.sess.struct_token_loc(self.token, self.token),
+                    )));
                 };
             }
         }
@@ -2063,13 +2072,21 @@ impl<'a> Parser<'a> {
                     let ident = self.token.ident();
                     match ident {
                         Some(id) => {
-                            names.push(id.as_str().to_string());
+                            names.push(id.as_str());
+                            pos.push(Box::new(Node::node(
+                                (),
+                                self.sess.struct_token_loc(self.token, self.token),
+                            )));
                             self.bump();
                         }
                         None => {
                             self.sess
                                 .struct_token_error(&[TokenKind::ident_value()], self.token);
-                            names.push("".to_string())
+                            names.push("".to_string());
+                            pos.push(Box::new(Node::node(
+                                (),
+                                self.sess.struct_token_loc(self.token, self.token),
+                            )));
                         }
                     }
                 }
@@ -2080,6 +2097,7 @@ impl<'a> Parser<'a> {
         Box::new(Node::node(
             Identifier {
                 names,
+                pos,
                 pkgpath: "".to_string(),
                 ctx: ExprContext::Load,
             },

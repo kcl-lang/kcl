@@ -1,6 +1,6 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 168
+assertion_line: 172
 expression: "crate::tests::parsing_module_string(r#\"type 'pkg_path'\"#)"
 ---
 Module {
@@ -15,6 +15,7 @@ Module {
                     type_name: Node {
                         node: Identifier {
                             names: [],
+                            pos: [],
                             pkgpath: "",
                             ctx: Load,
                         },

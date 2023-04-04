@@ -173,6 +173,7 @@ impl Node<Expr> {
         Node {
             node: Identifier {
                 names: vec![],
+                pos: vec![],
                 pkgpath: String::new(),
                 ctx: ExprContext::Load,
             },
@@ -607,6 +608,7 @@ pub enum Expr {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Identifier {
     pub names: Vec<String>,
+    pub pos: Vec<NodeRef<()>>,
     pub pkgpath: String,
     pub ctx: ExprContext,
 }
@@ -1466,7 +1468,7 @@ impl ToString for Type {
             match typ {
                 Type::Any => w.push_str("any"),
                 Type::Named(x) => {
-                    w.push_str(&x.names.join("."));
+                    w.push_str(&x.get_name());
                 }
                 Type::Basic(x) => {
                     w.push_str(match x {

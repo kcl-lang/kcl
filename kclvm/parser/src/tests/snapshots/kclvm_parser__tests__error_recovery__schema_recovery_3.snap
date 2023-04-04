@@ -1,6 +1,6 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 122
+assertion_line: 138
 expression: "crate::tests::parsing_expr_string(r#\"s?.a {a=1}\"#)"
 ---
 Node {
@@ -11,6 +11,16 @@ Node {
                     Identifier {
                         names: [
                             "s",
+                        ],
+                        pos: [
+                            Node {
+                                node: (),
+                                filename: "",
+                                line: 1,
+                                column: 0,
+                                end_line: 1,
+                                end_column: 1,
+                            },
                         ],
                         pkgpath: "",
                         ctx: Load,
@@ -26,6 +36,16 @@ Node {
                 node: Identifier {
                     names: [
                         "a",
+                    ],
+                    pos: [
+                        Node {
+                            node: (),
+                            filename: "",
+                            line: 1,
+                            column: 3,
+                            end_line: 1,
+                            end_column: 4,
+                        },
                     ],
                     pkgpath: "",
                     ctx: Load,

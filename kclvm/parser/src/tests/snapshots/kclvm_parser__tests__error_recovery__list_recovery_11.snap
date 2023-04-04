@@ -1,7 +1,7 @@
 ---
 source: parser/src/tests/error_recovery.rs
 assertion_line: 53
-expression: "crate::tests::parsing_expr_string(r#\"[if True: a, b]\"#)"
+expression: "crate::tests::parsing_expr_string(\"[if True: a, b]\")"
 ---
 Node {
     node: List(
@@ -29,6 +29,16 @@ Node {
                                             names: [
                                                 "a",
                                             ],
+                                            pos: [
+                                                Node {
+                                                    node: (),
+                                                    filename: "",
+                                                    line: 1,
+                                                    column: 10,
+                                                    end_line: 1,
+                                                    end_column: 11,
+                                                },
+                                            ],
                                             pkgpath: "",
                                             ctx: Load,
                                         },
@@ -54,6 +64,16 @@ Node {
                         Identifier {
                             names: [
                                 "b",
+                            ],
+                            pos: [
+                                Node {
+                                    node: (),
+                                    filename: "",
+                                    line: 1,
+                                    column: 13,
+                                    end_line: 1,
+                                    end_column: 14,
+                                },
                             ],
                             pkgpath: "",
                             ctx: Load,
