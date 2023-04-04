@@ -1,0 +1,19 @@
+[package]
+name = "prost-wkt"
+version = "0.4.1"
+authors = ["fdeantoni <fdeantoni@gmail.com>"]
+license = "Apache-2.0"
+repository = "https://github.com/fdeantoni/prost-wkt"
+description = "Helper crate for prost to allow JSON serialization and deserialization of Well Known Types."
+readme = "README.md"
+documentation = "https://docs.rs/prost-wkt-derive"
+edition = "2021"
+
+[dependencies]
+prost = "0.11.6"
+inventory = "0.3.0"
+serde = "1.0"
+serde_json = "1.0"
+serde_derive = "1.0"
+chrono = { version = "0.4", default-features = false, features = ["serde"] }
+typetag = "0.2"

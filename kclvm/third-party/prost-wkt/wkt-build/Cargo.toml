@@ -1,0 +1,17 @@
+[package]
+name = "prost-wkt-build"
+version = "0.4.1"
+authors = ["fdeantoni <fdeantoni@gmail.com>"]
+license = "Apache-2.0"
+repository = "https://github.com/fdeantoni/prost-wkt"
+description = "Helper crate for prost to allow JSON serialization and deserialization of Well Known Types."
+readme = "../README.md"
+documentation = "https://docs.rs/prost-wkt-build"
+edition = "2021"
+
+[dependencies]
+prost = "0.11.6"
+prost-types = "0.11.5"
+prost-build = "0.11.5"
+quote = "1.0"
+heck = "0.4"
