@@ -1,6 +1,6 @@
 use lsp_types::{
     ClientCapabilities, CompletionOptions, OneOf, ServerCapabilities, TextDocumentSyncCapability,
-    TextDocumentSyncKind, WorkDoneProgressOptions,
+    TextDocumentSyncKind, WorkDoneProgressOptions, HoverProviderCapability,
 };
 
 /// Returns the capabilities of this LSP server implementation given the capabilities of the client.
@@ -16,6 +16,7 @@ pub fn server_capabilities(_client_caps: &ClientCapabilities) -> ServerCapabilit
                 work_done_progress: None,
             },
         }),
+        hover_provider: Some(HoverProviderCapability::Simple(true)),
         definition_provider: Some(OneOf::Left(true)),
         ..Default::default()
     }

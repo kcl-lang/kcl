@@ -15,6 +15,7 @@ mod request;
 mod state;
 mod to_lsp;
 mod util;
+mod hover;
 
 #[cfg(test)]
 mod tests;

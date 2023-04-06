@@ -9,7 +9,7 @@ use crate::{
     from_lsp::kcl_pos,
     goto_def::goto_definition,
     state::{log_message, LanguageServerSnapshot, LanguageServerState, Task},
-    util::{parse_param_and_compile, Param},
+    util::{parse_param_and_compile, Param}, hover,
 };
 
 impl LanguageServerState {
@@ -40,6 +40,7 @@ impl LanguageServerState {
             })?
             .on::<lsp_types::request::GotoDefinition>(handle_goto_definition)?
             .on::<lsp_types::request::Completion>(handle_completion)?
+            .on::<lsp_types::request::HoverRequest>(handle_hover)?
             .finish();
 
         Ok(())
@@ -103,6 +104,38 @@ pub(crate) fn handle_completion(
 
     let res = completion(
         completion_trigger_character,
+        &program,
+        &kcl_pos,
+        &prog_scope,
+    );
+    Ok(res)
+}
+
+/// Called when a `Completion` request was received.
+pub(crate) fn handle_hover(
+    snapshot: LanguageServerSnapshot,
+    params: lsp_types::HoverParams,
+    sender: Sender<Task>,
+) -> anyhow::Result<Option<lsp_types::Hover>> {
+    let file = params.text_document_position_params.text_document.uri.path();
+
+    let (program, prog_scope, _) = parse_param_and_compile(
+        Param {
+            file: file.to_string(),
+        },
+        Some(snapshot.vfs),
+    )
+    .unwrap();
+    let kcl_pos = kcl_pos(file, params.text_document_position_params.position);
+    log_message(
+        format!(
+            "handle_hover {:?}",
+            params.text_document_position_params.position
+        ),
+        &sender,
+    )?;
+
+    let res = hover::hover(
         &program,
         &kcl_pos,
         &prog_scope,

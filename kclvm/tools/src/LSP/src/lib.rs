@@ -12,3 +12,4 @@ mod util;
 
 mod goto_def;
 mod request;
+mod hover;

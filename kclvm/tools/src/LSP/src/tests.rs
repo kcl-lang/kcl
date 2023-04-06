@@ -10,8 +10,10 @@ use kclvm_sema::builtin::MATH_FUNCTION_NAMES;
 use kclvm_sema::builtin::STRING_MEMBER_FUNCTIONS;
 use kclvm_sema::resolver::scope::ProgramScope;
 use lsp_types::CompletionResponse;
+use lsp_types::MarkedString;
 use lsp_types::{Position, Range, TextDocumentContentChangeEvent};
 
+use crate::hover::hover;
 use crate::{
     completion::{completion, into_completion_items},
     goto_def::goto_definition,
@@ -122,7 +124,7 @@ fn goto_schema_def_test() {
     let mut expected_path = path;
     expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
 
-    // test goto import file: import .pkg.schema_def
+    // test goto schema definition: p = pkg.Person
     let pos = KCLPos {
         filename: file,
         line: 4,
@@ -407,9 +409,7 @@ fn goto_schema_attr_ty_def_test5() {
             assert_eq!(got_start, expected_start);
             assert_eq!(got_end, expected_end);
         }
-        _ => {
-            unreachable!("test error")
-        }
+        _ => unreachable!("test error")
     }
 }
 
@@ -584,4 +584,32 @@ fn completion_test() {
         CompletionResponse::List(_) => unreachable!("test error"),
     }
     items.clear();
+}
+
+#[test]
+fn schema_doc_hover_test() {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+
+    let (file, program, prog_scope, _) =
+        compile_test_file("src/test_data/goto_def_test/goto_def.k");
+
+    let mut expected_path = path;
+    expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
+
+    // test hover of schema doc: p = pkg.Person
+    let pos = KCLPos {
+        filename: file,
+        line: 4,
+        column: Some(11),
+    };
+    let got = hover(&program, &pos, &prog_scope).unwrap();
+    match got.contents{
+        lsp_types::HoverContents::Scalar(marked_string) => {
+            if let MarkedString::String(s) = marked_string{
+                assert_eq!(s, "\"\"\"\n    hover doc test \n    \"\"\"");
+            }
+        },
+        _ => unreachable!("test error")
+    }
+
 }
