@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use crate::settings::must_build_settings;
 
-/// Run the KCL main command.
+/// Run the KCL run command.
 pub fn run_command(matches: &ArgMatches) -> Result<()> {
     // Config settings building
     let settings = must_build_settings(matches);
