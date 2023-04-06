@@ -38,6 +38,8 @@ pub fn main(args: &[&str]) -> Result<()> {
             (@arg argument: ... -D --argument "Specify the top-level argument")
             (@arg emit_warning: --emit_warning "Emit warning message")
         )
+        (@subcommand server =>
+        )
     )
     .arg_required_else_help(true)
     .get_matches_from(args);
@@ -46,6 +48,8 @@ pub fn main(args: &[&str]) -> Result<()> {
         run_command(matches)
     } else if let Some(matches) = matches.subcommand_matches("lint") {
         lint_command(matches)
+    } else if let Some(_matches) = matches.subcommand_matches("server") {
+        kclvm_api::service::jsonrpc::start_stdio_server()
     } else {
         Ok(())
     }

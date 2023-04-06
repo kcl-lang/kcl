@@ -8,7 +8,7 @@ anyhow = "1.0"
 clap = "3.2.22"
 compiler_base_session = {path = "../../compiler_base/session"}
 
-kclvm-capi = {path = "../capi",version = "0.4.6"}
+kclvm-api = {path = "../api"}
 kclvm-parser = {path = "../parser"}
 kclvm-runner = {path = "../runner"}
 kclvm-config = {path = "../config"}

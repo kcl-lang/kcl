@@ -1,32 +1,31 @@
-use crate::model::gpyrpc::{Decorator, KclType};
+use crate::gpyrpc::{Decorator, KclType};
 use indexmap::IndexSet;
 use kclvm_runtime::SCHEMA_SETTINGS_ATTR_NAME;
 use kclvm_sema::ty::{SchemaType, Type};
-use protobuf::MessageField;
 use std::collections::HashMap;
 
 /// Convert the kcl sematic type to the kcl protobuf type.
 pub(crate) fn kcl_ty_to_pb_ty(ty: &Type) -> KclType {
     match &ty.kind {
         kclvm_sema::ty::TypeKind::List(item_ty) => KclType {
-            type_: "list".to_string(),
-            item: MessageField::some(kcl_ty_to_pb_ty(item_ty)),
+            r#type: "list".to_string(),
+            item: Some(Box::new(kcl_ty_to_pb_ty(item_ty))),
             ..Default::default()
         },
         kclvm_sema::ty::TypeKind::Dict(key_ty, val_ty) => KclType {
-            type_: "dict".to_string(),
-            key: MessageField::some(kcl_ty_to_pb_ty(key_ty)),
-            item: MessageField::some(kcl_ty_to_pb_ty(val_ty)),
+            r#type: "dict".to_string(),
+            key: Some(Box::new(kcl_ty_to_pb_ty(key_ty))),
+            item: Some(Box::new(kcl_ty_to_pb_ty(val_ty))),
             ..Default::default()
         },
         kclvm_sema::ty::TypeKind::Union(types) => KclType {
-            type_: "union".to_string(),
+            r#type: "union".to_string(),
             union_types: types.iter().map(|ty| kcl_ty_to_pb_ty(ty)).collect(),
             ..Default::default()
         },
         kclvm_sema::ty::TypeKind::Schema(schema_ty) => kcl_schema_ty_to_pb_ty(schema_ty),
         _ => KclType {
-            type_: ty.ty_str(),
+            r#type: ty.ty_str(),
             ..Default::default()
         },
     }
@@ -35,7 +34,7 @@ pub(crate) fn kcl_ty_to_pb_ty(ty: &Type) -> KclType {
 /// Convert the kcl sematic type to the kcl protobuf type.
 pub(crate) fn kcl_schema_ty_to_pb_ty(schema_ty: &SchemaType) -> KclType {
     KclType {
-        type_: "schema".to_string(),
+        r#type: "schema".to_string(),
         schema_name: schema_ty.name.clone(),
         schema_doc: schema_ty.doc.clone(),
         properties: get_schema_ty_attributes(schema_ty, &mut 1),

@@ -6,7 +6,7 @@
         "path_selector": [],
         "strict_range_check": true,
         "disable_none": false,
-        "verbose": "0",
+        "verbose": 0,
         "debug": false
     },
     "kcl_options": [
