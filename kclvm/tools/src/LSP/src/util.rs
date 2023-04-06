@@ -51,7 +51,7 @@ pub(crate) fn parse_param_and_compile(
     param: Param,
     vfs: Option<Arc<RwLock<Vfs>>>,
 ) -> anyhow::Result<(Program, ProgramScope, IndexSet<Diagnostic>)> {
-    let (files, opt) = lookup_compile_unit(&param.file);
+    let (files, opt) = lookup_compile_unit(&param.file, true);
     let files: Vec<&str> = files.iter().map(|s| s.as_str()).collect();
     let mut opt = opt.unwrap_or_default();
 
@@ -60,7 +60,6 @@ pub(crate) fn parse_param_and_compile(
         let mut k_code_list = load_files_code_from_vfs(&files, vfs)?;
         opt.k_code_list.append(&mut k_code_list);
     }
-
     let sess = Arc::new(ParseSession::default());
     let mut program = load_program(sess.clone(), &files, Some(opt)).unwrap();
     let prog_scope = resolve_program(&mut program);

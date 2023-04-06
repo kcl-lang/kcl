@@ -1,6 +1,7 @@
+use anyhow::Result;
 use kclvm_ast::ast;
 use kclvm_config::{
-    modfile::KCL_MOD_PATH_ENV,
+    modfile::{KCL_FILE_EXTENSION, KCL_FILE_SUFFIX, KCL_MOD_PATH_ENV},
     settings::{build_settings_pathbuf, DEFAULT_SETTING_FILE},
 };
 use kclvm_parser::LoadProgramOptions;
@@ -12,6 +13,7 @@ use std::{
     io::{self, ErrorKind},
     path::{Path, PathBuf},
 };
+use walkdir::WalkDir;
 
 /// Normalize input files with the working directory and replace ${KCL_MOD} with the module root path.
 pub fn canonicalize_input_files(
@@ -58,7 +60,10 @@ pub fn canonicalize_input_files(
 }
 
 /// Get compile uint(files and options) from a single file
-pub fn lookup_compile_unit(file: &str) -> (Vec<String>, Option<LoadProgramOptions>) {
+pub fn lookup_compile_unit(
+    file: &str,
+    load_pkg: bool,
+) -> (Vec<String>, Option<LoadProgramOptions>) {
     match lookup_compile_unit_path(file) {
         Ok(dir) => {
             let settings_files = lookup_setting_files(&dir);
@@ -111,7 +116,21 @@ pub fn lookup_compile_unit(file: &str) -> (Vec<String>, Option<LoadProgramOption
                 Err(_) => return (vec![file.to_string()], None),
             }
         }
-        Err(_) => return (vec![file.to_string()], None),
+        Err(_) => {
+            if load_pkg {
+                let path = Path::new(file);
+                if let Some(ext) = path.extension() {
+                    if ext == KCL_FILE_EXTENSION && path.is_file() {
+                        if let Some(parent) = path.parent() {
+                            if let Ok(files) = get_kcl_files(parent, false) {
+                                return (files, None);
+                            }
+                        }
+                    }
+                }
+            }
+            return (vec![file.to_string()], None);
+        }
     }
 }
 
@@ -151,4 +170,19 @@ pub fn lookup_compile_unit_path(file: &str) -> io::Result<PathBuf> {
         ErrorKind::NotFound,
         "Ran out of places to find kcl.yaml",
     ))
+}
+
+/// Get kcl files from path.
+pub fn get_kcl_files<P: AsRef<Path>>(path: P, recursively: bool) -> Result<Vec<String>> {
+    let mut files = vec![];
+    for entry in WalkDir::new(path).into_iter().filter_map(|e| e.ok()) {
+        let path = entry.path();
+        if path.is_file() {
+            let file = path.to_str().unwrap();
+            if file.ends_with(KCL_FILE_SUFFIX) && (recursively || entry.depth() == 1) {
+                files.push(file.to_string())
+            }
+        }
+    }
+    Ok(files)
 }
