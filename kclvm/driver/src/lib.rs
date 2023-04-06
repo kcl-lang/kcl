@@ -1,4 +1,9 @@
 use anyhow::Result;
+pub mod arguments;
+
+#[cfg(test)]
+mod tests;
+
 use kclvm_ast::ast;
 use kclvm_config::{
     modfile::{KCL_FILE_EXTENSION, KCL_FILE_SUFFIX, KCL_MOD_PATH_ENV},
@@ -8,7 +13,6 @@ use kclvm_parser::LoadProgramOptions;
 use kclvm_runtime::PanicInfo;
 use kclvm_utils::path::PathPrefix;
 use std::{
-    ffi::OsString,
     fs::read_dir,
     io::{self, ErrorKind},
     path::{Path, PathBuf},
@@ -28,7 +32,7 @@ pub fn canonicalize_input_files(
         // join with the work directory path and convert it to a absolute path.
         if !file.starts_with(KCL_MOD_PATH_ENV) && !Path::new(file).is_absolute() {
             match Path::new(&work_dir).join(file).canonicalize() {
-                Ok(path) => kcl_paths.push(String::from(path.adjust_canonicalization())),
+                Ok(path) => kcl_paths.push(path.adjust_canonicalization()),
                 Err(_) => {
                     return Err(PanicInfo::from_string(&format!(
                         "Cannot find the kcl file, please check whether the file path {}",
@@ -56,7 +60,7 @@ pub fn canonicalize_input_files(
             }
         })
         .collect();
-    return Ok(kcl_paths);
+    Ok(kcl_paths)
 }
 
 /// Get compile uint(files and options) from a single file
@@ -74,7 +78,7 @@ pub fn lookup_compile_unit(
             };
 
             let settings_files = settings_files.iter().map(|f| f.to_str().unwrap()).collect();
-            match build_settings_pathbuf(&files, None, Some(settings_files), false, false) {
+            match build_settings_pathbuf(&files, Some(settings_files), None) {
                 Ok(setting_buf) => {
                     let setting = setting_buf.settings();
                     let files = if let Some(cli_configs) = setting.clone().kcl_cli_configs {
@@ -109,11 +113,11 @@ pub fn lookup_compile_unit(
                         ..Default::default()
                     };
                     match canonicalize_input_files(&files, work_dir) {
-                        Ok(kcl_paths) => return (kcl_paths, Some(load_opt)),
-                        Err(_) => return (vec![file.to_string()], None),
+                        Ok(kcl_paths) => (kcl_paths, Some(load_opt)),
+                        Err(_) => (vec![file.to_string()], None),
                     }
                 }
-                Err(_) => return (vec![file.to_string()], None),
+                Err(_) => (vec![file.to_string()], None),
             }
         }
         Err(_) => {
@@ -146,7 +150,7 @@ pub fn lookup_kcl_yaml(dir: &PathBuf) -> io::Result<PathBuf> {
     let mut path = dir.clone();
     path.push(DEFAULT_SETTING_FILE);
     if path.is_file() {
-        return Ok(path);
+        Ok(path)
     } else {
         Err(io::Error::new(
             ErrorKind::NotFound,
@@ -157,11 +161,9 @@ pub fn lookup_kcl_yaml(dir: &PathBuf) -> io::Result<PathBuf> {
 
 pub fn lookup_compile_unit_path(file: &str) -> io::Result<PathBuf> {
     let path = PathBuf::from(file);
-    let mut path_ancestors = path.as_path().parent().unwrap().ancestors();
-    while let Some(p) = path_ancestors.next() {
-        let has_kcl_yaml = read_dir(p)?
-            .into_iter()
-            .any(|p| p.unwrap().file_name() == OsString::from(DEFAULT_SETTING_FILE));
+    let path_ancestors = path.as_path().parent().unwrap().ancestors();
+    for p in path_ancestors {
+        let has_kcl_yaml = read_dir(p)?.any(|p| p.unwrap().file_name() == *DEFAULT_SETTING_FILE);
         if has_kcl_yaml {
             return Ok(PathBuf::from(p));
         }

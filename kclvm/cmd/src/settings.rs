@@ -1,6 +1,7 @@
 use anyhow::Result;
 use clap::ArgMatches;
-use kclvm_config::settings::{build_settings_pathbuf, SettingsPathBuf};
+use kclvm_config::settings::{build_settings_pathbuf, Config, SettingsFile, SettingsPathBuf};
+use kclvm_driver::arguments::parse_key_value_pair;
 use kclvm_error::Handler;
 use kclvm_runtime::PanicInfo;
 
@@ -28,17 +29,66 @@ pub(crate) fn build_settings(matches: &ArgMatches) -> Result<SettingsPathBuf> {
         Some(files) => files.into_iter().collect::<Vec<&str>>(),
         None => vec![],
     };
-    let output = matches.value_of("output").map(|v| v.to_string());
-    let setting_files = if let Some(files) = matches.values_of("setting") {
-        Some(files.into_iter().collect::<Vec<&str>>())
-    } else {
-        None
-    };
+    let setting_files = matches
+        .values_of("setting")
+        .map(|files| files.into_iter().collect::<Vec<&str>>());
+    let arguments = strings_from_matches(matches, "arguments");
+
     build_settings_pathbuf(
         files.as_slice(),
-        output,
         setting_files,
-        matches.occurrences_of("debug") > 0,
-        matches.occurrences_of("disable_none") > 0,
+        Some(SettingsFile {
+            kcl_cli_configs: Some(Config {
+                output: matches.value_of("output").map(|v| v.to_string()),
+                overrides: strings_from_matches(matches, "overrides"),
+                path_selector: strings_from_matches(matches, "path_selector"),
+                strict_range_check: bool_from_matches(matches, "strict_range_check"),
+                disable_none: bool_from_matches(matches, "disable_none"),
+                verbose: u32_from_matches(matches, "verbose"),
+                debug: bool_from_matches(matches, "debug"),
+                ..Default::default()
+            }),
+            kcl_options: if arguments.is_some() {
+                let mut key_value_pairs = vec![];
+                if let Some(arguments) = arguments {
+                    for arg in arguments {
+                        key_value_pairs.push(parse_key_value_pair(&arg)?);
+                    }
+                }
+                Some(key_value_pairs)
+            } else {
+                None
+            },
+        }),
     )
+}
+
+#[inline]
+fn strings_from_matches(matches: &ArgMatches, key: &str) -> Option<Vec<String>> {
+    matches.values_of(key).map(|files| {
+        files
+            .into_iter()
+            .map(|v| v.to_string())
+            .collect::<Vec<String>>()
+    })
+}
+
+#[inline]
+fn bool_from_matches(matches: &ArgMatches, key: &str) -> Option<bool> {
+    let occurrences = matches.occurrences_of(key);
+    if occurrences > 0 {
+        Some(true)
+    } else {
+        None
+    }
+}
+
+#[inline]
+fn u32_from_matches(matches: &ArgMatches, key: &str) -> Option<u32> {
+    let occurrences = matches.occurrences_of(key);
+    if occurrences > 0 {
+        Some(occurrences as u32)
+    } else {
+        None
+    }
 }

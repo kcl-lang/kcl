@@ -110,9 +110,12 @@ impl Default for SettingsFile {
     }
 }
 
+/// Top level argument key value pair.
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct KeyValuePair {
+    /// key is the top level argument key.
     pub key: String,
+    // Note: here is a normal json string including int, float, string, bool list and dict.
     pub value: String,
 }
 
@@ -235,13 +238,11 @@ mod settings_test {
 /// Build SettingsPathBuf from args.
 pub fn build_settings_pathbuf(
     files: &[&str],
-    output: Option<String>,
     setting_files: Option<Vec<&str>>,
-    debug: bool,
-    disable_none: bool,
+    setting_config: Option<SettingsFile>,
 ) -> Result<SettingsPathBuf> {
     let mut path = None;
-    let mut settings = if let Some(files) = setting_files {
+    let settings = if let Some(files) = setting_files {
         let mut settings = vec![];
         for file in &files {
             let s = load_file(file)?;
@@ -270,16 +271,14 @@ pub fn build_settings_pathbuf(
     } else {
         SettingsFile::default()
     };
+    let mut settings = if let Some(setting_config) = setting_config {
+        merge_settings(&[settings, setting_config])
+    } else {
+        settings
+    };
     if let Some(config) = &mut settings.kcl_cli_configs {
         if !files.is_empty() {
             config.files = Some(files.iter().map(|f| f.to_string()).collect());
-        }
-        config.output = output;
-        if debug {
-            config.debug = Some(true);
-        }
-        if disable_none {
-            config.disable_none = Some(true);
         }
     }
     Ok(SettingsPathBuf::new(path, settings))

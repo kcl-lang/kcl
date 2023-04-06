@@ -12,6 +12,8 @@ kclvm-api = {path = "../api"}
 kclvm-parser = {path = "../parser"}
 kclvm-runner = {path = "../runner"}
 kclvm-config = {path = "../config"}
+kclvm-driver = {path = "../driver"}
 kclvm-runtime = {path = "../runtime"}
 kclvm-tools = {path = "../tools"}
 kclvm-error = {path = "../error"}
+kclvm-version = {path = "../version"}

@@ -359,8 +359,7 @@ impl KclvmServiceImpl {
         args: &LoadSettingsFilesArgs,
     ) -> anyhow::Result<LoadSettingsFilesResult> {
         let settings_files = args.files.iter().map(|f| f.as_str()).collect::<Vec<&str>>();
-        let settings_pathbuf =
-            build_settings_pathbuf(&[], None, Some(settings_files), false, false)?;
+        let settings_pathbuf = build_settings_pathbuf(&[], Some(settings_files), None)?;
         let files = if !settings_pathbuf.settings().input().is_empty() {
             canonicalize_input_files(&settings_pathbuf.settings().input(), args.work_dir.clone())
                 .map_err(|e| anyhow!(e))?

@@ -1098,12 +1098,22 @@ pub enum NameConstant {
 }
 
 impl NameConstant {
+    /// Returns the symbol
     pub fn symbol(&self) -> &'static str {
         match self {
             NameConstant::True => "True",
             NameConstant::False => "False",
             NameConstant::None => "None",
             NameConstant::Undefined => "Undefined",
+        }
+    }
+
+    // Returns the json value
+    pub fn json_value(&self) -> &'static str {
+        match self {
+            NameConstant::True => "true",
+            NameConstant::False => "false",
+            NameConstant::None | NameConstant::Undefined => "null",
         }
     }
 }
