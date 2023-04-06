@@ -197,12 +197,6 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                     self.insert_global_name(name, &aug_assign_stmt.target.get_pos());
                 }
             } else {
-                println!(
-                    "asd: {:?} {} {}",
-                    name,
-                    self.contains_global_name(name),
-                    self.scope_level
-                );
                 let mut msgs = vec![Message {
                     pos: aug_assign_stmt.target.get_pos(),
                     style: Style::LineAndColumn,

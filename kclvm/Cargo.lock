@@ -1472,11 +1472,13 @@ dependencies = [
  "compiler_base_session",
  "kclvm-api",
  "kclvm-config",
+ "kclvm-driver",
  "kclvm-error",
  "kclvm-parser",
  "kclvm-runner",
  "kclvm-runtime",
  "kclvm-tools",
+ "kclvm-version",
 ]
 
 [[package]]
@@ -1530,6 +1532,7 @@ dependencies = [
  "kclvm-parser",
  "kclvm-runtime",
  "kclvm-utils",
+ "serde_json",
  "walkdir",
 ]
 

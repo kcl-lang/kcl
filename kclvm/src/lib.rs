@@ -78,7 +78,14 @@ pub unsafe extern "C" fn kclvm_cli_main(argc: c_int, argv: *const *const c_char)
     CString::new(match kclvm_cli_main_result {
         Ok(result) => match result {
             Ok(()) => "".to_string(),
-            Err(err) => format!("Error: {}\n\nStack backtrace:\n{}", err, err.backtrace()),
+            Err(err) => {
+                let backtrace = format!("{}", err.backtrace());
+                if backtrace.is_empty() {
+                    format!("Error: {}\n", err)
+                } else {
+                    format!("Error: {}\n\nStack backtrace:\n{}", err, backtrace)
+                }
+            }
         },
         Err(err) => kclvm_error::err_to_str(err),
     })

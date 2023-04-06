@@ -3,6 +3,7 @@ use kclvm_config::{
     modfile::get_vendor_home,
     settings::{SettingsFile, SettingsPathBuf},
 };
+use kclvm_query::r#override::parse_override_spec;
 use kclvm_runtime::ValueRef;
 use serde::{Deserialize, Serialize};
 
@@ -17,35 +18,37 @@ pub type kclvm_context_t = std::ffi::c_void;
 #[allow(non_camel_case_types)]
 pub type kclvm_value_ref_t = std::ffi::c_void;
 
+/// ExecProgramArgs denotes the configuration required to execute the KCL program.
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct ExecProgramArgs {
     pub work_dir: Option<String>,
     pub k_filename_list: Vec<String>,
     pub k_code_list: Vec<String>,
-
+    // -D key=value
     pub args: Vec<ast::CmdArgSpec>,
+    // -O override_spec
     pub overrides: Vec<ast::OverrideSpec>,
-
+    // -S path_selector
+    #[serde(skip)]
+    pub path_selector: Vec<String>,
     pub disable_yaml_result: bool,
+    // Whether to apply overrides on the source code.
     pub print_override_ast: bool,
-
     // -r --strict-range-check
     pub strict_range_check: bool,
-
     // -n --disable-none
     pub disable_none: bool,
     // -v --verbose
     pub verbose: i32,
-
     // -d --debug
     pub debug: i32,
-
     // yaml/json: sort keys
     pub sort_keys: bool,
     // include schema type path in JSON/YAML result
     pub include_schema_type_path: bool,
 }
 
+/// ExecProgramResult denotes the running result of the KCL program.
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct ExecProgramResult {
     pub json_result: String,
@@ -71,7 +74,7 @@ impl ExecProgramArgs {
 
     pub fn get_load_program_options(&self) -> kclvm_parser::LoadProgramOptions {
         kclvm_parser::LoadProgramOptions {
-            work_dir: self.work_dir.clone().unwrap_or_else(|| "".to_string()),
+            work_dir: self.work_dir.clone().unwrap_or_default(),
             vendor_dirs: vec![get_vendor_home()],
             k_code_list: self.k_code_list.clone(),
             cmd_args: self.args.clone(),
@@ -81,8 +84,9 @@ impl ExecProgramArgs {
     }
 }
 
-impl From<SettingsFile> for ExecProgramArgs {
-    fn from(settings: SettingsFile) -> Self {
+impl TryFrom<SettingsFile> for ExecProgramArgs {
+    type Error = anyhow::Error;
+    fn try_from(settings: SettingsFile) -> Result<Self, Self::Error> {
         let mut args = Self::default();
         if let Some(cli_configs) = settings.kcl_cli_configs {
             args.k_filename_list = cli_configs.files.unwrap_or_default();
@@ -93,6 +97,10 @@ impl From<SettingsFile> for ExecProgramArgs {
             args.disable_none = cli_configs.disable_none.unwrap_or_default();
             args.verbose = cli_configs.verbose.unwrap_or_default() as i32;
             args.debug = cli_configs.debug.unwrap_or_default() as i32;
+            for override_str in &cli_configs.overrides.unwrap_or_default() {
+                args.overrides.push(parse_override_spec(override_str)?);
+            }
+            args.path_selector = cli_configs.path_selector.unwrap_or_default();
         }
         if let Some(options) = settings.kcl_options {
             args.args = options
@@ -103,15 +111,16 @@ impl From<SettingsFile> for ExecProgramArgs {
                 })
                 .collect();
         }
-        args
+        Ok(args)
     }
 }
 
-impl From<SettingsPathBuf> for ExecProgramArgs {
-    fn from(s: SettingsPathBuf) -> Self {
-        let mut args: ExecProgramArgs = s.settings().clone().into();
+impl TryFrom<SettingsPathBuf> for ExecProgramArgs {
+    type Error = anyhow::Error;
+    fn try_from(s: SettingsPathBuf) -> Result<Self, Self::Error> {
+        let mut args: ExecProgramArgs = s.settings().clone().try_into()?;
         args.work_dir = s.path().clone().map(|p| p.to_string_lossy().to_string());
-        args
+        Ok(args)
     }
 }
 
@@ -241,7 +250,7 @@ impl KclvmRunner {
         let disable_none = args.disable_none as i32;
         let disable_schema_check = 0; // todo
         let list_option_mode = 0; // todo
-        let debug_mode = args.debug as i32;
+        let debug_mode = args.debug;
 
         let mut result = vec![0u8; RESULT_SIZE];
         let result_buffer_len = result.len() as i32 - 1;

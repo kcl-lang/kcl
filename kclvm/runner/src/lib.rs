@@ -81,7 +81,12 @@ pub fn exec_program(
 
     let mut program = load_program(sess.clone(), kcl_paths_str.as_slice(), Some(opts))?;
 
-    if let Err(err) = apply_overrides(&mut program, &args.overrides, &[], args.print_override_ast) {
+    if let Err(err) = apply_overrides(
+        &mut program,
+        &args.overrides,
+        &[],
+        args.print_override_ast || args.debug > 0,
+    ) {
         return Err(err.to_string());
     }
 
@@ -91,8 +96,10 @@ pub fn exec_program(
         Ok(dur) => dur.as_secs_f32(),
         Err(err) => return Err(err.to_string()),
     };
-    let mut result = ExecProgramResult::default();
-    result.escaped_time = escape_time.to_string();
+    let mut result = ExecProgramResult {
+        escaped_time: escape_time.to_string(),
+        ..Default::default()
+    };
     // Exec result is a JSON or YAML string.
     let exec_result = match exec_result {
         Ok(res) => res,
@@ -108,6 +115,9 @@ pub fn exec_program(
         Ok(v) => v,
         Err(err) => return Err(err.to_string()),
     };
+    // Filter values with the path selector.
+    let kcl_val = kcl_val.filter_by_path(&args.path_selector)?;
+    // Plan values.
     let (json_result, yaml_result) = kcl_val.plan();
     result.json_result = json_result;
     if !args.disable_yaml_result {
@@ -250,8 +260,7 @@ fn clean_tmp_files(temp_entry_file: &String, lib_suffix: &String) {
 #[inline]
 fn remove_file(file: &str) {
     if Path::new(&file).exists() {
-        std::fs::remove_file(&file)
-            .unwrap_or_else(|err| panic!("{file} not found, details: {err}"));
+        std::fs::remove_file(file).unwrap_or_else(|err| panic!("{file} not found, details: {err}"));
     }
 }
 

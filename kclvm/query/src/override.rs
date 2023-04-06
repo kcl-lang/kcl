@@ -147,7 +147,7 @@ pub fn apply_override_on_module(
 ///     field_value: "10".to_string(),
 ///     action: ast::OverrideAction::CreateOrUpdate,
 /// }
-pub(crate) fn parse_override_spec(spec: &str) -> Result<ast::OverrideSpec> {
+pub fn parse_override_spec(spec: &str) -> Result<ast::OverrideSpec> {
     if spec.contains('=') {
         // Create or update the override value.
         let split_values = spec.splitn(2, '=').collect::<Vec<&str>>();

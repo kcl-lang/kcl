@@ -14,7 +14,7 @@ pub fn run_command(matches: &ArgMatches) -> Result<()> {
     let settings = must_build_settings(matches);
     let output = settings.output();
     let sess = Arc::new(ParseSession::default());
-    match exec_program(sess.clone(), &settings.into(), 1) {
+    match exec_program(sess.clone(), &settings.try_into()?, 1) {
         Ok(result) => match output {
             Some(o) => {
                 std::fs::write(o, result.yaml_result).unwrap();

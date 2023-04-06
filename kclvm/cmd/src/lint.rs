@@ -15,7 +15,7 @@ pub fn lint_command(matches: &ArgMatches) -> Result<()> {
     // Config settings building
     let settings = must_build_settings(matches);
     // Convert settings into execute arguments.
-    let args: ExecProgramArgs = settings.into();
+    let args: ExecProgramArgs = settings.try_into()?;
     files = if !files.is_empty() {
         files
     } else {

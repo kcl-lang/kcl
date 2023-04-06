@@ -505,7 +505,7 @@ fn test_from_setting_file_program_arg() {
             .to_string();
         let expected_json_str = fs::read_to_string(test_case_json_file).unwrap();
 
-        let exec_prog_args = ExecProgramArgs::from(settings_file);
+        let exec_prog_args = ExecProgramArgs::try_from(settings_file).unwrap();
         assert_eq!(expected_json_str.trim(), exec_prog_args.to_json().trim());
     }
 }

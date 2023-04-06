@@ -193,20 +193,57 @@ impl ValueRef {
         results.join(YAML_STREAM_SEP)
     }
 
-    /// Plan the value to JSON and YAML strings
+    /// Plan the value to JSON and YAML strings.
     pub fn plan(&self) -> (String, String) {
-        let results = filter_results(self);
-        let yaml_result = results
-            .iter()
-            .map(|r| r.to_yaml_string().strip_suffix('\n').unwrap().to_string())
-            .collect::<Vec<String>>()
-            .join(YAML_STREAM_SEP);
-        let mut list_result = ValueRef::list(None);
-        for r in results {
-            list_result.list_append(&r);
+        if self.is_list_or_config() {
+            let results = filter_results(self);
+            let yaml_result = results
+                .iter()
+                .map(|r| r.to_yaml_string().strip_suffix('\n').unwrap().to_string())
+                .collect::<Vec<String>>()
+                .join(YAML_STREAM_SEP);
+            let mut list_result = ValueRef::list(None);
+            for r in results {
+                list_result.list_append(&r);
+            }
+            let json_result = list_result.to_json_string();
+            (json_result, yaml_result)
+        } else {
+            (self.to_json_string(), self.to_yaml_string())
         }
-        let json_result = list_result.to_json_string();
-        (json_result, yaml_result)
+    }
+
+    /// Filter values using path selectors.
+    pub fn filter_by_path(&self, path_selector: &[String]) -> Result<ValueRef, String> {
+        if self.is_config() && !path_selector.is_empty() {
+            if path_selector.len() == 1 {
+                let path = &path_selector[0];
+                match self.get_by_path(path) {
+                    Some(value) => Ok(value),
+                    None => {
+                        return Err(format!(
+                            "invalid path select operand {path}, value not found"
+                        ))
+                    }
+                }
+            } else {
+                let mut values = ValueRef::list(None);
+                for path in path_selector {
+                    let value = match self.get_by_path(&path) {
+                        Some(value) => value,
+                        None => {
+                            return Err(format!(
+                                "invalid path select operand {path}, value not found"
+                            ))
+                        }
+                    };
+                    values.list_append(&value);
+                }
+                Ok(values)
+            }
+        } else {
+            Ok(self.clone())
+        }
     }
 
     fn filter_results(&self) -> ValueRef {
@@ -328,5 +365,35 @@ mod test_value_plan {
         for dict in dict_list {
             assert_eq!(filter_results(dict), vec![dict.deep_copy()]);
         }
+    }
+
+    #[test]
+    fn test_filter_by_path() {
+        let dict = ValueRef::dict_int(&[("k1", 1)]);
+        assert_eq!(
+            dict.filter_by_path(&[]).unwrap(),
+            ValueRef::dict_int(&[("k1", 1)]),
+        );
+        assert_eq!(
+            dict.filter_by_path(&["k1".to_string()]).unwrap(),
+            ValueRef::int(1)
+        );
+        assert_eq!(
+            dict.filter_by_path(&["k1".to_string(), "k1".to_string()])
+                .unwrap(),
+            ValueRef::list_int(&[1, 1])
+        );
+        assert_eq!(
+            dict.filter_by_path(&["err_path".to_string()])
+                .err()
+                .unwrap(),
+            "invalid path select operand err_path, value not found"
+        );
+        assert_eq!(
+            dict.filter_by_path(&["err_path.to".to_string()])
+                .err()
+                .unwrap(),
+            "invalid path select operand err_path.to, value not found"
+        );
     }
 }
