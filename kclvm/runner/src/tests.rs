@@ -163,8 +163,6 @@ fn parse_program(test_kcl_case_path: &str) -> Program {
 ///     module.pkg = "__main__"
 ///     Program.root = "__main__"
 ///     Program.main = "__main__"
-///     Program.cmd_args = []
-///     Program.cmd_overrides = []
 fn construct_program(mut module: Module) -> Program {
     module.pkg = MAIN_PKG_NAME.to_string();
     let mut pkgs_ast = HashMap::new();
@@ -173,8 +171,6 @@ fn construct_program(mut module: Module) -> Program {
         root: MAIN_PKG_NAME.to_string(),
         main: MAIN_PKG_NAME.to_string(),
         pkgs: pkgs_ast,
-        cmd_args: vec![],
-        cmd_overrides: vec![],
     }
 }
 
@@ -274,7 +270,7 @@ fn assemble_lib_for_test(
     let opts = args.get_load_program_options();
     let sess = Arc::new(ParseSession::default());
     // parse and resolve kcl
-    let mut program = load_program(sess.clone(), &files, Some(opts)).unwrap();
+    let mut program = load_program(sess, &files, Some(opts)).unwrap();
 
     let scope = resolve_program(&mut program);
 

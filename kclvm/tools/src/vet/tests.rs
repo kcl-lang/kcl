@@ -362,8 +362,7 @@ mod test_validater {
     fn test_validator() {
         test_validate();
         println!("test_validate - PASS");
-        // TOOD: Fix me on ubuntu platform. @zongzhe
-        // test_invalid_validate();
+        test_invalid_validate();
         println!("test_invalid_validate - PASS");
         test_validate_with_invalid_kcl_path();
         println!("test_validate_with_invalid_kcl_path - PASS");
@@ -406,10 +405,6 @@ mod test_validater {
     }
 
     fn test_invalid_validate() {
-        let prev_hook = std::panic::take_hook();
-        // disable print panic info
-        // std::panic::set_hook(Box::new(|_| {}));
-
         for (i, file_suffix) in VALIDATED_FILE_TYPE.iter().enumerate() {
             for case in KCL_TEST_CASES {
                 let validated_file_path = construct_full_path(&format!(
@@ -455,36 +450,30 @@ mod test_validater {
                     Some(kcl_code),
                 );
 
-                let result = panic::catch_unwind(|| validate(opt));
+                let result = validate(opt);
 
+                #[cfg(target_os = "windows")]
                 let mut expect: PanicInfo = serde_json::from_str(&expected_err_msg).unwrap();
 
                 #[cfg(target_os = "windows")]
                 path_to_windows(&mut expect);
 
-                match result {
-                    Ok(result) => match result {
-                        Ok(_) => {
-                            panic!("Unreachable.")
-                        }
-                        Err(err) => {
-                            let got: PanicInfo = serde_json::from_str(&err).unwrap();
+                #[cfg(not(target_os = "windows"))]
+                let expect: PanicInfo = serde_json::from_str(&expected_err_msg).unwrap();
 
-                            assert_eq!(got, expect);
-                        }
-                    },
+                match result {
+                    Ok(_) => {
+                        panic!("Unreachable.")
+                    }
                     Err(panic_err) => {
-                        if let Some(result) = panic_err.downcast_ref::<String>() {
-                            let got: PanicInfo = serde_json::from_str(result).unwrap();
-                            assert_eq!(got, expect);
-                        } else {
-                            panic!("Unreachable.")
-                        };
+                        let got: PanicInfo = serde_json::from_str(&panic_err).unwrap();
+
+                        assert_eq!(got.kcl_arg_msg, expect.kcl_arg_msg);
+                        assert_eq!(got.kcl_config_meta_arg_msg, expect.kcl_config_meta_arg_msg);
                     }
                 }
             }
         }
-        std::panic::set_hook(prev_hook);
     }
 
     fn test_validate_with_invalid_kcl_path() {

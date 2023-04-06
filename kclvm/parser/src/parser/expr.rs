@@ -9,7 +9,6 @@ use super::Parser;
 
 use either::{self, Either};
 use kclvm_ast::node_ref;
-use kclvm_ast::token::Token;
 
 use crate::parser::precedence::Precedence;
 use kclvm_ast::ast::*;

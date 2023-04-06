@@ -19,6 +19,8 @@ use threadpool::ThreadPool;
 const DEFAULT_IR_FILE: &str = "_a.out";
 /// Default codegen timeout.
 const DEFAULT_TIME_OUT: u64 = 50;
+/// Default thread count.
+const DEFAULT_THREAD_COUNT: usize = 1;
 
 /// LibAssembler trait is used to indicate the general interface
 /// that must be implemented when different intermediate codes are assembled
@@ -206,7 +208,7 @@ impl KclvmAssembler {
         single_file_assembler: KclvmLibAssembler,
     ) -> Self {
         Self {
-            thread_count: 4,
+            thread_count: DEFAULT_THREAD_COUNT,
             program,
             scope,
             entry_file,
@@ -286,8 +288,6 @@ impl KclvmAssembler {
                 root: self.program.root.clone(),
                 main: self.program.main.clone(),
                 pkgs,
-                cmd_args: vec![],
-                cmd_overrides: vec![],
             };
             compile_progs.insert(
                 pkgpath,
@@ -401,6 +401,6 @@ impl KclvmAssembler {
 #[inline]
 pub(crate) fn clean_path(path: &str) {
     if Path::new(path).exists() {
-        std::fs::remove_file(&path).unwrap();
+        std::fs::remove_file(path).unwrap();
     }
 }

@@ -121,7 +121,7 @@ pub fn test_vendor_home() {
         .unwrap()
         .display()
         .to_string();
-    env::set_var(KCLVM_VENDOR_HOME, vendor.to_string());
+    env::set_var(KCLVM_VENDOR_HOME, vendor);
     assert_eq!(get_vendor_home(), vendor.to_string());
 }
 
@@ -134,9 +134,9 @@ fn set_vendor_home() -> String {
         .unwrap()
         .display()
         .to_string();
-    env::set_var(KCLVM_VENDOR_HOME, vendor.to_string());
+    env::set_var(KCLVM_VENDOR_HOME, vendor);
     debug_assert_eq!(get_vendor_home(), vendor.to_string());
-    return vendor.to_string();
+    vendor.to_string()
 }
 
 #[test]
@@ -271,7 +271,7 @@ pub fn test_import_vendor_without_vendor_home() {
         .canonicalize()
         .unwrap();
     let test_case_path = dir.join("assign.k").display().to_string();
-    match load_program(sess.clone(), &[&test_case_path], None) {
+    match load_program(sess, &[&test_case_path], None) {
         Ok(_) => {
             panic!("Unreachable code.")
         }
@@ -292,7 +292,7 @@ fn test_import_vendor_with_same_internal_pkg() {
         .canonicalize()
         .unwrap();
     let test_case_path = dir.join("same_name.k").display().to_string();
-    match load_program(sess.clone(), &[&test_case_path], None) {
+    match load_program(sess, &[&test_case_path], None) {
         Ok(_) => {
             panic!("Unreachable code.")
         }
@@ -316,7 +316,7 @@ fn test_import_vendor_without_kclmod_and_same_name() {
         .canonicalize()
         .unwrap();
     let test_case_path = dir.join("assign.k").display().to_string();
-    match load_program(sess.clone(), &[&test_case_path], None) {
+    match load_program(sess, &[&test_case_path], None) {
         Ok(_) => {
             panic!("Unreachable code.")
         }

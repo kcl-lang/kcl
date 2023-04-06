@@ -14,7 +14,10 @@ use compiler_base_macros::bug;
 use compiler_base_session::Session;
 use compiler_base_span::span::new_byte_pos;
 use kclvm_ast::ast;
-use kclvm_config::modfile::{get_vendor_home, KCL_FILE_EXTENSION, KCL_FILE_SUFFIX, KCL_MOD_FILE};
+use kclvm_config::modfile::{
+    get_pkg_root_from_paths, get_vendor_home, KCL_FILE_EXTENSION, KCL_FILE_SUFFIX, KCL_MOD_FILE,
+    KCL_MOD_PATH_ENV,
+};
 use kclvm_error::ErrorKind;
 use kclvm_runtime::PanicInfo;
 use kclvm_sema::plugin::PLUGIN_MODULE_PREFIX;
@@ -22,6 +25,7 @@ use kclvm_utils::path::PathPrefix;
 
 use lexer::parse_token_streams;
 use parser::Parser;
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -40,112 +44,99 @@ pub fn parse_program(filename: &str) -> Result<ast::Program, String> {
 
     let mut prog = ast::Program {
         root: abspath.parent().unwrap().adjust_canonicalization(),
-        main: "__main__".to_string(),
-        pkgs: std::collections::HashMap::new(),
-        cmd_args: Vec::new(),
-        cmd_overrides: Vec::new(),
+        main: kclvm_ast::MAIN_PKG.to_string(),
+        pkgs: HashMap::new(),
     };
-
-    let mainpkg = "__main__";
 
     let mut module = parse_file(abspath.to_str().unwrap(), None)?;
     module.filename = filename.to_string();
-    module.pkg = mainpkg.to_string();
-    module.name = mainpkg.to_string();
+    module.pkg = kclvm_ast::MAIN_PKG.to_string();
+    module.name = kclvm_ast::MAIN_PKG.to_string();
 
-    prog.pkgs.insert(mainpkg.to_string(), vec![module]);
+    prog.pkgs
+        .insert(kclvm_ast::MAIN_PKG.to_string(), vec![module]);
 
     Ok(prog)
 }
 
 /// Parse a KCL file to the AST module.
-///
-/// TODO: We can remove the panic capture after the parser error recovery is completed.
 #[inline]
 pub fn parse_file(filename: &str, code: Option<String>) -> Result<ast::Module, String> {
-    let prev_hook = std::panic::take_hook();
-    std::panic::set_hook(Box::new(|_| {}));
-    let result = std::panic::catch_unwind(|| {
-        let sess = Arc::new(ParseSession::default());
-        let result = parse_file_with_session(sess.clone(), filename, code);
-        if sess
+    let sess = Arc::new(ParseSession::default());
+    let result = parse_file_with_global_session(sess.clone(), filename, code);
+    if sess
+        .0
+        .diag_handler
+        .has_errors()
+        .map_err(|e| e.to_string())?
+    {
+        let err = sess
             .0
-            .diag_handler
-            .has_errors()
+            .emit_nth_diag_into_string(0)
             .map_err(|e| e.to_string())?
-        {
-            let err = sess
-                .0
-                .emit_nth_diag_into_string(0)
-                .map_err(|e| e.to_string())?
-                .unwrap_or(Ok(ErrorKind::InvalidSyntax.name()))
-                .map_err(|e| e.to_string())?;
-            Err(err)
-        } else {
-            result
-        }
-    });
-    std::panic::set_hook(prev_hook);
-    match result {
-        Ok(result) => result,
-        Err(err) => Err(kclvm_error::err_to_str(err)),
+            .unwrap_or(Ok(ErrorKind::InvalidSyntax.name()))
+            .map_err(|e| e.to_string())?;
+        Err(err)
+    } else {
+        result
     }
 }
 
-/// Parse a KCL file to the AST module and returns session.
+/// Parse a KCL file to the AST module with the parse session .
 pub fn parse_file_with_session(
     sess: Arc<ParseSession>,
     filename: &str,
     code: Option<String>,
 ) -> Result<ast::Module, String> {
-    create_session_globals_then(move || {
-        let result = {
-            // Code source.
-            let src = if let Some(s) = code {
-                s
-            } else {
-                match std::fs::read_to_string(filename) {
-                    Ok(src) => src,
-                    Err(err) => {
-                        return Err(format!(
-                            "Failed to load KCL file '{filename}'. Because '{err}'"
-                        ));
-                    }
-                }
-            };
-
-            // Build a source map to store file sources.
-            let sf = sess
-                .0
-                .sm
-                .new_source_file(PathBuf::from(filename).into(), src);
-
-            let src_from_sf = match sf.src.as_ref() {
-                Some(src) => src,
-                None => {
-                    return Err(format!(
-                        "Internal Bug: Failed to load KCL file '{filename}'."
-                    ));
-                }
-            };
-
-            // Lexer
-            let stream = lexer::parse_token_streams(&sess, src_from_sf.as_str(), sf.start_pos);
-            // Parser
-            let mut p = parser::Parser::new(&sess, stream);
-            let mut m = p.parse_module();
-            m.filename = filename.to_string();
-            m.pkg = kclvm_ast::MAIN_PKG.to_string();
-            m.name = kclvm_ast::MAIN_PKG.to_string();
-
-            Ok(m)
-        };
-
-        match result {
-            Ok(result) => Ok(result),
-            Err(err) => Err(kclvm_error::err_to_str(err)),
+    // Code source.
+    let src = if let Some(s) = code {
+        s
+    } else {
+        match std::fs::read_to_string(filename) {
+            Ok(src) => src,
+            Err(err) => {
+                return Err(format!(
+                    "Failed to load KCL file '{filename}'. Because '{err}'"
+                ));
+            }
         }
-    })
+    };
+
+    // Build a source map to store file sources.
+    let sf = sess
+        .0
+        .sm
+        .new_source_file(PathBuf::from(filename).into(), src);
+
+    let src_from_sf = match sf.src.as_ref() {
+        Some(src) => src,
+        None => {
+            return Err(format!(
+                "Internal Bug: Failed to load KCL file '{filename}'."
+            ));
+        }
+    };
+
+    // Lexer
+    let stream = lexer::parse_token_streams(&sess, src_from_sf.as_str(), sf.start_pos);
+    // Parser
+    let mut p = parser::Parser::new(&sess, stream);
+    let mut m = p.parse_module();
+    m.filename = filename.to_string();
+    m.pkg = kclvm_ast::MAIN_PKG.to_string();
+    m.name = kclvm_ast::MAIN_PKG.to_string();
+
+    Ok(m)
+}
+
+/// Parse a KCL file to the AST module with the parse session and the global session
+#[inline]
+pub fn parse_file_with_global_session(
+    sess: Arc<ParseSession>,
+    filename: &str,
+    code: Option<String>,
+) -> Result<ast::Module, String> {
+    create_session_globals_then(move || parse_file_with_session(sess, filename, code))
 }
 
 /// Parse a source string to a expression. When input empty string, it will return [None].
@@ -194,9 +185,10 @@ pub struct LoadProgramOptions {
 
     pub cmd_args: Vec<ast::CmdArgSpec>,
     pub cmd_overrides: Vec<ast::OverrideSpec>,
-
-    pub _mode: Option<ParseMode>,
-    pub _load_packages: bool,
+    /// The parser mode.
+    pub mode: ParseMode,
+    /// Wether to load packages.
+    pub load_packages: bool,
 }
 
 impl Default for LoadProgramOptions {
@@ -207,8 +199,8 @@ impl Default for LoadProgramOptions {
             vendor_dirs: vec![get_vendor_home()],
             cmd_args: Default::default(),
             cmd_overrides: Default::default(),
-            _mode: Default::default(),
-            _load_packages: Default::default(),
+            mode: ParseMode::ParseComments,
+            load_packages: true,
         }
     }
 }
@@ -230,9 +222,7 @@ struct Loader {
     sess: Arc<ParseSession>,
     paths: Vec<String>,
     opts: LoadProgramOptions,
-    pkgs: std::collections::HashMap<String, Vec<ast::Module>>,
     missing_pkgs: Vec<String>,
-    // todo: add shared source_map all parse_file.
 }
 
 impl Loader {
@@ -241,26 +231,67 @@ impl Loader {
             sess,
             paths: paths.iter().map(|s| s.to_string()).collect(),
             opts: opts.unwrap_or_default(),
-            pkgs: Default::default(),
             missing_pkgs: Default::default(),
         }
     }
 
+    #[inline]
     fn load_main(&mut self) -> Result<ast::Program, String> {
-        self._load_main()
+        create_session_globals_then(move || self._load_main())
     }
 
     fn _load_main(&mut self) -> Result<ast::Program, String> {
-        let pkgroot = kclvm_config::modfile::get_pkg_root_from_paths(&self.paths)?;
+        let root = get_pkg_root_from_paths(&self.paths)?;
 
+        // Get files from options with root.
+        let k_files = self.get_main_files(&root)?;
+
+        // load module
+        let mut pkgs = HashMap::new();
+        let mut pkg_files = Vec::new();
+        for (i, filename) in k_files.iter().enumerate() {
+            if i < self.opts.k_code_list.len() {
+                let mut m = parse_file_with_session(
+                    self.sess.clone(),
+                    filename,
+                    Some(self.opts.k_code_list[i].clone()),
+                )?;
+                self.fix_rel_import_path(&root, &mut m);
+                pkg_files.push(m)
+            } else {
+                let mut m = parse_file_with_session(self.sess.clone(), filename, None)?;
+                self.fix_rel_import_path(&root, &mut m);
+                pkg_files.push(m);
+            }
+        }
+
+        let import_list = self.get_import_list(&root, &pkg_files);
+
+        pkgs.insert(kclvm_ast::MAIN_PKG.to_string(), pkg_files);
+
+        // load imported packages
+        for import_spec in import_list {
+            self.load_package(&root, import_spec.0, import_spec.1, &mut pkgs)?;
+        }
+
+        // Ok
+        Ok(ast::Program {
+            root,
+            main: kclvm_ast::MAIN_PKG.to_string(),
+            pkgs,
+        })
+    }
+
+    /// Get files in the main package with the package root.
+    fn get_main_files(&mut self, root: &str) -> Result<Vec<String>, String> {
         // fix path
         let mut path_list = Vec::new();
         for s in &self.paths {
             let mut s = s.clone();
-            if s.contains(kclvm_config::modfile::KCL_MOD_PATH_ENV) {
-                s = s.replace(kclvm_config::modfile::KCL_MOD_PATH_ENV, pkgroot.as_str());
+            if s.contains(KCL_MOD_PATH_ENV) {
+                s = s.replace(KCL_MOD_PATH_ENV, root);
             }
-            if !pkgroot.is_empty() && !self.is_absolute(s.as_str()) {
+            if !root.is_empty() && !self.is_absolute(s.as_str()) {
                 let p = std::path::Path::new(s.as_str());
                 if let Ok(x) = std::fs::canonicalize(p) {
                     s = x.adjust_canonicalization();
@@ -284,7 +315,7 @@ impl Loader {
                     return Err(PanicInfo::from("Invalid code list").to_json_string());
                 }
                 //k_code_list
-                for s in self.get_dir_kfile_list(path)? {
+                for s in self.get_dir_files(path)? {
                     k_files.push(s);
                 }
                 continue;
@@ -309,52 +340,16 @@ impl Loader {
                 .to_json_string());
             }
         }
-
-        // load module
-        let mut pkg_files = Vec::new();
-        for (i, filename) in k_files.iter().enumerate() {
-            if i < self.opts.k_code_list.len() {
-                let mut m = parse_file_with_session(
-                    self.sess.clone(),
-                    filename,
-                    Some(self.opts.k_code_list[i].clone()),
-                )?;
-                self.fix_rel_import_path(&pkgroot, &mut m);
-                pkg_files.push(m)
-            } else {
-                let mut m = parse_file_with_session(self.sess.clone(), filename, None)?;
-                self.fix_rel_import_path(&pkgroot, &mut m);
-                pkg_files.push(m);
-            }
-        }
-
-        let __kcl_main__ = kclvm_ast::MAIN_PKG;
-        let import_list = self.get_import_list(&pkgroot, &pkg_files);
-
-        self.pkgs.insert(__kcl_main__.to_string(), pkg_files);
-
-        // load imported packages
-        for import_spec in import_list {
-            self.load_package(&pkgroot, import_spec.0, import_spec.1)?;
-        }
-
-        // Ok
-        Ok(ast::Program {
-            root: pkgroot.clone(),
-            main: __kcl_main__.to_string(),
-            pkgs: self.pkgs.clone(),
-            cmd_args: Vec::new(),
-            cmd_overrides: Vec::new(),
-        })
+        Ok(k_files)
     }
 
     fn fix_rel_import_path(&mut self, pkgroot: &str, m: &mut ast::Module) {
         for stmt in &mut m.body {
             if let ast::Stmt::Import(ref mut import_spec) = &mut stmt.node {
                 import_spec.path = kclvm_config::vfs::fix_import_path(
-                    &pkgroot,
+                    pkgroot,
                     &m.filename,
-                    &import_spec.path.as_str(),
+                    import_spec.path.as_str(),
                 );
             }
         }
@@ -365,12 +360,13 @@ impl Loader {
         pkgroot: &str,
         pkgpath: String,
         pos: ast::Pos,
+        pkgs: &mut HashMap<String, Vec<ast::Module>>,
     ) -> Result<(), String> {
         if pkgpath.is_empty() {
             return Ok(());
         }
 
-        if self.pkgs.contains_key(&pkgpath) {
+        if pkgs.contains_key(&pkgpath) {
             return Ok(());
         }
         if self.missing_pkgs.contains(&pkgpath) {
@@ -409,7 +405,7 @@ impl Loader {
         let (pkgroot, k_files) = match is_internal {
             Some(internal_root) => (
                 internal_root.to_string(),
-                self.get_pkg_kfile_list(&internal_root, &pkgpath.to_string())?,
+                self.get_pkg_kfile_list(&internal_root, &pkgpath)?,
             ),
             None => match is_external {
                 Some(external_root) => (
@@ -446,10 +442,10 @@ impl Loader {
         }
 
         let import_list = self.get_import_list(&pkgroot, &pkg_files);
-        self.pkgs.insert(origin_pkg_path, pkg_files);
+        pkgs.insert(origin_pkg_path, pkg_files);
 
         for import_spec in import_list {
-            self.load_package(&pkgroot, import_spec.0, import_spec.1)?;
+            self.load_package(&pkgroot, import_spec.0, import_spec.1, pkgs)?;
         }
 
         Ok(())
@@ -462,7 +458,7 @@ impl Loader {
                 if let ast::Stmt::Import(import_spec) = &stmt.node {
                     let mut import_spec = import_spec.clone();
                     import_spec.path = kclvm_config::vfs::fix_import_path(
-                        &pkgroot,
+                        pkgroot,
                         &m.filename,
                         import_spec.path.as_str(),
                     );
@@ -489,7 +485,7 @@ impl Loader {
         }
 
         let mut pathbuf = std::path::PathBuf::new();
-        pathbuf.push(&pkgroot);
+        pathbuf.push(pkgroot);
 
         for s in pkgpath.split('.') {
             pathbuf.push(s);
@@ -503,7 +499,7 @@ impl Loader {
             .to_string();
 
         if std::path::Path::new(abspath.as_str()).exists() {
-            return self.get_dir_kfile_list(abspath.as_str());
+            return self.get_dir_files(abspath.as_str());
         }
 
         let as_k_path = abspath + KCL_FILE_SUFFIX;
@@ -514,7 +510,8 @@ impl Loader {
         Ok(Vec::new())
     }
 
-    fn get_dir_kfile_list(&self, dir: &str) -> Result<Vec<String>, String> {
+    /// Get file list in the directory.
+    fn get_dir_files(&self, dir: &str) -> Result<Vec<String>, String> {
         if !std::path::Path::new(dir).exists() {
             return Ok(Vec::new());
         }
@@ -615,12 +612,10 @@ impl Loader {
         let mut names = pkgpath.splitn(2, '.');
         match names.next() {
             Some(it) => Ok(it.to_string()),
-            None => {
-                return Err(
-                    PanicInfo::from(format!("Invalid external package name `{}`", pkgpath))
-                        .to_json_string(),
-                )
-            }
+            None => Err(
+                PanicInfo::from(format!("Invalid external package name `{}`", pkgpath))
+                    .to_json_string(),
+            ),
         }
     }
 
@@ -640,7 +635,7 @@ impl Loader {
     /// It only returns [`true`] if [`path`]/[`pkgpath`] or [`path`]/[`kcl.mod`] exists.
     fn pkg_exists_in_path(&self, path: String, pkgpath: &str) -> bool {
         let mut pathbuf = PathBuf::from(path);
-        pkgpath.split('.').into_iter().for_each(|s| pathbuf.push(s));
+        pkgpath.split('.').for_each(|s| pathbuf.push(s));
         pathbuf.exists() || pathbuf.with_extension(KCL_FILE_EXTENSION).exists()
     }
 }
