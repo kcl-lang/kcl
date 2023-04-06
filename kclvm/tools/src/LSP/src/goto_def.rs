@@ -1,61 +1,90 @@
-use indexmap::IndexSet;
+//! GotoDefinition for KCL
+//! Github Issue: https://github.com/KusionStack/KCLVM/issues/476
+//! Now supports goto definition for the following situation:
+//! + variable
+//! + schema definition
+//! + mixin definition
+//! + schema attr
+//! + attr type
 
-use std::fs;
+use indexmap::IndexSet;
+use kclvm_driver::get_kcl_files;
+
 use std::path::Path;
 
-use kclvm_ast::ast::{AssignStmt, ImportStmt, Program, Stmt, UnificationStmt};
-use kclvm_ast::pos::ContainsPos;
+use kclvm_ast::ast::{Expr, Identifier, ImportStmt, Program, SchemaExpr, Stmt};
 use kclvm_config::modfile::KCL_FILE_EXTENSION;
 use kclvm_error::Position as KCLPos;
-use kclvm_sema::resolver::scope::ProgramScope;
+use kclvm_sema::resolver::scope::{ProgramScope, ScopeObject};
 use lsp_types::{GotoDefinitionResponse, Url};
 use lsp_types::{Location, Range};
 
 use crate::to_lsp::lsp_pos;
+use crate::util::inner_most_expr_in_stmt;
 
+// Navigates to the definition of an identifier.
 pub(crate) fn goto_definition(
-    program: Program,
-    kcl_pos: KCLPos,
-    prog_scope: ProgramScope,
+    program: &Program,
+    kcl_pos: &KCLPos,
+    prog_scope: &ProgramScope,
 ) -> Option<lsp_types::GotoDefinitionResponse> {
-    match program.pos_to_stmt(&kcl_pos) {
+    match program.pos_to_stmt(kcl_pos) {
         Some(node) => match node.node {
-            Stmt::Unification(stmt) => goto_def_for_unification(stmt, kcl_pos, prog_scope),
-            Stmt::Assign(stmt) => goto_def_for_assign(stmt, kcl_pos, prog_scope),
-            Stmt::Import(stmt) => goto_def_for_import(stmt, kcl_pos, prog_scope, program),
+            Stmt::Import(stmt) => goto_def_for_import(&stmt, kcl_pos, prog_scope, program),
             _ => {
-                // todo
-                None
+                let (inner_expr, parent) = inner_most_expr_in_stmt(&node.node, kcl_pos, None);
+                match inner_expr {
+                    Some(expr) => {
+                        match expr.node {
+                            Expr::Identifier(id) => {
+                                let name = get_identifier_last_name(&id);
+                                let objs = if let Some(parent) = parent {
+                                    // find schema attr def
+                                    match parent.node {
+                                        Expr::Schema(schema_expr) => {
+                                            find_def_of_schema_attr(schema_expr, prog_scope, name)
+                                        }
+                                        _ => vec![],
+                                    }
+                                } else {
+                                    find_objs_in_program_scope(&name, prog_scope)
+                                };
+                                let positions = objs
+                                    .iter()
+                                    .map(|obj| (obj.start.clone(), obj.end.clone()))
+                                    .collect();
+                                positions_to_goto_def_resp(&positions)
+                            }
+                            _ => None,
+                        }
+                    }
+                    None => None,
+                }
             }
         },
         None => None,
     }
 }
 
-fn find_name_in_program_scope(name: &str, prog_scope: ProgramScope) -> IndexSet<(KCLPos, KCLPos)> {
-    let mut positions = IndexSet::new();
-    let mut scopes = vec![];
+// This function serves as the result of a global search, which may cause duplication.
+// It needs to be pruned according to the situation. There are two actions todo:
+// + AST Identifier provides location information for each name.
+// + Scope provides a method similar to resolve_var of the resolver to replace this function.
+pub(crate) fn find_objs_in_program_scope(
+    name: &str,
+    prog_scope: &ProgramScope,
+) -> Vec<ScopeObject> {
+    let mut res = vec![];
     for s in prog_scope.scope_map.values() {
-        scopes.push(s.borrow().clone());
+        let mut objs = s.borrow().search_obj_by_name(name);
+        res.append(&mut objs);
     }
 
-    while !scopes.is_empty() {
-        let s = scopes.pop().unwrap();
-        match s.lookup(&name) {
-            Some(obj) => {
-                let obj = obj.borrow().clone();
-                positions.insert((obj.start, obj.end));
-            }
-            None => {
-                for c in s.children {
-                    scopes.push(c.borrow().clone());
-                }
-            }
-        }
-    }
-    positions
+    res
 }
 
+// Convert kcl position to GotoDefinitionResponse. This function will convert to
+// None, Scalar or Array according to the number of positions
 fn positions_to_goto_def_resp(
     positions: &IndexSet<(KCLPos, KCLPos)>,
 ) -> Option<GotoDefinitionResponse> {
@@ -77,8 +106,8 @@ fn positions_to_goto_def_resp(
                 res.push(Location {
                     uri: Url::from_file_path(start.filename.clone()).unwrap(),
                     range: Range {
-                        start: lsp_pos(&start),
-                        end: lsp_pos(&end),
+                        start: lsp_pos(start),
+                        end: lsp_pos(end),
                     },
                 })
             }
@@ -87,66 +116,15 @@ fn positions_to_goto_def_resp(
     }
 }
 
-fn goto_def_for_unification(
-    stmt: UnificationStmt,
-    kcl_pos: KCLPos,
-    prog_scope: ProgramScope,
-) -> Option<GotoDefinitionResponse> {
-    let schema_expr = stmt.value.node;
-    if schema_expr.name.contains_pos(&kcl_pos) {
-        let id = schema_expr.name.node.names.last().unwrap();
-        let positions = find_name_in_program_scope(id, prog_scope);
-        positions_to_goto_def_resp(&positions)
-    } else {
-        None
-    }
-}
-
-fn goto_def_for_assign(
-    stmt: AssignStmt,
-    kcl_pos: KCLPos,
-    prog_scope: ProgramScope,
-) -> Option<GotoDefinitionResponse> {
-    let id = {
-        if let Some(ty) = stmt.type_annotation {
-            if ty.contains_pos(&kcl_pos) {
-                Some(ty.node)
-            } else {
-                None
-            }
-        } else if stmt.value.contains_pos(&kcl_pos) {
-            match stmt.value.node {
-                kclvm_ast::ast::Expr::Identifier(id) => Some(id.names.last().unwrap().clone()),
-                kclvm_ast::ast::Expr::Schema(schema_expr) => {
-                    if schema_expr.name.contains_pos(&kcl_pos) {
-                        Some(schema_expr.name.node.names.last().unwrap().clone())
-                    } else {
-                        None
-                    }
-                }
-                _ => None,
-            }
-        } else {
-            None
-        }
-    };
-    match id {
-        Some(id) => {
-            let positions = find_name_in_program_scope(&id, prog_scope);
-            positions_to_goto_def_resp(&positions)
-        }
-        None => None,
-    }
-}
-
 fn goto_def_for_import(
-    stmt: ImportStmt,
-    _kcl_pos: KCLPos,
-    _prog_scope: ProgramScope,
-    program: Program,
+    stmt: &ImportStmt,
+    _kcl_pos: &KCLPos,
+    _prog_scope: &ProgramScope,
+    program: &Program,
 ) -> Option<GotoDefinitionResponse> {
     let pkgpath = &stmt.path;
-    let real_path = Path::new(&program.root).join(pkgpath.replace('.', "/"));
+    let real_path =
+        Path::new(&program.root).join(pkgpath.replace('.', &std::path::MAIN_SEPARATOR.to_string()));
     let mut positions = IndexSet::new();
     let mut k_file = real_path.clone();
     k_file.set_extension(KCL_FILE_EXTENSION);
@@ -160,23 +138,73 @@ fn goto_def_for_import(
         let end = start.clone();
         positions.insert((start, end));
     } else if real_path.is_dir() {
-        if let Ok(entries) = fs::read_dir(real_path) {
-            for entry in entries {
-                if let Ok(entry) = entry {
-                    if let Some(extension) = entry.path().extension() {
-                        if extension == KCL_FILE_EXTENSION {
-                            let start = KCLPos {
-                                filename: entry.path().to_str().unwrap().to_string(),
-                                line: 1,
-                                column: None,
-                            };
-                            let end = start.clone();
-                            positions.insert((start, end));
-                        }
+        if let Ok(files) = get_kcl_files(real_path, false) {
+            positions.extend(files.iter().map(|file| {
+                let start = KCLPos {
+                    filename: file.clone(),
+                    line: 1,
+                    column: None,
+                };
+                let end = start.clone();
+                (start, end)
+            }))
+        }
+    }
+    positions_to_goto_def_resp(&positions)
+}
+
+// Todo: fix ConfigExpr
+// ```kcl
+// schema Person:
+//     name: str
+//     data: Data
+
+// schema Data:
+//     id: int
+
+// person = Person {
+//     data.id = 1
+//     data: {
+//         id = 1
+//     }
+//     data: Data {
+//         id = 3
+//     }
+// }
+fn find_def_of_schema_attr(
+    schema_expr: SchemaExpr,
+    prog_scope: &ProgramScope,
+    attr_name: String,
+) -> Vec<ScopeObject> {
+    let schema_name = get_identifier_last_name(&schema_expr.name.node);
+    let mut res = vec![];
+    for scope in prog_scope.scope_map.values() {
+        let s = scope.borrow();
+        if let Some(scope) = s.search_child_scope_by_name(&schema_name) {
+            let s = scope.borrow();
+            if matches!(s.kind, kclvm_sema::resolver::scope::ScopeKind::Schema(_)) {
+                for (attr, obj) in &s.elems {
+                    if attr == &attr_name {
+                        res.push(obj.borrow().clone());
                     }
                 }
             }
         }
     }
-    positions_to_goto_def_resp(&positions)
+    res
+}
+
+pub(crate) fn get_identifier_last_name(id: &Identifier) -> String {
+    match id.names.len() {
+        0 => "".to_string(),
+        1 => id.names[0].clone(),
+        _ => {
+            if id.names.last().unwrap().clone() == *"" {
+                // MissingExpr
+                id.names.get(id.names.len() - 2).unwrap().clone()
+            } else {
+                id.names.last().unwrap().clone()
+            }
+        }
+    }
 }

@@ -9,6 +9,7 @@ use super::Parser;
 
 use either::{self, Either};
 use kclvm_ast::node_ref;
+use kclvm_ast::token::Token;
 
 use crate::parser::precedence::Precedence;
 use kclvm_ast::ast::*;
@@ -2233,7 +2234,7 @@ impl<'a> Parser<'a> {
         Box::new(Node::node(
             Expr::Missing(MissingExpr),
             // The text range of missing expression is zero.
-            self.sess.struct_token_loc(self.prev_token, self.token),
+            self.sess.struct_token_loc(self.token, self.token),
         ))
     }
 

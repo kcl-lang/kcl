@@ -1,6 +1,5 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 54
 expression: "crate::tests::parsing_expr_string(\"[if True: **a, b]\")"
 ---
 Node {
@@ -32,7 +31,7 @@ Node {
                                                 ),
                                                 filename: "",
                                                 line: 1,
-                                                column: 8,
+                                                column: 10,
                                                 end_line: 1,
                                                 end_column: 12,
                                             },

@@ -1,9 +1,9 @@
 #![allow(dead_code)]
 
 use anyhow::Result;
+use kclvm_driver::get_kcl_files;
 use kclvm_error::Position;
-use kclvm_tools::util::get_kcl_files;
-use rustc_lexer;
+
 mod find_refs;
 mod go_to_def;
 mod word_map;
@@ -49,7 +49,7 @@ pub fn word_at_pos(pos: Position) -> Option<String> {
 }
 
 pub fn read_file(path: &String) -> Result<String> {
-    let text = std::fs::read_to_string(&path)?;
+    let text = std::fs::read_to_string(path)?;
     Ok(text)
 }
 
@@ -96,33 +96,29 @@ pub fn line_to_words(text: String) -> Vec<LineWord> {
 // Get all occurrences of the word in the entire path.
 pub fn match_word(path: String, name: String) -> Vec<Position> {
     let mut res = vec![];
-    let files = get_kcl_files(path, true);
-    match files {
-        Ok(files) => {
-            // Searching in all files.
-            for file in files.into_iter() {
-                let text = read_file(&file);
-                if text.is_err() {
-                    continue;
-                }
-                let text = text.unwrap();
-                let lines: Vec<&str> = text.lines().collect();
-                for (li, line) in lines.into_iter().enumerate() {
-                    // Get the matching results for each line.
-                    let matched: Vec<Position> = line_to_words(line.to_string())
-                        .into_iter()
-                        .filter(|x| x.word == name)
-                        .map(|x| Position {
-                            filename: file.clone(),
-                            line: li as u64,
-                            column: Some(x.startpos as u64),
-                        })
-                        .collect();
-                    res.extend(matched);
-                }
+    if let Ok(files) = get_kcl_files(path, true) {
+        // Searching in all files.
+        for file in files.into_iter() {
+            let text = read_file(&file);
+            if text.is_err() {
+                continue;
+            }
+            let text = text.unwrap();
+            let lines: Vec<&str> = text.lines().collect();
+            for (li, line) in lines.into_iter().enumerate() {
+                // Get the matching results for each line.
+                let matched: Vec<Position> = line_to_words(line.to_string())
+                    .into_iter()
+                    .filter(|x| x.word == name)
+                    .map(|x| Position {
+                        filename: file.clone(),
+                        line: li as u64,
+                        column: Some(x.startpos),
+                    })
+                    .collect();
+                res.extend(matched);
             }
         }
-        Err(_) => {}
     }
     res
 }

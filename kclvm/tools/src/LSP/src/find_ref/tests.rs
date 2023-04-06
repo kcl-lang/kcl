@@ -240,12 +240,10 @@ mod tests {
         );
 
         let except = vec![Position {
-            filename: String::from(
-                Path::new(&test_word_workspace_map())
-                    .join("inherit_bak.k")
-                    .display()
-                    .to_string(),
-            ),
+            filename: Path::new(&test_word_workspace_map())
+                .join("inherit_bak.k")
+                .display()
+                .to_string(),
             line: 2,
             column: Some(7),
         }];

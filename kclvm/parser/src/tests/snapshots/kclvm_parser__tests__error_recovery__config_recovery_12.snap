@@ -1,6 +1,5 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 70
 expression: "crate::tests::parsing_expr_string(\"{if True: *a, b = 2}\")"
 ---
 Node {
@@ -38,7 +37,7 @@ Node {
                                                                     ),
                                                                     filename: "",
                                                                     line: 1,
-                                                                    column: 8,
+                                                                    column: 10,
                                                                     end_line: 1,
                                                                     end_column: 11,
                                                                 },
@@ -76,7 +75,7 @@ Node {
                                                     ),
                                                     filename: "",
                                                     line: 1,
-                                                    column: 11,
+                                                    column: 12,
                                                     end_line: 1,
                                                     end_column: 13,
                                                 },
@@ -85,7 +84,7 @@ Node {
                                             },
                                             filename: "",
                                             line: 1,
-                                            column: 11,
+                                            column: 12,
                                             end_line: 1,
                                             end_column: 13,
                                         },
@@ -142,7 +141,7 @@ Node {
                                                         ),
                                                         filename: "",
                                                         line: 1,
-                                                        column: 18,
+                                                        column: 19,
                                                         end_line: 1,
                                                         end_column: 20,
                                                     },
@@ -153,7 +152,7 @@ Node {
                                                     ),
                                                     filename: "",
                                                     line: 1,
-                                                    column: 18,
+                                                    column: 19,
                                                     end_line: 1,
                                                     end_column: 20,
                                                 },
@@ -162,7 +161,7 @@ Node {
                                             },
                                             filename: "",
                                             line: 1,
-                                            column: 18,
+                                            column: 19,
                                             end_line: 1,
                                             end_column: 20,
                                         },

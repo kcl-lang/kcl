@@ -1,6 +1,5 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 36
 expression: "crate::tests::parsing_expr_string(r#\"(a +\"#)"
 ---
 Node {
@@ -34,7 +33,7 @@ Node {
                             ),
                             filename: "",
                             line: 1,
-                            column: 3,
+                            column: 4,
                             end_line: 1,
                             end_column: 4,
                         },

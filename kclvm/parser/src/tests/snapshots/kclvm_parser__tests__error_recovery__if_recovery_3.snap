@@ -38,7 +38,7 @@ Node {
                 ),
                 filename: "",
                 line: 1,
-                column: 10,
+                column: 14,
                 end_line: 1,
                 end_column: 14,
             },

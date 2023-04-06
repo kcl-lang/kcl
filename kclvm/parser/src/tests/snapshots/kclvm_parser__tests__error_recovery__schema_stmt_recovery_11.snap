@@ -1,6 +1,5 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 196
 expression: "crate::tests::parsing_module_string(r#\"schema A:\n[str]: str = \"#)"
 ---
 Module {
@@ -62,7 +61,7 @@ Module {
                         ),
                         filename: "",
                         line: 2,
-                        column: 11,
+                        column: 13,
                         end_line: 2,
                         end_column: 13,
                     },

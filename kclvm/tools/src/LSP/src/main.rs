@@ -4,6 +4,7 @@ use state::LanguageServerState;
 
 mod analysis;
 mod capabilities;
+mod completion;
 mod config;
 mod db;
 mod dispatcher;
@@ -12,10 +13,11 @@ mod goto_def;
 mod notification;
 mod request;
 mod state;
-#[cfg(test)]
-mod tests;
 mod to_lsp;
 mod util;
+
+#[cfg(test)]
+mod tests;
 
 /// Runs the main loop of the language server. This will receive requests and handle them.
 pub fn main_loop(connection: Connection, config: Config) -> anyhow::Result<()> {

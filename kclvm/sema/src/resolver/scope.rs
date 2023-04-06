@@ -190,6 +190,22 @@ impl Scope {
             None => None,
         }
     }
+
+    /// Search scope obj by the object name.
+    pub fn search_obj_by_name(&self, name: &str) -> Vec<ScopeObject> {
+        let mut res = vec![];
+        for (obj_name, obj) in &self.elems {
+            if obj_name == name {
+                res.push(obj.borrow().clone())
+            }
+        }
+        for c in &self.children {
+            let c = c.borrow();
+            let mut objs = c.search_obj_by_name(name);
+            res.append(&mut objs);
+        }
+        res
+    }
 }
 
 /// Program scope is scope contains a multiple scopes related to the
