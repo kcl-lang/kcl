@@ -56,8 +56,8 @@ pub struct Config {
     pub disable_none: Option<bool>,
     pub verbose: Option<u32>,
     pub debug: Option<bool>,
-    // kclvm needs a mapping between the package name and the package path 
-    // to determine the source code path corresponding to different version package. 
+    // kclvm needs a mapping between the package name and the package path
+    // to determine the source code path corresponding to different version package.
     pub package_maps: Option<HashMap<String, String>>,
 }
 

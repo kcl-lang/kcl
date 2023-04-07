@@ -1,4 +1,5 @@
 use clap::ArgMatches;
+use std::collections::HashMap;
 
 #[inline]
 pub(crate) fn strings_from_matches(matches: &ArgMatches, key: &str) -> Option<Vec<String>> {
@@ -7,6 +8,28 @@ pub(crate) fn strings_from_matches(matches: &ArgMatches, key: &str) -> Option<Ve
             .into_iter()
             .map(|v| v.to_string())
             .collect::<Vec<String>>()
+    })
+}
+
+#[inline]
+pub(crate) fn hashmaps_from_matches(
+    matches: &ArgMatches,
+    key: &str,
+) -> Option<HashMap<String, String>> {
+    matches.values_of(key).map(|files| {
+        files
+            .into_iter()
+            .map(|s| {
+                let parts: Vec<&str> = s.split('=').collect();
+                if parts.len() == 2 {
+                    let key = parts[0].trim();
+                    let value = parts[1].trim();
+                    (key.to_string(), value.to_string())
+                } else {
+                    (String::default(), String::default())
+                }
+            })
+            .collect::<HashMap<String, String>>()
     })
 }
 
