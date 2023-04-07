@@ -37,7 +37,7 @@ pub(crate) fn build_settings(matches: &ArgMatches) -> Result<SettingsPathBuf> {
         .map(|files| files.into_iter().collect::<Vec<&str>>());
     let arguments = strings_from_matches(matches, "arguments");
 
-    let package_maps = hashmaps_from_matches(matches, "package_map");
+    let package_maps = hashmaps_from_matches(matches, "package_map").transpose()?;
 
     build_settings_pathbuf(
         files.as_slice(),

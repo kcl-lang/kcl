@@ -1,4 +1,7 @@
+use anyhow::bail;
+use anyhow::Result;
 use clap::ArgMatches;
+use kclvm_driver::arguments::parse_key_value_pair;
 use std::collections::HashMap;
 
 #[inline]
@@ -15,21 +18,17 @@ pub(crate) fn strings_from_matches(matches: &ArgMatches, key: &str) -> Option<Ve
 pub(crate) fn hashmaps_from_matches(
     matches: &ArgMatches,
     key: &str,
-) -> Option<HashMap<String, String>> {
+) -> Option<Result<HashMap<String, String>>> {
     matches.values_of(key).map(|files| {
         files
             .into_iter()
-            .map(|s| {
-                let parts: Vec<&str> = s.split('=').collect();
-                if parts.len() == 2 {
-                    let key = parts[0].trim();
-                    let value = parts[1].trim();
-                    (key.to_string(), value.to_string())
-                } else {
-                    (String::default(), String::default())
+            .map(|s| match parse_key_value_pair(s) {
+                Ok(pair) => Ok((pair.key, pair.value)),
+                Err(err) => {
+                    bail!("Invalid arguments format '-E, --external', use'kclvm_cli run --help' for more help.")
                 }
             })
-            .collect::<HashMap<String, String>>()
+            .collect::<Result<HashMap<String, String>>>()
     })
 }
 
