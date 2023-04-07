@@ -1,3 +1,4 @@
+use crate::util::*;
 use anyhow::Result;
 use clap::ArgMatches;
 use kclvm_config::settings::{build_settings_pathbuf, Config, SettingsFile, SettingsPathBuf};
@@ -61,34 +62,4 @@ pub(crate) fn build_settings(matches: &ArgMatches) -> Result<SettingsPathBuf> {
             },
         }),
     )
-}
-
-#[inline]
-fn strings_from_matches(matches: &ArgMatches, key: &str) -> Option<Vec<String>> {
-    matches.values_of(key).map(|files| {
-        files
-            .into_iter()
-            .map(|v| v.to_string())
-            .collect::<Vec<String>>()
-    })
-}
-
-#[inline]
-fn bool_from_matches(matches: &ArgMatches, key: &str) -> Option<bool> {
-    let occurrences = matches.occurrences_of(key);
-    if occurrences > 0 {
-        Some(true)
-    } else {
-        None
-    }
-}
-
-#[inline]
-fn u32_from_matches(matches: &ArgMatches, key: &str) -> Option<u32> {
-    let occurrences = matches.occurrences_of(key);
-    if occurrences > 0 {
-        Some(occurrences as u32)
-    } else {
-        None
-    }
 }

@@ -6,7 +6,7 @@ use kclvm_tools::lint::lint_files;
 
 use crate::settings::must_build_settings;
 
-/// Run the KCL main command.
+/// Run the KCL lint command.
 pub fn lint_command(matches: &ArgMatches) -> Result<()> {
     let mut files: Vec<&str> = match matches.values_of("input") {
         Some(files) => files.into_iter().collect::<Vec<&str>>(),

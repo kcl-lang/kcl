@@ -3,16 +3,21 @@
 #[macro_use]
 extern crate clap;
 
+pub mod fmt;
 pub mod lint;
 pub mod run;
 pub mod settings;
+pub(crate) mod util;
+pub mod vet;
 
 #[cfg(test)]
 mod tests;
 
 use anyhow::Result;
+use fmt::fmt_command;
 use lint::lint_command;
 use run::run_command;
+use vet::vet_command;
 
 /// Run the KCL main command.
 pub fn main(args: &[&str]) -> Result<()> {
@@ -22,6 +27,10 @@ pub fn main(args: &[&str]) -> Result<()> {
         run_command(matches)
     } else if let Some(matches) = matches.subcommand_matches("lint") {
         lint_command(matches)
+    } else if let Some(matches) = matches.subcommand_matches("fmt") {
+        fmt_command(matches)
+    } else if let Some(matches) = matches.subcommand_matches("vet") {
+        vet_command(matches)
     } else if let Some(_matches) = matches.subcommand_matches("server") {
         kclvm_api::service::jsonrpc::start_stdio_server()
     } else if matches.subcommand_matches("version").is_some() {
@@ -54,6 +63,18 @@ pub fn app() -> clap::App<'static> {
             (@arg setting: ... -Y --setting +takes_value "Sets the input file to use")
             (@arg verbose: -v --verbose "Print test information verbosely")
             (@arg emit_warning: --emit_warning "Emit warning message")
+        )
+        (@subcommand fmt =>
+            (@arg input: "Input file or path name for formatting")
+            (@arg recursive: -R --recursive "Iterate through subdirectories recursively")
+            (@arg std_output: -w --std_output "Whether to output format to stdout")
+        )
+        (@subcommand vet =>
+            (@arg data_file: "Validation data file")
+            (@arg kcl_file: "KCL file")
+            (@arg schema: -d --schema +takes_value "Iterate through subdirectories recursively")
+            (@arg attribute_name: -n --attribute_name +takes_value "The attribute name for the data loading")
+            (@arg format: --format +takes_value "Validation data file format, support YAML and JSON, default is JSON")
         )
         (@subcommand server =>
         )

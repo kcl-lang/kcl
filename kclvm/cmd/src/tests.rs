@@ -1,4 +1,6 @@
-use crate::{app, settings::build_settings};
+use crate::{app, fmt::fmt_command, settings::build_settings, vet::vet_command};
+
+const ROOT_CMD: &str = "kclvm_cli";
 
 #[test]
 fn test_build_settings() {
@@ -43,6 +45,36 @@ fn test_build_settings_fail() {
     assert!(build_settings(matches).is_err());
 }
 
+#[test]
+fn test_fmt_cmd() {
+    let input = std::path::Path::new(".")
+        .join("src")
+        .join("test_data")
+        .join("fmt")
+        .join("test.k");
+    let matches = app().get_matches_from(&[ROOT_CMD, "fmt", input.to_str().unwrap()]);
+    let matches = matches.subcommand_matches("fmt").unwrap();
+    assert!(fmt_command(&matches).is_ok())
+}
+
+#[test]
+fn test_vet_cmd() {
+    let test_path = std::path::Path::new(".")
+        .join("src")
+        .join("test_data")
+        .join("vet");
+    let data_file = test_path.join("data.json");
+    let kcl_file = test_path.join("test.k");
+    let matches = app().get_matches_from(&[
+        ROOT_CMD,
+        "vet",
+        data_file.to_str().unwrap(),
+        kcl_file.to_str().unwrap(),
+    ]);
+    let matches = matches.subcommand_matches("vet").unwrap();
+    assert!(vet_command(&matches).is_ok())
+}
+
 fn work_dir() -> std::path::PathBuf {
     std::path::Path::new(".")
         .join("src")
@@ -52,7 +84,7 @@ fn work_dir() -> std::path::PathBuf {
 
 fn settings_arguments(path: std::path::PathBuf) -> Vec<String> {
     vec![
-        "kclvm_cli".to_string(),
+        ROOT_CMD.to_string(),
         "run".to_string(),
         "-Y".to_string(),
         path.to_str().unwrap().to_string(),
