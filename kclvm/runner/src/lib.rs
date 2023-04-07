@@ -238,8 +238,6 @@ pub fn execute_module(mut m: Module) -> Result<String, String> {
         root: MAIN_PKG.to_string(),
         main: MAIN_PKG.to_string(),
         pkgs,
-        cmd_args: vec![],
-        cmd_overrides: vec![],
     };
 
     execute(

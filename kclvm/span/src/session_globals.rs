@@ -1,6 +1,6 @@
 use crate::symbol::Symbol;
 use parking_lot::Mutex;
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 /// Per-session global variables: this struct is stored in thread-local storage
 /// in such a way that it is accessible without any kind of handle to all
@@ -48,13 +48,11 @@ where
     SESSION_GLOBALS.with(f)
 }
 
-// If this ever becomes non thread-local, `decode_syntax_context`
-// and `decode_expn_id` will need to be updated to handle concurrent
-// deserialization.
+// Global sessions to store strings and symbols.
 scoped_tls::scoped_thread_local!(static SESSION_GLOBALS: SessionGlobals);
 
 #[derive(Debug)]
-pub struct Interner(Mutex<InternerInner>);
+pub struct Interner(Arc<Mutex<InternerInner>>);
 
 // This type is private to prevent accidentally constructing more than one
 // `Interner` on the same thread, which makes it easy to mixup `Symbol`s
@@ -67,20 +65,20 @@ struct InternerInner {
 
 impl Default for Interner {
     fn default() -> Self {
-        Interner(Mutex::new(InternerInner::default()))
+        Interner(Arc::new(Mutex::new(InternerInner::default())))
     }
 }
 
 impl Interner {
     pub fn prefill(init: &[&'static str]) -> Self {
-        Interner(Mutex::new(InternerInner {
+        Interner(Arc::new(Mutex::new(InternerInner {
             strings: init.iter().map(|s| s.to_string()).collect(),
             names: init
                 .iter()
                 .map(|s| s.to_string())
                 .zip((0..).map(Symbol::new))
                 .collect(),
-        }))
+        })))
     }
 
     #[inline]

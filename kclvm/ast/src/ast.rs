@@ -235,8 +235,6 @@ pub struct Program {
     pub root: String,
     pub main: String,
     pub pkgs: HashMap<String, Vec<Module>>,
-    pub cmd_args: Vec<CmdArgSpec>,
-    pub cmd_overrides: Vec<OverrideSpec>,
 }
 
 impl Program {

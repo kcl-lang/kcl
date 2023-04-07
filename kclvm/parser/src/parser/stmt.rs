@@ -1099,7 +1099,7 @@ impl<'a> Parser<'a> {
 
         let name_pos = name_expr.pos();
         let name = name_expr.node;
-        let name = node_ref!(name.names.join("."), name_pos.clone());
+        let name = node_ref!(name.names.join("."), name_pos);
 
         let is_optional = if let TokenKind::Question = self.token.kind {
             self.bump_token(TokenKind::Question);

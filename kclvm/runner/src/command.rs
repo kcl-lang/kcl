@@ -1,7 +1,5 @@
-#![allow(dead_code)]
 use kclvm_utils::path::PathPrefix;
 use std::env::consts::DLL_SUFFIX;
-use std::ffi::CString;
 use std::path::PathBuf;
 
 const KCLVM_CLI_BIN_PATH_ENV_VAR: &str = "KCLVM_CLI_BIN_PATH";
@@ -18,66 +16,6 @@ impl Command {
         let executable_root = Self::get_executable_root();
 
         Self { executable_root }
-    }
-
-    /// Get lld linker args
-    fn lld_args(&self, lib_path: &str) -> Vec<CString> {
-        let lib_link_path = self.get_lib_link_path();
-        #[cfg(target_os = "macos")]
-        let args = vec![
-            // Arch
-            CString::new("-arch").unwrap(),
-            CString::new(std::env::consts::ARCH).unwrap(),
-            CString::new("-sdk_version").unwrap(),
-            CString::new("10.5.0").unwrap(),
-            // Output dynamic libs `.dylib`.
-            CString::new("-dylib").unwrap(),
-            // Link relative path
-            CString::new(format!("-L{}", lib_link_path)).unwrap(),
-            CString::new("-rpath").unwrap(),
-            CString::new(lib_link_path).unwrap(),
-            // With the change from Catalina to Big Sur (11.0), Apple moved the location of
-            // libraries. On Big Sur, it is required to pass the location of the System
-            // library. The -lSystem option is still required for macOS 10.15.7 and
-            // lower.
-            // Ref: https://github.com/ponylang/ponyc/pull/3686
-            CString::new("-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib").unwrap(),
-            CString::new("-lSystem").unwrap(),
-            // Link runtime libs.
-            CString::new("-lkclvm_cli_cdylib").unwrap(),
-            // Output lib path.
-            CString::new("-o").unwrap(),
-            CString::new(lib_path).unwrap(),
-        ];
-
-        #[cfg(target_os = "linux")]
-        let args = vec![
-            // clang -fPIC
-            CString::new("-znotext").unwrap(),
-            // Output dynamic libs `.so`.
-            CString::new("--shared").unwrap(),
-            // Link relative path
-            CString::new(format!("-L{}", lib_link_path)).unwrap(),
-            CString::new("-R").unwrap(),
-            CString::new(lib_link_path).unwrap(),
-            // Link runtime libs.
-            CString::new("-lkclvm_cli_cdylib").unwrap(),
-            // Output lib path.
-            CString::new("-o").unwrap(),
-            CString::new(lib_path).unwrap(),
-        ];
-
-        #[cfg(target_os = "windows")]
-        let args = vec![
-            // Output dynamic libs `.dll`.
-            CString::new("/dll").unwrap(),
-            // Lib search path
-            CString::new(format!("/libpath:{}/lib", self.executable_root)).unwrap(),
-            // Output lib path.
-            CString::new(format!("/out:{}", lib_path)).unwrap(),
-        ];
-
-        args
     }
 
     /// Link dynamic libraries into one library using cc-rs lib.
@@ -134,19 +72,24 @@ impl Command {
     pub(crate) fn add_args(
         &self,
         libs: &[String],
-        _lib_path: String,
+        lib_path: String,
         cmd: &mut std::process::Command,
     ) {
         #[cfg(not(target_os = "windows"))]
-        self.unix_args(libs, cmd);
+        self.unix_args(libs, lib_path, cmd);
 
         #[cfg(target_os = "windows")]
-        self.msvc_win_args(libs, _lib_path, cmd);
+        self.msvc_win_args(libs, lib_path, cmd);
     }
 
-    // Add args for cc on unix os.
-    pub(crate) fn unix_args(&self, libs: &[String], cmd: &mut std::process::Command) {
-        let path = self.get_lib_link_path();
+    /// Add args for cc on unix os.
+    pub(crate) fn unix_args(
+        &self,
+        libs: &[String],
+        lib_path: String,
+        cmd: &mut std::process::Command,
+    ) {
+        let path = self.runtime_lib_path(&lib_path);
         cmd.args(libs)
             .arg(&format!("-Wl,-rpath,{}", &path))
             .arg(&format!("-L{}", &path))
@@ -154,7 +97,30 @@ impl Command {
             .arg("-lkclvm_cli_cdylib");
     }
 
+    /// Get the runtime library path.
+    pub(crate) fn runtime_lib_path(&self, lib_path: &str) -> String {
+        let path = self.get_lib_link_path();
+        let lib_name = Self::get_lib_name();
+        let lib_file_path = std::path::Path::new(&path).join(&lib_name);
+        // Copy runtime library to target path for parallel execute.
+        if let Some(target_path) = std::path::Path::new(&lib_path).parent() {
+            let target_lib_file_path = std::path::Path::new(target_path).join(&lib_name);
+
+            // Locking file for parallel file copy.
+            let mut file_lock =
+                fslock::LockFile::open(&format!("{}.lock", target_lib_file_path.display()))
+                    .unwrap();
+            file_lock.lock().unwrap();
+
+            std::fs::copy(lib_file_path, target_lib_file_path).unwrap();
+            target_path.to_string_lossy().to_string()
+        } else {
+            path
+        }
+    }
+
     // Add args for cc on windows os.
+    #[cfg(target_os = "windows")]
     pub(crate) fn msvc_win_args(
         &self,
         libs: &[String],

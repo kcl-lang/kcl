@@ -31,7 +31,7 @@ pub fn main(args: &[&str]) -> Result<()> {
         fmt_command(matches)
     } else if let Some(matches) = matches.subcommand_matches("vet") {
         vet_command(matches)
-    } else if let Some(_matches) = matches.subcommand_matches("server") {
+    } else if matches.subcommand_matches("server").is_some() {
         kclvm_api::service::jsonrpc::start_stdio_server()
     } else if matches.subcommand_matches("version").is_some() {
         println!("{}", kclvm_version::get_full_version());
