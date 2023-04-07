@@ -145,7 +145,7 @@ fn goto_schema_def_test() {
             };
 
             let expected_end = Position {
-                line: 2, // zero-based
+                line: 5, // zero-based
                 character: 13,
             };
             assert_eq!(got_start, expected_start);
@@ -230,7 +230,7 @@ fn goto_schema_attr_ty_def_test() {
             };
 
             let expected_end = Position {
-                line: 2, // zero-based
+                line: 5, // zero-based
                 character: 13,
             };
 
@@ -273,7 +273,7 @@ fn goto_schema_attr_ty_def_test1() {
             };
 
             let expected_end = Position {
-                line: 2, // zero-based
+                line: 5, // zero-based
                 character: 13,
             };
 
@@ -316,7 +316,7 @@ fn goto_schema_attr_ty_def_test3() {
             };
 
             let expected_end = Position {
-                line: 2, // zero-based
+                line: 5, // zero-based
                 character: 13,
             };
 
@@ -359,7 +359,7 @@ fn goto_schema_attr_ty_def_test4() {
             };
 
             let expected_end = Position {
-                line: 2, // zero-based
+                line: 5, // zero-based
                 character: 13,
             };
 
@@ -409,7 +409,7 @@ fn goto_schema_attr_ty_def_test5() {
             assert_eq!(got_start, expected_start);
             assert_eq!(got_end, expected_end);
         }
-        _ => unreachable!("test error")
+        _ => unreachable!("test error"),
     }
 }
 
@@ -523,7 +523,8 @@ fn completion_test() {
 
     // test completion for str builtin function
     let got = completion(Some('.'), &program, &pos, &prog_scope).unwrap();
-    for k in STRING_MEMBER_FUNCTIONS.keys() {
+    let binding = STRING_MEMBER_FUNCTIONS;
+    for k in binding.keys() {
         items.insert(format!("{}{}", k, "()"));
     }
     let expect: CompletionResponse = into_completion_items(&items).into();
@@ -571,7 +572,7 @@ fn completion_test() {
     items.clear();
 
     let pos = KCLPos {
-        filename: file.to_owned(),
+        filename: file,
         line: 22,
         column: Some(19),
     };
@@ -598,18 +599,34 @@ fn schema_doc_hover_test() {
 
     // test hover of schema doc: p = pkg.Person
     let pos = KCLPos {
-        filename: file,
+        filename: file.clone(),
         line: 4,
         column: Some(11),
     };
     let got = hover(&program, &pos, &prog_scope).unwrap();
-    match got.contents{
-        lsp_types::HoverContents::Scalar(marked_string) => {
-            if let MarkedString::String(s) = marked_string{
+    match got.contents {
+        lsp_types::HoverContents::Array(vec) => {
+            if let MarkedString::String(s) = vec[0].clone() {
+                assert_eq!(s, "Person");
+            }
+            if let MarkedString::String(s) = vec[1].clone() {
                 assert_eq!(s, "\"\"\"\n    hover doc test \n    \"\"\"");
             }
-        },
-        _ => unreachable!("test error")
+        }
+        _ => unreachable!("test error"),
     }
-
+    let pos = KCLPos {
+        filename: file,
+        line: 5,
+        column: Some(7),
+    };
+    let got = hover(&program, &pos, &prog_scope).unwrap();
+    match got.contents {
+        lsp_types::HoverContents::Scalar(marked_string) => {
+            if let MarkedString::String(s) = marked_string {
+                assert_eq!(s, "str");
+            }
+        }
+        _ => unreachable!("test error"),
+    }
 }

@@ -37,7 +37,7 @@ pub(crate) fn goto_definition(
                     .iter()
                     .map(|obj| (obj.start.clone(), obj.end.clone()))
                     .collect();
-                return positions_to_goto_def_resp(&positions);
+                positions_to_goto_def_resp(&positions)
             }
         },
         None => None,

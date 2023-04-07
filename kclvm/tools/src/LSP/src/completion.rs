@@ -108,7 +108,7 @@ fn get_completion_items(expr: &Expr, prog_scope: &ProgramScope) -> IndexSet<Stri
     let mut items = IndexSet::new();
     match expr {
         Expr::Identifier(id) => {
-            let name = get_identifier_last_name(&id);
+            let name = get_identifier_last_name(id);
             if !id.pkgpath.is_empty() {
                 // standard system module
                 if STANDARD_SYSTEM_MODULES.contains(&name.as_str()) {
@@ -136,7 +136,8 @@ fn get_completion_items(expr: &Expr, prog_scope: &ProgramScope) -> IndexSet<Stri
                 match &obj.ty.kind {
                     // builtin (str) functions
                     kclvm_sema::ty::TypeKind::Str => {
-                        for k in STRING_MEMBER_FUNCTIONS.keys() {
+                        let binding = STRING_MEMBER_FUNCTIONS;
+                        for k in binding.keys() {
                             items.insert(format!("{}{}", k, "()"));
                         }
                     }
@@ -153,7 +154,8 @@ fn get_completion_items(expr: &Expr, prog_scope: &ProgramScope) -> IndexSet<Stri
             }
         }
         Expr::StringLit(_) => {
-            for k in STRING_MEMBER_FUNCTIONS.keys() {
+            let binding = STRING_MEMBER_FUNCTIONS;
+            for k in binding.keys() {
                 items.insert(format!("{}{}", k, "()"));
             }
         }

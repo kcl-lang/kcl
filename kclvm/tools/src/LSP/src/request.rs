@@ -8,8 +8,9 @@ use crate::{
     dispatcher::RequestDispatcher,
     from_lsp::kcl_pos,
     goto_def::goto_definition,
+    hover,
     state::{log_message, LanguageServerSnapshot, LanguageServerState, Task},
-    util::{parse_param_and_compile, Param}, hover,
+    util::{parse_param_and_compile, Param},
 };
 
 impl LanguageServerState {
@@ -117,7 +118,11 @@ pub(crate) fn handle_hover(
     params: lsp_types::HoverParams,
     sender: Sender<Task>,
 ) -> anyhow::Result<Option<lsp_types::Hover>> {
-    let file = params.text_document_position_params.text_document.uri.path();
+    let file = params
+        .text_document_position_params
+        .text_document
+        .uri
+        .path();
 
     let (program, prog_scope, _) = parse_param_and_compile(
         Param {
@@ -135,10 +140,6 @@ pub(crate) fn handle_hover(
         &sender,
     )?;
 
-    let res = hover::hover(
-        &program,
-        &kcl_pos,
-        &prog_scope,
-    );
+    let res = hover::hover(&program, &kcl_pos, &prog_scope);
     Ok(res)
 }

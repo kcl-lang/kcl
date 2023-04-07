@@ -1,7 +1,7 @@
 use indexmap::IndexSet;
 use kclvm_ast::ast::Program;
 use kclvm_error::Position as KCLPos;
-use kclvm_sema::resolver::scope::ProgramScope;
+use kclvm_sema::resolver::scope::{ProgramScope, ScopeObjectKind};
 use lsp_types::{Hover, HoverContents, MarkedString};
 
 use crate::goto_def::find_definition_objs;
@@ -14,17 +14,25 @@ pub(crate) fn hover(
     prog_scope: &ProgramScope,
 ) -> Option<lsp_types::Hover> {
     match program.pos_to_stmt(kcl_pos) {
-        Some(node) => match node.node {
-            _ => {
-                let objs = find_definition_objs(node, kcl_pos, prog_scope);
-                let docs: IndexSet<String> = objs
-                    .iter()
-                    .filter(|obj| obj.ty.is_schema())
-                    .map(|obj| obj.ty.into_schema_type().doc.clone())
-                    .collect();
-                docs_to_hover(docs)
+        Some(node) => {
+            let objs = find_definition_objs(node, kcl_pos, prog_scope);
+            let mut docs: IndexSet<String> = IndexSet::new();
+            for obj in &objs {
+                match obj.kind {
+                    ScopeObjectKind::Definition => {
+                        docs.insert(obj.ty.ty_str());
+                        let doc = obj.ty.into_schema_type().doc.clone();
+                        if !doc.is_empty() {
+                            docs.insert(doc);
+                        }
+                    }
+                    _ => {
+                        docs.insert(obj.ty.ty_str());
+                    }
+                }
             }
-        },
+            docs_to_hover(docs)
+        }
         None => None,
     }
 }

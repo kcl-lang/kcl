@@ -1,6 +1,6 @@
 use lsp_types::{
-    ClientCapabilities, CompletionOptions, OneOf, ServerCapabilities, TextDocumentSyncCapability,
-    TextDocumentSyncKind, WorkDoneProgressOptions, HoverProviderCapability,
+    ClientCapabilities, CompletionOptions, HoverProviderCapability, OneOf, ServerCapabilities,
+    TextDocumentSyncCapability, TextDocumentSyncKind, WorkDoneProgressOptions,
 };
 
 /// Returns the capabilities of this LSP server implementation given the capabilities of the client.

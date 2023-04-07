@@ -11,5 +11,5 @@ mod to_lsp;
 mod util;
 
 mod goto_def;
-mod request;
 mod hover;
+mod request;
