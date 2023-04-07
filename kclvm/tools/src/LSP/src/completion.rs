@@ -8,6 +8,7 @@
 //!  + defitions in pkg
 //!  + system module functions
 
+use std::io;
 use std::{fs, path::Path};
 
 use indexmap::IndexSet;
@@ -74,8 +75,12 @@ fn completion_for_import(
         Path::new(&program.root).join(pkgpath.replace('.', &std::path::MAIN_SEPARATOR.to_string()));
     if real_path.is_dir() {
         if let Ok(entries) = fs::read_dir(real_path) {
-            for entry in entries.flatten() {
-                let path = entry.path();
+            let mut entries = entries
+                .map(|res| res.map(|e| e.path()))
+                .collect::<Result<Vec<_>, io::Error>>()
+                .unwrap();
+            entries.sort();
+            for path in entries {
                 let filename = path.file_name().unwrap().to_str().unwrap().to_string();
                 if path.is_dir() {
                     items.insert(filename);

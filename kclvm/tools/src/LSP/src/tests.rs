@@ -538,9 +538,9 @@ fn completion_test() {
         column: Some(12),
     };
     let got = completion(Some('.'), &program, &pos, &prog_scope).unwrap();
+    items.insert("file1".to_string());
     items.insert("file2".to_string());
     items.insert("subpkg".to_string());
-    items.insert("file1".to_string());
 
     let expect: CompletionResponse = into_completion_items(&items).into();
     assert_eq!(got, expect);

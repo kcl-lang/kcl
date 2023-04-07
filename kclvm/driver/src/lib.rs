@@ -13,7 +13,7 @@ use kclvm_parser::LoadProgramOptions;
 use kclvm_runtime::PanicInfo;
 use kclvm_utils::path::PathPrefix;
 use std::{
-    fs::read_dir,
+    fs::{self, read_dir},
     io::{self, ErrorKind},
     path::{Path, PathBuf},
 };
@@ -186,5 +186,6 @@ pub fn get_kcl_files<P: AsRef<Path>>(path: P, recursively: bool) -> Result<Vec<S
             }
         }
     }
+    files.sort();
     Ok(files)
 }
