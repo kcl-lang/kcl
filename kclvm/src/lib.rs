@@ -9,7 +9,7 @@ pub use kclvm_runtime::*;
 use std::ffi::c_char;
 use std::ffi::c_int;
 use std::ffi::CStr;
-use std::ffi::CString;
+use std::process::ExitCode;
 use std::sync::Arc;
 
 /// KCLVM CLI run function CAPI.
@@ -62,7 +62,7 @@ fn kclvm_cli_run_unsafe(args: *const i8, plugin_agent: *const i8) -> Result<Stri
 
 /// KCLVM CLI main function CAPI.
 #[no_mangle]
-pub unsafe extern "C" fn kclvm_cli_main(argc: c_int, argv: *const *const c_char) -> *mut c_char {
+pub unsafe extern "C" fn kclvm_cli_main(argc: c_int, argv: *const *const c_char) -> *mut ExitCode {
     let prev_hook = std::panic::take_hook();
 
     // disable print panic info
@@ -78,20 +78,25 @@ pub unsafe extern "C" fn kclvm_cli_main(argc: c_int, argv: *const *const c_char)
     });
     std::panic::set_hook(prev_hook);
 
-    CString::new(match kclvm_cli_main_result {
+    match kclvm_cli_main_result {
         Ok(result) => match result {
-            Ok(()) => "".to_string(),
+            Ok(()) => Box::into_raw(Box::new(ExitCode::SUCCESS)),
             Err(err) => {
                 let backtrace = format!("{}", err.backtrace());
                 if backtrace.is_empty() {
-                    format!("Error: {}\n", err)
+                    println!("Error: {}", err);
                 } else {
-                    format!("Error: {}\n\nStack backtrace:\n{}", err, backtrace)
+                    println!("Error: {}\n\nStack backtrace:\n{}", err, backtrace);
                 }
+                Box::into_raw(Box::new(ExitCode::FAILURE))
             }
         },
-        Err(err) => kclvm_error::err_to_str(err),
-    })
-    .unwrap()
-    .into_raw()
+        Err(err) => {
+            let err_str = kclvm_error::err_to_str(err);
+            if !err_str.is_empty() {
+                println!("Error: {}", err_str);
+            }
+            Box::into_raw(Box::new(ExitCode::FAILURE))
+        }
+    }
 }
