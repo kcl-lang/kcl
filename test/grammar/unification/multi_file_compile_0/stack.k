@@ -1,3 +1,3 @@
-config = Config {
+config: Config {
     name = "config2"
 }

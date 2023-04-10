@@ -4,13 +4,13 @@ schema Main:
 schema Config:
     main: Main
 
-config = Config {
+config: Config {
     main: Main {
         env: ["s1"]
     }
 }
 
-config = Config {
+config: Config {
     main: Main {
         env += ["s2"]
     }

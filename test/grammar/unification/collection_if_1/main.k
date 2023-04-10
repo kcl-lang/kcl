@@ -2,17 +2,17 @@ schema Person:
     name: str
     age: int
 
-alice = Person {
+alice: Person {
     if True:
         name: "Alice"
 }
 
-alice = Person {
+alice: Person {
     if True:
         age = 18
 }
 
-alice = Person {
+alice: Person {
     age = 10
 }
 

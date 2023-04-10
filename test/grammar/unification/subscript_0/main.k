@@ -2,11 +2,11 @@ schema Person:
     name: str
     age: int
 
-alice = Person {
+alice: Person {
     name: "Alice"
 }
 
-alice = Person {
+alice: Person {
     age: 18
 }
 

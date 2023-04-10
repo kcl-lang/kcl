@@ -2,12 +2,12 @@ schema Person:
     name: str
     age: int
 
-alice = Person {
+alice: Person {
     name: "Alice"
     age: 18
 }
 
-alice = Person {}
+alice: Person {}
 
 name = alice.name
 age = alice.age

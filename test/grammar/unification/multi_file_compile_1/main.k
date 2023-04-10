@@ -3,7 +3,7 @@ schema Config:
     args: [str]
     labels: {str:}
 
-config = Config {
+config: Config {
     name: "config1"
     args: ["kcl", "main.k"]
     labels.key1: "value1"

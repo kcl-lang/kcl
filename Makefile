@@ -29,6 +29,10 @@ build:
 release:
 	${PWD}/run.sh -a release
 
+.PHONY: check
+check:
+	make -C ./kclvm check
+
 .PHONY: test
 test:
 	make -C ./kclvm test
