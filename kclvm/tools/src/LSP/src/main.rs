@@ -10,6 +10,7 @@ mod db;
 mod dispatcher;
 mod from_lsp;
 mod goto_def;
+mod hover;
 mod notification;
 mod request;
 mod state;

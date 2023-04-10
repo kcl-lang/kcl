@@ -12,7 +12,7 @@ use kclvm_driver::get_kcl_files;
 
 use std::path::Path;
 
-use kclvm_ast::ast::{Expr, Identifier, ImportStmt, Program, SchemaExpr, Stmt};
+use kclvm_ast::ast::{Expr, Identifier, ImportStmt, Node, Program, SchemaExpr, Stmt};
 use kclvm_config::modfile::KCL_FILE_EXTENSION;
 use kclvm_error::Position as KCLPos;
 use kclvm_sema::resolver::scope::{ProgramScope, ScopeObject};
@@ -32,38 +32,41 @@ pub(crate) fn goto_definition(
         Some(node) => match node.node {
             Stmt::Import(stmt) => goto_def_for_import(&stmt, kcl_pos, prog_scope, program),
             _ => {
-                let (inner_expr, parent) = inner_most_expr_in_stmt(&node.node, kcl_pos, None);
-                match inner_expr {
-                    Some(expr) => {
-                        match expr.node {
-                            Expr::Identifier(id) => {
-                                let name = get_identifier_last_name(&id);
-                                let objs = if let Some(parent) = parent {
-                                    // find schema attr def
-                                    match parent.node {
-                                        Expr::Schema(schema_expr) => {
-                                            find_def_of_schema_attr(schema_expr, prog_scope, name)
-                                        }
-                                        _ => vec![],
-                                    }
-                                } else {
-                                    find_objs_in_program_scope(&name, prog_scope)
-                                };
-                                let positions = objs
-                                    .iter()
-                                    .map(|obj| (obj.start.clone(), obj.end.clone()))
-                                    .collect();
-                                positions_to_goto_def_resp(&positions)
-                            }
-                            _ => None,
-                        }
-                    }
-                    None => None,
-                }
+                let objs = find_definition_objs(node, kcl_pos, prog_scope);
+                let positions = objs
+                    .iter()
+                    .map(|obj| (obj.start.clone(), obj.end.clone()))
+                    .collect();
+                positions_to_goto_def_resp(&positions)
             }
         },
         None => None,
     }
+}
+pub(crate) fn find_definition_objs(
+    node: Node<Stmt>,
+    kcl_pos: &KCLPos,
+    prog_scope: &ProgramScope,
+) -> Vec<ScopeObject> {
+    let (inner_expr, parent) = inner_most_expr_in_stmt(&node.node, kcl_pos, None);
+    if let Some(expr) = inner_expr {
+        if let Expr::Identifier(id) = expr.node {
+            let name = get_identifier_last_name(&id);
+            let objs = if let Some(parent) = parent {
+                // find schema attr def
+                match parent.node {
+                    Expr::Schema(schema_expr) => {
+                        find_def_of_schema_attr(schema_expr, prog_scope, name)
+                    }
+                    _ => vec![],
+                }
+            } else {
+                find_objs_in_program_scope(&name, prog_scope)
+            };
+            return objs;
+        }
+    }
+    vec![]
 }
 
 // This function serves as the result of a global search, which may cause duplication.
@@ -171,7 +174,7 @@ fn goto_def_for_import(
 //         id = 3
 //     }
 // }
-fn find_def_of_schema_attr(
+pub(crate) fn find_def_of_schema_attr(
     schema_expr: SchemaExpr,
     prog_scope: &ProgramScope,
     attr_name: String,
