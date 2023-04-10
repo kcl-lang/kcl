@@ -3,9 +3,7 @@ use std::path::PathBuf;
 use indexmap::IndexSet;
 use kclvm_ast::ast::Program;
 use kclvm_error::Diagnostic;
-use kclvm_error::ErrorKind::InvalidSyntax;
-use kclvm_error::ErrorKind::TypeError;
-use kclvm_error::{DiagnosticId, Position as KCLPos};
+use kclvm_error::Position as KCLPos;
 use kclvm_sema::builtin::MATH_FUNCTION_NAMES;
 use kclvm_sema::builtin::STRING_MEMBER_FUNCTIONS;
 use kclvm_sema::resolver::scope::ProgramScope;
@@ -38,11 +36,33 @@ fn compile_test_file(testfile: &str) -> (String, Program, ProgramScope, IndexSet
 
 #[test]
 fn diagnostics_test() {
-    let (_, _, _, diags) = compile_test_file("src/test_data/diagnostics.k");
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let mut test_file = path.clone();
+    test_file.push("src/test_data/diagnostics.k");
+    let file = test_file.to_str().unwrap();
 
-    assert_eq!(diags.len(), 2);
-    assert_eq!(diags[0].code, Some(DiagnosticId::Error(InvalidSyntax)));
-    assert_eq!(diags[1].code, Some(DiagnosticId::Error(TypeError)));
+    let (_, _, diags) = parse_param_and_compile(
+        Param {
+            file: file.to_string(),
+        },
+        None,
+    )
+    .unwrap();
+
+    let msgs = [
+        "expected one of [\"identifier\", \"literal\", \"(\", \"[\", \"{\"] got newline",
+        "pkgpath abc not found in the program",
+        &format!(
+            "Cannot find the module abc from {}/src/test_data/abc",
+            path.to_str().unwrap()
+        ),
+        "expected str, got int(1)",
+        "Module 'abc' imported but unused",
+    ];
+    assert_eq!(diags.len(), msgs.len());
+    for (diag, m) in diags.iter().zip(msgs.iter()) {
+        assert_eq!(diag.messages[0].message, m.to_string());
+    }
 }
 
 #[test]

@@ -58,6 +58,23 @@ impl Into<(String, u64, u64, u64, u64)> for Pos {
     }
 }
 
+impl Into<(Position, Position)> for Pos {
+    fn into(self) -> (Position, Position) {
+        (
+            Position {
+                filename: self.0.clone(),
+                line: self.1,
+                column: Some(self.2),
+            },
+            Position {
+                filename: self.0,
+                line: self.3,
+                column: Some(self.4),
+            },
+        )
+    }
+}
+
 /// Node is the file, line and column number information
 /// that all AST nodes need to contain.
 #[derive(Serialize, Deserialize, Debug, Clone)]

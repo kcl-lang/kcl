@@ -273,13 +273,20 @@ pub fn test_import_vendor_without_vendor_home() {
         .canonicalize()
         .unwrap();
     let test_case_path = dir.join("assign.k").display().to_string();
-    match load_program(sess, &[&test_case_path], None) {
+    match load_program(sess.clone(), &[&test_case_path], None) {
         Ok(_) => {
-            panic!("Unreachable code.")
+            let errors = sess.classification().0;
+            let msgs = [
+                "pkgpath assign not found in the program",
+                "pkgpath assign.assign not found in the program",
+            ];
+            assert_eq!(errors.len(), msgs.len());
+            for (diag, m) in errors.iter().zip(msgs.iter()) {
+                assert_eq!(diag.messages[0].message, m.to_string());
+            }
         }
-        Err(err) => {
-            let result: PanicInfo = serde_json::from_str(&err).unwrap();
-            assert_eq!(result.message, "pkgpath assign not found in the program");
+        Err(_) => {
+            panic!("Unreachable code.")
         }
     }
 }
@@ -294,8 +301,9 @@ fn test_import_vendor_with_same_internal_pkg() {
         .canonicalize()
         .unwrap();
     let test_case_path = dir.join("same_name.k").display().to_string();
-    match load_program(sess, &[&test_case_path], None) {
+    match load_program(sess.clone(), &[&test_case_path], None) {
         Ok(_) => {
+            let errors = sess.classification().0;
             panic!("Unreachable code.")
         }
         Err(err) => {
