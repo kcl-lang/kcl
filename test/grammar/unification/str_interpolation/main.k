@@ -3,8 +3,8 @@ schema Person:
     age: int
 
 key = "age"
-_alice = Person {
+_alice: Person {
     name: "Alice"
 }
-_alice = Person {"${key}": 18}
+_alice: Person {"${key}": 18}
 alice = _alice

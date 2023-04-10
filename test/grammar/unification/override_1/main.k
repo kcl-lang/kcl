@@ -3,7 +3,7 @@ schema Person:
     age: int
     env: [{str:}]
 
-alice = Person {
+alice: Person {
     name: "Alice"
     env: [{
         name: "key1"
@@ -14,7 +14,7 @@ alice = Person {
     }]
 }
 
-alice = Person {
+alice: Person {
     age: 18
     env = [{
         name: "key2"

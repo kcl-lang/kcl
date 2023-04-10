@@ -3,12 +3,12 @@ schema Person:
     age: int
     hc: [int]
 
-alice = Person {
+alice: Person {
     name: "Alice"
     hc: [1, 2]
 }
 
-alice = Person {
+alice: Person {
     age: 18
     hc = [2]
 }

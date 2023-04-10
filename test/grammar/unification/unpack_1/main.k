@@ -7,11 +7,11 @@ _base = {
     age = 10
 }
 
-alice = Person {
+alice: Person {
     age: 18
 }
 
-alice = Person {
+alice: Person {
     **_base
 }
 

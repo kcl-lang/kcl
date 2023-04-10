@@ -3,14 +3,14 @@ schema Config:
     age?: int
     hc: [int]
 
-config = Config {
+config: Config {
     name: "Alice"
 }
 age = 18
-config = Config {
+config: Config {
     age: age
 }
 
-config = Config {
+config: Config {
     hc: [1]
 }

@@ -1,4 +1,4 @@
 _NAME = "config2"
-config = Config {
+config: Config {
     name = _NAME
 }

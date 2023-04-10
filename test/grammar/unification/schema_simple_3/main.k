@@ -13,12 +13,12 @@ _main = Main {
     args: ["1"]
 }
 
-config = Config {
+config: Config {
     name: "Alice"
     main: _main
 }
 
-config = Config {
+config: Config {
     age: 18
     main: Main {
         env = ["789", "456"]

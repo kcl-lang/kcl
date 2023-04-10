@@ -10,13 +10,13 @@ schema Config:
     labels: {str:}
     name: Name
 
-config = Config {
+config: Config {
     args: ["kcl", "main.k"]
     labels.key1: "value1"
     name.name.name: "name"
 }
 
-config = Config {
+config: Config {
     labels: {
         key2: "value2"
     }
