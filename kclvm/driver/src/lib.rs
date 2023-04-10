@@ -13,7 +13,7 @@ use kclvm_parser::LoadProgramOptions;
 use kclvm_runtime::PanicInfo;
 use kclvm_utils::path::PathPrefix;
 use std::{
-    fs::{self, read_dir},
+    fs::read_dir,
     io::{self, ErrorKind},
     path::{Path, PathBuf},
 };

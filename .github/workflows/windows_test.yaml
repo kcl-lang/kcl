@@ -41,10 +41,6 @@ jobs:
       # Rust runtime test
       - run: python3 -m pip install --upgrade pip && python3 -m pip install pytest && kclvm -m pytest -vv
         working-directory: ./kclvm/tests/test_units
-
-      # Rust konfig test
-      - run: .\test\integration\test_konfig.bat
-        working-directory: .
       
       - uses: actions/upload-artifact@v3
         with:

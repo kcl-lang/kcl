@@ -43,6 +43,7 @@ You can use KCL to
 + **API affinity**: Native support for ecological API specifications such as [OpenAPI](https://github.com/KusionStack/kcl-openapi), Kubernetes CRD, Kubernetes YAML spec.
 + **Developer-friendly**: Friendly development experiences with rich [language tools](https://kcl-lang.io/docs/tools/cli/kcl/) (Format, Lint, Test, Vet, Doc, etc.) and [IDE plugins](https://github.com/KusionStack/vscode-kcl).
 + **Safety & maintainable**: Domain-oriented, no system-level functions such as native threads and IO, low noise and security risk, easy maintenance and governance.
++ **Integrations**: Mutate and validate manifests through [Kustomize KCL Plugin](https://github.com/KusionStack/kustomize-kcl), [Helm KCL Plugin](https://github.com/KusionStack/helm-kcl) or [KPT KCL SDK](https://github.com/KusionStack/kpt-kcl-sdk).
 + **Production-ready**: Widely used in production practices of platform engineering and automation at Ant Group.
 
 ## How to choose?

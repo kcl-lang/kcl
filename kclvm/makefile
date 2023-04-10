@@ -18,7 +18,11 @@ install-rustc-wasm:
 
 # Install python3 pytest
 install-pytest:
-	python3 -mpip install pytest pytest-html 
+	python3 -mpip install --user -U pytest pytest-html pytest-xdist
+
+# Install kclvm-py
+install-kclvm-py:
+	python3 -mpip install --user -U kclvm
 
 # ------------------------
 # Compile and run
@@ -26,8 +30,8 @@ install-pytest:
 
 # E2E compile and run
 run:
-	cd .. && ./run.sh -a update-kclvm && cd kclvm
-	kcl ../samples/hello.k --target native
+	cd .. && make build && cd kclvm
+	kcl ../samples/hello.k
 
 # Cargo check all packages
 check:
@@ -67,15 +71,15 @@ codecov-lcov:
 	cargo llvm-cov --lcov --output-path $(PWD)/.kclvm/lcov.info --workspace --ignore-filename-regex gpyrpc.rs
 
 # Test runtime libaries using python functions
-test-runtime:
+test-runtime: install-kclvm-py install-pytest
 	cd ./tests/test_units && PYTHONPATH=./../../plugin kclvm -m pytest -vv || { echo 'kclvm/tests/test_units failed' ; exit 1; }
 
 # E2E grammar tests.
-test-grammar:
+test-grammar: install-kclvm-py install-pytest
 	cd tests/integration/grammar && kclvm -m pytest -v -n 5
 
 # E2E konfig tests.
-test-konfig:
+test-konfig: install-kclvm-py install-pytest
 	cd tests/integration/konfig && kclvm -m pytest -v -n 5
 
 # Parser fuzz.

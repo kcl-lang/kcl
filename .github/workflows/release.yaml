@@ -37,7 +37,7 @@ jobs:
       # KCLVM build
 
       - name: Build KCLVM
-        run: export PATH=$PATH:$PWD/_build/dist/ubuntu/kclvm/bin && make build && cd kclvm && make
+        run: export PATH=$PATH:$PWD/_build/dist/ubuntu/kclvm/bin && make build
         shell: bash
 
       # KCLVM docker image build and upload

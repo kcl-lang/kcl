@@ -187,8 +187,10 @@ pub struct LoadProgramOptions {
     pub cmd_overrides: Vec<ast::OverrideSpec>,
     /// The parser mode.
     pub mode: ParseMode,
-    /// Wether to load packages.
+    /// Whether to load packages.
     pub load_packages: bool,
+    /// Whether to load plugins
+    pub load_plugins: bool,
 }
 
 impl Default for LoadProgramOptions {
@@ -201,6 +203,7 @@ impl Default for LoadProgramOptions {
             cmd_overrides: Default::default(),
             mode: ParseMode::ParseComments,
             load_packages: true,
+            load_plugins: false,
         }
     }
 }
@@ -362,6 +365,10 @@ impl Loader {
         pos: ast::Pos,
         pkgs: &mut HashMap<String, Vec<ast::Module>>,
     ) -> Result<(), String> {
+        if !self.opts.load_packages {
+            return Ok(());
+        }
+
         if pkgpath.is_empty() {
             return Ok(());
         }
@@ -375,7 +382,15 @@ impl Loader {
 
         // plugin pkgs
         if self.is_plugin_pkg(pkgpath.as_str()) {
-            return Ok(());
+            if self.opts.load_plugins {
+                return Ok(());
+            } else {
+                return Err(PanicInfo::from_ast_pos(
+                    format!("the plugin package `{}` is not found, please confirm if plugin mode is enabled", pkgpath),
+                    pos.into(),
+                )
+                .to_json_string());
+            }
         }
 
         // builtin pkgs

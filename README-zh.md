@@ -43,6 +43,7 @@ Kusion 配置语言（KCL）是一个开源的基于约束的记录及函数语�
 + **API 亲和**：原生支持 [OpenAPI](https://github.com/KusionStack/kcl-openapi)、 Kubernetes CRD， Kubernetes YAML 等 API 生态规范
 + **开发友好**：[语言工具](https://kcl-lang.io/docs/tools/cli/kcl/) (Format，Lint，Test，Vet，Doc 等)、 [IDE 插件](https://github.com/KusionStack/vscode-kcl) 构建良好的研发体验
 + **安全可控**：面向领域，不原生提供线程、IO 等系统级功能，低噪音，低安全风险，易维护，易治理
++ **生态集成**：通过 [Kustomize KCL 插件](https://github.com/KusionStack/kustomize-kcl), [Helm KCL 插件](https://github.com/KusionStack/helm-kcl) 或者 [KPT KCL SDK](https://github.com/KusionStack/kpt-kcl-sdk) 直接编辑或校验资源
 + **生产可用**：广泛应用在蚂蚁集团平台工程及自动化的生产环境实践中
 
 ## 如何选择

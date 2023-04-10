@@ -27,18 +27,19 @@ mod tests;
 ///
 /// ```no_run
 /// use kclvm_tools::lint::lint_files;
-/// let (error, warning) = lint_files(&["test.k"], None);
+/// let (errors, warnings) = lint_files(&["test.k"], None);
 /// ```
 ///
 /// - test.k
 ///
 /// ```kcl
-/// import kcl_plugin.hello
+/// import math
 /// schema Person:
 ///     age: int
 /// ```
 ///
 /// - return
+/// ```no_check
 /// error: []
 /// warning: [
 ///    Diagnostic {
@@ -50,12 +51,13 @@ mod tests;
 ///                column: None,
 ///            },
 ///            style: Style::Line,
-///            message: "Module 'kcl_plugin.hello' imported but unused",
+///            message: "Module 'math' imported but unused",
 ///            note: Some("Consider removing this statement".to_string()),
 ///        }],
 ///        code: Some<WarningKind::UnusedImportWarning>,
 ///     }
 /// ]
+/// ```
 pub fn lint_files(
     files: &[&str],
     opts: Option<LoadProgramOptions>,

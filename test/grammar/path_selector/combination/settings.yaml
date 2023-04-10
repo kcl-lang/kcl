@@ -1,1 +1,1 @@
-kcl_options: -S combination:alice.name.firstName -S combination:alice.name.lastName
+kcl_options: -S alice.name

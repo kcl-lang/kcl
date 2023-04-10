@@ -12,14 +12,6 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: "true"
-      - name: Build KCLVM
-        run: make build
-        shell: bash
-      - name: Grammar test
-        run: |
-          chmod +x ./internal/scripts/test_grammar.sh
-          ./internal/scripts/test_grammar.sh
-        shell: bash
       - name: Delete rust cargo
         run: rm -rf /root/.cargo/bin
         shell: bash
@@ -29,27 +21,27 @@ jobs:
           toolchain: 1.67
           override: true
           components: clippy, rustfmt
-      - name: Rust code format check
+      - name: Code format check
         working-directory: ./kclvm
         run: cargo fmt --check
         shell: bash
-      - name: Rust code clippy check
+      - name: Code clippy check
         working-directory: ./kclvm
         run: cargo clippy --no-deps -r
         shell: bash
-      - name: Rust grammar test
+      - name: Grammar test
         working-directory: ./kclvm
         run: export PATH=$PATH:$PWD/../_build/dist/ubuntu/kclvm/bin && make install-rustc-wasm && make && make test-grammar
         shell: bash
-      - name: Rust runtime test
+      - name: Runtime test
         working-directory: ./kclvm
         run: export PATH=$PATH:$PWD/../_build/dist/ubuntu/kclvm/bin && make install-rustc-wasm && make && make test-runtime
         shell: bash
-      - name: Rust unit test
+      - name: Unit test
         working-directory: ./kclvm
         run: export PATH=$PATH:$PWD/../_build/dist/ubuntu/kclvm/bin && make install-rustc-wasm && make && make codecov-lcov
         shell: bash
-      - name: Rust konfig test
+      - name: Konfig test
         working-directory: ./kclvm
         run: export PATH=$PATH:$PWD/../_build/dist/ubuntu/kclvm/bin && make install-rustc-wasm && make && make test-konfig
         shell: bash

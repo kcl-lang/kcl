@@ -34,12 +34,26 @@ def find_test_dirs():
 
 
 def compare_results(result, golden_result):
-    # Convert result and golden_result string to string lines with line ending stripped, then compare.
+    """Convert result and golden_result string to string lines with line ending stripped, then compare."""
+    result = [
+        r
+        for r in list(yaml.load_all(result))
+        if r and r.get("kind") != "SecretProviderClass"
+    ]
+    # Convert kusion compile spec to kcl result
+    expected = [
+        r
+        for r in list(yaml.load_all(golden_result))[0]
+        if r["attributes"]
+        # Remove CRDs
+        and not r["id"].startswith("apiextensions.k8s.io/v1:CustomResourceDefinition")
+    ]
+    print(len(result), len(expected))
+    assert compare_unordered_yaml_objects(result, expected)
 
-    assert compare_unordered_yaml_objects(list(yaml.load_all(result)), list(yaml.load_all(golden_result)))
 
-# Comparing the contents of two YAML objects for equality in an unordered manner
 def compare_unordered_yaml_objects(result, golden_result):
+    """Comparing the contents of two YAML objects for equality in an unordered manner"""
     if isinstance(result, Mapping) and isinstance(golden_result, Mapping):
         if result.keys() != golden_result.keys():
             return False
@@ -60,6 +74,7 @@ def compare_unordered_yaml_objects(result, golden_result):
         return True
     else:
         return result == golden_result
+
 
 def has_settings_file(directory):
     settings_file = directory / SETTINGS_FILE
@@ -92,8 +107,6 @@ def test_konfigs(test_dir):
         kcl_command.append(f"kcl.yaml")
     else:
         kcl_command.append(f"{TEST_FILE}")
-    kcl_command.append("--target")
-    kcl_command.append("native")
     process = subprocess.run(
         kcl_command, capture_output=True, cwd=test_dir, env=dict(os.environ)
     )

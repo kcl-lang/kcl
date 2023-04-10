@@ -575,13 +575,7 @@ fn completion_test() {
         line: 22,
         column: Some(19),
     };
-    let got = completion(Some('.'), &program, &pos, &prog_scope).unwrap();
+    assert!(completion(Some('.'), &program, &pos, &prog_scope).is_none());
 
-    match got {
-        CompletionResponse::Array(arr) => {
-            assert!(arr.is_empty())
-        }
-        CompletionResponse::List(_) => unreachable!("test error"),
-    }
     items.clear();
 }
