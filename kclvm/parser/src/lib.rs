@@ -18,7 +18,7 @@ use kclvm_config::modfile::{
     get_pkg_root_from_paths, get_vendor_home, KCL_FILE_EXTENSION, KCL_FILE_SUFFIX, KCL_MOD_FILE,
     KCL_MOD_PATH_ENV,
 };
-use kclvm_error::ErrorKind;
+use kclvm_error::{ErrorKind, Message, Position, Style};
 use kclvm_runtime::PanicInfo;
 use kclvm_sema::plugin::PLUGIN_MODULE_PREFIX;
 use kclvm_utils::path::PathPrefix;
@@ -433,11 +433,16 @@ impl Loader {
                     )?,
                 ),
                 None => {
-                    return Err(PanicInfo::from_ast_pos(
-                        format!("pkgpath {} not found in the program", pkgpath),
-                        pos.into(),
-                    )
-                    .to_json_string());
+                    self.sess.1.borrow_mut().add_error(
+                        ErrorKind::CannotFindModule,
+                        &[Message {
+                            pos: Into::<(Position, Position)>::into(pos).0,
+                            style: Style::Line,
+                            message: format!("pkgpath {} not found in the program", pkgpath),
+                            note: None,
+                        }],
+                    );
+                    return Ok(());
                 }
             },
         };
