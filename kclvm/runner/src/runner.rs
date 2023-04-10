@@ -25,6 +25,8 @@ pub type kclvm_value_ref_t = std::ffi::c_void;
 pub struct ExecProgramArgs {
     pub work_dir: Option<String>,
     pub k_filename_list: Vec<String>,
+    // -E key=value
+    #[serde(skip)]
     pub package_maps: HashMap<String, String>,
     pub k_code_list: Vec<String>,
     // -D key=value
