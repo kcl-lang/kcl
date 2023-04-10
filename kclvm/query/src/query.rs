@@ -41,9 +41,12 @@ impl Default for GetSchemaOption {
 ///
 /// let file = "schema.k";
 /// let code = r#"
+/// import units
+///
 /// schema Person:
 ///     name: str
 ///     age: int
+///     size?: units.NumberMultiplier = 1Mi
 ///
 /// person = Person {
 ///     name = "Alice"
@@ -67,6 +70,9 @@ impl Default for GetSchemaOption {
 /// assert_eq!(types.len(), 1);
 /// assert_eq!(types[0].name, "Person");
 /// assert_eq!(types["Person"].name, "Person");
+/// assert_eq!(types["Person"].attrs["name"].ty.ty_str(), "str");
+/// assert_eq!(types["Person"].attrs["age"].ty.ty_str(), "int");
+/// assert_eq!(types["Person"].attrs["size"].ty.ty_str(), "number_multiplier");
 /// ```
 pub fn get_schema_type(
     file: &str,

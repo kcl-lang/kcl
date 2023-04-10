@@ -24,7 +24,7 @@ pub(crate) fn hashmaps_from_matches(
             .into_iter()
             .map(|s| match parse_key_value_pair(s) {
                 Ok(pair) => Ok((pair.key, pair.value)),
-                Err(err) => {
+                Err(_) => {
                     bail!("Invalid arguments format '-E, --external', use'kclvm_cli run --help' for more help.")
                 }
             })
