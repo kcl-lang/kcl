@@ -68,6 +68,13 @@ parse_expr_snapshot! { config_recovery_9, "{*a, **b}" }
 parse_expr_snapshot! { config_recovery_10, "{**a, *b}" }
 parse_expr_snapshot! { config_recovery_11, "{if True: a = , b = 2}" }
 parse_expr_snapshot! { config_recovery_12, "{if True: *a, b = 2}" }
+parse_expr_snapshot! { comp_clause_recovery_0, "[i for i in [1,2,3]]" }
+parse_expr_snapshot! { comp_clause_recovery_1, "[i, j for i in [1,2,3]]" }
+parse_expr_snapshot! { comp_clause_recovery_2, "[for i in [1,2,3]]" }
+parse_expr_snapshot! { comp_clause_recovery_3, "{i for i in [1,2,3]}" }
+parse_expr_snapshot! { comp_clause_recovery_4, "{i: for i in [1,2,3]}" }
+parse_expr_snapshot! { comp_clause_recovery_5, "{i: 1, j for i in [1,2,3]}" }
+parse_expr_snapshot! { comp_clause_recovery_6, "{for i in [1,2,3]}" }
 parse_expr_snapshot! { unary_recovery_0, r#"!a"# }
 parse_expr_snapshot! { unary_recovery_1, r#"!!a"# }
 parse_expr_snapshot! { unary_recovery_2, r#"not (!a)"# }

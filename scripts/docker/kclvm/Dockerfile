@@ -21,7 +21,6 @@ RUN chmod +x /kclvm/bin/kcl-test
 RUN chmod +x /kclvm/bin/kcl-vet
 RUN chmod +x /kclvm/bin/kclvm
 RUN chmod +x /kclvm/bin/kclvm_cli
-RUN /kclvm/bin/kcl
 
 ENV PATH="/kclvm/bin:${PATH}"
 ENV LANG=en_US.utf8

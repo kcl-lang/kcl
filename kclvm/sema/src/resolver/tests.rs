@@ -85,6 +85,9 @@ fn test_resolve_program_fail() {
     let cases = &[
         "./src/resolver/test_fail_data/attr.k",
         "./src/resolver/test_fail_data/cannot_find_module.k",
+        "./src/resolver/test_fail_data/comp_clause_error_0.k",
+        "./src/resolver/test_fail_data/comp_clause_error_1.k",
+        "./src/resolver/test_fail_data/comp_clause_error_2.k",
         "./src/resolver/test_fail_data/config_expr.k",
         "./src/resolver/test_fail_data/module_optional_select.k",
         "./src/resolver/test_fail_data/mutable_error_0.k",
