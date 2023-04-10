@@ -22,7 +22,9 @@ pub(crate) fn document_symbol(
     // Get variable in scope
     for obj in scope.elems.values().filter(|obj| {
         if let Ok(canonicalized_path) = Path::new(&obj.borrow().start.filename).canonicalize() {
+            // skip schema definition
             canonicalized_path.eq(Path::new(file))
+                && obj.borrow().kind != ScopeObjectKind::Definition
         } else {
             false
         }
