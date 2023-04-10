@@ -8,6 +8,7 @@ mod completion;
 mod config;
 mod db;
 mod dispatcher;
+mod document_symbol;
 mod from_lsp;
 mod goto_def;
 mod hover;

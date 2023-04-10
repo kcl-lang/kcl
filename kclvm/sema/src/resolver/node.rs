@@ -356,7 +356,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 start,
                 end,
                 ty: expected_ty.clone(),
-                kind: ScopeObjectKind::Variable,
+                kind: ScopeObjectKind::Attribute,
                 used: false,
             },
         );

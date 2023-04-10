@@ -7,7 +7,7 @@ use lsp_types::{
 pub fn server_capabilities(_client_caps: &ClientCapabilities) -> ServerCapabilities {
     ServerCapabilities {
         text_document_sync: Some(TextDocumentSyncCapability::Kind(TextDocumentSyncKind::FULL)),
-        // document_symbol_provider: Some(OneOf::Left(true)),
+        document_symbol_provider: Some(OneOf::Left(true)),
         completion_provider: Some(CompletionOptions {
             resolve_provider: None,
             trigger_characters: Some(vec![String::from(".")]),

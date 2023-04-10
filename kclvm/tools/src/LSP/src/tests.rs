@@ -10,9 +10,13 @@ use kclvm_sema::builtin::MATH_FUNCTION_NAMES;
 use kclvm_sema::builtin::STRING_MEMBER_FUNCTIONS;
 use kclvm_sema::resolver::scope::ProgramScope;
 use lsp_types::CompletionResponse;
+use lsp_types::DocumentSymbol;
+use lsp_types::DocumentSymbolResponse;
 use lsp_types::MarkedString;
+use lsp_types::SymbolKind;
 use lsp_types::{Position, Range, TextDocumentContentChangeEvent};
 
+use crate::document_symbol::document_symbol;
 use crate::hover::hover;
 use crate::{
     completion::{completion, into_completion_items},
@@ -34,18 +38,8 @@ fn compile_test_file(testfile: &str) -> (String, Program, ProgramScope, IndexSet
 
 #[test]
 fn diagnostics_test() {
-    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let mut test_file = path;
-    test_file.push("src/test_data/diagnostics.k");
-    let file = test_file.to_str().unwrap();
+    let (_, _, _, diags) = compile_test_file("src/test_data/diagnostics.k");
 
-    let (_, _, diags) = parse_param_and_compile(
-        Param {
-            file: file.to_string(),
-        },
-        None,
-    )
-    .unwrap();
     assert_eq!(diags.len(), 2);
     assert_eq!(diags[0].code, Some(DiagnosticId::Error(InvalidSyntax)));
     assert_eq!(diags[1].code, Some(DiagnosticId::Error(TypeError)));
@@ -623,4 +617,60 @@ fn schema_doc_hover_test() {
         }
         _ => unreachable!("test error"),
     }
+}
+
+#[allow(deprecated)]
+fn build_document_symbol(
+    name: &str,
+    kind: SymbolKind,
+    range: ((u32, u32), (u32, u32)),
+    child: Option<Vec<DocumentSymbol>>,
+) -> DocumentSymbol {
+    let range: Range = Range {
+        start: Position {
+            line: range.0 .0,
+            character: range.0 .1,
+        },
+        end: Position {
+            line: range.1 .0,
+            character: range.1 .1,
+        },
+    };
+    DocumentSymbol {
+        name: name.to_string(),
+        detail: None,
+        kind,
+        tags: None,
+        deprecated: None,
+        range,
+        selection_range: range,
+        children: child,
+    }
+}
+
+#[test]
+fn document_symbol_test() {
+    let (file, program, prog_scope, _) = compile_test_file("src/test_data/document_symbol.k");
+
+    let res = document_symbol(file.as_str(), &program, &prog_scope).unwrap();
+    let mut expect = vec![];
+    expect.push(build_document_symbol(
+        "p",
+        SymbolKind::VARIABLE,
+        ((3, 0), (3, 1)),
+        None,
+    ));
+    expect.push(build_document_symbol(
+        "Person4",
+        SymbolKind::STRUCT,
+        ((0, 7), (1, 13)),
+        Some(vec![build_document_symbol(
+            "name",
+            SymbolKind::PROPERTY,
+            ((1, 4), (1, 8)),
+            None,
+        )]),
+    ));
+    let expect = DocumentSymbolResponse::Nested(expect);
+    assert_eq!(res, expect)
 }

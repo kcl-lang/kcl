@@ -6,6 +6,7 @@ use crossbeam_channel::Sender;
 use crate::{
     completion::completion,
     dispatcher::RequestDispatcher,
+    document_symbol::document_symbol,
     from_lsp::kcl_pos,
     goto_def::goto_definition,
     hover,
@@ -42,6 +43,7 @@ impl LanguageServerState {
             .on::<lsp_types::request::GotoDefinition>(handle_goto_definition)?
             .on::<lsp_types::request::Completion>(handle_completion)?
             .on::<lsp_types::request::HoverRequest>(handle_hover)?
+            .on::<lsp_types::request::DocumentSymbolRequest>(handle_document_symbol)?
             .finish();
 
         Ok(())
@@ -65,8 +67,7 @@ pub(crate) fn handle_goto_definition(
             file: file.to_string(),
         },
         Some(snapshot.vfs),
-    )
-    .unwrap();
+    )?;
     let kcl_pos = kcl_pos(file, params.text_document_position_params.position);
     let res = goto_definition(&program, &kcl_pos, &prog_scope);
     if res.is_none() {
@@ -88,8 +89,7 @@ pub(crate) fn handle_completion(
             file: file.to_string(),
         },
         Some(snapshot.vfs),
-    )
-    .unwrap();
+    )?;
     let kcl_pos = kcl_pos(file, params.text_document_position.position);
     log_message(
         format!(
@@ -129,8 +129,7 @@ pub(crate) fn handle_hover(
             file: file.to_string(),
         },
         Some(snapshot.vfs),
-    )
-    .unwrap();
+    )?;
     let kcl_pos = kcl_pos(file, params.text_document_position_params.position);
     log_message(
         format!(
@@ -141,5 +140,27 @@ pub(crate) fn handle_hover(
     )?;
 
     let res = hover::hover(&program, &kcl_pos, &prog_scope);
+    Ok(res)
+}
+
+/// Called when a `GotoDefinition` request was received.
+pub(crate) fn handle_document_symbol(
+    snapshot: LanguageServerSnapshot,
+    params: lsp_types::DocumentSymbolParams,
+    sender: Sender<Task>,
+) -> anyhow::Result<Option<lsp_types::DocumentSymbolResponse>> {
+    let file = params.text_document.uri.path();
+
+    let (program, prog_scope, _) = parse_param_and_compile(
+        Param {
+            file: file.to_string(),
+        },
+        Some(snapshot.vfs),
+    )?;
+
+    let res = document_symbol(file, &program, &prog_scope);
+    if res.is_none() {
+        log_message("Document symbol not found".to_string(), &sender)?;
+    }
     Ok(res)
 }
