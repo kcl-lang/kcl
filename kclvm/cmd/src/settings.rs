@@ -5,6 +5,7 @@ use kclvm_config::settings::{build_settings_pathbuf, Config, SettingsFile, Setti
 use kclvm_driver::arguments::parse_key_value_pair;
 use kclvm_error::Handler;
 use kclvm_runtime::PanicInfo;
+use std::collections::HashMap;
 
 /// Build settings from arg matches.
 pub(crate) fn must_build_settings(matches: &ArgMatches) -> SettingsPathBuf {
@@ -30,10 +31,13 @@ pub(crate) fn build_settings(matches: &ArgMatches) -> Result<SettingsPathBuf> {
         Some(files) => files.into_iter().collect::<Vec<&str>>(),
         None => vec![],
     };
+
     let setting_files = matches
         .values_of("setting")
         .map(|files| files.into_iter().collect::<Vec<&str>>());
     let arguments = strings_from_matches(matches, "arguments");
+
+    let package_maps = hashmaps_from_matches(matches, "package_map").transpose()?;
 
     build_settings_pathbuf(
         files.as_slice(),
@@ -47,6 +51,7 @@ pub(crate) fn build_settings(matches: &ArgMatches) -> Result<SettingsPathBuf> {
                 disable_none: bool_from_matches(matches, "disable_none"),
                 verbose: u32_from_matches(matches, "verbose"),
                 debug: bool_from_matches(matches, "debug"),
+                package_maps,
                 ..Default::default()
             }),
             kcl_options: if arguments.is_some() {

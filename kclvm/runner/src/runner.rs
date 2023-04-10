@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use kclvm_ast::ast;
 use kclvm_config::{
     modfile::get_vendor_home,
@@ -23,6 +25,9 @@ pub type kclvm_value_ref_t = std::ffi::c_void;
 pub struct ExecProgramArgs {
     pub work_dir: Option<String>,
     pub k_filename_list: Vec<String>,
+    // -E key=value
+    #[serde(skip)]
+    pub package_maps: HashMap<String, String>,
     pub k_code_list: Vec<String>,
     // -D key=value
     pub args: Vec<ast::CmdArgSpec>,
@@ -80,6 +85,7 @@ impl ExecProgramArgs {
         kclvm_parser::LoadProgramOptions {
             work_dir: self.work_dir.clone().unwrap_or_default(),
             vendor_dirs: vec![get_vendor_home()],
+            package_maps: self.package_maps.clone(),
             k_code_list: self.k_code_list.clone(),
             cmd_args: self.args.clone(),
             cmd_overrides: self.overrides.clone(),
@@ -106,6 +112,7 @@ impl TryFrom<SettingsFile> for ExecProgramArgs {
                 args.overrides.push(parse_override_spec(override_str)?);
             }
             args.path_selector = cli_configs.path_selector.unwrap_or_default();
+            args.package_maps = cli_configs.package_maps.unwrap_or(HashMap::default())
         }
         if let Some(options) = settings.kcl_options {
             args.args = options

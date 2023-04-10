@@ -57,6 +57,7 @@ pub fn app() -> clap::App<'static> {
             (@arg path_selector: ... -S --path_selector "Specify the path selector")
             (@arg overrides: ... -O --overrides +takes_value "Specify the configuration override path and value")
             (@arg target: --target +takes_value "Specify the target type")
+            (@arg package_map: ... -E --external +takes_value "Mapping of package name and path where the package is located")
         )
         (@subcommand lint =>
             (@arg input: ... "Sets the input file to use")
