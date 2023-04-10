@@ -143,6 +143,8 @@ fn set_vendor_home() -> String {
 /// The testing will set environment variables,
 /// so can not to execute test cases concurrently.
 fn test_in_order() {
+    test_import_vendor_by_external_arguments();
+    println!("{:?} PASS", "test_import_vendor_by_external_arguments");
     test_import_vendor_without_vendor_home();
     println!("{:?} PASS", "test_import_vendor_without_vendor_home");
     test_import_vendor_without_kclmod();
@@ -330,7 +332,6 @@ fn test_import_vendor_without_kclmod_and_same_name() {
     }
 }
 
-#[test]
 fn test_import_vendor_by_external_arguments() {
     let vendor = set_vendor_home();
     let sm = SourceMap::new(FilePathMapping::empty());
