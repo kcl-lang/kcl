@@ -49,6 +49,8 @@ pub mod tests;
 ///
 /// At last, KclvmRunner will be constructed and call method "run" to execute the kcl program.
 ///
+/// **Note that it is not thread safe.**
+///
 /// # Examples
 ///
 /// ```
@@ -64,12 +66,11 @@ pub mod tests;
 ///
 /// // Resolve ast, generate libs, link libs and execute.
 /// // Result is the kcl in json format.
-/// let result = exec_program(sess, &args, 0).unwrap();
+/// let result = exec_program(sess, &args).unwrap();
 /// ```
 pub fn exec_program(
     sess: Arc<ParseSession>,
     args: &ExecProgramArgs,
-    plugin_agent: u64,
 ) -> Result<ExecProgramResult, String> {
     // parse args from json string
     let opts = args.get_load_program_options();
@@ -91,7 +92,7 @@ pub fn exec_program(
     }
 
     let start_time = SystemTime::now();
-    let exec_result = execute(sess, program, plugin_agent, args);
+    let exec_result = execute(sess, program, args);
     let escape_time = match SystemTime::now().duration_since(start_time) {
         Ok(dur) => dur.as_secs_f32(),
         Err(err) => return Err(err.to_string()),
@@ -152,6 +153,8 @@ pub fn exec_program(
 ///
 /// At last, KclvmRunner will be constructed and call method "run" to execute the kcl program.
 ///
+/// **Note that it is not thread safe.**
+///
 /// # Examples
 ///
 /// ```
@@ -162,8 +165,6 @@ pub fn exec_program(
 ///
 /// // Create sessions
 /// let sess = Arc::new(ParseSession::default());
-/// // plugin_agent is the address of plugin.
-/// let plugin_agent = 0;
 /// // Get default args
 /// let args = ExecProgramArgs::default();
 /// let opts = args.get_load_program_options();
@@ -174,12 +175,11 @@ pub fn exec_program(
 ///     
 /// // Resolve ast, generate libs, link libs and execute.
 /// // Result is the kcl in json format.
-/// let result = execute(sess, prog, plugin_agent, &args).unwrap();
+/// let result = execute(sess, prog, &args).unwrap();
 /// ```
 pub fn execute(
     sess: Arc<ParseSession>,
     mut program: Program,
-    plugin_agent: u64,
     args: &ExecProgramArgs,
 ) -> Result<String, String> {
     // Resolve ast
@@ -209,7 +209,7 @@ pub fn execute(
     let runner = KclvmRunner::new(
         lib_path.as_str(),
         Some(KclvmRunnerOptions {
-            plugin_agent_ptr: plugin_agent,
+            plugin_agent_ptr: args.plugin_agent,
         }),
     );
     let result = runner.run(args);
@@ -228,6 +228,8 @@ pub fn execute(
 /// `execute_module` constructs `Program` with default pkg name `MAIN_PKG`,
 /// and calls method `execute` with default `plugin_agent` and `ExecProgramArgs`.
 /// For more information, see doc above method `execute`.
+///
+/// **Note that it is not thread safe.**
 pub fn execute_module(mut m: Module) -> Result<String, String> {
     m.pkg = MAIN_PKG.to_string();
 
@@ -243,7 +245,6 @@ pub fn execute_module(mut m: Module) -> Result<String, String> {
     execute(
         Arc::new(ParseSession::default()),
         prog,
-        0,
         &ExecProgramArgs::default(),
     )
 }

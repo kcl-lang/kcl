@@ -1,1 +1,1 @@
-kcl_options: -S dict:alice.labels.skin
+kcl_options: -S alice.labels.skin

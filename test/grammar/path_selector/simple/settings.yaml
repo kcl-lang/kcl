@@ -1,1 +1,1 @@
-kcl_options: -S simple:JohnDoe.firstName -S simple:JohnDoe.lastName
+kcl_options: -S JohnDoe.firstName

@@ -20,15 +20,7 @@ help_message=$(cat <<-END
             Perform an action interactively
     Available actions:
         build
-            Build everything
-        build-cpython
-            Configure and build CPython
-        build-kclvm
             Package CPython and the KCLVM extension into KCLVM
-        update-kclvm
-            Quickly update KCLVM without packaging CPython and site-packages
-        test
-            Perform testing
         release
             Create a package for releasing
 END
@@ -53,20 +45,11 @@ done
 
 if [ "$action" == "" ]; then
     PS3='Please select the action: '
-    options=("build" "build-kclvm" "update-kclvm" "test" "release")
+    options=("build" "release")
     select action in "${options[@]}"
     do
         case $action in
             "build")
-                break
-                ;;
-            "build-kclvm")
-                break
-                ;;
-            "update-kclvm")
-                break
-                ;;
-            "test")
                 break
                 ;;
             "release")

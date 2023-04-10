@@ -17,6 +17,3 @@ p3 = subpkg.  # complete user module definition
 
 import math
 math.         # complete user module definition
-
-import kcl_plugin.hello as hello
-err_result = hello.

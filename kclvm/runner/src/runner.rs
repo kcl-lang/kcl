@@ -46,6 +46,9 @@ pub struct ExecProgramArgs {
     pub sort_keys: bool,
     // include schema type path in JSON/YAML result
     pub include_schema_type_path: bool,
+    // plugin_agent is the address of plugin.
+    #[serde(skip)]
+    pub plugin_agent: u64,
 }
 
 /// ExecProgramResult denotes the running result of the KCL program.
@@ -72,6 +75,7 @@ impl ExecProgramArgs {
         self.k_filename_list.iter().map(|s| s.as_str()).collect()
     }
 
+    /// Get the [`kclvm_parser::LoadProgramOptions`] from the [`kclvm_runner::ExecProgramArgs`]
     pub fn get_load_program_options(&self) -> kclvm_parser::LoadProgramOptions {
         kclvm_parser::LoadProgramOptions {
             work_dir: self.work_dir.clone().unwrap_or_default(),
@@ -79,6 +83,7 @@ impl ExecProgramArgs {
             k_code_list: self.k_code_list.clone(),
             cmd_args: self.args.clone(),
             cmd_overrides: self.overrides.clone(),
+            load_plugins: self.plugin_agent > 0,
             ..Default::default()
         }
     }

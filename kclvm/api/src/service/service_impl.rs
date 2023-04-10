@@ -52,7 +52,7 @@ impl KclvmServiceImpl {
         })
     }
 
-    /// Execute KCL file with args.
+    /// Execute KCL file with args. **Note that it is not thread safe.**
     ///
     /// # Examples
     ///
@@ -78,7 +78,6 @@ impl KclvmServiceImpl {
         let result = exec_program(
             sess,
             &kclvm_runner::ExecProgramArgs::from_str(args_json.as_str()),
-            self.plugin_agent,
         )?;
 
         Ok(ExecProgramResult {
@@ -284,9 +283,11 @@ impl KclvmServiceImpl {
     /// Service for validating the data string using the schema code string, when the parameter
     /// `schema` is omitted, use the first schema appeared in the kcl code.
     ///
+    /// **Note that it is not thread safe.**
+    ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use kclvm_api::service::service_impl::KclvmServiceImpl;
     /// use kclvm_api::gpyrpc::*;
     ///
