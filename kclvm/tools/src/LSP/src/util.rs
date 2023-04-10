@@ -56,6 +56,7 @@ pub(crate) fn parse_param_and_compile(
     let (files, opt) = lookup_compile_unit(&param.file, true);
     let files: Vec<&str> = files.iter().map(|s| s.as_str()).collect();
     let mut opt = opt.unwrap_or_default();
+    opt.load_plugins = true;
 
     // update opt.k_code_list
     if let Some(vfs) = vfs {

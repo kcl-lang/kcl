@@ -10,6 +10,7 @@ mod state;
 mod to_lsp;
 mod util;
 
+mod document_symbol;
 mod goto_def;
 mod hover;
 mod request;
