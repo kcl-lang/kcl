@@ -892,6 +892,7 @@ impl<'a> Parser<'a> {
             false
         };
 
+        let item_start_token = self.token;
         let items = self.parse_list_items(has_newline);
         let generators = self.parse_comp_clauses();
 
@@ -919,17 +920,41 @@ impl<'a> Parser<'a> {
 
         if !generators.is_empty() {
             if items.len() > 1 {
-                self.sess
-                    .struct_span_error("list multiple items found", self.token.span)
+                self.sess.struct_span_error(
+                    &format!(
+                        "multiple list comp clause expression found: expected 1, got {}",
+                        items.len()
+                    ),
+                    item_start_token.span,
+                );
+                Box::new(Node::node(
+                    Expr::ListComp(ListComp {
+                        elt: items[0].clone(),
+                        generators,
+                    }),
+                    self.sess.struct_token_loc(token, self.prev_token),
+                ))
+            } else if items.len() == 1 {
+                Box::new(Node::node(
+                    Expr::ListComp(ListComp {
+                        elt: items[0].clone(),
+                        generators,
+                    }),
+                    self.sess.struct_token_loc(token, self.prev_token),
+                ))
+            } else {
+                self.sess.struct_span_error(
+                    "missing list comp clause expression",
+                    item_start_token.span,
+                );
+                Box::new(Node::node(
+                    Expr::List(ListExpr {
+                        elts: items,
+                        ctx: ExprContext::Load,
+                    }),
+                    self.sess.struct_token_loc(token, self.prev_token),
+                ))
             }
-
-            Box::new(Node::node(
-                Expr::ListComp(ListComp {
-                    elt: items[0].clone(),
-                    generators,
-                }),
-                self.sess.struct_token_loc(token, self.prev_token),
-            ))
         } else {
             Box::new(Node::node(
                 Expr::List(ListExpr {
@@ -1208,6 +1233,7 @@ impl<'a> Parser<'a> {
             false
         };
 
+        let item_start_token = self.token;
         let items = self.parse_config_entries(has_newline);
         let generators = self.parse_comp_clauses();
 
@@ -1235,17 +1261,38 @@ impl<'a> Parser<'a> {
 
         if !generators.is_empty() {
             if items.len() > 1 {
-                self.sess
-                    .struct_span_error("config multiple entries found", self.token.span)
+                self.sess.struct_span_error(
+                    &format!(
+                        "multiple config comp clause expression found: expected 1, got {}",
+                        items.len()
+                    ),
+                    item_start_token.span,
+                );
+                Box::new(Node::node(
+                    Expr::DictComp(DictComp {
+                        entry: items[0].node.clone(),
+                        generators,
+                    }),
+                    self.sess.struct_token_loc(token, self.prev_token),
+                ))
+            } else if items.len() == 1 {
+                Box::new(Node::node(
+                    Expr::DictComp(DictComp {
+                        entry: items[0].node.clone(),
+                        generators,
+                    }),
+                    self.sess.struct_token_loc(token, self.prev_token),
+                ))
+            } else {
+                self.sess.struct_span_error(
+                    "missing config comp clause expression",
+                    item_start_token.span,
+                );
+                Box::new(Node::node(
+                    Expr::Config(ConfigExpr { items }),
+                    self.sess.struct_token_loc(token, self.prev_token),
+                ))
             }
-
-            Box::new(Node::node(
-                Expr::DictComp(DictComp {
-                    entry: items[0].node.clone(),
-                    generators,
-                }),
-                self.sess.struct_token_loc(token, self.prev_token),
-            ))
         } else {
             Box::new(Node::node(
                 Expr::Config(ConfigExpr { items }),
@@ -1384,6 +1431,7 @@ impl<'a> Parser<'a> {
     /// loop_variables: identifier (COMMA identifier)*
     fn parse_comp_clause(&mut self) -> NodeRef<CompClause> {
         let token = self.token;
+        // bump the `for` keyword.
         self.bump();
 
         let mut targets = vec![self.parse_identifier()];
@@ -1848,7 +1896,7 @@ impl<'a> Parser<'a> {
         loop {
             if matches!(
                 self.token.kind,
-                TokenKind::CloseDelim(DelimToken::Brace) | TokenKind::Dedent
+                TokenKind::CloseDelim(DelimToken::Brace) | TokenKind::Dedent | TokenKind::Eof
             ) {
                 break;
             }

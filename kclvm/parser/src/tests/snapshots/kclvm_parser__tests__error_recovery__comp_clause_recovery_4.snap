@@ -1,0 +1,178 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 75
+expression: "crate::tests::parsing_expr_string(\"{i: for i in [1,2,3]}\")"
+---
+Node {
+    node: Config(
+        ConfigExpr {
+            items: [
+                Node {
+                    node: ConfigEntry {
+                        key: Some(
+                            Node {
+                                node: Identifier(
+                                    Identifier {
+                                        names: [
+                                            "i",
+                                        ],
+                                        pkgpath: "",
+                                        ctx: Load,
+                                    },
+                                ),
+                                filename: "",
+                                line: 1,
+                                column: 1,
+                                end_line: 1,
+                                end_column: 2,
+                            },
+                        ),
+                        value: Node {
+                            node: Identifier(
+                                Identifier {
+                                    names: [
+                                        "for",
+                                    ],
+                                    pkgpath: "",
+                                    ctx: Load,
+                                },
+                            ),
+                            filename: "",
+                            line: 1,
+                            column: 4,
+                            end_line: 1,
+                            end_column: 7,
+                        },
+                        operation: Union,
+                        insert_index: -1,
+                    },
+                    filename: "",
+                    line: 1,
+                    column: 1,
+                    end_line: 1,
+                    end_column: 7,
+                },
+                Node {
+                    node: ConfigEntry {
+                        key: Some(
+                            Node {
+                                node: Compare(
+                                    Compare {
+                                        left: Node {
+                                            node: Identifier(
+                                                Identifier {
+                                                    names: [
+                                                        "i",
+                                                    ],
+                                                    pkgpath: "",
+                                                    ctx: Load,
+                                                },
+                                            ),
+                                            filename: "",
+                                            line: 1,
+                                            column: 8,
+                                            end_line: 1,
+                                            end_column: 9,
+                                        },
+                                        ops: [
+                                            In,
+                                        ],
+                                        comparators: [
+                                            Node {
+                                                node: List(
+                                                    ListExpr {
+                                                        elts: [
+                                                            Node {
+                                                                node: NumberLit(
+                                                                    NumberLit {
+                                                                        binary_suffix: None,
+                                                                        value: Int(
+                                                                            1,
+                                                                        ),
+                                                                    },
+                                                                ),
+                                                                filename: "",
+                                                                line: 1,
+                                                                column: 14,
+                                                                end_line: 1,
+                                                                end_column: 15,
+                                                            },
+                                                            Node {
+                                                                node: NumberLit(
+                                                                    NumberLit {
+                                                                        binary_suffix: None,
+                                                                        value: Int(
+                                                                            2,
+                                                                        ),
+                                                                    },
+                                                                ),
+                                                                filename: "",
+                                                                line: 1,
+                                                                column: 16,
+                                                                end_line: 1,
+                                                                end_column: 17,
+                                                            },
+                                                            Node {
+                                                                node: NumberLit(
+                                                                    NumberLit {
+                                                                        binary_suffix: None,
+                                                                        value: Int(
+                                                                            3,
+                                                                        ),
+                                                                    },
+                                                                ),
+                                                                filename: "",
+                                                                line: 1,
+                                                                column: 18,
+                                                                end_line: 1,
+                                                                end_column: 19,
+                                                            },
+                                                        ],
+                                                        ctx: Load,
+                                                    },
+                                                ),
+                                                filename: "",
+                                                line: 1,
+                                                column: 13,
+                                                end_line: 1,
+                                                end_column: 20,
+                                            },
+                                        ],
+                                    },
+                                ),
+                                filename: "",
+                                line: 1,
+                                column: 8,
+                                end_line: 1,
+                                end_column: 20,
+                            },
+                        ),
+                        value: Node {
+                            node: Missing(
+                                MissingExpr,
+                            ),
+                            filename: "",
+                            line: 1,
+                            column: 21,
+                            end_line: 1,
+                            end_column: 21,
+                        },
+                        operation: Override,
+                        insert_index: -1,
+                    },
+                    filename: "",
+                    line: 1,
+                    column: 8,
+                    end_line: 1,
+                    end_column: 21,
+                },
+            ],
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 21,
+}
+

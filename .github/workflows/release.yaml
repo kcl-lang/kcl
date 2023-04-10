@@ -9,7 +9,7 @@ permissions:
   contents: write
 jobs:
   test:
-    name: Unit tests with coverage
+    name: Build and release
     runs-on: ubuntu-latest
     steps:
       - name: Check out code

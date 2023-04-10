@@ -1,0 +1,19 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 73
+expression: "crate::tests::parsing_expr_string(\"[for i in [1,2,3]]\")"
+---
+Node {
+    node: List(
+        ListExpr {
+            elts: [],
+            ctx: Load,
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 18,
+}
+

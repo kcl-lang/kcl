@@ -278,13 +278,27 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 if target.node.names.is_empty() {
                     continue;
                 }
+                if target.node.names.len() > 1 {
+                    self.handler.add_compile_error(
+                        "loop variables can only be ordinary identifiers",
+                        target.get_pos(),
+                    );
+                }
                 target_node = Some(target);
                 let name = &target.node.names[0];
                 if i == 0 {
                     key_name = Some(name.to_string());
-                }
-                if i == 1 {
+                } else if i == 1 {
                     val_name = Some(name.to_string())
+                } else {
+                    self.handler.add_compile_error(
+                        &format!(
+                            "the number of loop variables is {}, which can only be 1 or 2",
+                            quant_expr.variables.len()
+                        ),
+                        target.get_pos(),
+                    );
+                    break;
                 }
                 self.ctx.local_vars.push(name.to_string());
                 let (start, end) = target.get_span_pos();
@@ -702,13 +716,27 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             if target.node.names.is_empty() {
                 continue;
             }
+            if target.node.names.len() > 1 {
+                self.handler.add_compile_error(
+                    "loop variables can only be ordinary identifiers",
+                    target.get_pos(),
+                );
+            }
             target_node = Some(target);
             let name = &target.node.names[0];
             if i == 0 {
                 key_name = Some(name.to_string());
-            }
-            if i == 1 {
+            } else if i == 1 {
                 val_name = Some(name.to_string())
+            } else {
+                self.handler.add_compile_error(
+                    &format!(
+                        "the number of loop variables is {}, which can only be 1 or 2",
+                        comp_clause.targets.len()
+                    ),
+                    target.get_pos(),
+                );
+                break;
             }
             self.ctx.local_vars.push(name.to_string());
             let (start, end) = target.get_span_pos();
