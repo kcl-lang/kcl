@@ -194,22 +194,38 @@ impl ValueRef {
     }
 
     /// Plan the value to JSON and YAML strings.
-    pub fn plan(&self) -> (String, String) {
+    pub fn plan(&self, sort_keys: bool) -> (String, String) {
+        let json_opt = JsonEncodeOptions {
+            sort_keys,
+            ..Default::default()
+        };
+        let yaml_opt = YamlEncodeOptions {
+            sort_keys,
+            ..Default::default()
+        };
         if self.is_list_or_config() {
             let results = filter_results(self);
             let yaml_result = results
                 .iter()
-                .map(|r| r.to_yaml_string().strip_suffix('\n').unwrap().to_string())
+                .map(|r| {
+                    r.to_yaml_string_with_options(&yaml_opt)
+                        .strip_suffix('\n')
+                        .unwrap()
+                        .to_string()
+                })
                 .collect::<Vec<String>>()
                 .join(YAML_STREAM_SEP);
             let mut list_result = ValueRef::list(None);
             for r in results {
                 list_result.list_append(&r);
             }
-            let json_result = list_result.to_json_string();
+            let json_result = list_result.to_json_string_with_option(&json_opt);
             (json_result, yaml_result)
         } else {
-            (self.to_json_string(), self.to_yaml_string())
+            (
+                self.to_json_string_with_option(&json_opt),
+                self.to_yaml_string_with_options(&yaml_opt),
+            )
         }
     }
 

@@ -66,9 +66,6 @@ service BuiltinService {
 service KclvmService {
 	rpc Ping(Ping_Args) returns(Ping_Result);
 
-	rpc ParseFile_AST(ParseFile_AST_Args) returns(ParseFile_AST_Result);
-	rpc ParseProgram_AST(ParseProgram_AST_Args) returns(ParseProgram_AST_Result);
-
 	rpc ExecProgram(ExecProgram_Args) returns(ExecProgram_Result);
 
 	rpc FormatCode(FormatCode_Args) returns(FormatCode_Result);
@@ -76,8 +73,6 @@ service KclvmService {
 	rpc LintPath(LintPath_Args) returns(LintPath_Result);
 	rpc OverrideFile(OverrideFile_Args) returns (OverrideFile_Result);
 
-	rpc EvalCode(EvalCode_Args) returns(EvalCode_Result);
-	rpc ResolveCode(ResolveCode_Args) returns(ResolveCode_Result);
 	rpc GetSchemaType(GetSchemaType_Args) returns(GetSchemaType_Result);
 	rpc GetSchemaTypeMapping(GetSchemaTypeMapping_Args) returns(GetSchemaTypeMapping_Result);
 	rpc ValidateCode(ValidateCode_Args) returns(ValidateCode_Result);
@@ -192,21 +187,6 @@ message OverrideFile_Args {
 
 message OverrideFile_Result {
 	bool result = 1;
-}
-
-message EvalCode_Args {
-	string code = 1;
-}
-message EvalCode_Result {
-	string json_result = 2;
-}
-
-message ResolveCode_Args {
-	string code = 1;
-}
-
-message ResolveCode_Result {
-	bool success = 1;
 }
 
 message GetSchemaType_Args {

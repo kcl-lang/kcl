@@ -1409,6 +1409,7 @@ version = "0.4.6"
 dependencies = [
  "anyhow",
  "criterion 0.4.0",
+ "futures",
  "indexmap",
  "jsonrpc-stdio-server",
  "kclvm-ast",
