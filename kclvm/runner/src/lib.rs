@@ -119,7 +119,7 @@ pub fn exec_program(
     // Filter values with the path selector.
     let kcl_val = kcl_val.filter_by_path(&args.path_selector)?;
     // Plan values.
-    let (json_result, yaml_result) = kcl_val.plan();
+    let (json_result, yaml_result) = kcl_val.plan(args.sort_keys);
     result.json_result = json_result;
     if !args.disable_yaml_result {
         result.yaml_result = yaml_result;
