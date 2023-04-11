@@ -242,8 +242,9 @@ pub struct OverrideSpec {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub enum OverrideAction {
-    CreateOrUpdate,
     Delete,
+    #[serde(other)]
+    CreateOrUpdate,
 }
 
 /// Program is the AST collection of all files of the running KCL program.
