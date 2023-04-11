@@ -22,10 +22,15 @@ pub(crate) fn hashmaps_from_matches(
     matches.values_of(key).map(|files| {
         files
             .into_iter()
-            .map(|s| match parse_key_value_pair(s) {
-                Ok(pair) => Ok((pair.key, pair.value)),
-                Err(_) => {
-                    bail!("Invalid arguments format '-E, --external', use'kclvm_cli run --help' for more help.")
+            .map(|s| {
+                let split_values = s.split('=').collect::<Vec<&str>>();
+                if split_values.len() == 2
+                    && !split_values[0].trim().is_empty()
+                    && !split_values[1].trim().is_empty()
+                {
+                    Ok((split_values[0].to_string(), split_values[1].to_string()))
+                } else {
+                    Err(anyhow::anyhow!("Invalid value for top level arguments"))
                 }
             })
             .collect::<Result<HashMap<String, String>>>()

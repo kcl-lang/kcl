@@ -1,4 +1,6 @@
-use crate::{app, fmt::fmt_command, settings::build_settings, vet::vet_command};
+use crate::{
+    app, fmt::fmt_command, settings::build_settings, util::hashmaps_from_matches, vet::vet_command,
+};
 
 const ROOT_CMD: &str = "kclvm_cli";
 
@@ -96,4 +98,74 @@ fn settings_arguments(path: std::path::PathBuf) -> Vec<String> {
         "-S".to_string(),
         "a.b.c".to_string(),
     ]
+}
+
+#[test]
+fn test_external_cmd() {
+    let matches = app().get_matches_from(&[ROOT_CMD, "run", "-E", "test_name=test_path"]);
+    let matches = matches.subcommand_matches("run").unwrap();
+    let pair = hashmaps_from_matches(matches, "package_map")
+        .unwrap()
+        .unwrap();
+    assert_eq!("{\"test_name\": \"test_path\"}", format!("{:?}", pair));
+}
+
+#[test]
+fn test_multi_external_cmd() {
+    let matches = app().get_matches_from(&[
+        ROOT_CMD,
+        "run",
+        "-E",
+        "test_name=test_path",
+        "-E",
+        "test_name1=test_path1",
+    ]);
+    let matches = matches.subcommand_matches("run").unwrap();
+    let pair = hashmaps_from_matches(matches, "package_map")
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        "{\"test_name1\": \"test_path1\", \"test_name\": \"test_path\"}",
+        format!("{:?}", pair)
+    );
+}
+
+#[test]
+fn test_multi_external_with_same_key_cmd() {
+    let matches = app().get_matches_from(&[
+        ROOT_CMD,
+        "run",
+        "-E",
+        "test_name=test_path",
+        "-E",
+        "test_name=test_path1",
+    ]);
+    let matches = matches.subcommand_matches("run").unwrap();
+    let pair = hashmaps_from_matches(matches, "package_map")
+        .unwrap()
+        .unwrap();
+    assert_eq!("{\"test_name\": \"test_path1\"}", format!("{:?}", pair));
+}
+
+#[test]
+fn test_external_cmd_invalid() {
+    let invalid_cases: [&str; 1] = [
+        "test_nametest_path",
+        "test_name=test_path=test_suffix",
+        "=test_path",
+        "test_name=",
+        "=test_name=test_path=",
+    ];
+    for case in invalid_cases {
+        let matches = app().get_matches_from(&[ROOT_CMD, "run", "-E", case]);
+        let matches = matches.subcommand_matches("run").unwrap();
+        match hashmaps_from_matches(matches, "package_map").unwrap() {
+            Ok(_) => {
+                panic!("unreachable code.")
+            }
+            Err(err) => {
+                assert!(format!("{:?}", err).contains("Invalid value for top level arguments"));
+            }
+        };
+    }
 }
