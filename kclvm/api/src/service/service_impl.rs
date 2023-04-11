@@ -122,6 +122,57 @@ impl KclvmServiceImpl {
             .map(|result| OverrideFileResult { result })
     }
 
+    /// Service for getting the schema type list.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
+    /// use kclvm_api::gpyrpc::*;
+    ///
+    /// let serv = KclvmServiceImpl::default();
+    /// let file = "schema.k".to_string();
+    /// let code = r#"
+    /// schema Person:
+    ///     name: str
+    ///     age: int
+    ///
+    /// person = Person {
+    ///     name = "Alice"
+    ///     age = 18
+    /// }
+    /// "#.to_string();
+    /// let result = serv.get_schema_type(&GetSchemaTypeArgs {
+    ///     file,
+    ///     code,
+    ///     ..Default::default()
+    /// }).unwrap();
+    /// assert_eq!(result.schema_type_list.len(), 2);
+    /// ```
+    pub fn get_schema_type(&self, args: &GetSchemaTypeArgs) -> anyhow::Result<GetSchemaTypeResult> {
+        let mut type_list = Vec::new();
+        for (_k, schema_ty) in get_schema_type(
+            &args.file,
+            if args.code.is_empty() {
+                None
+            } else {
+                Some(&args.code)
+            },
+            if args.schema_name.is_empty() {
+                None
+            } else {
+                Some(&args.schema_name)
+            },
+            Default::default(),
+        )? {
+            type_list.push(kcl_schema_ty_to_pb_ty(&schema_ty));
+        }
+
+        Ok(GetSchemaTypeResult {
+            schema_type_list: type_list,
+        })
+    }
+
     /// Service for getting the schema mapping.
     ///
     /// # Examples
@@ -237,6 +288,7 @@ impl KclvmServiceImpl {
             path,
             &FormatOptions {
                 recursively,
+                is_stdout: false,
                 ..Default::default()
             },
         )?;

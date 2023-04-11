@@ -1,9 +1,10 @@
 use crate::gpyrpc::*;
 use crate::service::service_impl::KclvmServiceImpl;
-use jsonrpc_stdio_server::jsonrpc_core::{IoHandler, Params};
+use core::fmt::Display;
+use jsonrpc_stdio_server::jsonrpc_core::{Error, ErrorCode, IoHandler, Params};
 use jsonrpc_stdio_server::ServerBuilder;
-
-use super::util::result_to_json_value;
+use serde::Serialize;
+const KCLVM_SERVER_ERROR_CODE: i64 = 0x4B434C; // the ASCII code of "KCL"
 
 /// Start a json rpc server via Stdin/Stdout
 #[tokio::main]
@@ -18,61 +19,125 @@ pub async fn start_stdio_server() -> Result<(), anyhow::Error> {
     Ok(())
 }
 
+macro_rules! catch {
+    ($serv:expr, $args:expr, $serv_name:ident) => {{
+        let prev_hook = std::panic::take_hook();
+
+        // disable print panic info
+        std::panic::set_hook(Box::new(|_info| {}));
+        let result = std::panic::catch_unwind(|| to_json_result(&$serv.$serv_name(&$args)));
+        std::panic::set_hook(prev_hook);
+        match result {
+            Ok(result) => result,
+            Err(panic_err) => {
+                let err_message = kclvm_error::err_to_str(panic_err);
+                Err(Error {
+                    code: ErrorCode::from(KCLVM_SERVER_ERROR_CODE),
+                    message: err_message,
+                    data: None,
+                })
+            }
+        }
+    }};
+}
+
+/// Transform the [`Result<V, E>`]  into [`Result<serde_json::Value,jsonrpc_core::Error>`]
+#[inline]
+fn to_json_result<V, E>(val: &Result<V, E>) -> Result<serde_json::Value, Error>
+where
+    V: Serialize,
+    E: Display,
+{
+    match val {
+        Ok(val) => Ok(serde_json::to_value(val).unwrap()),
+        Err(err) => Err(Error {
+            code: ErrorCode::from(KCLVM_SERVER_ERROR_CODE),
+            message: err.to_string(),
+            data: None,
+        }),
+    }
+}
+
 fn register_kclvm_service(io: &mut IoHandler) {
-    io.add_sync_method("KclvmService.Ping", |params: Params| {
+    io.add_method("KclvmService.Ping", |params: Params| {
         let kclvm_service_impl = KclvmServiceImpl::default();
-        let args: PingArgs = params.parse()?;
-        Ok(result_to_json_value(&kclvm_service_impl.ping(&args)))
+        let args: PingArgs = match params.parse() {
+            Ok(val) => val,
+            Err(err) => return futures::future::ready(Err(err)),
+        };
+        futures::future::ready(catch!(kclvm_service_impl, args, ping))
     });
-    io.add_sync_method("KclvmService.ExecProgram", |params: Params| {
+    io.add_method("KclvmService.ExecProgram", |params: Params| {
         let kclvm_service_impl = KclvmServiceImpl::default();
-        let args: ExecProgramArgs = params.parse()?;
-        Ok(result_to_json_value(
-            &kclvm_service_impl.exec_program(&args),
-        ))
+        let args: ExecProgramArgs = match params.parse() {
+            Ok(val) => val,
+            Err(err) => return futures::future::ready(Err(err)),
+        };
+        futures::future::ready(catch!(kclvm_service_impl, args, exec_program))
     });
-    io.add_sync_method("KclvmService.OverrideFile", |params: Params| {
+    io.add_method("KclvmService.OverrideFile", |params: Params| {
         let kclvm_service_impl = KclvmServiceImpl::default();
-        let args: OverrideFileArgs = params.parse()?;
-        Ok(result_to_json_value(
-            &kclvm_service_impl.override_file(&args),
-        ))
+        let args: OverrideFileArgs = match params.parse() {
+            Ok(val) => val,
+            Err(err) => return futures::future::ready(Err(err)),
+        };
+        futures::future::ready(catch!(kclvm_service_impl, args, override_file))
     });
-    io.add_sync_method("KclvmService.GetSchemaTypeMapping", |params: Params| {
+    io.add_method("KclvmService.GetSchemaType", |params: Params| {
         let kclvm_service_impl = KclvmServiceImpl::default();
-        let args: GetSchemaTypeMappingArgs = params.parse()?;
-        Ok(result_to_json_value(
-            &kclvm_service_impl.get_schema_type_mapping(&args),
-        ))
+        let args: GetSchemaTypeArgs = match params.parse() {
+            Ok(val) => val,
+            Err(err) => return futures::future::ready(Err(err)),
+        };
+        futures::future::ready(catch!(kclvm_service_impl, args, get_schema_type))
     });
-    io.add_sync_method("KclvmService.FormatCode", |params: Params| {
+    io.add_method("KclvmService.GetSchemaTypeMapping", |params: Params| {
         let kclvm_service_impl = KclvmServiceImpl::default();
-        let args: FormatCodeArgs = params.parse()?;
-        Ok(result_to_json_value(&kclvm_service_impl.format_code(&args)))
+        let args: GetSchemaTypeMappingArgs = match params.parse() {
+            Ok(val) => val,
+            Err(err) => return futures::future::ready(Err(err)),
+        };
+        futures::future::ready(catch!(kclvm_service_impl, args, get_schema_type_mapping))
     });
-    io.add_sync_method("KclvmService.FormatPath", |params: Params| {
+    io.add_method("KclvmService.FormatCode", |params: Params| {
         let kclvm_service_impl = KclvmServiceImpl::default();
-        let args: FormatPathArgs = params.parse()?;
-        Ok(result_to_json_value(&kclvm_service_impl.format_path(&args)))
+        let args: FormatCodeArgs = match params.parse() {
+            Ok(val) => val,
+            Err(err) => return futures::future::ready(Err(err)),
+        };
+        futures::future::ready(catch!(kclvm_service_impl, args, format_code))
     });
-    io.add_sync_method("KclvmService.LintPath", |params: Params| {
+    io.add_method("KclvmService.FormatPath", |params: Params| {
         let kclvm_service_impl = KclvmServiceImpl::default();
-        let args: LintPathArgs = params.parse()?;
-        Ok(result_to_json_value(&kclvm_service_impl.lint_path(&args)))
+        let args: FormatPathArgs = match params.parse() {
+            Ok(val) => val,
+            Err(err) => return futures::future::ready(Err(err)),
+        };
+        futures::future::ready(catch!(kclvm_service_impl, args, format_path))
     });
-    io.add_sync_method("KclvmService.ValidateCode", |params: Params| {
+    io.add_method("KclvmService.LintPath", |params: Params| {
         let kclvm_service_impl = KclvmServiceImpl::default();
-        let args: ValidateCodeArgs = params.parse()?;
-        Ok(result_to_json_value(
-            &kclvm_service_impl.validate_code(&args),
-        ))
+        let args: LintPathArgs = match params.parse() {
+            Ok(val) => val,
+            Err(err) => return futures::future::ready(Err(err)),
+        };
+        futures::future::ready(catch!(kclvm_service_impl, args, lint_path))
     });
-    io.add_sync_method("KclvmService.LoadSettingsFiles", |params: Params| {
+    io.add_method("KclvmService.ValidateCode", |params: Params| {
         let kclvm_service_impl = KclvmServiceImpl::default();
-        let args: LoadSettingsFilesArgs = params.parse()?;
-        Ok(result_to_json_value(
-            &kclvm_service_impl.load_settings_files(&args),
-        ))
+        let args: ValidateCodeArgs = match params.parse() {
+            Ok(val) => val,
+            Err(err) => return futures::future::ready(Err(err)),
+        };
+        futures::future::ready(catch!(kclvm_service_impl, args, validate_code))
+    });
+    io.add_method("KclvmService.LoadSettingsFiles", |params: Params| {
+        let kclvm_service_impl = KclvmServiceImpl::default();
+        let args: LoadSettingsFilesArgs = match params.parse() {
+            Ok(val) => val,
+            Err(err) => return futures::future::ready(Err(err)),
+        };
+        futures::future::ready(catch!(kclvm_service_impl, args, load_settings_files))
     });
 }
 

@@ -103,6 +103,7 @@ pub(crate) fn kclvm_get_service_fn_ptr_by_name(name: &str) -> u64 {
         "KclvmService.Ping" => ping as *const () as u64,
         "KclvmService.ExecProgram" => exec_program as *const () as u64,
         "KclvmService.OverrideFile" => override_file as *const () as u64,
+        "KclvmService.GetSchemaType" => get_schema_type as *const () as u64,
         "KclvmService.GetSchemaTypeMapping" => get_schema_type_mapping as *const () as u64,
         "KclvmService.FormatCode" => format_code as *const () as u64,
         "KclvmService.FormatPath" => format_path as *const () as u64,
@@ -157,6 +158,18 @@ pub(crate) fn exec_program(serv: *mut kclvm_service, args: *const c_char) -> *co
 ///     Result of the call serialized as protobuf byte sequence
 pub(crate) fn override_file(serv: *mut kclvm_service, args: *const c_char) -> *const c_char {
     call!(serv, args, OverrideFileArgs, override_file)
+}
+
+/// Get schema types from a kcl file or code.
+///
+/// # Parameters
+/// file: [&str]. The kcl filename.
+///
+/// code: [Option<&str>]. The kcl code string
+///
+/// schema_name: [Option<&str>]. The schema name, when the schema name is empty, all schemas are returned.
+pub(crate) fn get_schema_type(serv: *mut kclvm_service, args: *const c_char) -> *const c_char {
+    call!(serv, args, GetSchemaTypeArgs, get_schema_type)
 }
 
 /// Get schema types from a kcl file or code.
