@@ -1757,16 +1757,17 @@ impl<'a> Parser<'a> {
             true
         }
 
-        while parse_body_item(self, &mut body, need_skip_newlines) {
-            if let TokenKind::Comma = self.token.kind {
-                self.bump();
-            }
-            if need_skip_newlines {
+        if !need_skip_newlines {
+            // Only parse one inline key-value pair.
+            parse_body_item(self, &mut body, need_skip_newlines);
+        } else {
+            while parse_body_item(self, &mut body, need_skip_newlines) {
+                // bump optional comma at the endline.
+                if let TokenKind::Comma = self.token.kind {
+                    self.bump();
+                }
                 self.skip_newlines();
             }
-        }
-        if let TokenKind::Newline = self.token.kind {
-            self.bump();
         }
 
         if need_skip_newlines {
