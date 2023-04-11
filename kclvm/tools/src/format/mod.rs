@@ -52,7 +52,7 @@ pub fn format<P: AsRef<Path>>(path: P, opts: &FormatOptions) -> Result<Vec<Strin
             changed_paths.push(file)
         }
     }
-    if !opts.is_stdout {
+    if opts.is_stdout {
         let n = changed_paths.len();
         println!(
             "KCL format done and {} {} formatted:",
