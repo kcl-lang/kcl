@@ -1,7 +1,5 @@
-use anyhow::bail;
 use anyhow::Result;
 use clap::ArgMatches;
-use kclvm_driver::arguments::parse_key_value_pair;
 use std::collections::HashMap;
 
 #[inline]

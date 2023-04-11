@@ -107,7 +107,9 @@ fn test_external_cmd() {
     let pair = hashmaps_from_matches(matches, "package_map")
         .unwrap()
         .unwrap();
-    assert_eq!("{\"test_name\": \"test_path\"}", format!("{:?}", pair));
+    assert_eq!(pair.len(), 1);
+    assert!(pair.contains_key("test_name"));
+    assert_eq!(pair.get("test_name").unwrap(), "test_path");
 }
 
 #[test]
@@ -124,10 +126,12 @@ fn test_multi_external_cmd() {
     let pair = hashmaps_from_matches(matches, "package_map")
         .unwrap()
         .unwrap();
-    assert_eq!(
-        "{\"test_name1\": \"test_path1\", \"test_name\": \"test_path\"}",
-        format!("{:?}", pair)
-    );
+
+    assert_eq!(pair.len(), 2);
+    assert!(pair.contains_key("test_name"));
+    assert!(pair.contains_key("test_name1"));
+    assert_eq!(pair.get("test_name").unwrap(), "test_path");
+    assert_eq!(pair.get("test_name1").unwrap(), "test_path1");
 }
 
 #[test]
@@ -144,7 +148,9 @@ fn test_multi_external_with_same_key_cmd() {
     let pair = hashmaps_from_matches(matches, "package_map")
         .unwrap()
         .unwrap();
-    assert_eq!("{\"test_name\": \"test_path1\"}", format!("{:?}", pair));
+    assert_eq!(pair.len(), 1);
+    assert!(pair.contains_key("test_name"));
+    assert_eq!(pair.get("test_name").unwrap(), "test_path1");
 }
 
 #[test]
