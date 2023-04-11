@@ -15,13 +15,15 @@ fn test_lint() {
         assert_eq!(diag.messages[0].message, m.to_string());
     }
 
-    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    path.push("src");
+    path.push("lint");
+    path.push("test_data");
+    path.push("abc");
+
     let msgs = [
         "pkgpath abc not found in the program",
-        &format!(
-            "Cannot find the module abc from {}/src/lint/test_data/abc",
-            path.to_str().unwrap()
-        ),
+        &format!("Cannot find the module abc from {}", path.to_str().unwrap()),
     ];
     assert_eq!(errors.len(), msgs.len());
     for (diag, m) in errors.iter().zip(msgs.iter()) {
