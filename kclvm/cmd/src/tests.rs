@@ -149,7 +149,7 @@ fn test_multi_external_with_same_key_cmd() {
 
 #[test]
 fn test_external_cmd_invalid() {
-    let invalid_cases: [&str; 1] = [
+    let invalid_cases: [&str; 5] = [
         "test_nametest_path",
         "test_name=test_path=test_suffix",
         "=test_path",
