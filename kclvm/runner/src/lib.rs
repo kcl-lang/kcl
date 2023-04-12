@@ -7,9 +7,10 @@ use kclvm_ast::{
     MAIN_PKG,
 };
 use kclvm_driver::canonicalize_input_files;
+use kclvm_error::{Diagnostic, Handler};
 use kclvm_parser::{load_program, ParseSession};
 use kclvm_query::apply_overrides;
-use kclvm_runtime::ValueRef;
+use kclvm_runtime::{PanicInfo, ValueRef};
 use kclvm_sema::resolver::resolve_program;
 pub use runner::ExecProgramArgs;
 use runner::{ExecProgramResult, KclvmRunner, KclvmRunnerOptions};
@@ -76,7 +77,7 @@ pub fn exec_program(
     let opts = args.get_load_program_options();
     let k_files = &args.k_filename_list;
     let work_dir = args.work_dir.clone().unwrap_or_default();
-    let kcl_paths = canonicalize_input_files(k_files, work_dir)?;
+    let kcl_paths = canonicalize_input_files(k_files, work_dir, false)?;
 
     let kcl_paths_str = kcl_paths.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
 
@@ -184,7 +185,7 @@ pub fn execute(
 ) -> Result<String, String> {
     // Resolve ast
     let scope = resolve_program(&mut program);
-    scope.alert_scope_diagnostics_with_session(sess.0.clone())?;
+    scope.emit_diagnostics_to_string(sess.0.clone())?;
 
     // Create a temp entry file and the temp dir will be delete automatically
     let temp_dir = tempdir().unwrap();
@@ -221,7 +222,16 @@ pub fn execute(
     remove_file(&lib_path);
     #[cfg(not(target_os = "windows"))]
     clean_tmp_files(&temp_entry_file, &lib_suffix);
-    result
+    // Wrap runtime error into diagnostic style string.
+    result.map_err(|err| {
+        match Handler::default()
+            .add_diagnostic(<PanicInfo as Into<Diagnostic>>::into(PanicInfo::from(err)))
+            .emit_to_string()
+        {
+            Ok(msg) => msg,
+            Err(err) => err.to_string(),
+        }
+    })
 }
 
 /// `execute_module` can directly execute the ast `Module`.

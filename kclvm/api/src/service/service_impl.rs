@@ -60,7 +60,7 @@ impl KclvmServiceImpl {
     /// use kclvm_api::service::service_impl::KclvmServiceImpl;
     /// use kclvm_api::gpyrpc::*;
     /// use std::path::Path;
-    ///
+    /// // File case
     /// let serv = KclvmServiceImpl::default();
     /// let args = &ExecProgramArgs {
     ///     work_dir: Path::new(".").join("src").join("testdata").canonicalize().unwrap().display().to_string(),
@@ -68,7 +68,31 @@ impl KclvmServiceImpl {
     ///     ..Default::default()
     /// };
     /// let exec_result = serv.exec_program(args).unwrap();
-    /// println!("{}",exec_result.json_result);
+    /// assert_eq!(exec_result.yaml_result, "alice:\n  age: 18");
+    ///
+    /// // Code case
+    /// let args = &ExecProgramArgs {
+    ///     k_filename_list: vec!["file.k".to_string()],
+    ///     k_code_list: vec!["alice = {age = 18}".to_string()],
+    ///     ..Default::default()
+    /// };
+    /// let exec_result = serv.exec_program(args).unwrap();
+    /// assert_eq!(exec_result.yaml_result, "alice:\n  age: 18");
+    ///
+    /// // Error case
+    /// let args = &ExecProgramArgs {
+    ///     k_filename_list: vec!["invalid_file.k".to_string()],
+    ///     ..Default::default()
+    /// };
+    /// let error = serv.exec_program(args).unwrap_err();
+    /// assert!(error.contains("Cannot find the kcl file"), "{error}");
+    ///
+    /// let args = &ExecProgramArgs {
+    ///     k_filename_list: vec![],
+    ///     ..Default::default()
+    /// };
+    /// let error = serv.exec_program(args).unwrap_err();
+    /// assert!(error.contains("No input KCL files or paths"), "{error}");
     /// ```
     pub fn exec_program(&self, args: &ExecProgramArgs) -> Result<ExecProgramResult, String> {
         // transform args to json
@@ -414,8 +438,12 @@ impl KclvmServiceImpl {
         let settings_files = args.files.iter().map(|f| f.as_str()).collect::<Vec<&str>>();
         let settings_pathbuf = build_settings_pathbuf(&[], Some(settings_files), None)?;
         let files = if !settings_pathbuf.settings().input().is_empty() {
-            canonicalize_input_files(&settings_pathbuf.settings().input(), args.work_dir.clone())
-                .map_err(|e| anyhow!(e))?
+            canonicalize_input_files(
+                &settings_pathbuf.settings().input(),
+                args.work_dir.clone(),
+                false,
+            )
+            .map_err(|e| anyhow!(e))?
         } else {
             vec![]
         };

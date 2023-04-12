@@ -66,13 +66,7 @@ pub(crate) fn parsing_module_string(src: &str) -> String {
 
 pub fn check_result_panic_info(result: Result<(), Box<dyn Any + Send>>) {
     if let Err(e) = result {
-        match e.downcast::<String>() {
-            Ok(_v) => {
-                let got = _v.to_string();
-                let _u: PanicInfo = serde_json::from_str(&got).unwrap();
-            }
-            _ => unreachable!(),
-        }
+        assert!(e.downcast::<String>().is_ok());
     };
 }
 
@@ -304,14 +298,16 @@ fn test_import_vendor_with_same_internal_pkg() {
     match load_program(sess.clone(), &[&test_case_path], None) {
         Ok(_) => {
             let errors = sess.classification().0;
-            panic!("Unreachable code.")
-        }
-        Err(err) => {
-            let result: PanicInfo = serde_json::from_str(&err).unwrap();
-            assert_eq!(
-                result.message,
+            let msgs = [
                 "the `same_vendor` is found multiple times in the current package and vendor package"
-            );
+            ];
+            assert_eq!(errors.len(), msgs.len());
+            for (diag, m) in errors.iter().zip(msgs.iter()) {
+                assert_eq!(diag.messages[0].message, m.to_string());
+            }
+        }
+        Err(_) => {
+            panic!("Unreachable code.")
         }
     }
 }
@@ -326,16 +322,19 @@ fn test_import_vendor_without_kclmod_and_same_name() {
         .canonicalize()
         .unwrap();
     let test_case_path = dir.join("assign.k").display().to_string();
-    match load_program(sess, &[&test_case_path], None) {
+    match load_program(sess.clone(), &[&test_case_path], None) {
         Ok(_) => {
-            panic!("Unreachable code.")
+            let errors = sess.classification().0;
+            let msgs = [
+                "the `assign` is found multiple times in the current package and vendor package",
+            ];
+            assert_eq!(errors.len(), msgs.len());
+            for (diag, m) in errors.iter().zip(msgs.iter()) {
+                assert_eq!(diag.messages[0].message, m.to_string());
+            }
         }
-        Err(err) => {
-            let result: PanicInfo = serde_json::from_str(&err).unwrap();
-            assert_eq!(
-                result.message,
-                "the `assign` is found multiple times in the current package and vendor package"
-            );
+        Err(_) => {
+            panic!("Unreachable code.")
         }
     }
 }

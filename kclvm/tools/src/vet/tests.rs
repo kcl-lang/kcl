@@ -342,7 +342,6 @@ mod test_expr_builder {
 mod test_validater {
     use std::{fs, panic, path::Path};
 
-    use kclvm_runtime::PanicInfo;
     use regex::Regex;
 
     use crate::{
@@ -428,19 +427,6 @@ mod test_validater {
                 )
                 .expect("Something went wrong reading the file");
 
-                let expected_err_msg = fs::read_to_string(
-                    construct_full_path(&format!(
-                        "{}.{}",
-                        Path::new("invalid_validate_cases")
-                            .join(case)
-                            .display()
-                            .to_string(),
-                        "stderr.json"
-                    ))
-                    .unwrap(),
-                )
-                .expect("Something went wrong reading the file");
-
                 let opt = ValidateOption::new(
                     None,
                     "value".to_string(),
@@ -450,28 +436,8 @@ mod test_validater {
                     Some(kcl_code),
                 );
 
-                let result = validate(opt);
-
-                #[cfg(target_os = "windows")]
-                let mut expect: PanicInfo = serde_json::from_str(&expected_err_msg).unwrap();
-
-                #[cfg(target_os = "windows")]
-                path_to_windows(&mut expect);
-
-                #[cfg(not(target_os = "windows"))]
-                let expect: PanicInfo = serde_json::from_str(&expected_err_msg).unwrap();
-
-                match result {
-                    Ok(_) => {
-                        panic!("Unreachable.")
-                    }
-                    Err(panic_err) => {
-                        let got: PanicInfo = serde_json::from_str(&panic_err).unwrap();
-
-                        assert_eq!(got.kcl_arg_msg, expect.kcl_arg_msg);
-                        assert_eq!(got.kcl_config_meta_arg_msg, expect.kcl_config_meta_arg_msg);
-                    }
-                }
+                let result = validate(opt).unwrap_err();
+                assert!(result.contains("error"), "{result}");
             }
         }
     }

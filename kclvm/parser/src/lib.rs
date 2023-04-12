@@ -19,7 +19,6 @@ use kclvm_config::modfile::{
     KCL_MOD_PATH_ENV,
 };
 use kclvm_error::{ErrorKind, Message, Position, Style};
-use kclvm_runtime::PanicInfo;
 use kclvm_sema::plugin::PLUGIN_MODULE_PREFIX;
 use kclvm_utils::path::PathPrefix;
 
@@ -309,26 +308,23 @@ impl Loader {
         // get k files
         let mut k_files: Vec<String> = Vec::new();
         for (i, path) in path_list.iter().enumerate() {
-            if path.ends_with(KCL_FILE_SUFFIX) {
-                k_files.push(path.to_string());
-                continue;
-            }
-
             // read dir/*.k
             if self.is_dir(path) {
                 if self.opts.k_code_list.len() > i {
-                    return Err(PanicInfo::from("Invalid code list").to_json_string());
+                    return Err("Invalid code list".to_string());
                 }
                 //k_code_list
                 for s in self.get_dir_files(path)? {
                     k_files.push(s);
                 }
                 continue;
+            } else {
+                k_files.push(path.to_string());
             }
         }
 
         if k_files.is_empty() {
-            return Err(PanicInfo::from("No input KCL files").to_json_string());
+            return Err("No input KCL files".to_string());
         }
 
         // check all file exists
@@ -338,11 +334,10 @@ impl Loader {
             }
 
             if !self.path_exist(filename.as_str()) {
-                return Err(PanicInfo::from(format!(
+                return Err(format!(
                     "Cannot find the kcl file, please check whether the file path {}",
                     filename.as_str(),
-                ))
-                .to_json_string());
+                ));
             }
         }
         Ok(k_files)
@@ -384,15 +379,18 @@ impl Loader {
 
         // plugin pkgs
         if self.is_plugin_pkg(pkgpath.as_str()) {
-            if self.opts.load_plugins {
-                return Ok(());
-            } else {
-                return Err(PanicInfo::from_ast_pos(
-                    format!("the plugin package `{}` is not found, please confirm if plugin mode is enabled", pkgpath),
-                    pos.into(),
-                )
-                .to_json_string());
+            if !self.opts.load_plugins {
+                self.sess.1.borrow_mut().add_error(
+                    ErrorKind::CannotFindModule,
+                    &[Message {
+                        pos: Into::<(Position, Position)>::into(pos).0,
+                        style: Style::Line,
+                        message: format!("the plugin package `{}` is not found, please confirm if plugin mode is enabled", pkgpath),
+                        note: None,
+                    }],
+                );
             }
+            return Ok(());
         }
 
         // builtin pkgs
@@ -407,14 +405,19 @@ impl Loader {
         let is_external = self.is_external_pkg(&pkgpath)?;
 
         if is_external.is_some() && is_internal.is_some() {
-            return Err(PanicInfo::from_ast_pos(
-                format!(
-                    "the `{}` is found multiple times in the current package and vendor package",
-                    pkgpath
-                ),
-                pos.into(),
-            )
-            .to_json_string());
+            self.sess.1.borrow_mut().add_error(
+                ErrorKind::CannotFindModule,
+                &[Message {
+                    pos: Into::<(Position, Position)>::into(pos).0,
+                    style: Style::Line,
+                    message: format!(
+                        "the `{}` is found multiple times in the current package and vendor package",
+                        pkgpath
+                    ),
+                    note: None,
+                }],
+            );
+            return Ok(());
         }
 
         let origin_pkg_path = pkgpath.to_string();
@@ -635,10 +638,7 @@ impl Loader {
         let mut names = pkgpath.splitn(2, '.');
         match names.next() {
             Some(it) => Ok(it.to_string()),
-            None => Err(
-                PanicInfo::from(format!("Invalid external package name `{}`", pkgpath))
-                    .to_json_string(),
-            ),
+            None => Err(format!("Invalid external package name `{}`", pkgpath)),
         }
     }
 

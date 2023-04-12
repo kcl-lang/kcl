@@ -1,7 +1,8 @@
+use anyhow::bail;
 use compiler_base_session::Session;
 use indexmap::IndexMap;
 use kclvm_ast::{ast, MAIN_PKG};
-use kclvm_error::{ErrorKind, Handler};
+use kclvm_error::{Handler, Level};
 use std::sync::Arc;
 use std::{
     cell::RefCell,
@@ -232,29 +233,26 @@ impl ProgramScope {
         self.scope_map.get(MAIN_PKG)
     }
 
-    /// Return diagnostic json string but do not abort if exist any diagnostic.
-    #[inline]
-    pub fn alert_scope_diagnostics(&self) -> Result<(), String> {
-        self.handler.alert_if_any_errors()
-    }
-
-    /// Return diagnostic json using session string but do not abort if exist any diagnostic.
-    pub fn alert_scope_diagnostics_with_session(&self, sess: Arc<Session>) -> Result<(), String> {
+    /// Return diagnostic pretty string but do not abort if the session exists any diagnostic.
+    pub fn emit_diagnostics_to_string(&self, sess: Arc<Session>) -> Result<(), String> {
         let emit_error = || -> anyhow::Result<()> {
-            // Add resolve errors into session
+            // Add resolve errors into the session
             for diag in &self.handler.diagnostics {
-                sess.add_err(diag.clone())?;
+                if matches!(diag.level, Level::Error) {
+                    sess.add_err(diag.clone())?;
+                }
             }
-            // If has syntax error but not resolve error, returns syntax errors.
-            let result = if self.handler.diagnostics.is_empty() && sess.diag_handler.has_errors()? {
-                let err = sess
-                    .emit_nth_diag_into_string(0)?
-                    .unwrap_or(Ok(ErrorKind::CompileError.name()))?;
-                Err(err)
+            // If has syntax and resolve errors, return its string format.
+            if sess.diag_handler.has_errors()? {
+                let errors = sess.emit_all_diags_into_string()?;
+                let mut error_strings = vec![];
+                for error in errors {
+                    error_strings.push(error?);
+                }
+                bail!(error_strings.join("\n"))
             } else {
-                self.alert_scope_diagnostics()
-            };
-            result.map_err(|e| anyhow::anyhow!(e))
+                Ok(())
+            }
         };
         emit_error().map_err(|e| e.to_string())
     }

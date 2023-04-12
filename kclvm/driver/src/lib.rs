@@ -11,7 +11,6 @@ use kclvm_config::{
     settings::{build_settings_pathbuf, DEFAULT_SETTING_FILE},
 };
 use kclvm_parser::LoadProgramOptions;
-use kclvm_runtime::PanicInfo;
 use kclvm_utils::path::PathPrefix;
 use std::{
     fs::read_dir,
@@ -22,8 +21,9 @@ use walkdir::WalkDir;
 
 /// Normalize input files with the working directory and replace ${KCL_MOD} with the module root path.
 pub fn canonicalize_input_files(
-    k_files: &Vec<String>,
+    k_files: &[String],
     work_dir: String,
+    check_exist: bool,
 ) -> Result<Vec<String>, String> {
     let mut kcl_paths = Vec::<String>::new();
 
@@ -32,14 +32,17 @@ pub fn canonicalize_input_files(
         // If the input file or path is a relative path and it is not a absolute path in the KCL module VFS,
         // join with the work directory path and convert it to a absolute path.
         if !file.starts_with(KCL_MOD_PATH_ENV) && !Path::new(file).is_absolute() {
-            match Path::new(&work_dir).join(file).canonicalize() {
+            let filepath = Path::new(&work_dir).join(file);
+            match filepath.canonicalize() {
                 Ok(path) => kcl_paths.push(path.adjust_canonicalization()),
                 Err(_) => {
-                    return Err(PanicInfo::from_string(&format!(
-                        "Cannot find the kcl file, please check whether the file path {}",
-                        file
-                    ))
-                    .to_json_string())
+                    kcl_paths.push(filepath.to_string_lossy().to_string());
+                    if check_exist {
+                        return Err(format!(
+                            "Cannot find the kcl file, please check whether the file path {}",
+                            file
+                        ));
+                    }
                 }
             }
         } else {
@@ -113,7 +116,7 @@ pub fn lookup_compile_unit(
                         },
                         ..Default::default()
                     };
-                    match canonicalize_input_files(&files, work_dir) {
+                    match canonicalize_input_files(&files, work_dir, true) {
                         Ok(kcl_paths) => (kcl_paths, Some(load_opt)),
                         Err(_) => (vec![file.to_string()], None),
                     }
