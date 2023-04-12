@@ -68,6 +68,8 @@ parse_expr_snapshot! { config_recovery_9, "{*a, **b}" }
 parse_expr_snapshot! { config_recovery_10, "{**a, *b}" }
 parse_expr_snapshot! { config_recovery_11, "{if True: a = , b = 2}" }
 parse_expr_snapshot! { config_recovery_12, "{if True: *a, b = 2}" }
+parse_expr_snapshot! { config_recovery_13, "{if True: key: {}}" }
+parse_expr_snapshot! { config_recovery_14, "{if True: key: []}" }
 parse_expr_snapshot! { comp_clause_recovery_0, "[i for i in [1,2,3]]" }
 parse_expr_snapshot! { comp_clause_recovery_1, "[i, j for i in [1,2,3]]" }
 parse_expr_snapshot! { comp_clause_recovery_2, "[for i in [1,2,3]]" }

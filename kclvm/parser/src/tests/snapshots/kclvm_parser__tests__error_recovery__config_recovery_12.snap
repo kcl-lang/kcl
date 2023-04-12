@@ -1,5 +1,6 @@
 ---
 source: parser/src/tests/error_recovery.rs
+assertion_line: 70
 expression: "crate::tests::parsing_expr_string(\"{if True: *a, b = 2}\")"
 ---
 Node {
@@ -88,83 +89,6 @@ Node {
                                             end_line: 1,
                                             end_column: 13,
                                         },
-                                        Node {
-                                            node: ConfigEntry {
-                                                key: Some(
-                                                    Node {
-                                                        node: Identifier(
-                                                            Identifier {
-                                                                names: [
-                                                                    "b",
-                                                                ],
-                                                                pkgpath: "",
-                                                                ctx: Load,
-                                                            },
-                                                        ),
-                                                        filename: "",
-                                                        line: 1,
-                                                        column: 14,
-                                                        end_line: 1,
-                                                        end_column: 15,
-                                                    },
-                                                ),
-                                                value: Node {
-                                                    node: NumberLit(
-                                                        NumberLit {
-                                                            binary_suffix: None,
-                                                            value: Int(
-                                                                2,
-                                                            ),
-                                                        },
-                                                    ),
-                                                    filename: "",
-                                                    line: 1,
-                                                    column: 18,
-                                                    end_line: 1,
-                                                    end_column: 19,
-                                                },
-                                                operation: Override,
-                                                insert_index: -1,
-                                            },
-                                            filename: "",
-                                            line: 1,
-                                            column: 18,
-                                            end_line: 1,
-                                            end_column: 19,
-                                        },
-                                        Node {
-                                            node: ConfigEntry {
-                                                key: Some(
-                                                    Node {
-                                                        node: Missing(
-                                                            MissingExpr,
-                                                        ),
-                                                        filename: "",
-                                                        line: 1,
-                                                        column: 19,
-                                                        end_line: 1,
-                                                        end_column: 20,
-                                                    },
-                                                ),
-                                                value: Node {
-                                                    node: Missing(
-                                                        MissingExpr,
-                                                    ),
-                                                    filename: "",
-                                                    line: 1,
-                                                    column: 19,
-                                                    end_line: 1,
-                                                    end_column: 20,
-                                                },
-                                                operation: Override,
-                                                insert_index: -1,
-                                            },
-                                            filename: "",
-                                            line: 1,
-                                            column: 19,
-                                            end_line: 1,
-                                            end_column: 20,
-                                        },
                                     ],
                                     orelse: None,
                                 },
@@ -173,7 +97,7 @@ Node {
                             line: 1,
                             column: 10,
                             end_line: 1,
-                            end_column: 20,
+                            end_column: 12,
                         },
                         operation: Union,
                         insert_index: -1,
@@ -182,7 +106,51 @@ Node {
                     line: 1,
                     column: 1,
                     end_line: 1,
-                    end_column: 20,
+                    end_column: 13,
+                },
+                Node {
+                    node: ConfigEntry {
+                        key: Some(
+                            Node {
+                                node: Identifier(
+                                    Identifier {
+                                        names: [
+                                            "b",
+                                        ],
+                                        pkgpath: "",
+                                        ctx: Load,
+                                    },
+                                ),
+                                filename: "",
+                                line: 1,
+                                column: 14,
+                                end_line: 1,
+                                end_column: 15,
+                            },
+                        ),
+                        value: Node {
+                            node: NumberLit(
+                                NumberLit {
+                                    binary_suffix: None,
+                                    value: Int(
+                                        2,
+                                    ),
+                                },
+                            ),
+                            filename: "",
+                            line: 1,
+                            column: 18,
+                            end_line: 1,
+                            end_column: 19,
+                        },
+                        operation: Override,
+                        insert_index: -1,
+                    },
+                    filename: "",
+                    line: 1,
+                    column: 14,
+                    end_line: 1,
+                    end_column: 19,
                 },
             ],
         },
