@@ -1,9 +1,8 @@
 use anyhow::Result;
 use clap::ArgMatches;
-use kclvm_error::Diagnostic;
+use kclvm_error::StringError;
 use kclvm_parser::ParseSession;
 use kclvm_runner::exec_program;
-use kclvm_runtime::PanicInfo;
 use std::sync::Arc;
 
 use crate::settings::must_build_settings;
@@ -23,8 +22,7 @@ pub fn run_command(matches: &ArgMatches) -> Result<()> {
         },
         Err(msg) => {
             if !sess.0.diag_handler.has_errors()? {
-                sess.0
-                    .add_err(<PanicInfo as Into<Diagnostic>>::into(PanicInfo::from(msg)))?;
+                sess.0.add_err(StringError(msg))?;
             }
             sess.0.emit_stashed_diagnostics_and_abort()?;
         }

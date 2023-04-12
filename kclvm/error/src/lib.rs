@@ -64,31 +64,18 @@ impl Handler {
         Ok(self.has_errors())
     }
 
-    /// Emit all diagnostics but do not abort and return the error json string format.
-    #[inline]
-    pub fn alert_if_any_errors(&self) -> Result<(), String> {
-        if self.has_errors() {
-            for diag in &self.diagnostics {
-                if !diag.messages.is_empty() {
-                    let pos = diag.messages[0].pos.clone();
-
-                    let mut panic_info = PanicInfo::from(diag.messages[0].message.clone());
-                    panic_info.kcl_file = pos.filename.clone();
-                    panic_info.kcl_line = pos.line as i32;
-                    panic_info.kcl_col = pos.column.unwrap_or(0) as i32;
-
-                    if diag.messages.len() >= 2 {
-                        let pos = diag.messages[1].pos.clone();
-                        panic_info.kcl_config_meta_file = pos.filename.clone();
-                        panic_info.kcl_config_meta_line = pos.line as i32;
-                        panic_info.kcl_config_meta_col = pos.column.unwrap_or(0) as i32;
-                    }
-
-                    return Err(panic_info.to_json_string());
-                }
-            }
+    /// Emit diagnostic to string.
+    pub fn emit_to_string(&mut self) -> Result<String> {
+        let sess = Session::default();
+        for diag in &self.diagnostics {
+            sess.add_err(diag.clone())?;
         }
-        Ok(())
+        let errors = sess.emit_all_diags_into_string()?;
+        let mut error_strings = vec![];
+        for error in errors {
+            error_strings.push(error?);
+        }
+        Ok(error_strings.join("\n"))
     }
 
     /// Emit all diagnostics and abort if has any errors.
@@ -277,6 +264,9 @@ pub enum ParseError {
     },
 }
 
+/// A single string error.
+pub struct StringError(pub String);
+
 impl ParseError {
     /// New a unexpected token parse error with span and token information.
     pub fn unexpected_token(expected: &[&str], got: &str, span: Span) -> Self {
@@ -430,6 +420,15 @@ impl SessionDiagnostic for Diagnostic {
             // Append a new line.
             diag.append_component(Box::new(String::from("\n")));
         }
+        Ok(diag)
+    }
+}
+
+impl SessionDiagnostic for StringError {
+    fn into_diagnostic(self, _: &Session) -> Result<DiagnosticTrait<DiagnosticStyle>> {
+        let mut diag = DiagnosticTrait::<DiagnosticStyle>::new();
+        diag.append_component(Box::new(Label::Error(E3M38.code.to_string())));
+        diag.append_component(Box::new(format!(": {}\n", self.0)));
         Ok(diag)
     }
 }
