@@ -104,7 +104,13 @@ pub fn exec_program(
     };
     // Exec result is a JSON or YAML string.
     let exec_result = match exec_result {
-        Ok(res) => res,
+        Ok(res) => {
+            if res.is_empty() {
+                return Ok(result);
+            } else {
+                res
+            }
+        }
         Err(res) => {
             if res.is_empty() {
                 return Ok(result);
