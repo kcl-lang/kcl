@@ -2,7 +2,7 @@
 
 use kclvm_utils::path::PathPrefix;
 use serde::Deserialize;
-use std::{env, io::Read};
+use std::{env, fs, io::Read, path::PathBuf};
 use toml;
 
 pub const KCL_MOD_FILE: &str = "kcl.mod";
@@ -18,13 +18,29 @@ pub const KCLVM_VENDOR_HOME: &str = "KCLVM_VENDOR_HOME";
 pub fn get_vendor_home() -> String {
     match env::var(KCLVM_VENDOR_HOME) {
         Ok(path) => path,
-        Err(_) => {
-            if let Some(home_dir) = dirs::home_dir() {
-                return home_dir.display().to_string();
-            } else {
-                return String::default();
-            }
-        }
+        Err(_) => create_default_vendor_home().unwrap_or(String::default()),
+    }
+}
+
+/// Create a '.kpm' folder in the user's root directory,
+/// returning the folder path in [Option::Some] if it already exists.
+///
+/// If the folder does not exist, create it and return the file path
+/// in [Option::Some].
+///
+/// If creating the folder failed, [`Option::None`] is returned.
+pub fn create_default_vendor_home() -> Option<String> {
+    let root_dir = match env::var("HOME") {
+        Ok(val) => val,
+        Err(_) => return None,
+    };
+    let kpm_home = PathBuf::from(root_dir).join(".kpm");
+    match kpm_home.canonicalize() {
+        Ok(path) => return Some(path.display().to_string()),
+        Err(_) => match fs::create_dir(kpm_home.clone()) {
+            Ok(_) => return Some(kpm_home.canonicalize().unwrap().display().to_string()),
+            Err(_) => None,
+        },
     }
 }
 
