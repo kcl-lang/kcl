@@ -1,20 +1,14 @@
+use regex::Regex;
+use std::collections::HashSet;
 use std::fs::File;
 use std::io::prelude::*;
 use std::iter::Iterator;
-use std::collections::HashSet;
-use regex::Regex;
-
-fn read_doc_content() -> String {
-    let mut file = File::open("/Users/amy/Documents/practice/rust/doc_parser/docstring.txt").expect("Unable to open file");
-    let mut contents = String::new();
-    file.read_to_string(&mut contents).expect("Unable to read file");
-    contents
-}
+use std::path::PathBuf;
 
 // strip leading and trailing triple quotes in the original docstring content
 fn strip_quotes(original: String) -> String {
     let quote = original.chars().next().unwrap();
-    let pattern = format!("(?s)^{char}{{3}}(.*?){char}{{3}}$", char=quote);
+    let pattern = format!("(?s)^{char}{{3}}(.*?){char}{{3}}$", char = quote);
     let re = Regex::new(&pattern).unwrap();
     let caps = re.captures(&original);
     let result = match caps {
@@ -31,7 +25,7 @@ fn expand_tabs(s: &str, spaces_per_tab: usize) -> String {
 
 // Clean up indentation by removing any common leading whitespace
 // on all lines after the first line.
-pub fn clean_doc(doc: &mut String) -> &mut String{
+pub fn clean_doc(doc: &mut String) {
     let tab_expanded = expand_tabs(&doc, 4);
     let mut lines: Vec<&str> = tab_expanded.split('\n').collect();
     // Find minimum indentation of any non-blank lines after first line.
@@ -45,7 +39,11 @@ pub fn clean_doc(doc: &mut String) -> &mut String{
             .unwrap_or(0);
 
         lines[1..].iter_mut().for_each(|line| {
-            *line = if line.len() > 0 {&line[margin..]} else {line}; // remove command indentation
+            *line = if line.len() > 0 {
+                &line[margin..]
+            } else {
+                line
+            }; // remove command indentation
         });
 
         // Remove trailing and leading blank lines.
@@ -57,19 +55,17 @@ pub fn clean_doc(doc: &mut String) -> &mut String{
         }
     }
     *doc = lines.join("\n");
-    doc
 }
 
-
 // A line-based string reader.
-struct Reader<'a> {
-    data: Vec<&'a str>,
+struct Reader {
+    data: Vec<String>,
     l: usize,
 }
 
-impl<'a> Reader<'a> {
-    fn new(data: &'a str) -> Self {
-        let data_vec: Vec<&str> = data.split('\n').collect();
+impl Reader {
+    fn new(data: String) -> Self {
+        let data_vec: Vec<String> = data.split('\n').map(|s| s.to_string()).collect();
         Self {
             data: data_vec,
             l: 0,
@@ -78,17 +74,17 @@ impl<'a> Reader<'a> {
     fn reset(&mut self) {
         self.l = 0;
     }
-    
-    fn read(&mut self) -> &'a str {
+
+    fn read(&mut self) -> String {
         if !self.eof() {
-            let out = self.data[self.l];
+            let out = self.data[self.l].clone();
             self.l += 1;
             return out;
         } else {
-            return "";
+            return "".to_string();
         }
     }
-    
+
     fn seek_next_non_empty_line(&mut self) {
         for l in self.data[self.l..].iter() {
             if l.trim().len() > 0 {
@@ -98,12 +94,12 @@ impl<'a> Reader<'a> {
             }
         }
     }
-    
+
     fn eof(&self) -> bool {
         self.l >= self.data.len()
     }
-    
-    fn read_to_condition(&mut self, condition_func: &dyn Fn(&str) -> bool) -> Vec<&'a str> {
+
+    fn read_to_condition(&mut self, condition_func: &dyn Fn(&str) -> bool) -> Vec<String> {
         let start = self.l;
         for line in self.data[start..].iter() {
             if condition_func(line) {
@@ -111,53 +107,53 @@ impl<'a> Reader<'a> {
             }
             self.l += 1;
             if self.eof() {
-                return self.data[start..self.l + 1].to_vec();
+                return self.data[start..self.l].to_vec();
             }
         }
         return vec![];
     }
-    
-    fn read_to_next_empty_line(&mut self) -> Vec<&'a str> {
+
+    fn read_to_next_empty_line(&mut self) -> Vec<String> {
         self.seek_next_non_empty_line();
-    
+
         fn is_empty(line: &str) -> bool {
             return line.trim().len() == 0;
         }
-    
+
         return self.read_to_condition(&is_empty);
     }
-    
-    fn read_to_next_unindented_line(&mut self) -> Vec<&'a str> {
+
+    fn read_to_next_unindented_line(&mut self) -> Vec<String> {
         fn is_unindented(line: &str) -> bool {
             return line.trim().len() > 0 && line.trim_start().len() == line.len();
         }
-    
+        
         return self.read_to_condition(&is_unindented);
     }
-    
-    fn peek(&self, n: usize, positive: bool) -> &'a str {
+
+    fn peek(&self, n: usize, positive: bool) -> String {
         if positive {
             if self.l + n < self.data.len() {
-                return self.data[self.l + n];
+                return self.data[self.l + n].clone();
             } else {
-                return "";
+                return "".to_string();
             }
         } else {
             if self.l >= n {
-                return self.data[self.l - n];
+                return self.data[self.l - n].clone();
             } else {
-                return "";
+                return "".to_string();
             }
         }
     }
-    
+
     fn is_empty(&self) -> bool {
-        return self.data.iter().all(|&x| x.trim().len() == 0);
-    }    
+        return self.data.iter().all(|x| x.trim().len() == 0);
+    }
 }
 
 // remove the leading and trailing empty lines
-fn _strip(doc: Vec<&str>) -> Vec<&str> {
+fn _strip(doc: Vec<String>) -> Vec<String> {
     let mut i = 0;
     let mut j = 0;
     for (line_num, line) in doc.iter().enumerate() {
@@ -183,11 +179,17 @@ fn is_at_section(doc: &mut Reader) -> bool {
     if doc.eof() {
         return false;
     }
-    let l1 = doc.peek(0, true).trim();
-    let l2 = doc.peek(1, true).trim(); // ---------- or ==========
+    let l1 = doc.peek(0, true);
+    let l1 = l1.trim();
+    let l2 = doc.peek(1, true);
+    let l2 = l2.trim(); // ---------- or ==========
     let l2_char_set = l2.chars().collect::<HashSet<char>>();
 
-    if l2.len() >= 3 && l2_char_set.len() == 1  && (l2.contains('-') || l2.contains('=')) && l1.len() != l1.len() {
+    if l2.len() >= 3
+        && l2_char_set.len() == 1
+        && (l2.contains('-') || l2.contains('='))
+        && l1.len() != l1.len()
+    {
         // todo: when line2 is conformed with "-" or "=", but the number of the "-/=" mismatch the section title length, mark as a section and return a warning
         return false;
     }
@@ -195,7 +197,7 @@ fn is_at_section(doc: &mut Reader) -> bool {
 }
 
 // read lines before next section beginning, continuous empty lines will be merged to one
-fn read_to_next_section<'a>(doc: &'a mut Reader<'a>) -> Vec<&'a str> {
+fn read_to_next_section(doc: &mut Reader) -> Vec<String> {
     let mut section = doc.read_to_next_empty_line();
 
     while !is_at_section(doc) && !doc.eof() {
@@ -208,7 +210,7 @@ fn read_to_next_section<'a>(doc: &'a mut Reader<'a>) -> Vec<&'a str> {
 }
 
 // read all sections, returns list of each section Title and the section content
-// For following docstring lines, the extracted sections will be: 
+// For following docstring lines, the extracted sections will be:
 // [("Attribute", ["content", "content"]), ("Examples", ["content"])]
 //
 // Attribute
@@ -219,106 +221,131 @@ fn read_to_next_section<'a>(doc: &'a mut Reader<'a>) -> Vec<&'a str> {
 // Examples
 // --------
 // content
-// fn read_sections<'a>(doc: &'a mut Reader<'a>) ->  Vec<Result<(String, Vec<&str>), &'static str>>{
-//     let mut sections = vec![];
+fn read_sections(doc: &mut Reader) -> Vec<(String, Vec<String>)> {
+    let mut sections = vec![];
 
+    while !doc.eof() {
+        let data = read_to_next_section(doc);
+        let name = data[0].trim().to_owned();
 
-//     while !doc.eof() {
-//         let data = read_to_next_section(doc);
-//         let name = data[0].trim().to_owned();
+        if data.len() < 2 {
+            sections.push((name, vec![]))
+        } else {
+            sections.push((name, _strip(data[2..].to_vec())))
+        }
+    }
+    sections
+}
 
-//         if data.len() < 2 {
-//             sections.push(Ok((name, vec![])))
-//         } else {
-//             sections.push(Ok((name, _strip(data[2..].to_vec()))))
-//         }
-//     }
-//     sections
-// }
-
-// parse 
-fn parse_attr_list(content: &str) -> Vec<Attribute> {
+// parse
+fn parse_attr_list(content: String) -> Vec<Attribute> {
     let mut r = Reader::new(content);
     let mut attrs = vec![];
     while !r.eof() {
-        let header = r.read().trim();
-        // 
+        let header = r.read();
+        let header = header.trim();
         if header.contains(" : ") {
             let parts: Vec<&str> = header.split(" : ").collect();
             let arg_name = parts[0];
-            let desc_lines: Vec<String> = r.read_to_next_unindented_line().iter().map(|&s| s.to_string()).collect();
-            attrs.push(Attribute::new(arg_name, desc_lines));
+
+            let desc_lines = r
+            .read_to_next_unindented_line()
+                .iter()
+                .map(|s| s.trim().to_string())
+                .collect();
+            attrs.push(Attribute::new(arg_name.to_string(), desc_lines));
         } else {
-            let arg_name = header;
-            let desc_lines: Vec<String> = r.read_to_next_unindented_line().iter().map(|&s| s.to_string()).collect();
-            attrs.push(Attribute::new(arg_name, desc_lines));
+            r.read_to_next_unindented_line();
         }
     }
     attrs
 }
 
 // parse the summary of the schema. The final summary content will be a concat of lines in the original summary with whitespace.
-fn parse_summary<'a>(doc: &'a mut Reader<'a>) -> Option<String> {
-    if is_at_section(doc){
+fn parse_summary(doc: &mut Reader) -> Option<String> {
+    if is_at_section(doc) {
         // no summary provided
-        return None
+        return None;
     }
     let lines = read_to_next_section(doc);
-    return Some(lines.iter().map(|s| s.trim()).collect::<Vec<_>>().join(" ").trim().to_string());
+    return Some(
+        lines
+            .iter()
+            .map(|s| s.trim())
+            .collect::<Vec<_>>()
+            .join(" ")
+            .trim()
+            .to_string(),
+    );
 }
 
 // the main logic of parsing the schema docstring
-// fn parse_doc_string(ori: &mut String) -> Doc {
-//     let cleaned = clean_doc(&mut ori);
-//     let doc = &mut Reader::new(&cleaned.as_str());
-//     doc.reset();
-//     let summary = parse_summary(doc);
-//     let attr_section = read_to_next_section(doc);
-//     let attr_content_cleaned = attr_section.iter().map(|s| s.trim()).collect::<Vec<_>>().join(" ").trim();
-//     let attrs = parse_attr_list(attr_content_cleaned);
+fn parse_doc_string(ori: &String) -> Doc {
+    let mut ori = ori.clone();
+    clean_doc(&mut ori);
+    let mut doc = Reader::new(ori);
+    doc.reset();
+    let summary = parse_summary(&mut doc);
 
-//     Doc::new(summary, attrs)
-// }
+    let attr_section = read_to_next_section(&mut doc);
 
-#[derive(Debug)]
-struct Doc<'a> {
-    summary: Option<String>,
-    attrs: Vec<Attribute<'a>>,
+    let attr_content = attr_section.join("\n");
+
+    let attrs = parse_attr_list(attr_content);
+
+    Doc::new(summary, attrs)
 }
 
-impl<'a> Doc<'a> {
-    fn new(summary: Option<String>, attrs: Vec<Attribute<'a>>) -> Self {
-        Self {
-            summary,
-            attrs: attrs,
-        }
+#[derive(Debug)]
+struct Doc {
+    summary: Option<String>,
+    attrs: Vec<Attribute>,
+}
+
+impl Doc {
+    fn new(summary: Option<String>, attrs: Vec<Attribute>) -> Self {
+        Self { summary, attrs }
     }
 }
 
 #[derive(Debug)]
-struct Attribute<'a> {
-    name: &'a str,
+struct Attribute {
+    name: String,
     desc: Vec<String>,
 }
 
-impl<'a> Attribute<'a> {
-    fn new(name: &'a str, desc: Vec<String>,) -> Self {
-        Self {
-            name,
-            desc,
-        }
+impl Attribute {
+    fn new(name: String, desc: Vec<String>) -> Self {
+        Self { name, desc }
     }
 }
 
+fn read_doc_content() -> String {
+    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    path.push("src/resolver/test_data/doc.txt");
+    let mut file = File::open(path).expect("Unable to open file");
+
+    let mut contents = String::new();
+    file.read_to_string(&mut contents)
+        .expect("Unable to read file");
+    contents
+}
 
 #[test]
 fn test_strip_quotes() {
     let ori_from_file = read_doc_content();
 
-    let oris = [r#""""abcde""""#, r#"'''abc
-de'''"#, ori_from_file.as_str()];
-    let results = ["abcde", "abc
-de", r#"Server is the common user interface for long-running
+    let oris = [
+        r#""""abcde""""#,
+        r#"'''abc
+de'''"#,
+        ori_from_file.as_str(),
+    ];
+    let results = [
+        "abcde",
+        "abc
+de",
+        r#"Server is the common user interface for long-running
     services adopting the best practice of Kubernetes.
 
     Attributes
@@ -341,20 +368,18 @@ de", r#"Server is the common user interface for long-running
     myCustomApp = AppConfiguration {
         name = "componentName"
     }
-
-
-    "#];
+"#,
+    ];
 
     for (ori, res) in oris.iter().zip(results.iter()) {
         assert_eq!(strip_quotes(ori.to_string()), res.to_string());
     }
-    
 }
 
 #[test]
 fn test_clean_doc() {
     let mut ori = strip_quotes(read_doc_content());
-    let cleaned = clean_doc(&mut ori);
+    clean_doc(&mut ori);
     let expect_cleaned = r#"Server is the common user interface for long-running
 services adopting the best practice of Kubernetes.
 
@@ -378,9 +403,8 @@ Examples
 myCustomApp = AppConfiguration {
     name = "componentName"
 }"#;
-assert_eq!(cleaned, &expect_cleaned.to_string());
+    assert_eq!(ori, expect_cleaned.to_string());
 }
-
 
 #[test]
 fn test_seek_next_non_empty_line() {
@@ -393,7 +417,7 @@ fn test_seek_next_non_empty_line() {
     line4
 
     ";
-    let mut reader = Reader::new(data);
+    let mut reader = Reader::new(data.to_string());
 
     // Test initial position
     assert_eq!(reader.l, 0);
@@ -420,7 +444,7 @@ fn test_seek_next_non_empty_line() {
 
 #[test]
 fn test_read_to_next_empty_line() {
-    let input_str = "hello
+    let data = "hello
     world
 
     foo
@@ -428,7 +452,7 @@ fn test_read_to_next_empty_line() {
 
 abc
     ";
-    let mut reader = Reader::new(input_str);
+    let mut reader = Reader::new(data.to_string());
 
     let output = reader.read_to_next_empty_line();
     assert_eq!(output, vec!["hello", "    world"]);
@@ -441,7 +465,6 @@ abc
 
     let output = reader.read_to_next_empty_line();
     assert_eq!(output.len(), 0);
-
 }
 
 #[test]
@@ -454,21 +477,33 @@ fn test_read_to_next_unindented_line() {
 
 unindented line
     ";
-    let mut reader = Reader::new(data);
+    let mut reader = Reader::new(data.to_string());
     let result = reader.read_to_next_unindented_line();
-    assert_eq!(result, vec!["", "    indented line", "    indented line", "        indented line", "    indented line", ""]);
+    assert_eq!(
+        result,
+        vec![
+            "",
+            "    indented line",
+            "    indented line",
+            "        indented line",
+            "    indented line",
+            ""
+        ]
+    );
 }
 
 #[test]
 fn test_at_section() {
-    let data = "Summary
+    let mut data = "Summary
     Attribute
     ---------
-    description";
-    
+    description"
+        .to_string();
+
+    clean_doc(&mut data);
+
     let mut doc = Reader::new(data);
     assert!(!is_at_section(&mut doc));
-
 
     assert_eq!(doc.read(), "Summary");
     assert!(is_at_section(&mut doc));
@@ -479,7 +514,7 @@ fn test_at_section() {
 
 #[test]
 fn test_read_to_next_section() {
-    let data = "Summary
+    let mut data = "Summary
     
 
     SummaryContinue
@@ -501,13 +536,55 @@ fn test_read_to_next_section() {
     
     See Also
     --------
-    content";
+    content"
+        .to_string();
+    clean_doc(&mut data);
+
     let mut doc = Reader::new(data);
-    assert_eq!(read_to_next_section(&mut doc), vec!["Summary", "", "SummaryContinue"]);
+    assert_eq!(
+        read_to_next_section(&mut doc),
+        vec!["Summary", "", "SummaryContinue"]
+    );
 }
 
-// #[test]
-// fn test_parse_doc() {
-//     let mut content = read_doc_content();
-//     parse_doc_string(&mut content);
-// }
+#[test]
+fn test_parse_doc() {
+    let mut content = read_doc_content();
+    let doc = parse_doc_string(&mut content);
+    assert_eq!(
+        doc.summary.clone().unwrap(),
+        "Server is the common user interface for long-running services adopting the best practice of Kubernetes."
+    );
+
+    assert_eq!(doc.attrs.len(), 3);
+    assert_eq!(doc.attrs[0].name, "workloadType".to_string());
+    assert_eq!(
+        doc.attrs[0].desc,
+        vec![
+            "Use this attribute to specify which kind of long-running service you want."
+                .to_string(),
+            "Valid values: Deployment, CafeDeployment.".to_string(),
+            "See also: kusion_models/core/v1/workload_metadata.k.".to_string()
+        ]
+    );
+
+    assert_eq!(doc.attrs[1].name, "name".to_string());
+    assert_eq!(
+        doc.attrs[1].desc,
+        vec![
+            "A Server-level attribute.".to_string(),
+            "The name of the long-running service.".to_string(),
+            "See also: kusion_models/core/v1/metadata.k.".to_string(),
+        ]
+    );
+
+    assert_eq!(doc.attrs[2].name, "labels".to_string());
+    assert_eq!(
+        doc.attrs[2].desc,
+        vec![
+            "A Server-level attribute.".to_string(),
+            "The labels of the long-running service.".to_string(),
+            "See also: kusion_models/core/v1/metadata.k.".to_string(),
+        ]
+    );
+}
