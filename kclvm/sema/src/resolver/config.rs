@@ -44,6 +44,7 @@ impl<'ctx> Resolver<'ctx> {
             ty,
             kind: ScopeObjectKind::Attribute,
             used: false,
+            doc: None,
         }
     }
 
@@ -418,6 +419,7 @@ impl<'ctx> Resolver<'ctx> {
                                     ty: val_ty.clone(),
                                     kind: ScopeObjectKind::Attribute,
                                     used: false,
+                                    doc: None,
                                 },
                             );
                             key_ty
@@ -451,6 +453,7 @@ impl<'ctx> Resolver<'ctx> {
                                     ty: val_ty.clone(),
                                     kind: ScopeObjectKind::Attribute,
                                     used: false,
+                                    doc: None,
                                 },
                             );
                         }

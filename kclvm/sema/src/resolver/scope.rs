@@ -30,6 +30,7 @@ pub struct ScopeObject {
     pub kind: ScopeObjectKind,
     /// Record whether has been used, for check unused imported module and var definition
     pub used: bool,
+    pub doc: Option<String>,
 }
 
 impl ScopeObject {
@@ -271,6 +272,7 @@ pub(crate) fn builtin_scope() -> Scope {
                 ty: Rc::new(builtin_func.clone()),
                 kind: ScopeObjectKind::Definition,
                 used: false,
+                doc: None,
             })),
         );
     }

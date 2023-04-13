@@ -280,7 +280,7 @@ fn parse_summary(doc: &mut Reader) -> Option<String> {
 }
 
 // the main logic of parsing the schema docstring
-fn parse_doc_string(ori: &String) -> Doc {
+pub(crate) fn parse_doc_string(ori: &String) -> Doc {
     let mut ori = ori.clone();
     clean_doc(&mut ori);
     let mut doc = Reader::new(ori);
@@ -297,9 +297,9 @@ fn parse_doc_string(ori: &String) -> Doc {
 }
 
 #[derive(Debug)]
-struct Doc {
-    summary: Option<String>,
-    attrs: Vec<Attribute>,
+pub(crate) struct Doc {
+    pub summary: Option<String>,
+    pub attrs: Vec<Attribute>,
 }
 
 impl Doc {
@@ -309,9 +309,9 @@ impl Doc {
 }
 
 #[derive(Debug)]
-struct Attribute {
-    name: String,
-    desc: Vec<String>,
+pub(crate) struct Attribute {
+    pub name: String,
+    pub desc: Vec<String>,
 }
 
 impl Attribute {

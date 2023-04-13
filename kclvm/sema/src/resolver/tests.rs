@@ -323,3 +323,47 @@ fn test_lint() {
         assert_eq!(d1, d2);
     }
 }
+
+#[test]
+fn test_resolve_schema_doc() {
+    let mut program = parse_program("./src/resolver/test_data/doc.k").unwrap();
+    let scope = resolve_program(&mut program);
+    let main_scope = scope
+        .scope_map
+        .get(kclvm_runtime::MAIN_PKG_PATH)
+        .unwrap()
+        .borrow_mut()
+        .clone();
+    let schema_scope = &main_scope.children[0];
+
+    let attrs_scope = &schema_scope.borrow().elems;
+
+    assert_eq!(
+        Some(
+            "Use this attribute to specify which kind of long-running service you want.
+Valid values: Deployment, CafeDeployment.
+See also: kusion_models/core/v1/workload_metadata.k."
+                .to_string()
+        ),
+        attrs_scope.get("workloadType").unwrap().borrow().doc
+    );
+    assert_eq!(
+        Some(
+            "A Server-level attribute.
+The name of the long-running service.
+See also: kusion_models/core/v1/metadata.k."
+                .to_string()
+        ),
+        attrs_scope.get("name").unwrap().borrow().doc
+    );
+    assert_eq!(
+        Some(
+            "A Server-level attribute.
+The labels of the long-running service.
+See also: kusion_models/core/v1/metadata.k."
+                .to_string()
+        ),
+        attrs_scope.get("labels").unwrap().borrow().doc
+    );
+
+}

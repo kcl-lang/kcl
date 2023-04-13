@@ -90,9 +90,10 @@ impl<'ctx> Resolver<'ctx> {
                                 name: name.to_string(),
                                 start,
                                 end,
-                                ty: Rc::new(Type::schema(schema_ty)),
+                                ty: Rc::new(Type::schema(schema_ty.clone())),
                                 kind: ScopeObjectKind::Definition,
                                 used: false,
+                                doc: Some(schema_ty.doc)
                             },
                         )
                     }
@@ -134,9 +135,10 @@ impl<'ctx> Resolver<'ctx> {
                                     name: schema_ty.name.to_string(),
                                     start,
                                     end,
-                                    ty: Rc::new(Type::schema(schema_ty)),
+                                    ty: Rc::new(Type::schema(schema_ty.clone())),
                                     kind: ScopeObjectKind::Definition,
                                     used: false,
+                                    doc: Some(schema_ty.doc),
                                 },
                             )
                         }
@@ -296,6 +298,7 @@ impl<'ctx> Resolver<'ctx> {
                     ty,
                     kind: ScopeObjectKind::Variable,
                     used: false,
+                    doc: None,
                 },
             );
         }
@@ -356,6 +359,7 @@ impl<'ctx> Resolver<'ctx> {
                 ty,
                 kind: ScopeObjectKind::Variable,
                 used: false,
+                doc: None,
             },
         );
     }

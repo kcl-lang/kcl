@@ -10,6 +10,7 @@ use crate::ty::{
     sup, DecoratorTarget, Parameter, Type, TypeInferMethods, TypeKind, RESERVED_TYPE_IDENTIFIERS,
 };
 
+use super::doc::parse_doc_string;
 use super::format::VALID_FORMAT_SPEC_SET;
 use super::scope::{ScopeKind, ScopeObject, ScopeObjectKind};
 use super::ty::ty_str_replace_pkgpath;
@@ -114,6 +115,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 ty: ty.clone(),
                 kind: ScopeObjectKind::TypeAlias,
                 used: false,
+                doc: None,
             },
         );
         ty
@@ -311,6 +313,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                         ty: self.any_ty(),
                         kind: ScopeObjectKind::Variable,
                         used: false,
+                        doc: None,
                     },
                 );
             }
@@ -347,8 +350,20 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             .borrow()
             .get_type_of_attr(name)
             .map_or(self.any_ty(), |ty| ty);
+
+        let schema_doc = schema.borrow().doc.clone() ;
+
         // Schema attribute decorators
         self.resolve_decorators(&schema_attr.decorators, DecoratorTarget::Attribute, name);
+
+        let doc = parse_doc_string(&schema_doc);
+        let doc_str = doc.attrs.iter().find_map(|attr| {
+            if attr.name == name {
+                Some(attr.desc.join("\n"))
+            } else {
+                None
+            }
+        });
         self.insert_object(
             name,
             ScopeObject {
@@ -358,6 +373,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 ty: expected_ty.clone(),
                 kind: ScopeObjectKind::Attribute,
                 used: false,
+                doc: doc_str,
             },
         );
         if let Some(value) = &schema_attr.value {
@@ -749,6 +765,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                     ty: self.any_ty(),
                     kind: ScopeObjectKind::Variable,
                     used: false,
+                    doc: None,
                 },
             );
         }
@@ -892,6 +909,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                     ty: param.ty.clone(),
                     kind: ScopeObjectKind::Parameter,
                     used: false,
+                    doc: None,
                 },
             )
         }
