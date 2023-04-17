@@ -288,7 +288,9 @@ impl KclvmRunner {
             warn_buffer,
         );
 
-        if n > 0 {
+        if n == 0 {
+            Ok("".to_string())
+        } else if n > 0 {
             let return_len = n;
             let s = std::str::from_utf8(&result[0..return_len as usize]).unwrap();
             wrap_msg_in_result(s)
