@@ -156,7 +156,9 @@ impl Command {
             x
         } else {
             std::env::current_exe().unwrap()
-        };
+        }
+        .canonicalize()
+        .expect("canonicalize kclvm executable path failed");
 
         let p = p.parent().unwrap().parent().unwrap();
         p.to_str().unwrap().to_string()
