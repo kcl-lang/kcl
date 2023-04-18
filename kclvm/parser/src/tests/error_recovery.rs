@@ -245,6 +245,18 @@ parse_module_snapshot! { schema_stmt_recovery_26, r#"
 schema A:
     check: 
         @"#}
+parse_module_snapshot! { schema_stmt_recovery_27, r#"
+schema A:
+    [.str]: str "#}
+parse_module_snapshot! { schema_stmt_recovery_28, r#"
+schema A:
+    [....str]: str "#}
+parse_module_snapshot! { schema_stmt_recovery_29, r#"
+schema A:
+    @"#}
+parse_module_snapshot! { schema_stmt_recovery_30, r#"
+schema A:
+    ."#}
 parse_module_snapshot! { rule_stmt_recovery_0, r#"rule"#}
 parse_module_snapshot! { rule_stmt_recovery_1, r#"rule A"#}
 parse_module_snapshot! { rule_stmt_recovery_2, r#"rule A["#}

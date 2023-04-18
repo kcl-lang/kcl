@@ -886,7 +886,10 @@ impl<'a> Parser<'a> {
         let mut body_index_signature = None;
 
         loop {
-            if self.token.kind == TokenKind::Dedent || self.token.is_keyword(kw::Check) {
+            let marker = self.mark();
+            if matches!(self.token.kind, TokenKind::Dedent | TokenKind::Eof)
+                || self.token.is_keyword(kw::Check)
+            {
                 break;
             }
             // assert stmt
@@ -942,7 +945,7 @@ impl<'a> Parser<'a> {
                             Into::<String>::into(self.token)
                         ),
                         self.token.span,
-                    )
+                    );
                 }
 
                 self.skip_newlines();
@@ -988,6 +991,7 @@ impl<'a> Parser<'a> {
                 // Error recovery from panic mode: Once an error is detected (the statement is None).
                 self.bump();
             }
+            self.drop(marker);
         }
 
         // check_block
