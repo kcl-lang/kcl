@@ -1,0 +1,142 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 251
+expression: "crate::tests::parsing_module_string(r#\"\nschema A:\n    [....str]: str \"#)"
+---
+Module {
+    filename: "",
+    pkg: "",
+    doc: "",
+    name: "",
+    body: [
+        Node {
+            node: Schema(
+                SchemaStmt {
+                    doc: "",
+                    name: Node {
+                        node: "A",
+                        filename: "",
+                        line: 2,
+                        column: 7,
+                        end_line: 2,
+                        end_column: 8,
+                    },
+                    parent_name: None,
+                    for_host_name: None,
+                    is_mixin: false,
+                    is_protocol: false,
+                    args: None,
+                    mixins: [],
+                    body: [
+                        Node {
+                            node: Expr(
+                                ExprStmt {
+                                    exprs: [
+                                        Node {
+                                            node: Missing(
+                                                MissingExpr,
+                                            ),
+                                            filename: "",
+                                            line: 3,
+                                            column: 5,
+                                            end_line: 3,
+                                            end_column: 8,
+                                        },
+                                    ],
+                                },
+                            ),
+                            filename: "",
+                            line: 3,
+                            column: 5,
+                            end_line: 3,
+                            end_column: 8,
+                        },
+                        Node {
+                            node: Expr(
+                                ExprStmt {
+                                    exprs: [
+                                        Node {
+                                            node: Selector(
+                                                SelectorExpr {
+                                                    value: Node {
+                                                        node: Missing(
+                                                            MissingExpr,
+                                                        ),
+                                                        filename: "",
+                                                        line: 3,
+                                                        column: 8,
+                                                        end_line: 3,
+                                                        end_column: 9,
+                                                    },
+                                                    attr: Node {
+                                                        node: Identifier {
+                                                            names: [
+                                                                "str",
+                                                            ],
+                                                            pkgpath: "",
+                                                            ctx: Load,
+                                                        },
+                                                        filename: "",
+                                                        line: 3,
+                                                        column: 9,
+                                                        end_line: 3,
+                                                        end_column: 12,
+                                                    },
+                                                    ctx: Load,
+                                                    has_question: false,
+                                                },
+                                            ),
+                                            filename: "",
+                                            line: 3,
+                                            column: 8,
+                                            end_line: 3,
+                                            end_column: 12,
+                                        },
+                                    ],
+                                },
+                            ),
+                            filename: "",
+                            line: 3,
+                            column: 8,
+                            end_line: 3,
+                            end_column: 12,
+                        },
+                        Node {
+                            node: Expr(
+                                ExprStmt {
+                                    exprs: [
+                                        Node {
+                                            node: Missing(
+                                                MissingExpr,
+                                            ),
+                                            filename: "",
+                                            line: 3,
+                                            column: 12,
+                                            end_line: 3,
+                                            end_column: 13,
+                                        },
+                                    ],
+                                },
+                            ),
+                            filename: "",
+                            line: 3,
+                            column: 12,
+                            end_line: 3,
+                            end_column: 13,
+                        },
+                    ],
+                    decorators: [],
+                    checks: [],
+                    index_signature: None,
+                },
+            ),
+            filename: "",
+            line: 2,
+            column: 0,
+            end_line: 3,
+            end_column: 19,
+        },
+    ],
+    comments: [],
+}
+
