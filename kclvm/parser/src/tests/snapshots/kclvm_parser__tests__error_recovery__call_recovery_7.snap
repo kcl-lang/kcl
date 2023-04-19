@@ -1,0 +1,90 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 144
+expression: "crate::tests::parsing_expr_string(r#\"a(type=\"list\", \"key\")\"#)"
+---
+Node {
+    node: Call(
+        CallExpr {
+            func: Node {
+                node: Identifier(
+                    Identifier {
+                        names: [
+                            "a",
+                        ],
+                        pkgpath: "",
+                        ctx: Load,
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 0,
+                end_line: 1,
+                end_column: 1,
+            },
+            args: [
+                Node {
+                    node: StringLit(
+                        StringLit {
+                            is_long_string: false,
+                            raw_value: "\"key\"",
+                            value: "key",
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 15,
+                    end_line: 1,
+                    end_column: 20,
+                },
+            ],
+            keywords: [
+                Node {
+                    node: Keyword {
+                        arg: Node {
+                            node: Identifier {
+                                names: [
+                                    "type",
+                                ],
+                                pkgpath: "",
+                                ctx: Load,
+                            },
+                            filename: "",
+                            line: 1,
+                            column: 2,
+                            end_line: 1,
+                            end_column: 6,
+                        },
+                        value: Some(
+                            Node {
+                                node: StringLit(
+                                    StringLit {
+                                        is_long_string: false,
+                                        raw_value: "\"list\"",
+                                        value: "list",
+                                    },
+                                ),
+                                filename: "",
+                                line: 1,
+                                column: 7,
+                                end_line: 1,
+                                end_column: 13,
+                            },
+                        ),
+                    },
+                    filename: "",
+                    line: 1,
+                    column: 2,
+                    end_line: 1,
+                    end_column: 13,
+                },
+            ],
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 21,
+}
+
