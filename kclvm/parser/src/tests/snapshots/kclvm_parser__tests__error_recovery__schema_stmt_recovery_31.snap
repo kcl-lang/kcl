@@ -1,0 +1,84 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 262
+expression: "crate::tests::parsing_module_string(r#\"\nschema A:\n    [str]: str\n    [str]: int\"#)"
+---
+Module {
+    filename: "",
+    pkg: "",
+    doc: "",
+    name: "",
+    body: [
+        Node {
+            node: Schema(
+                SchemaStmt {
+                    doc: "",
+                    name: Node {
+                        node: "A",
+                        filename: "",
+                        line: 2,
+                        column: 7,
+                        end_line: 2,
+                        end_column: 8,
+                    },
+                    parent_name: None,
+                    for_host_name: None,
+                    is_mixin: false,
+                    is_protocol: false,
+                    args: None,
+                    mixins: [],
+                    body: [],
+                    decorators: [],
+                    checks: [],
+                    index_signature: Some(
+                        Node {
+                            node: SchemaIndexSignature {
+                                key_name: None,
+                                key_type: Node {
+                                    node: "str",
+                                    filename: "",
+                                    line: 4,
+                                    column: 5,
+                                    end_line: 4,
+                                    end_column: 8,
+                                },
+                                value_type: Node {
+                                    node: "int",
+                                    filename: "",
+                                    line: 4,
+                                    column: 11,
+                                    end_line: 4,
+                                    end_column: 14,
+                                },
+                                value: None,
+                                any_other: false,
+                                value_ty: Node {
+                                    node: Basic(
+                                        Int,
+                                    ),
+                                    filename: "",
+                                    line: 4,
+                                    column: 11,
+                                    end_line: 4,
+                                    end_column: 14,
+                                },
+                            },
+                            filename: "",
+                            line: 4,
+                            column: 4,
+                            end_line: 4,
+                            end_column: 14,
+                        },
+                    ),
+                },
+            ),
+            filename: "",
+            line: 2,
+            column: 0,
+            end_line: 4,
+            end_column: 14,
+        },
+    ],
+    comments: [],
+}
+

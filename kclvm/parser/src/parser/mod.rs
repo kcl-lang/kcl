@@ -26,8 +26,8 @@ mod ty;
 
 use crate::session::ParseSession;
 
-use compiler_base_span::span::new_byte_pos;
-use kclvm_ast::ast::{Comment, NodeRef};
+use compiler_base_span::span::{new_byte_pos, BytePos};
+use kclvm_ast::ast::{Comment, NodeRef, PosTuple};
 use kclvm_ast::token::{CommentKind, Token, TokenKind};
 use kclvm_ast::token_stream::{Cursor, TokenStream};
 use kclvm_span::symbol::Symbol;
@@ -71,13 +71,16 @@ impl<'a> Parser<'a> {
         parser
     }
 
-    pub(crate) fn token_span_pos(
-        &mut self,
-        lo_tok: Token,
-        hi_tok: Token,
-    ) -> (String, u64, u64, u64, u64) {
-        let lo = self.sess.lookup_char_pos(lo_tok.span.lo());
-        let hi = self.sess.lookup_char_pos(hi_tok.span.hi());
+    /// Get an AST position from the token pair (lo_tok, hi_tok).
+    #[inline]
+    pub(crate) fn token_span_pos(&mut self, lo_tok: Token, hi_tok: Token) -> PosTuple {
+        self.byte_pos_to_pos(lo_tok.span.lo(), hi_tok.span.hi())
+    }
+
+    /// Get an AST position from the byte pos pair (lo, hi).
+    pub(crate) fn byte_pos_to_pos(&mut self, lo: BytePos, hi: BytePos) -> PosTuple {
+        let lo = self.sess.lookup_char_pos(lo);
+        let hi = self.sess.lookup_char_pos(hi);
 
         let filename: String = format!("{}", lo.file.name.prefer_remapped());
         (
@@ -96,6 +99,12 @@ impl<'a> Parser<'a> {
         if let Some(token) = next {
             self.token = token
         }
+    }
+
+    /// Whether the parser has the next token in the token stream.
+    #[inline]
+    pub(crate) fn has_next(&mut self) -> bool {
+        self.cursor.next().is_some()
     }
 
     pub(crate) fn bump_keyword(&mut self, kw: Symbol) {

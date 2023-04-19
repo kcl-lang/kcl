@@ -1,7 +1,7 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 151
-expression: "crate::tests::parsing_expr_string(r#\"'${}'\"#)"
+assertion_line: 156
+expression: "crate::tests::parsing_expr_string(r#\"'${a: json}'\"#)"
 ---
 Node {
     node: JoinedString(
@@ -13,14 +13,20 @@ Node {
                         FormattedValue {
                             is_long_string: false,
                             value: Node {
-                                node: Missing(
-                                    MissingExpr,
+                                node: Identifier(
+                                    Identifier {
+                                        names: [
+                                            "a",
+                                        ],
+                                        pkgpath: "",
+                                        ctx: Load,
+                                    },
                                 ),
                                 filename: "",
                                 line: 1,
                                 column: 3,
                                 end_line: 1,
-                                end_column: 3,
+                                end_column: 4,
                             },
                             format_spec: None,
                         },
@@ -29,16 +35,16 @@ Node {
                     line: 1,
                     column: 3,
                     end_line: 1,
-                    end_column: 3,
+                    end_column: 10,
                 },
             ],
-            raw_value: "'${}'",
+            raw_value: "'${a: json}'",
         },
     ),
     filename: "",
     line: 1,
     column: 0,
     end_line: 1,
-    end_column: 5,
+    end_column: 12,
 }
 

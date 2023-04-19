@@ -30,7 +30,12 @@ fn check_parsing_expr(src: &str, expect: Expect) {
 }
 
 fn check_parsing_file_ast_json(filename: &str, src: &str, expect: Expect) {
-    let m = crate::parse_file(filename, Some(src.into())).unwrap();
+    let m = crate::parse_file_with_global_session(
+        Arc::new(ParseSession::default()),
+        filename,
+        Some(src.into()),
+    )
+    .unwrap();
     let actual = serde_json::ser::to_string(&m).unwrap();
     let actual = format!("{actual}\n");
     expect.assert_eq(&actual)
@@ -1131,13 +1136,13 @@ fn test_parse_joined_string() {
     check_parsing_expr(
         r####"'${123+200}'"####,
         expect![[r#"
-        Node { node: JoinedString(JoinedString { is_long_string: false, values: [Node { node: FormattedValue(FormattedValue { is_long_string: false, value: Node { node: Binary(BinaryExpr { left: Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(123) }), filename: "", line: 1, column: 3, end_line: 1, end_column: 6 }, op: Bin(Add), right: Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(200) }), filename: "", line: 1, column: 7, end_line: 1, end_column: 10 } }), filename: "", line: 1, column: 3, end_line: 1, end_column: 10 }, format_spec: None }), filename: "", line: 1, column: 1, end_line: 1, end_column: 1 }], raw_value: "'${123+200}'" }), filename: "", line: 1, column: 0, end_line: 1, end_column: 12 }
+        Node { node: JoinedString(JoinedString { is_long_string: false, values: [Node { node: FormattedValue(FormattedValue { is_long_string: false, value: Node { node: Binary(BinaryExpr { left: Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(123) }), filename: "", line: 1, column: 3, end_line: 1, end_column: 6 }, op: Bin(Add), right: Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(200) }), filename: "", line: 1, column: 7, end_line: 1, end_column: 10 } }), filename: "", line: 1, column: 3, end_line: 1, end_column: 10 }, format_spec: None }), filename: "", line: 1, column: 3, end_line: 1, end_column: 10 }], raw_value: "'${123+200}'" }), filename: "", line: 1, column: 0, end_line: 1, end_column: 12 }
         "#]],
     );
     check_parsing_expr(
         r####"'abc${a+1}cde'"####,
         expect![[r#"
-        Node { node: JoinedString(JoinedString { is_long_string: false, values: [Node { node: StringLit(StringLit { is_long_string: false, raw_value: "abc", value: "abc" }), filename: "", line: 1, column: 1, end_line: 1, end_column: 1 }, Node { node: FormattedValue(FormattedValue { is_long_string: false, value: Node { node: Binary(BinaryExpr { left: Node { node: Identifier(Identifier { names: ["a"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 6, end_line: 1, end_column: 7 }, op: Bin(Add), right: Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(1) }), filename: "", line: 1, column: 8, end_line: 1, end_column: 9 } }), filename: "", line: 1, column: 6, end_line: 1, end_column: 9 }, format_spec: None }), filename: "", line: 1, column: 1, end_line: 1, end_column: 1 }, Node { node: StringLit(StringLit { is_long_string: false, raw_value: "cde", value: "cde" }), filename: "", line: 1, column: 1, end_line: 1, end_column: 1 }], raw_value: "'abc${a+1}cde'" }), filename: "", line: 1, column: 0, end_line: 1, end_column: 14 }
+        Node { node: JoinedString(JoinedString { is_long_string: false, values: [Node { node: StringLit(StringLit { is_long_string: false, raw_value: "abc", value: "abc" }), filename: "", line: 1, column: 1, end_line: 1, end_column: 1 }, Node { node: FormattedValue(FormattedValue { is_long_string: false, value: Node { node: Binary(BinaryExpr { left: Node { node: Identifier(Identifier { names: ["a"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 6, end_line: 1, end_column: 7 }, op: Bin(Add), right: Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(1) }), filename: "", line: 1, column: 8, end_line: 1, end_column: 9 } }), filename: "", line: 1, column: 6, end_line: 1, end_column: 9 }, format_spec: None }), filename: "", line: 1, column: 6, end_line: 1, end_column: 9 }, Node { node: StringLit(StringLit { is_long_string: false, raw_value: "cde", value: "cde" }), filename: "", line: 1, column: 1, end_line: 1, end_column: 1 }], raw_value: "'abc${a+1}cde'" }), filename: "", line: 1, column: 0, end_line: 1, end_column: 14 }
         "#]],
     );
 }
