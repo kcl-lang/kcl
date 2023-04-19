@@ -672,7 +672,7 @@ impl<'ctx> Resolver<'ctx> {
                 self.handler.add_error(
                     ErrorKind::NameError,
                     &[Message {
-                        pos: pos.clone(),
+                        pos: mixin.get_pos(),
                         style: Style::LineAndColumn,
                         message: format!(
                             "a valid mixin name should end with 'Mixin', got '{}'",
@@ -695,7 +695,10 @@ impl<'ctx> Resolver<'ctx> {
                         &[Message {
                             pos: mixin.get_pos(),
                             style: Style::LineAndColumn,
-                            message: format!("illegal schema mixin object type '{}'", ty.ty_str()),
+                            message: format!(
+                                "illegal schema mixin object type, expected mixin, got '{}'",
+                                ty.ty_str()
+                            ),
                             note: None,
                         }],
                     );
