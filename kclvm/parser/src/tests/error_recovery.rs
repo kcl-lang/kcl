@@ -141,6 +141,7 @@ parse_expr_snapshot! { call_recovery_3, r#"a.b(a=1,2)"# }
 parse_expr_snapshot! { call_recovery_4, r#"a(a.ba=1,2)"# }
 parse_expr_snapshot! { call_recovery_5, r#"a(a.b+a=1,2)"# }
 parse_expr_snapshot! { call_recovery_6, r#"a(a-1.b=1)"# }
+parse_expr_snapshot! { call_recovery_7, r#"a(type="list", "key")"# }
 parse_expr_snapshot! { schema_recovery_0, r#"s {"# }
 parse_expr_snapshot! { schema_recovery_1, r#"s {a=1"# }
 parse_expr_snapshot! { schema_recovery_2, r#"s.0 {a=1}"# }
