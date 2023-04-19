@@ -82,22 +82,25 @@ fn test_pkg_init_in_schema_resolve() {
 
 #[test]
 fn test_resolve_program_fail() {
+    let work_dir = "./src/resolver/test_fail_data/";
     let cases = &[
-        "./src/resolver/test_fail_data/attr.k",
-        "./src/resolver/test_fail_data/cannot_find_module.k",
-        "./src/resolver/test_fail_data/comp_clause_error_0.k",
-        "./src/resolver/test_fail_data/comp_clause_error_1.k",
-        "./src/resolver/test_fail_data/comp_clause_error_2.k",
-        "./src/resolver/test_fail_data/config_expr.k",
-        "./src/resolver/test_fail_data/module_optional_select.k",
-        "./src/resolver/test_fail_data/mutable_error_0.k",
-        "./src/resolver/test_fail_data/mutable_error_1.k",
-        "./src/resolver/test_fail_data/unique_key_error_0.k",
-        "./src/resolver/test_fail_data/unique_key_error_1.k",
-        "./src/resolver/test_fail_data/unmatched_args.k",
+        "attr.k",
+        "cannot_find_module.k",
+        "comp_clause_error_0.k",
+        "comp_clause_error_1.k",
+        "comp_clause_error_2.k",
+        "config_expr.k",
+        "invalid_mixin_0.k",
+        "module_optional_select.k",
+        "mutable_error_0.k",
+        "mutable_error_1.k",
+        "unique_key_error_0.k",
+        "unique_key_error_1.k",
+        "unmatched_args.k",
     ];
     for case in cases {
-        let mut program = parse_program(case).unwrap();
+        let path = Path::new(work_dir).join(case);
+        let mut program = parse_program(&path.to_string_lossy()).unwrap();
         let scope = resolve_program(&mut program);
         assert!(scope.handler.diagnostics.len() > 0, "{}", case);
     }
