@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 #![allow(unused_macros)]
 
-use compiler_base_span::{span::new_byte_pos, BytePos};
+use compiler_base_span::{span::new_byte_pos, BytePos, Span};
 use kclvm_ast::token::{DelimToken, LitKind, Token, TokenKind};
 use kclvm_ast::{ast::*, expr_as, node_ref};
 use kclvm_span::symbol::kw;
@@ -931,6 +931,12 @@ impl<'a> Parser<'a> {
                 let (index_sig, or_list_expr) = self.parse_schema_index_signature_or_list();
 
                 if let Some(x) = index_sig {
+                    if body_index_signature.is_some() {
+                        self.sess.struct_span_error(
+                            "duplicate schema index signature definitions, only one is allowed in the schema",
+                            token.span,
+                        );
+                    }
                     body_index_signature =
                         Some(node_ref!(x, self.token_span_pos(token, self.prev_token)));
                 } else if let Some(list_expr) = or_list_expr {
@@ -1455,15 +1461,18 @@ impl<'a> Parser<'a> {
 
         fn parse_expr(this: &mut Parser, src: &str, start_pos: BytePos) -> NodeRef<Expr> {
             use crate::lexer::parse_token_streams;
-
+            // The string interpolation end pos.
+            let end_pos = start_pos + new_byte_pos(src.len() as u32);
+            // Skip the start '${' and end '}'
             let src = &src[2..src.len() - 1];
             if src.is_empty() {
                 this.sess.struct_span_error(
                     "string interpolation expression can not be empty",
-                    this.token.span,
+                    Span::new(start_pos, end_pos),
                 );
             }
 
+            // Expression start pos, and skip the start '${'.
             let start_pos = start_pos + new_byte_pos(2);
 
             let stream = parse_token_streams(this.sess, src, start_pos);
@@ -1488,6 +1497,7 @@ impl<'a> Parser<'a> {
             };
 
             if let TokenKind::Colon = parser.token.kind {
+                // bump the format spec interval token `:`.
                 parser.bump();
                 if let TokenKind::DocComment(_) = parser.token.kind {
                     let format_spec = parser.sess.span_to_snippet(parser.token.span);
@@ -1498,9 +1508,28 @@ impl<'a> Parser<'a> {
                         parser.token.span,
                     );
                 }
+                // Whether there is syntax error or not, bump the joined string spec token.
+                parser.bump();
             }
 
-            node_ref!(Expr::FormattedValue(formatted_value))
+            // The token pair (lo, hi).
+            let lo = start_pos;
+            let hi = start_pos + new_byte_pos(src.len() as u32);
+            // Bump the expression endline.
+            parser.skip_newlines();
+            // If there are still remaining tokens, it indicates that an
+            // unexpected expression has occurred here.
+            if !src.is_empty() && parser.has_next() {
+                parser.sess.struct_span_error(
+                    &format!("invalid string interpolation expression: '{src}'"),
+                    Span::new(lo, hi),
+                )
+            }
+
+            node_ref!(
+                Expr::FormattedValue(formatted_value),
+                parser.byte_pos_to_pos(lo, hi)
+            )
         }
 
         let data = s.value.as_str();

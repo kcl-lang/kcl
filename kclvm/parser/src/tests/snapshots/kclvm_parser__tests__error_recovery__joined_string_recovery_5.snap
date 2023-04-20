@@ -1,7 +1,7 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 152
-expression: "crate::tests::parsing_expr_string(r#\"'${a +}'\"#)"
+assertion_line: 155
+expression: "crate::tests::parsing_expr_string(r#\"'${a + 1 = }'\"#)"
 ---
 Node {
     node: JoinedString(
@@ -35,14 +35,19 @@ Node {
                                             Add,
                                         ),
                                         right: Node {
-                                            node: Missing(
-                                                MissingExpr,
+                                            node: NumberLit(
+                                                NumberLit {
+                                                    binary_suffix: None,
+                                                    value: Int(
+                                                        1,
+                                                    ),
+                                                },
                                             ),
                                             filename: "",
                                             line: 1,
-                                            column: 6,
+                                            column: 7,
                                             end_line: 1,
-                                            end_column: 6,
+                                            end_column: 8,
                                         },
                                     },
                                 ),
@@ -50,7 +55,7 @@ Node {
                                 line: 1,
                                 column: 3,
                                 end_line: 1,
-                                end_column: 6,
+                                end_column: 8,
                             },
                             format_spec: None,
                         },
@@ -59,16 +64,16 @@ Node {
                     line: 1,
                     column: 3,
                     end_line: 1,
-                    end_column: 6,
+                    end_column: 11,
                 },
             ],
-            raw_value: "'${a +}'",
+            raw_value: "'${a + 1 = }'",
         },
     ),
     filename: "",
     line: 1,
     column: 0,
     end_line: 1,
-    end_column: 8,
+    end_column: 13,
 }
 

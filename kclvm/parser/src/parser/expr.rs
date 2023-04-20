@@ -1964,13 +1964,15 @@ impl<'a> Parser<'a> {
         let mut has_keyword = false;
 
         loop {
+            // Record the argument expression start token.
+            let token = self.token;
             match self.parse_argument_expr() {
                 Either::Left(expr) => {
                     args.push(Box::new(expr));
                     if has_keyword {
                         self.sess.struct_span_error(
                             "positional argument follows keyword argument",
-                            self.token.span,
+                            token.span,
                         )
                     }
                 }

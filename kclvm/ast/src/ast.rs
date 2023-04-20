@@ -44,16 +44,19 @@ use super::token;
 use crate::{node_ref, pos::ContainsPos};
 use kclvm_error::Position;
 
+/// PosTuple denotes the tuple `(filename, line, column, end_line, end_column)`.
+pub type PosTuple = (String, u64, u64, u64, u64);
+/// Pos denotes the struct tuple `(filename, line, column, end_line, end_column)`.
 pub struct Pos(String, u64, u64, u64, u64);
 
-impl From<(String, u64, u64, u64, u64)> for Pos {
-    fn from(value: (String, u64, u64, u64, u64)) -> Self {
+impl From<PosTuple> for Pos {
+    fn from(value: PosTuple) -> Self {
         Self(value.0, value.1, value.2, value.3, value.4)
     }
 }
 
-impl Into<(String, u64, u64, u64, u64)> for Pos {
-    fn into(self) -> (String, u64, u64, u64, u64) {
+impl Into<PosTuple> for Pos {
+    fn into(self) -> PosTuple {
         (self.0, self.1, self.2, self.3, self.4)
     }
 }
@@ -128,7 +131,7 @@ impl<T> Node<T> {
         }
     }
 
-    pub fn node_with_pos(node: T, pos: (String, u64, u64, u64, u64)) -> Self {
+    pub fn node_with_pos(node: T, pos: PosTuple) -> Self {
         Self {
             node,
             filename: pos.0.clone(),
@@ -139,7 +142,7 @@ impl<T> Node<T> {
         }
     }
 
-    pub fn pos(&self) -> (String, u64, u64, u64, u64) {
+    pub fn pos(&self) -> PosTuple {
         (
             self.filename.clone(),
             self.line,
@@ -149,7 +152,7 @@ impl<T> Node<T> {
         )
     }
 
-    pub fn set_pos(&mut self, pos: (String, u64, u64, u64, u64)) {
+    pub fn set_pos(&mut self, pos: PosTuple) {
         self.filename = pos.0.clone();
         self.line = pos.1;
         self.column = pos.2;

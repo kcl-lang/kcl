@@ -141,6 +141,7 @@ parse_expr_snapshot! { call_recovery_3, r#"a.b(a=1,2)"# }
 parse_expr_snapshot! { call_recovery_4, r#"a(a.ba=1,2)"# }
 parse_expr_snapshot! { call_recovery_5, r#"a(a.b+a=1,2)"# }
 parse_expr_snapshot! { call_recovery_6, r#"a(a-1.b=1)"# }
+parse_expr_snapshot! { call_recovery_7, r#"a(type="list", "key")"# }
 parse_expr_snapshot! { schema_recovery_0, r#"s {"# }
 parse_expr_snapshot! { schema_recovery_1, r#"s {a=1"# }
 parse_expr_snapshot! { schema_recovery_2, r#"s.0 {a=1}"# }
@@ -152,6 +153,8 @@ parse_expr_snapshot! { joined_string_recovery_0, r#"'${}'"# }
 parse_expr_snapshot! { joined_string_recovery_1, r#"'${a +}'"# }
 parse_expr_snapshot! { joined_string_recovery_2, r#"'${(a +}'"# }
 parse_expr_snapshot! { joined_string_recovery_3, r#"'${a'"# }
+parse_expr_snapshot! { joined_string_recovery_5, r#"'${a + 1 = }'"# }
+parse_expr_snapshot! { joined_string_recovery_6, r#"'${a: json}'"# }
 
 /* Stmt error recovery */
 
@@ -257,6 +260,10 @@ schema A:
 parse_module_snapshot! { schema_stmt_recovery_30, r#"
 schema A:
     ."#}
+parse_module_snapshot! { schema_stmt_recovery_31, r#"
+schema A:
+    [str]: str
+    [str]: int"#}
 parse_module_snapshot! { rule_stmt_recovery_0, r#"rule"#}
 parse_module_snapshot! { rule_stmt_recovery_1, r#"rule A"#}
 parse_module_snapshot! { rule_stmt_recovery_2, r#"rule A["#}
