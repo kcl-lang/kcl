@@ -1,5 +1,0 @@
-key = "age"
-alice = Person {
-    name: "Alice"
-    "${key}": 18
-}

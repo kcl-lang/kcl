@@ -1,2 +1,0 @@
-schema UnionType:
-    a?: int

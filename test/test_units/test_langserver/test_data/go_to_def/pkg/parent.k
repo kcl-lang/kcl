@@ -1,2 +1,0 @@
-schema Parent:
-    name: str

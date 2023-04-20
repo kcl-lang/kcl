@@ -1,2 +1,0 @@
-schema SomeProtocol:
-    data: int
