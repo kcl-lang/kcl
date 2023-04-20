@@ -1,6 +1,0 @@
-schema Config:
-    data?: int
-
-config1 = config2 = Config {
-    data: 1
-}

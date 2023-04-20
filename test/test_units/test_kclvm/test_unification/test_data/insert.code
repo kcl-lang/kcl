@@ -1,4 +1,0 @@
-person = Person {
-    info = {"key2": "value2"}
-    hc[0] += 4
-}

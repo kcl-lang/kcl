@@ -1,2 +1,0 @@
-schema TestOfMixin:
-    age?: int

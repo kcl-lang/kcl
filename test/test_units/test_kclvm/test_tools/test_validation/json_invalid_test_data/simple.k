@@ -1,1 +1,0 @@
-assert typeof(value) == "int"

@@ -1,3 +1,0 @@
-{
-    "code": "\nschema Person:\n    key: str\n    val:Str\n    check:\n        \"value\" in key  # 'key' is required and 'key' must contain \"value\"\n"
-}

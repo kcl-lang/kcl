@@ -1,2 +1,0 @@
-schema Data:
-    [int]: int
