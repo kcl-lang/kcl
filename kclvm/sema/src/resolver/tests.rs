@@ -365,5 +365,4 @@ See also: kusion_models/core/v1/metadata.k."
         ),
         attrs_scope.get("labels").unwrap().borrow().doc
     );
-
 }

@@ -93,7 +93,7 @@ impl<'ctx> Resolver<'ctx> {
                                 ty: Rc::new(Type::schema(schema_ty.clone())),
                                 kind: ScopeObjectKind::Definition,
                                 used: false,
-                                doc: Some(schema_ty.doc)
+                                doc: Some(schema_ty.doc),
                             },
                         )
                     }

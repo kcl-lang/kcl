@@ -2,6 +2,7 @@ mod arg;
 mod attr;
 mod calculation;
 mod config;
+mod doc;
 mod format;
 pub mod global;
 mod import;
@@ -13,7 +14,6 @@ pub mod scope;
 mod ty;
 mod ty_alias;
 mod var;
-mod doc;
 
 #[cfg(test)]
 mod tests;

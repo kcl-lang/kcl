@@ -127,7 +127,7 @@ impl Reader {
         fn is_unindented(line: &str) -> bool {
             return line.trim().len() > 0 && line.trim_start().len() == line.len();
         }
-        
+
         return self.read_to_condition(&is_unindented);
     }
 
@@ -249,7 +249,7 @@ fn parse_attr_list(content: String) -> Vec<Attribute> {
             let arg_name = parts[0];
 
             let desc_lines = r
-            .read_to_next_unindented_line()
+                .read_to_next_unindented_line()
                 .iter()
                 .map(|s| s.trim().to_string())
                 .collect();

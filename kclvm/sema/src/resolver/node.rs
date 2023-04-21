@@ -351,7 +351,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             .get_type_of_attr(name)
             .map_or(self.any_ty(), |ty| ty);
 
-        let schema_doc = schema.borrow().doc.clone() ;
+        let schema_doc = schema.borrow().doc.clone();
 
         // Schema attribute decorators
         self.resolve_decorators(&schema_attr.decorators, DecoratorTarget::Attribute, name);
