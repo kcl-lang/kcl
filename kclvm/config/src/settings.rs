@@ -1,7 +1,10 @@
 // Copyright 2021 The KCL Authors. All rights reserved.
 use anyhow::Result;
-use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, path::PathBuf};
+use serde::{
+    de::{DeserializeSeed, Error, MapAccess, SeqAccess, Unexpected, Visitor},
+    Deserialize, Serialize,
+};
+use std::{collections::HashMap, ops::Deref, path::PathBuf};
 
 /// Default settings file `kcl.yaml`
 pub const DEFAULT_SETTING_FILE: &str = "kcl.yaml";
@@ -120,7 +123,216 @@ pub struct KeyValuePair {
     /// key is the top level argument key.
     pub key: String,
     // Note: here is a normal json string including int, float, string, bool list and dict.
-    pub value: String,
+    pub value: ValueString,
+}
+
+#[macro_export]
+macro_rules! tri {
+    ($e:expr $(,)?) => {
+        match $e {
+            core::result::Result::Ok(val) => val,
+            core::result::Result::Err(err) => return core::result::Result::Err(err),
+        }
+    };
+}
+
+/// MapStringKey denotes the map deserialize key.
+struct MapStringKey;
+impl<'de> DeserializeSeed<'de> for MapStringKey {
+    type Value = String;
+
+    fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        deserializer.deserialize_str(self)
+    }
+}
+
+impl<'de> Visitor<'de> for MapStringKey {
+    type Value = String;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_str("a string key")
+    }
+
+    fn visit_str<E>(self, s: &str) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(s.to_owned())
+    }
+
+    fn visit_string<E>(self, s: String) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(s)
+    }
+}
+
+/// Top level argument value string.
+/// Note: here is a normal json string including int, float, string, bool list and dict.
+#[derive(Serialize, Debug, Clone, Default, PartialEq, Eq)]
+pub struct ValueString(pub String);
+
+impl Deref for ValueString {
+    type Target = String;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl From<String> for ValueString {
+    fn from(value: String) -> Self {
+        Self(value)
+    }
+}
+
+impl From<&str> for ValueString {
+    fn from(value: &str) -> Self {
+        Self(value.to_string())
+    }
+}
+
+impl<'de> Deserialize<'de> for ValueString {
+    #[inline]
+    fn deserialize<D>(deserializer: D) -> Result<ValueString, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct ValueVisitor;
+
+        impl<'de> Visitor<'de> for ValueVisitor {
+            type Value = ValueString;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("any valid JSON value or KCL value expression")
+            }
+
+            #[inline]
+            fn visit_bool<E>(self, value: bool) -> Result<Self::Value, E>
+            where
+                E: Error,
+            {
+                Ok(ValueString(serde_json::to_string(&value).map_err(
+                    |_| Error::invalid_type(Unexpected::Bool(value), &self),
+                )?))
+            }
+
+            #[inline]
+            fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
+            where
+                E: Error,
+            {
+                Ok(ValueString(serde_json::to_string(&value).map_err(
+                    |_| Error::invalid_type(Unexpected::Signed(value), &self),
+                )?))
+            }
+
+            #[inline]
+            fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
+            where
+                E: Error,
+            {
+                Ok(ValueString(serde_json::to_string(&value).map_err(
+                    |_| Error::invalid_type(Unexpected::Unsigned(value), &self),
+                )?))
+            }
+
+            #[inline]
+            fn visit_f64<E>(self, value: f64) -> Result<Self::Value, E>
+            where
+                E: Error,
+            {
+                Ok(ValueString(serde_json::to_string(&value).map_err(
+                    |_| Error::invalid_type(Unexpected::Float(value), &self),
+                )?))
+            }
+
+            #[inline]
+            fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                self.visit_string(String::from(value))
+            }
+
+            #[inline]
+            fn visit_string<E>(self, value: String) -> Result<Self::Value, E>
+            where
+                E: Error,
+            {
+                Ok(ValueString(serde_json::to_string(&value).map_err(
+                    |_| Error::invalid_type(Unexpected::Str(&value), &self),
+                )?))
+            }
+
+            #[inline]
+            fn visit_none<E>(self) -> Result<Self::Value, E>
+            where
+                E: Error,
+            {
+                Ok(ValueString("null".into()))
+            }
+
+            #[inline]
+            fn visit_some<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+                D::Error: Error,
+            {
+                Deserialize::deserialize(deserializer)
+            }
+
+            #[inline]
+            fn visit_unit<E>(self) -> Result<Self::Value, E> {
+                Ok(ValueString("null".into()))
+            }
+
+            #[inline]
+            fn visit_seq<V>(self, mut visitor: V) -> Result<Self::Value, V::Error>
+            where
+                V: SeqAccess<'de>,
+                V::Error: Error,
+            {
+                let mut vec: Vec<serde_json::Value> = Vec::new();
+
+                while let Some(elem) = tri!(visitor.next_element()) {
+                    vec.push(elem);
+                }
+
+                Ok(ValueString(serde_json::to_string(&vec).map_err(|_| {
+                    Error::invalid_type(Unexpected::Seq, &self)
+                })?))
+            }
+
+            fn visit_map<V>(self, mut visitor: V) -> Result<Self::Value, V::Error>
+            where
+                V: MapAccess<'de>,
+                V::Error: Error,
+            {
+                match visitor.next_key_seed(MapStringKey)? {
+                    Some(first_key) => {
+                        let mut values: HashMap<String, serde_json::Value> = HashMap::new();
+
+                        values.insert(first_key, tri!(visitor.next_value()));
+                        while let Some((key, value)) = tri!(visitor.next_entry()) {
+                            values.insert(key, value);
+                        }
+
+                        Ok(ValueString(serde_json::to_string(&values).map_err(
+                            |_| Error::invalid_type(Unexpected::Map, &self),
+                        )?))
+                    }
+                    None => Ok(ValueString("{}".into())),
+                }
+            }
+        }
+
+        deserializer.deserialize_any(ValueVisitor)
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -207,7 +419,7 @@ mod settings_test {
             }
         }
         if let Some(kcl_options) = settings.kcl_options {
-            assert!(kcl_options.len() == 2);
+            assert!(kcl_options.len() == 6);
         }
     }
 
@@ -234,7 +446,7 @@ mod settings_test {
             }
         }
         if let Some(kcl_options) = settings.kcl_options {
-            assert!(kcl_options.len() == 4);
+            assert!(kcl_options.len() == 12);
         }
         Ok(())
     }

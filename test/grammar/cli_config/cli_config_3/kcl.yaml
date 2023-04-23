@@ -1,0 +1,19 @@
+kcl_options:
+- key: env-type
+  value: TEST
+- key: deploy-topology
+  value:
+  - cluster: my-cluster
+    id: '000123'
+    idc: my-idc
+    is_dev: true
+    replicas: 2
+    value: null
+    workspace: my-workspace
+    zone: my-zone
+- key: labels
+  value:
+    app: app
+    env: env
+- key: ports
+  value: [80, 8080]

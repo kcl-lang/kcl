@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_yaml = "0.8.7"
+serde_json = "1.0"
 indexmap = "1.0"
 ahash = "0.7.2"
 toml = "0.5.8"
