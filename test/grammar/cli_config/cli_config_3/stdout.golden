@@ -1,0 +1,16 @@
+envType: TEST
+deployTopology:
+  - cluster: my-cluster
+    id: "000123"
+    idc: my-idc
+    is_dev: true
+    replicas: 2
+    value: null
+    workspace: my-workspace
+    zone: my-zone
+labels:
+  env: env
+  app: app
+ports:
+  - 80
+  - 8080

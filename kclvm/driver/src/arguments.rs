@@ -12,7 +12,7 @@ pub fn parse_key_value_pair(spec: &str) -> Result<KeyValuePair> {
     {
         Ok(KeyValuePair {
             key: split_values[0].to_string(),
-            value: val_to_json(split_values[1]),
+            value: val_to_json(split_values[1]).into(),
         })
     } else {
         Err(anyhow::anyhow!("Invalid value for top level arguments"))

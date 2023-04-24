@@ -12,7 +12,7 @@
     "kcl_options": [
         {
             "key": "key",
-            "value": "value"
+            "value": "\"value\""
         }
     ]
 }

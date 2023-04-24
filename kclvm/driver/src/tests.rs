@@ -27,49 +27,49 @@ fn test_parse_key_value_pair() {
             "k=v",
             KeyValuePair {
                 key: "k".to_string(),
-                value: "\"v\"".to_string(),
+                value: "\"v\"".into(),
             },
         ),
         (
             "k=1",
             KeyValuePair {
                 key: "k".to_string(),
-                value: "1".to_string(),
+                value: "1".into(),
             },
         ),
         (
             "k=None",
             KeyValuePair {
                 key: "k".to_string(),
-                value: "null".to_string(),
+                value: "null".into(),
             },
         ),
         (
             "k=True",
             KeyValuePair {
                 key: "k".to_string(),
-                value: "true".to_string(),
+                value: "true".into(),
             },
         ),
         (
             "k=true",
             KeyValuePair {
                 key: "k".to_string(),
-                value: "true".to_string(),
+                value: "true".into(),
             },
         ),
         (
             "k={\"key\": \"value\"}",
             KeyValuePair {
                 key: "k".to_string(),
-                value: "{\"key\": \"value\"}".to_string(),
+                value: "{\"key\": \"value\"}".into(),
             },
         ),
         (
             "k=[1, 2, 3]",
             KeyValuePair {
                 key: "k".to_string(),
-                value: "[1, 2, 3]".to_string(),
+                value: "[1, 2, 3]".into(),
             },
         ),
     ];

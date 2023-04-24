@@ -1519,6 +1519,7 @@ dependencies = [
  "ron",
  "rust-crypto",
  "serde",
+ "serde_json",
  "serde_yaml 0.8.26",
  "toml",
 ]
