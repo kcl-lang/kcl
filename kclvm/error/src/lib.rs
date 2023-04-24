@@ -210,7 +210,7 @@ impl Handler {
     /// ```
     /// use kclvm_error::*;
     /// let mut handler = Handler::default();
-    /// handler.add_diagnostic(Diagnostic::new_with_code(Level::Error, "error message", Position::dummy_pos(), Some(DiagnosticId::Error(E1001.kind))));
+    /// handler.add_diagnostic(Diagnostic::new_with_code(Level::Error, "error message", None, Position::dummy_pos(), Some(DiagnosticId::Error(E1001.kind))));
     /// ```
     #[inline]
     pub fn add_diagnostic(&mut self, diagnostic: Diagnostic) -> &mut Self {
@@ -245,10 +245,14 @@ impl From<PanicInfo> for Diagnostic {
             let mut backtrace = panic_info.backtrace.clone();
             backtrace.reverse();
             for (index, frame) in backtrace.iter().enumerate() {
-                backtrace_msg = format!(
-                    "{backtrace_msg}\t{index}: {}\n\t\tat {}:{}:{}\n",
-                    frame.func, frame.file, frame.line, frame.col
-                );
+                backtrace_msg.push_str(&format!(
+                    "\t{index}: {}\n\t\tat {}:{}",
+                    frame.func, frame.file, frame.line
+                ));
+                if frame.col != 0 {
+                    backtrace_msg.push_str(&format!(":{}", frame.col))
+                }
+                backtrace_msg.push_str("\n")
             }
             Diagnostic::new_with_code(
                 Level::Error,

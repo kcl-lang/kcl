@@ -320,21 +320,36 @@ pub unsafe extern "C" fn kclvm_value_schema_with_config(
 pub unsafe extern "C" fn kclvm_value_Function(
     fn_ptr: *const u64,
     closure: *const kclvm_value_ref_t,
-    external_name: *const kclvm_char_t,
+    name: *const kclvm_char_t,
+    is_external: kclvm_bool_t,
 ) -> *mut kclvm_value_ref_t {
     let closure = ptr_as_ref(closure);
-    let name = c2str(external_name);
-    new_mut_ptr(ValueRef::func(fn_ptr as u64, 0, closure.clone(), name, ""))
+    let name = c2str(name);
+    new_mut_ptr(ValueRef::func(
+        fn_ptr as u64,
+        0,
+        closure.clone(),
+        name,
+        "",
+        is_external != 0,
+    ))
 }
 
 #[no_mangle]
 #[runtime_fn]
 pub unsafe extern "C" fn kclvm_value_Function_using_ptr(
     fn_ptr: *const u64,
-    external_name: *const kclvm_char_t,
+    name: *const kclvm_char_t,
 ) -> *mut kclvm_value_ref_t {
-    let name = c2str(external_name);
-    new_mut_ptr(ValueRef::func(fn_ptr as u64, 0, ValueRef::none(), name, ""))
+    let name = c2str(name);
+    new_mut_ptr(ValueRef::func(
+        fn_ptr as u64,
+        0,
+        ValueRef::none(),
+        name,
+        "",
+        false,
+    ))
 }
 
 #[no_mangle]
@@ -377,6 +392,7 @@ pub unsafe extern "C" fn kclvm_value_schema_function(
         schema_args,
         "",
         runtime_type,
+        false,
     );
     let ctx = Context::current_context_mut();
     let mut all_schemas = ctx.all_schemas.borrow_mut();
@@ -578,7 +594,7 @@ pub unsafe extern "C" fn kclvm_value_function_is_external(
 ) -> kclvm_bool_t {
     let p = ptr_as_ref(p);
     match &*p.rc.borrow() {
-        Value::func_value(ref v) => !v.external_name.is_empty() as kclvm_bool_t,
+        Value::func_value(ref v) => v.is_external as kclvm_bool_t,
         _ => false as kclvm_bool_t,
     }
 }
@@ -593,7 +609,7 @@ pub unsafe extern "C" fn kclvm_value_function_external_invoke(
     let p = ptr_as_ref(p);
     match &*p.rc.borrow() {
         Value::func_value(ref v) => {
-            let name = format!("{}\0", v.external_name);
+            let name = format!("{}\0", v.name);
             kclvm_plugin_invoke(name.as_ptr() as *const i8, args, kwargs)
         }
         _ => kclvm_value_None(),
@@ -622,7 +638,7 @@ pub unsafe extern "C" fn kclvm_value_function_invoke(
             ctx_ref
                 .backtrace
                 .push(BacktraceFrame::from_panic_info(&ctx_ref.panic_info));
-            ctx_ref.panic_info.kcl_func = func.external_name.clone();
+            ctx_ref.panic_info.kcl_func = func.name.clone();
         }
         let now_meta_info = ctx_ref.panic_info.clone();
         unsafe {
@@ -659,6 +675,9 @@ pub unsafe extern "C" fn kclvm_value_function_invoke(
                 args_new.list_append_unpack(&closure_new);
                 call_fn(ctx, args_new.into_raw(), kwargs)
             // Normal kcl function, call directly
+            } else if func.is_external {
+                let name = format!("{}\0", func.name);
+                kclvm_plugin_invoke(name.as_ptr() as *const i8, args, kwargs)
             } else {
                 args_ref.list_append_unpack_first(closure);
                 let args = args_ref.clone().into_raw();
@@ -1927,7 +1946,14 @@ pub unsafe extern "C" fn kclvm_value_load_attr(
             _ => panic!("str object attr '{key}' not found"),
         };
         let closure = ValueRef::list(Some(&[p]));
-        return new_mut_ptr(ValueRef::func(function as usize as u64, 0, closure, "", ""));
+        return new_mut_ptr(ValueRef::func(
+            function as usize as u64,
+            0,
+            closure,
+            "",
+            "",
+            false,
+        ));
     }
     // schema instance
     else if p.is_func() {
@@ -1936,7 +1962,14 @@ pub unsafe extern "C" fn kclvm_value_load_attr(
             _ => panic!("schema object attr '{key}' not found"),
         };
         let closure = ValueRef::list(Some(&[p]));
-        return new_mut_ptr(ValueRef::func(function as usize as u64, 0, closure, "", ""));
+        return new_mut_ptr(ValueRef::func(
+            function as usize as u64,
+            0,
+            closure,
+            "",
+            "",
+            false,
+        ));
     }
     panic!(
         "invalid value '{}' to load attribute '{}'",

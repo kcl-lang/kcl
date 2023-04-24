@@ -72,13 +72,15 @@ impl ValueRef {
         closure: ValueRef,
         name: &str,
         runtime_type: &str,
+        is_external: bool,
     ) -> Self {
         Self::from(Value::func_value(Box::new(FuncValue {
             fn_ptr,
             check_fn_ptr,
             closure,
-            external_name: name.to_string(),
+            name: name.to_string(),
             runtime_type: runtime_type.to_string(),
+            is_external,
         })))
     }
 }

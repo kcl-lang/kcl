@@ -271,8 +271,9 @@ pub struct FuncValue {
     pub fn_ptr: u64,
     pub check_fn_ptr: u64,
     pub closure: ValueRef,
-    pub external_name: String,
+    pub name: String,
     pub runtime_type: String,
+    pub is_external: bool,
 }
 
 #[derive(PartialEq, Clone, Default, Debug)]

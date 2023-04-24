@@ -20,8 +20,9 @@ impl ValueRef {
                     fn_ptr: v.fn_ptr,
                     check_fn_ptr: v.check_fn_ptr,
                     closure: v.closure.deep_copy(),
-                    external_name: v.external_name.clone(),
+                    name: v.name.clone(),
                     runtime_type: v.runtime_type.clone(),
+                    is_external: v.is_external,
                 })))),
             },
             Value::bool_value(ref v) => ValueRef {

@@ -271,12 +271,12 @@
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_value_schema_with_config(%kclvm_value_ref_t* %schema_dict, %kclvm_value_ref_t* %config, %kclvm_value_ref_t* %config_meta, %kclvm_char_t* %name, %kclvm_char_t* %pkgpath, %kclvm_value_ref_t* %is_sub_schema, %kclvm_value_ref_t* %record_instance, %kclvm_value_ref_t* %instance_pkgpath, %kclvm_value_ref_t* %optional_mapping);
 
 // api-spec:       kclvm_value_Function
-// api-spec(c):    kclvm_value_ref_t* kclvm_value_Function(uint64_t* fn_ptr, kclvm_value_ref_t* closure, kclvm_char_t* external_name);
-// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_value_Function(i64* %fn_ptr, %kclvm_value_ref_t* %closure, %kclvm_char_t* %external_name);
+// api-spec(c):    kclvm_value_ref_t* kclvm_value_Function(uint64_t* fn_ptr, kclvm_value_ref_t* closure, kclvm_char_t* name, kclvm_bool_t is_external);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_value_Function(i64* %fn_ptr, %kclvm_value_ref_t* %closure, %kclvm_char_t* %name, %kclvm_bool_t %is_external);
 
 // api-spec:       kclvm_value_Function_using_ptr
-// api-spec(c):    kclvm_value_ref_t* kclvm_value_Function_using_ptr(uint64_t* fn_ptr, kclvm_char_t* external_name);
-// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_value_Function_using_ptr(i64* %fn_ptr, %kclvm_char_t* %external_name);
+// api-spec(c):    kclvm_value_ref_t* kclvm_value_Function_using_ptr(uint64_t* fn_ptr, kclvm_char_t* name);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_value_Function_using_ptr(i64* %fn_ptr, %kclvm_char_t* %name);
 
 // api-spec:       kclvm_value_schema_function
 // api-spec(c):    kclvm_value_ref_t* kclvm_value_schema_function(uint64_t* fn_ptr, uint64_t* check_fn_ptr, kclvm_char_t* tpe);

@@ -1,6 +1,5 @@
 // Copyright 2021 The KCL Authors. All rights reserved.
 
-use core::panic;
 use indexmap::{IndexMap, IndexSet};
 use inkwell::basic_block::BasicBlock;
 use inkwell::builder::Builder;
@@ -443,7 +442,7 @@ impl<'ctx> ValueMethods for LLVMCodeGenContext<'ctx> {
         );
         self.build_call(
             &ApiFunc::kclvm_value_Function.name(),
-            &[fn_ptr, closure, func_name_ptr],
+            &[fn_ptr, closure, func_name_ptr, self.native_i8_zero().into()],
         )
     }
     /// Construct a schema function value using native functions.
@@ -1683,7 +1682,12 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 let none_value = self.none_value();
                 self.build_call(
                     &ApiFunc::kclvm_value_Function.name(),
-                    &[lambda_fn_ptr, none_value, func_name_ptr],
+                    &[
+                        lambda_fn_ptr,
+                        none_value,
+                        func_name_ptr,
+                        self.native_i8_zero().into(),
+                    ],
                 )
             };
             Ok(value)
@@ -1701,7 +1705,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             let none_value = self.none_value();
             return Ok(self.build_call(
                 &ApiFunc::kclvm_value_Function.name(),
-                &[null_fn_ptr, none_value, name],
+                &[null_fn_ptr, none_value, name, self.native_i8(1).into()],
             ));
         // User pkgpath
         } else {
