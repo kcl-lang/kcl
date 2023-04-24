@@ -328,6 +328,10 @@ fn read_doc_content() -> String {
     let mut contents = String::new();
     file.read_to_string(&mut contents)
         .expect("Unable to read file");
+
+    if cfg!(windows) {
+        contents = contents.replace("\r\n", "\n")
+    }
     contents
 }
 
