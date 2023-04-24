@@ -320,19 +320,36 @@ pub unsafe extern "C" fn kclvm_value_schema_with_config(
 pub unsafe extern "C" fn kclvm_value_Function(
     fn_ptr: *const u64,
     closure: *const kclvm_value_ref_t,
-    external_name: *const kclvm_char_t,
+    name: *const kclvm_char_t,
+    is_external: kclvm_bool_t,
 ) -> *mut kclvm_value_ref_t {
     let closure = ptr_as_ref(closure);
-    let name = c2str(external_name);
-    new_mut_ptr(ValueRef::func(fn_ptr as u64, 0, closure.clone(), name, ""))
+    let name = c2str(name);
+    new_mut_ptr(ValueRef::func(
+        fn_ptr as u64,
+        0,
+        closure.clone(),
+        name,
+        "",
+        is_external != 0,
+    ))
 }
 
 #[no_mangle]
 #[runtime_fn]
 pub unsafe extern "C" fn kclvm_value_Function_using_ptr(
     fn_ptr: *const u64,
+    name: *const kclvm_char_t,
 ) -> *mut kclvm_value_ref_t {
-    new_mut_ptr(ValueRef::func(fn_ptr as u64, 0, ValueRef::none(), "", ""))
+    let name = c2str(name);
+    new_mut_ptr(ValueRef::func(
+        fn_ptr as u64,
+        0,
+        ValueRef::none(),
+        name,
+        "",
+        false,
+    ))
 }
 
 #[no_mangle]
@@ -375,6 +392,7 @@ pub unsafe extern "C" fn kclvm_value_schema_function(
         schema_args,
         "",
         runtime_type,
+        false,
     );
     let ctx = Context::current_context_mut();
     let mut all_schemas = ctx.all_schemas.borrow_mut();
@@ -576,7 +594,7 @@ pub unsafe extern "C" fn kclvm_value_function_is_external(
 ) -> kclvm_bool_t {
     let p = ptr_as_ref(p);
     match &*p.rc.borrow() {
-        Value::func_value(ref v) => !v.external_name.is_empty() as kclvm_bool_t,
+        Value::func_value(ref v) => v.is_external as kclvm_bool_t,
         _ => false as kclvm_bool_t,
     }
 }
@@ -591,7 +609,7 @@ pub unsafe extern "C" fn kclvm_value_function_external_invoke(
     let p = ptr_as_ref(p);
     match &*p.rc.borrow() {
         Value::func_value(ref v) => {
-            let name = format!("{}\0", v.external_name);
+            let name = format!("{}\0", v.name);
             kclvm_plugin_invoke(name.as_ptr() as *const i8, args, kwargs)
         }
         _ => kclvm_value_None(),
@@ -615,8 +633,13 @@ pub unsafe extern "C" fn kclvm_value_function_invoke(
         let fn_ptr = func.fn_ptr;
         let closure = &func.closure;
         let is_schema = !func.runtime_type.is_empty();
-        let is_external = !func.external_name.is_empty();
         let ctx_ref = mut_ptr_as_ref(ctx);
+        if ctx_ref.cfg.debug_mode {
+            ctx_ref
+                .backtrace
+                .push(BacktraceFrame::from_panic_info(&ctx_ref.panic_info));
+            ctx_ref.panic_info.kcl_func = func.name.clone();
+        }
         let now_meta_info = ctx_ref.panic_info.clone();
         unsafe {
             let call_fn: SchemaTypeFunc = transmute_copy(&fn_ptr);
@@ -652,8 +675,8 @@ pub unsafe extern "C" fn kclvm_value_function_invoke(
                 args_new.list_append_unpack(&closure_new);
                 call_fn(ctx, args_new.into_raw(), kwargs)
             // Normal kcl function, call directly
-            } else if is_external {
-                let name = format!("{}\0", func.external_name);
+            } else if func.is_external {
+                let name = format!("{}\0", func.name);
                 kclvm_plugin_invoke(name.as_ptr() as *const i8, args, kwargs)
             } else {
                 args_ref.list_append_unpack_first(closure);
@@ -664,6 +687,9 @@ pub unsafe extern "C" fn kclvm_value_function_invoke(
             if is_schema && !is_in_schema.is_truthy() {
                 let schema_value = ptr_as_ref(value);
                 schema_value.schema_check_attr_optional(true);
+            }
+            if ctx_ref.cfg.debug_mode {
+                ctx_ref.backtrace.pop();
             }
             ctx_ref.panic_info = now_meta_info;
             return value;
@@ -1920,7 +1946,14 @@ pub unsafe extern "C" fn kclvm_value_load_attr(
             _ => panic!("str object attr '{key}' not found"),
         };
         let closure = ValueRef::list(Some(&[p]));
-        return new_mut_ptr(ValueRef::func(function as usize as u64, 0, closure, "", ""));
+        return new_mut_ptr(ValueRef::func(
+            function as usize as u64,
+            0,
+            closure,
+            "",
+            "",
+            false,
+        ));
     }
     // schema instance
     else if p.is_func() {
@@ -1929,7 +1962,14 @@ pub unsafe extern "C" fn kclvm_value_load_attr(
             _ => panic!("schema object attr '{key}' not found"),
         };
         let closure = ValueRef::list(Some(&[p]));
-        return new_mut_ptr(ValueRef::func(function as usize as u64, 0, closure, "", ""));
+        return new_mut_ptr(ValueRef::func(
+            function as usize as u64,
+            0,
+            closure,
+            "",
+            "",
+            false,
+        ));
     }
     panic!(
         "invalid value '{}' to load attribute '{}'",
@@ -2263,6 +2303,14 @@ pub unsafe extern "C" fn kclvm_schema_value_new(
     if schema_value_or_func.is_func() {
         let schema_func = schema_value_or_func.as_function();
         let schema_fn_ptr = schema_func.fn_ptr;
+        let ctx_ref = mut_ptr_as_ref(ctx);
+        let now_meta_info = ctx_ref.panic_info.clone();
+        if ctx_ref.cfg.debug_mode {
+            ctx_ref
+                .backtrace
+                .push(BacktraceFrame::from_panic_info(&ctx_ref.panic_info));
+            ctx_ref.panic_info.kcl_func = schema_func.runtime_type.clone();
+        }
         let value = unsafe {
             let org_args = ptr_as_ref(args).deep_copy();
             let schema_fn: SchemaTypeFunc = transmute_copy(&schema_fn_ptr);
@@ -2324,6 +2372,10 @@ pub unsafe extern "C" fn kclvm_schema_value_new(
             }
             schema_fn(ctx, args, kwargs)
         };
+        ctx_ref.panic_info = now_meta_info;
+        if ctx_ref.cfg.debug_mode {
+            ctx_ref.backtrace.pop();
+        }
         value
     } else {
         let config = ptr_as_ref(config);

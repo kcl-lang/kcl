@@ -271,8 +271,9 @@ pub struct FuncValue {
     pub fn_ptr: u64,
     pub check_fn_ptr: u64,
     pub closure: ValueRef,
-    pub external_name: String,
+    pub name: String,
     pub runtime_type: String,
+    pub is_external: bool,
 }
 
 #[derive(PartialEq, Clone, Default, Debug)]
@@ -293,6 +294,7 @@ pub struct OptionHelp {
 #[derive(PartialEq, Eq, Clone, Default, Debug, Serialize, Deserialize)]
 pub struct PanicInfo {
     pub __kcl_PanicInfo__: bool, // "__kcl_PanicInfo__"
+    pub backtrace: Vec<BacktraceFrame>,
 
     pub rust_file: String,
     pub rust_line: i32,
@@ -300,6 +302,7 @@ pub struct PanicInfo {
 
     pub kcl_pkgpath: String,
     pub kcl_file: String,
+    pub kcl_func: String,
     pub kcl_line: i32,
     pub kcl_col: i32,
     pub kcl_arg_msg: String,
@@ -368,6 +371,7 @@ pub struct Context {
 
     pub main_pkg_path: String,
     pub main_pkg_files: Vec<String>,
+    pub backtrace: Vec<BacktraceFrame>,
 
     pub imported_pkgpath: HashSet<String>,
     pub app_args: HashMap<String, u64>,
@@ -385,10 +389,43 @@ pub struct Context {
     pub objects: IndexSet<usize>,
 }
 
+#[derive(PartialEq, Eq, Clone, Debug, Serialize, Deserialize)]
+pub struct BacktraceFrame {
+    pub file: String,
+    pub func: String,
+    pub col: i32,
+    pub line: i32,
+}
+impl Default for BacktraceFrame {
+    fn default() -> Self {
+        Self {
+            file: Default::default(),
+            func: "_kclvm_main".to_string(),
+            col: Default::default(),
+            line: Default::default(),
+        }
+    }
+}
+
+impl BacktraceFrame {
+    pub fn from_panic_info(info: &PanicInfo) -> Self {
+        Self {
+            file: info.kcl_file.clone(),
+            func: info.kcl_func.clone(),
+            col: info.kcl_col,
+            line: info.kcl_line,
+        }
+    }
+}
+
 impl Context {
     pub fn new() -> Self {
         Context {
             instances: RefCell::new(HashMap::new()),
+            panic_info: PanicInfo {
+                kcl_func: "kclvm_main".to_string(),
+                ..Default::default()
+            },
             ..Default::default()
         }
     }
