@@ -568,7 +568,7 @@ kclvm_float_t* kclvm_value_Float_ptr(kclvm_value_ref_t* p);
 
 kclvm_value_ref_t* kclvm_value_Function(uint64_t* fn_ptr, kclvm_value_ref_t* closure, kclvm_char_t* external_name);
 
-kclvm_value_ref_t* kclvm_value_Function_using_ptr(uint64_t* fn_ptr);
+kclvm_value_ref_t* kclvm_value_Function_using_ptr(uint64_t* fn_ptr, kclvm_char_t* external_name);
 
 kclvm_value_ref_t* kclvm_value_Int(kclvm_int_t v);
 

@@ -96,6 +96,7 @@ impl Handler {
         let diag = Diagnostic::new_with_code(
             Level::Error,
             &message,
+            None,
             pos,
             Some(DiagnosticId::Error(E1001.kind)),
         );
@@ -109,6 +110,7 @@ impl Handler {
         let diag = Diagnostic::new_with_code(
             Level::Error,
             msg,
+            None,
             pos,
             Some(DiagnosticId::Error(E2G22.kind)),
         );
@@ -122,6 +124,7 @@ impl Handler {
         let diag = Diagnostic::new_with_code(
             Level::Error,
             msg,
+            None,
             pos,
             Some(DiagnosticId::Error(E2L23.kind)),
         );
@@ -219,26 +222,54 @@ impl Handler {
 
 impl From<PanicInfo> for Diagnostic {
     fn from(panic_info: PanicInfo) -> Self {
-        let mut diag = Diagnostic::new_with_code(
-            Level::Error,
-            if panic_info.kcl_arg_msg.is_empty() {
-                &panic_info.message
-            } else {
-                &panic_info.kcl_arg_msg
-            },
-            Position {
-                filename: panic_info.kcl_file.clone(),
-                line: panic_info.kcl_line as u64,
-                column: None,
-            },
-            Some(DiagnosticId::Error(E3M38.kind)),
-        );
+        let panic_msg = if panic_info.kcl_arg_msg.is_empty() {
+            &panic_info.message
+        } else {
+            &panic_info.kcl_arg_msg
+        };
+
+        let mut diag = if panic_info.backtrace.is_empty() {
+            Diagnostic::new_with_code(
+                Level::Error,
+                &panic_msg,
+                None,
+                Position {
+                    filename: panic_info.kcl_file.clone(),
+                    line: panic_info.kcl_line as u64,
+                    column: None,
+                },
+                Some(DiagnosticId::Error(E3M38.kind)),
+            )
+        } else {
+            let mut backtrace_msg = "backtrace:\n".to_string();
+            let mut backtrace = panic_info.backtrace.clone();
+            backtrace.reverse();
+            for (index, frame) in backtrace.iter().enumerate() {
+                backtrace_msg = format!(
+                    "{backtrace_msg}\t{index}: {}\n\t\tat {}:{}:{}\n",
+                    frame.func, frame.file, frame.line, frame.col
+                );
+            }
+            Diagnostic::new_with_code(
+                Level::Error,
+                &panic_msg,
+                Some(&backtrace_msg),
+                Position {
+                    filename: panic_info.kcl_file.clone(),
+                    line: panic_info.kcl_line as u64,
+                    column: None,
+                },
+                Some(DiagnosticId::Error(E3M38.kind)),
+            )
+        };
+
         if panic_info.kcl_config_meta_file.is_empty() {
             return diag;
         }
         let mut config_meta_diag = Diagnostic::new_with_code(
             Level::Error,
             &panic_info.kcl_config_meta_arg_msg,
+            None,
             Position {
                 filename: panic_info.kcl_config_meta_file.clone(),
                 line: panic_info.kcl_config_meta_line as u64,
@@ -297,6 +328,7 @@ impl ParseError {
         Ok(Diagnostic::new_with_code(
             Level::Error,
             &self.to_string(),
+            None,
             loc.into(),
             Some(DiagnosticId::Error(ErrorKind::InvalidSyntax)),
         ))

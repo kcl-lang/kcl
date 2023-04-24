@@ -1,5 +1,6 @@
 // Copyright 2021 The KCL Authors. All rights reserved.
 
+use core::panic;
 use indexmap::{IndexMap, IndexSet};
 use inkwell::basic_block::BasicBlock;
 use inkwell::builder::Builder;
@@ -418,6 +419,8 @@ impl<'ctx> ValueMethods for LLVMCodeGenContext<'ctx> {
     }
     /// Construct a function value using a native function.
     fn function_value(&self, function: FunctionValue<'ctx>) -> Self::Value {
+        let func_name = function.get_name().to_str().unwrap();
+        let func_name_ptr = self.native_global_string(func_name, func_name).into();
         let lambda_fn_ptr = self.builder.build_bitcast(
             function.as_global_value().as_pointer_value(),
             self.context.i64_type().ptr_type(AddressSpace::default()),
@@ -425,21 +428,22 @@ impl<'ctx> ValueMethods for LLVMCodeGenContext<'ctx> {
         );
         self.build_call(
             &ApiFunc::kclvm_value_Function_using_ptr.name(),
-            &[lambda_fn_ptr],
+            &[lambda_fn_ptr, func_name_ptr],
         )
     }
     /// Construct a closure function value with the closure variable.
     fn closure_value(&self, function: FunctionValue<'ctx>, closure: Self::Value) -> Self::Value {
+        let func_name = function.get_name().to_str().unwrap();
+        let func_name_ptr = self.native_global_string(func_name, func_name).into();
         // Convert the function to a i64 pointer to store it into the function value.
         let fn_ptr = self.builder.build_bitcast(
             function.as_global_value().as_pointer_value(),
             self.context.i64_type().ptr_type(AddressSpace::default()),
             "",
         );
-        let name = self.native_global_string("", "").into();
         self.build_call(
             &ApiFunc::kclvm_value_Function.name(),
-            &[fn_ptr, closure, name],
+            &[fn_ptr, closure, func_name_ptr],
         )
     }
     /// Construct a schema function value using native functions.
@@ -1674,11 +1678,12 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                     self.context.i64_type().ptr_type(AddressSpace::default()),
                     "",
                 );
-                let name = self.native_global_string("", "").into();
+                let func_name = function.get_name().to_str().unwrap();
+                let func_name_ptr = self.native_global_string(func_name, func_name).into();
                 let none_value = self.none_value();
                 self.build_call(
                     &ApiFunc::kclvm_value_Function.name(),
-                    &[lambda_fn_ptr, none_value, name],
+                    &[lambda_fn_ptr, none_value, func_name_ptr],
                 )
             };
             Ok(value)

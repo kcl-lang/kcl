@@ -4,7 +4,7 @@ pub mod api;
 pub use api::*;
 use std::fmt;
 
-use crate::PanicInfo;
+use crate::{BacktraceFrame, PanicInfo};
 
 #[allow(non_camel_case_types)]
 type kclvm_value_ref_t = crate::ValueRef;
@@ -189,16 +189,24 @@ impl crate::Context {
     pub fn set_panic_info(&mut self, info: &std::panic::PanicInfo) {
         self.panic_info.__kcl_PanicInfo__ = true;
 
-        if let Some(s) = info.payload().downcast_ref::<&str>() {
-            self.panic_info.message = s.to_string();
+        self.panic_info.message = if let Some(s) = info.payload().downcast_ref::<&str>() {
+            s.to_string()
         } else if let Some(s) = info.payload().downcast_ref::<&String>() {
-            self.panic_info.message = (*s).clone();
+            (*s).clone()
         } else if let Some(s) = info.payload().downcast_ref::<String>() {
-            self.panic_info.message = (*s).clone();
+            (*s).clone()
         } else {
-            self.panic_info.message = "".to_string();
+            "".to_string()
+        };
+        if self.cfg.debug_mode {
+            self.panic_info.backtrace = self.backtrace.clone();
+            self.panic_info.backtrace.push(BacktraceFrame {
+                file: self.panic_info.kcl_file.clone(),
+                func: self.panic_info.kcl_func.clone(),
+                col: self.panic_info.kcl_col,
+                line: self.panic_info.kcl_line,
+            });
         }
-
         if let Some(location) = info.location() {
             self.panic_info.rust_file = location.file().to_string();
             self.panic_info.rust_line = location.line() as i32;
