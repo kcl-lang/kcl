@@ -44,7 +44,7 @@ pub fn create_default_vendor_home() -> Option<String> {
     let kpm_home = PathBuf::from(root_dir).join(DEFAULT_KCL_PKG_PATH);
     match kpm_home.canonicalize() {
         Ok(path) => return Some(path.display().to_string()),
-        Err(_) => match fs::create_dir(kpm_home.clone()) {
+        Err(_) => match fs::create_dir_all(kpm_home.clone()) {
             Ok(_) => return Some(kpm_home.canonicalize().unwrap().display().to_string()),
             Err(_) => None,
         },
