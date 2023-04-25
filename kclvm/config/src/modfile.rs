@@ -2,29 +2,55 @@
 
 use kclvm_utils::path::PathPrefix;
 use serde::Deserialize;
-use std::{env, io::Read};
+use std::{env, fs, io::Read, path::PathBuf};
 use toml;
 
 pub const KCL_MOD_FILE: &str = "kcl.mod";
 pub const KCL_FILE_SUFFIX: &str = ".k";
 pub const KCL_FILE_EXTENSION: &str = "k";
 pub const KCL_MOD_PATH_ENV: &str = "${KCL_MOD}";
-pub const KCLVM_VENDOR_HOME: &str = "KCLVM_VENDOR_HOME";
+pub const KCL_PKG_PATH: &str = "KCL_PKG_PATH";
+pub const DEFAULT_KCL_HOME: &str = ".kcl";
+pub const DEFAULT_KPM_SUBDIR: &str = "kpm";
 
-/// Get the path holding the external kcl packet.
-/// From the environment variable KCLVM_VENDOR_HOME.
-/// If `KCLVM_VENDOR_HOME` is not present, then the user root string is returned.
+/// Get the path holding the external kcl package.
+/// From the environment variable KCL_PKG_PATH.
+/// If `KCL_PKG_PATH` is not present, then the user root string is returned.
 /// If the user root directory cannot be found, an empty string will be returned.
 pub fn get_vendor_home() -> String {
-    match env::var(KCLVM_VENDOR_HOME) {
+    match env::var(KCL_PKG_PATH) {
         Ok(path) => path,
-        Err(_) => {
-            if let Some(home_dir) = dirs::home_dir() {
-                return home_dir.display().to_string();
-            } else {
-                return String::default();
-            }
-        }
+        Err(_) => create_default_vendor_home().unwrap_or(String::default()),
+    }
+}
+
+/// Create a '.kcl/kpm' folder in the user's root directory,
+/// returning the folder path in [Option::Some] if it already exists.
+///
+/// If the folder does not exist, create it and return the file path
+/// in [Option::Some].
+///
+/// If creating the folder failed, [`Option::None`] is returned.
+pub fn create_default_vendor_home() -> Option<String> {
+    #[cfg(target_os = "windows")]
+    let root_dir = match env::var("USERPROFILE") {
+        Ok(val) => val,
+        Err(_) => return None,
+    };
+    #[cfg(not(target_os = "windows"))]
+    let root_dir = match env::var("HOME") {
+        Ok(val) => val,
+        Err(_) => return None,
+    };
+    let kpm_home = PathBuf::from(root_dir)
+        .join(DEFAULT_KCL_HOME)
+        .join(DEFAULT_KPM_SUBDIR);
+    match kpm_home.canonicalize() {
+        Ok(path) => return Some(path.display().to_string()),
+        Err(_) => match fs::create_dir_all(kpm_home.clone()) {
+            Ok(_) => return Some(kpm_home.canonicalize().unwrap().display().to_string()),
+            Err(_) => None,
+        },
     }
 }
 

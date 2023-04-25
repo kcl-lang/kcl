@@ -4,7 +4,7 @@ use std::{
 };
 
 use compiler_base_span::{FilePathMapping, SourceMap};
-use kclvm_config::modfile::{get_vendor_home, KCLVM_VENDOR_HOME};
+use kclvm_config::modfile::{get_vendor_home, KCL_PKG_PATH};
 
 use crate::*;
 
@@ -115,7 +115,7 @@ pub fn test_vendor_home() {
         .unwrap()
         .display()
         .to_string();
-    env::set_var(KCLVM_VENDOR_HOME, vendor);
+    env::set_var(KCL_PKG_PATH, vendor);
     assert_eq!(get_vendor_home(), vendor.to_string());
 }
 
@@ -128,7 +128,7 @@ fn set_vendor_home() -> String {
         .unwrap()
         .display()
         .to_string();
-    env::set_var(KCLVM_VENDOR_HOME, vendor);
+    env::set_var(KCL_PKG_PATH, vendor);
     debug_assert_eq!(get_vendor_home(), vendor.to_string());
     vendor.to_string()
 }
@@ -258,7 +258,7 @@ pub fn test_import_vendor_without_kclmod() {
 }
 
 pub fn test_import_vendor_without_vendor_home() {
-    env::set_var(KCLVM_VENDOR_HOME, "");
+    env::set_var(KCL_PKG_PATH, "");
     let sm = SourceMap::new(FilePathMapping::empty());
     let sess = Arc::new(ParseSession::with_source_map(Arc::new(sm)));
     let dir = &PathBuf::from(".")
