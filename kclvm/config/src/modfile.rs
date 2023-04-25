@@ -10,7 +10,8 @@ pub const KCL_FILE_SUFFIX: &str = ".k";
 pub const KCL_FILE_EXTENSION: &str = "k";
 pub const KCL_MOD_PATH_ENV: &str = "${KCL_MOD}";
 pub const KCL_PKG_PATH: &str = "KCL_PKG_PATH";
-pub const DEFAULT_KCL_PKG_PATH: &str = ".kcl/kpm";
+pub const DEFAULT_KCL_HOME: &str = ".kcl";
+pub const DEFAULT_KPM_SUBDIR: &str = "kpm";
 
 /// Get the path holding the external kcl package.
 /// From the environment variable KCL_PKG_PATH.
@@ -41,7 +42,7 @@ pub fn create_default_vendor_home() -> Option<String> {
         Ok(val) => val,
         Err(_) => return None,
     };
-    let kpm_home = PathBuf::from(root_dir).join(DEFAULT_KCL_PKG_PATH);
+    let kpm_home = PathBuf::from(root_dir).join(DEFAULT_KCL_HOME).join(DEFAULT_KPM_SUBDIR);
     match kpm_home.canonicalize() {
         Ok(path) => return Some(path.display().to_string()),
         Err(_) => match fs::create_dir_all(kpm_home.clone()) {
