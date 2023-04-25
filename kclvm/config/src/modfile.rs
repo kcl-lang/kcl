@@ -42,7 +42,9 @@ pub fn create_default_vendor_home() -> Option<String> {
         Ok(val) => val,
         Err(_) => return None,
     };
-    let kpm_home = PathBuf::from(root_dir).join(DEFAULT_KCL_HOME).join(DEFAULT_KPM_SUBDIR);
+    let kpm_home = PathBuf::from(root_dir)
+        .join(DEFAULT_KCL_HOME)
+        .join(DEFAULT_KPM_SUBDIR);
     match kpm_home.canonicalize() {
         Ok(path) => return Some(path.display().to_string()),
         Err(_) => match fs::create_dir_all(kpm_home.clone()) {

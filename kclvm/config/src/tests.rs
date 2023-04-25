@@ -13,6 +13,10 @@ fn test_vendor_home() {
     #[cfg(not(target_os = "windows"))]
     let root_dir = env::var("HOME").unwrap();
 
-    let kpm_home = PathBuf::from(root_dir).join(".kcl").join("kpm").canonicalize().unwrap();
+    let kpm_home = PathBuf::from(root_dir)
+        .join(".kcl")
+        .join("kpm")
+        .canonicalize()
+        .unwrap();
     assert_eq!(get_vendor_home(), kpm_home.display().to_string())
 }
