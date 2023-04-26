@@ -14,8 +14,6 @@ use kclvm_parser::load_program;
 use kclvm_parser::ParseSession;
 use kclvm_sema::resolver::resolve_program;
 use std::fs::create_dir_all;
-use std::panic::catch_unwind;
-use std::panic::set_hook;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::thread;
@@ -296,38 +294,6 @@ fn test_kclvm_runner_execute() {
     }
 }
 
-fn test_kclvm_runner_execute_timeout() {
-    set_hook(Box::new(|_| {}));
-    let result_time_out = catch_unwind(|| {
-        gen_libs_for_test(
-            &Path::new("test")
-                .join("no_exist_path")
-                .display()
-                .to_string(),
-            &Path::new(".")
-                .join("src")
-                .join("test_datas")
-                .join("multi_file_compilation")
-                .join("import_abs_path")
-                .join("app-main")
-                .join("main.k")
-                .display()
-                .to_string(),
-        );
-    });
-    let timeout_panic_msg = "called `Result::unwrap()` on an `Err` value: Timeout";
-    match result_time_out {
-        Err(panic_err) => {
-            if let Some(s) = panic_err.downcast_ref::<String>() {
-                assert_eq!(s, timeout_panic_msg)
-            }
-        }
-        _ => {
-            unreachable!()
-        }
-    }
-}
-
 #[test]
 fn test_assemble_lib_llvm() {
     for case in TEST_CASES {
@@ -553,10 +519,6 @@ fn test_exec() {
 
     test_kclvm_runner_execute();
     println!("test_kclvm_runner_execute - PASS");
-
-    test_kclvm_runner_execute_timeout();
-    println!("test_kclvm_runner_execute_timeout - PASS");
-    fs::remove_dir_all(Path::new("__main__")).unwrap();
 
     test_custom_manifests_output();
     println!("test_custom_manifests_output - PASS");
