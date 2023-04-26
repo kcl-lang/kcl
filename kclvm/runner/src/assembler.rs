@@ -11,16 +11,10 @@ use std::{
     collections::HashMap,
     env,
     path::{Path, PathBuf},
-    sync::mpsc::channel,
 };
-use threadpool::ThreadPool;
 
 /// IR code file suffix.
 const DEFAULT_IR_FILE: &str = "_a.out";
-/// Default codegen timeout.
-const DEFAULT_TIME_OUT: u64 = 50;
-/// Default thread count.
-const DEFAULT_THREAD_COUNT: usize = 1;
 
 /// LibAssembler trait is used to indicate the general interface
 /// that must be implemented when different intermediate codes are assembled
@@ -189,7 +183,6 @@ impl LibAssembler for LlvmLibAssembler {
 /// KclvmAssembler provides an atomic operation for generating a dynamic link library for a single file
 /// through KclvmLibAssembler for each thread.
 pub(crate) struct KclvmAssembler {
-    thread_count: usize,
     program: ast::Program,
     scope: ProgramScope,
     entry_file: String,
@@ -208,7 +201,6 @@ impl KclvmAssembler {
         single_file_assembler: KclvmLibAssembler,
     ) -> Self {
         Self {
-            thread_count: DEFAULT_THREAD_COUNT,
             program,
             scope,
             entry_file,
@@ -298,11 +290,8 @@ impl KclvmAssembler {
                 ),
             );
         }
-        let pool = ThreadPool::new(self.thread_count);
-        let (tx, rx) = channel();
-        let prog_count = compile_progs.len();
+        let mut lib_paths = vec![];
         for (pkgpath, (compile_prog, import_names, cache_dir)) in compile_progs {
-            let tx = tx.clone();
             // Clone a single file assembler for one thread.
             let assembler = self.single_file_assembler.clone();
             // Generate paths for some intermediate files (*.o, *.lock).
@@ -319,7 +308,7 @@ impl KclvmAssembler {
             let code_file_path = assembler.add_code_file_suffix(&code_file);
             let lock_file_path = format!("{}.lock", code_file_path);
             let target = self.target.clone();
-            pool.execute(move || {
+            {
                 // Locking file for parallel code generation.
                 let mut file_lock = fslock::LockFile::open(&lock_file_path)
                     .unwrap_or_else(|_| panic!("{} not found", lock_file_path));
@@ -377,21 +366,8 @@ impl KclvmAssembler {
                     }
                 };
                 file_lock.unlock().unwrap();
-                tx.send(file_path)
-                    .expect("channel will be there waiting for the pool");
-            });
-        }
-        // Get all codegen results from the channel with timeout
-        let timeout: u64 = match env::var("KCLVM_CODE_GEN_TIMEOUT") {
-            Ok(timeout_str) => timeout_str.parse().unwrap_or(DEFAULT_TIME_OUT),
-            Err(_) => DEFAULT_TIME_OUT,
-        };
-        let mut lib_paths = vec![];
-        for _ in 0..prog_count {
-            let lib_path = rx
-                .recv_timeout(std::time::Duration::from_secs(timeout))
-                .unwrap();
-            lib_paths.push(lib_path);
+                lib_paths.push(file_path);
+            };
         }
         self.single_file_assembler.clean_lock_file(&self.entry_file);
         lib_paths
