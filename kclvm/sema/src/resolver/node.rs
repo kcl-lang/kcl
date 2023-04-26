@@ -10,7 +10,6 @@ use crate::ty::{
     sup, DecoratorTarget, Parameter, Type, TypeInferMethods, TypeKind, RESERVED_TYPE_IDENTIFIERS,
 };
 
-use super::doc::parse_doc_string;
 use super::format::VALID_FORMAT_SPEC_SET;
 use super::scope::{ScopeKind, ScopeObject, ScopeObjectKind};
 use super::ty::ty_str_replace_pkgpath;
@@ -351,19 +350,13 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             .get_type_of_attr(name)
             .map_or(self.any_ty(), |ty| ty);
 
-        let schema_doc = schema.borrow().doc.clone();
+        let doc_str = match schema.borrow().attrs.get(name) {
+            Some(attr) => attr.doc.clone(),
+            None => None,
+        };
 
         // Schema attribute decorators
         self.resolve_decorators(&schema_attr.decorators, DecoratorTarget::Attribute, name);
-
-        let doc = parse_doc_string(&schema_doc);
-        let doc_str = doc.attrs.iter().find_map(|attr| {
-            if attr.name == name {
-                Some(attr.desc.join("\n"))
-            } else {
-                None
-            }
-        });
         self.insert_object(
             name,
             ScopeObject {

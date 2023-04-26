@@ -6,17 +6,17 @@ use std::iter::Iterator;
 use std::path::PathBuf;
 
 // strip leading and trailing triple quotes in the original docstring content
-fn strip_quotes(original: String) -> String {
+fn strip_quotes(original: &mut String) {
     let quote = original.chars().next().unwrap();
     let pattern = format!("(?s)^{char}{{3}}(.*?){char}{{3}}$", char = quote);
     let re = Regex::new(&pattern).unwrap();
     let caps = re.captures(&original);
     let result = match caps {
         Some(caps) => caps,
-        None => return original,
+        None => return,
     };
-    let content = &result[1];
-    content.to_owned()
+    let content = result[1].to_owned();
+    *original = content;
 }
 
 fn expand_tabs(s: &str, spaces_per_tab: usize) -> String {
@@ -262,26 +262,28 @@ fn parse_attr_list(content: String) -> Vec<Attribute> {
 }
 
 // parse the summary of the schema. The final summary content will be a concat of lines in the original summary with whitespace.
-fn parse_summary(doc: &mut Reader) -> Option<String> {
+fn parse_summary(doc: &mut Reader) -> String {
     if is_at_section(doc) {
         // no summary provided
-        return None;
+        return "".to_string();
     }
     let lines = read_to_next_section(doc);
-    return Some(
-        lines
-            .iter()
-            .map(|s| s.trim())
-            .collect::<Vec<_>>()
-            .join(" ")
-            .trim()
-            .to_string(),
-    );
+    return lines
+        .iter()
+        .map(|s| s.trim())
+        .collect::<Vec<_>>()
+        .join(" ")
+        .trim()
+        .to_string();
 }
 
 // the main logic of parsing the schema docstring
 pub(crate) fn parse_doc_string(ori: &String) -> Doc {
+    if ori == "" {
+        return Doc::new("".to_string(), vec![]);
+    }
     let mut ori = ori.clone();
+    strip_quotes(&mut ori);
     clean_doc(&mut ori);
     let mut doc = Reader::new(ori);
     doc.reset();
@@ -298,12 +300,12 @@ pub(crate) fn parse_doc_string(ori: &String) -> Doc {
 
 #[derive(Debug)]
 pub(crate) struct Doc {
-    pub summary: Option<String>,
+    pub summary: String,
     pub attrs: Vec<Attribute>,
 }
 
 impl Doc {
-    fn new(summary: Option<String>, attrs: Vec<Attribute>) -> Self {
+    fn new(summary: String, attrs: Vec<Attribute>) -> Self {
         Self { summary, attrs }
     }
 }
@@ -376,13 +378,16 @@ de",
     ];
 
     for (ori, res) in oris.iter().zip(results.iter()) {
-        assert_eq!(strip_quotes(ori.to_string()), res.to_string());
+        let from = &mut ori.to_string();
+        strip_quotes(from);
+        assert_eq!(from.to_string(), res.to_string());
     }
 }
 
 #[test]
 fn test_clean_doc() {
-    let mut ori = strip_quotes(read_doc_content());
+    let mut ori = read_doc_content();
+    strip_quotes(&mut ori);
     clean_doc(&mut ori);
     let expect_cleaned = r#"Server is the common user interface for long-running
 services adopting the best practice of Kubernetes.
@@ -407,7 +412,7 @@ Examples
 myCustomApp = AppConfiguration {
     name = "componentName"
 }"#;
-    assert_eq!(ori, expect_cleaned.to_string());
+    assert_eq!(ori.to_string(), expect_cleaned.to_string());
 }
 
 #[test]
@@ -556,7 +561,7 @@ fn test_parse_doc() {
     let mut content = read_doc_content();
     let doc = parse_doc_string(&mut content);
     assert_eq!(
-        doc.summary.clone().unwrap(),
+        doc.summary,
         "Server is the common user interface for long-running services adopting the best practice of Kubernetes."
     );
 

@@ -208,6 +208,7 @@ impl SchemaType {
                     has_default: false,
                     ty,
                     pos: Position::dummy_pos(),
+                    doc: None,
                 };
                 self.attrs.insert(attr.to_string(), schema_attr);
             }
@@ -251,6 +252,7 @@ pub struct SchemaAttr {
     pub has_default: bool,
     pub ty: Rc<Type>,
     pub pos: Position,
+    pub doc: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq)]

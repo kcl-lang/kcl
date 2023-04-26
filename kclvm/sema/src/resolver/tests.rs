@@ -4,7 +4,7 @@ use crate::builtin::BUILTIN_FUNCTION_NAMES;
 use crate::pre_process::pre_process_program;
 use crate::resolver::resolve_program;
 use crate::resolver::scope::*;
-use crate::ty::Type;
+use crate::ty::{SchemaType, Type, TypeKind};
 use kclvm_ast::ast;
 use kclvm_error::*;
 use kclvm_parser::ParseSession;
@@ -334,10 +334,16 @@ fn test_resolve_schema_doc() {
         .unwrap()
         .borrow_mut()
         .clone();
+
+    let schema_scope_obj = &main_scope.elems[0].borrow().clone();
+    let schema_summary = match &schema_scope_obj.ty.kind {
+        TypeKind::Schema(schema_ty) => schema_ty.doc.clone(),
+        _ => "".to_string(),
+    };
+
     let schema_scope = &main_scope.children[0];
-
     let attrs_scope = &schema_scope.borrow().elems;
-
+    assert_eq!("Server is the common user interface for long-running services adopting the best practice of Kubernetes.".to_string(), schema_summary);
     assert_eq!(
         Some(
             "Use this attribute to specify which kind of long-running service you want.

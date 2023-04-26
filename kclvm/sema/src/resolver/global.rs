@@ -12,6 +12,7 @@ use kclvm_ast::ast;
 use kclvm_ast::walker::MutSelfTypedResultWalker;
 use kclvm_error::*;
 
+use super::doc::parse_doc_string;
 use super::scope::{ScopeObject, ScopeObjectKind};
 use kclvm_ast::pos::GetPos;
 
@@ -60,11 +61,12 @@ impl<'ctx> Resolver<'ctx> {
                             );
                             continue;
                         }
+                        let parsed_doc = parse_doc_string(&doc);
                         let schema_ty = SchemaType {
                             name: name.to_string(),
                             pkgpath: self.ctx.pkgpath.clone(),
                             filename: self.ctx.filename.clone(),
-                            doc: doc.to_string(),
+                            doc: parsed_doc.summary.clone(),
                             is_instance: false,
                             is_mixin,
                             is_protocol,
@@ -74,7 +76,7 @@ impl<'ctx> Resolver<'ctx> {
                             mixins: vec![],
                             attrs: IndexMap::default(),
                             func: Box::new(FunctionType {
-                                doc: doc.to_string(),
+                                doc: parsed_doc.summary.clone(),
                                 params: vec![],
                                 self_ty: None,
                                 return_ty: Rc::new(Type::VOID),
@@ -93,7 +95,7 @@ impl<'ctx> Resolver<'ctx> {
                                 ty: Rc::new(Type::schema(schema_ty.clone())),
                                 kind: ScopeObjectKind::Definition,
                                 used: false,
-                                doc: Some(schema_ty.doc),
+                                doc: Some(parsed_doc.summary.clone()),
                             },
                         )
                     }
@@ -585,8 +587,10 @@ impl<'ctx> Resolver<'ctx> {
                     line: pos.line,
                     column: pos.column,
                 },
+                doc: None,
             },
         );
+        let parsed_doc = parse_doc_string(&schema_stmt.doc);
         for stmt in &schema_stmt.body {
             let pos = stmt.get_pos();
             let (name, ty, is_optional, has_default) = match &stmt.node {
@@ -620,6 +624,13 @@ impl<'ctx> Resolver<'ctx> {
             };
             if !attr_obj_map.contains_key(&name) {
                 let existed_attr = parent_ty.as_ref().and_then(|ty| ty.get_obj_of_attr(&name));
+                let doc_str = parsed_doc.attrs.iter().find_map(|attr| {
+                    if attr.name == name {
+                        Some(attr.desc.join("\n"))
+                    } else {
+                        None
+                    }
+                });
                 attr_obj_map.insert(
                     name.clone(),
                     SchemaAttr {
@@ -627,6 +638,7 @@ impl<'ctx> Resolver<'ctx> {
                         has_default,
                         ty: ty.clone(),
                         pos: pos.clone(),
+                        doc: doc_str,
                     },
                 );
             }
@@ -771,7 +783,7 @@ impl<'ctx> Resolver<'ctx> {
             name: schema_stmt.name.node.clone(),
             pkgpath: self.ctx.pkgpath.clone(),
             filename: self.ctx.filename.clone(),
-            doc: schema_stmt.doc.clone(),
+            doc: parsed_doc.summary.clone(),
             is_instance: false,
             is_mixin: schema_stmt.is_mixin,
             is_protocol: schema_stmt.is_protocol,
@@ -781,7 +793,7 @@ impl<'ctx> Resolver<'ctx> {
             mixins: mixin_types,
             attrs: attr_obj_map,
             func: Box::new(FunctionType {
-                doc: schema_stmt.doc.clone(),
+                doc: parsed_doc.summary.clone(),
                 params,
                 self_ty: None,
                 return_ty: Rc::new(Type::ANY),
