@@ -1,9 +1,6 @@
 use regex::Regex;
 use std::collections::HashSet;
-use std::fs::File;
-use std::io::prelude::*;
 use std::iter::Iterator;
-use std::path::PathBuf;
 
 /// strip leading and trailing triple quotes from the original docstring content
 fn strip_quotes(original: &mut String) {
@@ -152,7 +149,7 @@ impl Reader {
 }
 
 /// remove the leading and trailing empty lines
-fn strip(doc: Vec<String>) -> Vec<String> {
+fn _strip(doc: Vec<String>) -> Vec<String> {
     let mut i = 0;
     let mut j = 0;
     for (line_num, line) in doc.iter().enumerate() {
@@ -239,20 +236,20 @@ fn parse_summary(doc: &mut Reader) -> String {
         return "".to_string();
     }
     let lines = read_to_next_section(doc);
-    return lines
+    lines
         .iter()
         .map(|s| s.trim())
         .collect::<Vec<_>>()
         .join(" ")
         .trim()
-        .to_string();
+        .to_string()
 }
 
 /// parse the schema docstring to Doc.
 /// The summary of the schema content will be concatenated to a single line string by whitespaces.
 /// The description of each attribute will be returned as separate lines.
 pub(crate) fn parse_doc_string(ori: &String) -> Doc {
-    if ori == "" {
+    if ori.is_empty() {
         return Doc::new("".to_string(), vec![]);
     }
     let mut ori = ori.clone();
@@ -297,27 +294,28 @@ impl Attribute {
     }
 }
 
-fn read_doc_content() -> String {
-    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    path.push("src/resolver/test_data/doc.txt");
-    let mut file = File::open(path).expect("Unable to open file");
-
-    let mut contents = String::new();
-    file.read_to_string(&mut contents)
-        .expect("Unable to read file");
-
-    if cfg!(windows) {
-        contents = contents.replace("\r\n", "\n")
-    }
-    contents
-}
-
 #[cfg(test)]
 mod tests {
-    use super::{
-        clean_doc, is_at_section, read_doc_content, read_to_next_section, strip_quotes, Reader,
-    };
+    use super::{clean_doc, is_at_section, read_to_next_section, strip_quotes, Reader};
     use crate::resolver::doc::parse_doc_string;
+    use std::fs::File;
+    use std::io::prelude::*;
+    use std::path::PathBuf;
+
+    fn read_doc_content() -> String {
+        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        path.push("src/resolver/test_data/doc.txt");
+        let mut file = File::open(path).expect("Unable to open file");
+
+        let mut contents = String::new();
+        file.read_to_string(&mut contents)
+            .expect("Unable to read file");
+
+        if cfg!(windows) {
+            contents = contents.replace("\r\n", "\n")
+        }
+        contents
+    }
 
     #[test]
     fn test_strip_quotes() {
