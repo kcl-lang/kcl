@@ -1,4 +1,5 @@
-Server is the common user interface for long-running
+"""
+    Server is the common user interface for long-running
     services adopting the best practice of Kubernetes.
 
     Attributes
@@ -21,3 +22,4 @@ Server is the common user interface for long-running
     myCustomApp = AppConfiguration {
         name = "componentName"
     }
+    """

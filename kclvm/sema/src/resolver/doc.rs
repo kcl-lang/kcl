@@ -5,7 +5,7 @@ use std::io::prelude::*;
 use std::iter::Iterator;
 use std::path::PathBuf;
 
-// strip leading and trailing triple quotes in the original docstring content
+/// strip leading and trailing triple quotes from the original docstring content
 fn strip_quotes(original: &mut String) {
     let quote = original.chars().next().unwrap();
     let pattern = format!("(?s)^{char}{{3}}(.*?){char}{{3}}$", char = quote);
@@ -23,9 +23,8 @@ fn expand_tabs(s: &str, spaces_per_tab: usize) -> String {
     s.replace("\t", &" ".repeat(spaces_per_tab))
 }
 
-// Clean up indentation by removing any common leading whitespace
-// on all lines after the first line.
-pub fn clean_doc(doc: &mut String) {
+/// Clean up indentation by removing any common leading whitespace on all lines after the first line.
+fn clean_doc(doc: &mut String) {
     let tab_expanded = expand_tabs(&doc, 4);
     let mut lines: Vec<&str> = tab_expanded.split('\n').collect();
     // Find minimum indentation of any non-blank lines after first line.
@@ -57,7 +56,7 @@ pub fn clean_doc(doc: &mut String) {
     *doc = lines.join("\n");
 }
 
-// A line-based string reader.
+/// A line-based string reader.
 struct Reader {
     data: Vec<String>,
     l: usize,
@@ -152,7 +151,7 @@ impl Reader {
     }
 }
 
-// remove the leading and trailing empty lines
+/// remove the leading and trailing empty lines
 fn strip(doc: Vec<String>) -> Vec<String> {
     let mut i = 0;
     let mut j = 0;
@@ -173,7 +172,7 @@ fn strip(doc: Vec<String>) -> Vec<String> {
     doc[i..j + 1].to_vec()
 }
 
-// Checks if current line is at the beginning of a section
+/// Checks if current line is at the beginning of a section
 fn is_at_section(doc: &mut Reader) -> bool {
     doc.seek_next_non_empty_line();
     if doc.eof() {
@@ -196,7 +195,7 @@ fn is_at_section(doc: &mut Reader) -> bool {
     l2.starts_with(&"-".repeat(l1.len())) || l2.starts_with(&"=".repeat(l1.len()))
 }
 
-// read lines before next section beginning, continuous empty lines will be merged to one
+/// read lines before next section beginning, continuous empty lines will be merged to one
 fn read_to_next_section(doc: &mut Reader) -> Vec<String> {
     let mut section = doc.read_to_next_empty_line();
 
@@ -209,7 +208,7 @@ fn read_to_next_section(doc: &mut Reader) -> Vec<String> {
     section
 }
 
-// parse
+/// parse the Attribute Section of the docstring to list of Attribute
 fn parse_attr_list(content: String) -> Vec<Attribute> {
     let mut r = Reader::new(content);
     let mut attrs = vec![];
@@ -233,7 +232,7 @@ fn parse_attr_list(content: String) -> Vec<Attribute> {
     attrs
 }
 
-// parse the summary of the schema. The final summary content will be a concat of lines in the original summary with whitespace.
+/// parse the summary of the schema. The final summary content will be a concat of lines in the original summary with whitespace.
 fn parse_summary(doc: &mut Reader) -> String {
     if is_at_section(doc) {
         // no summary provided
@@ -249,7 +248,9 @@ fn parse_summary(doc: &mut Reader) -> String {
         .to_string();
 }
 
-// the main logic of parsing the schema docstring
+/// parse the schema docstring to Doc.
+/// The summary of the schema content will be concatenated to a single line string by whitespaces.
+/// The description of each attribute will be returned as separate lines.
 pub(crate) fn parse_doc_string(ori: &String) -> Doc {
     if ori == "" {
         return Doc::new("".to_string(), vec![]);
@@ -270,6 +271,7 @@ pub(crate) fn parse_doc_string(ori: &String) -> Doc {
     Doc::new(summary, attrs)
 }
 
+/// The Doc struct contains a summary of schema and all the attributes described in the the docstring.
 #[derive(Debug)]
 pub(crate) struct Doc {
     pub summary: String,
@@ -282,6 +284,7 @@ impl Doc {
     }
 }
 
+/// The Attribute struct contains the attribute name and the corresponding description.
 #[derive(Debug)]
 pub(crate) struct Attribute {
     pub name: String,
@@ -330,7 +333,8 @@ de'''"#,
             "abcde",
             "abc
 de",
-            r#"Server is the common user interface for long-running
+            r#"
+    Server is the common user interface for long-running
     services adopting the best practice of Kubernetes.
 
     Attributes
@@ -353,7 +357,7 @@ de",
     myCustomApp = AppConfiguration {
         name = "componentName"
     }
-"#,
+    "#,
         ];
 
         for (ori, res) in oris.iter().zip(results.iter()) {

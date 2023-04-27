@@ -30,6 +30,7 @@ pub struct ScopeObject {
     pub kind: ScopeObjectKind,
     /// Record whether has been used, for check unused imported module and var definition
     pub used: bool,
+    /// The doc of the scope object, will be None unless the scope object represents a schema or schema attribute.
     pub doc: Option<String>,
 }
 

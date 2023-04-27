@@ -350,10 +350,12 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             .get_type_of_attr(name)
             .map_or(self.any_ty(), |ty| ty);
 
-        let doc_str = match schema.borrow().attrs.get(name) {
-            Some(attr) => attr.doc.clone(),
-            None => None,
-        };
+        let doc_str = schema
+            .borrow()
+            .attrs
+            .get(name)
+            .map(|attr| attr.doc.clone())
+            .flatten();
 
         // Schema attribute decorators
         self.resolve_decorators(&schema_attr.decorators, DecoratorTarget::Attribute, name);
