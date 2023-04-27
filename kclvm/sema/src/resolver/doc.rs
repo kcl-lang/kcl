@@ -116,11 +116,11 @@ impl Reader {
     fn read_to_next_empty_line(&mut self) -> Vec<String> {
         self.seek_next_non_empty_line();
 
-        fn _is_empty(line: &str) -> bool {
+        fn is_empty(line: &str) -> bool {
             return line.trim().len() == 0;
         }
 
-        return self.read_to_condition(&_is_empty);
+        return self.read_to_condition(&is_empty);
     }
 
     fn read_to_next_unindented_line(&mut self) -> Vec<String> {
@@ -147,13 +147,13 @@ impl Reader {
         }
     }
 
-    fn is_empty(&self) -> bool {
+    fn _is_empty(&self) -> bool {
         return self.data.iter().all(|x| x.trim().len() == 0);
     }
 }
 
 // remove the leading and trailing empty lines
-fn _strip(doc: Vec<String>) -> Vec<String> {
+fn strip(doc: Vec<String>) -> Vec<String> {
     let mut i = 0;
     let mut j = 0;
     for (line_num, line) in doc.iter().enumerate() {
@@ -207,34 +207,6 @@ fn read_to_next_section(doc: &mut Reader) -> Vec<String> {
         section.append(&mut doc.read_to_next_empty_line());
     }
     section
-}
-
-// read all sections, returns list of each section Title and the section content
-// For following docstring lines, the extracted sections will be:
-// [("Attribute", ["content", "content"]), ("Examples", ["content"])]
-//
-// Attribute
-// ----------
-// content
-// content
-
-// Examples
-// --------
-// content
-fn _read_sections(doc: &mut Reader) -> Vec<(String, Vec<String>)> {
-    let mut sections = vec![];
-
-    while !doc.eof() {
-        let data = read_to_next_section(doc);
-        let name = data[0].trim().to_owned();
-
-        if data.len() < 2 {
-            sections.push((name, vec![]))
-        } else {
-            sections.push((name, _strip(data[2..].to_vec())))
-        }
-    }
-    sections
 }
 
 // parse
@@ -322,7 +294,7 @@ impl Attribute {
     }
 }
 
-fn _read_doc_content() -> String {
+fn read_doc_content() -> String {
     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     path.push("src/resolver/test_data/doc.txt");
     let mut file = File::open(path).expect("Unable to open file");
@@ -337,21 +309,28 @@ fn _read_doc_content() -> String {
     contents
 }
 
-#[test]
-fn test_strip_quotes() {
-    let ori_from_file = _read_doc_content();
+#[cfg(test)]
+mod tests {
+    use super::{
+        clean_doc, is_at_section, read_doc_content, read_to_next_section, strip_quotes, Reader,
+    };
+    use crate::resolver::doc::parse_doc_string;
 
-    let oris = [
-        r#""""abcde""""#,
-        r#"'''abc
+    #[test]
+    fn test_strip_quotes() {
+        let ori_from_file = read_doc_content();
+
+        let oris = [
+            r#""""abcde""""#,
+            r#"'''abc
 de'''"#,
-        ori_from_file.as_str(),
-    ];
-    let results = [
-        "abcde",
-        "abc
+            ori_from_file.as_str(),
+        ];
+        let results = [
+            "abcde",
+            "abc
 de",
-        r#"Server is the common user interface for long-running
+            r#"Server is the common user interface for long-running
     services adopting the best practice of Kubernetes.
 
     Attributes
@@ -375,21 +354,21 @@ de",
         name = "componentName"
     }
 "#,
-    ];
+        ];
 
-    for (ori, res) in oris.iter().zip(results.iter()) {
-        let from = &mut ori.to_string();
-        strip_quotes(from);
-        assert_eq!(from.to_string(), res.to_string());
+        for (ori, res) in oris.iter().zip(results.iter()) {
+            let from = &mut ori.to_string();
+            strip_quotes(from);
+            assert_eq!(from.to_string(), res.to_string());
+        }
     }
-}
 
-#[test]
-fn test_clean_doc() {
-    let mut ori = _read_doc_content();
-    strip_quotes(&mut ori);
-    clean_doc(&mut ori);
-    let expect_cleaned = r#"Server is the common user interface for long-running
+    #[test]
+    fn test_clean_doc() {
+        let mut ori = read_doc_content();
+        strip_quotes(&mut ori);
+        clean_doc(&mut ori);
+        let expect_cleaned = r#"Server is the common user interface for long-running
 services adopting the best practice of Kubernetes.
 
 Attributes
@@ -412,12 +391,12 @@ Examples
 myCustomApp = AppConfiguration {
     name = "componentName"
 }"#;
-    assert_eq!(ori.to_string(), expect_cleaned.to_string());
-}
+        assert_eq!(ori.to_string(), expect_cleaned.to_string());
+    }
 
-#[test]
-fn test_seek_next_non_empty_line() {
-    let data = "line1
+    #[test]
+    fn test_seek_next_non_empty_line() {
+        let data = "line1
     line2
 
     
@@ -426,104 +405,104 @@ fn test_seek_next_non_empty_line() {
     line4
 
     ";
-    let mut reader = Reader::new(data.to_string());
+        let mut reader = Reader::new(data.to_string());
 
-    // Test initial position
-    assert_eq!(reader.l, 0);
+        // Test initial position
+        assert_eq!(reader.l, 0);
 
-    // Test seek to next non-empty line
-    reader.seek_next_non_empty_line();
-    assert_eq!(reader.l, 0); // line1
-    assert_eq!(reader.read(), "line1");
-    reader.seek_next_non_empty_line();
-    assert_eq!(reader.l, 1); // line2
-    assert_eq!(reader.read(), "    line2");
-    reader.seek_next_non_empty_line();
-    assert_eq!(reader.l, 4); // line3
-    assert_eq!(reader.read(), "    line3");
-    reader.seek_next_non_empty_line();
-    assert_eq!(reader.l, 6); // line4
-    assert_eq!(reader.read(), "    line4");
-    // Test seek at the end of the data
-    reader.seek_next_non_empty_line();
-    assert_eq!(reader.l, 9); // end of data
-    assert_eq!(reader.read(), "");
-    assert!(reader.eof());
-}
+        // Test seek to next non-empty line
+        reader.seek_next_non_empty_line();
+        assert_eq!(reader.l, 0); // line1
+        assert_eq!(reader.read(), "line1");
+        reader.seek_next_non_empty_line();
+        assert_eq!(reader.l, 1); // line2
+        assert_eq!(reader.read(), "    line2");
+        reader.seek_next_non_empty_line();
+        assert_eq!(reader.l, 4); // line3
+        assert_eq!(reader.read(), "    line3");
+        reader.seek_next_non_empty_line();
+        assert_eq!(reader.l, 6); // line4
+        assert_eq!(reader.read(), "    line4");
+        // Test seek at the end of the data
+        reader.seek_next_non_empty_line();
+        assert_eq!(reader.l, 9); // end of data
+        assert_eq!(reader.read(), "");
+        assert!(reader.eof());
+    }
 
-#[test]
-fn test_read_to_next_empty_line() {
-    let data = "hello
+    #[test]
+    fn test_read_to_next_empty_line() {
+        let data = "hello
     world
 
     foo
     bar
 
 abc
-    ";
-    let mut reader = Reader::new(data.to_string());
+        ";
+        let mut reader = Reader::new(data.to_string());
 
-    let output = reader.read_to_next_empty_line();
-    assert_eq!(output, vec!["hello", "    world"]);
+        let output = reader.read_to_next_empty_line();
+        assert_eq!(output, vec!["hello", "    world"]);
 
-    let output = reader.read_to_next_empty_line();
-    assert_eq!(output, vec!["    foo", "    bar"]);
+        let output = reader.read_to_next_empty_line();
+        assert_eq!(output, vec!["    foo", "    bar"]);
 
-    let output = reader.read_to_next_empty_line();
-    assert_eq!(output, vec!["abc"]);
+        let output = reader.read_to_next_empty_line();
+        assert_eq!(output, vec!["abc"]);
 
-    let output = reader.read_to_next_empty_line();
-    assert_eq!(output.len(), 0);
-}
+        let output = reader.read_to_next_empty_line();
+        assert_eq!(output.len(), 0);
+    }
 
-#[test]
-fn test_read_to_next_unindented_line() {
-    let data = "
+    #[test]
+    fn test_read_to_next_unindented_line() {
+        let data = "
     indented line
     indented line
         indented line
     indented line
 
 unindented line
-    ";
-    let mut reader = Reader::new(data.to_string());
-    let result = reader.read_to_next_unindented_line();
-    assert_eq!(
-        result,
-        vec![
-            "",
-            "    indented line",
-            "    indented line",
-            "        indented line",
-            "    indented line",
-            ""
-        ]
-    );
-}
+        ";
+        let mut reader = Reader::new(data.to_string());
+        let result = reader.read_to_next_unindented_line();
+        assert_eq!(
+            result,
+            vec![
+                "",
+                "    indented line",
+                "    indented line",
+                "        indented line",
+                "    indented line",
+                ""
+            ]
+        );
+    }
 
-#[test]
-fn test_at_section() {
-    let mut data = "Summary
+    #[test]
+    fn test_at_section() {
+        let mut data = "Summary
     Attribute
     ---------
     description"
-        .to_string();
+            .to_string();
 
-    clean_doc(&mut data);
+        clean_doc(&mut data);
 
-    let mut doc = Reader::new(data);
-    assert!(!is_at_section(&mut doc));
+        let mut doc = Reader::new(data);
+        assert!(!is_at_section(&mut doc));
 
-    assert_eq!(doc.read(), "Summary");
-    assert!(is_at_section(&mut doc));
+        assert_eq!(doc.read(), "Summary");
+        assert!(is_at_section(&mut doc));
 
-    assert_eq!(doc.read(), "Attribute");
-    assert!(!is_at_section(&mut doc));
-}
+        assert_eq!(doc.read(), "Attribute");
+        assert!(!is_at_section(&mut doc));
+    }
 
-#[test]
-fn test_read_to_next_section() {
-    let mut data = "Summary
+    #[test]
+    fn test_read_to_next_section() {
+        let mut data = "Summary
     
 
     SummaryContinue
@@ -546,54 +525,55 @@ fn test_read_to_next_section() {
     See Also
     --------
     content"
-        .to_string();
-    clean_doc(&mut data);
+            .to_string();
+        clean_doc(&mut data);
 
-    let mut doc = Reader::new(data);
-    assert_eq!(
-        read_to_next_section(&mut doc),
-        vec!["Summary", "", "SummaryContinue"]
-    );
-}
+        let mut doc = Reader::new(data);
+        assert_eq!(
+            read_to_next_section(&mut doc),
+            vec!["Summary", "", "SummaryContinue"]
+        );
+    }
 
-#[test]
-fn test_parse_doc() {
-    let mut content = _read_doc_content();
-    let doc = parse_doc_string(&mut content);
-    assert_eq!(
-        doc.summary,
-        "Server is the common user interface for long-running services adopting the best practice of Kubernetes."
-    );
+    #[test]
+    fn test_parse_doc() {
+        let mut content = read_doc_content();
+        let doc = parse_doc_string(&mut content);
+        assert_eq!(
+            doc.summary,
+            "Server is the common user interface for long-running services adopting the best practice of Kubernetes."
+        );
 
-    assert_eq!(doc.attrs.len(), 3);
-    assert_eq!(doc.attrs[0].name, "workloadType".to_string());
-    assert_eq!(
-        doc.attrs[0].desc,
-        vec![
-            "Use this attribute to specify which kind of long-running service you want."
-                .to_string(),
-            "Valid values: Deployment, CafeDeployment.".to_string(),
-            "See also: kusion_models/core/v1/workload_metadata.k.".to_string()
-        ]
-    );
+        assert_eq!(doc.attrs.len(), 3);
+        assert_eq!(doc.attrs[0].name, "workloadType".to_string());
+        assert_eq!(
+            doc.attrs[0].desc,
+            vec![
+                "Use this attribute to specify which kind of long-running service you want."
+                    .to_string(),
+                "Valid values: Deployment, CafeDeployment.".to_string(),
+                "See also: kusion_models/core/v1/workload_metadata.k.".to_string()
+            ]
+        );
 
-    assert_eq!(doc.attrs[1].name, "name".to_string());
-    assert_eq!(
-        doc.attrs[1].desc,
-        vec![
-            "A Server-level attribute.".to_string(),
-            "The name of the long-running service.".to_string(),
-            "See also: kusion_models/core/v1/metadata.k.".to_string(),
-        ]
-    );
+        assert_eq!(doc.attrs[1].name, "name".to_string());
+        assert_eq!(
+            doc.attrs[1].desc,
+            vec![
+                "A Server-level attribute.".to_string(),
+                "The name of the long-running service.".to_string(),
+                "See also: kusion_models/core/v1/metadata.k.".to_string(),
+            ]
+        );
 
-    assert_eq!(doc.attrs[2].name, "labels".to_string());
-    assert_eq!(
-        doc.attrs[2].desc,
-        vec![
-            "A Server-level attribute.".to_string(),
-            "The labels of the long-running service.".to_string(),
-            "See also: kusion_models/core/v1/metadata.k.".to_string(),
-        ]
-    );
+        assert_eq!(doc.attrs[2].name, "labels".to_string());
+        assert_eq!(
+            doc.attrs[2].desc,
+            vec![
+                "A Server-level attribute.".to_string(),
+                "The labels of the long-running service.".to_string(),
+                "See also: kusion_models/core/v1/metadata.k.".to_string(),
+            ]
+        );
+    }
 }
