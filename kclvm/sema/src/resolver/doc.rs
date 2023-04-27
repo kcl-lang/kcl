@@ -116,11 +116,11 @@ impl Reader {
     fn read_to_next_empty_line(&mut self) -> Vec<String> {
         self.seek_next_non_empty_line();
 
-        fn is_empty(line: &str) -> bool {
+        fn _is_empty(line: &str) -> bool {
             return line.trim().len() == 0;
         }
 
-        return self.read_to_condition(&is_empty);
+        return self.read_to_condition(&_is_empty);
     }
 
     fn read_to_next_unindented_line(&mut self) -> Vec<String> {
@@ -221,7 +221,7 @@ fn read_to_next_section(doc: &mut Reader) -> Vec<String> {
 // Examples
 // --------
 // content
-fn read_sections(doc: &mut Reader) -> Vec<(String, Vec<String>)> {
+fn _read_sections(doc: &mut Reader) -> Vec<(String, Vec<String>)> {
     let mut sections = vec![];
 
     while !doc.eof() {
@@ -322,7 +322,7 @@ impl Attribute {
     }
 }
 
-fn read_doc_content() -> String {
+fn _read_doc_content() -> String {
     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     path.push("src/resolver/test_data/doc.txt");
     let mut file = File::open(path).expect("Unable to open file");
@@ -339,7 +339,7 @@ fn read_doc_content() -> String {
 
 #[test]
 fn test_strip_quotes() {
-    let ori_from_file = read_doc_content();
+    let ori_from_file = _read_doc_content();
 
     let oris = [
         r#""""abcde""""#,
@@ -386,7 +386,7 @@ de",
 
 #[test]
 fn test_clean_doc() {
-    let mut ori = read_doc_content();
+    let mut ori = _read_doc_content();
     strip_quotes(&mut ori);
     clean_doc(&mut ori);
     let expect_cleaned = r#"Server is the common user interface for long-running
@@ -558,7 +558,7 @@ fn test_read_to_next_section() {
 
 #[test]
 fn test_parse_doc() {
-    let mut content = read_doc_content();
+    let mut content = _read_doc_content();
     let doc = parse_doc_string(&mut content);
     assert_eq!(
         doc.summary,

@@ -618,7 +618,7 @@ fn schema_doc_hover_test() {
                 assert_eq!(s, "Person");
             }
             if let MarkedString::String(s) = vec[1].clone() {
-                assert_eq!(s, "\"\"\"\n    hover doc test \n    \"\"\"");
+                assert_eq!(s, "hover doc test");
             }
         }
         _ => unreachable!("test error"),

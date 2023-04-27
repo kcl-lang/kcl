@@ -4,7 +4,7 @@ use crate::builtin::BUILTIN_FUNCTION_NAMES;
 use crate::pre_process::pre_process_program;
 use crate::resolver::resolve_program;
 use crate::resolver::scope::*;
-use crate::ty::{SchemaType, Type, TypeKind};
+use crate::ty::{Type, TypeKind};
 use kclvm_ast::ast;
 use kclvm_error::*;
 use kclvm_parser::ParseSession;
