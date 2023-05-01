@@ -19,7 +19,7 @@ use crate::hover::hover;
 use crate::{
     completion::{completion, into_completion_items},
     goto_def::goto_definition,
-    util::{apply_document_changes, parse_param_and_compile, Param},
+    util::{apply_document_changes, normalize_file_path, parse_param_and_compile, Param},
 };
 
 fn compile_test_file(testfile: &str) -> (String, Program, ProgramScope, IndexSet<Diagnostic>) {
@@ -693,4 +693,33 @@ fn document_symbol_test() {
     ));
     let expect = DocumentSymbolResponse::Nested(expect);
     assert_eq!(res, expect)
+}
+
+#[test]
+fn normalize_file_path_test() {
+    let path_list = if cfg!(windows) {
+        vec![
+            "abc/foo.txt",
+            "\\?\\c:\\folders",
+            "c:/abc/foo.txt",
+            "/c:/abc/foo.txt",
+        ]
+    } else {
+        vec!["abc/foo.txt", "/abc/foo.txt"]
+    };
+
+    let expected = if cfg!(windows) {
+        vec![
+            "abc/foo.txt",
+            "\\?\\c:\\folders",
+            "c:/abc/foo.txt",
+            "c:/abc/foo.txt",
+        ]
+    } else {
+        vec!["abc/foo.txt", "/abc/foo.txt"]
+    };
+
+    for (i, p) in path_list.iter().enumerate() {
+        assert_eq!(normalize_file_path(p), expected[i])
+    }
 }

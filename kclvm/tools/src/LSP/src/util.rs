@@ -93,7 +93,7 @@ fn load_files_code_from_vfs(files: &[&str], vfs: Arc<RwLock<Vfs>>) -> anyhow::Re
     let mut res = vec![];
     let vfs = &mut vfs.read();
     for file in files {
-        let url = Url::from_file_path(file)
+        let url = Url::from_file_path(normalize_file_path(file))
             .map_err(|_| anyhow::anyhow!("can't convert file to url: {}", file))?;
         let path = from_lsp::abs_path(&url)?;
         match vfs.file_id(&path.clone().into()) {
@@ -111,6 +111,14 @@ fn load_files_code_from_vfs(files: &[&str], vfs: Arc<RwLock<Vfs>>) -> anyhow::Re
         }
     }
     Ok(res)
+}
+
+pub(crate) fn normalize_file_path(filepath: &str) -> &str {
+    if cfg!(windows) && filepath.starts_with("/") {
+        &filepath[1..]
+    } else {
+        filepath
+    }
 }
 
 macro_rules! walk_if_contains {
