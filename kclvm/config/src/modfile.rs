@@ -112,12 +112,7 @@ pub fn get_pkg_root(k_file_path: &str) -> Option<String> {
         return None;
     }
     // # search by kcl.mod file
-    let filepath = if cfg!(windows) && k_file_path.starts_with("/") {
-        &k_file_path[1..]
-    } else {
-        k_file_path
-    };
-    if let Ok(module_path) = std::path::Path::new(filepath).canonicalize() {
+    if let Ok(module_path) = std::path::Path::new(k_file_path).canonicalize() {
         let mut module_path = module_path;
         while module_path.exists() {
             let kcl_mod_path = module_path.join(KCL_MOD_FILE);
@@ -132,7 +127,7 @@ pub fn get_pkg_root(k_file_path: &str) -> Option<String> {
         }
     }
     if k_file_path.ends_with(KCL_FILE_SUFFIX) {
-        if let Ok(path) = std::path::Path::new(filepath).canonicalize() {
+        if let Ok(path) = std::path::Path::new(k_file_path).canonicalize() {
             if let Some(path) = path.parent() {
                 return Some(path.adjust_canonicalization());
             }

@@ -12,14 +12,16 @@ use lsp_types::DocumentSymbol;
 use lsp_types::DocumentSymbolResponse;
 use lsp_types::MarkedString;
 use lsp_types::SymbolKind;
+use lsp_types::Url;
 use lsp_types::{Position, Range, TextDocumentContentChangeEvent};
 
 use crate::document_symbol::document_symbol;
+use crate::from_lsp::file_path_from_url;
 use crate::hover::hover;
 use crate::{
     completion::{completion, into_completion_items},
     goto_def::goto_definition,
-    util::{apply_document_changes, normalize_file_path, parse_param_and_compile, Param},
+    util::{apply_document_changes, parse_param_and_compile, Param},
 };
 
 fn compile_test_file(testfile: &str) -> (String, Program, ProgramScope, IndexSet<Diagnostic>) {
@@ -696,30 +698,15 @@ fn document_symbol_test() {
 }
 
 #[test]
-fn normalize_file_path_test() {
-    let path_list = if cfg!(windows) {
-        vec![
-            "abc/foo.txt",
-            "\\?\\c:\\folders",
-            "c:/abc/foo.txt",
-            "/c:/abc/foo.txt",
-        ]
+fn file_path_from_url_test() {
+    if cfg!(windows) {
+        let url =
+            Url::parse("file:///c%3A/Users/abc/Desktop/%E4%B8%AD%E6%96%87/ab%20c/abc.k").unwrap();
+        let path = file_path_from_url(&url).unwrap();
+        assert_eq!(path, "c:\\Users\\abc\\Desktop\\中文\\ab c\\abc.k");
     } else {
-        vec!["abc/foo.txt", "/abc/foo.txt"]
-    };
-
-    let expected = if cfg!(windows) {
-        vec![
-            "abc/foo.txt",
-            "\\?\\c:\\folders",
-            "c:/abc/foo.txt",
-            "c:/abc/foo.txt",
-        ]
-    } else {
-        vec!["abc/foo.txt", "/abc/foo.txt"]
-    };
-
-    for (i, p) in path_list.iter().enumerate() {
-        assert_eq!(normalize_file_path(p), expected[i])
+        let url = Url::parse("file:///Users/abc/Desktop/%E4%B8%AD%E6%96%87/ab%20c/abc.k").unwrap();
+        let path = file_path_from_url(&url).unwrap();
+        assert_eq!(path, "/Users/abc/Desktop/中文/ab c/abc.k");
     }
 }

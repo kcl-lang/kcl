@@ -20,7 +20,7 @@ use lsp_types::{GotoDefinitionResponse, Url};
 use lsp_types::{Location, Range};
 
 use crate::to_lsp::lsp_pos;
-use crate::util::{inner_most_expr_in_stmt, normalize_file_path};
+use crate::util::inner_most_expr_in_stmt;
 
 // Navigates to the definition of an identifier.
 pub(crate) fn goto_definition(
@@ -96,7 +96,7 @@ fn positions_to_goto_def_resp(
         1 => {
             let (start, end) = positions.iter().next().unwrap().clone();
             Some(lsp_types::GotoDefinitionResponse::Scalar(Location {
-                uri: Url::from_file_path(normalize_file_path(start.filename.as_str())).unwrap(),
+                uri: Url::from_file_path(start.filename.clone()).unwrap(),
                 range: Range {
                     start: lsp_pos(&start),
                     end: lsp_pos(&end),
@@ -107,7 +107,7 @@ fn positions_to_goto_def_resp(
             let mut res = vec![];
             for (start, end) in positions {
                 res.push(Location {
-                    uri: Url::from_file_path(normalize_file_path(start.filename.as_str())).unwrap(),
+                    uri: Url::from_file_path(start.filename.clone()).unwrap(),
                     range: Range {
                         start: lsp_pos(start),
                         end: lsp_pos(end),

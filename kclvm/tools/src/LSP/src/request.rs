@@ -7,7 +7,7 @@ use crate::{
     completion::completion,
     dispatcher::RequestDispatcher,
     document_symbol::document_symbol,
-    from_lsp::kcl_pos,
+    from_lsp::{file_path_from_url, kcl_pos},
     goto_def::goto_definition,
     hover,
     state::{log_message, LanguageServerSnapshot, LanguageServerState, Task},
@@ -56,11 +56,7 @@ pub(crate) fn handle_goto_definition(
     params: lsp_types::GotoDefinitionParams,
     sender: Sender<Task>,
 ) -> anyhow::Result<Option<lsp_types::GotoDefinitionResponse>> {
-    let file = params
-        .text_document_position_params
-        .text_document
-        .uri
-        .path();
+    let file = file_path_from_url(&params.text_document_position_params.text_document.uri)?;
 
     let (program, prog_scope, _) = parse_param_and_compile(
         Param {
@@ -68,7 +64,7 @@ pub(crate) fn handle_goto_definition(
         },
         Some(snapshot.vfs),
     )?;
-    let kcl_pos = kcl_pos(file, params.text_document_position_params.position);
+    let kcl_pos = kcl_pos(&file, params.text_document_position_params.position);
     let res = goto_definition(&program, &kcl_pos, &prog_scope);
     if res.is_none() {
         log_message("Definition not found".to_string(), &sender)?;
@@ -82,7 +78,7 @@ pub(crate) fn handle_completion(
     params: lsp_types::CompletionParams,
     sender: Sender<Task>,
 ) -> anyhow::Result<Option<lsp_types::CompletionResponse>> {
-    let file = params.text_document_position.text_document.uri.path();
+    let file = file_path_from_url(&params.text_document_position.text_document.uri)?;
 
     let (program, prog_scope, _) = parse_param_and_compile(
         Param {
@@ -90,7 +86,7 @@ pub(crate) fn handle_completion(
         },
         Some(snapshot.vfs),
     )?;
-    let kcl_pos = kcl_pos(file, params.text_document_position.position);
+    let kcl_pos = kcl_pos(&file, params.text_document_position.position);
     log_message(
         format!(
             "handle_completion {:?}",
@@ -118,11 +114,7 @@ pub(crate) fn handle_hover(
     params: lsp_types::HoverParams,
     sender: Sender<Task>,
 ) -> anyhow::Result<Option<lsp_types::Hover>> {
-    let file = params
-        .text_document_position_params
-        .text_document
-        .uri
-        .path();
+    let file = file_path_from_url(&params.text_document_position_params.text_document.uri)?;
 
     let (program, prog_scope, _) = parse_param_and_compile(
         Param {
@@ -130,7 +122,7 @@ pub(crate) fn handle_hover(
         },
         Some(snapshot.vfs),
     )?;
-    let kcl_pos = kcl_pos(file, params.text_document_position_params.position);
+    let kcl_pos = kcl_pos(&file, params.text_document_position_params.position);
     log_message(
         format!(
             "handle_hover {:?}",
@@ -149,7 +141,7 @@ pub(crate) fn handle_document_symbol(
     params: lsp_types::DocumentSymbolParams,
     sender: Sender<Task>,
 ) -> anyhow::Result<Option<lsp_types::DocumentSymbolResponse>> {
-    let file = params.text_document.uri.path();
+    let file = file_path_from_url(&params.text_document.uri)?;
 
     let (program, prog_scope, _) = parse_param_and_compile(
         Param {
@@ -158,7 +150,7 @@ pub(crate) fn handle_document_symbol(
         Some(snapshot.vfs),
     )?;
 
-    let res = document_symbol(file, &program, &prog_scope);
+    let res = document_symbol(&file, &program, &prog_scope);
     if res.is_none() {
         log_message("Document symbol not found".to_string(), &sender)?;
     }

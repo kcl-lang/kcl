@@ -11,7 +11,6 @@ use lsp_types::Range;
 use lsp_types::{DocumentSymbol, DocumentSymbolResponse, SymbolKind};
 
 use crate::to_lsp::lsp_pos;
-use crate::util::normalize_file_path;
 
 pub(crate) fn document_symbol(
     file: &str,
@@ -22,9 +21,7 @@ pub(crate) fn document_symbol(
     let scope = prog_scope.scope_map.get(MAIN_PKG).unwrap().borrow();
     // Get variable in scope
     for obj in scope.elems.values().filter(|obj| {
-        if let Ok(canonicalized_path) =
-            Path::new(normalize_file_path(&obj.borrow().start.filename)).canonicalize()
-        {
+        if let Ok(canonicalized_path) = Path::new(&obj.borrow().start.filename).canonicalize() {
             // skip schema definition
             canonicalized_path.eq(Path::new(file))
                 && obj.borrow().kind != ScopeObjectKind::Definition
@@ -36,9 +33,7 @@ pub(crate) fn document_symbol(
     }
     // Get schema definition in scope
     for child in scope.children.iter().filter(|child| {
-        if let Ok(canonicalized_path) =
-            Path::new(normalize_file_path(&child.borrow().start.filename)).canonicalize()
-        {
+        if let Ok(canonicalized_path) = Path::new(&child.borrow().start.filename).canonicalize() {
             canonicalized_path.eq(Path::new(file))
         } else {
             false

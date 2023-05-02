@@ -50,3 +50,12 @@ pub(crate) fn text_range(text: &str, range: lsp_types::Range) -> Range<usize> {
 
     Range { start, end }
 }
+
+/// Converts the specified `url` to a utf8 encoded file path string. Returns an error if the url could not be
+/// converted to a valid utf8 encoded file path string.
+pub(crate) fn file_path_from_url(url: &Url) -> anyhow::Result<String> {
+    url.to_file_path()
+        .ok()
+        .and_then(|path| path.to_str().map(|p| p.to_string()))
+        .ok_or_else(|| anyhow::anyhow!("can't convert url to file path: {}", url))
+}
