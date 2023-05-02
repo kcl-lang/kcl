@@ -12,9 +12,11 @@ use lsp_types::DocumentSymbol;
 use lsp_types::DocumentSymbolResponse;
 use lsp_types::MarkedString;
 use lsp_types::SymbolKind;
+use lsp_types::Url;
 use lsp_types::{Position, Range, TextDocumentContentChangeEvent};
 
 use crate::document_symbol::document_symbol;
+use crate::from_lsp::file_path_from_url;
 use crate::hover::hover;
 use crate::{
     completion::{completion, into_completion_items},
@@ -693,4 +695,18 @@ fn document_symbol_test() {
     ));
     let expect = DocumentSymbolResponse::Nested(expect);
     assert_eq!(res, expect)
+}
+
+#[test]
+fn file_path_from_url_test() {
+    if cfg!(windows) {
+        let url =
+            Url::parse("file:///c%3A/Users/abc/Desktop/%E4%B8%AD%E6%96%87/ab%20c/abc.k").unwrap();
+        let path = file_path_from_url(&url).unwrap();
+        assert_eq!(path, "c:\\Users\\abc\\Desktop\\中文\\ab c\\abc.k");
+    } else {
+        let url = Url::parse("file:///Users/abc/Desktop/%E4%B8%AD%E6%96%87/ab%20c/abc.k").unwrap();
+        let path = file_path_from_url(&url).unwrap();
+        assert_eq!(path, "/Users/abc/Desktop/中文/ab c/abc.k");
+    }
 }
