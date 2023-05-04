@@ -238,7 +238,7 @@ impl From<PanicInfo> for Diagnostic {
                     line: panic_info.kcl_line as u64,
                     column: None,
                 },
-                Some(DiagnosticId::Error(E3M38.kind)),
+                None,
             )
         } else {
             let mut backtrace_msg = "backtrace:\n".to_string();
@@ -263,7 +263,7 @@ impl From<PanicInfo> for Diagnostic {
                     line: panic_info.kcl_line as u64,
                     column: None,
                 },
-                Some(DiagnosticId::Error(E3M38.kind)),
+                None,
             )
         };
 
@@ -279,7 +279,7 @@ impl From<PanicInfo> for Diagnostic {
                 line: panic_info.kcl_config_meta_line as u64,
                 column: Some(panic_info.kcl_config_meta_col as u64),
             },
-            Some(DiagnosticId::Error(E3M38.kind)),
+            None,
         );
         config_meta_diag.messages.append(&mut diag.messages);
         config_meta_diag
@@ -379,27 +379,25 @@ impl SessionDiagnostic for Diagnostic {
             Some(id) => match id {
                 DiagnosticId::Error(error) => {
                     diag.append_component(Box::new(Label::Error(error.code())));
-                    diag.append_component(Box::new(format!(": {}", error.name())));
+                    diag.append_component(Box::new(format!(": {}\n", error.name())));
                 }
                 DiagnosticId::Warning(warning) => {
                     diag.append_component(Box::new(Label::Warning(warning.code())));
-                    diag.append_component(Box::new(format!(": {}", warning.name())));
+                    diag.append_component(Box::new(format!(": {}\n", warning.name())));
                 }
             },
             None => match self.level {
                 Level::Error => {
-                    diag.append_component(Box::new(Label::Error(E2L23.code.to_string())));
+                    diag.append_component(Box::new(format!("{}\n", ErrorKind::EvaluationError)));
                 }
                 Level::Warning => {
-                    diag.append_component(Box::new(Label::Warning(W1001.code.to_string())));
+                    diag.append_component(Box::new(format!("{}\n", WarningKind::CompilerWarning)));
                 }
                 Level::Note => {
                     diag.append_component(Box::new(Label::Note));
                 }
             },
         }
-        // Append a new line.
-        diag.append_component(Box::new(String::from("\n")));
         for msg in &self.messages {
             match Session::new_with_file_and_code(&msg.pos.filename, None) {
                 Ok(sess) => {
