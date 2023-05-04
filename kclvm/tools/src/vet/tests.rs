@@ -437,7 +437,7 @@ mod test_validater {
                 );
 
                 let result = validate(opt).unwrap_err();
-                assert!(result.contains("error"), "{result}");
+                assert!(result.contains("Error"), "{result}");
             }
         }
     }
