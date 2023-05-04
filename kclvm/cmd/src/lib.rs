@@ -44,7 +44,10 @@ pub fn main(args: &[&str]) -> Result<()> {
 /// Get the KCLVM CLI application.
 pub fn app() -> clap::App<'static> {
     clap_app!(kclvm_cli =>
+        (version: kclvm_version::VERSION)
+        (about: "KCL main CLI")
         (@subcommand run =>
+            (about: "Run KCL files")
             (@arg input: ... "Specify the input files to run")
             (@arg output: -o --output +takes_value "Specify the YAML output file path")
             (@arg setting: ... -Y --setting +takes_value "Specify the input setting file")
@@ -60,17 +63,20 @@ pub fn app() -> clap::App<'static> {
             (@arg package_map: ... -E --external +takes_value "Mapping of package name and path where the package is located")
         )
         (@subcommand lint =>
+            (about: "Lint KCL files")
             (@arg input: ... "Sets the input file to use")
             (@arg setting: ... -Y --setting +takes_value "Sets the input file to use")
             (@arg verbose: -v --verbose "Print test information verbosely")
             (@arg emit_warning: --emit_warning "Emit warning message")
         )
         (@subcommand fmt =>
+            (about: "Format KCL files")
             (@arg input: "Input file or path name for formatting")
             (@arg recursive: -R --recursive "Iterate through subdirectories recursively")
             (@arg std_output: -w --std_output "Whether to output format to stdout")
         )
         (@subcommand vet =>
+            (about: "Validate data files with KCL files")
             (@arg data_file: "Validation data file")
             (@arg kcl_file: "KCL file")
             (@arg schema: -d --schema +takes_value "Iterate through subdirectories recursively")
@@ -78,8 +84,10 @@ pub fn app() -> clap::App<'static> {
             (@arg format: --format +takes_value "Validation data file format, support YAML and JSON, default is JSON")
         )
         (@subcommand server =>
+            (about: "Start a rpc server for APIs")
         )
         (@subcommand version =>
+            (about: "Show the KCL version")
         )
     )
 }
