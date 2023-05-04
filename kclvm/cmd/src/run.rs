@@ -16,7 +16,7 @@ pub fn run_command(matches: &ArgMatches) -> Result<()> {
     match exec_program(sess.clone(), &settings.try_into()?) {
         Ok(result) => match output {
             Some(o) => {
-                std::fs::write(o, result.yaml_result).unwrap();
+                std::fs::write(o, result.yaml_result)?;
             }
             None => println!("{}", result.yaml_result),
         },

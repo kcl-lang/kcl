@@ -113,6 +113,12 @@ fn test_external_cmd() {
 }
 
 #[test]
+fn test_version_cmd() {
+    let matches = app().get_matches_from(&[ROOT_CMD, "version"]);
+    assert!(matches.subcommand_matches("version").is_some())
+}
+
+#[test]
 fn test_multi_external_cmd() {
     let matches = app().get_matches_from(&[
         ROOT_CMD,
