@@ -647,6 +647,7 @@ fn build_document_symbol(
     kind: SymbolKind,
     range: ((u32, u32), (u32, u32)),
     child: Option<Vec<DocumentSymbol>>,
+    detail: Option<String>,
 ) -> DocumentSymbol {
     let range: Range = Range {
         start: Position {
@@ -660,7 +661,7 @@ fn build_document_symbol(
     };
     DocumentSymbol {
         name: name.to_string(),
-        detail: None,
+        detail,
         kind,
         tags: None,
         deprecated: None,
@@ -681,6 +682,7 @@ fn document_symbol_test() {
         SymbolKind::VARIABLE,
         ((3, 0), (3, 1)),
         None,
+        Some("Person4".to_string()),
     ));
     expect.push(build_document_symbol(
         "Person4",
@@ -691,7 +693,9 @@ fn document_symbol_test() {
             SymbolKind::PROPERTY,
             ((1, 4), (1, 8)),
             None,
+            Some("str".to_string()),
         )]),
+        Some("schema".to_string()),
     ));
     let expect = DocumentSymbolResponse::Nested(expect);
     assert_eq!(res, expect)
