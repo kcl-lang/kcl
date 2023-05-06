@@ -1,0 +1,5 @@
+main:
+  name: sss
+  useBuiltInEnv: false
+aa: konfig.base.pkg.kusion_models.kube.frontend.container.Main
+cc: konfig.base.pkg.kusion_models.kube.frontend.container.Main

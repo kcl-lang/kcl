@@ -1,0 +1,7 @@
+main:
+  name: sss
+appConfiguration1:
+  mainContainer:
+    name: sss
+aa: kcl4.container.Main
+cc: kcl4.container.Main

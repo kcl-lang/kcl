@@ -174,10 +174,10 @@ pub fn test_import_vendor() {
                 "nested_vendor",
                 "nested_vendor.nested_vendor",
                 "vendor_subpkg",
-                "sub.sub1",
-                "sub.sub2",
-                "sub.sub",
-                "sub",
+                "vendor_subpkg.sub.sub1",
+                "vendor_subpkg.sub.sub2",
+                "vendor_subpkg.sub.sub",
+                "vendor_subpkg.sub",
             ],
         ),
         (
@@ -185,10 +185,10 @@ pub fn test_import_vendor() {
             vec![
                 "__main__",
                 "vendor_subpkg",
-                "sub.sub1",
-                "sub.sub",
-                "sub.sub2",
-                "sub",
+                "vendor_subpkg.sub.sub1",
+                "vendor_subpkg.sub.sub",
+                "vendor_subpkg.sub.sub2",
+                "vendor_subpkg.sub",
             ],
         ),
     ];
@@ -204,6 +204,7 @@ pub fn test_import_vendor() {
         let m = load_program(sess.clone(), &[&test_case_path], None).unwrap();
         assert_eq!(m.pkgs.len(), pkgs.len());
         m.pkgs.into_iter().for_each(|(name, modules)| {
+            println!("{:?} - {:?}", test_case_name, name);
             assert!(pkgs.contains(&name.as_str()));
             for pkg in pkgs.clone() {
                 if name == pkg {
@@ -368,10 +369,10 @@ fn test_import_vendor_by_external_arguments() {
                 "__main__",
                 "nested_vendor",
                 "vendor_subpkg",
-                "sub.sub2",
-                "sub.sub1",
-                "sub.sub",
-                "sub",
+                "vendor_subpkg.sub.sub2",
+                "vendor_subpkg.sub.sub1",
+                "vendor_subpkg.sub.sub",
+                "vendor_subpkg.sub",
             ],
         ),
         (
@@ -380,10 +381,10 @@ fn test_import_vendor_by_external_arguments() {
             vec![
                 "__main__",
                 "vendor_subpkg",
-                "sub.sub1",
-                "sub.sub2",
-                "sub.sub",
-                "sub",
+                "vendor_subpkg.sub.sub1",
+                "vendor_subpkg.sub.sub2",
+                "vendor_subpkg.sub.sub",
+                "vendor_subpkg.sub",
             ],
         ),
     ];
