@@ -65,7 +65,7 @@ fn schema_scope_to_document_symbol(scope: Scope) -> Option<DocumentSymbol> {
                     .map(|(_, obj)| scope_obj_to_document_symbol(obj.borrow().clone()))
                     .collect(),
             ),
-            detail: None,
+            detail: Some("schema".to_string()),
             tags: None,
             deprecated: None,
         })
@@ -86,7 +86,7 @@ fn scope_obj_to_document_symbol(obj: ScopeObject) -> DocumentSymbol {
         kind,
         range,
         selection_range: range,
-        detail: None,
+        detail: Some(obj.ty.ty_str()),
         tags: None,
         children: None,
         deprecated: None,
