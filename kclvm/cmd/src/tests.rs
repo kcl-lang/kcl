@@ -1,11 +1,10 @@
-use std::{env, fs, io::Read, path::PathBuf};
+use std::{env, fs, path::PathBuf};
 
-use gag::BufferRedirect;
 use kclvm_config::modfile::KCL_PKG_PATH;
 
 use crate::{
-    app, fmt::fmt_command, main, settings::build_settings, util::hashmaps_from_matches,
-    vet::vet_command,
+    app, fmt::fmt_command, settings::build_settings, util::hashmaps_from_matches,
+    vet::vet_command, run::run_command,
 };
 
 const ROOT_CMD: &str = "kclvm_cli";
@@ -189,7 +188,13 @@ fn test_external_cmd_invalid() {
 }
 
 #[test]
-fn test_main() {
+// 
+fn test_run_command() {
+    test_run_command_with_import();
+    test_run_command_with_konfig();
+}
+
+fn test_run_command_with_import() {
     let vendor_path = PathBuf::from("./src/test_data/cases/vendor");
 
     let test_cases = vec!["import_1"];
@@ -198,15 +203,14 @@ fn test_main() {
         .unwrap();
 
     for test_case in test_cases {
-        check_test_case_with_env(
+        check_run_command_with_env(
             test_case_root.join(test_case),
             vendor_path.canonicalize().unwrap().display().to_string(),
         );
     }
 }
 
-#[test]
-fn test_with_konfig() {
+fn test_run_command_with_konfig() {
     let vendor_path = PathBuf::from("../../test/integration");
 
     let test_cases = vec!["import_konfig_1"];
@@ -215,29 +219,31 @@ fn test_with_konfig() {
         .unwrap();
 
     for test_case in test_cases {
-        check_test_case_with_env(
+        check_run_command_with_env(
             test_case_root.join(test_case),
             vendor_path.canonicalize().unwrap().display().to_string(),
         );
     }
 }
 
-fn check_test_case_with_env(test_case_path: PathBuf, kcl_pkg_path_env: String) {
+/// rust crate [`gag`]: https://crates.io/crates/gag 
+/// allows redirecting stderr or stdout either to a file or to nothing, 
+/// but it only works on unix systems.
+/// After [`gag`] can better support windows in the future, it may be considered to test the `println!`.
+fn check_run_command_with_env(test_case_path: PathBuf, kcl_pkg_path_env: String) {
     env::set_var(KCL_PKG_PATH, kcl_pkg_path_env);
 
     let test_case_expect_file = test_case_path.join("stdout").display().to_string();
     let expect = fs::read_to_string(test_case_expect_file).expect("Unable to read file");
 
-    let mut buf = BufferRedirect::stdout().unwrap();
-
-    main(&[
+    let matches = app().arg_required_else_help(true).get_matches_from(&[
         ROOT_CMD,
         "run",
         &test_case_path.join("main.k").display().to_string(),
-    ])
-    .unwrap();
-    let mut output = String::new();
-    buf.read_to_string(&mut output).unwrap();
+    ]);
 
-    assert_eq!(&output[..], expect);
+    let mut buf = Vec::new();
+    run_command(matches.subcommand_matches("run").unwrap(), &mut buf).unwrap();
+
+    assert_eq!(String::from_utf8(buf).unwrap(), expect);
 }

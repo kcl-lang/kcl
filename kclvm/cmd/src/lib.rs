@@ -13,6 +13,8 @@ pub mod vet;
 #[cfg(test)]
 mod tests;
 
+use std::io;
+
 use anyhow::Result;
 use fmt::fmt_command;
 use lint::lint_command;
@@ -24,7 +26,7 @@ pub fn main(args: &[&str]) -> Result<()> {
     let matches = app().arg_required_else_help(true).get_matches_from(args);
     // Sub commands
     if let Some(matches) = matches.subcommand_matches("run") {
-        run_command(matches)
+        run_command(matches, &mut io::stdout())
     } else if let Some(matches) = matches.subcommand_matches("lint") {
         lint_command(matches)
     } else if let Some(matches) = matches.subcommand_matches("fmt") {

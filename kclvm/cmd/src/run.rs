@@ -4,11 +4,12 @@ use kclvm_error::StringError;
 use kclvm_parser::ParseSession;
 use kclvm_runner::exec_program;
 use std::sync::Arc;
+use std::io::Write;
 
 use crate::settings::must_build_settings;
 
 /// Run the KCL run command.
-pub fn run_command(matches: &ArgMatches) -> Result<()> {
+pub fn run_command<W: Write>(matches: &ArgMatches, writer: &mut W) -> Result<()> {
     // Config settings building
     let settings = must_build_settings(matches);
     let output = settings.output();
@@ -18,7 +19,9 @@ pub fn run_command(matches: &ArgMatches) -> Result<()> {
             Some(o) => {
                 std::fs::write(o, result.yaml_result)?;
             }
-            None => println!("{}", result.yaml_result),
+            // [`println!`] is not a good way to output content to stdout, 
+            // using [`writeln`] can be better to redirect the output.
+            None => writeln!(writer, "{}", result.yaml_result)?,
         },
         Err(msg) => {
             if !sess.0.diag_handler.has_errors()? {
