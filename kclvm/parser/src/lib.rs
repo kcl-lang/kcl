@@ -396,7 +396,7 @@ impl Loader {
                         import_spec.path.as_str(),
                     );
                     // Load the import package source code and compile.
-                    match self.load_package(
+                    if let Some(pkg_info) = self.load_package(
                         &pkgroot,
                         pkg_name.to_string(),
                         import_spec.path.to_string(),
@@ -404,10 +404,7 @@ impl Loader {
                         pkgs,
                     )? {
                         // Add the external package name as prefix of the [`kclvm_ast::ImportStmt`]'s member [`path`].
-                        Some(pkg_info) => {
-                            import_spec.path = pkg_info.pkg_path.to_string();
-                        }
-                        None => {}
+                        import_spec.path = pkg_info.pkg_path.to_string();
                     }
                 }
             }

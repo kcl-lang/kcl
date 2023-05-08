@@ -3,8 +3,8 @@ use std::{env, fs, path::PathBuf};
 use kclvm_config::modfile::KCL_PKG_PATH;
 
 use crate::{
-    app, fmt::fmt_command, settings::build_settings, util::hashmaps_from_matches,
-    vet::vet_command, run::run_command,
+    app, fmt::fmt_command, run::run_command, settings::build_settings, util::hashmaps_from_matches,
+    vet::vet_command,
 };
 
 const ROOT_CMD: &str = "kclvm_cli";
@@ -188,7 +188,7 @@ fn test_external_cmd_invalid() {
 }
 
 #[test]
-// 
+//
 fn test_run_command() {
     test_run_command_with_import();
     test_run_command_with_konfig();
@@ -226,8 +226,8 @@ fn test_run_command_with_konfig() {
     }
 }
 
-/// rust crate [`gag`]: https://crates.io/crates/gag 
-/// allows redirecting stderr or stdout either to a file or to nothing, 
+/// rust crate [`gag`]: https://crates.io/crates/gag
+/// allows redirecting stderr or stdout either to a file or to nothing,
 /// but it only works on unix systems.
 /// After [`gag`] can better support windows in the future, it may be considered to test the `println!`.
 fn check_run_command_with_env(test_case_path: PathBuf, kcl_pkg_path_env: String) {
