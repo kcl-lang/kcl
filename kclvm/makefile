@@ -55,20 +55,20 @@ fix:
 
 # Unit tests without code cov
 test:
-	cargo test -p kclvm-*
+	cargo test -p kclvm-* -- --nocapture
 
 # Unit tests with code cov (Requires rust 1.60+)
 codecov:
 	rustup component add llvm-tools-preview
 	cargo install cargo-llvm-cov
-	cargo llvm-cov --workspace --ignore-filename-regex gpyrpc.rs --html --open 
+	cargo llvm-cov --workspace --ignore-filename-regex gpyrpc.rs --html --open -- --nocapture
 
 # Unit tests with code cov and output the lcov file (Requires rust 1.60+)
 codecov-lcov:
 	rustup component add llvm-tools-preview
 	cargo install cargo-llvm-cov
 	mkdir $(PWD)/.kclvm
-	cargo llvm-cov --lcov --output-path $(PWD)/.kclvm/lcov.info --workspace --ignore-filename-regex gpyrpc.rs
+	cargo llvm-cov --lcov --output-path $(PWD)/.kclvm/lcov.info --workspace --ignore-filename-regex gpyrpc.rs -- --nocapture
 
 # Test runtime libaries using python functions
 test-runtime: install-kclvm-py install-pytest

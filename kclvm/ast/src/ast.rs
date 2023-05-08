@@ -47,6 +47,7 @@ use kclvm_error::Position;
 /// PosTuple denotes the tuple `(filename, line, column, end_line, end_column)`.
 pub type PosTuple = (String, u64, u64, u64, u64);
 /// Pos denotes the struct tuple `(filename, line, column, end_line, end_column)`.
+#[derive(Clone)]
 pub struct Pos(String, u64, u64, u64, u64);
 
 impl From<PosTuple> for Pos {

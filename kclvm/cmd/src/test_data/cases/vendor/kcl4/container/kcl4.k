@@ -1,0 +1,2 @@
+schema Main:
+    name: str
