@@ -4,7 +4,7 @@ use crate::builtin::BUILTIN_FUNCTION_NAMES;
 use crate::pre_process::pre_process_program;
 use crate::resolver::resolve_program;
 use crate::resolver::scope::*;
-use crate::ty::Type;
+use crate::ty::{Type, TypeKind};
 use kclvm_ast::ast;
 use kclvm_error::*;
 use kclvm_parser::ParseSession;
@@ -322,4 +322,53 @@ fn test_lint() {
     {
         assert_eq!(d1, d2);
     }
+}
+
+#[test]
+fn test_resolve_schema_doc() {
+    let mut program = parse_program("./src/resolver/test_data/doc.k").unwrap();
+    let scope = resolve_program(&mut program);
+    let main_scope = scope
+        .scope_map
+        .get(kclvm_runtime::MAIN_PKG_PATH)
+        .unwrap()
+        .borrow_mut()
+        .clone();
+
+    let schema_scope_obj = &main_scope.elems[0].borrow().clone();
+    let schema_summary = match &schema_scope_obj.ty.kind {
+        TypeKind::Schema(schema_ty) => schema_ty.doc.clone(),
+        _ => "".to_string(),
+    };
+
+    let schema_scope = &main_scope.children[0];
+    let attrs_scope = &schema_scope.borrow().elems;
+    assert_eq!("Server is the common user interface for long-running services adopting the best practice of Kubernetes.".to_string(), schema_summary);
+    assert_eq!(
+        Some(
+            "Use this attribute to specify which kind of long-running service you want.
+Valid values: Deployment, CafeDeployment.
+See also: kusion_models/core/v1/workload_metadata.k."
+                .to_string()
+        ),
+        attrs_scope.get("workloadType").unwrap().borrow().doc
+    );
+    assert_eq!(
+        Some(
+            "A Server-level attribute.
+The name of the long-running service.
+See also: kusion_models/core/v1/metadata.k."
+                .to_string()
+        ),
+        attrs_scope.get("name").unwrap().borrow().doc
+    );
+    assert_eq!(
+        Some(
+            "A Server-level attribute.
+The labels of the long-running service.
+See also: kusion_models/core/v1/metadata.k."
+                .to_string()
+        ),
+        attrs_scope.get("labels").unwrap().borrow().doc
+    );
 }

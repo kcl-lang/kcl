@@ -50,6 +50,7 @@ impl<'ctx> Resolver<'ctx> {
                                 ty: self.any_ty(),
                                 kind: ScopeObjectKind::Variable,
                                 used: false,
+                                doc: None,
                             },
                         );
                         if ty.is_none() {
@@ -77,6 +78,7 @@ impl<'ctx> Resolver<'ctx> {
                                 ty: self.any_ty(),
                                 kind: ScopeObjectKind::Variable,
                                 used: false,
+                                doc: None,
                             },
                         );
                         return self.any_ty();

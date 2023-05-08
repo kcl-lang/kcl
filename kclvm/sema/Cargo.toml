@@ -16,6 +16,7 @@ fancy-regex = "0.7.1"
 unicode_names2 = "0.4"
 petgraph = "0.6.0"
 anyhow = "1.0"
+regex = "1.7.0"
 kclvm-ast = {path = "../ast"}
 kclvm-runtime = {path = "../runtime"}
 kclvm-error = {path = "../error"}

@@ -114,6 +114,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 ty: ty.clone(),
                 kind: ScopeObjectKind::TypeAlias,
                 used: false,
+                doc: None,
             },
         );
         ty
@@ -311,6 +312,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                         ty: self.any_ty(),
                         kind: ScopeObjectKind::Variable,
                         used: false,
+                        doc: None,
                     },
                 );
             }
@@ -347,6 +349,14 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             .borrow()
             .get_type_of_attr(name)
             .map_or(self.any_ty(), |ty| ty);
+
+        let doc_str = schema
+            .borrow()
+            .attrs
+            .get(name)
+            .map(|attr| attr.doc.clone())
+            .flatten();
+
         // Schema attribute decorators
         self.resolve_decorators(&schema_attr.decorators, DecoratorTarget::Attribute, name);
         self.insert_object(
@@ -358,6 +368,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 ty: expected_ty.clone(),
                 kind: ScopeObjectKind::Attribute,
                 used: false,
+                doc: doc_str,
             },
         );
         if let Some(value) = &schema_attr.value {
@@ -749,6 +760,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                     ty: self.any_ty(),
                     kind: ScopeObjectKind::Variable,
                     used: false,
+                    doc: None,
                 },
             );
         }
@@ -892,6 +904,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                     ty: param.ty.clone(),
                     kind: ScopeObjectKind::Parameter,
                     used: false,
+                    doc: None,
                 },
             )
         }
