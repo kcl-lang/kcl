@@ -245,5 +245,7 @@ fn check_run_command_with_env(test_case_path: PathBuf, kcl_pkg_path_env: String)
     let mut buf = Vec::new();
     run_command(matches.subcommand_matches("run").unwrap(), &mut buf).unwrap();
 
+    #[cfg(target_os="windows")]
+    let expect = expect.replace("\r\n", "\n");
     assert_eq!(String::from_utf8(buf).unwrap(), expect);
 }
