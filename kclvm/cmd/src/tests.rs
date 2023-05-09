@@ -64,7 +64,6 @@ fn test_fmt_cmd() {
     assert!(fmt_command(&matches).is_ok())
 }
 
-#[test]
 fn test_vet_cmd() {
     let test_path = std::path::Path::new(".")
         .join("src")
@@ -188,8 +187,9 @@ fn test_external_cmd_invalid() {
 }
 
 #[test]
-//
+// All the unit test cases in [`test_run_command`] can not be executed concurrently.
 fn test_run_command() {
+    test_vet_cmd();
     test_run_command_with_import();
     test_run_command_with_konfig();
 }
