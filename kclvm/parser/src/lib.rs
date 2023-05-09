@@ -571,24 +571,6 @@ impl Loader {
         Ok(Some(pkg_info))
     }
 
-    fn get_import_list(&self, pkgroot: &str, pkg: &[ast::Module]) -> Vec<(String, ast::Pos)> {
-        let mut import_list = Vec::new();
-        for m in pkg {
-            for stmt in &m.body {
-                if let ast::Stmt::Import(import_spec) = &stmt.node {
-                    let mut import_spec = import_spec.clone();
-                    import_spec.path = kclvm_config::vfs::fix_import_path(
-                        pkgroot,
-                        &m.filename,
-                        import_spec.path.as_str(),
-                    );
-                    import_list.push((import_spec.path, stmt.pos().into()));
-                }
-            }
-        }
-        import_list
-    }
-
     fn get_pkg_kfile_list(&self, pkgroot: &str, pkgpath: &str) -> Result<Vec<String>, String> {
         // plugin pkgs
         if self.is_plugin_pkg(pkgpath) {
