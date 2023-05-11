@@ -9,15 +9,16 @@
 
 use indexmap::IndexSet;
 use kclvm_driver::get_kcl_files;
-
-use std::path::Path;
+use kclvm_driver::kpm_metadata::fetch_metadata;
 
 use kclvm_ast::ast::{Expr, Identifier, ImportStmt, Node, Program, SchemaExpr, Stmt};
 use kclvm_config::modfile::KCL_FILE_EXTENSION;
 use kclvm_error::Position as KCLPos;
+use kclvm_parser::rm_external_pkg_name;
 use kclvm_sema::resolver::scope::{ProgramScope, ScopeObject};
-use lsp_types::{GotoDefinitionResponse, Url};
+use lsp_types::{GotoDefinitionResponse, Position, Url};
 use lsp_types::{Location, Range};
+use std::path::{Path, PathBuf};
 
 use crate::to_lsp::lsp_pos;
 use crate::util::inner_most_expr_in_stmt;
@@ -126,8 +127,38 @@ fn goto_def_for_import(
     program: &Program,
 ) -> Option<GotoDefinitionResponse> {
     let pkgpath = &stmt.path;
-    let real_path =
+    let mut real_path =
         Path::new(&program.root).join(pkgpath.replace('.', &std::path::MAIN_SEPARATOR.to_string()));
+    let mut positions = get_pos_from_real_path(&real_path);
+
+    if positions.len() == 0 && !real_path.exists() {
+        real_path = PathBuf::new();
+
+        let pkg_root = fetch_metadata(program.root.clone().into())
+            .map(|metadata| {
+                metadata
+                    .packages
+                    .get(&stmt.pkg_name)
+                    .map_or(PathBuf::new(), |pkg| pkg.manifest_path.clone())
+            })
+            .unwrap_or_else(|_| PathBuf::new());
+
+        real_path = real_path.join(pkg_root);
+
+        let pkgpath = match rm_external_pkg_name(pkgpath) {
+            Ok(path) => path,
+            Err(_) => String::new(),
+        };
+        pkgpath.split('.').for_each(|s| real_path.push(s));
+    }
+    positions = get_pos_from_real_path(&real_path);
+
+    positions_to_goto_def_resp(&positions)
+}
+
+fn get_pos_from_real_path(
+    real_path: &PathBuf,
+) -> IndexSet<(kclvm_error::Position, kclvm_error::Position)> {
     let mut positions = IndexSet::new();
     let mut k_file = real_path.clone();
     k_file.set_extension(KCL_FILE_EXTENSION);
@@ -153,7 +184,7 @@ fn goto_def_for_import(
             }))
         }
     }
-    positions_to_goto_def_resp(&positions)
+    positions
 }
 
 // Todo: fix ConfigExpr

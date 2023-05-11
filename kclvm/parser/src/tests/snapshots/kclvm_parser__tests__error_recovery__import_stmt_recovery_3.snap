@@ -1,6 +1,5 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 163
 expression: "crate::tests::parsing_module_string(r#\"import pkg_path[0]\"#)"
 ---
 Module {
@@ -16,6 +15,7 @@ Module {
                     rawpath: "pkg_path",
                     name: "pkg_path",
                     asname: None,
+                    pkg_name: "",
                 },
             ),
             filename: "",

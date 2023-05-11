@@ -1,4 +1,6 @@
+use std::env;
 use std::path::PathBuf;
+use std::process::Command;
 
 use indexmap::IndexSet;
 use kclvm_ast::ast::Program;
@@ -713,4 +715,61 @@ fn file_path_from_url_test() {
         let path = file_path_from_url(&url).unwrap();
         assert_eq!(path, "/Users/abc/Desktop/中文/ab c/abc.k");
     }
+}
+
+#[test]
+fn goto_import_external_file_test() {
+    let path = PathBuf::from(".")
+        .join("src")
+        .join("test_data")
+        .join("goto_import_def_test")
+        .join("main.k")
+        .canonicalize()
+        .unwrap()
+        .display()
+        .to_string();
+
+    let vendor_path = PathBuf::from(".")
+        .join("src")
+        .join("test_data")
+        .join("test_vendor")
+        .canonicalize()
+        .unwrap()
+        .display()
+        .to_string();
+
+    let output = Command::new("kpm")
+        .arg("metadata")
+        .arg("--update")
+        .current_dir(
+            PathBuf::from(".")
+                .join("src")
+                .join("test_data")
+                .join("goto_import_def_test")
+                .canonicalize()
+                .unwrap()
+                .display()
+                .to_string(),
+        )
+        .output()
+        .unwrap();
+
+    let (program, prog_scope, diags) = parse_param_and_compile(
+        Param {
+            file: path.to_string(),
+        },
+        None,
+    )
+    .unwrap();
+
+    assert_eq!(diags.len(), 0);
+
+    // test goto import file: import .pkg.schema_def
+    let pos = KCLPos {
+        filename: path.to_string(),
+        line: 1,
+        column: Some(15),
+    };
+    let res = goto_definition(&program, &pos, &prog_scope);
+    assert!(res.is_some());
 }

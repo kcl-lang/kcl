@@ -1,5 +1,6 @@
 use anyhow::Result;
 pub mod arguments;
+pub mod kpm_metadata;
 pub const DEFAULT_PROJECT_FILE: &str = "project.yaml";
 
 #[cfg(test)]
@@ -12,6 +13,7 @@ use kclvm_config::{
 };
 use kclvm_parser::LoadProgramOptions;
 use kclvm_utils::path::PathPrefix;
+use kpm_metadata::fill_pkg_maps_for_k_file;
 use std::{
     fs::read_dir,
     io::{self, ErrorKind},
@@ -72,6 +74,7 @@ pub fn lookup_compile_unit(
     file: &str,
     load_pkg: bool,
 ) -> (Vec<String>, Option<LoadProgramOptions>) {
+    let compiled_file: String = file.to_string();
     match lookup_compile_unit_path(file) {
         Ok(dir) => {
             let settings_files = lookup_setting_files(&dir);
@@ -101,7 +104,7 @@ pub fn lookup_compile_unit(
                         .map(|p| p.to_string_lossy().to_string())
                         .unwrap_or_default();
 
-                    let load_opt = kclvm_parser::LoadProgramOptions {
+                    let mut load_opt = kclvm_parser::LoadProgramOptions {
                         work_dir: work_dir.clone(),
                         cmd_args: if let Some(options) = setting.clone().kcl_options {
                             options
@@ -117,7 +120,11 @@ pub fn lookup_compile_unit(
                         ..Default::default()
                     };
                     match canonicalize_input_files(&files, work_dir, true) {
-                        Ok(kcl_paths) => (kcl_paths, Some(load_opt)),
+                        Ok(kcl_paths) => {
+                            // 1. find the kcl.mod path
+                            let _ = fill_pkg_maps_for_k_file(compiled_file.into(), &mut load_opt);
+                            (kcl_paths, Some(load_opt))
+                        }
                         Err(_) => (vec![file.to_string()], None),
                     }
                 }
@@ -125,19 +132,22 @@ pub fn lookup_compile_unit(
             }
         }
         Err(_) => {
+            let mut load_opt = kclvm_parser::LoadProgramOptions::default();
+            let _ = fill_pkg_maps_for_k_file(compiled_file.into(), &mut load_opt);
+
             if load_pkg {
                 let path = Path::new(file);
                 if let Some(ext) = path.extension() {
                     if ext == KCL_FILE_EXTENSION && path.is_file() {
                         if let Some(parent) = path.parent() {
                             if let Ok(files) = get_kcl_files(parent, false) {
-                                return (files, None);
+                                return (files, Some(load_opt));
                             }
                         }
                     }
                 }
             }
-            return (vec![file.to_string()], None);
+            return (vec![file.to_string()], Some(load_opt));
         }
     }
 }
@@ -185,7 +195,7 @@ pub fn lookup_kcl_yaml(dir: &PathBuf) -> io::Result<PathBuf> {
 /// | | +-- stack.yaml
 /// | +-- project.yaml
 ///
-/// If the input file is project/base/base.k, it will return Path("project/base")
+/// If the input file is project/base/base.k, it will return Path("project/prod")
 /// If the input file is project/prod/main.k or project/test/main.k, it will return
 /// Path("project/prod") or Path("project/test")
 pub fn lookup_compile_unit_path(file: &str) -> io::Result<PathBuf> {

@@ -428,6 +428,7 @@ pub struct ImportStmt {
     pub rawpath: String,
     pub name: String,
     pub asname: Option<String>,
+    pub pkg_name: String,
 }
 
 /// SchemaStmt, e.g.

@@ -207,6 +207,7 @@ fn apply_import_paths_on_module(m: &mut ast::Module, import_paths: &[String]) ->
             rawpath: "".to_string(),
             name: name.to_string(),
             asname: None,
+            pkg_name: String::new(),
         };
         let import_stmt = Box::new(ast::Node::new(
             ast::Stmt::Import(import_node),

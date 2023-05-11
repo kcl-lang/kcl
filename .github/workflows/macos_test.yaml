@@ -13,6 +13,14 @@ jobs:
         with:
           submodules: "true"
 
+      - name: Set up Go 1.18
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.18
+
+      - name: Install kpm
+        run: go install kusionstack.io/kpm@latest
+        
       - run: clang --version
       - run: cargo --version
       - run: rustc --print sysroot
