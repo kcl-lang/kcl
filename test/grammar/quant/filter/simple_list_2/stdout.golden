@@ -1,0 +1,24 @@
+students:
+- name: Alice
+  id: 1
+  grade: 85
+- name: Bob
+  id: 2
+  grade: 70
+- name: Charlie
+  id: 3
+  grade: 90
+- name: David
+  id: 4
+  grade: 80
+- name: Eve
+  id: 5
+  grade: 95
+alice:
+  name: Alice
+  id: 1
+  grade: 85
+bob:
+  name: Bob
+  id: 2
+  grade: 70

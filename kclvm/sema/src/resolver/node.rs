@@ -320,7 +320,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 target_node.unwrap(),
                 key_name,
                 val_name,
-                iter_ty,
+                iter_ty.clone(),
                 quant_expr.target.get_pos(),
             );
             self.expr_or_any_type(&quant_expr.if_cond);
@@ -328,7 +328,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             self.leave_scope();
             match &quant_expr.op {
                 ast::QuantOperation::All | ast::QuantOperation::Any => self.bool_ty(),
-                ast::QuantOperation::Filter => item_ty,
+                ast::QuantOperation::Filter => iter_ty,
                 ast::QuantOperation::Map => Rc::new(Type::list(item_ty)),
             }
         }
