@@ -1,0 +1,8 @@
+app:
+  name: ngnix
+  containers:
+    ngnix:
+      image: ngnix
+      envs:
+        ngnix:
+          value: value
