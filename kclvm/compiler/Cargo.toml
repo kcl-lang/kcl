@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 inkwell = { git = "https://github.com/TheDan64/inkwell", branch = "master", features = ["target-webassembly", "llvm12-0"] }
-time = "0.2"
+time = "0.2.23"
 phf = { version = "0.9", features = ["macros"] }
 ahash = "0.7.2"
 indexmap = "1.0"
