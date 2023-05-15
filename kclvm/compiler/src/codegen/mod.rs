@@ -19,8 +19,8 @@ pub(crate) const KCL_CONTEXT_VAR_NAME: &str = "context";
 pub(crate) const PKG_INIT_FUNCTION_SUFFIX: &str = "init";
 /// Global level
 pub(crate) const GLOBAL_LEVEL: usize = 1;
-/// Schema level
-pub(crate) const SCHEMA_LEVEL: usize = 2;
+/// Inner level
+pub(crate) const INNER_LEVEL: usize = 2;
 /// Global variable alignment
 pub(crate) const GLOBAL_VAL_ALIGNMENT: u32 = 8;
 

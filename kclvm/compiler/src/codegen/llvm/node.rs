@@ -16,7 +16,7 @@ use crate::codegen::error as kcl_error;
 use crate::codegen::llvm::context::BacktrackMeta;
 use crate::codegen::llvm::utils;
 use crate::codegen::traits::*;
-use crate::codegen::{ENTRY_NAME, GLOBAL_LEVEL, PKG_INIT_FUNCTION_SUFFIX, SCHEMA_LEVEL};
+use crate::codegen::{ENTRY_NAME, GLOBAL_LEVEL, INNER_LEVEL, PKG_INIT_FUNCTION_SUFFIX};
 use crate::{check_backtrack_stop, pkgpath_without_prefix};
 
 use super::context::{CompileResult, LLVMCodeGenContext};
@@ -2046,8 +2046,9 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         // Exist the function
         self.builder.position_at_end(func_before_block);
         let closure = self.list_value();
-        let dict_value = self.get_closure_dict_in_current_scope();
-        self.list_append(closure, dict_value);
+        // Use closure map in the laste scope to construct curret closure map.
+        // The default value of the closure map is `{}`.
+        self.list_append(closure, self.get_closure_map());
         let function = self.closure_value(function, closure);
         self.leave_scope();
         self.pop_function();
@@ -2359,7 +2360,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                                 (&config_entry, then_block),
                             ]);
                             let config_value = phi.as_basic_value();
-                            if self.scope_level() >= SCHEMA_LEVEL && !is_local_var {
+                            if self.scope_level() >= INNER_LEVEL && !is_local_var {
                                 self.dict_merge(schema_value, name, value, 1, -1);
                                 self.value_union(schema_value, config_value);
                                 let cal_map = self
