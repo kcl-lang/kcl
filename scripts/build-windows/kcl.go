@@ -14,8 +14,14 @@ import (
 
 func main() {
 	var args []string
-	args = append(args, "/C", "kclvm-cli", "run")
-	args = append(args, os.Args[1:]...)
+	args = append(args, "/C", "kclvm-cli")
+	// Check version flags. Only for v0.4.x, all CLIs will be unified after v0.5.x.
+	if len(os.Args) >= 1 && (os.Args[1] == "-v" || os.Args[1] == "-V" || os.Args[1] == "version" || os.Args[1] == "--version") {
+		args = append(args, "version")
+	} else {
+		args = append(args, "run")
+		args = append(args, os.Args[1:]...)
+	}
 
 	os.Exit(KclvmCliMain(args))
 }
