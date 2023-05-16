@@ -245,7 +245,7 @@ impl KclvmAssembler {
         Path::new(prog_root_name)
             .join(".kclvm")
             .join("cache")
-            .join(kclvm_version::get_full_version())
+            .join(kclvm_version::get_version_string())
             .join(&self.target)
     }
 

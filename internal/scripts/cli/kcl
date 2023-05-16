@@ -15,4 +15,11 @@ fi
 
 export PYTHONPATH=$kclvm_install_dir/lib/site-packages
 export KCLVM_CLI_BIN_PATH=$kclvm_install_dir/bin
-$kclvm_cli_bin run "$@"
+# Only for v0.4.x, all CLIs will be unified after v0.5.x
+case $1 in
+    "version" | "--version" | "-v" | "-V")
+        $kclvm_cli_bin version
+        ;;
+    *) $kclvm_cli_bin run "$@"
+        ;;
+esac

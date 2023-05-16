@@ -36,7 +36,7 @@ pub fn main(args: &[&str]) -> Result<()> {
     } else if matches.subcommand_matches("server").is_some() {
         kclvm_api::service::jsonrpc::start_stdio_server()
     } else if matches.subcommand_matches("version").is_some() {
-        println!("{}", kclvm_version::get_full_version());
+        println!("{}", kclvm_version::get_version_info());
         Ok(())
     } else {
         Ok(())
