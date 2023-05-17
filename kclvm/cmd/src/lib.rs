@@ -57,7 +57,7 @@ pub fn app() -> clap::App<'static> {
             (@arg disable_none: -n --disable_none "Disable dumping None values")
             (@arg strict_range_check: -r --strict_range_check "Do perform strict numeric range checks")
             (@arg debug: -d --debug "Run in debug mode (for developers only)")
-            (@arg sort_key: -k --sort "Sort result keys")
+            (@arg sort_keys: -k --sort_keys "Sort result keys")
             (@arg arguments: ... -D --argument +takes_value "Specify the top-level argument")
             (@arg path_selector: ... -S --path_selector "Specify the path selector")
             (@arg overrides: ... -O --overrides +takes_value "Specify the configuration override path and value")
