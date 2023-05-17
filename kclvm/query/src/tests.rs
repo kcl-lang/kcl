@@ -54,6 +54,7 @@ fn test_override_file_config() {
         "appConfiguration.image=\"kcl/kcl:{}\".format(version)".to_string(),
         "appConfiguration.mainContainer.name=override_name".to_string(),
         "appConfiguration.labels.key.key=\"override_value\"".to_string(),
+        "appConfiguration.labels.key.str-key=\"override_value\"".to_string(),
         "appConfiguration.overQuota=False".to_string(),
         "appConfiguration.probe={periodSeconds=20}".to_string(),
         "appConfiguration.resource-".to_string(),
@@ -111,6 +112,9 @@ appConfiguration = AppConfiguration {
     overQuota = False
     overQuota = False
     probe: {periodSeconds = 20}
+    labels: {
+        key: {"str-key" = "override_value"}
+    }
 }
 
 appConfigurationUnification: AppConfiguration {

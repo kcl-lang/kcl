@@ -847,7 +847,7 @@ impl<'p> Printer<'p> {
                     self.write(
                         &names
                             .iter()
-                            .map(|n| n.replace('\"', "\\\""))
+                            .map(|n| format!("{n:?}"))
                             .collect::<Vec<String>>()
                             .join(": {"),
                     );
