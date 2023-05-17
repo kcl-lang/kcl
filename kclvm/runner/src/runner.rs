@@ -108,6 +108,7 @@ impl TryFrom<SettingsFile> for ExecProgramArgs {
             args.disable_none = cli_configs.disable_none.unwrap_or_default();
             args.verbose = cli_configs.verbose.unwrap_or_default() as i32;
             args.debug = cli_configs.debug.unwrap_or_default() as i32;
+            args.sort_keys = cli_configs.sort_keys.unwrap_or_default();
             for override_str in &cli_configs.overrides.unwrap_or_default() {
                 args.overrides.push(parse_override_spec(override_str)?);
             }

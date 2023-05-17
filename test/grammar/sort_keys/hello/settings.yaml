@@ -1,1 +1,1 @@
-kcl_options: -d --sort
+kcl_options: -d --sort_keys

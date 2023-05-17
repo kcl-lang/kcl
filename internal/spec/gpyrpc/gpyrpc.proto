@@ -263,6 +263,7 @@ message CliConfig {
 	bool disable_none = 6;
 	int64 verbose = 7;
 	bool debug = 8;
+	bool sort_keys = 9;
 }
 
 message KeyValuePair {
