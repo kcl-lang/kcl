@@ -428,8 +428,8 @@ pub struct ImportStmt {
     pub rawpath: String,
     pub name: String,
     pub asname: Option<String>,
-    /// `pkg_name` means the name of the package that the current import statement indexs to. 
-    /// If the current import statement indexs to the current package, `pkg_name`  is "__main__", 
+    /// `pkg_name` means the name of the package that the current import statement indexs to.
+    /// If the current import statement indexs to the current package, `pkg_name`  is "__main__",
     /// If the current import statement indexs to the external packages, `pkg_name` is the name of the package.
     pub pkg_name: String,
 }
