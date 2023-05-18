@@ -117,17 +117,22 @@ fn test_fill_pkg_maps_for_k_file() {
     let res = fill_pkg_maps_for_k_file(path.clone(), &mut opts);
     assert!(res.is_ok());
     let vendor_home = get_vendor_home();
+
+    let pkg_maps = opts.package_maps.clone();
+    assert_eq!(pkg_maps.len(), 1);
+    assert!(pkg_maps.get("kcl4").is_some());
     assert_eq!(
-        format!("{:?}", opts.package_maps),
-        format!(
-            "{{\"kcl4\": \"{}\"}}",
-            PathBuf::from(vendor_home)
-                .join("kcl4_v0.0.1")
-                .canonicalize()
-                .unwrap()
-                .display()
-                .to_string()
-        )
+        PathBuf::from(pkg_maps.get("kcl4").unwrap().clone())
+            .canonicalize()
+            .unwrap()
+            .display()
+            .to_string(),
+        PathBuf::from(vendor_home)
+            .join("kcl4_v0.0.1")
+            .canonicalize()
+            .unwrap()
+            .display()
+            .to_string()
     );
 }
 
