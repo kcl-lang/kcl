@@ -1480,6 +1480,7 @@ dependencies = [
  "kclvm-parser",
  "kclvm-runtime",
  "kclvm-utils",
+ "serde",
  "serde_json",
  "walkdir",
 ]

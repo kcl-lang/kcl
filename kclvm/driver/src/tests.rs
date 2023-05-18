@@ -1,9 +1,13 @@
-use std::path::Path;
+use std::env;
+use std::path::{Path, PathBuf};
 
+use kclvm_config::modfile::get_vendor_home;
 use kclvm_config::settings::KeyValuePair;
+use kclvm_parser::LoadProgramOptions;
 
 use crate::arguments::parse_key_value_pair;
 use crate::canonicalize_input_files;
+use crate::kpm_metadata::{fetch_metadata, fill_pkg_maps_for_k_file, lookup_the_nearest_file_dir};
 
 #[test]
 fn test_canonicalize_input_files() {
@@ -86,4 +90,109 @@ fn test_parse_key_value_pair_fail() {
     for case in cases {
         assert!(parse_key_value_pair(case).is_err());
     }
+}
+
+#[test]
+fn test_fill_pkg_maps_for_k_file() {
+    let path = PathBuf::from(".")
+        .join("src")
+        .join("test_data")
+        .join("kpm_metadata")
+        .join("subdir")
+        .join("main.k");
+
+    let vendor_path = PathBuf::from(".")
+        .join("src")
+        .join("test_data")
+        .join("test_vendor");
+
+    env::set_var(
+        "KCL_PKG_PATH",
+        vendor_path.canonicalize().unwrap().display().to_string(),
+    );
+
+    let mut opts = LoadProgramOptions::default();
+    assert_eq!(format!("{:?}", opts.package_maps), "{}");
+
+    let res = fill_pkg_maps_for_k_file(path.clone(), &mut opts);
+    assert!(res.is_ok());
+    let vendor_home = get_vendor_home();
+
+    let pkg_maps = opts.package_maps.clone();
+    assert_eq!(pkg_maps.len(), 1);
+    assert!(pkg_maps.get("kcl4").is_some());
+    assert_eq!(
+        PathBuf::from(pkg_maps.get("kcl4").unwrap().clone())
+            .canonicalize()
+            .unwrap()
+            .display()
+            .to_string(),
+        PathBuf::from(vendor_home)
+            .join("kcl4_v0.0.1")
+            .canonicalize()
+            .unwrap()
+            .display()
+            .to_string()
+    );
+}
+
+#[test]
+fn test_lookup_the_nearest_file_dir() {
+    let path = PathBuf::from(".")
+        .join("src")
+        .join("test_data")
+        .join("kpm_metadata");
+    let result = lookup_the_nearest_file_dir(path.clone(), "kcl.mod");
+    assert_eq!(result.is_some(), true);
+    assert_eq!(
+        result.unwrap().display().to_string(),
+        path.canonicalize().unwrap().display().to_string()
+    );
+
+    let main_path = path.join("subdir").join("main.k");
+    let result = lookup_the_nearest_file_dir(main_path, "kcl.mod");
+    assert_eq!(result.is_some(), true);
+    assert_eq!(
+        result.unwrap().display().to_string(),
+        path.canonicalize().unwrap().display().to_string()
+    );
+}
+
+#[test]
+fn test_fetch_metadata() {
+    let path = PathBuf::from(".")
+        .join("src")
+        .join("test_data")
+        .join("kpm_metadata");
+
+    let vendor_path = PathBuf::from(".")
+        .join("src")
+        .join("test_data")
+        .join("test_vendor");
+
+    env::set_var(
+        "KCL_PKG_PATH",
+        vendor_path.canonicalize().unwrap().display().to_string(),
+    );
+    let vendor_home = get_vendor_home();
+
+    let metadata = fetch_metadata(path.clone());
+    assert_eq!(metadata.is_err(), false);
+    let pkgs = metadata.unwrap().packages.clone();
+    assert_eq!(pkgs.len(), 1);
+    assert!(pkgs.get("kcl4").is_some());
+    assert_eq!(pkgs.get("kcl4").clone().unwrap().name, "kcl4");
+    assert_eq!(
+        PathBuf::from(pkgs.get("kcl4").unwrap().manifest_path.clone())
+            .canonicalize()
+            .unwrap()
+            .display()
+            .to_string(),
+        PathBuf::from(vendor_home)
+            .join("kcl4_v0.0.1")
+            .canonicalize()
+            .unwrap()
+            .display()
+            .to_string()
+    );
 }

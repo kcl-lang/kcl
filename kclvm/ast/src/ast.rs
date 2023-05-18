@@ -424,10 +424,19 @@ pub struct IfStmt {
 /// ```
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ImportStmt {
+    /// `path` is the import path, if 'import a.b.c' in kcl, `path` is a.b.c
     pub path: String,
     pub rawpath: String,
     pub name: String,
     pub asname: Option<String>,
+    /// `pkg_name` means the name of the package that the current import statement indexs to.
+    ///
+    /// 1. If the current import statement indexs to the kcl plugins, kcl builtin methods or the internal kcl packages,
+    /// `pkg_name` is `__main__`
+    ///
+    /// 2. If the current import statement indexs to the external kcl packages, `pkg_name` is the name of the package.
+    /// if `import k8s.example.apps`, `k8s` is another kcl package, `pkg_name` is `k8s`.
+    pub pkg_name: String,
 }
 
 /// SchemaStmt, e.g.

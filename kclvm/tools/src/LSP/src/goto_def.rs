@@ -8,19 +8,18 @@
 //! + attr type
 
 use indexmap::IndexSet;
-use kclvm_driver::get_kcl_files;
-
-use std::path::Path;
 
 use kclvm_ast::ast::{Expr, Identifier, ImportStmt, Node, Program, SchemaExpr, Stmt};
-use kclvm_config::modfile::KCL_FILE_EXTENSION;
+
 use kclvm_error::Position as KCLPos;
+
 use kclvm_sema::resolver::scope::{ProgramScope, ScopeObject};
 use lsp_types::{GotoDefinitionResponse, Url};
 use lsp_types::{Location, Range};
+use std::path::Path;
 
 use crate::to_lsp::lsp_pos;
-use crate::util::inner_most_expr_in_stmt;
+use crate::util::{get_pos_from_real_path, get_real_path_from_external, inner_most_expr_in_stmt};
 
 // Navigates to the definition of an identifier.
 pub(crate) fn goto_definition(
@@ -126,33 +125,17 @@ fn goto_def_for_import(
     program: &Program,
 ) -> Option<GotoDefinitionResponse> {
     let pkgpath = &stmt.path;
-    let real_path =
+    let mut real_path =
         Path::new(&program.root).join(pkgpath.replace('.', &std::path::MAIN_SEPARATOR.to_string()));
-    let mut positions = IndexSet::new();
-    let mut k_file = real_path.clone();
-    k_file.set_extension(KCL_FILE_EXTENSION);
+    let mut positions = get_pos_from_real_path(&real_path);
 
-    if k_file.is_file() {
-        let start = KCLPos {
-            filename: k_file.to_str().unwrap().to_string(),
-            line: 1,
-            column: None,
-        };
-        let end = start.clone();
-        positions.insert((start, end));
-    } else if real_path.is_dir() {
-        if let Ok(files) = get_kcl_files(real_path, false) {
-            positions.extend(files.iter().map(|file| {
-                let start = KCLPos {
-                    filename: file.clone(),
-                    line: 1,
-                    column: None,
-                };
-                let end = start.clone();
-                (start, end)
-            }))
-        }
+    if positions.is_empty() && !real_path.exists() {
+        real_path =
+            get_real_path_from_external(&stmt.pkg_name, pkgpath, program.root.clone().into());
     }
+
+    positions = get_pos_from_real_path(&real_path);
+
     positions_to_goto_def_resp(&positions)
 }
 

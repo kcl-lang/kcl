@@ -423,6 +423,7 @@ impl<'a> Parser<'a> {
                 rawpath,
                 name,
                 asname,
+                pkg_name: String::new()
             }),
             self.token_span_pos(token, self.prev_token)
         );
