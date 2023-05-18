@@ -435,7 +435,7 @@ pub struct ImportStmt {
     /// `pkg_name` is `__main__`
     ///
     /// 2. If the current import statement indexs to the external kcl packages, `pkg_name` is the name of the package.
-    /// if `import k8s.example.apps`, `k8s` is another kcl package, `pkg_name` is k8s.
+    /// if `import k8s.example.apps`, `k8s` is another kcl package, `pkg_name` is `k8s`.
     pub pkg_name: String,
 }
 
