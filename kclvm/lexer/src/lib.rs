@@ -475,7 +475,7 @@ impl<'a> ITokenCursor for Cursor<'a> {
                     match self.peek() {
                         '=' => {
                             self.bump();
-                            LtEq
+                            LtLtEq
                         }
                         _ => LtLt,
                     }

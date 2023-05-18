@@ -195,7 +195,7 @@ $
             Token { kind: Newline, len: 1 }
             Token { kind: SlashSlashEq, len: 3 }
             Token { kind: Newline, len: 1 }
-            Token { kind: LtEq, len: 3 }
+            Token { kind: LtLtEq, len: 3 }
             Token { kind: Newline, len: 1 }
             Token { kind: GtGtEq, len: 3 }
             Token { kind: Newline, len: 1 }
