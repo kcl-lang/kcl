@@ -1,12 +1,15 @@
+use std::path::PathBuf;
 use std::{fs, sync::Arc};
 
 use indexmap::IndexSet;
 use kclvm_ast::ast::{ConfigEntry, Expr, Identifier, Node, NodeRef, Program, Stmt, Type};
 use kclvm_ast::pos::ContainsPos;
-use kclvm_driver::lookup_compile_unit;
+use kclvm_config::modfile::KCL_FILE_EXTENSION;
+use kclvm_driver::kpm_metadata::fetch_metadata;
+use kclvm_driver::{get_kcl_files, lookup_compile_unit};
 use kclvm_error::Diagnostic;
 use kclvm_error::Position as KCLPos;
-use kclvm_parser::{load_program, ParseSession};
+use kclvm_parser::{load_program, rm_external_pkg_name, ParseSession};
 use kclvm_sema::resolver::{resolve_program, scope::ProgramScope};
 use lsp_types::Url;
 use parking_lot::{RwLock, RwLockReadGuard};
@@ -581,4 +584,69 @@ fn build_identifier_from_ty_string(ty: &NodeRef<Type>, pos: &KCLPos) -> Option<N
         }
         Type::Literal(_) => None,
     }
+}
+
+/// [`get_pos_from_real_path`] will return the start and the end position [`kclvm_error::Position`]
+/// in an [`IndexSet`] from the [`real_path`].
+pub(crate) fn get_pos_from_real_path(
+    real_path: &PathBuf,
+) -> IndexSet<(kclvm_error::Position, kclvm_error::Position)> {
+    let mut positions = IndexSet::new();
+    let mut k_file = real_path.clone();
+    k_file.set_extension(KCL_FILE_EXTENSION);
+
+    if k_file.is_file() {
+        let start = KCLPos {
+            filename: k_file.to_str().unwrap().to_string(),
+            line: 1,
+            column: None,
+        };
+        let end = start.clone();
+        positions.insert((start, end));
+    } else if real_path.is_dir() {
+        if let Ok(files) = get_kcl_files(real_path, false) {
+            positions.extend(files.iter().map(|file| {
+                let start = KCLPos {
+                    filename: file.clone(),
+                    line: 1,
+                    column: None,
+                };
+                let end = start.clone();
+                (start, end)
+            }))
+        }
+    }
+    positions
+}
+
+/// [`get_real_path_from_external`] will ask for the local path for [`pkg_name`] with subdir [`pkgpath`] from `kpm`.
+/// If the external package, whose [`pkg_name`] is 'my_package', is stored in '\user\my_package_v0.0.1'.
+/// The [`pkgpath`] is 'my_package.examples.apps'.
+///
+/// [`get_real_path_from_external`] will return '\user\my_package_v0.0.1\examples\apps'
+///
+/// # Note
+/// [`get_real_path_from_external`] is just a method for calculating a path, it doesn't check whether a path exists.
+pub(crate) fn get_real_path_from_external(
+    pkg_name: &str,
+    pkgpath: &str,
+    current_pkg_path: PathBuf,
+) -> PathBuf {
+    let mut real_path = PathBuf::new();
+    let pkg_root = fetch_metadata(current_pkg_path)
+        .map(|metadata| {
+            metadata
+                .packages
+                .get(pkg_name)
+                .map_or(PathBuf::new(), |pkg| pkg.manifest_path.clone())
+        })
+        .unwrap_or_else(|_| PathBuf::new());
+    real_path = real_path.join(pkg_root);
+
+    let pkgpath = match rm_external_pkg_name(pkgpath) {
+        Ok(path) => path,
+        Err(_) => String::new(),
+    };
+    pkgpath.split('.').for_each(|s| real_path.push(s));
+    real_path
 }
