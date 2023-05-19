@@ -261,7 +261,7 @@ $
             Token { kind: Newline, span: Span { base_or_index: 108, len_or_tag: 1 } }
             Token { kind: BinOpEq(SlashSlash), span: Span { base_or_index: 109, len_or_tag: 3 } }
             Token { kind: Newline, span: Span { base_or_index: 112, len_or_tag: 1 } }
-            Token { kind: BinCmp(LtEq), span: Span { base_or_index: 113, len_or_tag: 3 } }
+            Token { kind: BinOpEq(Shl), span: Span { base_or_index: 113, len_or_tag: 3 } }
             Token { kind: Newline, span: Span { base_or_index: 116, len_or_tag: 1 } }
             Token { kind: BinOpEq(Shr), span: Span { base_or_index: 117, len_or_tag: 3 } }
             Token { kind: Newline, span: Span { base_or_index: 120, len_or_tag: 1 } }
