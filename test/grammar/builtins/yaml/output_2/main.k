@@ -19,3 +19,5 @@ print("---")
 print(yaml.encode(_person, ignore_none=True), end="")
 print("---")
 print(yaml.encode(_person, ignore_private=True, ignore_none=True), end="")
+print("---")
+person = _person

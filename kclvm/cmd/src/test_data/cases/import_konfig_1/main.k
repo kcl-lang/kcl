@@ -7,10 +7,9 @@ main = container.Main {
     name = "sss"
 }
 aa = typeof(main, full_name=True)
-appConfiguration: frontend.Server {
+cc = typeof(frontend.Server {
     image = "nginx"
     mainContainer = {
         name = "nginx"
     }
-}
-cc = typeof(appConfiguration.mainContainer, full_name=True)
+}.mainContainer, full_name=True)

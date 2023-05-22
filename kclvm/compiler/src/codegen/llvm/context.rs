@@ -40,6 +40,8 @@ use crate::value;
 
 use super::OBJECT_FILE_SUFFIX;
 
+/// SCALAR_KEY denotes the temp scalar key for the global variable json plan process.
+const SCALAR_KEY: &str = "";
 /// Float type string width mapping
 pub const FLOAT_TYPE_WIDTH_MAPPING: Map<&str, usize> = phf_map! {
     "half" => 16,
@@ -54,7 +56,12 @@ pub const FLOAT_TYPE_WIDTH_MAPPING: Map<&str, usize> = phf_map! {
 pub type CompileResult<'a> = Result<BasicValueEnum<'a>, kcl_error::KCLError>;
 
 /// The compiler scope.
+#[derive(Debug, Default)]
 pub struct Scope<'ctx> {
+    /// Scalars denotes the expression statement values without attribute.
+    pub scalars: RefCell<Vec<BasicValueEnum<'ctx>>>,
+    /// schema_scalar_idxdenotes whether a schema exists in the scalar list.
+    pub schema_scalar_idx: RefCell<usize>,
     pub variables: RefCell<IndexMap<String, PointerValue<'ctx>>>,
     pub closures: RefCell<IndexMap<String, PointerValue<'ctx>>>,
     pub arguments: RefCell<IndexSet<String>>,
@@ -959,11 +966,7 @@ impl<'ctx> ProgramCodeGen for LLVMCodeGenContext<'ctx> {
             if pkg_scopes.contains_key(pkgpath) {
                 return;
             }
-            let scopes = vec![Rc::new(Scope {
-                variables: RefCell::new(IndexMap::default()),
-                closures: RefCell::new(IndexMap::default()),
-                arguments: RefCell::new(IndexSet::default()),
-            })];
+            let scopes = vec![Rc::new(Scope::default())];
             pkg_scopes.insert(String::from(pkgpath), scopes);
         }
         let msg = format!("pkgpath {} is not found", pkgpath);
@@ -1029,11 +1032,7 @@ impl<'ctx> ProgramCodeGen for LLVMCodeGenContext<'ctx> {
         let mut pkg_scopes = self.pkg_scopes.borrow_mut();
         let msg = format!("pkgpath {} is not found", current_pkgpath);
         let scopes = pkg_scopes.get_mut(&current_pkgpath).expect(&msg);
-        let scope = Rc::new(Scope {
-            variables: RefCell::new(IndexMap::default()),
-            closures: RefCell::new(IndexMap::default()),
-            arguments: RefCell::new(IndexSet::default()),
-        });
+        let scope = Rc::new(Scope::default());
         scopes.push(scope);
     }
 
@@ -1391,6 +1390,31 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         global_var.set_alignment(GLOBAL_VAL_ALIGNMENT);
         global_var.set_initializer(&tpe.const_zero());
         global_var.as_pointer_value()
+    }
+
+    /// Append a scalar value into the scope.
+    pub fn add_scalar(&self, scalar: BasicValueEnum<'ctx>, is_schema: bool) {
+        let current_pkgpath = self.current_pkgpath();
+        let mut pkg_scopes = self.pkg_scopes.borrow_mut();
+        let scopes = pkg_scopes
+            .get_mut(&current_pkgpath)
+            .expect(&format!("pkgpath {} is not found", current_pkgpath));
+        if let Some(last) = scopes.last_mut() {
+            let mut scalars = last.scalars.borrow_mut();
+            // TODO: To avoid conflicts, only the last schema scalar expressions are allowed.
+            let mut schema_scalar_idx = last.schema_scalar_idx.borrow_mut();
+            if is_schema {
+                // Remove the last schema scalar.
+                if *schema_scalar_idx < scalars.len() {
+                    scalars.remove(*schema_scalar_idx);
+                }
+                // Override the last schema scalar.
+                scalars.push(scalar);
+                *schema_scalar_idx = scalars.len() - 1;
+            } else {
+                scalars.push(scalar);
+            }
+        }
     }
 
     /// Append a variable into the scope
@@ -1890,23 +1914,38 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
     pub fn globals_to_json_str(&self) -> BasicValueEnum<'ctx> {
         let current_pkgpath = self.current_pkgpath();
         let mut pkg_scopes = self.pkg_scopes.borrow_mut();
-        let msg = format!("pkgpath {} is not found", current_pkgpath);
-        let scopes = pkg_scopes.get_mut(&current_pkgpath).expect(&msg);
-        let globals = scopes
-            .last_mut()
-            .expect(kcl_error::INTERNAL_ERROR_MSG)
-            .variables
-            .borrow_mut();
+        let scopes = pkg_scopes
+            .get_mut(&current_pkgpath)
+            .expect(&format!("pkgpath {} is not found", current_pkgpath));
+        // The global scope.
+        let scope = scopes.last().expect(kcl_error::INTERNAL_ERROR_MSG);
+        let scalars = scope.scalars.borrow();
+        let globals = scope.variables.borrow();
+        // Construct a plan object.
         let global_dict = self.dict_value();
+        // Deal scalars
+        for scalar in scalars.iter() {
+            self.dict_safe_insert(global_dict, SCALAR_KEY, scalar.clone(), 0, -1);
+        }
+        // Deal global variables
         for (name, ptr) in globals.iter() {
             // Omit private variables and function variables
             if name.starts_with(kclvm_runtime::KCL_PRIVATE_VAR_PREFIX) {
                 continue;
             }
             let value = self.builder.build_load(*ptr, "");
-            self.dict_safe_insert(global_dict, name.as_str(), value, 0, -1);
+            let value_dict = self.dict_value();
+            self.dict_safe_insert(value_dict, name.as_str(), value, 0, -1);
+            self.dict_safe_insert(global_dict, SCALAR_KEY, value_dict, 0, -1);
         }
-        self.build_call(&ApiFunc::kclvm_value_plan_to_json.name(), &[global_dict])
+        // Plan result to json string.
+        self.build_call(
+            &ApiFunc::kclvm_value_plan_to_json.name(),
+            &[self.dict_get(
+                global_dict,
+                self.native_global_string(SCALAR_KEY, "").into(),
+            )],
+        )
     }
 
     /// Insert a dict entry including key, value, op and insert_index into the dict.

@@ -290,10 +290,10 @@ impl ValueRef {
         );
         if union_context.conflict {
             union_context.path_backtrace.reverse();
-            let confilct_key = union_context.path_backtrace.last().unwrap();
+            let conflict_key = union_context.path_backtrace.last().unwrap();
             let path_string = union_context.path_backtrace.join(".");
 
-            // build override_example
+            // build note
             // it will be like:
             // {...} | {
             //         ...
@@ -301,19 +301,25 @@ impl ValueRef {
             //         ...
             // }
 
-            let override_example = format!(
+            let note = format!(
                 "    {{...}} | {{\n            ...\n            {} = {}\n            ...\n    }}",
-                confilct_key, union_context.delta_json
+                conflict_key, union_context.delta_json
             );
-
-            panic!(
-                "conflicting values on the attribute '{}' between :\n    {}\nand\n    {}\nwith union path :\n    {}\ntry operator '=' to override the attribute, like:\n{}",
-                confilct_key,
-                union_context.obj_json,
-                union_context.delta_json,
-                path_string,
-                override_example,
-            )
+            if conflict_key.is_empty() {
+                panic!(
+                    "conflicting values between {} and {}",
+                    union_context.delta_json, union_context.obj_json
+                );
+            } else {
+                panic!(
+                    "conflicting values on the attribute '{}' between :\n    {}\nand\n    {}\nwith union path :\n    {}\ntry operator '=' to override the attribute, like:\n{}",
+                    conflict_key,
+                    union_context.obj_json,
+                    union_context.delta_json,
+                    path_string,
+                    note,
+                );
+            }
         }
         ret
     }
