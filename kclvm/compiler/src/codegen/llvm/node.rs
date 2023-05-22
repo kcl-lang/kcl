@@ -59,10 +59,12 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         check_backtrack_stop!(self);
         let mut result = self.ok_result();
         for expr in &expr_stmt.exprs {
-            // Ignore the doc string
-            if !matches!(&expr.node, ast::Expr::StringLit(..)) {
-                result = self.walk_expr(expr);
+            let scalar = self.walk_expr(expr)?;
+            // Only non-call expressions are allowed to emit values bacause of the function void return type.
+            if !matches!(expr.node, ast::Expr::Call(_)) {
+                self.add_scalar(scalar, matches!(expr.node, ast::Expr::Schema(_)));
             }
+            result = Ok(scalar);
         }
         result
     }

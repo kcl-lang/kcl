@@ -1,0 +1,6 @@
+http:
+  server:
+    listen: 8080
+    location:
+      root: /var/www/html
+      index: index.html
