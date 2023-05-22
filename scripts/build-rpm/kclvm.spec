@@ -5,7 +5,7 @@
 #     rpmbuild -bb ./scripts/build-rpm/kclvm.spec
 #     # upload /root/rpmbuild/RPMS/x86_64/kclvm-${version}-1.el7.x86_64.rpm
 Name:           kclvm
-Version:        0.4.6
+Version:        0.5.0
 Release:        1%{?dist}
 Summary:        The KCL programming language and tools
 
