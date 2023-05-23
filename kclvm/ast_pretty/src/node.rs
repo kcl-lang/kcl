@@ -39,6 +39,10 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
         for comment in &module.comments {
             self.comments.push_back(comment.clone());
         }
+        if !module.doc.is_empty() {
+            self.write(&module.doc);
+            self.write_newline();
+        }
         self.stmts(&module.body);
     }
 
@@ -443,11 +447,12 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
             .map(|e| e.line)
             .collect::<HashSet<u64>>();
         // There are comments in the configuration block.
-        let has_comment = list_expr
-            .elts
-            .iter()
-            .map(|e| self.has_comments_on_node(e))
-            .all(|r| r);
+        let has_comment = !list_expr.elts.is_empty()
+            && list_expr
+                .elts
+                .iter()
+                .map(|e| self.has_comments_on_node(e))
+                .all(|r| r);
         // When there are comments in the configuration block, print them as multiline configurations.
         let mut in_one_line = line_set.len() <= 1 && !has_comment;
         if let Some(elt) = list_expr.elts.first() {
@@ -605,11 +610,12 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
     fn walk_config_expr(&mut self, config_expr: &'ctx ast::ConfigExpr) -> Self::Result {
         let line_set: HashSet<u64> = config_expr.items.iter().map(|item| item.line).collect();
         // There are comments in the configuration block.
-        let has_comment = config_expr
-            .items
-            .iter()
-            .map(|item| self.has_comments_on_node(item))
-            .all(|r| r);
+        let has_comment = !config_expr.items.is_empty()
+            && config_expr
+                .items
+                .iter()
+                .map(|item| self.has_comments_on_node(item))
+                .all(|r| r);
         // When there are comments in the configuration block, print them as multiline configurations.
         let mut in_one_line = line_set.len() <= 1 && !has_comment;
         // When there are complex configuration blocks in the configuration block, print them as multiline configurations.
@@ -729,9 +735,13 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
     }
 
     fn walk_number_lit(&mut self, number_lit: &'ctx ast::NumberLit) -> Self::Result {
-        match number_lit.value {
+        match &number_lit.value {
             ast::NumberLitValue::Int(int_val) => self.write(&int_val.to_string()),
             ast::NumberLitValue::Float(float_val) => self.write(&float_val.to_string()),
+        }
+        // Number suffix e.g., 1Gi
+        if let Some(binary_suffix) = &number_lit.binary_suffix {
+            self.write(&binary_suffix.value())
         }
     }
 

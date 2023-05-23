@@ -1,6 +1,6 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 90
+assertion_line: 115
 expression: "crate::tests::parsing_expr_string(r#\"[][a:b:c:d]\"#)"
 ---
 Node {
@@ -80,7 +80,7 @@ Node {
     ),
     filename: "",
     line: 1,
-    column: 2,
+    column: 0,
     end_line: 1,
     end_column: 8,
 }
