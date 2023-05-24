@@ -1,4 +1,6 @@
-
+"""
+Module documents
+"""
 
 
 import           math   as  alias_math
@@ -74,3 +76,6 @@ assert aa     == 1,"message"
 assert   aa     == 1 if   aa,"message"
 aaaa = (1 + 2 / 2) if    _a == 2   +  +   134.3    else ("a"*3)  
 bbbb = "{}".    format(a)
+empty_list = []
+empty_config = {}
+number_suffix = 1Gi

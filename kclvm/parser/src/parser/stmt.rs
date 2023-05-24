@@ -856,22 +856,7 @@ impl<'a> Parser<'a> {
         self.bump_token(TokenKind::Indent);
 
         // doc string
-        let body_doc = match self.token.kind {
-            TokenKind::Literal(lit) => {
-                if let LitKind::Str { .. } = lit.kind {
-                    let doc_expr = self.parse_str_expr(lit);
-                    self.skip_newlines();
-                    match &doc_expr.node {
-                        Expr::StringLit(str) => str.raw_value.clone(),
-                        Expr::JoinedString(str) => str.raw_value.clone(),
-                        _ => "".to_string(),
-                    }
-                } else {
-                    "".to_string()
-                }
-            }
-            _ => "".to_string(),
-        };
+        let body_doc = self.parse_doc();
 
         // mixin
         let body_mixins = if self.token.is_keyword(kw::Mixin) {

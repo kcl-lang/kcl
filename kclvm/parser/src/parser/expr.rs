@@ -236,13 +236,14 @@ impl<'a> Parser<'a> {
     /// primary_expr: operand | primary_expr select_suffix | primary_expr call_suffix | primary_expr slice_suffix
     /// Note: we need to look ahead 2 tokens to match select_suffix and slice_suffix, which actually breaks LL1 rule.
     fn parse_primary_expr(&mut self) -> NodeRef<Expr> {
+        let lo = self.token;
         let mut operand = self.parse_operand_expr();
 
         loop {
             match self.token.kind {
                 TokenKind::Dot => {
                     // select_suffix
-                    operand = self.parse_selector_expr(operand)
+                    operand = self.parse_selector_expr(operand, lo)
                 }
                 TokenKind::Question => {
                     match self.cursor.peek() {
@@ -250,11 +251,11 @@ impl<'a> Parser<'a> {
                             match token.kind {
                                 TokenKind::Dot => {
                                     // select_suffix
-                                    operand = self.parse_selector_expr(operand)
+                                    operand = self.parse_selector_expr(operand, lo)
                                 }
                                 TokenKind::OpenDelim(DelimToken::Bracket) => {
                                     // slice_suffix
-                                    operand = self.parse_subscript_expr(operand)
+                                    operand = self.parse_subscript_expr(operand, lo)
                                 }
                                 _ => break operand,
                             }
@@ -266,11 +267,11 @@ impl<'a> Parser<'a> {
                     match dt {
                         DelimToken::Paren => {
                             // call_suffix
-                            operand = self.parse_call_expr(operand)
+                            operand = self.parse_call_expr(operand, lo)
                         }
                         DelimToken::Bracket => {
                             // slice_suffix
-                            operand = self.parse_subscript_expr(operand)
+                            operand = self.parse_subscript_expr(operand, lo)
                         }
                         _ => break operand,
                     }
@@ -301,8 +302,7 @@ impl<'a> Parser<'a> {
 
     /// Syntax:
     /// select_suffix: [QUESTION] DOT NAME
-    fn parse_selector_expr(&mut self, value: NodeRef<Expr>) -> NodeRef<Expr> {
-        let token = self.token;
+    fn parse_selector_expr(&mut self, value: NodeRef<Expr>, lo: token::Token) -> NodeRef<Expr> {
         let has_question = match self.token.kind {
             TokenKind::Question => {
                 self.bump();
@@ -320,18 +320,17 @@ impl<'a> Parser<'a> {
                 has_question,
                 ctx: ExprContext::Load,
             }),
-            self.sess.struct_token_loc(token, self.prev_token),
+            self.sess.struct_token_loc(lo, self.prev_token),
         ))
     }
 
     /// Syntax:
     /// call_suffix: LEFT_PARENTHESES [arguments [COMMA]] RIGHT_PARENTHESES
-    fn parse_call_expr(&mut self, func: NodeRef<Expr>) -> NodeRef<Expr> {
-        let token = self.token;
+    fn parse_call_expr(&mut self, func: NodeRef<Expr>, lo: token::Token) -> NodeRef<Expr> {
         let call_expr = self.parse_call(func);
         Box::new(Node::node(
             Expr::Call(call_expr),
-            self.sess.struct_token_loc(token, self.prev_token),
+            self.sess.struct_token_loc(lo, self.prev_token),
         ))
     }
 
@@ -375,8 +374,7 @@ impl<'a> Parser<'a> {
 
     /// Syntax:
     /// slice_suffix: [QUESTION] LEFT_BRACKETS (expr | [expr] COLON [expr] [COLON [expr]]) RIGHT_BRACKETS
-    fn parse_subscript_expr(&mut self, value: NodeRef<Expr>) -> NodeRef<Expr> {
-        let token = self.token;
+    fn parse_subscript_expr(&mut self, value: NodeRef<Expr>, lo: token::Token) -> NodeRef<Expr> {
         let mut has_question = false;
         // [QUESTION]
         if self.token.kind == TokenKind::Question {
@@ -464,7 +462,7 @@ impl<'a> Parser<'a> {
                     ctx: ExprContext::Load,
                     has_question,
                 }),
-                self.sess.struct_token_loc(token, self.prev_token),
+                self.sess.struct_token_loc(lo, self.prev_token),
             ))
         } else {
             if exprs[0].is_none() {
@@ -488,7 +486,7 @@ impl<'a> Parser<'a> {
                     ctx: ExprContext::Load,
                     has_question,
                 }),
-                self.sess.struct_token_loc(token, self.prev_token),
+                self.sess.struct_token_loc(lo, self.prev_token),
             ))
         }
     }
@@ -2043,7 +2041,7 @@ impl<'a> Parser<'a> {
             TokenKind::OpenDelim(DelimToken::Paren) => {
                 self.bump();
 
-                self.parse_call_expr(func)
+                self.parse_call_expr(func, token)
             }
             _ => Box::new(Node::node(
                 Expr::Call(CallExpr {

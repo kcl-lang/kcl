@@ -1,6 +1,6 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 155
+assertion_line: 171
 expression: "crate::tests::parsing_module_string(r#\"a[0] -= 1\"#)"
 ---
 Module {
@@ -20,7 +20,7 @@ Module {
                         },
                         filename: "",
                         line: 1,
-                        column: 1,
+                        column: 0,
                         end_line: 1,
                         end_column: 4,
                     },

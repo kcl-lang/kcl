@@ -355,7 +355,7 @@ fn primary_expr_1() {
     check_parsing_expr(
         r####"'{}'.format(1)"####,
         expect![[r#"
-        Node { node: Call(CallExpr { func: Node { node: Selector(SelectorExpr { value: Node { node: StringLit(StringLit { is_long_string: false, raw_value: "'{}'", value: "{}" }), filename: "", line: 1, column: 0, end_line: 1, end_column: 4 }, attr: Node { node: Identifier { names: ["format"], pkgpath: "", ctx: Load }, filename: "", line: 1, column: 5, end_line: 1, end_column: 11 }, ctx: Load, has_question: false }), filename: "", line: 1, column: 4, end_line: 1, end_column: 11 }, args: [Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(1) }), filename: "", line: 1, column: 12, end_line: 1, end_column: 13 }], keywords: [] }), filename: "", line: 1, column: 11, end_line: 1, end_column: 14 }
+        Node { node: Call(CallExpr { func: Node { node: Selector(SelectorExpr { value: Node { node: StringLit(StringLit { is_long_string: false, raw_value: "'{}'", value: "{}" }), filename: "", line: 1, column: 0, end_line: 1, end_column: 4 }, attr: Node { node: Identifier { names: ["format"], pkgpath: "", ctx: Load }, filename: "", line: 1, column: 5, end_line: 1, end_column: 11 }, ctx: Load, has_question: false }), filename: "", line: 1, column: 0, end_line: 1, end_column: 11 }, args: [Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(1) }), filename: "", line: 1, column: 12, end_line: 1, end_column: 13 }], keywords: [] }), filename: "", line: 1, column: 0, end_line: 1, end_column: 14 }
         "#]],
     );
 }
@@ -365,7 +365,7 @@ fn primary_expr_2() {
     check_parsing_expr(
         r####"str(1).isdigit()"####,
         expect![[r#"
-        Node { node: Call(CallExpr { func: Node { node: Selector(SelectorExpr { value: Node { node: Call(CallExpr { func: Node { node: Identifier(Identifier { names: ["str"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 0, end_line: 1, end_column: 3 }, args: [Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(1) }), filename: "", line: 1, column: 4, end_line: 1, end_column: 5 }], keywords: [] }), filename: "", line: 1, column: 0, end_line: 1, end_column: 6 }, attr: Node { node: Identifier { names: ["isdigit"], pkgpath: "", ctx: Load }, filename: "", line: 1, column: 7, end_line: 1, end_column: 14 }, ctx: Load, has_question: false }), filename: "", line: 1, column: 6, end_line: 1, end_column: 14 }, args: [], keywords: [] }), filename: "", line: 1, column: 14, end_line: 1, end_column: 16 }
+        Node { node: Call(CallExpr { func: Node { node: Selector(SelectorExpr { value: Node { node: Call(CallExpr { func: Node { node: Identifier(Identifier { names: ["str"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 0, end_line: 1, end_column: 3 }, args: [Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(1) }), filename: "", line: 1, column: 4, end_line: 1, end_column: 5 }], keywords: [] }), filename: "", line: 1, column: 0, end_line: 1, end_column: 6 }, attr: Node { node: Identifier { names: ["isdigit"], pkgpath: "", ctx: Load }, filename: "", line: 1, column: 7, end_line: 1, end_column: 14 }, ctx: Load, has_question: false }), filename: "", line: 1, column: 0, end_line: 1, end_column: 14 }, args: [], keywords: [] }), filename: "", line: 1, column: 0, end_line: 1, end_column: 16 }
         "#]],
     );
 }
@@ -432,7 +432,7 @@ fn subscript_expr_0() {
     check_parsing_expr(
         r####"a[0]"####,
         expect![[r#"
-        Node { node: Subscript(Subscript { value: Node { node: Identifier(Identifier { names: ["a"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 0, end_line: 1, end_column: 1 }, index: Some(Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(0) }), filename: "", line: 1, column: 2, end_line: 1, end_column: 3 }), lower: None, upper: None, step: None, ctx: Load, has_question: false }), filename: "", line: 1, column: 1, end_line: 1, end_column: 4 }
+        Node { node: Subscript(Subscript { value: Node { node: Identifier(Identifier { names: ["a"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 0, end_line: 1, end_column: 1 }, index: Some(Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(0) }), filename: "", line: 1, column: 2, end_line: 1, end_column: 3 }), lower: None, upper: None, step: None, ctx: Load, has_question: false }), filename: "", line: 1, column: 0, end_line: 1, end_column: 4 }
         "#]],
     );
 }
@@ -442,7 +442,7 @@ fn subscript_expr_1() {
     check_parsing_expr(
         r####"b["k"]"####,
         expect![[r#"
-        Node { node: Subscript(Subscript { value: Node { node: Identifier(Identifier { names: ["b"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 0, end_line: 1, end_column: 1 }, index: Some(Node { node: StringLit(StringLit { is_long_string: false, raw_value: "\"k\"", value: "k" }), filename: "", line: 1, column: 2, end_line: 1, end_column: 5 }), lower: None, upper: None, step: None, ctx: Load, has_question: false }), filename: "", line: 1, column: 1, end_line: 1, end_column: 6 }
+        Node { node: Subscript(Subscript { value: Node { node: Identifier(Identifier { names: ["b"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 0, end_line: 1, end_column: 1 }, index: Some(Node { node: StringLit(StringLit { is_long_string: false, raw_value: "\"k\"", value: "k" }), filename: "", line: 1, column: 2, end_line: 1, end_column: 5 }), lower: None, upper: None, step: None, ctx: Load, has_question: false }), filename: "", line: 1, column: 0, end_line: 1, end_column: 6 }
         "#]],
     );
 }
@@ -452,7 +452,7 @@ fn subscript_expr_2() {
     check_parsing_expr(
         r####"c?[1]"####,
         expect![[r#"
-        Node { node: Subscript(Subscript { value: Node { node: Identifier(Identifier { names: ["c"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 0, end_line: 1, end_column: 1 }, index: Some(Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(1) }), filename: "", line: 1, column: 3, end_line: 1, end_column: 4 }), lower: None, upper: None, step: None, ctx: Load, has_question: true }), filename: "", line: 1, column: 1, end_line: 1, end_column: 5 }
+        Node { node: Subscript(Subscript { value: Node { node: Identifier(Identifier { names: ["c"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 0, end_line: 1, end_column: 1 }, index: Some(Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(1) }), filename: "", line: 1, column: 3, end_line: 1, end_column: 4 }), lower: None, upper: None, step: None, ctx: Load, has_question: true }), filename: "", line: 1, column: 0, end_line: 1, end_column: 5 }
         "#]],
     );
 }
@@ -462,7 +462,7 @@ fn subscript_expr_3() {
     check_parsing_expr(
         r####"a[1:]"####,
         expect![[r#"
-        Node { node: Subscript(Subscript { value: Node { node: Identifier(Identifier { names: ["a"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 0, end_line: 1, end_column: 1 }, index: None, lower: Some(Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(1) }), filename: "", line: 1, column: 2, end_line: 1, end_column: 3 }), upper: None, step: None, ctx: Load, has_question: false }), filename: "", line: 1, column: 1, end_line: 1, end_column: 5 }
+        Node { node: Subscript(Subscript { value: Node { node: Identifier(Identifier { names: ["a"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 0, end_line: 1, end_column: 1 }, index: None, lower: Some(Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(1) }), filename: "", line: 1, column: 2, end_line: 1, end_column: 3 }), upper: None, step: None, ctx: Load, has_question: false }), filename: "", line: 1, column: 0, end_line: 1, end_column: 5 }
         "#]],
     );
 }
@@ -472,7 +472,7 @@ fn subscript_expr_4() {
     check_parsing_expr(
         r####"a[:-1]"####,
         expect![[r#"
-        Node { node: Subscript(Subscript { value: Node { node: Identifier(Identifier { names: ["a"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 0, end_line: 1, end_column: 1 }, index: None, lower: None, upper: Some(Node { node: Unary(UnaryExpr { op: USub, operand: Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(1) }), filename: "", line: 1, column: 4, end_line: 1, end_column: 5 } }), filename: "", line: 1, column: 3, end_line: 1, end_column: 5 }), step: None, ctx: Load, has_question: false }), filename: "", line: 1, column: 1, end_line: 1, end_column: 6 }
+        Node { node: Subscript(Subscript { value: Node { node: Identifier(Identifier { names: ["a"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 0, end_line: 1, end_column: 1 }, index: None, lower: None, upper: Some(Node { node: Unary(UnaryExpr { op: USub, operand: Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(1) }), filename: "", line: 1, column: 4, end_line: 1, end_column: 5 } }), filename: "", line: 1, column: 3, end_line: 1, end_column: 5 }), step: None, ctx: Load, has_question: false }), filename: "", line: 1, column: 0, end_line: 1, end_column: 6 }
         "#]],
     );
 }
@@ -482,7 +482,7 @@ fn subscript_expr_5() {
     check_parsing_expr(
         r####"a[1:len]"####,
         expect![[r#"
-        Node { node: Subscript(Subscript { value: Node { node: Identifier(Identifier { names: ["a"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 0, end_line: 1, end_column: 1 }, index: None, lower: Some(Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(1) }), filename: "", line: 1, column: 2, end_line: 1, end_column: 3 }), upper: Some(Node { node: Identifier(Identifier { names: ["len"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 4, end_line: 1, end_column: 7 }), step: None, ctx: Load, has_question: false }), filename: "", line: 1, column: 1, end_line: 1, end_column: 8 }
+        Node { node: Subscript(Subscript { value: Node { node: Identifier(Identifier { names: ["a"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 0, end_line: 1, end_column: 1 }, index: None, lower: Some(Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(1) }), filename: "", line: 1, column: 2, end_line: 1, end_column: 3 }), upper: Some(Node { node: Identifier(Identifier { names: ["len"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 4, end_line: 1, end_column: 7 }), step: None, ctx: Load, has_question: false }), filename: "", line: 1, column: 0, end_line: 1, end_column: 8 }
         "#]],
     );
 }
@@ -492,7 +492,7 @@ fn subscript_expr_6() {
     check_parsing_expr(
         r####"a[0:-1]"####,
         expect![[r#"
-        Node { node: Subscript(Subscript { value: Node { node: Identifier(Identifier { names: ["a"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 0, end_line: 1, end_column: 1 }, index: None, lower: Some(Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(0) }), filename: "", line: 1, column: 2, end_line: 1, end_column: 3 }), upper: Some(Node { node: Unary(UnaryExpr { op: USub, operand: Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(1) }), filename: "", line: 1, column: 5, end_line: 1, end_column: 6 } }), filename: "", line: 1, column: 4, end_line: 1, end_column: 6 }), step: None, ctx: Load, has_question: false }), filename: "", line: 1, column: 1, end_line: 1, end_column: 7 }
+        Node { node: Subscript(Subscript { value: Node { node: Identifier(Identifier { names: ["a"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 0, end_line: 1, end_column: 1 }, index: None, lower: Some(Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(0) }), filename: "", line: 1, column: 2, end_line: 1, end_column: 3 }), upper: Some(Node { node: Unary(UnaryExpr { op: USub, operand: Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(1) }), filename: "", line: 1, column: 5, end_line: 1, end_column: 6 } }), filename: "", line: 1, column: 4, end_line: 1, end_column: 6 }), step: None, ctx: Load, has_question: false }), filename: "", line: 1, column: 0, end_line: 1, end_column: 7 }
         "#]],
     );
 }
@@ -502,7 +502,7 @@ fn subscript_expr_7() {
     check_parsing_expr(
         r####"a[::]"####,
         expect![[r#"
-        Node { node: Subscript(Subscript { value: Node { node: Identifier(Identifier { names: ["a"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 0, end_line: 1, end_column: 1 }, index: None, lower: None, upper: None, step: None, ctx: Load, has_question: false }), filename: "", line: 1, column: 1, end_line: 1, end_column: 5 }
+        Node { node: Subscript(Subscript { value: Node { node: Identifier(Identifier { names: ["a"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 0, end_line: 1, end_column: 1 }, index: None, lower: None, upper: None, step: None, ctx: Load, has_question: false }), filename: "", line: 1, column: 0, end_line: 1, end_column: 5 }
         "#]],
     );
 }
@@ -512,7 +512,7 @@ fn subscript_expr_8() {
     check_parsing_expr(
         r####"a[1::]"####,
         expect![[r#"
-        Node { node: Subscript(Subscript { value: Node { node: Identifier(Identifier { names: ["a"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 0, end_line: 1, end_column: 1 }, index: None, lower: Some(Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(1) }), filename: "", line: 1, column: 2, end_line: 1, end_column: 3 }), upper: None, step: None, ctx: Load, has_question: false }), filename: "", line: 1, column: 1, end_line: 1, end_column: 6 }
+        Node { node: Subscript(Subscript { value: Node { node: Identifier(Identifier { names: ["a"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 0, end_line: 1, end_column: 1 }, index: None, lower: Some(Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(1) }), filename: "", line: 1, column: 2, end_line: 1, end_column: 3 }), upper: None, step: None, ctx: Load, has_question: false }), filename: "", line: 1, column: 0, end_line: 1, end_column: 6 }
         "#]],
     );
 }
@@ -522,7 +522,7 @@ fn subscript_expr_9() {
     check_parsing_expr(
         r####"a[:0:]"####,
         expect![[r#"
-        Node { node: Subscript(Subscript { value: Node { node: Identifier(Identifier { names: ["a"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 0, end_line: 1, end_column: 1 }, index: None, lower: None, upper: Some(Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(0) }), filename: "", line: 1, column: 3, end_line: 1, end_column: 4 }), step: None, ctx: Load, has_question: false }), filename: "", line: 1, column: 1, end_line: 1, end_column: 6 }
+        Node { node: Subscript(Subscript { value: Node { node: Identifier(Identifier { names: ["a"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 0, end_line: 1, end_column: 1 }, index: None, lower: None, upper: Some(Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(0) }), filename: "", line: 1, column: 3, end_line: 1, end_column: 4 }), step: None, ctx: Load, has_question: false }), filename: "", line: 1, column: 0, end_line: 1, end_column: 6 }
         "#]],
     );
 }
@@ -532,7 +532,7 @@ fn subscript_expr_10() {
     check_parsing_expr(
         r####"a[::-1]"####,
         expect![[r#"
-        Node { node: Subscript(Subscript { value: Node { node: Identifier(Identifier { names: ["a"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 0, end_line: 1, end_column: 1 }, index: None, lower: None, upper: None, step: Some(Node { node: Unary(UnaryExpr { op: USub, operand: Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(1) }), filename: "", line: 1, column: 5, end_line: 1, end_column: 6 } }), filename: "", line: 1, column: 4, end_line: 1, end_column: 6 }), ctx: Load, has_question: false }), filename: "", line: 1, column: 1, end_line: 1, end_column: 7 }
+        Node { node: Subscript(Subscript { value: Node { node: Identifier(Identifier { names: ["a"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 0, end_line: 1, end_column: 1 }, index: None, lower: None, upper: None, step: Some(Node { node: Unary(UnaryExpr { op: USub, operand: Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(1) }), filename: "", line: 1, column: 5, end_line: 1, end_column: 6 } }), filename: "", line: 1, column: 4, end_line: 1, end_column: 6 }), ctx: Load, has_question: false }), filename: "", line: 1, column: 0, end_line: 1, end_column: 7 }
         "#]],
     );
 }
@@ -542,7 +542,7 @@ fn subscript_expr_11() {
     check_parsing_expr(
         r####"a[1::2]"####,
         expect![[r#"
-        Node { node: Subscript(Subscript { value: Node { node: Identifier(Identifier { names: ["a"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 0, end_line: 1, end_column: 1 }, index: None, lower: Some(Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(1) }), filename: "", line: 1, column: 2, end_line: 1, end_column: 3 }), upper: None, step: Some(Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(2) }), filename: "", line: 1, column: 5, end_line: 1, end_column: 6 }), ctx: Load, has_question: false }), filename: "", line: 1, column: 1, end_line: 1, end_column: 7 }
+        Node { node: Subscript(Subscript { value: Node { node: Identifier(Identifier { names: ["a"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 0, end_line: 1, end_column: 1 }, index: None, lower: Some(Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(1) }), filename: "", line: 1, column: 2, end_line: 1, end_column: 3 }), upper: None, step: Some(Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(2) }), filename: "", line: 1, column: 5, end_line: 1, end_column: 6 }), ctx: Load, has_question: false }), filename: "", line: 1, column: 0, end_line: 1, end_column: 7 }
         "#]],
     );
 }
@@ -552,7 +552,7 @@ fn subscript_expr_12() {
     check_parsing_expr(
         r####"a[:2:1]"####,
         expect![[r#"
-        Node { node: Subscript(Subscript { value: Node { node: Identifier(Identifier { names: ["a"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 0, end_line: 1, end_column: 1 }, index: None, lower: None, upper: Some(Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(2) }), filename: "", line: 1, column: 3, end_line: 1, end_column: 4 }), step: Some(Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(1) }), filename: "", line: 1, column: 5, end_line: 1, end_column: 6 }), ctx: Load, has_question: false }), filename: "", line: 1, column: 1, end_line: 1, end_column: 7 }
+        Node { node: Subscript(Subscript { value: Node { node: Identifier(Identifier { names: ["a"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 0, end_line: 1, end_column: 1 }, index: None, lower: None, upper: Some(Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(2) }), filename: "", line: 1, column: 3, end_line: 1, end_column: 4 }), step: Some(Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(1) }), filename: "", line: 1, column: 5, end_line: 1, end_column: 6 }), ctx: Load, has_question: false }), filename: "", line: 1, column: 0, end_line: 1, end_column: 7 }
         "#]],
     );
 }
@@ -562,7 +562,7 @@ fn subscript_expr_13() {
     check_parsing_expr(
         r####"a[1:2:]"####,
         expect![[r#"
-        Node { node: Subscript(Subscript { value: Node { node: Identifier(Identifier { names: ["a"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 0, end_line: 1, end_column: 1 }, index: None, lower: Some(Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(1) }), filename: "", line: 1, column: 2, end_line: 1, end_column: 3 }), upper: Some(Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(2) }), filename: "", line: 1, column: 4, end_line: 1, end_column: 5 }), step: None, ctx: Load, has_question: false }), filename: "", line: 1, column: 1, end_line: 1, end_column: 7 }
+        Node { node: Subscript(Subscript { value: Node { node: Identifier(Identifier { names: ["a"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 0, end_line: 1, end_column: 1 }, index: None, lower: Some(Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(1) }), filename: "", line: 1, column: 2, end_line: 1, end_column: 3 }), upper: Some(Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(2) }), filename: "", line: 1, column: 4, end_line: 1, end_column: 5 }), step: None, ctx: Load, has_question: false }), filename: "", line: 1, column: 0, end_line: 1, end_column: 7 }
         "#]],
     );
 }
@@ -572,7 +572,7 @@ fn subscript_expr_14() {
     check_parsing_expr(
         r####"a[1:3:1]"####,
         expect![[r#"
-        Node { node: Subscript(Subscript { value: Node { node: Identifier(Identifier { names: ["a"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 0, end_line: 1, end_column: 1 }, index: None, lower: Some(Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(1) }), filename: "", line: 1, column: 2, end_line: 1, end_column: 3 }), upper: Some(Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(3) }), filename: "", line: 1, column: 4, end_line: 1, end_column: 5 }), step: Some(Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(1) }), filename: "", line: 1, column: 6, end_line: 1, end_column: 7 }), ctx: Load, has_question: false }), filename: "", line: 1, column: 1, end_line: 1, end_column: 8 }
+        Node { node: Subscript(Subscript { value: Node { node: Identifier(Identifier { names: ["a"], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 0, end_line: 1, end_column: 1 }, index: None, lower: Some(Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(1) }), filename: "", line: 1, column: 2, end_line: 1, end_column: 3 }), upper: Some(Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(3) }), filename: "", line: 1, column: 4, end_line: 1, end_column: 5 }), step: Some(Node { node: NumberLit(NumberLit { binary_suffix: None, value: Int(1) }), filename: "", line: 1, column: 6, end_line: 1, end_column: 7 }), ctx: Load, has_question: false }), filename: "", line: 1, column: 0, end_line: 1, end_column: 8 }
         "#]],
     );
 }

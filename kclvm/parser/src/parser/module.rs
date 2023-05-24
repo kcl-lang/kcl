@@ -19,17 +19,24 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_doc(&mut self) -> String {
-        if let TokenKind::Literal(lit) = self.token.kind {
-            if let LitKind::Str { is_long_string, .. } = lit.kind {
-                if is_long_string {
-                    let doc = format!("{:?}", self.token);
-                    self.bump();
-                    return doc;
+    pub(crate) fn parse_doc(&mut self) -> String {
+        // doc string
+        match self.token.kind {
+            TokenKind::Literal(lit) => {
+                if let LitKind::Str { .. } = lit.kind {
+                    let doc_expr = self.parse_str_expr(lit);
+                    self.skip_newlines();
+                    match &doc_expr.node {
+                        Expr::StringLit(str) => str.raw_value.clone(),
+                        Expr::JoinedString(str) => str.raw_value.clone(),
+                        _ => "".to_string(),
+                    }
+                } else {
+                    "".to_string()
                 }
             }
+            _ => "".to_string(),
         }
-        "".to_string()
     }
 
     fn parse_body(&mut self) -> Vec<NodeRef<Stmt>> {
