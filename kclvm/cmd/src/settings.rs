@@ -26,14 +26,15 @@ pub(crate) fn must_build_settings(matches: &ArgMatches) -> SettingsPathBuf {
 
 /// Build settings from arg matches.
 pub(crate) fn build_settings(matches: &ArgMatches) -> Result<SettingsPathBuf> {
-    let files: Vec<&str> = match matches.values_of("input") {
-        Some(files) => files.into_iter().collect::<Vec<&str>>(),
+    let files: Vec<&str> = match matches.get_many::<String>("input") {
+        Some(files) => files.into_iter().map(|f| f.as_str()).collect::<Vec<&str>>(),
         None => vec![],
     };
 
     let setting_files = matches
-        .values_of("setting")
-        .map(|files| files.into_iter().collect::<Vec<&str>>());
+        .get_many::<String>("setting")
+        .map(|files| files.into_iter().map(|f| f.as_str()).collect::<Vec<&str>>());
+
     let arguments = strings_from_matches(matches, "arguments");
 
     let package_maps = hashmaps_from_matches(matches, "package_map").transpose()?;
@@ -43,7 +44,7 @@ pub(crate) fn build_settings(matches: &ArgMatches) -> Result<SettingsPathBuf> {
         setting_files,
         Some(SettingsFile {
             kcl_cli_configs: Some(Config {
-                output: matches.value_of("output").map(|v| v.to_string()),
+                output: matches.get_one::<String>("output").map(|v| v.to_string()),
                 overrides: strings_from_matches(matches, "overrides"),
                 path_selector: strings_from_matches(matches, "path_selector"),
                 strict_range_check: bool_from_matches(matches, "strict_range_check"),

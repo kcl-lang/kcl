@@ -8,8 +8,8 @@ use crate::settings::must_build_settings;
 
 /// Run the KCL lint command.
 pub fn lint_command(matches: &ArgMatches) -> Result<()> {
-    let mut files: Vec<&str> = match matches.values_of("input") {
-        Some(files) => files.into_iter().collect::<Vec<&str>>(),
+    let mut files = match matches.get_many::<String>("input") {
+        Some(files) => files.into_iter().map(|f| f.as_str()).collect::<Vec<&str>>(),
         None => vec![],
     };
     // Config settings building
@@ -24,7 +24,7 @@ pub fn lint_command(matches: &ArgMatches) -> Result<()> {
     let (mut err_handler, mut warning_handler) = (Handler::default(), Handler::default());
     (err_handler.diagnostics, warning_handler.diagnostics) =
         lint_files(&files, Some(args.get_load_program_options()));
-    if matches.occurrences_of("emit_warning") > 0 {
+    if matches.get_count("emit_warning") > 0 {
         warning_handler.emit()?;
     }
     err_handler.abort_if_any_errors();

@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0"
-clap = "3.2.22"
+clap = "4.3.0"
 compiler_base_session = {path = "../../compiler_base/session"}
 
 kclvm-api = {path = "../api"}
