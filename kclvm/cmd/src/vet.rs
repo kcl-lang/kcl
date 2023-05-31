@@ -6,8 +6,8 @@ use crate::util::string_from_matches;
 
 /// Run the KCL vet command.
 pub fn vet_command(matches: &ArgMatches) -> Result<()> {
-    let data_file = matches.value_of("data_file");
-    let kcl_file = matches.value_of("kcl_file");
+    let data_file = matches.get_one::<String>("data_file").map(|f| f.as_str());
+    let kcl_file = matches.get_one::<String>("kcl_file").map(|f| f.as_str());
     match (data_file, kcl_file) {
         (Some(data_file), Some(kcl_file)) => {
             validate(ValidateOption::new(

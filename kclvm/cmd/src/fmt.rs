@@ -5,7 +5,7 @@ use kclvm_tools::format::{format, FormatOptions};
 
 /// Run the KCL fmt command.
 pub fn fmt_command(matches: &ArgMatches) -> Result<()> {
-    let input = matches.value_of("input");
+    let input = matches.get_one::<String>("input").map(|f| f.as_str());
     match input {
         Some(input) => {
             format(

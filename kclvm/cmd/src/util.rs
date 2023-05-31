@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 #[inline]
 pub(crate) fn strings_from_matches(matches: &ArgMatches, key: &str) -> Option<Vec<String>> {
-    matches.values_of(key).map(|files| {
+    matches.get_many::<String>(key).map(|files| {
         files
             .into_iter()
             .map(|v| v.to_string())
@@ -17,7 +17,7 @@ pub(crate) fn hashmaps_from_matches(
     matches: &ArgMatches,
     key: &str,
 ) -> Option<Result<HashMap<String, String>>> {
-    matches.values_of(key).map(|files| {
+    matches.get_many::<String>(key).map(|files| {
         files
             .into_iter()
             .map(|s| {
@@ -37,13 +37,12 @@ pub(crate) fn hashmaps_from_matches(
 
 #[inline]
 pub(crate) fn string_from_matches(matches: &ArgMatches, key: &str) -> Option<String> {
-    matches.value_of(key).map(|v| v.to_string())
+    matches.get_one::<String>(key).map(|v| v.to_string())
 }
 
 #[inline]
 pub(crate) fn bool_from_matches(matches: &ArgMatches, key: &str) -> Option<bool> {
-    let occurrences = matches.occurrences_of(key);
-    if occurrences > 0 {
+    if matches.get_flag(key) == true {
         Some(true)
     } else {
         None
@@ -52,7 +51,7 @@ pub(crate) fn bool_from_matches(matches: &ArgMatches, key: &str) -> Option<bool>
 
 #[inline]
 pub(crate) fn u32_from_matches(matches: &ArgMatches, key: &str) -> Option<u32> {
-    let occurrences = matches.occurrences_of(key);
+    let occurrences = matches.get_count(key);
     if occurrences > 0 {
         Some(occurrences as u32)
     } else {
