@@ -729,16 +729,7 @@ fn goto_import_external_file_test() {
         .display()
         .to_string();
 
-    let vendor_path = PathBuf::from(".")
-        .join("src")
-        .join("test_data")
-        .join("test_vendor")
-        .canonicalize()
-        .unwrap()
-        .display()
-        .to_string();
-
-    let output = Command::new("kpm")
+    let _ = Command::new("kpm")
         .arg("metadata")
         .arg("--update")
         .current_dir(
