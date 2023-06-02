@@ -1,0 +1,11 @@
+#!/bin/sh
+
+kcl_go_path=$(cd `dirname $0`; pwd)/kcl-go
+if [[ ! -f $kcl_go_path ]]; then
+  echo "kcl-go not found, please check the installation"
+  exit 1
+fi
+install_dir=$(cd `dirname $0`/..; pwd)
+export KCLVM_CLI_BIN_PATH=$install_dir/bin
+export PATHONPATH=''
+$kcl_go_path test "$@"
