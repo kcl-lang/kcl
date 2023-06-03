@@ -2394,7 +2394,7 @@ pub unsafe extern "C" fn kclvm_convert_collection_value(
 ) -> *const kclvm_value_ref_t {
     let value = ptr_as_ref(value);
     let tpe = c2str(tpe);
-    let value = convert_collection_value(value, tpe);
+    let value = type_pack_and_check(value, vec![tpe]);
     value.into_raw()
 }
 

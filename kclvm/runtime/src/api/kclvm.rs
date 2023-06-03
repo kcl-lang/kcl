@@ -323,10 +323,13 @@ pub struct ContextConfig {
     pub debug_mode: bool,
 
     pub strict_range_check: bool,
-    pub disable_none: bool,
     pub disable_schema_check: bool,
 
     pub list_option_mode: bool,
+    // Whether to emit none value in the plan process.
+    pub disable_none: bool,
+    // Whether to output empty list in the plan process.
+    pub plan_empty_list: bool,
 }
 
 #[derive(PartialEq, Eq, Clone, Debug)]

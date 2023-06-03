@@ -111,6 +111,11 @@ fn filter_results(key_values: &ValueRef) -> Vec<ValueRef> {
                 }
                 let schema_in_list_count = ignore_schema_count + standalone_list.len();
                 let value = &value.as_list_ref().values;
+                // Plan empty list to values.
+                if value.is_empty() && ctx.cfg.plan_empty_list {
+                    let result = results.get_mut(0).unwrap();
+                    result.dict_update_key_value(key.as_str(), ValueRef::list(None));
+                }
                 if schema_in_list_count < value.len() {
                     let result = results.get_mut(0).unwrap();
                     let filtered_list: Vec<&ValueRef> = filtered_list.iter().collect();
