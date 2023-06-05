@@ -2,7 +2,7 @@
 
 release_file="kclvm-$os-latest.tar.gz"
 release_path="$topdir/_build"
-package_dir="$topdir/_build/dist/$os"
+package_dir="$topdir/_build/python_dist/$os"
 install_dir="kclvm"
 
 cd $package_dir

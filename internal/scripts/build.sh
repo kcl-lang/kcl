@@ -12,10 +12,10 @@ else
 fi
 
 prepare_dirs () {
-    kclvm_install_dir="$topdir/_build/dist/$os/kclvm"
-    mkdir -p "$kclvm_install_dir/bin"
-    mkdir -p "$kclvm_install_dir/lib/site-packages"
-    mkdir -p "$kclvm_install_dir/include"
+    install_dir="$topdir/_build/dist/$os/kclvm"
+    mkdir -p "$install_dir/bin"
+    mkdir -p "$install_dir/lib/site-packages"
+    mkdir -p "$install_dir/include"
 }
 
 prepare_dirs
@@ -23,34 +23,34 @@ prepare_dirs
 # Perform the build process.
 set -x
 
-# Copy KCLVM.
-cp "$topdir/internal/scripts/cli/kcl" $kclvm_install_dir/bin/
-cp "$topdir/internal/scripts/cli/kclvm" $kclvm_install_dir/bin/
-cp "$topdir/internal/scripts/cli/kcl-plugin" $kclvm_install_dir/bin/
-cp "$topdir/internal/scripts/cli/kcl-doc" $kclvm_install_dir/bin/
-cp "$topdir/internal/scripts/cli/kcl-test" $kclvm_install_dir/bin/
-cp "$topdir/internal/scripts/cli/kcl-lint" $kclvm_install_dir/bin/
-cp "$topdir/internal/scripts/cli/kcl-fmt" $kclvm_install_dir/bin/
-cp "$topdir/internal/scripts/cli/kcl-vet" $kclvm_install_dir/bin/
-chmod +x $kclvm_install_dir/bin/kcl
-chmod +x $kclvm_install_dir/bin/kclvm
-chmod +x $kclvm_install_dir/bin/kcl-plugin
-chmod +x $kclvm_install_dir/bin/kcl-doc
-chmod +x $kclvm_install_dir/bin/kcl-test
-chmod +x $kclvm_install_dir/bin/kcl-lint
-chmod +x $kclvm_install_dir/bin/kcl-fmt
-chmod +x $kclvm_install_dir/bin/kcl-vet
+# Copy kcl scripts
+cp "$topdir/internal/scripts/cli/kcl" $install_dir/bin/
+cp "$topdir/internal/scripts/cli/kclvm" $install_dir/bin/
+cp "$topdir/internal/scripts/cli/kcl-plugin" $install_dir/bin/
+cp "$topdir/internal/scripts/cli/kcl-doc" $install_dir/bin/
+cp "$topdir/internal/scripts/cli/kcl-test" $install_dir/bin/
+cp "$topdir/internal/scripts/cli/kcl-lint" $install_dir/bin/
+cp "$topdir/internal/scripts/cli/kcl-fmt" $install_dir/bin/
+cp "$topdir/internal/scripts/cli/kcl-vet" $install_dir/bin/
+chmod +x $install_dir/bin/kcl
+chmod +x $install_dir/bin/kclvm
+chmod +x $install_dir/bin/kcl-plugin
+chmod +x $install_dir/bin/kcl-doc
+chmod +x $install_dir/bin/kcl-test
+chmod +x $install_dir/bin/kcl-lint
+chmod +x $install_dir/bin/kcl-fmt
+chmod +x $install_dir/bin/kcl-vet
 
-if [ -d $kclvm_install_dir/lib/site-packages/kclvm ]; then
-   rm -rf $kclvm_install_dir/lib/site-packages/kclvm
+if [ -d $install_dir/lib/site-packages/kclvm ]; then
+   rm -rf $install_dir/lib/site-packages/kclvm
 fi
 
 # Install plugins
-cp -rf $topdir/plugins $kclvm_install_dir/
+cp -rf $topdir/plugins $install_dir/
 
 set +x
 
-# build kclvm
+# build kcl
 
 cd $topdir/kclvm
 cargo build --release
@@ -71,9 +71,9 @@ esac
 # Copy libkclvm_cli lib
 
 if [ -e $topdir/kclvm/target/release/libkclvm_cli_cdylib.$dll_extension ]; then
-    touch $kclvm_install_dir/bin/libkclvm_cli_cdylib.$dll_extension
-    rm $kclvm_install_dir/bin/libkclvm_cli_cdylib.$dll_extension
-    cp $topdir/kclvm/target/release/libkclvm_cli_cdylib.$dll_extension $kclvm_install_dir/bin/libkclvm_cli_cdylib.$dll_extension
+    touch $install_dir/bin/libkclvm_cli_cdylib.$dll_extension
+    rm $install_dir/bin/libkclvm_cli_cdylib.$dll_extension
+    cp $topdir/kclvm/target/release/libkclvm_cli_cdylib.$dll_extension $install_dir/bin/libkclvm_cli_cdylib.$dll_extension
 fi
 
 # build kcl LSP server
@@ -81,29 +81,29 @@ fi
 cd $topdir/kclvm/tools/src/LSP
 cargo build --release
 
-touch $kclvm_install_dir/bin/kcl-language-server
-rm $kclvm_install_dir/bin/kcl-language-server
-cp $topdir/kclvm/target/release/kcl-language-server $kclvm_install_dir/bin/kcl-language-server
+touch $install_dir/bin/kcl-language-server
+rm $install_dir/bin/kcl-language-server
+cp $topdir/kclvm/target/release/kcl-language-server $install_dir/bin/kcl-language-server
 
 
 cd $topdir/kclvm_cli
 cargo build --release
 
-touch $kclvm_install_dir/bin/kclvm_cli
-rm $kclvm_install_dir/bin/kclvm_cli
-cp ./target/release/kclvm_cli $kclvm_install_dir/bin/kclvm_cli
+touch $install_dir/bin/kclvm_cli
+rm $install_dir/bin/kclvm_cli
+cp ./target/release/kclvm_cli $install_dir/bin/kclvm_cli
 
 
-# Copy KCLVM C API header
+# Copy kcl C API header
 cd $topdir/kclvm/runtime
-cp src/_kclvm.h  $kclvm_install_dir/include/_kclvm.h
+cp src/_kclvm.h  $install_dir/include/_kclvm.h
 
-# build kclvm_plugin python module
+# build kcl plugin python module
 cd $topdir/kclvm/plugin
-cp ./kclvm_plugin.py $kclvm_install_dir/lib/site-packages/
-cp ./kclvm_runtime.py $kclvm_install_dir/lib/site-packages/
+cp ./kclvm_plugin.py $install_dir/lib/site-packages/
+cp ./kclvm_runtime.py $install_dir/lib/site-packages/
 
 cd $topdir
 # Print the summary.
 echo "================ Summary ================"
-echo "  KCLVM is updated into $kclvm_install_dir"
+echo "  KCLVM is updated into $install_dir"
