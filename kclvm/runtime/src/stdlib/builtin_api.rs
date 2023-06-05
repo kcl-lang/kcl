@@ -209,7 +209,7 @@ pub unsafe extern "C" fn kclvm_builtin_option(
             return ValueRef::none();
         }
 
-        panic!("unknonwn type '{typ}'");
+        panic!("unknown type '{typ}'");
     }
 
     if let Some(arg0) = args.arg_0() {
