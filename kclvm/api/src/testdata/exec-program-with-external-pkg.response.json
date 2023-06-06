@@ -1,0 +1,5 @@
+{
+        "json_result": "[{\"a\": \"Hello External World!\"}]",
+        "yaml_result": "a: Hello External World!",
+        "escaped_time": "0.002061128616333008"
+}
