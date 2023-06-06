@@ -1,0 +1,8 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/alpine
+{
+    // ref: https://docs.github.com/en/codespaces/setting-up-your-project-for-codespaces/adding-a-dev-container-configuration/introduction-to-dev-containers#dockerfile
+    "build": {
+        "dockerfile": "../scripts/docker/kclvm-builder/Dockerfile"
+    }
+}
