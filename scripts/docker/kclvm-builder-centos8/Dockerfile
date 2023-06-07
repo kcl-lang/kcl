@@ -41,24 +41,30 @@ RUN yum -y install llvm-devel
 RUN yum -y install libffi-devel
 RUN ln -s /usr/lib64/libtinfo.so.6 /usr/lib64/libtinfo.so
 
-# Go 1.6
-RUN yum -y install golang
-RUN go version
+# golang 1.19+
+RUN mkdir -p /root/download && cd /root/download \
+    && wget https://dl.google.com/go/go1.20.5.linux-amd64.tar.gz \
+    && tar -zxvf go1.20.5.linux-amd64.tar.gz \
+    && mv ./go /usr/local/go1.20.5
+RUN ln -sf /usr/local/go1.20.5/bin/go /usr/bin/go
+RUN rm -rf /root/download
+
+ENV GOPATH=/go
+ENV GOLANG_VERSION=1.20.5
+
+RUN go install golang.org/x/lint/golint@latest
+RUN go install golang.org/x/tools/cmd/goimports@latest
+# RUN go install honnef.co/go/tools/cmd/...@latest
+
+RUN go install github.com/t-yuki/gocover-cobertura@latest
+RUN go install github.com/jstemmer/go-junit-report@latest
+
+RUN rm -rf /go/pkg/mod
+RUN rm -rf /go/pkg/sumdb
 
 # /usr/lib64/python3.9
 RUN yum -y install python39-devel
 RUN python3 -m pip install pytest
-
-# golang apps
-RUN go get golang.org/x/lint/golint
-RUN go get golang.org/x/tools/cmd/goimports
-#RUN go get honnef.co/go/tools/cmd/...
-
-RUN go get github.com/t-yuki/gocover-cobertura
-RUN go get github.com/jstemmer/go-junit-report
-
-RUN rm -rf /go/pkg/mod
-RUN rm -rf /go/pkg/sumdb
 
 RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 RUN echo 'Asia/Shanghai' >/etc/timezone
