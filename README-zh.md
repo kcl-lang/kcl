@@ -1,5 +1,7 @@
 <h1 align="center">KCL: 基于约束的记录及函数语言</h1>
 
+[![用 GitHub Codespaces 打开](https://github.com/codespaces/badge.svg)](https://codespaces.new/KusionStack/kcl)
+
 <p align="center">
 <a href="./README.md">English</a> | <a href="./README-zh.md">简体中文</a>
 </p>
