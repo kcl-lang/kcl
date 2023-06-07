@@ -1,5 +1,7 @@
 <h1 align="center">KCL: Constraint-based Record & Functional Language</h1>
 
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/KusionStack/kcl)
+
 <p align="center">
 <a href="./README.md">English</a> | <a href="./README-zh.md">简体中文</a>
 </p>

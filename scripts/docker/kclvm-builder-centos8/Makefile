@@ -26,6 +26,6 @@ publish-builder:
 	@echo "push ${BUILDER_IMAGE} ok"
 
 sh-in-builder:
-	${RUN_IN_DOCKER} -v ${PWD}/../..:/root/kclvm -w /root ${BUILDER_IMAGE} bash
+	${RUN_IN_DOCKER} -v ${PWD}/../../..:/root/kclvm -w /root ${BUILDER_IMAGE} bash
 
 clean:

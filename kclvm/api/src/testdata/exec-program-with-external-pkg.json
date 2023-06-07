@@ -1,0 +1,12 @@
+{
+	"work_dir" : "./src/testdata",
+	"k_filename_list":[
+		"hello_import.k"
+	],
+	"external_pkgs": [
+		{
+		  "pkg_name": "external",
+		  "pkg_path": "./src/testdata/external"
+		}
+	]
+}

@@ -4,15 +4,8 @@
 set -e
 
 # kclvm_cli path
-kclvm_cli_bin=`which kclvm_cli`
-kclvm_install_dir=$(cd `dirname $0`/..; pwd)
-
-# check kclvm_cli
-if [ -z "$kclvm_cli_bin" ]; then
-    echo "kclvm cli not found!"
-    exit 1
-fi
-
-export PYTHONPATH=$kclvm_install_dir/lib/site-packages
-export KCLVM_CLI_BIN_PATH=$kclvm_install_dir/bin
+install_dir=$(cd `dirname $0`/..; pwd)
+export PYTHONPATH=$install_dir/lib/site-packages
+export KCLVM_CLI_BIN_PATH=$install_dir/bin
+kclvm_cli_bin=$install_dir/bin/kclvm_cli
 $kclvm_cli_bin fmt "$@"
