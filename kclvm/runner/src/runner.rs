@@ -26,8 +26,7 @@ pub struct ExecProgramArgs {
     pub work_dir: Option<String>,
     pub k_filename_list: Vec<String>,
     // -E key=value
-    #[serde(skip)]
-    pub package_maps: HashMap<String, String>,
+    pub external_pkgs: Vec<ast::CmdExternalPkgSpec>,
     pub k_code_list: Vec<String>,
     // -D key=value
     pub args: Vec<ast::CmdArgSpec>,
@@ -54,6 +53,28 @@ pub struct ExecProgramArgs {
     // plugin_agent is the address of plugin.
     #[serde(skip)]
     pub plugin_agent: u64,
+}
+
+impl ExecProgramArgs {
+    /// [`get_package_maps_from_external_pkg`] gets the package name to package path mapping.
+    pub fn get_package_maps_from_external_pkg(&self) -> HashMap<String, String> {
+        let mut package_maps = HashMap::new();
+        for external_pkg in &self.external_pkgs {
+            package_maps.insert(external_pkg.pkg_name.clone(), external_pkg.pkg_path.clone());
+        }
+        package_maps
+    }
+
+    /// [`set_external_pkg_from_package_maps`] sets the package name to package path mapping.
+    pub fn set_external_pkg_from_package_maps(&mut self, package_maps: HashMap<String, String>) {
+        self.external_pkgs = package_maps
+            .iter()
+            .map(|(pkg_name, pkg_path)| ast::CmdExternalPkgSpec {
+                pkg_name: pkg_name.clone(),
+                pkg_path: pkg_path.clone(),
+            })
+            .collect();
+    }
 }
 
 /// ExecProgramResult denotes the running result of the KCL program.
@@ -85,7 +106,7 @@ impl ExecProgramArgs {
         kclvm_parser::LoadProgramOptions {
             work_dir: self.work_dir.clone().unwrap_or_default(),
             vendor_dirs: vec![get_vendor_home()],
-            package_maps: self.package_maps.clone(),
+            package_maps: self.get_package_maps_from_external_pkg(),
             k_code_list: self.k_code_list.clone(),
             cmd_args: self.args.clone(),
             cmd_overrides: self.overrides.clone(),
@@ -113,7 +134,9 @@ impl TryFrom<SettingsFile> for ExecProgramArgs {
                 args.overrides.push(parse_override_spec(override_str)?);
             }
             args.path_selector = cli_configs.path_selector.unwrap_or_default();
-            args.package_maps = cli_configs.package_maps.unwrap_or(HashMap::default())
+            args.set_external_pkg_from_package_maps(
+                cli_configs.package_maps.unwrap_or(HashMap::default()),
+            )
         }
         if let Some(options) = settings.kcl_options {
             args.args = options
