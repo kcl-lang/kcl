@@ -57,22 +57,25 @@ impl Metadata {
 
 /// [`fetch_metadata`] will call `kpm metadata` to obtain the metadata.
 pub fn fetch_metadata(manifest_path: PathBuf) -> Result<Metadata> {
-    let output = Command::new(kpm())
+    use std::result::Result::Ok;
+    match Command::new(kpm())
         .arg("metadata")
         .current_dir(manifest_path)
         .output()
-        .unwrap();
-
-    if !output.status.success() {
-        bail!(
-            "fetch workspace failed with error: {}",
-            String::from_utf8_lossy(&output.stderr)
-        );
+    {
+        Ok(output) => {
+            if !output.status.success() {
+                bail!(
+                    "fetch metadata failed with error: {}",
+                    String::from_utf8_lossy(&output.stderr)
+                );
+            }
+            Ok(Metadata::parse(
+                String::from_utf8_lossy(&output.stdout).to_string(),
+            )?)
+        }
+        Err(err) => bail!("fetch metadata failed with error: {}", err),
     }
-
-    Ok(Metadata::parse(
-        String::from_utf8_lossy(&output.stdout).to_string(),
-    )?)
 }
 
 /// [`lookup_the_nearest_file_dir`] will start from [`from`] and search for file [`the_nearest_file`] in the parent directories.
