@@ -66,7 +66,7 @@ pub fn fetch_metadata(manifest_path: PathBuf) -> Result<Metadata> {
         Ok(output) => {
             if !output.status.success() {
                 bail!(
-                    "fetch workspace failed with error: {}",
+                    "fetch metadata failed with error: {}",
                     String::from_utf8_lossy(&output.stderr)
                 );
             }
@@ -74,7 +74,7 @@ pub fn fetch_metadata(manifest_path: PathBuf) -> Result<Metadata> {
                 String::from_utf8_lossy(&output.stdout).to_string(),
             )?)
         }
-        Err(_) => return Ok(Metadata::default()),
+        Err(err) => bail!("fetch metadata failed with error: {}", err),
     }
 }
 
