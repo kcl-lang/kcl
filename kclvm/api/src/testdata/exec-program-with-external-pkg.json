@@ -6,7 +6,11 @@
 	"external_pkgs": [
 		{
 		  "pkg_name": "external",
-		  "pkg_path": "./src/testdata/external"
+		  "pkg_path": "./src/testdata_external/external"
+		},
+		{
+			"pkg_name": "external_1",
+			"pkg_path": "./src/testdata_external/external_1"
 		}
 	]
 }

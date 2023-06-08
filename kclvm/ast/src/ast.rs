@@ -228,6 +228,13 @@ impl TryInto<Node<SchemaExpr>> for Node<Expr> {
 /// AST node type T
 pub type NodeRef<T> = Box<Node<T>>;
 
+/// KCL command line argument spec, e.g. `kcl main.k -E pkg_name=pkg_path`
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct CmdExternalPkgSpec {
+    pub pkg_name: String,
+    pub pkg_path: String,
+}
+
 /// KCL command line argument spec, e.g. `kcl main.k -D name=value`
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct CmdArgSpec {
