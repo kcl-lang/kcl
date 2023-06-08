@@ -1,4 +1,4 @@
-use std::env;
+use std::{env, panic};
 use std::path::{Path, PathBuf};
 
 use kclvm_config::modfile::get_vendor_home;
@@ -199,5 +199,16 @@ fn test_fetch_metadata() {
 
 #[test]
 fn test_fetch_metadata_invalid() {
-    fetch_metadata("invalid_path".to_string().into()).expect("This method can not panic.");
+    let result = panic::catch_unwind(|| {
+        let result =  fetch_metadata("invalid_path".to_string().into());
+        match result {
+            Ok(_) => {panic!("The method should not return Ok")},
+            Err(_) => {println!("return with an error.")},
+        }
+    });
+
+    match result {
+        Ok(_) => println!("no panic"),
+        Err(e) => panic!("The method should not panic forever.: {:?}", e),
+    }  
 }
