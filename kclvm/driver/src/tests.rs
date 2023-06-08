@@ -196,3 +196,8 @@ fn test_fetch_metadata() {
             .to_string()
     );
 }
+
+#[test]
+fn test_fetch_metadata_invalid() {
+    fetch_metadata("invalid_path".to_string().into()).expect("This method can not panic.");
+}
