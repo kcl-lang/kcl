@@ -596,8 +596,6 @@ impl Loader {
         }
 
         let abspath: String = pathbuf
-            .canonicalize()
-            .unwrap()
             .as_path()
             .to_str()
             .unwrap()
