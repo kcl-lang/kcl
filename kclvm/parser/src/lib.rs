@@ -595,11 +595,7 @@ impl Loader {
             pathbuf.push(s);
         }
 
-        let abspath: String = pathbuf
-            .as_path()
-            .to_str()
-            .unwrap()
-            .to_string();
+        let abspath: String = pathbuf.as_path().to_str().unwrap().to_string();
 
         if std::path::Path::new(abspath.as_str()).exists() {
             return self.get_dir_files(abspath.as_str());
