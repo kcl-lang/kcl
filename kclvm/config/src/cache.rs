@@ -60,7 +60,7 @@ where
             let pkg_name = parse_external_pkg_name(pkgpath).ok()?;
             if Path::new(&real_path).exists()
                 || (external_pkgs.get(&pkg_name).is_some()
-                    && Path::new(external_pkgs.get(&pkg_name).unwrap()).exists())
+                    && Path::new(external_pkgs.get(&pkg_name)?).exists())
             {
                 let cache_info = read_info_cache(root, target, Some(&option.cache_dir));
                 let relative_path = real_path.replacen(root, ".", 1);
