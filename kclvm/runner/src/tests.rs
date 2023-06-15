@@ -387,7 +387,13 @@ fn test_clean_path_for_genlibs() {
             .to_string(),
     );
     let scope = resolve_program(&mut prog);
-    let assembler = KclvmAssembler::new(prog, scope, String::new(), KclvmLibAssembler::LLVM, HashMap::new());
+    let assembler = KclvmAssembler::new(
+        prog,
+        scope,
+        String::new(),
+        KclvmLibAssembler::LLVM,
+        HashMap::new(),
+    );
 
     let temp_dir = tempdir().unwrap();
     let temp_dir_path = temp_dir.path().to_str().unwrap();
