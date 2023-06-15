@@ -218,6 +218,7 @@ fn gen_assembler(entry_file: &str, test_kcl_case_path: &str) -> KclvmAssembler {
         scope,
         entry_file.to_string(),
         KclvmLibAssembler::LLVM,
+        HashMap::new(),
     )
 }
 
@@ -386,7 +387,13 @@ fn test_clean_path_for_genlibs() {
             .to_string(),
     );
     let scope = resolve_program(&mut prog);
-    let assembler = KclvmAssembler::new(prog, scope, String::new(), KclvmLibAssembler::LLVM);
+    let assembler = KclvmAssembler::new(
+        prog,
+        scope,
+        String::new(),
+        KclvmLibAssembler::LLVM,
+        HashMap::new(),
+    );
 
     let temp_dir = tempdir().unwrap();
     let temp_dir_path = temp_dir.path().to_str().unwrap();

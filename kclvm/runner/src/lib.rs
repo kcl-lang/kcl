@@ -204,6 +204,7 @@ pub fn execute(
         scope,
         temp_entry_file.clone(),
         KclvmLibAssembler::LLVM,
+        args.get_package_maps_from_external_pkg(),
     )
     .gen_libs();
 

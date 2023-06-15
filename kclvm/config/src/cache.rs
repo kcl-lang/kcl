@@ -4,6 +4,7 @@ use super::modfile::KCL_FILE_SUFFIX;
 use crypto::digest::Digest;
 use crypto::md5::Md5;
 use fslock::LockFile;
+use kclvm_utils::pkgpath::parse_external_pkg_name;
 use serde::{de::DeserializeOwned, Serialize};
 use std::collections::HashMap;
 use std::error;
@@ -35,7 +36,13 @@ impl Default for CacheOption {
 }
 
 /// Load pkg cache.
-pub fn load_pkg_cache<T>(root: &str, target: &str, pkgpath: &str, option: CacheOption) -> Option<T>
+pub fn load_pkg_cache<T>(
+    root: &str,
+    target: &str,
+    pkgpath: &str,
+    option: CacheOption,
+    external_pkgs: &HashMap<String, String>,
+) -> Option<T>
 where
     T: DeserializeOwned + Default,
 {
@@ -48,7 +55,13 @@ where
         } else {
             // Compare the md5 using cache
             let real_path = get_pkg_realpath_from_pkgpath(root, pkgpath);
-            if Path::new(&real_path).exists() {
+            // If the file exists and it is an internal package or an external package,
+            // Check the cache info.
+            let pkg_name = parse_external_pkg_name(pkgpath).ok()?;
+            if Path::new(&real_path).exists()
+                || (external_pkgs.get(&pkg_name).is_some()
+                    && Path::new(external_pkgs.get(&pkg_name)?).exists())
+            {
                 let cache_info = read_info_cache(root, target, Some(&option.cache_dir));
                 let relative_path = real_path.replacen(root, ".", 1);
                 match cache_info.get(&relative_path) {
