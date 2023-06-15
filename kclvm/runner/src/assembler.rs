@@ -188,6 +188,7 @@ pub(crate) struct KclvmAssembler {
     entry_file: String,
     single_file_assembler: KclvmLibAssembler,
     target: String,
+    external_pkgs: HashMap<String, String>,
 }
 
 impl KclvmAssembler {
@@ -199,6 +200,7 @@ impl KclvmAssembler {
         scope: ProgramScope,
         entry_file: String,
         single_file_assembler: KclvmLibAssembler,
+        external_pkgs: HashMap<String, String>,
     ) -> Self {
         Self {
             program,
@@ -206,6 +208,7 @@ impl KclvmAssembler {
             entry_file,
             single_file_assembler,
             target: env!("KCLVM_DEFAULT_TARGET").to_string(),
+            external_pkgs,
         }
     }
 
@@ -326,8 +329,13 @@ impl KclvmAssembler {
                     assembler.assemble(&compile_prog, import_names, &code_file, &code_file_path)
                 } else {
                     // Read the lib path cache
-                    let file_relative_path: Option<String> =
-                        load_pkg_cache(root, &target, &pkgpath, CacheOption::default());
+                    let file_relative_path: Option<String> = load_pkg_cache(
+                        root,
+                        &target,
+                        &pkgpath,
+                        CacheOption::default(),
+                        &self.external_pkgs,
+                    );
                     let file_abs_path = match file_relative_path {
                         Some(file_relative_path) => {
                             let path = if file_relative_path.starts_with('.') {

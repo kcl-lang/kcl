@@ -26,6 +26,7 @@ kclvm-driver = {path = "../../../driver"}
 kclvm-parser = {path = "../../../parser"}
 kclvm-sema = {path = "../../../sema"}
 kclvm-ast = {path = "../../../ast"}
+kclvm-utils = {path = "../../../utils"}
 compiler_base_session = {path = "../../../../compiler_base/session"}
 
 lsp-server = { version = "0.6.0", default-features = false }
