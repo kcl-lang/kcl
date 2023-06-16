@@ -192,6 +192,7 @@ fn test_run_command() {
     test_vet_cmd();
     test_run_command_with_import();
     test_run_command_with_konfig();
+    test_load_cache_with_different_pkg();
 }
 
 fn test_run_command_with_import() {
@@ -226,7 +227,6 @@ fn test_run_command_with_konfig() {
     }
 }
 
-#[test]
 fn test_load_cache_with_different_pkg() {
     let main_path = PathBuf::from("./src/test_data/cache/main/main.k");
     let main_v1_path = PathBuf::from("./src/test_data/cache/main/main.k.v1");
