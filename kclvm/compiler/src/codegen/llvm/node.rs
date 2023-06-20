@@ -622,52 +622,6 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         self.builder.position_at_end(do_check_block);
         let schema_name_native_str = self.native_global_string_value(&schema_stmt.name.node);
         let schema_pkgpath_native_str = self.native_global_string_value(&self.current_pkgpath());
-        // Schema runtime index signature and relaxed check
-        if let Some(index_signature) = &schema_stmt.index_signature {
-            let index_sign_value = if let Some(value) = &index_signature.node.value {
-                self.walk_expr(value).expect(kcl_error::COMPILE_ERROR_MSG)
-            } else {
-                self.none_value()
-            };
-            let key_name_str_ptr = if let Some(key_name) = &index_signature.node.key_name {
-                self.native_global_string(key_name.as_str(), "")
-            } else {
-                self.native_global_string("", "")
-            };
-            self.build_void_call(
-                &ApiFunc::kclvm_schema_value_check.name(),
-                &[
-                    schema_value,
-                    schema_config,
-                    schema_config_meta,
-                    schema_name_native_str,
-                    index_sign_value,
-                    key_name_str_ptr.into(),
-                    self.native_global_string(index_signature.node.key_type.node.as_str(), "")
-                        .into(),
-                    self.native_global_string(index_signature.node.value_type.node.as_str(), "")
-                        .into(),
-                    self.native_i8(index_signature.node.any_other as i8).into(),
-                    self.native_i8(false as i8).into(),
-                ],
-            );
-        } else {
-            self.build_void_call(
-                &ApiFunc::kclvm_schema_value_check.name(),
-                &[
-                    schema_value,
-                    schema_config,
-                    schema_config_meta,
-                    schema_name_native_str,
-                    self.none_value(),
-                    self.native_global_string("", "").into(),
-                    self.native_global_string("", "").into(),
-                    self.native_global_string("", "").into(),
-                    self.native_i8(0).into(),
-                    self.native_i8(false as i8).into(),
-                ],
-            );
-        }
         {
             let index_sign_key_name = if let Some(index_signature) = &schema_stmt.index_signature {
                 if let Some(key_name) = &index_signature.node.key_name {
@@ -772,6 +726,55 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
                 .expect(kcl_error::INTERNAL_ERROR_MSG);
             self.walk_arguments(&schema_stmt.args, args, kwargs);
             self.schema_stack.borrow_mut().push(schema);
+            // Schema runtime index signature and relaxed check
+            if let Some(index_signature) = &schema_stmt.index_signature {
+                let index_sign_value = if let Some(value) = &index_signature.node.value {
+                    self.walk_expr(value).expect(kcl_error::COMPILE_ERROR_MSG)
+                } else {
+                    self.none_value()
+                };
+                let key_name_str_ptr = if let Some(key_name) = &index_signature.node.key_name {
+                    self.native_global_string(key_name.as_str(), "")
+                } else {
+                    self.native_global_string("", "")
+                };
+                self.build_void_call(
+                    &ApiFunc::kclvm_schema_value_check.name(),
+                    &[
+                        schema_value,
+                        schema_config,
+                        schema_config_meta,
+                        schema_name_native_str,
+                        index_sign_value,
+                        key_name_str_ptr.into(),
+                        self.native_global_string(index_signature.node.key_type.node.as_str(), "")
+                            .into(),
+                        self.native_global_string(
+                            index_signature.node.value_type.node.as_str(),
+                            "",
+                        )
+                        .into(),
+                        self.native_i8(index_signature.node.any_other as i8).into(),
+                        self.native_i8(false as i8).into(),
+                    ],
+                );
+            } else {
+                self.build_void_call(
+                    &ApiFunc::kclvm_schema_value_check.name(),
+                    &[
+                        schema_value,
+                        schema_config,
+                        schema_config_meta,
+                        schema_name_native_str,
+                        self.none_value(),
+                        self.native_global_string("", "").into(),
+                        self.native_global_string("", "").into(),
+                        self.native_global_string("", "").into(),
+                        self.native_i8(0).into(),
+                        self.native_i8(false as i8).into(),
+                    ],
+                );
+            }
             // Call base check function
             if let Some(parent_name) = &schema_stmt.parent_name {
                 let base_constructor_func = self
