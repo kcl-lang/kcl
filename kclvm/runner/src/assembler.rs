@@ -1,3 +1,4 @@
+use anyhow::Result;
 use compiler_base_macros::bug;
 use indexmap::IndexMap;
 use kclvm_ast::ast::{self, Program};
@@ -59,12 +60,13 @@ pub(crate) trait LibAssembler {
         import_names: IndexMap<String, IndexMap<String, String>>,
         code_file: &str,
         code_file_path: &str,
-    ) -> String;
+    ) -> Result<String>;
 
+    /// Clean cache lock files.
     #[inline]
-    fn clean_lock_file(&self, path: &str) {
+    fn clean_lock_file(&self, path: &str) -> Result<()> {
         let lock_path = &format!("{}.lock", self.add_code_file_suffix(path));
-        clean_path(lock_path);
+        clean_path(lock_path)
     }
 }
 
@@ -88,7 +90,7 @@ impl LibAssembler for KclvmLibAssembler {
         import_names: IndexMap<String, IndexMap<String, String>>,
         code_file: &str,
         object_file_path: &str,
-    ) -> String {
+    ) -> Result<String> {
         match &self {
             KclvmLibAssembler::LLVM => LlvmLibAssembler::default().assemble(
                 compile_prog,
@@ -143,9 +145,9 @@ impl LibAssembler for LlvmLibAssembler {
         import_names: IndexMap<String, IndexMap<String, String>>,
         code_file: &str,
         object_file_path: &str,
-    ) -> String {
+    ) -> Result<String> {
         // Clean the existed "*.o" object file.
-        clean_path(object_file_path);
+        clean_path(object_file_path)?;
 
         // Compile KCL code into ".o" object file.
         emit_code(
@@ -157,9 +159,14 @@ impl LibAssembler for LlvmLibAssembler {
                 no_link: true,
             },
         )
-        .expect("Compile KCL to LLVM error");
+        .map_err(|e| {
+            anyhow::anyhow!(
+                "Internal error: compile KCL to LLVM error {}",
+                e.to_string()
+            )
+        })?;
 
-        object_file_path.to_string()
+        Ok(object_file_path.to_string())
     }
 
     #[inline]
@@ -215,32 +222,33 @@ impl KclvmAssembler {
     /// Clean up the path of the dynamic link libraries generated.
     /// It will remove the file in "file_path" and all the files in file_path end with ir code file suffix.
     #[inline]
-    pub(crate) fn clean_path_for_genlibs(&self, file_path: &str, suffix: &str) {
+    pub(crate) fn clean_path_for_genlibs(&self, file_path: &str, suffix: &str) -> Result<()> {
         let path = std::path::Path::new(file_path);
         if path.exists() {
-            std::fs::remove_file(path).unwrap();
+            std::fs::remove_file(path)?;
         }
-        for entry in glob::glob(&format!("{}*{}", file_path, suffix)).unwrap() {
+        for entry in glob::glob(&format!("{}*{}", file_path, suffix))? {
             match entry {
                 Ok(path) => {
                     if path.exists() {
-                        std::fs::remove_file(path).unwrap();
+                        std::fs::remove_file(path)?;
                     }
                 }
                 Err(e) => bug!("{:?}", e),
             };
         }
+        Ok(())
     }
 
     /// Generate cache dir from the program root path.
     /// Create cache dir if it doesn't exist.
     #[inline]
-    pub(crate) fn load_cache_dir(&self, prog_root_name: &str) -> PathBuf {
+    pub(crate) fn load_cache_dir(&self, prog_root_name: &str) -> Result<PathBuf> {
         let cache_dir = self.construct_cache_dir(prog_root_name);
         if !cache_dir.exists() {
-            std::fs::create_dir_all(&cache_dir).unwrap();
+            std::fs::create_dir_all(&cache_dir)?;
         }
-        cache_dir
+        Ok(cache_dir)
     }
 
     #[inline]
@@ -262,12 +270,12 @@ impl KclvmAssembler {
     ///
     /// `gen_libs` will create multiple threads and call the method provided by [KclvmLibAssembler] in each thread
     /// to generate the dynamic link library in parallel.
-    pub(crate) fn gen_libs(self) -> Vec<String> {
+    pub(crate) fn gen_libs(self) -> Result<Vec<String>> {
         self.clean_path_for_genlibs(
             DEFAULT_IR_FILE,
             &self.single_file_assembler.get_code_file_suffix(),
-        );
-        let cache_dir = self.load_cache_dir(&self.program.root);
+        )?;
+        let cache_dir = self.load_cache_dir(&self.program.root)?;
         let mut compile_progs: IndexMap<
             String,
             (
@@ -307,15 +315,17 @@ impl KclvmAssembler {
                 // The path to the generated files(*.o or *.lock) when the non-main package is compiled.
                 cache_dir.join(&pkgpath)
             };
-            let code_file = file.to_str().unwrap().to_string();
+            let code_file = file
+                .to_str()
+                .ok_or(anyhow::anyhow!("Internal error: get cache file failed"))?
+                .to_string();
             let code_file_path = assembler.add_code_file_suffix(&code_file);
             let lock_file_path = format!("{}.lock", code_file_path);
             let target = self.target.clone();
             {
                 // Locking file for parallel code generation.
-                let mut file_lock = fslock::LockFile::open(&lock_file_path)
-                    .unwrap_or_else(|_| panic!("{} not found", lock_file_path));
-                file_lock.lock().unwrap();
+                let mut file_lock = fslock::LockFile::open(&lock_file_path)?;
+                file_lock.lock()?;
 
                 let root = &compile_prog.root;
                 // The main package does not perform cache reading and writing,
@@ -326,7 +336,7 @@ impl KclvmAssembler {
                 // written.
                 let file_path = if is_main_pkg {
                     // generate dynamic link library for single file kcl program
-                    assembler.assemble(&compile_prog, import_names, &code_file, &code_file_path)
+                    assembler.assemble(&compile_prog, import_names, &code_file, &code_file_path)?
                 } else {
                     // Read the lib path cache
                     let file_relative_path: Option<String> = load_pkg_cache(
@@ -360,7 +370,7 @@ impl KclvmAssembler {
                                 import_names,
                                 &code_file,
                                 &code_file_path,
-                            );
+                            )?;
                             let lib_relative_path = file_path.replacen(root, ".", 1);
                             save_pkg_cache(
                                 root,
@@ -373,18 +383,20 @@ impl KclvmAssembler {
                         }
                     }
                 };
-                file_lock.unlock().unwrap();
+                file_lock.unlock()?;
                 lib_paths.push(file_path);
             };
         }
-        self.single_file_assembler.clean_lock_file(&self.entry_file);
-        lib_paths
+        self.single_file_assembler
+            .clean_lock_file(&self.entry_file)?;
+        Ok(lib_paths)
     }
 }
 
 #[inline]
-pub(crate) fn clean_path(path: &str) {
+pub(crate) fn clean_path(path: &str) -> Result<()> {
     if Path::new(path).exists() {
-        std::fs::remove_file(path).unwrap();
+        std::fs::remove_file(path)?;
     }
+    Ok(())
 }

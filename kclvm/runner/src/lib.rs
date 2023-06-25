@@ -1,7 +1,7 @@
 use std::{collections::HashMap, path::Path, sync::Arc, time::SystemTime};
 
+use anyhow::Result;
 use assembler::KclvmLibAssembler;
-use command::Command;
 use kclvm_ast::{
     ast::{Module, Program},
     MAIN_PKG,
@@ -12,12 +12,12 @@ use kclvm_parser::{load_program, ParseSession};
 use kclvm_query::apply_overrides;
 use kclvm_runtime::{PanicInfo, ValueRef};
 use kclvm_sema::resolver::resolve_program;
+use linker::Command;
 pub use runner::ExecProgramArgs;
 use runner::{ExecProgramResult, KclvmRunner, KclvmRunnerOptions};
 use tempfile::tempdir;
 
 pub mod assembler;
-pub mod command;
 pub mod linker;
 pub mod runner;
 
@@ -194,9 +194,12 @@ pub fn execute(
     scope.emit_diagnostics_to_string(sess.0.clone())?;
 
     // Create a temp entry file and the temp dir will be delete automatically
-    let temp_dir = tempdir().unwrap();
-    let temp_dir_path = temp_dir.path().to_str().unwrap();
-    let temp_entry_file = temp_file(temp_dir_path);
+    let temp_dir = tempdir().map_err(|e| e.to_string())?;
+    let temp_dir_path = temp_dir.path().to_str().ok_or(format!(
+        "Internal error: {}: No such file or directory",
+        temp_dir.path().display()
+    ))?;
+    let temp_entry_file = temp_file(temp_dir_path).map_err(|e| e.to_string())?;
 
     // Generate libs
     let lib_paths = assembler::KclvmAssembler::new(
@@ -206,29 +209,28 @@ pub fn execute(
         KclvmLibAssembler::LLVM,
         args.get_package_maps_from_external_pkg(),
     )
-    .gen_libs();
+    .gen_libs()
+    .map_err(|e| e.to_string())?;
 
     // Link libs
     let lib_suffix = Command::get_lib_suffix();
     let temp_out_lib_file = format!("{}{}", temp_entry_file, lib_suffix);
-    let lib_path = linker::KclvmLinker::link_all_libs(lib_paths, temp_out_lib_file);
+    let lib_path = linker::KclvmLinker::link_all_libs(lib_paths, temp_out_lib_file)
+        .map_err(|e| e.to_string())?;
 
     // Run
-    let runner = KclvmRunner::new(
-        lib_path.as_str(),
-        Some(KclvmRunnerOptions {
-            plugin_agent_ptr: args.plugin_agent,
-        }),
-    );
-    let result = runner.run(args);
+    let runner = KclvmRunner::new(Some(KclvmRunnerOptions {
+        plugin_agent_ptr: args.plugin_agent,
+    }));
+    let result = runner.run(&lib_path, args);
 
     // Clean temp files.
     // FIXME(issue #346): On windows, sometimes there will be an error that the file cannot be accessed.
     // Therefore, the function of automatically deleting dll files on windows is temporarily turned off.
     #[cfg(not(target_os = "windows"))]
-    remove_file(&lib_path);
+    remove_file(&lib_path).map_err(|e| e.to_string())?;
     #[cfg(not(target_os = "windows"))]
-    clean_tmp_files(&temp_entry_file, &lib_suffix);
+    clean_tmp_files(&temp_entry_file, &lib_suffix).map_err(|e| e.to_string())?;
     // Wrap runtime error into diagnostic style string.
     result.map_err(|err| {
         match Handler::default()
@@ -268,23 +270,28 @@ pub fn execute_module(mut m: Module) -> Result<String, String> {
 
 /// Clean all the tmp files generated during lib generating and linking.
 #[inline]
-fn clean_tmp_files(temp_entry_file: &String, lib_suffix: &String) {
+fn clean_tmp_files(temp_entry_file: &String, lib_suffix: &String) -> Result<()> {
     let temp_entry_lib_file = format!("{}{}", temp_entry_file, lib_suffix);
-    remove_file(&temp_entry_lib_file);
+    remove_file(&temp_entry_lib_file)
 }
 
 #[inline]
-fn remove_file(file: &str) {
+fn remove_file(file: &str) -> Result<()> {
     if Path::new(&file).exists() {
-        std::fs::remove_file(file).unwrap_or_else(|err| panic!("{file} not found, details: {err}"));
+        std::fs::remove_file(file)?;
     }
+    Ok(())
 }
 
 /// Returns a temporary file name consisting of timestamp and process id.
-fn temp_file(dir: &str) -> String {
+fn temp_file(dir: &str) -> Result<String> {
     let timestamp = chrono::Local::now().timestamp_nanos();
     let id = std::process::id();
     let file = format!("{}_{}", id, timestamp);
-    std::fs::create_dir_all(dir).unwrap_or_else(|err| panic!("{dir} not found, details: {err}"));
-    Path::new(dir).join(file).to_str().unwrap().to_string()
+    std::fs::create_dir_all(dir)?;
+    Ok(Path::new(dir)
+        .join(file)
+        .to_str()
+        .ok_or(anyhow::anyhow!("{dir} not found"))?
+        .to_string())
 }

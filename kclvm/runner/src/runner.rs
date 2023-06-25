@@ -87,16 +87,20 @@ pub struct ExecProgramResult {
 }
 
 impl ExecProgramArgs {
+    /// Deserialize an instance of type [ExecProgramArgs] from a string of JSON text.
     pub fn from_str(s: &str) -> Self {
         if s.trim().is_empty() {
             return Default::default();
         }
         serde_json::from_str::<ExecProgramArgs>(s).expect(s)
     }
+
+    /// Serialize the [ExecProgramArgs] structure as a String of JSON.
     pub fn to_json(&self) -> String {
         serde_json::ser::to_string(self).unwrap()
     }
 
+    /// Get the input file list.
     pub fn get_files(&self) -> Vec<&str> {
         self.k_filename_list.iter().map(|s| s.as_str()).collect()
     }
@@ -167,35 +171,36 @@ pub struct KclvmRunnerOptions {
 
 pub struct KclvmRunner {
     opts: KclvmRunnerOptions,
-    lib: libloading::Library,
 }
 
 impl KclvmRunner {
-    pub fn new(lib_path: &str, opts: Option<KclvmRunnerOptions>) -> Self {
-        let lib = unsafe {
-            libloading::Library::new(
-                std::path::PathBuf::from(lib_path)
-                    .canonicalize()
-                    .unwrap_or_else(|_| panic!("{} not found", lib_path)),
-            )
-            .unwrap()
-        };
+    /// New a runner using the lib path and options.
+    pub fn new(opts: Option<KclvmRunnerOptions>) -> Self {
         Self {
             opts: opts.unwrap_or_default(),
-            lib,
         }
     }
 
-    pub fn run(&self, args: &ExecProgramArgs) -> Result<String, String> {
+    /// Run kcl library with exec arguments.
+    pub fn run(&self, lib_path: &str, args: &ExecProgramArgs) -> Result<String, String> {
         unsafe {
-            Self::lib_kclvm_plugin_init(&self.lib, self.opts.plugin_agent_ptr);
-            Self::lib_kcl_run(&self.lib, args)
+            let lib = libloading::Library::new(
+                std::path::PathBuf::from(lib_path)
+                    .canonicalize()
+                    .map_err(|e| e.to_string())?,
+            )
+            .map_err(|e| e.to_string())?;
+            Self::lib_kclvm_plugin_init(&lib, self.opts.plugin_agent_ptr)?;
+            Self::lib_kcl_run(&lib, args)
         }
     }
 }
 
 impl KclvmRunner {
-    unsafe fn lib_kclvm_plugin_init(lib: &libloading::Library, plugin_method_ptr: u64) {
+    unsafe fn lib_kclvm_plugin_init(
+        lib: &libloading::Library,
+        plugin_method_ptr: u64,
+    ) -> Result<(), String> {
         // get kclvm_plugin_init
         let kclvm_plugin_init: libloading::Symbol<
             unsafe extern "C" fn(
@@ -205,7 +210,7 @@ impl KclvmRunner {
                     kwargs_json: *const i8,
                 ) -> *const i8,
             ),
-        > = lib.get(b"kclvm_plugin_init").unwrap();
+        > = lib.get(b"kclvm_plugin_init").map_err(|e| e.to_string())?;
 
         // get plugin_method
         let plugin_method_ptr = plugin_method_ptr;
@@ -223,6 +228,7 @@ impl KclvmRunner {
 
         // register plugin agent
         kclvm_plugin_init(plugin_method);
+        Ok(())
     }
 
     unsafe fn lib_kcl_run(
@@ -245,9 +251,10 @@ impl KclvmRunner {
                 warn_buffer_len: kclvm_size_t,
                 warn_buffer: *mut kclvm_char_t,
             ) -> kclvm_size_t,
-        > = lib.get(b"_kcl_run").unwrap();
+        > = lib.get(b"_kcl_run").map_err(|e| e.to_string())?;
 
-        let kclvm_main: libloading::Symbol<u64> = lib.get(b"kclvm_main").unwrap();
+        let kclvm_main: libloading::Symbol<u64> =
+            lib.get(b"kclvm_main").map_err(|e| e.to_string())?;
         let kclvm_main_ptr = kclvm_main.into_raw().into_raw() as u64;
 
         let option_len = args.args.len() as kclvm_size_t;
@@ -316,11 +323,13 @@ impl KclvmRunner {
             Ok("".to_string())
         } else if n > 0 {
             let return_len = n;
-            let s = std::str::from_utf8(&result[0..return_len as usize]).unwrap();
+            let s =
+                std::str::from_utf8(&result[0..return_len as usize]).map_err(|e| e.to_string())?;
             wrap_msg_in_result(s)
         } else {
             let return_len = 0 - n;
-            let s = std::str::from_utf8(&warn_data[0..return_len as usize]).unwrap();
+            let s = std::str::from_utf8(&warn_data[0..return_len as usize])
+                .map_err(|e| e.to_string())?;
             Err(s.to_string())
         }
     }
