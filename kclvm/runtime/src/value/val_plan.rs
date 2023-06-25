@@ -325,7 +325,7 @@ impl ValueRef {
                             key,
                             &val.filter_results(),
                             ConfigEntryOperationKind::Override,
-                            0,
+                            -1,
                         );
                     }
                 }
@@ -353,7 +353,7 @@ impl ValueRef {
                             key,
                             &val.filter_results(),
                             ConfigEntryOperationKind::Union,
-                            0,
+                            -1,
                         );
                     }
                 }

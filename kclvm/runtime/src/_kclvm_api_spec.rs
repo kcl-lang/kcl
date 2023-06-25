@@ -787,8 +787,8 @@
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_schema_value_new(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs, %kclvm_value_ref_t* %schema_value_or_func, %kclvm_value_ref_t* %config, %kclvm_value_ref_t* %config_meta, %kclvm_char_t* %pkgpath);
 
 // api-spec:       kclvm_convert_collection_value
-// api-spec(c):    kclvm_value_ref_t* kclvm_convert_collection_value(kclvm_value_ref_t* value, kclvm_char_t* tpe);
-// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_convert_collection_value(%kclvm_value_ref_t* %value, %kclvm_char_t* %tpe);
+// api-spec(c):    kclvm_value_ref_t* kclvm_convert_collection_value(kclvm_value_ref_t* value, kclvm_char_t* tpe, kclvm_value_ref_t* is_in_schema);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_convert_collection_value(%kclvm_value_ref_t* %value, %kclvm_char_t* %tpe, %kclvm_value_ref_t* %is_in_schema);
 
 // api-spec:       kclvm_schema_get_value
 // api-spec(c):    kclvm_value_ref_t* kclvm_schema_get_value(kclvm_value_ref_t* p, kclvm_char_t* key, kclvm_value_ref_t* config, kclvm_value_ref_t* config_meta, kclvm_value_ref_t* cal_map, kclvm_char_t* target_attr, kclvm_value_ref_t* backtrack_level_map, kclvm_value_ref_t* backtrack_cache, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);

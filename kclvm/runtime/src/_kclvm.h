@@ -264,7 +264,7 @@ kclvm_size_t kclvm_context_symbol_num(kclvm_context_t* p);
 
 kclvm_value_t* kclvm_context_symbol_value(kclvm_context_t* p, kclvm_size_t i);
 
-kclvm_value_ref_t* kclvm_convert_collection_value(kclvm_value_ref_t* value, kclvm_char_t* tpe);
+kclvm_value_ref_t* kclvm_convert_collection_value(kclvm_value_ref_t* value, kclvm_char_t* tpe, kclvm_value_ref_t* is_in_schema);
 
 kclvm_value_ref_t* kclvm_crypto_md5(kclvm_context_t* _ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
 
