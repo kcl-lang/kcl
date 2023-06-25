@@ -462,7 +462,7 @@ pub fn dict(iterable: Option<&ValueRef>) -> ValueRef {
                 let k = iter.cur_key.clone();
                 match &*k.rc.borrow() {
                     Value::str_value(str) => {
-                        result.dict_insert(str.as_str(), &elem, Default::default(), 0);
+                        result.dict_insert(str.as_str(), &elem, Default::default(), -1);
                     }
                     _ => {
                         let mut elem_iter = elem.iter();
@@ -471,7 +471,7 @@ pub fn dict(iterable: Option<&ValueRef>) -> ValueRef {
                         }
                         let k = elem_iter.next(val).unwrap().to_string();
                         let v = elem_iter.next(val).unwrap();
-                        result.dict_insert(k.as_str(), v, Default::default(), 0);
+                        result.dict_insert(k.as_str(), v, Default::default(), -1);
                     }
                 };
             }

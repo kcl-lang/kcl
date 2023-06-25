@@ -371,7 +371,7 @@ impl ValueRef {
                         name.as_ref(),
                         &Self::parse_json(value),
                         ConfigEntryOperationKind::Union,
-                        0,
+                        -1,
                     );
                 }
                 dict

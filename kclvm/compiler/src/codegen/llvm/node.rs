@@ -155,9 +155,11 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
             .expect(kcl_error::COMPILE_ERROR_MSG);
         if let Some(type_annotation) = &assign_stmt.type_annotation {
             let type_annotation = self.native_global_string_value(&type_annotation.node);
+            let is_in_schema =
+                self.schema_stack.borrow().len() > 0 || self.schema_expr_stack.borrow().len() > 0;
             value = self.build_call(
                 &ApiFunc::kclvm_convert_collection_value.name(),
-                &[value, type_annotation],
+                &[value, type_annotation, self.bool_value(is_in_schema)],
             );
         }
         if assign_stmt.targets.len() == 1 {

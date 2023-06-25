@@ -1823,20 +1823,20 @@ pub unsafe extern "C" fn kclvm_value_union(
                 let mut entry = b.dict_get_entry(k).unwrap().deep_copy();
                 entry.dict_update_key_value(k, v);
                 result = a
-                    .union_entry(&entry, true, false, false, false)
+                    .union_entry(&entry, true, false, false, true)
                     .clone()
                     .into_raw();
             } else {
                 let entry = b.dict_get_entry(k).unwrap();
                 result = a
-                    .union_entry(&entry, true, false, false, false)
+                    .union_entry(&entry, true, false, false, true)
                     .clone()
                     .into_raw();
             }
         }
         result
     } else {
-        a.union_entry(b, true, false, false, false).into_raw()
+        a.union_entry(b, true, false, false, true).into_raw()
     }
 }
 
@@ -2203,7 +2203,7 @@ pub unsafe extern "C" fn kclvm_schema_value_check(
             }
         } else if !should_add_attr && is_not_in_schema {
             let schema_name = c2str(schema_name);
-            panic!("{key}: No such member in the schema '{schema_name}'");
+            panic!("No attribute named '{key}' in the schema '{schema_name}'");
         }
     }
 }
@@ -2408,10 +2408,15 @@ pub unsafe extern "C" fn kclvm_schema_value_new(
 pub unsafe extern "C" fn kclvm_convert_collection_value(
     value: *const kclvm_value_ref_t,
     tpe: *const kclvm_char_t,
+    is_in_schema: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let value = ptr_as_ref(value);
     let tpe = c2str(tpe);
     let value = type_pack_and_check(value, vec![tpe]);
+    let is_in_schema = ptr_as_ref(is_in_schema);
+    if value.is_schema() && !is_in_schema.is_truthy() {
+        value.schema_check_attr_optional(true);
+    }
     value.into_raw()
 }
 
