@@ -1,0 +1,8 @@
+labelMap:
+  key1: value1
+  key2: 2
+namedMap:
+  key1:
+    key1: value1
+  key2:
+    key2: value2

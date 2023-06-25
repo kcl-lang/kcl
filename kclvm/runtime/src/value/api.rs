@@ -2154,7 +2154,7 @@ pub unsafe extern "C" fn kclvm_schema_value_check(
     _config_meta: *const kclvm_value_ref_t,
     schema_name: *const kclvm_char_t,
     index_sign_value: *const kclvm_value_ref_t,
-    _key_name: *const kclvm_char_t,
+    key_name: *const kclvm_char_t,
     key_type: *const kclvm_char_t,
     _value_type: *const kclvm_char_t,
     _any_other: kclvm_bool_t,
@@ -2164,6 +2164,7 @@ pub unsafe extern "C" fn kclvm_schema_value_check(
     let schema_config = ptr_as_ref(schema_config);
     let index_sign_value = ptr_as_ref(index_sign_value);
     let key_type = c2str(key_type);
+    let index_key_name = c2str(key_name);
     let has_index_signature = !key_type.is_empty();
     let should_add_attr = is_relaxed != 0 || has_index_signature;
 
@@ -2171,19 +2172,35 @@ pub unsafe extern "C" fn kclvm_schema_value_check(
     if ctx.cfg.disable_schema_check {
         return;
     }
-
     let config = schema_config.as_dict_ref();
     for (key, value) in &config.values {
         let is_not_in_schema = schema_value.dict_get_value(key).is_none();
         if should_add_attr && is_not_in_schema {
-            let value = index_sign_value
-                .deep_copy()
-                .union_entry(value, true, false, false, true);
-            let op = config
-                .ops
-                .get(key)
-                .unwrap_or(&ConfigEntryOperationKind::Union);
-            schema_value.dict_update_entry(key.as_str(), &value.clone(), op, &-1);
+            // Allow index signature value has different values
+            // related to the index signature key name.
+            let should_update =
+                if let Some(index_key_value) = schema_value.dict_get_value(index_key_name) {
+                    if index_key_value.is_str() && key == &index_key_value.as_str() {
+                        true
+                    } else {
+                        false
+                    }
+                } else {
+                    true
+                };
+            if should_update {
+                let op = config
+                    .ops
+                    .get(key)
+                    .unwrap_or(&ConfigEntryOperationKind::Union);
+                schema_value.dict_update_entry(
+                    key.as_str(),
+                    &index_sign_value,
+                    &ConfigEntryOperationKind::Override,
+                    &-1,
+                );
+                schema_value.dict_insert(key.as_str(), &value, op.clone(), -1);
+            }
         } else if !should_add_attr && is_not_in_schema {
             let schema_name = c2str(schema_name);
             panic!("{key}: No such member in the schema '{schema_name}'");
