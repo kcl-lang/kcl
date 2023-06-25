@@ -280,7 +280,7 @@ impl ValueRef {
         v: &ValueRef,
         op: ConfigEntryOperationKind,
         insert_index: i32,
-        should_idempotent_check: bool,
+        idempotent_check: bool,
     ) {
         let ctx = crate::Context::current_context_mut();
 
@@ -314,9 +314,11 @@ impl ValueRef {
             self.union_entry(
                 &ValueRef::from(Value::dict_value(Box::new(dict))),
                 true,
-                false,
-                should_idempotent_check,
-                false,
+                &UnionOptions {
+                    config_resolve: false,
+                    idempotent_check,
+                    ..Default::default()
+                },
             );
         } else {
             panic!("invalid dict insert value: {}", self.type_str())
