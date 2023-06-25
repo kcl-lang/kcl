@@ -295,7 +295,8 @@ impl ValueRef {
         if let (Value::int_value(a), Value::int_value(b)) = (&*self.rc.borrow(), &*x.rc.borrow()) {
             return Self::int(*a | *b);
         };
-        self.deep_copy().union_entry(x, true, false, true, true)
+        self.deep_copy()
+            .union_entry(x, true, &UnionOptions::default())
     }
 
     pub fn bin_subscr(&self, x: &Self) -> Self {

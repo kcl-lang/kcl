@@ -3,6 +3,8 @@
 use crate::unification::value_subsume;
 use crate::*;
 
+/// UnionContext records some information during the value merging process,
+/// including the merging path and whether there are conflicts.
 #[derive(Default, Debug)]
 struct UnionContext {
     path_backtrace: Vec<String>,
@@ -11,13 +13,32 @@ struct UnionContext {
     delta_json: String,
 }
 
+/// UnionOptions denotes the union options between runtime values.
+#[derive(Debug, Clone)]
+pub struct UnionOptions {
+    /// Whether to override list values.
+    pub list_override: bool,
+    /// Whether to do the idempotent check.
+    pub idempotent_check: bool,
+    /// Whether to resolve config including optional attributes, etc.
+    pub config_resolve: bool,
+}
+
+impl Default for UnionOptions {
+    fn default() -> Self {
+        Self {
+            list_override: false,
+            idempotent_check: true,
+            config_resolve: true,
+        }
+    }
+}
+
 impl ValueRef {
     fn do_union(
         &mut self,
         x: &Self,
-        should_list_override: bool,
-        should_idempotent_check: bool,
-        should_config_resolve: bool,
+        opts: &UnionOptions,
         union_context: &mut UnionContext,
     ) -> Self {
         if self.is_same_ref(x) {
@@ -50,7 +71,7 @@ impl ValueRef {
                     match operation {
                         ConfigEntryOperationKind::Union => {
                             let obj_value = obj.values.get_mut(k).unwrap();
-                            if should_idempotent_check && !value_subsume(v, obj_value, false) {
+                            if opts.idempotent_check && !value_subsume(v, obj_value, false) {
                                 union_context.conflict = true;
                                 union_context.path_backtrace.push(k.clone());
                                 union_context.obj_json = if obj_value.is_config() {
@@ -70,14 +91,7 @@ impl ValueRef {
                                 };
                                 return;
                             }
-                            obj_value.union(
-                                v,
-                                false,
-                                should_list_override,
-                                should_idempotent_check,
-                                should_config_resolve,
-                                union_context,
-                            );
+                            obj_value.union(v, false, opts, union_context);
                             if union_context.conflict {
                                 union_context.path_backtrace.push(k.clone());
                                 return;
@@ -140,7 +154,7 @@ impl ValueRef {
         let mut valid = true;
         match (&mut *self.rc.borrow_mut(), &*x.rc.borrow()) {
             (Value::list_value(obj), Value::list_value(delta)) => {
-                if !should_list_override {
+                if !opts.list_override {
                     let length = if obj.values.len() > delta.values.len() {
                         obj.values.len()
                     } else {
@@ -152,14 +166,7 @@ impl ValueRef {
                         if idx >= obj_len {
                             obj.values.push(delta.values[idx].clone());
                         } else if idx < delta_len {
-                            obj.values[idx].union(
-                                &delta.values[idx],
-                                false,
-                                should_list_override,
-                                should_idempotent_check,
-                                should_config_resolve,
-                                union_context,
-                            );
+                            obj.values[idx].union(&delta.values[idx], false, opts, union_context);
                             if union_context.conflict {
                                 union_context.path_backtrace.push(format!("list[{idx}]"));
                             }
@@ -221,7 +228,7 @@ impl ValueRef {
                 &x.schema_config_meta(),
                 &optional_mapping,
             );
-            if should_config_resolve {
+            if opts.config_resolve {
                 *self = resolve_schema(&schema, &common_keys);
             } else {
                 *self = schema;
@@ -233,9 +240,7 @@ impl ValueRef {
         &mut self,
         x: &Self,
         or_mode: bool,
-        should_list_override: bool,
-        should_idempotent_check: bool,
-        should_config_resolve: bool,
+        opts: &UnionOptions,
         union_context: &mut UnionContext,
     ) -> Self {
         if self.is_none_or_undefined() {
@@ -246,13 +251,7 @@ impl ValueRef {
             return self.clone();
         }
         if self.is_list_or_config() && x.is_list_or_config() {
-            self.do_union(
-                x,
-                should_list_override,
-                should_idempotent_check,
-                should_config_resolve,
-                union_context,
-            );
+            self.do_union(x, opts, union_context);
         } else if or_mode {
             if let (Value::int_value(a), Value::int_value(b)) =
                 (&mut *self.rc.borrow_mut(), &*x.rc.borrow())
@@ -271,23 +270,9 @@ impl ValueRef {
         self.clone()
     }
 
-    pub fn union_entry(
-        &mut self,
-        x: &Self,
-        or_mode: bool,
-        should_list_override: bool,
-        should_idempotent_check: bool,
-        should_config_resolve: bool,
-    ) -> Self {
+    pub fn union_entry(&mut self, x: &Self, or_mode: bool, opts: &UnionOptions) -> Self {
         let mut union_context = UnionContext::default();
-        let ret = self.union(
-            x,
-            or_mode,
-            should_list_override,
-            should_idempotent_check,
-            should_config_resolve,
-            &mut union_context,
-        );
+        let ret = self.union(x, or_mode, opts, &mut union_context);
         if union_context.conflict {
             union_context.path_backtrace.reverse();
             let conflict_key = union_context.path_backtrace.last().unwrap();

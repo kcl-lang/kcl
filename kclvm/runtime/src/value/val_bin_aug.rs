@@ -390,7 +390,7 @@ impl ValueRef {
         };
         if !valid {
             if self.is_list_or_config() || x.is_list_or_config() {
-                self.union_entry(x, true, false, true, true);
+                self.union_entry(x, true, &UnionOptions::default());
             } else {
                 panic_unsupported_bin_op!("|", self.type_str(), x.type_str());
             }

@@ -1814,6 +1814,11 @@ pub unsafe extern "C" fn kclvm_value_union(
         Value::schema_value(schema) => schema.config.attr_map.clone(),
         _ => panic!("invalid object '{}' in attr_map", a.type_str()),
     };
+    let opts = UnionOptions {
+        list_override: false,
+        idempotent_check: false,
+        config_resolve: true,
+    };
     if b.is_config() {
         let dict = b.as_dict_ref();
         let mut result = schema;
@@ -1822,21 +1827,15 @@ pub unsafe extern "C" fn kclvm_value_union(
                 let v = type_pack_and_check(v, vec![attr_map.get(k).unwrap()]);
                 let mut entry = b.dict_get_entry(k).unwrap().deep_copy();
                 entry.dict_update_key_value(k, v);
-                result = a
-                    .union_entry(&entry, true, false, false, true)
-                    .clone()
-                    .into_raw();
+                result = a.union_entry(&entry, true, &opts).clone().into_raw();
             } else {
                 let entry = b.dict_get_entry(k).unwrap();
-                result = a
-                    .union_entry(&entry, true, false, false, true)
-                    .clone()
-                    .into_raw();
+                result = a.union_entry(&entry, true, &opts).clone().into_raw();
             }
         }
         result
     } else {
-        a.union_entry(b, true, false, false, true).into_raw()
+        a.union_entry(b, true, &opts).into_raw()
     }
 }
 
@@ -2396,9 +2395,10 @@ pub unsafe extern "C" fn kclvm_schema_value_new(
         value
     } else {
         let config = ptr_as_ref(config);
-        let result = schema_value_or_func
-            .deep_copy()
-            .union_entry(config, true, false, true, true);
+        let result =
+            schema_value_or_func
+                .deep_copy()
+                .union_entry(config, true, &UnionOptions::default());
         result.into_raw()
     }
 }
