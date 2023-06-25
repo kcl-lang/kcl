@@ -32,13 +32,12 @@ criterion_main!(benches);
 fn exec(file: &str) -> Result<String, String> {
     let mut args = ExecProgramArgs::default();
     args.k_filename_list.push(file.to_string());
-    let plugin_agent = 0;
     let opts = args.get_load_program_options();
     let sess = Arc::new(ParseSession::default());
     // Load AST program
     let program = load_program(sess.clone(), &[file], Some(opts)).unwrap();
     // Resolve ATS, generate libs, link libs and execute.
-    execute(sess, program, plugin_agent, &args)
+    execute(sess, program, &args)
 }
 
 /// Get kcl files from path.

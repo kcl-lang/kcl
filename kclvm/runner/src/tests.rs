@@ -232,7 +232,7 @@ fn gen_libs_for_test(entry_file: &str, test_kcl_case_path: &str) {
         OBJECT_FILE_SUFFIX.to_string(),
     );
 
-    let lib_paths = assembler.gen_libs();
+    let lib_paths = assembler.gen_libs().unwrap();
 
     assert_eq!(lib_paths.len(), expected_pkg_paths.len());
 
@@ -244,7 +244,7 @@ fn gen_libs_for_test(entry_file: &str, test_kcl_case_path: &str) {
         fs::canonicalize(format!("{}{}", entry_file, OBJECT_FILE_SUFFIX)).unwrap();
     assert_eq!(tmp_main_lib_path.exists(), true);
 
-    clean_path(tmp_main_lib_path.to_str().unwrap());
+    clean_path(tmp_main_lib_path.to_str().unwrap()).unwrap();
     assert_eq!(tmp_main_lib_path.exists(), false);
 }
 
@@ -269,12 +269,14 @@ fn assemble_lib_for_test(
     let temp_entry_file_path = &format!("{}{}", entry_file, OBJECT_FILE_SUFFIX);
 
     // Assemble object files
-    assembler.assemble(
-        &program,
-        scope.import_names,
-        entry_file,
-        temp_entry_file_path,
-    )
+    assembler
+        .assemble(
+            &program,
+            scope.import_names,
+            entry_file,
+            temp_entry_file_path,
+        )
+        .unwrap()
 }
 
 fn test_kclvm_runner_execute() {
@@ -300,7 +302,7 @@ fn test_assemble_lib_llvm() {
     for case in TEST_CASES {
         let temp_dir = tempdir().unwrap();
         let temp_dir_path = temp_dir.path().to_str().unwrap();
-        let temp_entry_file = temp_file(temp_dir_path);
+        let temp_entry_file = temp_file(temp_dir_path).unwrap();
         let kcl_path = &Path::new(&test_case_path())
             .join(case)
             .join(KCL_FILE_NAME)
@@ -316,7 +318,7 @@ fn test_assemble_lib_llvm() {
 
         let lib_path = std::path::Path::new(&lib_file);
         assert_eq!(lib_path.exists(), true);
-        clean_path(&lib_file);
+        clean_path(&lib_file).unwrap();
         assert_eq!(lib_path.exists(), false);
     }
 }
@@ -326,7 +328,7 @@ fn test_gen_libs() {
     for case in multi_file_test_cases() {
         let temp_dir = tempdir().unwrap();
         let temp_dir_path = temp_dir.path().to_str().unwrap();
-        let temp_entry_file = temp_file(temp_dir_path);
+        let temp_entry_file = temp_file(temp_dir_path).unwrap();
 
         let kcl_path = gen_full_path(
             Path::new(&test_case_path())
@@ -397,7 +399,7 @@ fn test_clean_path_for_genlibs() {
 
     let temp_dir = tempdir().unwrap();
     let temp_dir_path = temp_dir.path().to_str().unwrap();
-    let tmp_file_path = &temp_file(temp_dir_path);
+    let tmp_file_path = &temp_file(temp_dir_path).unwrap();
 
     create_dir_all(tmp_file_path).unwrap();
 
@@ -408,7 +410,9 @@ fn test_clean_path_for_genlibs() {
     let path = std::path::Path::new(file_name);
     assert_eq!(path.exists(), true);
 
-    assembler.clean_path_for_genlibs(file_name, file_suffix);
+    assembler
+        .clean_path_for_genlibs(file_name, file_suffix)
+        .unwrap();
     assert_eq!(path.exists(), false);
 
     let test1 = &format!("{}{}", file_name, ".test1.o");
@@ -421,7 +425,9 @@ fn test_clean_path_for_genlibs() {
     assert_eq!(path1.exists(), true);
     assert_eq!(path2.exists(), true);
 
-    assembler.clean_path_for_genlibs(file_name, file_suffix);
+    assembler
+        .clean_path_for_genlibs(file_name, file_suffix)
+        .unwrap();
     assert_eq!(path1.exists(), false);
     assert_eq!(path2.exists(), false);
 }
