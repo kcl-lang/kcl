@@ -1,7 +1,7 @@
 // Copyright 2021 The KCL Authors. All rights reserved.
 
-pub const VERSION: &str = "0.5.0-alpha.4";
-pub const CHECK_SUM: &str = "eb13b547c76bd1eaf9b1ea0caa917fb1";
+pub const VERSION: &str = "0.5.0-beta.1";
+pub const CHECK_SUM: &str = "20ab3eb4b9179219d6837a57f5d35286";
 
 /// Get kCL full version string with the format `{version}-{check_sum}`.
 #[inline]
