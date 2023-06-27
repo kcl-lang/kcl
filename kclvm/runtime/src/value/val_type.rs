@@ -160,7 +160,7 @@ pub fn type_pack_and_check(value: &ValueRef, expected_types: Vec<&str>) -> Value
     let is_schema = value.is_schema();
     let value_tpe = value.type_str();
     let mut checked = false;
-    let mut convertted_value = value.clone();
+    let mut converted_value = value.clone();
     let expected_type = &expected_types.join(" | ").replace('@', "");
     for tpe in expected_types {
         let tpe = if !tpe.contains('.') {
@@ -173,10 +173,10 @@ pub fn type_pack_and_check(value: &ValueRef, expected_types: Vec<&str>) -> Value
             tpe
         };
         if !is_schema {
-            convertted_value = convert_collection_value(value, tpe);
+            converted_value = convert_collection_value(value, tpe);
         }
         // Runtime type check
-        checked = check_type(&convertted_value, tpe);
+        checked = check_type(&converted_value, tpe);
         if checked {
             break;
         }
@@ -184,7 +184,7 @@ pub fn type_pack_and_check(value: &ValueRef, expected_types: Vec<&str>) -> Value
     if !checked {
         panic!("expect {expected_type}, got {value_tpe}");
     }
-    convertted_value
+    converted_value
 }
 
 /// Convert collection value including dict/list to the potential schema

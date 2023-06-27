@@ -428,7 +428,7 @@ declare %kclvm_value_ref_t* @kclvm_schema_instances(%kclvm_context_t* %ctx, %kcl
 
 declare void @kclvm_schema_optional_check(%kclvm_value_ref_t* %p);
 
-declare void @kclvm_schema_value_check(%kclvm_value_ref_t* %schema_value, %kclvm_value_ref_t* %schema_config, %kclvm_value_ref_t* %_config_meta, %kclvm_char_t* %schema_name, %kclvm_value_ref_t* %index_sign_value, %kclvm_char_t* %_key_name, %kclvm_char_t* %key_type, %kclvm_char_t* %_value_type, %kclvm_bool_t %_any_other, %kclvm_bool_t %is_relaxed);
+declare void @kclvm_schema_value_check(%kclvm_value_ref_t* %schema_value, %kclvm_value_ref_t* %schema_config, %kclvm_value_ref_t* %_config_meta, %kclvm_char_t* %schema_name, %kclvm_value_ref_t* %index_sign_value, %kclvm_char_t* %key_name, %kclvm_char_t* %key_type, %kclvm_char_t* %value_type, %kclvm_bool_t %_any_other);
 
 declare %kclvm_value_ref_t* @kclvm_schema_value_new(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs, %kclvm_value_ref_t* %schema_value_or_func, %kclvm_value_ref_t* %config, %kclvm_value_ref_t* %config_meta, %kclvm_char_t* %pkgpath);
 

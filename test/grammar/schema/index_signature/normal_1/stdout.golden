@@ -5,8 +5,6 @@ namedMap:
   key1:
     default_key: default_value
     key1: value1
-    key2: value2
   key2:
     default_key: default_value
-    key1: value1
     key2: value2

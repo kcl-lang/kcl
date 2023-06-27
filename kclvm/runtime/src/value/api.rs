@@ -1821,19 +1821,16 @@ pub unsafe extern "C" fn kclvm_value_union(
     };
     if b.is_config() {
         let dict = b.as_dict_ref();
-        let mut result = schema;
-        for (k, v) in &dict.values {
-            if attr_map.contains_key(k) {
-                let v = type_pack_and_check(v, vec![attr_map.get(k).unwrap()]);
-                let mut entry = b.dict_get_entry(k).unwrap().deep_copy();
-                entry.dict_update_key_value(k, v);
-                result = a.union_entry(&entry, true, &opts).clone().into_raw();
-            } else {
-                let entry = b.dict_get_entry(k).unwrap();
-                result = a.union_entry(&entry, true, &opts).clone().into_raw();
+        for k in dict.values.keys() {
+            let entry = b.dict_get_entry(k).unwrap();
+            a.union_entry(&entry, true, &opts);
+            // Has type annotation
+            if let Some(ty) = attr_map.get(k) {
+                let value = a.dict_get_value(k).unwrap();
+                a.dict_update_key_value(k, type_pack_and_check(&value, vec![ty]));
             }
         }
-        result
+        a.clone().into_raw()
     } else {
         a.union_entry(b, true, &opts).into_raw()
     }
@@ -2155,17 +2152,16 @@ pub unsafe extern "C" fn kclvm_schema_value_check(
     index_sign_value: *const kclvm_value_ref_t,
     key_name: *const kclvm_char_t,
     key_type: *const kclvm_char_t,
-    _value_type: *const kclvm_char_t,
+    value_type: *const kclvm_char_t,
     _any_other: kclvm_bool_t,
-    is_relaxed: kclvm_bool_t,
 ) {
     let schema_value = mut_ptr_as_ref(schema_value);
     let schema_config = ptr_as_ref(schema_config);
     let index_sign_value = ptr_as_ref(index_sign_value);
     let key_type = c2str(key_type);
+    let value_type = c2str(value_type);
     let index_key_name = c2str(key_name);
     let has_index_signature = !key_type.is_empty();
-    let should_add_attr = is_relaxed != 0 || has_index_signature;
 
     let ctx = Context::current_context_mut();
     if ctx.cfg.disable_schema_check {
@@ -2173,8 +2169,8 @@ pub unsafe extern "C" fn kclvm_schema_value_check(
     }
     let config = schema_config.as_dict_ref();
     for (key, value) in &config.values {
-        let is_not_in_schema = schema_value.dict_get_value(key).is_none();
-        if should_add_attr && is_not_in_schema {
+        let no_such_attr = schema_value.dict_get_value(key).is_none();
+        if has_index_signature && no_such_attr {
             // Allow index signature value has different values
             // related to the index signature key name.
             let should_update =
@@ -2194,13 +2190,18 @@ pub unsafe extern "C" fn kclvm_schema_value_check(
                     .unwrap_or(&ConfigEntryOperationKind::Union);
                 schema_value.dict_update_entry(
                     key.as_str(),
-                    &index_sign_value,
+                    &index_sign_value.deep_copy(),
                     &ConfigEntryOperationKind::Override,
                     &-1,
                 );
                 schema_value.dict_insert(key.as_str(), &value, op.clone(), -1);
+                let value = schema_value.dict_get_value(key).unwrap();
+                schema_value.dict_update_key_value(
+                    key.as_str(),
+                    type_pack_and_check(&value, vec![value_type]),
+                );
             }
-        } else if !should_add_attr && is_not_in_schema {
+        } else if !has_index_signature && no_such_attr {
             let schema_name = c2str(schema_name);
             panic!("No attribute named '{key}' in the schema '{schema_name}'");
         }

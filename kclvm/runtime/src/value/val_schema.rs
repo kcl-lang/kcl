@@ -133,8 +133,13 @@ impl ValueRef {
                             self.schema_name()
                         );
                     }
-                    if recursive && value.is_schema() {
-                        value.schema_check_attr_optional(recursive);
+                }
+                // Recursive check schema values for every attributes.
+                if recursive {
+                    for value in attr_map.values() {
+                        if value.is_schema() {
+                            value.schema_check_attr_optional(recursive);
+                        }
                     }
                 }
             }

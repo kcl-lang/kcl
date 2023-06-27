@@ -1,12 +1,13 @@
 schema TeamSpec[id: str]:
     fullName: str
-    name = id
+    name: str = id
     shortName: str = name
 
-schema TeamMap:
-    [n: str]: TeamSpec = TeamSpec(n)
+schema Team:
+    [id: str]: TeamSpec = TeamSpec(id)
 
-teamMap = TeamMap {
+Teams = Team {
     a.fullName = "alpha"
     b.fullName = "bravo"
+    c.shortName = "cc"
 }
