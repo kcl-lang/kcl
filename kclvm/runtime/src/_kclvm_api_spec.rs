@@ -763,8 +763,8 @@
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_schema_instances(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 // api-spec:       kclvm_schema_value_check
-// api-spec(c):    void kclvm_schema_value_check(kclvm_value_ref_t* schema_value, kclvm_value_ref_t* schema_config, kclvm_value_ref_t* _config_meta, kclvm_char_t* schema_name, kclvm_value_ref_t* index_sign_value, kclvm_char_t* _key_name, kclvm_char_t* key_type, kclvm_char_t* _value_type, kclvm_bool_t _any_other, kclvm_bool_t is_relaxed);
-// api-spec(llvm): declare void @kclvm_schema_value_check(%kclvm_value_ref_t* %schema_value, %kclvm_value_ref_t* %schema_config, %kclvm_value_ref_t* %_config_meta, %kclvm_char_t* %schema_name, %kclvm_value_ref_t* %index_sign_value, %kclvm_char_t* %_key_name, %kclvm_char_t* %key_type, %kclvm_char_t* %_value_type, %kclvm_bool_t %_any_other, %kclvm_bool_t %is_relaxed);
+// api-spec(c):    void kclvm_schema_value_check(kclvm_value_ref_t* schema_value, kclvm_value_ref_t* schema_config, kclvm_value_ref_t* _config_meta, kclvm_char_t* schema_name, kclvm_value_ref_t* index_sign_value, kclvm_char_t* key_name, kclvm_char_t* key_type, kclvm_char_t* value_type, kclvm_bool_t _any_other);
+// api-spec(llvm): declare void @kclvm_schema_value_check(%kclvm_value_ref_t* %schema_value, %kclvm_value_ref_t* %schema_config, %kclvm_value_ref_t* %_config_meta, %kclvm_char_t* %schema_name, %kclvm_value_ref_t* %index_sign_value, %kclvm_char_t* %key_name, %kclvm_char_t* %key_type, %kclvm_char_t* %value_type, %kclvm_bool_t %_any_other);
 
 // api-spec:       kclvm_schema_do_check_with_index_sign_attr
 // api-spec(c):    void kclvm_schema_do_check_with_index_sign_attr(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs, uint64_t* check_fn_ptr, kclvm_char_t* attr_name);

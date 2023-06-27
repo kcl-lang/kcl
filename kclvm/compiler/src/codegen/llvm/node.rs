@@ -733,7 +733,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
                 let index_sign_value = if let Some(value) = &index_signature.node.value {
                     self.walk_expr(value).expect(kcl_error::COMPILE_ERROR_MSG)
                 } else {
-                    self.none_value()
+                    self.undefined_value()
                 };
                 let key_name_str_ptr = if let Some(key_name) = &index_signature.node.key_name {
                     self.native_global_string(key_name.as_str(), "")
@@ -757,7 +757,6 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
                         )
                         .into(),
                         self.native_i8(index_signature.node.any_other as i8).into(),
-                        self.native_i8(false as i8).into(),
                     ],
                 );
             } else {
@@ -773,7 +772,6 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
                         self.native_global_string("", "").into(),
                         self.native_global_string("", "").into(),
                         self.native_i8(0).into(),
-                        self.native_i8(false as i8).into(),
                     ],
                 );
             }
