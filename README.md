@@ -1,7 +1,5 @@
 <h1 align="center">KCL: Constraint-based Record & Functional Language</h1>
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/KusionStack/kcl)
-
 <p align="center">
 <a href="./README.md">English</a> | <a href="./README-zh.md">简体中文</a>
 </p>
@@ -126,7 +124,9 @@ Detailed documentation is available at [KCL Website](https://kcl-lang.io/)
 
 ## Contributing
 
-See [Developing Guide](./docs/dev_guide/1.about_this_guide.md).
+See [Developing Guide](./docs/dev_guide/1.about_this_guide.md). You can also get started by opening the project in GitHub Codespaces.
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/KusionStack/kcl)
 
 ## Roadmap
 
