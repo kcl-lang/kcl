@@ -176,10 +176,7 @@ pub fn validate(val_opt: ValidateOption) -> Result<bool, String> {
         None => TMP_FILE.to_string(),
     };
 
-    let mut module: Module = match kclvm_parser::parse_file(&k_path, val_opt.kcl_code) {
-        Ok(ast_m) => ast_m,
-        Err(err_msg) => return Err(err_msg),
-    };
+    let mut module = kclvm_parser::parse_file(&k_path, val_opt.kcl_code)?;
 
     let schemas = filter_schema_stmt(&module);
     let schema_name = match val_opt.schema_name {
@@ -187,27 +184,19 @@ pub fn validate(val_opt: ValidateOption) -> Result<bool, String> {
         None => schemas.get(0).map(|schema| schema.name.node.clone()),
     };
 
-    let expr_builder = match ExprBuilder::new_with_file_path(
-        val_opt.validated_file_kind,
-        val_opt.validated_file_path,
-    ) {
-        Ok(builder) => builder,
-        Err(_) => return Err("Failed to load validated file.".to_string()),
-    };
+    let expr_builder =
+        ExprBuilder::new_with_file_path(val_opt.validated_file_kind, val_opt.validated_file_path)
+            .map_err(|_| "Failed to load validated file.".to_string())?;
 
-    let validated_expr = match expr_builder.build(schema_name) {
-        Ok(expr) => expr,
-        Err(_) => return Err("Failed to load validated file.".to_string()),
-    };
+    let validated_expr = expr_builder
+        .build(schema_name)
+        .map_err(|_| "Failed to load validated file.".to_string())?;
 
     let assign_stmt = build_assign(&val_opt.attribute_name, validated_expr);
 
     module.body.insert(0, assign_stmt);
 
-    match execute_module(module) {
-        Ok(_) => Ok(true),
-        Err(err) => Err(err),
-    }
+    execute_module(module).map(|_| true)
 }
 
 fn build_assign(attr_name: &str, node: NodeRef<Expr>) -> NodeRef<Stmt> {

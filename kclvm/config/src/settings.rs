@@ -1,5 +1,5 @@
 // Copyright 2021 The KCL Authors. All rights reserved.
-use anyhow::Result;
+use anyhow::{Context, Result};
 use serde::{
     de::{DeserializeSeed, Error, MapAccess, SeqAccess, Unexpected, Visitor},
     Deserialize, Serialize,
@@ -344,8 +344,10 @@ pub struct TestSettingsFile {
 
 /// Load kcl settings file.
 pub fn load_file(filename: &str) -> Result<SettingsFile> {
-    let f = std::fs::File::open(filename)?;
-    let data: SettingsFile = serde_yaml::from_reader(f)?;
+    let f = std::fs::File::open(filename)
+        .with_context(|| format!("Failed to load '{}', no such file or directory", filename))?;
+    let data: SettingsFile = serde_yaml::from_reader(f)
+        .with_context(|| format!("Failed to load '{}', invalid setting file format", filename))?;
     Ok(data)
 }
 
