@@ -10,6 +10,8 @@ use kclvm_ast::{
 use crate::util::loader::{DataLoader, Loader, LoaderKind};
 use anyhow::{bail, Context, Result};
 
+const FAIL_LOAD_VALIDATED_ERR_MSG: &str = "Failed to load the validated file";
+
 trait ExprGenerator<T> {
     fn generate(&self, value: &T, schema_name: &Option<String>) -> Result<NodeRef<Expr>>;
 }
@@ -71,8 +73,8 @@ impl ExprGenerator<serde_yaml::Value> for ExprBuilder {
             serde_yaml::Value::Bool(j_bool) => {
                 let name_const = match NameConstant::try_from(*j_bool) {
                     Ok(nc) => nc,
-                    Err(_) => {
-                        bail!("Failed to Load Validated File")
+                    Err(err) => {
+                        bail!("{FAIL_LOAD_VALIDATED_ERR_MSG}, {err}")
                     }
                 };
 
@@ -85,7 +87,7 @@ impl ExprGenerator<serde_yaml::Value> for ExprBuilder {
                     let number_lit = match j_num.as_f64() {
                         Some(num_f64) => num_f64,
                         None => {
-                            bail!("Failed to Load Validated File")
+                            bail!("{FAIL_LOAD_VALIDATED_ERR_MSG}")
                         }
                     };
 
@@ -97,7 +99,7 @@ impl ExprGenerator<serde_yaml::Value> for ExprBuilder {
                     let number_lit = match j_num.as_i64() {
                         Some(j_num) => j_num,
                         None => {
-                            bail!("Failed to Load Validated File")
+                            bail!("{FAIL_LOAD_VALIDATED_ERR_MSG}")
                         }
                     };
 
@@ -106,14 +108,14 @@ impl ExprGenerator<serde_yaml::Value> for ExprBuilder {
                         value: NumberLitValue::Int(number_lit)
                     })))
                 } else {
-                    bail!("Failed to Load Validated File, Unsupported Unsigned 64");
+                    bail!("{FAIL_LOAD_VALIDATED_ERR_MSG}, Unsupported Unsigned 64");
                 }
             }
             serde_yaml::Value::String(j_string) => {
                 let str_lit = match StringLit::try_from(j_string.to_string()) {
                     Ok(s) => s,
                     Err(_) => {
-                        bail!("Failed to Load Validated File")
+                        bail!("{FAIL_LOAD_VALIDATED_ERR_MSG}")
                     }
                 };
                 Ok(node_ref!(Expr::StringLit(str_lit)))
@@ -123,7 +125,7 @@ impl ExprGenerator<serde_yaml::Value> for ExprBuilder {
                 for j_arr_item in j_arr {
                     j_arr_ast_nodes.push(
                         self.generate(j_arr_item, schema_name)
-                            .with_context(|| "Failed to Load Validated File".to_string())?,
+                            .with_context(|| FAIL_LOAD_VALIDATED_ERR_MSG)?,
                     );
                 }
                 Ok(node_ref!(Expr::List(ListExpr {
@@ -138,10 +140,10 @@ impl ExprGenerator<serde_yaml::Value> for ExprBuilder {
                     // The configuration builder already in the schema no longer needs a schema name
                     let k = self
                         .generate(k, &None)
-                        .with_context(|| "Failed to Load Validated File".to_string())?;
+                        .with_context(|| FAIL_LOAD_VALIDATED_ERR_MSG)?;
                     let v = self
                         .generate(v, &None)
-                        .with_context(|| "Failed to Load Validated File".to_string())?;
+                        .with_context(|| FAIL_LOAD_VALIDATED_ERR_MSG)?;
 
                     let config_entry = node_ref!(ConfigEntry {
                         key: Some(k),
@@ -173,8 +175,11 @@ impl ExprGenerator<serde_yaml::Value> for ExprBuilder {
                     None => Ok(config_expr),
                 }
             }
-            serde_yaml::Value::Tagged(_) => {
-                bail!("Failed to Load Validated File, Unsupported Yaml Tagged.")
+            serde_yaml::Value::Tagged(v) => {
+                bail!(
+                    "{FAIL_LOAD_VALIDATED_ERR_MSG}, Unsupported Yaml tag {}",
+                    v.tag
+                )
             }
         }
     }
@@ -193,8 +198,8 @@ impl ExprGenerator<serde_json::Value> for ExprBuilder {
             serde_json::Value::Bool(j_bool) => {
                 let name_const = match NameConstant::try_from(*j_bool) {
                     Ok(nc) => nc,
-                    Err(_) => {
-                        bail!("Failed to Load Validated File")
+                    Err(err) => {
+                        bail!("{FAIL_LOAD_VALIDATED_ERR_MSG}, {err}")
                     }
                 };
 
@@ -207,7 +212,7 @@ impl ExprGenerator<serde_json::Value> for ExprBuilder {
                     let number_lit = match j_num.as_f64() {
                         Some(num_f64) => num_f64,
                         None => {
-                            bail!("Failed to Load Validated File")
+                            bail!("{FAIL_LOAD_VALIDATED_ERR_MSG}")
                         }
                     };
 
@@ -219,7 +224,7 @@ impl ExprGenerator<serde_json::Value> for ExprBuilder {
                     let number_lit = match j_num.as_i64() {
                         Some(j_num) => j_num,
                         None => {
-                            bail!("Failed to Load Validated File")
+                            bail!("{FAIL_LOAD_VALIDATED_ERR_MSG}")
                         }
                     };
 
@@ -228,14 +233,14 @@ impl ExprGenerator<serde_json::Value> for ExprBuilder {
                         value: NumberLitValue::Int(number_lit)
                     })))
                 } else {
-                    bail!("Failed to Load Validated File, Unsupported Unsigned 64");
+                    bail!("{FAIL_LOAD_VALIDATED_ERR_MSG}, Unsupported Unsigned 64");
                 }
             }
             serde_json::Value::String(j_string) => {
                 let str_lit = match StringLit::try_from(j_string.to_string()) {
                     Ok(s) => s,
                     Err(_) => {
-                        bail!("Failed to Load Validated File")
+                        bail!("{FAIL_LOAD_VALIDATED_ERR_MSG}")
                     }
                 };
 
@@ -246,7 +251,7 @@ impl ExprGenerator<serde_json::Value> for ExprBuilder {
                 for j_arr_item in j_arr {
                     j_arr_ast_nodes.push(
                         self.generate(j_arr_item, schema_name)
-                            .with_context(|| "Failed to Load Validated File".to_string())?,
+                            .with_context(|| FAIL_LOAD_VALIDATED_ERR_MSG)?,
                     );
                 }
                 Ok(node_ref!(Expr::List(ListExpr {
@@ -260,13 +265,13 @@ impl ExprGenerator<serde_json::Value> for ExprBuilder {
                 for (k, v) in j_map.iter() {
                     let k = match StringLit::try_from(k.to_string()) {
                         Ok(s) => s,
-                        Err(_) => {
-                            bail!("Failed to Load Validated File")
+                        Err(err) => {
+                            bail!("{FAIL_LOAD_VALIDATED_ERR_MSG}, {err}")
                         }
                     };
                     let v = self
                         .generate(v, &None)
-                        .with_context(|| "Failed to Load Validated File".to_string())?;
+                        .with_context(|| FAIL_LOAD_VALIDATED_ERR_MSG)?;
 
                     let config_entry = node_ref!(ConfigEntry {
                         key: Some(node_ref!(Expr::StringLit(k))),

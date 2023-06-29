@@ -303,7 +303,7 @@ mod test_expr_builder {
                 panic!("unreachable")
             }
             Err(err) => {
-                assert_eq!(format!("{:?}", err), "Failed to Load JSON\n\nCaused by:\n    0: Failed to Load Validated File\n    1: Failed to Load Validated File, Unsupported Unsigned 64");
+                assert_eq!(format!("{:?}", err), "Failed to Load JSON\n\nCaused by:\n    0: Failed to load the validated file\n    1: Failed to load the validated file, Unsupported Unsigned 64");
             }
         };
     }
@@ -318,7 +318,7 @@ mod test_expr_builder {
                 panic!("unreachable")
             }
             Err(err) => {
-                assert_eq!(format!("{:?}", err), "Failed to Load YAML\n\nCaused by:\n    0: Failed to Load Validated File\n    1: Failed to Load Validated File, Unsupported Unsigned 64");
+                assert_eq!(format!("{:?}", err), "Failed to Load YAML\n\nCaused by:\n    0: Failed to load the validated file\n    1: Failed to load the validated file, Unsupported Unsigned 64");
             }
         };
     }
@@ -333,7 +333,7 @@ mod test_expr_builder {
                 panic!("unreachable")
             }
             Err(err) => {
-                assert_eq!(format!("{:?}", err), "Failed to Load YAML\n\nCaused by:\n    Failed to Load Validated File, Unsupported Yaml Tagged.");
+                assert_eq!(format!("{:?}", err), "Failed to Load YAML\n\nCaused by:\n    Failed to load the validated file, Unsupported Yaml tag !mytag");
             }
         };
     }

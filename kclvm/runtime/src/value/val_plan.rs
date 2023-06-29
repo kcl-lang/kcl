@@ -172,7 +172,7 @@ fn handle_schema(value: &ValueRef) -> (Vec<ValueRef>, bool) {
 
 impl ValueRef {
     fn is_planned_empty(&self) -> bool {
-        self.is_dict() && !self.is_truthy()
+        (self.is_dict() && !self.is_truthy()) || self.is_undefined()
     }
 
     pub fn plan_to_json_string(&self) -> String {
