@@ -4,7 +4,7 @@ use anyhow::{anyhow, Result};
 
 use compiler_base_macros::bug;
 use kclvm_ast::config::try_get_config_expr_mut;
-use kclvm_ast::path::{get_attr_paths_from_config_expr, get_key_path};
+use kclvm_ast::path::get_key_path;
 use kclvm_ast::walker::MutSelfMutWalker;
 use kclvm_ast::{ast, walk_if_mut};
 use kclvm_ast_pretty::print_ast_module;
@@ -318,36 +318,27 @@ impl<'ctx> MutSelfMutWalker<'ctx> for OverrideTransformer {
 impl OverrideTransformer {
     /// Lookup schema config all fields and replace if it is matched with the override spec,
     /// return whether is found a replaced one.
-    fn lookup_config_and_replace(&mut self, config_expr: &mut ast::ConfigExpr) -> bool {
-        // Get all entry paths from a config expression.
-        let paths = get_attr_paths_from_config_expr(config_expr);
-        // Query whether there is a matching path from the path lookup table.
-        match paths.iter().position(|r| r == &self.field_path) {
-            Some(pos) => {
-                let path = &paths[pos];
-                // Split a path into multiple parts. `a.b.c` -> ["a", "b", "c"]
-                let parts = path.split('.').collect::<Vec<&str>>();
-                self.replace_config_with_path_parts(config_expr, &parts);
-                true
-            }
-            None => false,
-        }
+    fn lookup_config_and_replace(&self, config_expr: &mut ast::ConfigExpr) -> bool {
+        // Split a path into multiple parts. `a.b.c` -> ["a", "b", "c"]
+        let parts = self.field_path.split('.').collect::<Vec<&str>>();
+        self.replace_config_with_path_parts(config_expr, &parts)
     }
 
     /// Replace AST config expr with one part of path. The implementation of this function
     /// uses recursive matching to find the config entry need to be modified.
     fn replace_config_with_path_parts(
-        &mut self,
+        &self,
         config_expr: &mut ast::ConfigExpr,
         parts: &[&str],
-    ) {
+    ) -> bool {
         // Do not replace empty path parts and out of index parts on the config expression.
         if parts.is_empty() {
-            return;
+            return false;
         }
         // Always take the first part to match, because recursive search is required.
         let part = parts[0];
         let mut delete_index_set = HashSet::new();
+        let mut changed = false;
         // Loop all entries in the config expression and replace, because there may be duplicate
         // configuration items in config.
         for (i, item) in config_expr.items.iter_mut().enumerate() {
@@ -369,11 +360,13 @@ impl OverrideTransformer {
                             value.set_pos(item.pos());
                             // Override the node value.
                             item.node.value = value;
+                            changed = true;
                         }
                         ast::OverrideAction::Delete => {
                             // Store the config entry delete index into the delete index set.
                             // Because we can't delete the entry directly in the loop
                             delete_index_set.insert(i);
+                            changed = true;
                         }
                     }
                 }
@@ -385,7 +378,7 @@ impl OverrideTransformer {
                 // directly on AST nodes.
                 else if let Some(config_expr) = try_get_config_expr_mut(&mut item.node.value.node)
                 {
-                    self.replace_config_with_path_parts(config_expr, &parts[1..]);
+                    changed = self.replace_config_with_path_parts(config_expr, &parts[1..]);
                 }
             }
         }
@@ -401,12 +394,30 @@ impl OverrideTransformer {
                 .iter()
                 .map(|(_, item)| <&ast::NodeRef<ast::ConfigEntry>>::clone(item).clone())
                 .collect();
+        } else if let ast::OverrideAction::CreateOrUpdate = self.action {
+            if !changed {
+                let key = ast::Identifier {
+                    names: parts.iter().map(|s| s.to_string()).collect(),
+                    ctx: ast::ExprContext::Store,
+                    pkgpath: "".to_string(),
+                };
+                config_expr
+                    .items
+                    .push(Box::new(ast::Node::dummy_node(ast::ConfigEntry {
+                        key: Some(Box::new(ast::Node::dummy_node(ast::Expr::Identifier(key)))),
+                        value: self.clone_override_value(),
+                        operation: ast::ConfigEntryOperation::Override,
+                        insert_index: -1,
+                    })));
+                changed = true;
+            }
         }
+        return changed;
     }
 
     /// Clone a override value
     #[inline]
-    fn clone_override_value(&mut self) -> ast::NodeRef<ast::Expr> {
+    fn clone_override_value(&self) -> ast::NodeRef<ast::Expr> {
         match &self.override_value {
             Some(v) => v.clone(),
             None => bug!("Override value is None"),
