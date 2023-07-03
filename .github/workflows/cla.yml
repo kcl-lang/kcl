@@ -14,14 +14,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # the below token should have repo scope and must be manually added by you in the repository's secret
-          PERSONAL_ACCESS_TOKEN : ${{ secrets.KUSIONSTACK_BOT_TOKEN }}
+          PERSONAL_ACCESS_TOKEN : ${{ secrets.KCL_LANG_BOT_TOKEN }}
         with:
-          path-to-document: 'https://github.com/KusionStack/.github/blob/main/CLA.md' # e.g. a CLA or a DCO document
+          path-to-document: 'https://github.com/kcl-lang/.github/blob/main/CLA.md' # e.g. a CLA or a DCO document
 
           # branch should not be protected
           lock-pullrequest-aftermerge: True
           path-to-signatures: 'signatures/version1/cla.json'
-          remote-organization-name: KusionStack
+          remote-organization-name: kcl-lang
           remote-repository-name: cla.db
           branch: 'main'
           allowlist: bot*
