@@ -1,7 +1,5 @@
 <h1 align="center">KCL: 基于约束的记录及函数语言</h1>
 
-[![用 GitHub Codespaces 打开](https://github.com/codespaces/badge.svg)](https://codespaces.new/KusionStack/kcl)
-
 <p align="center">
 <a href="./README.md">English</a> | <a href="./README-zh.md">简体中文</a>
 </p>
@@ -126,7 +124,9 @@ spec:
 
 ## 贡献
 
-参考[开发手册](./docs/dev_guide/1.about_this_guide.md).
+参考[开发手册](./docs/dev_guide/1.about_this_guide.md)。您也可以直接在 GitHub Codespaces 中打开该项目开始贡献。
+
+[![用 GitHub Codespaces 打开](https://github.com/codespaces/badge.svg)](https://codespaces.new/KusionStack/kcl)
 
 ## 路线规划
 
