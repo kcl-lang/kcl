@@ -312,16 +312,45 @@ impl<'a> Parser<'a> {
         };
         // bump .
         self.bump();
-        let attr = self.parse_identifier();
-        Box::new(Node::node(
-            Expr::Selector(SelectorExpr {
-                value,
-                attr,
-                has_question,
-                ctx: ExprContext::Load,
-            }),
-            self.sess.struct_token_loc(lo, self.prev_token),
-        ))
+        match self.token.ident() {
+            Some(_) => {
+                let attr = self.parse_identifier();
+                Box::new(Node::node(
+                    Expr::Selector(SelectorExpr {
+                        value,
+                        attr,
+                        has_question,
+                        ctx: ExprContext::Load,
+                    }),
+                    self.sess.struct_token_loc(lo, self.prev_token),
+                ))
+            }
+            _ => {
+                let attr = Box::new(Node::node(
+                    Identifier {
+                        names: vec!["".to_string()],
+                        pkgpath: "".to_string(),
+                        ctx: ExprContext::Load,
+                    },
+                    (
+                        self.sess.lookup_char_pos(self.token.span.lo()),
+                        self.sess.lookup_char_pos(self.token.span.lo()),
+                    ),
+                ));
+                Box::new(Node::node(
+                    Expr::Selector(SelectorExpr {
+                        value,
+                        attr,
+                        has_question,
+                        ctx: ExprContext::Load,
+                    }),
+                    (
+                        self.sess.lookup_char_pos(lo.span.lo()),
+                        self.sess.lookup_char_pos(self.token.span.lo()),
+                    ),
+                ))
+            }
+        }
     }
 
     /// Syntax:
@@ -2099,7 +2128,18 @@ impl<'a> Parser<'a> {
                 {
                     self.sess
                         .struct_token_error(&[TokenKind::ident_value()], self.token);
-                    names.push("".to_string())
+                    names.push("".to_string());
+                    return Box::new(Node::node(
+                        Identifier {
+                            names,
+                            pkgpath: "".to_string(),
+                            ctx: ExprContext::Load,
+                        },
+                        (
+                            self.sess.lookup_char_pos(self.token.span.lo()),
+                            self.sess.lookup_char_pos(self.token.span.lo()),
+                        ),
+                    ));
                 };
             }
         }
