@@ -20,7 +20,7 @@ type kclvm_value_ref_t = ValueRef;
 ///     a character `_` (defaults to false).
 /// - ignore_none: Whether to ignore the attribute whose value is `None` (defaults to false).
 /// - sep: Which separator to use between YAML documents (defaults to "---").
-/// More information: https://github.com/KusionStack/KCLVM/issues/94
+/// More information: https://github.com/kcl-lang/kcl/issues/94
 ///
 /// - Function signature.
 ///

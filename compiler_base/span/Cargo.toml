@@ -6,8 +6,8 @@ authors = ["zongzhe1024@163.com"]
 license = "Apache-2.0 OR MIT"
 description = "compiler_base_span"
 readme = "README.md"
-homepage = "https://github.com/KusionStack/KCLVM"
-repository = "https://github.com/KusionStack/KCLVM"
+homepage = "https://github.com/kcl-lang/kcl"
+repository = "https://github.com/kcl-lang/kcl"
 keywords = ["compiler", "span"]
 categories = ["command-line-utilities"]
 

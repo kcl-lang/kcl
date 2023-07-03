@@ -1,5 +1,5 @@
 //! GotoDefinition for KCL
-//! Github Issue: https://github.com/KusionStack/KCLVM/issues/476
+//! Github Issue: https://github.com/kcl-lang/kcl/issues/476
 //! Now supports goto definition for the following situation:
 //! + variable
 //! + schema definition

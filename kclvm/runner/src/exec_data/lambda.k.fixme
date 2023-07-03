@@ -1,4 +1,4 @@
-# TOFIX(zong-zhe): issue https://github.com/KusionStack/KCLVM/issues/241
+# TOFIX(zong-zhe): issue https://github.com/kcl-lang/kcl/issues/241
 sumFunc1 = lambda x, y {
     x + y
 }

@@ -8,11 +8,11 @@
 </p>
 
 <p align="center">
-  <img src="https://github.com/KusionStack/KCLVM/workflows/release/badge.svg">
+  <img src="https://github.com/kcl-lang/kcl/workflows/release/badge.svg">
   <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square">
-  <img src="https://coveralls.io/repos/github/KusionStack/KCLVM/badge.svg">
-  <img src="https://img.shields.io/github/release/KusionStack/KCLVM.svg">
-  <img src="https://img.shields.io/github/license/KusionStack/KCLVM.svg">
+  <img src="https://coveralls.io/repos/github/kcl-lang/kcl/badge.svg">
+  <img src="https://img.shields.io/github/release/kcl-lang/kcl.svg">
+  <img src="https://img.shields.io/github/license/kcl-lang/kcl.svg">
 </p>
 
 ## 介绍
@@ -38,12 +38,12 @@ Kusion 配置语言（KCL）是一个开源的基于约束的记录及函数语�
 + **功能完备**：基于 [Config](https://kcl-lang.io/docs/reference/lang/tour#config-operations)、[Schema](https://kcl-lang.io/docs/reference/lang/tour#schema)、[Lambda](https://kcl-lang.io/docs/reference/lang/tour#function)、[Rule](https://kcl-lang.io/docs/reference/lang/tour#rule) 的配置及其模型、逻辑和策略编写
 + **可靠稳定**：依赖[静态类型系统](https://kcl-lang.io/docs/reference/lang/tour/#type-system)、[约束](https://kcl-lang.io/docs/reference/lang/tour/#validation)和[自定义规则](https://kcl-lang.io/docs/reference/lang/tour#rule)的配置稳定性
 + **强可扩展**：通过独立配置块[自动合并机制](https://kcl-lang.io/docs/reference/lang/tour/#-operators-1)保证配置编写的高可扩展性
-+ **易自动化**：[CRUD APIs](https://kcl-lang.io/docs/reference/lang/tour/#kcl-cli-variable-override)，[多语言 SDK](https://kcl-lang.io/docs/reference/xlang-api/overview)，[语言插件](https://github.com/KusionStack/kcl-plugin) 构成的梯度自动化方案
++ **易自动化**：[CRUD APIs](https://kcl-lang.io/docs/reference/lang/tour/#kcl-cli-variable-override)，[多语言 SDK](https://kcl-lang.io/docs/reference/xlang-api/overview)，[语言插件](https://github.com/kcl-lang/kcl-plugin) 构成的梯度自动化方案
 + **极致性能**：使用 Rust & C，[LLVM](https://llvm.org/) 实现，支持编译到本地代码和 [WASM](https://webassembly.org/) 的高性能编译时和运行时
-+ **API 亲和**：原生支持 [OpenAPI](https://github.com/KusionStack/kcl-openapi)、 Kubernetes CRD， Kubernetes YAML 等 API 生态规范
-+ **开发友好**：[语言工具](https://kcl-lang.io/docs/tools/cli/kcl/) (Format，Lint，Test，Vet，Doc 等)、 [IDE 插件](https://github.com/KusionStack/vscode-kcl) 构建良好的研发体验
++ **API 亲和**：原生支持 [OpenAPI](https://github.com/kcl-lang/kcl-openapi)、 Kubernetes CRD， Kubernetes YAML 等 API 生态规范
++ **开发友好**：[语言工具](https://kcl-lang.io/docs/tools/cli/kcl/) (Format，Lint，Test，Vet，Doc 等)、 [IDE 插件](https://github.com/kcl-lang/vscode-kcl) 构建良好的研发体验
 + **安全可控**：面向领域，不原生提供线程、IO 等系统级功能，低噪音，低安全风险，易维护，易治理
-+ **生态集成**：通过 [Kustomize KCL 插件](https://github.com/KusionStack/kustomize-kcl), [Helm KCL 插件](https://github.com/KusionStack/helm-kcl) 或者 [KPT KCL SDK](https://github.com/KusionStack/kpt-kcl-sdk) 直接编辑或校验资源
++ **生态集成**：通过 [Kustomize KCL 插件](https://github.com/kcl-lang/kustomize-kcl), [Helm KCL 插件](https://github.com/kcl-lang/helm-kcl) 或者 [KPT KCL SDK](https://github.com/kcl-lang/kpt-kcl-sdk) 直接编辑或校验资源
 + **生产可用**：广泛应用在蚂蚁集团平台工程及自动化的生产环境实践中
 
 ## 如何选择
@@ -59,7 +59,7 @@ Kusion 配置语言（KCL）是一个开源的基于约束的记录及函数语�
 
 ## 安装
 
-从 Github releases 页面[下载](https://github.com/KusionStack/KCLVM/releases)，并且将 `{install-location}/kclvm/bin` 添加到您的环境变量中
+从 Github releases 页面[下载](https://github.com/kcl-lang/kcl/releases)，并且将 `{install-location}/kclvm/bin` 添加到您的环境变量中
 
 ## 快速开始
 
@@ -126,12 +126,12 @@ spec:
 
 参考[开发手册](./docs/dev_guide/1.about_this_guide.md)。您也可以直接在 GitHub Codespaces 中打开该项目开始贡献。
 
-[![用 GitHub Codespaces 打开](https://github.com/codespaces/badge.svg)](https://codespaces.new/KusionStack/kcl)
+[![用 GitHub Codespaces 打开](https://github.com/codespaces/badge.svg)](https://codespaces.new/kcl-lang/kcl)
 
 ## 路线规划
 
-参考[KCL 路线规划](https://github.com/KusionStack/KCLVM/issues/29)
+参考[KCL 路线规划](https://github.com/kcl-lang/kcl/issues/29)
 
 ## 开源社区
 
-欢迎访问 [社区](https://github.com/KusionStack/community) 加入我们。
+欢迎访问 [社区](https://github.com/kcl-lang/community) 加入我们。

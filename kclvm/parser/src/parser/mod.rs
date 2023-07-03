@@ -11,7 +11,7 @@
 //! in which statement consists of expressions and tokens. In expression, operand is the most
 //! complex part to enable all kinds of ident, constant, list, dict, config exprs.
 //!
-//! The parser error recovery strategy design is [here](https://github.com/KusionStack/KCLVM/issues/420).
+//! The parser error recovery strategy design is [here](https://github.com/kcl-lang/kcl/issues/420).
 
 #![macro_use]
 

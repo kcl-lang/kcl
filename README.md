@@ -8,11 +8,11 @@
 </p>
 
 <p align="center">
-  <img src="https://github.com/KusionStack/KCLVM/workflows/release/badge.svg">
+  <img src="https://github.com/kcl-lang/kcl/workflows/release/badge.svg">
   <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square">
-  <img src="https://coveralls.io/repos/github/KusionStack/KCLVM/badge.svg">
-  <img src="https://img.shields.io/github/release/KusionStack/KCLVM.svg">
-  <img src="https://img.shields.io/github/license/KusionStack/KCLVM.svg">
+  <img src="https://coveralls.io/repos/github/kcl-lang/kcl/badge.svg">
+  <img src="https://img.shields.io/github/release/kcl-lang/kcl.svg">
+  <img src="https://img.shields.io/github/license/kcl-lang/kcl.svg">
 </p>
 
 ## Introduction
@@ -38,12 +38,12 @@ You can use KCL to
 + **Rich capabilities**: Configuration with type, logic and policy based on [Config](https://kcl-lang.io/docs/reference/lang/tour#config-operations), [Schema](https://kcl-lang.io/docs/reference/lang/tour#schema), [Lambda](https://kcl-lang.io/docs/reference/lang/tour#function), [Rule](https://kcl-lang.io/docs/reference/lang/tour#rule).
 + **Stability**: Configuration stability is achieved through a [static type system](https://kcl-lang.io/docs/reference/lang/tour/#type-system), [constraints](https://kcl-lang.io/docs/reference/lang/tour/#validation), and [rules](https://kcl-lang.io/docs/reference/lang/tour#rule).
 + **Scalability**: High scalability is assured with an [automatic merge mechanism](https://kcl-lang.io/docs/reference/lang/tour/#-operators-1) of isolated config blocks.
-+ **Fast automation**: Gradient automation scheme of [CRUD APIs](https://kcl-lang.io/docs/reference/lang/tour/#kcl-cli-variable-override), [multilingual SDKs](https://kcl-lang.io/docs/reference/xlang-api/overview), and [language plugin](https://github.com/KusionStack/kcl-plugin)
++ **Fast automation**: Gradient automation scheme of [CRUD APIs](https://kcl-lang.io/docs/reference/lang/tour/#kcl-cli-variable-override), [multilingual SDKs](https://kcl-lang.io/docs/reference/xlang-api/overview), and [language plugin](https://github.com/kcl-lang/kcl-plugin)
 + **High performance**: High compile-time and runtime performance using Rust & C and [LLVM](https://llvm.org/), and support compilation to native code and [WASM](https://webassembly.org/).
-+ **API affinity**: Native support for ecological API specifications such as [OpenAPI](https://github.com/KusionStack/kcl-openapi), Kubernetes CRD, Kubernetes YAML spec.
-+ **Developer-friendly**: Friendly development experiences with rich [language tools](https://kcl-lang.io/docs/tools/cli/kcl/) (Format, Lint, Test, Vet, Doc, etc.) and [IDE plugins](https://github.com/KusionStack/vscode-kcl).
++ **API affinity**: Native support for ecological API specifications such as [OpenAPI](https://github.com/kcl-lang/kcl-openapi), Kubernetes CRD, Kubernetes YAML spec.
++ **Developer-friendly**: Friendly development experiences with rich [language tools](https://kcl-lang.io/docs/tools/cli/kcl/) (Format, Lint, Test, Vet, Doc, etc.) and [IDE plugins](https://github.com/kcl-lang/vscode-kcl).
 + **Safety & maintainable**: Domain-oriented, no system-level functions such as native threads and IO, low noise and security risk, easy maintenance and governance.
-+ **Integrations**: Mutate and validate manifests through [Kustomize KCL Plugin](https://github.com/KusionStack/kustomize-kcl), [Helm KCL Plugin](https://github.com/KusionStack/helm-kcl) or [KPT KCL SDK](https://github.com/KusionStack/kpt-kcl-sdk).
++ **Integrations**: Mutate and validate manifests through [Kustomize KCL Plugin](https://github.com/kcl-lang/kustomize-kcl), [Helm KCL Plugin](https://github.com/kcl-lang/helm-kcl) or [KPT KCL SDK](https://github.com/kcl-lang/kpt-kcl-sdk).
 + **Production-ready**: Widely used in production practices of platform engineering and automation at Ant Group.
 
 ## How to choose?
@@ -59,7 +59,7 @@ A detailed feature and scenario comparison is [here](https://kcl-lang.io/docs/us
 
 ## Installation
 
-[Download](https://github.com/KusionStack/KCLVM/releases) the latest release from GitHub and add `{install-location}/kclvm/bin` to the environment `PATH`.
+[Download](https://github.com/kcl-lang/kcl/releases) the latest release from GitHub and add `{install-location}/kclvm/bin` to the environment `PATH`.
 
 ## Showcase
 
@@ -126,12 +126,12 @@ Detailed documentation is available at [KCL Website](https://kcl-lang.io/)
 
 See [Developing Guide](./docs/dev_guide/1.about_this_guide.md). You can also get started by opening the project in GitHub Codespaces.
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/KusionStack/kcl)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/kcl-lang/kcl)
 
 ## Roadmap
 
-See [KCL Roadmap](https://github.com/KusionStack/KCLVM/issues/29).
+See [KCL Roadmap](https://github.com/kcl-lang/kcl/issues/29).
 
 ## Community
 
-See the [community](https://github.com/KusionStack/community) for ways to join us.
+See the [community](https://github.com/kcl-lang/community) for ways to join us.

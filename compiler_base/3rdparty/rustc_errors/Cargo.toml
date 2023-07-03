@@ -6,8 +6,8 @@ authors = ["zongzhe1024@163.com"]
 license = "Apache-2.0 OR MIT"
 description = "Reuse rustc_errors for compiler_base"
 readme = "README.md"
-homepage = "https://github.com/KusionStack/KCLVM"
-repository = "https://github.com/KusionStack/KCLVM"
+homepage = "https://github.com/kcl-lang/kcl"
+repository = "https://github.com/kcl-lang/kcl"
 keywords = ["rustc", "rustc_errors"]
 categories = ["command-line-utilities"]
 

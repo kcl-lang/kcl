@@ -1,5 +1,5 @@
 //! Complete for KCL
-//! Github Issue: https://github.com/KusionStack/KCLVM/issues/476
+//! Github Issue: https://github.com/kcl-lang/kcl/issues/476
 //! Now supports code completion in treigger mode (triggered when user enters `.`),
 //! and the content of the completion includes:
 //!  + import path

@@ -1,6 +1,6 @@
 //! This file is the implementation of KCLLint, which is used to perform some additional checks on KCL code.
 //! The main structures of the file are Lint, LintPass, CombinedLintPass and Linter.
-//! For details see the: https://github.com/KusionStack/KCLVM/issues/109
+//! For details see the: https://github.com/kcl-lang/kcl/issues/109
 //!
 //! File dependencies：
 //! mode  -> combinedlintpass -> lints_def -> lintpass -> lint

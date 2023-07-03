@@ -34,31 +34,31 @@ jobs:
           override: true
           components: clippy, rustfmt
 
-      # KCLVM build
+      # KCL build
 
-      - name: Build KCLVM
+      - name: Build KCL
         run: export PATH=$PATH:$PWD/_build/dist/ubuntu/kclvm/bin && make build
         shell: bash
 
-      # KCLVM docker image build and upload
+      # KCL docker image build and upload, TODO: bump kusionstack/kclvm to kcl-lang/kcl
 
-      - name: Copy Dockerfile to the current work directory
-        run: cp scripts/docker/kclvm/Dockerfile .
-        shell: bash
-      - name: Login to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@v4
-        with:
-          images: kusionstack/kclvm
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v3
-        with:
-          context: .
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+      # - name: Copy Dockerfile to the current work directory
+      #   run: cp scripts/docker/kclvm/Dockerfile .
+      #   shell: bash
+      # - name: Login to Docker Hub
+      #   uses: docker/login-action@v2
+      #   with:
+      #     username: ${{ secrets.DOCKERHUB_USERNAME }}
+      #     password: ${{ secrets.DOCKERHUB_TOKEN }}
+      # - name: Extract metadata (tags, labels) for Docker
+      #   id: meta
+      #   uses: docker/metadata-action@v4
+      #   with:
+      #     images: kusionstack/kclvm
+      # - name: Build and push Docker image
+      #   uses: docker/build-push-action@v3
+      #   with:
+      #     context: .
+      #     push: ${{ github.event_name != 'pull_request' }}
+      #     tags: ${{ steps.meta.outputs.tags }}
+      #     labels: ${{ steps.meta.outputs.labels }}
