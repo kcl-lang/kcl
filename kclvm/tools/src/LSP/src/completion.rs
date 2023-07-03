@@ -45,6 +45,13 @@ fn completion_dot(
     pos: &KCLPos,
     prog_scope: &ProgramScope,
 ) -> Option<lsp_types::CompletionResponse> {
+    // Get the position of trigger_character '.'
+    let pos = &KCLPos {
+        filename: pos.filename.clone(),
+        line: pos.line,
+        column: pos.column.map(|c| c - 1),
+    };
+
     match program.pos_to_stmt(pos) {
         Some(node) => match node.node {
             Stmt::Import(stmt) => completion_for_import(&stmt, pos, prog_scope, program),

@@ -589,14 +589,21 @@ fn completion_test() {
     assert_eq!(got, expect);
     items.clear();
 
+    // test completion for literal str builtin function
     let pos = KCLPos {
         filename: file,
-        line: 22,
-        column: Some(19),
+        line: 21,
+        column: Some(4),
     };
-    assert!(completion(Some('.'), &program, &pos, &prog_scope).is_none());
 
-    items.clear();
+    let got = completion(Some('.'), &program, &pos, &prog_scope).unwrap();
+    let binding = STRING_MEMBER_FUNCTIONS;
+    for k in binding.keys() {
+        items.insert(format!("{}{}", k, "()"));
+    }
+    let expect: CompletionResponse = into_completion_items(&items).into();
+
+    assert_eq!(got, expect);
 }
 
 #[test]
