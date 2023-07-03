@@ -15,7 +15,7 @@ jobs:
       - name: Set up Go 1.18
         uses: actions/setup-go@v2
         with:
-          go-version: 1.18
+          go-version: 1.19
       - name: Delete rust cargo
         run: rm -rf /root/.cargo/bin
         shell: bash
