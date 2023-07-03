@@ -27,7 +27,7 @@ jobs:
       - run: cargo --version
 
       # Install LLVM-12
-      - run: Invoke-WebRequest -Uri https://github.com/KusionStack/llvm-package-windows/releases/download/v12.0.1/LLVM-12.0.1-win64.7z -OutFile C:/LLVM-12.0.1-win64.7z
+      - run: Invoke-WebRequest -Uri https://github.com/kcl-lang/llvm-package-windows/releases/download/v12.0.1/LLVM-12.0.1-win64.7z -OutFile C:/LLVM-12.0.1-win64.7z
       - run: Get-FileHash -Algorithm MD5 C:/LLVM-12.0.1-win64.7z # md5: 3fcf77f82c6c3ee650711439b20aebe5
       - run: 7z x -y C:/LLVM-12.0.1-win64.7z -o"C:/LLVM"
       - run: Remove-Item C:/LLVM-12.0.1-win64.7z
