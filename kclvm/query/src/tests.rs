@@ -106,15 +106,15 @@ appConfiguration = AppConfiguration {
     appName: "kclvm"
     image: "kcl/kcl:{}".format(version)
     labels: {
-        key: {key: "override_value"}
+        key: {
+            key: "override_value"
+            "str-key" = "override_value"
+        }
     }
     mainContainer: Main {name: "override_name"}
     overQuota = False
     overQuota = False
     probe: {periodSeconds = 20}
-    labels: {
-        key: {"str-key" = "override_value"}
-    }
 }
 
 appConfigurationUnification: AppConfiguration {
