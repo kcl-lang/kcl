@@ -6,6 +6,7 @@ use crate::resolver::resolve_program;
 use crate::resolver::scope::*;
 use crate::ty::{Type, TypeKind};
 use kclvm_ast::ast;
+use kclvm_ast::pos::ContainsPos;
 use kclvm_error::*;
 use kclvm_parser::ParseSession;
 use kclvm_parser::{load_program, parse_program};
@@ -371,4 +372,68 @@ See also: kusion_models/core/v1/metadata.k."
         ),
         attrs_scope.get("labels").unwrap().borrow().doc
     );
+}
+
+#[test]
+fn test_pkg_scope() {
+    let sess = Arc::new(ParseSession::default());
+    let mut program = load_program(
+        sess.clone(),
+        &["./src/resolver/test_data/pkg_scope.k"],
+        None,
+    )
+    .unwrap();
+    let scope = resolve_program(&mut program);
+
+    assert_eq!(scope.scope_map.len(), 2);
+    let main_scope = scope
+        .scope_map
+        .get(kclvm_runtime::MAIN_PKG_PATH)
+        .unwrap()
+        .borrow_mut()
+        .clone();
+    let pkg_scope = scope.scope_map.get("pkg").unwrap().borrow_mut().clone();
+
+    let root = &program.root.clone();
+    let filename = Path::new(&root.clone())
+        .join("pkg_scope.k")
+        .display()
+        .to_string();
+
+    let pos = Position {
+        filename: filename.clone(),
+        line: 2,
+        column: Some(0),
+    };
+
+    assert!(main_scope.contains_pos(&pos));
+
+    let pos = Position {
+        filename: filename.clone(),
+        line: 10,
+        column: Some(0),
+    };
+    assert!(!main_scope.contains_pos(&pos));
+
+    let filename = Path::new(&root.clone())
+        .join("pkg")
+        .join("pkg.k")
+        .display()
+        .to_string();
+
+    let pos = Position {
+        filename: filename.clone(),
+        line: 4,
+        column: Some(0),
+    };
+
+    assert!(pkg_scope.contains_pos(&pos));
+
+    let pos = Position {
+        filename: filename.clone(),
+        line: 10,
+        column: Some(0),
+    };
+
+    assert!(!pkg_scope.contains_pos(&pos));
 }
