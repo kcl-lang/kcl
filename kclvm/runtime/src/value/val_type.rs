@@ -508,13 +508,19 @@ pub fn is_literal_type(tpe: &str) -> bool {
 /// is_dict_type returns the type string whether is a dict type
 #[inline]
 pub fn is_dict_type(tpe: &str) -> bool {
-    tpe.len() >= 2 && &tpe[0..1] == "{" && &tpe[tpe.len() - 1..] == "}"
+    let count = tpe.chars().count();
+    count >= 2
+        && matches!(tpe.chars().nth(0), Some('{'))
+        && matches!(tpe.chars().nth(count - 1), Some('}'))
 }
 
 /// is_list_type returns the type string whether is a list type
 #[inline]
 pub fn is_list_type(tpe: &str) -> bool {
-    tpe.len() >= 2 && &tpe[0..1] == "[" && &tpe[tpe.len() - 1..] == "]"
+    let count = tpe.chars().count();
+    count >= 2
+        && matches!(tpe.chars().nth(0), Some('['))
+        && matches!(tpe.chars().nth(count - 1), Some(']'))
 }
 
 #[inline]
@@ -546,16 +552,16 @@ pub fn is_type_union(tpe: &str) -> bool {
         } else if c == ']' || c == '}' {
             stack.pop();
         } else if c == '\"' {
-            let t = &tpe[i..];
+            let t: String = tpe.chars().skip(i).collect();
             let re = fancy_regex::Regex::new(r#""(?!"").*?(?<!\\)(\\\\)*?""#).unwrap();
-            if let Ok(Some(v)) = re.find(t) {
-                i += v.range().end - 1;
+            if let Ok(Some(v)) = re.find(&t) {
+                i += v.as_str().chars().count() - 1;
             }
         } else if c == '\'' {
-            let t = &tpe[i..];
+            let t: String = tpe.chars().skip(i).collect();
             let re = fancy_regex::Regex::new(r#"'(?!'').*?(?<!\\)(\\\\)*?'"#).unwrap();
-            if let Ok(Some(v)) = re.find(t) {
-                i += v.range().end - 1;
+            if let Ok(Some(v)) = re.find(&t) {
+                i += v.as_str().chars().count() - 1;
             }
         }
         i += 1;
@@ -580,10 +586,10 @@ pub fn split_type_union(tpe: &str) -> Vec<&str> {
     let mut stack = String::new();
     let mut types: Vec<&str> = vec![];
     while i < tpe.chars().count() {
-        let c = tpe.chars().nth(i).unwrap();
+        let (c_idx, c) = tpe.char_indices().nth(i).unwrap();
         if c == '|' && stack.is_empty() {
-            types.push(&tpe[s_index..i]);
-            s_index = i + 1;
+            types.push(&tpe[s_index..c_idx]);
+            s_index = c_idx + 1;
         }
         // List/Dict type
         else if c == '[' || c == '{' {
@@ -595,18 +601,18 @@ pub fn split_type_union(tpe: &str) -> Vec<&str> {
         }
         // String literal type
         else if c == '\"' {
-            let t = &tpe[i..];
+            let t: String = tpe.chars().skip(i).collect();
             let re = fancy_regex::Regex::new(r#""(?!"").*?(?<!\\)(\\\\)*?""#).unwrap();
-            if let Ok(Some(v)) = re.find(t) {
-                i += v.range().end - 1;
+            if let Ok(Some(v)) = re.find(&t) {
+                i += v.as_str().chars().count() - 1;
             }
         }
         // String literal type
         else if c == '\'' {
-            let t = &tpe[i..];
+            let t: String = tpe.chars().skip(i).collect();
             let re = fancy_regex::Regex::new(r#"'(?!'').*?(?<!\\)(\\\\)*?'"#).unwrap();
-            if let Ok(Some(v)) = re.find(t) {
-                i += v.range().end - 1;
+            if let Ok(Some(v)) = re.find(&t) {
+                i += v.as_str().chars().count() - 1;
             }
         }
         i += 1;
