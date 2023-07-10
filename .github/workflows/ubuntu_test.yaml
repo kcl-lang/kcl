@@ -42,7 +42,7 @@ jobs:
         run: export PATH=$PATH:$PWD/../_build/dist/ubuntu/kclvm/bin && make install-rustc-wasm && make && make test-runtime
         shell: bash
       - name: Install kpm
-        run: go install kusionstack.io/kpm@latest
+        run: go install kcl-lang.io/kpm@latest
 
       - name: Unit test
         working-directory: ./kclvm
