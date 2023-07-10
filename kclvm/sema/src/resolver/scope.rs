@@ -42,6 +42,12 @@ impl ScopeObject {
     }
 }
 
+impl ContainsPos for ScopeObject {
+    fn contains_pos(&self, pos: &Position) -> bool {
+        self.start.less_equal(pos) && pos.less_equal(&self.end)
+    }
+}
+
 #[derive(PartialEq, Clone, Debug)]
 pub enum ScopeObjectKind {
     Variable,
@@ -106,14 +112,27 @@ impl Scope {
 impl ContainsPos for Scope {
     /// Check if current scope contains a position
     fn contains_pos(&self, pos: &Position) -> bool {
-        self.start.less_equal(pos) && pos.less_equal(&self.end)
+        match &self.kind {
+            ScopeKind::Package(files) => {
+                if files.contains(&pos.filename) {
+                    self.children.iter().any(|s| s.borrow().contains_pos(pos))
+                        || self
+                            .elems
+                            .iter()
+                            .any(|(_, child)| child.borrow().contains_pos(pos))
+                } else {
+                    false
+                }
+            }
+            _ => self.start.less_equal(pos) && pos.less_equal(&self.end),
+        }
     }
 }
 
 #[derive(Clone, Debug)]
 pub enum ScopeKind {
     /// Package scope.
-    Package,
+    Package(Vec<String>),
     /// Builtin scope.
     Builtin,
     /// Schema name string.

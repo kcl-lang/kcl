@@ -205,6 +205,7 @@ impl<'ctx> Resolver<'ctx> {
         if pkgpath.is_empty() {
             return;
         }
+
         if !self.scope_map.contains_key(pkgpath) {
             let scope = Rc::new(RefCell::new(Scope {
                 parent: Some(Rc::downgrade(&self.builtin_scope)),
@@ -212,7 +213,7 @@ impl<'ctx> Resolver<'ctx> {
                 elems: IndexMap::default(),
                 start: Position::dummy_pos(),
                 end: Position::dummy_pos(),
-                kind: ScopeKind::Package,
+                kind: ScopeKind::Package(vec![]),
             }));
             self.scope_map
                 .insert(pkgpath.to_string(), Rc::clone(&scope));
@@ -220,6 +221,10 @@ impl<'ctx> Resolver<'ctx> {
         }
         self.ctx.pkgpath = pkgpath.to_string();
         self.ctx.filename = filename.to_string();
-        self.scope = self.scope_map.get(pkgpath).unwrap().clone();
+        let scope = self.scope_map.get(pkgpath).unwrap().clone();
+        if let ScopeKind::Package(files) = &mut scope.borrow_mut().kind {
+            files.push(filename.to_string())
+        }
+        self.scope = scope;
     }
 }
