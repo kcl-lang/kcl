@@ -6,7 +6,7 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     container:
-      image: kusionstack/kclvm-builder
+      image: kcllang/kcl-builder
     steps:
       - name: Check out code
         uses: actions/checkout@v3

@@ -2,5 +2,5 @@
 // README at: https://github.com/devcontainers/templates/tree/main/src/alpine
 {
     // ref: https://docs.github.com/en/codespaces/setting-up-your-project-for-codespaces/adding-a-dev-container-configuration/introduction-to-dev-containers#dockerfile
-    "image": "docker.io/kusionstack/kclvm-builder:latest"
+    "image": "docker.io/kcllang/kcl-builder:latest"
 }

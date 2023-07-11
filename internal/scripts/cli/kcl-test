@@ -2,7 +2,7 @@
 
 kcl_go_path=$(cd `dirname $0`; pwd)/kcl-go
 if [[ ! -f $kcl_go_path ]]; then
-  echo "kcl-go not found, please check the installation at https://github.com/KusionStack/kclvm-go"
+  echo "kcl-go not found, please check the installation at https://github.com/kcl-lang/kcl-go"
   exit 1
 fi
 export PYTHONPATH=''

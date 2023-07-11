@@ -5,7 +5,7 @@ PROJECT_NAME = KCLVM
 PWD:=$(shell pwd)
 
 KCLVM_VERSION := $(shell cat VERSION)
-BUILD_IMAGE:=kusionstack/kclvm-builder
+BUILD_IMAGE:=kcllang/kcl-builder
 
 # export DOCKER_DEFAULT_PLATFORM=linux/amd64
 # or
