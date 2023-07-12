@@ -1,4 +1,8 @@
-use std::{env, fs, path::PathBuf};
+use std::{
+    env,
+    fs::{self, remove_file},
+    path::{Path, PathBuf},
+};
 
 use kclvm_config::modfile::KCL_PKG_PATH;
 
@@ -6,6 +10,11 @@ use crate::{
     app, fmt::fmt_command, run::run_command, settings::build_settings, util::hashmaps_from_matches,
     vet::vet_command,
 };
+
+#[cfg(unix)]
+use std::os::unix::fs::symlink;
+#[cfg(windows)]
+use std::os::windows::fs::symlink_file as symlink;
 
 const ROOT_CMD: &str = "kclvm_cli";
 
@@ -193,6 +202,7 @@ fn test_run_command() {
     test_run_command_with_import();
     test_run_command_with_konfig();
     test_load_cache_with_different_pkg();
+    test_kcl_path_is_sym_link();
 }
 
 fn test_run_command_with_import() {
@@ -293,4 +303,52 @@ fn check_run_command_with_env(test_case_path: PathBuf, kcl_pkg_path_env: String)
     #[cfg(target_os = "windows")]
     let expect = expect.replace("\r\n", "\n");
     assert_eq!(String::from_utf8(buf).unwrap(), expect);
+}
+
+fn test_kcl_path_is_sym_link() {
+    let origin = "./src/test_data/sym_link/origin";
+    let link = "./src/test_data/sym_link/sym_link";
+
+    let origin_k_file_path = PathBuf::from(origin).join("a.k");
+    let origin_matches = app().arg_required_else_help(true).get_matches_from(&[
+        ROOT_CMD,
+        "run",
+        origin_k_file_path.to_str().unwrap(),
+    ]);
+
+    let mut origin_res = Vec::new();
+    run_command(
+        origin_matches.subcommand_matches("run").unwrap(),
+        &mut origin_res,
+    )
+    .unwrap();
+
+    // Create a symlink
+    symlink(
+        PathBuf::from(origin).canonicalize().unwrap(),
+        Path::new(link),
+    )
+    .unwrap();
+
+    let sym_link_k_file_path = PathBuf::from(link).join("a.k");
+    let mut sym_link_res = Vec::new();
+    let sym_link_matches = app().arg_required_else_help(true).get_matches_from(&[
+        ROOT_CMD,
+        "run",
+        sym_link_k_file_path.to_str().unwrap(),
+    ]);
+    run_command(
+        sym_link_matches.subcommand_matches("run").unwrap(),
+        &mut sym_link_res,
+    )
+    .unwrap();
+
+    // compare the result from origin kcl path and symlink kcl path.
+    assert_eq!(
+        String::from_utf8(sym_link_res),
+        String::from_utf8(origin_res)
+    );
+
+    // clean up the symlink
+    remove_file(link).unwrap();
 }
