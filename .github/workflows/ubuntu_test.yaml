@@ -57,3 +57,8 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: ./kclvm/.kclvm/lcov.info
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: kcl-linux-amd64
+          path: _build/dist/ubuntu/kclvm
