@@ -51,5 +51,5 @@ jobs:
       
       - uses: actions/upload-artifact@v3
         with:
-          name: kclvm-windows
+          name: kcl-windows
           path: scripts/build-windows/_output/kclvm-windows
