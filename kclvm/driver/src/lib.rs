@@ -33,9 +33,7 @@ pub fn canonicalize_input_files(
     for (_, file) in k_files.iter().enumerate() {
         let path = Path::new(file);
         let is_absolute = path.is_absolute();
-        let is_symlink = fs::symlink_metadata(file)
-            .map(|metadata| metadata.file_type().is_symlink())
-            .unwrap_or(false);
+        let is_exist_maybe_symlink = path.exists();
         // If the input file or path is a relative path and it is not a absolute path in the KCL module VFS,
         // join with the work directory path and convert it to a absolute path.
 
@@ -57,7 +55,7 @@ pub fn canonicalize_input_files(
             None
         };
         // If the input file or path is a symlink, convert it to a real path.
-        let real_path = if is_symlink {
+        let real_path = if is_exist_maybe_symlink {
             match PathBuf::from(file).canonicalize() {
                 Ok(real_path) => Some(String::from(real_path.to_str().unwrap())),
                 Err(_) => {
