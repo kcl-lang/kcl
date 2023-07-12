@@ -15,7 +15,7 @@ use kclvm_parser::LoadProgramOptions;
 use kclvm_utils::path::PathPrefix;
 use kpm_metadata::fill_pkg_maps_for_k_file;
 use std::{
-    fs::read_dir,
+    fs::{self, read_dir},
     io::{self, ErrorKind},
     path::{Path, PathBuf},
 };
@@ -31,25 +31,48 @@ pub fn canonicalize_input_files(
 
     // The first traversal changes the relative path to an absolute path
     for (_, file) in k_files.iter().enumerate() {
+        let path = Path::new(file);
+        let is_absolute = path.is_absolute();
+        let is_exist_maybe_symlink = path.exists();
         // If the input file or path is a relative path and it is not a absolute path in the KCL module VFS,
         // join with the work directory path and convert it to a absolute path.
-        if !file.starts_with(KCL_MOD_PATH_ENV) && !Path::new(file).is_absolute() {
+
+        let abs_path = if !is_absolute && !file.starts_with(KCL_MOD_PATH_ENV) {
             let filepath = Path::new(&work_dir).join(file);
             match filepath.canonicalize() {
-                Ok(path) => kcl_paths.push(path.adjust_canonicalization()),
+                Ok(path) => Some(path.adjust_canonicalization()),
                 Err(_) => {
-                    kcl_paths.push(filepath.to_string_lossy().to_string());
                     if check_exist {
                         return Err(format!(
                             "Cannot find the kcl file, please check whether the file path {}",
                             file
                         ));
                     }
+                    Some(filepath.to_string_lossy().to_string())
                 }
             }
         } else {
-            kcl_paths.push(String::from(file))
-        }
+            None
+        };
+        // If the input file or path is a symlink, convert it to a real path.
+        let real_path = if is_exist_maybe_symlink {
+            match PathBuf::from(file).canonicalize() {
+                Ok(real_path) => Some(String::from(real_path.to_str().unwrap())),
+                Err(_) => {
+                    if check_exist {
+                        return Err(format!(
+                            "Cannot find the kcl file, please check whether the file path {}",
+                            file
+                        ));
+                    }
+                    Some(file.to_string())
+                }
+            }
+        } else {
+            None
+        };
+
+        kcl_paths.push(abs_path.unwrap_or(real_path.unwrap_or(file.to_string())));
     }
 
     // Get the root path of the project
