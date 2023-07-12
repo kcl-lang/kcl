@@ -22,8 +22,9 @@ use kclvm_sema::builtin::{
 use kclvm_sema::resolver::scope::ProgramScope;
 use lsp_types::CompletionItem;
 
-use crate::goto_def::get_identifier_last_name;
-use crate::{goto_def::find_objs_in_program_scope, util::inner_most_expr_in_stmt};
+use crate::goto_def::{get_identifier_last_name, resolve_var};
+use crate::util::fix_missing_identifier;
+use crate::util::inner_most_expr_in_stmt;
 
 /// Computes completions at the given position.
 pub(crate) fn completion(
@@ -115,7 +116,7 @@ fn get_completion_items(expr: &Expr, prog_scope: &ProgramScope) -> IndexSet<Stri
     let mut items = IndexSet::new();
     match expr {
         Expr::Identifier(id) => {
-            let name = get_identifier_last_name(id);
+            let name = get_identifier_last_name(&id);
             if !id.pkgpath.is_empty() {
                 // standard system module
                 if STANDARD_SYSTEM_MODULES.contains(&name.as_str()) {
@@ -137,9 +138,22 @@ fn get_completion_items(expr: &Expr, prog_scope: &ProgramScope) -> IndexSet<Stri
                 }
                 return items;
             }
-
-            let objs = find_objs_in_program_scope(&name, prog_scope);
-            for obj in objs {
+            let obj = if id.pkgpath.is_empty() {
+                resolve_var(
+                    &fix_missing_identifier(&id.names),
+                    &id.pkgpath,
+                    &prog_scope.main_scope().unwrap().borrow(),
+                    &prog_scope.scope_map,
+                )
+            } else {
+                resolve_var(
+                    &fix_missing_identifier(&id.names),
+                    &id.pkgpath,
+                    &prog_scope.scope_map.get(&id.pkgpath).unwrap().borrow(),
+                    &prog_scope.scope_map,
+                )
+            };
+            if let Some(obj) = obj {
                 match &obj.ty.kind {
                     // builtin (str) functions
                     kclvm_sema::ty::TypeKind::Str => {
@@ -160,15 +174,15 @@ fn get_completion_items(expr: &Expr, prog_scope: &ProgramScope) -> IndexSet<Stri
                 }
             }
         }
+        Expr::Selector(select_expr) => {
+            let res = get_completion_items(&select_expr.value.node, prog_scope);
+            items.extend(res);
+        }
         Expr::StringLit(_) => {
             let binding = STRING_MEMBER_FUNCTIONS;
             for k in binding.keys() {
                 items.insert(format!("{}{}", k, "()"));
             }
-        }
-        Expr::Selector(select_expr) => {
-            let res = get_completion_items(&select_expr.value.node, prog_scope);
-            items.extend(res);
         }
         _ => {}
     }

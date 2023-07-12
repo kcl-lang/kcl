@@ -176,6 +176,196 @@ fn goto_schema_def_test() {
 }
 
 #[test]
+fn goto_schema_attr_def_test() {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+
+    let (file, program, prog_scope, _) =
+        compile_test_file("src/test_data/goto_def_test/goto_def.k");
+
+    let mut expected_path = path;
+    expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
+
+    // test goto schema attr definition: name: "alice"
+    let pos = KCLPos {
+        filename: file,
+        line: 5,
+        column: Some(7),
+    };
+    let res = goto_definition(&program, &pos, &prog_scope);
+
+    match res.unwrap() {
+        lsp_types::GotoDefinitionResponse::Scalar(loc) => {
+            let got_path = loc.uri.path();
+            assert_eq!(got_path, expected_path.to_str().unwrap());
+
+            let (got_start, got_end) = (loc.range.start, loc.range.end);
+
+            let expected_start = Position {
+                line: 4, // zero-based
+                character: 4,
+            };
+
+            let expected_end = Position {
+                line: 4, // zero-based
+                character: 8,
+            };
+            assert_eq!(got_start, expected_start);
+            assert_eq!(got_end, expected_end);
+        }
+        _ => {
+            unreachable!("test error")
+        }
+    }
+}
+
+#[test]
+fn goto_schema_attr_def_test1() {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+
+    let (file, program, prog_scope, _) =
+        compile_test_file("src/test_data/goto_def_test/goto_def.k");
+
+    let mut expected_path = path;
+    expected_path.push("src/test_data/goto_def_test/goto_def.k");
+
+    // test goto schema attr definition, goto name in: s = p2.n.name
+    let pos = KCLPos {
+        filename: file,
+        line: 30,
+        column: Some(12),
+    };
+    let res = goto_definition(&program, &pos, &prog_scope);
+    match res.unwrap() {
+        lsp_types::GotoDefinitionResponse::Scalar(loc) => {
+            let got_path = loc.uri.path();
+            assert_eq!(got_path, expected_path.to_str().unwrap());
+
+            let (got_start, got_end) = (loc.range.start, loc.range.end);
+
+            let expected_start = Position {
+                line: 18,     // zero-based
+                character: 1, // character is different from col in IDE, `\t` is counted as 1 character instead of 4 col
+            };
+
+            let expected_end = Position {
+                line: 18, // zero-based
+                character: 5,
+            };
+            assert_eq!(got_start, expected_start);
+            assert_eq!(got_end, expected_end);
+        }
+        _ => {
+            unreachable!("test error")
+        }
+    }
+}
+
+// todo: fix pre-process
+// #[test]
+// fn test_split_identifier() {
+//     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+
+//     let (file, program, prog_scope, _) =
+//         compile_test_file("src/test_data/goto_def_test/goto_def.k");
+
+//     let mut expected_path = path;
+//     expected_path.push("src/test_data/goto_def_test/goto_def.k");
+
+//     // test goto p2 in: s = p2.n.name
+//     let pos = KCLPos {
+//         filename: file.clone(),
+//         line: 30,
+//         column: Some(5),
+//     };
+//     let res = goto_definition(&program, &pos, &prog_scope);
+//     match res.unwrap() {
+//         lsp_types::GotoDefinitionResponse::Scalar(loc) => {
+//             let got_path = loc.uri.path();
+//             assert_eq!(got_path, expected_path.to_str().unwrap());
+
+//             let (got_start, got_end) = (loc.range.start, loc.range.end);
+
+//             let expected_start = Position {
+//                 line: 23, // zero-based
+//                 character: 0,
+//             };
+
+//             let expected_end = Position {
+//                 line: 23, // zero-based
+//                 character: 2,
+//             };
+//             assert_eq!(got_start, expected_start);
+//             assert_eq!(got_end, expected_end);
+//         }
+//         _ => {
+//             unreachable!("test error")
+//         }
+//     }
+
+//     // test goto n in: s = p2.n.name
+//     let pos = KCLPos {
+//         filename: file.clone(),
+//         line: 30,
+//         column: Some(8),
+//     };
+//     let res = goto_definition(&program, &pos, &prog_scope);
+//     match res.unwrap() {
+//         lsp_types::GotoDefinitionResponse::Scalar(loc) => {
+//             let got_path = loc.uri.path();
+//             assert_eq!(got_path, expected_path.to_str().unwrap());
+
+//             let (got_start, got_end) = (loc.range.start, loc.range.end);
+
+//             let expected_start = Position {
+//                 line: 21, // zero-based
+//                 character: 1,
+//             };
+
+//             let expected_end = Position {
+//                 line: 21, // zero-based
+//                 character: 2,
+//             };
+//             assert_eq!(got_start, expected_start);
+//             assert_eq!(got_end, expected_end);
+//         }
+//         _ => {
+//             unreachable!("test error")
+//         }
+//     }
+
+//     // test goto name in: s = p2.n.name
+//     let pos = KCLPos {
+//         filename: file,
+//         line: 30,
+//         column: Some(12),
+//     };
+//     let res = goto_definition(&program, &pos, &prog_scope);
+//     match res.unwrap() {
+//         lsp_types::GotoDefinitionResponse::Scalar(loc) => {
+//             let got_path = loc.uri.path();
+//             assert_eq!(got_path, expected_path.to_str().unwrap());
+
+//             let (got_start, got_end) = (loc.range.start, loc.range.end);
+
+//             let expected_start = Position {
+//                 line: 18,     // zero-based
+//                 character: 1, // character is different from col in IDE, `\t` is counted as 1 character instead of 4 col
+//             };
+
+//             let expected_end = Position {
+//                 line: 18, // zero-based
+//                 character: 5,
+//             };
+//             assert_eq!(got_start, expected_start);
+//             assert_eq!(got_end, expected_end);
+//         }
+//         _ => {
+//             unreachable!("test error")
+//         }
+//     }
+// }
+
+#[test]
 fn goto_identifier_def_test() {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 

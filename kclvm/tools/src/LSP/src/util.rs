@@ -545,7 +545,7 @@ fn inner_most_expr_in_config_entry(
     if config_entry.node.value.contains_pos(pos) {
         inner_most_expr(&config_entry.node.value, pos, None)
     } else {
-        (None, None)
+        (None, schema_def)
     }
 }
 
@@ -690,4 +690,46 @@ pub(crate) fn get_real_path_from_external(
     };
     pkgpath.split('.').for_each(|s| real_path.push(s));
     real_path
+}
+
+/// Error recovery may generate an Identifier with an empty string at the end, e.g.,
+/// a. => vec["a", ""].
+/// When analyzing in LSP,the empty string needs to be removed and find definition of the second last name("a").
+pub(crate) fn fix_missing_identifier(names: &[String]) -> Vec<String> {
+    if names.len() >= 1 && names.last().unwrap() == "" {
+        return names[..names.len() - 1].to_vec();
+    } else {
+        return (names).to_vec();
+    }
+}
+
+pub(crate) fn pre_process_identifier(id: Node<Identifier>, pos: &KCLPos) -> Identifier {
+    if !id.contains_pos(pos) {
+        return id.node.clone();
+    }
+
+    let mut id = id.node.clone();
+    // todo: fix import path replace
+    // ```KCL
+    // import a.b.c
+    // e = c.d
+    // ```
+    // c.d => names:["@a.b.c", "d"]  pkg: "@a.b.c"
+
+    // let mut start_col = id.column;
+    // let mut names = vec![];
+
+    // for name in id.names {
+    //     start_col = start_col + name.len() as u64 + 1;
+    //     names.push(name);
+    //     if start_col > pos.column.unwrap() {
+    //         break;
+    //     }
+    // }
+    // id.names = names;
+    if id.pkgpath.starts_with("@") {
+        id.pkgpath = id.pkgpath[1..].to_string();
+    }
+
+    id
 }

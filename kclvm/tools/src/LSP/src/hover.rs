@@ -4,7 +4,7 @@ use kclvm_error::Position as KCLPos;
 use kclvm_sema::resolver::scope::{ProgramScope, ScopeObjectKind};
 use lsp_types::{Hover, HoverContents, MarkedString};
 
-use crate::goto_def::find_definition_objs;
+use crate::goto_def::find_def;
 
 /// Returns a short text describing element at position.
 /// Specifically, the doc for schema and schema attr(todo)
@@ -15,9 +15,8 @@ pub(crate) fn hover(
 ) -> Option<lsp_types::Hover> {
     match program.pos_to_stmt(kcl_pos) {
         Some(node) => {
-            let objs = find_definition_objs(node, kcl_pos, prog_scope);
             let mut docs: IndexSet<String> = IndexSet::new();
-            for obj in &objs {
+            if let Some(obj) = find_def(node, kcl_pos, prog_scope) {
                 match obj.kind {
                     ScopeObjectKind::Definition => {
                         docs.insert(obj.ty.ty_str());

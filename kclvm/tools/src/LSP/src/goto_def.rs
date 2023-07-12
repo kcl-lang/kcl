@@ -7,19 +7,26 @@
 //! + schema attr
 //! + attr type
 
-use indexmap::IndexSet;
+use indexmap::{IndexMap, IndexSet};
+use kclvm_ast::pos::GetPos;
+use kclvm_ast::MAIN_PKG;
 
-use kclvm_ast::ast::{Expr, Identifier, ImportStmt, Node, Program, SchemaExpr, Stmt};
-
+use kclvm_ast::ast::{Expr, Identifier, ImportStmt, Node, Program, Stmt};
 use kclvm_error::Position as KCLPos;
 
-use kclvm_sema::resolver::scope::{ProgramScope, ScopeObject};
+use kclvm_sema::resolver::scope::{ProgramScope, Scope, ScopeObject};
+use kclvm_sema::ty::SchemaType;
 use lsp_types::{GotoDefinitionResponse, Url};
 use lsp_types::{Location, Range};
+use std::cell::RefCell;
 use std::path::Path;
+use std::rc::Rc;
 
 use crate::to_lsp::lsp_pos;
-use crate::util::{get_pos_from_real_path, get_real_path_from_external, inner_most_expr_in_stmt};
+use crate::util::{
+    get_pos_from_real_path, get_real_path_from_external, inner_most_expr_in_stmt,
+    pre_process_identifier,
+};
 
 // Navigates to the definition of an identifier.
 pub(crate) fn goto_definition(
@@ -30,59 +37,212 @@ pub(crate) fn goto_definition(
     match program.pos_to_stmt(kcl_pos) {
         Some(node) => match node.node {
             Stmt::Import(stmt) => goto_def_for_import(&stmt, kcl_pos, prog_scope, program),
-            _ => {
-                let objs = find_definition_objs(node, kcl_pos, prog_scope);
-                let positions = objs
-                    .iter()
-                    .map(|obj| (obj.start.clone(), obj.end.clone()))
-                    .collect();
-                positions_to_goto_def_resp(&positions)
-            }
+            _ => match find_def(node.clone(), kcl_pos, prog_scope) {
+                Some(obj) => {
+                    let mut positions = IndexSet::new();
+                    positions.insert((obj.start.clone(), obj.end.clone()));
+                    return positions_to_goto_def_resp(&positions);
+                }
+                None => return None,
+            },
         },
         None => None,
     }
 }
-pub(crate) fn find_definition_objs(
+
+// Todo: fix ConfigExpr
+// ```kcl
+// schema Person:
+//     name: str
+//     data: Data
+
+// schema Data:
+//     id: int
+
+// person = Person {
+//     data.id = 1
+//     data: {
+//         id = 1
+//     }
+//     data: Data {
+//         id = 3
+//     }
+// }
+
+pub(crate) fn find_def(
     node: Node<Stmt>,
     kcl_pos: &KCLPos,
     prog_scope: &ProgramScope,
-) -> Vec<ScopeObject> {
+) -> Option<ScopeObject> {
     let (inner_expr, parent) = inner_most_expr_in_stmt(&node.node, kcl_pos, None);
     if let Some(expr) = inner_expr {
         if let Expr::Identifier(id) = expr.node {
-            let name = get_identifier_last_name(&id);
-            let objs = if let Some(parent) = parent {
-                // find schema attr def
-                match parent.node {
+            let id_node = Node::node_with_pos(
+                id.clone(),
+                (
+                    expr.filename,
+                    expr.line,
+                    expr.column,
+                    expr.end_line,
+                    expr.end_column,
+                ),
+            );
+            let id = pre_process_identifier(id_node, kcl_pos);
+            match parent {
+                Some(schema_expr_node) => match schema_expr_node.node {
+                    // find_schema_attr
                     Expr::Schema(schema_expr) => {
-                        find_def_of_schema_attr(schema_expr, prog_scope, name)
+                        let schema_obj = find_def(node, &schema_expr.name.get_pos(), prog_scope);
+                        match schema_obj {
+                            Some(schema) => match &schema.ty.kind {
+                                kclvm_sema::ty::TypeKind::Schema(schema_type) => {
+                                    return find_attr_in_schema(
+                                        &schema_type,
+                                        &id.names,
+                                        &id.pkgpath,
+                                        &prog_scope.scope_map,
+                                    )
+                                }
+                                _ => {}
+                            },
+                            None => {}
+                        }
                     }
-                    _ => vec![],
+                    _ => {}
+                },
+                None => {
+                    let current_scope = if id.pkgpath.is_empty() {
+                        prog_scope.main_scope().unwrap().borrow()
+                    } else {
+                        prog_scope.scope_map.get(&id.pkgpath).unwrap().borrow()
+                    };
+                    return resolve_var(
+                        &id.names,
+                        &id.pkgpath,
+                        &current_scope,
+                        &prog_scope.scope_map,
+                    );
                 }
-            } else {
-                find_objs_in_program_scope(&name, prog_scope)
-            };
-            return objs;
+            }
         }
     }
-    vec![]
+    None
 }
 
-// This function serves as the result of a global search, which may cause duplication.
-// It needs to be pruned according to the situation. There are two actions todo:
-// + AST Identifier provides location information for each name.
-// + Scope provides a method similar to resolve_var of the resolver to replace this function.
-pub(crate) fn find_objs_in_program_scope(
-    name: &str,
-    prog_scope: &ProgramScope,
-) -> Vec<ScopeObject> {
-    let mut res = vec![];
-    for s in prog_scope.scope_map.values() {
-        let mut objs = s.borrow().search_obj_by_name(name);
-        res.append(&mut objs);
+/// Similar to vars.rs/reesolver_var, find a ScopeObj corresponding to the definition of identifier
+pub(crate) fn resolve_var(
+    names: &[String],
+    pkgpath: &str,
+    current_scope: &Scope,
+    scope_map: &IndexMap<String, Rc<RefCell<Scope>>>,
+) -> Option<ScopeObject> {
+    match names.len() {
+        0 => None,
+        1 => {
+            let name = names[0].clone();
+            match current_scope.lookup(&name) {
+                Some(obj) => Some(obj.borrow().clone()),
+                None => None,
+            }
+        }
+        _ => {
+            if pkgpath.is_empty() {
+                let name = names[0].clone();
+                match current_scope.lookup(&name) {
+                    Some(obj) => {
+                        match &obj.borrow().ty.kind {
+                            kclvm_sema::ty::TypeKind::Schema(schema_type) => {
+                                find_attr_in_schema(
+                                    schema_type,
+                                    &names[1..],
+                                    pkgpath,
+                                    // current_scope,
+                                    scope_map,
+                                )
+                            }
+                            kclvm_sema::ty::TypeKind::Module(_) => {
+                                let pkg = name;
+                                match scope_map.get(&pkg) {
+                                    Some(scope) => {
+                                        return resolve_var(
+                                            &names[1..],
+                                            pkgpath,
+                                            &scope.borrow(),
+                                            scope_map,
+                                        )
+                                    }
+                                    None => None,
+                                }
+                            }
+                            _ => None,
+                        }
+                    }
+                    None => {
+                        let pkg = name;
+                        match scope_map.get(&pkg) {
+                            Some(scope) => {
+                                resolve_var(&names[1..], pkgpath, &scope.borrow(), scope_map)
+                            }
+                            None => None,
+                        }
+                    }
+                }
+            } else {
+                match scope_map.get(pkgpath) {
+                    Some(scope) => {
+                        return resolve_var(&names[1..], pkgpath, &scope.borrow(), scope_map)
+                    }
+                    None => None,
+                }
+            }
+        }
     }
+}
 
-    res
+pub fn find_attr_in_schema(
+    schema_type: &SchemaType,
+    names: &[String],
+    pkgpath: &str,
+    // current_scope: &Scope,
+    scope_map: &IndexMap<String, Rc<RefCell<Scope>>>,
+) -> Option<ScopeObject> {
+    if schema_type.pkgpath.is_empty() {
+        match scope_map.get(MAIN_PKG) {
+            Some(main_scope) => {
+                for child in &main_scope.borrow().children {
+                    let child_scope = child.borrow();
+                    match &child_scope.kind {
+                        kclvm_sema::resolver::scope::ScopeKind::Schema(schema_name) => {
+                            if schema_name == &schema_type.name {
+                                return resolve_var(&names[1..], pkgpath, &child_scope, scope_map);
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                None
+            }
+            None => None,
+        }
+    } else {
+        match scope_map.get(&schema_type.pkgpath) {
+            Some(schema_pkg) => {
+                for child in &schema_pkg.borrow().children {
+                    let child_scope = child.borrow();
+                    match &child_scope.kind {
+                        kclvm_sema::resolver::scope::ScopeKind::Schema(schema_name) => {
+                            if schema_name == &schema_type.name {
+                                return resolve_var(&names, pkgpath, &child_scope, scope_map);
+                            }
+                        }
+                        _ => continue,
+                    }
+                }
+                None
+            }
+            None => None,
+        }
+    }
 }
 
 // Convert kcl position to GotoDefinitionResponse. This function will convert to
@@ -137,47 +297,6 @@ fn goto_def_for_import(
     positions = get_pos_from_real_path(&real_path);
 
     positions_to_goto_def_resp(&positions)
-}
-
-// Todo: fix ConfigExpr
-// ```kcl
-// schema Person:
-//     name: str
-//     data: Data
-
-// schema Data:
-//     id: int
-
-// person = Person {
-//     data.id = 1
-//     data: {
-//         id = 1
-//     }
-//     data: Data {
-//         id = 3
-//     }
-// }
-pub(crate) fn find_def_of_schema_attr(
-    schema_expr: SchemaExpr,
-    prog_scope: &ProgramScope,
-    attr_name: String,
-) -> Vec<ScopeObject> {
-    let schema_name = get_identifier_last_name(&schema_expr.name.node);
-    let mut res = vec![];
-    for scope in prog_scope.scope_map.values() {
-        let s = scope.borrow();
-        if let Some(scope) = s.search_child_scope_by_name(&schema_name) {
-            let s = scope.borrow();
-            if matches!(s.kind, kclvm_sema::resolver::scope::ScopeKind::Schema(_)) {
-                for (attr, obj) in &s.elems {
-                    if attr == &attr_name {
-                        res.push(obj.borrow().clone());
-                    }
-                }
-            }
-        }
-    }
-    res
 }
 
 pub(crate) fn get_identifier_last_name(id: &Identifier) -> String {

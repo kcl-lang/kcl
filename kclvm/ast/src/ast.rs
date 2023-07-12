@@ -81,6 +81,8 @@ impl Into<(Position, Position)> for Pos {
 
 /// Node is the file, line and column number information
 /// that all AST nodes need to contain.
+/// In fact, column and end_column are the index of character,
+/// e.g., `\t` is counted as 1 character instead of 4 col
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Node<T> {
     pub node: T,
