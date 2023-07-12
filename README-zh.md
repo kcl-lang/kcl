@@ -17,17 +17,18 @@
 
 ## 介绍
 
-Kusion 配置语言（KCL）是一个开源的基于约束的记录及函数语言。KCL 通过成熟的编程语言技术和实践来改进对大量繁杂配置比如云原生场景的编写，致力于构建围绕配置的更好的模块化、扩展性和稳定性，更简单的逻辑编写，以及更快的自动化集成和良好的生态延展性。
+KCL 是一个开源的基于约束的记录及函数语言并通过成熟的编程语言技术和实践来改进对大量繁杂配置比如云原生 Kubernetes 配置场景的编写，致力于构建围绕配置的更好的模块化、扩展性和稳定性，更简单的逻辑编写，以及更简单的自动化和生态工具集成。
 
 ## 场景
 
 您可以将 KCL 用于
 
 + [生成静态配置数据](https://kcl-lang.io/docs/user_docs/guides/configuration)如 JSON, YAML 等，或者[与已有的数据进行集成](https://kcl-lang.io/docs/user_docs/guides/data-integration)
-+ [使用 schema 对配置数据进行建模](https://kcl-lang.io/docs/user_docs/guides/schema-definition)并减少配置数据中的样板文件
-+ [为配置数据定义带有规则约束](https://kcl-lang.io/docs/user_docs/guides/validation)的 schema 并对数据进行自动验证
-+ [通过梯度自动化方案](https://kcl-lang.io/docs/user_docs/guides/automation)无副作用地组织、简化、统一和管理庞大的配置
++ [使用 Schema 对配置数据进行抽象建模](https://kcl-lang.io/docs/user_docs/guides/schema-definition)并减少配置数据中的样板文件
++ [为配置数据定义带有规则约束](https://kcl-lang.io/docs/user_docs/guides/validation)的 Schema 并对数据进行自动验证
++ [通过梯度自动化方案和 GitOps](https://kcl-lang.io/docs/user_docs/guides/automation)无副作用地组织、简化、统一和管理庞大的配置
 + 通过[分块编写配置数据](https://kcl-lang.io/docs/reference/lang/tour#config-operations)可扩展地管理庞大的配置
++ 通过与[云原生配置工具](https://kcl-lang.io/docs/user_docs/guides/working-with-k8s/)集成直接编辑或校验存量 Kubernetes 资源
 + 与 [Kusion Stack](https://kusionstack.io) 一起，用作平台工程语言来交付现代应用程序
 
 ## 特性
@@ -41,9 +42,11 @@ Kusion 配置语言（KCL）是一个开源的基于约束的记录及函数语�
 + **易自动化**：[CRUD APIs](https://kcl-lang.io/docs/reference/lang/tour/#kcl-cli-variable-override)，[多语言 SDK](https://kcl-lang.io/docs/reference/xlang-api/overview)，[语言插件](https://github.com/kcl-lang/kcl-plugin) 构成的梯度自动化方案
 + **极致性能**：使用 Rust & C，[LLVM](https://llvm.org/) 实现，支持编译到本地代码和 [WASM](https://webassembly.org/) 的高性能编译时和运行时
 + **API 亲和**：原生支持 [OpenAPI](https://github.com/kcl-lang/kcl-openapi)、 Kubernetes CRD， Kubernetes YAML 等 API 生态规范
-+ **开发友好**：[语言工具](https://kcl-lang.io/docs/tools/cli/kcl/) (Format，Lint，Test，Vet，Doc 等)、 [IDE 插件](https://github.com/kcl-lang/vscode-kcl) 构建良好的研发体验
++ **开发友好**：[语言工具](https://kcl-lang.io/docs/tools/cli/kcl/) (Format，Lint，Test，Vet，Doc 等)、[包管理工具](https://github.com/kcl-lang/kpm)和 [IDE 插件](https://github.com/kcl-lang/vscode-kcl) 构建良好的研发体验
 + **安全可控**：面向领域，不原生提供线程、IO 等系统级功能，低噪音，低安全风险，易维护，易治理
-+ **生态集成**：通过 [Kustomize KCL 插件](https://github.com/kcl-lang/kustomize-kcl), [Helm KCL 插件](https://github.com/kcl-lang/helm-kcl) 或者 [KPT KCL SDK](https://github.com/kcl-lang/kpt-kcl-sdk) 直接编辑或校验资源
++ **多语言 SDK**：[Go](https://github.com/kcl-lang/kcl-go)，[Python](https://github.com/kcl-lang/kcl-py) 和 [Java](https://github.com/kcl-lang/kcl-java) SDK 满足不同场景和应用使用需求
++ **生态集成**：通过 [Kubectl KCL 插件](https://github.com/kcl-lang/kubectl-kcl)、[Kustomize KCL 插件](https://github.com/kcl-lang/kustomize-kcl)、[Helm KCL 插件](https://github.com/kcl-lang/helm-kcl) 或者 [KPT KCL SDK](https://github.com/kcl-lang/kpt-kcl) 直接编辑或校验资源
+
 + **生产可用**：广泛应用在蚂蚁集团平台工程及自动化的生产环境实践中
 
 ## 如何选择
@@ -60,6 +63,8 @@ Kusion 配置语言（KCL）是一个开源的基于约束的记录及函数语�
 ## 安装
 
 从 Github releases 页面[下载](https://github.com/kcl-lang/kcl/releases)，并且将 `{install-location}/kclvm/bin` 添加到您的环境变量中
+
+> 有关安装的更多信息，请查看 KCL 官网的[安装指南](https://kcl-lang.io/docs/user_docs/getting-started/install/)
 
 ## 快速开始
 
@@ -118,6 +123,8 @@ spec:
         - containerPort: 80
 ```
 
+> 更多例子可以在[这里](https://github.com/kcl-lang/kcl-lang.io/tree/main/examples)找到
+
 ## 文档
 
 更多文档请访问[KCL 网站](https://kcl-lang.io/)
@@ -132,6 +139,6 @@ spec:
 
 参考[KCL 路线规划](https://github.com/kcl-lang/kcl/issues/29)
 
-## 开源社区
+## 社区
 
 欢迎访问 [社区](https://github.com/kcl-lang/community) 加入我们。
