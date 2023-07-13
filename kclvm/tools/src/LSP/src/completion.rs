@@ -13,6 +13,7 @@ use std::{fs, path::Path};
 
 use indexmap::IndexSet;
 use kclvm_ast::ast::{Expr, ImportStmt, Program, Stmt};
+use kclvm_compiler::pkgpath_without_prefix;
 use kclvm_config::modfile::KCL_FILE_EXTENSION;
 
 use kclvm_error::Position as KCLPos;
@@ -23,8 +24,8 @@ use kclvm_sema::resolver::scope::ProgramScope;
 use lsp_types::CompletionItem;
 
 use crate::goto_def::{get_identifier_last_name, resolve_var};
-use crate::util::fix_missing_identifier;
 use crate::util::inner_most_expr_in_stmt;
+use crate::util::{fix_missing_identifier, get_current_scope};
 
 /// Computes completions at the given position.
 pub(crate) fn completion(
@@ -127,7 +128,7 @@ fn get_completion_items(expr: &Expr, prog_scope: &ProgramScope) -> IndexSet<Stri
                     )
                 }
                 // user module
-                if let Some(scope) = prog_scope.scope_map.get(&id.pkgpath) {
+                if let Some(scope) = prog_scope.scope_map.get(&pkgpath_without_prefix!(id.pkgpath)) {
                     let scope = scope.borrow();
                     for (name, obj) in &scope.elems {
                         if obj.borrow().ty.is_module() {
@@ -138,21 +139,14 @@ fn get_completion_items(expr: &Expr, prog_scope: &ProgramScope) -> IndexSet<Stri
                 }
                 return items;
             }
-            let obj = if id.pkgpath.is_empty() {
-                resolve_var(
-                    &fix_missing_identifier(&id.names),
-                    &id.pkgpath,
-                    &prog_scope.main_scope().unwrap().borrow(),
-                    &prog_scope.scope_map,
-                )
-            } else {
-                resolve_var(
-                    &fix_missing_identifier(&id.names),
-                    &id.pkgpath,
-                    &prog_scope.scope_map.get(&id.pkgpath).unwrap().borrow(),
-                    &prog_scope.scope_map,
-                )
-            };
+
+            let obj = resolve_var(
+                &fix_missing_identifier(&id.names),
+                &id.pkgpath,
+                &get_current_scope(&id.pkgpath, &prog_scope.scope_map),
+                &prog_scope.scope_map,
+            );
+
             if let Some(obj) = obj {
                 match &obj.ty.kind {
                     // builtin (str) functions

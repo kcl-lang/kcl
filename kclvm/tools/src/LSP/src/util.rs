@@ -1,15 +1,20 @@
+use std::cell::RefCell;
 use std::path::PathBuf;
+use std::rc::Rc;
 use std::{fs, sync::Arc};
 
-use indexmap::IndexSet;
 use kclvm_ast::ast::{ConfigEntry, Expr, Identifier, Node, NodeRef, PosTuple, Program, Stmt, Type};
+use indexmap::{IndexMap, IndexSet};
 use kclvm_ast::pos::ContainsPos;
+use kclvm_ast::MAIN_PKG;
+use kclvm_compiler::pkgpath_without_prefix;
 use kclvm_config::modfile::KCL_FILE_EXTENSION;
 use kclvm_driver::kpm_metadata::fetch_metadata;
 use kclvm_driver::{get_kcl_files, lookup_compile_unit};
 use kclvm_error::Diagnostic;
 use kclvm_error::Position as KCLPos;
 use kclvm_parser::{load_program, ParseSession};
+use kclvm_sema::resolver::scope::Scope;
 use kclvm_sema::resolver::{resolve_program, scope::ProgramScope};
 use kclvm_utils::pkgpath::rm_external_pkg_name;
 use lsp_types::Url;
@@ -694,12 +699,12 @@ pub(crate) fn get_real_path_from_external(
 
 /// Error recovery may generate an Identifier with an empty string at the end, e.g.,
 /// a. => vec["a", ""].
-/// When analyzing in LSP,the empty string needs to be removed and find definition of the second last name("a").
+/// When analyzing in LSP, the empty string needs to be removed and find definition of the second last name("a").
 pub(crate) fn fix_missing_identifier(names: &[String]) -> Vec<String> {
     if names.len() >= 1 && names.last().unwrap() == "" {
-        return names[..names.len() - 1].to_vec();
+        names[..names.len() - 1].to_vec()
     } else {
-        return (names).to_vec();
+        names.to_vec()
     }
 }
 
@@ -727,9 +732,19 @@ pub(crate) fn pre_process_identifier(id: Node<Identifier>, pos: &KCLPos) -> Iden
     //     }
     // }
     // id.names = names;
-    if id.pkgpath.starts_with("@") {
-        id.pkgpath = id.pkgpath[1..].to_string();
-    }
+
+    id.pkgpath = pkgpath_without_prefix!(id.pkgpath);
 
     id
+}
+
+pub(crate) fn get_current_scope(
+    pkgpath: &String,
+    scope_map: &IndexMap<String, Rc<RefCell<Scope>>>,
+) -> Scope {
+    scope_map
+        .get(&pkgpath_without_prefix!(pkgpath))
+        .unwrap_or(scope_map.get(MAIN_PKG).unwrap())
+        .borrow()
+        .clone()
 }

@@ -9,9 +9,9 @@
 
 use indexmap::{IndexMap, IndexSet};
 use kclvm_ast::pos::GetPos;
-use kclvm_ast::MAIN_PKG;
 
 use kclvm_ast::ast::{Expr, Identifier, ImportStmt, Node, Program, Stmt};
+use kclvm_compiler::pkgpath_without_prefix;
 use kclvm_error::Position as KCLPos;
 
 use kclvm_sema::resolver::scope::{ProgramScope, Scope, ScopeObject};
@@ -24,8 +24,8 @@ use std::rc::Rc;
 
 use crate::to_lsp::lsp_pos;
 use crate::util::{
-    get_pos_from_real_path, get_real_path_from_external, inner_most_expr_in_stmt,
-    pre_process_identifier,
+    get_current_scope, get_pos_from_real_path, get_real_path_from_external,
+    inner_most_expr_in_stmt, pre_process_identifier,
 };
 
 // Navigates to the definition of an identifier.
@@ -41,9 +41,9 @@ pub(crate) fn goto_definition(
                 Some(obj) => {
                     let mut positions = IndexSet::new();
                     positions.insert((obj.start.clone(), obj.end.clone()));
-                    return positions_to_goto_def_resp(&positions);
+                    positions_to_goto_def_resp(&positions)
                 }
-                None => return None,
+                None => None,
             },
         },
         None => None,
@@ -89,37 +89,25 @@ pub(crate) fn find_def(
             );
             let id = pre_process_identifier(id_node, kcl_pos);
             match parent {
-                Some(schema_expr_node) => match schema_expr_node.node {
-                    // find_schema_attr
-                    Expr::Schema(schema_expr) => {
+                Some(schema_expr_node) => {
+                    if let Expr::Schema(schema_expr) = schema_expr_node.node {
                         let schema_obj = find_def(node, &schema_expr.name.get_pos(), prog_scope);
-                        match schema_obj {
-                            Some(schema) => match &schema.ty.kind {
-                                kclvm_sema::ty::TypeKind::Schema(schema_type) => {
-                                    return find_attr_in_schema(
-                                        &schema_type,
-                                        &id.names,
-                                        &id.pkgpath,
-                                        &prog_scope.scope_map,
-                                    )
-                                }
-                                _ => {}
-                            },
-                            None => {}
+                        if let Some(schema) = schema_obj {
+                            let schema_type = schema.ty.into_schema_type();
+                            return find_attr_in_schema(
+                                &schema_type,
+                                &id.names,
+                                &id.pkgpath,
+                                &prog_scope.scope_map,
+                            );
                         }
                     }
-                    _ => {}
-                },
+                }
                 None => {
-                    let current_scope = if id.pkgpath.is_empty() {
-                        prog_scope.main_scope().unwrap().borrow()
-                    } else {
-                        prog_scope.scope_map.get(&id.pkgpath).unwrap().borrow()
-                    };
                     return resolve_var(
                         &id.names,
                         &id.pkgpath,
-                        &current_scope,
+                        &get_current_scope(&id.pkgpath, &prog_scope.scope_map),
                         &prog_scope.scope_map,
                     );
                 }
@@ -129,7 +117,7 @@ pub(crate) fn find_def(
     None
 }
 
-/// Similar to vars.rs/reesolver_var, find a ScopeObj corresponding to the definition of identifier
+/// Similar to vars.rs/resolver_var, find a ScopeObj corresponding to the definition of identifier
 pub(crate) fn resolve_var(
     names: &[String],
     pkgpath: &str,
@@ -156,13 +144,12 @@ pub(crate) fn resolve_var(
                                     schema_type,
                                     &names[1..],
                                     pkgpath,
-                                    // current_scope,
                                     scope_map,
                                 )
                             }
                             kclvm_sema::ty::TypeKind::Module(_) => {
                                 let pkg = name;
-                                match scope_map.get(&pkg) {
+                                match scope_map.get(&pkgpath_without_prefix!(pkg)) {
                                     Some(scope) => {
                                         return resolve_var(
                                             &names[1..],
@@ -179,7 +166,7 @@ pub(crate) fn resolve_var(
                     }
                     None => {
                         let pkg = name;
-                        match scope_map.get(&pkg) {
+                        match scope_map.get(&pkgpath_without_prefix!(pkg)) {
                             Some(scope) => {
                                 resolve_var(&names[1..], pkgpath, &scope.borrow(), scope_map)
                             }
@@ -188,10 +175,8 @@ pub(crate) fn resolve_var(
                     }
                 }
             } else {
-                match scope_map.get(pkgpath) {
-                    Some(scope) => {
-                        return resolve_var(&names[1..], pkgpath, &scope.borrow(), scope_map)
-                    }
+                match scope_map.get(&pkgpath_without_prefix!(pkgpath)) {
+                    Some(scope) => resolve_var(&names[1..], pkgpath, &scope.borrow(), scope_map),
                     None => None,
                 }
             }
@@ -203,46 +188,21 @@ pub fn find_attr_in_schema(
     schema_type: &SchemaType,
     names: &[String],
     pkgpath: &str,
-    // current_scope: &Scope,
     scope_map: &IndexMap<String, Rc<RefCell<Scope>>>,
 ) -> Option<ScopeObject> {
-    if schema_type.pkgpath.is_empty() {
-        match scope_map.get(MAIN_PKG) {
-            Some(main_scope) => {
-                for child in &main_scope.borrow().children {
-                    let child_scope = child.borrow();
-                    match &child_scope.kind {
-                        kclvm_sema::resolver::scope::ScopeKind::Schema(schema_name) => {
-                            if schema_name == &schema_type.name {
-                                return resolve_var(&names[1..], pkgpath, &child_scope, scope_map);
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-                None
+    let schema_pkg_scope = get_current_scope(&schema_type.pkgpath, scope_map);
+    let names = if schema_type.pkgpath.is_empty() {&names[1..] } else {names};
+    for child in &schema_pkg_scope.children {
+        let child_scope = child.borrow();
+        if let kclvm_sema::resolver::scope::ScopeKind::Schema(schema_name) =
+            &child_scope.kind
+        {
+            if schema_name == &schema_type.name {
+                return resolve_var(&names, pkgpath, &child_scope, scope_map);
             }
-            None => None,
-        }
-    } else {
-        match scope_map.get(&schema_type.pkgpath) {
-            Some(schema_pkg) => {
-                for child in &schema_pkg.borrow().children {
-                    let child_scope = child.borrow();
-                    match &child_scope.kind {
-                        kclvm_sema::resolver::scope::ScopeKind::Schema(schema_name) => {
-                            if schema_name == &schema_type.name {
-                                return resolve_var(&names, pkgpath, &child_scope, scope_map);
-                            }
-                        }
-                        _ => continue,
-                    }
-                }
-                None
-            }
-            None => None,
         }
     }
+    None
 }
 
 // Convert kcl position to GotoDefinitionResponse. This function will convert to
