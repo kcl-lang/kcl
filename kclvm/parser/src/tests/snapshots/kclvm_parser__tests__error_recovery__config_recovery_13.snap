@@ -1,6 +1,5 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 71
 expression: "crate::tests::parsing_expr_string(\"{if True: key: {}}\")"
 ---
 Node {
@@ -33,7 +32,14 @@ Node {
                                                         node: Identifier(
                                                             Identifier {
                                                                 names: [
-                                                                    "key",
+                                                                    Node {
+                                                                        node: "key",
+                                                                        filename: "",
+                                                                        line: 1,
+                                                                        column: 10,
+                                                                        end_line: 1,
+                                                                        end_column: 13,
+                                                                    },
                                                                 ],
                                                                 pkgpath: "",
                                                                 ctx: Load,

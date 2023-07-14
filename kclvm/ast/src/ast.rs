@@ -492,7 +492,7 @@ impl SchemaStmt {
                         attr_list.push((
                             unification_stmt.target.line,
                             unification_stmt.target.column,
-                            unification_stmt.target.node.names[0].to_string(),
+                            unification_stmt.target.node.names[0].node.to_string(),
                         ));
                     }
                     Stmt::Assign(assign_stmt) => {
@@ -501,7 +501,7 @@ impl SchemaStmt {
                                 attr_list.push((
                                     target.line,
                                     target.column,
-                                    target.node.names[0].to_string(),
+                                    target.node.names[0].node.to_string(),
                                 ));
                             }
                         }
@@ -511,7 +511,7 @@ impl SchemaStmt {
                             attr_list.push((
                                 aug_assign_stmt.target.line,
                                 aug_assign_stmt.target.column,
-                                aug_assign_stmt.target.node.names[0].to_string(),
+                                aug_assign_stmt.target.node.names[0].node.to_string(),
                             ));
                         }
                     }
@@ -642,14 +642,21 @@ pub enum Expr {
 /// ```
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Identifier {
-    pub names: Vec<String>,
+    pub names: Vec<Node<String>>,
     pub pkgpath: String,
     pub ctx: ExprContext,
 }
 
 impl Identifier {
     pub fn get_name(&self) -> String {
-        self.names.join(".")
+        self.get_names().join(".")
+    }
+
+    pub fn get_names(&self) -> Vec<String> {
+        self.names
+            .iter()
+            .map(|node| node.node.clone())
+            .collect::<Vec<String>>()
     }
 }
 
@@ -1512,7 +1519,7 @@ impl ToString for Type {
             match typ {
                 Type::Any => w.push_str("any"),
                 Type::Named(x) => {
-                    w.push_str(&x.names.join("."));
+                    w.push_str(&x.get_name());
                 }
                 Type::Basic(x) => {
                     w.push_str(match x {

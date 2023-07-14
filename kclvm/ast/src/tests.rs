@@ -5,7 +5,7 @@ use crate::{ast, ast::*};
 /// Construct an AssignStmt node with assign_value as value
 fn build_assign_node(attr_name: &str, assign_value: NodeRef<Expr>) -> NodeRef<Stmt> {
     let iden = node_ref!(Identifier {
-        names: vec![attr_name.to_string()],
+        names: vec![Node::dummy_node(attr_name.to_string())],
         pkgpath: String::new(),
         ctx: ExprContext::Store
     });
@@ -28,7 +28,7 @@ fn get_dummy_assign_ast() -> ast::Node<ast::AssignStmt> {
         ast::AssignStmt {
             targets: vec![Box::new(ast::Node::new(
                 ast::Identifier {
-                    names: vec![String::from("a")],
+                    names: vec![Node::dummy_node(String::from("a"))],
                     pkgpath: String::from(filename),
                     ctx: ast::ExprContext::Load,
                 },
@@ -71,7 +71,7 @@ fn get_dummy_assign_binary_ast() -> ast::Node<ast::AssignStmt> {
         ast::AssignStmt {
             targets: vec![Box::new(ast::Node::new(
                 ast::Identifier {
-                    names: vec![String::from("a")],
+                    names: vec![Node::dummy_node(String::from("a"))],
                     pkgpath: String::from(filename),
                     ctx: ast::ExprContext::Load,
                 },
@@ -86,7 +86,7 @@ fn get_dummy_assign_binary_ast() -> ast::Node<ast::AssignStmt> {
                     op: ast::BinOrCmpOp::Bin(ast::BinOp::Add),
                     left: Box::new(ast::Node::new(
                         ast::Expr::Identifier(ast::Identifier {
-                            names: vec![String::from("a")],
+                            names: vec![Node::dummy_node(String::from("a"))],
                             pkgpath: String::from(filename),
                             ctx: ast::ExprContext::Load,
                         }),
@@ -98,7 +98,7 @@ fn get_dummy_assign_binary_ast() -> ast::Node<ast::AssignStmt> {
                     )),
                     right: Box::new(ast::Node::new(
                         ast::Expr::Identifier(ast::Identifier {
-                            names: vec![String::from("a")],
+                            names: vec![Node::dummy_node(String::from("a"))],
                             pkgpath: String::from(filename),
                             ctx: ast::ExprContext::Load,
                         }),
@@ -147,15 +147,15 @@ fn test_mut_walker() {
     pub struct VarMutSelfMutWalker;
     impl<'ctx> MutSelfMutWalker<'ctx> for VarMutSelfMutWalker {
         fn walk_identifier(&mut self, identifier: &'ctx mut ast::Identifier) {
-            if identifier.names[0] == "a" {
+            if identifier.names[0].node == "a" {
                 let id_mut = identifier.names.get_mut(0).unwrap();
-                *id_mut = "x".to_string();
+                id_mut.node = "x".to_string();
             }
         }
     }
     let mut assign_stmt = get_dummy_assign_ast();
     VarMutSelfMutWalker {}.walk_assign_stmt(&mut assign_stmt.node);
-    assert_eq!(assign_stmt.node.targets[0].node.names[0], "x")
+    assert_eq!(assign_stmt.node.targets[0].node.names[0].node, "x")
 }
 
 #[test]
@@ -235,7 +235,10 @@ fn test_filter_schema_with_mult_schema() {
 #[test]
 fn test_build_assign_stmt() {
     let test_expr = node_ref!(ast::Expr::Identifier(Identifier {
-        names: vec!["name1".to_string(), "name2".to_string()],
+        names: vec![
+            Node::dummy_node("name1".to_string()),
+            Node::dummy_node("name2".to_string())
+        ],
         pkgpath: "test".to_string(),
         ctx: ast::ExprContext::Load
     }));
@@ -244,8 +247,8 @@ fn test_build_assign_stmt() {
     if let ast::Stmt::Assign(ref assign) = assgin_stmt.node {
         if let ast::Expr::Identifier(ref iden) = &assign.value.node {
             assert_eq!(iden.names.len(), 2);
-            assert_eq!(iden.names[0], "name1".to_string());
-            assert_eq!(iden.names[1], "name2".to_string());
+            assert_eq!(iden.names[0].node, "name1".to_string());
+            assert_eq!(iden.names[1].node, "name2".to_string());
             assert_eq!(iden.pkgpath, "test".to_string());
             match iden.ctx {
                 ast::ExprContext::Load => {}

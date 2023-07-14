@@ -1,6 +1,5 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 180
 expression: "crate::tests::parsing_module_string(r#\"if else\"#)"
 ---
 Module {
@@ -41,7 +40,14 @@ Module {
                         node: Identifier(
                             Identifier {
                                 names: [
-                                    "else",
+                                    Node {
+                                        node: "else",
+                                        filename: "",
+                                        line: 1,
+                                        column: 3,
+                                        end_line: 1,
+                                        end_column: 7,
+                                    },
                                 ],
                                 pkgpath: "",
                                 ctx: Load,

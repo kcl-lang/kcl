@@ -72,7 +72,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         for stmt in body {
             match &stmt.node {
                 ast::Stmt::Unification(unification_stmt) => {
-                    let name = &unification_stmt.target.node.names[0];
+                    let name = &unification_stmt.target.node.names[0].node;
                     self.dict_merge(schema_value, name, value, 0, -1);
                     if is_in_if {
                         in_if_names.push(name.to_string());
@@ -82,7 +82,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 }
                 ast::Stmt::Assign(assign_stmt) => {
                     for target in &assign_stmt.targets {
-                        let name = &target.node.names[0];
+                        let name = &target.node.names[0].node;
                         self.dict_merge(schema_value, name, value, 0, -1);
                         if is_in_if {
                             in_if_names.push(name.to_string());
@@ -93,7 +93,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 }
                 ast::Stmt::AugAssign(aug_assign_stmt) => {
                     let target = &aug_assign_stmt.target;
-                    let name = &target.node.names[0];
+                    let name = &target.node.names[0].node;
                     self.dict_merge(schema_value, name, value, 0, -1);
                     if is_in_if {
                         in_if_names.push(name.to_string());
@@ -173,7 +173,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         for item in &t.items {
             if let Some(key) = &item.node.key {
                 let name = match &key.node {
-                    ast::Expr::Identifier(t) => t.names[0].clone(),
+                    ast::Expr::Identifier(t) => t.names[0].node.clone(),
                     ast::Expr::NumberLit(t) => match t.value {
                         ast::NumberLitValue::Int(i) => i.to_string(),
                         ast::NumberLitValue::Float(f) => f.to_string(),

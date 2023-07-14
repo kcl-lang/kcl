@@ -114,7 +114,7 @@ impl ConfigMergeTransformer {
                         ast::Stmt::Unification(unification_stmt)
                             if !unification_stmt.target.node.names.is_empty() =>
                         {
-                            let name = &unification_stmt.target.node.names[0];
+                            let name = &unification_stmt.target.node.names[0].node;
                             match name_declaration_mapping.get_mut(name) {
                                 Some(declarations) => declarations.push((
                                     module.filename.to_string(),
@@ -139,7 +139,7 @@ impl ConfigMergeTransformer {
                             if let ast::Expr::Schema(_) = assign_stmt.value.node {
                                 for target in &assign_stmt.targets {
                                     if target.node.names.len() == 1 {
-                                        let name = &target.node.names[0];
+                                        let name = &target.node.names[0].node;
                                         match name_declaration_mapping.get_mut(name) {
                                             Some(declarations) => {
                                                 // A hidden var is mutable.

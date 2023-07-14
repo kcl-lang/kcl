@@ -2,7 +2,7 @@ use std::path::PathBuf;
 use std::{fs, sync::Arc};
 
 use indexmap::IndexSet;
-use kclvm_ast::ast::{ConfigEntry, Expr, Identifier, Node, NodeRef, Program, Stmt, Type};
+use kclvm_ast::ast::{ConfigEntry, Expr, Identifier, Node, NodeRef, PosTuple, Program, Stmt, Type};
 use kclvm_ast::pos::ContainsPos;
 use kclvm_config::modfile::KCL_FILE_EXTENSION;
 use kclvm_driver::kpm_metadata::fetch_metadata;
@@ -162,6 +162,19 @@ macro_rules! walk_list_if_contains {
     };
 }
 
+fn transfer_ident_names(names: Vec<String>, pos: &PosTuple) -> Vec<Node<String>> {
+    let mut new_names = vec![];
+    let mut col = pos.2;
+    for name in &names {
+        let mut name_pos = pos.clone();
+        name_pos.2 = col;
+        name_pos.4 = col + name.len() as u64;
+        new_names.push(Node::node_with_pos(name.clone(), name_pos));
+        col = col + name.len() as u64 + ".".len() as u64;
+    }
+    new_names
+}
+
 /// Recursively finds the inner most expr and its schema_def expr if in a schema expr(e.g., schema_attr and schema_expr)
 /// in a stmt according to the position.
 pub(crate) fn inner_most_expr_in_stmt(
@@ -176,7 +189,16 @@ pub(crate) fn inner_most_expr_in_stmt(
                 return (
                     Some(Node::node_with_pos(
                         Expr::Identifier(Identifier {
-                            names: vec![ty.node.clone()],
+                            names: transfer_ident_names(
+                                vec![ty.node.clone()],
+                                &(
+                                    ty.filename.clone(),
+                                    ty.line,
+                                    ty.column,
+                                    ty.end_line,
+                                    ty.end_column,
+                                ),
+                            ),
                             pkgpath: "".to_string(),
                             ctx: kclvm_ast::ast::ExprContext::Load,
                         }),
@@ -257,7 +279,16 @@ pub(crate) fn inner_most_expr_in_stmt(
             walk_if_contains!(
                 Node::node_with_pos(
                     Expr::Identifier(Identifier {
-                        names: vec![schema_stmt.name.node.clone()],
+                        names: transfer_ident_names(
+                            vec![schema_stmt.name.node.clone()],
+                            &(
+                                schema_stmt.name.filename.clone(),
+                                schema_stmt.name.line,
+                                schema_stmt.name.column,
+                                schema_stmt.name.end_line,
+                                schema_stmt.name.end_column,
+                            ),
+                        ),
                         pkgpath: "".to_string(),
                         ctx: kclvm_ast::ast::ExprContext::Load,
                     }),
@@ -522,7 +553,16 @@ fn inner_most_expr_in_config_entry(
 fn build_identifier_from_string(s: &NodeRef<String>) -> Node<Expr> {
     Node::node_with_pos(
         Expr::Identifier(Identifier {
-            names: vec![s.node.clone()],
+            names: transfer_ident_names(
+                vec![s.node.clone()],
+                &(
+                    s.filename.clone(),
+                    s.line,
+                    s.column,
+                    s.end_line,
+                    s.end_column,
+                ),
+            ),
             pkgpath: "".to_string(),
             ctx: kclvm_ast::ast::ExprContext::Load,
         }),

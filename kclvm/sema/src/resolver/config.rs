@@ -124,12 +124,12 @@ impl<'ctx> Resolver<'ctx> {
         match key {
             Some(key) => {
                 let names: Vec<String> = match &key.node {
-                    ast::Expr::Identifier(identifier) => identifier.names.clone(),
+                    ast::Expr::Identifier(identifier) => identifier.get_names(),
                     ast::Expr::Subscript(subscript) => {
                         if let ast::Expr::Identifier(identifier) = &subscript.value.node {
                             if let Some(index) = &subscript.index {
                                 if matches!(index.node, ast::Expr::NumberLit(_)) {
-                                    identifier.names.clone()
+                                    identifier.get_names()
                                 } else {
                                     return SwitchConfigContextState::KeepConfigUnchanged as usize;
                                 }
@@ -267,13 +267,13 @@ impl<'ctx> Resolver<'ctx> {
             if let Some(Some(_)) = self.ctx.config_expr_context.last() {
                 let mut has_index = false;
                 let names: Vec<String> = match &key.node {
-                    ast::Expr::Identifier(identifier) => identifier.names.clone(),
+                    ast::Expr::Identifier(identifier) => identifier.get_names(),
                     ast::Expr::Subscript(subscript) => {
                         if let ast::Expr::Identifier(identifier) = &subscript.value.node {
                             if let Some(index) = &subscript.index {
                                 if matches!(index.node, ast::Expr::NumberLit(_)) {
                                     has_index = true;
-                                    identifier.names.clone()
+                                    identifier.get_names()
                                 } else {
                                     return;
                                 }
@@ -406,7 +406,7 @@ impl<'ctx> Resolver<'ctx> {
                             val_ty = Type::dict_ref(self.str_ty(), val_ty.clone());
                         }
                         let key_ty = if identifier.names.len() == 1 {
-                            let name = &identifier.names[0];
+                            let name = &identifier.names[0].node;
                             let key_ty = if self.ctx.local_vars.contains(name) {
                                 self.expr(key)
                             } else {

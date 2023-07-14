@@ -46,7 +46,14 @@ Module {
                             node: Identifier(
                                 Identifier {
                                     names: [
-                                        "a",
+                                        Node {
+                                            node: "a",
+                                            filename: "",
+                                            line: 2,
+                                            column: 0,
+                                            end_line: 2,
+                                            end_column: 1,
+                                        },
                                     ],
                                     pkgpath: "",
                                     ctx: Load,
@@ -145,7 +152,14 @@ Module {
                             node: Identifier(
                                 Identifier {
                                     names: [
-                                        "int",
+                                        Node {
+                                            node: "int",
+                                            filename: "",
+                                            line: 2,
+                                            column: 5,
+                                            end_line: 2,
+                                            end_column: 8,
+                                        },
                                     ],
                                     pkgpath: "",
                                     ctx: Load,

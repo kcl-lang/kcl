@@ -328,7 +328,13 @@ impl<'a> Parser<'a> {
             _ => {
                 let attr = Box::new(Node::node(
                     Identifier {
-                        names: vec!["".to_string()],
+                        names: vec![Node::node(
+                            "".to_string(),
+                            (
+                                self.sess.lookup_char_pos(self.token.span.lo()),
+                                self.sess.lookup_char_pos(self.token.span.lo()),
+                            ),
+                        )],
                         pkgpath: "".to_string(),
                         ctx: ExprContext::Load,
                     },
@@ -2117,18 +2123,27 @@ impl<'a> Parser<'a> {
 
     pub(crate) fn parse_identifier(&mut self) -> NodeRef<Identifier> {
         let token = self.token;
-        let mut names = Vec::new();
+        let mut names: Vec<Node<String>> = Vec::new();
         let ident = self.token.ident();
         match ident {
             Some(id) => {
-                names.push(id.as_str());
+                names.push(Node::node(
+                    id.as_str(),
+                    self.sess.struct_token_loc(self.token, self.token),
+                ));
                 self.bump();
             }
             None => {
                 {
                     self.sess
                         .struct_token_error(&[TokenKind::ident_value()], self.token);
-                    names.push("".to_string());
+                    names.push(Node::node(
+                        "".to_string(),
+                        (
+                            self.sess.lookup_char_pos(self.token.span.lo()),
+                            self.sess.lookup_char_pos(self.token.span.lo()),
+                        ),
+                    ));
                     return Box::new(Node::node(
                         Identifier {
                             names,
@@ -2152,13 +2167,22 @@ impl<'a> Parser<'a> {
                     let ident = self.token.ident();
                     match ident {
                         Some(id) => {
-                            names.push(id.as_str().to_string());
+                            names.push(Node::node(
+                                id.as_str(),
+                                self.sess.struct_token_loc(self.token, self.token),
+                            ));
                             self.bump();
                         }
                         None => {
                             self.sess
                                 .struct_token_error(&[TokenKind::ident_value()], self.token);
-                            names.push("".to_string())
+                            names.push(Node::node(
+                                "".to_string(),
+                                (
+                                    self.sess.lookup_char_pos(self.token.span.lo()),
+                                    self.sess.lookup_char_pos(self.token.span.lo()),
+                                ),
+                            ))
                         }
                     }
                 }

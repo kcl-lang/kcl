@@ -161,7 +161,7 @@ impl ExprGenerator<serde_yaml::Value> for ExprBuilder {
                 match schema_name {
                     Some(s_name) => {
                         let iden = node_ref!(Identifier {
-                            names: vec![s_name.to_string()],
+                            names: vec![Node::dummy_node(s_name.to_string())],
                             pkgpath: String::new(),
                             ctx: ExprContext::Load
                         });
@@ -289,7 +289,7 @@ impl ExprGenerator<serde_json::Value> for ExprBuilder {
                 match schema_name {
                     Some(s_name) => {
                         let iden = node_ref!(Identifier {
-                            names: vec![s_name.to_string()],
+                            names: vec![Node::dummy_node(s_name.to_string())],
                             pkgpath: String::new(),
                             ctx: ExprContext::Load
                         });

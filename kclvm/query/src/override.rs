@@ -112,7 +112,10 @@ pub fn apply_override_on_module(
     let field = ss[1..].join(".");
     let value = &o.field_value;
     let key = ast::Identifier {
-        names: field.split('.').map(|s| s.to_string()).collect(),
+        names: field
+            .split('.')
+            .map(|s| ast::Node::dummy_node(s.to_string()))
+            .collect(),
         ctx: ast::ExprContext::Store,
         pkgpath: "".to_string(),
     };
@@ -243,7 +246,7 @@ impl<'ctx> MutSelfMutWalker<'ctx> for OverrideTransformer {
                 unification_stmt.target.node.names
             ),
         };
-        if name != &self.target_id {
+        if name.node != self.target_id {
             return;
         }
         self.override_target_count = 1;
@@ -258,7 +261,7 @@ impl<'ctx> MutSelfMutWalker<'ctx> for OverrideTransformer {
                 if target.node.names.len() != 1 {
                     continue;
                 }
-                if target.node.names[0] != self.target_id {
+                if target.node.names[0].node != self.target_id {
                     continue;
                 }
                 self.override_target_count += 1;
@@ -397,7 +400,10 @@ impl OverrideTransformer {
         } else if let ast::OverrideAction::CreateOrUpdate = self.action {
             if !changed {
                 let key = ast::Identifier {
-                    names: parts.iter().map(|s| s.to_string()).collect(),
+                    names: parts
+                        .iter()
+                        .map(|s| ast::Node::dummy_node(s.to_string()))
+                        .collect(),
                     ctx: ast::ExprContext::Store,
                     pkgpath: "".to_string(),
                 };

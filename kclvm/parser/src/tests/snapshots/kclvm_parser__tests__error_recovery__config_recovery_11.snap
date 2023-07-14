@@ -1,6 +1,5 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 69
 expression: "crate::tests::parsing_expr_string(\"{if True: a = , b = 2}\")"
 ---
 Node {
@@ -33,7 +32,14 @@ Node {
                                                         node: Identifier(
                                                             Identifier {
                                                                 names: [
-                                                                    "a",
+                                                                    Node {
+                                                                        node: "a",
+                                                                        filename: "",
+                                                                        line: 1,
+                                                                        column: 10,
+                                                                        end_line: 1,
+                                                                        end_column: 11,
+                                                                    },
                                                                 ],
                                                                 pkgpath: "",
                                                                 ctx: Load,
@@ -91,7 +97,14 @@ Node {
                                 node: Identifier(
                                     Identifier {
                                         names: [
-                                            "b",
+                                            Node {
+                                                node: "b",
+                                                filename: "",
+                                                line: 1,
+                                                column: 16,
+                                                end_line: 1,
+                                                end_column: 17,
+                                            },
                                         ],
                                         pkgpath: "",
                                         ctx: Load,

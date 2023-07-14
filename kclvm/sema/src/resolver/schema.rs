@@ -165,7 +165,7 @@ impl<'ctx> Resolver<'ctx> {
         for decorator in decorators {
             let name = if let ast::Expr::Identifier(identifier) = &decorator.node.func.node {
                 if identifier.names.len() == 1 {
-                    Some(identifier.names[0].clone())
+                    Some(identifier.names[0].node.clone())
                 } else {
                     None
                 }

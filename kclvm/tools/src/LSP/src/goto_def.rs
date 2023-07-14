@@ -183,13 +183,13 @@ pub(crate) fn find_def_of_schema_attr(
 pub(crate) fn get_identifier_last_name(id: &Identifier) -> String {
     match id.names.len() {
         0 => "".to_string(),
-        1 => id.names[0].clone(),
+        1 => id.names[0].node.clone(),
         _ => {
-            if id.names.last().unwrap().clone() == *"" {
+            if id.names.last().unwrap().node == *"" {
                 // MissingExpr
-                id.names.get(id.names.len() - 2).unwrap().clone()
+                id.names.get(id.names.len() - 2).unwrap().node.clone()
             } else {
-                id.names.last().unwrap().clone()
+                id.names.last().unwrap().node.clone()
             }
         }
     }

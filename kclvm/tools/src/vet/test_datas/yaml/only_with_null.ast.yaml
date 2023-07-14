@@ -2,7 +2,12 @@ node: !Schema
   name:
     node:
       names:
-      - only_with_null
+      - node: only_with_null
+        filename: ''
+        line: 1
+        column: 1
+        end_line: 1
+        end_column: 1
       pkgpath: ''
       ctx: Load
     filename: ''

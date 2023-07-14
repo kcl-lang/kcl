@@ -220,7 +220,7 @@ impl<'ctx> Resolver<'ctx> {
                     .add_compile_error("missing target in the assign statement", target.get_pos());
                 continue;
             }
-            let name = &target.node.names[0];
+            let name = &target.node.names[0].node;
             let (start, end) = target.get_span_pos();
             if self.contains_object(name) && !is_private_field(name) && unique_check {
                 self.handler.add_error(
@@ -315,7 +315,7 @@ impl<'ctx> Resolver<'ctx> {
         if target.node.names.is_empty() {
             return;
         }
-        let name = &target.node.names[0];
+        let name = &target.node.names[0].node;
         let (start, end) = target.get_span_pos();
         if self.contains_object(name) && !is_private_field(name) && unique_check {
             self.handler.add_error(
@@ -683,7 +683,7 @@ impl<'ctx> Resolver<'ctx> {
         // Mixin types
         let mut mixin_types: Vec<SchemaType> = vec![];
         for mixin in &schema_stmt.mixins {
-            let mixin_names = &mixin.node.names;
+            let mixin_names = &mixin.node.get_names();
             if !mixin_names[mixin_names.len() - 1].ends_with(MIXIN_SUFFIX) {
                 self.handler.add_error(
                     ErrorKind::NameError,
