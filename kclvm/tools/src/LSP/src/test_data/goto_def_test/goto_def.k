@@ -23,8 +23,11 @@ schema Person:
 
 p2 = Person {
     n: Name{
-        name: "a"
+        name: pkg.m.name
     }
 }
 
 s = p2.n.name
+
+a: int = 1
+

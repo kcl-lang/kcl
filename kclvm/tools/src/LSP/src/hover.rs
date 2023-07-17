@@ -16,17 +16,19 @@ pub(crate) fn hover(
     match program.pos_to_stmt(kcl_pos) {
         Some(node) => {
             let mut docs: IndexSet<String> = IndexSet::new();
-            if let Some(obj) = find_def(node, kcl_pos, prog_scope) {
-                match obj.kind {
-                    ScopeObjectKind::Definition => {
-                        docs.insert(obj.ty.ty_str());
-                        let doc = obj.ty.into_schema_type().doc.clone();
-                        if !doc.is_empty() {
-                            docs.insert(doc);
+            if let Some(def) = find_def(node, kcl_pos, prog_scope) {
+                if let crate::goto_def::Definition::Object(obj) = def {
+                    match obj.kind {
+                        ScopeObjectKind::Definition => {
+                            docs.insert(obj.ty.ty_str());
+                            let doc = obj.ty.into_schema_type().doc.clone();
+                            if !doc.is_empty() {
+                                docs.insert(doc);
+                            }
                         }
-                    }
-                    _ => {
-                        docs.insert(obj.ty.ty_str());
+                        _ => {
+                            docs.insert(obj.ty.ty_str());
+                        }
                     }
                 }
             }

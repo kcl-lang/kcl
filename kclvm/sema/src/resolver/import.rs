@@ -222,9 +222,6 @@ impl<'ctx> Resolver<'ctx> {
         self.ctx.pkgpath = pkgpath.to_string();
         self.ctx.filename = filename.to_string();
         let scope = self.scope_map.get(pkgpath).unwrap().clone();
-        if let ScopeKind::Package(files) = &mut scope.borrow_mut().kind {
-            files.push(filename.to_string())
-        }
         self.scope = scope;
     }
 }

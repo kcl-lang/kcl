@@ -4,3 +4,7 @@ schema Person:
     """
     name: str
     age: int
+
+m : {str: str} = {
+    name: "a"
+}

@@ -3,8 +3,8 @@ use std::path::PathBuf;
 use std::rc::Rc;
 use std::{fs, sync::Arc};
 
-use kclvm_ast::ast::{ConfigEntry, Expr, Identifier, Node, NodeRef, PosTuple, Program, Stmt, Type};
 use indexmap::{IndexMap, IndexSet};
+use kclvm_ast::ast::{ConfigEntry, Expr, Identifier, Node, NodeRef, PosTuple, Program, Stmt, Type};
 use kclvm_ast::pos::ContainsPos;
 use kclvm_ast::MAIN_PKG;
 use kclvm_compiler::pkgpath_without_prefix;
@@ -700,8 +700,8 @@ pub(crate) fn get_real_path_from_external(
 /// Error recovery may generate an Identifier with an empty string at the end, e.g.,
 /// a. => vec["a", ""].
 /// When analyzing in LSP, the empty string needs to be removed and find definition of the second last name("a").
-pub(crate) fn fix_missing_identifier(names: &[String]) -> Vec<String> {
-    if names.len() >= 1 && names.last().unwrap() == "" {
+pub(crate) fn fix_missing_identifier(names: &[Node<String>]) -> Vec<Node<String>> {
+    if names.len() >= 1 && names.last().unwrap().node == "" {
         names[..names.len() - 1].to_vec()
     } else {
         names.to_vec()
@@ -709,36 +709,26 @@ pub(crate) fn fix_missing_identifier(names: &[String]) -> Vec<String> {
 }
 
 pub(crate) fn pre_process_identifier(id: Node<Identifier>, pos: &KCLPos) -> Identifier {
-    if !id.contains_pos(pos) {
+    if !id.contains_pos(pos) && id.node.names.is_empty() {
         return id.node.clone();
     }
 
     let mut id = id.node.clone();
-    // todo: fix import path replace
-    // ```KCL
-    // import a.b.c
-    // e = c.d
-    // ```
-    // c.d => names:["@a.b.c", "d"]  pkg: "@a.b.c"
-
-    // let mut start_col = id.column;
-    // let mut names = vec![];
-
-    // for name in id.names {
-    //     start_col = start_col + name.len() as u64 + 1;
-    //     names.push(name);
-    //     if start_col > pos.column.unwrap() {
-    //         break;
-    //     }
-    // }
-    // id.names = names;
-
-    id.pkgpath = pkgpath_without_prefix!(id.pkgpath);
-
+    let mut names = vec![];
+    for name in id.names {
+        names.push(name.clone());
+        if name.contains_pos(pos) {
+            break;
+        }
+    }
+    id.names = names;
+    if !id.pkgpath.is_empty() {
+        id.names[0].node = pkgpath_without_prefix!(id.pkgpath);
+    }
     id
 }
 
-pub(crate) fn get_current_scope(
+pub(crate) fn get_pkg_scope(
     pkgpath: &String,
     scope_map: &IndexMap<String, Rc<RefCell<Scope>>>,
 ) -> Scope {

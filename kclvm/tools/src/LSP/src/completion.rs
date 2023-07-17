@@ -25,7 +25,7 @@ use lsp_types::CompletionItem;
 
 use crate::goto_def::{get_identifier_last_name, resolve_var};
 use crate::util::inner_most_expr_in_stmt;
-use crate::util::{fix_missing_identifier, get_current_scope};
+use crate::util::{fix_missing_identifier, get_pkg_scope};
 
 /// Computes completions at the given position.
 pub(crate) fn completion(
@@ -128,7 +128,10 @@ fn get_completion_items(expr: &Expr, prog_scope: &ProgramScope) -> IndexSet<Stri
                     )
                 }
                 // user module
-                if let Some(scope) = prog_scope.scope_map.get(&pkgpath_without_prefix!(id.pkgpath)) {
+                if let Some(scope) = prog_scope
+                    .scope_map
+                    .get(&pkgpath_without_prefix!(id.pkgpath))
+                {
                     let scope = scope.borrow();
                     for (name, obj) in &scope.elems {
                         if obj.borrow().ty.is_module() {
@@ -140,31 +143,35 @@ fn get_completion_items(expr: &Expr, prog_scope: &ProgramScope) -> IndexSet<Stri
                 return items;
             }
 
-            let obj = resolve_var(
+            let def = resolve_var(
                 &fix_missing_identifier(&id.names),
-                &id.pkgpath,
-                &get_current_scope(&id.pkgpath, &prog_scope.scope_map),
+                &get_pkg_scope(&id.pkgpath, &prog_scope.scope_map),
                 &prog_scope.scope_map,
             );
 
-            if let Some(obj) = obj {
-                match &obj.ty.kind {
-                    // builtin (str) functions
-                    kclvm_sema::ty::TypeKind::Str => {
-                        let binding = STRING_MEMBER_FUNCTIONS;
-                        for k in binding.keys() {
-                            items.insert(format!("{}{}", k, "()"));
-                        }
-                    }
-                    // schema attrs
-                    kclvm_sema::ty::TypeKind::Schema(schema) => {
-                        for k in schema.attrs.keys() {
-                            if k != "__settings__" {
-                                items.insert(k.clone());
+            if let Some(def) = def {
+                match def {
+                    crate::goto_def::Definition::Object(obj) => {
+                        match &obj.ty.kind {
+                            // builtin (str) functions
+                            kclvm_sema::ty::TypeKind::Str => {
+                                let binding = STRING_MEMBER_FUNCTIONS;
+                                for k in binding.keys() {
+                                    items.insert(format!("{}{}", k, "()"));
+                                }
                             }
+                            // schema attrs
+                            kclvm_sema::ty::TypeKind::Schema(schema) => {
+                                for k in schema.attrs.keys() {
+                                    if k != "__settings__" {
+                                        items.insert(k.clone());
+                                    }
+                                }
+                            }
+                            _ => {}
                         }
                     }
-                    _ => {}
+                    crate::goto_def::Definition::Scope(_) => {}
                 }
             }
         }
