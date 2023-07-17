@@ -46,7 +46,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 for target in &assign_stmt.targets {
                     let names = &target.node.names;
                     if names.len() == 1 {
-                        self.add_or_update_global_variable(&names[0], self.undefined_value());
+                        self.add_or_update_global_variable(&names[0].node, self.undefined_value());
                     }
                 }
             }

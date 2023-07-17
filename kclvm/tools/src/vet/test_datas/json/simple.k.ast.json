@@ -148,7 +148,14 @@
                 "node": {
                     "ctx": "Load",
                     "names": [
-                        "simple"
+                        {
+                            "column": 1,
+                            "end_column": 1,
+                            "end_line": 1,
+                            "filename": "",
+                            "line": 1,
+                            "node": "simple"
+                        }
                     ],
                     "pkgpath": ""
                 }

@@ -63,7 +63,8 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
         self.ctx.l_value = true;
         let expected_ty = self.walk_identifier_expr(&unification_stmt.target);
         self.ctx.l_value = false;
-        let obj = self.new_config_expr_context_item(&names[0], expected_ty.clone(), start, end);
+        let obj =
+            self.new_config_expr_context_item(&names[0].node, expected_ty.clone(), start, end);
         let init_stack_depth = self.switch_config_expr_context(Some(obj));
         let ty = self.walk_schema_expr(&unification_stmt.value.node);
         self.clear_config_expr_context(init_stack_depth as usize, false);
@@ -74,7 +75,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             None,
         );
         if !ty.is_any() && expected_ty.is_any() {
-            self.set_type_to_scope(&names[0], ty, unification_stmt.target.get_pos());
+            self.set_type_to_scope(&names[0].node, ty, unification_stmt.target.get_pos());
         }
         expected_ty
     }
@@ -132,7 +133,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             if target.node.names.is_empty() {
                 continue;
             }
-            let name = &target.node.names[0];
+            let name = &target.node.names[0].node;
             // Add global names.
             if (is_private_field(name) || is_config || !self.contains_global_name(name))
                 && self.scope_level == 0
@@ -191,7 +192,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
         self.ctx.l_value = false;
         if !aug_assign_stmt.target.node.names.is_empty() {
             let is_config = matches!(aug_assign_stmt.value.node, ast::Expr::Schema(_));
-            let name = &aug_assign_stmt.target.node.names[0];
+            let name = &aug_assign_stmt.target.node.names[0].node;
             // Add global names.
             if is_private_field(name) || is_config || !self.contains_global_name(name) {
                 if self.scope_level == 0 {
@@ -286,7 +287,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                     );
                 }
                 target_node = Some(target);
-                let name = &target.node.names[0];
+                let name = &target.node.names[0].node;
                 if i == 0 {
                     key_name = Some(name.to_string());
                 } else if i == 1 {
@@ -464,7 +465,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             );
         }
         for name in &selector_expr.attr.node.names {
-            value_ty = self.load_attr(value_ty.clone(), name, pos.clone());
+            value_ty = self.load_attr(value_ty.clone(), &name.node, pos.clone());
         }
         value_ty
     }
@@ -734,7 +735,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 );
             }
             target_node = Some(target);
-            let name = &target.node.names[0];
+            let name = &target.node.names[0].node;
             if i == 0 {
                 key_name = Some(name.to_string());
             } else if i == 1 {
@@ -962,7 +963,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
 
     fn walk_identifier(&mut self, identifier: &'ctx ast::Identifier) -> Self::Result {
         self.resolve_var(
-            &identifier.names,
+            &identifier.get_names(),
             &identifier.pkgpath,
             self.ctx.start_pos.clone(),
         )
@@ -1091,7 +1092,7 @@ impl<'ctx> Resolver<'ctx> {
         identifier: &'ctx ast::NodeRef<ast::Identifier>,
     ) -> ResolvedResult {
         self.resolve_var(
-            &identifier.node.names,
+            &identifier.node.get_names(),
             &identifier.node.pkgpath,
             identifier.get_pos(),
         )

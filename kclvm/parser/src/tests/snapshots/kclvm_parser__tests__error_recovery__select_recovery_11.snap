@@ -1,6 +1,5 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 133
 expression: "crate::tests::parsing_expr_string(r#\"a?.b?.c?\"#)"
 ---
 Node {
@@ -13,7 +12,14 @@ Node {
                             node: Identifier(
                                 Identifier {
                                     names: [
-                                        "a",
+                                        Node {
+                                            node: "a",
+                                            filename: "",
+                                            line: 1,
+                                            column: 0,
+                                            end_line: 1,
+                                            end_column: 1,
+                                        },
                                     ],
                                     pkgpath: "",
                                     ctx: Load,
@@ -28,7 +34,14 @@ Node {
                         attr: Node {
                             node: Identifier {
                                 names: [
-                                    "b",
+                                    Node {
+                                        node: "b",
+                                        filename: "",
+                                        line: 1,
+                                        column: 3,
+                                        end_line: 1,
+                                        end_column: 4,
+                                    },
                                 ],
                                 pkgpath: "",
                                 ctx: Load,
@@ -52,7 +65,14 @@ Node {
             attr: Node {
                 node: Identifier {
                     names: [
-                        "c",
+                        Node {
+                            node: "c",
+                            filename: "",
+                            line: 1,
+                            column: 6,
+                            end_line: 1,
+                            end_column: 7,
+                        },
                     ],
                     pkgpath: "",
                     ctx: Load,

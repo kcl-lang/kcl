@@ -1,15 +1,35 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 98
 expression: "crate::tests::parsing_expr_string(r#\"a.b.\"#)"
 ---
 Node {
     node: Identifier(
         Identifier {
             names: [
-                "a",
-                "b",
-                "",
+                Node {
+                    node: "a",
+                    filename: "",
+                    line: 1,
+                    column: 0,
+                    end_line: 1,
+                    end_column: 1,
+                },
+                Node {
+                    node: "b",
+                    filename: "",
+                    line: 1,
+                    column: 2,
+                    end_line: 1,
+                    end_column: 3,
+                },
+                Node {
+                    node: "",
+                    filename: "",
+                    line: 1,
+                    column: 4,
+                    end_line: 1,
+                    end_column: 4,
+                },
             ],
             pkgpath: "",
             ctx: Load,

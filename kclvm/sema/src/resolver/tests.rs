@@ -63,7 +63,7 @@ fn test_pkg_init_in_schema_resolve() {
         if let ast::Stmt::SchemaAttr(attr) = &schema.body[0].node {
             let value = attr.value.as_ref().unwrap();
             if let ast::Expr::Schema(schema_expr) = &value.node {
-                assert_eq!(schema_expr.name.node.names, vec!["Name".to_string()]);
+                assert_eq!(schema_expr.name.node.get_names(), vec!["Name".to_string()]);
             } else {
                 panic!("test failed, expect schema expr, got {:?}", value)
             }

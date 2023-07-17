@@ -72,7 +72,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
     fn walk_unification_stmt(&self, unification_stmt: &'ctx ast::UnificationStmt) -> Self::Result {
         check_backtrack_stop!(self);
         self.local_vars.borrow_mut().clear();
-        let name = &unification_stmt.target.node.names[0];
+        let name = &unification_stmt.target.node.names[0].node;
         self.target_vars.borrow_mut().push(name.clone());
         // The right value of the unification_stmt is a schema_expr.
         let value = self
@@ -147,7 +147,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         for name in &assign_stmt.targets {
             self.target_vars
                 .borrow_mut()
-                .push(name.node.names[0].clone());
+                .push(name.node.names[0].node.clone());
         }
         // Load the right value
         let mut value = self
@@ -181,7 +181,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         check_backtrack_stop!(self);
         self.target_vars
             .borrow_mut()
-            .push(aug_assign_stmt.target.node.names[0].clone());
+            .push(aug_assign_stmt.target.node.names[0].node.clone());
         // Load the right value
         let right_value = self
             .walk_expr(&aug_assign_stmt.value)
@@ -1281,7 +1281,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         {
             let mut local_vars = self.local_vars.borrow_mut();
             for v in variables {
-                let name = &v.node.names[0];
+                let name = &v.node.names[0].node;
                 local_vars.insert(name.clone());
             }
         }
@@ -1539,7 +1539,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
             let right_value = if is_membership_as_op {
                 match &binary_expr.right.node {
                     ast::Expr::Identifier(id) => {
-                        let name = id.names.join(".");
+                        let name = id.get_names().join(".");
                         self.string_value(&name)
                     }
                     _ => self.none_value(),
@@ -1634,7 +1634,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
             .walk_expr(&selector_expr.value)
             .expect(kcl_error::COMPILE_ERROR_MSG);
         let string_ptr_value = self
-            .native_global_string(selector_expr.attr.node.names[0].as_str(), "")
+            .native_global_string(selector_expr.attr.node.names[0].node.as_str(), "")
             .into();
         let fn_name = if selector_expr.has_question {
             &ApiFunc::kclvm_value_load_attr_option
@@ -1643,7 +1643,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         };
         value = self.build_call(&fn_name.name(), &[value, string_ptr_value]);
         for name in &selector_expr.attr.node.names[1..] {
-            let string_ptr_value = self.native_global_string(name, "").into();
+            let string_ptr_value = self.native_global_string(&name.node, "").into();
             value = self.build_call(
                 &ApiFunc::kclvm_value_load_attr.name(),
                 &[value, string_ptr_value],
@@ -1672,7 +1672,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
             } else {
                 self.none_value()
             };
-            self.dict_insert(dict_value, name.as_str(), value, 0, -1);
+            self.dict_insert(dict_value, name.node.as_str(), value, 0, -1);
         }
         let pkgpath = self.native_global_string_value(&self.current_pkgpath());
         let is_in_schema =
@@ -1933,7 +1933,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
             } else {
                 self.none_value()
             };
-            self.dict_insert(dict_value, name.as_str(), value, 0, -1);
+            self.dict_insert(dict_value, name.node.as_str(), value, 0, -1);
         }
         let pkgpath = self.native_global_string_value(&self.current_pkgpath());
         let schema = self.build_call(
@@ -2285,7 +2285,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         match identifier_ctx {
             ast::ExprContext::Store => {
                 if identifier.names.len() == 1 {
-                    let name = identifier.names[0].as_str();
+                    let name = identifier.names[0].node.as_str();
                     let tpe = self.value_ptr_type();
                     // Global variables
                     if self.scope_level() == GLOBAL_LEVEL {
@@ -2416,7 +2416,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                     }
                 } else {
                     let names = &identifier.names;
-                    let name = names[0].as_str();
+                    let name = names[0].node.as_str();
                     let mut value = if is_in_schema {
                         self.get_variable_in_schema(name)
                             .expect(kcl_error::INTERNAL_ERROR_MSG)
@@ -2425,7 +2425,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                             .expect(kcl_error::INTERNAL_ERROR_MSG)
                     };
                     for i in 0..names.len() - 1 {
-                        let attr = names[i + 1].as_str();
+                        let attr = names[i + 1].node.as_str();
                         let ctx = if matches!(identifier_ctx, ast::ExprContext::Store)
                             && i != names.len() - 2
                             && names.len() > 2
@@ -2459,7 +2459,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 Ok(right_value.expect(kcl_error::INTERNAL_ERROR_MSG))
             }
             ast::ExprContext::Load => {
-                let name = identifier.names[0].as_str();
+                let name = identifier.names[0].node.as_str();
                 let is_local_var = {
                     let local_vars = self.local_vars.borrow_mut();
                     local_vars.contains(name)
@@ -2472,7 +2472,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                     }
                 } else {
                     let names = &identifier.names;
-                    let name = names[0].as_str();
+                    let name = names[0].node.as_str();
                     let mut value = if identifier.pkgpath.is_empty() {
                         if is_in_schema && !is_local_var {
                             self.get_variable_in_schema(name)
@@ -2485,7 +2485,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                         self.ok_result().expect(kcl_error::INTERNAL_ERROR_MSG)
                     };
                     for i in 0..names.len() - 1 {
-                        let attr = names[i + 1].as_str();
+                        let attr = names[i + 1].node.as_str();
                         let ctx = if matches!(identifier_ctx, ast::ExprContext::Store)
                             && i != names.len() - 2
                             && names.len() > 2
@@ -2560,7 +2560,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             } else {
                 self.none_value()
             };
-            self.dict_insert(dict_value, name.as_str(), value, 0, -1);
+            self.dict_insert(dict_value, name.node.as_str(), value, 0, -1);
         }
         let name = match &decorator.func.node {
             ast::Expr::Identifier(ident) if ident.names.len() == 1 => ident.names[0].clone(),
@@ -2571,7 +2571,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         Ok(self.build_call(
             &ApiFunc::kclvm_value_Decorator.name(),
             &[
-                self.native_global_string_value(name.as_str()),
+                self.native_global_string_value(name.node.as_str()),
                 list_value,
                 dict_value,
                 schema_config_meta,
@@ -2629,14 +2629,14 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 &ApiFunc::kclvm_list_get_option.name(),
                 &[args, self.native_int_value(i as i32)],
             );
-            self.store_variable(&arg_name.names[0], arg_value);
+            self.store_variable(&arg_name.names[0].node, arg_value);
         }
         // for loop in 0..argument_len in LLVM end
         self.br(end_block);
         self.builder.position_at_end(end_block);
         // Keyword arguments
         for arg_name in arg_names.iter() {
-            let name = &arg_name.names[0];
+            let name = &arg_name.names[0].node;
             let string_ptr_value = self.native_global_string(name.as_str(), "").into();
             let has_key = self
                 .build_call(
@@ -2660,7 +2660,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 &[kwargs, string_ptr_value],
             );
             // Find argument name in the scope
-            self.store_variable(&arg_name.names[0], arg);
+            self.store_variable(&arg_name.names[0].node, arg);
             self.br(else_block);
             self.builder.position_at_end(else_block);
         }
@@ -2704,7 +2704,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         {
             let mut local_vars = self.local_vars.borrow_mut();
             for v in targets {
-                let name = &v.node.names[0];
+                let name = &v.node.names[0].node;
                 local_vars.insert(name.clone());
             }
         }
@@ -2780,7 +2780,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         {
             let mut local_vars = self.local_vars.borrow_mut();
             for v in targets {
-                let name = &v.node.names[0];
+                let name = &v.node.names[0].node;
                 local_vars.remove(name);
             }
         }
@@ -2797,7 +2797,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             if let Some(key) = &item.node.key {
                 let mut insert_index = -1;
                 let optional_name = match &key.node {
-                    ast::Expr::Identifier(identifier) => Some(identifier.names[0].clone()),
+                    ast::Expr::Identifier(identifier) => Some(identifier.names[0].node.clone()),
                     ast::Expr::StringLit(string_lit) => Some(string_lit.value.clone()),
                     ast::Expr::Subscript(subscript) => {
                         let mut name = None;
@@ -2806,7 +2806,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                                 if let ast::Expr::NumberLit(number) = &index_node.node {
                                     if let ast::NumberLitValue::Int(v) = number.value {
                                         insert_index = v;
-                                        name = Some(identifier.names[0].clone())
+                                        name = Some(identifier.names[0].node.clone())
                                     }
                                 }
                             }

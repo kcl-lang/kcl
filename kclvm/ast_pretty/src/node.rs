@@ -852,7 +852,7 @@ impl<'p> Printer<'p> {
                 let names = &identifier.names;
 
                 let re = fancy_regex::Regex::new(IDENTIFIER_REGEX).unwrap();
-                let need_right_brace = !names.iter().all(|n| re.is_match(n).unwrap_or(false));
+                let need_right_brace = !names.iter().all(|n| re.is_match(&n.node).unwrap_or(false));
                 let count = if need_right_brace {
                     self.write(
                         &names

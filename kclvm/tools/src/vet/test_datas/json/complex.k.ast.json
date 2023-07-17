@@ -426,7 +426,14 @@
                 "node": {
                     "ctx": "Load",
                     "names": [
-                        "complex"
+                        {
+                            "column": 1,
+                            "end_column": 1,
+                            "end_line": 1,
+                            "filename": "",
+                            "line": 1,
+                            "node": "complex"
+                        }
                     ],
                     "pkgpath": ""
                 }

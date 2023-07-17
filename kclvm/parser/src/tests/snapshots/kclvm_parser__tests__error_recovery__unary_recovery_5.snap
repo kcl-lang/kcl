@@ -34,7 +34,14 @@ Node {
                 node: Identifier(
                     Identifier {
                         names: [
-                            "i",
+                            Node {
+                                node: "i",
+                                filename: "",
+                                line: 1,
+                                column: 2,
+                                end_line: 1,
+                                end_column: 3,
+                            },
                         ],
                         pkgpath: "",
                         ctx: Load,

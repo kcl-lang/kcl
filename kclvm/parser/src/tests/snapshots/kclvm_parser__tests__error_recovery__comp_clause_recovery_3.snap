@@ -1,6 +1,5 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 74
 expression: "crate::tests::parsing_expr_string(\"{i for i in [1,2,3]}\")"
 ---
 Node {
@@ -14,7 +13,14 @@ Node {
                                 node: Identifier(
                                     Identifier {
                                         names: [
-                                            "i",
+                                            Node {
+                                                node: "i",
+                                                filename: "",
+                                                line: 1,
+                                                column: 1,
+                                                end_line: 1,
+                                                end_column: 2,
+                                            },
                                         ],
                                         pkgpath: "",
                                         ctx: Load,
@@ -34,7 +40,14 @@ Node {
                                         node: Identifier(
                                             Identifier {
                                                 names: [
-                                                    "i",
+                                                    Node {
+                                                        node: "i",
+                                                        filename: "",
+                                                        line: 1,
+                                                        column: 7,
+                                                        end_line: 1,
+                                                        end_column: 8,
+                                                    },
                                                 ],
                                                 pkgpath: "",
                                                 ctx: Load,

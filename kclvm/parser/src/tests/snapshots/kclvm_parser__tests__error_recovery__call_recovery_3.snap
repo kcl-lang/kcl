@@ -1,6 +1,5 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 115
 expression: "crate::tests::parsing_expr_string(r#\"a.b(a=1,2)\"#)"
 ---
 Node {
@@ -10,8 +9,22 @@ Node {
                 node: Identifier(
                     Identifier {
                         names: [
-                            "a",
-                            "b",
+                            Node {
+                                node: "a",
+                                filename: "",
+                                line: 1,
+                                column: 0,
+                                end_line: 1,
+                                end_column: 1,
+                            },
+                            Node {
+                                node: "b",
+                                filename: "",
+                                line: 1,
+                                column: 2,
+                                end_line: 1,
+                                end_column: 3,
+                            },
                         ],
                         pkgpath: "",
                         ctx: Load,
@@ -46,7 +59,14 @@ Node {
                         arg: Node {
                             node: Identifier {
                                 names: [
-                                    "a",
+                                    Node {
+                                        node: "a",
+                                        filename: "",
+                                        line: 1,
+                                        column: 4,
+                                        end_line: 1,
+                                        end_column: 5,
+                                    },
                                 ],
                                 pkgpath: "",
                                 ctx: Load,

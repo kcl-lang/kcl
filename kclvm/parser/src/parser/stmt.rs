@@ -257,7 +257,7 @@ impl<'a> Parser<'a> {
                     return Some(node_ref!(
                         Stmt::SchemaAttr(SchemaAttr {
                             doc: "".to_string(),
-                            name: node_ref!(target.names.join("."), targets[0].pos()),
+                            name: node_ref!(target.get_name(), targets[0].pos()),
                             type_str: type_annotation.unwrap(),
                             ty: ty.unwrap(),
                             op: Some(BinOrAugOp::Aug(aug_op)),
@@ -312,7 +312,7 @@ impl<'a> Parser<'a> {
                     return Some(node_ref!(
                         Stmt::SchemaAttr(SchemaAttr {
                             doc: "".to_string(),
-                            name: node_ref!(target.names.join("."), targets[0].pos()),
+                            name: node_ref!(target.get_names().join("."), targets[0].pos()),
                             type_str: type_annotation.unwrap(),
                             ty: ty.unwrap(),
                             op: None,
@@ -401,20 +401,20 @@ impl<'a> Parser<'a> {
         let asname = if self.token.is_keyword(kw::As) {
             self.bump_keyword(kw::As);
             let ident = self.parse_identifier().node;
-            Some(ident.names.join("."))
+            Some(ident.get_names().join("."))
         } else {
             None
         };
 
         let mut path = leading_dot.join("");
-        path.push_str(dot_name.names.join(".").as_str());
+        path.push_str(dot_name.get_names().join(".").as_str());
 
         let rawpath = path.clone();
 
         let name = if let Some(as_name_value) = asname.clone() {
             as_name_value
         } else {
-            dot_name.names.last().unwrap().clone()
+            dot_name.get_names().last().unwrap().clone()
         };
 
         let t = node_ref!(
@@ -612,7 +612,7 @@ impl<'a> Parser<'a> {
         let name_expr = self.parse_identifier();
         let name_pos = name_expr.pos();
         let name = name_expr.node;
-        let name = node_ref!(name.names.join("."), name_pos);
+        let name = node_ref!(name.get_names().join("."), name_pos);
 
         if name
             .node
@@ -960,7 +960,7 @@ impl<'a> Parser<'a> {
                                     Stmt::SchemaAttr(SchemaAttr {
                                         doc: "".to_string(),
                                         name: node_ref!(
-                                            ident.names.join("."),
+                                            ident.get_names().join("."),
                                             assign.targets[0].pos()
                                         ),
                                         type_str,
@@ -1095,7 +1095,7 @@ impl<'a> Parser<'a> {
 
         let name_pos = name_expr.pos();
         let name = name_expr.node;
-        let name = node_ref!(name.names.join("."), name_pos);
+        let name = node_ref!(name.get_names().join("."), name_pos);
 
         let is_optional = if let TokenKind::Question = self.token.kind {
             self.bump_token(TokenKind::Question);
@@ -1191,7 +1191,7 @@ impl<'a> Parser<'a> {
             let expr = self.parse_identifier_expr();
             let ident = self.expr_as_identifier(expr.clone(), token);
             let pos = expr.pos();
-            let key_name = ident.names.join(".");
+            let key_name = ident.get_names().join(".");
 
             if let TokenKind::CloseDelim(DelimToken::Bracket) = self.token.kind {
                 let key_type = {
@@ -1290,7 +1290,7 @@ impl<'a> Parser<'a> {
         let name_expr = self.parse_identifier_expr();
         let name_pos = name_expr.pos();
         let name = expr_as!(name_expr, Expr::Identifier).unwrap();
-        let name = node_ref!(name.names.join("."), name_pos);
+        let name = node_ref!(name.get_names().join("."), name_pos);
 
         let args = if let TokenKind::OpenDelim(DelimToken::Bracket) = self.token.kind {
             self.parse_parameters(

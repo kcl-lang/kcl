@@ -1,6 +1,5 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 159
 expression: "crate::tests::parsing_module_string(r#\"assert True if data else 'msg'\"#)"
 ---
 Module {
@@ -29,7 +28,14 @@ Module {
                             node: Identifier(
                                 Identifier {
                                     names: [
-                                        "data",
+                                        Node {
+                                            node: "data",
+                                            filename: "",
+                                            line: 1,
+                                            column: 15,
+                                            end_line: 1,
+                                            end_column: 19,
+                                        },
                                     ],
                                     pkgpath: "",
                                     ctx: Load,
@@ -59,7 +65,14 @@ Module {
                             node: Identifier(
                                 Identifier {
                                     names: [
-                                        "else",
+                                        Node {
+                                            node: "else",
+                                            filename: "",
+                                            line: 1,
+                                            column: 20,
+                                            end_line: 1,
+                                            end_column: 24,
+                                        },
                                     ],
                                     pkgpath: "",
                                     ctx: Load,

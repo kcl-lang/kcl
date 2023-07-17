@@ -1,4 +1,5 @@
 use indexmap::IndexMap;
+use kclvm_ast::ast::Node;
 use kclvm_ast::walker::MutSelfMutWalker;
 use kclvm_ast::{ast, walk_if_mut, walk_list_mut};
 
@@ -98,11 +99,24 @@ impl<'ctx> MutSelfMutWalker<'ctx> for TypeAliasTransformer {
                 // ```
                 if self.pkgpath != &pkgpath[1..] {
                     identifier.pkgpath = pkgpath;
-                    identifier.names = vec![splits[1].to_string(), splits[0].to_string()];
+                    let mut first_node = identifier.names[0].clone();
+                    first_node.node = splits[1].to_string();
+                    let mut second_node = identifier.names[0].clone();
+                    second_node.node = splits[0].to_string();
+                    identifier.names = vec![first_node, second_node];
                 }
             } else {
                 let names = type_alias.split('.').collect::<Vec<&str>>();
-                identifier.names = names.iter().map(|n| n.to_string()).collect();
+                let new_names: Vec<Node<String>> = names
+                    .iter()
+                    .zip(&identifier.names)
+                    .map(|(name, pos_name)| {
+                        let mut new_name = pos_name.clone();
+                        new_name.node = name.to_string();
+                        new_name.clone()
+                    })
+                    .collect();
+                identifier.names = new_names;
             }
         }
     }

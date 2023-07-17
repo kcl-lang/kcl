@@ -37,7 +37,7 @@ impl<'ctx> Resolver<'ctx> {
         let mut check_table: IndexSet<String> = IndexSet::default();
         for kw in kwargs {
             if !kw.node.arg.node.names.is_empty() {
-                let arg_name = &kw.node.arg.node.names[0];
+                let arg_name = &kw.node.arg.node.names[0].node;
                 if check_table.contains(arg_name) {
                     self.handler.add_compile_error(
                         &format!("{} has duplicated keyword argument {}", func_name, arg_name),

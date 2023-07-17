@@ -45,7 +45,14 @@ Module {
                         Node {
                             node: Identifier {
                                 names: [
-                                    "a",
+                                    Node {
+                                        node: "a",
+                                        filename: "",
+                                        line: 2,
+                                        column: 0,
+                                        end_line: 2,
+                                        end_column: 1,
+                                    },
                                 ],
                                 pkgpath: "",
                                 ctx: Store,

@@ -75,7 +75,14 @@ Module {
                                     node: Identifier(
                                         Identifier {
                                             names: [
-                                                "deprecated",
+                                                Node {
+                                                    node: "deprecated",
+                                                    filename: "",
+                                                    line: 1,
+                                                    column: 1,
+                                                    end_line: 1,
+                                                    end_column: 11,
+                                                },
                                             ],
                                             pkgpath: "",
                                             ctx: Load,
@@ -92,7 +99,14 @@ Module {
                                         node: Identifier(
                                             Identifier {
                                                 names: [
-                                                    "a",
+                                                    Node {
+                                                        node: "a",
+                                                        filename: "",
+                                                        line: 1,
+                                                        column: 12,
+                                                        end_line: 1,
+                                                        end_column: 13,
+                                                    },
                                                 ],
                                                 pkgpath: "",
                                                 ctx: Load,

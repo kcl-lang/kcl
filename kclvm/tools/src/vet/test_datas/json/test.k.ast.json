@@ -292,7 +292,14 @@
                 "node": {
                     "ctx": "Load",
                     "names": [
-                        "test"
+                        {
+                            "column": 1,
+                            "end_column": 1,
+                            "end_line": 1,
+                            "filename": "",
+                            "line": 1,
+                            "node": "test"
+                        }
                     ],
                     "pkgpath": ""
                 }

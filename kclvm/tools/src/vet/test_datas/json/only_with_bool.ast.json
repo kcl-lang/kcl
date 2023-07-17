@@ -67,7 +67,14 @@
                 "node": {
                     "ctx": "Load",
                     "names": [
-                        "only_with_bool"
+                        {
+                            "column": 1,
+                            "end_column": 1,
+                            "end_line": 1,
+                            "filename": "",
+                            "line": 1,
+                            "node": "only_with_bool"
+                        }
                     ],
                     "pkgpath": ""
                 }

@@ -10,7 +10,7 @@ use crate::ast;
 /// use kclvm_ast::path::get_key_path;
 ///
 /// let ident = Some(Box::new(ast::Node::dummy_node(ast::Expr::Identifier(ast::Identifier {
-///     names: vec!["alice".to_string()],
+///     names: vec![ast::Node::dummy_node("alice".to_string())],
 ///     pkgpath: "".to_string(),
 ///     ctx: ast::ExprContext::Load,
 /// }))));

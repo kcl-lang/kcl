@@ -13,7 +13,14 @@ Node {
                             node: Identifier(
                                 Identifier {
                                     names: [
-                                        "a",
+                                        Node {
+                                            node: "a",
+                                            filename: "",
+                                            line: 1,
+                                            column: 3,
+                                            end_line: 1,
+                                            end_column: 4,
+                                        },
                                     ],
                                     pkgpath: "",
                                     ctx: Load,
@@ -57,7 +64,14 @@ Node {
                                             node: Identifier(
                                                 Identifier {
                                                     names: [
-                                                        "b",
+                                                        Node {
+                                                            node: "b",
+                                                            filename: "",
+                                                            line: 1,
+                                                            column: 7,
+                                                            end_line: 1,
+                                                            end_column: 8,
+                                                        },
                                                     ],
                                                     pkgpath: "",
                                                     ctx: Load,

@@ -202,7 +202,7 @@ pub fn validate(val_opt: ValidateOption) -> Result<bool, String> {
 fn build_assign(attr_name: &str, node: NodeRef<Expr>) -> NodeRef<Stmt> {
     node_ref!(Stmt::Assign(AssignStmt {
         targets: vec![node_ref!(Identifier {
-            names: vec![attr_name.to_string()],
+            names: vec![Node::dummy_node(attr_name.to_string())],
             pkgpath: String::new(),
             ctx: ExprContext::Store,
         })],

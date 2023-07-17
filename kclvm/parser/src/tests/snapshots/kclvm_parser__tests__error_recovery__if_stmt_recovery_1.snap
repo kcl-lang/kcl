@@ -1,6 +1,5 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 175
 expression: "crate::tests::parsing_module_string(r#\"if True: a = 1 else if b = 2\"#)"
 ---
 Module {
@@ -20,7 +19,14 @@ Module {
                                         Node {
                                             node: Identifier {
                                                 names: [
-                                                    "a",
+                                                    Node {
+                                                        node: "a",
+                                                        filename: "",
+                                                        line: 1,
+                                                        column: 9,
+                                                        end_line: 1,
+                                                        end_column: 10,
+                                                    },
                                                 ],
                                                 pkgpath: "",
                                                 ctx: Store,
@@ -78,7 +84,14 @@ Module {
                                         Node {
                                             node: Identifier {
                                                 names: [
-                                                    "b",
+                                                    Node {
+                                                        node: "b",
+                                                        filename: "",
+                                                        line: 1,
+                                                        column: 23,
+                                                        end_line: 1,
+                                                        end_column: 24,
+                                                    },
                                                 ],
                                                 pkgpath: "",
                                                 ctx: Store,
