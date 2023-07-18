@@ -137,11 +137,12 @@ pub(crate) fn find_def(
                     }
                 }
                 None => {
-                    return resolve_var(
-                        &id.names,
-                        &get_pkg_scope(&"".to_string(), &prog_scope.scope_map),
-                        &prog_scope.scope_map,
-                    );
+                    for (_, scope) in &prog_scope.scope_map {
+                        match scope.borrow().inner_most(kcl_pos) {
+                            Some(s) => return resolve_var(&id.names, &s, &prog_scope.scope_map),
+                            None => continue,
+                        }
+                    }
                 }
             }
         }

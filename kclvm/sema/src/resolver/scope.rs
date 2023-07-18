@@ -113,17 +113,7 @@ impl ContainsPos for Scope {
     /// Check if current scope contains a position
     fn contains_pos(&self, pos: &Position) -> bool {
         match &self.kind {
-            ScopeKind::Package(files) => {
-                if files.contains(&pos.filename) {
-                    self.children.iter().any(|s| s.borrow().contains_pos(pos))
-                        || self
-                            .elems
-                            .iter()
-                            .any(|(_, child)| child.borrow().contains_pos(pos))
-                } else {
-                    false
-                }
-            }
+            ScopeKind::Package(files) => files.contains(&pos.filename),
             _ => self.start.less_equal(pos) && pos.less_equal(&self.end),
         }
     }

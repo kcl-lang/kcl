@@ -189,34 +189,37 @@ pub(crate) fn inner_most_expr_in_stmt(
 ) -> (Option<Node<Expr>>, Option<Node<Expr>>) {
     match stmt {
         Stmt::Assign(assign_stmt) => {
-            if let Some(ty) = &assign_stmt.type_annotation {
-                // build a temp identifier with string
-                return (
-                    Some(Node::node_with_pos(
-                        Expr::Identifier(Identifier {
-                            names: transfer_ident_names(
-                                vec![ty.node.clone()],
-                                &(
-                                    ty.filename.clone(),
-                                    ty.line,
-                                    ty.column,
-                                    ty.end_line,
-                                    ty.end_column,
-                                ),
-                            ),
-                            pkgpath: "".to_string(),
-                            ctx: kclvm_ast::ast::ExprContext::Load,
-                        }),
-                        (
-                            ty.filename.clone(),
-                            ty.line,
-                            ty.column,
-                            ty.end_line,
-                            ty.end_column,
-                        ),
-                    )),
-                    schema_def,
-                );
+            if let Some(ty) = &assign_stmt.ty {
+                if ty.contains_pos(pos) {
+                    return (build_identifier_from_ty_string(&ty, pos), schema_def);
+                    // build a temp identifier with string
+                    // return (
+                    //     Some(Node::node_with_pos(
+                    //         Expr::Identifier(Identifier {
+                    //             names: transfer_ident_names(
+                    //                 vec![ty.node.clone()],
+                    //                 &(
+                    //                     ty.filename.clone(),
+                    //                     ty.line,
+                    //                     ty.column,
+                    //                     ty.end_line,
+                    //                     ty.end_column,
+                    //                 ),
+                    //             ),
+                    //             pkgpath: "".to_string(),
+                    //             ctx: kclvm_ast::ast::ExprContext::Load,
+                    //         }),
+                    //         (
+                    //             ty.filename.clone(),
+                    //             ty.line,
+                    //             ty.column,
+                    //             ty.end_line,
+                    //             ty.end_column,
+                    //         ),
+                    //     )),
+                    //     schema_def,
+                    // );
+                }
             }
             walk_if_contains!(assign_stmt.value, pos, schema_def);
 

@@ -9,6 +9,7 @@ use kclvm_error::Position as KCLPos;
 use kclvm_sema::builtin::MATH_FUNCTION_NAMES;
 use kclvm_sema::builtin::STRING_MEMBER_FUNCTIONS;
 use kclvm_sema::resolver::scope::ProgramScope;
+use lsp_types::request::GotoTypeDefinitionResponse;
 use lsp_types::CompletionResponse;
 use lsp_types::DocumentSymbol;
 use lsp_types::DocumentSymbolResponse;
@@ -36,6 +37,32 @@ fn compile_test_file(testfile: &str) -> (String, Program, ProgramScope, IndexSet
     let (program, prog_scope, diags) =
         parse_param_and_compile(Param { file: file.clone() }, None).unwrap();
     (file, program, prog_scope, diags)
+}
+
+fn compare_goto_res(res: Option<GotoTypeDefinitionResponse>, pos: (&String, u32, u32, u32, u32)) {
+    match res.unwrap() {
+        lsp_types::GotoDefinitionResponse::Scalar(loc) => {
+            let got_path = loc.uri.path();
+            assert_eq!(got_path, pos.0);
+
+            let (got_start, got_end) = (loc.range.start, loc.range.end);
+
+            let expected_start = Position {
+                line: pos.1, // zero-based
+                character: pos.2,
+            };
+
+            let expected_end = Position {
+                line: pos.3, // zero-based
+                character: pos.4,
+            };
+            assert_eq!(got_start, expected_start);
+            assert_eq!(got_end, expected_end);
+        }
+        _ => {
+            unreachable!("test error")
+        }
+    }
 }
 
 #[test]
@@ -157,9 +184,6 @@ fn goto_pkg_prefix_def_test() {
 
     match res.unwrap() {
         lsp_types::GotoDefinitionResponse::Array(arr) => {
-            for e in &arr {
-                println!("{:?}", e);
-            }
             assert_eq!(expeced_files.len(), arr.len());
             for loc in arr {
                 let got_path = loc.uri.path().to_string();
@@ -189,30 +213,10 @@ fn goto_schema_def_test() {
         column: Some(11),
     };
     let res = goto_definition(&program, &pos, &prog_scope);
-
-    match res.unwrap() {
-        lsp_types::GotoDefinitionResponse::Scalar(loc) => {
-            let got_path = loc.uri.path();
-            assert_eq!(got_path, expected_path.to_str().unwrap());
-
-            let (got_start, got_end) = (loc.range.start, loc.range.end);
-
-            let expected_start = Position {
-                line: 0, // zero-based
-                character: 0,
-            };
-
-            let expected_end = Position {
-                line: 7, // zero-based
-                character: 0,
-            };
-            assert_eq!(got_start, expected_start);
-            assert_eq!(got_end, expected_end);
-        }
-        _ => {
-            unreachable!("test error")
-        }
-    }
+    compare_goto_res(
+        res,
+        (&expected_path.to_str().unwrap().to_string(), 0, 0, 7, 0),
+    );
 }
 
 // todo
@@ -253,30 +257,10 @@ fn goto_schema_attr_def_test() {
         column: Some(7),
     };
     let res = goto_definition(&program, &pos, &prog_scope);
-
-    match res.unwrap() {
-        lsp_types::GotoDefinitionResponse::Scalar(loc) => {
-            let got_path = loc.uri.path();
-            assert_eq!(got_path, expected_path.to_str().unwrap());
-
-            let (got_start, got_end) = (loc.range.start, loc.range.end);
-
-            let expected_start = Position {
-                line: 4, // zero-based
-                character: 4,
-            };
-
-            let expected_end = Position {
-                line: 4, // zero-based
-                character: 8,
-            };
-            assert_eq!(got_start, expected_start);
-            assert_eq!(got_end, expected_end);
-        }
-        _ => {
-            unreachable!("test error")
-        }
-    }
+    compare_goto_res(
+        res,
+        (&expected_path.to_str().unwrap().to_string(), 4, 4, 4, 8),
+    );
 }
 
 #[test]
@@ -296,29 +280,10 @@ fn goto_schema_attr_def_test1() {
         column: Some(12),
     };
     let res = goto_definition(&program, &pos, &prog_scope);
-    match res.unwrap() {
-        lsp_types::GotoDefinitionResponse::Scalar(loc) => {
-            let got_path = loc.uri.path();
-            assert_eq!(got_path, expected_path.to_str().unwrap());
-
-            let (got_start, got_end) = (loc.range.start, loc.range.end);
-
-            let expected_start = Position {
-                line: 18,     // zero-based
-                character: 1, // character is different from col in IDE, `\t` is counted as 1 character instead of 4 col
-            };
-
-            let expected_end = Position {
-                line: 18, // zero-based
-                character: 5,
-            };
-            assert_eq!(got_start, expected_start);
-            assert_eq!(got_end, expected_end);
-        }
-        _ => {
-            unreachable!("test error")
-        }
-    }
+    compare_goto_res(
+        res,
+        (&expected_path.to_str().unwrap().to_string(), 18, 1, 18, 5),
+    );
 }
 
 #[test]
@@ -338,29 +303,10 @@ fn test_goto_identifier_names() {
         column: Some(5),
     };
     let res = goto_definition(&program, &pos, &prog_scope);
-    match res.unwrap() {
-        lsp_types::GotoDefinitionResponse::Scalar(loc) => {
-            let got_path = loc.uri.path();
-            assert_eq!(got_path, expected_path.to_str().unwrap());
-
-            let (got_start, got_end) = (loc.range.start, loc.range.end);
-
-            let expected_start = Position {
-                line: 23, // zero-based
-                character: 0,
-            };
-
-            let expected_end = Position {
-                line: 23, // zero-based
-                character: 2,
-            };
-            assert_eq!(got_start, expected_start);
-            assert_eq!(got_end, expected_end);
-        }
-        _ => {
-            unreachable!("test error")
-        }
-    }
+    compare_goto_res(
+        res,
+        (&expected_path.to_str().unwrap().to_string(), 23, 0, 23, 2),
+    );
 
     // test goto n in: s = p2.n.name
     let pos = KCLPos {
@@ -369,29 +315,10 @@ fn test_goto_identifier_names() {
         column: Some(8),
     };
     let res = goto_definition(&program, &pos, &prog_scope);
-    match res.unwrap() {
-        lsp_types::GotoDefinitionResponse::Scalar(loc) => {
-            let got_path = loc.uri.path();
-            assert_eq!(got_path, expected_path.to_str().unwrap());
-
-            let (got_start, got_end) = (loc.range.start, loc.range.end);
-
-            let expected_start = Position {
-                line: 21, // zero-based
-                character: 1,
-            };
-
-            let expected_end = Position {
-                line: 21, // zero-based
-                character: 2,
-            };
-            assert_eq!(got_start, expected_start);
-            assert_eq!(got_end, expected_end);
-        }
-        _ => {
-            unreachable!("test error")
-        }
-    }
+    compare_goto_res(
+        res,
+        (&expected_path.to_str().unwrap().to_string(), 21, 1, 21, 2),
+    );
 
     // test goto name in: s = p2.n.name
     let pos = KCLPos {
@@ -400,40 +327,16 @@ fn test_goto_identifier_names() {
         column: Some(12),
     };
     let res = goto_definition(&program, &pos, &prog_scope);
-    match res.unwrap() {
-        lsp_types::GotoDefinitionResponse::Scalar(loc) => {
-            let got_path = loc.uri.path();
-            assert_eq!(got_path, expected_path.to_str().unwrap());
-
-            let (got_start, got_end) = (loc.range.start, loc.range.end);
-
-            let expected_start = Position {
-                line: 18,     // zero-based
-                character: 1, // character is different from col in IDE, `\t` is counted as 1 character instead of 4 col
-            };
-
-            let expected_end = Position {
-                line: 18, // zero-based
-                character: 5,
-            };
-            assert_eq!(got_start, expected_start);
-            assert_eq!(got_end, expected_end);
-        }
-        _ => {
-            unreachable!("test error")
-        }
-    }
+    compare_goto_res(
+        res,
+        (&expected_path.to_str().unwrap().to_string(), 18, 1, 18, 5),
+    );
 }
 
 #[test]
 fn goto_identifier_def_test() {
-    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-
     let (file, program, prog_scope, _) =
         compile_test_file("src/test_data/goto_def_test/goto_def.k");
-
-    let mut expected_path = path;
-    expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
 
     // test goto identifier definition: p1 = p
     let pos = KCLPos {
@@ -442,30 +345,28 @@ fn goto_identifier_def_test() {
         column: Some(6),
     };
     let res = goto_definition(&program, &pos, &prog_scope);
-    match res.unwrap() {
-        lsp_types::GotoDefinitionResponse::Scalar(loc) => {
-            let got_path = loc.uri.path();
-            assert_eq!(got_path, file);
+    compare_goto_res(res, (&file, 3, 0, 3, 1));
+}
 
-            let (got_start, got_end) = (loc.range.start, loc.range.end);
+#[test]
+fn goto_assign_type_test() {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-            let expected_start = Position {
-                line: 3, // zero-based
-                character: 0,
-            };
+    let (file, program, prog_scope, _) =
+        compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
-            let expected_end = Position {
-                line: 3, // zero-based
-                character: 1,
-            };
+    let mut expected_path = path;
+    expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
 
-            assert_eq!(got_start, expected_start);
-            assert_eq!(got_end, expected_end);
-        }
-        _ => {
-            unreachable!("test error")
-        }
-    }
+    // test goto schema attr definition: name: "alice"
+    let pos = KCLPos {
+        filename: file.clone(),
+        line: 38,
+        column: Some(17),
+    };
+
+    let res = goto_definition(&program, &pos, &prog_scope);
+    compare_goto_res(res, (&file, 33, 0, 37, 0));
 }
 
 #[test]
@@ -485,30 +386,10 @@ fn goto_schema_attr_ty_def_test() {
         column: Some(15),
     };
     let res = goto_definition(&program, &pos, &prog_scope);
-    match res.unwrap() {
-        lsp_types::GotoDefinitionResponse::Scalar(loc) => {
-            let got_path = loc.uri.path();
-            assert_eq!(got_path, expected_path.to_str().unwrap());
-
-            let (got_start, got_end) = (loc.range.start, loc.range.end);
-
-            let expected_start = Position {
-                line: 0, // zero-based
-                character: 0,
-            };
-
-            let expected_end = Position {
-                line: 7, // zero-based
-                character: 0,
-            };
-
-            assert_eq!(got_start, expected_start);
-            assert_eq!(got_end, expected_end);
-        }
-        _ => {
-            unreachable!("test error")
-        }
-    }
+    compare_goto_res(
+        res,
+        (&expected_path.to_str().unwrap().to_string(), 0, 0, 7, 0),
+    );
 }
 
 #[test]
@@ -528,30 +409,10 @@ fn goto_schema_attr_ty_def_test1() {
         column: Some(15),
     };
     let res = goto_definition(&program, &pos, &prog_scope);
-    match res.unwrap() {
-        lsp_types::GotoDefinitionResponse::Scalar(loc) => {
-            let got_path = loc.uri.path();
-            assert_eq!(got_path, expected_path.to_str().unwrap());
-
-            let (got_start, got_end) = (loc.range.start, loc.range.end);
-
-            let expected_start = Position {
-                line: 0, // zero-based
-                character: 0,
-            };
-
-            let expected_end = Position {
-                line: 7, // zero-based
-                character: 0,
-            };
-
-            assert_eq!(got_start, expected_start);
-            assert_eq!(got_end, expected_end);
-        }
-        _ => {
-            unreachable!("test error")
-        }
-    }
+    compare_goto_res(
+        res,
+        (&expected_path.to_str().unwrap().to_string(), 0, 0, 7, 0),
+    );
 }
 
 #[test]
@@ -571,30 +432,10 @@ fn goto_schema_attr_ty_def_test3() {
         column: Some(22),
     };
     let res = goto_definition(&program, &pos, &prog_scope);
-    match res.unwrap() {
-        lsp_types::GotoDefinitionResponse::Scalar(loc) => {
-            let got_path = loc.uri.path();
-            assert_eq!(got_path, expected_path.to_str().unwrap());
-
-            let (got_start, got_end) = (loc.range.start, loc.range.end);
-
-            let expected_start = Position {
-                line: 0, // zero-based
-                character: 0,
-            };
-
-            let expected_end = Position {
-                line: 7, // zero-based
-                character: 0,
-            };
-
-            assert_eq!(got_start, expected_start);
-            assert_eq!(got_end, expected_end);
-        }
-        _ => {
-            unreachable!("test error")
-        }
-    }
+    compare_goto_res(
+        res,
+        (&expected_path.to_str().unwrap().to_string(), 0, 0, 7, 0),
+    );
 }
 
 #[test]
@@ -614,30 +455,10 @@ fn goto_schema_attr_ty_def_test4() {
         column: Some(17),
     };
     let res = goto_definition(&program, &pos, &prog_scope);
-    match res.unwrap() {
-        lsp_types::GotoDefinitionResponse::Scalar(loc) => {
-            let got_path = loc.uri.path();
-            assert_eq!(got_path, expected_path.to_str().unwrap());
-
-            let (got_start, got_end) = (loc.range.start, loc.range.end);
-
-            let expected_start = Position {
-                line: 0, // zero-based
-                character: 0,
-            };
-
-            let expected_end = Position {
-                line: 7, // zero-based
-                character: 0,
-            };
-
-            assert_eq!(got_start, expected_start);
-            assert_eq!(got_end, expected_end);
-        }
-        _ => {
-            unreachable!("test error")
-        }
-    }
+    compare_goto_res(
+        res,
+        (&expected_path.to_str().unwrap().to_string(), 0, 0, 7, 0),
+    );
 }
 
 #[test]
@@ -657,28 +478,31 @@ fn goto_schema_attr_ty_def_test5() {
         column: Some(28),
     };
     let res = goto_definition(&program, &pos, &prog_scope);
-    match res.unwrap() {
-        lsp_types::GotoDefinitionResponse::Scalar(loc) => {
-            let got_path = loc.uri.path();
-            assert_eq!(got_path, expected_path.to_str().unwrap());
+    compare_goto_res(
+        res,
+        (&expected_path.to_str().unwrap().to_string(), 0, 0, 2, 13),
+    );
+}
 
-            let (got_start, got_end) = (loc.range.start, loc.range.end);
+#[test]
+fn goto_local_var_def_test() {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-            let expected_start = Position {
-                line: 0, // zero-based
-                character: 0,
-            };
+    let (file, program, prog_scope, _) =
+        compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
-            let expected_end = Position {
-                line: 2, // zero-based
-                character: 13,
-            };
+    let mut expected_path = path;
+    expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
 
-            assert_eq!(got_start, expected_start);
-            assert_eq!(got_end, expected_end);
-        }
-        _ => unreachable!("test error"),
-    }
+    // test goto schema attr definition: name: "alice"
+    let pos = KCLPos {
+        filename: file.clone(),
+        line: 47,
+        column: Some(11),
+    };
+
+    let res = goto_definition(&program, &pos, &prog_scope);
+    compare_goto_res(res, (&file, 43, 4, 43, 9));
 }
 
 #[test]
