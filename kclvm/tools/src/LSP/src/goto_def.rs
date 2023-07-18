@@ -8,7 +8,7 @@
 //! + attr type
 
 use indexmap::{IndexMap, IndexSet};
-use kclvm_ast::pos::GetPos;
+use kclvm_ast::pos::{ContainsPos, GetPos};
 
 use kclvm_ast::ast::{Expr, Identifier, ImportStmt, Node, Program, Stmt};
 use kclvm_compiler::pkgpath_without_prefix;
@@ -25,7 +25,6 @@ use std::rc::Rc;
 use crate::to_lsp::lsp_pos;
 use crate::util::{
     get_pkg_scope, get_pos_from_real_path, get_real_path_from_external, inner_most_expr_in_stmt,
-    pre_process_identifier,
 };
 
 // Navigates to the definition of an identifier.
@@ -78,10 +77,10 @@ impl Definition {
                 positions.insert((obj.start.clone(), obj.end.clone()));
             }
             Definition::Scope(scope) => match &scope.kind {
-                kclvm_sema::resolver::scope::ScopeKind::Package(modules) => {
-                    for module in modules {
+                kclvm_sema::resolver::scope::ScopeKind::Package(filenames) => {
+                    for file in filenames {
                         let dummy_pos = KCLPos {
-                            filename: module.clone(),
+                            filename: file.clone(),
                             line: 1,
                             column: None,
                         };
@@ -102,6 +101,26 @@ pub(crate) fn find_def(
     kcl_pos: &KCLPos,
     prog_scope: &ProgramScope,
 ) -> Option<Definition> {
+    fn pre_process_identifier(id: Node<Identifier>, pos: &KCLPos) -> Identifier {
+        if !id.contains_pos(pos) && id.node.names.is_empty() {
+            return id.node.clone();
+        }
+
+        let mut id = id.node.clone();
+        let mut names = vec![];
+        for name in id.names {
+            names.push(name.clone());
+            if name.contains_pos(pos) {
+                break;
+            }
+        }
+        id.names = names;
+        if !id.pkgpath.is_empty() {
+            id.names[0].node = pkgpath_without_prefix!(id.pkgpath);
+        }
+        id
+    }
+
     let (inner_expr, parent) = inner_most_expr_in_stmt(&node.node, kcl_pos, None);
     if let Some(expr) = inner_expr {
         if let Expr::Identifier(id) = expr.node {
@@ -117,8 +136,8 @@ pub(crate) fn find_def(
             );
             let id = pre_process_identifier(id_node, kcl_pos);
             match parent {
-                Some(schema_expr_node) => {
-                    if let Expr::Schema(schema_expr) = schema_expr_node.node {
+                Some(schema_expr) => {
+                    if let Expr::Schema(schema_expr) = schema_expr.node {
                         let schema_def =
                             find_def(node, &schema_expr.name.get_end_pos(), prog_scope);
                         if let Some(schema) = schema_def {
@@ -131,7 +150,9 @@ pub(crate) fn find_def(
                                         &prog_scope.scope_map,
                                     );
                                 }
-                                Definition::Scope(_) => todo!(),
+                                Definition::Scope(_) => {
+                                    //todo
+                                }
                             }
                         }
                     }

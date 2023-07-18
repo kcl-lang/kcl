@@ -73,7 +73,7 @@ impl<'ctx> Resolver<'ctx> {
                 for module in modules {
                     self.ctx.filename = module.filename.to_string();
                     if let scope::ScopeKind::Package(files) = &mut self.scope.borrow_mut().kind {
-                        files.push(module.filename.to_string())
+                        files.insert(module.filename.to_string());
                     }
                     for stmt in &module.body {
                         self.stmt(&stmt);

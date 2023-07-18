@@ -171,7 +171,9 @@ fn get_completion_items(expr: &Expr, prog_scope: &ProgramScope) -> IndexSet<Stri
                             _ => {}
                         }
                     }
-                    crate::goto_def::Definition::Scope(_) => {}
+                    crate::goto_def::Definition::Scope(_) => {
+                        // todo
+                    }
                 }
             }
         }

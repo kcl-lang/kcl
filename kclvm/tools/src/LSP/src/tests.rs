@@ -230,14 +230,12 @@ fn goto_schema_def_test() {
 //     let mut expected_path = path;
 //     expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
 
-//     // test goto schema definition: p = pkg.Person
 //     let pos = KCLPos {
 //         filename: file,
 //         line: 30,
 //         column: Some(11),
 //     };
 //     let res = goto_definition(&program, &pos, &prog_scope);
-
 // }
 
 #[test]
@@ -494,7 +492,7 @@ fn goto_local_var_def_test() {
     let mut expected_path = path;
     expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
 
-    // test goto schema attr definition: name: "alice"
+    // test goto local var def
     let pos = KCLPos {
         filename: file.clone(),
         line: 47,
@@ -503,6 +501,25 @@ fn goto_local_var_def_test() {
 
     let res = goto_definition(&program, &pos, &prog_scope);
     compare_goto_res(res, (&file, 43, 4, 43, 9));
+
+    let pos = KCLPos {
+        filename: file.clone(),
+        line: 49,
+        column: Some(11),
+    };
+
+    let res = goto_definition(&program, &pos, &prog_scope);
+    compare_goto_res(res, (&file, 43, 4, 43, 9));
+
+    // todo: fix if stmt position error
+    // let pos = KCLPos {
+    //     filename: file.clone(),
+    //     line: 51,
+    //     column: Some(11),
+    // };
+
+    // let res = goto_definition(&program, &pos, &prog_scope);
+    // compare_goto_res(res, (&file, 43, 4, 43, 9));
 }
 
 #[test]

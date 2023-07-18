@@ -5,7 +5,7 @@ use crate::{
     builtin::system_module::STANDARD_SYSTEM_MODULES,
     ty::{Type, TypeKind},
 };
-use indexmap::IndexMap;
+use indexmap::{IndexMap, IndexSet};
 use kclvm_ast::ast;
 use kclvm_error::*;
 use std::{cell::RefCell, path::Path, rc::Rc};
@@ -213,7 +213,7 @@ impl<'ctx> Resolver<'ctx> {
                 elems: IndexMap::default(),
                 start: Position::dummy_pos(),
                 end: Position::dummy_pos(),
-                kind: ScopeKind::Package(vec![]),
+                kind: ScopeKind::Package(IndexSet::new()),
             }));
             self.scope_map
                 .insert(pkgpath.to_string(), Rc::clone(&scope));

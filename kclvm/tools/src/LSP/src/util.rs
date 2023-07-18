@@ -192,33 +192,6 @@ pub(crate) fn inner_most_expr_in_stmt(
             if let Some(ty) = &assign_stmt.ty {
                 if ty.contains_pos(pos) {
                     return (build_identifier_from_ty_string(&ty, pos), schema_def);
-                    // build a temp identifier with string
-                    // return (
-                    //     Some(Node::node_with_pos(
-                    //         Expr::Identifier(Identifier {
-                    //             names: transfer_ident_names(
-                    //                 vec![ty.node.clone()],
-                    //                 &(
-                    //                     ty.filename.clone(),
-                    //                     ty.line,
-                    //                     ty.column,
-                    //                     ty.end_line,
-                    //                     ty.end_column,
-                    //                 ),
-                    //             ),
-                    //             pkgpath: "".to_string(),
-                    //             ctx: kclvm_ast::ast::ExprContext::Load,
-                    //         }),
-                    //         (
-                    //             ty.filename.clone(),
-                    //             ty.line,
-                    //             ty.column,
-                    //             ty.end_line,
-                    //             ty.end_column,
-                    //         ),
-                    //     )),
-                    //     schema_def,
-                    // );
                 }
             }
             walk_if_contains!(assign_stmt.value, pos, schema_def);
@@ -709,26 +682,6 @@ pub(crate) fn fix_missing_identifier(names: &[Node<String>]) -> Vec<Node<String>
     } else {
         names.to_vec()
     }
-}
-
-pub(crate) fn pre_process_identifier(id: Node<Identifier>, pos: &KCLPos) -> Identifier {
-    if !id.contains_pos(pos) && id.node.names.is_empty() {
-        return id.node.clone();
-    }
-
-    let mut id = id.node.clone();
-    let mut names = vec![];
-    for name in id.names {
-        names.push(name.clone());
-        if name.contains_pos(pos) {
-            break;
-        }
-    }
-    id.names = names;
-    if !id.pkgpath.is_empty() {
-        id.names[0].node = pkgpath_without_prefix!(id.pkgpath);
-    }
-    id
 }
 
 pub(crate) fn get_pkg_scope(

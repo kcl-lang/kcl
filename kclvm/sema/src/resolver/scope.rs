@@ -1,6 +1,6 @@
 use anyhow::bail;
 use compiler_base_session::Session;
-use indexmap::IndexMap;
+use indexmap::{IndexMap, IndexSet};
 use kclvm_ast::{ast, MAIN_PKG};
 use kclvm_error::{Handler, Level};
 use std::sync::Arc;
@@ -122,7 +122,7 @@ impl ContainsPos for Scope {
 #[derive(Clone, Debug)]
 pub enum ScopeKind {
     /// Package scope.
-    Package(Vec<String>),
+    Package(IndexSet<String>),
     /// Builtin scope.
     Builtin,
     /// Schema name string.
