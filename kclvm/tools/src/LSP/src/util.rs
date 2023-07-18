@@ -1,15 +1,20 @@
+use std::cell::RefCell;
 use std::path::PathBuf;
+use std::rc::Rc;
 use std::{fs, sync::Arc};
 
-use indexmap::IndexSet;
+use indexmap::{IndexMap, IndexSet};
 use kclvm_ast::ast::{ConfigEntry, Expr, Identifier, Node, NodeRef, PosTuple, Program, Stmt, Type};
 use kclvm_ast::pos::ContainsPos;
+use kclvm_ast::MAIN_PKG;
+use kclvm_compiler::pkgpath_without_prefix;
 use kclvm_config::modfile::KCL_FILE_EXTENSION;
 use kclvm_driver::kpm_metadata::fetch_metadata;
 use kclvm_driver::{get_kcl_files, lookup_compile_unit};
 use kclvm_error::Diagnostic;
 use kclvm_error::Position as KCLPos;
 use kclvm_parser::{load_program, ParseSession};
+use kclvm_sema::resolver::scope::Scope;
 use kclvm_sema::resolver::{resolve_program, scope::ProgramScope};
 use kclvm_utils::pkgpath::rm_external_pkg_name;
 use lsp_types::Url;
@@ -184,34 +189,10 @@ pub(crate) fn inner_most_expr_in_stmt(
 ) -> (Option<Node<Expr>>, Option<Node<Expr>>) {
     match stmt {
         Stmt::Assign(assign_stmt) => {
-            if let Some(ty) = &assign_stmt.type_annotation {
-                // build a temp identifier with string
-                return (
-                    Some(Node::node_with_pos(
-                        Expr::Identifier(Identifier {
-                            names: transfer_ident_names(
-                                vec![ty.node.clone()],
-                                &(
-                                    ty.filename.clone(),
-                                    ty.line,
-                                    ty.column,
-                                    ty.end_line,
-                                    ty.end_column,
-                                ),
-                            ),
-                            pkgpath: "".to_string(),
-                            ctx: kclvm_ast::ast::ExprContext::Load,
-                        }),
-                        (
-                            ty.filename.clone(),
-                            ty.line,
-                            ty.column,
-                            ty.end_line,
-                            ty.end_column,
-                        ),
-                    )),
-                    schema_def,
-                );
+            if let Some(ty) = &assign_stmt.ty {
+                if ty.contains_pos(pos) {
+                    return (build_identifier_from_ty_string(&ty, pos), schema_def);
+                }
             }
             walk_if_contains!(assign_stmt.value, pos, schema_def);
 
@@ -545,7 +526,7 @@ fn inner_most_expr_in_config_entry(
     if config_entry.node.value.contains_pos(pos) {
         inner_most_expr(&config_entry.node.value, pos, None)
     } else {
-        (None, None)
+        (None, schema_def)
     }
 }
 
@@ -690,4 +671,26 @@ pub(crate) fn get_real_path_from_external(
     };
     pkgpath.split('.').for_each(|s| real_path.push(s));
     real_path
+}
+
+/// Error recovery may generate an Identifier with an empty string at the end, e.g.,
+/// a. => vec["a", ""].
+/// When analyzing in LSP, the empty string needs to be removed and find definition of the second last name("a").
+pub(crate) fn fix_missing_identifier(names: &[Node<String>]) -> Vec<Node<String>> {
+    if names.len() >= 1 && names.last().unwrap().node == "" {
+        names[..names.len() - 1].to_vec()
+    } else {
+        names.to_vec()
+    }
+}
+
+pub(crate) fn get_pkg_scope(
+    pkgpath: &String,
+    scope_map: &IndexMap<String, Rc<RefCell<Scope>>>,
+) -> Scope {
+    scope_map
+        .get(&pkgpath_without_prefix!(pkgpath))
+        .unwrap_or(scope_map.get(MAIN_PKG).unwrap())
+        .borrow()
+        .clone()
 }

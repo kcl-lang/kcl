@@ -13,6 +13,7 @@ use std::{fs, path::Path};
 
 use indexmap::IndexSet;
 use kclvm_ast::ast::{Expr, ImportStmt, Program, Stmt};
+use kclvm_compiler::pkgpath_without_prefix;
 use kclvm_config::modfile::KCL_FILE_EXTENSION;
 
 use kclvm_error::Position as KCLPos;
@@ -22,8 +23,9 @@ use kclvm_sema::builtin::{
 use kclvm_sema::resolver::scope::ProgramScope;
 use lsp_types::CompletionItem;
 
-use crate::goto_def::get_identifier_last_name;
-use crate::{goto_def::find_objs_in_program_scope, util::inner_most_expr_in_stmt};
+use crate::goto_def::{get_identifier_last_name, resolve_var};
+use crate::util::inner_most_expr_in_stmt;
+use crate::util::{fix_missing_identifier, get_pkg_scope};
 
 /// Computes completions at the given position.
 pub(crate) fn completion(
@@ -115,7 +117,7 @@ fn get_completion_items(expr: &Expr, prog_scope: &ProgramScope) -> IndexSet<Stri
     let mut items = IndexSet::new();
     match expr {
         Expr::Identifier(id) => {
-            let name = get_identifier_last_name(id);
+            let name = get_identifier_last_name(&id);
             if !id.pkgpath.is_empty() {
                 // standard system module
                 if STANDARD_SYSTEM_MODULES.contains(&name.as_str()) {
@@ -126,7 +128,10 @@ fn get_completion_items(expr: &Expr, prog_scope: &ProgramScope) -> IndexSet<Stri
                     )
                 }
                 // user module
-                if let Some(scope) = prog_scope.scope_map.get(&id.pkgpath) {
+                if let Some(scope) = prog_scope
+                    .scope_map
+                    .get(&pkgpath_without_prefix!(id.pkgpath))
+                {
                     let scope = scope.borrow();
                     for (name, obj) in &scope.elems {
                         if obj.borrow().ty.is_module() {
@@ -138,37 +143,49 @@ fn get_completion_items(expr: &Expr, prog_scope: &ProgramScope) -> IndexSet<Stri
                 return items;
             }
 
-            let objs = find_objs_in_program_scope(&name, prog_scope);
-            for obj in objs {
-                match &obj.ty.kind {
-                    // builtin (str) functions
-                    kclvm_sema::ty::TypeKind::Str => {
-                        let binding = STRING_MEMBER_FUNCTIONS;
-                        for k in binding.keys() {
-                            items.insert(format!("{}{}", k, "()"));
-                        }
-                    }
-                    // schema attrs
-                    kclvm_sema::ty::TypeKind::Schema(schema) => {
-                        for k in schema.attrs.keys() {
-                            if k != "__settings__" {
-                                items.insert(k.clone());
+            let def = resolve_var(
+                &fix_missing_identifier(&id.names),
+                &get_pkg_scope(&id.pkgpath, &prog_scope.scope_map),
+                &prog_scope.scope_map,
+            );
+
+            if let Some(def) = def {
+                match def {
+                    crate::goto_def::Definition::Object(obj) => {
+                        match &obj.ty.kind {
+                            // builtin (str) functions
+                            kclvm_sema::ty::TypeKind::Str => {
+                                let binding = STRING_MEMBER_FUNCTIONS;
+                                for k in binding.keys() {
+                                    items.insert(format!("{}{}", k, "()"));
+                                }
                             }
+                            // schema attrs
+                            kclvm_sema::ty::TypeKind::Schema(schema) => {
+                                for k in schema.attrs.keys() {
+                                    if k != "__settings__" {
+                                        items.insert(k.clone());
+                                    }
+                                }
+                            }
+                            _ => {}
                         }
                     }
-                    _ => {}
+                    crate::goto_def::Definition::Scope(_) => {
+                        // todo
+                    }
                 }
             }
+        }
+        Expr::Selector(select_expr) => {
+            let res = get_completion_items(&select_expr.value.node, prog_scope);
+            items.extend(res);
         }
         Expr::StringLit(_) => {
             let binding = STRING_MEMBER_FUNCTIONS;
             for k in binding.keys() {
                 items.insert(format!("{}{}", k, "()"));
             }
-        }
-        Expr::Selector(select_expr) => {
-            let res = get_completion_items(&select_expr.value.node, prog_scope);
-            items.extend(res);
         }
         _ => {}
     }

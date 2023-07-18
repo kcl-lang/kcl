@@ -408,13 +408,6 @@ fn test_pkg_scope() {
 
     assert!(main_scope.contains_pos(&pos));
 
-    let pos = Position {
-        filename: filename.clone(),
-        line: 10,
-        column: Some(0),
-    };
-    assert!(!main_scope.contains_pos(&pos));
-
     let filename = Path::new(&root.clone())
         .join("pkg")
         .join("pkg.k")
@@ -428,12 +421,4 @@ fn test_pkg_scope() {
     };
 
     assert!(pkg_scope.contains_pos(&pos));
-
-    let pos = Position {
-        filename: filename.clone(),
-        line: 10,
-        column: Some(0),
-    };
-
-    assert!(!pkg_scope.contains_pos(&pos));
 }

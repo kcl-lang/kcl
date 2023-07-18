@@ -1,6 +1,6 @@
 use anyhow::bail;
 use compiler_base_session::Session;
-use indexmap::IndexMap;
+use indexmap::{IndexMap, IndexSet};
 use kclvm_ast::{ast, MAIN_PKG};
 use kclvm_error::{Handler, Level};
 use std::sync::Arc;
@@ -113,17 +113,7 @@ impl ContainsPos for Scope {
     /// Check if current scope contains a position
     fn contains_pos(&self, pos: &Position) -> bool {
         match &self.kind {
-            ScopeKind::Package(files) => {
-                if files.contains(&pos.filename) {
-                    self.children.iter().any(|s| s.borrow().contains_pos(pos))
-                        || self
-                            .elems
-                            .iter()
-                            .any(|(_, child)| child.borrow().contains_pos(pos))
-                } else {
-                    false
-                }
-            }
+            ScopeKind::Package(files) => files.contains(&pos.filename),
             _ => self.start.less_equal(pos) && pos.less_equal(&self.end),
         }
     }
@@ -132,7 +122,7 @@ impl ContainsPos for Scope {
 #[derive(Clone, Debug)]
 pub enum ScopeKind {
     /// Package scope.
-    Package(Vec<String>),
+    Package(IndexSet<String>),
     /// Builtin scope.
     Builtin,
     /// Schema name string.
