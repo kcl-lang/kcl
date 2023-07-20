@@ -18,6 +18,7 @@ use lsp_types::SymbolKind;
 use lsp_types::Url;
 use lsp_types::{Position, Range, TextDocumentContentChangeEvent};
 
+use crate::completion::KCLCompletionItem;
 use crate::document_symbol::document_symbol;
 use crate::from_lsp::file_path_from_url;
 use crate::hover::hover;
@@ -603,9 +604,68 @@ fn test_apply_document_changes() {
 }
 
 #[test]
-fn completion_test() {
+fn var_completion_test() {
     let (file, program, prog_scope, _) =
         compile_test_file("src/test_data/completion_test/dot/completion.k");
+
+    let mut items: IndexSet<KCLCompletionItem> = IndexSet::new();
+
+    // test completion for var
+    let pos = KCLPos {
+        filename: file.to_owned(),
+        line: 26,
+        column: Some(5),
+    };
+
+    let got = completion(None, &program, &pos, &prog_scope).unwrap();
+
+    items.extend(
+        vec![
+            "", // generate from error recovery of "pkg."
+            "subpkg", "math", "Person", "p", "p1", "p2", "p3", "p4",
+        ]
+        .iter()
+        .map(|name| KCLCompletionItem {
+            label: name.to_string(),
+        })
+        .collect::<IndexSet<KCLCompletionItem>>(),
+    );
+
+    let expect: CompletionResponse = into_completion_items(&items).into();
+
+    assert_eq!(expect, got);
+
+    // test completion for schema attr
+    let pos = KCLPos {
+        filename: file.to_owned(),
+        line: 24,
+        column: Some(4),
+    };
+
+    let got = completion(None, &program, &pos, &prog_scope).unwrap();
+
+    items.extend(
+        vec![
+            "__settings__",
+            "name",
+            "age", // attr of schema `Person`
+        ]
+        .iter()
+        .map(|name| KCLCompletionItem {
+            label: name.to_string(),
+        })
+        .collect::<IndexSet<KCLCompletionItem>>(),
+    );
+    let expect: CompletionResponse = into_completion_items(&items).into();
+
+    assert_eq!(expect, got);
+}
+
+#[test]
+fn dot_completion_test() {
+    let (file, program, prog_scope, _) =
+        compile_test_file("src/test_data/completion_test/dot/completion.k");
+    let mut items: IndexSet<KCLCompletionItem> = IndexSet::new();
 
     // test completion for schema attr
     let pos = KCLPos {
@@ -615,9 +675,13 @@ fn completion_test() {
     };
 
     let got = completion(Some('.'), &program, &pos, &prog_scope).unwrap();
-    let mut items = IndexSet::new();
-    items.insert("name".to_string());
-    items.insert("age".to_string());
+
+    items.insert(KCLCompletionItem {
+        label: "name".to_string(),
+    });
+    items.insert(KCLCompletionItem {
+        label: "age".to_string(),
+    });
 
     let expect: CompletionResponse = into_completion_items(&items).into();
 
@@ -634,7 +698,9 @@ fn completion_test() {
     let got = completion(Some('.'), &program, &pos, &prog_scope).unwrap();
     let binding = STRING_MEMBER_FUNCTIONS;
     for k in binding.keys() {
-        items.insert(format!("{}{}", k, "()"));
+        items.insert(KCLCompletionItem {
+            label: format!("{}{}", k, "()"),
+        });
     }
     let expect: CompletionResponse = into_completion_items(&items).into();
 
@@ -648,9 +714,15 @@ fn completion_test() {
         column: Some(12),
     };
     let got = completion(Some('.'), &program, &pos, &prog_scope).unwrap();
-    items.insert("file1".to_string());
-    items.insert("file2".to_string());
-    items.insert("subpkg".to_string());
+    items.insert(KCLCompletionItem {
+        label: "file1".to_string(),
+    });
+    items.insert(KCLCompletionItem {
+        label: "file2".to_string(),
+    });
+    items.insert(KCLCompletionItem {
+        label: "subpkg".to_string(),
+    });
 
     let expect: CompletionResponse = into_completion_items(&items).into();
     assert_eq!(got, expect);
@@ -664,7 +736,10 @@ fn completion_test() {
     };
 
     let got = completion(Some('.'), &program, &pos, &prog_scope).unwrap();
-    items.insert("Person1".to_string());
+    items.insert(KCLCompletionItem {
+        label: "Person1".to_string(),
+    });
+
     let expect: CompletionResponse = into_completion_items(&items).into();
     assert_eq!(got, expect);
     items.clear();
@@ -675,7 +750,10 @@ fn completion_test() {
         column: Some(5),
     };
     let got = completion(Some('.'), &program, &pos, &prog_scope).unwrap();
-    items.extend(MATH_FUNCTION_NAMES.iter().map(|s| s.to_string()));
+
+    items.extend(MATH_FUNCTION_NAMES.iter().map(|s| KCLCompletionItem {
+        label: s.to_string(),
+    }));
     let expect: CompletionResponse = into_completion_items(&items).into();
     assert_eq!(got, expect);
     items.clear();
@@ -690,7 +768,9 @@ fn completion_test() {
     let got = completion(Some('.'), &program, &pos, &prog_scope).unwrap();
     let binding = STRING_MEMBER_FUNCTIONS;
     for k in binding.keys() {
-        items.insert(format!("{}{}", k, "()"));
+        items.insert(KCLCompletionItem {
+            label: format!("{}{}", k, "()"),
+        });
     }
     let expect: CompletionResponse = into_completion_items(&items).into();
 

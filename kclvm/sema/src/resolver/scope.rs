@@ -55,7 +55,17 @@ pub enum ScopeObjectKind {
     Definition,
     Parameter,
     TypeAlias,
-    Module,
+    Module(Module),
+}
+
+/// A scope object of module type represents an import stmt on an AST and
+/// is used to record information on the AST
+#[derive(PartialEq, Clone, Debug)]
+pub struct Module {
+    pub path: String,
+    pub rawpath: String,
+    pub name: String,
+    pub asname: Option<String>,
 }
 
 /// A Scope maintains a set of objects and links to its containing
@@ -94,6 +104,29 @@ impl Scope {
                 None => None,
             },
         }
+    }
+
+    /// Get all usable scope objects in current and parent scope.
+    pub fn all_usable_objects(&self) -> IndexMap<String, Rc<RefCell<ScopeObject>>> {
+        let mut res = match &self.parent {
+            Some(parent) => match parent.upgrade() {
+                Some(parent) => parent.borrow().all_usable_objects(),
+                None => IndexMap::new(),
+            },
+            None => IndexMap::new(),
+        };
+
+        for (name, obj) in &self.elems {
+            match &obj.borrow().kind {
+                ScopeObjectKind::Module(module) => {
+                    res.insert(module.name.clone(), obj.clone());
+                }
+                _ => {
+                    res.insert(name.clone(), obj.clone());
+                }
+            }
+        }
+        res
     }
 
     /// Set a type by name to existed object, return true if found.
@@ -266,6 +299,17 @@ impl ProgramScope {
             }
         };
         emit_error().map_err(|e| e.to_string())
+    }
+
+    /// Returns the inner most scope on the position.
+    pub fn inner_most_scope(&self, pos: &Position) -> Option<Scope> {
+        for (_, scope) in &self.scope_map {
+            match scope.borrow().inner_most(&pos) {
+                Some(scope) => return Some(scope),
+                None => continue,
+            }
+        }
+        None
     }
 }
 

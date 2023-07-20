@@ -19,3 +19,8 @@ import math
 math.         # complete user module definition
 
 "a".
+
+p4 = Person{
+    
+}
+

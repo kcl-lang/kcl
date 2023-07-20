@@ -100,6 +100,6 @@ fn scope_obj_kind_to_document_symbol_kind(kind: ScopeObjectKind) -> SymbolKind {
         ScopeObjectKind::Definition => SymbolKind::STRUCT,
         ScopeObjectKind::Parameter => SymbolKind::VARIABLE,
         ScopeObjectKind::TypeAlias => SymbolKind::TYPE_PARAMETER,
-        ScopeObjectKind::Module => SymbolKind::MODULE,
+        ScopeObjectKind::Module(_) => SymbolKind::MODULE,
     }
 }
