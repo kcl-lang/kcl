@@ -563,8 +563,20 @@ impl<'a> Parser<'a> {
 
         // fix elif-list and else
         while let Some(mut x) = elif_list.pop() {
-            x.node.orelse = if_stmt.orelse;
-            let pos = x.clone().pos();
+            x.node.orelse = if_stmt.orelse.clone();
+            let pos = if if_stmt.orelse.is_empty() {
+                x.clone().pos()
+            } else {
+                let start_pos = x.clone().pos();
+                let end_pos = if_stmt.orelse.last().unwrap().pos();
+                (
+                    start_pos.0.clone(),
+                    start_pos.1,
+                    start_pos.2,
+                    end_pos.3,
+                    end_pos.4,
+                )
+            };
             let t = Box::new(Node::node_with_pos(Stmt::If(x.node), pos));
             if_stmt.orelse = vec![t];
         }
