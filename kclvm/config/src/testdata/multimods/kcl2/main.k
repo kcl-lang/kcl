@@ -1,0 +1,1 @@
+The_first_kcl_program_2 = 'Hello World 2!'

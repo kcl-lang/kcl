@@ -2,13 +2,21 @@ use std::{
     env,
     fs::{self, remove_file},
     path::{Path, PathBuf},
+    sync::Arc,
 };
 
 use kclvm_config::modfile::KCL_PKG_PATH;
+use kclvm_parser::ParseSession;
+use kclvm_runner::exec_program;
 
 use crate::{
-    app, fmt::fmt_command, lint::lint_command, run::run_command, settings::build_settings,
-    util::hashmaps_from_matches, vet::vet_command,
+    app,
+    fmt::fmt_command,
+    lint::lint_command,
+    run::run_command,
+    settings::{build_settings, must_build_settings},
+    util::hashmaps_from_matches,
+    vet::vet_command,
 };
 
 #[cfg(unix)]
@@ -215,6 +223,9 @@ fn test_run_command() {
     test_run_command_with_konfig();
     test_load_cache_with_different_pkg();
     test_kcl_path_is_sym_link();
+    test_compile_two_kcl_mod();
+    test_main_pkg_not_found();
+    test_conflict_mod_file();
 }
 
 fn test_run_command_with_import() {
@@ -363,4 +374,121 @@ fn test_kcl_path_is_sym_link() {
 
     // clean up the symlink
     remove_file(link).unwrap();
+}
+
+fn test_compile_two_kcl_mod() {
+    let test_case_path = PathBuf::from("./src/test_data/multimod");
+
+    let matches = app().arg_required_else_help(true).get_matches_from(&[
+        ROOT_CMD,
+        "run",
+        &test_case_path.join("kcl1/main.k").display().to_string(),
+        "${kcl2:KCL_MOD}/main.k",
+        "-E",
+        &format!("kcl2={}", test_case_path.join("kcl2").display().to_string()),
+    ]);
+
+    let mut buf = Vec::new();
+    run_command(matches.subcommand_matches("run").unwrap(), &mut buf).unwrap();
+
+    assert_eq!(
+        "kcl1: hello 1\nkcl2: hello 2\n",
+        String::from_utf8(buf).unwrap()
+    );
+
+    let matches = app().arg_required_else_help(true).get_matches_from(&[
+        ROOT_CMD,
+        "run",
+        &test_case_path.join("kcl2/main.k").display().to_string(),
+        "${kcl1:KCL_MOD}/main.k",
+        "-E",
+        &format!("kcl1={}", test_case_path.join("kcl1").display().to_string()),
+    ]);
+
+    let mut buf = Vec::new();
+    run_command(matches.subcommand_matches("run").unwrap(), &mut buf).unwrap();
+
+    assert_eq!(
+        "kcl2: hello 2\nkcl1: hello 1\n",
+        String::from_utf8(buf).unwrap()
+    );
+
+    let matches = app().arg_required_else_help(true).get_matches_from(&[
+        ROOT_CMD,
+        "run",
+        &test_case_path.join("kcl3/main.k").display().to_string(),
+        "${kcl4:KCL_MOD}/main.k",
+        "-E",
+        &format!(
+            "kcl4={}",
+            test_case_path
+                .join("kcl3")
+                .join("kcl4")
+                .display()
+                .to_string()
+        ),
+    ]);
+
+    let mut buf = Vec::new();
+    run_command(matches.subcommand_matches("run").unwrap(), &mut buf).unwrap();
+
+    assert_eq!(
+        "k3: Hello World 3\nk4: Hello World 4\n",
+        String::from_utf8(buf).unwrap()
+    );
+
+    let matches = app().arg_required_else_help(true).get_matches_from(&[
+        ROOT_CMD,
+        "run",
+        &test_case_path
+            .join("kcl3/kcl4/main.k")
+            .display()
+            .to_string(),
+        "${kcl3:KCL_MOD}/main.k",
+        "-E",
+        &format!("kcl3={}", test_case_path.join("kcl3").display().to_string()),
+    ]);
+
+    let mut buf = Vec::new();
+    run_command(matches.subcommand_matches("run").unwrap(), &mut buf).unwrap();
+
+    assert_eq!(
+        "k4: Hello World 4\nk3: Hello World 3\n",
+        String::from_utf8(buf).unwrap()
+    );
+}
+
+fn test_main_pkg_not_found() {
+    let test_case_path = PathBuf::from("./src/test_data/multimod");
+
+    let matches = app().arg_required_else_help(true).get_matches_from(&[
+        ROOT_CMD,
+        "run",
+        "${kcl3:KCL_MOD}/main.k",
+        "-E",
+        &format!("kcl3={}", test_case_path.join("kcl3").display().to_string()),
+    ]);
+    let settings = must_build_settings(matches.subcommand_matches("run").unwrap());
+    let sess = Arc::new(ParseSession::default());
+    match exec_program(sess.clone(), &settings.try_into().unwrap()) {
+        Ok(_) => panic!("unreachable code."),
+        Err(msg) => assert_eq!(msg, "No input KCL files"),
+    }
+}
+
+fn test_conflict_mod_file() {
+    let test_case_path = PathBuf::from("./src/test_data/multimod");
+
+    let matches = app().arg_required_else_help(true).get_matches_from(&[
+        ROOT_CMD,
+        "run",
+        &test_case_path.join("kcl1").display().to_string(),
+        &test_case_path.join("kcl2").display().to_string(),
+    ]);
+    let settings = must_build_settings(matches.subcommand_matches("run").unwrap());
+    let sess = Arc::new(ParseSession::default());
+    match exec_program(sess.clone(), &settings.try_into().unwrap()) {
+        Ok(_) => panic!("unreachable code."),
+        Err(msg) => assert!(msg.contains("conflict kcl.mod file paths")),
+    }
 }

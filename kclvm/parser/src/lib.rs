@@ -15,9 +15,10 @@ use compiler_base_session::Session;
 use compiler_base_span::span::new_byte_pos;
 use kclvm_ast::ast;
 use kclvm_config::modfile::{
-    get_pkg_root_from_paths, get_vendor_home, KCL_FILE_EXTENSION, KCL_FILE_SUFFIX, KCL_MOD_FILE,
-    KCL_MOD_PATH_ENV,
+    get_compile_entries_from_paths, get_vendor_home, KCL_FILE_EXTENSION, KCL_FILE_SUFFIX,
+    KCL_MOD_FILE,
 };
+use kclvm_config::path::ModRelativePath;
 use kclvm_error::{ErrorKind, Message, Position, Style};
 use kclvm_sema::plugin::PLUGIN_MODULE_PREFIX;
 use kclvm_utils::path::PathPrefix;
@@ -277,41 +278,51 @@ impl Loader {
     }
 
     fn _load_main(&mut self) -> Result<ast::Program, String> {
-        let root = get_pkg_root_from_paths(&self.paths)?;
-        let main_pkg_name = kclvm_ast::MAIN_PKG.to_string();
-
-        // Get files from options with root.
-        let k_files = self.get_main_files(&root)?;
-
-        // load module
+        let compile_entries =
+            get_compile_entries_from_paths(&self.paths, self.opts.package_maps.clone())?;
         let mut pkgs = HashMap::new();
-        let mut pkg_files = Vec::new();
-        for (i, filename) in k_files.iter().enumerate() {
-            if i < self.opts.k_code_list.len() {
-                let mut m = parse_file_with_session(
-                    self.sess.clone(),
-                    filename,
-                    Some(self.opts.k_code_list[i].clone()),
-                )?;
-                self.fix_rel_import_path(&root, &mut m);
-                pkg_files.push(m)
-            } else {
-                let mut m = parse_file_with_session(self.sess.clone(), filename, None)?;
-                self.fix_rel_import_path(&root, &mut m);
-                pkg_files.push(m);
+
+        let main_program_root = compile_entries
+            .get(kclvm_ast::MAIN_PKG)
+            .ok_or(format!("main package not found in {:?}", &self.paths))?;
+        for (pkg_name, pkg_root) in compile_entries.iter() {
+            // Get files from options with root.
+            let k_files = self.get_main_files_from_pkg(&pkg_root, pkg_name)?;
+
+            // load module
+            let mut pkg_files = Vec::new();
+            for (i, filename) in k_files.iter().enumerate() {
+                if i < self.opts.k_code_list.len() {
+                    let mut m = parse_file_with_session(
+                        self.sess.clone(),
+                        filename,
+                        Some(self.opts.k_code_list[i].clone()),
+                    )?;
+                    self.fix_rel_import_path(&pkg_root, &mut m);
+                    pkg_files.push(m)
+                } else {
+                    let mut m = parse_file_with_session(self.sess.clone(), filename, None)?;
+                    self.fix_rel_import_path(&pkg_root, &mut m);
+                    pkg_files.push(m);
+                }
             }
+
+            // Insert an empty vec to determine whether there is a circular import.
+            pkgs.insert(kclvm_ast::MAIN_PKG.to_string(), vec![]);
+
+            self.load_import_package(
+                &pkg_root,
+                kclvm_ast::MAIN_PKG.to_string(),
+                &mut pkg_files,
+                &mut pkgs,
+            )?;
+
+            // Insert the complete ast to replace the empty list.
+            pkgs.insert(kclvm_ast::MAIN_PKG.to_string(), pkg_files);
         }
 
-        // Insert an empty vec to determine whether there is a circular import.
-        pkgs.insert(kclvm_ast::MAIN_PKG.to_string(), vec![]);
-
-        self.load_import_package(&root, main_pkg_name, &mut pkg_files, &mut pkgs)?;
-
-        // Insert the complete ast to replace the empty list.
-        pkgs.insert(kclvm_ast::MAIN_PKG.to_string(), pkg_files);
-
         Ok(ast::Program {
-            root,
+            root: main_program_root.to_string(),
             main: kclvm_ast::MAIN_PKG.to_string(),
             pkgs,
         })
@@ -417,14 +428,31 @@ impl Loader {
     }
 
     /// Get files in the main package with the package root.
-    fn get_main_files(&mut self, root: &str) -> Result<Vec<String>, String> {
+    fn get_main_files_from_pkg(
+        &mut self,
+        root: &str,
+        pkg_name: &str,
+    ) -> Result<Vec<String>, String> {
         // fix path
         let mut path_list = Vec::new();
         for s in &self.paths {
             let mut s = s.clone();
-            if s.contains(KCL_MOD_PATH_ENV) {
-                s = s.replace(KCL_MOD_PATH_ENV, root);
+            let path = ModRelativePath::from(s.to_string());
+
+            if path.is_relative_path().map_err(|e| e.to_string())? {
+                if let Some(name) = path.get_root_pkg_name().map_err(|e| e.to_string())? {
+                    if name == pkg_name {
+                        s = path
+                            .canonicalize_by_root_path(root)
+                            .map_err(|e| e.to_string())?;
+                        path_list.push(s);
+                    }
+                } else if path.is_relative_path().map_err(|e| e.to_string())? {
+                    continue;
+                }
+                continue;
             }
+
             if !root.is_empty() && !self.is_absolute(s.as_str()) {
                 let p = std::path::Path::new(s.as_str());
                 if let Ok(x) = std::fs::canonicalize(p) {
