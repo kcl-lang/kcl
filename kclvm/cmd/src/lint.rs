@@ -1,3 +1,4 @@
+use crate::util::*;
 use anyhow::Result;
 use clap::ArgMatches;
 use kclvm_error::Handler;
@@ -24,7 +25,7 @@ pub fn lint_command(matches: &ArgMatches) -> Result<()> {
     let (mut err_handler, mut warning_handler) = (Handler::default(), Handler::default());
     (err_handler.diagnostics, warning_handler.diagnostics) =
         lint_files(&files, Some(args.get_load_program_options()));
-    if matches.get_count("emit_warning") > 0 {
+    if bool_from_matches(matches, "emit_warning").unwrap_or_default() {
         warning_handler.emit()?;
     }
     err_handler.abort_if_any_errors();

@@ -129,7 +129,7 @@ pub(crate) fn ping(serv: *mut kclvm_service, args: *const c_char) -> *const c_ch
 ///
 ///
 /// `args`: [*const c_char]
-///     the items and compile parameters selected by the user in the KCLVM CLI
+///     the items and compile parameters selected by the user in the KCL CLI
 ///     serialized as protobuf byte sequence
 ///
 /// # Returns
@@ -149,7 +149,7 @@ pub(crate) fn exec_program(serv: *mut kclvm_service, args: *const c_char) -> *co
 ///
 ///
 /// `args`: [*const c_char]
-///     kcl file , override specs and import paths selected by the user in the KCLVM CLI
+///     kcl file , override specs and import paths selected by the user in the KCL CLI
 ///     serialized as protobuf byte sequence
 ///
 /// # Returns

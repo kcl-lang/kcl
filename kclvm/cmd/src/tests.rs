@@ -7,8 +7,8 @@ use std::{
 use kclvm_config::modfile::KCL_PKG_PATH;
 
 use crate::{
-    app, fmt::fmt_command, run::run_command, settings::build_settings, util::hashmaps_from_matches,
-    vet::vet_command,
+    app, fmt::fmt_command, lint::lint_command, run::run_command, settings::build_settings,
+    util::hashmaps_from_matches, vet::vet_command,
 };
 
 #[cfg(unix)]
@@ -193,6 +193,18 @@ fn test_external_cmd_invalid() {
             }
         };
     }
+}
+
+#[test]
+fn test_lint_cmd() {
+    let input = std::path::Path::new(".")
+        .join("src")
+        .join("test_data")
+        .join("lint")
+        .join("test.k");
+    let matches = app().get_matches_from(&[ROOT_CMD, "lint", input.to_str().unwrap()]);
+    let matches = matches.subcommand_matches("lint").unwrap();
+    assert!(lint_command(&matches).is_ok())
 }
 
 #[test]

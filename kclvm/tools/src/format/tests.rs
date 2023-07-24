@@ -34,7 +34,7 @@ fn read_data(data_name: &str) -> (String, String) {
     .unwrap();
 
     (
-        format_source(&src).unwrap().0,
+        format_source("", &src).unwrap().0,
         std::fs::read_to_string(&format!(
             "./src/format/test_data/format_data/{}{}",
             data_name, FILE_OUTPUT_SUFFIX
@@ -111,7 +111,7 @@ fn test_format_integration_konfig() -> Result<()> {
             file
         );
         let src = std::fs::read_to_string(file)?;
-        let (formatted_src, _) = format_source(&src)?;
+        let (formatted_src, _) = format_source("", &src)?;
         let parse_result = parse_file("test.k", Some(formatted_src.clone() + "\n"));
         assert!(
             parse_result.is_ok(),

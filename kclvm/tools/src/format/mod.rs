@@ -5,7 +5,7 @@
 //! The basic principle is to call the [kclvm_parser::parse_file] function to parse the
 //! AST Module, and then use the AST printer [kclvm_tools::printer::print_ast_module]
 //! to print it as source code string.
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use kclvm_ast_pretty::print_ast_module;
 use kclvm_driver::get_kcl_files;
 use std::path::Path;
@@ -69,7 +69,7 @@ pub fn format<P: AsRef<Path>>(path: P, opts: &FormatOptions) -> Result<Vec<Strin
 /// Formats a file and returns whether the file has been formatted and modified.
 pub fn format_file(file: &str, opts: &FormatOptions) -> Result<bool> {
     let src = std::fs::read_to_string(file)?;
-    let (source, is_formatted) = format_source(&src)?;
+    let (source, is_formatted) = format_source(file, &src)?;
     if opts.is_stdout {
         println!("{}", source);
     } else {
@@ -80,11 +80,8 @@ pub fn format_file(file: &str, opts: &FormatOptions) -> Result<bool> {
 
 /// Formats a code source and returns the formatted source and
 /// whether the source is changed.
-pub fn format_source(src: &str) -> Result<(String, bool)> {
-    let module = match parse_file("", Some(src.to_string())) {
-        Ok(module) => module,
-        Err(err) => return Err(anyhow!("{}", err)),
-    };
+pub fn format_source(file: &str, src: &str) -> Result<(String, bool)> {
+    let module = parse_file(file, Some(src.to_string())).map_err(|err| anyhow::anyhow!(err))?;
     let formatted_src = print_ast_module(&module);
     let is_formatted = src != formatted_src;
     Ok((formatted_src, is_formatted))
