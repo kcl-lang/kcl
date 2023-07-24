@@ -15,7 +15,7 @@ use kclvm_parser::LoadProgramOptions;
 use kclvm_utils::path::PathPrefix;
 use kpm_metadata::fill_pkg_maps_for_k_file;
 use std::{
-    fs::{self, read_dir},
+    fs::read_dir,
     io::{self, ErrorKind},
     path::{Path, PathBuf},
 };
