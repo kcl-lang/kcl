@@ -24,7 +24,8 @@ use std::rc::Rc;
 
 use crate::to_lsp::lsp_pos;
 use crate::util::{
-    get_pkg_scope, get_pos_from_real_path, get_real_path_from_external, inner_most_expr_in_stmt,
+    fix_missing_identifier, get_pkg_scope, get_pos_from_real_path, get_real_path_from_external,
+    inner_most_expr_in_stmt,
 };
 
 // Navigates to the definition of an identifier.
@@ -64,6 +65,7 @@ pub(crate) fn goto_definition(
 //     }
 // }
 
+#[derive(Debug)]
 pub enum Definition {
     Object(ScopeObject),
     Scope(Scope),
@@ -114,7 +116,7 @@ pub(crate) fn find_def(
                 break;
             }
         }
-        id.names = names;
+        id.names = fix_missing_identifier(&names);
         if !id.pkgpath.is_empty() {
             id.names[0].node = pkgpath_without_prefix!(id.pkgpath);
         }
@@ -158,11 +160,8 @@ pub(crate) fn find_def(
                     }
                 }
                 None => {
-                    for (_, scope) in &prog_scope.scope_map {
-                        match scope.borrow().inner_most(kcl_pos) {
-                            Some(s) => return resolve_var(&id.names, &s, &prog_scope.scope_map),
-                            None => continue,
-                        }
+                    if let Some(inner_most_scope) = prog_scope.inner_most_scope(&kcl_pos) {
+                        return resolve_var(&id.names, &inner_most_scope, &prog_scope.scope_map);
                     }
                 }
             }
@@ -187,7 +186,7 @@ pub(crate) fn resolve_var(
             let name = names[0].clone();
             match current_scope.lookup(&name) {
                 Some(obj) => match obj.borrow().kind {
-                    kclvm_sema::resolver::scope::ScopeObjectKind::Module => {
+                    kclvm_sema::resolver::scope::ScopeObjectKind::Module(_) => {
                         match scope_map.get(&name) {
                             Some(scope) => Some(Definition::Scope(scope.borrow().clone())),
                             None => None,

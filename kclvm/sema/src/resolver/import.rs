@@ -1,4 +1,5 @@
 use crate::plugin::PLUGIN_MODULE_PREFIX;
+use crate::resolver::scope::Module;
 use crate::resolver::Resolver;
 use crate::ty::ModuleKind;
 use crate::{
@@ -161,7 +162,12 @@ impl<'ctx> Resolver<'ctx> {
                                                 start,
                                                 end,
                                                 ty: Rc::new(ty),
-                                                kind: ScopeObjectKind::Module,
+                                                kind: ScopeObjectKind::Module(Module {
+                                                    path: import_stmt.path.clone(),
+                                                    rawpath: import_stmt.rawpath.clone(),
+                                                    name: import_stmt.name.clone(),
+                                                    asname: import_stmt.asname.clone(),
+                                                }),
                                                 used: false,
                                                 doc: None,
                                             })),
