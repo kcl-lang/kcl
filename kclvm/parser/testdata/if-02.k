@@ -8,3 +8,4 @@ elif a + 100:
     ddd = 4
 else:
     eee = 5
+    fff = 6

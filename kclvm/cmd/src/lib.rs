@@ -67,9 +67,19 @@ pub fn app() -> Command {
             Command::new("lint")
             .about("lint")
             .arg(arg!([input] ... "Sets the input file to use").num_args(0..))
+            .arg(arg!(output: -o --output <output> "Specify the YAML output file path"))
             .arg(arg!(setting: -Y --setting <setting> ... "Sets the input file to use").num_args(1..))
             .arg(arg!(verbose: -v --verbose "Print test information verbosely").action(ArgAction::Count))
-            .arg(arg!(emit_warning: --emit_warning "Emit warning message")),
+            .arg(arg!(emit_warning: --emit_warning "Emit warning message"))
+            .arg(arg!(disable_none: -n --disable_none "Disable dumping None values"))
+            .arg(arg!(strict_range_check: -r --strict_range_check "Do perform strict numeric range checks"))
+            .arg(arg!(debug: -d --debug "Run in debug mode (for developers only)"))
+            .arg(arg!(sort_keys: -k --sort_keys "Sort result keys"))
+            .arg(arg!(arguments: -D --argument <arguments> ... "Specify the top-level argument").num_args(1..))
+            .arg(arg!(path_selector: -S --path_selector <path_selector> ... "Specify the path selector").num_args(1..))
+            .arg(arg!(overrides: -O --overrides <overrides> ... "Specify the configuration override path and value").num_args(1..))
+            .arg(arg!(target: --target <target> "Specify the target type"))
+            .arg(arg!(package_map: -E --external <package_map> ... "Mapping of package name and path where the package is located").num_args(1..)),
         )
         .subcommand(
             Command::new("fmt")

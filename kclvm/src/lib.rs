@@ -12,7 +12,7 @@ use std::ffi::CStr;
 use std::process::ExitCode;
 use std::sync::Arc;
 
-/// KCLVM CLI run function CAPI.
+/// KCL CLI run function CAPI.
 ///
 /// args is a ExecProgramArgs JSON string.
 #[no_mangle]
@@ -51,7 +51,7 @@ pub unsafe extern "C" fn kclvm_cli_run(args: *const i8, plugin_agent: *const i8)
     }
 }
 
-/// KCLVM CLI run function CAPI.
+/// KCL CLI run function CAPI.
 fn kclvm_cli_run_unsafe(args: *const i8, plugin_agent: *const i8) -> Result<String, String> {
     let mut args = ExecProgramArgs::from_str(kclvm_runtime::c2str(args));
     args.plugin_agent = plugin_agent as u64;
@@ -60,7 +60,7 @@ fn kclvm_cli_run_unsafe(args: *const i8, plugin_agent: *const i8) -> Result<Stri
         .map(|r| r.json_result)
 }
 
-/// KCLVM CLI main function CAPI.
+/// KCL CLI main function CAPI.
 #[no_mangle]
 pub unsafe extern "C" fn kclvm_cli_main(argc: c_int, argv: *const *const c_char) -> *mut ExitCode {
     let prev_hook = std::panic::take_hook();
@@ -83,10 +83,10 @@ pub unsafe extern "C" fn kclvm_cli_main(argc: c_int, argv: *const *const c_char)
             Ok(()) => Box::into_raw(Box::new(ExitCode::SUCCESS)),
             Err(err) => {
                 let backtrace = format!("{}", err.backtrace());
-                if backtrace.is_empty() {
-                    println!("Error: {}", err);
+                if backtrace.is_empty() || backtrace.contains("disabled backtrace") {
+                    println!("Error: {err}");
                 } else {
-                    println!("Error: {}\n\nStack backtrace:\n{}", err, backtrace);
+                    println!("Error: {err}\nStack backtrace:\n{backtrace}");
                 }
                 Box::into_raw(Box::new(ExitCode::FAILURE))
             }
@@ -94,7 +94,7 @@ pub unsafe extern "C" fn kclvm_cli_main(argc: c_int, argv: *const *const c_char)
         Err(err) => {
             let err_str = kclvm_error::err_to_str(err);
             if !err_str.is_empty() {
-                println!("Error: {}", err_str);
+                println!("Error: {err_str}");
             }
             Box::into_raw(Box::new(ExitCode::FAILURE))
         }

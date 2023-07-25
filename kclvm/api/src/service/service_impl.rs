@@ -278,7 +278,7 @@ impl KclvmServiceImpl {
     /// assert_eq!(result.formatted, source.as_bytes().to_vec());
     /// ```
     pub fn format_code(&self, args: &FormatCodeArgs) -> anyhow::Result<FormatCodeResult> {
-        let (formatted, _) = format_source(&args.source)?;
+        let (formatted, _) = format_source("", &args.source)?;
         Ok(FormatCodeResult {
             formatted: formatted.as_bytes().to_vec(),
         })

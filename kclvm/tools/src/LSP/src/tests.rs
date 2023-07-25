@@ -512,15 +512,14 @@ fn goto_local_var_def_test() {
     let res = goto_definition(&program, &pos, &prog_scope);
     compare_goto_res(res, (&file, 43, 4, 43, 9));
 
-    // todo: fix if stmt position error
-    // let pos = KCLPos {
-    //     filename: file.clone(),
-    //     line: 51,
-    //     column: Some(11),
-    // };
+    let pos = KCLPos {
+        filename: file.clone(),
+        line: 51,
+        column: Some(11),
+    };
 
-    // let res = goto_definition(&program, &pos, &prog_scope);
-    // compare_goto_res(res, (&file, 43, 4, 43, 9));
+    let res = goto_definition(&program, &pos, &prog_scope);
+    compare_goto_res(res, (&file, 43, 4, 43, 9));
 }
 
 #[test]

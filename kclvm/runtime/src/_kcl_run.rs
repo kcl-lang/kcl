@@ -4,37 +4,37 @@
 use crate::*;
 
 #[allow(dead_code, non_camel_case_types)]
-pub type kclvm_buffer_t = Buffer;
+type kclvm_buffer_t = Buffer;
 
 #[allow(dead_code, non_camel_case_types)]
-pub type kclvm_context_t = Context;
+type kclvm_context_t = Context;
 
 #[allow(dead_code, non_camel_case_types)]
-pub type kclvm_kind_t = Kind;
+type kclvm_kind_t = Kind;
 
 #[allow(dead_code, non_camel_case_types)]
-pub type kclvm_type_t = Type;
+type kclvm_type_t = Type;
 
 #[allow(dead_code, non_camel_case_types)]
-pub type kclvm_value_ref_t = ValueRef;
+type kclvm_value_ref_t = ValueRef;
 
 #[allow(dead_code, non_camel_case_types)]
-pub type kclvm_iterator_t = ValueIterator;
+type kclvm_iterator_t = ValueIterator;
 
 #[allow(dead_code, non_camel_case_types)]
-pub type kclvm_char_t = i8;
+type kclvm_char_t = i8;
 
 #[allow(dead_code, non_camel_case_types)]
-pub type kclvm_size_t = i32;
+type kclvm_size_t = i32;
 
 #[allow(dead_code, non_camel_case_types)]
 type kclvm_bool_t = i8;
 
 #[allow(dead_code, non_camel_case_types)]
-pub type kclvm_int_t = i64;
+type kclvm_int_t = i64;
 
 #[allow(dead_code, non_camel_case_types)]
-pub type kclvm_float_t = f64;
+type kclvm_float_t = f64;
 
 // const SHOULD_PROFILE: bool = false;
 

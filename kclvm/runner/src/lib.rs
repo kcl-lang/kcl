@@ -33,7 +33,7 @@ pub mod tests;
 /// It returns the KCL program executing result as Result<a_json_string, an_err_string>,
 /// and mainly takes "program" (ast.Program returned by kclvm-parser) as input.
 ///
-/// "args" is the items selected by the user in the KCLVM CLI.
+/// "args" is the items selected by the user in the KCL CLI.
 ///
 /// This method will first resolve “program” (ast.Program) and save the result to the "scope" (ProgramScope).
 ///
@@ -143,7 +143,7 @@ pub fn exec_program(
 /// It returns the KCL program executing result as Result<a_json_string, an_err_string>,
 /// and mainly takes "program" (ast.Program returned by kclvm-parser) as input.
 ///
-/// "args" is the items selected by the user in the KCLVM CLI.
+/// "args" is the items selected by the user in the KCL CLI.
 ///
 /// This method will first resolve “program” (ast.Program) and save the result to the "scope" (ProgramScope).
 ///

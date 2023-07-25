@@ -1,19 +1,24 @@
-use regex::Regex;
+use pcre2::bytes::Regex;
 use std::collections::HashSet;
 use std::iter::Iterator;
+use std::str;
+
+lazy_static::lazy_static! {
+    static ref RE: Regex = Regex::new(r#"(?s)^(['\"]{3})(.*?)(['\"]{3})$"#).unwrap();
+}
 
 /// strip leading and trailing triple quotes from the original docstring content
 fn strip_quotes(original: &mut String) {
     let quote = original.chars().next().unwrap();
-    let pattern = format!("(?s)^{char}{{3}}(.*?){char}{{3}}$", char = quote);
-    let re = Regex::new(&pattern).unwrap();
-    let caps = re.captures(&original);
-    let result = match caps {
-        Some(caps) => caps,
-        None => return,
-    };
-    let content = result[1].to_owned();
-    *original = content;
+    if quote != '"' && quote != '\'' {
+        return;
+    }
+    if let Ok(Some(mat)) = RE.find(original.as_bytes()) {
+        let content = str::from_utf8(&original.as_bytes()[mat.start() + 3..mat.end() - 3])
+            .unwrap()
+            .to_owned();
+        *original = content;
+    }
 }
 
 fn expand_tabs(s: &str, spaces_per_tab: usize) -> String {
