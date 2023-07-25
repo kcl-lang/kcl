@@ -156,7 +156,7 @@ mod test_value_yaml {
             ),
             (
                 "a:\n- 1\n  -2\n-3",
-                "while parsing a block mapping, did not find expected key at line 4 column 1",
+                "could not find expected ':' at line 5 column 1, while scanning a simple key at line 4 column 1",
             ),
         ];
         for (yaml_str, expected) in cases {
@@ -192,7 +192,7 @@ mod test_value_yaml {
             ),
             (
                 "b:3\n---\na:\n- 1\n  -2\n-3",
-                "while parsing a block mapping, did not find expected key at line 6 column 1",
+                "could not find expected ':' at line 7 column 1, while scanning a simple key at line 6 column 1",
             ),
         ];
         for (yaml_str, expected) in cases {
@@ -214,7 +214,7 @@ mod test_value_yaml {
                     ("a", &ValueRef::list_int(&[1, 2, 3])),
                     ("b", &ValueRef::str("s")),
                 ])),
-                "a:\n  - 1\n  - 2\n  - 3\nb: s\n",
+                "a:\n- 1\n- 2\n- 3\nb: s\n",
             ),
         ];
         for (value, expected) in cases {
@@ -271,7 +271,7 @@ mod test_value_yaml {
                     ("b", &ValueRef::list_int(&[1, 2, 3])),
                     ("a", &ValueRef::str("s")),
                 ])),
-                "a: s\nb:\n  - 1\n  - 2\n  - 3\n",
+                "a: s\nb:\n- 1\n- 2\n- 3\n",
                 YamlEncodeOptions {
                     sort_keys: true,
                     ignore_private: false,
