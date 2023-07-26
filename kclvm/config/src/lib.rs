@@ -2,6 +2,7 @@
 
 pub mod cache;
 pub mod modfile;
+pub mod path;
 pub mod settings;
 pub mod vfs;
 

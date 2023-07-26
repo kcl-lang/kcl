@@ -9,6 +9,7 @@ mod tests;
 use kclvm_ast::ast;
 use kclvm_config::{
     modfile::{KCL_FILE_EXTENSION, KCL_FILE_SUFFIX, KCL_MOD_PATH_ENV},
+    path::ModRelativePath,
     settings::{build_settings_pathbuf, DEFAULT_SETTING_FILE},
 };
 use kclvm_parser::LoadProgramOptions;
@@ -36,8 +37,8 @@ pub fn canonicalize_input_files(
         let is_exist_maybe_symlink = path.exists();
         // If the input file or path is a relative path and it is not a absolute path in the KCL module VFS,
         // join with the work directory path and convert it to a absolute path.
-
-        let abs_path = if !is_absolute && !file.starts_with(KCL_MOD_PATH_ENV) {
+        let path = ModRelativePath::from(file.to_string());
+        let abs_path = if !is_absolute && !path.is_relative_path().map_err(|err| err.to_string())? {
             let filepath = Path::new(&work_dir).join(file);
             match filepath.canonicalize() {
                 Ok(path) => Some(path.adjust_canonicalization()),

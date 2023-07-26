@@ -32,7 +32,6 @@ kclvm-sema = {path = "../sema"}
 kclvm-runtime = {path = "../runtime"}
 kclvm-utils = {path = "../utils"}
 
-
 [dev-dependencies]
 expect-test = "1.0"
 insta = "1.8.0"
