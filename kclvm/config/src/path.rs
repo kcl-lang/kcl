@@ -12,6 +12,7 @@
 //! The real path of `${my_pkg:KCL_MOD}/xxx/main.k` is `/usr/my_pkg/sub/main.k`.
 use anyhow::Result;
 use pcre2::bytes::Regex;
+use std::path::PathBuf;
 
 #[derive(Clone, Debug, Default)]
 /// [`ModRelativePath`] is a path that is relative to the root package path.
@@ -29,7 +30,7 @@ pub struct ModRelativePath {
 }
 
 /// The regular expression to match the mod relative path preffix.
-const RELATIVE_PATH_PREFFIX: &str = r#"\$\{((?P<name>[a-zA-Z0-9_-]+):)?KCL_MOD\}"#;
+const RELATIVE_PATH_PREFFIX: &str = r#"\$\{((?P<name>[a-zA-Z0-9_-]+):)?KCL_MOD\}/"#;
 
 /// The name of the root package.
 const ROOT_PKG_NAME_FLAG: &str = "name";
@@ -91,6 +92,10 @@ impl ModRelativePath {
     /// assert_eq!(path.get_root_pkg_name().unwrap(), None);
     /// ```
     pub fn get_root_pkg_name(&self) -> Result<Option<String>> {
+        if !self.is_relative_path()? {
+            return Ok(None);
+        }
+
         Ok(Regex::new(RELATIVE_PATH_PREFFIX)?
             .captures(&self.path.as_bytes())?
             .and_then(|caps| caps.name(ROOT_PKG_NAME_FLAG))
@@ -105,21 +110,37 @@ impl ModRelativePath {
     /// ```rust
     /// use kclvm_config::path::ModRelativePath;
     /// let path = ModRelativePath::new("${name:KCL_MOD}/src/path".to_string());
+    /// #[cfg(target_os = "windows")]
+    /// assert_eq!(path.canonicalize_by_root_path("/usr/my_pkg").unwrap(), "/usr/my_pkg\\src/path");
+    /// #[cfg(not(target_os = "windows"))]
     /// assert_eq!(path.canonicalize_by_root_path("/usr/my_pkg").unwrap(), "/usr/my_pkg/src/path");
     ///
     /// let path = ModRelativePath::new("/src/path".to_string());
     /// assert_eq!(path.canonicalize_by_root_path("/usr/my_pkg").unwrap(), "/src/path");
     /// ```
     pub fn canonicalize_by_root_path(&self, root_path: &str) -> Result<String> {
+        if !self.is_relative_path()? {
+            return Ok(self.get_path());
+        }
+
         Ok(Regex::new(RELATIVE_PATH_PREFFIX)?
             .captures(&self.path.as_bytes())?
             .map_or_else(
                 || self.get_path(),
                 |caps| {
-                    self.get_path().replace(
+                    // Due to the path format is different between windows and linux,
+                    // Can not use the replace method directly
+                    // by 'replace(std::str::from_utf8(caps.get(0).unwrap().as_bytes()).unwrap(), root_path)'.
+                    let sub_path = self.get_path().replace(
                         std::str::from_utf8(caps.get(0).unwrap().as_bytes()).unwrap(),
-                        root_path,
-                    )
+                        "",
+                    );
+                    let res = PathBuf::from(root_path)
+                        .join(sub_path.to_string())
+                        .display()
+                        .to_string();
+
+                    return res;
                 },
             ))
     }
@@ -165,6 +186,12 @@ mod test_relative_path {
     #[test]
     fn test_canonicalize_by_root_path() {
         let path = ModRelativePath::new("${name:KCL_MOD}/src/path".to_string());
+        #[cfg(target_os = "windows")]
+        assert_eq!(
+            path.canonicalize_by_root_path("C:\\usr\\my_pkg").unwrap(),
+            "C:\\usr\\my_pkg\\src/path"
+        );
+        #[cfg(not(target_os = "windows"))]
         assert_eq!(
             path.canonicalize_by_root_path("/usr/my_pkg").unwrap(),
             "/usr/my_pkg/src/path"

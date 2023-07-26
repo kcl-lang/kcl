@@ -117,8 +117,14 @@ pub struct KCLModFileExpectedSection {
 /// let entries = get_compile_entries_from_paths(&[kcl1_path.to_str().unwrap().to_string(), kcl2_path.display().to_string()], external_pkgs).unwrap();
 ///
 /// assert_eq!(entries.len(), 2);
-/// assert_eq!(entries.get("__main__").unwrap(), kcl1_path.to_str().unwrap());
-/// assert_eq!(entries.get("kcl2").unwrap(), testpath.join("kcl2").to_str().unwrap());
+/// assert_eq!(
+///     PathBuf::from(entries.get("__main__").unwrap()).canonicalize().unwrap().display().to_string(),
+///     kcl1_path.canonicalize().unwrap().to_str().unwrap()
+/// );
+/// assert_eq!(
+///     PathBuf::from(entries.get("kcl2").unwrap()).canonicalize().unwrap().display().to_string(),
+///     testpath.join("kcl2").canonicalize().unwrap().to_str().unwrap()
+/// );
 /// ```
 pub fn get_compile_entries_from_paths(
     file_paths: &[String],
