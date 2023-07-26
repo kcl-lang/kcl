@@ -321,7 +321,7 @@ version = "0.9.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "23170228b96236b5a7299057ac284a321457700bc8c41a4476052f0f4ba5349d"
 dependencies = [
- "hashbrown",
+ "hashbrown 0.12.3",
  "stacker",
 ]
 
@@ -371,7 +371,7 @@ checksum = "4ea181bf566f71cb9a5d17a59e1871af638180a18fb0035c92ae62b705207123"
 dependencies = [
  "bitflags",
  "clap_lex 0.2.4",
- "indexmap",
+ "indexmap 1.9.3",
  "textwrap 0.16.0",
 ]
 
@@ -691,7 +691,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "907076dfda823b0b36d2a1bb5f90c96660a5bbcd7729e10727f07858f22c4edc"
 dependencies = [
  "cfg-if 1.0.0",
- "hashbrown",
+ "hashbrown 0.12.3",
  "lock_api",
  "once_cell",
  "parking_lot_core 0.9.7",
@@ -808,6 +808,12 @@ dependencies = [
  "regex",
  "termcolor",
 ]
+
+[[package]]
+name = "equivalent"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5443807d6dff69373d433ab9ef5378ad8df50ca6298caf15de6e52e24aaf54d5"
 
 [[package]]
 name = "erased-serde"
@@ -1104,6 +1110,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "hashbrown"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2c6201b9ff9fd90a5a3bac2e56a830d0caa509576f0e503818ee82c181b3437a"
+
+[[package]]
 name = "heck"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1202,8 +1214,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bd070e393353796e801d209ad339e89596eb4c8d430d18ede6a1cced8fafbd99"
 dependencies = [
  "autocfg",
- "hashbrown",
+ "hashbrown 0.12.3",
  "rustc-rayon 0.5.0",
+]
+
+[[package]]
+name = "indexmap"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d5477fe2230a79769d8dc68e0eabf5437907c0457a5614a9e8dddb67f65eb65d"
+dependencies = [
+ "equivalent",
+ "hashbrown 0.14.0",
 ]
 
 [[package]]
@@ -1376,7 +1398,7 @@ dependencies = [
  "dashmap",
  "env_logger",
  "im-rc",
- "indexmap",
+ "indexmap 1.9.3",
  "kclvm-ast",
  "kclvm-compiler",
  "kclvm-config",
@@ -1412,7 +1434,7 @@ dependencies = [
  "compiler_base_session",
  "fslock",
  "glob",
- "indexmap",
+ "indexmap 1.9.3",
  "kclvm-api",
  "kclvm-ast",
  "kclvm-cmd",
@@ -1441,7 +1463,7 @@ dependencies = [
  "anyhow",
  "criterion 0.4.0",
  "futures",
- "indexmap",
+ "indexmap 1.9.3",
  "jsonrpc-stdio-server",
  "kclvm-ast",
  "kclvm-ast-pretty",
@@ -1464,7 +1486,7 @@ dependencies = [
  "protoc-bin-vendored",
  "serde",
  "serde_json",
- "serde_yaml 0.9.21",
+ "serde_yaml",
  "tempfile",
  "tokio",
 ]
@@ -1488,7 +1510,7 @@ dependencies = [
  "compiler_base_macros",
  "compiler_base_session",
  "fancy-regex",
- "indexmap",
+ "indexmap 1.9.3",
  "kclvm-ast",
  "kclvm-error",
  "kclvm-parser",
@@ -1521,7 +1543,7 @@ dependencies = [
  "bit-set",
  "bitflags",
  "fancy-regex",
- "indexmap",
+ "indexmap 1.9.3",
  "inkwell",
  "kclvm-ast",
  "kclvm-error",
@@ -1543,7 +1565,7 @@ dependencies = [
  "dirs",
  "fslock",
  "glob",
- "indexmap",
+ "indexmap 1.9.3",
  "kclvm-ast",
  "kclvm-utils",
  "kclvm-version",
@@ -1552,7 +1574,7 @@ dependencies = [
  "rust-crypto",
  "serde",
  "serde_json",
- "serde_yaml 0.8.26",
+ "serde_yaml",
  "toml",
 ]
 
@@ -1582,7 +1604,7 @@ dependencies = [
  "compiler_base_macros",
  "compiler_base_session",
  "compiler_base_span 0.0.2",
- "indexmap",
+ "indexmap 1.9.3",
  "kclvm-runtime",
  "kclvm-span",
  "termize",
@@ -1622,7 +1644,7 @@ dependencies = [
  "either",
  "enquote",
  "expect-test",
- "indexmap",
+ "indexmap 1.9.3",
  "insta",
  "kclvm-ast",
  "kclvm-config",
@@ -1648,7 +1670,7 @@ dependencies = [
  "anyhow",
  "compiler_base_macros",
  "compiler_base_session",
- "indexmap",
+ "indexmap 1.9.3",
  "kclvm-ast",
  "kclvm-ast-pretty",
  "kclvm-error",
@@ -1669,7 +1691,7 @@ dependencies = [
  "criterion 0.3.6",
  "fslock",
  "glob",
- "indexmap",
+ "indexmap 1.9.3",
  "kclvm-ast",
  "kclvm-compiler",
  "kclvm-config",
@@ -1700,7 +1722,7 @@ dependencies = [
  "bstr",
  "chrono",
  "fancy-regex",
- "indexmap",
+ "indexmap 1.9.3",
  "itertools",
  "kclvm_runtime_internal_macros",
  "libc",
@@ -1710,7 +1732,7 @@ dependencies = [
  "regex",
  "serde",
  "serde_json",
- "serde_yaml 0.8.26",
+ "serde_yaml",
  "sha1",
  "sha2 0.9.9",
  "unic-ucd-bidi",
@@ -1732,7 +1754,7 @@ dependencies = [
  "compiler_base_span 0.0.2",
  "criterion 0.3.6",
  "fancy-regex",
- "indexmap",
+ "indexmap 1.9.3",
  "kclvm-ast",
  "kclvm-error",
  "kclvm-parser",
@@ -1765,7 +1787,7 @@ dependencies = [
  "compiler_base_session",
  "criterion 0.3.6",
  "fancy-regex",
- "indexmap",
+ "indexmap 1.9.3",
  "kclvm-ast",
  "kclvm-ast-pretty",
  "kclvm-config",
@@ -1781,7 +1803,7 @@ dependencies = [
  "regex",
  "rustc_lexer",
  "serde_json",
- "serde_yaml 0.9.21",
+ "serde_yaml",
  "walkdir",
 ]
 
@@ -2165,7 +2187,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4dd7d28ee937e54fe3080c91faa1c3a46c06de6252988a7f4592ba2310ef22a4"
 dependencies = [
  "fixedbitset",
- "indexmap",
+ "indexmap 1.9.3",
 ]
 
 [[package]]
@@ -2489,7 +2511,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e8cd60adecd0947e1dd41a3077713381aa0cdcba6dc8777300d7d5b83b9fbe84"
 dependencies = [
  "fst",
- "indexmap",
+ "indexmap 1.9.3",
  "ra_ap_paths",
  "ra_ap_stdx",
  "rustc-hash",
@@ -2762,7 +2784,7 @@ dependencies = [
  "bitflags",
  "cfg-if 0.1.10",
  "ena",
- "indexmap",
+ "indexmap 1.9.3",
  "jobserver",
  "libc",
  "memmap2",
@@ -2863,7 +2885,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4b84d9f96071f3f3be0dc818eae3327625d8ebc95b58da37d6850724f31d3403"
 dependencies = [
  "crossbeam-utils",
- "indexmap",
+ "indexmap 1.9.3",
  "lock_api",
  "log",
  "oorandom",
@@ -3005,23 +3027,11 @@ dependencies = [
 
 [[package]]
 name = "serde_yaml"
-version = "0.8.26"
+version = "0.9.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "578a7433b776b56a35785ed5ce9a7e777ac0598aac5a6dd1b4b18a307c7fc71b"
+checksum = "1a49e178e4452f45cb61d0cd8cebc1b0fafd3e41929e996cef79aa3aca91f574"
 dependencies = [
- "indexmap",
- "ryu",
- "serde",
- "yaml-rust",
-]
-
-[[package]]
-name = "serde_yaml"
-version = "0.9.21"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d9d684e3ec7de3bf5466b32bd75303ac16f0736426e5a4e0d6e489559ce1249c"
-dependencies = [
- "indexmap",
+ "indexmap 2.0.0",
  "itoa",
  "ryu",
  "serde",

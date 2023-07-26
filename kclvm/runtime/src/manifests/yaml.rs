@@ -39,7 +39,7 @@ mod test_manifests_yaml {
                 YamlEncodeOptions::default(),
             ),
             (
-                "a:\n  - 1\n  - 2\n  - 3\nb: s\n",
+                "a:\n- 1\n- 2\n- 3\nb: s\n",
                 ValueRef::list(Some(&[&ValueRef::dict(Some(&[
                     ("a", &ValueRef::list_int(&[1, 2, 3])),
                     ("b", &ValueRef::str("s")),
@@ -58,7 +58,7 @@ mod test_manifests_yaml {
                 },
             ),
             (
-                "a: 1\nb: ~\n",
+                "a: 1\nb: null\n",
                 ValueRef::list(Some(&[&ValueRef::dict(Some(&[
                     ("a", &ValueRef::int(1)),
                     ("b", &ValueRef::none()),
