@@ -107,14 +107,14 @@ pub struct KCLModFileExpectedSection {
 ///
 /// // [`kcl2_path`] is a mod relative path of the packege [`kcl2`] root directory.
 /// // It looks like `${kcl2:KCL_MOD}/xxx/xxx`
-/// let kcl2_path = "${kcl2:KCL_MOD}/main.k";
+/// let kcl2_path = PathBuf::from("${kcl2:KCL_MOD}/main.k");
 ///
 /// // [`external_pkgs`] is a map to show the real path of the mod relative path [`kcl2`].
 /// let mut external_pkgs = std::collections::HashMap::<String, String>::new();
 /// external_pkgs.insert("kcl2".to_string(), testpath.join("kcl2").to_str().unwrap().to_string());
 ///
 /// // [`get_compile_entries_from_paths`] will return the map of package name to package root real path.
-/// let entries = get_compile_entries_from_paths(&[kcl1_path.to_str().unwrap().to_string(), kcl2_path.to_string()], external_pkgs).unwrap();
+/// let entries = get_compile_entries_from_paths(&[kcl1_path.to_str().unwrap().to_string(), kcl2_path.display().to_string()], external_pkgs).unwrap();
 ///
 /// assert_eq!(entries.len(), 2);
 /// assert_eq!(entries.get("__main__").unwrap(), kcl1_path.to_str().unwrap());
