@@ -12,7 +12,7 @@
         A Server-level attribute.
         The name of the long-running service.
         See also: kusion_models/core/v1/metadata.k.
-    labels : {str:str}, optional
+    labels: {str:str}, optional
         A Server-level attribute.
         The labels of the long-running service.
         See also: kusion_models/core/v1/metadata.k.
