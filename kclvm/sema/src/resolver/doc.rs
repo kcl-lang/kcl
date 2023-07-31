@@ -217,9 +217,9 @@ fn parse_attr_list(content: String) -> Vec<Attribute> {
     while !r.eof() {
         let header = r.read();
         let header = header.trim();
-        if header.contains(" : ") {
-            let parts: Vec<&str> = header.split(" : ").collect();
-            let arg_name = parts[0];
+        if header.contains(": ") {
+            let parts: Vec<&str> = header.split(": ").collect();
+            let arg_name = parts[0].trim();
 
             let desc_lines = r
                 .read_to_next_unindented_line()
@@ -350,7 +350,7 @@ de",
         A Server-level attribute.
         The name of the long-running service.
         See also: kusion_models/core/v1/metadata.k.
-    labels : {str:str}, optional
+    labels: {str:str}, optional
         A Server-level attribute.
         The labels of the long-running service.
         See also: kusion_models/core/v1/metadata.k.
@@ -388,7 +388,7 @@ name : str, required
     A Server-level attribute.
     The name of the long-running service.
     See also: kusion_models/core/v1/metadata.k.
-labels : {str:str}, optional
+labels: {str:str}, optional
     A Server-level attribute.
     The labels of the long-running service.
     See also: kusion_models/core/v1/metadata.k.
