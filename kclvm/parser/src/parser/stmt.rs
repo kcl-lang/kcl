@@ -137,6 +137,11 @@ impl<'a> Parser<'a> {
 
         self.bump_token(open_tok);
         loop {
+            if self.token.kind == TokenKind::Eof {
+                self.bump();
+                break;
+            }
+
             if self.token.kind == close_tok {
                 self.bump_token(close_tok);
                 break;
