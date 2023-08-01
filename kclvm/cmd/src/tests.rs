@@ -226,6 +226,7 @@ fn test_run_command() {
     test_compile_two_kcl_mod();
     test_main_pkg_not_found();
     test_conflict_mod_file();
+    test_instances_with_yaml();
 }
 
 fn test_run_command_with_import() {
@@ -456,6 +457,45 @@ fn test_compile_two_kcl_mod() {
         "k4: Hello World 4\nk3: Hello World 3\n",
         String::from_utf8(buf).unwrap()
     );
+}
+
+fn test_instances_with_yaml() {
+    let test_cases = [
+        "test_inst_1/kcl.yaml",
+        "test_inst_2/kcl.yaml",
+        "test_inst_3/kcl.yaml",
+        "test_inst_4/kcl.yaml",
+        "test_inst_5/kcl.yaml",
+        "test_inst_6/kcl.yaml",
+        "test_inst_7/kcl.yaml",
+        "test_inst_8/kcl.yaml",
+    ];
+
+    for case in &test_cases {
+        let expected = format!("{}/expected", case);
+        test_instances(case, &expected);
+    }
+}
+
+fn test_instances(kcl_yaml_path: &str, expected_file_path: &str) {
+    let test_case_path = PathBuf::from("./src/test_data/instances");
+    let matches = app().arg_required_else_help(true).get_matches_from(&[
+        ROOT_CMD,
+        "run",
+        "-Y",
+        &test_case_path.join(kcl_yaml_path).display().to_string(),
+    ]);
+
+    let mut buf = Vec::new();
+    run_command(matches.subcommand_matches("run").unwrap(), &mut buf).unwrap();
+    let expect = fs::read_to_string(
+        test_case_path
+            .join(expected_file_path)
+            .display()
+            .to_string(),
+    )
+    .unwrap();
+    assert_eq!(expect, String::from_utf8(buf).unwrap());
 }
 
 fn test_main_pkg_not_found() {

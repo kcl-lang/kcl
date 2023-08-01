@@ -1,9 +1,14 @@
 // Copyright 2021 The KCL Authors. All rights reserved.
 
-use indexmap::IndexMap;
+use anyhow::Result;
 use kclvm_utils::path::PathPrefix;
 use serde::Deserialize;
-use std::{collections::HashMap, env, fs, io::Read, path::PathBuf};
+use std::{
+    collections::{HashMap, VecDeque},
+    env, fs,
+    io::Read,
+    path::PathBuf,
+};
 use toml;
 
 use crate::path::ModRelativePath;
@@ -84,10 +89,110 @@ pub struct KCLModFileExpectedSection {
     pub global_version: Option<String>,
 }
 
-/// [`get_compile_entries_from_paths`] returns a map of package name to package root path.
+/// [`Entries`] is a map of package name to package root path for one compilation
+/// # note
+///
+/// The [`entries`] in [`Entries`] is ordered, and the order of Entrys may affect the result of the compilation.
+/// The reason why the [`Entries`] is not an [`IndexMap`] is that the [`entries`] is duplicable and ordered.
+#[derive(Default, Debug)]
+pub struct Entries {
+    entries: VecDeque<Entry>,
+}
+
+impl Entries {
+    /// [`push`] will push a new [`Entry`] into [`Entries`] with the given name and path.
+    pub fn push(&mut self, name: String, path: String) {
+        self.entries.push_back(Entry::new(name, path));
+    }
+
+    /// [`contains_pkg_name`] will return [`Option::Some`] if there is an [`Entry`] with the given name in [`Entries`].
+    pub fn contains_pkg_name(&self, name: &String) -> Option<&Entry> {
+        self.entries.iter().find(|entry| entry.name() == name)
+    }
+
+    /// [`iter`] will return an iterator of [`Entry`] in [`Entries`].
+    pub fn iter(&self) -> std::collections::vec_deque::Iter<Entry> {
+        self.entries.iter()
+    }
+
+    /// [`len`] will return the length of [`Entries`].
+    pub fn len(&self) -> usize {
+        self.entries.len()
+    }
+
+    /// [`get_nth_entry`] will return the nth [`Entry`] in [`Entries`].
+    pub fn get_nth_entry(&self, n: usize) -> Option<&Entry> {
+        if n >= self.len() {
+            return None;
+        }
+        let mut count = 0;
+        for entry in self.entries.iter() {
+            if count == n {
+                return Some(entry);
+            }
+            count += 1;
+        }
+        return None;
+    }
+
+    /// [`get_nth_entry_by_name`] will return the nth [`Entry`] by name in [`Entries`].
+    pub fn get_nth_entry_by_name(&self, n: usize, name: &str) -> Option<&Entry> {
+        self.entries
+            .iter()
+            .enumerate()
+            .filter(|(_, entry)| name == entry.name())
+            .nth(n)
+            .map(|(_, entry)| entry)
+    }
+
+    /// [`apply_to_all_entries`] will apply the given function to all [`Entry`] in [`Entries`].
+    pub fn apply_to_all_entries<F>(&mut self, f: F) -> Result<()>
+    where
+        F: FnMut(&mut Entry) -> Result<()>,
+    {
+        self.entries.iter_mut().try_for_each(f)?;
+        return Ok(());
+    }
+}
+
+/// [`Entry`] is a package name and package root path pair.
+#[derive(Default, Debug)]
+pub struct Entry {
+    name: String,
+    path: String,
+}
+
+impl Entry {
+    /// [`new`] will create a new [`Entry`] with the given name and path.
+    pub fn new(name: String, path: String) -> Self {
+        Self { name, path }
+    }
+
+    /// [`name`] will return the name of [`Entry`].
+    pub fn name(&self) -> &String {
+        &self.name
+    }
+
+    /// [`path`] will return the path of [`Entry`].
+    pub fn path(&self) -> &String {
+        &self.path
+    }
+
+    /// [`set_name`] will set the name of [`Entry`] to the given name.
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
+    }
+
+    /// [`set_path`] will set the path of [`Entry`] to the given path.
+    pub fn set_path(&mut self, path: String) {
+        self.path = path;
+    }
+}
+
+/// [`get_compile_entries_from_paths`] returns all the [`Entries`] for compilation from the given [`file_paths`].
 ///
 /// # Note
-/// If the path in [`file_paths`] is a normal path, the package will be named as `__main__`.
+/// If the path in [`file_paths`] is a normal path or a [`ModRelativePath`] with prefix `${KCL_MOD}`, the package will be named as `__main__`.
 /// If the path in [`file_paths`] is a [`ModRelativePath`], the package will be named by the suffix of [`ModRelativePath`].
 ///
 /// # Error
@@ -109,31 +214,66 @@ pub struct KCLModFileExpectedSection {
 /// // It looks like `${kcl2:KCL_MOD}/xxx/xxx`
 /// let kcl2_path = PathBuf::from("${kcl2:KCL_MOD}/main.k");
 ///
+/// // [`kcl3_path`] is a mod relative path of the [`__main__`] packege.
+/// let kcl3_path = PathBuf::from("${KCL_MOD}/main.k");
+///
 /// // [`external_pkgs`] is a map to show the real path of the mod relative path [`kcl2`].
 /// let mut external_pkgs = std::collections::HashMap::<String, String>::new();
 /// external_pkgs.insert("kcl2".to_string(), testpath.join("kcl2").to_str().unwrap().to_string());
 ///
 /// // [`get_compile_entries_from_paths`] will return the map of package name to package root real path.
-/// let entries = get_compile_entries_from_paths(&[kcl1_path.to_str().unwrap().to_string(), kcl2_path.display().to_string()], external_pkgs).unwrap();
+/// let entries = get_compile_entries_from_paths(
+///     &[
+///         kcl1_path.to_str().unwrap().to_string(),
+///         kcl2_path.display().to_string(),
+///         kcl3_path.display().to_string(),
+///     ],
+/// external_pkgs).unwrap();
 ///
-/// assert_eq!(entries.len(), 2);
+/// assert_eq!(entries.len(), 3);
+///
+/// assert_eq!(entries.get_nth_entry(0).unwrap().name(), "__main__");
 /// assert_eq!(
-///     PathBuf::from(entries.get("__main__").unwrap()).canonicalize().unwrap().display().to_string(),
+///     PathBuf::from(entries.get_nth_entry(0).unwrap().path())
+///         .canonicalize()
+///         .unwrap()
+///         .display()
+///         .to_string(),
 ///     kcl1_path.canonicalize().unwrap().to_str().unwrap()
 /// );
+///
+/// assert_eq!(entries.get_nth_entry(1).unwrap().name(), "kcl2");
 /// assert_eq!(
-///     PathBuf::from(entries.get("kcl2").unwrap()).canonicalize().unwrap().display().to_string(),
-///     testpath.join("kcl2").canonicalize().unwrap().to_str().unwrap()
+///     PathBuf::from(entries.get_nth_entry(1).unwrap().path())
+///         .canonicalize()
+///         .unwrap()
+///         .display()
+///         .to_string(),
+///     testpath
+///         .join("kcl2")
+///         .canonicalize()
+///         .unwrap()
+///         .to_str()
+///         .unwrap()
 /// );
+///
+/// assert_eq!(entries.get_nth_entry(2).unwrap().name(), "__main__");
+/// assert_eq!(
+///     PathBuf::from(entries.get_nth_entry(2).unwrap().path())
+///         .display()
+///         .to_string(),
+///     kcl1_path.join("main.k").canonicalize().unwrap().to_str().unwrap()
+/// );
+///
 /// ```
 pub fn get_compile_entries_from_paths(
     file_paths: &[String],
     external_pkgs: HashMap<String, String>,
-) -> Result<IndexMap<String, String>, String> {
+) -> Result<Entries, String> {
     if file_paths.is_empty() {
         return Err("No input KCL files or paths".to_string());
     }
-    let mut result = IndexMap::default();
+    let mut result = Entries::default();
     let mut m = std::collections::HashMap::<String, String>::new();
     for s in file_paths {
         let path = ModRelativePath::from(s.to_string());
@@ -152,22 +292,55 @@ pub fn get_compile_entries_from_paths(
                 .canonicalize_by_root_path(pkg_path)
                 .map_err(|err| err.to_string())?;
             if let Some(root) = get_pkg_root(&s) {
-                result.insert(pkg_name, root);
+                result.push(pkg_name, root);
+                continue;
+            } else {
+                return Err(format!(
+                    "can not find the package name of path {} in {:?}",
+                    s, external_pkgs
+                ));
             }
+        } else if path.is_relative_path().map_err(|err| err.to_string())?
+            && path
+                .get_root_pkg_name()
+                .map_err(|err| err.to_string())?
+                .is_none()
+        {
+            result.push(kclvm_ast::MAIN_PKG.to_string(), path.get_path());
             continue;
         } else if let Some(root) = get_pkg_root(s) {
             // If the path is a normal path.
             m.insert(root.clone(), root.clone());
-            result.insert(kclvm_ast::MAIN_PKG.to_string(), root.clone());
-            continue;
+            result.push(kclvm_ast::MAIN_PKG.to_string(), root);
+        } else {
+            return Err(format!(
+                "can not find the package name of path {} in {:?}",
+                s, external_pkgs
+            ));
         }
     }
 
     if m.is_empty() {
-        result.insert(kclvm_ast::MAIN_PKG.to_string(), "".to_string());
-        return Ok(result);
+        result.push(kclvm_ast::MAIN_PKG.to_string(), "".to_string());
     }
     if m.len() == 1 {
+        let pkg_root;
+        let main_entry = result
+            .get_nth_entry_by_name(0, kclvm_ast::MAIN_PKG)
+            .ok_or_else(|| format!("program entry not found in {:?}", file_paths))?;
+        pkg_root = main_entry.path().to_string();
+
+        result
+            .apply_to_all_entries(|entry| {
+                if entry.name() == kclvm_ast::MAIN_PKG {
+                    entry.set_path(
+                        ModRelativePath::from(entry.path().to_string())
+                            .canonicalize_by_root_path(&pkg_root)?,
+                    );
+                }
+                return Ok(());
+            })
+            .map_err(|err| err.to_string())?;
         return Ok(result);
     }
 

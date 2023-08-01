@@ -1,0 +1,8 @@
+kcl_cli_configs:
+  file:
+    - ${test_inst_71:KCL_MOD}/main.k
+    - ${test_inst_72:KCL_MOD}/main.k
+    - ./test_inst_73/
+  package_maps:
+    test_inst_71: ./src/test_data/instances/test_inst_7/test_inst_71
+    test_inst_72: ./src/test_data/instances/test_inst_7/test_inst_72

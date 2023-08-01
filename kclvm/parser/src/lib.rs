@@ -283,14 +283,18 @@ impl Loader {
         let mut pkgs = HashMap::new();
 
         let main_program_root = compile_entries
-            .get(kclvm_ast::MAIN_PKG)
+            .contains_pkg_name(&kclvm_ast::MAIN_PKG.to_string())
             .ok_or(format!("main package not found in {:?}", &self.paths))?;
-        for (pkg_name, pkg_root) in compile_entries.iter() {
+
+        debug_assert_eq!(compile_entries.len(), self.paths.len());
+
+        let mut pkg_files = Vec::new();
+        for entry in compile_entries.iter() {
             // Get files from options with root.
-            let k_files = self.get_main_files_from_pkg(&pkg_root, pkg_name)?;
+            let k_files = self.get_main_files_from_pkg(entry.path(), entry.name())?;
 
             // load module
-            let mut pkg_files = Vec::new();
+
             for (i, filename) in k_files.iter().enumerate() {
                 if i < self.opts.k_code_list.len() {
                     let mut m = parse_file_with_session(
@@ -298,11 +302,11 @@ impl Loader {
                         filename,
                         Some(self.opts.k_code_list[i].clone()),
                     )?;
-                    self.fix_rel_import_path(&pkg_root, &mut m);
-                    pkg_files.push(m)
+                    self.fix_rel_import_path(entry.path(), &mut m);
+                    pkg_files.push(m);
                 } else {
                     let mut m = parse_file_with_session(self.sess.clone(), filename, None)?;
-                    self.fix_rel_import_path(&pkg_root, &mut m);
+                    self.fix_rel_import_path(entry.path(), &mut m);
                     pkg_files.push(m);
                 }
             }
@@ -311,18 +315,16 @@ impl Loader {
             pkgs.insert(kclvm_ast::MAIN_PKG.to_string(), vec![]);
 
             self.load_import_package(
-                &pkg_root,
+                &entry.path(),
                 kclvm_ast::MAIN_PKG.to_string(),
                 &mut pkg_files,
                 &mut pkgs,
             )?;
-
-            // Insert the complete ast to replace the empty list.
-            pkgs.insert(kclvm_ast::MAIN_PKG.to_string(), pkg_files);
         }
-
+        // Insert the complete ast to replace the empty list.
+        pkgs.insert(kclvm_ast::MAIN_PKG.to_string(), pkg_files);
         Ok(ast::Program {
-            root: main_program_root.to_string(),
+            root: main_program_root.path().to_string(),
             main: kclvm_ast::MAIN_PKG.to_string(),
             pkgs,
         })
@@ -435,33 +437,29 @@ impl Loader {
     ) -> Result<Vec<String>, String> {
         // fix path
         let mut path_list = Vec::new();
-        for s in &self.paths {
-            let mut s = s.clone();
-            let path = ModRelativePath::from(s.to_string());
+        let mut s = self.paths.remove(0);
 
-            if path.is_relative_path().map_err(|e| e.to_string())? {
-                if let Some(name) = path.get_root_pkg_name().map_err(|e| e.to_string())? {
-                    if name == pkg_name {
-                        s = path
-                            .canonicalize_by_root_path(root)
-                            .map_err(|e| e.to_string())?;
-                        path_list.push(s);
-                    }
-                } else if path.is_relative_path().map_err(|e| e.to_string())? {
-                    continue;
+        let path = ModRelativePath::from(s.to_string());
+
+        if path.is_relative_path().map_err(|e| e.to_string())? {
+            if let Some(name) = path.get_root_pkg_name().map_err(|e| e.to_string())? {
+                if name == pkg_name {
+                    s = path
+                        .canonicalize_by_root_path(root)
+                        .map_err(|e| e.to_string())?;
                 }
-                continue;
+            } else if path.is_relative_path().map_err(|e| e.to_string())? {
+                return Err(format!("Can not find {} in the path: {}", s, root));
             }
-
-            if !root.is_empty() && !self.is_absolute(s.as_str()) {
-                let p = std::path::Path::new(s.as_str());
-                if let Ok(x) = std::fs::canonicalize(p) {
-                    s = x.adjust_canonicalization();
-                }
-            }
-
-            path_list.push(s);
         }
+        if !root.is_empty() && !self.is_absolute(s.as_str()) {
+            let p = std::path::Path::new(s.as_str());
+            if let Ok(x) = std::fs::canonicalize(p) {
+                s = x.adjust_canonicalization();
+            }
+        }
+
+        path_list.push(s);
 
         // get k files
         let mut k_files: Vec<String> = Vec::new();

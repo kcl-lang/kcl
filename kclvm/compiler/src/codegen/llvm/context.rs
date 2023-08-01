@@ -1233,6 +1233,9 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                         .borrow_mut()
                         .push(ast_module.filename.clone());
                 }
+                self.compile_module_import_and_types(ast_module);
+            }
+            for ast_module in main_pkg_modules {
                 self.walk_module(ast_module)
                     .expect(kcl_error::COMPILE_ERROR_MSG);
             }

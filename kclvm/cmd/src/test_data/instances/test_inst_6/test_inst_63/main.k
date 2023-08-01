@@ -1,0 +1,1 @@
+k6_inst = K6.instances()

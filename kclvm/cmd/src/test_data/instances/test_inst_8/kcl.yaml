@@ -1,0 +1,14 @@
+kcl_cli_configs:
+  file:
+    - ${test_inst_81:KCL_MOD}/main.k
+    - ./main.k
+    - ${test_inst_82:KCL_MOD}/main.k
+    - ./main1.k
+    - ${test_inst_83:KCL_MOD}/main.k
+    - ./main2.k
+    - ${test_inst_84:KCL_MOD}/main.k
+  package_maps:
+    test_inst_81: ./src/test_data/instances/test_inst_8/test_inst_81
+    test_inst_82: ./src/test_data/instances/test_inst_8/test_inst_82
+    test_inst_83: ./src/test_data/instances/test_inst_8/test_inst_83
+    test_inst_84: ./src/test_data/instances/test_inst_8/test_inst_84

@@ -1,0 +1,4 @@
+kcl_cli_configs:
+  file:
+    - ./main.k
+    - ./main1.k

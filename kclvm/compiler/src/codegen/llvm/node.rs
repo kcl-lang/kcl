@@ -2242,8 +2242,6 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         if !module.body.is_empty() {
             utils::update_ctx_filename(self, &module.body[0]);
         }
-        // Compile all schema and rule firstly
-        self.compile_module_import_and_types(module);
         // Compile all statements of the module
         self.walk_stmts_except_import(&module.body)
     }
