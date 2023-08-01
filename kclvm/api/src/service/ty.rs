@@ -66,8 +66,6 @@ fn get_schema_ty_attributes(schema_ty: &SchemaType, line: &mut i32) -> HashMap<S
             let mut ty = kcl_ty_to_pb_ty(&attr.ty);
             ty.line = *line;
             ty.description = attr.doc.clone().unwrap_or_default();
-            ty.filename = schema_ty.filename.clone();
-            ty.pkg_path = schema_ty.pkgpath.clone();
             type_mapping.insert(key.to_string(), ty);
             *line += 1
         }

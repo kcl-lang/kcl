@@ -133,7 +133,7 @@ where
     let mut except_result = serde_json::from_str::<R>(&except_result_json).unwrap();
     wrapper(&mut result);
     wrapper(&mut except_result);
-    assert_eq!(result, except_result, "result json is {}", result_json);
+    assert_eq!(result, except_result, "\nresult json is {result_json}");
     unsafe {
         kclvm_service_delete(serv);
         kclvm_service_free_string(result_ptr);
