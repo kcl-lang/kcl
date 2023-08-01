@@ -105,7 +105,7 @@ where
 fn test_c_api<A, R, F>(svc_name: &str, input: &str, output: &str, wrapper: F)
 where
     A: Message + DeserializeOwned,
-    R: Message + Default + PartialEq + DeserializeOwned + serde::Serialize,
+    R: Message + Default + PartialEq + DeserializeOwned + serde::Serialize + ?Sized,
     F: Fn(&mut R),
 {
     let _test_lock = TEST_MUTEX.lock().unwrap();
@@ -122,6 +122,7 @@ where
     let result = unsafe { CStr::from_ptr(result_ptr) };
 
     let mut result = R::decode(result.to_bytes()).unwrap();
+    let result_json = serde_json::to_string(&result).unwrap();
     let except_result_path = Path::new(TEST_DATA_PATH).join(output);
     let except_result_json = fs::read_to_string(&except_result_path).unwrap_or_else(|_| {
         panic!(
@@ -132,7 +133,7 @@ where
     let mut except_result = serde_json::from_str::<R>(&except_result_json).unwrap();
     wrapper(&mut result);
     wrapper(&mut except_result);
-    assert_eq!(result, except_result);
+    assert_eq!(result, except_result, "result json is {}", result_json);
     unsafe {
         kclvm_service_delete(serv);
         kclvm_service_free_string(result_ptr);

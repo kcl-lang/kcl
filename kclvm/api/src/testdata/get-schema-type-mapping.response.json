@@ -1,22 +1,71 @@
 {
     "schema_type_mapping": {
-        "person": {
+        "Server": {
             "type": "schema",
             "union_types": [],
             "default": "",
-            "schema_name": "Person",
-            "schema_doc": "",
+            "schema_name": "Server",
+            "schema_doc": "Server is the common user interface for long-running services adopting the best practice of Kubernetes.",
             "properties": {
-                "age": {
-                    "type": "int",
+                "labels": {
+                    "type": "dict",
                     "union_types": [],
                     "default": "",
                     "schema_name": "",
                     "schema_doc": "",
                     "properties": {},
                     "required": [],
-                    "line": 2,
-                    "decorators": []
+                    "key": {
+                        "type": "str",
+                        "union_types": [],
+                        "default": "",
+                        "schema_name": "",
+                        "schema_doc": "",
+                        "properties": {},
+                        "required": [],
+                        "line": 0,
+                        "decorators": [],
+                        "filename": "",
+                        "pkg_path": "",
+                        "description": "",
+                        "examples": {}
+                    },
+                    "item": {
+                        "type": "str",
+                        "union_types": [],
+                        "default": "",
+                        "schema_name": "",
+                        "schema_doc": "",
+                        "properties": {},
+                        "required": [],
+                        "line": 0,
+                        "decorators": [],
+                        "filename": "",
+                        "pkg_path": "",
+                        "description": "",
+                        "examples": {}
+                    },
+                    "line": 3,
+                    "decorators": [],
+                    "filename": "schema.k",
+                    "pkg_path": "__main__",
+                    "description": "A Server-level attribute.\nThe labels of the long-running service.\nSee also: kusion_models/core/v1/metadata.k.",
+                    "examples": {}
+                },
+                "workloadType": {
+                    "type": "str",
+                    "union_types": [],
+                    "default": "",
+                    "schema_name": "",
+                    "schema_doc": "",
+                    "properties": {},
+                    "required": [],
+                    "line": 1,
+                    "decorators": [],
+                    "filename": "schema.k",
+                    "pkg_path": "__main__",
+                    "description": "Use this attribute to specify which kind of long-running service you want.\nValid values: Deployment, CafeDeployment.\nSee also: kusion_models/core/v1/workload_metadata.k.",
+                    "examples": {}
                 },
                 "name": {
                     "type": "str",
@@ -26,53 +75,24 @@
                     "schema_doc": "",
                     "properties": {},
                     "required": [],
-                    "line": 1,
-                    "decorators": []
-                }
-            },
-            "required": [
-                "name",
-                "age"
-            ],
-            "line": 0,
-            "decorators": []
-        },
-        "Person": {
-            "type": "schema",
-            "union_types": [],
-            "default": "",
-            "schema_name": "Person",
-            "schema_doc": "",
-            "properties": {
-                "name": {
-                    "type": "str",
-                    "union_types": [],
-                    "default": "",
-                    "schema_name": "",
-                    "schema_doc": "",
-                    "properties": {},
-                    "required": [],
-                    "line": 1,
-                    "decorators": []
-                },
-                "age": {
-                    "type": "int",
-                    "union_types": [],
-                    "default": "",
-                    "schema_name": "",
-                    "schema_doc": "",
-                    "properties": {},
-                    "required": [],
                     "line": 2,
-                    "decorators": []
+                    "decorators": [],
+                    "filename": "schema.k",
+                    "pkg_path": "__main__",
+                    "description": "A Server-level attribute.\nThe name of the long-running service.\nSee also: kusion_models/core/v1/metadata.k.",
+                    "examples": {}
                 }
             },
             "required": [
-                "name",
-                "age"
+                "workloadType",
+                "name"
             ],
             "line": 0,
-            "decorators": []
+            "decorators": [],
+            "filename": "schema.k",
+            "pkg_path": "__main__",
+            "description": "Server is the common user interface for long-running services adopting the best practice of Kubernetes.",
+            "examples": {}
         }
     }
 }
