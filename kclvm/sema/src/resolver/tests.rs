@@ -186,7 +186,7 @@ fn test_resolve_program_illegal_attr_fail() {
         Some(DiagnosticId::Error(ErrorKind::IllegalAttributeError))
     );
     assert_eq!(diag.messages.len(), 1);
-    assert_eq!(diag.messages[0].pos.line, 4);
+    assert_eq!(diag.messages[0].range.0.line, 4);
     assert_eq!(diag.messages[0].message, expect_err_msg,);
     let diag = &scope.handler.diagnostics[1];
     assert_eq!(
@@ -195,7 +195,7 @@ fn test_resolve_program_illegal_attr_fail() {
     );
     assert_eq!(diag.messages.len(), 1);
     assert_eq!(diag.messages[0].message, expect_err_msg,);
-    assert_eq!(diag.messages[0].pos.line, 5);
+    assert_eq!(diag.messages[0].range.0.line, 5);
 }
 
 #[test]
@@ -210,7 +210,7 @@ fn test_resolve_program_unmatched_args_fail() {
         Some(DiagnosticId::Error(ErrorKind::CompileError))
     );
     assert_eq!(diag.messages.len(), 1);
-    assert_eq!(diag.messages[0].pos.line, 6);
+    assert_eq!(diag.messages[0].range.0.line, 6);
     assert_eq!(diag.messages[0].message, expect_err_msg);
 
     let expect_err_msg = "\"f\" takes 1 positional argument but 2 were given";
@@ -220,7 +220,7 @@ fn test_resolve_program_unmatched_args_fail() {
         Some(DiagnosticId::Error(ErrorKind::CompileError))
     );
     assert_eq!(diag.messages.len(), 1);
-    assert_eq!(diag.messages[0].pos.line, 7);
+    assert_eq!(diag.messages[0].range.0.line, 7);
     assert_eq!(diag.messages[0].message, expect_err_msg);
 }
 
@@ -238,7 +238,7 @@ fn test_resolve_program_module_optional_select_fail() {
         Some(DiagnosticId::Error(ErrorKind::CompileError))
     );
     assert_eq!(diag.messages.len(), 1);
-    assert_eq!(diag.messages[0].pos.line, 3);
+    assert_eq!(diag.messages[0].range.0.line, 3);
     assert_eq!(diag.messages[0].message, expect_err_msg);
 
     let expect_err_msg = "Module 'math' imported but unused";
@@ -248,7 +248,7 @@ fn test_resolve_program_module_optional_select_fail() {
         Some(DiagnosticId::Warning(WarningKind::UnusedImportWarning))
     );
     assert_eq!(diag.messages.len(), 1);
-    assert_eq!(diag.messages[0].pos.line, 1);
+    assert_eq!(diag.messages[0].range.0.line, 1);
     assert_eq!(diag.messages[0].message, expect_err_msg);
 }
 
@@ -278,11 +278,18 @@ fn test_lint() {
     handler.add_warning(
         WarningKind::ImportPositionWarning,
         &[Message {
-            pos: Position {
-                filename: filename.clone(),
-                line: 10,
-                column: None,
-            },
+            range: (
+                Position {
+                    filename: filename.clone(),
+                    line: 10,
+                    column: Some(0),
+                },
+                Position {
+                    filename: filename.clone(),
+                    line: 10,
+                    column: Some(20),
+                },
+            ),
             style: Style::Line,
             message: format!("Importstmt should be placed at the top of the module"),
             note: Some("Consider moving tihs statement to the top of the file".to_string()),
@@ -291,11 +298,18 @@ fn test_lint() {
     handler.add_warning(
         WarningKind::ReimportWarning,
         &[Message {
-            pos: Position {
-                filename: filename.clone(),
-                line: 2,
-                column: None,
-            },
+            range: (
+                Position {
+                    filename: filename.clone(),
+                    line: 2,
+                    column: Some(0),
+                },
+                Position {
+                    filename: filename.clone(),
+                    line: 2,
+                    column: Some(20),
+                },
+            ),
             style: Style::Line,
             message: format!("Module 'a' is reimported multiple times"),
             note: Some("Consider removing this statement".to_string()),
@@ -304,11 +318,18 @@ fn test_lint() {
     handler.add_warning(
         WarningKind::UnusedImportWarning,
         &[Message {
-            pos: Position {
-                filename,
-                line: 1,
-                column: None,
-            },
+            range: (
+                Position {
+                    filename: filename.clone(),
+                    line: 1,
+                    column: Some(0),
+                },
+                Position {
+                    filename: filename.clone(),
+                    line: 1,
+                    column: Some(20),
+                },
+            ),
             style: Style::Line,
             message: format!("Module 'import_test.a' imported but unused"),
             note: Some("Consider removing this statement".to_string()),

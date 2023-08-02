@@ -13,6 +13,7 @@ use crate::resolver::Resolver;
 use crate::ty::Type;
 use crate::{builtin::BUILTIN_FUNCTIONS, ty::TypeInferMethods};
 use kclvm_ast::pos::ContainsPos;
+use kclvm_ast::pos::GetPos;
 use kclvm_error::Position;
 
 /// The object stored in the scope.
@@ -45,6 +46,19 @@ impl ScopeObject {
 impl ContainsPos for ScopeObject {
     fn contains_pos(&self, pos: &Position) -> bool {
         self.start.less_equal(pos) && pos.less_equal(&self.end)
+    }
+}
+
+impl GetPos for ScopeObject {
+    fn get_span_pos(&self) -> (Position, Position) {
+        (self.start.clone(), self.end.clone())
+    }
+    fn get_pos(&self) -> Position {
+        self.start.clone()
+    }
+
+    fn get_end_pos(&self) -> Position {
+        self.end.clone()
     }
 }
 
@@ -385,13 +399,13 @@ impl<'ctx> Resolver<'ctx> {
 
     /// Lookup type from the scope by name, if not found, emit a compile error and
     /// return the any type.
-    pub fn lookup_type_from_scope(&mut self, name: &str, pos: Position) -> Rc<Type> {
+    pub fn lookup_type_from_scope(&mut self, name: &str, range: (Position, Position)) -> Rc<Type> {
         match self.find_type_in_scope(name) {
             Some(ty) => ty,
             None => {
                 self.handler.add_compile_error(
                     &format!("name '{}' is not defined", name.replace('@', "")),
-                    pos,
+                    range,
                 );
                 self.any_ty()
             }
@@ -399,7 +413,7 @@ impl<'ctx> Resolver<'ctx> {
     }
 
     /// Set type to the scope exited object, if not found, emit a compile error.
-    pub fn set_type_to_scope(&mut self, name: &str, ty: Rc<Type>, pos: Position) {
+    pub fn set_type_to_scope(&mut self, name: &str, ty: Rc<Type>, range: (Position, Position)) {
         let mut scope = self.scope.borrow_mut();
         match scope.elems.get_mut(name) {
             Some(obj) => {
@@ -409,7 +423,7 @@ impl<'ctx> Resolver<'ctx> {
             None => {
                 self.handler.add_compile_error(
                     &format!("name '{}' is not defined", name.replace('@', "")),
-                    pos,
+                    range,
                 );
             }
         }

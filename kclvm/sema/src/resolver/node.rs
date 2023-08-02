@@ -34,7 +34,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             if expr_types.len() > 1 {
                 self.handler.add_compile_error(
                     "expression statement can only have one expression",
-                    expr_stmt.exprs[1].get_pos(),
+                    expr_stmt.exprs[1].get_span_pos(),
                 );
             }
             ty
@@ -51,13 +51,15 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
         if names.len() > 1 {
             self.handler.add_compile_error(
                 "unification identifier can not be selected",
-                unification_stmt.target.get_pos(),
+                unification_stmt.target.get_span_pos(),
             );
         }
         let (start, end) = unification_stmt.value.get_span_pos();
         if names.is_empty() {
-            self.handler
-                .add_compile_error("missing target in the unification statement", start);
+            self.handler.add_compile_error(
+                "missing target in the unification statement",
+                unification_stmt.value.get_span_pos(),
+            );
             return self.any_ty();
         }
         self.ctx.l_value = true;
@@ -71,11 +73,11 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
         self.must_assignable_to(
             ty.clone(),
             expected_ty.clone(),
-            unification_stmt.target.get_pos(),
+            unification_stmt.target.get_span_pos(),
             None,
         );
         if !ty.is_any() && expected_ty.is_any() {
-            self.set_type_to_scope(&names[0].node, ty, unification_stmt.target.get_pos());
+            self.set_type_to_scope(&names[0].node, ty, unification_stmt.target.get_span_pos());
         }
         expected_ty
     }
@@ -83,7 +85,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
     fn walk_type_alias_stmt(&mut self, type_alias_stmt: &'ctx ast::TypeAliasStmt) -> Self::Result {
         let (start, end) = type_alias_stmt.type_name.get_span_pos();
         let mut ty = self
-            .parse_ty_with_scope(&type_alias_stmt.ty.node, start.clone())
+            .parse_ty_with_scope(&type_alias_stmt.ty.node, (start.clone(), end.clone()))
             .as_ref()
             .clone();
         if let TypeKind::Schema(schema_ty) = &mut ty.kind {
@@ -103,7 +105,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                     "type alias '{}' cannot be the same as the built-in types ({:?})",
                     name, RESERVED_TYPE_IDENTIFIERS
                 ),
-                start.clone(),
+                type_alias_stmt.type_name.get_span_pos(),
             );
         }
         self.insert_object(
@@ -138,7 +140,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             if (is_private_field(name) || is_config || !self.contains_global_name(name))
                 && self.scope_level == 0
             {
-                self.insert_global_name(name, &target.get_pos());
+                self.insert_global_name(name, &target.get_span_pos());
             }
             if target.node.names.len() == 1 {
                 self.ctx.l_value = true;
@@ -160,14 +162,14 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 self.must_assignable_to(
                     value_ty.clone(),
                     expected_ty.clone(),
-                    target.get_pos(),
+                    target.get_span_pos(),
                     None,
                 );
                 if !value_ty.is_any()
                     && expected_ty.is_any()
                     && assign_stmt.type_annotation.is_none()
                 {
-                    self.set_type_to_scope(name, value_ty.clone(), target.get_pos());
+                    self.set_type_to_scope(name, value_ty.clone(), target.get_span_pos());
                     if let Some(schema_ty) = &self.ctx.schema {
                         let mut schema_ty = schema_ty.borrow_mut();
                         schema_ty.set_type_of_attr(
@@ -177,12 +179,12 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                     }
                 }
             } else {
-                self.lookup_type_from_scope(name, target.get_pos());
+                self.lookup_type_from_scope(name, target.get_span_pos());
                 self.ctx.l_value = true;
                 let expected_ty = self.walk_identifier_expr(target);
                 self.ctx.l_value = false;
                 value_ty = self.expr(&assign_stmt.value);
-                self.must_assignable_to(value_ty.clone(), expected_ty, target.get_pos(), None)
+                self.must_assignable_to(value_ty.clone(), expected_ty, target.get_span_pos(), None)
             }
         }
         value_ty
@@ -196,18 +198,18 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             // Add global names.
             if is_private_field(name) || is_config || !self.contains_global_name(name) {
                 if self.scope_level == 0 {
-                    self.insert_global_name(name, &aug_assign_stmt.target.get_pos());
+                    self.insert_global_name(name, &aug_assign_stmt.target.get_span_pos());
                 }
             } else {
                 let mut msgs = vec![Message {
-                    pos: aug_assign_stmt.target.get_pos(),
+                    range: aug_assign_stmt.target.get_span_pos(),
                     style: Style::LineAndColumn,
                     message: format!("Immutable variable '{}' is modified during compiling", name),
                     note: None,
                 }];
                 if let Some(pos) = self.get_global_name_pos(name) {
                     msgs.push(Message {
-                        pos: pos.clone(),
+                        range: pos.clone(),
                         style: Style::LineAndColumn,
                         message: format!("The variable '{}' is declared here firstly", name),
                         note: Some(format!(
@@ -225,13 +227,18 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             Ok(op) => op,
             Err(msg) => bug!("{}", msg),
         };
-        let new_target_ty = self.binary(left_ty, right_ty, &op, aug_assign_stmt.target.get_pos());
+        let new_target_ty = self.binary(
+            left_ty,
+            right_ty,
+            &op,
+            aug_assign_stmt.target.get_span_pos(),
+        );
         self.ctx.l_value = true;
         let expected_ty = self.walk_identifier_expr(&aug_assign_stmt.target);
         self.must_assignable_to(
             new_target_ty.clone(),
             expected_ty,
-            aug_assign_stmt.target.get_pos(),
+            aug_assign_stmt.target.get_span_pos(),
             None,
         );
         self.ctx.l_value = false;
@@ -283,7 +290,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 if target.node.names.len() > 1 {
                     self.handler.add_compile_error(
                         "loop variables can only be ordinary identifiers",
-                        target.get_pos(),
+                        target.get_span_pos(),
                     );
                 }
                 target_node = Some(target);
@@ -298,7 +305,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                             "the number of loop variables is {}, which can only be 1 or 2",
                             quant_expr.variables.len()
                         ),
-                        target.get_pos(),
+                        target.get_span_pos(),
                     );
                     break;
                 }
@@ -322,7 +329,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 key_name,
                 val_name,
                 iter_ty.clone(),
-                quant_expr.target.get_pos(),
+                quant_expr.target.get_span_pos(),
             );
             self.expr_or_any_type(&quant_expr.if_cond);
             let item_ty = self.expr(&quant_expr.test);
@@ -339,8 +346,10 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
         self.ctx.local_vars.clear();
         let (start, end) = schema_attr.name.get_span_pos();
         let name = if schema_attr.name.node.contains('.') {
-            self.handler
-                .add_compile_error("schema attribute can not be selected", start.clone());
+            self.handler.add_compile_error(
+                "schema attribute can not be selected",
+                schema_attr.name.get_span_pos(),
+            );
             schema_attr.name.node.split('.').collect::<Vec<&str>>()[0]
         } else {
             &schema_attr.name.node
@@ -384,17 +393,31 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             } else {
                 self.expr(value)
             };
-            let pos = schema_attr.name.get_pos();
             match &schema_attr.op {
                 Some(bin_or_aug) => match bin_or_aug {
                     // Union
                     ast::BinOrAugOp::Aug(ast::AugOp::BitOr) => {
                         let op = ast::BinOp::BitOr;
-                        let value_ty = self.binary(value_ty, expected_ty.clone(), &op, pos.clone());
-                        self.must_assignable_to(value_ty, expected_ty, pos, None);
+                        let value_ty = self.binary(
+                            value_ty,
+                            expected_ty.clone(),
+                            &op,
+                            schema_attr.name.get_span_pos(),
+                        );
+                        self.must_assignable_to(
+                            value_ty,
+                            expected_ty,
+                            schema_attr.name.get_span_pos(),
+                            None,
+                        );
                     }
                     // Assign
-                    _ => self.must_assignable_to(value_ty, expected_ty, pos, None),
+                    _ => self.must_assignable_to(
+                        value_ty,
+                        expected_ty,
+                        schema_attr.name.get_span_pos(),
+                        None,
+                    ),
                 },
                 None => bug!("invalid ast schema attr op kind"),
             }
@@ -412,20 +435,23 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
 
     fn walk_unary_expr(&mut self, unary_expr: &'ctx ast::UnaryExpr) -> Self::Result {
         let operand_ty = self.expr(&unary_expr.operand);
-        self.unary(operand_ty, &unary_expr.op, unary_expr.operand.get_pos())
+        self.unary(
+            operand_ty,
+            &unary_expr.op,
+            unary_expr.operand.get_span_pos(),
+        )
     }
 
     fn walk_binary_expr(&mut self, binary_expr: &'ctx ast::BinaryExpr) -> Self::Result {
         let left_ty = self.expr(&binary_expr.left);
         let mut right_ty = self.expr(&binary_expr.right);
-        let pos = binary_expr.left.get_pos();
         match &binary_expr.op {
             ast::BinOrCmpOp::Bin(bin_op) => match bin_op {
                 ast::BinOp::As => {
                     if let ast::Expr::Identifier(identifier) = &binary_expr.right.node {
                         right_ty = self.parse_ty_str_with_scope(
                             &identifier.get_name(),
-                            binary_expr.right.get_pos(),
+                            binary_expr.right.get_span_pos(),
                         );
                         if right_ty.is_schema() {
                             let mut schema_ty = right_ty.into_schema_type();
@@ -438,21 +464,24 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                             &ty_str_replace_pkgpath(&ty_annotation_str, &self.ctx.pkgpath),
                         );
                     } else {
-                        self.handler
-                            .add_compile_error("keyword 'as' right operand must be a type", pos);
+                        self.handler.add_compile_error(
+                            "keyword 'as' right operand must be a type",
+                            binary_expr.left.get_span_pos(),
+                        );
                         return left_ty;
                     }
-                    self.binary(left_ty, right_ty, bin_op, pos)
+                    self.binary(left_ty, right_ty, bin_op, binary_expr.left.get_span_pos())
                 }
-                _ => self.binary(left_ty, right_ty, bin_op, pos),
+                _ => self.binary(left_ty, right_ty, bin_op, binary_expr.left.get_span_pos()),
             },
-            ast::BinOrCmpOp::Cmp(cmp_op) => self.compare(left_ty, right_ty, cmp_op, pos),
+            ast::BinOrCmpOp::Cmp(cmp_op) => {
+                self.compare(left_ty, right_ty, cmp_op, binary_expr.left.get_span_pos())
+            }
         }
     }
 
     fn walk_selector_expr(&mut self, selector_expr: &'ctx ast::SelectorExpr) -> Self::Result {
         let mut value_ty = self.expr(&selector_expr.value);
-        let pos = selector_expr.attr.get_pos();
         if value_ty.is_module() && selector_expr.has_question {
             let attr = selector_expr.attr.node.get_name();
             self.handler.add_compile_error(
@@ -461,18 +490,22 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                     attr,
                     attr
                 ),
-                selector_expr.value.get_pos(),
+                selector_expr.value.get_span_pos(),
             );
         }
         for name in &selector_expr.attr.node.names {
-            value_ty = self.load_attr(value_ty.clone(), &name.node, pos.clone());
+            value_ty = self.load_attr(
+                value_ty.clone(),
+                &name.node,
+                selector_expr.attr.get_span_pos(),
+            );
         }
         value_ty
     }
 
     fn walk_call_expr(&mut self, call_expr: &'ctx ast::CallExpr) -> Self::Result {
         let call_ty = self.expr(&call_expr.func);
-        let pos = call_expr.func.get_pos();
+        let range = call_expr.func.get_span_pos();
         if call_ty.is_any() {
             self.do_arguments_type_check(
                 &call_expr.func.node,
@@ -493,7 +526,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             if schema_ty.is_instance {
                 self.handler.add_compile_error(
                     &format!("schema '{}' instance is not callable", call_ty.ty_str()),
-                    pos,
+                    range,
                 );
                 self.any_ty()
             } else {
@@ -510,7 +543,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
         } else {
             self.handler.add_compile_error(
                 &format!("'{}' object is not callable", call_ty.ty_str()),
-                pos,
+                range,
             );
             self.any_ty()
         }
@@ -518,7 +551,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
 
     fn walk_subscript(&mut self, subscript: &'ctx ast::Subscript) -> Self::Result {
         let value_ty = self.expr(&subscript.value);
-        let pos = subscript.value.get_pos();
+        let range = subscript.value.get_span_pos();
         if value_ty.is_any() {
             value_ty
         } else {
@@ -557,17 +590,17 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                                     "invalid dict/schema key type: '{}'",
                                     index_key_ty.ty_str()
                                 ),
-                                pos,
+                                range,
                             );
                             self.any_ty()
                         } else if let ast::Expr::StringLit(string_lit) = &subscript.value.node {
-                            self.load_attr(value_ty, &string_lit.value, pos)
+                            self.load_attr(value_ty, &string_lit.value, range)
                         } else {
                             val_ty.clone()
                         }
                     } else {
                         self.handler
-                            .add_compile_error("unhashable type: 'slice'", pos);
+                            .add_compile_error("unhashable type: 'slice'", range);
                         self.any_ty()
                     }
                 }
@@ -582,24 +615,24 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                                     "invalid dict/schema key type: '{}'",
                                     index_key_ty.ty_str()
                                 ),
-                                pos,
+                                range,
                             );
                             self.any_ty()
                         } else if let ast::Expr::StringLit(string_lit) = &subscript.value.node {
-                            self.load_attr(value_ty, &string_lit.value, pos)
+                            self.load_attr(value_ty, &string_lit.value, range)
                         } else {
                             schema_ty.val_ty()
                         }
                     } else {
                         self.handler
-                            .add_compile_error("unhashable type: 'slice'", pos);
+                            .add_compile_error("unhashable type: 'slice'", range);
                         self.any_ty()
                     }
                 }
                 _ => {
                     self.handler.add_compile_error(
                         &format!("'{}' object is not subscriptable", value_ty.ty_str()),
-                        subscript.value.get_pos(),
+                        subscript.value.get_span_pos(),
                     );
                     self.any_ty()
                 }
@@ -627,8 +660,10 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             self.walk_comp_clause(&comp_clause.node);
         }
         if let ast::Expr::Starred(_) = list_comp.elt.node {
-            self.handler
-                .add_compile_error("list unpacking cannot be used in list comprehension", start);
+            self.handler.add_compile_error(
+                "list unpacking cannot be used in list comprehension",
+                list_comp.elt.get_span_pos(),
+            );
         }
         let item_ty = self.expr(&list_comp.elt);
         self.leave_scope();
@@ -648,7 +683,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
         }
         let key_ty = self.expr(key);
         // TODO: Naming both dict keys and schema attributes as `attribute`
-        self.check_attr_ty(&key_ty, start);
+        self.check_attr_ty(&key_ty, key.get_span_pos());
         let val_ty = self.expr(&dict_comp.entry.value);
         self.leave_scope();
         Type::dict_ref(key_ty, val_ty)
@@ -700,7 +735,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                     "only list, dict, schema object can be used * unpacked, got {}",
                     ty.ty_str()
                 ),
-                starred_expr.value.get_pos(),
+                starred_expr.value.get_span_pos(),
             );
         }
         ty
@@ -731,7 +766,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             if target.node.names.len() > 1 {
                 self.handler.add_compile_error(
                     "loop variables can only be ordinary identifiers",
-                    target.get_pos(),
+                    target.get_span_pos(),
                 );
             }
             target_node = Some(target);
@@ -746,7 +781,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                         "the number of loop variables is {}, which can only be 1 or 2",
                         comp_clause.targets.len()
                     ),
-                    target.get_pos(),
+                    target.get_span_pos(),
                 );
                 break;
             }
@@ -773,7 +808,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 key_name,
                 val_name,
                 iter_ty,
-                comp_clause.iter.get_pos(),
+                comp_clause.iter.get_span_pos(),
             );
             self.exprs(&comp_clause.ifs);
             self.any_ty()
@@ -785,10 +820,10 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
         if !matches!(&schema_expr.config.node, ast::Expr::Config(_)) {
             self.handler.add_compile_error(
                 "Invalid schema config expr, expect config entries, e.g., {k1 = v1, k2 = v2}",
-                schema_expr.config.get_pos(),
+                schema_expr.config.get_span_pos(),
             );
         }
-        let mut pos = schema_expr.name.get_pos();
+        let mut range = schema_expr.name.get_span_pos();
         let ret_ty = match &def_ty.kind {
             TypeKind::Dict(_, _) => {
                 let obj = self.new_config_expr_context_item(
@@ -800,7 +835,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 let init_stack_depth = self.switch_config_expr_context(Some(obj));
                 let config_ty = self.expr(&schema_expr.config);
                 self.clear_config_expr_context(init_stack_depth as usize, false);
-                self.binary(def_ty.clone(), config_ty, &ast::BinOp::BitOr, pos)
+                self.binary(def_ty.clone(), config_ty, &ast::BinOp::BitOr, range)
             }
             TypeKind::Schema(schema_ty) => {
                 if !schema_ty.is_instance {
@@ -824,7 +859,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                     if !schema_expr.args.is_empty() || !schema_expr.kwargs.is_empty() {
                         self.handler.add_compile_error(
                             "Arguments cannot be used in the schema modification expression",
-                            pos,
+                            range,
                         );
                     }
                 } else {
@@ -840,9 +875,12 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 self.any_ty()
             }
             _ => {
-                pos.filename = self.ctx.filename.clone();
-                self.handler
-                    .add_compile_error(&format!("Invalid schema type '{}'", def_ty.ty_str()), pos);
+                range.0.filename = self.ctx.filename.clone();
+                range.1.filename = self.ctx.filename.clone();
+                self.handler.add_compile_error(
+                    &format!("Invalid schema type '{}'", def_ty.ty_str()),
+                    range,
+                );
                 return self.any_ty();
             }
         };
@@ -878,7 +916,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             for (i, arg) in args.node.args.iter().enumerate() {
                 let name = arg.node.get_name();
                 let arg_ty = args.node.get_arg_type(i);
-                let ty = self.parse_ty_with_scope(&arg_ty, arg.get_pos());
+                let ty = self.parse_ty_with_scope(&arg_ty, arg.get_span_pos());
                 params.push(Parameter {
                     name,
                     ty: ty.clone(),
@@ -890,7 +928,8 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
         }
         let (start, end) = (self.ctx.start_pos.clone(), self.ctx.end_pos.clone());
         if let Some(ret_annotation_ty) = &lambda_expr.return_ty {
-            ret_ty = self.parse_ty_with_scope(&ret_annotation_ty.node, start.clone());
+            ret_ty =
+                self.parse_ty_with_scope(&ret_annotation_ty.node, (start.clone(), end.clone()));
         }
         self.enter_scope(start.clone(), end.clone(), ScopeKind::Lambda);
         self.ctx.in_lambda_expr.push(true);
@@ -916,14 +955,14 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             ) {
                 self.handler.add_compile_error(
                     "The last statement of the lambda body must be a expression e.g., x, 1, etc.",
-                    stmt.get_pos(),
+                    stmt.get_span_pos(),
                 );
             }
         }
         let real_ret_ty = self.stmts(&lambda_expr.body);
         self.leave_scope();
         self.ctx.in_lambda_expr.pop();
-        self.must_assignable_to(real_ret_ty.clone(), ret_ty.clone(), end, None);
+        self.must_assignable_to(real_ret_ty.clone(), ret_ty.clone(), (start, end), None);
         if !real_ret_ty.is_any() && ret_ty.is_any() && lambda_expr.return_type_str.is_none() {
             ret_ty = real_ret_ty;
         }
@@ -938,7 +977,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
     fn walk_arguments(&mut self, arguments: &'ctx ast::Arguments) -> Self::Result {
         for (i, arg) in arguments.args.iter().enumerate() {
             let ty = arguments.get_arg_type(i);
-            self.parse_ty_with_scope(&ty, arg.get_pos());
+            self.parse_ty_with_scope(&ty, arg.get_span_pos());
             let value = &arguments.defaults[i];
             self.expr_or_any_type(value);
         }
@@ -952,11 +991,16 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             t1.clone(),
             t2.clone(),
             &compare.ops[0],
-            compare.comparators[0].get_pos(),
+            compare.comparators[0].get_span_pos(),
         );
         for i in 1..compare.comparators.len() - 1 {
             let op = &compare.ops[i + 1];
-            self.compare(t1.clone(), t2.clone(), op, compare.comparators[i].get_pos());
+            self.compare(
+                t1.clone(),
+                t2.clone(),
+                op,
+                compare.comparators[i].get_span_pos(),
+            );
         }
         self.bool_ty()
     }
@@ -965,7 +1009,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
         self.resolve_var(
             &identifier.get_names(),
             &identifier.pkgpath,
-            self.ctx.start_pos.clone(),
+            (self.ctx.start_pos.clone(), self.ctx.end_pos.clone()),
         )
     }
 
@@ -977,7 +1021,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                     ast::NumberLitValue::Float(float_val) => {
                         self.handler.add_compile_error(
                             "float literal can not be followed the unit suffix",
-                            self.ctx.start_pos.clone(),
+                            (self.ctx.start_pos.clone(), self.ctx.end_pos.clone()),
                         );
                         float_val as i64
                     }
@@ -1024,7 +1068,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             if !VALID_FORMAT_SPEC_SET.contains(&spec_lower.as_str()) {
                 self.handler.add_compile_error(
                     &format!("{} is a invalid format spec", spec),
-                    formatted_value.value.get_pos(),
+                    formatted_value.value.get_span_pos(),
                 );
             }
         }
@@ -1094,7 +1138,7 @@ impl<'ctx> Resolver<'ctx> {
         self.resolve_var(
             &identifier.node.get_names(),
             &identifier.node.pkgpath,
-            identifier.get_pos(),
+            identifier.get_span_pos(),
         )
     }
 }

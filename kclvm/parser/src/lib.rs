@@ -354,7 +354,7 @@ impl Loader {
             self.sess.1.borrow_mut().add_error(
                 ErrorKind::CannotFindModule,
                 &[Message {
-                    pos: Into::<(Position, Position)>::into(pos).0,
+                    range: Into::<(Position, Position)>::into(pos),
                     style: Style::Line,
                     message: format!(
                         "the `{}` is found multiple times in the current package and vendor package",
@@ -373,7 +373,7 @@ impl Loader {
                 self.sess.1.borrow_mut().add_error(
                     ErrorKind::CannotFindModule,
                     &[Message {
-                        pos: Into::<(Position, Position)>::into(pos).0,
+                        range: Into::<(Position, Position)>::into(pos),
                         style: Style::Line,
                         message: format!("pkgpath {} not found in the program", pkg_path),
                         note: None,
@@ -469,7 +469,7 @@ impl Loader {
                 self.sess.1.borrow_mut().add_error(
                     ErrorKind::CannotFindModule,
                     &[Message {
-                        pos: Into::<(Position, Position)>::into(pos).0,
+                        range: Into::<(Position, Position)>::into(pos),
                         style: Style::Line,
                         message: format!("the plugin package `{}` is not found, please confirm if plugin mode is enabled", pkgpath),
                         note: None,

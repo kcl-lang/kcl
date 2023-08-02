@@ -243,7 +243,7 @@ impl<'ctx> Resolver<'ctx> {
             if let Some(Some(obj)) = self.ctx.config_expr_context.last() {
                 let obj = obj.clone();
                 if let TypeKind::Schema(schema_ty) = &obj.ty.kind {
-                    self.check_config_attr(name, &key.get_pos(), schema_ty);
+                    self.check_config_attr(name, &key.get_span_pos(), schema_ty);
                 }
             }
         }
@@ -301,8 +301,12 @@ impl<'ctx> Resolver<'ctx> {
                 }
                 if let Some(Some(obj_last)) = self.ctx.config_expr_context.last() {
                     let ty = obj_last.ty.clone();
-                    let pos = obj_last.start.clone();
-                    self.must_assignable_to(val_ty, ty, key.get_pos(), Some(pos));
+                    self.must_assignable_to(
+                        val_ty,
+                        ty,
+                        key.get_span_pos(),
+                        Some(obj_last.get_span_pos()),
+                    );
                 }
                 self.clear_config_expr_context(stack_depth, false);
             }
@@ -310,7 +314,12 @@ impl<'ctx> Resolver<'ctx> {
     }
 
     /// Check config attr has been defined.
-    pub(crate) fn check_config_attr(&mut self, attr: &str, pos: &Position, schema_ty: &SchemaType) {
+    pub(crate) fn check_config_attr(
+        &mut self,
+        attr: &str,
+        range: &(Position, Position),
+        schema_ty: &SchemaType,
+    ) {
         let runtime_type = kclvm_runtime::schema_runtime_type(&schema_ty.name, &schema_ty.pkgpath);
         match self.ctx.schema_mapping.get(&runtime_type) {
             Some(schema_mapping_ty) => {
@@ -324,7 +333,7 @@ impl<'ctx> Resolver<'ctx> {
                             "Cannot add member '{}' to schema '{}'",
                             attr, schema_ty.name
                         ),
-                        pos.clone(),
+                        range.clone(),
                     );
                 }
             }
@@ -338,7 +347,7 @@ impl<'ctx> Resolver<'ctx> {
                             "Cannot add member '{}' to schema '{}'",
                             attr, schema_ty.name
                         ),
-                        pos.clone(),
+                        range.clone(),
                     );
                 }
             }
@@ -412,7 +421,7 @@ impl<'ctx> Resolver<'ctx> {
                             } else {
                                 Rc::new(Type::str_lit(name))
                             };
-                            self.check_attr_ty(&key_ty, key.get_pos());
+                            self.check_attr_ty(&key_ty, key.get_span_pos());
                             self.insert_object(
                                 name,
                                 ScopeObject {
@@ -445,7 +454,7 @@ impl<'ctx> Resolver<'ctx> {
                     _ => {
                         let key_ty = self.expr(key);
                         let val_ty = self.expr(value);
-                        self.check_attr_ty(&key_ty, key.get_pos());
+                        self.check_attr_ty(&key_ty, key.get_span_pos());
                         if let ast::Expr::StringLit(string_lit) = &key.node {
                             self.insert_object(
                                 &string_lit.value,
@@ -500,7 +509,7 @@ impl<'ctx> Resolver<'ctx> {
                                     "only dict and schema can be used ** unpack, got '{}'",
                                     val_ty.ty_str()
                                 ),
-                                value.get_pos(),
+                                value.get_span_pos(),
                             );
                         }
                     }
@@ -515,7 +524,7 @@ impl<'ctx> Resolver<'ctx> {
                 self.handler.add_error(
                     ErrorKind::IllegalAttributeError,
                     &[Message {
-                        pos: value.get_pos(),
+                        range: value.get_span_pos(),
                         style: Style::LineAndColumn,
                         message: format!(
                             "only list type can in inserted, got '{}'",

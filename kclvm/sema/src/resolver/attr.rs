@@ -9,12 +9,12 @@ use kclvm_error::*;
 use super::node::ResolvedResult;
 
 impl<'ctx> Resolver<'ctx> {
-    pub fn check_attr_ty(&mut self, attr_ty: &Type, pos: Position) {
+    pub fn check_attr_ty(&mut self, attr_ty: &Type, range: (Position, Position)) {
         if !attr_ty.is_any() && !attr_ty.is_key() {
             self.handler.add_error(
                 ErrorKind::IllegalAttributeError,
                 &[Message {
-                    pos,
+                    range,
                     style: Style::LineAndColumn,
                     message: format!(
                         "A attribute must be string type, got '{}'",
@@ -26,7 +26,12 @@ impl<'ctx> Resolver<'ctx> {
         }
     }
 
-    pub fn load_attr(&mut self, obj: Rc<Type>, attr: &str, pos: Position) -> ResolvedResult {
+    pub fn load_attr(
+        &mut self,
+        obj: Rc<Type>,
+        attr: &str,
+        range: (Position, Position),
+    ) -> ResolvedResult {
         let (result, return_ty) = match &obj.kind {
             TypeKind::Any => (true, self.any_ty()),
             TypeKind::None
@@ -76,7 +81,7 @@ impl<'ctx> Resolver<'ctx> {
                             Some(v) => {
                                 if v.borrow().ty.is_module() {
                                     self.handler
-                                            .add_compile_error(&format!("can not import the attribute '{}' from the module '{}'", attr, module_ty.pkgpath), pos.clone());
+                                            .add_compile_error(&format!("can not import the attribute '{}' from the module '{}'", attr, module_ty.pkgpath), range.clone());
                                 }
                                 (true, v.borrow().ty.clone())
                             }
@@ -107,7 +112,7 @@ impl<'ctx> Resolver<'ctx> {
                         attr
                     }
                 ),
-                pos,
+                range,
             );
         }
         return_ty

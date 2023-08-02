@@ -91,13 +91,13 @@ impl Handler {
     }
 
     /// Construct a parse error and put it into the handler diagnostic buffer
-    pub fn add_syntex_error(&mut self, msg: &str, pos: Position) -> &mut Self {
+    pub fn add_syntex_error(&mut self, msg: &str, range: (Position, Position)) -> &mut Self {
         let message = format!("Invalid syntax: {msg}");
         let diag = Diagnostic::new_with_code(
             Level::Error,
             &message,
             None,
-            pos,
+            range,
             Some(DiagnosticId::Error(E1001.kind)),
         );
         self.add_diagnostic(diag);
@@ -106,12 +106,12 @@ impl Handler {
     }
 
     /// Construct a type error and put it into the handler diagnostic buffer
-    pub fn add_type_error(&mut self, msg: &str, pos: Position) -> &mut Self {
+    pub fn add_type_error(&mut self, msg: &str, range: (Position, Position)) -> &mut Self {
         let diag = Diagnostic::new_with_code(
             Level::Error,
             msg,
             None,
-            pos,
+            range,
             Some(DiagnosticId::Error(E2G22.kind)),
         );
         self.add_diagnostic(diag);
@@ -120,12 +120,12 @@ impl Handler {
     }
 
     /// Construct a type error and put it into the handler diagnostic buffer
-    pub fn add_compile_error(&mut self, msg: &str, pos: Position) -> &mut Self {
+    pub fn add_compile_error(&mut self, msg: &str, range: (Position, Position)) -> &mut Self {
         let diag = Diagnostic::new_with_code(
             Level::Error,
             msg,
             None,
-            pos,
+            range,
             Some(DiagnosticId::Error(E2L23.kind)),
         );
         self.add_diagnostic(diag);
@@ -229,17 +229,12 @@ impl From<PanicInfo> for Diagnostic {
         };
 
         let mut diag = if panic_info.backtrace.is_empty() {
-            Diagnostic::new_with_code(
-                Level::Error,
-                &panic_msg,
-                None,
-                Position {
-                    filename: panic_info.kcl_file.clone(),
-                    line: panic_info.kcl_line as u64,
-                    column: None,
-                },
-                None,
-            )
+            let pos = Position {
+                filename: panic_info.kcl_file.clone(),
+                line: panic_info.kcl_line as u64,
+                column: None,
+            };
+            Diagnostic::new_with_code(Level::Error, &panic_msg, None, (pos.clone(), pos), None)
         } else {
             let mut backtrace_msg = "backtrace:\n".to_string();
             let mut backtrace = panic_info.backtrace.clone();
@@ -254,15 +249,16 @@ impl From<PanicInfo> for Diagnostic {
                 }
                 backtrace_msg.push_str("\n")
             }
+            let pos = Position {
+                filename: panic_info.kcl_file.clone(),
+                line: panic_info.kcl_line as u64,
+                column: None,
+            };
             Diagnostic::new_with_code(
                 Level::Error,
                 &panic_msg,
                 Some(&backtrace_msg),
-                Position {
-                    filename: panic_info.kcl_file.clone(),
-                    line: panic_info.kcl_line as u64,
-                    column: None,
-                },
+                (pos.clone(), pos),
                 None,
             )
         };
@@ -270,15 +266,16 @@ impl From<PanicInfo> for Diagnostic {
         if panic_info.kcl_config_meta_file.is_empty() {
             return diag;
         }
+        let pos = Position {
+            filename: panic_info.kcl_config_meta_file.clone(),
+            line: panic_info.kcl_config_meta_line as u64,
+            column: Some(panic_info.kcl_config_meta_col as u64),
+        };
         let mut config_meta_diag = Diagnostic::new_with_code(
             Level::Error,
             &panic_info.kcl_config_meta_arg_msg,
             None,
-            Position {
-                filename: panic_info.kcl_config_meta_file.clone(),
-                line: panic_info.kcl_config_meta_line as u64,
-                column: Some(panic_info.kcl_config_meta_col as u64),
-            },
+            (pos.clone(), pos),
             None,
         );
         config_meta_diag.messages.append(&mut diag.messages);
@@ -329,11 +326,12 @@ impl ParseError {
             ParseError::Message { span, .. } => span,
         };
         let loc = sess.sm.lookup_char_pos(span.lo());
+        let pos: Position = loc.into();
         Ok(Diagnostic::new_with_code(
             Level::Error,
             &self.to_string(),
             None,
-            loc.into(),
+            (pos.clone(), pos),
             Some(DiagnosticId::Error(ErrorKind::InvalidSyntax)),
         ))
     }
@@ -399,10 +397,10 @@ impl SessionDiagnostic for Diagnostic {
             },
         }
         for msg in &self.messages {
-            match Session::new_with_file_and_code(&msg.pos.filename, None) {
+            match Session::new_with_file_and_code(&msg.range.0.filename, None) {
                 Ok(sess) => {
                     let source = sess.sm.lookup_source_file(new_byte_pos(0));
-                    let line = source.get_line((msg.pos.line - 1) as usize);
+                    let line = source.get_line((msg.range.0.line - 1) as usize);
                     match line.as_ref() {
                         Some(content) => {
                             let snippet = Snippet {
@@ -410,10 +408,10 @@ impl SessionDiagnostic for Diagnostic {
                                 footer: vec![],
                                 slices: vec![Slice {
                                     source: content,
-                                    line_start: msg.pos.line as usize,
-                                    origin: Some(&msg.pos.filename),
+                                    line_start: msg.range.0.line as usize,
+                                    origin: Some(&msg.range.0.filename),
                                     annotations: vec![SourceAnnotation {
-                                        range: match msg.pos.column {
+                                        range: match msg.range.0.column {
                                             Some(column) if content.len() >= 1 => {
                                                 let column = column as usize;
                                                 // If the position exceeds the length of the content,

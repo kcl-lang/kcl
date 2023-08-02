@@ -17,15 +17,16 @@ impl<'ctx> Resolver<'ctx> {
         &mut self,
         schema_stmt: &'ctx ast::SchemaStmt,
     ) -> ResolvedResult {
-        self.resolve_unique_key(&schema_stmt.name.node, &schema_stmt.name.get_pos());
-        let ty = self.lookup_type_from_scope(&schema_stmt.name.node, schema_stmt.name.get_pos());
+        self.resolve_unique_key(&schema_stmt.name.node, &schema_stmt.name.get_span_pos());
+        let ty =
+            self.lookup_type_from_scope(&schema_stmt.name.node, schema_stmt.name.get_span_pos());
         let scope_ty = if ty.is_schema() {
             ty.into_schema_type()
         } else {
             self.handler.add_error(
                 ErrorKind::TypeError,
                 &[Message {
-                    pos: schema_stmt.get_pos(),
+                    range: schema_stmt.get_span_pos(),
                     style: Style::LineAndColumn,
                     message: format!("expected schema type, got {}", ty.ty_str()),
                     note: None,
@@ -108,15 +109,15 @@ impl<'ctx> Resolver<'ctx> {
     }
 
     pub(crate) fn resolve_rule_stmt(&mut self, rule_stmt: &'ctx ast::RuleStmt) -> ResolvedResult {
-        self.resolve_unique_key(&rule_stmt.name.node, &rule_stmt.name.get_pos());
-        let ty = self.lookup_type_from_scope(&rule_stmt.name.node, rule_stmt.name.get_pos());
+        self.resolve_unique_key(&rule_stmt.name.node, &rule_stmt.name.get_span_pos());
+        let ty = self.lookup_type_from_scope(&rule_stmt.name.node, rule_stmt.name.get_span_pos());
         let scope_ty = if ty.is_schema() {
             ty.into_schema_type()
         } else {
             self.handler.add_error(
                 ErrorKind::TypeError,
                 &[Message {
-                    pos: rule_stmt.get_pos(),
+                    range: rule_stmt.get_span_pos(),
                     style: Style::LineAndColumn,
                     message: format!("expected rule type, got {}", ty.ty_str()),
                     note: None,
@@ -193,14 +194,14 @@ impl<'ctx> Resolver<'ctx> {
                     None => {
                         self.handler.add_compile_error(
                             &format!("UnKnown decorator {}", name),
-                            decorator.get_pos(),
+                            decorator.get_span_pos(),
                         );
                     }
                 },
                 None => {
                     self.handler.add_type_error(
                         "decorator name must be a single identifier",
-                        decorator.get_pos(),
+                        decorator.get_span_pos(),
                     );
                 }
             }

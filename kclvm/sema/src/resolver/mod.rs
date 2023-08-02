@@ -118,7 +118,7 @@ pub struct Context {
     /// Import pkgpath and name
     pub import_names: IndexMap<String, IndexMap<String, String>>,
     /// Global names at top level of the program.
-    pub global_names: IndexMap<String, IndexMap<String, Position>>,
+    pub global_names: IndexMap<String, IndexMap<String, (Position, Position)>>,
     /// Are we resolving the left value.
     pub l_value: bool,
     /// Are we resolving the statement start position.

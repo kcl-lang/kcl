@@ -56,7 +56,7 @@ impl<'ctx> Resolver<'ctx> {
         left: Rc<Type>,
         right: Rc<Type>,
         op: &ast::BinOp,
-        pos: Position,
+        range: (Position, Position),
     ) -> Rc<Type> {
         let t1 = self
             .ctx
@@ -123,7 +123,7 @@ impl<'ctx> Resolver<'ctx> {
                 if t1.is_number() && t2.is_number() {
                     if ZERO_LIT_TYPES.contains(&t2) {
                         self.handler
-                            .add_type_error(DIV_OR_MOD_ZERO_MSG, pos.clone());
+                            .add_type_error(DIV_OR_MOD_ZERO_MSG, range.clone());
                     }
                     (true, number_binary(&t1, &t2))
                 } else {
@@ -134,7 +134,7 @@ impl<'ctx> Resolver<'ctx> {
                 if t1.is_number() && t2.is_number() {
                     if ZERO_LIT_TYPES.contains(&t2) {
                         self.handler
-                            .add_type_error(DIV_OR_MOD_ZERO_MSG, pos.clone());
+                            .add_type_error(DIV_OR_MOD_ZERO_MSG, range.clone());
                     }
                     (true, self.int_ty())
                 } else {
@@ -186,7 +186,7 @@ impl<'ctx> Resolver<'ctx> {
                             t1.ty_str(),
                             t2.ty_str()
                         ),
-                        pos.clone(),
+                        range.clone(),
                     );
                 }
                 (true, t2)
@@ -201,7 +201,7 @@ impl<'ctx> Resolver<'ctx> {
                     left.ty_str(),
                     right.ty_str()
                 ),
-                pos,
+                range,
             );
         }
         return_ty
@@ -213,7 +213,12 @@ impl<'ctx> Resolver<'ctx> {
     /// - number        unary negation          (int, float)
     /// ~ number        unary bitwise inversion (int)
     /// not x           logical negation        (any type)
-    pub fn unary(&mut self, ty: Rc<Type>, op: &ast::UnaryOp, pos: Position) -> Rc<Type> {
+    pub fn unary(
+        &mut self,
+        ty: Rc<Type>,
+        op: &ast::UnaryOp,
+        range: (Position, Position),
+    ) -> Rc<Type> {
         if has_any_type(&[ty.clone()]) {
             return self.any_ty();
         }
@@ -235,7 +240,7 @@ impl<'ctx> Resolver<'ctx> {
                     op.symbol(),
                     ty.ty_str(),
                 ),
-                pos,
+                range,
             );
             self.any_ty()
         }
@@ -254,7 +259,7 @@ impl<'ctx> Resolver<'ctx> {
         left: Rc<Type>,
         right: Rc<Type>,
         op: &ast::CmpOp,
-        pos: Position,
+        range: (Position, Position),
     ) -> Rc<Type> {
         let t1 = self.ctx.ty_ctx.literal_union_type_to_variable_type(left);
         let t2 = self.ctx.ty_ctx.literal_union_type_to_variable_type(right);
@@ -313,7 +318,7 @@ impl<'ctx> Resolver<'ctx> {
                 t1.ty_str(),
                 t2.ty_str(),
             ),
-            pos,
+            range,
         );
         self.any_ty()
     }

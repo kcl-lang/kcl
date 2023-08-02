@@ -56,10 +56,14 @@ impl<'ctx> Resolver<'ctx> {
     }
     /// Parse the type string with the scope, if parse_ty returns a Named type(schema type or type alias),
     /// found it from the scope.
-    pub fn parse_ty_with_scope(&mut self, ty: &ast::Type, pos: Position) -> ResolvedResult {
+    pub fn parse_ty_with_scope(
+        &mut self,
+        ty: &ast::Type,
+        range: (Position, Position),
+    ) -> ResolvedResult {
         let ty: Rc<Type> = Rc::new(ty.clone().into());
         // If a named type, find it from scope to get the specific type
-        let ret_ty = self.upgrade_named_ty_with_scope(ty.clone(), &pos);
+        let ret_ty = self.upgrade_named_ty_with_scope(ty.clone(), &range);
         self.add_type_alias(
             &ty.into_type_annotation_str(),
             &ret_ty.into_type_annotation_str(),
@@ -67,10 +71,14 @@ impl<'ctx> Resolver<'ctx> {
         ret_ty
     }
 
-    pub fn parse_ty_str_with_scope(&mut self, ty_str: &str, pos: Position) -> ResolvedResult {
+    pub fn parse_ty_str_with_scope(
+        &mut self,
+        ty_str: &str,
+        range: (Position, Position),
+    ) -> ResolvedResult {
         let ty: Rc<Type> = parse_type_str(ty_str);
         // If a named type, find it from scope to get the specific type
-        let ret_ty = self.upgrade_named_ty_with_scope(ty, &pos);
+        let ret_ty = self.upgrade_named_ty_with_scope(ty, &range);
         self.add_type_alias(ty_str, &ret_ty.into_type_annotation_str());
         ret_ty
     }
@@ -79,7 +87,7 @@ impl<'ctx> Resolver<'ctx> {
     #[inline]
     pub fn must_be_type(&mut self, expr: &'ctx ast::NodeRef<ast::Expr>, expected_ty: Rc<Type>) {
         let ty = self.expr(expr);
-        self.must_assignable_to(ty, expected_ty, expr.get_pos(), None);
+        self.must_assignable_to(ty, expected_ty, expr.get_span_pos(), None);
     }
 
     /// Must assignable to the expected type.
@@ -88,12 +96,12 @@ impl<'ctx> Resolver<'ctx> {
         &mut self,
         ty: Rc<Type>,
         expected_ty: Rc<Type>,
-        pos: Position,
-        expected_pos: Option<Position>,
+        range: (Position, Position),
+        expected_pos: Option<(Position, Position)>,
     ) {
-        if !self.check_type(ty.clone(), expected_ty.clone(), &pos) {
+        if !self.check_type(ty.clone(), expected_ty.clone(), &range) {
             let mut msgs = vec![Message {
-                pos,
+                range,
                 style: Style::LineAndColumn,
                 message: format!("expected {}, got {}", expected_ty.ty_str(), ty.ty_str(),),
                 note: None,
@@ -101,7 +109,7 @@ impl<'ctx> Resolver<'ctx> {
 
             if let Some(expected_pos) = expected_pos {
                 msgs.push(Message {
-                    pos: expected_pos,
+                    range: expected_pos,
                     style: Style::LineAndColumn,
                     message: format!(
                         "variable is defined here, its type is {}, but got {}",
@@ -117,24 +125,29 @@ impl<'ctx> Resolver<'ctx> {
 
     /// The check type main function, returns a boolean result.
     #[inline]
-    pub fn check_type(&mut self, ty: Rc<Type>, expected_ty: Rc<Type>, pos: &Position) -> bool {
+    pub fn check_type(
+        &mut self,
+        ty: Rc<Type>,
+        expected_ty: Rc<Type>,
+        range: &(Position, Position),
+    ) -> bool {
         match (&ty.kind, &expected_ty.kind) {
             (TypeKind::List(item_ty), TypeKind::List(expected_item_ty)) => {
-                self.check_type(item_ty.clone(), expected_item_ty.clone(), pos)
+                self.check_type(item_ty.clone(), expected_item_ty.clone(), range)
             }
             (TypeKind::Dict(key_ty, val_ty), TypeKind::Dict(expected_key_ty, expected_val_ty)) => {
-                self.check_type(key_ty.clone(), expected_key_ty.clone(), pos)
-                    && self.check_type(val_ty.clone(), expected_val_ty.clone(), pos)
+                self.check_type(key_ty.clone(), expected_key_ty.clone(), range)
+                    && self.check_type(val_ty.clone(), expected_val_ty.clone(), range)
             }
             (TypeKind::Dict(key_ty, val_ty), TypeKind::Schema(schema_ty)) => {
-                self.dict_assignable_to_schema(key_ty.clone(), val_ty.clone(), schema_ty, pos)
+                self.dict_assignable_to_schema(key_ty.clone(), val_ty.clone(), schema_ty, range)
             }
             (TypeKind::Union(types), _) => types
                 .iter()
-                .all(|ty| self.check_type(ty.clone(), expected_ty.clone(), pos)),
+                .all(|ty| self.check_type(ty.clone(), expected_ty.clone(), range)),
             (_, TypeKind::Union(types)) => types
                 .iter()
-                .any(|expected_ty| self.check_type(ty.clone(), expected_ty.clone(), pos)),
+                .any(|expected_ty| self.check_type(ty.clone(), expected_ty.clone(), range)),
             _ => assignable_to(ty, expected_ty),
         }
     }
@@ -146,7 +159,7 @@ impl<'ctx> Resolver<'ctx> {
         key_ty: Rc<Type>,
         val_ty: Rc<Type>,
         schema_ty: &SchemaType,
-        pos: &Position,
+        range: &(Position, Position),
     ) -> bool {
         if let Some(index_signature) = &schema_ty.index_signature {
             if !assignable_to(val_ty.clone(), index_signature.val_ty.clone()) {
@@ -156,7 +169,7 @@ impl<'ctx> Resolver<'ctx> {
                         index_signature.val_ty.ty_str(),
                         val_ty.ty_str()
                     ),
-                    pos.clone(),
+                    range.clone(),
                 );
             }
             if index_signature.any_other {
@@ -169,19 +182,23 @@ impl<'ctx> Resolver<'ctx> {
         }
     }
 
-    fn upgrade_named_ty_with_scope(&mut self, ty: Rc<Type>, pos: &Position) -> ResolvedResult {
+    fn upgrade_named_ty_with_scope(
+        &mut self,
+        ty: Rc<Type>,
+        range: &(Position, Position),
+    ) -> ResolvedResult {
         match &ty.kind {
             TypeKind::List(item_ty) => {
-                Type::list_ref(self.upgrade_named_ty_with_scope(item_ty.clone(), pos))
+                Type::list_ref(self.upgrade_named_ty_with_scope(item_ty.clone(), range))
             }
             TypeKind::Dict(key_ty, val_ty) => Type::dict_ref(
-                self.upgrade_named_ty_with_scope(key_ty.clone(), pos),
-                self.upgrade_named_ty_with_scope(val_ty.clone(), pos),
+                self.upgrade_named_ty_with_scope(key_ty.clone(), range),
+                self.upgrade_named_ty_with_scope(val_ty.clone(), range),
             ),
             TypeKind::Union(types) => Type::union_ref(
                 &types
                     .iter()
-                    .map(|ty| self.upgrade_named_ty_with_scope(ty.clone(), pos))
+                    .map(|ty| self.upgrade_named_ty_with_scope(ty.clone(), range))
                     .collect::<Vec<Rc<Type>>>(),
             ),
             TypeKind::Named(ty_str) => {
@@ -194,7 +211,7 @@ impl<'ctx> Resolver<'ctx> {
                 };
                 if names.is_empty() {
                     self.handler
-                        .add_compile_error("missing type annotation", pos.clone());
+                        .add_compile_error("missing type annotation", range.clone());
                     return self.any_ty();
                 }
                 let mut pkgpath = "".to_string();
@@ -210,7 +227,7 @@ impl<'ctx> Resolver<'ctx> {
                 self.resolve_var(
                     &names.iter().map(|n| n.to_string()).collect::<Vec<String>>(),
                     &pkgpath,
-                    pos.clone(),
+                    range.clone(),
                 )
             }
             _ => ty.clone(),

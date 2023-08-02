@@ -22,9 +22,9 @@ pub fn lsp_pos(pos: &KCLPos) -> Position {
 
 /// Convert KCL Message to LSP Diagnostic
 fn kcl_msg_to_lsp_diags(msg: &Message, severity: DiagnosticSeverity) -> Diagnostic {
-    let kcl_pos = msg.pos.clone();
-    let start_position = lsp_pos(&kcl_pos);
-    let end_position = lsp_pos(&kcl_pos);
+    let range = msg.range.clone();
+    let start_position = lsp_pos(&range.0);
+    let end_position = lsp_pos(&range.1);
 
     Diagnostic {
         range: Range::new(start_position, end_position),
@@ -52,7 +52,7 @@ fn kcl_err_level_to_severity(level: Level) -> DiagnosticSeverity {
 pub fn kcl_diag_to_lsp_diags(diag: &KCLDiagnostic, file_name: &str) -> Vec<Diagnostic> {
     diag.messages
         .iter()
-        .filter(|msg| msg.pos.filename == file_name)
+        .filter(|msg| msg.range.0.filename == file_name)
         .map(|msg| kcl_msg_to_lsp_diags(msg, kcl_err_level_to_severity(diag.level)))
         .collect()
 }
