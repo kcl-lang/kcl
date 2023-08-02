@@ -461,19 +461,20 @@ fn test_compile_two_kcl_mod() {
 
 fn test_instances_with_yaml() {
     let test_cases = [
-        "test_inst_1/kcl.yaml",
-        "test_inst_2/kcl.yaml",
-        "test_inst_3/kcl.yaml",
-        "test_inst_4/kcl.yaml",
-        "test_inst_5/kcl.yaml",
-        "test_inst_6/kcl.yaml",
-        "test_inst_7/kcl.yaml",
-        "test_inst_8/kcl.yaml",
+        "test_inst_1",
+        "test_inst_2",
+        "test_inst_3",
+        "test_inst_4",
+        "test_inst_5",
+        "test_inst_6",
+        "test_inst_7",
+        "test_inst_8",
     ];
 
     for case in &test_cases {
         let expected = format!("{}/expected", case);
-        test_instances(case, &expected);
+        let case_yaml = format!("{}/kcl.yaml", case);
+        test_instances(&case_yaml, &expected);
     }
 }
 
@@ -512,7 +513,10 @@ fn test_main_pkg_not_found() {
     let sess = Arc::new(ParseSession::default());
     match exec_program(sess.clone(), &settings.try_into().unwrap()) {
         Ok(_) => panic!("unreachable code."),
-        Err(msg) => assert_eq!(msg, "No input KCL files"),
+        Err(msg) => assert_eq!(
+            msg,
+            "Cannot find the kcl file, please check the file path ${kcl3:KCL_MOD}/main.k"
+        ),
     }
 }
 

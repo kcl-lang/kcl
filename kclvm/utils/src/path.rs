@@ -87,3 +87,15 @@ fn test_adjust_canonicalization1() {
         path.display().to_string()
     );
 }
+
+pub fn is_dir(path: &str) -> bool {
+    std::path::Path::new(path).is_dir()
+}
+
+pub fn is_absolute(path: &str) -> bool {
+    std::path::Path::new(path).is_absolute()
+}
+
+pub fn path_exist(path: &str) -> bool {
+    std::path::Path::new(path).exists()
+}
