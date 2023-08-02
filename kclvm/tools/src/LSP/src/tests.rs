@@ -796,10 +796,16 @@ fn schema_doc_hover_test() {
     match got.contents {
         lsp_types::HoverContents::Array(vec) => {
             if let MarkedString::String(s) = vec[0].clone() {
-                assert_eq!(s, "Person");
+                assert_eq!(s, "pkg\n\nschema Person");
             }
             if let MarkedString::String(s) = vec[1].clone() {
                 assert_eq!(s, "hover doc test");
+            }
+            if let MarkedString::String(s) = vec[2].clone() {
+                assert_eq!(
+                    s,
+                    "Attributes:\n\n__settings__?: {str:any}\n\nname: str\n\nage: int"
+                );
             }
         }
         _ => unreachable!("test error"),
@@ -813,7 +819,80 @@ fn schema_doc_hover_test() {
     match got.contents {
         lsp_types::HoverContents::Scalar(marked_string) => {
             if let MarkedString::String(s) = marked_string {
-                assert_eq!(s, "str");
+                assert_eq!(s, "name: str");
+            }
+        }
+        _ => unreachable!("test error"),
+    }
+}
+
+#[test]
+fn schema_doc_hover_test1() {
+    let (file, program, prog_scope, _) = compile_test_file("src/test_data/hover_test/hover.k");
+
+    let pos = KCLPos {
+        filename: file.clone(),
+        line: 15,
+        column: Some(11),
+    };
+    let got = hover(&program, &pos, &prog_scope).unwrap();
+
+    match got.contents {
+        lsp_types::HoverContents::Array(vec) => {
+            if let MarkedString::String(s) = vec[0].clone() {
+                assert_eq!(s, "__main__\n\nschema Person");
+            }
+            if let MarkedString::String(s) = vec[1].clone() {
+                assert_eq!(s, "hover doc test");
+            }
+            if let MarkedString::String(s) = vec[2].clone() {
+                assert_eq!(
+                    s,
+                    "Attributes:\n\n__settings__?: {str:any}\n\nname: str\n\nage?: int"
+                );
+            }
+        }
+        _ => unreachable!("test error"),
+    }
+}
+
+#[test]
+fn schema_attr_hover_test() {
+    let (file, program, prog_scope, _) = compile_test_file("src/test_data/hover_test/hover.k");
+
+    let pos = KCLPos {
+        filename: file.clone(),
+        line: 16,
+        column: Some(11),
+    };
+    let got = hover(&program, &pos, &prog_scope).unwrap();
+
+    match got.contents {
+        lsp_types::HoverContents::Array(vec) => {
+            if let MarkedString::String(s) = vec[0].clone() {
+                assert_eq!(s, "name: str");
+            }
+            if let MarkedString::String(s) = vec[1].clone() {
+                assert_eq!(s, "name doc test");
+            }
+        }
+        _ => unreachable!("test error"),
+    }
+
+    let pos = KCLPos {
+        filename: file.clone(),
+        line: 17,
+        column: Some(11),
+    };
+    let got = hover(&program, &pos, &prog_scope).unwrap();
+
+    match got.contents {
+        lsp_types::HoverContents::Array(vec) => {
+            if let MarkedString::String(s) = vec[0].clone() {
+                assert_eq!(s, "age: int");
+            }
+            if let MarkedString::String(s) = vec[1].clone() {
+                assert_eq!(s, "age doc test");
             }
         }
         _ => unreachable!("test error"),

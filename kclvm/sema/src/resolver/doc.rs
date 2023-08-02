@@ -274,7 +274,7 @@ pub(crate) fn parse_doc_string(ori: &String) -> Doc {
 }
 
 /// The Doc struct contains a summary of schema and all the attributes described in the the docstring.
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub(crate) struct Doc {
     pub summary: String,
     pub attrs: Vec<Attribute>,
@@ -287,7 +287,7 @@ impl Doc {
 }
 
 /// The Attribute struct contains the attribute name and the corresponding description.
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub(crate) struct Attribute {
     pub name: String,
     pub desc: Vec<String>,
