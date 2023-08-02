@@ -20,14 +20,51 @@ pub(crate) fn hover(
                 if let crate::goto_def::Definition::Object(obj) = def {
                     match obj.kind {
                         ScopeObjectKind::Definition => {
-                            docs.insert(obj.ty.ty_str());
-                            let doc = obj.ty.into_schema_type().doc.clone();
-                            if !doc.is_empty() {
+                            // Schema Definition hover
+                            // ```
+                            // pkg
+                            // schema Foo(Base)
+                            // -----------------
+                            // doc
+                            // -----------------
+                            // Attributes:
+                            // attr1: type
+                            // attr2? type
+                            // ```
+                            let schema_ty = obj.ty.into_schema_type();
+                            let base: String = if let Some(base) = schema_ty.base {
+                                format!("({})", base.name)
+                            } else {
+                                "".to_string()
+                            };
+                            docs.insert(format!(
+                                "{}\n\nschema {}{}",
+                                schema_ty.pkgpath, schema_ty.name, base
+                            ));
+                            if !schema_ty.doc.is_empty() {
+                                docs.insert(schema_ty.doc.clone());
+                            }
+                            let mut attrs = vec!["Attributes:".to_string()];
+                            for (name, attr) in schema_ty.attrs {
+                                attrs.push(format!(
+                                    "{}{}:{}",
+                                    name,
+                                    if attr.is_optional { "?" } else { "" },
+                                    format!(" {}", attr.ty.ty_str()),
+                                ));
+                            }
+                            docs.insert(attrs.join("\n\n"));
+                        }
+                        // todo: hover ScopeObjectKind::Attribute optional, default value
+                        _ => {
+                            // Variable
+                            // ```
+                            // name: type
+                            //```
+                            docs.insert(format!("{}: {}", obj.name, obj.ty.ty_str()));
+                            if let Some(doc) = obj.doc {
                                 docs.insert(doc);
                             }
-                        }
-                        _ => {
-                            docs.insert(obj.ty.ty_str());
                         }
                     }
                 }
