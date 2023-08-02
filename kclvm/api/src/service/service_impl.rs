@@ -313,7 +313,6 @@ impl KclvmServiceImpl {
             &FormatOptions {
                 recursively,
                 is_stdout: false,
-                ..Default::default()
             },
         )?;
         Ok(FormatPathResult { changed_paths })

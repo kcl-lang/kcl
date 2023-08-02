@@ -47,6 +47,9 @@ pub(crate) fn kcl_schema_ty_to_pb_ty(schema_ty: &SchemaType) -> KclType {
                 ..Default::default()
             })
             .collect(),
+        filename: schema_ty.filename.clone(),
+        pkg_path: schema_ty.pkgpath.clone(),
+        description: schema_ty.doc.clone(),
         ..Default::default()
     }
 }
@@ -62,6 +65,7 @@ fn get_schema_ty_attributes(schema_ty: &SchemaType, line: &mut i32) -> HashMap<S
         if key != SCHEMA_SETTINGS_ATTR_NAME {
             let mut ty = kcl_ty_to_pb_ty(&attr.ty);
             ty.line = *line;
+            ty.description = attr.doc.clone().unwrap_or_default();
             type_mapping.insert(key.to_string(), ty);
             *line += 1
         }
@@ -79,8 +83,8 @@ fn get_schema_ty_required_attributes(schema_ty: &SchemaType) -> Vec<String> {
         Vec::new()
     };
     let mut attr_set = IndexSet::new();
-    for (key, _) in &schema_ty.attrs {
-        if key != SCHEMA_SETTINGS_ATTR_NAME {
+    for (key, attr) in &schema_ty.attrs {
+        if key != SCHEMA_SETTINGS_ATTR_NAME && !attr.is_optional {
             attr_set.insert(key.to_string());
         }
     }

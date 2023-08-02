@@ -48,8 +48,6 @@ pub struct ExecProgramArgs {
     pub debug: i32,
     // yaml/json: sort keys
     pub sort_keys: bool,
-    // include schema type path in JSON/YAML result
-    pub include_schema_type_path: bool,
     // plugin_agent is the address of plugin.
     #[serde(skip)]
     pub plugin_agent: u64,

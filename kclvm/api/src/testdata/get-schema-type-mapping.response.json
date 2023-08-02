@@ -1,22 +1,59 @@
 {
     "schema_type_mapping": {
-        "person": {
+        "Server": {
             "type": "schema",
             "union_types": [],
             "default": "",
-            "schema_name": "Person",
-            "schema_doc": "",
+            "schema_name": "Server",
+            "schema_doc": "Server is the common user interface for long-running services adopting the best practice of Kubernetes.",
             "properties": {
-                "age": {
-                    "type": "int",
+                "containers": {
+                    "type": "list",
                     "union_types": [],
                     "default": "",
                     "schema_name": "",
                     "schema_doc": "",
                     "properties": {},
                     "required": [],
-                    "line": 2,
-                    "decorators": []
+                    "item": {
+                        "type": "schema",
+                        "union_types": [],
+                        "default": "",
+                        "schema_name": "Container",
+                        "schema_doc": "Container is the common user interface for long-running services.",
+                        "properties": {
+                            "name": {
+                                "type": "str",
+                                "union_types": [],
+                                "default": "",
+                                "schema_name": "",
+                                "schema_doc": "",
+                                "properties": {},
+                                "required": [],
+                                "line": 1,
+                                "decorators": [],
+                                "filename": "",
+                                "pkg_path": "",
+                                "description": "The name of the long-running container.",
+                                "examples": {}
+                            }
+                        },
+                        "required": [
+                            "name"
+                        ],
+                        "line": 0,
+                        "decorators": [],
+                        "filename": "schema.k",
+                        "pkg_path": "__main__",
+                        "description": "Container is the common user interface for long-running services.",
+                        "examples": {}
+                    },
+                    "line": 4,
+                    "decorators": [],
+                    "filename": "",
+                    "pkg_path": "",
+                    "description": "",
+                    "examples": {}
                 },
                 "name": {
                     "type": "str",
@@ -26,23 +63,92 @@
                     "schema_doc": "",
                     "properties": {},
                     "required": [],
+                    "line": 2,
+                    "decorators": [],
+                    "filename": "",
+                    "pkg_path": "",
+                    "description": "A Server-level attribute.\nThe name of the long-running service.\nSee also: kusion_models/core/v1/metadata.k.",
+                    "examples": {}
+                },
+                "workloadType": {
+                    "type": "str",
+                    "union_types": [],
+                    "default": "",
+                    "schema_name": "",
+                    "schema_doc": "",
+                    "properties": {},
+                    "required": [],
                     "line": 1,
-                    "decorators": []
+                    "decorators": [],
+                    "filename": "",
+                    "pkg_path": "",
+                    "description": "Use this attribute to specify which kind of long-running service you want.\nValid values: Deployment, CafeDeployment.\nSee also: kusion_models/core/v1/workload_metadata.k.",
+                    "examples": {}
+                },
+                "labels": {
+                    "type": "dict",
+                    "union_types": [],
+                    "default": "",
+                    "schema_name": "",
+                    "schema_doc": "",
+                    "properties": {},
+                    "required": [],
+                    "key": {
+                        "type": "str",
+                        "union_types": [],
+                        "default": "",
+                        "schema_name": "",
+                        "schema_doc": "",
+                        "properties": {},
+                        "required": [],
+                        "line": 0,
+                        "decorators": [],
+                        "filename": "",
+                        "pkg_path": "",
+                        "description": "",
+                        "examples": {}
+                    },
+                    "item": {
+                        "type": "str",
+                        "union_types": [],
+                        "default": "",
+                        "schema_name": "",
+                        "schema_doc": "",
+                        "properties": {},
+                        "required": [],
+                        "line": 0,
+                        "decorators": [],
+                        "filename": "",
+                        "pkg_path": "",
+                        "description": "",
+                        "examples": {}
+                    },
+                    "line": 3,
+                    "decorators": [],
+                    "filename": "",
+                    "pkg_path": "",
+                    "description": "A Server-level attribute.\nThe labels of the long-running service.\nSee also: kusion_models/core/v1/metadata.k.",
+                    "examples": {}
                 }
             },
             "required": [
+                "workloadType",
                 "name",
-                "age"
+                "containers"
             ],
             "line": 0,
-            "decorators": []
+            "decorators": [],
+            "filename": "schema.k",
+            "pkg_path": "__main__",
+            "description": "Server is the common user interface for long-running services adopting the best practice of Kubernetes.",
+            "examples": {}
         },
-        "Person": {
+        "Container": {
             "type": "schema",
             "union_types": [],
             "default": "",
-            "schema_name": "Person",
-            "schema_doc": "",
+            "schema_name": "Container",
+            "schema_doc": "Container is the common user interface for long-running services.",
             "properties": {
                 "name": {
                     "type": "str",
@@ -53,26 +159,22 @@
                     "properties": {},
                     "required": [],
                     "line": 1,
-                    "decorators": []
-                },
-                "age": {
-                    "type": "int",
-                    "union_types": [],
-                    "default": "",
-                    "schema_name": "",
-                    "schema_doc": "",
-                    "properties": {},
-                    "required": [],
-                    "line": 2,
-                    "decorators": []
+                    "decorators": [],
+                    "filename": "",
+                    "pkg_path": "",
+                    "description": "The name of the long-running container.",
+                    "examples": {}
                 }
             },
             "required": [
-                "name",
-                "age"
+                "name"
             ],
             "line": 0,
-            "decorators": []
+            "decorators": [],
+            "filename": "schema.k",
+            "pkg_path": "__main__",
+            "description": "Container is the common user interface for long-running services.",
+            "examples": {}
         }
     }
 }

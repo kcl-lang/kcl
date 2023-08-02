@@ -144,12 +144,11 @@ message ExecProgram_Args {
 
 	// yaml/json: sort keys
 	bool sort_keys = 12;
-	// include schema type path in JSON/YAML result
-	bool include_schema_type_path = 13;
 
 	// -E --external : external packages path
-	repeated CmdExternalPkgSpec external_pkgs = 14;
+	repeated CmdExternalPkgSpec external_pkgs = 13;
 }
+
 message ExecProgram_Result {
 	string json_result = 1;
 	string yaml_result = 2;
@@ -281,7 +280,7 @@ message KeyValuePair {
 }
 
 // ----------------------------------------------------------------------------
-// JSON Schema Lit
+// KCL Type Structure
 // ----------------------------------------------------------------------------
 
 message KclType {
@@ -300,12 +299,23 @@ message KclType {
 	int32 line = 10;
 
 	repeated Decorator decorators = 11;  // schema decorators
+
+	string filename = 12;                // `filename` represents the absolute path of the file name where the attribute is located.
+	string pkg_path = 13;                // `pkg_path` represents the path name of the package where the attribute is located.
+	string description = 14;             // `description` represents the document of the attribute.
+	map<string, Example> examples = 15;  // A map object to hold examples, the key is the example name.
 }
 
 message Decorator {
 	string name = 1;
 	repeated string arguments = 2;
 	map<string, string> keywords = 3;
+}
+
+message Example {
+	string summary = 1;                // Short description for the example.
+	string description = 2;            // Long description for the example.
+	google.protobuf.Any value = 3;     // Embedded literal example.
 }
 
 // ----------------------------------------------------------------------------
