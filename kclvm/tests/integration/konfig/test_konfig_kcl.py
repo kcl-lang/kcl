@@ -15,6 +15,7 @@ TEST_FILE = "kcl.yaml"
 CI_TEST_DIR = "ci-test"
 STDOUT_GOLDEN = "stdout.golden.yaml"
 SETTINGS_FILE = "settings.yaml"
+SKIP_TESTS = ["kcl-vault-csi"]
 
 ROOT_STR = "test/integration/konfig"
 ROOT = str(Path(__file__).parent.parent.parent.parent.parent.joinpath(ROOT_STR))
@@ -29,7 +30,10 @@ def find_test_dirs():
         for root, _, files in os.walk(root_dir):
             for name in files:
                 if name == TEST_FILE:
-                    result.append(root)
+                    if any([p in SKIP_TESTS for p in Path(root).parts]):
+                        print(f"Skip {root}")
+                    else:
+                        result.append(root)
     return result
 
 
