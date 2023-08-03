@@ -1,6 +1,6 @@
 // Copyright 2021 The KCL Authors. All rights reserved.
 
-mod entry;
+pub mod entry;
 mod lexer;
 mod parser;
 mod session;

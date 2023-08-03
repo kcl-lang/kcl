@@ -169,7 +169,8 @@ impl Entry {
 ///
 /// ```rust
 /// use std::path::PathBuf;
-/// use kclvm_config::modfile::get_compile_entries_from_paths;
+/// use kclvm_parser::entry::get_compile_entries_from_paths;
+/// use kclvm_parser::LoadProgramOptions;
 /// let testpath = PathBuf::from("./src/testdata/multimods").canonicalize().unwrap();
 ///
 /// // [`kcl1_path`] is a normal path of the package [`kcl1`] root directory.
@@ -181,11 +182,12 @@ impl Entry {
 /// let kcl2_path = PathBuf::from("${kcl2:KCL_MOD}/main.k");
 ///
 /// // [`kcl3_path`] is a mod relative path of the [`__main__`] packege.
+/// // It looks like `${KCL_MOD}/xxx/xxx`
 /// let kcl3_path = PathBuf::from("${KCL_MOD}/main.k");
 ///
-/// // [`external_pkgs`] is a map to show the real path of the mod relative path [`kcl2`].
-/// let mut external_pkgs = std::collections::HashMap::<String, String>::new();
-/// external_pkgs.insert("kcl2".to_string(), testpath.join("kcl2").to_str().unwrap().to_string());
+/// // [`package_maps`] is a map to show the real path of the mod relative path [`kcl2`].
+/// let mut opts = LoadProgramOptions::default();
+/// opts.package_maps.insert("kcl2".to_string(), testpath.join("kcl2").to_str().unwrap().to_string());
 ///
 /// // [`get_compile_entries_from_paths`] will return the map of package name to package root real path.
 /// let entries = get_compile_entries_from_paths(
@@ -194,10 +196,16 @@ impl Entry {
 ///         kcl2_path.display().to_string(),
 ///         kcl3_path.display().to_string(),
 ///     ],
-/// external_pkgs).unwrap();
+///     &opts,
+/// ).unwrap();
 ///
+/// // [`entries`] will contain 3 entries.
+/// // <__main__, "/usr/xxx/src/testdata/multimods/kcl1">
+/// // <kcl2, "/usr/xxx/src/testdata/multimods/kcl2">
+/// // <__main__, "/usr/xxx/src/testdata/multimods/kcl1">
 /// assert_eq!(entries.len(), 3);
 ///
+/// // <__main__, "/usr/xxx/src/testdata/multimods/kcl1">
 /// assert_eq!(entries.get_nth_entry(0).unwrap().name(), "__main__");
 /// assert_eq!(
 ///     PathBuf::from(entries.get_nth_entry(0).unwrap().path())
@@ -208,6 +216,7 @@ impl Entry {
 ///     kcl1_path.canonicalize().unwrap().to_str().unwrap()
 /// );
 ///
+/// // <kcl2, "/usr/xxx/src/testdata/multimods/kcl2">
 /// assert_eq!(entries.get_nth_entry(1).unwrap().name(), "kcl2");
 /// assert_eq!(
 ///     PathBuf::from(entries.get_nth_entry(1).unwrap().path())
@@ -223,14 +232,16 @@ impl Entry {
 ///         .unwrap()
 /// );
 ///
+/// // <__main__, "/usr/xxx/src/testdata/multimods/kcl1">
 /// assert_eq!(entries.get_nth_entry(2).unwrap().name(), "__main__");
 /// assert_eq!(
 ///     PathBuf::from(entries.get_nth_entry(2).unwrap().path())
-///         .display()
-///         .to_string(),
-///     kcl1_path.join("main.k").canonicalize().unwrap().to_str().unwrap()
+///         .canonicalize()
+///         .unwrap()
+///         .to_str()
+///         .unwrap(),
+///     kcl1_path.canonicalize().unwrap().to_str().unwrap()
 /// );
-///
 /// ```
 pub fn get_compile_entries_from_paths(
     file_paths: &[String],
