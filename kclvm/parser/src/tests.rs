@@ -424,3 +424,76 @@ fn test_import_vendor_by_external_arguments() {
             });
         });
 }
+
+#[test]
+fn test_get_compile_entries_from_paths() {
+    let testpath = PathBuf::from("./src/testdata/multimods")
+        .canonicalize()
+        .unwrap();
+
+    // [`kcl1_path`] is a normal path of the package [`kcl1`] root directory.
+    // It looks like `/xxx/xxx/xxx`.
+    let kcl1_path = testpath.join("kcl1");
+
+    // [`kcl2_path`] is a mod relative path of the packege [`kcl2`] root directory.
+    // It looks like `${kcl2:KCL_MOD}/xxx/xxx`
+    let kcl2_path = PathBuf::from("${kcl2:KCL_MOD}/main.k");
+
+    // [`kcl3_path`] is a mod relative path of the [`__main__`] packege.
+    let kcl3_path = PathBuf::from("${KCL_MOD}/main.k");
+
+    // [`package_maps`] is a map to show the real path of the mod relative path [`kcl2`].
+    let mut opts = LoadProgramOptions::default();
+    opts.package_maps.insert(
+        "kcl2".to_string(),
+        testpath.join("kcl2").to_str().unwrap().to_string(),
+    );
+
+    // [`get_compile_entries_from_paths`] will return the map of package name to package root real path.
+    let entries = get_compile_entries_from_paths(
+        &[
+            kcl1_path.to_str().unwrap().to_string(),
+            kcl2_path.display().to_string(),
+            kcl3_path.display().to_string(),
+        ],
+        &opts,
+    )
+    .unwrap();
+
+    assert_eq!(entries.len(), 3);
+
+    assert_eq!(entries.get_nth_entry(0).unwrap().name(), "__main__");
+    assert_eq!(
+        PathBuf::from(entries.get_nth_entry(0).unwrap().path())
+            .canonicalize()
+            .unwrap()
+            .display()
+            .to_string(),
+        kcl1_path.canonicalize().unwrap().to_str().unwrap()
+    );
+
+    assert_eq!(entries.get_nth_entry(1).unwrap().name(), "kcl2");
+    assert_eq!(
+        PathBuf::from(entries.get_nth_entry(1).unwrap().path())
+            .canonicalize()
+            .unwrap()
+            .display()
+            .to_string(),
+        testpath
+            .join("kcl2")
+            .canonicalize()
+            .unwrap()
+            .to_str()
+            .unwrap()
+    );
+
+    assert_eq!(entries.get_nth_entry(2).unwrap().name(), "__main__");
+    assert_eq!(
+        PathBuf::from(entries.get_nth_entry(2).unwrap().path())
+            .canonicalize()
+            .unwrap()
+            .to_str()
+            .unwrap(),
+        kcl1_path.canonicalize().unwrap().to_str().unwrap()
+    );
+}

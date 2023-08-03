@@ -1,0 +1,17 @@
+a:
+  id: 8
+b:
+  id: 81
+c:
+  id: 82
+k8_inst_1:
+- id: 8
+- id: 81
+- id: 82
+d:
+  id: 83
+k8_inst_2:
+- id: 8
+- id: 81
+- id: 82
+- id: 83

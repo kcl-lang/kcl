@@ -45,7 +45,7 @@ pub fn canonicalize_input_files(
                 Err(_) => {
                     if check_exist {
                         return Err(format!(
-                            "Cannot find the kcl file, please check whether the file path {}",
+                            "Cannot find the kcl file, please check the file path {}",
                             file
                         ));
                     }
@@ -62,7 +62,7 @@ pub fn canonicalize_input_files(
                 Err(_) => {
                     if check_exist {
                         return Err(format!(
-                            "Cannot find the kcl file, please check whether the file path {}",
+                            "Cannot find the kcl file, please check the file path {}",
                             file
                         ));
                     }

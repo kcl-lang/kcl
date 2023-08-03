@@ -1,9 +1,10 @@
 use std::path::{Path, PathBuf};
-use std::{env, panic};
+use std::{env, fs, panic};
 
 use kclvm_config::modfile::get_vendor_home;
 use kclvm_config::settings::KeyValuePair;
 use kclvm_parser::LoadProgramOptions;
+use walkdir::WalkDir;
 
 use crate::arguments::parse_key_value_pair;
 use crate::canonicalize_input_files;
@@ -84,6 +85,17 @@ fn test_parse_key_value_pair() {
     }
 }
 
+fn clear_path(path: PathBuf) {
+    WalkDir::new(path)
+        .into_iter()
+        .filter_map(|e| e.ok())
+        .for_each(|e| {
+            fs::remove_file(e.path())
+                .or_else(|_| fs::remove_dir(e.path()))
+                .ok();
+        });
+}
+
 #[test]
 fn test_parse_key_value_pair_fail() {
     let cases = ["=v", "k=", "="];
@@ -134,6 +146,8 @@ fn test_fill_pkg_maps_for_k_file() {
             .display()
             .to_string()
     );
+
+    clear_path(vendor_path.join(".kpm"))
 }
 
 #[test]
@@ -195,6 +209,7 @@ fn test_fetch_metadata() {
             .display()
             .to_string()
     );
+    clear_path(vendor_path.join(".kpm"))
 }
 
 #[test]

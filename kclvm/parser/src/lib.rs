@@ -1,5 +1,6 @@
 // Copyright 2021 The KCL Authors. All rights reserved.
 
+pub mod entry;
 mod lexer;
 mod parser;
 mod session;
@@ -9,16 +10,13 @@ mod tests;
 
 extern crate kclvm_error;
 
+use crate::entry::get_compile_entries_from_paths;
 pub use crate::session::ParseSession;
 use compiler_base_macros::bug;
 use compiler_base_session::Session;
 use compiler_base_span::span::new_byte_pos;
 use kclvm_ast::ast;
-use kclvm_config::modfile::{
-    get_compile_entries_from_paths, get_vendor_home, KCL_FILE_EXTENSION, KCL_FILE_SUFFIX,
-    KCL_MOD_FILE,
-};
-use kclvm_config::path::ModRelativePath;
+use kclvm_config::modfile::{get_vendor_home, KCL_FILE_EXTENSION, KCL_FILE_SUFFIX, KCL_MOD_FILE};
 use kclvm_error::{ErrorKind, Message, Position, Style};
 use kclvm_sema::plugin::PLUGIN_MODULE_PREFIX;
 use kclvm_utils::path::PathPrefix;
@@ -278,19 +276,22 @@ impl Loader {
     }
 
     fn _load_main(&mut self) -> Result<ast::Program, String> {
-        let compile_entries =
-            get_compile_entries_from_paths(&self.paths, self.opts.package_maps.clone())?;
+        let compile_entries = get_compile_entries_from_paths(&self.paths, &self.opts)?;
         let mut pkgs = HashMap::new();
 
         let main_program_root = compile_entries
-            .get(kclvm_ast::MAIN_PKG)
+            .contains_pkg_name(&kclvm_ast::MAIN_PKG.to_string())
             .ok_or(format!("main package not found in {:?}", &self.paths))?;
-        for (pkg_name, pkg_root) in compile_entries.iter() {
-            // Get files from options with root.
-            let k_files = self.get_main_files_from_pkg(&pkg_root, pkg_name)?;
 
+        debug_assert_eq!(compile_entries.len(), self.paths.len());
+
+        let mut pkg_files = Vec::new();
+        for entry in compile_entries.iter() {
+            // Get files from options with root.
+            // let k_files = self.get_main_files_from_pkg(entry.path(), entry.name())?;
+            let k_files = entry.get_k_files();
             // load module
-            let mut pkg_files = Vec::new();
+
             for (i, filename) in k_files.iter().enumerate() {
                 if i < self.opts.k_code_list.len() {
                     let mut m = parse_file_with_session(
@@ -298,11 +299,11 @@ impl Loader {
                         filename,
                         Some(self.opts.k_code_list[i].clone()),
                     )?;
-                    self.fix_rel_import_path(&pkg_root, &mut m);
-                    pkg_files.push(m)
+                    self.fix_rel_import_path(entry.path(), &mut m);
+                    pkg_files.push(m);
                 } else {
                     let mut m = parse_file_with_session(self.sess.clone(), filename, None)?;
-                    self.fix_rel_import_path(&pkg_root, &mut m);
+                    self.fix_rel_import_path(entry.path(), &mut m);
                     pkg_files.push(m);
                 }
             }
@@ -311,18 +312,16 @@ impl Loader {
             pkgs.insert(kclvm_ast::MAIN_PKG.to_string(), vec![]);
 
             self.load_import_package(
-                &pkg_root,
+                &entry.path(),
                 kclvm_ast::MAIN_PKG.to_string(),
                 &mut pkg_files,
                 &mut pkgs,
             )?;
-
-            // Insert the complete ast to replace the empty list.
-            pkgs.insert(kclvm_ast::MAIN_PKG.to_string(), pkg_files);
         }
-
+        // Insert the complete ast to replace the empty list.
+        pkgs.insert(kclvm_ast::MAIN_PKG.to_string(), pkg_files);
         Ok(ast::Program {
-            root: main_program_root.to_string(),
+            root: main_program_root.path().to_string(),
             main: kclvm_ast::MAIN_PKG.to_string(),
             pkgs,
         })
@@ -425,80 +424,6 @@ impl Loader {
             }
         }
         return Ok(());
-    }
-
-    /// Get files in the main package with the package root.
-    fn get_main_files_from_pkg(
-        &mut self,
-        root: &str,
-        pkg_name: &str,
-    ) -> Result<Vec<String>, String> {
-        // fix path
-        let mut path_list = Vec::new();
-        for s in &self.paths {
-            let mut s = s.clone();
-            let path = ModRelativePath::from(s.to_string());
-
-            if path.is_relative_path().map_err(|e| e.to_string())? {
-                if let Some(name) = path.get_root_pkg_name().map_err(|e| e.to_string())? {
-                    if name == pkg_name {
-                        s = path
-                            .canonicalize_by_root_path(root)
-                            .map_err(|e| e.to_string())?;
-                        path_list.push(s);
-                    }
-                } else if path.is_relative_path().map_err(|e| e.to_string())? {
-                    continue;
-                }
-                continue;
-            }
-
-            if !root.is_empty() && !self.is_absolute(s.as_str()) {
-                let p = std::path::Path::new(s.as_str());
-                if let Ok(x) = std::fs::canonicalize(p) {
-                    s = x.adjust_canonicalization();
-                }
-            }
-
-            path_list.push(s);
-        }
-
-        // get k files
-        let mut k_files: Vec<String> = Vec::new();
-        for (i, path) in path_list.iter().enumerate() {
-            // read dir/*.k
-            if self.is_dir(path) {
-                if self.opts.k_code_list.len() > i {
-                    return Err("Invalid code list".to_string());
-                }
-                //k_code_list
-                for s in self.get_dir_files(path)? {
-                    k_files.push(s);
-                }
-                continue;
-            } else {
-                k_files.push(path.to_string());
-            }
-        }
-
-        if k_files.is_empty() {
-            return Err("No input KCL files".to_string());
-        }
-
-        // check all file exists
-        for (i, filename) in k_files.iter().enumerate() {
-            if i < self.opts.k_code_list.len() {
-                continue;
-            }
-
-            if !self.path_exist(filename.as_str()) {
-                return Err(format!(
-                    "Cannot find the kcl file, please check whether the file path {}",
-                    filename.as_str(),
-                ));
-            }
-        }
-        Ok(k_files)
     }
 
     fn fix_rel_import_path(&mut self, pkgroot: &str, m: &mut ast::Module) {
@@ -771,20 +696,5 @@ impl Loader {
         let mut pathbuf = PathBuf::from(path);
         pkgpath.split('.').for_each(|s| pathbuf.push(s));
         pathbuf.exists() || pathbuf.with_extension(KCL_FILE_EXTENSION).exists()
-    }
-}
-
-// utils
-impl Loader {
-    fn is_dir(&self, path: &str) -> bool {
-        std::path::Path::new(path).is_dir()
-    }
-
-    fn is_absolute(&self, path: &str) -> bool {
-        std::path::Path::new(path).is_absolute()
-    }
-
-    fn path_exist(&self, path: &str) -> bool {
-        std::path::Path::new(path).exists()
     }
 }

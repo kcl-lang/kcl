@@ -1,9 +1,9 @@
 // Copyright 2021 The KCL Authors. All rights reserved.
 
-use indexmap::IndexMap;
+use anyhow::Result;
 use kclvm_utils::path::PathPrefix;
 use serde::Deserialize;
-use std::{collections::HashMap, env, fs, io::Read, path::PathBuf};
+use std::{env, fs, io::Read, path::PathBuf};
 use toml;
 
 use crate::path::ModRelativePath;
@@ -82,96 +82,6 @@ pub struct KCLModFileExpectedSection {
     pub kclvm_version: Option<String>,
     pub kcl_plugin_version: Option<String>,
     pub global_version: Option<String>,
-}
-
-/// [`get_compile_entries_from_paths`] returns a map of package name to package root path.
-///
-/// # Note
-/// If the path in [`file_paths`] is a normal path, the package will be named as `__main__`.
-/// If the path in [`file_paths`] is a [`ModRelativePath`], the package will be named by the suffix of [`ModRelativePath`].
-///
-/// # Error
-/// The package root path for package name `__main__` is only used once. If there are multiple
-/// package root paths for `__main__`, an error `conflict kcl.mod file` is returned.
-///
-/// # Example
-///
-/// ```rust
-/// use std::path::PathBuf;
-/// use kclvm_config::modfile::get_compile_entries_from_paths;
-/// let testpath = PathBuf::from("./src/testdata/multimods").canonicalize().unwrap();
-///
-/// // [`kcl1_path`] is a normal path of the package [`kcl1`] root directory.
-/// // It looks like `/xxx/xxx/xxx`.
-/// let kcl1_path = testpath.join("kcl1");
-///
-/// // [`kcl2_path`] is a mod relative path of the packege [`kcl2`] root directory.
-/// // It looks like `${kcl2:KCL_MOD}/xxx/xxx`
-/// let kcl2_path = PathBuf::from("${kcl2:KCL_MOD}/main.k");
-///
-/// // [`external_pkgs`] is a map to show the real path of the mod relative path [`kcl2`].
-/// let mut external_pkgs = std::collections::HashMap::<String, String>::new();
-/// external_pkgs.insert("kcl2".to_string(), testpath.join("kcl2").to_str().unwrap().to_string());
-///
-/// // [`get_compile_entries_from_paths`] will return the map of package name to package root real path.
-/// let entries = get_compile_entries_from_paths(&[kcl1_path.to_str().unwrap().to_string(), kcl2_path.display().to_string()], external_pkgs).unwrap();
-///
-/// assert_eq!(entries.len(), 2);
-/// assert_eq!(
-///     PathBuf::from(entries.get("__main__").unwrap()).canonicalize().unwrap().display().to_string(),
-///     kcl1_path.canonicalize().unwrap().to_str().unwrap()
-/// );
-/// assert_eq!(
-///     PathBuf::from(entries.get("kcl2").unwrap()).canonicalize().unwrap().display().to_string(),
-///     testpath.join("kcl2").canonicalize().unwrap().to_str().unwrap()
-/// );
-/// ```
-pub fn get_compile_entries_from_paths(
-    file_paths: &[String],
-    external_pkgs: HashMap<String, String>,
-) -> Result<IndexMap<String, String>, String> {
-    if file_paths.is_empty() {
-        return Err("No input KCL files or paths".to_string());
-    }
-    let mut result = IndexMap::default();
-    let mut m = std::collections::HashMap::<String, String>::new();
-    for s in file_paths {
-        let path = ModRelativePath::from(s.to_string());
-        // If the path is a [`ModRelativePath`],
-        // calculate the real path and the package name.
-        if let Some((pkg_name, pkg_path)) = path
-            .get_root_pkg_name()
-            .map_err(|err| err.to_string())?
-            .and_then(|name| {
-                external_pkgs
-                    .get(&name)
-                    .map(|pkg_path: &String| (name, pkg_path))
-            })
-        {
-            let s = path
-                .canonicalize_by_root_path(pkg_path)
-                .map_err(|err| err.to_string())?;
-            if let Some(root) = get_pkg_root(&s) {
-                result.insert(pkg_name, root);
-            }
-            continue;
-        } else if let Some(root) = get_pkg_root(s) {
-            // If the path is a normal path.
-            m.insert(root.clone(), root.clone());
-            result.insert(kclvm_ast::MAIN_PKG.to_string(), root.clone());
-            continue;
-        }
-    }
-
-    if m.is_empty() {
-        result.insert(kclvm_ast::MAIN_PKG.to_string(), "".to_string());
-        return Ok(result);
-    }
-    if m.len() == 1 {
-        return Ok(result);
-    }
-
-    Err(format!("conflict kcl.mod file paths: {:?}", m))
 }
 
 pub fn get_pkg_root_from_paths(file_paths: &[String]) -> Result<String, String> {

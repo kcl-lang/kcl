@@ -226,6 +226,7 @@ fn test_run_command() {
     test_compile_two_kcl_mod();
     test_main_pkg_not_found();
     test_conflict_mod_file();
+    test_instances_with_yaml();
 }
 
 fn test_run_command_with_import() {
@@ -458,6 +459,50 @@ fn test_compile_two_kcl_mod() {
     );
 }
 
+fn test_instances_with_yaml() {
+    let test_cases = [
+        "test_inst_1",
+        "test_inst_2",
+        "test_inst_3",
+        "test_inst_4",
+        "test_inst_5",
+        "test_inst_6",
+        "test_inst_7",
+        "test_inst_8",
+    ];
+
+    for case in &test_cases {
+        let expected = format!("{}/expected", case);
+        let case_yaml = format!("{}/kcl.yaml", case);
+        test_instances(&case_yaml, &expected);
+    }
+}
+
+fn test_instances(kcl_yaml_path: &str, expected_file_path: &str) {
+    let test_case_path = PathBuf::from("./src/test_data/instances");
+    let matches = app().arg_required_else_help(true).get_matches_from(&[
+        ROOT_CMD,
+        "run",
+        "-Y",
+        &test_case_path.join(kcl_yaml_path).display().to_string(),
+    ]);
+
+    let mut buf = Vec::new();
+    run_command(matches.subcommand_matches("run").unwrap(), &mut buf).unwrap();
+    let expect = fs::read_to_string(
+        test_case_path
+            .join(expected_file_path)
+            .display()
+            .to_string(),
+    )
+    .unwrap();
+
+    assert_eq!(
+        expect.replace("\r\n", "\n"),
+        String::from_utf8(buf).unwrap()
+    );
+}
+
 fn test_main_pkg_not_found() {
     let test_case_path = PathBuf::from("./src/test_data/multimod");
 
@@ -472,7 +517,10 @@ fn test_main_pkg_not_found() {
     let sess = Arc::new(ParseSession::default());
     match exec_program(sess.clone(), &settings.try_into().unwrap()) {
         Ok(_) => panic!("unreachable code."),
-        Err(msg) => assert_eq!(msg, "No input KCL files"),
+        Err(msg) => assert_eq!(
+            msg,
+            "Cannot find the kcl file, please check the file path ${kcl3:KCL_MOD}/main.k"
+        ),
     }
 }
 
