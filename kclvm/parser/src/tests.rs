@@ -427,11 +427,9 @@ fn test_import_vendor_by_external_arguments() {
 
 #[test]
 fn test_get_compile_entries_from_paths() {
-    let testpath = PathBuf::from(
-        "./src/testdata/multimods",
-    )
-    .canonicalize()
-    .unwrap();
+    let testpath = PathBuf::from("./src/testdata/multimods")
+        .canonicalize()
+        .unwrap();
 
     // [`kcl1_path`] is a normal path of the package [`kcl1`] root directory.
     // It looks like `/xxx/xxx/xxx`.
