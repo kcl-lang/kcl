@@ -496,7 +496,11 @@ fn test_instances(kcl_yaml_path: &str, expected_file_path: &str) {
             .to_string(),
     )
     .unwrap();
-    assert_eq!(expect, String::from_utf8(buf).unwrap());
+
+    assert_eq!(
+        expect.replace("\r\n", "\n"),
+        String::from_utf8(buf).unwrap()
+    );
 }
 
 fn test_main_pkg_not_found() {

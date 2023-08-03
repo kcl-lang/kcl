@@ -428,7 +428,7 @@ fn test_import_vendor_by_external_arguments() {
 #[test]
 fn test_get_compile_entries_from_paths() {
     let testpath = PathBuf::from(
-        "/Users/zongz/Workspace/kusionstack/KCLVM/kclvm/parser/src/testdata/multimods",
+        "./src/testdata/multimods",
     )
     .canonicalize()
     .unwrap();

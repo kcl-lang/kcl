@@ -19,6 +19,37 @@ pub struct Entries {
 }
 
 impl Entries {
+    /// [`get_unique_normal_paths_by_name`] will return all the unique normal paths of [`Entry`] with the given name in [`Entries`].
+    pub fn get_unique_normal_paths_by_name(&self, name: &str) -> Vec<String> {
+        let paths = self
+            .get_unique_paths_by_name(name)
+            .iter()
+            .filter(|path| {
+                // All the paths contains the normal paths and the mod relative paths start with ${KCL_MOD}.
+                // If the number of 'kcl.mod' paths is 0, except for the mod relative paths start with ${KCL_MOD},
+                // then use empty path "" as the default.
+                !ModRelativePath::new(path.to_string())
+                    .is_relative_path()
+                    .unwrap_or(false)
+            })
+            .map(|entry| entry.to_string())
+            .collect::<Vec<String>>();
+        paths
+    }
+
+    /// [`get_unique_paths_by_name`] will return all the unique paths of [`Entry`] with the given name in [`Entries`].
+    pub fn get_unique_paths_by_name(&self, name: &str) -> Vec<String> {
+        let mut paths = self
+            .entries
+            .iter()
+            .filter(|entry| entry.name() == name)
+            .map(|entry| entry.path().to_string())
+            .collect::<Vec<String>>();
+        paths.sort();
+        paths.dedup();
+        paths
+    }
+
     /// [`push_entry`] will push a new [`Entry`] into [`Entries`].
     pub fn push_entry(&mut self, entry: Entry) {
         self.entries.push_back(entry);
@@ -209,7 +240,6 @@ pub fn get_compile_entries_from_paths(
         return Err("No input KCL files or paths".to_string());
     }
     let mut result = Entries::default();
-    let mut m = std::collections::HashMap::<String, String>::new();
     for s in file_paths {
         let path = ModRelativePath::from(s.to_string());
         // If the path is a [`ModRelativePath`] with preffix '${<package_name>:KCL_MOD}',
@@ -245,8 +275,7 @@ pub fn get_compile_entries_from_paths(
             continue;
         } else if let Some(root) = get_pkg_root(s) {
             // If the path is a normal path.
-            m.insert(root.clone(), root.clone());
-            let mut entry = Entry::new(kclvm_ast::MAIN_PKG.to_string(), root.clone());
+            let mut entry: Entry = Entry::new(kclvm_ast::MAIN_PKG.to_string(), root.clone());
             entry.extend_k_files(get_main_files_from_pkg_path(
                 &s,
                 &root,
@@ -257,8 +286,11 @@ pub fn get_compile_entries_from_paths(
         }
     }
 
-    if m.is_empty() {
-        m.insert("".to_string(), "".to_string());
+    // The main 'kcl.mod' can not be found, the empty path "" will be took by default.
+    if result
+        .get_unique_normal_paths_by_name(kclvm_ast::MAIN_PKG)
+        .is_empty()
+    {
         let mut entry = Entry::new(kclvm_ast::MAIN_PKG.to_string(), "".to_string());
         for s in file_paths {
             entry.extend_k_files(get_main_files_from_pkg_path(
@@ -271,7 +303,13 @@ pub fn get_compile_entries_from_paths(
         result.push_entry(entry);
     }
 
-    if m.len() == 1 {
+    // The main 'kcl.mod' path can be found only once.
+    // Replace all the '${KCL_MOD}' with the real path of main 'kcl.mod'.
+    if result
+        .get_unique_normal_paths_by_name(kclvm_ast::MAIN_PKG)
+        .len()
+        == 1
+    {
         // If the [`ModRelativePath`] with preffix '${KCL_MOD}'.
         // Replace the '${KCL_MOD}' by the root path of package '__main__'.
 
@@ -303,9 +341,12 @@ pub fn get_compile_entries_from_paths(
         return Ok(result);
     }
 
-    // Filling the kcl program files (*.k) in each entry.
-
-    Err(format!("conflict kcl.mod file paths: {:?}", m))
+    // If there are more than one main 'kcl.mod' files, return error.
+    // the root path of package '__main__' can only one.
+    Err(format!(
+        "conflict kcl.mod file paths: {:?}",
+        result.get_unique_normal_paths_by_name(kclvm_ast::MAIN_PKG)
+    ))
 }
 
 /// Get files in the main package with the package root.

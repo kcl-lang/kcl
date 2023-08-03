@@ -3,11 +3,7 @@
 use anyhow::Result;
 use kclvm_utils::path::PathPrefix;
 use serde::Deserialize;
-use std::{
-    env, fs,
-    io::Read,
-    path::PathBuf,
-};
+use std::{env, fs, io::Read, path::PathBuf};
 use toml;
 
 use crate::path::ModRelativePath;
