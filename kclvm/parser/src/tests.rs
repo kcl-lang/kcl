@@ -490,8 +490,10 @@ fn test_get_compile_entries_from_paths() {
     assert_eq!(entries.get_nth_entry(2).unwrap().name(), "__main__");
     assert_eq!(
         PathBuf::from(entries.get_nth_entry(2).unwrap().path())
-            .display()
-            .to_string(),
+            .canonicalize()
+            .unwrap()
+            .to_str()
+            .unwrap(),
         kcl1_path.canonicalize().unwrap().to_str().unwrap()
     );
 }
