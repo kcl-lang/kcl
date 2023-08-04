@@ -284,7 +284,7 @@ message KeyValuePair {
 // ----------------------------------------------------------------------------
 
 message KclType {
-	string type = 1;                     // schema, dict, list, str, int, float, bool, null, type_string
+	string type = 1;                     // schema, dict, list, str, int, float, bool, any, union, number_multiplier
 	repeated KclType union_types = 2 ;   // union types
 	string default = 3;                  // default value
 
