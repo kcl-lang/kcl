@@ -1,4 +1,4 @@
-use kclvm_error::Position;
+use kclvm_error::{diagnostic::Range, Position};
 
 use crate::ast;
 
@@ -9,7 +9,7 @@ pub trait ContainsPos {
 
 pub trait GetPos {
     /// Get start and end position from node.
-    fn get_span_pos(&self) -> (Position, Position) {
+    fn get_span_pos(&self) -> Range {
         (self.get_pos(), self.get_end_pos())
     }
     /// Get start pos from node.

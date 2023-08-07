@@ -4,13 +4,15 @@ use std::process::Command;
 
 use indexmap::IndexSet;
 use kclvm_ast::ast::Program;
-use kclvm_error::Diagnostic;
+use kclvm_error::Diagnostic as KCLDiagnostic;
 use kclvm_error::Position as KCLPos;
 use kclvm_sema::builtin::MATH_FUNCTION_NAMES;
 use kclvm_sema::builtin::STRING_MEMBER_FUNCTIONS;
 use kclvm_sema::resolver::scope::ProgramScope;
 use lsp_types::request::GotoTypeDefinitionResponse;
 use lsp_types::CompletionResponse;
+use lsp_types::Diagnostic;
+use lsp_types::DiagnosticSeverity;
 use lsp_types::DocumentSymbol;
 use lsp_types::DocumentSymbolResponse;
 use lsp_types::MarkedString;
@@ -22,13 +24,14 @@ use crate::completion::KCLCompletionItem;
 use crate::document_symbol::document_symbol;
 use crate::from_lsp::file_path_from_url;
 use crate::hover::hover;
+use crate::to_lsp::kcl_diag_to_lsp_diags;
 use crate::{
     completion::{completion, into_completion_items},
     goto_def::goto_definition,
     util::{apply_document_changes, parse_param_and_compile, Param},
 };
 
-fn compile_test_file(testfile: &str) -> (String, Program, ProgramScope, IndexSet<Diagnostic>) {
+fn compile_test_file(testfile: &str) -> (String, Program, ProgramScope, IndexSet<KCLDiagnostic>) {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let mut test_file = path;
     test_file.push(testfile);
@@ -68,6 +71,33 @@ fn compare_goto_res(res: Option<GotoTypeDefinitionResponse>, pos: (&String, u32,
 
 #[test]
 fn diagnostics_test() {
+    fn build_lsp_diag(
+        pos: (u32, u32, u32, u32),
+        message: String,
+        severity: Option<DiagnosticSeverity>,
+    ) -> Diagnostic {
+        Diagnostic {
+            range: lsp_types::Range {
+                start: Position {
+                    line: pos.0,
+                    character: pos.1,
+                },
+                end: Position {
+                    line: pos.2,
+                    character: pos.3,
+                },
+            },
+            severity,
+            code: None,
+            code_description: None,
+            source: None,
+            message,
+            related_information: None,
+            tags: None,
+            data: None,
+        }
+    }
+
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let mut test_file = path.clone();
     test_file.push("src/test_data/diagnostics.k");
@@ -81,19 +111,44 @@ fn diagnostics_test() {
     )
     .unwrap();
 
-    let msgs = [
-        "expected one of [\"identifier\", \"literal\", \"(\", \"[\", \"{\"] got newline",
-        "pkgpath abc not found in the program",
-        &format!(
-            "Cannot find the module abc from {}/src/test_data/abc",
-            path.to_str().unwrap()
+    let diagnostics = diags
+        .iter()
+        .flat_map(|diag| kcl_diag_to_lsp_diags(diag, file))
+        .collect::<Vec<Diagnostic>>();
+
+    let expected_diags: Vec<Diagnostic> = vec![
+        build_lsp_diag(
+            (1, 4, 1, 4),
+            "expected one of [\"identifier\", \"literal\", \"(\", \"[\", \"{\"] got newline"
+                .to_string(),
+            Some(DiagnosticSeverity::ERROR),
         ),
-        "expected str, got int(1)",
-        "Module 'abc' imported but unused",
+        build_lsp_diag(
+            (0, 0, 0, 10),
+            "pkgpath abc not found in the program".to_string(),
+            Some(DiagnosticSeverity::ERROR),
+        ),
+        build_lsp_diag(
+            (0, 0, 0, 10),
+            format!(
+                "Cannot find the module abc from {}/src/test_data/abc",
+                path.to_str().unwrap()
+            ),
+            Some(DiagnosticSeverity::ERROR),
+        ),
+        build_lsp_diag(
+            (2, 0, 2, 1),
+            "expected str, got int(1)".to_string(),
+            Some(DiagnosticSeverity::ERROR),
+        ),
+        build_lsp_diag(
+            (0, 0, 0, 10),
+            "Module 'abc' imported but unused".to_string(),
+            Some(DiagnosticSeverity::WARNING),
+        ),
     ];
-    assert_eq!(diags.len(), msgs.len());
-    for (diag, m) in diags.iter().zip(msgs.iter()) {
-        assert_eq!(diag.messages[0].message, m.to_string());
+    for (get, expected) in diagnostics.iter().zip(expected_diags.iter()) {
+        assert_eq!(get, expected);
     }
 }
 

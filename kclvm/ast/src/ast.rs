@@ -42,7 +42,7 @@ use compiler_base_span::{Loc, Span};
 
 use super::token;
 use crate::{node_ref, pos::ContainsPos};
-use kclvm_error::Position;
+use kclvm_error::{diagnostic::Range, Position};
 
 /// PosTuple denotes the tuple `(filename, line, column, end_line, end_column)`.
 pub type PosTuple = (String, u64, u64, u64, u64);
@@ -62,8 +62,8 @@ impl Into<PosTuple> for Pos {
     }
 }
 
-impl Into<(Position, Position)> for Pos {
-    fn into(self) -> (Position, Position) {
+impl Into<Range> for Pos {
+    fn into(self) -> Range {
         (
             Position {
                 filename: self.0.clone(),

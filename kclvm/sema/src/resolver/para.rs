@@ -17,7 +17,7 @@ impl<'ctx> Resolver<'ctx> {
                             self.handler.add_error(
                                 ErrorKind::IllegalParameterError,
                                 &[Message {
-                                    pos: default.get_pos(),
+                                    range: default.get_span_pos(),
                                     style: Style::LineAndColumn,
                                     message: "non-default argument follows default argument"
                                         .to_string(),

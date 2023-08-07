@@ -45,11 +45,18 @@ mod tests;
 ///    Diagnostic {
 ///        level: Warning
 ///        messages: [Message {
-///            pos: Position {
-///                filename: test.k,
-///                line: 1,
-///                column: None,
-///            },
+///            range: (
+///                Position {
+///                    filename: test.k,
+///                    line: 1,
+///                    column: None,
+///                },
+///                Position {
+///                    filename: test.k,
+///                    line: 1,
+///                    column: None,
+///                },
+///            ),
 ///            style: Style::Line,
 ///            message: "Module 'math' imported but unused",
 ///            note: Some("Consider removing this statement".to_string()),

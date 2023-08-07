@@ -53,7 +53,7 @@ impl<'ctx> Resolver<'ctx> {
                             self.handler.add_error(
                                 ErrorKind::UniqueKeyError,
                                 &[Message {
-                                    pos: start.clone(),
+                                    range: stmt.get_span_pos(),
                                     style: Style::LineAndColumn,
                                     message: format!("unique key error name '{}'", name),
                                     note: None,
@@ -170,14 +170,15 @@ impl<'ctx> Resolver<'ctx> {
                 }
             }
             None => {
+                let pos = Position {
+                    filename: self.ctx.filename.clone(),
+                    line: 1,
+                    column: None,
+                };
                 self.handler.add_error(
                     ErrorKind::CannotFindModule,
                     &[Message {
-                        pos: Position {
-                            filename: self.ctx.filename.clone(),
-                            line: 1,
-                            column: None,
-                        },
+                        range: (pos.clone(), pos),
                         style: Style::Line,
                         message: format!("pkgpath {} not found in the program", self.ctx.pkgpath),
                         note: None,
@@ -216,8 +217,10 @@ impl<'ctx> Resolver<'ctx> {
     ) {
         for target in &assign_stmt.targets {
             if target.node.names.is_empty() {
-                self.handler
-                    .add_compile_error("missing target in the assign statement", target.get_pos());
+                self.handler.add_compile_error(
+                    "missing target in the assign statement",
+                    target.get_span_pos(),
+                );
                 continue;
             }
             let name = &target.node.names[0].node;
@@ -227,7 +230,7 @@ impl<'ctx> Resolver<'ctx> {
                     ErrorKind::ImmutableError,
                     &[
                         Message {
-                            pos: start.clone(),
+                            range: target.get_span_pos(),
                             style: Style::LineAndColumn,
                             message: format!(
                             "Can not change the value of '{}', because it was declared immutable",
@@ -236,15 +239,14 @@ impl<'ctx> Resolver<'ctx> {
                             note: None,
                         },
                         Message {
-                            pos: self
+                            range: self
                                 .scope
                                 .borrow()
                                 .elems
                                 .get(name)
                                 .unwrap()
                                 .borrow()
-                                .start
-                                .clone(),
+                                .get_span_pos(),
                             style: Style::LineAndColumn,
                             message: format!("The variable '{}' is declared here", name),
                             note: Some(format!(
@@ -258,7 +260,7 @@ impl<'ctx> Resolver<'ctx> {
             }
             let ty = if let Some(ty_annotation) = &assign_stmt.ty {
                 let ty = &ty_annotation.node;
-                let ty = self.parse_ty_with_scope(ty, ty_annotation.get_pos());
+                let ty = self.parse_ty_with_scope(ty, ty_annotation.get_span_pos());
                 if let Some(obj) = self.scope.borrow().elems.get(name) {
                     let obj = obj.borrow();
                     if !is_upper_bound(obj.ty.clone(), ty.clone()) {
@@ -266,7 +268,7 @@ impl<'ctx> Resolver<'ctx> {
                             ErrorKind::TypeError,
                             &[
                                 Message {
-                                    pos: start.clone(),
+                                    range: target.get_span_pos(),
                                     style: Style::LineAndColumn,
                                     message: format!(
                                         "can not change the type of '{}' to {}",
@@ -276,7 +278,7 @@ impl<'ctx> Resolver<'ctx> {
                                     note: None,
                                 },
                                 Message {
-                                    pos: obj.start.clone(),
+                                    range: obj.get_span_pos(),
                                     style: Style::LineAndColumn,
                                     message: format!("expected {}", obj.ty.ty_str()),
                                     note: None,
@@ -322,7 +324,7 @@ impl<'ctx> Resolver<'ctx> {
                 ErrorKind::ImmutableError,
                 &[
                     Message {
-                        pos: start,
+                        range: target.get_span_pos(),
                         style: Style::LineAndColumn,
                         message: format!(
                             "Can not change the value of '{}', because it was declared immutable",
@@ -331,15 +333,14 @@ impl<'ctx> Resolver<'ctx> {
                         note: None,
                     },
                     Message {
-                        pos: self
+                        range: self
                             .scope
                             .borrow()
                             .elems
                             .get(name)
                             .unwrap()
                             .borrow()
-                            .start
-                            .clone(),
+                            .get_span_pos(),
                         style: Style::LineAndColumn,
                         message: format!("The variable '{}' is declared here", name),
                         note: Some(format!(
@@ -380,7 +381,7 @@ impl<'ctx> Resolver<'ctx> {
                     self.handler.add_error(
                         ErrorKind::IllegalInheritError,
                         &[Message {
-                            pos: host_name.get_pos(),
+                            range: host_name.get_span_pos(),
                             style: Style::LineAndColumn,
                             message: format!(
                                 "invalid schema inherit object type, expect protocol, got '{}'",
@@ -406,7 +407,7 @@ impl<'ctx> Resolver<'ctx> {
                 self.handler.add_error(
                     ErrorKind::IllegalInheritError,
                     &[Message {
-                        pos: host_name.get_pos(),
+                        range: host_name.get_span_pos(),
                         style: Style::LineAndColumn,
                         message: "only schema mixin can inherit from protocol".to_string(),
                         note: None,
@@ -424,7 +425,7 @@ impl<'ctx> Resolver<'ctx> {
                     self.handler.add_error(
                         ErrorKind::IllegalInheritError,
                         &[Message {
-                            pos: host_name.get_pos(),
+                            range: host_name.get_span_pos(),
                             style: Style::LineAndColumn,
                             message: format!(
                                 "invalid schema inherit object type, expect protocol, got '{}'",
@@ -457,7 +458,7 @@ impl<'ctx> Resolver<'ctx> {
                     self.handler.add_error(
                         ErrorKind::IllegalInheritError,
                         &[Message {
-                            pos: parent_name.get_pos(),
+                            range: parent_name.get_span_pos(),
                             style: Style::LineAndColumn,
                             message: format!(
                                 "invalid schema inherit object type, expect schema, got '{}'",
@@ -489,14 +490,14 @@ impl<'ctx> Resolver<'ctx> {
                     "schema name '{}' cannot be the same as the built-in types ({:?})",
                     name, RESERVED_TYPE_IDENTIFIERS
                 ),
-                pos.clone(),
+                schema_stmt.name.get_span_pos(),
             );
         }
         if schema_stmt.is_protocol && !name.ends_with(PROTOCOL_SUFFIX) {
             self.handler.add_error(
                 ErrorKind::CompileError,
                 &[Message {
-                    pos: pos.clone(),
+                    range: schema_stmt.name.get_span_pos(),
                     style: Style::LineAndColumn,
                     message: format!("schema protocol name must end with '{}'", PROTOCOL_SUFFIX),
                     note: None,
@@ -506,7 +507,7 @@ impl<'ctx> Resolver<'ctx> {
         if schema_stmt.is_protocol && !schema_stmt.has_only_attribute_definitions() {
             self.handler.add_compile_error(
                 "a protocol is only allowed to define attributes in it",
-                pos.clone(),
+                schema_stmt.name.get_span_pos(),
             );
         }
         let parent_name = parent_ty
@@ -516,7 +517,7 @@ impl<'ctx> Resolver<'ctx> {
             self.handler.add_error(
                 ErrorKind::IllegalInheritError,
                 &[Message {
-                    pos: pos.clone(),
+                    range: schema_stmt.name.get_span_pos(),
                     style: Style::LineAndColumn,
                     message: format!("mixin inheritance {} is prohibited", parent_name),
                     note: None,
@@ -534,7 +535,7 @@ impl<'ctx> Resolver<'ctx> {
                     self.handler.add_error(
                         ErrorKind::IndexSignatureError,
                         &[Message {
-                            pos: index_signature.get_pos(),
+                            range: index_signature.get_span_pos(),
                             style: Style::LineAndColumn,
                             message: format!("index signature attribute name '{}' cannot have the same name as schema attributes", index_sign_name),
                             note: None,
@@ -544,11 +545,11 @@ impl<'ctx> Resolver<'ctx> {
             }
             let key_ty = self.parse_ty_str_with_scope(
                 &index_signature.node.key_type.node,
-                index_signature.node.key_type.get_pos(),
+                index_signature.node.key_type.get_span_pos(),
             );
             let val_ty = self.parse_ty_with_scope(
                 &index_signature.node.value_ty.node,
-                index_signature.node.value_type.get_pos(),
+                index_signature.node.value_type.get_span_pos(),
             );
             if !self
                 .ctx
@@ -558,7 +559,7 @@ impl<'ctx> Resolver<'ctx> {
                 self.handler.add_error(
                     ErrorKind::IndexSignatureError,
                     &[Message {
-                        pos: pos.clone(),
+                        range: schema_stmt.name.get_span_pos(),
                         style: Style::LineAndColumn,
                         message: format!("invalid index signature key type: '{}'", key_ty.ty_str()),
                         note: None,
@@ -592,11 +593,10 @@ impl<'ctx> Resolver<'ctx> {
         );
         let parsed_doc = parse_doc_string(&schema_stmt.doc);
         for stmt in &schema_stmt.body {
-            let pos = stmt.get_pos();
             let (name, ty, is_optional, has_default) = match &stmt.node {
                 ast::Stmt::Unification(unification_stmt) => {
                     let name = unification_stmt.value.node.name.node.get_name();
-                    let ty = self.parse_ty_str_with_scope(&name, pos.clone());
+                    let ty = self.parse_ty_str_with_scope(&name, stmt.get_span_pos());
                     let is_optional = true;
                     let has_default = true;
                     (
@@ -610,7 +610,7 @@ impl<'ctx> Resolver<'ctx> {
                     let name = schema_attr.name.node.clone();
                     let ty = self.parse_ty_with_scope(
                         &schema_attr.ty.node.clone(),
-                        schema_attr.ty.get_pos(),
+                        schema_attr.ty.get_span_pos(),
                     );
                     let is_optional = schema_attr.is_optional;
                     let has_default = schema_attr.value.is_some();
@@ -652,7 +652,7 @@ impl<'ctx> Resolver<'ctx> {
                         attr_obj_map.get(&name).unwrap().ty.clone().ty_str(),
                         ty.ty_str()
                     ),
-                    pos.clone(),
+                    stmt.get_span_pos(),
                 );
             }
             if is_optional && !attr_obj_map.get(&name).unwrap().is_optional {
@@ -661,7 +661,7 @@ impl<'ctx> Resolver<'ctx> {
                         "can't change the required schema attribute of '{}' to optional",
                         name
                     ),
-                    pos.clone(),
+                    stmt.get_span_pos(),
                 );
             }
             if let Some(ref index_signature_obj) = index_signature {
@@ -671,7 +671,7 @@ impl<'ctx> Resolver<'ctx> {
                     self.handler.add_error(
                         ErrorKind::IndexSignatureError,
                         &[Message {
-                            pos: pos.clone(),
+                            range: stmt.get_span_pos(),
                             style: Style::LineAndColumn,
                             message: format!("the type '{}' of schema attribute '{}' does not meet the index signature definition {}", ty.ty_str(), name, index_signature_obj.ty_str()),
                             note: None,
@@ -688,7 +688,7 @@ impl<'ctx> Resolver<'ctx> {
                 self.handler.add_error(
                     ErrorKind::NameError,
                     &[Message {
-                        pos: mixin.get_pos(),
+                        range: mixin.get_span_pos(),
                         style: Style::LineAndColumn,
                         message: format!(
                             "a valid mixin name should end with 'Mixin', got '{}'",
@@ -709,7 +709,7 @@ impl<'ctx> Resolver<'ctx> {
                     self.handler.add_error(
                         ErrorKind::IllegalInheritError,
                         &[Message {
-                            pos: mixin.get_pos(),
+                            range: mixin.get_span_pos(),
                             style: Style::LineAndColumn,
                             message: format!(
                                 "illegal schema mixin object type, expected mixin, got '{}'",
@@ -736,18 +736,17 @@ impl<'ctx> Resolver<'ctx> {
         if let Some(args) = &schema_stmt.args {
             for (i, para) in args.node.args.iter().enumerate() {
                 let name = para.node.get_name();
-                let pos = para.get_pos();
                 if schema_attr_names.contains(&name) {
                     self.handler.add_compile_error(
                         &format!(
                             "Unexpected parameter name '{}' with the same name as the schema attribute",
                             name
                         ),
-                        pos.clone(),
+                        para.get_span_pos(),
                     );
                 }
                 let ty = args.node.get_arg_type(i);
-                let ty = self.parse_ty_with_scope(&ty, pos);
+                let ty = self.parse_ty_with_scope(&ty, para.get_span_pos());
                 params.push(Parameter {
                     name,
                     ty: ty.clone(),
@@ -769,7 +768,7 @@ impl<'ctx> Resolver<'ctx> {
                             "There is a circular reference between schema {} and {}",
                             name, parent_ty.name,
                         ),
-                        schema_stmt.get_pos(),
+                        schema_stmt.get_span_pos(),
                     );
                 }
             }
@@ -816,14 +815,13 @@ impl<'ctx> Resolver<'ctx> {
         should_add_schema_ref: bool,
     ) -> SchemaType {
         let name = &rule_stmt.name.node;
-        let pos = rule_stmt.name.get_end_pos();
         if RESERVED_TYPE_IDENTIFIERS.contains(&name.as_str()) {
             self.handler.add_compile_error(
                 &format!(
                     "rule name '{}' cannot be the same as the built-in types ({:?})",
                     name, RESERVED_TYPE_IDENTIFIERS
                 ),
-                pos,
+                rule_stmt.name.get_span_pos(),
             );
         }
         // Parent types
@@ -838,7 +836,7 @@ impl<'ctx> Resolver<'ctx> {
                     self.handler.add_error(
                         ErrorKind::IllegalInheritError,
                         &[Message {
-                            pos: rule.get_pos(),
+                            range: rule.get_span_pos(),
                             style: Style::LineAndColumn,
                             message: format!("illegal rule type '{}'", ty.ty_str()),
                             note: None,
@@ -856,9 +854,8 @@ impl<'ctx> Resolver<'ctx> {
         if let Some(args) = &rule_stmt.args {
             for (i, para) in args.node.args.iter().enumerate() {
                 let name = para.node.get_name();
-                let pos = para.get_pos();
                 let ty = args.node.get_arg_type(i);
-                let ty = self.parse_ty_with_scope(&ty, pos);
+                let ty = self.parse_ty_with_scope(&ty, para.get_span_pos());
                 params.push(Parameter {
                     name,
                     ty: ty.clone(),
@@ -880,7 +877,7 @@ impl<'ctx> Resolver<'ctx> {
                             "There is a circular reference between rule {} and {}",
                             name, parent_ty.name,
                         ),
-                        rule_stmt.get_pos(),
+                        rule_stmt.get_span_pos(),
                     );
                 }
             }

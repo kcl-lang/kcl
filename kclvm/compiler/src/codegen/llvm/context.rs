@@ -1777,14 +1777,12 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                     let is_in_schema = self.schema_stack.borrow().len() > 0;
                     if !is_in_schema {
                         let mut handler = self.handler.borrow_mut();
-                        handler.add_compile_error(
-                            &err.message,
-                            Position {
-                                filename: self.current_filename(),
-                                line: *self.current_line.borrow(),
-                                column: None,
-                            },
-                        );
+                        let pos = Position {
+                            filename: self.current_filename(),
+                            line: *self.current_line.borrow(),
+                            column: None,
+                        };
+                        handler.add_compile_error(&err.message, (pos.clone(), pos));
                         handler.abort_if_any_errors()
                     }
                     result

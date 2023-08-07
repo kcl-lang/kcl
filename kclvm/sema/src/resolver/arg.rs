@@ -41,7 +41,7 @@ impl<'ctx> Resolver<'ctx> {
                 if check_table.contains(arg_name) {
                     self.handler.add_compile_error(
                         &format!("{} has duplicated keyword argument {}", func_name, arg_name),
-                        kw.get_pos(),
+                        kw.get_span_pos(),
                     );
                 }
                 check_table.insert(arg_name.to_string());
@@ -49,7 +49,7 @@ impl<'ctx> Resolver<'ctx> {
                 kwarg_types.push((arg_name.to_string(), arg_value_type.clone()));
             } else {
                 self.handler
-                    .add_compile_error("missing argument", kw.get_pos());
+                    .add_compile_error("missing argument", kw.get_span_pos());
             }
         }
         if !params.is_empty() {
@@ -64,12 +64,12 @@ impl<'ctx> Resolver<'ctx> {
                                 params.len(),
                                 args.len(),
                             ),
-                            args[i].get_pos(),
+                            args[i].get_span_pos(),
                         );
                         return;
                     }
                 };
-                self.must_assignable_to(ty.clone(), expected_ty, args[i].get_pos(), None)
+                self.must_assignable_to(ty.clone(), expected_ty, args[i].get_span_pos(), None)
             }
             for (i, (arg_name, kwarg_ty)) in kwarg_types.iter().enumerate() {
                 if !params
@@ -82,7 +82,7 @@ impl<'ctx> Resolver<'ctx> {
                             "{} got an unexpected keyword argument '{}'",
                             func_name, arg_name
                         ),
-                        kwargs[i].get_pos(),
+                        kwargs[i].get_span_pos(),
                     );
                 }
                 let expected_types: Vec<Rc<Type>> = params
@@ -94,7 +94,7 @@ impl<'ctx> Resolver<'ctx> {
                     self.must_assignable_to(
                         kwarg_ty.clone(),
                         expected_types[0].clone(),
-                        kwargs[i].get_pos(),
+                        kwargs[i].get_span_pos(),
                         None,
                     );
                 };

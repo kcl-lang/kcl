@@ -17,7 +17,8 @@ use compiler_base_session::Session;
 use compiler_base_span::span::new_byte_pos;
 use kclvm_ast::ast;
 use kclvm_config::modfile::{get_vendor_home, KCL_FILE_EXTENSION, KCL_FILE_SUFFIX, KCL_MOD_FILE};
-use kclvm_error::{ErrorKind, Message, Position, Style};
+use kclvm_error::diagnostic::Range;
+use kclvm_error::{ErrorKind, Message, Style};
 use kclvm_sema::plugin::PLUGIN_MODULE_PREFIX;
 use kclvm_utils::path::PathPrefix;
 use kclvm_utils::pkgpath::parse_external_pkg_name;
@@ -354,7 +355,7 @@ impl Loader {
             self.sess.1.borrow_mut().add_error(
                 ErrorKind::CannotFindModule,
                 &[Message {
-                    pos: Into::<(Position, Position)>::into(pos).0,
+                    range: Into::<Range>::into(pos),
                     style: Style::Line,
                     message: format!(
                         "the `{}` is found multiple times in the current package and vendor package",
@@ -373,7 +374,7 @@ impl Loader {
                 self.sess.1.borrow_mut().add_error(
                     ErrorKind::CannotFindModule,
                     &[Message {
-                        pos: Into::<(Position, Position)>::into(pos).0,
+                        range: Into::<Range>::into(pos),
                         style: Style::Line,
                         message: format!("pkgpath {} not found in the program", pkg_path),
                         note: None,
@@ -469,7 +470,7 @@ impl Loader {
                 self.sess.1.borrow_mut().add_error(
                     ErrorKind::CannotFindModule,
                     &[Message {
-                        pos: Into::<(Position, Position)>::into(pos).0,
+                        range: Into::<Range>::into(pos),
                         style: Style::Line,
                         message: format!("the plugin package `{}` is not found, please confirm if plugin mode is enabled", pkgpath),
                         note: None,

@@ -37,11 +37,7 @@ impl<'ctx> Resolver<'ctx> {
                             self.handler.add_error(
                                 ErrorKind::CannotFindModule,
                                 &[Message {
-                                    pos: Position {
-                                        filename: m.filename.clone(),
-                                        line: stmt.line,
-                                        column: None,
-                                    },
+                                    range: stmt.get_span_pos(),
                                     style: Style::Line,
                                     message: format!(
                                         "Cannot find the module {} from {}",
@@ -57,11 +53,7 @@ impl<'ctx> Resolver<'ctx> {
                                 self.handler.add_error(
                                     ErrorKind::CompileError,
                                     &[Message {
-                                        pos: Position {
-                                            filename: self.ctx.filename.clone(),
-                                            line: stmt.line,
-                                            column: None,
-                                        },
+                                        range: stmt.get_span_pos(),
                                         style: Style::Line,
                                         message: format!(
                                             "Cannot import {} in the main package",
@@ -190,7 +182,7 @@ impl<'ctx> Resolver<'ctx> {
                                         "There is a circular import reference between module {} and {}",
                                         self.ctx.pkgpath, import_stmt.path,
                                     ),
-                                    stmt.get_pos(),
+                                    stmt.get_span_pos(),
                                 );
                             }
                             // Switch pkgpath context
