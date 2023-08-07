@@ -511,6 +511,6 @@ fn test_dir_with_k_code_list() {
 
     match load_program(sess.clone(), &[&testpath.display().to_string()], Some(opts)) {
         Ok(_) => panic!("unreachable code"),
-        Err(err) => assert_eq!(err, "Invalid code list")
+        Err(err) => assert_eq!(err, "Invalid code list"),
     }
 }

@@ -295,11 +295,8 @@ impl Loader {
             // load module
 
             for (i, filename) in k_files.iter().enumerate() {
-                let mut m = parse_file_with_session(
-                    self.sess.clone(),
-                    filename,
-                    maybe_k_codes[i].clone(),
-                )?;
+                let mut m =
+                    parse_file_with_session(self.sess.clone(), filename, maybe_k_codes[i].clone())?;
                 self.fix_rel_import_path(entry.path(), &mut m);
                 pkg_files.push(m);
             }

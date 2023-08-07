@@ -37,8 +37,11 @@ fn compile_test_file(testfile: &str) -> (String, Program, ProgramScope, IndexSet
 
     let file = test_file.to_str().unwrap().to_string();
 
-    let (program, prog_scope, diags) =
-        parse_param_and_compile(Param { file: file.clone() }, Some(Arc::new(RwLock::new(Default::default())))).unwrap();
+    let (program, prog_scope, diags) = parse_param_and_compile(
+        Param { file: file.clone() },
+        Some(Arc::new(RwLock::new(Default::default()))),
+    )
+    .unwrap();
     (file, program, prog_scope, diags)
 }
 

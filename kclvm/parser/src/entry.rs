@@ -152,7 +152,11 @@ impl Entry {
     }
 
     /// [`extend_k_files_and_codes`] will extend the k files and k codes of [`Entry`] to the given k file and k code.
-    pub fn extend_k_files_and_codes(&mut self, k_files: Vec<String>, k_codes: &mut VecDeque<String>) {
+    pub fn extend_k_files_and_codes(
+        &mut self,
+        k_files: Vec<String>,
+        k_codes: &mut VecDeque<String>,
+    ) {
         for k_file in k_files.iter() {
             self.k_code_lists.push(k_codes.pop_front());
             self.k_files.push(k_file.to_string());
@@ -275,7 +279,7 @@ pub fn get_compile_entries_from_paths(
     for (i, s) in file_paths.iter().enumerate() {
         let path = ModRelativePath::from(s.to_string());
 
-        if path.is_dir() && opts.k_code_list.len() > i  {
+        if path.is_dir() && opts.k_code_list.len() > i {
             return Err("Invalid code list".to_string());
         }
 
@@ -296,7 +300,10 @@ pub fn get_compile_entries_from_paths(
                 .map_err(|err| err.to_string())?;
             if let Some(root) = get_pkg_root(&s) {
                 let mut entry: Entry = Entry::new(pkg_name.clone(), root.clone());
-                entry.extend_k_files_and_codes(get_main_files_from_pkg_path(&s, &root, &pkg_name, opts)?, &mut k_code_queue);
+                entry.extend_k_files_and_codes(
+                    get_main_files_from_pkg_path(&s, &root, &pkg_name, opts)?,
+                    &mut k_code_queue,
+                );
                 result.push_entry(entry);
                 continue;
             }
@@ -315,12 +322,10 @@ pub fn get_compile_entries_from_paths(
         } else if let Some(root) = get_pkg_root(s) {
             // If the path is a normal path.
             let mut entry: Entry = Entry::new(kclvm_ast::MAIN_PKG.to_string(), root.clone());
-            entry.extend_k_files_and_codes(get_main_files_from_pkg_path(
-                &s,
-                &root,
-                &kclvm_ast::MAIN_PKG.to_string(),
-                opts,
-            )?, &mut k_code_queue);
+            entry.extend_k_files_and_codes(
+                get_main_files_from_pkg_path(&s, &root, &kclvm_ast::MAIN_PKG.to_string(), opts)?,
+                &mut k_code_queue,
+            );
             result.push_entry(entry);
         }
     }
@@ -332,12 +337,10 @@ pub fn get_compile_entries_from_paths(
     {
         let mut entry = Entry::new(kclvm_ast::MAIN_PKG.to_string(), "".to_string());
         for s in file_paths {
-            entry.extend_k_files_and_codes(get_main_files_from_pkg_path(
-                s,
-                "",
-                &kclvm_ast::MAIN_PKG.to_string(),
-                opts,
-            )?, &mut k_code_queue);
+            entry.extend_k_files_and_codes(
+                get_main_files_from_pkg_path(s, "", &kclvm_ast::MAIN_PKG.to_string(), opts)?,
+                &mut k_code_queue,
+            );
         }
         result.push_entry(entry);
     }

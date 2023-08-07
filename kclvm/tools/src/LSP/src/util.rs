@@ -1,5 +1,5 @@
 use std::cell::RefCell;
-use std::path::{PathBuf, Path};
+use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::{fs, sync::Arc};
 
