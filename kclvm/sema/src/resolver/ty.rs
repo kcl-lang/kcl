@@ -6,6 +6,7 @@ use crate::ty::{assignable_to, SchemaType, Type, TypeKind};
 use indexmap::IndexMap;
 use kclvm_ast::ast;
 use kclvm_ast::pos::GetPos;
+use kclvm_error::diagnostic::Range;
 use kclvm_error::*;
 
 use super::node::ResolvedResult;
@@ -56,11 +57,7 @@ impl<'ctx> Resolver<'ctx> {
     }
     /// Parse the type string with the scope, if parse_ty returns a Named type(schema type or type alias),
     /// found it from the scope.
-    pub fn parse_ty_with_scope(
-        &mut self,
-        ty: &ast::Type,
-        range: (Position, Position),
-    ) -> ResolvedResult {
+    pub fn parse_ty_with_scope(&mut self, ty: &ast::Type, range: Range) -> ResolvedResult {
         let ty: Rc<Type> = Rc::new(ty.clone().into());
         // If a named type, find it from scope to get the specific type
         let ret_ty = self.upgrade_named_ty_with_scope(ty.clone(), &range);
@@ -71,11 +68,7 @@ impl<'ctx> Resolver<'ctx> {
         ret_ty
     }
 
-    pub fn parse_ty_str_with_scope(
-        &mut self,
-        ty_str: &str,
-        range: (Position, Position),
-    ) -> ResolvedResult {
+    pub fn parse_ty_str_with_scope(&mut self, ty_str: &str, range: Range) -> ResolvedResult {
         let ty: Rc<Type> = parse_type_str(ty_str);
         // If a named type, find it from scope to get the specific type
         let ret_ty = self.upgrade_named_ty_with_scope(ty, &range);
@@ -96,8 +89,8 @@ impl<'ctx> Resolver<'ctx> {
         &mut self,
         ty: Rc<Type>,
         expected_ty: Rc<Type>,
-        range: (Position, Position),
-        expected_pos: Option<(Position, Position)>,
+        range: Range,
+        expected_pos: Option<Range>,
     ) {
         if !self.check_type(ty.clone(), expected_ty.clone(), &range) {
             let mut msgs = vec![Message {
@@ -125,12 +118,7 @@ impl<'ctx> Resolver<'ctx> {
 
     /// The check type main function, returns a boolean result.
     #[inline]
-    pub fn check_type(
-        &mut self,
-        ty: Rc<Type>,
-        expected_ty: Rc<Type>,
-        range: &(Position, Position),
-    ) -> bool {
+    pub fn check_type(&mut self, ty: Rc<Type>, expected_ty: Rc<Type>, range: &Range) -> bool {
         match (&ty.kind, &expected_ty.kind) {
             (TypeKind::List(item_ty), TypeKind::List(expected_item_ty)) => {
                 self.check_type(item_ty.clone(), expected_item_ty.clone(), range)
@@ -159,7 +147,7 @@ impl<'ctx> Resolver<'ctx> {
         key_ty: Rc<Type>,
         val_ty: Rc<Type>,
         schema_ty: &SchemaType,
-        range: &(Position, Position),
+        range: &Range,
     ) -> bool {
         if let Some(index_signature) = &schema_ty.index_signature {
             if !assignable_to(val_ty.clone(), index_signature.val_ty.clone()) {
@@ -182,11 +170,7 @@ impl<'ctx> Resolver<'ctx> {
         }
     }
 
-    fn upgrade_named_ty_with_scope(
-        &mut self,
-        ty: Rc<Type>,
-        range: &(Position, Position),
-    ) -> ResolvedResult {
+    fn upgrade_named_ty_with_scope(&mut self, ty: Rc<Type>, range: &Range) -> ResolvedResult {
         match &ty.kind {
             TypeKind::List(item_ty) => {
                 Type::list_ref(self.upgrade_named_ty_with_scope(item_ty.clone(), range))

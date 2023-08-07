@@ -142,7 +142,7 @@ pub enum WarningKind {
 /// let mut handler = Handler::default();
 /// handler.add_warning(WarningKind::UnusedImportWarning, &[
 ///     Message {
-///         pos: Position::dummy_pos(),
+///         range: (Position::dummy_pos(), Position::dummy_pos()),
 ///         style: Style::LineAndColumn,
 ///         message: "Module 'a' imported but unused.".to_string(),
 ///         note: None,
@@ -168,7 +168,7 @@ impl std::fmt::Display for WarningKind {
 /// let mut handler = Handler::default();
 /// handler.add_warning(WarningKind::UnusedImportWarning, &[
 ///     Message {
-///         pos: Position::dummy_pos(),
+///         range: (Position::dummy_pos(), Position::dummy_pos()),
 ///         style: Style::LineAndColumn,
 ///         message: "Module 'a' imported but unused.".to_string(),
 ///         note: None,

@@ -18,6 +18,7 @@ use compiler_base_error::{
 };
 use compiler_base_session::{Session, SessionDiagnostic};
 use compiler_base_span::{span::new_byte_pos, Span};
+use diagnostic::Range;
 use indexmap::IndexSet;
 use kclvm_runtime::PanicInfo;
 use std::{any::Any, sync::Arc};
@@ -91,7 +92,7 @@ impl Handler {
     }
 
     /// Construct a parse error and put it into the handler diagnostic buffer
-    pub fn add_syntex_error(&mut self, msg: &str, range: (Position, Position)) -> &mut Self {
+    pub fn add_syntex_error(&mut self, msg: &str, range: Range) -> &mut Self {
         let message = format!("Invalid syntax: {msg}");
         let diag = Diagnostic::new_with_code(
             Level::Error,
@@ -106,7 +107,7 @@ impl Handler {
     }
 
     /// Construct a type error and put it into the handler diagnostic buffer
-    pub fn add_type_error(&mut self, msg: &str, range: (Position, Position)) -> &mut Self {
+    pub fn add_type_error(&mut self, msg: &str, range: Range) -> &mut Self {
         let diag = Diagnostic::new_with_code(
             Level::Error,
             msg,
@@ -120,7 +121,7 @@ impl Handler {
     }
 
     /// Construct a type error and put it into the handler diagnostic buffer
-    pub fn add_compile_error(&mut self, msg: &str, range: (Position, Position)) -> &mut Self {
+    pub fn add_compile_error(&mut self, msg: &str, range: Range) -> &mut Self {
         let diag = Diagnostic::new_with_code(
             Level::Error,
             msg,
@@ -146,7 +147,7 @@ impl Handler {
     /// let mut handler = Handler::default();
     /// handler.add_error(ErrorKind::InvalidSyntax, &[
     ///     Message {
-    ///         pos: Position::dummy_pos(),
+    ///         range: (Position::dummy_pos(), Position::dummy_pos()),
     ///         style: Style::LineAndColumn,
     ///         message: "Invalid syntax: expected '+', got '-'".to_string(),
     ///         note: None,
@@ -170,7 +171,7 @@ impl Handler {
     /// let mut handler = Handler::default();
     /// handler.add_warning(WarningKind::UnusedImportWarning, &[
     ///     Message {
-    ///         pos: Position::dummy_pos(),
+    ///         range: (Position::dummy_pos(), Position::dummy_pos()),
     ///         style: Style::LineAndColumn,
     ///         message: "Module 'a' imported but unused.".to_string(),
     ///         note: None,
@@ -210,7 +211,7 @@ impl Handler {
     /// ```
     /// use kclvm_error::*;
     /// let mut handler = Handler::default();
-    /// handler.add_diagnostic(Diagnostic::new_with_code(Level::Error, "error message", None, Position::dummy_pos(), Some(DiagnosticId::Error(E1001.kind))));
+    /// handler.add_diagnostic(Diagnostic::new_with_code(Level::Error, "error message", None, (Position::dummy_pos(), Position::dummy_pos()), Some(DiagnosticId::Error(E1001.kind))));
     /// ```
     #[inline]
     pub fn add_diagnostic(&mut self, diagnostic: Diagnostic) -> &mut Self {

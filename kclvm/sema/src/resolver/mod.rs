@@ -19,6 +19,7 @@ mod var;
 mod tests;
 
 use indexmap::IndexMap;
+use kclvm_error::diagnostic::Range;
 use std::{cell::RefCell, rc::Rc};
 
 use crate::lint::{CombinedLintPass, Linter};
@@ -118,7 +119,7 @@ pub struct Context {
     /// Import pkgpath and name
     pub import_names: IndexMap<String, IndexMap<String, String>>,
     /// Global names at top level of the program.
-    pub global_names: IndexMap<String, IndexMap<String, (Position, Position)>>,
+    pub global_names: IndexMap<String, IndexMap<String, Range>>,
     /// Are we resolving the left value.
     pub l_value: bool,
     /// Are we resolving the statement start position.

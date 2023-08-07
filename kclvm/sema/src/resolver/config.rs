@@ -10,7 +10,7 @@ use crate::ty::SchemaType;
 use crate::ty::{Type, TypeKind};
 use kclvm_ast::ast;
 use kclvm_ast::pos::GetPos;
-use kclvm_error::{ErrorKind, Message, Position, Style};
+use kclvm_error::{diagnostic::Range, ErrorKind, Message, Position, Style};
 
 /// Config Expr type check state.
 ///
@@ -314,12 +314,7 @@ impl<'ctx> Resolver<'ctx> {
     }
 
     /// Check config attr has been defined.
-    pub(crate) fn check_config_attr(
-        &mut self,
-        attr: &str,
-        range: &(Position, Position),
-        schema_ty: &SchemaType,
-    ) {
+    pub(crate) fn check_config_attr(&mut self, attr: &str, range: &Range, schema_ty: &SchemaType) {
         let runtime_type = kclvm_runtime::schema_runtime_type(&schema_ty.name, &schema_ty.pkgpath);
         match self.ctx.schema_mapping.get(&runtime_type) {
             Some(schema_mapping_ty) => {

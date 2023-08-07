@@ -95,7 +95,7 @@ impl From<Loc> for Position {
 }
 
 impl Diagnostic {
-    pub fn new(level: Level, message: &str, range: (Position, Position)) -> Self {
+    pub fn new(level: Level, message: &str, range: Range) -> Self {
         Diagnostic::new_with_code(level, message, None, range, None)
     }
 
@@ -104,7 +104,7 @@ impl Diagnostic {
         level: Level,
         message: &str,
         note: Option<&str>,
-        range: (Position, Position),
+        range: Range,
         code: Option<DiagnosticId>,
     ) -> Self {
         Diagnostic {
@@ -125,9 +125,11 @@ impl Diagnostic {
     }
 }
 
+pub type Range = (Position, Position);
+
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Message {
-    pub range: (Position, Position),
+    pub range: Range,
     pub style: Style,
     pub message: String,
     pub note: Option<String>,

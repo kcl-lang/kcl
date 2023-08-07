@@ -4,12 +4,13 @@ use crate::builtin::system_module::{get_system_module_members, UNITS, UNITS_NUMB
 use crate::builtin::STRING_MEMBER_FUNCTIONS;
 use crate::resolver::Resolver;
 use crate::ty::{ModuleKind, Type, TypeKind};
+use kclvm_error::diagnostic::Range;
 use kclvm_error::*;
 
 use super::node::ResolvedResult;
 
 impl<'ctx> Resolver<'ctx> {
-    pub fn check_attr_ty(&mut self, attr_ty: &Type, range: (Position, Position)) {
+    pub fn check_attr_ty(&mut self, attr_ty: &Type, range: Range) {
         if !attr_ty.is_any() && !attr_ty.is_key() {
             self.handler.add_error(
                 ErrorKind::IllegalAttributeError,
@@ -26,12 +27,7 @@ impl<'ctx> Resolver<'ctx> {
         }
     }
 
-    pub fn load_attr(
-        &mut self,
-        obj: Rc<Type>,
-        attr: &str,
-        range: (Position, Position),
-    ) -> ResolvedResult {
+    pub fn load_attr(&mut self, obj: Rc<Type>, attr: &str, range: Range) -> ResolvedResult {
         let (result, return_ty) = match &obj.kind {
             TypeKind::Any => (true, self.any_ty()),
             TypeKind::None

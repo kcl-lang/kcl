@@ -2,6 +2,7 @@ use anyhow::bail;
 use compiler_base_session::Session;
 use indexmap::{IndexMap, IndexSet};
 use kclvm_ast::{ast, MAIN_PKG};
+use kclvm_error::diagnostic::Range;
 use kclvm_error::{Handler, Level};
 use std::sync::Arc;
 use std::{
@@ -50,7 +51,7 @@ impl ContainsPos for ScopeObject {
 }
 
 impl GetPos for ScopeObject {
-    fn get_span_pos(&self) -> (Position, Position) {
+    fn get_span_pos(&self) -> Range {
         (self.start.clone(), self.end.clone())
     }
     fn get_pos(&self) -> Position {
@@ -399,7 +400,7 @@ impl<'ctx> Resolver<'ctx> {
 
     /// Lookup type from the scope by name, if not found, emit a compile error and
     /// return the any type.
-    pub fn lookup_type_from_scope(&mut self, name: &str, range: (Position, Position)) -> Rc<Type> {
+    pub fn lookup_type_from_scope(&mut self, name: &str, range: Range) -> Rc<Type> {
         match self.find_type_in_scope(name) {
             Some(ty) => ty,
             None => {
@@ -413,7 +414,7 @@ impl<'ctx> Resolver<'ctx> {
     }
 
     /// Set type to the scope exited object, if not found, emit a compile error.
-    pub fn set_type_to_scope(&mut self, name: &str, ty: Rc<Type>, range: (Position, Position)) {
+    pub fn set_type_to_scope(&mut self, name: &str, ty: Rc<Type>, range: Range) {
         let mut scope = self.scope.borrow_mut();
         match scope.elems.get_mut(name) {
             Some(obj) => {

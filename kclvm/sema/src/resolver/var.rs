@@ -1,6 +1,7 @@
 use crate::resolver::Resolver;
 use crate::ty::TypeKind;
 use indexmap::IndexMap;
+use kclvm_error::diagnostic::Range;
 use kclvm_error::*;
 
 use super::node::ResolvedResult;
@@ -8,12 +9,7 @@ use super::scope::{ScopeObject, ScopeObjectKind};
 
 impl<'ctx> Resolver<'ctx> {
     /// Resolve variables.
-    pub fn resolve_var(
-        &mut self,
-        names: &[String],
-        pkgpath: &str,
-        range: (Position, Position),
-    ) -> ResolvedResult {
+    pub fn resolve_var(&mut self, names: &[String], pkgpath: &str, range: Range) -> ResolvedResult {
         if !pkgpath.is_empty() && self.ctx.l_value {
             self.handler.add_compile_error(
                 "only schema and dict object can be updated attribute",
@@ -122,7 +118,7 @@ impl<'ctx> Resolver<'ctx> {
     }
 
     /// Resolve an unique key in the current package.
-    pub(crate) fn resolve_unique_key(&mut self, name: &str, range: &(Position, Position)) {
+    pub(crate) fn resolve_unique_key(&mut self, name: &str, range: &Range) {
         if !self.contains_global_name(name) && self.scope_level == 0 {
             self.insert_global_name(name, range);
         } else {
@@ -145,7 +141,7 @@ impl<'ctx> Resolver<'ctx> {
     }
 
     /// Insert global name in the current package.
-    pub(crate) fn insert_global_name(&mut self, name: &str, range: &(Position, Position)) {
+    pub(crate) fn insert_global_name(&mut self, name: &str, range: &Range) {
         match self.ctx.global_names.get_mut(&self.ctx.pkgpath) {
             Some(mapping) => {
                 mapping.insert(name.to_string(), range.clone());
@@ -169,7 +165,7 @@ impl<'ctx> Resolver<'ctx> {
     }
 
     /// Get global name position in the current package.
-    pub(crate) fn get_global_name_pos(&mut self, name: &str) -> Option<&(Position, Position)> {
+    pub(crate) fn get_global_name_pos(&mut self, name: &str) -> Option<&Range> {
         match self.ctx.global_names.get_mut(&self.ctx.pkgpath) {
             Some(mapping) => mapping.get(name),
             None => None,

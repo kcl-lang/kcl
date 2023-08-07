@@ -3,6 +3,7 @@ use std::rc::Rc;
 use crate::resolver::Resolver;
 use crate::ty::{has_any_type, is_upper_bound, sup, Type, TypeInferMethods, ZERO_LIT_TYPES};
 use kclvm_ast::ast;
+use kclvm_error::diagnostic::Range;
 use kclvm_error::Position;
 
 const DIV_OR_MOD_ZERO_MSG: &str = "integer division or modulo by zero";
@@ -56,7 +57,7 @@ impl<'ctx> Resolver<'ctx> {
         left: Rc<Type>,
         right: Rc<Type>,
         op: &ast::BinOp,
-        range: (Position, Position),
+        range: Range,
     ) -> Rc<Type> {
         let t1 = self
             .ctx
@@ -213,12 +214,7 @@ impl<'ctx> Resolver<'ctx> {
     /// - number        unary negation          (int, float)
     /// ~ number        unary bitwise inversion (int)
     /// not x           logical negation        (any type)
-    pub fn unary(
-        &mut self,
-        ty: Rc<Type>,
-        op: &ast::UnaryOp,
-        range: (Position, Position),
-    ) -> Rc<Type> {
+    pub fn unary(&mut self, ty: Rc<Type>, op: &ast::UnaryOp, range: Range) -> Rc<Type> {
         if has_any_type(&[ty.clone()]) {
             return self.any_ty();
         }
@@ -259,7 +255,7 @@ impl<'ctx> Resolver<'ctx> {
         left: Rc<Type>,
         right: Rc<Type>,
         op: &ast::CmpOp,
-        range: (Position, Position),
+        range: Range,
     ) -> Rc<Type> {
         let t1 = self.ctx.ty_ctx.literal_union_type_to_variable_type(left);
         let t2 = self.ctx.ty_ctx.literal_union_type_to_variable_type(right);

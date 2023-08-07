@@ -4,7 +4,7 @@ use crate::resolver::Resolver;
 use crate::ty::{sup, Type, TypeKind};
 use kclvm_ast::ast;
 use kclvm_ast::pos::GetPos;
-use kclvm_error::Position;
+use kclvm_error::diagnostic::Range;
 
 impl<'ctx> Resolver<'ctx> {
     /// Do loop type check including quant and comp for expression.
@@ -14,7 +14,7 @@ impl<'ctx> Resolver<'ctx> {
         first_var_name: Option<String>,
         second_var_name: Option<String>,
         iter_ty: Rc<Type>,
-        iter_range: (Position, Position),
+        iter_range: Range,
     ) {
         let types = match &iter_ty.kind {
             TypeKind::Union(types) => types.clone(),
