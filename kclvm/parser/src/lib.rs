@@ -290,22 +290,18 @@ impl Loader {
             // Get files from options with root.
             // let k_files = self.get_main_files_from_pkg(entry.path(), entry.name())?;
             let k_files = entry.get_k_files();
+            let maybe_k_codes = entry.get_k_codes();
+
             // load module
 
             for (i, filename) in k_files.iter().enumerate() {
-                if i < self.opts.k_code_list.len() {
-                    let mut m = parse_file_with_session(
-                        self.sess.clone(),
-                        filename,
-                        Some(self.opts.k_code_list[i].clone()),
-                    )?;
-                    self.fix_rel_import_path(entry.path(), &mut m);
-                    pkg_files.push(m);
-                } else {
-                    let mut m = parse_file_with_session(self.sess.clone(), filename, None)?;
-                    self.fix_rel_import_path(entry.path(), &mut m);
-                    pkg_files.push(m);
-                }
+                let mut m = parse_file_with_session(
+                    self.sess.clone(),
+                    filename,
+                    maybe_k_codes[i].clone(),
+                )?;
+                self.fix_rel_import_path(entry.path(), &mut m);
+                pkg_files.push(m);
             }
 
             // Insert an empty vec to determine whether there is a circular import.

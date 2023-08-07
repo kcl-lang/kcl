@@ -1,5 +1,5 @@
 use std::cell::RefCell;
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
 use std::rc::Rc;
 use std::{fs, sync::Arc};
 
@@ -15,6 +15,7 @@ use kclvm_driver::kpm_metadata::fetch_metadata;
 use kclvm_driver::{get_kcl_files, lookup_compile_unit};
 use kclvm_error::Diagnostic;
 use kclvm_error::Position as KCLPos;
+use kclvm_parser::entry::get_dir_files;
 use kclvm_parser::{load_program, ParseSession};
 use kclvm_sema::resolver::scope::Scope;
 use kclvm_sema::resolver::{resolve_program, scope::ProgramScope};
@@ -114,10 +115,24 @@ fn load_files_code_from_vfs(files: &[&str], vfs: Arc<RwLock<Vfs>>) -> anyhow::Re
             }
             None => {
                 // In order to ensure that k_file corresponds to k_code, load the code from the file system if not exist
-                res.push(
-                    fs::read_to_string(path)
-                        .map_err(|_| anyhow::anyhow!("can't convert file to url: {}", file))?,
-                );
+                let p: &Path = path.as_ref();
+                if p.is_file() {
+                    res.push(
+                        fs::read_to_string(path)
+                            .map_err(|_| anyhow::anyhow!("can't convert file to url: {}", file))?,
+                    );
+                } else if p.is_dir() {
+                    let k_files = get_dir_files(p.to_str().unwrap())
+                        .map_err(|_| anyhow::anyhow!("can't get dir files: {} ", file))?;
+                    for k_file in k_files {
+                        let k_file_path = Path::new(k_file.as_str());
+                        res.push(
+                            fs::read_to_string(k_file_path).map_err(|_| {
+                                anyhow::anyhow!("can't convert file to url: {}", file)
+                            })?,
+                        );
+                    }
+                }
             }
         }
     }

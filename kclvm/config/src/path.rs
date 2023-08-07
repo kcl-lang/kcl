@@ -12,7 +12,9 @@
 //! The real path of `${my_pkg:KCL_MOD}/xxx/main.k` is `/usr/my_pkg/sub/main.k`.
 use anyhow::Result;
 use pcre2::bytes::Regex;
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
+
+use crate::modfile::KCL_FILE_SUFFIX;
 
 #[derive(Clone, Debug, Default)]
 /// [`ModRelativePath`] is a path that is relative to the root package path.
@@ -143,6 +145,21 @@ impl ModRelativePath {
                     return res;
                 },
             ))
+    }
+
+    /// [`is_dir`] returns true if the path is a directory.
+    /// 
+    /// # Examples
+    /// 
+    /// ```rust
+    /// use kclvm_config::path::ModRelativePath;
+    /// let path = ModRelativePath::new("${name:KCL_MOD}/src/path".to_string());
+    /// assert_eq!(path.is_dir(), true);
+    /// let path = ModRelativePath::new("${name:KCL_MOD}/src/path/main.k".to_string());
+    /// assert_eq!(path.is_dir(), false);
+    /// ```
+    pub fn is_dir(&self) -> bool {
+        Path::new(&self.path).is_dir() || !self.path.ends_with(KCL_FILE_SUFFIX)
     }
 }
 

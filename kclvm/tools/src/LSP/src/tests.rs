@@ -1,6 +1,7 @@
 use std::env;
 use std::path::PathBuf;
 use std::process::Command;
+use std::sync::Arc;
 
 use indexmap::IndexSet;
 use kclvm_ast::ast::Program;
@@ -17,6 +18,7 @@ use lsp_types::MarkedString;
 use lsp_types::SymbolKind;
 use lsp_types::Url;
 use lsp_types::{Position, Range, TextDocumentContentChangeEvent};
+use parking_lot::RwLock;
 
 use crate::completion::KCLCompletionItem;
 use crate::document_symbol::document_symbol;
@@ -36,7 +38,7 @@ fn compile_test_file(testfile: &str) -> (String, Program, ProgramScope, IndexSet
     let file = test_file.to_str().unwrap().to_string();
 
     let (program, prog_scope, diags) =
-        parse_param_and_compile(Param { file: file.clone() }, None).unwrap();
+        parse_param_and_compile(Param { file: file.clone() }, Some(Arc::new(RwLock::new(Default::default())))).unwrap();
     (file, program, prog_scope, diags)
 }
 
