@@ -1,7 +1,6 @@
 //! A KCL lexer.
 //!
-//! The lexer is built on the low level [`kclvm_lexer`], and works
-//! based on the rules defined by the KCL grammar ['./spec/grammar'].
+//! The lexer is built on the low level [`kclvm_lexer`]
 //!
 //! It's main responsibilities:
 //! 1. Mapping low level [`kclvm_lexer::Token`] tokens into [`kclvm_ast::Token`] tokens,

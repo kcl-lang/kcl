@@ -13,16 +13,16 @@ topdir=$PWD
 help_message=$(cat <<-END
     Usage:
         run.sh -h
-            Print this help message
+            Print this help message.
         run.sh -a [action]
-            Perform an action
+            Perform an action.
         run.sh
-            Perform an action interactively
+            Perform an action interactively.
     Available actions:
         build
-            Package CPython and the KCLVM extension into KCLVM
+            Build the KCL package.
         release
-            Create a package for releasing
+            Create a releasing for the KCL package.
 END
 )
 action=
@@ -63,4 +63,4 @@ if [ "$action" == "" ]; then
     done
 fi
 
-os=$os topdir=$topdir sslpath=$sslpath $topdir/internal/scripts/$action.sh
+os=$os topdir=$topdir sslpath=$sslpath $topdir/scripts/$action.sh

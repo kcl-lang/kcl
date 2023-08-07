@@ -65,7 +65,7 @@ fi
 cp -r $cpython_build_dir/include $kcl_install_dir/
 
 # Copy KCL Scripts.
-scripts_dir="$topdir/internal/scripts/python-plugin/cli"
+scripts_dir="$topdir/scripts/python-plugin/cli"
 cp "$scripts_dir/kcl" $kcl_install_dir/bin/
 cp "$scripts_dir/kcl-plugin" $kcl_install_dir/bin/
 cp "$scripts_dir/kcl-doc" $kcl_install_dir/bin/

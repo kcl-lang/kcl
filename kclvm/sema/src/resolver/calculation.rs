@@ -4,7 +4,6 @@ use crate::resolver::Resolver;
 use crate::ty::{has_any_type, is_upper_bound, sup, Type, TypeInferMethods, ZERO_LIT_TYPES};
 use kclvm_ast::ast;
 use kclvm_error::diagnostic::Range;
-use kclvm_error::Position;
 
 const DIV_OR_MOD_ZERO_MSG: &str = "integer division or modulo by zero";
 

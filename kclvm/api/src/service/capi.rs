@@ -62,7 +62,7 @@ macro_rules! call {
 ///
 /// `args`: [*const c_char]
 ///     Arguments of the call serialized as protobuf byte sequence,
-///     refer to internal/spec/gpyrpc/gpyrpc.proto for the specific definitions of arguments
+///     refer to kclvm/spec/gpyrpc/gpyrpc.proto for the specific definitions of arguments
 ///
 /// # Returns
 ///
