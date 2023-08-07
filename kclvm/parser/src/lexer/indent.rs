@@ -1,5 +1,4 @@
 //! KCL indent handling.
-//! See details defined in KCL Grammar ['./spec/grammar'].
 
 use std::cmp::Ordering;
 

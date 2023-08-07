@@ -24,14 +24,14 @@ prepare_dirs
 set -x
 
 # Copy kcl scripts
-cp "$topdir/internal/scripts/cli/kcl" $install_dir/bin/
-cp "$topdir/internal/scripts/cli/kclvm" $install_dir/bin/
-cp "$topdir/internal/scripts/cli/kcl-plugin" $install_dir/bin/
-cp "$topdir/internal/scripts/cli/kcl-doc" $install_dir/bin/
-cp "$topdir/internal/scripts/cli/kcl-test" $install_dir/bin/
-cp "$topdir/internal/scripts/cli/kcl-lint" $install_dir/bin/
-cp "$topdir/internal/scripts/cli/kcl-fmt" $install_dir/bin/
-cp "$topdir/internal/scripts/cli/kcl-vet" $install_dir/bin/
+cp "$topdir/scripts/cli/kcl" $install_dir/bin/
+cp "$topdir/scripts/cli/kclvm" $install_dir/bin/
+cp "$topdir/scripts/cli/kcl-plugin" $install_dir/bin/
+cp "$topdir/scripts/cli/kcl-doc" $install_dir/bin/
+cp "$topdir/scripts/cli/kcl-test" $install_dir/bin/
+cp "$topdir/scripts/cli/kcl-lint" $install_dir/bin/
+cp "$topdir/scripts/cli/kcl-fmt" $install_dir/bin/
+cp "$topdir/scripts/cli/kcl-vet" $install_dir/bin/
 chmod +x $install_dir/bin/kcl
 chmod +x $install_dir/bin/kclvm
 chmod +x $install_dir/bin/kcl-plugin

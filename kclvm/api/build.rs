@@ -2,7 +2,7 @@ use std::{env, path::PathBuf};
 
 use prost_wkt_build::{FileDescriptorSet, Message};
 
-/// According to the file KCLVM/internal/kclvm_py/spec/gpyrpc/gpyrpc.proto, automatically generate
+/// According to the file kclvm/spec/gpyrpc/gpyrpc.proto, automatically generate
 /// the corresponding rust source file to the directory src/model
 fn main() {
     std::env::set_var(
@@ -21,10 +21,7 @@ fn main() {
         .extern_path(".google.protobuf.Timestamp", "::prost_wkt_types::Timestamp")
         .extern_path(".google.protobuf.Value", "::prost_wkt_types::Value")
         .file_descriptor_set_path(&descriptor_file)
-        .compile_protos(
-            &["../../internal/spec/gpyrpc/gpyrpc.proto"],
-            &["../../internal/spec/gpyrpc/"],
-        )
+        .compile_protos(&["../spec/gpyrpc/gpyrpc.proto"], &["../spec/gpyrpc/"])
         .expect("Running prost build failed.");
 
     let descriptor_bytes = std::fs::read(descriptor_file).unwrap();
