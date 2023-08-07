@@ -497,3 +497,20 @@ fn test_get_compile_entries_from_paths() {
         kcl1_path.canonicalize().unwrap().to_str().unwrap()
     );
 }
+
+#[test]
+fn test_dir_with_k_code_list() {
+    let sm = SourceMap::new(FilePathMapping::empty());
+    let sess = Arc::new(ParseSession::with_source_map(Arc::new(sm)));
+    let testpath = PathBuf::from("./src/testdata/test_k_code_list")
+        .canonicalize()
+        .unwrap();
+
+    let mut opts = LoadProgramOptions::default();
+    opts.k_code_list = vec!["test_code = 1".to_string()];
+
+    match load_program(sess.clone(), &[&testpath.display().to_string()], Some(opts)) {
+        Ok(_) => panic!("unreachable code"),
+        Err(err) => assert_eq!(err, "Invalid code list"),
+    }
+}

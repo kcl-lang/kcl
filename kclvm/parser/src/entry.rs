@@ -117,6 +117,7 @@ pub struct Entry {
     name: String,
     path: String,
     k_files: Vec<String>,
+    k_code_lists: Vec<Option<String>>,
 }
 
 impl Entry {
@@ -126,6 +127,7 @@ impl Entry {
             name,
             path,
             k_files: vec![],
+            k_code_lists: vec![],
         }
     }
 
@@ -149,9 +151,31 @@ impl Entry {
         self.k_files.extend(k_files);
     }
 
+    /// [`extend_k_files_and_codes`] will extend the k files and k codes of [`Entry`] to the given k file and k code.
+    pub fn extend_k_files_and_codes(
+        &mut self,
+        k_files: Vec<String>,
+        k_codes: &mut VecDeque<String>,
+    ) {
+        for k_file in k_files.iter() {
+            self.k_code_lists.push(k_codes.pop_front());
+            self.k_files.push(k_file.to_string());
+        }
+    }
+
+    /// [`push_k_code`] will push the k code of [`Entry`] to the given k code.
+    pub fn push_k_code(&mut self, k_code: Option<String>) {
+        self.k_code_lists.push(k_code);
+    }
+
     /// [`get_k_files`] will return the k files of [`Entry`].
     pub fn get_k_files(&self) -> &Vec<String> {
         &self.k_files
+    }
+
+    /// [`get_k_codes`] will return the k codes of [`Entry`].
+    pub fn get_k_codes(&self) -> &Vec<Option<String>> {
+        &self.k_code_lists
     }
 }
 
@@ -251,8 +275,14 @@ pub fn get_compile_entries_from_paths(
         return Err("No input KCL files or paths".to_string());
     }
     let mut result = Entries::default();
-    for s in file_paths {
+    let mut k_code_queue = VecDeque::from(opts.k_code_list.clone());
+    for (i, s) in file_paths.iter().enumerate() {
         let path = ModRelativePath::from(s.to_string());
+
+        if path.is_dir() && opts.k_code_list.len() > i {
+            return Err("Invalid code list".to_string());
+        }
+
         // If the path is a [`ModRelativePath`] with preffix '${<package_name>:KCL_MOD}',
         // calculate the real path and the package name.
         if let Some((pkg_name, pkg_path)) = path
@@ -269,8 +299,11 @@ pub fn get_compile_entries_from_paths(
                 .canonicalize_by_root_path(pkg_path)
                 .map_err(|err| err.to_string())?;
             if let Some(root) = get_pkg_root(&s) {
-                let mut entry = Entry::new(pkg_name.clone(), root.clone());
-                entry.extend_k_files(get_main_files_from_pkg_path(&s, &root, &pkg_name, opts)?);
+                let mut entry: Entry = Entry::new(pkg_name.clone(), root.clone());
+                entry.extend_k_files_and_codes(
+                    get_main_files_from_pkg_path(&s, &root, &pkg_name, opts)?,
+                    &mut k_code_queue,
+                );
                 result.push_entry(entry);
                 continue;
             }
@@ -282,17 +315,17 @@ pub fn get_compile_entries_from_paths(
                 .is_none()
         {
             // Push it into `result`, and deal it later.
-            result.push(kclvm_ast::MAIN_PKG.to_string(), path.get_path());
+            let mut entry = Entry::new(kclvm_ast::MAIN_PKG.to_string(), path.get_path());
+            entry.push_k_code(k_code_queue.pop_front());
+            result.push_entry(entry);
             continue;
         } else if let Some(root) = get_pkg_root(s) {
             // If the path is a normal path.
             let mut entry: Entry = Entry::new(kclvm_ast::MAIN_PKG.to_string(), root.clone());
-            entry.extend_k_files(get_main_files_from_pkg_path(
-                &s,
-                &root,
-                &kclvm_ast::MAIN_PKG.to_string(),
-                opts,
-            )?);
+            entry.extend_k_files_and_codes(
+                get_main_files_from_pkg_path(&s, &root, &kclvm_ast::MAIN_PKG.to_string(), opts)?,
+                &mut k_code_queue,
+            );
             result.push_entry(entry);
         }
     }
@@ -304,12 +337,10 @@ pub fn get_compile_entries_from_paths(
     {
         let mut entry = Entry::new(kclvm_ast::MAIN_PKG.to_string(), "".to_string());
         for s in file_paths {
-            entry.extend_k_files(get_main_files_from_pkg_path(
-                s,
-                "",
-                &kclvm_ast::MAIN_PKG.to_string(),
-                opts,
-            )?);
+            entry.extend_k_files_and_codes(
+                get_main_files_from_pkg_path(s, "", &kclvm_ast::MAIN_PKG.to_string(), opts)?,
+                &mut k_code_queue,
+            );
         }
         result.push_entry(entry);
     }
@@ -432,7 +463,7 @@ fn get_main_files_from_pkg_path(
 }
 
 /// Get file list in the directory.
-fn get_dir_files(dir: &str) -> Result<Vec<String>, String> {
+pub fn get_dir_files(dir: &str) -> Result<Vec<String>, String> {
     if !std::path::Path::new(dir).exists() {
         return Ok(Vec::new());
     }
