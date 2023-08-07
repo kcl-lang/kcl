@@ -1,7 +1,4 @@
-// Copyright 2021 The KCL Authors. All rights reserved.
-
-pub mod api;
-pub use api::*;
+// Copyright The KCL Authors. All rights reserved.
 
 pub mod typ_kind;
 pub use typ_kind::*;
