@@ -31,7 +31,9 @@ pub unsafe extern "C" fn kclvm_service_delete(serv: *mut kclvm_service) {
 #[no_mangle]
 pub unsafe extern "C" fn kclvm_service_free_string(res: *mut c_char) {
     if !res.is_null() {
-        unsafe { CString::from_raw(res) };
+        unsafe {
+            let _ = CString::from_raw(res);
+        };
     }
 }
 

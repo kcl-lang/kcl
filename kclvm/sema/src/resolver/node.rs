@@ -6,9 +6,7 @@ use kclvm_error::*;
 use std::rc::Rc;
 
 use crate::info::is_private_field;
-use crate::ty::{
-    sup, DecoratorTarget, Parameter, Type, TypeInferMethods, TypeKind, RESERVED_TYPE_IDENTIFIERS,
-};
+use crate::ty::{sup, Parameter, Type, TypeInferMethods, TypeKind, RESERVED_TYPE_IDENTIFIERS};
 
 use super::format::VALID_FORMAT_SPEC_SET;
 use super::scope::{ScopeKind, ScopeObject, ScopeObjectKind};
@@ -367,8 +365,6 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             .map(|attr| attr.doc.clone())
             .flatten();
 
-        // Schema attribute decorators
-        self.resolve_decorators(&schema_attr.decorators, DecoratorTarget::Attribute, name);
         self.insert_object(
             name,
             ScopeObject {

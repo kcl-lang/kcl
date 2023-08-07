@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::rc::Rc;
 
 use crate::builtin::BUILTIN_DECORATORS;
@@ -7,6 +8,7 @@ use crate::ty::{Decorator, DecoratorTarget, TypeKind};
 use kclvm_ast::ast;
 use kclvm_ast::pos::GetPos;
 use kclvm_ast::walker::MutSelfTypedResultWalker;
+use kclvm_ast_pretty::{print_ast_node, ASTNode};
 use kclvm_error::{ErrorKind, Message, Position, Style};
 
 use super::node::ResolvedResult;
@@ -183,10 +185,16 @@ impl<'ctx> Resolver<'ctx> {
                                 &decorator.node.keywords,
                                 &func_ty.params,
                             );
+                            let (arguments, keywords) = self.arguments_to_string(
+                                &decorator.node.args,
+                                &decorator.node.keywords,
+                            );
                             decorator_objs.push(Decorator {
                                 target: target.clone(),
                                 name,
                                 key: key.to_string(),
+                                arguments,
+                                keywords,
                             })
                         }
                         _ => bug!("invalid builtin decorator function type"),
@@ -207,5 +215,30 @@ impl<'ctx> Resolver<'ctx> {
             }
         }
         decorator_objs
+    }
+
+    fn arguments_to_string(
+        &mut self,
+        args: &'ctx [ast::NodeRef<ast::Expr>],
+        kwargs: &'ctx [ast::NodeRef<ast::Keyword>],
+    ) -> (Vec<String>, HashMap<String, String>) {
+        (
+            args.iter()
+                .map(|a| print_ast_node(ASTNode::Expr(a)))
+                .collect(),
+            kwargs
+                .iter()
+                .map(|a| {
+                    (
+                        a.node.arg.node.get_name(),
+                        a.node
+                            .value
+                            .as_ref()
+                            .map(|v| print_ast_node(ASTNode::Expr(v)))
+                            .unwrap_or_default(),
+                    )
+                })
+                .collect(),
+        )
     }
 }
