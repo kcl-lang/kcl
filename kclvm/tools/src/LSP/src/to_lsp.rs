@@ -21,10 +21,34 @@ pub fn lsp_pos(pos: &KCLPos) -> Position {
 }
 
 /// Convert KCL Message to LSP Diagnostic
-fn kcl_msg_to_lsp_diags(msg: &Message, severity: DiagnosticSeverity) -> Diagnostic {
+fn kcl_msg_to_lsp_diags(
+    msg: &Message,
+    severity: DiagnosticSeverity,
+    related_msg: Vec<Message>,
+) -> Diagnostic {
     let range = msg.range.clone();
     let start_position = lsp_pos(&range.0);
     let end_position = lsp_pos(&range.1);
+
+    let related_information = if related_msg.is_empty() {
+        None
+    } else {
+        Some(
+            related_msg
+                .iter()
+                .map(|m| DiagnosticRelatedInformation {
+                    location: Location {
+                        uri: Url::from_file_path(m.range.0.filename.clone()).unwrap(),
+                        range: Range {
+                            start: lsp_pos(&m.range.0),
+                            end: lsp_pos(&m.range.1),
+                        },
+                    },
+                    message: m.message.clone(),
+                })
+                .collect(),
+        )
+    };
 
     Diagnostic {
         range: Range::new(start_position, end_position),
@@ -33,7 +57,7 @@ fn kcl_msg_to_lsp_diags(msg: &Message, severity: DiagnosticSeverity) -> Diagnost
         code_description: None,
         source: None,
         message: msg.message.clone(),
-        related_information: None,
+        related_information,
         tags: None,
         data: None,
     }
@@ -48,13 +72,20 @@ fn kcl_err_level_to_severity(level: Level) -> DiagnosticSeverity {
 }
 
 /// Convert KCL Diagnostic to LSP Diagnostics.
-/// Because the diagnostic of KCL contains multiple messages, and each messages corresponds to a diagnostic of LSP, the return value is a vec
 pub fn kcl_diag_to_lsp_diags(diag: &KCLDiagnostic, file_name: &str) -> Vec<Diagnostic> {
-    diag.messages
-        .iter()
-        .filter(|msg| msg.range.0.filename == file_name)
-        .map(|msg| kcl_msg_to_lsp_diags(msg, kcl_err_level_to_severity(diag.level)))
-        .collect()
+    let mut diags = vec![];
+    for (idx, msg) in diag.messages.iter().enumerate() {
+        if msg.range.0.filename == file_name {
+            let mut related_msg = diag.messages.clone();
+            related_msg.remove(idx);
+            diags.push(kcl_msg_to_lsp_diags(
+                msg,
+                kcl_err_level_to_severity(diag.level),
+                related_msg,
+            ))
+        }
+    }
+    diags
 }
 
 /// Returns the `Url` associated with the specified `FileId`.
