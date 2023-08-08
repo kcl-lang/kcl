@@ -13,9 +13,11 @@ use kclvm_sema::resolver::scope::ProgramScope;
 use lsp_types::request::GotoTypeDefinitionResponse;
 use lsp_types::CompletionResponse;
 use lsp_types::Diagnostic;
+use lsp_types::DiagnosticRelatedInformation;
 use lsp_types::DiagnosticSeverity;
 use lsp_types::DocumentSymbol;
 use lsp_types::DocumentSymbolResponse;
+use lsp_types::Location;
 use lsp_types::MarkedString;
 use lsp_types::SymbolKind;
 use lsp_types::Url;
@@ -80,7 +82,33 @@ fn diagnostics_test() {
         pos: (u32, u32, u32, u32),
         message: String,
         severity: Option<DiagnosticSeverity>,
+        related_info: Vec<(String, (u32, u32, u32, u32), String)>,
     ) -> Diagnostic {
+        let related_information = if related_info.is_empty() {
+            None
+        } else {
+            Some(
+                related_info
+                    .iter()
+                    .map(|(file, pos, msg)| DiagnosticRelatedInformation {
+                        location: Location {
+                            uri: Url::from_file_path(file).unwrap(),
+                            range: Range {
+                                start: Position {
+                                    line: pos.0,
+                                    character: pos.1,
+                                },
+                                end: Position {
+                                    line: pos.2,
+                                    character: pos.3,
+                                },
+                            },
+                        },
+                        message: msg.clone(),
+                    })
+                    .collect(),
+            )
+        };
         Diagnostic {
             range: lsp_types::Range {
                 start: Position {
@@ -97,7 +125,7 @@ fn diagnostics_test() {
             code_description: None,
             source: None,
             message,
-            related_information: None,
+            related_information,
             tags: None,
             data: None,
         }
@@ -127,11 +155,13 @@ fn diagnostics_test() {
             "expected one of [\"identifier\", \"literal\", \"(\", \"[\", \"{\"] got newline"
                 .to_string(),
             Some(DiagnosticSeverity::ERROR),
+            vec![],
         ),
         build_lsp_diag(
             (0, 0, 0, 10),
             "pkgpath abc not found in the program".to_string(),
             Some(DiagnosticSeverity::ERROR),
+            vec![],
         ),
         build_lsp_diag(
             (0, 0, 0, 10),
@@ -140,20 +170,43 @@ fn diagnostics_test() {
                 path.to_str().unwrap()
             ),
             Some(DiagnosticSeverity::ERROR),
+            vec![],
+        ),
+        build_lsp_diag(
+            (8, 0, 8, 1),
+            "Can not change the value of 'd', because it was declared immutable".to_string(),
+            Some(DiagnosticSeverity::ERROR),
+            vec![(
+                file.to_string(),
+                (7, 0, 7, 1),
+                "The variable 'd' is declared here".to_string(),
+            )],
+        ),
+        build_lsp_diag(
+            (7, 0, 7, 1),
+            "The variable 'd' is declared here".to_string(),
+            Some(DiagnosticSeverity::ERROR),
+            vec![(
+                file.to_string(),
+                (8, 0, 8, 1),
+                "Can not change the value of 'd', because it was declared immutable".to_string(),
+            )],
         ),
         build_lsp_diag(
             (2, 0, 2, 1),
             "expected str, got int(1)".to_string(),
             Some(DiagnosticSeverity::ERROR),
+            vec![],
         ),
         build_lsp_diag(
             (0, 0, 0, 10),
             "Module 'abc' imported but unused".to_string(),
             Some(DiagnosticSeverity::WARNING),
+            vec![],
         ),
     ];
     for (get, expected) in diagnostics.iter().zip(expected_diags.iter()) {
-        assert_eq!(get, expected);
+        assert_eq!(get, expected)
     }
 }
 
