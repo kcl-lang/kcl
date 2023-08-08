@@ -12,7 +12,7 @@ pub use TokenKind::*;
 pub use UnaryOpToken::*;
 
 use compiler_base_span::{Span, DUMMY_SP};
-use kclvm_span::symbol::{Ident, Symbol};
+pub use kclvm_span::symbol::{Ident, Symbol};
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum CommentKind {

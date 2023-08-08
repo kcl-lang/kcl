@@ -589,11 +589,12 @@ impl<'ctx> Resolver<'ctx> {
                     column: pos.column,
                 },
                 doc: None,
+                decorators: vec![],
             },
         );
         let parsed_doc = parse_doc_string(&schema_stmt.doc);
         for stmt in &schema_stmt.body {
-            let (name, ty, is_optional, has_default) = match &stmt.node {
+            let (name, ty, is_optional, has_default, decorators) = match &stmt.node {
                 ast::Stmt::Unification(unification_stmt) => {
                     let name = unification_stmt.value.node.name.node.get_name();
                     let ty = self.parse_ty_str_with_scope(&name, stmt.get_span_pos());
@@ -604,6 +605,7 @@ impl<'ctx> Resolver<'ctx> {
                         ty,
                         is_optional,
                         has_default,
+                        vec![],
                     )
                 }
                 ast::Stmt::SchemaAttr(schema_attr) => {
@@ -614,7 +616,13 @@ impl<'ctx> Resolver<'ctx> {
                     );
                     let is_optional = schema_attr.is_optional;
                     let has_default = schema_attr.value.is_some();
-                    (name, ty, is_optional, has_default)
+                    // Schema attribute decorators
+                    let decorators = self.resolve_decorators(
+                        &schema_attr.decorators,
+                        DecoratorTarget::Attribute,
+                        &name,
+                    );
+                    (name, ty, is_optional, has_default, decorators)
                 }
                 _ => continue,
             };
@@ -639,6 +647,7 @@ impl<'ctx> Resolver<'ctx> {
                         ty: ty.clone(),
                         pos: pos.clone(),
                         doc: doc_str,
+                        decorators,
                     },
                 );
             }

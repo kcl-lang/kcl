@@ -64,7 +64,17 @@
                     "properties": {},
                     "required": [],
                     "line": 2,
-                    "decorators": [],
+                    "decorators": [
+                        {
+                            "name": "info",
+                            "arguments": [
+                                "\"name\""
+                            ],
+                            "keywords": {
+                                "key": "\"value\""
+                            }
+                        }
+                    ],
                     "filename": "",
                     "pkg_path": "",
                     "description": "A Server-level attribute.\nThe name of the long-running service.\nSee also: kusion_models/core/v1/metadata.k.",
@@ -137,7 +147,15 @@
                 "containers"
             ],
             "line": 0,
-            "decorators": [],
+            "decorators": [
+                {
+                    "name": "info",
+                    "arguments": [],
+                    "keywords": {
+                        "name": "\"ServerSchema\""
+                    }
+                }
+            ],
             "filename": "schema.k",
             "pkg_path": "__main__",
             "description": "Server is the common user interface for long-running services adopting the best practice of Kubernetes.",

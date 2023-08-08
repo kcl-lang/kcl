@@ -6,17 +6,17 @@ pub mod parser;
 mod unify;
 mod walker;
 
+use std::collections::HashMap;
 use std::rc::Rc;
 
 pub use constants::*;
 pub use context::{TypeContext, TypeInferMethods};
+use indexmap::IndexMap;
 use kclvm_ast::ast;
 use kclvm_ast::MAIN_PKG;
 use kclvm_error::Position;
 pub use unify::*;
 pub use walker::walk_type;
-
-use indexmap::IndexMap;
 
 #[cfg(test)]
 mod tests;
@@ -209,6 +209,7 @@ impl SchemaType {
                     ty,
                     pos: Position::dummy_pos(),
                     doc: None,
+                    decorators: vec![],
                 };
                 self.attrs.insert(attr.to_string(), schema_attr);
             }
@@ -253,6 +254,7 @@ pub struct SchemaAttr {
     pub ty: Rc<Type>,
     pub pos: Position,
     pub doc: Option<String>,
+    pub decorators: Vec<Decorator>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -294,11 +296,16 @@ pub enum ModuleKind {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Decorator {
+    /// The decorator target e.g., the schema statement or schema attribute.
     pub target: DecoratorTarget,
     /// The decorator name.
     pub name: String,
-    /// The schema or attribute name of decorator dimension
+    /// The schema or attribute name of decorator dimension.
     pub key: String,
+    /// The decorator argument list values.
+    pub arguments: Vec<String>,
+    /// The decorator keyword mapping values.
+    pub keywords: HashMap<String, String>,
 }
 
 #[derive(Debug, Clone, PartialEq)]

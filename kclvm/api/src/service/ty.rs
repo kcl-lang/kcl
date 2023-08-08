@@ -44,7 +44,8 @@ pub(crate) fn kcl_schema_ty_to_pb_ty(schema_ty: &SchemaType) -> KclType {
             .iter()
             .map(|d| Decorator {
                 name: d.name.clone(),
-                ..Default::default()
+                arguments: d.arguments.clone(),
+                keywords: d.keywords.clone(),
             })
             .collect(),
         filename: schema_ty.filename.clone(),
@@ -66,6 +67,15 @@ fn get_schema_ty_attributes(schema_ty: &SchemaType, line: &mut i32) -> HashMap<S
             let mut ty = kcl_ty_to_pb_ty(&attr.ty);
             ty.line = *line;
             ty.description = attr.doc.clone().unwrap_or_default();
+            ty.decorators = attr
+                .decorators
+                .iter()
+                .map(|d| Decorator {
+                    name: d.name.clone(),
+                    arguments: d.arguments.clone(),
+                    keywords: d.keywords.clone(),
+                })
+                .collect();
             type_mapping.insert(key.to_string(), ty);
             *line += 1
         }
