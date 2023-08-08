@@ -32,13 +32,13 @@ RUN yum install -y zlib*
 # in order to use the modules that require ssl, such as pip3, twine, etc.
 RUN yum install -y openssl-devel
 
-# install which
+# Install which
 RUN yum install -y which
 
-# install wget
+# Install wget
 RUN yum install -y wget
 
-# install git-2.x
+# Install git-2.x
 # RUN yum -y install https://packages.endpoint.com/rhel/7/os/x86_64/endpoint-repo-1.7-1.x86_64.rpm
 # RUN yum -y install git
 
@@ -54,7 +54,7 @@ RUN rustc --version
 # wasm
 RUN rustup target add wasm32-unknown-unknown
 
-# clang7
+# Install clang7 and llvm7
 # https://www.softwarecollections.org/en/scls/rhscl/llvm-toolset-7.0/
 #
 # 1. Install a package with repository for your system:
@@ -75,6 +75,11 @@ RUN yum-config-manager --enable rhel-server-rhscl-7-rpms
 RUN yum -y install llvm-toolset-7.0
 RUN yum -y install llvm-toolset-7.0\*
 RUN scl enable llvm-toolset-7.0 bash
+
+# Install gcc7
+RUN yum -y install devtoolset-7*
+RUN scl enable devtoolset-7 bash
+RUN gcc -v
 
 # rpm -ql llvm-toolset-7.0-clang.x86_64
 # /opt/rh/llvm-toolset-7.0/root/usr/lib64/libLLVM-7.so
