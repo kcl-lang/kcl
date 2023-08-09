@@ -13,4 +13,5 @@ mod util;
 mod document_symbol;
 mod goto_def;
 mod hover;
+mod quick_fix;
 mod request;

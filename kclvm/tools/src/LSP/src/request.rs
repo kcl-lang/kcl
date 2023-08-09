@@ -1,8 +1,9 @@
-use std::time::Instant;
+use std::{collections::HashMap, time::Instant};
 
 use anyhow::Ok;
 use crossbeam_channel::Sender;
 use ra_ap_vfs::VfsPath;
+use lsp_types::{CodeAction, CodeActionKind, CodeActionOrCommand, TextEdit};
 
 use crate::{
     completion::completion,
@@ -11,7 +12,7 @@ use crate::{
     document_symbol::document_symbol,
     from_lsp::{self, file_path_from_url, kcl_pos},
     goto_def::goto_definition,
-    hover,
+    hover, quick_fix,
     state::{log_message, LanguageServerSnapshot, LanguageServerState, Task},
 };
 
@@ -45,6 +46,7 @@ impl LanguageServerState {
             .on::<lsp_types::request::Completion>(handle_completion)?
             .on::<lsp_types::request::HoverRequest>(handle_hover)?
             .on::<lsp_types::request::DocumentSymbolRequest>(handle_document_symbol)?
+            .on::<lsp_types::request::CodeActionRequest>(handle_code_action)?
             .finish();
 
         Ok(())
@@ -63,6 +65,17 @@ impl LanguageServerSnapshot {
             None => Err(anyhow::anyhow!(format!("Path {path} fileId not found"))),
         }
     }
+}
+
+/// Called when a `GotoDefinition` request was received.
+pub(crate) fn handle_code_action(
+    _snap: LanguageServerSnapshot,
+    params: lsp_types::CodeActionParams,
+    _sender: Sender<Task>,
+) -> anyhow::Result<Option<lsp_types::CodeActionResponse>> {
+    let mut code_actions: Vec<lsp_types::CodeActionOrCommand> = vec![];
+    code_actions.extend(quick_fix::quick_fix(params));
+    Ok(Some(code_actions))
 }
 
 /// Called when a `GotoDefinition` request was received.
