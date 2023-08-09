@@ -40,10 +40,14 @@ fn clean_doc(doc: &mut String) {
             .unwrap_or(0);
 
         lines[1..].iter_mut().for_each(|line| {
-            *line = if line.len() > 0 {
-                &line[margin..]
+            *line = if line.trim().len() > 0 {
+                if let Some(sub) = line.get(margin..) {
+                    sub
+                } else {
+                    line.trim()
+                }
             } else {
-                line
+                line.trim()
             }; // remove command indentation
         });
 
@@ -354,7 +358,7 @@ de",
         A Server-level attribute.
         The labels of the long-running service.
         See also: kusion_models/core/v1/metadata.k.
-
+  
     Examples
     ----------------------
     myCustomApp = AppConfiguration {
