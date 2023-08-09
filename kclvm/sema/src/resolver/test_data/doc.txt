@@ -16,7 +16,7 @@
         A Server-level attribute.
         The labels of the long-running service.
         See also: kusion_models/core/v1/metadata.k.
-
+  
     Examples
     ----------------------
     myCustomApp = AppConfiguration {
