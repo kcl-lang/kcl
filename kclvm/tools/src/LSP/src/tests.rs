@@ -19,6 +19,7 @@ use lsp_types::DocumentSymbol;
 use lsp_types::DocumentSymbolResponse;
 use lsp_types::Location;
 use lsp_types::MarkedString;
+use lsp_types::NumberOrString;
 use lsp_types::SymbolKind;
 use lsp_types::Url;
 use lsp_types::{Position, Range, TextDocumentContentChangeEvent};
@@ -83,6 +84,7 @@ fn diagnostics_test() {
         message: String,
         severity: Option<DiagnosticSeverity>,
         related_info: Vec<(String, (u32, u32, u32, u32), String)>,
+        code: Option<NumberOrString>,
     ) -> Diagnostic {
         let related_information = if related_info.is_empty() {
             None
@@ -121,7 +123,7 @@ fn diagnostics_test() {
                 },
             },
             severity,
-            code: None,
+            code,
             code_description: None,
             source: None,
             message,
@@ -156,12 +158,14 @@ fn diagnostics_test() {
                 .to_string(),
             Some(DiagnosticSeverity::ERROR),
             vec![],
+            Some(NumberOrString::String("InvalidSyntax".to_string())),
         ),
         build_lsp_diag(
             (0, 0, 0, 10),
             "pkgpath abc not found in the program".to_string(),
             Some(DiagnosticSeverity::ERROR),
             vec![],
+            Some(NumberOrString::String("CannotFindModule".to_string())),
         ),
         build_lsp_diag(
             (0, 0, 0, 10),
@@ -171,6 +175,7 @@ fn diagnostics_test() {
             ),
             Some(DiagnosticSeverity::ERROR),
             vec![],
+            Some(NumberOrString::String("CannotFindModule".to_string())),
         ),
         build_lsp_diag(
             (8, 0, 8, 1),
@@ -181,6 +186,7 @@ fn diagnostics_test() {
                 (7, 0, 7, 1),
                 "The variable 'd' is declared here".to_string(),
             )],
+            Some(NumberOrString::String("ImmutableError".to_string())),
         ),
         build_lsp_diag(
             (7, 0, 7, 1),
@@ -191,18 +197,21 @@ fn diagnostics_test() {
                 (8, 0, 8, 1),
                 "Can not change the value of 'd', because it was declared immutable".to_string(),
             )],
+            Some(NumberOrString::String("ImmutableError".to_string())),
         ),
         build_lsp_diag(
             (2, 0, 2, 1),
             "expected str, got int(1)".to_string(),
             Some(DiagnosticSeverity::ERROR),
             vec![],
+            Some(NumberOrString::String("TypeError".to_string())),
         ),
         build_lsp_diag(
             (0, 0, 0, 10),
             "Module 'abc' imported but unused".to_string(),
             Some(DiagnosticSeverity::WARNING),
             vec![],
+            Some(NumberOrString::String("UnusedImportWarning".to_string())),
         ),
     ];
     for (get, expected) in diagnostics.iter().zip(expected_diags.iter()) {

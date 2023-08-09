@@ -1,4 +1,5 @@
 use kclvm_error::Diagnostic as KCLDiagnostic;
+use kclvm_error::DiagnosticId;
 use kclvm_error::Level;
 use kclvm_error::Message;
 use kclvm_error::Position as KCLPos;
@@ -25,6 +26,7 @@ fn kcl_msg_to_lsp_diags(
     msg: &Message,
     severity: DiagnosticSeverity,
     related_msg: Vec<Message>,
+    code: Option<NumberOrString>,
 ) -> Diagnostic {
     let range = msg.range.clone();
     let start_position = lsp_pos(&range.0);
@@ -53,7 +55,7 @@ fn kcl_msg_to_lsp_diags(
     Diagnostic {
         range: Range::new(start_position, end_position),
         severity: Some(severity),
-        code: None,
+        code,
         code_description: None,
         source: None,
         message: msg.message.clone(),
@@ -78,14 +80,29 @@ pub fn kcl_diag_to_lsp_diags(diag: &KCLDiagnostic, file_name: &str) -> Vec<Diagn
         if msg.range.0.filename == file_name {
             let mut related_msg = diag.messages.clone();
             related_msg.remove(idx);
+            let code = if diag.code.is_some() {
+                Some(kcl_diag_id_to_lsp_diag_code(diag.code.clone().unwrap()))
+            } else {
+                None
+            };
             diags.push(kcl_msg_to_lsp_diags(
                 msg,
                 kcl_err_level_to_severity(diag.level),
                 related_msg,
+                code,
             ))
         }
     }
     diags
+}
+
+/// Convert KCL Diagnostic ID to LSP Diagnostics code.
+/// Todo: use unique id/code instead of name()
+pub(crate) fn kcl_diag_id_to_lsp_diag_code(id: DiagnosticId) -> NumberOrString {
+    match id {
+        DiagnosticId::Error(err) => NumberOrString::String(err.name()),
+        DiagnosticId::Warning(warn) => NumberOrString::String(warn.name()),
+    }
 }
 
 /// Returns the `Url` associated with the specified `FileId`.
