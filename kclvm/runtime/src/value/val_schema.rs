@@ -1,4 +1,6 @@
-// Copyright 2021 The KCL Authors. All rights reserved.
+// Copyright The KCL Authors. All rights reserved.
+
+use indexmap::IndexSet;
 
 use crate::*;
 
@@ -19,6 +21,7 @@ pub const MAIN_PKG_PATH: &str = "__main__";
 pub const PKG_PATH_PREFIX: char = '@';
 pub const CAL_MAP_RUNTIME_TYPE: &str = "cal_map_runtime_type";
 pub const CAL_MAP_META_LINE: &str = "cal_map_meta_line";
+pub const CAL_MAP_INDEX_SIGNATURE: &str = "$cal_map_index_signature";
 
 /// Get the schema runtime type use the schema name and pkgpath
 pub fn schema_runtime_type(name: &str, pkgpath: &str) -> String {
@@ -98,6 +101,31 @@ impl ValueRef {
         } else {
             ValueRef::dict(None)
         }
+    }
+
+    /// Set of keys not in the schema.
+    pub fn keys_not_in_schema(&self, ty: &SchemaType, cal_order: &ValueRef) -> IndexSet<String> {
+        let mut keys = IndexSet::new();
+        if self.is_config() {
+            let config = self.as_dict_ref();
+            for (key, _) in &config.values {
+                let no_such_attr = ty.attrs.get(key).is_none()
+                    && cal_order.dict_get_value(key).is_none()
+                    && !key.starts_with('_');
+                let has_index_signature = ty.has_index_signature
+                    || cal_order.dict_get_value(CAL_MAP_INDEX_SIGNATURE).is_some();
+                if !has_index_signature && no_such_attr {
+                    keys.insert(key.to_string());
+                }
+            }
+        }
+        keys
+    }
+
+    /// Check whether the config fits into the schema type.
+    #[inline]
+    pub fn is_fit_schema(&self, ty: &SchemaType, cal_order: &ValueRef) -> bool {
+        self.keys_not_in_schema(ty, cal_order).is_empty()
     }
 
     /// Check schema optional attributes.

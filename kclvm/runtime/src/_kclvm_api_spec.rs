@@ -66,14 +66,6 @@
 // api-spec(c):    void kclvm_context_set_kcl_line_col(int32_t line, int32_t col);
 // api-spec(llvm): declare void @kclvm_context_set_kcl_line_col(i32 %line, i32 %col);
 
-// api-spec:       kclvm_context_put_type
-// api-spec(c):    void kclvm_context_put_type(kclvm_context_t* p, kclvm_type_t* typ);
-// api-spec(llvm): declare void @kclvm_context_put_type(%kclvm_context_t* %p, %kclvm_type_t* %typ);
-
-// api-spec:       kclvm_context_clear_all_types
-// api-spec(c):    void kclvm_context_clear_all_types(kclvm_context_t* p);
-// api-spec(llvm): declare void @kclvm_context_clear_all_types(%kclvm_context_t* %p);
-
 // api-spec:       kclvm_context_symbol_init
 // api-spec(c):    void kclvm_context_symbol_init(kclvm_context_t* p, kclvm_size_t n, kclvm_char_t** symbol_names);
 // api-spec(llvm): declare void @kclvm_context_symbol_init(%kclvm_context_t* %p, %kclvm_size_t %n, %kclvm_char_t** %symbol_names);
@@ -207,8 +199,8 @@
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_value_Function_using_ptr(i64* %fn_ptr, %kclvm_char_t* %name);
 
 // api-spec:       kclvm_value_schema_function
-// api-spec(c):    kclvm_value_ref_t* kclvm_value_schema_function(uint64_t* fn_ptr, uint64_t* check_fn_ptr, kclvm_char_t* tpe);
-// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_value_schema_function(i64* %fn_ptr, i64* %check_fn_ptr, %kclvm_char_t* %tpe);
+// api-spec(c):    kclvm_value_ref_t* kclvm_value_schema_function(uint64_t* fn_ptr, uint64_t* check_fn_ptr, kclvm_value_ref_t* attr_map, kclvm_char_t* tpe);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_value_schema_function(i64* %fn_ptr, i64* %check_fn_ptr, %kclvm_value_ref_t* %attr_map, %kclvm_char_t* %tpe);
 
 // api-spec:       kclvm_value_from_json
 // api-spec(c):    kclvm_value_ref_t* kclvm_value_from_json(kclvm_char_t* s);

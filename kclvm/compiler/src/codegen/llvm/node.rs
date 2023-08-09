@@ -536,6 +536,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         add_variable(value::SCHEMA_SELF_NAME, schema_value);
         self.emit_schema_left_identifiers(
             &schema_stmt.body,
+            &schema_stmt.index_signature,
             cal_map,
             &runtime_type,
             false,
@@ -858,8 +859,11 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         }
         // Build schema attr backtrack functions
         {
-            for (k, functions) in place_holder_map {
-                let stmt_list = body_map.get(&k).expect(kcl_error::INTERNAL_ERROR_MSG);
+            for (k, functions) in &place_holder_map {
+                if k == kclvm_runtime::CAL_MAP_INDEX_SIGNATURE {
+                    continue;
+                }
+                let stmt_list = body_map.get(k).expect(kcl_error::INTERNAL_ERROR_MSG);
                 let mut if_level = 0;
                 for (attr_func, stmt) in functions.iter().zip(stmt_list) {
                     let function = *attr_func;
@@ -933,7 +937,11 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
                 }
             }
         }
-        let function = self.struct_function_value(&[function, check_function], &runtime_type);
+        let function = self.struct_function_value(
+            &[function, check_function],
+            &place_holder_map,
+            &runtime_type,
+        );
         self.leave_scope();
         self.pop_function();
         self.schema_stack.borrow_mut().pop();
@@ -1171,7 +1179,8 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
             self.builder.position_at_end(func_before_block);
             self.pop_function();
         }
-        let function = self.struct_function_value(&[function, check_function], &runtime_type);
+        let function =
+            self.struct_function_value(&[function, check_function], &HashMap::new(), &runtime_type);
         self.leave_scope();
         self.pop_function();
         self.schema_stack.borrow_mut().pop();

@@ -81,7 +81,7 @@ pub fn resolve_schema(schema: &ValueRef, keys: &[String]) -> ValueRef {
             let all_schemas = ctx.all_schemas.borrow_mut();
             all_schemas.get(&schema_type_name).unwrap().clone()
         };
-        let schema_type = schema_type.as_function();
+        let schema_type = schema_type.func.as_function();
         let schema_fn_ptr = schema_type.fn_ptr;
         let keys = keys.iter().map(|v| v.as_str()).collect();
         let config = schema.dict_get_entries(keys);
@@ -206,10 +206,14 @@ pub fn convert_collection_value(value: &ValueRef, tpe: &str) -> ValueRef {
     let invalid_match_dict = is_dict_type(tpe) && !value.is_dict();
     let invalid_match_list = is_list_type(tpe) && !value.is_list();
     let invalid_match = invalid_match_dict || invalid_match_list;
-    if !is_collection || invalid_match || is_type_union(tpe) {
+    if !is_collection || invalid_match {
         return value.clone();
     }
-    if is_dict_type(tpe) {
+    // Convert a vlaue to union types e.g., {a: 1} => A | B
+    if is_type_union(tpe) {
+        let types = split_type_union(tpe);
+        convert_collection_value_with_union_types(value, &types)
+    } else if is_dict_type(tpe) {
         //let (key_tpe, value_tpe) = separate_kv(tpe);
         let (_, value_tpe) = separate_kv(&dereference_type(tpe));
         let mut expected_dict = ValueRef::dict(None);
@@ -281,8 +285,8 @@ pub fn convert_collection_value(value: &ValueRef, tpe: &str) -> ValueRef {
                 let all_schemas = ctx.all_schemas.borrow_mut();
                 all_schemas.get(&schema_type_name).unwrap().clone()
             };
-            let schema_type = schema_type.as_function();
-            let schema_fn_ptr = schema_type.fn_ptr;
+            let schema_fn = schema_type.func.as_function();
+            let schema_fn_ptr = schema_fn.fn_ptr;
             let value = unsafe {
                 let schema_fn: SchemaTypeFunc = transmute_copy(&schema_fn_ptr);
                 let ctx = kclvm_context_current();
@@ -312,6 +316,12 @@ pub fn convert_collection_value(value: &ValueRef, tpe: &str) -> ValueRef {
                 let dict = kclvm_value_Dict();
                 schema_fn(ctx, list, dict);
                 let list = kclvm_value_List();
+
+                // Try convert the  config to schema, if failed, return the config
+                if !value.is_fit_schema(&schema_type, ptr_as_ref(cal_order)) {
+                    return value.clone();
+                }
+
                 // Schema function closures
                 // is_sub_schema
                 kclvm_list_append(list, ValueRef::bool(true).into_raw());
@@ -340,6 +350,22 @@ pub fn convert_collection_value(value: &ValueRef, tpe: &str) -> ValueRef {
             return value.clone();
         }
         ctx.panic_info = now_meta_info;
+        value.clone()
+    }
+}
+
+/// Convert collection value including dict/list to the potential schema and return errors.
+pub fn convert_collection_value_with_union_types(value: &ValueRef, types: &[&str]) -> ValueRef {
+    if value.is_schema() {
+        value.clone()
+    } else {
+        for tpe in types {
+            // Try match every type and convert the value, if matched, return the value.
+            let value = convert_collection_value(value, tpe);
+            if check_type(&value, tpe) {
+                return value;
+            }
+        }
         value.clone()
     }
 }
@@ -391,9 +417,10 @@ pub fn check_type(value: &ValueRef, tpe: &str) -> bool {
 pub fn check_type_union(value: &ValueRef, tpe: &str) -> bool {
     let expected_types = split_type_union(tpe);
     if expected_types.len() <= 1 {
-        return false;
+        false
+    } else {
+        expected_types.iter().any(|tpe| check_type(value, tpe))
     }
-    return expected_types.iter().any(|tpe| check_type(value, tpe));
 }
 
 /// check_type_literal returns the value wether match the given the literal type string

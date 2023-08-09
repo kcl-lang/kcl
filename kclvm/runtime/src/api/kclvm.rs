@@ -83,12 +83,17 @@ pub struct UnionType {
     pub elem_types: Vec<Type>,
 }
 
+/// The runtime schema type.
 #[derive(PartialEq, Clone, Default, Debug)]
 pub struct SchemaType {
+    /// The schema runtime type name.
     pub name: String,
-    pub parent_name: String,
-    pub field_names: Vec<String>,
-    pub field_types: Vec<Type>,
+    /// Schema attributes.
+    pub attrs: IndexMap<String, Type>,
+    /// Schema index signature.
+    pub has_index_signature: bool,
+    /// Schema runtime function value.
+    pub func: ValueRef,
 }
 
 #[derive(PartialEq, Clone, Default, Debug)]
@@ -379,8 +384,7 @@ pub struct Context {
     pub imported_pkgpath: HashSet<String>,
     pub app_args: HashMap<String, u64>,
     pub instances: RefCell<HashMap<String, Vec<ValueRef>>>,
-    pub all_types: Vec<Type>,
-    pub all_schemas: RefCell<HashMap<String, ValueRef>>,
+    pub all_schemas: RefCell<HashMap<String, SchemaType>>,
     pub import_names: IndexMap<String, IndexMap<String, String>>,
     pub symbol_names: Vec<String>,
     pub symbol_values: Vec<Value>,

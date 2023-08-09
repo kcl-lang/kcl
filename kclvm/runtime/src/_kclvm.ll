@@ -166,8 +166,6 @@ declare %kclvm_char_t* @kclvm_context_args_get(%kclvm_context_t* %_p, %kclvm_cha
 
 declare void @kclvm_context_args_set(%kclvm_context_t* %_p, %kclvm_char_t* %_key, %kclvm_char_t* %_value);
 
-declare void @kclvm_context_clear_all_types(%kclvm_context_t* %p);
-
 declare %kclvm_context_t* @kclvm_context_current();
 
 declare void @kclvm_context_delete(%kclvm_context_t* %p);
@@ -181,8 +179,6 @@ declare %kclvm_value_ref_t* @kclvm_context_main_end_hook(%kclvm_context_t* %p, %
 declare %kclvm_context_t* @kclvm_context_new();
 
 declare %kclvm_bool_t @kclvm_context_pkgpath_is_imported(%kclvm_char_t* %pkgpath);
-
-declare void @kclvm_context_put_type(%kclvm_context_t* %p, %kclvm_type_t* %typ);
 
 declare void @kclvm_context_set_debug_mode(%kclvm_context_t* %p, %kclvm_bool_t %v);
 
@@ -622,7 +618,7 @@ declare %kclvm_value_ref_t* @kclvm_value_plan_to_yaml(%kclvm_value_ref_t* %p);
 
 declare void @kclvm_value_remove_item(%kclvm_value_ref_t* %a, %kclvm_value_ref_t* %b);
 
-declare %kclvm_value_ref_t* @kclvm_value_schema_function(i64* %fn_ptr, i64* %check_fn_ptr, %kclvm_char_t* %tpe);
+declare %kclvm_value_ref_t* @kclvm_value_schema_function(i64* %fn_ptr, i64* %check_fn_ptr, %kclvm_value_ref_t* %attr_map, %kclvm_char_t* %tpe);
 
 declare %kclvm_value_ref_t* @kclvm_value_schema_with_config(%kclvm_value_ref_t* %schema_dict, %kclvm_value_ref_t* %config, %kclvm_value_ref_t* %config_meta, %kclvm_char_t* %name, %kclvm_char_t* %pkgpath, %kclvm_value_ref_t* %is_sub_schema, %kclvm_value_ref_t* %record_instance, %kclvm_value_ref_t* %instance_pkgpath, %kclvm_value_ref_t* %optional_mapping);
 

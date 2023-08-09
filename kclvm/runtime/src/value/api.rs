@@ -357,6 +357,7 @@ pub unsafe extern "C" fn kclvm_value_Function_using_ptr(
 pub unsafe extern "C" fn kclvm_value_schema_function(
     fn_ptr: *const u64,
     check_fn_ptr: *const u64,
+    attr_map: *const kclvm_value_ref_t,
     tpe: *const kclvm_char_t,
 ) -> *mut kclvm_value_ref_t {
     // Schema function closures
@@ -394,9 +395,21 @@ pub unsafe extern "C" fn kclvm_value_schema_function(
         runtime_type,
         false,
     );
+    let attr_map = ptr_as_ref(attr_map);
+    let attr_dict = attr_map.as_dict_ref();
     let ctx = Context::current_context_mut();
     let mut all_schemas = ctx.all_schemas.borrow_mut();
-    all_schemas.insert(runtime_type.to_string(), schema_func.clone());
+    let schema_ty = SchemaType {
+        name: runtime_type.to_string(),
+        attrs: attr_dict
+            .values
+            .iter()
+            .map(|(k, _)| (k.to_string(), Type::any()))  // TODO: store schema attr type in the runtime.
+            .collect(),
+        has_index_signature: attr_dict.attr_map.contains_key(CAL_MAP_INDEX_SIGNATURE),
+        func: schema_func.clone(),
+    };
+    all_schemas.insert(runtime_type.to_string(), schema_ty);
     new_mut_ptr(schema_func)
 }
 

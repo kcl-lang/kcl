@@ -150,26 +150,6 @@ pub unsafe extern "C" fn kclvm_context_set_kcl_line_col(line: i32, col: i32) {
 }
 
 // ----------------------------------------------------------------------------
-// manage types
-// ----------------------------------------------------------------------------
-
-#[no_mangle]
-#[runtime_fn]
-pub unsafe extern "C" fn kclvm_context_put_type(p: *mut kclvm_context_t, typ: *const kclvm_type_t) {
-    let p = mut_ptr_as_ref(p);
-    let typ = ptr_as_ref(typ);
-
-    p.all_types.push(typ.clone());
-}
-
-#[no_mangle]
-#[runtime_fn]
-pub unsafe extern "C" fn kclvm_context_clear_all_types(p: *mut kclvm_context_t) {
-    let p = mut_ptr_as_ref(p);
-    p.all_types.clear();
-}
-
-// ----------------------------------------------------------------------------
 // symbol
 // ----------------------------------------------------------------------------
 

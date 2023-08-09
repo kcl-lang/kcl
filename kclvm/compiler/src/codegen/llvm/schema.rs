@@ -18,6 +18,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
     pub fn emit_schema_left_identifiers(
         &self,
         body: &'ctx [Box<ast::Node<ast::Stmt>>],
+        index_signature: &'ctx Option<ast::NodeRef<ast::SchemaIndexSignature>>,
         cal_map: BasicValueEnum<'ctx>,
         runtime_type: &str,
         is_in_if: bool,
@@ -69,6 +70,14 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 let body_vec = body_map.get_mut(name).expect(kcl_error::INTERNAL_ERROR_MSG);
                 body_vec.push(stmt);
             };
+        if let Some(index_signature) = index_signature {
+            self.default_collection_insert_value(
+                cal_map,
+                &kclvm_runtime::CAL_MAP_INDEX_SIGNATURE,
+                self.int_value(index_signature.line as i64),
+            );
+            place_holder_map.insert(kclvm_runtime::CAL_MAP_INDEX_SIGNATURE.to_string(), vec![]);
+        }
         for stmt in body {
             match &stmt.node {
                 ast::Stmt::Unification(unification_stmt) => {
@@ -105,6 +114,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                     let mut names: Vec<String> = vec![];
                     self.emit_schema_left_identifiers(
                         &if_stmt.body,
+                        &None,
                         cal_map,
                         runtime_type,
                         true,
@@ -124,6 +134,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                     }
                     self.emit_schema_left_identifiers(
                         &if_stmt.orelse,
+                        &None,
                         cal_map,
                         runtime_type,
                         true,

@@ -456,6 +456,7 @@ impl<'ctx> ValueMethods for LLVMCodeGenContext<'ctx> {
     fn struct_function_value(
         &self,
         functions: &[FunctionValue<'ctx>],
+        attr_functions: &HashMap<String, Vec<FunctionValue<'ctx>>>,
         runtime_type: &str,
     ) -> Self::Value {
         if functions.is_empty() {
@@ -482,12 +483,17 @@ impl<'ctx> ValueMethods for LLVMCodeGenContext<'ctx> {
                 .into()
         };
         let runtime_type_native_str = self.native_global_string_value(runtime_type);
+        let attr_map = self.dict_value();
+        for attr in attr_functions.keys() {
+            self.dict_insert_override_item(attr_map, attr, self.undefined_value())
+        }
         self.builder
             .build_call(
                 self.lookup_function(&ApiFunc::kclvm_value_schema_function.name()),
                 &[
                     schema_body_fn_ptr.into(),
                     check_block_fn_ptr.into(),
+                    attr_map.into(),
                     runtime_type_native_str.into(),
                 ],
                 runtime_type,

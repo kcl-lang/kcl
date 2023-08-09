@@ -78,7 +78,6 @@ pub fn _kclvm_get_fn_ptr_by_name(name: &str) -> u64 {
         "kclvm_context_args_clear" => crate::kclvm_context_args_clear as *const () as u64,
         "kclvm_context_args_get" => crate::kclvm_context_args_get as *const () as u64,
         "kclvm_context_args_set" => crate::kclvm_context_args_set as *const () as u64,
-        "kclvm_context_clear_all_types" => crate::kclvm_context_clear_all_types as *const () as u64,
         "kclvm_context_current" => crate::kclvm_context_current as *const () as u64,
         "kclvm_context_delete" => crate::kclvm_context_delete as *const () as u64,
         "kclvm_context_invoke" => crate::kclvm_context_invoke as *const () as u64,
@@ -88,7 +87,6 @@ pub fn _kclvm_get_fn_ptr_by_name(name: &str) -> u64 {
         "kclvm_context_pkgpath_is_imported" => {
             crate::kclvm_context_pkgpath_is_imported as *const () as u64
         }
-        "kclvm_context_put_type" => crate::kclvm_context_put_type as *const () as u64,
         "kclvm_context_set_debug_mode" => crate::kclvm_context_set_debug_mode as *const () as u64,
         "kclvm_context_set_disable_none" => {
             crate::kclvm_context_set_disable_none as *const () as u64

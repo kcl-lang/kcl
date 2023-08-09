@@ -1,4 +1,6 @@
-//! Copyright 2021 The KCL Authors. All rights reserved.
+//! Copyright The KCL Authors. All rights reserved.
+
+use std::collections::HashMap;
 
 use super::BackendTypes;
 
@@ -32,6 +34,7 @@ pub trait ValueMethods: BackendTypes {
     fn struct_function_value(
         &self,
         functions: &[Self::Function],
+        attr_functions: &HashMap<String, Vec<Self::Function>>,
         runtime_type: &str,
     ) -> Self::Value;
     /// Construct a builtin function value using the function name.
