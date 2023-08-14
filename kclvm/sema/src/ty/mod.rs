@@ -45,7 +45,15 @@ impl Type {
             TypeKind::Any => ANY_TYPE_STR.to_string(),
             TypeKind::Bool => BOOL_TYPE_STR.to_string(),
             TypeKind::BoolLit(v) => {
-                format!("{}({})", BOOL_TYPE_STR, v.to_string().to_ascii_uppercase())
+                format!(
+                    "{}({})",
+                    BOOL_TYPE_STR,
+                    if *v {
+                        NAME_CONSTANT_TRUE
+                    } else {
+                        NAME_CONSTANT_FALSE
+                    }
+                )
             }
             TypeKind::Int => INT_TYPE_STR.to_string(),
             TypeKind::IntLit(v) => format!("{}({})", INT_TYPE_STR, v),

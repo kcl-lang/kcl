@@ -144,7 +144,7 @@
                     "type": "union",
                     "union_types": [
                         {
-                            "type": "bool(TRUE)",
+                            "type": "bool(True)",
                             "union_types": [],
                             "default": "",
                             "schema_name": "",
@@ -159,7 +159,7 @@
                             "examples": {}
                         },
                         {
-                            "type": "bool(FALSE)",
+                            "type": "bool(False)",
                             "union_types": [],
                             "default": "",
                             "schema_name": "",
