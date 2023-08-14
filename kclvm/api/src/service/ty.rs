@@ -76,6 +76,7 @@ fn get_schema_ty_attributes(schema_ty: &SchemaType, line: &mut i32) -> HashMap<S
                     keywords: d.keywords.clone(),
                 })
                 .collect();
+            ty.default = attr.default.clone().unwrap_or_default();
             type_mapping.insert(key.to_string(), ty);
             *line += 1
         }

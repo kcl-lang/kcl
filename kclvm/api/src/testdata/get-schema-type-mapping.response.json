@@ -48,7 +48,7 @@
                         "description": "Container is the common user interface for long-running services.",
                         "examples": {}
                     },
-                    "line": 4,
+                    "line": 5,
                     "decorators": [],
                     "filename": "",
                     "pkg_path": "",
@@ -83,7 +83,7 @@
                 "workloadType": {
                     "type": "str",
                     "union_types": [],
-                    "default": "",
+                    "default": "\"Deployment\"",
                     "schema_name": "",
                     "schema_doc": "",
                     "properties": {},
@@ -139,11 +139,58 @@
                     "pkg_path": "",
                     "description": "A Server-level attribute.\nThe labels of the long-running service.\nSee also: kusion_models/core/v1/metadata.k.",
                     "examples": {}
+                },
+                "useCustomizeLables": {
+                    "type": "union",
+                    "union_types": [
+                        {
+                            "type": "bool(TRUE)",
+                            "union_types": [],
+                            "default": "",
+                            "schema_name": "",
+                            "schema_doc": "",
+                            "properties": {},
+                            "required": [],
+                            "line": 0,
+                            "decorators": [],
+                            "filename": "",
+                            "pkg_path": "",
+                            "description": "",
+                            "examples": {}
+                        },
+                        {
+                            "type": "bool(FALSE)",
+                            "union_types": [],
+                            "default": "",
+                            "schema_name": "",
+                            "schema_doc": "",
+                            "properties": {},
+                            "required": [],
+                            "line": 0,
+                            "decorators": [],
+                            "filename": "",
+                            "pkg_path": "",
+                            "description": "",
+                            "examples": {}
+                        }
+                    ],
+                    "default": "",
+                    "schema_name": "",
+                    "schema_doc": "",
+                    "properties": {},
+                    "required": [],
+                    "line": 4,
+                    "decorators": [],
+                    "filename": "",
+                    "pkg_path": "",
+                    "description": "",
+                    "examples": {}
                 }
             },
             "required": [
                 "workloadType",
                 "name",
+                "useCustomizeLables",
                 "containers"
             ],
             "line": 0,

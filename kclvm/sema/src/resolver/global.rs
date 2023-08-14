@@ -10,6 +10,7 @@ use crate::ty::{
 use indexmap::IndexMap;
 use kclvm_ast::ast;
 use kclvm_ast::walker::MutSelfTypedResultWalker;
+use kclvm_ast_pretty::{print_ast_node, print_schema_expr, ASTNode};
 use kclvm_error::*;
 
 use super::doc::parse_doc_string;
@@ -582,6 +583,7 @@ impl<'ctx> Resolver<'ctx> {
             SchemaAttr {
                 is_optional: true,
                 has_default: false,
+                default: None,
                 ty: Type::dict_ref(self.str_ty(), self.any_ty()),
                 pos: Position {
                     filename: self.ctx.filename.clone(),
@@ -594,17 +596,17 @@ impl<'ctx> Resolver<'ctx> {
         );
         let parsed_doc = parse_doc_string(&schema_stmt.doc);
         for stmt in &schema_stmt.body {
-            let (name, ty, is_optional, has_default, decorators) = match &stmt.node {
+            let (name, ty, is_optional, default, decorators) = match &stmt.node {
                 ast::Stmt::Unification(unification_stmt) => {
                     let name = unification_stmt.value.node.name.node.get_name();
                     let ty = self.parse_ty_str_with_scope(&name, stmt.get_span_pos());
                     let is_optional = true;
-                    let has_default = true;
+                    let default = print_schema_expr(&unification_stmt.value.node);
                     (
                         unification_stmt.target.node.get_name(),
                         ty,
                         is_optional,
-                        has_default,
+                        Some(default),
                         vec![],
                     )
                 }
@@ -615,14 +617,17 @@ impl<'ctx> Resolver<'ctx> {
                         schema_attr.ty.get_span_pos(),
                     );
                     let is_optional = schema_attr.is_optional;
-                    let has_default = schema_attr.value.is_some();
+                    let default = schema_attr
+                        .value
+                        .as_ref()
+                        .map(|v| print_ast_node(ASTNode::Expr(v)));
                     // Schema attribute decorators
                     let decorators = self.resolve_decorators(
                         &schema_attr.decorators,
                         DecoratorTarget::Attribute,
                         &name,
                     );
-                    (name, ty, is_optional, has_default, decorators)
+                    (name, ty, is_optional, default, decorators)
                 }
                 _ => continue,
             };
@@ -643,7 +648,8 @@ impl<'ctx> Resolver<'ctx> {
                     name.clone(),
                     SchemaAttr {
                         is_optional: existed_attr.map_or(is_optional, |attr| attr.is_optional),
-                        has_default,
+                        has_default: default.is_some(),
+                        default,
                         ty: ty.clone(),
                         pos: pos.clone(),
                         doc: doc_str,
