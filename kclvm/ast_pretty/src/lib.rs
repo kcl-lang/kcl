@@ -274,3 +274,10 @@ pub fn print_ast_node(node: ASTNode) -> String {
     printer.write_node(node);
     printer.out
 }
+
+/// Print schema expression AST node to string.
+pub fn print_schema_expr(schema_expr: &ast::SchemaExpr) -> String {
+    let mut printer = Printer::default();
+    printer.walk_schema_expr(schema_expr);
+    printer.out
+}

@@ -44,7 +44,17 @@ impl Type {
             TypeKind::None => NONE_TYPE_STR.to_string(),
             TypeKind::Any => ANY_TYPE_STR.to_string(),
             TypeKind::Bool => BOOL_TYPE_STR.to_string(),
-            TypeKind::BoolLit(v) => format!("{}({})", BOOL_TYPE_STR, v),
+            TypeKind::BoolLit(v) => {
+                format!(
+                    "{}({})",
+                    BOOL_TYPE_STR,
+                    if *v {
+                        NAME_CONSTANT_TRUE
+                    } else {
+                        NAME_CONSTANT_FALSE
+                    }
+                )
+            }
             TypeKind::Int => INT_TYPE_STR.to_string(),
             TypeKind::IntLit(v) => format!("{}({})", INT_TYPE_STR, v),
             TypeKind::Float => FLOAT_TYPE_STR.to_string(),
@@ -206,6 +216,7 @@ impl SchemaType {
                 let schema_attr = SchemaAttr {
                     is_optional: true,
                     has_default: false,
+                    default: None,
                     ty,
                     pos: Position::dummy_pos(),
                     doc: None,
@@ -251,6 +262,12 @@ impl SchemaType {
 pub struct SchemaAttr {
     pub is_optional: bool,
     pub has_default: bool,
+    /// `default` denotes the schema attribute optional value string. For example,
+    /// for the schema attribute definition `name?: str = "Alice"`, the value of
+    /// `default` is [Some("Alice")].
+    /// For the schema attribute definition `name?: str`, the value of `default`
+    /// is [None].
+    pub default: Option<String>,
     pub ty: Rc<Type>,
     pub pos: Position,
     pub doc: Option<String>,
