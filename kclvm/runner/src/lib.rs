@@ -10,7 +10,7 @@ use kclvm_driver::canonicalize_input_files;
 use kclvm_error::{Diagnostic, Handler};
 use kclvm_parser::{load_program, ParseSession};
 use kclvm_query::apply_overrides;
-use kclvm_runtime::{PanicInfo, ValueRef};
+use kclvm_runtime::{PanicInfo, PlanOptions, ValueRef};
 use kclvm_sema::resolver::resolve_program;
 use linker::Command;
 pub use runner::ExecProgramArgs;
@@ -126,7 +126,10 @@ pub fn exec_program(
     // Filter values with the path selector.
     let kcl_val = kcl_val.filter_by_path(&args.path_selector)?;
     // Plan values.
-    let (json_result, yaml_result) = kcl_val.plan(args.sort_keys);
+    let (json_result, yaml_result) = kcl_val.plan(&PlanOptions {
+        sort_keys: args.sort_keys,
+        include_schema_type_path: args.include_schema_type_path,
+    });
     result.json_result = json_result;
     if !args.disable_yaml_result {
         result.yaml_result = yaml_result;

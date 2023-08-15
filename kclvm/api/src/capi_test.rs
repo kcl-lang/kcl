@@ -32,6 +32,16 @@ fn test_c_api_call_exec_program_with_external_pkg() {
 }
 
 #[test]
+fn test_c_api_call_exec_program_with_include_schema_type_path() {
+    test_c_api::<ExecProgramArgs, ExecProgramResult, _>(
+        "KclvmService.ExecProgram",
+        "exec-program-with-include-schema-type-path.json",
+        "exec-program-with-include-schema-type-path.response.json",
+        |res| res.escaped_time = "0".to_owned(),
+    );
+}
+
+#[test]
 fn test_c_api_call_override_file() {
     test_c_api_without_wrapper::<OverrideFileArgs, OverrideFileResult>(
         "KclvmService.OverrideFile",
