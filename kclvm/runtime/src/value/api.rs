@@ -2312,7 +2312,15 @@ pub unsafe extern "C" fn kclvm_schema_assert(
             );
         }
 
-        ctx.set_kcl_location_info(Some("Check failed on the condition"), None, None, None);
+        let arg_msg = format!(
+            "Check failed on the condition{}",
+            if msg.is_empty() {
+                "".to_string()
+            } else {
+                format!(": {msg}")
+            }
+        );
+        ctx.set_kcl_location_info(Some(arg_msg.as_str()), None, None, None);
 
         panic!("{}", msg.as_str());
     }
