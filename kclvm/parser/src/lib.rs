@@ -307,7 +307,7 @@ impl Loader {
 
             self.load_import_package(
                 &entry.path(),
-                kclvm_ast::MAIN_PKG.to_string(),
+                entry.name().to_string(),
                 &mut pkg_files,
                 &mut pkgs,
             )?;
