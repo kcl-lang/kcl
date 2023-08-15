@@ -113,6 +113,40 @@ pub fn parse_file(filename: &str, code: Option<String>) -> Result<ast::Module, S
     }
 }
 
+/// Parse a KCL file with all errors.
+///
+/// Note that an optional AST structure is returned here because there may be other error reasons
+/// that may result in no AST being returned, such as file not being found, etc.
+pub fn parse_file_with_errors(
+    filename: &str,
+    code: Option<String>,
+) -> (Option<ast::Module>, String) {
+    let sess = Arc::new(ParseSession::default());
+    match parse_file_with_global_session(sess.clone(), filename, code) {
+        Ok(module) => match sess.0.diag_handler.has_errors() {
+            Ok(has_error) => {
+                let get_err = || -> anyhow::Result<String> {
+                    let err = sess
+                        .0
+                        .emit_nth_diag_into_string(0)?
+                        .unwrap_or(Ok(ErrorKind::InvalidSyntax.name()))?;
+                    Ok(err)
+                };
+                if has_error {
+                    match get_err() {
+                        Ok(err) => (Some(module), err),
+                        Err(err) => (Some(module), err.to_string()),
+                    }
+                } else {
+                    (Some(module), "".to_string())
+                }
+            }
+            Err(err) => (Some(module), err.to_string()),
+        },
+        Err(err) => (None, err),
+    }
+}
+
 /// Parse a KCL file to the AST module with the parse session .
 pub fn parse_file_with_session(
     sess: Arc<ParseSession>,

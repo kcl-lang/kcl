@@ -13,6 +13,7 @@ pub fn fmt_command(matches: &ArgMatches) -> Result<()> {
                 &FormatOptions {
                     is_stdout: bool_from_matches(matches, "std_output").unwrap_or_default(),
                     recursively: bool_from_matches(matches, "recursive").unwrap_or_default(),
+                    omit_errors: true,
                 },
             )?;
             Ok(())

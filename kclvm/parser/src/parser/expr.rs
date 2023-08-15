@@ -49,6 +49,12 @@ impl<'a> Parser<'a> {
     /// Syntax:
     /// test: if_expr | simple_expr
     pub(crate) fn parse_expr(&mut self) -> NodeRef<Expr> {
+        if self.token.is_in_recovery_set() {
+            self.sess
+                .struct_span_error("expected expression", self.token.span);
+            self.bump();
+        }
+
         let token = self.token;
         let operand = self.parse_simple_expr();
 
@@ -912,13 +918,6 @@ impl<'a> Parser<'a> {
                 // If we don't find the indentation, skip and parse the next statement.
                 self.sess
                     .struct_token_error(&[TokenKind::Indent.into()], self.token);
-                return Box::new(Node::node(
-                    Expr::List(ListExpr {
-                        elts: vec![],
-                        ctx: ExprContext::Load,
-                    }),
-                    self.sess.struct_token_loc(token, self.token),
-                ));
             }
             true
         } else {
@@ -1256,10 +1255,6 @@ impl<'a> Parser<'a> {
                 // If we don't find the indentation, skip and parse the next statement.
                 self.sess
                     .struct_token_error(&[TokenKind::Indent.into()], self.token);
-                return Box::new(Node::node(
-                    Expr::Config(ConfigExpr { items: vec![] }),
-                    self.sess.struct_token_loc(token, self.token),
-                ));
             }
             true
         } else {
