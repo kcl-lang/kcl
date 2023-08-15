@@ -8,14 +8,23 @@ use std::rc::Rc;
 pub const KCL_PRIVATE_VAR_PREFIX: &str = "_";
 const LIST_DICT_TEMP_KEY: &str = "$";
 const YAML_STREAM_SEP: &str = "\n---\n";
+const SCHEMA_TYPE_META_ATTR: &str = "_type";
 
-fn filter_results(key_values: &ValueRef) -> Vec<ValueRef> {
+/// PlanOptions denotes the configuration required to execute the KCL
+/// program and the JSON/YAML planning.
+#[derive(Debug, Default, Clone)]
+pub struct PlanOptions {
+    pub sort_keys: bool,
+    pub include_schema_type_path: bool,
+}
+
+fn filter_results(key_values: &ValueRef, opts: &PlanOptions) -> Vec<ValueRef> {
     let mut results: Vec<ValueRef> = vec![];
     // Plan list value with the yaml stream format.
     if key_values.is_list() {
         let key_values_list = &key_values.as_list_ref().values;
         for key_values in key_values_list {
-            results.append(&mut filter_results(key_values));
+            results.append(&mut filter_results(key_values, opts));
         }
         results
     }
@@ -33,7 +42,7 @@ fn filter_results(key_values: &ValueRef) -> Vec<ValueRef> {
             if key.starts_with(KCL_PRIVATE_VAR_PREFIX) || value.is_undefined() || value.is_func() {
                 continue;
             } else if value.is_schema() || value.has_key(SCHEMA_SETTINGS_ATTR_NAME) {
-                let (filtered, standalone) = handle_schema(value);
+                let (filtered, standalone) = handle_schema(value, opts);
                 if !filtered.is_empty() {
                     if standalone {
                         // if the instance is marked as 'STANDALONE', treat it as a separate one and
@@ -54,7 +63,7 @@ fn filter_results(key_values: &ValueRef) -> Vec<ValueRef> {
                     }
                 }
             } else if value.is_dict() {
-                let filtered = filter_results(value);
+                let filtered = filter_results(value, opts);
                 if !results.is_empty() {
                     let result = results.get_mut(0).unwrap();
                     if !filtered.is_empty() {
@@ -74,7 +83,7 @@ fn filter_results(key_values: &ValueRef) -> Vec<ValueRef> {
                 let list_value = value.as_list_ref();
                 for v in &list_value.values {
                     if v.is_schema() || v.has_key(SCHEMA_SETTINGS_ATTR_NAME) {
-                        let (filtered, standalone) = handle_schema(v);
+                        let (filtered, standalone) = handle_schema(v, opts);
                         if filtered.is_empty() {
                             ignore_schema_count += 1;
                             continue;
@@ -88,7 +97,7 @@ fn filter_results(key_values: &ValueRef) -> Vec<ValueRef> {
                             }
                         }
                     } else if v.is_dict() {
-                        let filtered = filter_results(v);
+                        let filtered = filter_results(v, opts);
                         for v in filtered {
                             filtered_list.push(v);
                         }
@@ -96,7 +105,7 @@ fn filter_results(key_values: &ValueRef) -> Vec<ValueRef> {
                         continue;
                     } else if !v.is_undefined() {
                         let list_dict = ValueRef::dict(Some(&[(LIST_DICT_TEMP_KEY, v)]));
-                        let filtered = filter_results(&list_dict);
+                        let filtered = filter_results(&list_dict, opts);
                         if !filtered.is_empty() {
                             if let Some(v) = filtered[0].get_by_key(LIST_DICT_TEMP_KEY) {
                                 filtered_list.push(v.clone());
@@ -143,10 +152,22 @@ fn filter_results(key_values: &ValueRef) -> Vec<ValueRef> {
     }
 }
 
-fn handle_schema(value: &ValueRef) -> (Vec<ValueRef>, bool) {
-    let filtered = filter_results(value);
+fn handle_schema(value: &ValueRef, opts: &PlanOptions) -> (Vec<ValueRef>, bool) {
+    let mut filtered = filter_results(value, opts);
     if filtered.is_empty() {
         return (filtered, false);
+    }
+    // Deal schema type meta attribute and add the attribute with the type string value
+    // into the planned object.
+    if opts.include_schema_type_path {
+        if let Some(v) = filtered.get_mut(0) {
+            if v.is_config() {
+                v.dict_update_key_value(
+                    SCHEMA_TYPE_META_ATTR,
+                    ValueRef::str(&value_type_path(value)),
+                );
+            }
+        }
     }
     let settings = SCHEMA_SETTINGS_ATTR_NAME;
     let output_type = SETTINGS_OUTPUT_KEY;
@@ -170,6 +191,24 @@ fn handle_schema(value: &ValueRef) -> (Vec<ValueRef>, bool) {
     (filtered, standalone)
 }
 
+/// Returns the type path of the runtime value `v`.
+fn value_type_path(v: &ValueRef) -> String {
+    let path = format!("{SCHEMA_SETTINGS_ATTR_NAME}.{SETTINGS_SCHEMA_TYPE_KEY}");
+    match v.get_by_path(&path) {
+        Some(type_path) => match &*type_path.rc.borrow() {
+            Value::str_value(ty_str) => {
+                let parts: Vec<&str> = ty_str.rsplit('.').collect();
+                match parts.get(0) {
+                    Some(v) => v.to_string(),
+                    None => v.type_str(),
+                }
+            }
+            _ => v.type_str(),
+        },
+        None => v.type_str(),
+    }
+}
+
 impl ValueRef {
     fn is_planned_empty(&self) -> bool {
         (self.is_dict() && !self.is_truthy()) || self.is_undefined()
@@ -190,7 +229,7 @@ impl ValueRef {
 
     /// Plan the value to the YAML string with delimiter `---`.
     pub fn plan_to_yaml_string_with_delimiter(&self) -> String {
-        let results = filter_results(self);
+        let results = filter_results(self, &PlanOptions::default());
         let results = results
             .iter()
             .map(|r| r.to_yaml_string())
@@ -199,17 +238,17 @@ impl ValueRef {
     }
 
     /// Plan the value to JSON and YAML strings.
-    pub fn plan(&self, sort_keys: bool) -> (String, String) {
+    pub fn plan(&self, opts: &PlanOptions) -> (String, String) {
         let json_opt = JsonEncodeOptions {
-            sort_keys,
+            sort_keys: opts.sort_keys,
             ..Default::default()
         };
         let yaml_opt = YamlEncodeOptions {
-            sort_keys,
+            sort_keys: opts.sort_keys,
             ..Default::default()
         };
         if self.is_list_or_config() {
-            let results = filter_results(self);
+            let results = filter_results(self, opts);
             let yaml_result = results
                 .iter()
                 .map(|r| {
@@ -377,14 +416,17 @@ mod test_value_plan {
         let dict_list = vec![&dict1, &dict2, &dict3];
         let list_data = ValueRef::list(Some(&dict_list));
         assert_eq!(
-            filter_results(&list_data),
+            filter_results(&list_data, &Default::default()),
             dict_list
                 .iter()
                 .map(|v| v.deep_copy())
                 .collect::<Vec<ValueRef>>()
         );
         for dict in dict_list {
-            assert_eq!(filter_results(dict), vec![dict.deep_copy()]);
+            assert_eq!(
+                filter_results(dict, &Default::default()),
+                vec![dict.deep_copy()]
+            );
         }
     }
 

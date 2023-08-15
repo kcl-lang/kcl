@@ -1,0 +1,4 @@
+{
+    "json_result": "[{\"alice\": {\"age\": 18, \"_type\": \"Person\"}}]",
+    "yaml_result": "alice:\n  age: 18\n  _type: Person"
+}

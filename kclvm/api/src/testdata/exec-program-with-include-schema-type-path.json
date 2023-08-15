@@ -1,0 +1,8 @@
+
+{
+	"work_dir" : "./src/testdata",
+	"k_filename_list":[
+		"test.k"
+	],
+	"include_schema_type_path": true
+}

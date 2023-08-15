@@ -19,6 +19,7 @@ impl IntoLoadSettingsFiles for SettingsFile {
                 verbose: config.verbose.unwrap_or_default() as i64,
                 debug: config.debug.unwrap_or_default(),
                 sort_keys: config.sort_keys.unwrap_or_default(),
+                include_schema_type_path: config.include_schema_type_path.unwrap_or_default(),
             }),
             kcl_options: match self.kcl_options {
                 Some(opts) => opts
