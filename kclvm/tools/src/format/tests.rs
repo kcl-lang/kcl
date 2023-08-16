@@ -34,7 +34,7 @@ fn read_data(data_name: &str) -> (String, String) {
     .unwrap();
 
     (
-        format_source("", &src).unwrap().0,
+        format_source("", &src, &Default::default()).unwrap().0,
         std::fs::read_to_string(&format!(
             "./src/format/test_data/format_data/{}{}",
             data_name, FILE_OUTPUT_SUFFIX
@@ -76,6 +76,7 @@ fn test_format_with_stdout_option() {
     let opts = FormatOptions {
         is_stdout: true,
         recursively: false,
+        omit_errors: false,
     };
     let changed_files = format("./src/format/test_data/format_path_data/if.k", &opts).unwrap();
     assert_eq!(changed_files.len(), 1);
@@ -84,9 +85,87 @@ fn test_format_with_stdout_option() {
     let opts = FormatOptions {
         is_stdout: true,
         recursively: true,
+        omit_errors: false,
     };
     let changed_files = format("./src/format/test_data/format_path_data/", &opts).unwrap();
     assert_eq!(changed_files.len(), 2);
+}
+
+#[test]
+fn test_format_with_omit_error_option() {
+    let opts = FormatOptions {
+        is_stdout: false,
+        recursively: false,
+        omit_errors: true,
+    };
+    let cases = [
+        (
+            r#"x = {
+a: {
+b: 1
+c: 2
+}
+d: 3
+}       
+"#,
+            r#"x = {
+    a: {
+        b: 1
+        c: 2
+    }
+    d: 3
+}
+"#,
+        ),
+        (
+            r#"x = {
+a: {
+    b: 1
+        c: 2
+}
+}
+"#,
+            r#"x = {
+    a: {
+        b: 1
+        c: 2
+    }
+}
+"#,
+        ),
+        (
+            r#"x = {
+    a: 1
+   b: 2
+  c: 3
+}
+"#,
+            r#"x = {
+    a: 1
+    b: 2
+    c: 3
+}
+"#,
+        ),
+        (
+            r#"x = {
+    a: 1
+     b: 2
+      c: 3
+}
+"#,
+            r#"x = {
+    a: 1
+    b: 2
+    c: 3
+}
+"#,
+        ),
+    ];
+    for (code, expected_code) in cases {
+        let (actual_code, _) = format_source("error_indent.k", code, &opts).unwrap();
+        assert_eq!(actual_code, expected_code);
+    }
 }
 
 #[test]
@@ -111,7 +190,7 @@ fn test_format_integration_konfig() -> Result<()> {
             file
         );
         let src = std::fs::read_to_string(file)?;
-        let (formatted_src, _) = format_source("", &src)?;
+        let (formatted_src, _) = format_source("", &src, &Default::default())?;
         let parse_result = parse_file("test.k", Some(formatted_src.clone() + "\n"));
         assert!(
             parse_result.is_ok(),

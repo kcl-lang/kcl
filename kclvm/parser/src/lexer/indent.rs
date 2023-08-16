@@ -92,6 +92,7 @@ impl<'a> Lexer<'a> {
                     }
                     Ordering::Less => {
                         let mut dedents = Vec::new();
+                        let mut indents = Vec::new();
 
                         loop {
                             match ordering {
@@ -99,7 +100,9 @@ impl<'a> Lexer<'a> {
                                     match order {
                                         Ordering::Less => {
                                             // Pop indents util we find an equal ident level
-                                            self.indent_cxt.indents.pop();
+                                            if let Some(indent) = self.indent_cxt.indents.pop() {
+                                                indents.push(indent);
+                                            }
                                             // update pos & collect dedent
                                             // For dedent token, we ignore the length
                                             let dedent = Token::new(
@@ -113,6 +116,10 @@ impl<'a> Lexer<'a> {
                                             break;
                                         }
                                         Ordering::Greater => {
+                                            if let Some(indent) = indents.pop() {
+                                                self.indent_cxt.indents.push(indent);
+                                            }
+                                            dedents.pop();
                                             self.sess.struct_span_error(
                                             &format!("unindent {} does not match any outer indentation level", indent.spaces),
                                             self.span(self.pos, self.pos),

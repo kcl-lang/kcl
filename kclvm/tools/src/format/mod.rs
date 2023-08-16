@@ -10,7 +10,7 @@ use kclvm_ast_pretty::print_ast_module;
 use kclvm_driver::get_kcl_files;
 use std::path::Path;
 
-use kclvm_parser::parse_file;
+use kclvm_parser::{parse_file, parse_file_with_errors};
 
 #[cfg(test)]
 mod tests;
@@ -18,10 +18,12 @@ mod tests;
 /// FormatOptions contains two options:
 /// - is_stdout: whether to output the formatted result to stdout.
 /// - recursively: whether to recursively traverse a folder and format all KCL files in it.
+/// - omit_errors: whether to omit the parse errors when format the KCL code.
 #[derive(Debug, Default)]
 pub struct FormatOptions {
     pub is_stdout: bool,
     pub recursively: bool,
+    pub omit_errors: bool,
 }
 
 /// Formats kcl file or directory path contains kcl files and
@@ -69,7 +71,7 @@ pub fn format<P: AsRef<Path>>(path: P, opts: &FormatOptions) -> Result<Vec<Strin
 /// Formats a file and returns whether the file has been formatted and modified.
 pub fn format_file(file: &str, opts: &FormatOptions) -> Result<bool> {
     let src = std::fs::read_to_string(file)?;
-    let (source, is_formatted) = format_source(file, &src)?;
+    let (source, is_formatted) = format_source(file, &src, opts)?;
     if opts.is_stdout {
         println!("{}", source);
     } else {
@@ -80,8 +82,16 @@ pub fn format_file(file: &str, opts: &FormatOptions) -> Result<bool> {
 
 /// Formats a code source and returns the formatted source and
 /// whether the source is changed.
-pub fn format_source(file: &str, src: &str) -> Result<(String, bool)> {
-    let module = parse_file(file, Some(src.to_string())).map_err(|err| anyhow::anyhow!(err))?;
+pub fn format_source(file: &str, src: &str, opts: &FormatOptions) -> Result<(String, bool)> {
+    let module = if opts.omit_errors {
+        let (module, err) = parse_file_with_errors(file, Some(src.to_string()));
+        match module {
+            Some(module) => module,
+            None => return Err(anyhow::anyhow!(err)),
+        }
+    } else {
+        parse_file(file, Some(src.to_string())).map_err(|err| anyhow::anyhow!(err))?
+    };
     let formatted_src = print_ast_module(&module);
     let is_formatted = src != formatted_src;
     Ok((formatted_src, is_formatted))

@@ -340,6 +340,12 @@ impl Token {
             _ => false,
         }
     }
+
+    /// Whether the token kind is in the recovery token set, when meets errors, drop it.
+    #[inline]
+    pub fn is_in_recovery_set(&self) -> bool {
+        matches!(self.kind, TokenKind::Indent | TokenKind::Dummy)
+    }
 }
 
 impl PartialEq<TokenKind> for Token {
