@@ -1,4 +1,7 @@
-use lsp_types::notification::{DidChangeTextDocument, DidOpenTextDocument, DidSaveTextDocument};
+use lsp_types::notification::{
+    DidChangeTextDocument, DidChangeWatchedFiles, DidCloseTextDocument, DidOpenTextDocument,
+    DidSaveTextDocument,
+};
 
 use crate::{
     dispatcher::NotificationDispatcher, from_lsp, state::LanguageServerState,
@@ -15,8 +18,8 @@ impl LanguageServerState {
             .on::<DidOpenTextDocument>(LanguageServerState::on_did_open_text_document)?
             .on::<DidChangeTextDocument>(LanguageServerState::on_did_change_text_document)?
             .on::<DidSaveTextDocument>(LanguageServerState::on_did_save_text_document)?
-            // .on::<DidCloseTextDocument>(LanguageServerState::on_did_close_text_document)?
-            // .on::<DidChangeWatchedFiles>(LanguageServerState::on_did_change_watched_files)?
+            .on::<DidCloseTextDocument>(LanguageServerState::on_did_close_text_document)?
+            .on::<DidChangeWatchedFiles>(LanguageServerState::on_did_change_watched_files)?
             .finish();
         Ok(())
     }
@@ -28,9 +31,15 @@ impl LanguageServerState {
     ) -> anyhow::Result<()> {
         let path = from_lsp::abs_path(&params.text_document.uri)?;
         self.log_message(format!("on did open file: {:?}", path));
-        self.vfs
-            .write()
-            .set_file_contents(path.into(), Some(params.text_document.text.into_bytes()));
+
+        self.vfs.write().set_file_contents(
+            path.clone().into(),
+            Some(params.text_document.text.into_bytes()),
+        );
+
+        if let Some(id) = self.vfs.read().file_id(&path.into()) {
+            self.opened_files.insert(id);
+        }
         Ok(())
     }
 
@@ -71,6 +80,33 @@ impl LanguageServerState {
         apply_document_changes(&mut text, content_changes);
         vfs.set_file_contents(path.into(), Some(text.into_bytes()));
 
+        Ok(())
+    }
+
+    /// Called when a `DidCloseTextDocument` notification was received.
+    fn on_did_close_text_document(
+        &mut self,
+        params: lsp_types::DidCloseTextDocumentParams,
+    ) -> anyhow::Result<()> {
+        let path = from_lsp::abs_path(&params.text_document.uri)?;
+
+        if let Some(id) = self.vfs.read().file_id(&path.clone().into()) {
+            self.opened_files.remove(&id);
+        }
+        self.vfs_handle.invalidate(path);
+
+        Ok(())
+    }
+
+    /// Called when a `DidChangeWatchedFiles` was received
+    fn on_did_change_watched_files(
+        &mut self,
+        params: lsp_types::DidChangeWatchedFilesParams,
+    ) -> anyhow::Result<()> {
+        for change in params.changes {
+            let path = from_lsp::abs_path(&change.uri)?;
+            self.vfs_handle.invalidate(path);
+        }
         Ok(())
     }
 }

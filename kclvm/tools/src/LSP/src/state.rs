@@ -1,14 +1,19 @@
+use crate::analysis::Analysis;
 use crate::config::Config;
+use crate::db::AnalysisDatabase;
 use crate::to_lsp::{kcl_diag_to_lsp_diags, url};
 use crate::util::{get_file_name, parse_param_and_compile, to_json, Param};
 use crossbeam_channel::{select, unbounded, Receiver, Sender};
+use indexmap::IndexSet;
 use lsp_server::{ReqQueue, Response};
 use lsp_types::{
     notification::{Notification, PublishDiagnostics},
     Diagnostic, PublishDiagnosticsParams,
 };
 use parking_lot::RwLock;
-use ra_ap_vfs::Vfs;
+use ra_ap_vfs::{FileId, Vfs};
+use ra_ap_vfs_notify::NotifyHandle;
+use std::collections::HashMap;
 use std::{sync::Arc, time::Instant};
 
 pub(crate) type RequestHandler = fn(&mut LanguageServerState, lsp_server::Response);
@@ -53,6 +58,15 @@ pub(crate) struct LanguageServerState {
 
     /// True if the client requested that we shut down
     pub shutdown_requested: bool,
+
+    /// Holds the state of the analysis process
+    pub analysis: Analysis,
+
+    /// Documents that are currently kept in memory from the client
+    pub opened_files: IndexSet<FileId>,
+
+    /// The VFS loader
+    pub vfs_handle: Box<dyn ra_ap_vfs::loader::Handle>,
 }
 
 /// A snapshot of the state of the language server
@@ -60,12 +74,22 @@ pub(crate) struct LanguageServerState {
 pub(crate) struct LanguageServerSnapshot {
     /// The virtual filesystem that holds all the file contents
     pub vfs: Arc<RwLock<Vfs>>,
+    /// Holds the state of the analysis process
+    pub db: HashMap<FileId, AnalysisDatabase>,
+    /// Documents that are currently kept in memory from the client
+    pub opened_files: IndexSet<FileId>,
 }
 
 #[allow(unused)]
 impl LanguageServerState {
     pub fn new(sender: Sender<lsp_server::Message>, config: Config) -> Self {
         let (task_sender, task_receiver) = unbounded::<Task>();
+
+        let (vfs_sender, receiver) = unbounded::<ra_ap_vfs::loader::Message>();
+        let handle: NotifyHandle =
+            ra_ap_vfs::loader::Handle::spawn(Box::new(move |msg| vfs_sender.send(msg).unwrap()));
+        let handle = Box::new(handle) as Box<dyn ra_ap_vfs::loader::Handle>;
+
         LanguageServerState {
             sender,
             request_queue: ReqQueue::default(),
@@ -75,6 +99,9 @@ impl LanguageServerState {
             task_sender,
             task_receiver,
             shutdown_requested: false,
+            analysis: Analysis::default(),
+            opened_files: IndexSet::new(),
+            vfs_handle: handle,
         }
     }
 
@@ -115,16 +142,17 @@ impl LanguageServerState {
         };
 
         // 2. Process changes
-        // Todo: recompile and store result in db. Handle request and push diagnostis with db
-        // let state_changed: bool = self.process_vfs_changes();
+        let state_changed: bool = self.process_vfs_changes();
 
         // 3. Handle Diagnostics
-        let mut snapshot = self.snapshot();
-        let task_sender = self.task_sender.clone();
-        // Spawn the diagnostics in the threadpool
-        self.thread_pool.execute(move || {
-            let _result = handle_diagnostics(snapshot, task_sender);
-        });
+        if state_changed {
+            let mut snapshot = self.snapshot();
+            let task_sender = self.task_sender.clone();
+            // Spawn the diagnostics in the threadpool
+            self.thread_pool.execute(move || {
+                let _result = handle_diagnostics(snapshot, task_sender);
+            });
+        }
 
         Ok(())
     }
@@ -141,12 +169,31 @@ impl LanguageServerState {
         if changed_files.is_empty() {
             return false;
         }
-        self.log_message("process_vfs_changes".to_string());
 
         // Construct an AnalysisChange to apply to the analysis
-        let vfs = self.vfs.read();
         for file in changed_files {
-            // todo: recompile and record context
+            let vfs = self.vfs.read();
+
+            match get_file_name(vfs, file.file_id) {
+                Ok(filename) => {
+                    match parse_param_and_compile(
+                        Param {
+                            file: filename.clone(),
+                        },
+                        Some(self.vfs.clone()),
+                    ) {
+                        Ok((prog, scope, diags)) => {
+                            self.analysis
+                                .set_db(file.file_id, AnalysisDatabase { prog, scope, diags });
+                        }
+                        Err(_) => self.log_message(format!("{filename} compilation failed")),
+                    }
+                }
+                Err(_) => {
+                    self.log_message(format!("{:?} not found", file.file_id));
+                    continue;
+                }
+            }
         }
         true
     }
@@ -196,6 +243,8 @@ impl LanguageServerState {
     pub fn snapshot(&self) -> LanguageServerSnapshot {
         LanguageServerSnapshot {
             vfs: self.vfs.clone(),
+            db: self.analysis.db.clone(),
+            opened_files: self.opened_files.clone(),
         }
     }
 
@@ -209,42 +258,32 @@ impl LanguageServerState {
     }
 }
 
-// todo: `handle_diagnostics` only gets diag from db and converts them to lsp diagnostics.
 fn handle_diagnostics(
     snapshot: LanguageServerSnapshot,
     sender: Sender<Task>,
 ) -> anyhow::Result<()> {
-    let changed_files = {
-        let mut vfs = snapshot.vfs.write();
-        vfs.take_changes()
-    };
-    for file in changed_files {
-        let (filename, uri) = {
-            let vfs = snapshot.vfs.read();
-            let filename = get_file_name(vfs, file.file_id)?;
-            let uri = url(&snapshot, file.file_id)?;
-            (filename, uri)
-        };
-        let (_, _, diags) = parse_param_and_compile(
-            Param {
-                file: filename.clone(),
-            },
-            Some(snapshot.vfs.clone()),
-        )
-        .unwrap();
-
-        let diagnostics = diags
-            .iter()
-            .flat_map(|diag| kcl_diag_to_lsp_diags(diag, filename.as_str()))
-            .collect::<Vec<Diagnostic>>();
-        sender.send(Task::Notify(lsp_server::Notification {
-            method: PublishDiagnostics::METHOD.to_owned(),
-            params: to_json(PublishDiagnosticsParams {
-                uri,
-                diagnostics,
-                version: None,
-            })?,
-        }))?;
+    for file_id in &snapshot.opened_files {
+        let vfs = snapshot.vfs.read();
+        let filename = get_file_name(vfs, file_id.clone())?;
+        let uri = url(&snapshot, file_id.clone())?;
+        match snapshot.db.get(file_id) {
+            Some(db) => {
+                let diagnostics = db
+                    .diags
+                    .iter()
+                    .flat_map(|diag| kcl_diag_to_lsp_diags(diag, filename.as_str()))
+                    .collect::<Vec<Diagnostic>>();
+                sender.send(Task::Notify(lsp_server::Notification {
+                    method: PublishDiagnostics::METHOD.to_owned(),
+                    params: to_json(PublishDiagnosticsParams {
+                        uri,
+                        diagnostics,
+                        version: None,
+                    })?,
+                }))?;
+            }
+            None => continue,
+        }
     }
     Ok(())
 }
