@@ -165,8 +165,21 @@ impl ValueRef {
                 // Recursive check schema values for every attributes.
                 if recursive {
                     for value in attr_map.values() {
+                        // For composite type structures, we recursively check the schema within them.
                         if value.is_schema() {
                             value.schema_check_attr_optional(recursive);
+                        } else if value.is_list() {
+                            for v in &value.as_list_ref().values {
+                                if v.is_schema() {
+                                    v.schema_check_attr_optional(recursive)
+                                }
+                            }
+                        } else if value.is_dict() {
+                            for v in value.as_dict_ref().values.values() {
+                                if v.is_schema() {
+                                    v.schema_check_attr_optional(recursive)
+                                }
+                            }
                         }
                     }
                 }
