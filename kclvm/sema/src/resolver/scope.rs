@@ -270,7 +270,7 @@ impl Scope {
 
 /// Program scope is scope contains a multiple scopes related to the
 /// package path.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct ProgramScope {
     pub scope_map: IndexMap<String, Rc<RefCell<Scope>>>,
     pub import_names: IndexMap<String, IndexMap<String, String>>,

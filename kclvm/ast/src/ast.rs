@@ -261,7 +261,7 @@ pub enum OverrideAction {
 }
 
 /// Program is the AST collection of all files of the running KCL program.
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Program {
     pub root: String,
     pub main: String,

@@ -2,16 +2,17 @@ use std::time::Instant;
 
 use anyhow::Ok;
 use crossbeam_channel::Sender;
+use ra_ap_vfs::VfsPath;
 
 use crate::{
     completion::completion,
+    db::AnalysisDatabase,
     dispatcher::RequestDispatcher,
     document_symbol::document_symbol,
-    from_lsp::{file_path_from_url, kcl_pos},
+    from_lsp::{self, file_path_from_url, kcl_pos},
     goto_def::goto_definition,
     hover,
     state::{log_message, LanguageServerSnapshot, LanguageServerState, Task},
-    util::{parse_param_and_compile, Param},
 };
 
 impl LanguageServerState {
@@ -50,6 +51,20 @@ impl LanguageServerState {
     }
 }
 
+impl LanguageServerSnapshot {
+    pub(crate) fn get_db(&self, path: &VfsPath) -> anyhow::Result<&AnalysisDatabase> {
+        match self.vfs.read().file_id(path) {
+            Some(id) => match self.db.get(&id) {
+                Some(db) => Ok(db),
+                None => Err(anyhow::anyhow!(format!(
+                    "Path {path} AnalysisDatabase not found"
+                ))),
+            },
+            None => Err(anyhow::anyhow!(format!("Path {path} fileId not found"))),
+        }
+    }
+}
+
 /// Called when a `GotoDefinition` request was received.
 pub(crate) fn handle_goto_definition(
     snapshot: LanguageServerSnapshot,
@@ -57,17 +72,12 @@ pub(crate) fn handle_goto_definition(
     sender: Sender<Task>,
 ) -> anyhow::Result<Option<lsp_types::GotoDefinitionResponse>> {
     let file = file_path_from_url(&params.text_document_position_params.text_document.uri)?;
-
-    let (program, prog_scope, _) = parse_param_and_compile(
-        Param {
-            file: file.to_string(),
-        },
-        Some(snapshot.vfs),
-    )?;
+    let path = from_lsp::abs_path(&params.text_document_position_params.text_document.uri)?;
+    let db = snapshot.get_db(&path.into())?;
     let kcl_pos = kcl_pos(&file, params.text_document_position_params.position);
-    let res = goto_definition(&program, &kcl_pos, &prog_scope);
+    let res = goto_definition(&db.prog, &kcl_pos, &db.scope);
     if res.is_none() {
-        log_message("Definition not found".to_string(), &sender)?;
+        log_message("Definition item not found".to_string(), &sender)?;
     }
     Ok(res)
 }
@@ -79,32 +89,17 @@ pub(crate) fn handle_completion(
     sender: Sender<Task>,
 ) -> anyhow::Result<Option<lsp_types::CompletionResponse>> {
     let file = file_path_from_url(&params.text_document_position.text_document.uri)?;
-
-    let (program, prog_scope, _) = parse_param_and_compile(
-        Param {
-            file: file.to_string(),
-        },
-        Some(snapshot.vfs),
-    )?;
+    let path = from_lsp::abs_path(&params.text_document_position.text_document.uri)?;
+    let db = snapshot.get_db(&path.into())?;
     let kcl_pos = kcl_pos(&file, params.text_document_position.position);
-    log_message(
-        format!(
-            "handle_completion {:?}",
-            params.text_document_position.position
-        ),
-        &sender,
-    )?;
     let completion_trigger_character = params
         .context
         .and_then(|ctx| ctx.trigger_character)
         .and_then(|s| s.chars().next());
-
-    let res = completion(
-        completion_trigger_character,
-        &program,
-        &kcl_pos,
-        &prog_scope,
-    );
+    let res = completion(completion_trigger_character, &db.prog, &kcl_pos, &db.scope);
+    if res.is_none() {
+        log_message("Completion item not found".to_string(), &sender)?;
+    }
     Ok(res)
 }
 
@@ -115,23 +110,13 @@ pub(crate) fn handle_hover(
     sender: Sender<Task>,
 ) -> anyhow::Result<Option<lsp_types::Hover>> {
     let file = file_path_from_url(&params.text_document_position_params.text_document.uri)?;
-
-    let (program, prog_scope, _) = parse_param_and_compile(
-        Param {
-            file: file.to_string(),
-        },
-        Some(snapshot.vfs),
-    )?;
+    let path = from_lsp::abs_path(&params.text_document_position_params.text_document.uri)?;
+    let db = snapshot.get_db(&path.into())?;
     let kcl_pos = kcl_pos(&file, params.text_document_position_params.position);
-    log_message(
-        format!(
-            "handle_hover {:?}",
-            params.text_document_position_params.position
-        ),
-        &sender,
-    )?;
-
-    let res = hover::hover(&program, &kcl_pos, &prog_scope);
+    let res = hover::hover(&db.prog, &kcl_pos, &db.scope);
+    if res.is_none() {
+        log_message("Hover definition not found".to_string(), &sender)?;
+    }
     Ok(res)
 }
 
@@ -142,17 +127,11 @@ pub(crate) fn handle_document_symbol(
     sender: Sender<Task>,
 ) -> anyhow::Result<Option<lsp_types::DocumentSymbolResponse>> {
     let file = file_path_from_url(&params.text_document.uri)?;
-
-    let (program, prog_scope, _) = parse_param_and_compile(
-        Param {
-            file: file.to_string(),
-        },
-        Some(snapshot.vfs),
-    )?;
-
-    let res = document_symbol(&file, &program, &prog_scope);
+    let path = from_lsp::abs_path(&params.text_document.uri)?;
+    let db = snapshot.get_db(&path.into())?;
+    let res = document_symbol(&file, &db.prog, &db.scope);
     if res.is_none() {
-        log_message("Document symbol not found".to_string(), &sender)?;
+        log_message(format!("File {file} Document symbol not found"), &sender)?;
     }
     Ok(res)
 }
