@@ -266,6 +266,7 @@ pub trait MutSelfMutWalker<'ctx> {
     }
     fn walk_type_alias_stmt(&mut self, type_alias_stmt: &'ctx mut ast::TypeAliasStmt) {
         self.walk_identifier(&mut type_alias_stmt.type_name.node);
+        self.walk_type(&mut type_alias_stmt.ty.node);
     }
     fn walk_unification_stmt(&mut self, unification_stmt: &'ctx mut ast::UnificationStmt) {
         self.walk_identifier(&mut unification_stmt.target.node);
@@ -276,6 +277,7 @@ pub trait MutSelfMutWalker<'ctx> {
             self.walk_identifier(&mut target.node)
         }
         self.walk_expr(&mut assign_stmt.value.node);
+        walk_if_mut!(self, walk_type, assign_stmt.ty);
     }
     fn walk_aug_assign_stmt(&mut self, aug_assign_stmt: &'ctx mut ast::AugAssignStmt) {
         self.walk_identifier(&mut aug_assign_stmt.target.node);
@@ -297,6 +299,33 @@ pub trait MutSelfMutWalker<'ctx> {
     fn walk_schema_attr(&mut self, schema_attr: &'ctx mut ast::SchemaAttr) {
         walk_list_mut!(self, walk_call_expr, schema_attr.decorators);
         walk_if_mut!(self, walk_expr, schema_attr.value);
+        self.walk_type(&mut schema_attr.ty.node);
+    }
+
+    fn walk_type(&mut self, ty: &'ctx mut ast::Type) {
+        match ty {
+            ast::Type::Named(id) => self.walk_identifier(id),
+            ast::Type::List(list_ty) => {
+                if let Some(ty) = &mut list_ty.inner_type {
+                    self.walk_type(&mut ty.node)
+                }
+            }
+            ast::Type::Dict(dict_ty) => {
+                if let Some(ty) = &mut dict_ty.key_type {
+                    self.walk_type(&mut ty.node)
+                }
+                if let Some(ty) = &mut dict_ty.value_type {
+                    self.walk_type(&mut ty.node)
+                }
+            }
+            ast::Type::Union(union_ty) => {
+                union_ty
+                    .type_elements
+                    .iter_mut()
+                    .for_each(|ty| self.walk_type(&mut ty.node));
+            }
+            _ => {}
+        }
     }
     fn walk_schema_stmt(&mut self, schema_stmt: &'ctx mut ast::SchemaStmt) {
         walk_if_mut!(self, walk_identifier, schema_stmt.parent_name);
@@ -413,6 +442,7 @@ pub trait MutSelfMutWalker<'ctx> {
     fn walk_lambda_expr(&mut self, lambda_expr: &'ctx mut ast::LambdaExpr) {
         walk_if_mut!(self, walk_arguments, lambda_expr.args);
         walk_list_mut!(self, walk_stmt, lambda_expr.body);
+        walk_if_mut!(self, walk_type, lambda_expr.return_ty);
     }
     fn walk_keyword(&mut self, keyword: &'ctx mut ast::Keyword) {
         self.walk_identifier(&mut keyword.arg.node);
@@ -425,6 +455,11 @@ pub trait MutSelfMutWalker<'ctx> {
         for default in arguments.defaults.iter_mut() {
             if let Some(d) = default.as_deref_mut() {
                 self.walk_expr(&mut d.node)
+            }
+        }
+        for ty in arguments.ty_list.iter_mut() {
+            if let Some(ty) = ty.as_deref_mut() {
+                self.walk_type(&mut ty.node);
             }
         }
     }
