@@ -14,6 +14,7 @@ pub use context::{TypeContext, TypeInferMethods};
 use indexmap::IndexMap;
 use kclvm_ast::ast;
 use kclvm_ast::MAIN_PKG;
+use kclvm_error::diagnostic::Range;
 use kclvm_error::Position;
 pub use unify::*;
 pub use walker::walk_type;
@@ -218,7 +219,7 @@ impl SchemaType {
                     has_default: false,
                     default: None,
                     ty,
-                    pos: Position::dummy_pos(),
+                    range: (Position::dummy_pos(), Position::dummy_pos()),
                     doc: None,
                     decorators: vec![],
                 };
@@ -269,7 +270,7 @@ pub struct SchemaAttr {
     /// is [None].
     pub default: Option<String>,
     pub ty: Rc<Type>,
-    pub pos: Position,
+    pub range: Range,
     pub doc: Option<String>,
     pub decorators: Vec<Decorator>,
 }

@@ -84,8 +84,8 @@ impl<'ctx> Resolver<'ctx> {
                                     Some(attr_ty_obj) => Some(self.new_config_expr_context_item(
                                         key_name,
                                         attr_ty_obj.ty.clone(),
-                                        attr_ty_obj.pos.clone(),
-                                        attr_ty_obj.pos.clone(),
+                                        attr_ty_obj.range.0.clone(),
+                                        attr_ty_obj.range.1.clone(),
                                     )),
                                     None => match &schema_ty.index_signature {
                                         Some(index_signature) => {
