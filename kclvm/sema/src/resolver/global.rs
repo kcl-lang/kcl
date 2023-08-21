@@ -578,6 +578,11 @@ impl<'ctx> Resolver<'ctx> {
         };
         // Schema attributes
         let mut attr_obj_map: IndexMap<String, SchemaAttr> = IndexMap::default();
+        let settings_dummy_pos = Position {
+            filename: self.ctx.filename.clone(),
+            line: pos.line,
+            column: pos.column,
+        };
         attr_obj_map.insert(
             kclvm_runtime::SCHEMA_SETTINGS_ATTR_NAME.to_string(),
             SchemaAttr {
@@ -585,18 +590,14 @@ impl<'ctx> Resolver<'ctx> {
                 has_default: false,
                 default: None,
                 ty: Type::dict_ref(self.str_ty(), self.any_ty()),
-                pos: Position {
-                    filename: self.ctx.filename.clone(),
-                    line: pos.line,
-                    column: pos.column,
-                },
+                range: (settings_dummy_pos.clone(), settings_dummy_pos),
                 doc: None,
                 decorators: vec![],
             },
         );
         let parsed_doc = parse_doc_string(&schema_stmt.doc);
         for stmt in &schema_stmt.body {
-            let (name, ty, is_optional, default, decorators) = match &stmt.node {
+            let (name, ty, is_optional, default, decorators, range) = match &stmt.node {
                 ast::Stmt::Unification(unification_stmt) => {
                     let name = unification_stmt.value.node.name.node.get_name();
                     let ty = self.parse_ty_str_with_scope(&name, stmt.get_span_pos());
@@ -608,6 +609,7 @@ impl<'ctx> Resolver<'ctx> {
                         is_optional,
                         Some(default),
                         vec![],
+                        stmt.get_span_pos(),
                     )
                 }
                 ast::Stmt::SchemaAttr(schema_attr) => {
@@ -627,7 +629,14 @@ impl<'ctx> Resolver<'ctx> {
                         DecoratorTarget::Attribute,
                         &name,
                     );
-                    (name, ty, is_optional, default, decorators)
+                    (
+                        name,
+                        ty,
+                        is_optional,
+                        default,
+                        decorators,
+                        stmt.get_span_pos(),
+                    )
                 }
                 _ => continue,
             };
@@ -651,7 +660,7 @@ impl<'ctx> Resolver<'ctx> {
                         has_default: default.is_some(),
                         default,
                         ty: ty.clone(),
-                        pos: pos.clone(),
+                        range: range.clone(),
                         doc: doc_str,
                         decorators,
                     },
