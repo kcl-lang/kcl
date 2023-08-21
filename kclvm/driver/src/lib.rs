@@ -202,7 +202,6 @@ pub fn lookup_kcl_yaml(dir: &PathBuf) -> io::Result<PathBuf> {
 /// to find a `compile unit` that contains all definitions
 /// Given a file path, search for the nearest "kcl.yaml" file or the nearest "project.yaml" file.
 /// If a "kcl.yaml" file is found, return the path of the directory containing the file.
-/// If a "project.yaml" file is found, return the path of the first directory containing a "kcl.yaml" file in that project.
 /// If none of these files are found, return an error indicating that the files were not found.
 ///
 /// Example:
@@ -219,7 +218,6 @@ pub fn lookup_kcl_yaml(dir: &PathBuf) -> io::Result<PathBuf> {
 /// | | +-- stack.yaml
 /// | +-- project.yaml
 ///
-/// If the input file is project/base/base.k, it will return Path("project/prod")
 /// If the input file is project/prod/main.k or project/test/main.k, it will return
 /// Path("project/prod") or Path("project/test")
 pub fn lookup_compile_unit_path(file: &str) -> io::Result<PathBuf> {
@@ -233,19 +231,6 @@ pub fn lookup_compile_unit_path(file: &str) -> io::Result<PathBuf> {
                 // If find "kcl.yaml", the input file is in a stack, return the
                 // path of this stack
                 return Ok(PathBuf::from(p));
-            } else if entry.file_name() == DEFAULT_PROJECT_FILE {
-                // If find "project.yaml", the input file may be in the `base`
-                // directory of a project, return the path of the first stack
-                // of this project
-                let project_path = PathBuf::from(p);
-                for e in read_dir(project_path)? {
-                    if let Ok(entry) = e {
-                        let path = entry.path();
-                        if path.is_dir() && lookup_kcl_yaml(&path).is_ok() {
-                            return Ok(path);
-                        }
-                    }
-                }
             }
         }
     }
