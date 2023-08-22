@@ -1,12 +1,11 @@
 use std::collections::HashMap;
 
 use kclvm_error::{DiagnosticId, WarningKind};
-use lsp_types::{CodeAction, CodeActionKind, CodeActionOrCommand, NumberOrString, TextEdit};
+use lsp_types::{
+    CodeAction, CodeActionKind, CodeActionOrCommand, Diagnostic, NumberOrString, TextEdit, Url,
+};
 
-pub(crate) fn quick_fix(
-    params: lsp_types::CodeActionParams,
-) -> Vec<lsp_types::CodeActionOrCommand> {
-    let diags = params.context.diagnostics;
+pub(crate) fn quick_fix(uri: &Url, diags: &Vec<Diagnostic>) -> Vec<lsp_types::CodeActionOrCommand> {
     let mut code_actions: Vec<lsp_types::CodeActionOrCommand> = vec![];
     for diag in diags {
         if let Some(code) = &diag.code {
@@ -17,7 +16,7 @@ pub(crate) fn quick_fix(
                         WarningKind::UnusedImportWarning => {
                             let mut changes = HashMap::new();
                             changes.insert(
-                                params.text_document.uri.clone(),
+                                uri.clone(),
                                 vec![TextEdit {
                                     range: diag.range,
                                     new_text: "".to_string(),
@@ -37,7 +36,7 @@ pub(crate) fn quick_fix(
                         WarningKind::ReimportWarning => {
                             let mut changes = HashMap::new();
                             changes.insert(
-                                params.text_document.uri.clone(),
+                                uri.clone(),
                                 vec![TextEdit {
                                     range: diag.range,
                                     new_text: "".to_string(),

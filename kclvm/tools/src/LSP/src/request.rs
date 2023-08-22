@@ -2,8 +2,8 @@ use std::{collections::HashMap, time::Instant};
 
 use anyhow::Ok;
 use crossbeam_channel::Sender;
-use ra_ap_vfs::VfsPath;
 use lsp_types::{CodeAction, CodeActionKind, CodeActionOrCommand, TextEdit};
+use ra_ap_vfs::VfsPath;
 
 use crate::{
     completion::completion,
@@ -74,7 +74,10 @@ pub(crate) fn handle_code_action(
     _sender: Sender<Task>,
 ) -> anyhow::Result<Option<lsp_types::CodeActionResponse>> {
     let mut code_actions: Vec<lsp_types::CodeActionOrCommand> = vec![];
-    code_actions.extend(quick_fix::quick_fix(params));
+    code_actions.extend(quick_fix::quick_fix(
+        &params.text_document.uri,
+        &params.context.diagnostics,
+    ));
     Ok(Some(code_actions))
 }
 
