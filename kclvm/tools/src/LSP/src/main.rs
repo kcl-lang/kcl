@@ -13,6 +13,7 @@ mod from_lsp;
 mod goto_def;
 mod hover;
 mod notification;
+mod quick_fix;
 mod request;
 mod state;
 mod to_lsp;

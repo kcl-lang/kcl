@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::env;
 use std::path::PathBuf;
 use std::process::Command;
@@ -11,6 +12,9 @@ use kclvm_sema::builtin::MATH_FUNCTION_NAMES;
 use kclvm_sema::builtin::STRING_MEMBER_FUNCTIONS;
 use kclvm_sema::resolver::scope::ProgramScope;
 use lsp_types::request::GotoTypeDefinitionResponse;
+use lsp_types::CodeAction;
+use lsp_types::CodeActionKind;
+use lsp_types::CodeActionOrCommand;
 use lsp_types::CompletionResponse;
 use lsp_types::Diagnostic;
 use lsp_types::DiagnosticRelatedInformation;
@@ -21,7 +25,9 @@ use lsp_types::Location;
 use lsp_types::MarkedString;
 use lsp_types::NumberOrString;
 use lsp_types::SymbolKind;
+use lsp_types::TextEdit;
 use lsp_types::Url;
+use lsp_types::WorkspaceEdit;
 use lsp_types::{Position, Range, TextDocumentContentChangeEvent};
 use parking_lot::RwLock;
 
@@ -29,6 +35,7 @@ use crate::completion::KCLCompletionItem;
 use crate::document_symbol::document_symbol;
 use crate::from_lsp::file_path_from_url;
 use crate::hover::hover;
+use crate::quick_fix::quick_fix;
 use crate::to_lsp::kcl_diag_to_lsp_diags;
 use crate::{
     completion::{completion, into_completion_items},
@@ -217,6 +224,98 @@ fn diagnostics_test() {
     for (get, expected) in diagnostics.iter().zip(expected_diags.iter()) {
         assert_eq!(get, expected)
     }
+}
+
+#[test]
+fn quick_fix_test() {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let mut test_file = path.clone();
+    test_file.push("src/test_data/quick_fix.k");
+    let file = test_file.to_str().unwrap();
+
+    let (_, _, diags) = parse_param_and_compile(
+        Param {
+            file: file.to_string(),
+        },
+        None,
+    )
+    .unwrap();
+
+    let diagnostics = diags
+        .iter()
+        .flat_map(|diag| kcl_diag_to_lsp_diags(diag, file))
+        .collect::<Vec<Diagnostic>>();
+
+    let uri = Url::from_file_path(file).unwrap();
+    let code_actions = quick_fix(&uri, &diagnostics);
+
+    let expected = vec![
+        CodeActionOrCommand::CodeAction(CodeAction {
+            title: "ReimportWarning".to_string(),
+            kind: Some(CodeActionKind::QUICKFIX),
+            diagnostics: Some(vec![diagnostics[0].clone()]),
+            edit: Some(WorkspaceEdit {
+                changes: Some(
+                    vec![(
+                        uri.clone(),
+                        vec![TextEdit {
+                            range: Range {
+                                start: Position {
+                                    line: 1,
+                                    character: 0,
+                                },
+                                end: Position {
+                                    line: 1,
+                                    character: 20,
+                                },
+                            },
+                            new_text: "".to_string(),
+                        }],
+                    )]
+                    .into_iter()
+                    .collect(),
+                ),
+                ..Default::default()
+            }),
+            ..Default::default()
+        }),
+        CodeActionOrCommand::CodeAction(CodeAction {
+            title: "UnusedImportWarning".to_string(),
+            kind: Some(CodeActionKind::QUICKFIX),
+            diagnostics: Some(vec![diagnostics[1].clone()]),
+            edit: Some(WorkspaceEdit {
+                changes: Some(
+                    vec![(
+                        uri.clone(),
+                        vec![TextEdit {
+                            range: Range {
+                                start: Position {
+                                    line: 0,
+                                    character: 0,
+                                },
+                                end: Position {
+                                    line: 0,
+                                    character: 20,
+                                },
+                            },
+                            new_text: "".to_string(),
+                        }],
+                    )]
+                    .into_iter()
+                    .collect(),
+                ),
+                ..Default::default()
+            }),
+            ..Default::default()
+        }),
+    ];
+
+    for (get, expected) in code_actions.iter().zip(expected.iter()) {
+        assert_eq!(get, expected)
+    }
+
+    assert_eq!(expected[0], code_actions[0]);
+    assert_eq!(expected[1], code_actions[1]);
 }
 
 #[test]

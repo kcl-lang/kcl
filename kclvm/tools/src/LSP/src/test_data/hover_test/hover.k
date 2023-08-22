@@ -8,10 +8,10 @@ schema Person:
         name doc test
     age : int, default is False, optional
         age doc test
+  
     """
     name: str
     age?: int
-
     p = Person{
         name: "Alice"
         age: 1
