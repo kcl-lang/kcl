@@ -1,7 +1,7 @@
 use crate::gpyrpc::{Decorator, KclType};
 use indexmap::IndexSet;
 use kclvm_runtime::SCHEMA_SETTINGS_ATTR_NAME;
-use kclvm_sema::ty::{SchemaType, Type};
+use kclvm_sema::ty::{DictType, SchemaType, Type};
 use std::collections::HashMap;
 
 /// Convert the kcl sematic type to the kcl protobuf type.
@@ -12,7 +12,7 @@ pub(crate) fn kcl_ty_to_pb_ty(ty: &Type) -> KclType {
             item: Some(Box::new(kcl_ty_to_pb_ty(item_ty))),
             ..Default::default()
         },
-        kclvm_sema::ty::TypeKind::Dict(key_ty, val_ty) => KclType {
+        kclvm_sema::ty::TypeKind::Dict(DictType { key_ty, val_ty, .. }) => KclType {
             r#type: "dict".to_string(),
             key: Some(Box::new(kcl_ty_to_pb_ty(key_ty))),
             item: Some(Box::new(kcl_ty_to_pb_ty(val_ty))),

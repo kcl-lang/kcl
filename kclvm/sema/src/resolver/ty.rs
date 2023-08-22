@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use crate::resolver::Resolver;
 use crate::ty::parser::parse_type_str;
-use crate::ty::{assignable_to, SchemaType, Type, TypeKind};
+use crate::ty::{assignable_to, Attr, DictType, SchemaType, Type, TypeKind};
 use indexmap::IndexMap;
 use kclvm_ast::ast;
 use kclvm_ast::pos::GetPos;
@@ -123,11 +123,18 @@ impl<'ctx> Resolver<'ctx> {
             (TypeKind::List(item_ty), TypeKind::List(expected_item_ty)) => {
                 self.check_type(item_ty.clone(), expected_item_ty.clone(), range)
             }
-            (TypeKind::Dict(key_ty, val_ty), TypeKind::Dict(expected_key_ty, expected_val_ty)) => {
+            (
+                TypeKind::Dict(DictType { key_ty, val_ty, .. }),
+                TypeKind::Dict(DictType {
+                    key_ty: expected_key_ty,
+                    val_ty: expected_val_ty,
+                    ..
+                }),
+            ) => {
                 self.check_type(key_ty.clone(), expected_key_ty.clone(), range)
                     && self.check_type(val_ty.clone(), expected_val_ty.clone(), range)
             }
-            (TypeKind::Dict(key_ty, val_ty), TypeKind::Schema(schema_ty)) => {
+            (TypeKind::Dict(DictType { key_ty, val_ty, .. }), TypeKind::Schema(schema_ty)) => {
                 self.dict_assignable_to_schema(key_ty.clone(), val_ty.clone(), schema_ty, range)
             }
             (TypeKind::Union(types), _) => types
@@ -175,9 +182,25 @@ impl<'ctx> Resolver<'ctx> {
             TypeKind::List(item_ty) => {
                 Type::list_ref(self.upgrade_named_ty_with_scope(item_ty.clone(), range))
             }
-            TypeKind::Dict(key_ty, val_ty) => Type::dict_ref(
+            TypeKind::Dict(DictType {
+                key_ty,
+                val_ty,
+                attrs,
+            }) => Type::dict_ref_with_attrs(
                 self.upgrade_named_ty_with_scope(key_ty.clone(), range),
                 self.upgrade_named_ty_with_scope(val_ty.clone(), range),
+                attrs
+                    .into_iter()
+                    .map(|(key, attr)| {
+                        (
+                            key.to_string(),
+                            Attr {
+                                ty: self.upgrade_named_ty_with_scope(val_ty.clone(), range),
+                                range: attr.range.clone(),
+                            },
+                        )
+                    })
+                    .collect(),
             ),
             TypeKind::Union(types) => Type::union_ref(
                 &types

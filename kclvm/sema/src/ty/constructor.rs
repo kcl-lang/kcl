@@ -33,7 +33,11 @@ impl Type {
     #[inline]
     pub fn dict(key_ty: Rc<Type>, val_ty: Rc<Type>) -> Type {
         Type {
-            kind: TypeKind::Dict(key_ty, val_ty),
+            kind: TypeKind::Dict(DictType {
+                key_ty,
+                val_ty,
+                attrs: IndexMap::new(),
+            }),
             flags: TypeFlags::DICT,
             is_type_alias: false,
         }
@@ -42,6 +46,32 @@ impl Type {
     #[inline]
     pub fn dict_ref(key_ty: Rc<Type>, val_ty: Rc<Type>) -> Rc<Type> {
         Rc::new(Self::dict(key_ty, val_ty))
+    }
+    /// Construct a dict type with attrs
+    #[inline]
+    pub fn dict_with_attrs(
+        key_ty: TypeRef,
+        val_ty: TypeRef,
+        attrs: IndexMap<String, Attr>,
+    ) -> Type {
+        Type {
+            kind: TypeKind::Dict(DictType {
+                key_ty,
+                val_ty,
+                attrs,
+            }),
+            flags: TypeFlags::DICT,
+            is_type_alias: false,
+        }
+    }
+    /// Construct a dict type reference with attrs
+    #[inline]
+    pub fn dict_ref_with_attrs(
+        key_ty: TypeRef,
+        val_ty: TypeRef,
+        attrs: IndexMap<String, Attr>,
+    ) -> TypeRef {
+        Rc::new(Self::dict_with_attrs(key_ty, val_ty, attrs))
     }
     /// Construct a bool literal type.
     #[inline]
@@ -310,7 +340,7 @@ impl Type {
             | TypeKind::Str
             | TypeKind::StrLit(_)
             | TypeKind::List(_)
-            | TypeKind::Dict(_, _)
+            | TypeKind::Dict(DictType { .. })
             | TypeKind::Union(_)
             | TypeKind::Schema(_)
             | TypeKind::NumberMultiplier(_)

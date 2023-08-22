@@ -3,7 +3,7 @@ use std::rc::Rc;
 use crate::builtin::system_module::{get_system_module_members, UNITS, UNITS_NUMBER_MULTIPLIER};
 use crate::builtin::STRING_MEMBER_FUNCTIONS;
 use crate::resolver::Resolver;
-use crate::ty::{ModuleKind, Type, TypeKind};
+use crate::ty::{DictType, ModuleKind, Type, TypeKind};
 use kclvm_error::diagnostic::Range;
 use kclvm_error::*;
 
@@ -46,7 +46,17 @@ impl<'ctx> Resolver<'ctx> {
                 Some(ty) => (true, Rc::new(ty.clone())),
                 None => (false, self.any_ty()),
             },
-            TypeKind::Dict(_, val_ty) => (true, Rc::new(val_ty.as_ref().clone())),
+            TypeKind::Dict(DictType {
+                key_ty: _,
+                val_ty,
+                attrs,
+            }) => (
+                true,
+                attrs
+                    .get(attr)
+                    .map(|attr| attr.ty.clone())
+                    .unwrap_or(Rc::new(val_ty.as_ref().clone())),
+            ),
             // union type load attr based the type guard. e.g, a: str|int; if a is str: xxx; if a is int: xxx;
             // return sup([self.load_attr_type(t, attr, filename, line, column) for t in obj.types])
             TypeKind::Union(_) => (true, self.any_ty()),

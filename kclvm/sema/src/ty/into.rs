@@ -13,7 +13,7 @@ impl Type {
     #[inline]
     pub fn dict_entry_ty(&self) -> (Rc<Type>, Rc<Type>) {
         match &self.kind {
-            TypeKind::Dict(key_ty, val_ty) => (key_ty.clone(), val_ty.clone()),
+            TypeKind::Dict(DictType { key_ty, val_ty, .. }) => (key_ty.clone(), val_ty.clone()),
             _ => bug!("invalid dict type {}", self.ty_str()),
         }
     }
@@ -21,7 +21,7 @@ impl Type {
     #[inline]
     pub fn config_key_ty(&self) -> Rc<Type> {
         match &self.kind {
-            TypeKind::Dict(key_ty, _) => key_ty.clone(),
+            TypeKind::Dict(DictType { key_ty, .. }) => key_ty.clone(),
             TypeKind::Schema(schema_ty) => schema_ty.key_ty(),
             _ => bug!("invalid config type {}", self.ty_str()),
         }
@@ -30,7 +30,9 @@ impl Type {
     #[inline]
     pub fn config_val_ty(&self) -> Rc<Type> {
         match &self.kind {
-            TypeKind::Dict(_, val_ty) => val_ty.clone(),
+            TypeKind::Dict(DictType {
+                key_ty: _, val_ty, ..
+            }) => val_ty.clone(),
             TypeKind::Schema(schema_ty) => schema_ty.val_ty(),
             _ => bug!("invalid config type {}", self.ty_str()),
         }
@@ -79,7 +81,7 @@ impl Type {
             }
             TypeKind::StrLit(v) => format!("\"{}\"", v.replace('"', "\\\"")),
             TypeKind::List(item_ty) => format!("[{}]", item_ty.into_type_annotation_str()),
-            TypeKind::Dict(key_ty, val_ty) => {
+            TypeKind::Dict(DictType { key_ty, val_ty, .. }) => {
                 format!(
                     "{{{}:{}}}",
                     key_ty.into_type_annotation_str(),

@@ -15,7 +15,7 @@ use kclvm_compiler::pkgpath_without_prefix;
 use kclvm_error::Position as KCLPos;
 
 use kclvm_sema::resolver::scope::{ProgramScope, Scope, ScopeObject};
-use kclvm_sema::ty::SchemaType;
+use kclvm_sema::ty::{DictType, SchemaType};
 use lsp_types::{GotoDefinitionResponse, Url};
 use lsp_types::{Location, Range};
 use std::cell::RefCell;
@@ -217,7 +217,7 @@ pub(crate) fn resolve_var(
                                 None => None,
                             }
                         }
-                        kclvm_sema::ty::TypeKind::Dict(_, _) => {
+                        kclvm_sema::ty::TypeKind::Dict(DictType { attrs: _, .. }) => {
                             // Todo: find key def in dict
                             None
                         }
