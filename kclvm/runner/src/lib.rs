@@ -11,7 +11,7 @@ use kclvm_error::{Diagnostic, Handler};
 use kclvm_parser::{load_program, ParseSession};
 use kclvm_query::apply_overrides;
 use kclvm_runtime::{PanicInfo, PlanOptions, ValueRef};
-use kclvm_sema::resolver::resolve_program;
+use kclvm_sema::resolver::{resolve_program, scope::ProgramScope};
 use linker::Command;
 pub use runner::ExecProgramArgs;
 use runner::{ExecProgramResult, KclvmRunner, KclvmRunnerOptions};
@@ -194,7 +194,7 @@ pub fn execute(
 ) -> Result<String, String> {
     // Resolve ast
     let scope = resolve_program(&mut program);
-    scope.emit_diagnostics_to_string(sess.0.clone())?;
+    emit_compile_diag_to_string(sess, &scope)?;
 
     // Create a temp entry file and the temp dir will be delete automatically
     let temp_dir = tempdir().map_err(|e| e.to_string())?;
@@ -297,4 +297,26 @@ fn temp_file(dir: &str) -> Result<String> {
         .to_str()
         .ok_or(anyhow::anyhow!("{dir} not found"))?
         .to_string())
+}
+
+// [`emit_compile_diag_to_string`] will emit compile diagnostics to string, including parsing and resolving diagnostics.
+fn emit_compile_diag_to_string(
+    sess: Arc<ParseSession>,
+    scope: &ProgramScope,
+) -> Result<(), String> {
+    let mut res_str = sess
+        .1
+        .borrow_mut()
+        .emit_to_string()
+        .map_err(|err| err.to_string())?;
+    let sema_err = scope.emit_diagnostics_to_string(sess.0.clone());
+    if sema_err.is_err() {
+        #[cfg(not(target_os = "windows"))]
+        res_str.push_str("\n");
+        #[cfg(target_os = "windows")]
+        res_str.push_str("\r\n");
+        res_str.push_str(&sema_err.unwrap_err());
+    }
+
+    Err(res_str)
 }
