@@ -318,5 +318,8 @@ fn emit_compile_diag_to_string(
         res_str.push_str(&sema_err.unwrap_err());
     }
 
-    Err(res_str)
+    res_str
+        .is_empty()
+        .then(|| Ok(()))
+        .unwrap_or_else(|| Err(res_str))
 }
