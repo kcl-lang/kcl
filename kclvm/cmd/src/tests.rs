@@ -227,6 +227,7 @@ fn test_run_command() {
     test_main_pkg_not_found();
     test_conflict_mod_file();
     test_instances_with_yaml();
+    test_plugin_not_found();
 }
 
 fn test_run_command_with_import() {
@@ -540,5 +541,20 @@ fn test_conflict_mod_file() {
     match exec_program(sess.clone(), &settings.try_into().unwrap()) {
         Ok(_) => panic!("unreachable code."),
         Err(msg) => assert!(msg.contains("conflict kcl.mod file paths")),
+    }
+}
+
+fn test_plugin_not_found() {
+    let test_case_path = PathBuf::from("./src/test_data/plugin/plugin_not_found");
+    let matches = app().arg_required_else_help(true).get_matches_from(&[
+        ROOT_CMD,
+        "run",
+        test_case_path.as_path().display().to_string().as_str(),
+    ]);
+    let settings = must_build_settings(matches.subcommand_matches("run").unwrap());
+    let sess = Arc::new(ParseSession::default());
+    match exec_program(sess.clone(), &settings.try_into().unwrap()) {
+        Ok(_) => panic!("unreachable code."),
+        Err(msg) => assert!(msg.contains("the plugin package `kcl_plugin.not_exist` is not found, please confirm if plugin mode is enabled")),
     }
 }
