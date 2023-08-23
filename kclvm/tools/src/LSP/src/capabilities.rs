@@ -36,6 +36,7 @@ pub fn server_capabilities(client_caps: &ClientCapabilities) -> ServerCapabiliti
                     })
                 }),
         ),
+        document_formatting_provider: Some(OneOf::Left(true)),
         ..Default::default()
     }
 }

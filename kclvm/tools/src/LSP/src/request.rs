@@ -1,9 +1,8 @@
-use std::{collections::HashMap, time::Instant};
-
-use anyhow::Ok;
 use crossbeam_channel::Sender;
-use lsp_types::{CodeAction, CodeActionKind, CodeActionOrCommand, TextEdit};
+use kclvm_tools::format::{format_source, FormatOptions};
+use lsp_types::{CodeAction, CodeActionKind, CodeActionOrCommand, Position, Range, TextEdit};
 use ra_ap_vfs::VfsPath;
+use std::{collections::HashMap, time::Instant};
 
 use crate::{
     completion::completion,
@@ -47,6 +46,7 @@ impl LanguageServerState {
             .on::<lsp_types::request::HoverRequest>(handle_hover)?
             .on::<lsp_types::request::DocumentSymbolRequest>(handle_document_symbol)?
             .on::<lsp_types::request::CodeActionRequest>(handle_code_action)?
+            .on::<lsp_types::request::Formatting>(handle_formatting)?
             .finish();
 
         Ok(())
@@ -63,6 +63,31 @@ impl LanguageServerSnapshot {
                 ))),
             },
             None => Err(anyhow::anyhow!(format!("Path {path} fileId not found"))),
+        }
+    }
+}
+
+pub(crate) fn handle_formatting(
+    _snap: LanguageServerSnapshot,
+    params: lsp_types::DocumentFormattingParams,
+    sender: Sender<Task>,
+) -> anyhow::Result<Option<Vec<TextEdit>>> {
+    let file = file_path_from_url(&params.text_document.uri)?;
+    let src = std::fs::read_to_string(file.clone())?;
+    match format_source(&file, &src, &FormatOptions::default()) {
+        Ok((source, is_formatted)) => {
+            if is_formatted {
+                Ok(Some(vec![TextEdit {
+                    range: Range::new(Position::new(0, 0), Position::new(u32::MAX, u32::MAX)),
+                    new_text: source,
+                }]))
+            } else {
+                Ok(None)
+            }
+        }
+        Err(err) => {
+            log_message(format!("Format failed: {err}"), &sender)?;
+            Ok(None)
         }
     }
 }
