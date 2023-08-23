@@ -6,7 +6,9 @@ use kclvm_error::*;
 use std::rc::Rc;
 
 use crate::info::is_private_field;
-use crate::ty::{sup, Parameter, Type, TypeInferMethods, TypeKind, RESERVED_TYPE_IDENTIFIERS};
+use crate::ty::{
+    sup, DictType, Parameter, Type, TypeInferMethods, TypeKind, RESERVED_TYPE_IDENTIFIERS,
+};
 
 use super::format::VALID_FORMAT_SPEC_SET;
 use super::scope::{ScopeKind, ScopeObject, ScopeObjectKind};
@@ -575,7 +577,9 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                         }
                     }
                 }
-                TypeKind::Dict(_, val_ty) => {
+                TypeKind::Dict(DictType {
+                    key_ty: _, val_ty, ..
+                }) => {
                     if let Some(index) = &subscript.index {
                         let index_key_ty = self.expr(index);
                         if index_key_ty.is_none_or_any() {
@@ -705,7 +709,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             match &ty.kind {
                 TypeKind::None | TypeKind::Any => (ty.clone(), true),
                 TypeKind::List(item_ty) => (item_ty.clone(), true),
-                TypeKind::Dict(key_ty, _) => (key_ty.clone(), true),
+                TypeKind::Dict(DictType { key_ty, .. }) => (key_ty.clone(), true),
                 TypeKind::Schema(schema_ty) => (schema_ty.key_ty(), true),
                 TypeKind::Union(types) => {
                     let results = types
@@ -821,7 +825,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
         }
         let mut range = schema_expr.name.get_span_pos();
         let ret_ty = match &def_ty.kind {
-            TypeKind::Dict(_, _) => {
+            TypeKind::Dict(DictType { .. }) => {
                 let obj = self.new_config_expr_context_item(
                     "",
                     def_ty.clone(),

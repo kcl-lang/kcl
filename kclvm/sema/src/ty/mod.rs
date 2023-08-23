@@ -22,6 +22,11 @@ pub use walker::walk_type;
 #[cfg(test)]
 mod tests;
 
+/// TypeRef represents a reference to a type that exists to avoid copying types everywhere affecting
+/// performance. For example, for two instances that are both integer types, there is actually no
+/// difference between them.
+pub type TypeRef = Rc<Type>;
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct Type {
     // The type kind.
@@ -63,7 +68,7 @@ impl Type {
             TypeKind::Str => STR_TYPE_STR.to_string(),
             TypeKind::StrLit(v) => format!("{}({})", STR_TYPE_STR, v),
             TypeKind::List(item_ty) => format!("[{}]", item_ty.ty_str()),
-            TypeKind::Dict(key_ty, val_ty) => {
+            TypeKind::Dict(DictType { key_ty, val_ty, .. }) => {
                 format!("{{{}:{}}}", key_ty.ty_str(), val_ty.ty_str())
             }
             TypeKind::Union(types) => types
@@ -106,7 +111,7 @@ pub enum TypeKind {
     /// The pointer of an array slice. Written as `[T]`.
     List(Rc<Type>),
     /// A map type. Written as `{kT, vT}`.
-    Dict(Rc<Type>, Rc<Type>),
+    Dict(DictType),
     /// A union type. Written as ty1 | ty2 | ... | tyn
     Union(Vec<Rc<Type>>),
     /// A schema type.
@@ -144,6 +149,19 @@ bitflags::bitflags! {
         const MODULE = 1 << 14;
         const NAMED = 1 << 15;
     }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct DictType {
+    pub key_ty: TypeRef,
+    pub val_ty: TypeRef,
+    pub attrs: IndexMap<String, Attr>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Attr {
+    pub ty: TypeRef,
+    pub range: Range,
 }
 
 /// The schema type.

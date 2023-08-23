@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use crate::resolver::Resolver;
-use crate::ty::{sup, Type, TypeKind};
+use crate::ty::{sup, DictType, Type, TypeKind};
 use kclvm_ast::ast;
 use kclvm_ast::pos::GetPos;
 use kclvm_error::diagnostic::Range;
@@ -53,7 +53,7 @@ impl<'ctx> Resolver<'ctx> {
                         );
                     }
                 }
-                TypeKind::Dict(key_ty, val_ty) => {
+                TypeKind::Dict(DictType { key_ty, val_ty, .. }) => {
                     first_var_ty = sup(&[key_ty.clone(), first_var_ty.clone()]);
                     self.set_type_to_scope(
                         first_var_name.as_ref().unwrap(),

@@ -5,9 +5,10 @@ use super::{
     scope::{ScopeKind, ScopeObject, ScopeObjectKind},
     Resolver,
 };
-use crate::ty::sup;
-use crate::ty::SchemaType;
+use crate::ty::{sup, DictType};
+use crate::ty::{Attr, SchemaType};
 use crate::ty::{Type, TypeKind};
+use indexmap::IndexMap;
 use kclvm_ast::ast;
 use kclvm_ast::pos::GetPos;
 use kclvm_error::{diagnostic::Range, ErrorKind, Message, Position, Style};
@@ -73,7 +74,9 @@ impl<'ctx> Resolver<'ctx> {
                     let obj = obj.clone();
                     match obj {
                         Some(obj) => match &obj.ty.kind {
-                            TypeKind::Dict(_, val_ty) => Some(self.new_config_expr_context_item(
+                            TypeKind::Dict(DictType {
+                                key_ty: _, val_ty, ..
+                            }) => Some(self.new_config_expr_context_item(
                                 key_name,
                                 val_ty.clone(),
                                 obj.start.clone(),
@@ -394,6 +397,7 @@ impl<'ctx> Resolver<'ctx> {
         );
         let mut key_types: Vec<TypeRef> = vec![];
         let mut val_types: Vec<TypeRef> = vec![];
+        let mut attrs = IndexMap::new();
         for item in entries {
             let key = &item.node.key;
             let value = &item.node.value;
@@ -417,6 +421,13 @@ impl<'ctx> Resolver<'ctx> {
                                 Rc::new(Type::str_lit(name))
                             };
                             self.check_attr_ty(&key_ty, key.get_span_pos());
+                            attrs.insert(
+                                name.to_string(),
+                                Attr {
+                                    ty: val_ty.clone(),
+                                    range: key.get_span_pos(),
+                                },
+                            );
                             self.insert_object(
                                 name,
                                 ScopeObject {
@@ -475,7 +486,7 @@ impl<'ctx> Resolver<'ctx> {
                         TypeKind::None | TypeKind::Any => {
                             val_types.push(val_ty.clone());
                         }
-                        TypeKind::Dict(key_ty, val_ty) => {
+                        TypeKind::Dict(DictType { key_ty, val_ty, .. }) => {
                             key_types.push(key_ty.clone());
                             val_types.push(val_ty.clone());
                         }
@@ -534,6 +545,6 @@ impl<'ctx> Resolver<'ctx> {
         self.leave_scope();
         let key_ty = sup(&key_types);
         let val_ty = sup(&val_types);
-        Type::dict_ref(key_ty, val_ty)
+        Type::dict_ref_with_attrs(key_ty, val_ty, attrs)
     }
 }
