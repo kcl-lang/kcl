@@ -4,6 +4,7 @@ mod config;
 mod db;
 mod dispatcher;
 mod find_ref;
+mod formatting;
 mod from_lsp;
 mod notification;
 mod state;

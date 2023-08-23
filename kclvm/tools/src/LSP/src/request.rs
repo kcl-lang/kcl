@@ -1,15 +1,15 @@
-use std::{collections::HashMap, time::Instant};
-
-use anyhow::Ok;
 use crossbeam_channel::Sender;
-use lsp_types::{CodeAction, CodeActionKind, CodeActionOrCommand, TextEdit};
+
+use lsp_types::{CodeAction, CodeActionKind, CodeActionOrCommand, Position, Range, TextEdit};
 use ra_ap_vfs::VfsPath;
+use std::{collections::HashMap, time::Instant};
 
 use crate::{
     completion::completion,
     db::AnalysisDatabase,
     dispatcher::RequestDispatcher,
     document_symbol::document_symbol,
+    formatting::format_single_file,
     from_lsp::{self, file_path_from_url, kcl_pos},
     goto_def::goto_definition,
     hover, quick_fix,
@@ -47,6 +47,7 @@ impl LanguageServerState {
             .on::<lsp_types::request::HoverRequest>(handle_hover)?
             .on::<lsp_types::request::DocumentSymbolRequest>(handle_document_symbol)?
             .on::<lsp_types::request::CodeActionRequest>(handle_code_action)?
+            .on::<lsp_types::request::Formatting>(handle_formatting)?
             .finish();
 
         Ok(())
@@ -65,6 +66,16 @@ impl LanguageServerSnapshot {
             None => Err(anyhow::anyhow!(format!("Path {path} fileId not found"))),
         }
     }
+}
+
+pub(crate) fn handle_formatting(
+    _snap: LanguageServerSnapshot,
+    params: lsp_types::DocumentFormattingParams,
+    sender: Sender<Task>,
+) -> anyhow::Result<Option<Vec<TextEdit>>> {
+    let file = file_path_from_url(&params.text_document.uri)?;
+    let src = std::fs::read_to_string(file.clone())?;
+    format_single_file(file, src)
 }
 
 /// Called when a `GotoDefinition` request was received.
