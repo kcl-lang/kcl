@@ -76,7 +76,8 @@ pub(crate) fn parse_param_and_compile(
         opt.k_code_list.append(&mut k_code_list);
     }
     let sess = Arc::new(ParseSession::default());
-    let mut program = load_program(sess.clone(), &files, Some(opt)).unwrap();
+    let mut program = load_program(sess.clone(), &files, Some(opt))
+        .map_err(|err| anyhow::anyhow!("Compile failed: {}", err))?;
     let prog_scope = resolve_program(&mut program);
     sess.append_diagnostic(prog_scope.handler.diagnostics.clone());
     let diags = sess.1.borrow().diagnostics.clone();
