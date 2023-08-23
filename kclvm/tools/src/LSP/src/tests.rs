@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::env;
 use std::path::PathBuf;
 use std::process::Command;
@@ -33,6 +32,7 @@ use parking_lot::RwLock;
 
 use crate::completion::KCLCompletionItem;
 use crate::document_symbol::document_symbol;
+use crate::formatting::format_single_file;
 use crate::from_lsp::file_path_from_url;
 use crate::hover::hover;
 use crate::quick_fix::quick_fix;
@@ -1240,4 +1240,76 @@ fn goto_import_external_file_test() {
     };
     let res = goto_definition(&program, &pos, &prog_scope);
     assert!(res.is_some());
+}
+
+#[test]
+fn formmat_signle_file_test() {
+    const FILE_INPUT_SUFFIX: &str = ".input";
+    const FILE_OUTPUT_SUFFIX: &str = ".golden";
+    const TEST_CASES: &[&str; 17] = &[
+        "assert",
+        "check",
+        "blankline",
+        "breakline",
+        "codelayout",
+        "collection_if",
+        "comment",
+        "comp_for",
+        // "empty",
+        "import",
+        "indent",
+        "inline_comment",
+        "lambda",
+        "quant",
+        "schema",
+        "string",
+        "type_alias",
+        "unary",
+    ];
+
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let test_file = path;
+    let test_dir = test_file
+        .parent()
+        .unwrap()
+        .join("format")
+        .join("test_data")
+        .join("format_data");
+    for case in TEST_CASES {
+        let test_file = test_dir
+            .join(format!("{}{}", case, FILE_INPUT_SUFFIX))
+            .to_str()
+            .unwrap()
+            .to_string();
+        let test_src = std::fs::read_to_string(&test_file).unwrap();
+        let got = format_single_file(test_file, test_src).unwrap().unwrap();
+        let data_output = std::fs::read_to_string(
+            &test_dir
+                .join(format!("{}{}", case, FILE_OUTPUT_SUFFIX))
+                .to_str()
+                .unwrap()
+                .to_string(),
+        )
+        .unwrap();
+
+        #[cfg(target_os = "windows")]
+        let data_output = data_output.replace("\r\n", "\n");
+
+        let expect = vec![TextEdit {
+            range: Range::new(Position::new(0, 0), Position::new(u32::MAX, u32::MAX)),
+            new_text: data_output,
+        }];
+
+        assert_eq!(expect, got);
+    }
+
+    // empty test case, without change after fmt
+    let test_file = test_dir
+        .join(format!("{}{}", "empty", FILE_INPUT_SUFFIX))
+        .to_str()
+        .unwrap()
+        .to_string();
+    let test_src = std::fs::read_to_string(&test_file).unwrap();
+    let got = format_single_file(test_file, test_src).unwrap();
+    assert_eq!(got, None)
 }

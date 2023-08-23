@@ -19,6 +19,7 @@ mod state;
 mod to_lsp;
 mod util;
 
+mod formatting;
 #[cfg(test)]
 mod tests;
 

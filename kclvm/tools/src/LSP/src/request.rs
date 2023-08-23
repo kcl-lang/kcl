@@ -1,5 +1,5 @@
 use crossbeam_channel::Sender;
-use kclvm_tools::format::{format_source, FormatOptions};
+
 use lsp_types::{CodeAction, CodeActionKind, CodeActionOrCommand, Position, Range, TextEdit};
 use ra_ap_vfs::VfsPath;
 use std::{collections::HashMap, time::Instant};
@@ -9,6 +9,7 @@ use crate::{
     db::AnalysisDatabase,
     dispatcher::RequestDispatcher,
     document_symbol::document_symbol,
+    formatting::format_single_file,
     from_lsp::{self, file_path_from_url, kcl_pos},
     goto_def::goto_definition,
     hover, quick_fix,
@@ -74,22 +75,7 @@ pub(crate) fn handle_formatting(
 ) -> anyhow::Result<Option<Vec<TextEdit>>> {
     let file = file_path_from_url(&params.text_document.uri)?;
     let src = std::fs::read_to_string(file.clone())?;
-    match format_source(&file, &src, &FormatOptions::default()) {
-        Ok((source, is_formatted)) => {
-            if is_formatted {
-                Ok(Some(vec![TextEdit {
-                    range: Range::new(Position::new(0, 0), Position::new(u32::MAX, u32::MAX)),
-                    new_text: source,
-                }]))
-            } else {
-                Ok(None)
-            }
-        }
-        Err(err) => {
-            log_message(format!("Format failed: {err}"), &sender)?;
-            Ok(None)
-        }
-    }
+    format_single_file(file, src)
 }
 
 /// Called when a `GotoDefinition` request was received.
