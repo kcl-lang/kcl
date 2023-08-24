@@ -1,4 +1,5 @@
 use std::env;
+use std::ops::Index;
 use std::path::PathBuf;
 use std::process::Command;
 use std::sync::Arc;
@@ -29,11 +30,13 @@ use lsp_types::Url;
 use lsp_types::WorkspaceEdit;
 use lsp_types::{Position, Range, TextDocumentContentChangeEvent};
 use parking_lot::RwLock;
+use ra_ap_vfs::AbsPathBuf;
+use ra_ap_vfs::Vfs;
 
 use crate::completion::KCLCompletionItem;
 use crate::document_symbol::document_symbol;
-use crate::formatting::format_single_file;
-use crate::from_lsp::file_path_from_url;
+use crate::formatting::format;
+use crate::from_lsp::{abs_path, file_path_from_url, text_range};
 use crate::hover::hover;
 use crate::quick_fix::quick_fix;
 use crate::to_lsp::kcl_diag_to_lsp_diags;
@@ -149,7 +152,7 @@ fn diagnostics_test() {
         Param {
             file: file.to_string(),
         },
-        None,
+        Some(Arc::new(RwLock::new(Default::default()))),
     )
     .unwrap();
 
@@ -237,7 +240,7 @@ fn quick_fix_test() {
         Param {
             file: file.to_string(),
         },
-        None,
+        Some(Arc::new(RwLock::new(Default::default()))),
     )
     .unwrap();
 
@@ -1226,7 +1229,7 @@ fn goto_import_external_file_test() {
         Param {
             file: path.to_string(),
         },
-        None,
+        Some(Arc::new(RwLock::new(Default::default()))),
     )
     .unwrap();
 
@@ -1243,7 +1246,7 @@ fn goto_import_external_file_test() {
 }
 
 #[test]
-fn formmat_signle_file_test() {
+fn format_signle_file_test() {
     const FILE_INPUT_SUFFIX: &str = ".input";
     const FILE_OUTPUT_SUFFIX: &str = ".golden";
     const TEST_CASES: &[&str; 17] = &[
@@ -1282,7 +1285,7 @@ fn formmat_signle_file_test() {
             .unwrap()
             .to_string();
         let test_src = std::fs::read_to_string(&test_file).unwrap();
-        let got = format_single_file(test_file, test_src).unwrap().unwrap();
+        let got = format(test_file, test_src, None).unwrap().unwrap();
         let data_output = std::fs::read_to_string(
             &test_dir
                 .join(format!("{}{}", case, FILE_OUTPUT_SUFFIX))
@@ -1310,6 +1313,26 @@ fn formmat_signle_file_test() {
         .unwrap()
         .to_string();
     let test_src = std::fs::read_to_string(&test_file).unwrap();
-    let got = format_single_file(test_file, test_src).unwrap();
+    let got = format(test_file, test_src, None).unwrap();
     assert_eq!(got, None)
+}
+
+#[test]
+fn format_range_test() {
+    let (file, program, prog_scope, _) = compile_test_file("src/test_data/format/format_range.k");
+    let lsp_range = Range::new(Position::new(0, 0), Position::new(11, 0));
+    let text = std::fs::read_to_string(file.clone()).unwrap();
+
+    let range = text_range(&text, lsp_range);
+    let src = text.index(range);
+
+    let got = format(file, src.to_owned(), Some(lsp_range))
+        .unwrap()
+        .unwrap();
+
+    let expected = vec![TextEdit {
+        range: lsp_range,
+        new_text: "a = 1\nb = 2\nc = 3\n".to_string(),
+    }];
+    assert_eq!(got, expected)
 }

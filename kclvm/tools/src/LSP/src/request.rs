@@ -2,14 +2,14 @@ use crossbeam_channel::Sender;
 
 use lsp_types::{CodeAction, CodeActionKind, CodeActionOrCommand, Position, Range, TextEdit};
 use ra_ap_vfs::VfsPath;
-use std::{collections::HashMap, time::Instant};
+use std::{collections::HashMap, ops::Index, time::Instant};
 
 use crate::{
     completion::completion,
     db::AnalysisDatabase,
     dispatcher::RequestDispatcher,
     document_symbol::document_symbol,
-    formatting::format_single_file,
+    formatting::format,
     from_lsp::{self, file_path_from_url, kcl_pos},
     goto_def::goto_definition,
     hover, quick_fix,
@@ -48,6 +48,7 @@ impl LanguageServerState {
             .on::<lsp_types::request::DocumentSymbolRequest>(handle_document_symbol)?
             .on::<lsp_types::request::CodeActionRequest>(handle_code_action)?
             .on::<lsp_types::request::Formatting>(handle_formatting)?
+            .on::<lsp_types::request::RangeFormatting>(handle_range_formatting)?
             .finish();
 
         Ok(())
@@ -69,18 +70,40 @@ impl LanguageServerSnapshot {
 }
 
 pub(crate) fn handle_formatting(
-    _snap: LanguageServerSnapshot,
+    _snapshot: LanguageServerSnapshot,
     params: lsp_types::DocumentFormattingParams,
-    sender: Sender<Task>,
+    _sender: Sender<Task>,
 ) -> anyhow::Result<Option<Vec<TextEdit>>> {
     let file = file_path_from_url(&params.text_document.uri)?;
     let src = std::fs::read_to_string(file.clone())?;
-    format_single_file(file, src)
+    format(file, src, None)
+}
+
+pub(crate) fn handle_range_formatting(
+    snapshot: LanguageServerSnapshot,
+    params: lsp_types::DocumentRangeFormattingParams,
+    _sender: Sender<Task>,
+) -> anyhow::Result<Option<Vec<TextEdit>>> {
+    let file = file_path_from_url(&params.text_document.uri)?;
+    let path = from_lsp::abs_path(&params.text_document.uri)?;
+    let vfs = &*snapshot.vfs.read();
+
+    let file_id = vfs
+        .file_id(&path.clone().into())
+        .ok_or(anyhow::anyhow!("Already checked that the file_id exists!"))?;
+
+    let text = String::from_utf8(vfs.file_contents(file_id).to_vec())?;
+    let range = from_lsp::text_range(&text, params.range);
+    if let Some(src) = text.get(range) {
+        format(file, src.to_owned(), Some(params.range))
+    } else {
+        Ok(None)
+    }
 }
 
 /// Called when a `GotoDefinition` request was received.
 pub(crate) fn handle_code_action(
-    _snap: LanguageServerSnapshot,
+    _snapshot: LanguageServerSnapshot,
     params: lsp_types::CodeActionParams,
     _sender: Sender<Task>,
 ) -> anyhow::Result<Option<lsp_types::CodeActionResponse>> {
