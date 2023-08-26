@@ -602,7 +602,11 @@ impl<'ctx> Resolver<'ctx> {
                     let name = unification_stmt.value.node.name.node.get_name();
                     let ty = self.parse_ty_str_with_scope(&name, stmt.get_span_pos());
                     let is_optional = true;
-                    let default = print_schema_expr(&unification_stmt.value.node);
+                    let default = if self.options.resolve_val {
+                        print_schema_expr(&unification_stmt.value.node)
+                    } else {
+                        "".to_string()
+                    };
                     (
                         unification_stmt.target.node.get_name(),
                         ty,
@@ -619,10 +623,13 @@ impl<'ctx> Resolver<'ctx> {
                         schema_attr.ty.get_span_pos(),
                     );
                     let is_optional = schema_attr.is_optional;
-                    let default = schema_attr
-                        .value
-                        .as_ref()
-                        .map(|v| print_ast_node(ASTNode::Expr(v)));
+                    let default = schema_attr.value.as_ref().map(|v| {
+                        if self.options.resolve_val {
+                            print_ast_node(ASTNode::Expr(v))
+                        } else {
+                            "".to_string()
+                        }
+                    });
                     // Schema attribute decorators
                     let decorators = self.resolve_decorators(
                         &schema_attr.decorators,
