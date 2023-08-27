@@ -258,14 +258,7 @@ fn test_lint() {
     let mut program =
         load_program(sess.clone(), &["./src/resolver/test_data/lint.k"], None).unwrap();
     pre_process_program(&mut program);
-    let mut resolver = Resolver::new(
-        &program,
-        Options {
-            raise_err: true,
-            config_auto_fix: false,
-            lint_check: true,
-        },
-    );
+    let mut resolver = Resolver::new(&program, Options::default());
     resolver.resolve_import();
     resolver.check_and_lint(kclvm_ast::MAIN_PKG);
 

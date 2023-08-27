@@ -136,25 +136,34 @@ pub struct Context {
     pub type_alias_mapping: IndexMap<String, IndexMap<String, String>>,
 }
 
-/// Resolve options
-#[derive(Clone, Debug, Default)]
+/// Resolve options.
+/// - lint_check: whether to run lint passes
+/// - resolve_val: whether to resolve and print their AST to value for some nodes.
+#[derive(Clone, Debug)]
 pub struct Options {
-    pub raise_err: bool,
-    pub config_auto_fix: bool,
     pub lint_check: bool,
+    pub resolve_val: bool,
 }
 
-/// Resolve program
-pub fn resolve_program(program: &mut Program) -> ProgramScope {
-    pre_process_program(program);
-    let mut resolver = Resolver::new(
-        program,
-        Options {
-            raise_err: true,
-            config_auto_fix: false,
+impl Default for Options {
+    fn default() -> Self {
+        Self {
             lint_check: true,
-        },
-    );
+            resolve_val: false,
+        }
+    }
+}
+
+/// Resolve program with default options.
+#[inline]
+pub fn resolve_program(program: &mut Program) -> ProgramScope {
+    resolve_program_with_opts(program, Options::default())
+}
+
+/// Resolve program with options. See [Options]
+pub fn resolve_program_with_opts(program: &mut Program, opts: Options) -> ProgramScope {
+    pre_process_program(program);
+    let mut resolver = Resolver::new(program, opts);
     resolver.resolve_import();
     let scope = resolver.check_and_lint(kclvm_ast::MAIN_PKG);
     let type_alias_mapping = resolver.ctx.type_alias_mapping.clone();

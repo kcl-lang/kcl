@@ -222,23 +222,27 @@ impl<'ctx> Resolver<'ctx> {
         args: &'ctx [ast::NodeRef<ast::Expr>],
         kwargs: &'ctx [ast::NodeRef<ast::Keyword>],
     ) -> (Vec<String>, HashMap<String, String>) {
-        (
-            args.iter()
-                .map(|a| print_ast_node(ASTNode::Expr(a)))
-                .collect(),
-            kwargs
-                .iter()
-                .map(|a| {
-                    (
-                        a.node.arg.node.get_name(),
-                        a.node
-                            .value
-                            .as_ref()
-                            .map(|v| print_ast_node(ASTNode::Expr(v)))
-                            .unwrap_or_default(),
-                    )
-                })
-                .collect(),
-        )
+        if self.options.resolve_val {
+            (
+                args.iter()
+                    .map(|a| print_ast_node(ASTNode::Expr(a)))
+                    .collect(),
+                kwargs
+                    .iter()
+                    .map(|a| {
+                        (
+                            a.node.arg.node.get_name(),
+                            a.node
+                                .value
+                                .as_ref()
+                                .map(|v| print_ast_node(ASTNode::Expr(v)))
+                                .unwrap_or_default(),
+                        )
+                    })
+                    .collect(),
+            )
+        } else {
+            (vec![], HashMap::new())
+        }
     }
 }

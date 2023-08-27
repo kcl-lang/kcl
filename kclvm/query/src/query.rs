@@ -4,7 +4,7 @@ use anyhow::Result;
 use indexmap::IndexMap;
 use kclvm_parser::{load_program, LoadProgramOptions, ParseSession};
 use kclvm_sema::{
-    resolver::{resolve_program, scope::Scope},
+    resolver::{resolve_program_with_opts, scope::Scope, Options},
     ty::SchemaType,
 };
 
@@ -121,7 +121,13 @@ fn resolve_file(file: &str, code: Option<&str>) -> Result<Rc<RefCell<Scope>>> {
             return Err(anyhow::anyhow!("{err}"));
         }
     };
-    let scope = resolve_program(&mut program);
+    let scope = resolve_program_with_opts(
+        &mut program,
+        Options {
+            resolve_val: true,
+            ..Default::default()
+        },
+    );
     match scope.main_scope() {
         Some(scope) => Ok(scope.clone()),
         None => Err(anyhow::anyhow!("main scope is not found")),

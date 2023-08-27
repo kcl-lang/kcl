@@ -1,8 +1,8 @@
 use crossbeam_channel::Sender;
 
-use lsp_types::{CodeAction, CodeActionKind, CodeActionOrCommand, Position, Range, TextEdit};
+use lsp_types::TextEdit;
 use ra_ap_vfs::VfsPath;
-use std::{collections::HashMap, ops::Index, time::Instant};
+use std::time::Instant;
 
 use crate::{
     completion::completion,
