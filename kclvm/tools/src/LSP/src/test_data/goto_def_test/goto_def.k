@@ -53,6 +53,7 @@ fib8 = Fib {n = 8}.value
 
 schema_map: {str: Person} = {
     person: p2
+    person1: p2
 }
 
 p3 = schema_map.person.n.name

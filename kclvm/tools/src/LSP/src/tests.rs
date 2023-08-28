@@ -467,7 +467,7 @@ fn goto_dict_key_def_test() {
 
     let pos = KCLPos {
         filename: file.clone(),
-        line: 58,
+        line: 59,
         column: Some(28),
     };
     let res = goto_definition(&program, &pos, &prog_scope);
