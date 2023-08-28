@@ -444,24 +444,35 @@ fn goto_schema_def_test() {
     );
 }
 
-// todo
-// #[test]
-// fn goto_dict_key_def_test() {
-//     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+#[test]
+fn goto_dict_key_def_test() {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-//     let (file, program, prog_scope, _) =
-//         compile_test_file("src/test_data/goto_def_test/goto_def.k");
+    let (file, program, prog_scope, _) =
+        compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
-//     let mut expected_path = path;
-//     expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
+    let mut expected_path = path;
+    expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
 
-//     let pos = KCLPos {
-//         filename: file,
-//         line: 30,
-//         column: Some(11),
-//     };
-//     let res = goto_definition(&program, &pos, &prog_scope);
-// }
+    let pos = KCLPos {
+        filename: file.clone(),
+        line: 26,
+        column: Some(24),
+    };
+    let res = goto_definition(&program, &pos, &prog_scope);
+    compare_goto_res(
+        res,
+        (&expected_path.to_str().unwrap().to_string(), 8, 4, 8, 8),
+    );
+
+    let pos = KCLPos {
+        filename: file.clone(),
+        line: 59,
+        column: Some(28),
+    };
+    let res = goto_definition(&program, &pos, &prog_scope);
+    compare_goto_res(res, (&file, 18, 4, 18, 8));
+}
 
 #[test]
 fn goto_schema_attr_def_test() {
@@ -505,7 +516,7 @@ fn goto_schema_attr_def_test1() {
     let res = goto_definition(&program, &pos, &prog_scope);
     compare_goto_res(
         res,
-        (&expected_path.to_str().unwrap().to_string(), 18, 1, 18, 5),
+        (&expected_path.to_str().unwrap().to_string(), 18, 4, 18, 8),
     );
 }
 
@@ -552,7 +563,7 @@ fn test_goto_identifier_names() {
     let res = goto_definition(&program, &pos, &prog_scope);
     compare_goto_res(
         res,
-        (&expected_path.to_str().unwrap().to_string(), 18, 1, 18, 5),
+        (&expected_path.to_str().unwrap().to_string(), 18, 4, 18, 8),
     );
 }
 

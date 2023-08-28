@@ -16,7 +16,7 @@ schema Person3:
 
 
 schema Name:
-	name: str
+    name: str
 
 schema Person:
 	n: Name
@@ -50,3 +50,10 @@ schema Fib:
     else:
         value = Fib {n = n1}.value + Fib {n = n2}.value
 fib8 = Fib {n = 8}.value
+
+schema_map: {str: Person} = {
+    person: p2
+    person1: p2
+}
+
+p3 = schema_map.person.n.name

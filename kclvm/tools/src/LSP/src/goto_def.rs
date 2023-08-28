@@ -200,30 +200,42 @@ pub(crate) fn resolve_var(
         _ => {
             let name = names[0].clone();
             match current_scope.lookup(&name) {
-                Some(obj) => {
-                    match &obj.borrow().ty.kind {
-                        kclvm_sema::ty::TypeKind::Schema(schema_type) => {
-                            find_attr_in_schema(schema_type, &node_names[1..], scope_map)
-                        }
-                        kclvm_sema::ty::TypeKind::Module(module_ty) => {
-                            match scope_map.get(&pkgpath_without_prefix!(module_ty.pkgpath)) {
-                                Some(scope) => {
-                                    return resolve_var(
-                                        &node_names[1..],
-                                        &scope.borrow(),
-                                        scope_map,
-                                    );
-                                }
-                                None => None,
-                            }
-                        }
-                        kclvm_sema::ty::TypeKind::Dict(DictType { attrs: _, .. }) => {
-                            // Todo: find key def in dict
-                            None
-                        }
-                        _ => None,
+                Some(obj) => match &obj.borrow().ty.kind {
+                    kclvm_sema::ty::TypeKind::Schema(schema_type) => {
+                        find_attr_in_schema(schema_type, &node_names[1..], scope_map)
                     }
-                }
+                    kclvm_sema::ty::TypeKind::Module(module_ty) => {
+                        match scope_map.get(&pkgpath_without_prefix!(module_ty.pkgpath)) {
+                            Some(scope) => {
+                                return resolve_var(&node_names[1..], &scope.borrow(), scope_map);
+                            }
+                            None => None,
+                        }
+                    }
+                    kclvm_sema::ty::TypeKind::Dict(DictType { attrs, .. }) => {
+                        let key_name = names[1].clone();
+                        match attrs.get(&key_name) {
+                            Some(attr) => {
+                                let start_pos = attr.range.0.clone();
+                                for (_, scope) in scope_map {
+                                    match scope.borrow().inner_most(&start_pos) {
+                                        Some(inner_most_scope) => {
+                                            return resolve_var(
+                                                &node_names[1..],
+                                                &inner_most_scope,
+                                                scope_map,
+                                            )
+                                        }
+                                        None => continue,
+                                    }
+                                }
+                                None
+                            }
+                            None => None,
+                        }
+                    }
+                    _ => None,
+                },
                 None => None,
             }
         }

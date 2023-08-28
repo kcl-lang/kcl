@@ -146,18 +146,26 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 self.ctx.l_value = true;
                 let expected_ty = self.walk_identifier_expr(target);
                 self.ctx.l_value = false;
-                if let TypeKind::Schema(ty) = &expected_ty.kind {
-                    let obj = self.new_config_expr_context_item(
-                        &ty.name,
-                        expected_ty.clone(),
-                        start.clone(),
-                        end.clone(),
-                    );
-                    let init_stack_depth = self.switch_config_expr_context(Some(obj));
-                    value_ty = self.expr(&assign_stmt.value);
-                    self.clear_config_expr_context(init_stack_depth as usize, false)
-                } else {
-                    value_ty = self.expr(&assign_stmt.value);
+                match &expected_ty.kind {
+                    TypeKind::Schema(ty) => {
+                        let obj = self.new_config_expr_context_item(
+                            &ty.name,
+                            expected_ty.clone(),
+                            start.clone(),
+                            end.clone(),
+                        );
+                        let init_stack_depth = self.switch_config_expr_context(Some(obj));
+                        value_ty = self.expr(&assign_stmt.value);
+                        self.clear_config_expr_context(init_stack_depth as usize, false)
+                    }
+                    TypeKind::Dict(_) => {
+                        value_ty = self.expr(&assign_stmt.value);
+                        // update attrs
+                        self.set_type_to_scope(name, value_ty.clone(), target.get_span_pos());
+                    }
+                    _ => {
+                        value_ty = self.expr(&assign_stmt.value);
+                    }
                 }
                 self.must_assignable_to(
                     value_ty.clone(),
