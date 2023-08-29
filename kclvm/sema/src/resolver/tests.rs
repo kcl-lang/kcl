@@ -274,12 +274,12 @@ fn test_lint() {
             range: (
                 Position {
                     filename: filename.clone(),
-                    line: 10,
+                    line: 11,
                     column: Some(0),
                 },
                 Position {
                     filename: filename.clone(),
-                    line: 10,
+                    line: 11,
                     column: Some(20),
                 },
             ),

@@ -284,69 +284,65 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
 
     fn walk_quant_expr(&mut self, quant_expr: &'ctx ast::QuantExpr) -> Self::Result {
         let iter_ty = self.expr(&quant_expr.target);
-        if iter_ty.is_any() {
-            iter_ty
-        } else {
-            let (start, end) = (self.ctx.start_pos.clone(), self.ctx.end_pos.clone());
-            self.enter_scope(start, end, ScopeKind::Loop);
-            let (mut key_name, mut val_name) = (None, None);
-            let mut target_node = None;
-            for (i, target) in quant_expr.variables.iter().enumerate() {
-                if target.node.names.is_empty() {
-                    continue;
-                }
-                if target.node.names.len() > 1 {
-                    self.handler.add_compile_error(
-                        "loop variables can only be ordinary identifiers",
-                        target.get_span_pos(),
-                    );
-                }
-                target_node = Some(target);
-                let name = &target.node.names[0].node;
-                if i == 0 {
-                    key_name = Some(name.to_string());
-                } else if i == 1 {
-                    val_name = Some(name.to_string())
-                } else {
-                    self.handler.add_compile_error(
-                        &format!(
-                            "the number of loop variables is {}, which can only be 1 or 2",
-                            quant_expr.variables.len()
-                        ),
-                        target.get_span_pos(),
-                    );
-                    break;
-                }
-                self.ctx.local_vars.push(name.to_string());
-                let (start, end) = target.get_span_pos();
-                self.insert_object(
-                    name,
-                    ScopeObject {
-                        name: name.to_string(),
-                        start,
-                        end,
-                        ty: self.any_ty(),
-                        kind: ScopeObjectKind::Variable,
-                        used: false,
-                        doc: None,
-                    },
+        let (start, end) = (self.ctx.start_pos.clone(), self.ctx.end_pos.clone());
+        self.enter_scope(start, end, ScopeKind::Loop);
+        let (mut key_name, mut val_name) = (None, None);
+        let mut target_node = None;
+        for (i, target) in quant_expr.variables.iter().enumerate() {
+            if target.node.names.is_empty() {
+                continue;
+            }
+            if target.node.names.len() > 1 {
+                self.handler.add_compile_error(
+                    "loop variables can only be ordinary identifiers",
+                    target.get_span_pos(),
                 );
             }
-            self.do_loop_type_check(
-                target_node.unwrap(),
-                key_name,
-                val_name,
-                iter_ty.clone(),
-                quant_expr.target.get_span_pos(),
-            );
-            self.expr_or_any_type(&quant_expr.if_cond);
-            let item_ty = self.expr(&quant_expr.test);
-            self.leave_scope();
-            match &quant_expr.op {
-                ast::QuantOperation::All | ast::QuantOperation::Any => self.bool_ty(),
-                ast::QuantOperation::Filter => iter_ty,
-                ast::QuantOperation::Map => Rc::new(Type::list(item_ty)),
+            target_node = Some(target);
+            let name = &target.node.names[0].node;
+            if i == 0 {
+                key_name = Some(name.to_string());
+            } else if i == 1 {
+                val_name = Some(name.to_string())
+            } else {
+                self.handler.add_compile_error(
+                    &format!(
+                        "the number of loop variables is {}, which can only be 1 or 2",
+                        quant_expr.variables.len()
+                    ),
+                    target.get_span_pos(),
+                );
+                break;
             }
+            self.ctx.local_vars.push(name.to_string());
+            let (start, end) = target.get_span_pos();
+            self.insert_object(
+                name,
+                ScopeObject {
+                    name: name.to_string(),
+                    start,
+                    end,
+                    ty: self.any_ty(),
+                    kind: ScopeObjectKind::Variable,
+                    used: false,
+                    doc: None,
+                },
+            );
+        }
+        self.do_loop_type_check(
+            target_node.unwrap(),
+            key_name,
+            val_name,
+            iter_ty.clone(),
+            quant_expr.target.get_span_pos(),
+        );
+        self.expr_or_any_type(&quant_expr.if_cond);
+        let item_ty = self.expr(&quant_expr.test);
+        self.leave_scope();
+        match &quant_expr.op {
+            ast::QuantOperation::All | ast::QuantOperation::Any => self.bool_ty(),
+            ast::QuantOperation::Filter => iter_ty,
+            ast::QuantOperation::Map => Rc::new(Type::list(item_ty)),
         }
     }
 
