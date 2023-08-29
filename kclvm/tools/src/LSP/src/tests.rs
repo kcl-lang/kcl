@@ -30,13 +30,12 @@ use lsp_types::Url;
 use lsp_types::WorkspaceEdit;
 use lsp_types::{Position, Range, TextDocumentContentChangeEvent};
 use parking_lot::RwLock;
-use ra_ap_vfs::AbsPathBuf;
-use ra_ap_vfs::Vfs;
+use proc_macro_crate::bench_test;
 
 use crate::completion::KCLCompletionItem;
 use crate::document_symbol::document_symbol;
 use crate::formatting::format;
-use crate::from_lsp::{abs_path, file_path_from_url, text_range};
+use crate::from_lsp::{file_path_from_url, text_range};
 use crate::hover::hover;
 use crate::quick_fix::quick_fix;
 use crate::to_lsp::kcl_diag_to_lsp_diags;
@@ -88,6 +87,7 @@ fn compare_goto_res(res: Option<GotoTypeDefinitionResponse>, pos: (&String, u32,
 }
 
 #[test]
+#[bench_test]
 fn diagnostics_test() {
     fn build_lsp_diag(
         pos: (u32, u32, u32, u32),
@@ -230,6 +230,7 @@ fn diagnostics_test() {
 }
 
 #[test]
+#[bench_test]
 fn quick_fix_test() {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let mut test_file = path.clone();
@@ -322,6 +323,7 @@ fn quick_fix_test() {
 }
 
 #[test]
+#[bench_test]
 fn goto_import_pkg_test() {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let (file, program, prog_scope, _) =
@@ -357,6 +359,7 @@ fn goto_import_pkg_test() {
 }
 
 #[test]
+#[bench_test]
 fn goto_import_file_test() {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
@@ -385,6 +388,7 @@ fn goto_import_file_test() {
 }
 
 #[test]
+#[bench_test]
 fn goto_pkg_prefix_def_test() {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
@@ -422,6 +426,7 @@ fn goto_pkg_prefix_def_test() {
 }
 
 #[test]
+#[bench_test]
 fn goto_schema_def_test() {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
@@ -445,6 +450,7 @@ fn goto_schema_def_test() {
 }
 
 #[test]
+#[bench_test]
 fn goto_var_def_in_config_and_config_if_test() {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
@@ -488,6 +494,7 @@ fn goto_var_def_in_config_and_config_if_test() {
 }
 
 #[test]
+#[bench_test]
 fn goto_var_def_in_dict_comp_test() {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
@@ -545,6 +552,7 @@ fn goto_dict_key_def_test() {
 }
 
 #[test]
+#[bench_test]
 fn goto_schema_attr_def_test() {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
@@ -568,6 +576,7 @@ fn goto_schema_attr_def_test() {
 }
 
 #[test]
+#[bench_test]
 fn goto_schema_attr_def_test1() {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
@@ -591,6 +600,7 @@ fn goto_schema_attr_def_test1() {
 }
 
 #[test]
+#[bench_test]
 fn test_goto_identifier_names() {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
@@ -638,6 +648,7 @@ fn test_goto_identifier_names() {
 }
 
 #[test]
+#[bench_test]
 fn goto_identifier_def_test() {
     let (file, program, prog_scope, _) =
         compile_test_file("src/test_data/goto_def_test/goto_def.k");
@@ -653,6 +664,7 @@ fn goto_identifier_def_test() {
 }
 
 #[test]
+#[bench_test]
 fn goto_assign_type_test() {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
@@ -674,6 +686,7 @@ fn goto_assign_type_test() {
 }
 
 #[test]
+#[bench_test]
 fn goto_schema_attr_ty_def_test() {
     // test goto schema attr type definition: p1: pkg.Person
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -697,6 +710,7 @@ fn goto_schema_attr_ty_def_test() {
 }
 
 #[test]
+#[bench_test]
 fn goto_schema_attr_ty_def_test1() {
     // test goto schema attr type definition: p2: [pkg.Person]
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -720,6 +734,7 @@ fn goto_schema_attr_ty_def_test1() {
 }
 
 #[test]
+#[bench_test]
 fn goto_schema_attr_ty_def_test3() {
     // test goto schema attr type definition: p3: {str: pkg.Person}
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -743,6 +758,7 @@ fn goto_schema_attr_ty_def_test3() {
 }
 
 #[test]
+#[bench_test]
 fn goto_schema_attr_ty_def_test4() {
     // test goto schema attr type definition(Person): p4: pkg.Person | pkg.Person1
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -766,6 +782,7 @@ fn goto_schema_attr_ty_def_test4() {
 }
 
 #[test]
+#[bench_test]
 fn goto_schema_attr_ty_def_test5() {
     // test goto schema attr type definition(Person1): p4: pkg.Person | pkg.Person1
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -789,6 +806,7 @@ fn goto_schema_attr_ty_def_test5() {
 }
 
 #[test]
+#[bench_test]
 fn goto_local_var_def_test() {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
@@ -828,6 +846,7 @@ fn goto_local_var_def_test() {
 }
 
 #[test]
+#[bench_test]
 fn test_apply_document_changes() {
     macro_rules! change {
         [$($sl:expr, $sc:expr; $el:expr, $ec:expr => $text:expr),+] => {
@@ -908,6 +927,7 @@ fn test_apply_document_changes() {
 }
 
 #[test]
+#[bench_test]
 fn var_completion_test() {
     let (file, program, prog_scope, _) =
         compile_test_file("src/test_data/completion_test/dot/completion.k");
@@ -966,6 +986,7 @@ fn var_completion_test() {
 }
 
 #[test]
+#[bench_test]
 fn dot_completion_test() {
     let (file, program, prog_scope, _) =
         compile_test_file("src/test_data/completion_test/dot/completion.k");
@@ -1082,6 +1103,7 @@ fn dot_completion_test() {
 }
 
 #[test]
+#[bench_test]
 fn schema_doc_hover_test() {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
@@ -1132,6 +1154,7 @@ fn schema_doc_hover_test() {
 }
 
 #[test]
+#[bench_test]
 fn schema_doc_hover_test1() {
     let (file, program, prog_scope, _) = compile_test_file("src/test_data/hover_test/hover.k");
 
@@ -1162,6 +1185,7 @@ fn schema_doc_hover_test1() {
 }
 
 #[test]
+#[bench_test]
 fn schema_attr_hover_test() {
     let (file, program, prog_scope, _) = compile_test_file("src/test_data/hover_test/hover.k");
 
@@ -1235,6 +1259,7 @@ fn build_document_symbol(
 }
 
 #[test]
+#[bench_test]
 fn document_symbol_test() {
     let (file, program, prog_scope, _) = compile_test_file("src/test_data/document_symbol.k");
 
@@ -1265,6 +1290,7 @@ fn document_symbol_test() {
 }
 
 #[test]
+#[bench_test]
 fn file_path_from_url_test() {
     if cfg!(windows) {
         let url =
@@ -1279,6 +1305,7 @@ fn file_path_from_url_test() {
 }
 
 #[test]
+#[bench_test]
 fn goto_import_external_file_test() {
     let path = PathBuf::from(".")
         .join("src")
@@ -1327,6 +1354,7 @@ fn goto_import_external_file_test() {
 }
 
 #[test]
+#[bench_test]
 fn format_signle_file_test() {
     const FILE_INPUT_SUFFIX: &str = ".input";
     const FILE_OUTPUT_SUFFIX: &str = ".golden";
@@ -1399,6 +1427,7 @@ fn format_signle_file_test() {
 }
 
 #[test]
+#[bench_test]
 fn format_range_test() {
     let (file, program, prog_scope, _) = compile_test_file("src/test_data/format/format_range.k");
     let lsp_range = Range::new(Position::new(0, 0), Position::new(11, 0));

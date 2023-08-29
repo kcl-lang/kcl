@@ -16,3 +16,4 @@ mod goto_def;
 mod hover;
 mod quick_fix;
 mod request;
+mod test_utils;
