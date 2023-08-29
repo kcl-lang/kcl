@@ -735,7 +735,7 @@ pub struct ParenExpr {
     pub expr: NodeRef<Expr>,
 }
 
-/// QuantExpr, e.g.
+/// QuantExpr, <op> <variables> in <target> {<test> <if_cond>}  e.g.
 /// ```kcl
 /// all x in collection {x > 0}
 /// any y in collection {y < 0}
