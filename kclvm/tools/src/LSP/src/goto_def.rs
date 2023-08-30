@@ -124,6 +124,7 @@ pub(crate) fn find_def(
     }
 
     let (inner_expr, parent) = inner_most_expr_in_stmt(&node.node, kcl_pos, None);
+
     if let Some(expr) = inner_expr {
         if let Expr::Identifier(id) = expr.node {
             let id_node = Node::node_with_pos(

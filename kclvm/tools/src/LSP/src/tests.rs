@@ -946,7 +946,7 @@ fn var_completion_test() {
     items.extend(
         vec![
             "", // generate from error recovery of "pkg."
-            "subpkg", "math", "Person", "p", "p1", "p2", "p3", "p4",
+            "subpkg", "math", "Person", "P", "p", "p1", "p2", "p3", "p4", "aaaa",
         ]
         .iter()
         .map(|name| KCLCompletionItem {
@@ -1085,7 +1085,7 @@ fn dot_completion_test() {
 
     // test completion for literal str builtin function
     let pos = KCLPos {
-        filename: file,
+        filename: file.clone(),
         line: 21,
         column: Some(4),
     };
@@ -1098,7 +1098,24 @@ fn dot_completion_test() {
         });
     }
     let expect: CompletionResponse = into_completion_items(&items).into();
+    items.clear();
 
+    assert_eq!(got, expect);
+
+    let pos = KCLPos {
+        filename: file,
+        line: 30,
+        column: Some(11),
+    };
+
+    let got = completion(Some('.'), &program, &pos, &prog_scope).unwrap();
+    items.insert(KCLCompletionItem {
+        label: "__settings__".to_string(),
+    });
+    items.insert(KCLCompletionItem {
+        label: "a".to_string(),
+    });
+    let expect: CompletionResponse = into_completion_items(&items).into();
     assert_eq!(got, expect);
 }
 
