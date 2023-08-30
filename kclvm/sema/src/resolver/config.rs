@@ -390,11 +390,15 @@ impl<'ctx> Resolver<'ctx> {
         &mut self,
         entries: &'ctx [ast::NodeRef<ast::ConfigEntry>],
     ) -> TypeRef {
-        self.enter_scope(
-            self.ctx.start_pos.clone(),
-            self.ctx.end_pos.clone(),
-            ScopeKind::Config,
-        );
+        let (start, end) = match entries.len() {
+            0 => (self.ctx.start_pos.clone(), self.ctx.end_pos.clone()),
+            1 => entries[0].get_span_pos(),
+            _ => (
+                entries.first().unwrap().get_pos(),
+                entries.last().unwrap().get_end_pos(),
+            ),
+        };
+        self.enter_scope(start, end, ScopeKind::Config);
         let mut key_types: Vec<TypeRef> = vec![];
         let mut val_types: Vec<TypeRef> = vec![];
         let mut attrs = IndexMap::new();

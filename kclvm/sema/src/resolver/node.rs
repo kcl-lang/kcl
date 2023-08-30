@@ -284,7 +284,10 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
 
     fn walk_quant_expr(&mut self, quant_expr: &'ctx ast::QuantExpr) -> Self::Result {
         let iter_ty = self.expr(&quant_expr.target);
-        let (start, end) = (self.ctx.start_pos.clone(), self.ctx.end_pos.clone());
+        let (start, mut end) = quant_expr.test.get_span_pos();
+        if let Some(if_cond) = &quant_expr.if_cond {
+            end = if_cond.get_end_pos();
+        }
         self.enter_scope(start, end, ScopeKind::Loop);
         let (mut key_name, mut val_name) = (None, None);
         let mut target_node = None;

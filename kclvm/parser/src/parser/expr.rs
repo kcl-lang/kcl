@@ -1512,6 +1512,7 @@ impl<'a> Parser<'a> {
     ///   (ELSE COLON if_entry_exec_block)?
     fn parse_if_entry_expr(&mut self) -> NodeRef<Expr> {
         let mut need_skip_newlines = false;
+        let token = self.token;
 
         let mut if_entry = {
             self.bump_keyword(kw::If);
@@ -1616,13 +1617,10 @@ impl<'a> Parser<'a> {
 
             if_entry.node.orelse = Some(Box::new(t));
         }
-        Box::new(Node::new(
+
+        Box::new(Node::node(
             Expr::ConfigIfEntry(if_entry.node),
-            if_entry.filename,
-            if_entry.line,
-            if_entry.column,
-            if_entry.end_line,
-            if_entry.end_column,
+            self.sess.struct_token_loc(token, self.prev_token),
         ))
     }
 
@@ -1768,8 +1766,16 @@ impl<'a> Parser<'a> {
                 };
 
                 let expr1 = this.parse_expr();
+                let expr0_pos = expr0.clone().unwrap().pos();
+                let expr1_pos = expr1.pos();
 
-                let pos = expr1.pos();
+                let pos = (
+                    expr0_pos.0,
+                    expr0_pos.1,
+                    expr0_pos.2,
+                    expr1_pos.3,
+                    expr1_pos.4,
+                );
 
                 body.items.push(node_ref!(
                     ConfigEntry {
@@ -1801,7 +1807,6 @@ impl<'a> Parser<'a> {
         if need_skip_newlines {
             self.skip_newlines();
             self.bump_token(TokenKind::Dedent);
-
             Box::new(Node::node(
                 body,
                 self.sess.struct_token_loc(token, self.prev_token),
