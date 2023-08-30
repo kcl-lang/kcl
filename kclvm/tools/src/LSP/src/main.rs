@@ -16,7 +16,6 @@ mod notification;
 mod quick_fix;
 mod request;
 mod state;
-mod test_utils;
 mod to_lsp;
 mod util;
 

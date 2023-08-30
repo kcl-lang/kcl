@@ -1305,7 +1305,6 @@ fn file_path_from_url_test() {
 }
 
 #[test]
-#[bench_test]
 fn goto_import_external_file_test() {
     let path = PathBuf::from(".")
         .join("src")
@@ -1354,7 +1353,6 @@ fn goto_import_external_file_test() {
 }
 
 #[test]
-#[bench_test]
 fn format_signle_file_test() {
     const FILE_INPUT_SUFFIX: &str = ".input";
     const FILE_OUTPUT_SUFFIX: &str = ".golden";
