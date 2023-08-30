@@ -445,6 +445,76 @@ fn goto_schema_def_test() {
 }
 
 #[test]
+fn goto_var_def_in_config_and_config_if_test() {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+
+    let (file, program, prog_scope, _) =
+        compile_test_file("src/test_data/goto_def_test/goto_def.k");
+
+    let mut expected_path = path;
+    expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
+
+    let pos = KCLPos {
+        filename: file.clone(),
+        line: 67,
+        column: Some(36),
+    };
+    let res = goto_definition(&program, &pos, &prog_scope);
+    compare_goto_res(res, (&file, 65, 11, 65, 14));
+
+    let pos = KCLPos {
+        filename: file.clone(),
+        line: 67,
+        column: Some(44),
+    };
+    let res = goto_definition(&program, &pos, &prog_scope);
+    compare_goto_res(res, (&file, 65, 16, 65, 21));
+
+    let pos = KCLPos {
+        filename: file.clone(),
+        line: 64,
+        column: Some(11),
+    };
+    let res = goto_definition(&program, &pos, &prog_scope);
+    compare_goto_res(res, (&file, 69, 6, 69, 10));
+
+    let pos = KCLPos {
+        filename: file.clone(),
+        line: 67,
+        column: Some(10),
+    };
+    let res = goto_definition(&program, &pos, &prog_scope);
+    compare_goto_res(res, (&file, 69, 6, 69, 10));
+}
+
+#[test]
+fn goto_var_def_in_dict_comp_test() {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+
+    let (file, program, prog_scope, _) =
+        compile_test_file("src/test_data/goto_def_test/goto_def.k");
+
+    let mut expected_path = path;
+    expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
+
+    let pos = KCLPos {
+        filename: file.clone(),
+        line: 77,
+        column: Some(68),
+    };
+    let res = goto_definition(&program, &pos, &prog_scope);
+    compare_goto_res(res, (&file, 76, 143, 76, 145));
+
+    let pos = KCLPos {
+        filename: file.clone(),
+        line: 77,
+        column: Some(61),
+    };
+    let res = goto_definition(&program, &pos, &prog_scope);
+    compare_goto_res(res, (&file, 76, 143, 76, 145));
+}
+
+#[test]
 fn goto_dict_key_def_test() {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 

@@ -46,11 +46,11 @@ impl ConfigNestAttrTransformer {
                         let config_expr = ast::ConfigExpr {
                             items: vec![Box::new(ast::Node::new(
                                 entry_value,
-                                key.filename.clone(),
-                                key.line,
-                                key.column,
-                                key.end_line,
-                                key.end_column,
+                                config_entry.filename.clone(),
+                                config_entry.line,
+                                config_entry.column,
+                                config_entry.end_line,
+                                config_entry.end_column,
                             ))],
                         };
                         value = Box::new(ast::Node::new(

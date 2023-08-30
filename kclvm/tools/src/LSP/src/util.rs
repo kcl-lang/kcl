@@ -447,7 +447,17 @@ pub(crate) fn inner_most_expr(
             walk_if_contains!(starred_exor.value, pos, schema_def);
             (Some(expr.clone()), schema_def)
         }
-        Expr::DictComp(_) => (Some(expr.clone()), schema_def),
+        Expr::DictComp(dict_comp) => {
+            walk_option_if_contains!(dict_comp.entry.key, pos, schema_def);
+            walk_if_contains!(dict_comp.entry.value, pos, schema_def);
+
+            for generator in &dict_comp.generators {
+                if generator.contains_pos(pos) {
+                    walk_if_contains_with_new_expr!(generator, pos, schema_def, Expr::CompClause);
+                }
+            }
+            (Some(expr.clone()), schema_def)
+        }
         Expr::ConfigIfEntry(config_if_entry_expr) => {
             walk_if_contains!(config_if_entry_expr.if_cond, pos, schema_def);
             for item in &config_if_entry_expr.items {

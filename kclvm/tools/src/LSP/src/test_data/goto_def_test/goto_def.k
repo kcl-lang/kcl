@@ -57,3 +57,23 @@ schema_map: {str: Person} = {
 }
 
 p3 = schema_map.person.n.name
+
+params = option("params")
+toMatch = params.toMatch
+toAdd = params.toAdd
+items = [item | {
+   # If all annotations are matched, patch more annotations
+    if all key, value in toMatch {
+        item.metadata.annotations[key] == value
+    }:
+       metadata.annotations: toAdd
+} for item in option("items")]
+
+
+capabilities = option("params").capabilities or ["SETUID", "SETFCAP"]
+items1 = [item | {
+    if item.kind == "Pod":
+        spec.containers: [{
+            "securityContext": {"capabilities": {"add" += [cc] if cc not in (container?.securityContext?.capabilities?.drop or []) else [] for cc in capabilities}}
+        } for container in item.spec.containers]
+} for item in option("items")]
