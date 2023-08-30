@@ -24,3 +24,7 @@ p4 = Person{
     
 }
 
+schema P:
+    a: int = 1
+
+aaaa = P{}.

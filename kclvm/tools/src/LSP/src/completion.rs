@@ -162,7 +162,7 @@ pub(crate) fn get_completion(
     pos: &KCLPos,
     prog_scope: &ProgramScope,
 ) -> IndexSet<KCLCompletionItem> {
-    let expr = inner_most_expr_in_stmt(&stmt.node, pos, None).0;
+    let (expr, parent) = inner_most_expr_in_stmt(&stmt.node, pos, None);
     match expr {
         Some(node) => {
             let mut items: IndexSet<KCLCompletionItem> = IndexSet::new();
@@ -233,6 +233,32 @@ pub(crate) fn get_completion(
                         });
                     }
                 }
+                Expr::Config(config_expr) => match parent {
+                    Some(schema_expr) => {
+                        if let Expr::Schema(schema_expr) = schema_expr.node {
+                            let schema_def =
+                                find_def(stmt, &schema_expr.name.get_end_pos(), prog_scope);
+                            if let Some(schema) = schema_def {
+                                match schema {
+                                    Definition::Object(obj) => {
+                                        let schema_type = obj.ty.into_schema_type();
+                                        items.extend(
+                                            schema_type
+                                                .attrs
+                                                .keys()
+                                                .map(|s| KCLCompletionItem {
+                                                    label: s.to_string(),
+                                                })
+                                                .collect::<IndexSet<KCLCompletionItem>>(),
+                                        );
+                                    }
+                                    Definition::Scope(_) => {}
+                                }
+                            }
+                        }
+                    }
+                    None => {}
+                },
                 _ => {}
             }
 
