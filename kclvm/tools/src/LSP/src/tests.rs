@@ -856,7 +856,7 @@ fn var_completion_test() {
     items.extend(
         vec![
             "", // generate from error recovery of "pkg."
-            "subpkg", "math", "Person", "p", "p1", "p2", "p3", "p4",
+            "subpkg", "math", "Person", "P", "p", "p1", "p2", "p3", "p4", "aaaa",
         ]
         .iter()
         .map(|name| KCLCompletionItem {
