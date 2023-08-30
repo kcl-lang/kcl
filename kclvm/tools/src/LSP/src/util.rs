@@ -1,8 +1,3 @@
-use std::cell::RefCell;
-use std::path::{Path, PathBuf};
-use std::rc::Rc;
-use std::{fs, sync::Arc};
-
 use indexmap::{IndexMap, IndexSet};
 use kclvm_ast::ast::{
     ConfigEntry, Expr, Identifier, Node, NodeRef, PosTuple, Program, SchemaExpr, Stmt, Type,
@@ -24,6 +19,10 @@ use lsp_types::Url;
 use parking_lot::{RwLock, RwLockReadGuard};
 use ra_ap_vfs::{FileId, Vfs};
 use serde::{de::DeserializeOwned, Serialize};
+use std::cell::RefCell;
+use std::path::{Path, PathBuf};
+use std::rc::Rc;
+use std::{fs, sync::Arc};
 
 use crate::from_lsp;
 
