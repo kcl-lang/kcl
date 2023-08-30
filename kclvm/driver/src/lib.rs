@@ -77,7 +77,7 @@ pub fn canonicalize_input_files(
     }
 
     // Get the root path of the project
-    let pkgroot = kclvm_config::modfile::get_pkg_root_from_paths(&kcl_paths)?;
+    let pkgroot = kclvm_config::modfile::get_pkg_root_from_paths(&kcl_paths, work_dir)?;
 
     // The second traversal replaces ${KCL_MOD} with the project root path
     kcl_paths = kcl_paths

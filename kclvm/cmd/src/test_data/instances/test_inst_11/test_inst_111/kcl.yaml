@@ -1,0 +1,6 @@
+kcl_cli_configs:
+  file:
+    - ../sub/main.k
+    - ./main.k
+  package_maps:
+    test_inst_11: ./src/test_data/instances/test_inst_11

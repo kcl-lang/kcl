@@ -67,8 +67,9 @@ codecov:
 codecov-lcov:
 	rustup component add llvm-tools-preview
 	cargo install cargo-llvm-cov
-	mkdir $(PWD)/.kclvm
-	cargo llvm-cov --lcov --output-path $(PWD)/.kclvm/lcov.info --workspace --ignore-filename-regex gpyrpc.rs -- --nocapture
+	rm -rf $(PWD)/.kclvm_cov
+	mkdir $(PWD)/.kclvm_cov
+	cargo llvm-cov --lcov --output-path $(PWD)/.kclvm_cov/lcov.info --workspace --ignore-filename-regex gpyrpc.rs -- --nocapture
 
 # Test runtime libaries using python functions
 test-runtime: install-kclvm-py install-pytest

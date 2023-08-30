@@ -212,7 +212,7 @@ impl Entry {
 /// // [`package_maps`] is a map to show the real path of the mod relative path [`kcl2`].
 /// let mut opts = LoadProgramOptions::default();
 /// opts.package_maps.insert("kcl2".to_string(), testpath.join("kcl2").to_str().unwrap().to_string());
-///
+/// opts.work_dir = kcl1_path.display().to_string();
 /// // [`get_compile_entries_from_paths`] will return the map of package name to package root real path.
 /// let entries = get_compile_entries_from_paths(
 ///     &[
@@ -345,50 +345,46 @@ pub fn get_compile_entries_from_paths(
         result.push_entry(entry);
     }
 
-    // The main 'kcl.mod' path can be found only once.
-    // Replace all the '${KCL_MOD}' with the real path of main 'kcl.mod'.
-    if result
+    let pkg_root = if result
         .get_unique_normal_paths_by_name(kclvm_ast::MAIN_PKG)
         .len()
         == 1
     {
-        // If the [`ModRelativePath`] with preffix '${KCL_MOD}'.
-        // Replace the '${KCL_MOD}' by the root path of package '__main__'.
+        // If the 'kcl.mod' can be found only once, the package root path will be the path of the 'kcl.mod'.
+        result
+            .get_unique_normal_paths_by_name(kclvm_ast::MAIN_PKG)
+            .get(0)
+            .unwrap()
+            .to_string()
+    } else {
+        // If the 'kcl.mod' can be found more than once, the package root path will be the 'work_dir'.
+        if let Some(root_work_dir) = get_pkg_root(&opts.work_dir) {
+            root_work_dir
+        } else {
+            "".to_string()
+        }
+    };
 
-        // Calculate the root path of package '__main__'.
-        let pkg_root;
-        let main_entry = result
-            .get_nth_entry_by_name(0, kclvm_ast::MAIN_PKG)
-            .ok_or_else(|| format!("program entry not found in {:?}", file_paths))?;
-        pkg_root = main_entry.path().to_string();
+    // Replace the '${KCL_MOD}' of all the paths with package name '__main__'.
+    result.apply_to_all_entries(|entry| {
+        let path = ModRelativePath::from(entry.path().to_string());
+        if entry.name() == kclvm_ast::MAIN_PKG
+            && path.is_relative_path().map_err(|err| err.to_string())?
+        {
+            entry.set_path(pkg_root.to_string());
+            entry.extend_k_files(get_main_files_from_pkg_path(
+                &path
+                    .canonicalize_by_root_path(&pkg_root)
+                    .map_err(|err| err.to_string())?,
+                &pkg_root,
+                &kclvm_ast::MAIN_PKG.to_string(),
+                opts,
+            )?);
+        }
+        return Ok(());
+    })?;
 
-        // Replace the '${KCL_MOD}' of all the paths with package name '__main__'.
-        result.apply_to_all_entries(|entry| {
-            let path = ModRelativePath::from(entry.path().to_string());
-            if entry.name() == kclvm_ast::MAIN_PKG
-                && path.is_relative_path().map_err(|err| err.to_string())?
-            {
-                entry.set_path(pkg_root.to_string());
-                entry.extend_k_files(get_main_files_from_pkg_path(
-                    &path
-                        .canonicalize_by_root_path(&pkg_root)
-                        .map_err(|err| err.to_string())?,
-                    &pkg_root,
-                    &kclvm_ast::MAIN_PKG.to_string(),
-                    opts,
-                )?);
-            }
-            return Ok(());
-        })?;
-        return Ok(result);
-    }
-
-    // If there are more than one main 'kcl.mod' files, return error.
-    // the root path of package '__main__' can only one.
-    Err(format!(
-        "conflict kcl.mod file paths: {:?}",
-        result.get_unique_normal_paths_by_name(kclvm_ast::MAIN_PKG)
-    ))
+    return Ok(result);
 }
 
 /// Get files in the main package with the package root.

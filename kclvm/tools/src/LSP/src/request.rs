@@ -1,5 +1,5 @@
+use anyhow::Ok;
 use crossbeam_channel::Sender;
-
 use lsp_types::TextEdit;
 use ra_ap_vfs::VfsPath;
 use std::time::Instant;
