@@ -448,7 +448,6 @@ fn test_get_compile_entries_from_paths() {
         "kcl2".to_string(),
         testpath.join("kcl2").to_str().unwrap().to_string(),
     );
-    opts.work_dir = kcl1_path.display().to_string();
 
     // [`get_compile_entries_from_paths`] will return the map of package name to package root real path.
     let entries = get_compile_entries_from_paths(

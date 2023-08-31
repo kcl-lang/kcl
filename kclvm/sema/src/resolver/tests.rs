@@ -8,11 +8,9 @@ use crate::ty::{Type, TypeKind};
 use kclvm_ast::ast;
 use kclvm_ast::pos::ContainsPos;
 use kclvm_error::*;
-use kclvm_parser::LoadProgramOptions;
 use kclvm_parser::ParseSession;
 use kclvm_parser::{load_program, parse_program};
 use std::path::Path;
-use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::Arc;
 
@@ -257,18 +255,8 @@ fn test_resolve_program_module_optional_select_fail() {
 #[test]
 fn test_lint() {
     let sess = Arc::new(ParseSession::default());
-    let mut opts = LoadProgramOptions::default();
-    opts.work_dir = PathBuf::from("./src/resolver/test_data/")
-        .canonicalize()
-        .unwrap()
-        .display()
-        .to_string();
-    let mut program = load_program(
-        sess.clone(),
-        &["./src/resolver/test_data/lint.k"],
-        Some(opts),
-    )
-    .unwrap();
+    let mut program =
+        load_program(sess.clone(), &["./src/resolver/test_data/lint.k"], None).unwrap();
     pre_process_program(&mut program);
     let mut resolver = Resolver::new(&program, Options::default());
     resolver.resolve_import();
@@ -403,16 +391,10 @@ See also: kusion_models/core/v1/metadata.k."
 #[test]
 fn test_pkg_scope() {
     let sess = Arc::new(ParseSession::default());
-    let mut opt = LoadProgramOptions::default();
-    opt.work_dir = PathBuf::from("./src/resolver/test_data/")
-        .canonicalize()
-        .unwrap()
-        .display()
-        .to_string();
     let mut program = load_program(
         sess.clone(),
         &["./src/resolver/test_data/pkg_scope.k"],
-        Some(opt),
+        None,
     )
     .unwrap();
     let scope = resolve_program(&mut program);

@@ -15,6 +15,7 @@ use crate::LoadProgramOptions;
 /// The reason why the [`Entries`] is not an [`IndexMap`] is that the [`entries`] is duplicable and ordered.
 #[derive(Default, Debug)]
 pub struct Entries {
+    root_path: String,
     entries: VecDeque<Entry>,
 }
 
@@ -108,6 +109,11 @@ impl Entries {
     {
         self.entries.iter_mut().try_for_each(f)?;
         return Ok(());
+    }
+
+    /// [`get_root_path`] will return the root path of [`Entries`].
+    pub fn get_root_path(&self) -> &String {
+        &self.root_path
     }
 }
 
@@ -212,7 +218,7 @@ impl Entry {
 /// // [`package_maps`] is a map to show the real path of the mod relative path [`kcl2`].
 /// let mut opts = LoadProgramOptions::default();
 /// opts.package_maps.insert("kcl2".to_string(), testpath.join("kcl2").to_str().unwrap().to_string());
-/// opts.work_dir = kcl1_path.display().to_string();
+/// 
 /// // [`get_compile_entries_from_paths`] will return the map of package name to package root real path.
 /// let entries = get_compile_entries_from_paths(
 ///     &[
@@ -349,6 +355,7 @@ pub fn get_compile_entries_from_paths(
         .get_unique_normal_paths_by_name(kclvm_ast::MAIN_PKG)
         .len()
         == 1
+        && opts.work_dir.is_empty()
     {
         // If the 'kcl.mod' can be found only once, the package root path will be the path of the 'kcl.mod'.
         result
@@ -356,15 +363,22 @@ pub fn get_compile_entries_from_paths(
             .get(0)
             .unwrap()
             .to_string()
-    } else {
+    } else if !opts.work_dir.is_empty() {
         // If the 'kcl.mod' can be found more than once, the package root path will be the 'work_dir'.
         if let Some(root_work_dir) = get_pkg_root(&opts.work_dir) {
             root_work_dir
         } else {
             "".to_string()
         }
+    } else {
+        // If there are more than one main 'kcl.mod' files, return error.
+        // the root path of package '__main__' can only one.
+        return Err(format!(
+            "conflict kcl.mod file paths: {:?}",
+            result.get_unique_normal_paths_by_name(kclvm_ast::MAIN_PKG)
+        ));
     };
-
+    result.root_path = pkg_root.clone();
     // Replace the '${KCL_MOD}' of all the paths with package name '__main__'.
     result.apply_to_all_entries(|entry| {
         let path = ModRelativePath::from(entry.path().to_string());

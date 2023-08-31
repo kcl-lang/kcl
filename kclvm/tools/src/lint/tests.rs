@@ -1,17 +1,9 @@
-use kclvm_parser::LoadProgramOptions;
-
 use super::lint_files;
 use std::path::PathBuf;
 
 #[test]
 fn test_lint() {
-    let mut opts = LoadProgramOptions::default();
-    opts.work_dir = PathBuf::from("./src/lint/test_data")
-        .canonicalize()
-        .unwrap()
-        .display()
-        .to_string();
-    let (errors, warnings) = lint_files(&["./src/lint/test_data/lint.k"], Some(opts));
+    let (errors, warnings) = lint_files(&["./src/lint/test_data/lint.k"], None);
     let msgs = [
         "Importstmt should be placed at the top of the module",
         "Module 'a' is reimported multiple times",

@@ -16,7 +16,6 @@ use compiler_base_macros::bug;
 use compiler_base_session::Session;
 use compiler_base_span::span::new_byte_pos;
 use kclvm_ast::ast;
-use kclvm_config::modfile::get_pkg_root;
 use kclvm_config::modfile::{get_vendor_home, KCL_FILE_EXTENSION, KCL_FILE_SUFFIX, KCL_MOD_FILE};
 use kclvm_error::diagnostic::Range;
 use kclvm_error::{ErrorKind, Message, Style};
@@ -28,7 +27,6 @@ use kclvm_utils::pkgpath::rm_external_pkg_name;
 use lexer::parse_token_streams;
 use parser::Parser;
 use std::collections::HashMap;
-use std::env;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -315,33 +313,7 @@ impl Loader {
     fn _load_main(&mut self) -> Result<ast::Program, String> {
         let compile_entries = get_compile_entries_from_paths(&self.paths, &self.opts)?;
         let mut pkgs = HashMap::new();
-
-        // Calculate the root path.
-        let workdir = if compile_entries
-            .get_unique_paths_by_name(kclvm_ast::MAIN_PKG)
-            .len()
-            == 1
-        {
-            // If only one 'kcl.mod' found, use it as the root path.
-            compile_entries
-                .contains_pkg_name(&kclvm_ast::MAIN_PKG.to_string())
-                .ok_or(format!("main package not found in {:?}", &self.paths))?
-                .path()
-                .to_string()
-        } else {
-            // If more than one 'kcl.mod' or no 'kcl.mod' found,
-            // It will find 'kcl.mod' start from the 'workdir',
-            // If not found, the 'workdir' will be considered as the root path.
-            let opt_work_dir = self.opts.work_dir.to_string();
-            get_pkg_root(&opt_work_dir)
-                .unwrap_or(
-                    env::current_dir()
-                        .map_err(|err| err.to_string())?
-                        .display()
-                        .to_string(),
-                )
-                .to_string()
-        };
+        let workdir = compile_entries.get_root_path().to_string();
 
         debug_assert_eq!(compile_entries.len(), self.paths.len());
 
