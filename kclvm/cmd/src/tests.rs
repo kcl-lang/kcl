@@ -225,6 +225,7 @@ fn test_run_command() {
     test_kcl_path_is_sym_link();
     test_compile_two_kcl_mod();
     test_main_pkg_not_found();
+    test_conflict_mod_file();
     test_instances_with_yaml();
     test_plugin_not_found();
 }
@@ -524,6 +525,23 @@ fn test_main_pkg_not_found() {
             msg,
             "Cannot find the kcl file, please check the file path ${kcl3:KCL_MOD}/main.k"
         ),
+    }
+}
+
+fn test_conflict_mod_file() {
+    let test_case_path = PathBuf::from("./src/test_data/multimod");
+
+    let matches = app().arg_required_else_help(true).get_matches_from(&[
+        ROOT_CMD,
+        "run",
+        &test_case_path.join("kcl1").display().to_string(),
+        &test_case_path.join("kcl2").display().to_string(),
+    ]);
+    let settings = must_build_settings(matches.subcommand_matches("run").unwrap());
+    let sess = Arc::new(ParseSession::default());
+    match exec_program(sess.clone(), &settings.try_into().unwrap()) {
+        Ok(_) => panic!("unreachable code."),
+        Err(msg) => assert!(msg.contains("conflict kcl.mod file paths")),
     }
 }
 
