@@ -56,7 +56,7 @@ jobs:
         uses: coverallsapp/github-action@master
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: ./kclvm/.kclvm/lcov.info
+          path-to-lcov: ./kclvm/.kclvm_cov/lcov.info
 
       - uses: actions/upload-artifact@v3
         with:

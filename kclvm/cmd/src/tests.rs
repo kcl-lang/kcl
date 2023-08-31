@@ -472,6 +472,7 @@ fn test_instances_with_yaml() {
         "test_inst_8",
         "test_inst_9",
         "test_inst_10",
+        "test_inst_11/test_inst_111",
     ];
 
     for case in &test_cases {

@@ -84,7 +84,7 @@ pub struct KCLModFileExpectedSection {
     pub global_version: Option<String>,
 }
 
-pub fn get_pkg_root_from_paths(file_paths: &[String]) -> Result<String, String> {
+pub fn get_pkg_root_from_paths(file_paths: &[String], workdir: String) -> Result<String, String> {
     if file_paths.is_empty() {
         return Err("No input KCL files or paths".to_string());
     }
@@ -107,6 +107,8 @@ pub fn get_pkg_root_from_paths(file_paths: &[String]) -> Result<String, String> 
     }
     if m.len() == 1 {
         return Ok(last_root);
+    } else if !workdir.is_empty() {
+        return Ok(workdir);
     }
 
     Err(format!("conflict kcl.mod file paths: {:?}", m))
@@ -162,17 +164,17 @@ mod modfile_test {
     #[test]
     fn test_get_pkg_root_from_paths() {
         assert_eq!(
-            get_pkg_root_from_paths(&[]),
+            get_pkg_root_from_paths(&[], "".to_string()),
             Err("No input KCL files or paths".to_string())
         );
         assert_eq!(
-            get_pkg_root_from_paths(&["wrong_path".to_string()]),
+            get_pkg_root_from_paths(&["wrong_path".to_string()], "".to_string()),
             Ok("".to_string())
         );
         let expected_root = std::path::Path::new(TEST_ROOT).canonicalize().unwrap();
         let expected = expected_root.adjust_canonicalization();
         assert_eq!(
-            get_pkg_root_from_paths(&[SETTINGS_FILE.to_string()]),
+            get_pkg_root_from_paths(&[SETTINGS_FILE.to_string()], "".to_string()),
             Ok(expected.to_string())
         );
     }

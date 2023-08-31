@@ -313,10 +313,7 @@ impl Loader {
     fn _load_main(&mut self) -> Result<ast::Program, String> {
         let compile_entries = get_compile_entries_from_paths(&self.paths, &self.opts)?;
         let mut pkgs = HashMap::new();
-
-        let main_program_root = compile_entries
-            .contains_pkg_name(&kclvm_ast::MAIN_PKG.to_string())
-            .ok_or(format!("main package not found in {:?}", &self.paths))?;
+        let workdir = compile_entries.get_root_path().to_string();
 
         debug_assert_eq!(compile_entries.len(), self.paths.len());
 
@@ -349,7 +346,7 @@ impl Loader {
         // Insert the complete ast to replace the empty list.
         pkgs.insert(kclvm_ast::MAIN_PKG.to_string(), pkg_files);
         Ok(ast::Program {
-            root: main_program_root.path().to_string(),
+            root: workdir,
             main: kclvm_ast::MAIN_PKG.to_string(),
             pkgs,
         })
