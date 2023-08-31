@@ -218,7 +218,7 @@ impl Entry {
 /// // [`package_maps`] is a map to show the real path of the mod relative path [`kcl2`].
 /// let mut opts = LoadProgramOptions::default();
 /// opts.package_maps.insert("kcl2".to_string(), testpath.join("kcl2").to_str().unwrap().to_string());
-/// 
+///
 /// // [`get_compile_entries_from_paths`] will return the map of package name to package root real path.
 /// let entries = get_compile_entries_from_paths(
 ///     &[
