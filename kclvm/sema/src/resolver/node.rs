@@ -7,7 +7,8 @@ use std::rc::Rc;
 
 use crate::info::is_private_field;
 use crate::ty::{
-    sup, DictType, Parameter, Type, TypeInferMethods, TypeKind, RESERVED_TYPE_IDENTIFIERS,
+    sup, DictType, FunctionType, Parameter, Type, TypeInferMethods, TypeKind,
+    RESERVED_TYPE_IDENTIFIERS,
 };
 
 use super::format::VALID_FORMAT_SPEC_SET;
@@ -516,7 +517,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 &call_expr.func.node,
                 &call_expr.args,
                 &call_expr.keywords,
-                &[],
+                &FunctionType::variadic_func(),
             );
             self.any_ty()
         } else if let TypeKind::Function(func_ty) = &call_ty.kind {
@@ -524,7 +525,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 &call_expr.func.node,
                 &call_expr.args,
                 &call_expr.keywords,
-                &func_ty.params,
+                &func_ty,
             );
             func_ty.return_ty.clone()
         } else if let TypeKind::Schema(schema_ty) = &call_ty.kind {
@@ -539,7 +540,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                     &call_expr.func.node,
                     &call_expr.args,
                     &call_expr.keywords,
-                    &schema_ty.func.params,
+                    &schema_ty.func,
                 );
                 let mut return_ty = schema_ty.clone();
                 return_ty.is_instance = true;
@@ -876,7 +877,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                         &func,
                         &schema_expr.args,
                         &schema_expr.kwargs,
-                        &schema_ty.func.params,
+                        &schema_ty.func,
                     );
                 }
                 self.any_ty()

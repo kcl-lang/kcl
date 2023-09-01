@@ -377,10 +377,24 @@ impl NumberMultiplierType {
 pub struct FunctionType {
     pub doc: String,
     pub params: Vec<Parameter>,
-    pub self_ty: Option<Rc<Type>>,
-    pub return_ty: Rc<Type>,
+    pub self_ty: Option<TypeRef>,
+    pub return_ty: TypeRef,
     pub is_variadic: bool,
     pub kw_only_index: Option<usize>,
+}
+
+impl FunctionType {
+    #[inline]
+    pub fn variadic_func() -> Self {
+        Self {
+            doc: "".to_string(),
+            params: vec![],
+            self_ty: None,
+            return_ty: Type::any_ref(),
+            is_variadic: true,
+            kw_only_index: None,
+        }
+    }
 }
 
 /// The function parameter.
