@@ -1,0 +1,21 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 159
+expression: "crate::tests::parsing_expr_string(r#\"lambda {\"#)"
+---
+Node {
+    node: Lambda(
+        LambdaExpr {
+            args: None,
+            return_type_str: None,
+            body: [],
+            return_ty: None,
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 8,
+}
+

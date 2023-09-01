@@ -792,6 +792,8 @@ impl<'a> Parser<'a> {
         };
 
         loop {
+            let marker = self.mark();
+
             let mut has_close_token = false;
             for token in close_tokens {
                 if *token == self.token.kind {
@@ -846,6 +848,8 @@ impl<'a> Parser<'a> {
             if let TokenKind::Comma = self.token.kind {
                 self.bump();
             }
+
+            self.drop(marker);
         }
 
         self.skip_newlines();

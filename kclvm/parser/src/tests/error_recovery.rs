@@ -155,6 +155,12 @@ parse_expr_snapshot! { joined_string_recovery_2, r#"'${(a +}'"# }
 parse_expr_snapshot! { joined_string_recovery_3, r#"'${a'"# }
 parse_expr_snapshot! { joined_string_recovery_5, r#"'${a + 1 = }'"# }
 parse_expr_snapshot! { joined_string_recovery_6, r#"'${a: json}'"# }
+parse_expr_snapshot! { lambda_recovery_0, r#"lambda"# }
+parse_expr_snapshot! { lambda_recovery_1, r#"lambda {"# }
+parse_expr_snapshot! { lambda_recovery_2, r#"lambda {}"# }
+parse_expr_snapshot! { lambda_recovery_3, r#"{lambda}"# }
+parse_expr_snapshot! { lambda_recovery_4, r#"{lambda{}"# }
+parse_expr_snapshot! { lambda_recovery_5, r#"{lambda a{}"# }
 
 /* Stmt error recovery */
 
