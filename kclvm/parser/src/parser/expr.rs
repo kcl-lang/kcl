@@ -1928,6 +1928,8 @@ impl<'a> Parser<'a> {
         };
 
         loop {
+            let marker = self.mark();
+
             if matches!(
                 self.token.kind,
                 TokenKind::CloseDelim(DelimToken::Brace) | TokenKind::Dedent | TokenKind::Eof
@@ -1940,6 +1942,8 @@ impl<'a> Parser<'a> {
             } else {
                 self.bump();
             }
+
+            self.drop(marker);
         }
 
         // _DEDENT

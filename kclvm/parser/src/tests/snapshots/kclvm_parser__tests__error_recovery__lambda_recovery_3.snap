@@ -1,0 +1,99 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 161
+expression: "crate::tests::parsing_expr_string(r#\"{lambda}\"#)"
+---
+Node {
+    node: Config(
+        ConfigExpr {
+            items: [
+                Node {
+                    node: ConfigEntry {
+                        key: Some(
+                            Node {
+                                node: Lambda(
+                                    LambdaExpr {
+                                        args: Some(
+                                            Node {
+                                                node: Arguments {
+                                                    args: [
+                                                        Node {
+                                                            node: Identifier {
+                                                                names: [
+                                                                    Node {
+                                                                        node: "",
+                                                                        filename: "",
+                                                                        line: 1,
+                                                                        column: 7,
+                                                                        end_line: 1,
+                                                                        end_column: 7,
+                                                                    },
+                                                                ],
+                                                                pkgpath: "",
+                                                                ctx: Load,
+                                                            },
+                                                            filename: "",
+                                                            line: 1,
+                                                            column: 7,
+                                                            end_line: 1,
+                                                            end_column: 7,
+                                                        },
+                                                    ],
+                                                    defaults: [
+                                                        None,
+                                                    ],
+                                                    type_annotation_list: [
+                                                        None,
+                                                    ],
+                                                    ty_list: [
+                                                        None,
+                                                    ],
+                                                },
+                                                filename: "",
+                                                line: 1,
+                                                column: 7,
+                                                end_line: 1,
+                                                end_column: 8,
+                                            },
+                                        ),
+                                        return_type_str: None,
+                                        body: [],
+                                        return_ty: None,
+                                    },
+                                ),
+                                filename: "",
+                                line: 1,
+                                column: 1,
+                                end_line: 1,
+                                end_column: 8,
+                            },
+                        ),
+                        value: Node {
+                            node: Missing(
+                                MissingExpr,
+                            ),
+                            filename: "",
+                            line: 1,
+                            column: 8,
+                            end_line: 1,
+                            end_column: 8,
+                        },
+                        operation: Override,
+                        insert_index: -1,
+                    },
+                    filename: "",
+                    line: 1,
+                    column: 1,
+                    end_line: 1,
+                    end_column: 8,
+                },
+            ],
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 8,
+}
+
