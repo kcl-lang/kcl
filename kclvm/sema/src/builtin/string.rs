@@ -2,7 +2,7 @@ use indexmap::IndexMap;
 use once_cell::sync::Lazy;
 use std::rc::Rc;
 
-use crate::ty::Type;
+use crate::ty::{Parameter, Type};
 
 macro_rules! register_string_member {
     ($($name:ident => $ty:expr)*) => (
@@ -27,7 +27,23 @@ register_string_member! {
     count => Type::function(
         Some(Rc::new(Type::STR)),
         Rc::new(Type::INT),
-        &[],
+        &[
+            Parameter {
+                name: "sub".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+            Parameter {
+                name: "start".to_string(),
+                ty: Type::int_ref(),
+                has_default: true,
+            },
+            Parameter {
+                name: "end".to_string(),
+                ty: Type::int_ref(),
+                has_default: true,
+            },
+        ],
         r#"Return the number of non-overlapping occurrences of substring sub in the range [start, end]. Optional arguments start and end are interpreted as in slice notation."#,
         false,
         None,
@@ -35,7 +51,23 @@ register_string_member! {
     endswith => Type::function(
         Some(Rc::new(Type::STR)),
         Rc::new(Type::BOOL),
-        &[],
+        &[
+            Parameter {
+                name: "val".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+            Parameter {
+                name: "start".to_string(),
+                ty: Type::int_ref(),
+                has_default: true,
+            },
+            Parameter {
+                name: "end".to_string(),
+                ty: Type::int_ref(),
+                has_default: true,
+            },
+        ],
         r#"Return True if the string ends with the specified suffix, otherwise return False. suffix can also be a tuple of suffixes to look for. With optional start, test beginning at that position. With optional end, stop comparing at that position."#,
         false,
         None,
@@ -43,7 +75,23 @@ register_string_member! {
     find => Type::function(
         Some(Rc::new(Type::STR)),
         Rc::new(Type::INT),
-        &[],
+        &[
+            Parameter {
+                name: "sub".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+            Parameter {
+                name: "start".to_string(),
+                ty: Type::int_ref(),
+                has_default: true,
+            },
+            Parameter {
+                name: "end".to_string(),
+                ty: Type::int_ref(),
+                has_default: true,
+            },
+        ],
         r#"Return the lowest index in the string where substring sub is found within the slice s[start:end]. Optional arguments start and end are interpreted as in slice notation. Return -1 if sub is not found."#,
         false,
         None,
@@ -59,7 +107,23 @@ register_string_member! {
     index => Type::function(
         Some(Rc::new(Type::STR)),
         Rc::new(Type::INT),
-        &[],
+        &[
+            Parameter {
+                name: "sub".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+            Parameter {
+                name: "start".to_string(),
+                ty: Type::int_ref(),
+                has_default: true,
+            },
+            Parameter {
+                name: "end".to_string(),
+                ty: Type::int_ref(),
+                has_default: true,
+            },
+        ],
         r#"Like str.find(), but raise an error when the substring is not found."#,
         false,
         None,
@@ -123,9 +187,15 @@ register_string_member! {
     join => Type::function(
         Some(Rc::new(Type::STR)),
         Rc::new(Type::STR),
-        &[],
+        &[
+            Parameter {
+                name: "iter".to_string(),
+                ty: Type::list_ref(Type::any_ref()),
+                has_default: false,
+            },
+        ],
         r#"Return a string which is the concatenation of the strings in iterable. An error will be raised if there are any non-string values in iterable. The separator between elements is the string providing this method."#,
-        true,
+        false,
         None,
     )
     lower => Type::function(
@@ -133,7 +203,7 @@ register_string_member! {
         Rc::new(Type::STR),
         &[],
         r#"Return a copy of the string with all the cased characters converted to lowercase."#,
-        true,
+        false,
         None,
     )
     upper => Type::function(
@@ -141,93 +211,209 @@ register_string_member! {
         Rc::new(Type::STR),
         &[],
         r#""#,
-        true,
+        false,
         None,
     )
     lstrip => Type::function(
         Some(Rc::new(Type::STR)),
         Rc::new(Type::STR),
-        &[],
+        &[
+            Parameter {
+                name: "chars".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+        ],
         r#"Return a copy of the string with leading characters removed. The chars argument is a string specifying the set of characters to be removed. If omitted or None, the chars argument defaults to removing whitespace. The chars argument is not a prefix; rather, all combinations of its values are stripped:"#,
-        true,
+        false,
         None,
     )
     rstrip => Type::function(
         Some(Rc::new(Type::STR)),
         Rc::new(Type::STR),
-        &[],
+        &[
+            Parameter {
+                name: "chars".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+        ],
         r#"Return a copy of the string with trailing characters removed. The chars argument is a string specifying the set of characters to be removed. If omitted or None, the chars argument defaults to removing whitespace. The chars argument is not a suffix; rather, all combinations of its values are stripped:"#,
-        true,
+        false,
         None,
     )
     replace => Type::function(
         Some(Rc::new(Type::STR)),
         Rc::new(Type::STR),
-        &[],
+        &[
+            Parameter {
+                name: "old".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+            Parameter {
+                name: "new".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+            Parameter {
+                name: "count".to_string(),
+                ty: Type::int_ref(),
+                has_default: true,
+            },
+        ],
         r#"Return a copy of the string with all occurrences of substring old replaced by new. If the optional argument count is given, only the first count occurrences are replaced.Return a copy of the string with all occurrences of substring old replaced by new. If the optional argument count is given, only the first count occurrences are replaced."#,
-        true,
+        false,
         None,
     )
     removeprefix => Type::function(
         Some(Rc::new(Type::STR)),
         Rc::new(Type::STR),
-        &[],
+        &[
+            Parameter {
+                name: "prefix".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+        ],
         r#"If the string starts with the prefix string, return string[len(prefix):]. Otherwise, return a copy of the original string."#,
-        true,
+        false,
         None,
     )
     removesuffix => Type::function(
         Some(Rc::new(Type::STR)),
         Rc::new(Type::STR),
-        &[],
+        &[
+            Parameter {
+                name: "suffix".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+        ],
         r#"If the string ends with the suffix string and that suffix is not empty, return string[:-len(suffix)]. Otherwise, return a copy of the original string."#,
-        true,
+        false,
         None,
     )
     rfind => Type::function(
         Some(Rc::new(Type::STR)),
         Rc::new(Type::INT),
-        &[],
+        &[
+            Parameter {
+                name: "sub".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+            Parameter {
+                name: "start".to_string(),
+                ty: Type::int_ref(),
+                has_default: true,
+            },
+            Parameter {
+                name: "end".to_string(),
+                ty: Type::int_ref(),
+                has_default: true,
+            },
+        ],
         r#"Return the highest index in the string where substring sub is found, such that sub is contained within s[start:end]. Optional arguments start and end are interpreted as in slice notation. Return -1 on failure."#,
-        true,
+        false,
         None,
     )
     rindex => Type::function(
         Some(Rc::new(Type::STR)),
         Rc::new(Type::INT),
-        &[],
+        &[
+            Parameter {
+                name: "sub".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+            Parameter {
+                name: "start".to_string(),
+                ty: Type::int_ref(),
+                has_default: true,
+            },
+            Parameter {
+                name: "end".to_string(),
+                ty: Type::int_ref(),
+                has_default: true,
+            },
+        ],
         r#"Like rfind() but raises ValueError when the substring sub is not found."#,
-        true,
+        false,
         None,
     )
     rsplit => Type::function(
         Some(Rc::new(Type::STR)),
         Type::list_ref(Rc::new(Type::STR)),
-        &[],
+        &[
+            Parameter {
+                name: "sep".to_string(),
+                ty: Type::str_ref(),
+                has_default: true,
+            },
+            Parameter {
+                name: "maxsplit".to_string(),
+                ty: Type::int_ref(),
+                has_default: true,
+            },
+        ],
         r#"Return a list of the words in the string, using sep as the delimiter string. If maxsplit is given, at most maxsplit splits are done, the rightmost ones. If sep is not specified or None, any whitespace string is a separator. Except for splitting from the right, rsplit() behaves like split() which is described in detail below."#,
-        true,
+        false,
         None,
     )
     split => Type::function(
         Some(Rc::new(Type::STR)),
         Type::list_ref(Rc::new(Type::STR)),
-        &[],
+        &[
+            Parameter {
+                name: "sep".to_string(),
+                ty: Type::str_ref(),
+                has_default: true,
+            },
+            Parameter {
+                name: "maxsplit".to_string(),
+                ty: Type::int_ref(),
+                has_default: true,
+            },
+        ],
         r#"Return a list of the words in the string, using sep as the delimiter string. If maxsplit is given, at most maxsplit splits are done (thus, the list will have at most maxsplit+1 elements). If maxsplit is not specified or -1, then there is no limit on the number of splits (all possible splits are made)."#,
-        true,
+        false,
         None,
     )
     splitlines => Type::function(
         Some(Rc::new(Type::STR)),
         Type::list_ref(Rc::new(Type::STR)),
-        &[],
+        &[
+            Parameter {
+                name: "keepends".to_string(),
+                ty: Type::bool_ref(),
+                has_default: true,
+            },
+        ],
         r#"Return a list of the lines in the string, breaking at line boundaries. Line breaks are not included in the resulting list unless keepends is given and true."#,
-        true,
+        false,
         None,
     )
     startswith => Type::function(
         Some(Rc::new(Type::STR)),
         Rc::new(Type::BOOL),
-        &[],
+        &[
+            Parameter {
+                name: "val".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+            Parameter {
+                name: "start".to_string(),
+                ty: Type::int_ref(),
+                has_default: true,
+            },
+            Parameter {
+                name: "end".to_string(),
+                ty: Type::int_ref(),
+                has_default: true,
+            },
+        ],
         r#"Return True if string starts with the prefix, otherwise return False. prefix can also be a tuple of prefixes to look for. With optional start, test string beginning at that position. With optional end, stop comparing string at that position."#,
         false,
         None,
@@ -235,7 +421,13 @@ register_string_member! {
     strip => Type::function(
         Some(Rc::new(Type::STR)),
         Rc::new(Type::STR),
-        &[],
+        &[
+            Parameter {
+                name: "chars".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+        ],
         r#"Return a copy of the string with the leading and trailing characters removed. The chars argument is a string specifying the set of characters to be removed. If omitted or None, the chars argument defaults to removing whitespace. The chars argument is not a prefix or suffix; rather, all combinations of its values are stripped:"#,
         false,
         None,

@@ -1,6 +1,31 @@
 use super::*;
 
 impl Type {
+    /// Construct an int type reference.
+    #[inline]
+    pub fn int_ref() -> TypeRef {
+        Rc::new(Type::INT)
+    }
+    /// Construct a float type reference.
+    #[inline]
+    pub fn float_ref() -> TypeRef {
+        Rc::new(Type::FLOAT)
+    }
+    /// Construct a bool type reference.
+    #[inline]
+    pub fn bool_ref() -> TypeRef {
+        Rc::new(Type::BOOL)
+    }
+    /// Construct a str type reference.
+    #[inline]
+    pub fn str_ref() -> TypeRef {
+        Rc::new(Type::STR)
+    }
+    /// Construct a any type reference.
+    #[inline]
+    pub fn any_ref() -> TypeRef {
+        Rc::new(Type::ANY)
+    }
     /// Construct a union type
     #[inline]
     pub fn union(types: &[Rc<Type>]) -> Type {
@@ -10,7 +35,7 @@ impl Type {
             is_type_alias: false,
         }
     }
-    /// Construct a union type ref
+    /// Construct an union type reference.
     #[inline]
     pub fn union_ref(types: &[Rc<Type>]) -> Rc<Type> {
         Rc::new(Self::union(types))

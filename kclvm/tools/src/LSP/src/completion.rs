@@ -233,7 +233,7 @@ pub(crate) fn get_completion(
                         });
                     }
                 }
-                Expr::Config(config_expr) => match parent {
+                Expr::Config(_) => match parent {
                     Some(schema_expr) => {
                         if let Expr::Schema(schema_expr) = schema_expr.node {
                             let schema_def =
