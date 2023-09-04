@@ -436,3 +436,35 @@ fn test_pkg_scope() {
 
     assert!(pkg_scope.contains_pos(&pos));
 }
+
+#[test]
+fn test_system_package() {
+    let sess = Arc::new(ParseSession::default());
+    let mut program = load_program(
+        sess.clone(),
+        &["./src/resolver/test_data/system_package.k"],
+        None,
+    )
+    .unwrap();
+    let scope = resolve_program(&mut program);
+    let main_scope = scope
+        .scope_map
+        .get(kclvm_runtime::MAIN_PKG_PATH)
+        .unwrap()
+        .borrow_mut()
+        .clone();
+
+    assert!(main_scope.lookup("base64").unwrap().borrow().ty.is_module());
+    assert!(main_scope
+        .lookup("base64_encode")
+        .unwrap()
+        .borrow()
+        .ty
+        .is_func());
+    assert!(main_scope
+        .lookup("base64_decode")
+        .unwrap()
+        .borrow()
+        .ty
+        .is_func());
+}

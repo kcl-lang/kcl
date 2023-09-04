@@ -18,7 +18,7 @@ macro_rules! register_string_member {
 register_string_member! {
     capitalize => Type::function(
         Some(Rc::new(Type::STR)),
-        Rc::new(Type::ANY),
+        Rc::new(Type::STR),
         &[],
         r#"Return a copy of the string with its first character capitalized and the rest lowercased."#,
         false,

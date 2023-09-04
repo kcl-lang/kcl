@@ -1,7 +1,62 @@
-// Copyright 2021 The KCL Authors. All rights reserved.
+// Copyright The KCL Authors. All rights reserved.
+
+use std::rc::Rc;
+
+use crate::ty::{Parameter, Type, TypeRef};
+use indexmap::IndexMap;
+use once_cell::sync::Lazy;
 
 pub const BASE64: &str = "base64";
 pub const BASE64_FUNCTION_NAMES: [&str; 2] = ["encode", "decode"];
+macro_rules! register_base64_member {
+    ($($name:ident => $ty:expr)*) => (
+        pub const BASE64_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
+            let mut builtin_mapping = IndexMap::default();
+            $( builtin_mapping.insert(stringify!($name).to_string(), $ty); )*
+            builtin_mapping
+        });
+    )
+}
+register_base64_member! {
+    encode => Type::function(
+        None,
+        Type::str_ref(),
+        &[
+            Parameter {
+                name: "value".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+            Parameter {
+                name: "encoding".to_string(),
+                ty: Type::str_ref(),
+                has_default: true,
+            },
+        ],
+        r#"Encode the string `value` using the codec registered for encoding."#,
+        false,
+        None,
+    )
+    decode => Type::function(
+        None,
+        Type::str_ref(),
+        &[
+            Parameter {
+                name: "value".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+            Parameter {
+                name: "encoding".to_string(),
+                ty: Type::str_ref(),
+                has_default: true,
+            },
+        ],
+        r#"Decode the string `value` using the codec registered for encoding."#,
+        false,
+        None,
+    )
+}
 
 pub const NET: &str = "net";
 pub const NET_FUNCTION_NAMES: [&str; 16] = [
@@ -22,6 +77,32 @@ pub const NET_FUNCTION_NAMES: [&str; 16] = [
     "is_global_unicast_IP",
     "is_unspecified_IP",
 ];
+macro_rules! register_net_member {
+    ($($name:ident => $ty:expr)*) => (
+        pub const NET_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
+            let mut builtin_mapping = IndexMap::default();
+            $( builtin_mapping.insert(stringify!($name).to_string(), $ty); )*
+            builtin_mapping
+        });
+    )
+}
+// TODO: add more system package types.
+register_net_member! {
+    split_host_port => Type::function(
+        None,
+        Type::list_ref(Type::str_ref()),
+        &[
+            Parameter {
+                name: "ip_end_point".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+        ],
+        r#"Split the `host` and `port` from the `ip_end_point`."#,
+        false,
+        None,
+    )
+}
 
 pub const MANIFESTS: &str = "manifests";
 pub const MANIFESTS_FUNCTION_NAMES: [&str; 1] = ["yaml_stream"];
@@ -133,4 +214,21 @@ pub fn get_system_module_members(name: &str) -> Vec<&str> {
         COLLECTION => COLLECTION_FUNCTION_NAMES.to_vec(),
         _ => bug!("invalid system module name '{}'", name),
     }
+}
+
+/// Get the system package member function type, if not found, return the any type.
+pub fn get_system_member_function_ty(name: &str, func: &str) -> TypeRef {
+    // TODO: add more system package types.
+    let optional_ty = match name {
+        BASE64 => {
+            let types = BASE64_FUNCTION_TYPES;
+            types.get(func).cloned()
+        }
+        NET => {
+            let types = NET_FUNCTION_TYPES;
+            types.get(func).cloned()
+        }
+        _ => None,
+    };
+    optional_ty.map(|ty| Rc::new(ty)).unwrap_or(Type::any_ref())
 }

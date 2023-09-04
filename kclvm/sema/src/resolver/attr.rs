@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use crate::builtin::system_module::{get_system_module_members, UNITS, UNITS_NUMBER_MULTIPLIER};
-use crate::builtin::STRING_MEMBER_FUNCTIONS;
+use crate::builtin::{get_system_member_function_ty, STRING_MEMBER_FUNCTIONS};
 use crate::resolver::Resolver;
 use crate::ty::{DictType, ModuleKind, Type, TypeKind};
 use kclvm_error::diagnostic::Range;
@@ -100,7 +100,10 @@ impl<'ctx> Resolver<'ctx> {
                             (true, Rc::new(Type::number_multiplier_non_lit_ty()))
                         } else {
                             let members = get_system_module_members(&module_ty.pkgpath);
-                            (members.contains(&attr), self.any_ty())
+                            (
+                                members.contains(&attr),
+                                get_system_member_function_ty(&module_ty.pkgpath, attr),
+                            )
                         }
                     }
                     ModuleKind::Plugin => (true, self.any_ty()),
