@@ -38,13 +38,19 @@ macro_rules! register_warnings {
 // Error messages for EXXXX errors. Each message should start and end with a
 // new line.
 register_errors! {
+    // E1XXX Syntax Errors
     E1001: ErrorKind::InvalidSyntax, include_str!("./error_codes/E1001.md"),
+    E1002: ErrorKind::TabError, include_str!("./error_codes/E1002.md"),
+    E1003: ErrorKind::IndentationError, include_str!("./error_codes/E1003.md"),
+    E1I37: ErrorKind::IllegalArgumentSyntax, include_str!("./error_codes/E1I37.md"),
+    // E2XXX Compile Errors
     E2G22: ErrorKind::TypeError, include_str!("./error_codes/E2G22.md"),
     E2F04: ErrorKind::CannotFindModule, include_str!("./error_codes/E2F04.md"),
     E2L23: ErrorKind::CompileError, include_str!("./error_codes/E2L23.md"),
     E2A31: ErrorKind::IllegalAttributeError, include_str!("./error_codes/E2A31.md"),
     E2L28: ErrorKind::UniqueKeyError, include_str!("./error_codes/E2L28.md"),
     E2D34: ErrorKind::IllegalInheritError, include_str!("./error_codes/E2D34.md"),
+    // E3XXX Runtime Errors
     E3M38: ErrorKind::EvaluationError, include_str!("./error_codes/E2D34.md"),
 }
 
@@ -63,9 +69,12 @@ pub struct Error {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ErrorKind {
+    // Syntax Errors
     InvalidSyntax,
     TabError,
-    Indentation,
+    IndentationError,
+    IllegalArgumentSyntax,
+    // Compile Errors
     CannotFindModule,
     RecursiveLoad,
     FloatOverflow,
@@ -83,6 +92,7 @@ pub enum ErrorKind {
     ValueError,
     KeyError,
     AttributeError,
+    // Runtime Errors
     AssertionError,
     ImmutableError,
     MultiInheritError,
@@ -129,6 +139,7 @@ pub struct Warning {
 // Kind of KCL warning.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum WarningKind {
+    // Compile Warnings
     CompilerWarning,
     UnusedImportWarning,
     ReimportWarning,
