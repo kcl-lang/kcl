@@ -1,0 +1,73 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 158
+expression: "crate::tests::parsing_expr_string(r#\"'\\n${a: #json}'\"#)"
+---
+Node {
+    node: JoinedString(
+        JoinedString {
+            is_long_string: false,
+            values: [
+                Node {
+                    node: StringLit(
+                        StringLit {
+                            is_long_string: false,
+                            raw_value: "\n",
+                            value: "\n",
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 1,
+                    end_line: 1,
+                    end_column: 1,
+                },
+                Node {
+                    node: FormattedValue(
+                        FormattedValue {
+                            is_long_string: false,
+                            value: Node {
+                                node: Identifier(
+                                    Identifier {
+                                        names: [
+                                            Node {
+                                                node: "a",
+                                                filename: "",
+                                                line: 1,
+                                                column: 4,
+                                                end_line: 1,
+                                                end_column: 5,
+                                            },
+                                        ],
+                                        pkgpath: "",
+                                        ctx: Load,
+                                    },
+                                ),
+                                filename: "",
+                                line: 1,
+                                column: 4,
+                                end_line: 1,
+                                end_column: 5,
+                            },
+                            format_spec: Some(
+                                "#json",
+                            ),
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 4,
+                    end_line: 1,
+                    end_column: 12,
+                },
+            ],
+            raw_value: "'\\n${a: #json}'",
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 15,
+}
+
