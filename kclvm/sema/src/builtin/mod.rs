@@ -423,7 +423,7 @@ register_builtin! {
     )
     bool => Type::function(
         None,
-        Rc::new(Type::ANY),
+        Rc::new(Type::BOOL),
         &[
             Parameter {
                 name: "x".to_string(),
@@ -439,7 +439,7 @@ register_builtin! {
     )
     str => Type::function(
         None,
-        Rc::new(Type::ANY),
+        Rc::new(Type::STR),
         &[
             Parameter {
                 name: "x".to_string(),
