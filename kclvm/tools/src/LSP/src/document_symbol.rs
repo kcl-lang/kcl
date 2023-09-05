@@ -103,3 +103,72 @@ fn scope_obj_kind_to_document_symbol_kind(kind: ScopeObjectKind) -> SymbolKind {
         ScopeObjectKind::Module(_) => SymbolKind::MODULE,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use lsp_types::{DocumentSymbol, DocumentSymbolResponse, Position, Range, SymbolKind};
+    use proc_macro_crate::bench_test;
+
+    use crate::{document_symbol::document_symbol, tests::compile_test_file};
+
+    #[allow(deprecated)]
+    fn build_document_symbol(
+        name: &str,
+        kind: SymbolKind,
+        range: ((u32, u32), (u32, u32)),
+        child: Option<Vec<DocumentSymbol>>,
+        detail: Option<String>,
+    ) -> DocumentSymbol {
+        let range: Range = Range {
+            start: Position {
+                line: range.0 .0,
+                character: range.0 .1,
+            },
+            end: Position {
+                line: range.1 .0,
+                character: range.1 .1,
+            },
+        };
+        DocumentSymbol {
+            name: name.to_string(),
+            detail,
+            kind,
+            tags: None,
+            deprecated: None,
+            range,
+            selection_range: range,
+            children: child,
+        }
+    }
+
+    #[test]
+    #[bench_test]
+    fn document_symbol_test() {
+        let (file, program, prog_scope, _) = compile_test_file("src/test_data/document_symbol.k");
+
+        let res = document_symbol(file.as_str(), &program, &prog_scope).unwrap();
+        let mut expect = vec![];
+        expect.push(build_document_symbol(
+            "p",
+            SymbolKind::VARIABLE,
+            ((3, 0), (3, 1)),
+            None,
+            Some("Person4".to_string()),
+        ));
+        expect.push(build_document_symbol(
+            "Person4",
+            SymbolKind::STRUCT,
+            ((0, 7), (1, 13)),
+            Some(vec![build_document_symbol(
+                "name",
+                SymbolKind::PROPERTY,
+                ((1, 4), (1, 8)),
+                None,
+                Some("str".to_string()),
+            )]),
+            Some("schema".to_string()),
+        ));
+        let expect = DocumentSymbolResponse::Nested(expect);
+        assert_eq!(res, expect)
+    }
+}

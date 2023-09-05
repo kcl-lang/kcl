@@ -1,7 +1,5 @@
 use config::Config;
-use lsp_server::Connection;
-use state::LanguageServerState;
-
+use main_loop::main_loop;
 mod analysis;
 mod capabilities;
 mod completion;
@@ -12,6 +10,7 @@ mod document_symbol;
 mod from_lsp;
 mod goto_def;
 mod hover;
+mod main_loop;
 mod notification;
 mod quick_fix;
 mod request;
@@ -22,11 +21,6 @@ mod util;
 mod formatting;
 #[cfg(test)]
 mod tests;
-
-/// Runs the main loop of the language server. This will receive requests and handle them.
-pub fn main_loop(connection: Connection, config: Config) -> anyhow::Result<()> {
-    LanguageServerState::new(connection.sender, config).run(connection.receiver)
-}
 
 /// Main entry point for the language server
 pub fn run_server() -> anyhow::Result<()> {
