@@ -89,6 +89,18 @@ impl ValueRef {
         default
     }
 
+    pub fn arg_i_int_or_bool(&self, i: usize, default: Option<i64>) -> Option<i64> {
+        if let Some(x) = self.arg_i(i) {
+            match *x.rc.borrow() {
+                Value::bool_value(v) => return Some(v as i64),
+                Value::int_value(v) => return Some(v),
+                Value::none => return default,
+                _ => return None,
+            }
+        }
+        default
+    }
+
     pub fn arg_i_float(&self, i: usize, default: Option<f64>) -> Option<f64> {
         if let Some(x) = self.arg_i(i) {
             match *x.rc.borrow() {

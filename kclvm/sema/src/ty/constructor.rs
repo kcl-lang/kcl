@@ -214,6 +214,7 @@ impl Type {
         }
     }
     /// Construct a iterable type
+    #[inline]
     pub fn iterable() -> Rc<Type> {
         Rc::new(Type::union(&[
             Rc::new(Type::STR),
@@ -222,12 +223,9 @@ impl Type {
         ]))
     }
     /// Construct a number type
-    pub fn number() -> Rc<Type> {
-        Rc::new(Type::union(&[
-            Rc::new(Type::INT),
-            Rc::new(Type::FLOAT),
-            Rc::new(Type::STR),
-        ]))
+    #[inline]
+    pub fn number() -> TypeRef {
+        Type::union_ref(&[Type::int_ref(), Type::float_ref(), Type::bool_ref()])
     }
     /// Whether is a any type.
     #[inline]

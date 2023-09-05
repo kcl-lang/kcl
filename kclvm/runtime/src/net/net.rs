@@ -132,7 +132,7 @@ pub unsafe extern "C" fn kclvm_net_IP_string(
             return ValueRef::str(s.as_ref()).into_raw();
         }
 
-        return kclvm_value_False();
+        return ValueRef::str("").into_raw();
     }
 
     panic!("IP_string() missing 1 required positional argument: 'ip'");

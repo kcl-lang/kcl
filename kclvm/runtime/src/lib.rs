@@ -98,9 +98,6 @@ pub use self::regex::*;
 pub mod stdlib;
 pub use self::stdlib::*;
 
-pub mod testing;
-pub use self::testing::*;
-
 pub mod units;
 pub use self::units::*;
 

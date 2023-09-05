@@ -12,7 +12,7 @@ use crate::*;
 #[allow(non_camel_case_types)]
 type kclvm_value_ref_t = ValueRef;
 
-// def KMANGLED_today() -> str:
+// today() -> str:
 
 #[no_mangle]
 #[runtime_fn]
@@ -25,7 +25,7 @@ pub unsafe extern "C" fn kclvm_datetime_today(
     return ValueRef::str(s.as_ref()).into_raw();
 }
 
-// def KMANGLED_now() -> str:
+// now() -> str:
 
 #[no_mangle]
 #[runtime_fn]
@@ -38,7 +38,7 @@ pub unsafe extern "C" fn kclvm_datetime_now(
     return ValueRef::str(s.as_ref()).into_raw();
 }
 
-// def KMANGLED_ticks() -> float:
+// ticks() -> float:
 
 #[no_mangle]
 #[runtime_fn]
@@ -51,7 +51,7 @@ pub unsafe extern "C" fn kclvm_datetime_ticks(
     ValueRef::float(x as f64).into_raw()
 }
 
-// def KMANGLED_date() -> str:
+// date() -> str:
 
 #[no_mangle]
 #[runtime_fn]
