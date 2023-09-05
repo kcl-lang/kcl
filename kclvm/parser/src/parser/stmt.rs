@@ -2,7 +2,7 @@
 #![allow(unused_macros)]
 
 use compiler_base_span::{span::new_byte_pos, BytePos, Span};
-use kclvm_ast::token::{DelimToken, LitKind, Token, TokenKind};
+use kclvm_ast::token::{CommentKind, DelimToken, LitKind, Token, TokenKind};
 use kclvm_ast::{ast::*, expr_as, node_ref};
 use kclvm_span::symbol::kw;
 
@@ -1506,9 +1506,8 @@ impl<'a> Parser<'a> {
             if let TokenKind::Colon = parser.token.kind {
                 // bump the format spec interval token `:`.
                 parser.bump();
-                if let TokenKind::DocComment(_) = parser.token.kind {
-                    let format_spec = parser.sess.span_to_snippet(parser.token.span);
-                    formatted_value.format_spec = Some(format_spec);
+                if let TokenKind::DocComment(CommentKind::Line(symbol)) = parser.token.kind {
+                    formatted_value.format_spec = Some(symbol.as_str());
                 } else {
                     this.sess.struct_span_error(
                         "invalid joined string spec without #",
