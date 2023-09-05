@@ -16,7 +16,7 @@ use crate::*;
 #[allow(non_camel_case_types)]
 type kclvm_value_ref_t = ValueRef;
 
-// def KMANGLED_match(string: str, pattern: str) -> bool:
+// match(string: str, pattern: str) -> bool:
 
 #[no_mangle]
 #[runtime_fn]
@@ -46,7 +46,7 @@ pub unsafe extern "C" fn kclvm_regex_match(
     panic!("match() missing 2 required positional arguments: 'string' and 'pattern'")
 }
 
-// def KMANGLED_replace(string: str, pattern: str, replace: str, count: int = 0):
+// replace(string: str, pattern: str, replace: str, count: int = 0):
 
 #[no_mangle]
 #[runtime_fn]
@@ -71,7 +71,7 @@ pub unsafe extern "C" fn kclvm_regex_replace(
     panic!("replace() missing 3 required positional arguments: 'string', 'pattern', and 'replace");
 }
 
-// def KMANGLED_compile(pattern: str) -> bool:
+// compile(pattern: str) -> bool:
 
 #[no_mangle]
 #[runtime_fn]
@@ -91,7 +91,7 @@ pub unsafe extern "C" fn kclvm_regex_compile(
     panic!("compile() missing 2 required positional arguments: 'string' and 'pattern'")
 }
 
-// def KMANGLED_findall(string: str, pattern: str) -> [str]:
+// findall(string: str, pattern: str) -> [str]:
 
 #[no_mangle]
 #[runtime_fn]
@@ -130,7 +130,7 @@ pub unsafe extern "C" fn kclvm_regex_findall(
     panic!("findall() missing 2 required positional arguments: 'string' and 'pattern'")
 }
 
-// def KMANGLED_search(string: str, pattern: str):
+// search(string: str, pattern: str):
 
 #[no_mangle]
 #[runtime_fn]
@@ -154,7 +154,7 @@ pub unsafe extern "C" fn kclvm_regex_search(
     panic!("search() missing 2 required positional arguments: 'string' and 'pattern'");
 }
 
-// def KMANGLED_split(string: str, pattern: str, maxsplit: int = 0):
+// split(string: str, pattern: str, maxsplit: int = 0):
 
 #[no_mangle]
 #[runtime_fn]

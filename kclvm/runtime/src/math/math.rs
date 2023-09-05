@@ -23,7 +23,7 @@ pub unsafe extern "C" fn kclvm_math_ceil(
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
 
-    if let Some(x) = args.arg_i_int(0, None) {
+    if let Some(x) = args.arg_i_int_or_bool(0, None) {
         return kclvm_value_Int(x);
     }
     if let Some(x) = args.arg_i_float(0, None) {
@@ -55,7 +55,7 @@ pub unsafe extern "C" fn kclvm_math_factorial(
 
     let args = ptr_as_ref(args);
 
-    if let Some(x) = args.arg_i_int(0, None) {
+    if let Some(x) = args.arg_i_int_or_bool(0, None) {
         if x >= 0 {
             return kclvm_value_Int(factorial(x));
         }
@@ -65,6 +65,7 @@ pub unsafe extern "C" fn kclvm_math_factorial(
             return kclvm_value_Float(factorial(x as i64) as f64);
         }
     }
+
     if args.args_len() > 0 {
         panic!("factorial() only accepts integral values")
     }
@@ -80,7 +81,7 @@ pub unsafe extern "C" fn kclvm_math_floor(
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
 
-    if let Some(x) = args.arg_i_int(0, None) {
+    if let Some(x) = args.arg_i_int_or_bool(0, None) {
         return kclvm_value_Int(x);
     }
     if let Some(x) = args.arg_i_float(0, None) {
@@ -120,11 +121,14 @@ pub unsafe extern "C" fn kclvm_math_isfinite(
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
 
-    if let Some(_x) = args.arg_i_int(0, None) {
+    if let Some(_) = args.arg_i_int_or_bool(0, None) {
         return kclvm_value_Bool(true as i8);
     }
     if let Some(x) = args.arg_i_float(0, None) {
         return kclvm_value_Bool(x.is_finite() as i8);
+    }
+    if let Some(_) = args.arg_i_bool(0, None) {
+        return kclvm_value_Bool(true as i8);
     }
 
     panic!("isfinite() takes exactly one argument (0 given)");
@@ -139,11 +143,14 @@ pub unsafe extern "C" fn kclvm_math_isinf(
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
 
-    if let Some(_x) = args.arg_i_int(0, None) {
+    if let Some(_x) = args.arg_i_int_or_bool(0, None) {
         return kclvm_value_Bool(false as i8);
     }
     if let Some(x) = args.arg_i_float(0, None) {
         return kclvm_value_Bool(x.is_infinite() as i8);
+    }
+    if let Some(_) = args.arg_i_bool(0, None) {
+        return kclvm_value_Bool(false as i8);
     }
 
     panic!("isinf() takes exactly one argument (0 given)");
@@ -158,7 +165,7 @@ pub unsafe extern "C" fn kclvm_math_isnan(
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
 
-    if let Some(_x) = args.arg_i_int(0, None) {
+    if let Some(_x) = args.arg_i_int_or_bool(0, None) {
         return kclvm_value_Bool(false as i8);
     }
     if let Some(x) = args.arg_i_float(0, None) {
@@ -177,7 +184,7 @@ pub unsafe extern "C" fn kclvm_math_modf(
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
 
-    if let Some(x) = args.arg_i_int(0, None) {
+    if let Some(x) = args.arg_i_int_or_bool(0, None) {
         let list = ValueRef::list_float(&[0.0, x as f64]);
         return list.into_raw();
     }
@@ -207,7 +214,7 @@ pub unsafe extern "C" fn kclvm_math_exp(
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
 
-    if let Some(x) = args.arg_i_int(0, None) {
+    if let Some(x) = args.arg_i_int_or_bool(0, None) {
         return kclvm_value_Float((x as f64).exp());
     }
     if let Some(x) = args.arg_i_float(0, None) {
@@ -225,7 +232,7 @@ pub unsafe extern "C" fn kclvm_math_expm1(
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
 
-    if let Some(x) = args.arg_i_int(0, None) {
+    if let Some(x) = args.arg_i_int_or_bool(0, None) {
         return kclvm_value_Float((x as f64).exp_m1());
     }
     if let Some(x) = args.arg_i_float(0, None) {
@@ -243,7 +250,7 @@ pub unsafe extern "C" fn kclvm_math_log(
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
 
-    if let Some(x) = args.arg_i_int(0, None) {
+    if let Some(x) = args.arg_i_int_or_bool(0, None) {
         if let Some(base) = args.arg_i_float(1, Some(std::f64::consts::E)) {
             return kclvm_value_Int((x as f64).log(base) as i64);
         }
@@ -265,7 +272,7 @@ pub unsafe extern "C" fn kclvm_math_log1p(
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
 
-    if let Some(x) = args.arg_i_int(0, None) {
+    if let Some(x) = args.arg_i_int_or_bool(0, None) {
         return kclvm_value_Float(((x + 1) as f64).ln_1p());
     }
     if let Some(x) = args.arg_i_float(0, None) {
@@ -283,7 +290,7 @@ pub unsafe extern "C" fn kclvm_math_log2(
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
 
-    if let Some(x) = args.arg_i_int(0, None) {
+    if let Some(x) = args.arg_i_int_or_bool(0, None) {
         return kclvm_value_Int((x as f64).log2() as i64);
     }
     if let Some(x) = args.arg_i_float(0, None) {
@@ -301,7 +308,7 @@ pub unsafe extern "C" fn kclvm_math_log10(
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
 
-    if let Some(x) = args.arg_i_int(0, None) {
+    if let Some(x) = args.arg_i_int_or_bool(0, None) {
         return kclvm_value_Float((x as f64).log10());
     }
     if let Some(x) = args.arg_i_float(0, None) {
@@ -319,8 +326,8 @@ pub unsafe extern "C" fn kclvm_math_pow(
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
 
-    if let Some(x) = args.arg_i_int(0, None) {
-        if let Some(n) = args.arg_i_int(1, None) {
+    if let Some(x) = args.arg_i_int_or_bool(0, None) {
+        if let Some(n) = args.arg_i_int_or_bool(1, None) {
             if n < 0 {
                 return kclvm_value_Float((x as f64).powf(n as f64));
             } else {
@@ -332,7 +339,7 @@ pub unsafe extern "C" fn kclvm_math_pow(
         }
     }
     if let Some(x) = args.arg_i_float(0, None) {
-        if let Some(n) = args.arg_i_int(1, None) {
+        if let Some(n) = args.arg_i_int_or_bool(1, None) {
             return kclvm_value_Float(x.powi(n as i32));
         }
         if let Some(n) = args.arg_i_float(1, None) {
@@ -351,7 +358,7 @@ pub unsafe extern "C" fn kclvm_math_sqrt(
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
 
-    if let Some(x) = args.arg_i_int(0, None) {
+    if let Some(x) = args.arg_i_int_or_bool(0, None) {
         return kclvm_value_Float((x as f64).sqrt());
     }
     if let Some(x) = args.arg_i_float(0, None) {

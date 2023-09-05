@@ -1190,14 +1190,6 @@
 // api-spec(c):    char* kclvm_plugin_invoke_json(int8_t* method, char* args, char* kwargs);
 // api-spec(llvm): declare i8* @kclvm_plugin_invoke_json(i8* %method, i8* %args, i8* %kwargs);
 
-// api-spec:       kclvm_testing_arguments
-// api-spec(c):    void kclvm_testing_arguments(kclvm_context_t* _ctx, kclvm_value_ref_t* _args, kclvm_value_ref_t* _kwargs);
-// api-spec(llvm): declare void @kclvm_testing_arguments(%kclvm_context_t* %_ctx, %kclvm_value_ref_t* %_args, %kclvm_value_ref_t* %_kwargs);
-
-// api-spec:       kclvm_testing_setting_file
-// api-spec(c):    void kclvm_testing_setting_file(kclvm_context_t* _ctx, kclvm_value_ref_t* _args, kclvm_value_ref_t* _kwargs);
-// api-spec(llvm): declare void @kclvm_testing_setting_file(%kclvm_context_t* %_ctx, %kclvm_value_ref_t* %_args, %kclvm_value_ref_t* %_kwargs);
-
 // api-spec:       kclvm_units_to_n
 // api-spec(c):    kclvm_value_ref_t* kclvm_units_to_n(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_units_to_n(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);

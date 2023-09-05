@@ -482,10 +482,6 @@ kclvm_value_ref_t* kclvm_schema_value_new(kclvm_context_t* ctx, kclvm_value_ref_
 
 kclvm_size_t kclvm_strlen(uint8_t* ptr);
 
-void kclvm_testing_arguments(kclvm_context_t* _ctx, kclvm_value_ref_t* _args, kclvm_value_ref_t* _kwargs);
-
-void kclvm_testing_setting_file(kclvm_context_t* _ctx, kclvm_value_ref_t* _args, kclvm_value_ref_t* _kwargs);
-
 kclvm_value_ref_t* kclvm_units_to_G(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
 kclvm_value_ref_t* kclvm_units_to_Gi(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
