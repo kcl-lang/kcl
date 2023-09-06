@@ -124,7 +124,7 @@ fn completion_for_import(
     let mut items: IndexSet<KCLCompletionItem> = IndexSet::new();
     let pkgpath = &stmt.path;
     let real_path =
-        Path::new(&program.root).join(pkgpath.replace('.', std::path::MAIN_SEPARATOR_STR));
+        Path::new(&program.root).join(pkgpath.replace('.', &std::path::MAIN_SEPARATOR.to_string()));
     if real_path.is_dir() {
         if let Ok(entries) = fs::read_dir(real_path) {
             let mut entries = entries
@@ -309,8 +309,10 @@ mod tests {
         let got = completion(None, &program, &pos, &prog_scope).unwrap();
 
         items.extend(
-            ["", // generate from error recovery of "pkg."
-                "subpkg", "math", "Person", "P", "p", "p1", "p2", "p3", "p4", "aaaa"]
+            [
+                "", // generate from error recovery of "pkg."
+                "subpkg", "math", "Person", "P", "p", "p1", "p2", "p3", "p4", "aaaa",
+            ]
             .iter()
             .map(|name| KCLCompletionItem {
                 label: name.to_string(),
@@ -332,14 +334,12 @@ mod tests {
         let got = completion(None, &program, &pos, &prog_scope).unwrap();
 
         items.extend(
-            ["__settings__",
-                "name",
-                "age"]
-            .iter()
-            .map(|name| KCLCompletionItem {
-                label: name.to_string(),
-            })
-            .collect::<IndexSet<KCLCompletionItem>>(),
+            ["__settings__", "name", "age"]
+                .iter()
+                .map(|name| KCLCompletionItem {
+                    label: name.to_string(),
+                })
+                .collect::<IndexSet<KCLCompletionItem>>(),
         );
         let expect: CompletionResponse = into_completion_items(&items).into();
 

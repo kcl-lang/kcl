@@ -165,8 +165,8 @@ mod tests {
 
         let pos = KCLPos {
             filename: file.clone(),
-            line: 15,
-            column: Some(11),
+            line: 16,
+            column: Some(8),
         };
         let got = hover(&program, &pos, &prog_scope).unwrap();
 
@@ -196,8 +196,8 @@ mod tests {
 
         let pos = KCLPos {
             filename: file.clone(),
-            line: 16,
-            column: Some(11),
+            line: 17,
+            column: Some(7),
         };
         let got = hover(&program, &pos, &prog_scope).unwrap();
 
@@ -215,8 +215,8 @@ mod tests {
 
         let pos = KCLPos {
             filename: file.clone(),
-            line: 17,
-            column: Some(11),
+            line: 18,
+            column: Some(7),
         };
         let got = hover(&program, &pos, &prog_scope).unwrap();
 

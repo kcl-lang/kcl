@@ -187,9 +187,9 @@ pub(crate) fn resolve_var(
             let name = names[0].clone();
             match current_scope.lookup(&name) {
                 Some(obj) => match obj.borrow().kind {
-                    kclvm_sema::resolver::scope::ScopeObjectKind::Module(_) => {
-                        scope_map.get(&name).map(|scope| Definition::Scope(scope.borrow().clone()))
-                    }
+                    kclvm_sema::resolver::scope::ScopeObjectKind::Module(_) => scope_map
+                        .get(&name)
+                        .map(|scope| Definition::Scope(scope.borrow().clone())),
                     _ => Some(Definition::Object(obj.borrow().clone())),
                 },
                 None => None,
@@ -303,7 +303,7 @@ fn goto_def_for_import(
 ) -> Option<GotoDefinitionResponse> {
     let pkgpath = &stmt.path;
     let mut real_path =
-        Path::new(&program.root).join(pkgpath.replace('.', std::path::MAIN_SEPARATOR_STR));
+        Path::new(&program.root).join(pkgpath.replace('.', &std::path::MAIN_SEPARATOR.to_string()));
     let mut positions = get_pos_from_real_path(&real_path);
 
     if positions.is_empty() && !real_path.exists() {

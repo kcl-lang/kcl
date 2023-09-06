@@ -3,8 +3,23 @@ use crossbeam_channel::select;
 use indexmap::IndexSet;
 use lsp_server::Response;
 use lsp_types::notification::Exit;
+use lsp_types::CompletionContext;
+use lsp_types::CompletionItem;
+use lsp_types::CompletionParams;
+use lsp_types::CompletionResponse;
+use lsp_types::CompletionTriggerKind;
+use lsp_types::DocumentFormattingParams;
+use lsp_types::GotoDefinitionParams;
+use lsp_types::GotoDefinitionResponse;
+use lsp_types::Hover;
+use lsp_types::HoverContents;
+use lsp_types::HoverParams;
+use lsp_types::MarkedString;
 use lsp_types::PublishDiagnosticsParams;
+use lsp_types::TextDocumentIdentifier;
 use lsp_types::TextDocumentItem;
+use lsp_types::TextDocumentPositionParams;
+use lsp_types::TextEdit;
 use serde::Serialize;
 use std::cell::Cell;
 use std::cell::RefCell;
@@ -525,4 +540,235 @@ fn notification_test() {
             unreachable!("test error")
         }
     }
+}
+
+#[test]
+fn goto_def_test() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let mut path = root.clone();
+
+    path.push("src/test_data/goto_def_test/goto_def.k");
+
+    let path = path.to_str().unwrap();
+    let src = std::fs::read_to_string(path.clone()).unwrap();
+    let server = Project {}.server();
+
+    // Mock open file
+    server.notification::<lsp_types::notification::DidOpenTextDocument>(
+        lsp_types::DidOpenTextDocumentParams {
+            text_document: TextDocumentItem {
+                uri: Url::from_file_path(path).unwrap(),
+                language_id: "KCL".to_string(),
+                version: 0,
+                text: src,
+            },
+        },
+    );
+
+    let id = server.next_request_id.get();
+    server.next_request_id.set(id.wrapping_add(1));
+
+    let r: Request = Request::new(
+        id.into(),
+        "textDocument/definition".to_string(),
+        GotoDefinitionParams {
+            text_document_position_params: TextDocumentPositionParams {
+                text_document: TextDocumentIdentifier {
+                    uri: Url::from_file_path(path).unwrap(),
+                },
+                position: Position::new(23, 9),
+            },
+            work_done_progress_params: Default::default(),
+            partial_result_params: Default::default(),
+        },
+    );
+
+    // Send request and wait for it's response
+    let res = server.send_and_receive(r);
+
+    assert_eq!(
+        res.result.unwrap(),
+        to_json(GotoDefinitionResponse::Scalar(Location {
+            uri: Url::from_file_path(path).unwrap(),
+            range: Range {
+                start: Position::new(20, 0),
+                end: Position::new(23, 0),
+            },
+        }))
+        .unwrap()
+    );
+}
+
+#[test]
+fn complete_test() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let mut path = root.clone();
+
+    path.push("src/test_data/completion_test/dot/completion.k");
+
+    let path = path.to_str().unwrap();
+    let src = std::fs::read_to_string(path.clone()).unwrap();
+    let server = Project {}.server();
+
+    // Mock open file
+    server.notification::<lsp_types::notification::DidOpenTextDocument>(
+        lsp_types::DidOpenTextDocumentParams {
+            text_document: TextDocumentItem {
+                uri: Url::from_file_path(path).unwrap(),
+                language_id: "KCL".to_string(),
+                version: 0,
+                text: src,
+            },
+        },
+    );
+
+    let id = server.next_request_id.get();
+    server.next_request_id.set(id.wrapping_add(1));
+
+    let r: Request = Request::new(
+        id.into(),
+        "textDocument/completion".to_string(),
+        CompletionParams {
+            text_document_position: TextDocumentPositionParams {
+                text_document: TextDocumentIdentifier {
+                    uri: Url::from_file_path(path).unwrap(),
+                },
+                position: Position::new(11, 7),
+            },
+            work_done_progress_params: Default::default(),
+            partial_result_params: Default::default(),
+            context: Some(CompletionContext {
+                trigger_kind: CompletionTriggerKind::TRIGGER_CHARACTER,
+                trigger_character: Some(".".to_string()),
+            }),
+        },
+    );
+
+    // Send request and wait for it's response
+    let res = server.send_and_receive(r);
+
+    assert_eq!(
+        res.result.unwrap(),
+        to_json(CompletionResponse::Array(vec![
+            CompletionItem {
+                label: "name".to_string(),
+                ..Default::default()
+            },
+            CompletionItem {
+                label: "age".to_string(),
+                ..Default::default()
+            }
+        ]))
+        .unwrap()
+    )
+}
+
+#[test]
+fn hover_test() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let mut path = root.clone();
+
+    path.push("src/test_data/hover_test/hover.k");
+
+    let path = path.to_str().unwrap();
+    let src = std::fs::read_to_string(path.clone()).unwrap();
+    let server = Project {}.server();
+
+    // Mock open file
+    server.notification::<lsp_types::notification::DidOpenTextDocument>(
+        lsp_types::DidOpenTextDocumentParams {
+            text_document: TextDocumentItem {
+                uri: Url::from_file_path(path).unwrap(),
+                language_id: "KCL".to_string(),
+                version: 0,
+                text: src,
+            },
+        },
+    );
+
+    let id = server.next_request_id.get();
+    server.next_request_id.set(id.wrapping_add(1));
+
+    let r: Request = Request::new(
+        id.into(),
+        "textDocument/hover".to_string(),
+        HoverParams {
+            text_document_position_params: TextDocumentPositionParams {
+                text_document: TextDocumentIdentifier {
+                    uri: Url::from_file_path(path).unwrap(),
+                },
+                position: Position::new(15, 7),
+            },
+            work_done_progress_params: Default::default(),
+        },
+    );
+
+    // Send request and wait for it's response
+    let res = server.send_and_receive(r);
+
+    assert_eq!(
+        res.result.unwrap(),
+        to_json(Hover {
+            contents: HoverContents::Array(vec![
+                MarkedString::String("__main__\n\nschema Person".to_string()),
+                MarkedString::String("hover doc test".to_string()),
+                MarkedString::String(
+                    "Attributes:\n\n__settings__?: {str:any}\n\nname: str\n\nage?: int".to_string()
+                ),
+            ]),
+            range: None
+        })
+        .unwrap()
+    )
+}
+
+#[test]
+fn formatting_test() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let mut path = root.clone();
+
+    path.push("src/test_data/format/format_range.k");
+
+    let path = path.to_str().unwrap();
+    let src = std::fs::read_to_string(path.clone()).unwrap();
+    let server = Project {}.server();
+
+    // Mock open file
+    server.notification::<lsp_types::notification::DidOpenTextDocument>(
+        lsp_types::DidOpenTextDocumentParams {
+            text_document: TextDocumentItem {
+                uri: Url::from_file_path(path).unwrap(),
+                language_id: "KCL".to_string(),
+                version: 0,
+                text: src,
+            },
+        },
+    );
+
+    let id = server.next_request_id.get();
+    server.next_request_id.set(id.wrapping_add(1));
+
+    let r: Request = Request::new(
+        id.into(),
+        "textDocument/formatting".to_string(),
+        DocumentFormattingParams {
+            text_document: TextDocumentIdentifier {
+                uri: Url::from_file_path(path).unwrap(),
+            },
+            options: Default::default(),
+            work_done_progress_params: Default::default(),
+        },
+    );
+
+    // Send request and wait for it's response
+    let res = server.send_and_receive(r);
+
+    assert_eq!(
+        res.result.unwrap(),
+        to_json(Some(vec![TextEdit {
+            range: Range::new(Position::new(0, 0), Position::new(u32::MAX, u32::MAX),),
+            new_text: "a = 1\nb = 2\nc = 3\nd = 4\n".to_string()
+        }]))
+        .unwrap()
+    )
 }

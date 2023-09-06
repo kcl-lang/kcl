@@ -12,7 +12,8 @@ schema Person:
     """
     name: str
     age?: int
-    p = Person{
-        name: "Alice"
-        age: 1
-    }
+    
+p = Person{
+    name: "Alice"
+    age: 1
+}
