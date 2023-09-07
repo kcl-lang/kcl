@@ -32,7 +32,7 @@ mod tests {
 
     #[test]
     fn test_line_to_words() {
-        let datas = vec![
+        let datas = [
             "alice_first_name = \"alice\"",
             "0lice_first_name = \"alic0\"",
             "alice = p.Parent { name: \"alice\" }",

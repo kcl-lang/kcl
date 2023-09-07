@@ -26,7 +26,7 @@ impl FileWordMap {
 
     // insert an occurrence of a name
     pub fn insert(&mut self, name: String, pos: Position) {
-        self.word_map.entry(name).or_insert(Vec::new()).push(pos);
+        self.word_map.entry(name).or_default().push(pos);
     }
 
     // build the record map
@@ -40,7 +40,7 @@ impl FileWordMap {
             words.iter().for_each(|x| {
                 self.word_map
                     .entry(x.word.clone())
-                    .or_insert(Vec::new())
+                    .or_default()
                     .push(Position {
                         filename: self.file_name.clone(),
                         line: li as u64,

@@ -264,8 +264,9 @@ fn handle_diagnostics(
 ) -> anyhow::Result<()> {
     for file_id in &snapshot.opened_files {
         let vfs = snapshot.vfs.read();
-        let filename = get_file_name(vfs, file_id.clone())?;
-        let uri = url(&snapshot, file_id.clone())?;
+        let filename = get_file_name(vfs, *file_id)?;
+        let uri = url(&snapshot, *file_id)?;
+
         match snapshot.db.get(file_id) {
             Some(db) => {
                 let diagnostics = db

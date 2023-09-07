@@ -208,7 +208,7 @@ pub(crate) fn inner_most_expr_in_stmt(
         Stmt::Assign(assign_stmt) => {
             if let Some(ty) = &assign_stmt.ty {
                 if ty.contains_pos(pos) {
-                    return (build_identifier_from_ty_string(&ty, pos), schema_def);
+                    return (build_identifier_from_ty_string(ty, pos), schema_def);
                 }
             }
             walk_if_contains!(assign_stmt.value, pos, schema_def);
@@ -720,7 +720,7 @@ pub(crate) fn get_real_path_from_external(
 /// a. => vec["a", ""].
 /// When analyzing in LSP, the empty string needs to be removed and find definition of the second last name("a").
 pub(crate) fn fix_missing_identifier(names: &[Node<String>]) -> Vec<Node<String>> {
-    if names.len() >= 1 && names.last().unwrap().node == "" {
+    if !names.is_empty() && names.last().unwrap().node.is_empty() {
         names[..names.len() - 1].to_vec()
     } else {
         names.to_vec()

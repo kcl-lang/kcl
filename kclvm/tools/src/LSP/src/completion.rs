@@ -277,3 +277,206 @@ pub(crate) fn into_completion_items(items: &IndexSet<KCLCompletionItem>) -> Vec<
         })
         .collect()
 }
+
+#[cfg(test)]
+mod tests {
+    use indexmap::IndexSet;
+    use kclvm_error::Position as KCLPos;
+    use kclvm_sema::builtin::{MATH_FUNCTION_NAMES, STRING_MEMBER_FUNCTIONS};
+    use lsp_types::CompletionResponse;
+    use proc_macro_crate::bench_test;
+
+    use crate::{
+        completion::{completion, into_completion_items, KCLCompletionItem},
+        tests::compile_test_file,
+    };
+
+    #[test]
+    #[bench_test]
+    fn var_completion_test() {
+        let (file, program, prog_scope, _) =
+            compile_test_file("src/test_data/completion_test/dot/completion.k");
+
+        let mut items: IndexSet<KCLCompletionItem> = IndexSet::new();
+
+        // test completion for var
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 26,
+            column: Some(5),
+        };
+
+        let got = completion(None, &program, &pos, &prog_scope).unwrap();
+
+        items.extend(
+            [
+                "", // generate from error recovery of "pkg."
+                "subpkg", "math", "Person", "P", "p", "p1", "p2", "p3", "p4", "aaaa",
+            ]
+            .iter()
+            .map(|name| KCLCompletionItem {
+                label: name.to_string(),
+            })
+            .collect::<IndexSet<KCLCompletionItem>>(),
+        );
+
+        let expect: CompletionResponse = into_completion_items(&items).into();
+
+        assert_eq!(expect, got);
+
+        // test completion for schema attr
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 24,
+            column: Some(4),
+        };
+
+        let got = completion(None, &program, &pos, &prog_scope).unwrap();
+
+        items.extend(
+            ["__settings__", "name", "age"]
+                .iter()
+                .map(|name| KCLCompletionItem {
+                    label: name.to_string(),
+                })
+                .collect::<IndexSet<KCLCompletionItem>>(),
+        );
+        let expect: CompletionResponse = into_completion_items(&items).into();
+
+        assert_eq!(expect, got);
+    }
+
+    #[test]
+    #[bench_test]
+    fn dot_completion_test() {
+        let (file, program, prog_scope, _) =
+            compile_test_file("src/test_data/completion_test/dot/completion.k");
+        let mut items: IndexSet<KCLCompletionItem> = IndexSet::new();
+
+        // test completion for schema attr
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 12,
+            column: Some(7),
+        };
+
+        let got = completion(Some('.'), &program, &pos, &prog_scope).unwrap();
+
+        items.insert(KCLCompletionItem {
+            label: "name".to_string(),
+        });
+        items.insert(KCLCompletionItem {
+            label: "age".to_string(),
+        });
+
+        let expect: CompletionResponse = into_completion_items(&items).into();
+
+        assert_eq!(got, expect);
+        items.clear();
+
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 14,
+            column: Some(12),
+        };
+
+        // test completion for str builtin function
+        let got = completion(Some('.'), &program, &pos, &prog_scope).unwrap();
+        let binding = STRING_MEMBER_FUNCTIONS;
+        for k in binding.keys() {
+            items.insert(KCLCompletionItem {
+                label: format!("{}{}", k, "()"),
+            });
+        }
+        let expect: CompletionResponse = into_completion_items(&items).into();
+
+        assert_eq!(got, expect);
+        items.clear();
+
+        // test completion for import pkg path
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 1,
+            column: Some(12),
+        };
+        let got = completion(Some('.'), &program, &pos, &prog_scope).unwrap();
+        items.insert(KCLCompletionItem {
+            label: "file1".to_string(),
+        });
+        items.insert(KCLCompletionItem {
+            label: "file2".to_string(),
+        });
+        items.insert(KCLCompletionItem {
+            label: "subpkg".to_string(),
+        });
+
+        let expect: CompletionResponse = into_completion_items(&items).into();
+        assert_eq!(got, expect);
+        items.clear();
+
+        // test completion for import pkg' schema
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 16,
+            column: Some(12),
+        };
+
+        let got = completion(Some('.'), &program, &pos, &prog_scope).unwrap();
+        items.insert(KCLCompletionItem {
+            label: "Person1".to_string(),
+        });
+
+        let expect: CompletionResponse = into_completion_items(&items).into();
+        assert_eq!(got, expect);
+        items.clear();
+
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 19,
+            column: Some(5),
+        };
+        let got = completion(Some('.'), &program, &pos, &prog_scope).unwrap();
+
+        items.extend(MATH_FUNCTION_NAMES.iter().map(|s| KCLCompletionItem {
+            label: s.to_string(),
+        }));
+        let expect: CompletionResponse = into_completion_items(&items).into();
+        assert_eq!(got, expect);
+        items.clear();
+
+        // test completion for literal str builtin function
+        let pos = KCLPos {
+            filename: file.clone(),
+            line: 21,
+            column: Some(4),
+        };
+
+        let got = completion(Some('.'), &program, &pos, &prog_scope).unwrap();
+        let binding = STRING_MEMBER_FUNCTIONS;
+        for k in binding.keys() {
+            items.insert(KCLCompletionItem {
+                label: format!("{}{}", k, "()"),
+            });
+        }
+        let expect: CompletionResponse = into_completion_items(&items).into();
+        items.clear();
+
+        assert_eq!(got, expect);
+
+        let pos = KCLPos {
+            filename: file,
+            line: 30,
+            column: Some(11),
+        };
+
+        let got = completion(Some('.'), &program, &pos, &prog_scope).unwrap();
+        items.insert(KCLCompletionItem {
+            label: "__settings__".to_string(),
+        });
+        items.insert(KCLCompletionItem {
+            label: "a".to_string(),
+        });
+        let expect: CompletionResponse = into_completion_items(&items).into();
+        assert_eq!(got, expect);
+    }
+}

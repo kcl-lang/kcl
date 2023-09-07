@@ -76,3 +76,115 @@ pub(crate) fn conver_code_to_kcl_diag_id(code: &NumberOrString) -> Option<Diagno
         },
     }
 }
+
+#[cfg(test)]
+mod tests {
+
+    use lsp_types::{
+        CodeAction, CodeActionKind, CodeActionOrCommand, Diagnostic, Position, Range, TextEdit,
+        Url, WorkspaceEdit,
+    };
+    use proc_macro_crate::bench_test;
+    use std::path::PathBuf;
+
+    use super::quick_fix;
+    use crate::{
+        to_lsp::kcl_diag_to_lsp_diags,
+        util::{parse_param_and_compile, Param},
+    };
+    use parking_lot::RwLock;
+    use std::sync::Arc;
+
+    #[test]
+    #[bench_test]
+    fn quick_fix_test() {
+        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let mut test_file = path.clone();
+        test_file.push("src/test_data/quick_fix.k");
+        let file = test_file.to_str().unwrap();
+
+        let (_, _, diags) = parse_param_and_compile(
+            Param {
+                file: file.to_string(),
+            },
+            Some(Arc::new(RwLock::new(Default::default()))),
+        )
+        .unwrap();
+
+        let diagnostics = diags
+            .iter()
+            .flat_map(|diag| kcl_diag_to_lsp_diags(diag, file))
+            .collect::<Vec<Diagnostic>>();
+
+        let uri = Url::from_file_path(file).unwrap();
+        let code_actions = quick_fix(&uri, &diagnostics);
+
+        let expected = vec![
+            CodeActionOrCommand::CodeAction(CodeAction {
+                title: "ReimportWarning".to_string(),
+                kind: Some(CodeActionKind::QUICKFIX),
+                diagnostics: Some(vec![diagnostics[0].clone()]),
+                edit: Some(WorkspaceEdit {
+                    changes: Some(
+                        vec![(
+                            uri.clone(),
+                            vec![TextEdit {
+                                range: Range {
+                                    start: Position {
+                                        line: 1,
+                                        character: 0,
+                                    },
+                                    end: Position {
+                                        line: 1,
+                                        character: 20,
+                                    },
+                                },
+                                new_text: "".to_string(),
+                            }],
+                        )]
+                        .into_iter()
+                        .collect(),
+                    ),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            }),
+            CodeActionOrCommand::CodeAction(CodeAction {
+                title: "UnusedImportWarning".to_string(),
+                kind: Some(CodeActionKind::QUICKFIX),
+                diagnostics: Some(vec![diagnostics[1].clone()]),
+                edit: Some(WorkspaceEdit {
+                    changes: Some(
+                        vec![(
+                            uri.clone(),
+                            vec![TextEdit {
+                                range: Range {
+                                    start: Position {
+                                        line: 0,
+                                        character: 0,
+                                    },
+                                    end: Position {
+                                        line: 0,
+                                        character: 20,
+                                    },
+                                },
+                                new_text: "".to_string(),
+                            }],
+                        )]
+                        .into_iter()
+                        .collect(),
+                    ),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            }),
+        ];
+
+        for (get, expected) in code_actions.iter().zip(expected.iter()) {
+            assert_eq!(get, expected)
+        }
+
+        assert_eq!(expected[0], code_actions[0]);
+        assert_eq!(expected[1], code_actions[1]);
+    }
+}
