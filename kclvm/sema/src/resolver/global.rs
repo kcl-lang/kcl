@@ -77,7 +77,6 @@ impl<'ctx> Resolver<'ctx> {
                             mixins: vec![],
                             attrs: IndexMap::default(),
                             func: Box::new(FunctionType {
-                                pkg: None,
                                 doc: parsed_doc.summary.clone(),
                                 params: vec![],
                                 self_ty: None,
@@ -824,7 +823,6 @@ impl<'ctx> Resolver<'ctx> {
             mixins: mixin_types,
             attrs: attr_obj_map,
             func: Box::new(FunctionType {
-                pkg: None,
                 doc: parsed_doc.summary.clone(),
                 params,
                 self_ty: None,
@@ -934,7 +932,6 @@ impl<'ctx> Resolver<'ctx> {
             mixins: parent_types,
             attrs: IndexMap::default(),
             func: Box::new(FunctionType {
-                pkg: None,
                 doc: rule_stmt.doc.clone(),
                 params,
                 self_ty: None,

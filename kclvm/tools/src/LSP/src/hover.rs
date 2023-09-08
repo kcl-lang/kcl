@@ -72,14 +72,11 @@ pub(crate) fn hover(
                                     // if let Some(pkg) = &func_ty.pkg{
                                     //     docs.insert(pkg.clone());
                                     // }
-                                    let pkg = if let Some(pkg) = &func_ty.pkg {
-                                        format!("{}\n\n", pkg)
-                                    } else {
-                                        "".to_string()
-                                    };
+                                    if let Some(ty) = &func_ty.self_ty {
+                                        let self_ty = format!("{}\n\n", ty.ty_str());
+                                        docs.insert(self_ty);
+                                    }
                                     let func_sig = build_func_sig_str(func_ty, obj.name);
-
-                                    docs.insert(pkg);
                                     docs.insert(func_sig);
 
                                     if !func_ty.doc.is_empty() {
@@ -298,14 +295,11 @@ mod tests {
 
         match got.contents {
             lsp_types::HoverContents::Array(vec) => {
-                assert_eq!(vec.len(), 3);
+                assert_eq!(vec.len(), 2);
                 if let MarkedString::String(s) = vec[0].clone() {
-                    assert_eq!(s, "Base64\n\n");
-                }
-                if let MarkedString::String(s) = vec[1].clone() {
                     assert_eq!(s, "fn encode(value: str, encoding: str) -> str");
                 }
-                if let MarkedString::String(s) = vec[2].clone() {
+                if let MarkedString::String(s) = vec[1].clone() {
                     assert_eq!(
                         s,
                         "Encode the string `value` using the codec registered for encoding."
@@ -326,7 +320,7 @@ mod tests {
             lsp_types::HoverContents::Array(vec) => {
                 assert_eq!(vec.len(), 3);
                 if let MarkedString::String(s) = vec[0].clone() {
-                    assert_eq!(s, "Str\n\n");
+                    assert_eq!(s, "str\n\n");
                 }
                 if let MarkedString::String(s) = vec[1].clone() {
                     assert_eq!(s, "fn count(sub: str, start: int, end: int) -> int");

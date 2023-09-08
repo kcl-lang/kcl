@@ -23,7 +23,6 @@ macro_rules! register_base64_member {
 }
 register_base64_member! {
     encode => Type::function(
-        Some("Base64".to_string()),
         None,
         Type::str_ref(),
         &[
@@ -43,7 +42,6 @@ register_base64_member! {
         None,
     )
     decode => Type::function(
-        Some("Base64".to_string()),
         None,
         Type::str_ref(),
         &[
@@ -98,7 +96,6 @@ macro_rules! register_net_member {
 }
 register_net_member! {
     split_host_port => Type::function(
-        Some("Net".to_string()),
         None,
         Type::list_ref(Type::str_ref()),
         &[
@@ -113,7 +110,6 @@ register_net_member! {
         None,
     )
     join_host_port => Type::function(
-        Some("Net".to_string()),
         None,
         Type::str_ref(),
         &[
@@ -133,7 +129,7 @@ register_net_member! {
         None,
     )
     fqdn => Type::function(
-        Some("Net".to_string()),
+
         None,
         Type::str_ref(),
         &[
@@ -148,7 +144,7 @@ register_net_member! {
         None,
     )
     parse_IP => Type::function(
-        Some("Net".to_string()),
+
         None,
         Type::str_ref(),
         &[
@@ -163,7 +159,7 @@ register_net_member! {
         None,
     )
     IP_string => Type::function(
-        Some("Net".to_string()),
+
         None,
         Type::str_ref(),
         &[
@@ -178,7 +174,7 @@ register_net_member! {
         None,
     )
     to_IP4 => Type::function(
-        Some("Net".to_string()),
+
         None,
         Type::str_ref(),
         &[
@@ -193,7 +189,7 @@ register_net_member! {
         None,
     )
     to_IP16 => Type::function(
-        Some("Net".to_string()),
+
         None,
         Type::str_ref(),
         &[
@@ -208,7 +204,7 @@ register_net_member! {
         None,
     )
     is_IPv4 => Type::function(
-        Some("Net".to_string()),
+
         None,
         Type::bool_ref(),
         &[
@@ -223,7 +219,7 @@ register_net_member! {
         None,
     )
     is_IP =>Type::function(
-        Some("Net".to_string()),
+
         None,
         Type::bool_ref(),
         &[
@@ -238,7 +234,7 @@ register_net_member! {
         None,
     )
     is_loopback_IP =>Type::function(
-        Some("Net".to_string()),
+
         None,
         Type::bool_ref(),
         &[
@@ -253,7 +249,7 @@ register_net_member! {
         None,
     )
     is_multicast_IP =>Type::function(
-        Some("Net".to_string()),
+
         None,
         Type::bool_ref(),
         &[
@@ -268,7 +264,7 @@ register_net_member! {
         None,
     )
     is_interface_local_multicast_IP => Type::function(
-        Some("Net".to_string()),
+
         None,
         Type::bool_ref(),
         &[
@@ -283,7 +279,7 @@ register_net_member! {
         None,
     )
     is_link_local_multicast_IP =>Type::function(
-        Some("Net".to_string()),
+
         None,
         Type::bool_ref(),
         &[
@@ -298,7 +294,7 @@ register_net_member! {
         None,
     )
     is_link_local_unicast_IP =>Type::function(
-        Some("Net".to_string()),
+
         None,
         Type::bool_ref(),
         &[
@@ -313,7 +309,7 @@ register_net_member! {
         None,
     )
     is_global_unicast_IP =>Type::function(
-        Some("Net".to_string()),
+
         None,
         Type::bool_ref(),
         &[
@@ -328,7 +324,7 @@ register_net_member! {
         None,
     )
     is_unspecified_IP => Type::function(
-        Some("Net".to_string()),
+
         None,
         Type::bool_ref(),
         &[
@@ -361,7 +357,7 @@ macro_rules! register_manifests_member {
 }
 register_manifests_member! {
     yaml_stream => Type::function(
-        Some("Yaml Stream".to_string()),
+
         None,
         Type::any_ref(),
         &[
@@ -423,7 +419,7 @@ macro_rules! register_math_member {
 }
 register_math_member! {
     ceil => Type::function(
-        Some("Math".to_string()),
+
         None,
         Type::int_ref(),
         &[
@@ -438,7 +434,7 @@ register_math_member! {
         None,
     )
     factorial => Type::function(
-        Some("Math".to_string()),
+
         None,
         Type::int_ref(),
         &[
@@ -453,7 +449,7 @@ register_math_member! {
         None,
     )
     floor => Type::function(
-        Some("Math".to_string()),
+
         None,
         Type::int_ref(),
         &[
@@ -468,7 +464,7 @@ register_math_member! {
         None,
     )
     gcd => Type::function(
-        Some("Math".to_string()),
+
         None,
         Type::int_ref(),
         &[
@@ -488,7 +484,7 @@ register_math_member! {
         None,
     )
     isfinite => Type::function(
-        Some("Math".to_string()),
+
         None,
         Type::bool_ref(),
         &[
@@ -503,7 +499,7 @@ register_math_member! {
         None,
     )
     isinf => Type::function(
-        Some("Math".to_string()),
+
         None,
         Type::bool_ref(),
         &[
@@ -518,7 +514,7 @@ register_math_member! {
         None,
     )
     isnan => Type::function(
-        Some("Math".to_string()),
+
         None,
         Type::bool_ref(),
         &[
@@ -533,7 +529,7 @@ register_math_member! {
         None,
     )
     modf => Type::function(
-        Some("Math".to_string()),
+
         None,
         Type::list_ref(Type::float_ref()),
         &[
@@ -548,7 +544,7 @@ register_math_member! {
         None,
     )
     exp => Type::function(
-        Some("Math".to_string()),
+
         None,
         Type::float_ref(),
         &[
@@ -563,7 +559,7 @@ register_math_member! {
         None,
     )
     expm1 => Type::function(
-        Some("Math".to_string()),
+
         None,
         Type::float_ref(),
         &[
@@ -578,7 +574,7 @@ register_math_member! {
         None,
     )
     log => Type::function(
-        Some("Math".to_string()),
+
         None,
         Type::float_ref(),
         &[
@@ -598,7 +594,7 @@ register_math_member! {
         None,
     )
     log1p => Type::function(
-        Some("Math".to_string()),
+
         None,
         Type::float_ref(),
         &[
@@ -613,7 +609,7 @@ register_math_member! {
         None,
     )
     log2 => Type::function(
-        Some("Math".to_string()),
+
         None,
         Type::float_ref(),
         &[
@@ -628,7 +624,7 @@ register_math_member! {
         None,
     )
     log10 => Type::function(
-        Some("Math".to_string()),
+
         None,
         Type::float_ref(),
         &[
@@ -643,7 +639,7 @@ register_math_member! {
         None,
     )
     pow => Type::function(
-        Some("Math".to_string()),
+
         None,
         Type::float_ref(),
         &[
@@ -663,7 +659,7 @@ register_math_member! {
         None,
     )
     sqrt => Type::function(
-        Some("Math".to_string()),
+
         None,
         Type::float_ref(),
         &[
@@ -696,7 +692,7 @@ macro_rules! register_datetime_member {
 }
 register_datetime_member! {
     ticks => Type::function(
-        Some("Datatime".to_string()),
+
         None,
         Type::float_ref(),
         &[],
@@ -705,7 +701,7 @@ register_datetime_member! {
         None,
     )
     date => Type::function(
-        Some("Datatime".to_string()),
+
         None,
         Type::str_ref(),
         &[],
@@ -714,7 +710,7 @@ register_datetime_member! {
         None,
     )
     now => Type::function(
-        Some("Datatime".to_string()),
+
         None,
         Type::str_ref(),
         &[],
@@ -723,7 +719,7 @@ register_datetime_member! {
         None,
     )
     today => Type::function(
-        Some("Datatime".to_string()),
+
         None,
         Type::str_ref(),
         &[],
@@ -751,7 +747,7 @@ macro_rules! register_regex_member {
 }
 register_regex_member! {
     replace => Type::function(
-        Some("Regex".to_string()),
+
         None,
         Type::str_ref(),
         &[
@@ -781,7 +777,7 @@ register_regex_member! {
         None,
     )
     match => Type::function(
-        Some("Regex".to_string()),
+
         None,
         Type::bool_ref(),
         &[
@@ -801,7 +797,7 @@ register_regex_member! {
         None,
     )
     compile => Type::function(
-        Some("Regex".to_string()),
+
         None,
         Type::bool_ref(),
         &[
@@ -816,7 +812,7 @@ register_regex_member! {
         None,
     )
     findall => Type::function(
-        Some("Regex".to_string()),
+
         None,
         Type::list_ref(Type::str_ref()),
         &[
@@ -836,7 +832,7 @@ register_regex_member! {
         None,
     )
     search => Type::function(
-        Some("Regex".to_string()),
+
         None,
         Type::bool_ref(),
         &[
@@ -856,7 +852,7 @@ register_regex_member! {
         None,
     )
     split => Type::function(
-        Some("Regex".to_string()),
+
         None,
         Type::list_ref(Type::str_ref()),
         &[
@@ -899,7 +895,7 @@ macro_rules! register_yaml_member {
 }
 register_yaml_member! {
     encode => Type::function(
-        Some("Yaml".to_string()),
+
         None,
         Type::str_ref(),
         &[
@@ -929,7 +925,7 @@ register_yaml_member! {
         Some(1),
     )
     decode => Type::function(
-        Some("Yaml".to_string()),
+
         None,
         Type::any_ref(),
         &[
@@ -944,7 +940,7 @@ register_yaml_member! {
         None,
     )
     dump_to_file => Type::function(
-        Some("Yaml".to_string()),
+
         None,
         Type::str_ref(),
         &[
@@ -997,7 +993,7 @@ macro_rules! register_json_member {
 }
 register_json_member! {
     encode => Type::function(
-        Some("Json".to_string()),
+
         None,
         Type::str_ref(),
         &[
@@ -1032,7 +1028,7 @@ register_json_member! {
         Some(1),
     )
     decode => Type::function(
-        Some("Json".to_string()),
+
         None,
         Type::any_ref(),
         &[
@@ -1047,7 +1043,7 @@ register_json_member! {
         None,
     )
     dump_to_file => Type::function(
-        Some("Json".to_string()),
+
         None,
         Type::str_ref(),
         &[
@@ -1105,7 +1101,7 @@ macro_rules! register_crypto_member {
 }
 register_crypto_member! {
     md5 => Type::function(
-        Some("Crypto".to_string()),
+
         None,
         Type::str_ref(),
         &[
@@ -1125,7 +1121,7 @@ register_crypto_member! {
         None,
     )
     sha1 => Type::function(
-        Some("Crypto".to_string()),
+
         None,
         Type::str_ref(),
         &[
@@ -1145,7 +1141,7 @@ register_crypto_member! {
         None,
     )
     sha224 => Type::function(
-        Some("Crypto".to_string()),
+
         None,
         Type::str_ref(),
         &[
@@ -1165,7 +1161,7 @@ register_crypto_member! {
         None,
     )
     sha256 => Type::function(
-        Some("Crypto".to_string()),
+
         None,
         Type::str_ref(),
         &[
@@ -1185,7 +1181,7 @@ register_crypto_member! {
         None,
     )
     sha384 => Type::function(
-        Some("Crypto".to_string()),
+
         None,
         Type::str_ref(),
         &[
@@ -1205,7 +1201,7 @@ register_crypto_member! {
         None,
     )
     sha512 => Type::function(
-        Some("Crypto".to_string()),
+
         None,
         Type::str_ref(),
         &[
@@ -1278,7 +1274,7 @@ register_units_member! {
     Ti => Type::INT
     Pi => Type::INT
     to_n => Type::function(
-        Some("Units".to_string()),
+
         None,
         Type::str_ref(),
         &[
@@ -1293,7 +1289,7 @@ register_units_member! {
         None,
     )
     to_u => Type::function(
-        Some("Units".to_string()),
+
         None,
         Type::str_ref(),
         &[
@@ -1308,7 +1304,7 @@ register_units_member! {
         None,
     )
     to_m => Type::function(
-        Some("Units".to_string()),
+
         None,
         Type::str_ref(),
         &[
@@ -1323,7 +1319,7 @@ register_units_member! {
         None,
     )
     to_K => Type::function(
-        Some("Units".to_string()),
+
         None,
         Type::str_ref(),
         &[
@@ -1338,7 +1334,7 @@ register_units_member! {
         None,
     )
     to_M => Type::function(
-        Some("Units".to_string()),
+
         None,
         Type::str_ref(),
         &[
@@ -1353,7 +1349,7 @@ register_units_member! {
         None,
     )
     to_G => Type::function(
-        Some("Units".to_string()),
+
         None,
         Type::str_ref(),
         &[
@@ -1368,7 +1364,7 @@ register_units_member! {
         None,
     )
     to_T => Type::function(
-        Some("Units".to_string()),
+
         None,
         Type::str_ref(),
         &[
@@ -1383,7 +1379,7 @@ register_units_member! {
         None,
     )
     to_P => Type::function(
-        Some("Units".to_string()),
+
         None,
         Type::str_ref(),
         &[
@@ -1398,7 +1394,7 @@ register_units_member! {
         None,
     )
     to_Ki => Type::function(
-        Some("Units".to_string()),
+
         None,
         Type::str_ref(),
         &[
@@ -1413,7 +1409,7 @@ register_units_member! {
         None,
     )
     to_Mi => Type::function(
-        Some("Units".to_string()),
+
         None,
         Type::str_ref(),
         &[
@@ -1428,7 +1424,7 @@ register_units_member! {
         None,
     )
     to_Gi => Type::function(
-        Some("Units".to_string()),
+
         None,
         Type::str_ref(),
         &[
@@ -1443,7 +1439,7 @@ register_units_member! {
         None,
     )
     to_Ti => Type::function(
-        Some("Units".to_string()),
+
         None,
         Type::str_ref(),
         &[
@@ -1458,7 +1454,7 @@ register_units_member! {
         None,
     )
     to_Pi => Type::function(
-        Some("Units".to_string()),
+
         None,
         Type::str_ref(),
         &[
@@ -1491,7 +1487,7 @@ macro_rules! register_collection_member {
 }
 register_collection_member! {
     union_all => Type::function(
-        Some("Collection".to_string()),
+
         None,
         Type::any_ref(),
         &[

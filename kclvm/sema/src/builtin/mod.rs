@@ -34,7 +34,6 @@ macro_rules! register_builtin {
 
 register_builtin! {
     option => Type::function(
-        Some("Builtin".to_string()),
         None,
         Rc::new(Type::ANY),
         &[
@@ -79,7 +78,6 @@ register_builtin! {
         Some(1),
     )
     print => Type::function(
-        Some("Builtin".to_string()),
         None,
         Rc::new(Type::ANY),
         &[],
@@ -92,7 +90,6 @@ register_builtin! {
         Some(0),
     )
     multiplyof => Type::function(
-        Some("Builtin".to_string()),
         None,
         Rc::new(Type::BOOL),
         &[
@@ -112,7 +109,6 @@ register_builtin! {
         Some(0),
     )
     isunique => Type::function(
-        Some("Builtin".to_string()),
         None,
         Rc::new(Type::BOOL),
         &[
@@ -127,7 +123,6 @@ register_builtin! {
         None,
     )
     len => Type::function(
-        Some("Builtin".to_string()),
         None,
         Rc::new(Type::INT),
         &[
@@ -142,7 +137,6 @@ register_builtin! {
         None,
     )
     abs => Type::function(
-        Some("Builtin".to_string()),
         None,
         Rc::new(Type::ANY),
         &[
@@ -157,7 +151,6 @@ register_builtin! {
         None,
     )
     all_true => Type::function(
-        Some("Builtin".to_string()),
         None,
         Rc::new(Type::BOOL),
         &[
@@ -174,7 +167,6 @@ register_builtin! {
         None,
     )
     any_true => Type::function(
-        Some("Builtin".to_string()),
         None,
         Rc::new(Type::BOOL),
         &[
@@ -191,7 +183,6 @@ register_builtin! {
         None,
     )
     hex => Type::function(
-        Some("Builtin".to_string()),
         None,
         Rc::new(Type::STR),
         &[
@@ -206,7 +197,6 @@ register_builtin! {
         None,
     )
     bin => Type::function(
-        Some("Builtin".to_string()),
         None,
         Rc::new(Type::STR),
         &[
@@ -221,7 +211,6 @@ register_builtin! {
         None,
     )
     oct => Type::function(
-        Some("Builtin".to_string()),
         None,
         Rc::new(Type::STR),
         &[
@@ -236,7 +225,6 @@ register_builtin! {
         None,
     )
     ord => Type::function(
-        Some("Builtin".to_string()),
         None,
         Rc::new(Type::INT),
         &[
@@ -251,7 +239,6 @@ register_builtin! {
         None,
     )
     sorted => Type::function(
-        Some("Builtin".to_string()),
         None,
         Type::list_ref(Rc::new(Type::ANY)),
         &[
@@ -274,7 +261,6 @@ register_builtin! {
         Some(1),
     )
     range => Type::function(
-        Some("Builtin".to_string()),
         None,
         Type::list_ref(Rc::new(Type::INT)),
         &[
@@ -299,7 +285,6 @@ register_builtin! {
         None,
     )
     max => Type::function(
-        Some("Builtin".to_string()),
         None,
         Rc::new(Type::ANY),
         &[],
@@ -311,7 +296,6 @@ register_builtin! {
         None,
     )
     min => Type::function(
-        Some("Builtin".to_string()),
         None,
         Rc::new(Type::ANY),
         &[],
@@ -323,7 +307,6 @@ register_builtin! {
         None,
     )
     sum => Type::function(
-        Some("Builtin".to_string()),
         None,
         Rc::new(Type::ANY),
         &[
@@ -345,7 +328,6 @@ register_builtin! {
         None,
     )
     pow => Type::function(
-        Some("Builtin".to_string()),
         None,
         Type::number(),
         &[
@@ -373,7 +355,6 @@ register_builtin! {
         None,
     )
     round => Type::function(
-        Some("Builtin".to_string()),
         None,
         Type::number(),
         &[
@@ -397,7 +378,6 @@ register_builtin! {
         None,
     )
     zip => Type::function(
-        Some("Builtin".to_string()),
         None,
         Type::list_ref(Rc::new(Type::ANY)),
         &[],
@@ -408,7 +388,6 @@ register_builtin! {
         None,
     )
     int => Type::function(
-        Some("Builtin".to_string()),
         None,
         Rc::new(Type::INT),
         &[
@@ -429,7 +408,6 @@ register_builtin! {
         None,
     )
     float => Type::function(
-        Some("Builtin".to_string()),
         None,
         Rc::new(Type::FLOAT),
         &[
@@ -444,7 +422,6 @@ register_builtin! {
         None,
     )
     bool => Type::function(
-        Some("Builtin".to_string()),
         None,
         Rc::new(Type::BOOL),
         &[
@@ -461,7 +438,6 @@ register_builtin! {
         None,
     )
     str => Type::function(
-        Some("Builtin".to_string()),
         None,
         Rc::new(Type::STR),
         &[
@@ -479,7 +455,6 @@ register_builtin! {
         None,
     )
     list => Type::function(
-        Some("Builtin".to_string()),
         None,
         Type::list_ref(Rc::new(Type::ANY)),
         &[
@@ -497,7 +472,6 @@ register_builtin! {
         None,
     )
     dict => Type::function(
-        Some("Builtin".to_string()),
         None,
         Type::dict_ref(Rc::new(Type::ANY), Rc::new(Type::ANY)),
         &[
@@ -512,7 +486,6 @@ register_builtin! {
         None,
     )
     typeof => Type::function(
-        Some("Builtin".to_string()),
         None,
         Rc::new(Type::STR),
         &[

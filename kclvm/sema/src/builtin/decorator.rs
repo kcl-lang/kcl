@@ -21,7 +21,6 @@ macro_rules! register_decorator {
 
 register_decorator! {
     deprecated => Type::function(
-        Some("Decorator".to_string()),
         None,
         Rc::new(Type::ANY),
         &[
@@ -54,7 +53,6 @@ register_decorator! {
         None,
     )
     info => Type::function(
-        Some("Decorator".to_string()),
         None,
         Rc::new(Type::ANY),
         &[],

@@ -375,7 +375,6 @@ impl NumberMultiplierType {
 /// The function type.
 #[derive(Debug, Clone, PartialEq)]
 pub struct FunctionType {
-    pub pkg: Option<String>,
     pub doc: String,
     pub params: Vec<Parameter>,
     pub self_ty: Option<TypeRef>,
@@ -388,7 +387,6 @@ impl FunctionType {
     #[inline]
     pub fn variadic_func() -> Self {
         Self {
-            pkg: None,
             doc: "".to_string(),
             params: vec![],
             self_ty: None,

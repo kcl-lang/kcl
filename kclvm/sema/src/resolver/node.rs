@@ -990,7 +990,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
         if !real_ret_ty.is_any() && ret_ty.is_any() && lambda_expr.return_type_str.is_none() {
             ret_ty = real_ret_ty;
         }
-        Rc::new(Type::function(None, None, ret_ty, &params, "", false, None))
+        Rc::new(Type::function(None, ret_ty, &params, "", false, None))
     }
 
     fn walk_keyword(&mut self, keyword: &'ctx ast::Keyword) -> Self::Result {
