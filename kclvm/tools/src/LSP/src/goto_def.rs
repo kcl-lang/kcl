@@ -14,7 +14,8 @@ use kclvm_ast::ast::{Expr, Identifier, ImportStmt, Node, Program, Stmt};
 use kclvm_compiler::pkgpath_without_prefix;
 use kclvm_error::Position as KCLPos;
 
-use kclvm_sema::resolver::scope::{ProgramScope, Scope, ScopeObject};
+use kclvm_sema::builtin::get_system_member_function_ty;
+use kclvm_sema::resolver::scope::{ProgramScope, Scope, ScopeObject, ScopeObjectKind};
 use kclvm_sema::ty::{DictType, SchemaType};
 use lsp_types::{GotoDefinitionResponse, Url};
 use lsp_types::{Location, Range};
@@ -124,7 +125,6 @@ pub(crate) fn find_def(
     }
 
     let (inner_expr, parent) = inner_most_expr_in_stmt(&node.node, kcl_pos, None);
-
     if let Some(expr) = inner_expr {
         if let Expr::Identifier(id) = expr.node {
             let id_node = Node::node_with_pos(
@@ -202,14 +202,43 @@ pub(crate) fn resolve_var(
                     kclvm_sema::ty::TypeKind::Schema(schema_type) => {
                         find_attr_in_schema(schema_type, &node_names[1..], scope_map)
                     }
-                    kclvm_sema::ty::TypeKind::Module(module_ty) => {
-                        match scope_map.get(&pkgpath_without_prefix!(module_ty.pkgpath)) {
-                            Some(scope) => {
-                                return resolve_var(&node_names[1..], &scope.borrow(), scope_map);
+                    kclvm_sema::ty::TypeKind::Module(module_ty) => match module_ty.kind {
+                        kclvm_sema::ty::ModuleKind::User => {
+                            match scope_map.get(&pkgpath_without_prefix!(module_ty.pkgpath)) {
+                                Some(scope) => {
+                                    return resolve_var(
+                                        &node_names[1..],
+                                        &scope.borrow(),
+                                        scope_map,
+                                    );
+                                }
+                                None => None,
                             }
-                            None => None,
                         }
-                    }
+                        kclvm_sema::ty::ModuleKind::System => {
+                            if node_names.len() == 2 {
+                                let func_name_node = node_names[1].clone();
+                                let func_name = func_name_node.node.clone();
+                                let ty = get_system_member_function_ty(&name, &func_name);
+                                match &ty.kind {
+                                    kclvm_sema::ty::TypeKind::Function(func_ty) => {
+                                        return Some(Definition::Object(ScopeObject {
+                                            name: func_name,
+                                            start: func_name_node.get_pos(),
+                                            end: func_name_node.get_end_pos(),
+                                            ty: ty.clone(),
+                                            kind: ScopeObjectKind::FunctionCall,
+                                            used: false,
+                                            doc: Some(func_ty.doc.clone()),
+                                        }))
+                                    }
+                                    _ => return None,
+                                }
+                            }
+                            None
+                        }
+                        kclvm_sema::ty::ModuleKind::Plugin => None,
+                    },
                     kclvm_sema::ty::TypeKind::Dict(DictType { attrs, .. }) => {
                         let key_name = names[1].clone();
                         match attrs.get(&key_name) {

@@ -17,6 +17,7 @@ macro_rules! register_string_member {
 
 register_string_member! {
     capitalize => Type::function(
+        Some("Str".to_string()),
         Some(Rc::new(Type::STR)),
         Rc::new(Type::STR),
         &[],
@@ -25,6 +26,7 @@ register_string_member! {
         None,
     )
     count => Type::function(
+        Some("Str".to_string()),
         Some(Rc::new(Type::STR)),
         Rc::new(Type::INT),
         &[
@@ -49,6 +51,7 @@ register_string_member! {
         None,
     )
     endswith => Type::function(
+        Some("Str".to_string()),
         Some(Rc::new(Type::STR)),
         Rc::new(Type::BOOL),
         &[
@@ -73,6 +76,7 @@ register_string_member! {
         None,
     )
     find => Type::function(
+        Some("Str".to_string()),
         Some(Rc::new(Type::STR)),
         Rc::new(Type::INT),
         &[
@@ -97,6 +101,7 @@ register_string_member! {
         None,
     )
     format => Type::function(
+        Some("Str".to_string()),
         Some(Rc::new(Type::STR)),
         Rc::new(Type::STR),
         &[],
@@ -105,6 +110,7 @@ register_string_member! {
         None,
     )
     index => Type::function(
+        Some("Str".to_string()),
         Some(Rc::new(Type::STR)),
         Rc::new(Type::INT),
         &[
@@ -129,6 +135,7 @@ register_string_member! {
         None,
     )
     isalpha => Type::function(
+        Some("Str".to_string()),
         Some(Rc::new(Type::STR)),
         Rc::new(Type::BOOL),
         &[],
@@ -137,6 +144,7 @@ register_string_member! {
         None,
     )
     isalnum => Type::function(
+        Some("Str".to_string()),
         Some(Rc::new(Type::STR)),
         Rc::new(Type::BOOL),
         &[],
@@ -145,6 +153,7 @@ register_string_member! {
         None,
     )
     isdigit => Type::function(
+        Some("Str".to_string()),
         Some(Rc::new(Type::STR)),
         Rc::new(Type::BOOL),
         &[],
@@ -153,6 +162,7 @@ register_string_member! {
         None,
     )
     islower => Type::function(
+        Some("Str".to_string()),
         Some(Rc::new(Type::STR)),
         Rc::new(Type::BOOL),
         &[],
@@ -161,6 +171,7 @@ register_string_member! {
         None,
     )
     isspace => Type::function(
+        Some("Str".to_string()),
         Some(Rc::new(Type::STR)),
         Rc::new(Type::BOOL),
         &[],
@@ -169,6 +180,7 @@ register_string_member! {
         None,
     )
     istitle => Type::function(
+        Some("Str".to_string()),
         Some(Rc::new(Type::STR)),
         Rc::new(Type::BOOL),
         &[],
@@ -177,6 +189,7 @@ register_string_member! {
         None,
     )
     isupper => Type::function(
+        Some("Str".to_string()),
         Some(Rc::new(Type::STR)),
         Rc::new(Type::BOOL),
         &[],
@@ -185,6 +198,7 @@ register_string_member! {
         None,
     )
     join => Type::function(
+        Some("Str".to_string()),
         Some(Rc::new(Type::STR)),
         Rc::new(Type::STR),
         &[
@@ -199,6 +213,7 @@ register_string_member! {
         None,
     )
     lower => Type::function(
+        Some("Str".to_string()),
         Some(Rc::new(Type::STR)),
         Rc::new(Type::STR),
         &[],
@@ -207,6 +222,7 @@ register_string_member! {
         None,
     )
     upper => Type::function(
+        Some("Str".to_string()),
         Some(Rc::new(Type::STR)),
         Rc::new(Type::STR),
         &[],
@@ -215,6 +231,7 @@ register_string_member! {
         None,
     )
     lstrip => Type::function(
+        Some("Str".to_string()),
         Some(Rc::new(Type::STR)),
         Rc::new(Type::STR),
         &[
@@ -229,6 +246,7 @@ register_string_member! {
         None,
     )
     rstrip => Type::function(
+        Some("Str".to_string()),
         Some(Rc::new(Type::STR)),
         Rc::new(Type::STR),
         &[
@@ -243,6 +261,7 @@ register_string_member! {
         None,
     )
     replace => Type::function(
+        Some("Str".to_string()),
         Some(Rc::new(Type::STR)),
         Rc::new(Type::STR),
         &[
@@ -267,6 +286,7 @@ register_string_member! {
         None,
     )
     removeprefix => Type::function(
+        Some("Str".to_string()),
         Some(Rc::new(Type::STR)),
         Rc::new(Type::STR),
         &[
@@ -281,6 +301,7 @@ register_string_member! {
         None,
     )
     removesuffix => Type::function(
+        Some("Str".to_string()),
         Some(Rc::new(Type::STR)),
         Rc::new(Type::STR),
         &[
@@ -295,6 +316,7 @@ register_string_member! {
         None,
     )
     rfind => Type::function(
+        Some("Str".to_string()),
         Some(Rc::new(Type::STR)),
         Rc::new(Type::INT),
         &[
@@ -319,6 +341,7 @@ register_string_member! {
         None,
     )
     rindex => Type::function(
+        Some("Str".to_string()),
         Some(Rc::new(Type::STR)),
         Rc::new(Type::INT),
         &[
@@ -343,6 +366,7 @@ register_string_member! {
         None,
     )
     rsplit => Type::function(
+        Some("Str".to_string()),
         Some(Rc::new(Type::STR)),
         Type::list_ref(Rc::new(Type::STR)),
         &[
@@ -362,6 +386,7 @@ register_string_member! {
         None,
     )
     split => Type::function(
+        Some("Str".to_string()),
         Some(Rc::new(Type::STR)),
         Type::list_ref(Rc::new(Type::STR)),
         &[
@@ -381,6 +406,7 @@ register_string_member! {
         None,
     )
     splitlines => Type::function(
+        Some("Str".to_string()),
         Some(Rc::new(Type::STR)),
         Type::list_ref(Rc::new(Type::STR)),
         &[
@@ -395,6 +421,7 @@ register_string_member! {
         None,
     )
     startswith => Type::function(
+        Some("Str".to_string()),
         Some(Rc::new(Type::STR)),
         Rc::new(Type::BOOL),
         &[
@@ -419,6 +446,7 @@ register_string_member! {
         None,
     )
     strip => Type::function(
+        Some("Str".to_string()),
         Some(Rc::new(Type::STR)),
         Rc::new(Type::STR),
         &[
@@ -433,6 +461,7 @@ register_string_member! {
         None,
     )
     title => Type::function(
+        Some("Str".to_string()),
         Some(Rc::new(Type::STR)),
         Rc::new(Type::STR),
         &[],

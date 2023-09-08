@@ -1,7 +1,10 @@
 use indexmap::IndexSet;
 use kclvm_ast::ast::Program;
 use kclvm_error::Position as KCLPos;
-use kclvm_sema::resolver::scope::{ProgramScope, ScopeObjectKind};
+use kclvm_sema::{
+    resolver::scope::{ProgramScope, ScopeObjectKind},
+    ty::FunctionType,
+};
 use lsp_types::{Hover, HoverContents, MarkedString};
 
 use crate::goto_def::find_def;
@@ -55,7 +58,37 @@ pub(crate) fn hover(
                             }
                             docs.insert(attrs.join("\n\n"));
                         }
-                        // todo: hover ScopeObjectKind::Attribute optional, default value
+                        ScopeObjectKind::FunctionCall => {
+                            let ty = obj.ty.clone();
+                            match &ty.kind {
+                                kclvm_sema::ty::TypeKind::Function(func_ty) => {
+                                    // system package function
+                                    // ```
+                                    // pkg
+                                    // function func_name(arg1: type, arg2: type, ..) -> type
+                                    // -----------------
+                                    // doc
+                                    // ```
+                                    // if let Some(pkg) = &func_ty.pkg{
+                                    //     docs.insert(pkg.clone());
+                                    // }
+                                    let pkg = if let Some(pkg) = &func_ty.pkg {
+                                        format!("{}\n\n", pkg)
+                                    } else {
+                                        "".to_string()
+                                    };
+                                    let func_sig = build_func_sig_str(func_ty, obj.name);
+
+                                    docs.insert(pkg);
+                                    docs.insert(func_sig);
+
+                                    if !func_ty.doc.is_empty() {
+                                        docs.insert(func_ty.doc.clone());
+                                    }
+                                }
+                                _ => {}
+                            }
+                        }
                         _ => {
                             // Variable
                             // ```
@@ -93,6 +126,24 @@ fn docs_to_hover(docs: IndexSet<String>) -> Option<lsp_types::Hover> {
             range: None,
         }),
     }
+}
+
+fn build_func_sig_str(func_ty: &FunctionType, name: String) -> String {
+    let mut result = format!("fn {}(", name);
+    if func_ty.params.is_empty() {
+        result.push_str(")");
+    } else {
+        for (i, p) in func_ty.params.iter().enumerate() {
+            result.push_str(&format!("{}: {}", p.name, p.ty.ty_str()));
+
+            if i != func_ty.params.len() - 1 {
+                result.push_str(", ");
+            }
+        }
+        result.push_str(")");
+    }
+    result.push_str(&format!(" -> {}", func_ty.return_ty.ty_str()));
+    result
 }
 
 #[cfg(test)]
@@ -227,6 +278,61 @@ mod tests {
                 }
                 if let MarkedString::String(s) = vec[1].clone() {
                     assert_eq!(s, "age doc test");
+                }
+            }
+            _ => unreachable!("test error"),
+        }
+    }
+
+    #[test]
+    #[bench_test]
+    fn func_def_hover() {
+        let (file, program, prog_scope, _) = compile_test_file("src/test_data/hover_test/hover.k");
+
+        let pos = KCLPos {
+            filename: file.clone(),
+            line: 22,
+            column: Some(18),
+        };
+        let got = hover(&program, &pos, &prog_scope).unwrap();
+
+        match got.contents {
+            lsp_types::HoverContents::Array(vec) => {
+                assert_eq!(vec.len(), 3);
+                if let MarkedString::String(s) = vec[0].clone() {
+                    assert_eq!(s, "Base64\n\n");
+                }
+                if let MarkedString::String(s) = vec[1].clone() {
+                    assert_eq!(s, "fn encode(value: str, encoding: str) -> str");
+                }
+                if let MarkedString::String(s) = vec[2].clone() {
+                    assert_eq!(
+                        s,
+                        "Encode the string `value` using the codec registered for encoding."
+                    );
+                }
+            }
+            _ => unreachable!("test error"),
+        }
+
+        let pos = KCLPos {
+            filename: file.clone(),
+            line: 23,
+            column: Some(14),
+        };
+        let got = hover(&program, &pos, &prog_scope).unwrap();
+
+        match got.contents {
+            lsp_types::HoverContents::Array(vec) => {
+                assert_eq!(vec.len(), 3);
+                if let MarkedString::String(s) = vec[0].clone() {
+                    assert_eq!(s, "Str\n\n");
+                }
+                if let MarkedString::String(s) = vec[1].clone() {
+                    assert_eq!(s, "fn count(sub: str, start: int, end: int) -> int");
+                }
+                if let MarkedString::String(s) = vec[2].clone() {
+                    assert_eq!(s, "Return the number of non-overlapping occurrences of substring sub in the range [start, end]. Optional arguments start and end are interpreted as in slice notation.");
                 }
             }
             _ => unreachable!("test error"),

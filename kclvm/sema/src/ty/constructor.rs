@@ -173,6 +173,7 @@ impl Type {
     /// Construct a function type.
     #[inline]
     pub fn function(
+        pkg: Option<String>,
         self_ty: Option<Rc<Type>>,
         return_ty: Rc<Type>,
         params: &[Parameter],
@@ -182,6 +183,7 @@ impl Type {
     ) -> Type {
         Type {
             kind: TypeKind::Function(FunctionType {
+                pkg,
                 doc: doc.to_string(),
                 params: params.to_owned(),
                 self_ty,

@@ -68,6 +68,7 @@ impl<'ctx> Resolver<'ctx> {
                     (
                         true,
                         Rc::new(Type::function(
+                            Some("Schema".to_string()),
                             Some(obj.clone()),
                             Type::list_ref(self.any_ty()),
                             &[],
