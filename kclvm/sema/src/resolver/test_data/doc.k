@@ -19,7 +19,7 @@ schema Server:
         See also: kusion_models/core/v1/metadata.k.
 
     Examples
-    ----------------------
+    --------
     myCustomApp = AppConfiguration {
         name = "componentName"
     }

@@ -2,7 +2,7 @@ mod arg;
 mod attr;
 mod calculation;
 mod config;
-mod doc;
+pub mod doc;
 mod format;
 pub mod global;
 mod import;
@@ -29,7 +29,6 @@ use crate::resolver::ty_alias::process_program_type_alias;
 use crate::{resolver::scope::Scope, ty::SchemaType};
 use kclvm_ast::ast::Program;
 use kclvm_error::*;
-
 use crate::ty::TypeContext;
 
 use self::scope::{builtin_scope, ProgramScope};

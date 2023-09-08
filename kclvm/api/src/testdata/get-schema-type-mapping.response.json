@@ -206,7 +206,13 @@
             "filename": "schema.k",
             "pkg_path": "__main__",
             "description": "Server is the common user interface for long-running services adopting the best practice of Kubernetes.",
-            "examples": {}
+            "examples": {
+                "Default example": {
+                    "summary": "",
+                    "description": "",
+                    "value": "myCustomApp = AppConfiguration {\n    name = \"componentName\"\n}"
+                }
+            }
         },
         "Container": {
             "type": "schema",

@@ -1,4 +1,4 @@
-use crate::gpyrpc::{Decorator, KclType};
+use crate::gpyrpc::{Decorator, KclType, Example};
 use indexmap::IndexSet;
 use kclvm_runtime::SCHEMA_SETTINGS_ATTR_NAME;
 use kclvm_sema::ty::{DictType, SchemaType, Type};
@@ -37,6 +37,7 @@ pub(crate) fn kcl_schema_ty_to_pb_ty(schema_ty: &SchemaType) -> KclType {
         r#type: "schema".to_string(),
         schema_name: schema_ty.name.clone(),
         schema_doc: schema_ty.doc.clone(),
+        examples: get_schema_ty_examples(schema_ty),
         properties: get_schema_ty_attributes(schema_ty, &mut 1),
         required: get_schema_ty_required_attributes(schema_ty),
         decorators: schema_ty
@@ -53,6 +54,19 @@ pub(crate) fn kcl_schema_ty_to_pb_ty(schema_ty: &SchemaType) -> KclType {
         description: schema_ty.doc.clone(),
         ..Default::default()
     }
+}
+
+fn get_schema_ty_examples(schema_ty: &SchemaType) -> HashMap<String, Example> {
+    let mut examples = HashMap::new();
+    for (key, example) in &schema_ty.examples {
+        let exa = Example {
+            summary: example.summary.clone(),
+            description: example.description.clone(),
+            value: example.value.clone()
+        };
+        examples.insert(key.clone(), exa);
+    }
+    examples
 }
 
 fn get_schema_ty_attributes(schema_ty: &SchemaType, line: &mut i32) -> HashMap<String, KclType> {

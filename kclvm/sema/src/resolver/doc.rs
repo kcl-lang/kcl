@@ -1,5 +1,5 @@
 use pcre2::bytes::Regex;
-use std::collections::HashSet;
+use std::collections::{HashSet, HashMap};
 use std::iter::Iterator;
 use std::str;
 
@@ -259,7 +259,7 @@ fn parse_summary(doc: &mut Reader) -> String {
 /// The description of each attribute will be returned as separate lines.
 pub(crate) fn parse_doc_string(ori: &String) -> Doc {
     if ori.is_empty() {
-        return Doc::new("".to_string(), vec![]);
+        return Doc::new("".to_string(), vec![], HashMap::new());
     }
     let mut ori = ori.clone();
     strip_quotes(&mut ori);
@@ -274,7 +274,16 @@ pub(crate) fn parse_doc_string(ori: &String) -> Doc {
 
     let attrs = parse_attr_list(attr_content);
 
-    Doc::new(summary, attrs)
+    let mut examples = HashMap::new();
+    let example_section = read_to_next_section(&mut doc);
+    if !example_section.is_empty() {
+        let default_example_content = match example_section.len() {
+            0 | 1 | 2 => "".to_string(),
+            _ => example_section[2..].join("\n"),
+        };
+        examples.insert("Default example".to_string(), Example::new("".to_string(), "".to_string(), default_example_content));
+    }
+    Doc::new(summary, attrs, examples)
 }
 
 /// The Doc struct contains a summary of schema and all the attributes described in the the docstring.
@@ -282,11 +291,12 @@ pub(crate) fn parse_doc_string(ori: &String) -> Doc {
 pub(crate) struct Doc {
     pub summary: String,
     pub attrs: Vec<Attribute>,
+    pub examples: HashMap<String, Example>,
 }
 
 impl Doc {
-    fn new(summary: String, attrs: Vec<Attribute>) -> Self {
-        Self { summary, attrs }
+    fn new(summary: String, attrs: Vec<Attribute>, examples: HashMap<String, Example>) -> Self {
+        Self { summary, attrs, examples: examples }
     }
 }
 
@@ -303,10 +313,24 @@ impl Attribute {
     }
 }
 
+/// The Example struct contains the example summary and the literal content
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct Example {
+    pub summary: String,
+    pub description: String,
+    pub value: String,
+}
+
+impl Example {
+    fn new(summary: String, description: String, value: String) -> Self {
+        Self { summary, description, value }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::{clean_doc, is_at_section, read_to_next_section, strip_quotes, Reader};
-    use crate::resolver::doc::parse_doc_string;
+    use crate::resolver::doc::{parse_doc_string, Example};
     use std::fs::File;
     use std::io::prelude::*;
     use std::path::PathBuf;
@@ -586,5 +610,9 @@ unindented line
                 "See also: kusion_models/core/v1/metadata.k.".to_string(),
             ]
         );
+        assert!(doc.examples.contains_key("Default example"));
+        assert_eq!(doc.examples.get("Default example"), Some(&Example::new("".to_string(), "".to_string(), "myCustomApp = AppConfiguration {
+    name = \"componentName\"
+}".to_string())));
     }
 }
