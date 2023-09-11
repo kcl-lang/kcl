@@ -419,7 +419,6 @@ register_string_member! {
         None,
     )
     strip => Type::function(
-
         Some(Rc::new(Type::STR)),
         Rc::new(Type::STR),
         &[

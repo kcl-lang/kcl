@@ -1,9 +1,8 @@
-use indexmap::IndexSet;
 use kclvm_ast::ast::Program;
 use kclvm_error::Position as KCLPos;
 use kclvm_sema::{
     resolver::scope::{ProgramScope, ScopeObjectKind},
-    ty::FunctionType,
+    ty::{FunctionType, SchemaType},
 };
 use lsp_types::{Hover, HoverContents, MarkedString};
 
@@ -18,70 +17,18 @@ pub(crate) fn hover(
 ) -> Option<lsp_types::Hover> {
     match program.pos_to_stmt(kcl_pos) {
         Some(node) => {
-            let mut docs: IndexSet<String> = IndexSet::new();
+            let mut docs: Vec<String> = vec![];
             if let Some(def) = find_def(node, kcl_pos, prog_scope) {
                 if let crate::goto_def::Definition::Object(obj) = def {
                     match obj.kind {
                         ScopeObjectKind::Definition => {
-                            // Schema Definition hover
-                            // ```
-                            // pkg
-                            // schema Foo(Base)
-                            // -----------------
-                            // doc
-                            // -----------------
-                            // Attributes:
-                            // attr1: type
-                            // attr2? type
-                            // ```
-                            let schema_ty = obj.ty.into_schema_type();
-                            let base: String = if let Some(base) = schema_ty.base {
-                                format!("({})", base.name)
-                            } else {
-                                "".to_string()
-                            };
-                            docs.insert(format!(
-                                "{}\n\nschema {}{}",
-                                schema_ty.pkgpath, schema_ty.name, base
-                            ));
-                            if !schema_ty.doc.is_empty() {
-                                docs.insert(schema_ty.doc.clone());
-                            }
-                            let mut attrs = vec!["Attributes:".to_string()];
-                            for (name, attr) in schema_ty.attrs {
-                                attrs.push(format!(
-                                    "{}{}:{}",
-                                    name,
-                                    if attr.is_optional { "?" } else { "" },
-                                    format!(" {}", attr.ty.ty_str()),
-                                ));
-                            }
-                            docs.insert(attrs.join("\n\n"));
+                            docs.extend(build_schema_hover_content(&obj.ty.into_schema_type()))
                         }
                         ScopeObjectKind::FunctionCall => {
                             let ty = obj.ty.clone();
                             match &ty.kind {
                                 kclvm_sema::ty::TypeKind::Function(func_ty) => {
-                                    // system package function
-                                    // ```
-                                    // pkg
-                                    // function func_name(arg1: type, arg2: type, ..) -> type
-                                    // -----------------
-                                    // doc
-                                    // ```
-                                    // if let Some(pkg) = &func_ty.pkg{
-                                    //     docs.insert(pkg.clone());
-                                    // }
-                                    if let Some(ty) = &func_ty.self_ty {
-                                        let self_ty = format!("{}\n\n", ty.ty_str());
-                                        docs.insert(self_ty);
-                                    }
-                                    let func_sig = build_func_sig_str(func_ty, obj.name);
-                                    docs.insert(func_sig);
-
-                                    if !func_ty.doc.is_empty() {
-                                        docs.insert(func_ty.doc.clone());
-                                    }
+                                    docs.extend(build_func_hover_content(func_ty, obj.name))
                                 }
                                 _ => {}
                             }
@@ -91,9 +38,9 @@ pub(crate) fn hover(
                             // ```
                             // name: type
                             //```
-                            docs.insert(format!("{}: {}", obj.name, obj.ty.ty_str()));
+                            docs.push(format!("{}: {}", obj.name, obj.ty.ty_str()));
                             if let Some(doc) = obj.doc {
-                                docs.insert(doc);
+                                docs.push(doc);
                             }
                         }
                     }
@@ -107,7 +54,7 @@ pub(crate) fn hover(
 
 // Convert docs to Hover. This function will convert to
 // None, Scalar or Array according to the number of positions
-fn docs_to_hover(docs: IndexSet<String>) -> Option<lsp_types::Hover> {
+fn docs_to_hover(docs: Vec<String>) -> Option<lsp_types::Hover> {
     match docs.len() {
         0 => None,
         1 => Some(Hover {
@@ -125,22 +72,80 @@ fn docs_to_hover(docs: IndexSet<String>) -> Option<lsp_types::Hover> {
     }
 }
 
-fn build_func_sig_str(func_ty: &FunctionType, name: String) -> String {
-    let mut result = format!("fn {}(", name);
+// Build hover content for schema definition
+// Schema Definition hover
+// ```
+// pkg
+// schema Foo(Base)
+// -----------------
+// doc
+// -----------------
+// Attributes:
+// attr1: type
+// attr2? type
+// ```
+fn build_schema_hover_content(schema_ty: &SchemaType) -> Vec<String> {
+    let mut docs = vec![];
+    let base: String = if let Some(base) = &schema_ty.base {
+        format!("({})", base.name)
+    } else {
+        "".to_string()
+    };
+    docs.push(format!(
+        "{}\n\nschema {}{}",
+        schema_ty.pkgpath, schema_ty.name, base
+    ));
+    if !schema_ty.doc.is_empty() {
+        docs.push(schema_ty.doc.clone());
+    }
+    let mut attrs = vec!["Attributes:".to_string()];
+    for (name, attr) in &schema_ty.attrs {
+        attrs.push(format!(
+            "{}{}:{}",
+            name,
+            if attr.is_optional { "?" } else { "" },
+            format!(" {}", attr.ty.ty_str()),
+        ));
+    }
+    docs.push(attrs.join("\n\n"));
+    docs
+}
+
+// Build hover content for function call
+// ```
+// pkg
+// -----------------
+// function func_name(arg1: type, arg2: type, ..) -> type
+// -----------------
+// doc
+// ```
+fn build_func_hover_content(func_ty: &FunctionType, name: String) -> Vec<String> {
+    let mut docs = vec![];
+    if let Some(ty) = &func_ty.self_ty {
+        let self_ty = format!("{}\n\n", ty.ty_str());
+        docs.push(self_ty);
+    }
+
+    let mut sig = format!("fn {}(", name);
     if func_ty.params.is_empty() {
-        result.push_str(")");
+        sig.push_str(")");
     } else {
         for (i, p) in func_ty.params.iter().enumerate() {
-            result.push_str(&format!("{}: {}", p.name, p.ty.ty_str()));
+            sig.push_str(&format!("{}: {}", p.name, p.ty.ty_str()));
 
             if i != func_ty.params.len() - 1 {
-                result.push_str(", ");
+                sig.push_str(", ");
             }
         }
-        result.push_str(")");
+        sig.push_str(")");
     }
-    result.push_str(&format!(" -> {}", func_ty.return_ty.ty_str()));
-    result
+    sig.push_str(&format!(" -> {}", func_ty.return_ty.ty_str()));
+    docs.push(sig);
+
+    if !func_ty.doc.is_empty() {
+        docs.push(func_ty.doc.clone());
+    }
+    docs
 }
 
 #[cfg(test)]
