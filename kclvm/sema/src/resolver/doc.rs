@@ -1,5 +1,5 @@
 use pcre2::bytes::Regex;
-use std::collections::{HashSet, HashMap};
+use std::collections::{HashMap, HashSet};
 use std::iter::Iterator;
 use std::str;
 
@@ -281,7 +281,10 @@ pub(crate) fn parse_doc_string(ori: &String) -> Doc {
             0 | 1 | 2 => "".to_string(),
             _ => example_section[2..].join("\n"),
         };
-        examples.insert("Default example".to_string(), Example::new("".to_string(), "".to_string(), default_example_content));
+        examples.insert(
+            "Default example".to_string(),
+            Example::new("".to_string(), "".to_string(), default_example_content),
+        );
     }
     Doc::new(summary, attrs, examples)
 }
@@ -296,7 +299,11 @@ pub(crate) struct Doc {
 
 impl Doc {
     fn new(summary: String, attrs: Vec<Attribute>, examples: HashMap<String, Example>) -> Self {
-        Self { summary, attrs, examples: examples }
+        Self {
+            summary,
+            attrs,
+            examples,
+        }
     }
 }
 
@@ -323,7 +330,11 @@ pub struct Example {
 
 impl Example {
     fn new(summary: String, description: String, value: String) -> Self {
-        Self { summary, description, value }
+        Self {
+            summary,
+            description,
+            value,
+        }
     }
 }
 
@@ -611,8 +622,16 @@ unindented line
             ]
         );
         assert!(doc.examples.contains_key("Default example"));
-        assert_eq!(doc.examples.get("Default example"), Some(&Example::new("".to_string(), "".to_string(), "myCustomApp = AppConfiguration {
+        assert_eq!(
+            doc.examples.get("Default example"),
+            Some(&Example::new(
+                "".to_string(),
+                "".to_string(),
+                "myCustomApp = AppConfiguration {
     name = \"componentName\"
-}".to_string())));
+}"
+                .to_string()
+            ))
+        );
     }
 }

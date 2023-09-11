@@ -1,4 +1,4 @@
-use crate::gpyrpc::{Decorator, KclType, Example};
+use crate::gpyrpc::{Decorator, Example, KclType};
 use indexmap::IndexSet;
 use kclvm_runtime::SCHEMA_SETTINGS_ATTR_NAME;
 use kclvm_sema::ty::{DictType, SchemaType, Type};
@@ -62,7 +62,7 @@ fn get_schema_ty_examples(schema_ty: &SchemaType) -> HashMap<String, Example> {
         let exa = Example {
             summary: example.summary.clone(),
             description: example.description.clone(),
-            value: example.value.clone()
+            value: example.value.clone(),
         };
         examples.insert(key.clone(), exa);
     }
