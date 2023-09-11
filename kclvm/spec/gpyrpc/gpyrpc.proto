@@ -318,7 +318,7 @@ message Decorator {
 message Example {
 	string summary = 1;                // Short description for the example.
 	string description = 2;            // Long description for the example.
-	google.protobuf.Any value = 3;     // Embedded literal example.
+	string value = 3;                  // Embedded literal example.
 }
 
 // ----------------------------------------------------------------------------

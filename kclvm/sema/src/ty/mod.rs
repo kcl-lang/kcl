@@ -19,6 +19,8 @@ use kclvm_error::Position;
 pub use unify::*;
 pub use walker::walk_type;
 
+use super::resolver::doc::Example;
+
 #[cfg(test)]
 mod tests;
 
@@ -175,6 +177,8 @@ pub struct SchemaType {
     pub filename: String,
     /// The schema definition document string.
     pub doc: String,
+    /// The code snippets of the schema usage examples
+    pub examples: HashMap<String, Example>,
     /// Indicates whether the schema is a type of a instance or
     /// a type (value). Besides, it is necessary to distinguish
     /// between a type instance and a type value, such as the following code:

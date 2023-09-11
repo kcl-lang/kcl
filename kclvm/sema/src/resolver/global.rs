@@ -68,6 +68,7 @@ impl<'ctx> Resolver<'ctx> {
                             pkgpath: self.ctx.pkgpath.clone(),
                             filename: self.ctx.filename.clone(),
                             doc: parsed_doc.summary.clone(),
+                            examples: parsed_doc.examples,
                             is_instance: false,
                             is_mixin,
                             is_protocol,
@@ -814,6 +815,7 @@ impl<'ctx> Resolver<'ctx> {
             pkgpath: self.ctx.pkgpath.clone(),
             filename: self.ctx.filename.clone(),
             doc: parsed_doc.summary.clone(),
+            examples: parsed_doc.examples,
             is_instance: false,
             is_mixin: schema_stmt.is_mixin,
             is_protocol: schema_stmt.is_protocol,
@@ -918,11 +920,14 @@ impl<'ctx> Resolver<'ctx> {
             DecoratorTarget::Schema,
             &rule_stmt.name.node,
         );
+
+        let parsed_doc = parse_doc_string(&rule_stmt.doc);
         SchemaType {
             name: rule_stmt.name.node.clone(),
             pkgpath: self.ctx.pkgpath.clone(),
             filename: self.ctx.filename.clone(),
-            doc: rule_stmt.doc.clone(),
+            doc: parsed_doc.summary.clone(),
+            examples: parsed_doc.examples,
             is_instance: false,
             is_mixin: false,
             is_protocol: false,
