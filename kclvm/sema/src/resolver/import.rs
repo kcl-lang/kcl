@@ -151,6 +151,27 @@ impl<'ctx> Resolver<'ctx> {
                                             import_stmt.path.to_string(),
                                             Rc::new(RefCell::new(ScopeObject {
                                                 name: import_stmt.path.to_string(),
+                                                start: start.clone(),
+                                                end: end.clone(),
+                                                ty: Rc::new(ty.clone()),
+                                                kind: ScopeObjectKind::Module(Module {
+                                                    path: import_stmt.path.clone(),
+                                                    rawpath: import_stmt.rawpath.clone(),
+                                                    name: import_stmt.name.clone(),
+                                                    asname: import_stmt.asname.clone(),
+                                                }),
+                                                used: false,
+                                                doc: None,
+                                            })),
+                                        );
+                                        let name = match &import_stmt.asname {
+                                            Some(name) => name.clone(),
+                                            None => import_stmt.name.clone(),
+                                        };
+                                        scope.elems.insert(
+                                            name.clone(),
+                                            Rc::new(RefCell::new(ScopeObject {
+                                                name,
                                                 start,
                                                 end,
                                                 ty: Rc::new(ty),
