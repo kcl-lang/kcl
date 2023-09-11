@@ -17,3 +17,7 @@ p = Person{
     name: "Alice"
     age: 1
 }
+
+import base64
+abdc = base64.encode("1")
+abcd = "a".count()

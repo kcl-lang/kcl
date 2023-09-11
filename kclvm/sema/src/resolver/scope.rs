@@ -70,6 +70,7 @@ pub enum ScopeObjectKind {
     Definition,
     Parameter,
     TypeAlias,
+    FunctionCall,
     Module(Module),
 }
 

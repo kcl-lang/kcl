@@ -506,6 +506,22 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 selector_expr.attr.get_span_pos(),
             );
         }
+
+        if let TypeKind::Function(func) = &value_ty.kind {
+            self.insert_object(
+                &selector_expr.attr.node.get_name(),
+                ScopeObject {
+                    name: selector_expr.attr.node.get_name(),
+                    start: selector_expr.attr.get_pos(),
+                    end: selector_expr.attr.get_end_pos(),
+                    ty: value_ty.clone(),
+                    kind: ScopeObjectKind::FunctionCall,
+                    used: false,
+                    doc: Some(func.doc.clone()),
+                },
+            )
+        }
+
         value_ty
     }
 
