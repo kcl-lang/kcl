@@ -478,6 +478,13 @@ impl<'ctx> Resolver<'ctx> {
                                     doc: None,
                                 },
                             );
+                            attrs.insert(
+                                string_lit.value.clone(),
+                                Attr {
+                                    ty: val_ty.clone(),
+                                    range: key.get_span_pos(),
+                                },
+                            );
                         }
                         key_types.push(key_ty);
                         val_types.push(val_ty.clone());

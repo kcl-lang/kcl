@@ -1,0 +1,8 @@
+config:
+  map:
+  - key: value
+  values:
+  - foo
+  - bar
+map:
+- key: value
