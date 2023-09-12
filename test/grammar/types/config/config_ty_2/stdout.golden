@@ -1,0 +1,9 @@
+config:
+  key:
+  - key: value
+  values:
+  - foo
+  - bar
+values:
+- foo
+- bar
