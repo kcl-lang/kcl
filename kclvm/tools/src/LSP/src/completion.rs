@@ -18,9 +18,7 @@ use kclvm_compiler::pkgpath_without_prefix;
 use kclvm_config::modfile::KCL_FILE_EXTENSION;
 
 use kclvm_error::Position as KCLPos;
-use kclvm_sema::builtin::{
-    get_system_module_members, STANDARD_SYSTEM_MODULES, STRING_MEMBER_FUNCTIONS,
-};
+use kclvm_sema::builtin::{get_system_module_members, STRING_MEMBER_FUNCTIONS};
 use kclvm_sema::resolver::scope::{ProgramScope, ScopeObjectKind};
 use lsp_types::CompletionItem;
 

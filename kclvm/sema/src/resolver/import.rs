@@ -147,10 +147,15 @@ impl<'ctx> Resolver<'ctx> {
                                             kind.clone(),
                                         );
                                         let (start, end) = stmt.get_span_pos();
+
+                                        let name = match &import_stmt.asname {
+                                            Some(name) => name.clone(),
+                                            None => import_stmt.name.clone(),
+                                        };
                                         scope.elems.insert(
-                                            import_stmt.path.to_string(),
+                                            name.clone(),
                                             Rc::new(RefCell::new(ScopeObject {
-                                                name: import_stmt.path.to_string(),
+                                                name,
                                                 start: start.clone(),
                                                 end: end.clone(),
                                                 ty: Rc::new(ty.clone()),
@@ -160,18 +165,14 @@ impl<'ctx> Resolver<'ctx> {
                                                     name: import_stmt.name.clone(),
                                                     asname: import_stmt.asname.clone(),
                                                 }),
-                                                used: false,
+                                                used: true,
                                                 doc: None,
                                             })),
                                         );
-                                        let name = match &import_stmt.asname {
-                                            Some(name) => name.clone(),
-                                            None => import_stmt.name.clone(),
-                                        };
                                         scope.elems.insert(
-                                            name.clone(),
+                                            import_stmt.path.to_string(),
                                             Rc::new(RefCell::new(ScopeObject {
-                                                name,
+                                                name: import_stmt.path.to_string(),
                                                 start,
                                                 end,
                                                 ty: Rc::new(ty),
