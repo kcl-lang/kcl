@@ -14,12 +14,11 @@ use std::{fs, path::Path};
 use indexmap::IndexSet;
 use kclvm_ast::ast::{Expr, ImportStmt, Node, Program, Stmt};
 use kclvm_ast::pos::GetPos;
+use kclvm_compiler::pkgpath_without_prefix;
 use kclvm_config::modfile::KCL_FILE_EXTENSION;
 
 use kclvm_error::Position as KCLPos;
-use kclvm_sema::builtin::{
-    get_system_module_members, STANDARD_SYSTEM_MODULES, STRING_MEMBER_FUNCTIONS,
-};
+use kclvm_sema::builtin::{get_system_module_members, STRING_MEMBER_FUNCTIONS};
 use kclvm_sema::resolver::scope::{ProgramScope, ScopeObjectKind};
 use lsp_types::CompletionItem;
 
@@ -169,19 +168,7 @@ pub(crate) fn get_completion(
             match node.node {
                 Expr::Identifier(id) => {
                     let name = get_identifier_last_name(&id);
-                    if !id.pkgpath.is_empty() && STANDARD_SYSTEM_MODULES.contains(&name.as_str()) {
-                        items.extend(
-                            get_system_module_members(name.as_str())
-                                .iter()
-                                .map(|s| KCLCompletionItem {
-                                    label: s.to_string(),
-                                })
-                                .collect::<IndexSet<KCLCompletionItem>>(),
-                        )
-                    }
-
                     let def = find_def(stmt, pos, prog_scope);
-
                     if let Some(def) = def {
                         match def {
                             crate::goto_def::Definition::Object(obj) => {
@@ -204,6 +191,31 @@ pub(crate) fn get_completion(
                                             }
                                         }
                                     }
+
+                                    kclvm_sema::ty::TypeKind::Module(module) => match module.kind {
+                                        kclvm_sema::ty::ModuleKind::User => {
+                                            match prog_scope
+                                                .scope_map
+                                                .get(&pkgpath_without_prefix!(module.pkgpath))
+                                            {
+                                                Some(scope) => {
+                                                    items.extend(scope.borrow().elems.keys().map(
+                                                        |k| KCLCompletionItem { label: k.clone() },
+                                                    ))
+                                                }
+                                                None => {}
+                                            }
+                                        }
+                                        kclvm_sema::ty::ModuleKind::System => items.extend(
+                                            get_system_module_members(name.as_str())
+                                                .iter()
+                                                .map(|s| KCLCompletionItem {
+                                                    label: s.to_string(),
+                                                })
+                                                .collect::<IndexSet<KCLCompletionItem>>(),
+                                        ),
+                                        kclvm_sema::ty::ModuleKind::Plugin => {}
+                                    },
                                     _ => {}
                                 }
                             }
@@ -351,6 +363,141 @@ mod tests {
     fn dot_completion_test() {
         let (file, program, prog_scope, _) =
             compile_test_file("src/test_data/completion_test/dot/completion.k");
+        let mut items: IndexSet<KCLCompletionItem> = IndexSet::new();
+
+        // test completion for schema attr
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 12,
+            column: Some(7),
+        };
+
+        let got = completion(Some('.'), &program, &pos, &prog_scope).unwrap();
+
+        items.insert(KCLCompletionItem {
+            label: "name".to_string(),
+        });
+        items.insert(KCLCompletionItem {
+            label: "age".to_string(),
+        });
+
+        let expect: CompletionResponse = into_completion_items(&items).into();
+
+        assert_eq!(got, expect);
+        items.clear();
+
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 14,
+            column: Some(12),
+        };
+
+        // test completion for str builtin function
+        let got = completion(Some('.'), &program, &pos, &prog_scope).unwrap();
+        let binding = STRING_MEMBER_FUNCTIONS;
+        for k in binding.keys() {
+            items.insert(KCLCompletionItem {
+                label: format!("{}{}", k, "()"),
+            });
+        }
+        let expect: CompletionResponse = into_completion_items(&items).into();
+
+        assert_eq!(got, expect);
+        items.clear();
+
+        // test completion for import pkg path
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 1,
+            column: Some(12),
+        };
+        let got = completion(Some('.'), &program, &pos, &prog_scope).unwrap();
+        items.insert(KCLCompletionItem {
+            label: "file1".to_string(),
+        });
+        items.insert(KCLCompletionItem {
+            label: "file2".to_string(),
+        });
+        items.insert(KCLCompletionItem {
+            label: "subpkg".to_string(),
+        });
+
+        let expect: CompletionResponse = into_completion_items(&items).into();
+        assert_eq!(got, expect);
+        items.clear();
+
+        // test completion for import pkg' schema
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 16,
+            column: Some(12),
+        };
+
+        let got = completion(Some('.'), &program, &pos, &prog_scope).unwrap();
+        items.insert(KCLCompletionItem {
+            label: "Person1".to_string(),
+        });
+
+        let expect: CompletionResponse = into_completion_items(&items).into();
+        assert_eq!(got, expect);
+        items.clear();
+
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 19,
+            column: Some(5),
+        };
+        let got = completion(Some('.'), &program, &pos, &prog_scope).unwrap();
+
+        items.extend(MATH_FUNCTION_NAMES.iter().map(|s| KCLCompletionItem {
+            label: s.to_string(),
+        }));
+        let expect: CompletionResponse = into_completion_items(&items).into();
+        assert_eq!(got, expect);
+        items.clear();
+
+        // test completion for literal str builtin function
+        let pos = KCLPos {
+            filename: file.clone(),
+            line: 21,
+            column: Some(4),
+        };
+
+        let got = completion(Some('.'), &program, &pos, &prog_scope).unwrap();
+        let binding = STRING_MEMBER_FUNCTIONS;
+        for k in binding.keys() {
+            items.insert(KCLCompletionItem {
+                label: format!("{}{}", k, "()"),
+            });
+        }
+        let expect: CompletionResponse = into_completion_items(&items).into();
+        items.clear();
+
+        assert_eq!(got, expect);
+
+        let pos = KCLPos {
+            filename: file,
+            line: 30,
+            column: Some(11),
+        };
+
+        let got = completion(Some('.'), &program, &pos, &prog_scope).unwrap();
+        items.insert(KCLCompletionItem {
+            label: "__settings__".to_string(),
+        });
+        items.insert(KCLCompletionItem {
+            label: "a".to_string(),
+        });
+        let expect: CompletionResponse = into_completion_items(&items).into();
+        assert_eq!(got, expect);
+    }
+
+    #[test]
+    #[bench_test]
+    fn dot_completion_test_without_dot() {
+        // sometime lsp handle completion request before didChange notificaion, there is no dot in vfs
+        let (file, program, prog_scope, _) =
+            compile_test_file("src/test_data/completion_test/without_dot/completion.k");
         let mut items: IndexSet<KCLCompletionItem> = IndexSet::new();
 
         // test completion for schema attr

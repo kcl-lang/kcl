@@ -16,7 +16,7 @@ p2 = p.name.  # complete builtin (str) function
 p3 = subpkg.  # complete user module definition
 
 import math
-math.         # complete user module definition
+math.         # complete system module definition
 
 "a".
 

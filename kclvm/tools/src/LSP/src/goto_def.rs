@@ -185,11 +185,23 @@ pub(crate) fn resolve_var(
         0 => None,
         1 => {
             let name = names[0].clone();
+
             match current_scope.lookup(&name) {
-                Some(obj) => match obj.borrow().kind {
-                    kclvm_sema::resolver::scope::ScopeObjectKind::Module(_) => scope_map
-                        .get(&name)
-                        .map(|scope| Definition::Scope(scope.borrow().clone())),
+                Some(obj) => match &obj.borrow().kind {
+                    kclvm_sema::resolver::scope::ScopeObjectKind::Module(_) => {
+                        match &obj.borrow().ty.kind {
+                            kclvm_sema::ty::TypeKind::Module(module_ty) => match module_ty.kind {
+                                kclvm_sema::ty::ModuleKind::User => scope_map
+                                    .get(&pkgpath_without_prefix!(module_ty.pkgpath))
+                                    .map(|scope| Definition::Scope(scope.borrow().clone())),
+                                kclvm_sema::ty::ModuleKind::System => {
+                                    Some(Definition::Object(obj.borrow().clone()))
+                                }
+                                kclvm_sema::ty::ModuleKind::Plugin => None,
+                            },
+                            _ => None,
+                        }
+                    }
                     _ => Some(Definition::Object(obj.borrow().clone())),
                 },
                 None => None,

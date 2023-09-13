@@ -147,6 +147,28 @@ impl<'ctx> Resolver<'ctx> {
                                             kind.clone(),
                                         );
                                         let (start, end) = stmt.get_span_pos();
+
+                                        let name = match &import_stmt.asname {
+                                            Some(name) => name.clone(),
+                                            None => import_stmt.name.clone(),
+                                        };
+                                        scope.elems.insert(
+                                            name.clone(),
+                                            Rc::new(RefCell::new(ScopeObject {
+                                                name,
+                                                start: start.clone(),
+                                                end: end.clone(),
+                                                ty: Rc::new(ty.clone()),
+                                                kind: ScopeObjectKind::Module(Module {
+                                                    path: import_stmt.path.clone(),
+                                                    rawpath: import_stmt.rawpath.clone(),
+                                                    name: import_stmt.name.clone(),
+                                                    asname: import_stmt.asname.clone(),
+                                                }),
+                                                used: true,
+                                                doc: None,
+                                            })),
+                                        );
                                         scope.elems.insert(
                                             import_stmt.path.to_string(),
                                             Rc::new(RefCell::new(ScopeObject {
