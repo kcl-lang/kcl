@@ -221,7 +221,7 @@ register_string_member! {
             Parameter {
                 name: "chars".to_string(),
                 ty: Type::str_ref(),
-                has_default: false,
+                has_default: true,
             },
         ],
         r#"Return a copy of the string with leading characters removed. The chars argument is a string specifying the set of characters to be removed. If omitted or None, the chars argument defaults to removing whitespace. The chars argument is not a prefix; rather, all combinations of its values are stripped:"#,
@@ -235,7 +235,7 @@ register_string_member! {
             Parameter {
                 name: "chars".to_string(),
                 ty: Type::str_ref(),
-                has_default: false,
+                has_default: true,
             },
         ],
         r#"Return a copy of the string with trailing characters removed. The chars argument is a string specifying the set of characters to be removed. If omitted or None, the chars argument defaults to removing whitespace. The chars argument is not a suffix; rather, all combinations of its values are stripped:"#,
@@ -425,7 +425,7 @@ register_string_member! {
             Parameter {
                 name: "chars".to_string(),
                 ty: Type::str_ref(),
-                has_default: false,
+                has_default: true,
             },
         ],
         r#"Return a copy of the string with the leading and trailing characters removed. The chars argument is a string specifying the set of characters to be removed. If omitted or None, the chars argument defaults to removing whitespace. The chars argument is not a prefix or suffix; rather, all combinations of its values are stripped:"#,

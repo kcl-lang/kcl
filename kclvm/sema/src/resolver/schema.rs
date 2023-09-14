@@ -180,7 +180,7 @@ impl<'ctx> Resolver<'ctx> {
                     Some(ty) => match &ty.kind {
                         TypeKind::Function(func_ty) => {
                             self.do_arguments_type_check(
-                                &decorator.node.func.node,
+                                &decorator.node.func,
                                 &decorator.node.args,
                                 &decorator.node.keywords,
                                 &func_ty,

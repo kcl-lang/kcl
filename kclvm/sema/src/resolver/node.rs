@@ -530,7 +530,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
         let range = call_expr.func.get_span_pos();
         if call_ty.is_any() {
             self.do_arguments_type_check(
-                &call_expr.func.node,
+                &call_expr.func,
                 &call_expr.args,
                 &call_expr.keywords,
                 &FunctionType::variadic_func(),
@@ -538,7 +538,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             self.any_ty()
         } else if let TypeKind::Function(func_ty) = &call_ty.kind {
             self.do_arguments_type_check(
-                &call_expr.func.node,
+                &call_expr.func,
                 &call_expr.args,
                 &call_expr.keywords,
                 &func_ty,
@@ -553,7 +553,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 self.any_ty()
             } else {
                 self.do_arguments_type_check(
-                    &call_expr.func.node,
+                    &call_expr.func,
                     &call_expr.args,
                     &call_expr.keywords,
                     &schema_ty.func,
@@ -887,8 +887,10 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                         );
                     }
                 } else {
-                    let func = ast::Expr::Identifier(schema_expr.name.node.clone());
-
+                    let func = Box::new(ast::Node::node_with_pos(
+                        ast::Expr::Identifier(schema_expr.name.node.clone()),
+                        schema_expr.name.pos(),
+                    ));
                     self.do_arguments_type_check(
                         &func,
                         &schema_expr.args,

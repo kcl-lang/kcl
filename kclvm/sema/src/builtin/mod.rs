@@ -87,7 +87,7 @@ register_builtin! {
         end:   string appended after the last value, default a newline.
         "#,
         true,
-        Some(0),
+        None,
     )
     multiplyof => Type::function(
         None,
@@ -105,8 +105,8 @@ register_builtin! {
             },
         ],
         "Check if the modular result of a and b is 0.",
-        true,
-        Some(0),
+        false,
+        None,
     )
     isunique => Type::function(
         None,
@@ -501,7 +501,7 @@ register_builtin! {
             },
         ],
         r#"Return the type of the object"#,
-        true,
+        false,
         None,
     )
 }

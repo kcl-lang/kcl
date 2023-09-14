@@ -26,12 +26,12 @@ impl<'ctx> Resolver<'ctx> {
     /// Do schema/function/decorator argument type check.
     pub fn do_arguments_type_check(
         &mut self,
-        func: &ast::Expr,
+        func: &ast::NodeRef<ast::Expr>,
         args: &'ctx [ast::NodeRef<ast::Expr>],
         kwargs: &'ctx [ast::NodeRef<ast::Keyword>],
         func_ty: &FunctionType,
     ) {
-        let func_name = self.get_func_name(func);
+        let func_name = self.get_func_name(&func.node);
         let arg_types = self.exprs(args);
         let mut kwarg_types: Vec<(String, Rc<Type>)> = vec![];
         let mut check_table: IndexSet<String> = IndexSet::default();
@@ -52,6 +52,30 @@ impl<'ctx> Resolver<'ctx> {
                     .add_compile_error("missing argument", kw.get_span_pos());
             }
         }
+        // Do few argument count check
+        if !func_ty.is_variadic {
+            let mut got_count = 0;
+            let mut expect_count = 0;
+            for param in &func_ty.params {
+                if !param.has_default {
+                    expect_count += 1;
+                    if check_table.contains(&param.name) {
+                        got_count += 1
+                    }
+                }
+            }
+            got_count += args.len();
+            if got_count < expect_count {
+                self.handler.add_compile_error(
+                    &format!(
+                        "expected {} positional argument, found {}",
+                        expect_count, got_count
+                    ),
+                    func.get_span_pos(),
+                );
+            }
+        }
+        // Do normal argument type check
         for (i, ty) in arg_types.iter().enumerate() {
             let expected_ty = match func_ty.params.get(i) {
                 Some(param) => param.ty.clone(),
@@ -72,6 +96,7 @@ impl<'ctx> Resolver<'ctx> {
             };
             self.must_assignable_to(ty.clone(), expected_ty, args[i].get_span_pos(), None)
         }
+        // Do keyword argument type check
         for (i, (arg_name, kwarg_ty)) in kwarg_types.iter().enumerate() {
             if !func_ty
                 .params
