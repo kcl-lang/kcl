@@ -2893,8 +2893,8 @@ pub unsafe extern "C" fn kclvm_builtin_str_replace(
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
     if let Some(val) = args.pop_arg_first() {
-        let old = args.arg_i(0).unwrap();
-        let new = args.arg_i(1).unwrap();
+        let old = args.arg_i(0).expect("expect 1 argument, found 0");
+        let new = args.arg_i(1).expect("expect 2 arguments, found 1");
         let count = args.arg_i(2);
         val.str_replace(&old, &new, count.as_ref()).into_raw()
     } else {
@@ -2913,7 +2913,7 @@ pub unsafe extern "C" fn kclvm_builtin_str_removeprefix(
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
     if let Some(val) = args.pop_arg_first() {
-        let prefix = args.arg_i(0).unwrap();
+        let prefix = args.arg_i(0).expect("expect 1 argument, found 0");
         val.str_removeprefix(&prefix).into_raw()
     } else {
         panic!("invalid self value in str_removeprefix");
@@ -2931,7 +2931,7 @@ pub unsafe extern "C" fn kclvm_builtin_str_removesuffix(
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
     if let Some(val) = args.pop_arg_first() {
-        let suffix = args.arg_i(0).unwrap();
+        let suffix = args.arg_i(0).expect("expect 1 argument, found 0");
         val.str_removesuffix(&suffix).into_raw()
     } else {
         panic!("invalid self value in str_removesuffix");
