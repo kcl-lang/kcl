@@ -1763,6 +1763,7 @@ dependencies = [
  "kclvm-parser",
  "kclvm-runtime",
  "kclvm-span",
+ "kclvm-utils",
  "lazy_static",
  "once_cell",
  "pcre2",
@@ -1813,6 +1814,9 @@ dependencies = [
 [[package]]
 name = "kclvm-utils"
 version = "0.5.0"
+dependencies = [
+ "strsim",
+]
 
 [[package]]
 name = "kclvm-version"

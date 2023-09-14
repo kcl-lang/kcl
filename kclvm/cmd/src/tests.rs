@@ -559,3 +559,39 @@ fn test_plugin_not_found() {
         Err(msg) => assert!(msg.contains("the plugin package `kcl_plugin.not_exist` is not found, please confirm if plugin mode is enabled")),
     }
 }
+
+#[test]
+fn test_error_message_fuzz_matched() {
+    let test_case_path = PathBuf::from("./src/test_data/fuzz_match/main.k");
+    let matches = app().arg_required_else_help(true).get_matches_from(&[
+        ROOT_CMD,
+        "run",
+        &test_case_path.canonicalize().unwrap().display().to_string(),
+    ]);
+    let settings = must_build_settings(matches.subcommand_matches("run").unwrap());
+    let sess = Arc::new(ParseSession::default());
+    match exec_program(sess.clone(), &settings.try_into().unwrap()) {
+        Ok(_) => panic!("unreachable code."),
+        Err(msg) => {
+            assert!(msg.contains("attribute 'a' not found in schema 'Person', did you mean 'aa'?"))
+        }
+    }
+}
+
+#[test]
+fn test_error_message_fuzz_unmatched() {
+    let test_case_path = PathBuf::from("./src/test_data/fuzz_match/main_unmatched.k");
+    let matches = app().arg_required_else_help(true).get_matches_from(&[
+        ROOT_CMD,
+        "run",
+        &test_case_path.canonicalize().unwrap().display().to_string(),
+    ]);
+    let settings = must_build_settings(matches.subcommand_matches("run").unwrap());
+    let sess = Arc::new(ParseSession::default());
+    match exec_program(sess.clone(), &settings.try_into().unwrap()) {
+        Ok(_) => panic!("unreachable code."),
+        Err(msg) => {
+            assert!(msg.contains("attribute 'a' not found in schema 'Person'"))
+        }
+    }
+}

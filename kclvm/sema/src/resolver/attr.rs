@@ -3,9 +3,11 @@ use std::rc::Rc;
 use crate::builtin::system_module::{get_system_module_members, UNITS, UNITS_NUMBER_MULTIPLIER};
 use crate::builtin::{get_system_member_function_ty, STRING_MEMBER_FUNCTIONS};
 use crate::resolver::Resolver;
+use crate::ty::TypeKind::Schema;
 use crate::ty::{DictType, ModuleKind, Type, TypeKind};
 use kclvm_error::diagnostic::Range;
 use kclvm_error::*;
+use kclvm_utils::str::find_closest_strs;
 
 use super::node::ResolvedResult;
 
@@ -110,16 +112,32 @@ impl<'ctx> Resolver<'ctx> {
                 }
             }
         };
+
         if !result {
+            let mut suggestion = String::new();
+            // Calculate the closests miss attributes.
+            if let Schema(schema_ty) = &obj.kind {
+                // Get all the attrbuets of the schema.
+                let attrs = schema_ty.attrs.keys().cloned().collect::<Vec<String>>();
+                // The attr user input.
+                let attr = if attr.is_empty() {
+                    "[missing name]"
+                } else {
+                    attr
+                };
+                // Find the closests miss attributes.
+                let closests = find_closest_strs(attr.to_string(), attrs, None);
+                // If there are closests miss attributes, add the suggestion.
+                if closests.len() != 0 {
+                    suggestion = format!(", did you mean '{}'?", closests.join(" or "))
+                };
+            }
             self.handler.add_type_error(
                 &format!(
-                    "{} has no attribute {}",
+                    "attribute '{}' not found in schema '{}'{}",
+                    attr,
                     obj.ty_str(),
-                    if attr.is_empty() {
-                        "[missing name]"
-                    } else {
-                        attr
-                    }
+                    suggestion
                 ),
                 range,
             );
