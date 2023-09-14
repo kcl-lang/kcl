@@ -3,6 +3,7 @@ use crossbeam_channel::select;
 use indexmap::IndexSet;
 use lsp_server::Response;
 use lsp_types::notification::Exit;
+use lsp_types::request::GotoTypeDefinitionResponse;
 use lsp_types::CompletionContext;
 use lsp_types::CompletionItem;
 use lsp_types::CompletionParams;
@@ -24,6 +25,7 @@ use serde::Serialize;
 use std::cell::Cell;
 use std::cell::RefCell;
 use std::env;
+use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 use std::sync::Arc;
@@ -46,9 +48,13 @@ use proc_macro_crate::bench_test;
 
 use lsp_server::{Connection, Message, Notification, Request};
 
+use crate::completion::completion;
+use crate::completion::into_completion_items;
+use crate::completion::KCLCompletionItem;
 use crate::config::Config;
 use crate::from_lsp::file_path_from_url;
 
+use crate::hover::hover;
 use crate::main_loop::main_loop;
 use crate::to_lsp::kcl_diag_to_lsp_diags;
 use crate::util::to_json;
@@ -56,6 +62,35 @@ use crate::{
     goto_def::goto_definition,
     util::{apply_document_changes, parse_param_and_compile, Param},
 };
+
+pub(crate) fn compare_goto_res(
+    res: Option<GotoTypeDefinitionResponse>,
+    pos: (&String, u32, u32, u32, u32),
+) {
+    match res.unwrap() {
+        lsp_types::GotoDefinitionResponse::Scalar(loc) => {
+            let got_path = loc.uri.path();
+            assert_eq!(got_path, pos.0);
+
+            let (got_start, got_end) = (loc.range.start, loc.range.end);
+
+            let expected_start = Position {
+                line: pos.1, // zero-based
+                character: pos.2,
+            };
+
+            let expected_end = Position {
+                line: pos.3, // zero-based
+                character: pos.4,
+            };
+            assert_eq!(got_start, expected_start);
+            assert_eq!(got_end, expected_end);
+        }
+        _ => {
+            unreachable!("test error")
+        }
+    }
+}
 
 pub(crate) fn compile_test_file(
     testfile: &str,
@@ -771,4 +806,380 @@ fn formatting_test() {
         }]))
         .unwrap()
     )
+}
+
+// Integration testing of lsp and konfig
+fn konfig_path() -> PathBuf {
+    let konfig_path = Path::new(".")
+        .canonicalize()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .join("test")
+        .join("konfig");
+    konfig_path
+}
+
+#[test]
+fn konfig_goto_def_test_base() {
+    let konfig_path = konfig_path();
+    let mut base_path = konfig_path.clone();
+    base_path.push("appops/nginx-example/base/base.k");
+    let base_path_str = base_path.to_str().unwrap().to_string();
+    let (program, prog_scope, _) = parse_param_and_compile(
+        Param {
+            file: base_path_str.clone(),
+        },
+        Some(Arc::new(RwLock::new(Default::default()))),
+    )
+    .unwrap();
+
+    // schema def
+    let pos = KCLPos {
+        filename: base_path_str.clone(),
+        line: 7,
+        column: Some(30),
+    };
+    let res = goto_definition(&program, &pos, &prog_scope);
+    let mut expected_path = konfig_path.clone();
+    expected_path.push("base/pkg/kusion_models/kube/frontend/server.k");
+    compare_goto_res(
+        res,
+        (&expected_path.to_str().unwrap().to_string(), 11, 0, 125, 39),
+    );
+
+    // schema def
+    let pos = KCLPos {
+        filename: base_path_str.clone(),
+        line: 9,
+        column: Some(32),
+    };
+    let res = goto_definition(&program, &pos, &prog_scope);
+    let mut expected_path = konfig_path.clone();
+    expected_path.push("base/pkg/kusion_models/kube/frontend/container/container.k");
+    compare_goto_res(
+        res,
+        (&expected_path.to_str().unwrap().to_string(), 5, 0, 80, 111),
+    );
+
+    // schema attr
+    let pos = KCLPos {
+        filename: base_path_str.clone(),
+        line: 9,
+        column: Some(9),
+    };
+    let res = goto_definition(&program, &pos, &prog_scope);
+    let mut expected_path = konfig_path.clone();
+    expected_path.push("base/pkg/kusion_models/kube/frontend/server.k");
+    compare_goto_res(
+        res,
+        (
+            &expected_path.to_str().unwrap().to_string(),
+            102,
+            4,
+            102,
+            17,
+        ),
+    );
+
+    // schema attr
+    let pos = KCLPos {
+        filename: base_path_str.clone(),
+        line: 10,
+        column: Some(10),
+    };
+    let res = goto_definition(&program, &pos, &prog_scope);
+    let mut expected_path = konfig_path.clone();
+    expected_path.push("base/pkg/kusion_models/kube/frontend/container/container.k");
+    compare_goto_res(
+        res,
+        (&expected_path.to_str().unwrap().to_string(), 69, 4, 69, 9),
+    );
+
+    // import pkg
+    let pos = KCLPos {
+        filename: base_path_str.clone(),
+        line: 2,
+        column: Some(49),
+    };
+    let res = goto_definition(&program, &pos, &prog_scope);
+    let mut expected_path = konfig_path.clone();
+    expected_path.push("base/pkg/kusion_models/kube/frontend/service/service.k");
+    compare_goto_res(
+        res,
+        (&expected_path.to_str().unwrap().to_string(), 0, 0, 0, 0),
+    );
+}
+
+#[test]
+fn konfig_goto_def_test_main() {
+    let konfig_path = konfig_path();
+    let mut main_path = konfig_path.clone();
+    main_path.push("appops/nginx-example/dev/main.k");
+    let main_path_str = main_path.to_str().unwrap().to_string();
+    let (program, prog_scope, _) = parse_param_and_compile(
+        Param {
+            file: main_path_str.clone(),
+        },
+        Some(Arc::new(RwLock::new(Default::default()))),
+    )
+    .unwrap();
+
+    // schema def
+    let pos = KCLPos {
+        filename: main_path_str.clone(),
+        line: 6,
+        column: Some(31),
+    };
+    let res = goto_definition(&program, &pos, &prog_scope);
+    let mut expected_path = konfig_path.clone();
+    expected_path.push("base/pkg/kusion_models/kube/frontend/server.k");
+    compare_goto_res(
+        res,
+        (&expected_path.to_str().unwrap().to_string(), 11, 0, 125, 39),
+    );
+
+    // schema attr
+    let pos = KCLPos {
+        filename: main_path_str.clone(),
+        line: 7,
+        column: Some(14),
+    };
+    let res = goto_definition(&program, &pos, &prog_scope);
+    let mut expected_path = konfig_path.clone();
+    expected_path.push("base/pkg/kusion_models/kube/frontend/server.k");
+    compare_goto_res(
+        res,
+        (&expected_path.to_str().unwrap().to_string(), 99, 4, 99, 22),
+    );
+
+    // import pkg
+    let pos = KCLPos {
+        filename: main_path_str.clone(),
+        line: 2,
+        column: Some(61),
+    };
+    let res = goto_definition(&program, &pos, &prog_scope);
+    let mut expected_path = konfig_path.clone();
+    expected_path.push("base/pkg/kusion_models/kube/templates/resource.k");
+    compare_goto_res(
+        res,
+        (&expected_path.to_str().unwrap().to_string(), 0, 0, 0, 0),
+    );
+}
+
+#[test]
+fn konfig_completion_test_main() {
+    let konfig_path = konfig_path();
+    let mut main_path = konfig_path.clone();
+    main_path.push("appops/nginx-example/dev/main.k");
+    let main_path_str = main_path.to_str().unwrap().to_string();
+    let (program, prog_scope, _) = parse_param_and_compile(
+        Param {
+            file: main_path_str.clone(),
+        },
+        Some(Arc::new(RwLock::new(Default::default()))),
+    )
+    .unwrap();
+
+    // pkg's definition(schema) completion
+    let pos = KCLPos {
+        filename: main_path_str.clone(),
+        line: 6,
+        column: Some(27),
+    };
+    let got = completion(Some('.'), &program, &pos, &prog_scope).unwrap();
+    let mut items: IndexSet<KCLCompletionItem> = IndexSet::new();
+    items.insert(KCLCompletionItem {
+        label: "Job".to_string(),
+    });
+    items.insert(KCLCompletionItem {
+        label: "Server".to_string(),
+    });
+
+    let expect: CompletionResponse = into_completion_items(&items).into();
+    assert_eq!(got, expect);
+    items.clear();
+
+    // schema attr completion
+    let pos = KCLPos {
+        filename: main_path_str.clone(),
+        line: 7,
+        column: Some(4),
+    };
+    let got = completion(None, &program, &pos, &prog_scope).unwrap();
+    let attrs = [
+        "project",
+        "stack",
+        "frontend",
+        "service",
+        "container",
+        "res_tpl",
+        "rbac",
+        "backend",
+        "resource",
+        "corev1",
+        "monitoringv1",
+        "monitoringv1alpha1",
+        "__META_APP_NAME",
+        "__META_ENV_TYPE_NAME",
+        "__META_CLUSTER_NAME",
+        "appConfiguration",
+        "__output_standalone__",
+        "__output_ignore__",
+        "__output_inline__",
+        "__renderServerFrontendInstances__",
+        "__renderServerBackendInstances__",
+        "__renderJobFrontendInstances__",
+        "__renderJobBackendInstances__",
+        "__renderFrontendInstances__",
+        "__renderBackendInstances__",
+        "__rbac_map__",
+        "__prometheus_map__",
+        "__k8s__",
+        "__array_of_resource_map___",
+        "__resource_map___",
+        "konfig_kubeKubernetes",
+        "getId",
+        "x",
+        "__settings__",
+        "workloadType",
+        "replicas",
+        "image",
+        "schedulingStrategy",
+        "mainContainer",
+        "sidecarContainers",
+        "initContainers",
+        "useBuiltInLabels",
+        "labels",
+        "annotations",
+        "useBuiltInSelector",
+        "selector",
+        "podMetadata",
+        "volumes",
+        "needNamespace",
+        "enableMonitoring",
+        "configMaps",
+        "secrets",
+        "services",
+        "ingresses",
+        "serviceAccount",
+    ];
+    items.extend(attrs.iter().map(|item| KCLCompletionItem {
+        label: item.to_string(),
+    }));
+    let expect: CompletionResponse = into_completion_items(&items).into();
+    assert_eq!(got, expect);
+    items.clear();
+
+    // import path completion
+    let pos = KCLPos {
+        filename: main_path_str.clone(),
+        line: 1,
+        column: Some(35),
+    };
+    let got = completion(Some('.'), &program, &pos, &prog_scope).unwrap();
+    let pkgs = [
+        "common",
+        "configmap",
+        "container",
+        "ingress",
+        "job",
+        "rbac",
+        "resource",
+        "secret",
+        "server",
+        "service",
+        "serviceaccount",
+        "sidecar",
+        "strategy",
+        "volume",
+    ];
+    items.extend(pkgs.iter().map(|item| KCLCompletionItem {
+        label: item.to_string(),
+    }));
+    let expect: CompletionResponse = into_completion_items(&items).into();
+
+    assert_eq!(got, expect);
+}
+
+#[test]
+fn konfig_hover_test_main() {
+    let konfig_path = konfig_path();
+    let mut main_path = konfig_path.clone();
+    main_path.push("appops/nginx-example/dev/main.k");
+    let main_path_str = main_path.to_str().unwrap().to_string();
+    let (program, prog_scope, _) = parse_param_and_compile(
+        Param {
+            file: main_path_str.clone(),
+        },
+        Some(Arc::new(RwLock::new(Default::default()))),
+    )
+    .unwrap();
+
+    // schema def hover
+    let pos = KCLPos {
+        filename: main_path_str.clone(),
+        line: 6,
+        column: Some(32),
+    };
+    let got = hover(&program, &pos, &prog_scope).unwrap();
+    match got.contents {
+        HoverContents::Array(arr) => {
+            let expect: Vec<MarkedString> = vec![
+                "base.pkg.kusion_models.kube.frontend\n\nschema Server",
+                "Server is abstaction of Deployment and StatefulSet.",
+                "Attributes:\n\n__settings__?: {str:any}\n\nworkloadType: str(Deployment)|str(StatefulSet)\n\nreplicas: int\n\nimage: str\n\nschedulingStrategy: SchedulingStrategy\n\nmainContainer: Main\n\nsidecarContainers?: [Sidecar]\n\ninitContainers?: [Sidecar]\n\nuseBuiltInLabels?: bool\n\nlabels?: {str:str}\n\nannotations?: {str:str}\n\nuseBuiltInSelector?: bool\n\nselector?: {str:str}\n\npodMetadata?: ObjectMeta\n\nvolumes?: [Volume]\n\nneedNamespace?: bool\n\nenableMonitoring?: bool\n\nconfigMaps?: [ConfigMap]\n\nsecrets?: [Secret]\n\nservices?: [Service]\n\ningresses?: [Ingress]\n\nserviceAccount?: ServiceAccount"
+            ]
+            .iter()
+            .map(|s| MarkedString::String(s.to_string()))
+            .collect();
+            assert_eq!(expect, arr);
+        }
+        _ => unreachable!("test error"),
+    }
+
+    // schema attr def hover
+    let pos = KCLPos {
+        filename: main_path_str.clone(),
+        line: 7,
+        column: Some(15),
+    };
+    let got = hover(&program, &pos, &prog_scope).unwrap();
+    match got.contents {
+        HoverContents::Array(arr) => {
+            let expect: Vec<MarkedString> = vec![
+                "schedulingStrategy: SchedulingStrategy",
+                "SchedulingStrategy represents scheduling strategy.",
+            ]
+            .iter()
+            .map(|s| MarkedString::String(s.to_string()))
+            .collect();
+            assert_eq!(expect, arr);
+        }
+        _ => unreachable!("test error"),
+    }
+
+    // variable hover
+    let pos = KCLPos {
+        filename: main_path_str.clone(),
+        line: 6,
+        column: Some(3),
+    };
+    let got = hover(&program, &pos, &prog_scope).unwrap();
+    match got.contents {
+        HoverContents::Scalar(s) => {
+            assert_eq!(
+                s,
+                MarkedString::String("appConfiguration: Server".to_string())
+            );
+        }
+        _ => unreachable!("test error"),
+    }
 }
