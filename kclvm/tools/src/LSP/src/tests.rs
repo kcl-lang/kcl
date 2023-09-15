@@ -822,6 +822,7 @@ fn konfig_path() -> PathBuf {
         .parent()
         .unwrap()
         .join("test")
+        .join("integration")
         .join("konfig");
     konfig_path
 }
@@ -851,7 +852,7 @@ fn konfig_goto_def_test_base() {
     expected_path.push("base/pkg/kusion_models/kube/frontend/server.k");
     compare_goto_res(
         res,
-        (&expected_path.to_str().unwrap().to_string(), 11, 0, 125, 39),
+        (&expected_path.to_str().unwrap().to_string(), 12, 0, 142, 31),
     );
 
     // schema def
@@ -881,9 +882,9 @@ fn konfig_goto_def_test_base() {
         res,
         (
             &expected_path.to_str().unwrap().to_string(),
-            102,
+            115,
             4,
-            102,
+            115,
             17,
         ),
     );
@@ -942,7 +943,7 @@ fn konfig_goto_def_test_main() {
     expected_path.push("base/pkg/kusion_models/kube/frontend/server.k");
     compare_goto_res(
         res,
-        (&expected_path.to_str().unwrap().to_string(), 11, 0, 125, 39),
+        (&expected_path.to_str().unwrap().to_string(), 12, 0, 142, 31),
     );
 
     // schema attr
@@ -956,7 +957,13 @@ fn konfig_goto_def_test_main() {
     expected_path.push("base/pkg/kusion_models/kube/frontend/server.k");
     compare_goto_res(
         res,
-        (&expected_path.to_str().unwrap().to_string(), 99, 4, 99, 22),
+        (
+            &expected_path.to_str().unwrap().to_string(),
+            112,
+            4,
+            112,
+            22,
+        ),
     );
 
     // import pkg
@@ -1015,8 +1022,6 @@ fn konfig_completion_test_main() {
     };
     let got = completion(None, &program, &pos, &prog_scope).unwrap();
     let attrs = [
-        "project",
-        "stack",
         "frontend",
         "service",
         "container",
@@ -1024,16 +1029,22 @@ fn konfig_completion_test_main() {
         "rbac",
         "backend",
         "resource",
+        "metadata",
+        "apis",
         "corev1",
         "monitoringv1",
         "monitoringv1alpha1",
+        "kubevelav1beta1",
+        "commons",
+        "vaultv1",
+        "manifests",
         "__META_APP_NAME",
         "__META_ENV_TYPE_NAME",
         "__META_CLUSTER_NAME",
         "appConfiguration",
-        "__output_standalone__",
-        "__output_ignore__",
-        "__output_inline__",
+        "checkIdentical",
+        "manifestsResourceMap",
+        "remove_duplicated_iter",
         "__renderServerFrontendInstances__",
         "__renderServerBackendInstances__",
         "__renderJobFrontendInstances__",
@@ -1042,14 +1053,22 @@ fn konfig_completion_test_main() {
         "__renderBackendInstances__",
         "__rbac_map__",
         "__prometheus_map__",
+        "__vault_map__",
         "__k8s__",
         "__array_of_resource_map___",
+        "__resource_map_original___",
+        "_providerResource",
+        "_providerResourceMapping",
         "__resource_map___",
-        "konfig_kubeKubernetes",
+        "__is_kubevela_application__",
         "getId",
-        "x",
+        "kubevela_app",
+        "kubevela_output",
+        "server_output",
         "__settings__",
+        "name",
         "workloadType",
+        "renderType",
         "replicas",
         "image",
         "schedulingStrategy",
@@ -1070,6 +1089,8 @@ fn konfig_completion_test_main() {
         "services",
         "ingresses",
         "serviceAccount",
+        "storage",
+        "database",
     ];
     items.extend(attrs.iter().map(|item| KCLCompletionItem {
         label: item.to_string(),
@@ -1098,6 +1119,7 @@ fn konfig_completion_test_main() {
         "service",
         "serviceaccount",
         "sidecar",
+        "storage",
         "strategy",
         "volume",
     ];
@@ -1135,7 +1157,7 @@ fn konfig_hover_test_main() {
             let expect: Vec<MarkedString> = vec![
                 "base.pkg.kusion_models.kube.frontend\n\nschema Server",
                 "Server is abstaction of Deployment and StatefulSet.",
-                "Attributes:\n\n__settings__?: {str:any}\n\nworkloadType: str(Deployment)|str(StatefulSet)\n\nreplicas: int\n\nimage: str\n\nschedulingStrategy: SchedulingStrategy\n\nmainContainer: Main\n\nsidecarContainers?: [Sidecar]\n\ninitContainers?: [Sidecar]\n\nuseBuiltInLabels?: bool\n\nlabels?: {str:str}\n\nannotations?: {str:str}\n\nuseBuiltInSelector?: bool\n\nselector?: {str:str}\n\npodMetadata?: ObjectMeta\n\nvolumes?: [Volume]\n\nneedNamespace?: bool\n\nenableMonitoring?: bool\n\nconfigMaps?: [ConfigMap]\n\nsecrets?: [Secret]\n\nservices?: [Service]\n\ningresses?: [Ingress]\n\nserviceAccount?: ServiceAccount"
+                "Attributes:\n\n__settings__?: {str:any}\n\nname?: str\n\nworkloadType: str(Deployment)|str(StatefulSet)\n\nrenderType?: str(Server)|str(KubeVelaApplication)\n\nreplicas: int\n\nimage: str\n\nschedulingStrategy: SchedulingStrategy\n\nmainContainer: Main\n\nsidecarContainers?: [Sidecar]\n\ninitContainers?: [Sidecar]\n\nuseBuiltInLabels?: bool\n\nlabels?: {str:str}\n\nannotations?: {str:str}\n\nuseBuiltInSelector?: bool\n\nselector?: {str:str}\n\npodMetadata?: ObjectMeta\n\nvolumes?: [Volume]\n\nneedNamespace?: bool\n\nenableMonitoring?: bool\n\nconfigMaps?: [ConfigMap]\n\nsecrets?: [Secret]\n\nservices?: [Service]\n\ningresses?: [Ingress]\n\nserviceAccount?: ServiceAccount\n\nstorage?: ObjectStorage\n\ndatabase?: DataBase"
             ]
             .iter()
             .map(|s| MarkedString::String(s.to_string()))

@@ -177,6 +177,7 @@ fn test_format_integration_konfig() -> Result<()> {
         .parent()
         .unwrap()
         .join("test")
+        .join("integration")
         .join("konfig");
     let files = get_files(konfig_path, true, true, ".k");
     for file in &files {
