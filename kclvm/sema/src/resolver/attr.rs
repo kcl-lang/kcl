@@ -3,6 +3,7 @@ use std::rc::Rc;
 use crate::builtin::system_module::{get_system_module_members, UNITS, UNITS_NUMBER_MULTIPLIER};
 use crate::builtin::{get_system_member_function_ty, STRING_MEMBER_FUNCTIONS};
 use crate::resolver::Resolver;
+use crate::ty::TypeKind::Schema;
 use crate::ty::{DictType, ModuleKind, Type, TypeKind};
 use kclvm_error::diagnostic::Range;
 use kclvm_error::*;
@@ -110,16 +111,31 @@ impl<'ctx> Resolver<'ctx> {
                 }
             }
         };
+
         if !result {
+            // The attr user input.
+            let (attr, suggestion) = if attr.is_empty() {
+                ("[missing name]", "".to_string())
+            } else {
+                let mut suggestion = String::new();
+                // Calculate the closests miss attributes.
+                if let Schema(schema_ty) = &obj.kind {
+                    // Get all the attrbuets of the schema.
+                    let attrs = schema_ty.attrs.keys().cloned().collect::<Vec<String>>();
+                    let suggs = suggestions::provide_suggestions(attr, &attrs);
+                    if suggs.len() > 0 {
+                        suggestion = format!(", did you mean '{:?}'?", suggs);
+                    }
+                }
+                (attr, suggestion)
+            };
+
             self.handler.add_type_error(
                 &format!(
-                    "{} has no attribute {}",
+                    "attribute '{}' not found in schema '{}'{}",
+                    attr,
                     obj.ty_str(),
-                    if attr.is_empty() {
-                        "[missing name]"
-                    } else {
-                        attr
-                    }
+                    suggestion
                 ),
                 range,
             );
