@@ -23,8 +23,11 @@ pub fn lint_command(matches: &ArgMatches) -> Result<()> {
         args.get_files()
     };
     let (mut err_handler, mut warning_handler) = (Handler::default(), Handler::default());
+
+    let mut opts = args.get_load_program_options();
+    opts.load_plugins = true;
     (err_handler.diagnostics, warning_handler.diagnostics) =
-        lint_files(&files, Some(args.get_load_program_options()));
+        lint_files(&files, Some(opts));
     if bool_from_matches(matches, "emit_warning").unwrap_or_default() {
         warning_handler.emit()?;
     }
@@ -33,7 +36,7 @@ pub fn lint_command(matches: &ArgMatches) -> Result<()> {
         let mut diags = vec![];
         diags.extend(err_handler.diagnostics.clone());
         diags.extend(warning_handler.diagnostics);
-        fix::fix(diags).unwrap();
+        fix::fix(diags)?;
     }
     err_handler.abort_if_any_errors();
     Ok(())

@@ -1,10 +1,12 @@
 mod replace;
-use anyhow::Error;
+mod tests;
+use anyhow::{ensure, Error};
 use kclvm_error::{diagnostic::Range as KCLRange, Diagnostic};
 use std::collections::HashMap;
 use std::fs;
 use std::ops::Range;
 
+/// A structure for handling code fixes.
 pub struct CodeFix {
     data: replace::Data,
 }
@@ -53,7 +55,7 @@ pub struct Snippet {
 pub fn diag_to_suggestion(
     diag: Diagnostic,
     files: &mut HashMap<String, String>,
-) -> Vec<Suggestion> {
+) -> anyhow::Result<Vec<Suggestion>, Error> {
     let mut suggestions = vec![];
 
     for msg in &diag.messages {
@@ -72,17 +74,17 @@ pub fn diag_to_suggestion(
                 replacement: Replacement {
                     snippet: Snippet {
                         file_name: msg.range.0.filename.clone(),
-                        range: text_range(src.as_str(), &msg.range),
+                        range: text_range(src.as_str(), &msg.range)?,
                     },
                     replacement: replace.clone(),
                 },
             });
         }
     }
-    suggestions
+    Ok(suggestions)
 }
 
-pub(crate) fn text_range(text: &str, range: &KCLRange) -> Range<usize> {
+pub(crate) fn text_range(text: &str, range: &KCLRange) -> anyhow::Result<Range<usize>, Error> {
     let mut lines_length = vec![];
     let lines_text: Vec<&str> = text.split('\n').collect();
     let mut pre_total_length = 0;
@@ -92,6 +94,12 @@ pub(crate) fn text_range(text: &str, range: &KCLRange) -> Range<usize> {
         pre_total_length += line.len() + "\n".len();
     }
 
+    ensure!(
+        (range.0.line as usize) <= lines_length.len()
+            && (range.1.line as usize) < lines_length.len()
+    );
+
+    // The KCL diagnostic line is 1-based and the column is 0-based.
     let start =
         lines_length.get(range.0.line as usize - 1).unwrap() + range.0.column.unwrap_or(0) as usize;
     let mut end =
@@ -101,14 +109,14 @@ pub(crate) fn text_range(text: &str, range: &KCLRange) -> Range<usize> {
             end += 1;
         }
     }
-    Range { start, end }
+    Ok(Range { start, end })
 }
 
 pub fn fix(diags: Vec<Diagnostic>) -> Result<(), Error> {
     let mut suggestions = vec![];
     let mut source_code = HashMap::new();
     for diag in diags {
-        suggestions.extend(diag_to_suggestion(diag, &mut source_code))
+        suggestions.extend(diag_to_suggestion(diag, &mut source_code)?)
     }
 
     let mut files = HashMap::new();

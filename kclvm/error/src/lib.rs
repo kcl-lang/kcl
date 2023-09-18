@@ -216,7 +216,7 @@ impl Handler {
     /// ```
     /// use kclvm_error::*;
     /// let mut handler = Handler::default();
-    /// handler.add_diagnostic(Diagnostic::new_with_code(Level::Error, "error message", None, (Position::dummy_pos(), Position::dummy_pos()), Some(DiagnosticId::Error(E1001.kind))));
+    /// handler.add_diagnostic(Diagnostic::new_with_code(Level::Error, "error message", None, (Position::dummy_pos(), Position::dummy_pos()), Some(DiagnosticId::Error(E1001.kind)), None));
     /// ```
     #[inline]
     pub fn add_diagnostic(&mut self, diagnostic: Diagnostic) -> &mut Self {
