@@ -573,7 +573,8 @@ fn test_error_message_fuzz_matched() {
     match exec_program(sess.clone(), &settings.try_into().unwrap()) {
         Ok(_) => panic!("unreachable code."),
         Err(msg) => {
-            assert!(msg.contains("attribute 'a' not found in schema 'Person', did you mean '[\"aa\"]'?"))
+            assert!(msg
+                .contains("attribute 'a' not found in schema 'Person', did you mean '[\"aa\"]'?"))
         }
     }
 }
