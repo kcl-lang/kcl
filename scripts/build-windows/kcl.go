@@ -20,7 +20,9 @@ func main() {
 		args = append(args, "version")
 	} else {
 		args = append(args, "run")
-		args = append(args, os.Args[1:]...)
+		if len(os.Args) >= 1 {
+			args = append(args, os.Args[1:]...)
+		}
 	}
 
 	os.Exit(KclvmCliMain(args))
