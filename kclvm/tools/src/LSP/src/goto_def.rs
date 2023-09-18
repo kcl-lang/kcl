@@ -374,44 +374,12 @@ pub(crate) fn get_identifier_last_name(id: &Identifier) -> String {
 
 #[cfg(test)]
 mod tests {
+    use super::goto_definition;
+    use crate::tests::{compare_goto_res, compile_test_file};
     use indexmap::IndexSet;
     use kclvm_error::Position as KCLPos;
-    use lsp_types::{request::GotoTypeDefinitionResponse, Position};
     use proc_macro_crate::bench_test;
     use std::path::PathBuf;
-
-    use crate::tests::compile_test_file;
-
-    use super::goto_definition;
-
-    fn compare_goto_res(
-        res: Option<GotoTypeDefinitionResponse>,
-        pos: (&String, u32, u32, u32, u32),
-    ) {
-        match res.unwrap() {
-            lsp_types::GotoDefinitionResponse::Scalar(loc) => {
-                let got_path = loc.uri.path();
-                assert_eq!(got_path, pos.0);
-
-                let (got_start, got_end) = (loc.range.start, loc.range.end);
-
-                let expected_start = Position {
-                    line: pos.1, // zero-based
-                    character: pos.2,
-                };
-
-                let expected_end = Position {
-                    line: pos.3, // zero-based
-                    character: pos.4,
-                };
-                assert_eq!(got_start, expected_start);
-                assert_eq!(got_end, expected_end);
-            }
-            _ => {
-                unreachable!("test error")
-            }
-        }
-    }
 
     #[test]
     #[bench_test]
