@@ -1,3 +1,5 @@
+//! The design and implementation of KCL Lint refer to the [rust-lang/rustc](https://github.com/rust-lang/rust) lint and follow Apache License Version 2.0
+//!
 //! This file is the implementation of KCLLint, which is used to perform some additional checks on KCL code.
 //! The main structures of the file are Lint, LintPass, CombinedLintPass and Linter.
 //! For details see the: https://github.com/kcl-lang/kcl/issues/109
