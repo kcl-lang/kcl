@@ -23,7 +23,7 @@ mod tests;
 use compiler_base_macros::bug;
 use compiler_base_span::{self, span::new_byte_pos, BytePos, Span};
 use kclvm_ast::ast::NumberBinarySuffix;
-use kclvm_ast::token::{self, CommentKind, Token, TokenKind};
+use kclvm_ast::token::{self, BinOpToken, CommentKind, Token, TokenKind};
 use kclvm_ast::token_stream::TokenStream;
 use kclvm_lexer::Base;
 use kclvm_span::symbol::Symbol;
@@ -40,6 +40,7 @@ pub fn parse_token_streams(sess: &ParseSession, src: &str, start_pos: BytePos) -
         sess,
         start_pos,
         pos: start_pos,
+        tok_start_pos: start_pos,
         end_src_index: src.len(),
         src,
         token: TokenWithIndents::Token {
@@ -111,6 +112,9 @@ struct Lexer<'a> {
     /// The absolute offset within the source_map of the current character.
     pos: BytePos,
 
+    /// The start position of the current token.
+    tok_start_pos: BytePos,
+
     /// Stop reading src at this index.
     end_src_index: usize,
 
@@ -147,18 +151,23 @@ struct IndentContext {
 impl<'a> Lexer<'a> {
     fn into_tokens(mut self) -> TokenStream {
         let mut buf = TokenStreamBuilder::default();
-        self.token = self.token();
+        // In the process of look-behind lexing, it is necessary to check the type of the previous token in 'buf',
+        // If the previous token and the current token can form a multi-character token,
+        // then the previous token will be popped from 'buf'.
+        //
+        // Therefore, the method 'self.token()' needs to take the mutable reference of 'buf' as an incoming argument.
+        self.token = self.token(&mut buf);
 
         while !self.token.is_eof() {
             self.token.append_to(&mut buf);
-            self.token = self.token();
+            self.token = self.token(&mut buf);
         }
 
         self.eof(&mut buf);
         buf.into_token_stream()
     }
 
-    fn token(&mut self) -> TokenWithIndents {
+    fn token(&mut self, tok_stream_builder: &mut TokenStreamBuilder) -> TokenWithIndents {
         loop {
             let start_src_index = self.src_index(self.pos);
             let text: &str = &self.src[start_src_index..self.end_src_index];
@@ -175,12 +184,19 @@ impl<'a> Lexer<'a> {
             // Detect and handle indent cases before lexing on-going token
             let indent = self.lex_indent_context(token.kind);
 
-            let start = self.pos;
+            // Because of the 'look-behind', the 'start' of the current token becomes a two-way cursor,
+            // which can not only move forward, but also move backward when 'look-behind'.
+            // Therefore, the value of 'self.tok_start_pos' can be changed in 'self.lex_token()'.
+            self.tok_start_pos = self.pos;
             // update pos after token and indent handling
             self.pos = self.pos + new_byte_pos(token.len as u32);
 
-            if let Some(kind) = self.lex_token(token, start) {
-                let span = self.span(start, self.pos);
+            // In the process of look-behind lexing, it is necessary to check the type of the previous token in 'tok_stream_builder',
+            // If the previous token and the current token can form a multi-character token,
+            // then the previous token will be popped from 'tok_stream_builder'.
+            // Therefore, the method 'self.lex_token()' needs to take the mutable reference of 'tok_stream_builder' as an incoming argument.
+            if let Some(kind) = self.lex_token(token, self.tok_start_pos, tok_stream_builder) {
+                let span = self.span(self.tok_start_pos, self.pos);
 
                 match indent {
                     Some(iord) => {
@@ -202,7 +218,12 @@ impl<'a> Lexer<'a> {
     }
 
     /// Turns `kclvm_lexer::TokenKind` into a rich `kclvm_ast::TokenKind`.
-    fn lex_token(&mut self, token: kclvm_lexer::Token, start: BytePos) -> Option<TokenKind> {
+    fn lex_token(
+        &mut self,
+        token: kclvm_lexer::Token,
+        start: BytePos,
+        tok_stream_builder: &mut TokenStreamBuilder,
+    ) -> Option<TokenKind> {
         Some(match token.kind {
             kclvm_lexer::TokenKind::LineComment { doc_style: _ } => {
                 let s = self.str_from(start);
@@ -244,22 +265,7 @@ impl<'a> Lexer<'a> {
             }
             // Binary op
             kclvm_lexer::TokenKind::Plus => token::BinOp(token::Plus),
-            kclvm_lexer::TokenKind::Minus => {
-                let head = start + new_byte_pos(1);
-                let tail = start + new_byte_pos(2);
-                if self.has_next_token(head, tail) {
-                    let next_tkn = self.str_from_to(head, tail);
-                    if next_tkn == ">" {
-                        // waste '>' token
-                        self.pos = self.pos + new_byte_pos(1);
-                        token::RArrow
-                    } else {
-                        token::BinOp(token::Minus)
-                    }
-                } else {
-                    token::BinOp(token::Minus)
-                }
-            }
+            kclvm_lexer::TokenKind::Minus => token::BinOp(token::Minus),
             kclvm_lexer::TokenKind::Star => token::BinOp(token::Star),
             kclvm_lexer::TokenKind::Slash => token::BinOp(token::Slash),
             kclvm_lexer::TokenKind::Percent => token::BinOp(token::Percent),
@@ -288,7 +294,13 @@ impl<'a> Lexer<'a> {
             kclvm_lexer::TokenKind::BangEq => token::BinCmp(token::NotEq),
             kclvm_lexer::TokenKind::Lt => token::BinCmp(token::Lt),
             kclvm_lexer::TokenKind::LtEq => token::BinCmp(token::LtEq),
-            kclvm_lexer::TokenKind::Gt => token::BinCmp(token::Gt),
+            // If the current token is '>',
+            // then lexer need to check whether the previous token is '-',
+            // if yes, return token '->', if not return token '>'.
+            kclvm_lexer::TokenKind::Gt => match self.look_behind(&token, tok_stream_builder) {
+                Some(tok_kind) => tok_kind,
+                None => token::BinCmp(token::Gt),
+            },
             kclvm_lexer::TokenKind::GtEq => token::BinCmp(token::GtEq),
             // Structural symbols
             kclvm_lexer::TokenKind::At => token::At,
@@ -429,6 +441,36 @@ impl<'a> Lexer<'a> {
                 return None;
             }
         })
+    }
+
+    /// From the lexed tokens stack, check whether the token at the top of the stack and the current character can combine a new token.
+    /// If yes, lexer will pop the token at the top of the stack and return a new token combined with the token poped and the current character.
+    /// If not, return None.
+    fn look_behind(
+        &mut self,
+        tok: &kclvm_lexer::Token,
+        tok_stream_builder: &mut TokenStreamBuilder,
+    ) -> Option<TokenKind> {
+        match tok.kind {
+            // Most multi-character tokens are lexed in ['kclvm-lexer'],
+            // and the multi-character tokens that need to be lexed in ['kclvm-parser/lexer'] are only token '->'.
+            // If a new multi-character token is added later, the corresponding operation can be added here.
+            kclvm_lexer::TokenKind::Gt => {
+                if let Some(_) =
+                    tok_stream_builder.pop_if_tok_kind(&TokenKind::BinOp(BinOpToken::Minus))
+                {
+                    // After the previous token pops up, 'self.tok_start_pos' needs to be updated.
+                    if self.tok_start_pos >= new_byte_pos(1) {
+                        self.tok_start_pos = self.tok_start_pos - new_byte_pos(1);
+                        return Some(TokenKind::RArrow);
+                    } else {
+                        bug!("Internal Bugs: Please connect us to fix it, invalid token start pos")
+                    }
+                }
+            }
+            _ => return None,
+        }
+        None
     }
 
     fn lex_literal(
@@ -646,10 +688,6 @@ impl<'a> Lexer<'a> {
         &self.src[self.src_index(start)..self.src_index(end)]
     }
 
-    fn has_next_token(&self, start: BytePos, end: BytePos) -> bool {
-        !(self.src_index(start) > self.src_index(end) || self.src_index(end) > self.src.len())
-    }
-
     fn symbol_from_to(&self, start: BytePos, end: BytePos) -> Symbol {
         Symbol::intern(self.str_from_to(start, end))
     }
@@ -681,5 +719,28 @@ impl TokenStreamBuilder {
 
     fn into_token_stream(self) -> TokenStream {
         TokenStream::new(self.buf)
+    }
+
+    /// Pop the token at the top of the stack, and return None if the stack is empty.
+    fn pop(&mut self) -> Option<Token> {
+        self.buf.pop()
+    }
+
+    /// If the token kind at the top of the stack is 'expected_tok_kind',
+    /// pop the token and return it, otherwise do nothing and return None.
+    fn pop_if_tok_kind(&mut self, expected_tok_kind: &TokenKind) -> Option<Token> {
+        if self.peek_tok_kind() == expected_tok_kind {
+            self.pop()
+        } else {
+            None
+        }
+    }
+
+    /// Peek the kind of the token on the top of the stack.
+    fn peek_tok_kind(&self) -> &TokenKind {
+        match self.buf.last() {
+            Some(tok) => &tok.kind,
+            None => &TokenKind::Dummy,
+        }
     }
 }
