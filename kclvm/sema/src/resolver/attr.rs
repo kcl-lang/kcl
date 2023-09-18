@@ -7,7 +7,6 @@ use crate::ty::TypeKind::Schema;
 use crate::ty::{DictType, ModuleKind, Type, TypeKind};
 use kclvm_error::diagnostic::Range;
 use kclvm_error::*;
-use kclvm_utils::str::find_closest_strs;
 
 use super::node::ResolvedResult;
 
@@ -114,24 +113,23 @@ impl<'ctx> Resolver<'ctx> {
         };
 
         if !result {
-            let mut suggestion = String::new();
-            // Calculate the closests miss attributes.
-            if let Schema(schema_ty) = &obj.kind {
-                // Get all the attrbuets of the schema.
-                let attrs = schema_ty.attrs.keys().cloned().collect::<Vec<String>>();
-                // The attr user input.
-                let attr = if attr.is_empty() {
-                    "[missing name]"
-                } else {
-                    attr
-                };
-                // Find the closests miss attributes.
-                let closests = find_closest_strs(attr.to_string(), attrs, None);
-                // If there are closests miss attributes, add the suggestion.
-                if closests.len() != 0 {
-                    suggestion = format!(", did you mean '{}'?", closests.join(" or "))
-                };
-            }
+            // The attr user input.
+            let (attr, suggestion) = if attr.is_empty() {
+                ("[missing name]", "".to_string())
+            } else {
+                let mut suggestion = String::new();
+                // Calculate the closests miss attributes.
+                if let Schema(schema_ty) = &obj.kind {
+                    // Get all the attrbuets of the schema.
+                    let attrs = schema_ty.attrs.keys().cloned().collect::<Vec<String>>();
+                    let suggs = suggestions::provide_suggestions(attr, &attrs);
+                    if suggs.len() > 0 {
+                        suggestion = format!(", did you mean '{:?}'?", suggs);
+                    }
+                }
+                (attr, suggestion)
+            };
+
             self.handler.add_type_error(
                 &format!(
                     "attribute '{}' not found in schema '{}'{}",

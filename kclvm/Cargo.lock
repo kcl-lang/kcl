@@ -1770,6 +1770,7 @@ dependencies = [
  "petgraph",
  "phf",
  "regex",
+ "suggestions",
  "unicode_names2",
 ]
 
@@ -1816,6 +1817,7 @@ name = "kclvm-utils"
 version = "0.5.0"
 dependencies = [
  "strsim",
+ "suggest",
 ]
 
 [[package]]
@@ -1859,6 +1861,12 @@ name = "lazy_static"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
+
+[[package]]
+name = "lev_distance"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "72d9d1bd215936bc8647ad92986bb56f3f216550b53c44ab785e3217ae33625e"
 
 [[package]]
 name = "libc"
@@ -3307,6 +3315,24 @@ name = "strsim"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
+
+[[package]]
+name = "suggest"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "df37b6c6c8c30907c3194639450e4d9cf5c0633b95b0fb65e2a45c37caffe829"
+dependencies = [
+ "lev_distance",
+]
+
+[[package]]
+name = "suggestions"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5441c382482e49aaac2c3ea9cbcd24290531246e879ee94af5dfc4b144f11e80"
+dependencies = [
+ "strsim",
+]
 
 [[package]]
 name = "syn"
