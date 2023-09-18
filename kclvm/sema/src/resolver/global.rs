@@ -58,6 +58,7 @@ impl<'ctx> Resolver<'ctx> {
                                     style: Style::LineAndColumn,
                                     message: format!("unique key error name '{}'", name),
                                     note: None,
+                                    suggested_replacement: None,
                                 }],
                             );
                             continue;
@@ -184,6 +185,7 @@ impl<'ctx> Resolver<'ctx> {
                         style: Style::Line,
                         message: format!("pkgpath {} not found in the program", self.ctx.pkgpath),
                         note: None,
+                        suggested_replacement: None,
                     }],
                 );
             }
@@ -239,6 +241,7 @@ impl<'ctx> Resolver<'ctx> {
                             name
                         ),
                             note: None,
+                            suggested_replacement: None,
                         },
                         Message {
                             range: self
@@ -255,6 +258,7 @@ impl<'ctx> Resolver<'ctx> {
                                 "change the variable name to '_{}' to make it mutable",
                                 name
                             )),
+                            suggested_replacement: None,
                         },
                     ],
                 );
@@ -278,12 +282,14 @@ impl<'ctx> Resolver<'ctx> {
                                         obj.ty.ty_str()
                                     ),
                                     note: None,
+                                    suggested_replacement: None,
                                 },
                                 Message {
                                     range: obj.get_span_pos(),
                                     style: Style::LineAndColumn,
                                     message: format!("expected {}", obj.ty.ty_str()),
                                     note: None,
+                                    suggested_replacement: None,
                                 },
                             ],
                         );
@@ -333,6 +339,7 @@ impl<'ctx> Resolver<'ctx> {
                             name
                         ),
                         note: None,
+                        suggested_replacement: None,
                     },
                     Message {
                         range: self
@@ -349,6 +356,7 @@ impl<'ctx> Resolver<'ctx> {
                             "change the variable name to '_{}' to make it mutable",
                             name
                         )),
+                        suggested_replacement: None,
                     },
                 ],
             );
@@ -390,6 +398,7 @@ impl<'ctx> Resolver<'ctx> {
                                 ty.ty_str()
                             ),
                             note: None,
+                            suggested_replacement: None,
                         }],
                     );
                     None
@@ -413,6 +422,7 @@ impl<'ctx> Resolver<'ctx> {
                         style: Style::LineAndColumn,
                         message: "only schema mixin can inherit from protocol".to_string(),
                         note: None,
+                        suggested_replacement: None,
                     }],
                 );
                 return None;
@@ -434,6 +444,7 @@ impl<'ctx> Resolver<'ctx> {
                                 ty.ty_str()
                             ),
                             note: None,
+                            suggested_replacement: None,
                         }],
                     );
                     None
@@ -467,6 +478,7 @@ impl<'ctx> Resolver<'ctx> {
                                 ty.ty_str()
                             ),
                             note: None,
+                            suggested_replacement: None,
                         }],
                     );
                     None
@@ -503,6 +515,7 @@ impl<'ctx> Resolver<'ctx> {
                     style: Style::LineAndColumn,
                     message: format!("schema protocol name must end with '{}'", PROTOCOL_SUFFIX),
                     note: None,
+                    suggested_replacement: None,
                 }],
             );
         }
@@ -523,6 +536,7 @@ impl<'ctx> Resolver<'ctx> {
                     style: Style::LineAndColumn,
                     message: format!("mixin inheritance {} is prohibited", parent_name),
                     note: None,
+                    suggested_replacement: None,
                 }],
             );
         }
@@ -541,6 +555,7 @@ impl<'ctx> Resolver<'ctx> {
                             style: Style::LineAndColumn,
                             message: format!("index signature attribute name '{}' cannot have the same name as schema attributes", index_sign_name),
                             note: None,
+                            suggested_replacement: None,
                         }],
                     );
                 }
@@ -565,6 +580,7 @@ impl<'ctx> Resolver<'ctx> {
                         style: Style::LineAndColumn,
                         message: format!("invalid index signature key type: '{}'", key_ty.ty_str()),
                         note: None,
+                        suggested_replacement: None,
                     }],
                 );
             }
@@ -707,6 +723,7 @@ impl<'ctx> Resolver<'ctx> {
                             style: Style::LineAndColumn,
                             message: format!("the type '{}' of schema attribute '{}' does not meet the index signature definition {}", ty.ty_str(), name, index_signature_obj.ty_str()),
                             note: None,
+                            suggested_replacement: None,
                         }],
                     );
                 }
@@ -727,6 +744,7 @@ impl<'ctx> Resolver<'ctx> {
                             mixin_names[mixin_names.len() - 1]
                         ),
                         note: None,
+                        suggested_replacement: None,
                     }],
                 );
             }
@@ -748,6 +766,7 @@ impl<'ctx> Resolver<'ctx> {
                                 ty.ty_str()
                             ),
                             note: None,
+                            suggested_replacement: None,
                         }],
                     );
                     None
@@ -873,6 +892,7 @@ impl<'ctx> Resolver<'ctx> {
                             style: Style::LineAndColumn,
                             message: format!("illegal rule type '{}'", ty.ty_str()),
                             note: None,
+                            suggested_replacement: None,
                         }],
                     );
                     None

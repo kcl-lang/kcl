@@ -96,7 +96,7 @@ impl From<Loc> for Position {
 
 impl Diagnostic {
     pub fn new(level: Level, message: &str, range: Range) -> Self {
-        Diagnostic::new_with_code(level, message, None, range, None)
+        Diagnostic::new_with_code(level, message, None, range, None, None)
     }
 
     /// New a diagnostic with error code.
@@ -106,6 +106,7 @@ impl Diagnostic {
         note: Option<&str>,
         range: Range,
         code: Option<DiagnosticId>,
+        suggested_replacement: Option<String>,
     ) -> Self {
         Diagnostic {
             level,
@@ -114,6 +115,7 @@ impl Diagnostic {
                 style: Style::LineAndColumn,
                 message: message.to_string(),
                 note: note.map(|s| s.to_string()),
+                suggested_replacement
             }],
             code,
         }
@@ -133,6 +135,7 @@ pub struct Message {
     pub style: Style,
     pub message: String,
     pub note: Option<String>,
+    pub suggested_replacement: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]

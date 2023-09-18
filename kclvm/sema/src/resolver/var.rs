@@ -127,6 +127,7 @@ impl<'ctx> Resolver<'ctx> {
                 style: Style::LineAndColumn,
                 message: format!("Unique key error name '{}'", name),
                 note: None,
+                suggested_replacement: None,
             }];
             if let Some(pos) = self.get_global_name_pos(name) {
                 msgs.push(Message {
@@ -134,6 +135,7 @@ impl<'ctx> Resolver<'ctx> {
                     style: Style::LineAndColumn,
                     message: format!("The variable '{}' is declared here", name),
                     note: None,
+                    suggested_replacement: None,
                 });
             }
             self.handler.add_error(ErrorKind::UniqueKeyError, &msgs);

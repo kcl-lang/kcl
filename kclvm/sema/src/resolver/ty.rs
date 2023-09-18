@@ -98,6 +98,7 @@ impl<'ctx> Resolver<'ctx> {
                 style: Style::LineAndColumn,
                 message: format!("expected {}, got {}", expected_ty.ty_str(), ty.ty_str(),),
                 note: None,
+                suggested_replacement: None,
             }];
 
             if let Some(expected_pos) = expected_pos {
@@ -110,6 +111,7 @@ impl<'ctx> Resolver<'ctx> {
                         ty.ty_str(),
                     ),
                     note: None,
+                    suggested_replacement: None,
                 });
             }
             self.handler.add_error(ErrorKind::TypeError, &msgs);

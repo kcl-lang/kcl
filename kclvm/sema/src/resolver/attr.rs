@@ -22,6 +22,7 @@ impl<'ctx> Resolver<'ctx> {
                         attr_ty.ty_str()
                     ),
                     note: None,
+                    suggested_replacement: None,
                 }],
             );
         }

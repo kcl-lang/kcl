@@ -215,6 +215,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                     style: Style::LineAndColumn,
                     message: format!("Immutable variable '{}' is modified during compiling", name),
                     note: None,
+                    suggested_replacement: None,
                 }];
                 if let Some(pos) = self.get_global_name_pos(name) {
                     msgs.push(Message {
@@ -225,6 +226,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                             "change the variable name to '_{}' to make it mutable",
                             name
                         )),
+                        suggested_replacement: None,
                     })
                 }
                 self.handler.add_error(ErrorKind::ImmutableError, &msgs);
