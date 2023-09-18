@@ -45,6 +45,7 @@ impl<'ctx> Resolver<'ctx> {
                                         real_path.to_str().unwrap()
                                     ),
                                     note: None,
+                                    suggested_replacement: None,
                                 }],
                             );
                         } else {
@@ -60,6 +61,7 @@ impl<'ctx> Resolver<'ctx> {
                                             file
                                         ),
                                         note: None,
+                                        suggested_replacement: None,
                                     }],
                                 );
                             }

@@ -545,6 +545,7 @@ impl<'ctx> Resolver<'ctx> {
                             val_ty.ty_str()
                         ),
                         note: None,
+                        suggested_replacement: None,
                     }],
                 );
             }

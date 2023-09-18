@@ -386,6 +386,7 @@ impl Loader {
                         pkg_path
                     ),
                     note: None,
+                    suggested_replacement: None,
                 }],
             );
             return Ok(None);
@@ -402,6 +403,7 @@ impl Loader {
                         style: Style::Line,
                         message: format!("pkgpath {} not found in the program", pkg_path),
                         note: None,
+                        suggested_replacement: None,
                     }],
                 );
                 return Ok(None);
@@ -498,6 +500,7 @@ impl Loader {
                         style: Style::Line,
                         message: format!("the plugin package `{}` is not found, please confirm if plugin mode is enabled", pkgpath),
                         note: None,
+                        suggested_replacement: None,
                     }],
                 );
             }

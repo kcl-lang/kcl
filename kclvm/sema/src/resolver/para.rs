@@ -22,6 +22,7 @@ impl<'ctx> Resolver<'ctx> {
                                     message: "non-default argument follows default argument"
                                         .to_string(),
                                     note: Some("A default argument".to_string()),
+                                    suggested_replacement: None,
                                 }],
                             );
                         }

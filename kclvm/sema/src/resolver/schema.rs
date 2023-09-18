@@ -32,6 +32,7 @@ impl<'ctx> Resolver<'ctx> {
                     style: Style::LineAndColumn,
                     message: format!("expected schema type, got {}", ty.ty_str()),
                     note: None,
+                    suggested_replacement: None,
                 }],
             );
             return ty;
@@ -120,6 +121,7 @@ impl<'ctx> Resolver<'ctx> {
                     style: Style::LineAndColumn,
                     message: format!("expected rule type, got {}", ty.ty_str()),
                     note: None,
+                    suggested_replacement: None,
                 }],
             );
             return ty;
