@@ -101,9 +101,16 @@ fn completion_variable(pos: &KCLPos, prog_scope: &ProgramScope) -> IndexSet<KCLC
         for (name, obj) in inner_most_scope.all_usable_objects() {
             match &obj.borrow().kind {
                 kclvm_sema::resolver::scope::ScopeObjectKind::Module(module) => {
-                    completions.insert(KCLCompletionItem {
-                        label: module.name.clone(),
-                    });
+                    for stmt in &module.import_stmts {
+                        match &stmt.node {
+                            Stmt::Import(import_stmtt) => {
+                                completions.insert(KCLCompletionItem {
+                                    label: import_stmtt.name.clone(),
+                                });
+                            }
+                            _ => {}
+                        }
+                    }
                 }
                 _ => {
                     completions.insert(KCLCompletionItem { label: name });

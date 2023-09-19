@@ -111,6 +111,15 @@ impl<'ctx> Resolver<'ctx> {
                                 let is_user_module = match scope.elems.get(&import_stmt.path) {
                                     Some(scope_obj) => {
                                         let mut obj = scope_obj.borrow_mut();
+                                        match &mut obj.kind {
+                                                    ScopeObjectKind::Module(m) => {
+                                                        m.import_stmts.push(stmt.clone())
+                                                    },
+                                                    _ => bug!(
+                                                        "invalid module type in the import check function {}",
+                                                        scope_obj.borrow().ty.ty_str()
+                                                    )
+                                                }
                                         match &obj.ty.kind {
                                             TypeKind::Module(module_ty) => {
                                                 let mut module_ty = module_ty.clone();
@@ -152,6 +161,7 @@ impl<'ctx> Resolver<'ctx> {
                                             Some(name) => name.clone(),
                                             None => import_stmt.name.clone(),
                                         };
+
                                         scope.elems.insert(
                                             name.clone(),
                                             Rc::new(RefCell::new(ScopeObject {
@@ -160,10 +170,7 @@ impl<'ctx> Resolver<'ctx> {
                                                 end: end.clone(),
                                                 ty: Rc::new(ty.clone()),
                                                 kind: ScopeObjectKind::Module(Module {
-                                                    path: import_stmt.path.clone(),
-                                                    rawpath: import_stmt.rawpath.clone(),
-                                                    name: import_stmt.name.clone(),
-                                                    asname: import_stmt.asname.clone(),
+                                                    import_stmts: vec![stmt.clone()],
                                                 }),
                                                 used: true,
                                                 doc: None,
@@ -177,15 +184,13 @@ impl<'ctx> Resolver<'ctx> {
                                                 end,
                                                 ty: Rc::new(ty),
                                                 kind: ScopeObjectKind::Module(Module {
-                                                    path: import_stmt.path.clone(),
-                                                    rawpath: import_stmt.rawpath.clone(),
-                                                    name: import_stmt.name.clone(),
-                                                    asname: import_stmt.asname.clone(),
+                                                    import_stmts: vec![stmt.clone()],
                                                 }),
                                                 used: false,
                                                 doc: None,
                                             })),
                                         );
+
                                         matches!(kind, ModuleKind::User)
                                     }
                                 };

@@ -83,7 +83,7 @@ impl Into<Range> for Pos {
 /// that all AST nodes need to contain.
 /// In fact, column and end_column are the counts of character,
 /// For example, `\t` is counted as 1 character, so it is recorded as 1 here, but generally col is 4.
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Node<T> {
     pub node: T,
     pub filename: String,
@@ -165,7 +165,7 @@ impl<T> Node<T> {
 }
 
 /// Spanned<T> is the span information that all AST nodes need to contain.
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Spanned<T> {
     pub node: T,
     #[serde(skip)]
@@ -231,21 +231,21 @@ impl TryInto<Node<SchemaExpr>> for Node<Expr> {
 pub type NodeRef<T> = Box<Node<T>>;
 
 /// KCL command line argument spec, e.g. `kcl main.k -E pkg_name=pkg_path`
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct CmdExternalPkgSpec {
     pub pkg_name: String,
     pub pkg_path: String,
 }
 
 /// KCL command line argument spec, e.g. `kcl main.k -D name=value`
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct CmdArgSpec {
     pub name: String,
     pub value: String,
 }
 
 /// KCL command line override spec, e.g. `kcl main.k -O pkgpath:path.to.field=field_value`
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct OverrideSpec {
     pub pkgpath: String,
     pub field_path: String,
@@ -253,7 +253,7 @@ pub struct OverrideSpec {
     pub action: OverrideAction,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum OverrideAction {
     Delete,
     #[serde(other)]
@@ -261,7 +261,7 @@ pub enum OverrideAction {
 }
 
 /// Program is the AST collection of all files of the running KCL program.
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
 pub struct Program {
     pub root: String,
     pub main: String,
@@ -290,7 +290,7 @@ impl Program {
 }
 
 /// Module is an abstract syntax tree for a single KCL file.
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Module {
     pub filename: String,
     pub pkg: String,
@@ -328,7 +328,7 @@ impl Module {
  */
 
 /// A statement
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum Stmt {
     TypeAlias(TypeAliasStmt),
     Expr(ExprStmt),
@@ -347,7 +347,7 @@ pub enum Stmt {
 /// ```kcl
 /// type StrOrInt = str | int
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct TypeAliasStmt {
     pub type_name: NodeRef<Identifier>,
     pub type_value: NodeRef<String>,
@@ -360,7 +360,7 @@ pub struct TypeAliasStmt {
 /// 1
 /// """A long string"""
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct ExprStmt {
     pub exprs: Vec<NodeRef<Expr>>,
 }
@@ -369,7 +369,7 @@ pub struct ExprStmt {
 /// ```kcl
 /// data: ASchema {}
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct UnificationStmt {
     pub target: NodeRef<Identifier>,
     pub value: NodeRef<SchemaExpr>,
@@ -379,7 +379,7 @@ pub struct UnificationStmt {
 /// ```kcl
 /// a: int = 1
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct AssignStmt {
     pub targets: Vec<NodeRef<Identifier>>,
     pub value: NodeRef<Expr>,
@@ -392,7 +392,7 @@ pub struct AssignStmt {
 /// ```kcl
 /// a += 1
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct AugAssignStmt {
     pub target: NodeRef<Identifier>,
     pub value: NodeRef<Expr>,
@@ -403,7 +403,7 @@ pub struct AugAssignStmt {
 /// ```kcl
 /// assert True if condition, "Assert failed message"
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct AssertStmt {
     pub test: NodeRef<Expr>,
     pub if_cond: Option<NodeRef<Expr>>,
@@ -420,7 +420,7 @@ pub struct AssertStmt {
 /// else:
 ///     c = 3
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct IfStmt {
     pub body: Vec<NodeRef<Stmt>>,
     pub cond: NodeRef<Expr>,
@@ -431,7 +431,7 @@ pub struct IfStmt {
 /// ```kcl
 /// import pkg as pkg_alias
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct ImportStmt {
     /// `path` is the import path, if 'import a.b.c' in kcl, `path` is a.b.c
     pub path: String,
@@ -464,7 +464,7 @@ pub struct ImportStmt {
 /// protocol ProtocolExample:
 ///     attr: int
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct SchemaStmt {
     pub doc: String,
     pub name: NodeRef<String>,
@@ -553,7 +553,7 @@ impl SchemaStmt {
 /// schema SchemaIndexSignatureExample:
 ///     [str]: int
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct SchemaIndexSignature {
     pub key_name: Option<String>,
     pub key_type: NodeRef<String>,
@@ -570,7 +570,7 @@ pub struct SchemaIndexSignature {
 ///      x: int
 ///      y: str
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct SchemaAttr {
     pub doc: String,
     pub name: NodeRef<String>,
@@ -589,7 +589,7 @@ pub struct SchemaAttr {
 ///     a > 1
 ///     b < 0
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct RuleStmt {
     pub doc: String,
     pub name: NodeRef<String>,
@@ -601,7 +601,7 @@ pub struct RuleStmt {
 }
 
 /// A expression
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum Expr {
     Identifier(Identifier),
     Unary(UnaryExpr),
@@ -642,7 +642,7 @@ pub enum Expr {
 /// _c
 /// pkg.a
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Identifier {
     pub names: Vec<Node<String>>,
     pub pkgpath: String,
@@ -669,7 +669,7 @@ impl Identifier {
 /// ~3
 /// not True
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct UnaryExpr {
     pub op: UnaryOp,
     pub operand: NodeRef<Expr>,
@@ -682,7 +682,7 @@ pub struct UnaryExpr {
 /// 5 / 2
 /// a is None
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct BinaryExpr {
     pub left: NodeRef<Expr>,
     pub op: BinOrCmpOp,
@@ -693,7 +693,7 @@ pub struct BinaryExpr {
 /// ```kcl
 /// 1 if condition else 2
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct IfExpr {
     pub body: NodeRef<Expr>,
     pub cond: NodeRef<Expr>,
@@ -705,7 +705,7 @@ pub struct IfExpr {
 /// x.y
 /// x?.y
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct SelectorExpr {
     pub value: NodeRef<Expr>,
     pub attr: NodeRef<Identifier>,
@@ -719,7 +719,7 @@ pub struct SelectorExpr {
 /// func2(1)
 /// func3(x=2)
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct CallExpr {
     pub func: NodeRef<Expr>,
     pub args: Vec<NodeRef<Expr>>,
@@ -730,7 +730,7 @@ pub struct CallExpr {
 /// ```kcl
 /// 1 + (2 - 3)
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct ParenExpr {
     pub expr: NodeRef<Expr>,
 }
@@ -742,7 +742,7 @@ pub struct ParenExpr {
 /// map x in collection {x + 1}
 /// filter x in collection {x > 1}
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct QuantExpr {
     pub target: NodeRef<Expr>,
     pub variables: Vec<NodeRef<Identifier>>,
@@ -752,7 +752,7 @@ pub struct QuantExpr {
     pub ctx: ExprContext,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum QuantOperation {
     All,
     Any,
@@ -777,7 +777,7 @@ impl From<QuantOperation> for String {
 /// ```kcl
 /// [1, 2, 3]
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct ListExpr {
     pub elts: Vec<NodeRef<Expr>>,
     pub ctx: ExprContext,
@@ -787,7 +787,7 @@ pub struct ListExpr {
 /// ```kcl
 /// [1, if condition: 2, 3]
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct ListIfItemExpr {
     pub if_cond: NodeRef<Expr>,
     pub exprs: Vec<NodeRef<Expr>>,
@@ -803,7 +803,7 @@ pub enum CompType {
 /// ```kcl
 /// [x ** 2 for x in [1, 2, 3]]
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct ListComp {
     pub elt: NodeRef<Expr>,
     pub generators: Vec<NodeRef<CompClause>>,
@@ -813,7 +813,7 @@ pub struct ListComp {
 /// ```kcl
 /// [1, 2, *[3, 4]]
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct StarredExpr {
     pub value: NodeRef<Expr>,
     pub ctx: ExprContext,
@@ -823,7 +823,7 @@ pub struct StarredExpr {
 /// ```kcl
 /// {k: v + 1 for k, v in {k1 = 1, k2 = 2}}
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct DictComp {
     pub entry: ConfigEntry,
     pub generators: Vec<NodeRef<CompClause>>,
@@ -837,7 +837,7 @@ pub struct DictComp {
 ///         k2 = 2
 /// }
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct ConfigIfEntryExpr {
     pub if_cond: NodeRef<Expr>,
     pub items: Vec<NodeRef<ConfigEntry>>,
@@ -848,7 +848,7 @@ pub struct ConfigIfEntryExpr {
 /// ```kcl
 /// i, a in [1, 2, 3] if i > 1 and a > 1
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct CompClause {
     pub targets: Vec<NodeRef<Identifier>>,
     pub iter: NodeRef<Expr>,
@@ -862,7 +862,7 @@ pub struct CompClause {
 ///     attr2 = 2
 /// }
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct SchemaExpr {
     pub name: NodeRef<Identifier>,
     pub args: Vec<NodeRef<Expr>>,
@@ -877,12 +877,12 @@ pub struct SchemaExpr {
 ///     attr2 = 2
 /// }
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct ConfigExpr {
     pub items: Vec<NodeRef<ConfigEntry>>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum ConfigEntryOperation {
     Union,
     Override,
@@ -915,7 +915,7 @@ impl ConfigEntryOperation {
 ///     c += [0]
 /// }
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct ConfigEntry {
     pub key: Option<NodeRef<Expr>>,
     pub value: NodeRef<Expr>,
@@ -927,7 +927,7 @@ pub struct ConfigEntry {
 /// ```kcl
 /// len(attr) > 3 if attr, "Check failed message"
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct CheckExpr {
     pub test: NodeRef<Expr>,
     pub if_cond: Option<NodeRef<Expr>>,
@@ -941,7 +941,7 @@ pub struct CheckExpr {
 ///     z + y
 /// }
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct LambdaExpr {
     pub args: Option<NodeRef<Arguments>>,
     pub return_type_str: Option<String>,
@@ -956,7 +956,7 @@ pub struct LambdaExpr {
 /// b["k"]
 /// c?[1]
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Subscript {
     pub value: NodeRef<Expr>,
     pub index: Option<NodeRef<Expr>>,
@@ -971,7 +971,7 @@ pub struct Subscript {
 /// ```kcl
 /// arg=value
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Keyword {
     pub arg: NodeRef<Identifier>,
     pub value: Option<NodeRef<Expr>>,
@@ -983,7 +983,7 @@ pub struct Keyword {
 ///     x + y
 /// }
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Arguments {
     pub args: Vec<NodeRef<Identifier>>,
     pub defaults: Vec<Option<NodeRef<Expr>>>,
@@ -1007,7 +1007,7 @@ impl Arguments {
 /// b is not None
 /// c != d
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Compare {
     pub left: NodeRef<Expr>,
     pub ops: Vec<CmpOp>,
@@ -1021,7 +1021,7 @@ pub struct Compare {
 /// "string literal"
 /// """long string literal"""
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum Literal {
     Number(NumberLit),
     String(StringLit),
@@ -1029,7 +1029,7 @@ pub enum Literal {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum NumberBinarySuffix {
     n,
     u,
@@ -1084,7 +1084,7 @@ impl NumberBinarySuffix {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum NumberLitValue {
     Int(i64),
     Float(f64),
@@ -1096,7 +1096,7 @@ pub enum NumberLitValue {
 /// 1K
 /// 1Mi
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct NumberLit {
     pub binary_suffix: Option<NumberBinarySuffix>,
     pub value: NumberLitValue,
@@ -1107,7 +1107,7 @@ pub struct NumberLit {
 /// "string literal"
 /// """long string literal"""
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct StringLit {
     pub is_long_string: bool,
     pub raw_value: String,
@@ -1134,7 +1134,7 @@ impl TryFrom<String> for StringLit {
 /// None
 /// Undefined
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum NameConstant {
     True,
     False,
@@ -1175,13 +1175,13 @@ impl TryFrom<bool> for NameConstant {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct NameConstantLit {
     pub value: NameConstant,
 }
 
 /// JoinedString, e.g. abc in the string interpolation "${var1} abc ${var2}"
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct JoinedString {
     pub is_long_string: bool,
     pub values: Vec<NodeRef<Expr>>,
@@ -1189,7 +1189,7 @@ pub struct JoinedString {
 }
 
 /// FormattedValue, e.g. var1 and var2  in the string interpolation "${var1} abc ${var2}"
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct FormattedValue {
     pub is_long_string: bool,
     pub value: NodeRef<Expr>,
@@ -1197,14 +1197,14 @@ pub struct FormattedValue {
 }
 
 /// MissingExpr placeholder for error recovery.
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct MissingExpr;
 
 /// Comment, e.g.
 /// ```kcl
 /// # This is a comment
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Comment {
     pub text: String,
 }
@@ -1214,7 +1214,7 @@ pub struct Comment {
  */
 
 /// BinOp is the set of all binary operators in KCL.
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum BinOp {
     /// The `+` operator (addition)
     Add,
@@ -1291,7 +1291,7 @@ impl BinOp {
 }
 
 /// BinOp is the set of all argument operators in KCL.
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum AugOp {
     // The `=` operator (assign)
     Assign,
@@ -1364,7 +1364,7 @@ impl TryInto<BinOp> for AugOp {
 }
 
 /// UnaryOp is the set of all unary operators in KCL.
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum UnaryOp {
     /// The `+` operator for positive
     UAdd,
@@ -1388,7 +1388,7 @@ impl UnaryOp {
 }
 
 /// CmpOp is the set of all comparison operators in KCL.
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum CmpOp {
     /// The `==` operator (equality)
     Eq,
@@ -1449,14 +1449,14 @@ impl CmpOp {
 }
 
 /// BinOrCmpOp is the set of all binary and comparison operators in KCL.
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum BinOrCmpOp {
     Bin(BinOp),
     Cmp(CmpOp),
 }
 
 /// BinOrAugOp is the set of all binary and argument operators in KCL.
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum BinOrAugOp {
     Bin(BinOp),
     Aug(AugOp),
@@ -1465,14 +1465,14 @@ pub enum BinOrAugOp {
 /// ExprContext represents the location information of the AST node.
 /// The left side of the assignment symbol represents `Store`,
 /// and the right side represents `Load`.
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum ExprContext {
     Load,
     Store,
 }
 
 /// A expression
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum Type {
     Any,
     Named(Identifier),
@@ -1483,7 +1483,7 @@ pub enum Type {
     Literal(LiteralType),
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum BasicType {
     Bool,
     Int,
@@ -1491,23 +1491,23 @@ pub enum BasicType {
     Str,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct ListType {
     pub inner_type: Option<NodeRef<Type>>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct DictType {
     pub key_type: Option<NodeRef<Type>>,
     pub value_type: Option<NodeRef<Type>>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct UnionType {
     pub type_elements: Vec<NodeRef<Type>>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum LiteralType {
     Bool(bool),
     Int(i64, Option<NumberBinarySuffix>), // value + suffix

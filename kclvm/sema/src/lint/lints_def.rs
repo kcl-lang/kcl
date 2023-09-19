@@ -99,17 +99,19 @@ impl LintPass for UnusedImport {
         let scope_objs = &scope.elems;
         for (_, scope_obj) in scope_objs {
             let scope_obj = scope_obj.borrow();
-            if let ScopeObjectKind::Module(_) = &scope_obj.kind {
+            if let ScopeObjectKind::Module(m) = &scope_obj.kind {
                 if !scope_obj.used {
-                    handler.add_warning(
-                        WarningKind::UnusedImportWarning,
-                        &[Message {
-                            range: scope_obj.get_span_pos(),
-                            style: Style::Line,
-                            message: format!("Module '{}' imported but unused", scope_obj.name),
-                            note: Some("Consider removing this statement".to_string()),
-                        }],
-                    );
+                    for stmt in &m.import_stmts {
+                        handler.add_warning(
+                            WarningKind::UnusedImportWarning,
+                            &[Message {
+                                range: stmt.get_span_pos(),
+                                style: Style::Line,
+                                message: format!("Module '{}' imported but unused", scope_obj.name),
+                                note: Some("Consider removing this statement".to_string()),
+                            }],
+                        );
+                    }
                 }
             }
         }

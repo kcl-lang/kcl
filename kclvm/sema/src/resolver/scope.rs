@@ -1,6 +1,9 @@
 use anyhow::bail;
 use compiler_base_session::Session;
 use indexmap::{IndexMap, IndexSet};
+use kclvm_ast::ast::NodeRef;
+use kclvm_ast::ast::Stmt;
+use kclvm_ast::ast::Stmt::Import;
 use kclvm_ast::{ast, MAIN_PKG};
 use kclvm_error::diagnostic::Range;
 use kclvm_error::{Handler, Level};
@@ -78,10 +81,7 @@ pub enum ScopeObjectKind {
 /// is used to record information on the AST
 #[derive(PartialEq, Clone, Debug)]
 pub struct Module {
-    pub path: String,
-    pub rawpath: String,
-    pub name: String,
-    pub asname: Option<String>,
+    pub import_stmts: Vec<NodeRef<Stmt>>,
 }
 
 /// A Scope maintains a set of objects and links to its containing
@@ -135,7 +135,11 @@ impl Scope {
         for (name, obj) in &self.elems {
             match &obj.borrow().kind {
                 ScopeObjectKind::Module(module) => {
-                    res.insert(module.name.clone(), obj.clone());
+                    for stmt in &module.import_stmts {
+                        if let Import(import_stmt) = &stmt.node {
+                            res.insert(import_stmt.name.clone(), obj.clone());
+                        }
+                    }
                 }
                 _ => {
                     res.insert(name.clone(), obj.clone());
