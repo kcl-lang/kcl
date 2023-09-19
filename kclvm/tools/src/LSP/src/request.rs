@@ -1,6 +1,6 @@
 use anyhow::Ok;
 use crossbeam_channel::Sender;
-use lsp_types::TextEdit;
+use lsp_types::{TextEdit, Location};
 use ra_ap_vfs::VfsPath;
 use std::time::Instant;
 
@@ -12,6 +12,7 @@ use crate::{
     formatting::format,
     from_lsp::{self, file_path_from_url, kcl_pos},
     goto_def::goto_definition,
+    find_refs::find_references,
     hover, quick_fix,
     state::{log_message, LanguageServerSnapshot, LanguageServerState, Task},
 };
@@ -42,7 +43,9 @@ impl LanguageServerState {
                 state.shutdown_requested = true;
                 Ok(())
             })?
+            // .on::<lsp_types::request::Initialize>(handle_initialize)?
             .on::<lsp_types::request::GotoDefinition>(handle_goto_definition)?
+            .on::<lsp_types::request::References>(handle_reference)?
             .on::<lsp_types::request::Completion>(handle_completion)?
             .on::<lsp_types::request::HoverRequest>(handle_hover)?
             .on::<lsp_types::request::DocumentSymbolRequest>(handle_document_symbol)?
@@ -68,6 +71,16 @@ impl LanguageServerSnapshot {
         }
     }
 }
+
+// pub(crate) fn handle_initialize(
+//     _snapshot: LanguageServerSnapshot, 
+//     params: lsp_types::InitializeParams,
+//     _sender: Sender<Task>
+// ) -> anyhow::Result<lsp_types::InitializeResult>{
+//     if let Some(uri) = params.root_uri {
+//         self.word_index = build_word_index(uri.path().to_string())
+//     }
+// }
 
 pub(crate) fn handle_formatting(
     _snapshot: LanguageServerSnapshot,
@@ -130,6 +143,15 @@ pub(crate) fn handle_goto_definition(
         log_message("Definition item not found".to_string(), &sender)?;
     }
     Ok(res)
+}
+
+/// Called when a `FindReferences` request was received
+pub(crate) fn handle_reference (
+    snapshot: LanguageServerSnapshot,
+    params: lsp_types::ReferenceParams,
+    sender: Sender<Task>,
+) -> anyhow::Result<Option<Vec<Location>>> {
+    find_references(snapshot, params, sender)
 }
 
 /// Called when a `Completion` request was received.

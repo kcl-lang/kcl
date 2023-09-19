@@ -19,7 +19,7 @@ pub(crate) fn hover(
         Some(node) => {
             let mut docs: Vec<String> = vec![];
             if let Some(def) = find_def(node, kcl_pos, prog_scope) {
-                if let crate::goto_def::Definition::Object(obj) = def {
+                if let crate::goto_def::Definition::Object(obj, _) = def {
                     match obj.kind {
                         ScopeObjectKind::Definition => {
                             docs.extend(build_schema_hover_content(&obj.ty.into_schema_type()))

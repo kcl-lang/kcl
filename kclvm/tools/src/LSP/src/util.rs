@@ -16,7 +16,7 @@ use kclvm_sema::resolver::resolve_program_with_opts;
 use kclvm_sema::resolver::scope::ProgramScope;
 use kclvm_sema::resolver::scope::Scope;
 use kclvm_utils::pkgpath::rm_external_pkg_name;
-use lsp_types::Url;
+use lsp_types::{Location, Range, Position, Url};
 use parking_lot::{RwLock, RwLockReadGuard};
 use ra_ap_vfs::{FileId, Vfs};
 use serde::{de::DeserializeOwned, Serialize};
@@ -24,6 +24,7 @@ use std::cell::RefCell;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::{fs, sync::Arc};
+use std::collections::HashMap;
 
 use crate::from_lsp;
 
@@ -743,4 +744,166 @@ pub(crate) fn get_pkg_scope(
         .unwrap_or(scope_map.get(MAIN_PKG).unwrap())
         .borrow()
         .clone()
+}
+
+/// scan and build a word -> Locations index map
+pub fn build_word_index(path: String)-> anyhow::Result<HashMap<String, Vec<Location>>> {
+    let mut index: HashMap<String, Vec<Location>> = HashMap::new();
+    if let Ok(files) = get_kcl_files(path.clone(), true) {
+        for file_path in &files {
+            // str path to url
+            if let Ok(url) = Url::from_file_path(file_path) {
+                // read file content and save the word to word index
+                let text = read_file(file_path).unwrap();
+                let lines: Vec<&str> = text.lines().collect();
+                for (li, line) in lines.into_iter().enumerate() {
+                    let words = line_to_words(line.to_string());
+                    for (key, values) in words {
+                        index.entry(key)
+                            .or_insert_with(Vec::new)
+                            .extend(values.iter().map(|w| {
+                                Location { uri: url.clone(), range: Range { start: Position::new(li as u32, w.start_col), end: Position::new(li as u32, w.end_col) } }
+                            }));
+                    }
+                }
+            }
+        }
+    }
+    return Ok(index)
+}
+
+// Word describes an arbitrary word in a certain line including
+// start position, end position and the word itself.
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct Word {
+    start_col: u32,
+    end_col: u32,
+    word: String,
+}
+
+impl Word {
+    fn new(start_col: u32, end_col: u32, word: String) -> Self {
+        Self {
+            start_col,
+            end_col,
+            word
+        }
+    }
+}
+
+fn read_file(path: &String) -> anyhow::Result<String> {
+    let text = std::fs::read_to_string(path)?;
+    Ok(text)
+}
+
+// Split one line into identifier words.
+fn line_to_words(text: String) -> HashMap<String, Vec<Word>> {
+    let mut result = HashMap::new();
+    let mut chars: Vec<char> = text.chars().collect();
+    chars.push('\n');
+    let mut start_pos = usize::MAX;
+    let mut continue_pos = usize::MAX - 1; // avoid overflow
+    let mut prev_word = false;
+    let mut words: Vec<Word> = vec![];
+    for (i, ch) in chars.iter().enumerate() {
+        let is_id_start = rustc_lexer::is_id_start(*ch);
+        let is_id_continue = rustc_lexer::is_id_continue(*ch);
+        // If the character is valid identfier start and the previous character is not valid identifier continue, mark the start position.
+        if is_id_start && !prev_word {
+            start_pos = i;
+        }
+        match is_id_continue {
+            true => {
+                // Continue searching for the end position.
+                if start_pos != usize::MAX {
+                    continue_pos = i;
+                }
+            }
+            false => {
+                // Find out the end position.
+                if continue_pos + 1 == i {
+                    words.push(Word::new(start_pos as u32,i as u32,chars[start_pos..i].iter().collect::<String>().clone()));
+                }
+                // Reset the start position.
+                start_pos = usize::MAX;
+            }
+        }
+        prev_word = is_id_continue;
+    }
+
+    for w in words {
+        result.entry(w.word.clone()).or_insert(vec![w.clone()]);
+    }
+    result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{line_to_words,build_word_index, Word};
+    // todo assert
+    #[test]
+    fn test_build_word_index() {
+        let result = build_word_index("/Users/amy/work/open/catalog".to_string());
+        println!("{:?}", result)
+    }
+
+    // todo assert
+    #[test]
+    fn test_line_to_words() {
+        let datas = [
+            "alice_first_name = \"alice\"",
+            "0lice_first_name = \"alic0\"",
+            "alice = p.Parent { name: \"alice\" }",
+        ];
+        let expect = vec![
+            vec![
+                Word {
+                    start_col: 0,
+                    end_col: 16,
+                    word: "alice_first_name".to_string(),
+                },
+                Word {
+                    start_col: 20,
+                    end_col: 25,
+                    word: "alice".to_string(),
+                },
+            ],
+            vec![Word {
+                start_col: 20,
+                end_col: 25,
+                word: "alic0".to_string(),
+            }],
+            vec![
+                Word {
+                    start_col: 0,
+                    end_col: 5,
+                    word: "alice".to_string(),
+                },
+                Word {
+                    start_col: 8,
+                    end_col: 9,
+                    word: "p".to_string(),
+                },
+                Word {
+                    start_col: 10,
+                    end_col: 16,
+                    word: "Parent".to_string(),
+                },
+                Word {
+                    start_col: 19,
+                    end_col: 23,
+                    word: "name".to_string(),
+                },
+                Word {
+                    start_col: 26,
+                    end_col: 31,
+                    word: "alice".to_string(),
+                },
+            ],
+        ];
+        for i in 0..datas.len() {
+            // assert_eq!(line_to_words(datas[i].to_string()), expect[i].clone());
+            let _ = line_to_words(datas[i].to_string());
+        }
+    }
 }

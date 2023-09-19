@@ -2,13 +2,14 @@ use crate::analysis::Analysis;
 use crate::config::Config;
 use crate::db::AnalysisDatabase;
 use crate::to_lsp::{kcl_diag_to_lsp_diags, url};
-use crate::util::{get_file_name, parse_param_and_compile, to_json, Param};
+use crate::util::{get_file_name, parse_param_and_compile, to_json, Param, self};
 use crossbeam_channel::{select, unbounded, Receiver, Sender};
 use indexmap::IndexSet;
 use lsp_server::{ReqQueue, Response};
 use lsp_types::{
     notification::{Notification, PublishDiagnostics},
     Diagnostic, PublishDiagnosticsParams,
+    Location,
 };
 use parking_lot::RwLock;
 use ra_ap_vfs::{FileId, Vfs};
@@ -67,6 +68,9 @@ pub(crate) struct LanguageServerState {
 
     /// The VFS loader
     pub vfs_handle: Box<dyn ra_ap_vfs::loader::Handle>,
+
+    /// The word index map
+    pub word_index: HashMap<String, Vec<Location>>,
 }
 
 /// A snapshot of the state of the language server
@@ -78,6 +82,8 @@ pub(crate) struct LanguageServerSnapshot {
     pub db: HashMap<FileId, AnalysisDatabase>,
     /// Documents that are currently kept in memory from the client
     pub opened_files: IndexSet<FileId>,
+    /// The word index map
+    pub word_index: HashMap<String, Vec<Location>>,
 }
 
 #[allow(unused)]
@@ -102,6 +108,7 @@ impl LanguageServerState {
             analysis: Analysis::default(),
             opened_files: IndexSet::new(),
             vfs_handle: handle,
+            word_index: HashMap::new(),
         }
     }
 
@@ -245,6 +252,7 @@ impl LanguageServerState {
             vfs: self.vfs.clone(),
             db: self.analysis.db.clone(),
             opened_files: self.opened_files.clone(),
+            word_index: self.word_index.clone(),
         }
     }
 

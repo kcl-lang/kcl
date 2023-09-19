@@ -5,7 +5,7 @@ mod config;
 mod db;
 mod dispatcher;
 mod document_symbol;
-mod find_ref;
+mod find_refs;
 mod formatting;
 mod from_lsp;
 mod goto_def;
