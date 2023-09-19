@@ -16,15 +16,15 @@ use kclvm_sema::resolver::resolve_program_with_opts;
 use kclvm_sema::resolver::scope::ProgramScope;
 use kclvm_sema::resolver::scope::Scope;
 use kclvm_utils::pkgpath::rm_external_pkg_name;
-use lsp_types::{Location, Range, Position, Url};
+use lsp_types::{Location, Position, Range, Url};
 use parking_lot::{RwLock, RwLockReadGuard};
 use ra_ap_vfs::{FileId, Vfs};
 use serde::{de::DeserializeOwned, Serialize};
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::{fs, sync::Arc};
-use std::collections::HashMap;
 
 use crate::from_lsp;
 
@@ -747,7 +747,7 @@ pub(crate) fn get_pkg_scope(
 }
 
 /// scan and build a word -> Locations index map
-pub fn build_word_index(path: String)-> anyhow::Result<HashMap<String, Vec<Location>>> {
+pub fn build_word_index(path: String) -> anyhow::Result<HashMap<String, Vec<Location>>> {
     let mut index: HashMap<String, Vec<Location>> = HashMap::new();
     if let Ok(files) = get_kcl_files(path.clone(), true) {
         for file_path in &files {
@@ -759,17 +759,22 @@ pub fn build_word_index(path: String)-> anyhow::Result<HashMap<String, Vec<Locat
                 for (li, line) in lines.into_iter().enumerate() {
                     let words = line_to_words(line.to_string());
                     for (key, values) in words {
-                        index.entry(key)
+                        index
+                            .entry(key)
                             .or_insert_with(Vec::new)
-                            .extend(values.iter().map(|w| {
-                                Location { uri: url.clone(), range: Range { start: Position::new(li as u32, w.start_col), end: Position::new(li as u32, w.end_col) } }
+                            .extend(values.iter().map(|w| Location {
+                                uri: url.clone(),
+                                range: Range {
+                                    start: Position::new(li as u32, w.start_col),
+                                    end: Position::new(li as u32, w.end_col),
+                                },
                             }));
                     }
                 }
             }
         }
     }
-    return Ok(index)
+    return Ok(index);
 }
 
 // Word describes an arbitrary word in a certain line including
@@ -786,7 +791,7 @@ impl Word {
         Self {
             start_col,
             end_col,
-            word
+            word,
         }
     }
 }
@@ -822,7 +827,11 @@ fn line_to_words(text: String) -> HashMap<String, Vec<Word>> {
             false => {
                 // Find out the end position.
                 if continue_pos + 1 == i {
-                    words.push(Word::new(start_pos as u32,i as u32,chars[start_pos..i].iter().collect::<String>().clone()));
+                    words.push(Word::new(
+                        start_pos as u32,
+                        i as u32,
+                        chars[start_pos..i].iter().collect::<String>().clone(),
+                    ));
                 }
                 // Reset the start position.
                 start_pos = usize::MAX;
@@ -839,7 +848,7 @@ fn line_to_words(text: String) -> HashMap<String, Vec<Word>> {
 
 #[cfg(test)]
 mod tests {
-    use super::{line_to_words,build_word_index, Word};
+    use super::{build_word_index, line_to_words, Word};
     // todo assert
     #[test]
     fn test_build_word_index() {

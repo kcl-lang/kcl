@@ -2,14 +2,13 @@ use crate::analysis::Analysis;
 use crate::config::Config;
 use crate::db::AnalysisDatabase;
 use crate::to_lsp::{kcl_diag_to_lsp_diags, url};
-use crate::util::{get_file_name, parse_param_and_compile, to_json, Param, self};
+use crate::util::{self, get_file_name, parse_param_and_compile, to_json, Param};
 use crossbeam_channel::{select, unbounded, Receiver, Sender};
 use indexmap::IndexSet;
 use lsp_server::{ReqQueue, Response};
 use lsp_types::{
     notification::{Notification, PublishDiagnostics},
-    Diagnostic, PublishDiagnosticsParams,
-    Location,
+    Diagnostic, Location, PublishDiagnosticsParams,
 };
 use parking_lot::RwLock;
 use ra_ap_vfs::{FileId, Vfs};

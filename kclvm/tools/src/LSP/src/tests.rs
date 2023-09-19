@@ -17,6 +17,8 @@ use lsp_types::HoverContents;
 use lsp_types::HoverParams;
 use lsp_types::MarkedString;
 use lsp_types::PublishDiagnosticsParams;
+use lsp_types::ReferenceContext;
+use lsp_types::ReferenceParams;
 use lsp_types::TextDocumentIdentifier;
 use lsp_types::TextDocumentItem;
 use lsp_types::TextDocumentPositionParams;
@@ -1302,4 +1304,85 @@ fn lsp_invalid_subcommand_test() {
             _ => panic!("test failed"),
         },
     }
+}
+
+#[test]
+fn test_find_refs() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let mut path = root.clone();
+    path.push("src/test_data/find_refs_test/main.k");
+
+    let path = path.to_str().unwrap();
+    let src = std::fs::read_to_string(path.clone()).unwrap();
+    let server = Project {}.server();
+    let url = Url::from_file_path(path).unwrap();
+
+    // Mock open file
+    server.notification::<lsp_types::notification::DidOpenTextDocument>(
+        lsp_types::DidOpenTextDocumentParams {
+            text_document: TextDocumentItem {
+                uri: url.clone(),
+                language_id: "KCL".to_string(),
+                version: 0,
+                text: src,
+            },
+        },
+    );
+
+    let id = server.next_request_id.get();
+    server.next_request_id.set(id.wrapping_add(1));
+
+    let r: Request = Request::new(
+        id.into(),
+        "textDocument/references".to_string(),
+        ReferenceParams {
+            text_document_position: TextDocumentPositionParams {
+                text_document: TextDocumentIdentifier { uri: url.clone() },
+                position: Position::new(0, 1),
+            },
+            work_done_progress_params: Default::default(),
+            partial_result_params: Default::default(),
+            context: ReferenceContext {
+                include_declaration: true,
+            },
+        },
+    );
+
+    // Send request and wait for it's response
+    let res = server.send_and_receive(r);
+
+    assert_eq!(
+        res.result.unwrap(),
+        to_json(vec![
+            Location {
+                uri: url.clone(),
+                range: Range {
+                    start: Position::new(0, 0),
+                    end: Position::new(0, 1),
+                },
+            },
+            Location {
+                uri: url.clone(),
+                range: Range {
+                    start: Position::new(1, 4),
+                    end: Position::new(1, 5),
+                },
+            },
+            Location {
+                uri: url.clone(),
+                range: Range {
+                    start: Position::new(2, 4),
+                    end: Position::new(2, 5),
+                },
+            },
+            Location {
+                uri: url.clone(),
+                range: Range {
+                    start: Position::new(12, 14),
+                    end: Position::new(12, 15),
+                },
+            },
+        ])
+        .unwrap()
+    );
 }

@@ -313,7 +313,7 @@ impl Loader {
     fn _load_main(&mut self) -> Result<ast::Program, String> {
         let compile_entries = get_compile_entries_from_paths(&self.paths, &self.opts)?;
         let mut pkgs = HashMap::new();
-        let workdir = compile_entries.get_root_path().to_string();// get package root
+        let workdir = compile_entries.get_root_path().to_string();
 
         debug_assert_eq!(compile_entries.len(), self.paths.len());
 

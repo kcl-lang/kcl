@@ -107,7 +107,6 @@ impl Definition {
     }
 }
 
-
 pub(crate) fn find_def(
     node: Node<Stmt>,
     kcl_pos: &KCLPos,
