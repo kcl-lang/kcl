@@ -72,7 +72,7 @@ mod tests {
     use super::find_refs;
     use lsp_types::{Location, Position, Range};
     use proc_macro_crate::bench_test;
-    use std::{path::PathBuf, vec};
+    use std::path::PathBuf;
 
     fn logger(msg: String) -> Result<(), anyhow::Error> {
         println!("{}", msg);
@@ -174,55 +174,8 @@ mod tests {
                     Location {
                         uri: url.clone(),
                         range: Range {
-                            start: Position::new(8, 4),
-                            end: Position::new(8, 8),
-                        },
-                    },
-                    Location {
-                        uri: url.clone(),
-                        range: Range {
-                            start: Position::new(11, 7),
-                            end: Position::new(11, 11),
-                        },
-                    },
-                ];
-                check_locations_match(
-                    expect,
-                    find_refs(def_loc, "Name".to_string(), path.to_string(), logger),
-                );
-            }
-            Err(_) => assert!(false, "file not found"),
-        }
-    }
-    #[test]
-    #[bench_test]
-    fn find_refs_from_schema_name_test() {
-        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let mut path = root.clone();
-        path.push("src/test_data/find_refs_test/main.k");
-        let path = path.to_str().unwrap();
-        match lsp_types::Url::from_file_path(path) {
-            Ok(url) => {
-                let def_loc = Location {
-                    uri: url.clone(),
-                    range: Range {
-                        start: Position::new(4, 0),
-                        end: Position::new(7, 0),
-                    },
-                };
-                let expect = vec![
-                    Location {
-                        uri: url.clone(),
-                        range: Range {
-                            start: Position::new(4, 7),
-                            end: Position::new(4, 11),
-                        },
-                    },
-                    Location {
-                        uri: url.clone(),
-                        range: Range {
-                            start: Position::new(8, 4),
-                            end: Position::new(8, 8),
+                            start: Position::new(8, 7),
+                            end: Position::new(8, 11),
                         },
                     },
                     Location {

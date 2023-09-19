@@ -6,7 +6,7 @@ schema Name:
     name: str
 
 schema Person:
-	n: Name
+    n: Name
 
 p2 = Person {
     n: Name{
