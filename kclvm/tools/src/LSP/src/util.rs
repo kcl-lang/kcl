@@ -12,6 +12,7 @@ use kclvm_error::Diagnostic;
 use kclvm_error::Position as KCLPos;
 use kclvm_parser::entry::get_dir_files;
 use kclvm_parser::{load_program, ParseSession};
+use kclvm_sema::resolver::resolve_program_with_opts;
 use kclvm_sema::resolver::scope::Scope;
 use kclvm_sema::resolver::{resolve_program, scope::ProgramScope};
 use kclvm_utils::pkgpath::rm_external_pkg_name;
@@ -77,7 +78,14 @@ pub(crate) fn parse_param_and_compile(
     let sess = Arc::new(ParseSession::default());
     let mut program = load_program(sess.clone(), &files, Some(opt))
         .map_err(|err| anyhow::anyhow!("Compile failed: {}", err))?;
-    let prog_scope = resolve_program(&mut program);
+
+    let prog_scope = resolve_program_with_opts(
+        &mut program,
+        kclvm_sema::resolver::Options {
+            merge_program: false,
+            ..Default::default()
+        },
+    );
     sess.append_diagnostic(prog_scope.handler.diagnostics.clone());
     let diags = sess.1.borrow().diagnostics.clone();
     Ok((program, prog_scope, diags))

@@ -259,8 +259,9 @@ fn test_lint() {
     let sess = Arc::new(ParseSession::default());
     let mut program =
         load_program(sess.clone(), &["./src/resolver/test_data/lint.k"], None).unwrap();
-    pre_process_program(&mut program);
-    let mut resolver = Resolver::new(&program, Options::default());
+    let opts = Options::default();
+    pre_process_program(&mut program, &opts);
+    let mut resolver = Resolver::new(&program, opts);
     resolver.resolve_import();
     resolver.check_and_lint(kclvm_ast::MAIN_PKG);
 
