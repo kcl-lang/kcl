@@ -164,11 +164,13 @@ fn test_record_used_module() {
         .clone();
     for (_, obj) in main_scope.elems {
         let obj = obj.borrow_mut().clone();
-        if let ScopeObjectKind::Module(_) = obj.kind {
-            if obj.name == "math" {
-                assert!(!obj.used);
-            } else {
-                assert!(obj.used);
+        if let ScopeObjectKind::Module(m) = obj.kind {
+            for (_, used) in m.import_stmts {
+                if obj.name == "math" {
+                    assert!(!used);
+                } else {
+                    assert!(used);
+                }
             }
         }
     }
