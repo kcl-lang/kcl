@@ -71,7 +71,6 @@ pub(crate) fn find_refs<F: Fn(String) -> Result<(), anyhow::Error>>(
 mod tests {
     use super::find_refs;
     use lsp_types::{Location, Position, Range};
-    use proc_macro_crate::bench_test;
     use std::path::PathBuf;
 
     fn logger(msg: String) -> Result<(), anyhow::Error> {
@@ -93,7 +92,6 @@ mod tests {
     }
 
     #[test]
-    #[bench_test]
     fn find_refs_from_variable_test() {
         let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let mut path = root.clone();
@@ -148,7 +146,6 @@ mod tests {
     }
 
     #[test]
-    #[bench_test]
     fn find_refs_from_schema_name_test() {
         let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let mut path = root.clone();
