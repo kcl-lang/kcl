@@ -102,7 +102,7 @@ fn completion_variable(pos: &KCLPos, prog_scope: &ProgramScope) -> IndexSet<KCLC
             match &obj.borrow().kind {
                 kclvm_sema::resolver::scope::ScopeObjectKind::Module(module) => {
                     for stmt in &module.import_stmts {
-                        match &stmt.node {
+                        match &stmt.0.node {
                             Stmt::Import(import_stmtt) => {
                                 completions.insert(KCLCompletionItem {
                                     label: import_stmtt.name.clone(),

@@ -113,7 +113,7 @@ impl<'ctx> Resolver<'ctx> {
                                         let mut obj = scope_obj.borrow_mut();
                                         match &mut obj.kind {
                                                     ScopeObjectKind::Module(m) => {
-                                                        m.import_stmts.push(stmt.clone())
+                                                        m.import_stmts.push((stmt.clone(), false))
                                                     },
                                                     _ => bug!(
                                                         "invalid module type in the import check function {}",
@@ -170,9 +170,8 @@ impl<'ctx> Resolver<'ctx> {
                                                 end: end.clone(),
                                                 ty: Rc::new(ty.clone()),
                                                 kind: ScopeObjectKind::Module(Module {
-                                                    import_stmts: vec![stmt.clone()],
+                                                    import_stmts: vec![(stmt.clone(), true)],
                                                 }),
-                                                used: true,
                                                 doc: None,
                                             })),
                                         );
@@ -184,9 +183,8 @@ impl<'ctx> Resolver<'ctx> {
                                                 end,
                                                 ty: Rc::new(ty),
                                                 kind: ScopeObjectKind::Module(Module {
-                                                    import_stmts: vec![stmt.clone()],
+                                                    import_stmts: vec![(stmt.clone(), false)],
                                                 }),
-                                                used: false,
                                                 doc: None,
                                             })),
                                         );

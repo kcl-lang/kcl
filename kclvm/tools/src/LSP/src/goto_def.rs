@@ -240,7 +240,6 @@ pub(crate) fn resolve_var(
                                             end: func_name_node.get_end_pos(),
                                             ty: ty.clone(),
                                             kind: ScopeObjectKind::FunctionCall,
-                                            used: false,
                                             doc: Some(func_ty.doc.clone()),
                                         }))
                                     }

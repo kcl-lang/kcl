@@ -117,7 +117,6 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 end,
                 ty: ty.clone(),
                 kind: ScopeObjectKind::TypeAlias,
-                used: false,
                 doc: None,
             },
         );
@@ -328,7 +327,6 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                     end,
                     ty: self.any_ty(),
                     kind: ScopeObjectKind::Variable,
-                    used: false,
                     doc: None,
                 },
             );
@@ -383,7 +381,6 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 end,
                 ty: expected_ty.clone(),
                 kind: ScopeObjectKind::Attribute,
-                used: false,
                 doc: doc_str,
             },
         );
@@ -516,7 +513,6 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                     end: selector_expr.attr.get_end_pos(),
                     ty: value_ty.clone(),
                     kind: ScopeObjectKind::FunctionCall,
-                    used: false,
                     doc: Some(func.doc.clone()),
                 },
             )
@@ -819,7 +815,6 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                     end,
                     ty: self.any_ty(),
                     kind: ScopeObjectKind::Variable,
-                    used: false,
                     doc: None,
                 },
             );
@@ -969,7 +964,6 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                     end: end.clone(),
                     ty: param.ty.clone(),
                     kind: ScopeObjectKind::Parameter,
-                    used: false,
                     doc: None,
                 },
             )

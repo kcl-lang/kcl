@@ -100,8 +100,8 @@ impl LintPass for UnusedImport {
         for (_, scope_obj) in scope_objs {
             let scope_obj = scope_obj.borrow();
             if let ScopeObjectKind::Module(m) = &scope_obj.kind {
-                if !scope_obj.used {
-                    for stmt in &m.import_stmts {
+                for (stmt, has_used) in &m.import_stmts {
+                    if !has_used {
                         handler.add_warning(
                             WarningKind::UnusedImportWarning,
                             &[Message {
