@@ -199,7 +199,7 @@ impl<'ctx> Resolver<'ctx> {
                     self.init_scope_with_assign_stmt(assign_stmt, unique_check)
                 }
                 ast::Stmt::Unification(unification_stmt) => {
-                    self.init_scope_with_unification_stmt(unification_stmt, unique_check)
+                    self.init_scope_with_unification_stmt(unification_stmt)
                 }
                 ast::Stmt::If(if_stmt) => {
                     self.init_scope_with_stmts(&if_stmt.body, unique_check);
@@ -307,50 +307,13 @@ impl<'ctx> Resolver<'ctx> {
         }
     }
 
-    fn init_scope_with_unification_stmt(
-        &mut self,
-        unification_stmt: &'ctx ast::UnificationStmt,
-        unique_check: bool,
-    ) {
+    fn init_scope_with_unification_stmt(&mut self, unification_stmt: &'ctx ast::UnificationStmt) {
         let target = &unification_stmt.target;
         if target.node.names.is_empty() {
             return;
         }
         let name = &target.node.names[0].node;
         let (start, end) = target.get_span_pos();
-        if self.contains_object(name) && !is_private_field(name) && unique_check {
-            self.handler.add_error(
-                ErrorKind::ImmutableError,
-                &[
-                    Message {
-                        range: target.get_span_pos(),
-                        style: Style::LineAndColumn,
-                        message: format!(
-                            "Can not change the value of '{}', because it was declared immutable",
-                            name
-                        ),
-                        note: None,
-                    },
-                    Message {
-                        range: self
-                            .scope
-                            .borrow()
-                            .elems
-                            .get(name)
-                            .unwrap()
-                            .borrow()
-                            .get_span_pos(),
-                        style: Style::LineAndColumn,
-                        message: format!("The variable '{}' is declared here", name),
-                        note: Some(format!(
-                            "change the variable name to '_{}' to make it mutable",
-                            name
-                        )),
-                    },
-                ],
-            );
-            return;
-        }
         let ty = self.walk_identifier_expr(&unification_stmt.value.node.name);
         self.insert_object(
             name,
