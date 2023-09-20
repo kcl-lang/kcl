@@ -1,8 +1,5 @@
 use lsp_types::notification::{
-    DidChangeTextDocument,
-    DidChangeWatchedFiles,
-    DidCloseTextDocument,
-    DidOpenTextDocument,
+    DidChangeTextDocument, DidChangeWatchedFiles, DidCloseTextDocument, DidOpenTextDocument,
     DidSaveTextDocument,
 };
 
