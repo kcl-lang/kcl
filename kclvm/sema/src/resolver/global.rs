@@ -96,7 +96,6 @@ impl<'ctx> Resolver<'ctx> {
                                 end,
                                 ty: Rc::new(Type::schema(schema_ty.clone())),
                                 kind: ScopeObjectKind::Definition,
-                                used: false,
                                 doc: Some(parsed_doc.summary.clone()),
                             },
                         )
@@ -141,7 +140,6 @@ impl<'ctx> Resolver<'ctx> {
                                     end,
                                     ty: Rc::new(Type::schema(schema_ty.clone())),
                                     kind: ScopeObjectKind::Definition,
-                                    used: false,
                                     doc: Some(schema_ty.doc),
                                 },
                             )
@@ -303,7 +301,6 @@ impl<'ctx> Resolver<'ctx> {
                     end,
                     ty,
                     kind: ScopeObjectKind::Variable,
-                    used: false,
                     doc: None,
                 },
             );
@@ -354,7 +351,7 @@ impl<'ctx> Resolver<'ctx> {
             );
             return;
         }
-        let ty = self.walk_identifier(&unification_stmt.value.node.name.node);
+        let ty = self.walk_identifier_expr(&unification_stmt.value.node.name);
         self.insert_object(
             name,
             ScopeObject {
@@ -363,7 +360,6 @@ impl<'ctx> Resolver<'ctx> {
                 end,
                 ty,
                 kind: ScopeObjectKind::Variable,
-                used: false,
                 doc: None,
             },
         );
@@ -374,7 +370,7 @@ impl<'ctx> Resolver<'ctx> {
         rule_stmt: &'ctx ast::RuleStmt,
     ) -> Option<Box<SchemaType>> {
         if let Some(host_name) = &rule_stmt.for_host_name {
-            let ty = self.walk_identifier(&host_name.node);
+            let ty = self.walk_identifier_expr(&host_name);
             match &ty.kind {
                 TypeKind::Schema(schema_ty) if schema_ty.is_protocol && !schema_ty.is_instance => {
                     Some(Box::new(schema_ty.clone()))
@@ -418,7 +414,7 @@ impl<'ctx> Resolver<'ctx> {
                 return None;
             }
             // Mixin type check with protocol
-            let ty = self.walk_identifier(&host_name.node);
+            let ty = self.walk_identifier_expr(&host_name);
             match &ty.kind {
                 TypeKind::Schema(schema_ty) if schema_ty.is_protocol && !schema_ty.is_instance => {
                     Some(Box::new(schema_ty.clone()))
@@ -449,7 +445,7 @@ impl<'ctx> Resolver<'ctx> {
         schema_stmt: &'ctx ast::SchemaStmt,
     ) -> Option<Box<SchemaType>> {
         if let Some(parent_name) = &schema_stmt.parent_name {
-            let ty = self.walk_identifier(&parent_name.node);
+            let ty = self.walk_identifier_expr(&parent_name);
             match &ty.kind {
                 TypeKind::Schema(schema_ty)
                     if !schema_ty.is_protocol && !schema_ty.is_mixin && !schema_ty.is_instance =>
@@ -730,7 +726,7 @@ impl<'ctx> Resolver<'ctx> {
                     }],
                 );
             }
-            let ty = self.walk_identifier(&mixin.node);
+            let ty = self.walk_identifier_expr(&mixin);
             let mixin_ty = match &ty.kind {
                 TypeKind::Schema(schema_ty)
                     if !schema_ty.is_protocol && schema_ty.is_mixin && !schema_ty.is_instance =>
@@ -860,7 +856,7 @@ impl<'ctx> Resolver<'ctx> {
         // Parent types
         let mut parent_types: Vec<SchemaType> = vec![];
         for rule in &rule_stmt.parent_rules {
-            let ty = self.walk_identifier(&rule.node);
+            let ty = self.walk_identifier_expr(&rule);
             let parent_ty = match &ty.kind {
                 TypeKind::Schema(schema_ty) if schema_ty.is_rule && !schema_ty.is_instance => {
                     Some(schema_ty.clone())

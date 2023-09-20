@@ -53,7 +53,6 @@ impl<'ctx> Resolver<'ctx> {
                     end: end.clone(),
                     ty: param.ty.clone(),
                     kind: ScopeObjectKind::Parameter,
-                    used: false,
                     doc: None,
                 },
             )
@@ -72,7 +71,6 @@ impl<'ctx> Resolver<'ctx> {
                         end,
                         ty: index_signature.key_ty.clone(),
                         kind: ScopeObjectKind::Variable,
-                        used: false,
                         doc: None,
                     },
                 )
@@ -93,7 +91,6 @@ impl<'ctx> Resolver<'ctx> {
                         end: Position::dummy_pos(),
                         ty: self.any_ty(),
                         kind: ScopeObjectKind::Variable,
-                        used: false,
                         doc: None,
                     },
                 );
@@ -144,7 +141,6 @@ impl<'ctx> Resolver<'ctx> {
                     end: end.clone(),
                     ty: param.ty.clone(),
                     kind: ScopeObjectKind::Parameter,
-                    used: false,
                     doc: None,
                 },
             )

@@ -1,6 +1,7 @@
 use crate::resolver::Resolver;
 use crate::ty::TypeKind;
 use indexmap::IndexMap;
+use kclvm_ast::pos::GetPos;
 use kclvm_error::diagnostic::Range;
 use kclvm_error::*;
 
@@ -45,7 +46,6 @@ impl<'ctx> Resolver<'ctx> {
                                 end: range.1.clone(),
                                 ty: self.any_ty(),
                                 kind: ScopeObjectKind::Variable,
-                                used: false,
                                 doc: None,
                             },
                         );
@@ -73,7 +73,6 @@ impl<'ctx> Resolver<'ctx> {
                                 end: range.1.clone(),
                                 ty: self.any_ty(),
                                 kind: ScopeObjectKind::Variable,
-                                used: false,
                                 doc: None,
                             },
                         );
@@ -87,7 +86,13 @@ impl<'ctx> Resolver<'ctx> {
             // It should be recursively search whole scope to lookup scope object, not the current scope.element.
             if !pkgpath.is_empty() {
                 if let Some(obj) = self.scope.borrow().lookup(pkgpath) {
-                    obj.borrow_mut().used = true;
+                    if let ScopeObjectKind::Module(m) = &mut obj.borrow_mut().kind {
+                        for (stmt, used) in m.import_stmts.iter_mut() {
+                            if stmt.get_pos().filename == range.0.filename {
+                                *used = true;
+                            }
+                        }
+                    }
                 }
             }
             // Load type

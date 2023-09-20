@@ -33,8 +33,6 @@ pub struct ScopeObject {
     pub ty: Rc<Type>,
     /// The scope object kind.
     pub kind: ScopeObjectKind,
-    /// Record whether has been used, for check unused imported module and var definition
-    pub used: bool,
     /// The doc of the scope object, will be None unless the scope object represents a schema or schema attribute.
     pub doc: Option<String>,
 }
@@ -81,7 +79,8 @@ pub enum ScopeObjectKind {
 /// is used to record information on the AST
 #[derive(PartialEq, Clone, Debug)]
 pub struct Module {
-    pub import_stmts: Vec<NodeRef<Stmt>>,
+    /// Record stmts which import this module and whether has been used, for check unused imported module and var definition
+    pub import_stmts: Vec<(NodeRef<Stmt>, bool)>,
 }
 
 /// A Scope maintains a set of objects and links to its containing
@@ -136,7 +135,7 @@ impl Scope {
             match &obj.borrow().kind {
                 ScopeObjectKind::Module(module) => {
                     for stmt in &module.import_stmts {
-                        if let Import(import_stmt) = &stmt.node {
+                        if let Import(import_stmt) = &stmt.0.node {
                             res.insert(import_stmt.name.clone(), obj.clone());
                         }
                     }
@@ -345,7 +344,6 @@ pub(crate) fn builtin_scope() -> Scope {
                 end: Position::dummy_pos(),
                 ty: Rc::new(builtin_func.clone()),
                 kind: ScopeObjectKind::Definition,
-                used: false,
                 doc: None,
             })),
         );
