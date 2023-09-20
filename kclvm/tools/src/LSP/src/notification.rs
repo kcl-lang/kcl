@@ -3,7 +3,7 @@ use lsp_types::notification::{
     DidChangeWatchedFiles,
     DidCloseTextDocument,
     DidOpenTextDocument,
-    DidSaveTextDocument, //Initialized,
+    DidSaveTextDocument,
 };
 
 use crate::{
