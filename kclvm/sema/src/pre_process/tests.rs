@@ -144,3 +144,57 @@ fn test_config_override() {
         )
     }
 }
+
+#[test]
+fn test_skip_merge_program() {
+    let sess = Arc::new(ParseSession::default());
+    let mut program = load_program(
+        sess,
+        &[
+            "./src/pre_process/test_data/config_merge/def.k",
+            "./src/pre_process/test_data/config_merge/config1.k",
+            "./src/pre_process/test_data/config_merge/config2.k",
+        ],
+        None,
+    )
+    .unwrap();
+    // skip merge program and save raw config ast node
+    // merge_program(&mut program);
+    let modules = program.pkgs.get_mut(kclvm_ast::MAIN_PKG).unwrap();
+    assert_eq!(modules.len(), 3);
+    let config1 = &modules[1];
+    let config2 = &modules[1];
+    if let ast::Stmt::Unification(unification) = &config1.body[0].node {
+        let schema = &unification.value.node;
+        if let ast::Expr::Config(config) = &schema.config.node {
+            assert_eq!(config.items.len(), 1);
+        } else {
+            panic!(
+                "test failed, expect config expression, got {:?}",
+                schema.config
+            )
+        }
+    } else {
+        panic!(
+            "test failed, expect unification statement, got {:?}",
+            config1.body[0]
+        )
+    }
+
+    if let ast::Stmt::Unification(unification) = &config2.body[0].node {
+        let schema = &unification.value.node;
+        if let ast::Expr::Config(config) = &schema.config.node {
+            assert_eq!(config.items.len(), 1);
+        } else {
+            panic!(
+                "test failed, expect config expression, got {:?}",
+                schema.config
+            )
+        }
+    } else {
+        panic!(
+            "test failed, expect unification statement, got {:?}",
+            config2.body[0]
+        )
+    }
+}
