@@ -108,6 +108,30 @@ fn test_resolve_program_fail() {
 }
 
 #[test]
+fn test_resolve_program_redefine() {
+    let sess = Arc::new(ParseSession::default());
+    let mut program = load_program(
+        sess.clone(),
+        &["./src/resolver/test_fail_data/redefine_import/main.k"],
+        None,
+    )
+    .unwrap();
+
+    let scope = resolve_program(&mut program);
+    assert_eq!(scope.handler.diagnostics.len(), 2);
+    let diag = &scope.handler.diagnostics[0];
+    assert_eq!(
+        diag.code,
+        Some(DiagnosticId::Error(ErrorKind::CompileError))
+    );
+    assert_eq!(diag.messages.len(), 1);
+    assert_eq!(
+        diag.messages[0].message,
+        "the name 's' is defined multiple times, 's' must be defined only once"
+    );
+}
+
+#[test]
 fn test_resolve_program_mismatch_type_fail() {
     let mut program = parse_program("./src/resolver/test_fail_data/config_expr.k").unwrap();
     let scope = resolve_program(&mut program);
