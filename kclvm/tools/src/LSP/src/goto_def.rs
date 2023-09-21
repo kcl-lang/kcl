@@ -302,14 +302,17 @@ pub(crate) fn resolve_var(
                                 let ty = get_system_member_function_ty(&name, &func_name);
                                 match &ty.kind {
                                     kclvm_sema::ty::TypeKind::Function(func_ty) => {
-                                        return Some(Definition::Object(ScopeObject {
-                                            name: func_name.clone(),
-                                            start: func_name_node.get_pos(),
-                                            end: func_name_node.get_end_pos(),
-                                            ty: ty.clone(),
-                                            kind: ScopeObjectKind::FunctionCall,
-                                            doc: Some(func_ty.doc.clone()),
-                                        }, func_name))
+                                        return Some(Definition::Object(
+                                            ScopeObject {
+                                                name: func_name.clone(),
+                                                start: func_name_node.get_pos(),
+                                                end: func_name_node.get_end_pos(),
+                                                ty: ty.clone(),
+                                                kind: ScopeObjectKind::FunctionCall,
+                                                doc: Some(func_ty.doc.clone()),
+                                            },
+                                            func_name,
+                                        ))
                                     }
                                     _ => return None,
                                 }

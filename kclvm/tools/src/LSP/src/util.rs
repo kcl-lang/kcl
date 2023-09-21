@@ -754,7 +754,7 @@ pub fn build_word_index(path: String) -> anyhow::Result<HashMap<String, Vec<Loca
             // str path to url
             if let Ok(url) = Url::from_file_path(file_path) {
                 // read file content and save the word to word index
-                let text = read_file(file_path).unwrap();
+                let text = read_file(file_path)?;
                 let lines: Vec<&str> = text.lines().collect();
                 for (li, line) in lines.into_iter().enumerate() {
                     let words = line_to_words(line.to_string());

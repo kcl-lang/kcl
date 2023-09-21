@@ -44,7 +44,6 @@ impl LanguageServerState {
                 state.shutdown_requested = true;
                 Ok(())
             })?
-            // .on::<lsp_types::request::Initialize>(handle_initialize)?
             .on::<lsp_types::request::GotoDefinition>(handle_goto_definition)?
             .on::<lsp_types::request::References>(handle_reference)?
             .on::<lsp_types::request::Completion>(handle_completion)?
