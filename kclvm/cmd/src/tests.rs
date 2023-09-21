@@ -596,3 +596,22 @@ fn test_error_message_fuzz_unmatched() {
         }
     }
 }
+
+#[test]
+fn test_multi_import() {
+    let test_case_path = PathBuf::from("./src/test_data/multi_import/main.k");
+    let matches = app().arg_required_else_help(true).get_matches_from(&[
+        ROOT_CMD,
+        "run",
+        &test_case_path.canonicalize().unwrap().display().to_string(),
+    ]);
+    let settings = must_build_settings(matches.subcommand_matches("run").unwrap());
+    let sess = Arc::new(ParseSession::default());
+    match exec_program(sess.clone(), &settings.try_into().unwrap()) {
+        Ok(_) => panic!("unreachable code."),
+        Err(msg) => {
+            assert!(msg
+                .contains("the name 's' is defined multiple times, 's' must be defined only once"))
+        }
+    }
+}
