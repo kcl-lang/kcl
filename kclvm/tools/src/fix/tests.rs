@@ -1,31 +1,39 @@
+use std::fs;
+
 use crate::lint::lint_files;
+
+use super::fix;
 
 #[test]
 fn test_lint() {
-    let (errors, warnings) = lint_files(&["./src/lint/test_data/lint.k"], None);
-    // let msgs = [
-    //     "Importstmt should be placed at the top of the module",
-    //     "Module 'a' is reimported multiple times",
-    //     "Module 'import_test.a' imported but unused",
-    //     "Module 'abc' imported but unused",
-    // ];
-    // assert_eq!(warnings.len(), msgs.len());
-    // for (diag, m) in warnings.iter().zip(msgs.iter()) {
-    //     assert_eq!(diag.messages[0].message, m.to_string());
-    // }
+    let (errors, warnings) = lint_files(
+        &[
+            "./src/fix/test_data/fix_import.k",
+            "./src/fix/test_data/unused_import.k",
+        ],
+        None,
+    );
+    assert_eq!(errors.len(), 0);
+    let mut diags = vec![];
+    diags.extend(warnings);
 
-    // let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    // path.push("src");
-    // path.push("lint");
-    // path.push("test_data");
-    // path.push("abc");
+    match fix(diags) {
+        Ok(_) => {
+            let src = fs::read_to_string("./src/fix/test_data/fix_import.k").unwrap();
+            assert_eq!(src, "import math\n\na = math.pow(1, 1)".to_string());
+            fs::write(
+                "./src/fix/test_data/fix_import.k",
+                r#"import regex
+import math
+import regex
 
-    // let msgs = [
-    //     "pkgpath abc not found in the program",
-    //     &format!("Cannot find the module abc from {}", path.to_str().unwrap()),
-    // ];
-    // assert_eq!(errors.len(), msgs.len());
-    // for (diag, m) in errors.iter().zip(msgs.iter()) {
-    //     assert_eq!(diag.messages[0].message, m.to_string());
-    // }
+a = math.pow(1, 1)"#,
+            )
+            .unwrap();
+            let src = fs::read_to_string("./src/fix/test_data/unused_import.k").unwrap();
+            assert_eq!(src, "".to_string());
+            fs::write("./src/fix/test_data/unused_import.k", r#"import math"#).unwrap();
+        }
+        Err(e) => panic!("fix failed: {:?}", e),
+    }
 }

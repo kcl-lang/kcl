@@ -1,4 +1,5 @@
 mod replace;
+#[cfg(test)]
 mod tests;
 use anyhow::{ensure, Error};
 use kclvm_error::{diagnostic::Range as KCLRange, Diagnostic};
@@ -96,7 +97,7 @@ pub(crate) fn text_range(text: &str, range: &KCLRange) -> anyhow::Result<Range<u
 
     ensure!(
         (range.0.line as usize) <= lines_length.len()
-            && (range.1.line as usize) < lines_length.len()
+            && (range.1.line as usize) <= lines_length.len()
     );
 
     // The KCL diagnostic line is 1-based and the column is 0-based.

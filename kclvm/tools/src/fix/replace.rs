@@ -1,6 +1,6 @@
-//! The following code and tests are copied and modified from 
+//! The following code and tests are copied and modified from
 //! [rust-lang/rustfix](https://github.com/rust-lang/rustfix/blob/master/src/replace.rs)
-//! 
+//!
 //! A small module giving you a simple container that allows easy and cheap
 //! replacement of parts of its content, with the ability to prevent changing
 //! the same parts multiple times.

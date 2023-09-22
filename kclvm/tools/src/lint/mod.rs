@@ -71,7 +71,9 @@ pub fn lint_files(
 ) -> (IndexSet<Diagnostic>, IndexSet<Diagnostic>) {
     // Parse AST program.
     let sess = Arc::new(ParseSession::default());
-    let mut program = match load_program(sess.clone(), files, opts) {
+    let mut opts = opts.unwrap_or_default();
+    opts.load_plugins = true;
+    let mut program = match load_program(sess.clone(), files, Some(opts)) {
         Ok(p) => p,
         Err(err_str) => {
             return Handler::default()
