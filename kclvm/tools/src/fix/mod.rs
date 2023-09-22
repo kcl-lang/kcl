@@ -85,6 +85,26 @@ pub fn diag_to_suggestion(
     Ok(suggestions)
 }
 
+fn is_newline_at_index(s: &str, index: usize) -> bool {
+    let length = s.len();
+
+    if index >= length {
+        return false;
+    }
+
+    let bytes = s.as_bytes();
+
+    if bytes[index] == b'\n' {
+        return true;
+    }
+    #[cfg(target_os = "windows")]
+    if bytes[index] == b'\r' && index + 1 < length && bytes[index + 1] == b'\n' {
+        return true;
+    }
+
+    false
+}
+
 pub(crate) fn text_range(text: &str, range: &KCLRange) -> anyhow::Result<Range<usize>, Error> {
     let mut lines_length = vec![];
     let lines_text: Vec<&str> = text.split('\n').collect();
@@ -105,11 +125,15 @@ pub(crate) fn text_range(text: &str, range: &KCLRange) -> anyhow::Result<Range<u
         lines_length.get(range.0.line as usize - 1).unwrap() + range.0.column.unwrap_or(0) as usize;
     let mut end =
         lines_length.get(range.1.line as usize - 1).unwrap() + range.1.column.unwrap_or(0) as usize;
-    if let Some(ch) = text.chars().nth(end) {
-        if ch == '\n' {
-            end += 1;
+
+    if is_newline_at_index(text, end) {
+        if cfg!(windows) {
+            end += "\r\n".len()
+        } else {
+            end += "\n".len()
         }
     }
+
     Ok(Range { start, end })
 }
 

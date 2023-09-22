@@ -20,6 +20,9 @@ fn test_lint() {
     match fix(diags) {
         Ok(_) => {
             let src = fs::read_to_string("./src/fix/test_data/fix_import.k").unwrap();
+            #[cfg(target_os = "windows")]
+            assert_eq!(src, "import math\r\n\r\na = math.pow(1, 1)".to_string());
+            #[cfg(not(target_os = "windows"))]
             assert_eq!(src, "import math\n\na = math.pow(1, 1)".to_string());
             fs::write(
                 "./src/fix/test_data/fix_import.k",
