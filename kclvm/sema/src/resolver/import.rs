@@ -93,16 +93,17 @@ impl<'ctx> Resolver<'ctx> {
                                     Some(mapping) => {
                                         // 'import sub as s' and 'import sub.sub as s' will raise this error.
                                         // 'import sub' and 'import sub' will not raise this error.
-                                        if mapping.get(&import_stmt.name).is_some()
-                                            && import_stmt.asname.is_some()
-                                        {
-                                            self.handler.add_compile_error(
-                                                &format!(
-                                                    "the name '{}' is defined multiple times, '{}' must be defined only once",
-                                                    import_stmt.name, import_stmt.name
-                                                ),
-                                                stmt.get_span_pos(),
-                                            );
+                                        // 'import sub as s' and 'import sub as s' will not raise this error.
+                                        if let Some(path) = mapping.get(&import_stmt.name) {
+                                            if path != &import_stmt.path {
+                                                self.handler.add_compile_error(
+                                                    &format!(
+                                                        "the name '{}' is defined multiple times, '{}' must be defined only once",
+                                                        import_stmt.name, import_stmt.name
+                                                    ),
+                                                    stmt.get_span_pos(),
+                                                );
+                                            }
                                         }
                                         mapping.insert(
                                             import_stmt.name.to_string(),
