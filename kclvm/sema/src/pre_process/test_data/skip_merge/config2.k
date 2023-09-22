@@ -1,0 +1,3 @@
+person: Person {
+    name = "bob"
+}

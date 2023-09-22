@@ -142,6 +142,7 @@ pub struct Context {
 pub struct Options {
     pub lint_check: bool,
     pub resolve_val: bool,
+    pub merge_program: bool,
 }
 
 impl Default for Options {
@@ -149,6 +150,7 @@ impl Default for Options {
         Self {
             lint_check: true,
             resolve_val: false,
+            merge_program: true,
         }
     }
 }
@@ -161,7 +163,7 @@ pub fn resolve_program(program: &mut Program) -> ProgramScope {
 
 /// Resolve program with options. See [Options]
 pub fn resolve_program_with_opts(program: &mut Program, opts: Options) -> ProgramScope {
-    pre_process_program(program);
+    pre_process_program(program, &opts);
     let mut resolver = Resolver::new(program, opts);
     resolver.resolve_import();
     let scope = resolver.check_and_lint(kclvm_ast::MAIN_PKG);

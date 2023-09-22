@@ -12,8 +12,10 @@ pub use config::{fix_config_expr_nest_attr, merge_program};
 pub use identifier::{fix_qualified_identifier, fix_raw_identifier_prefix};
 pub use multi_assign::transform_multi_assign;
 
+use crate::resolver::Options;
+
 /// Pre-process AST program.
-pub fn pre_process_program(program: &mut ast::Program) {
+pub fn pre_process_program(program: &mut ast::Program, opts: &Options) {
     for (pkgpath, modules) in program.pkgs.iter_mut() {
         let mut import_names = IndexMap::default();
         if pkgpath == kclvm_ast::MAIN_PKG {
@@ -35,5 +37,7 @@ pub fn pre_process_program(program: &mut ast::Program) {
             fix_config_expr_nest_attr(module);
         }
     }
-    merge_program(program);
+    if opts.merge_program {
+        merge_program(program);
+    }
 }

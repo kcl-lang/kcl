@@ -4,7 +4,7 @@ use indexmap::IndexSet;
 use kclvm_error::{Diagnostic, Handler};
 use kclvm_parser::{load_program, LoadProgramOptions, ParseSession};
 use kclvm_runtime::PanicInfo;
-use kclvm_sema::resolver::resolve_program;
+use kclvm_sema::resolver::resolve_program_with_opts;
 #[cfg(test)]
 mod tests;
 
@@ -79,6 +79,16 @@ pub fn lint_files(
                 .classification();
         }
     };
-    sess.append_diagnostic(resolve_program(&mut program).handler.diagnostics)
-        .classification()
+    sess.append_diagnostic(
+        resolve_program_with_opts(
+            &mut program,
+            kclvm_sema::resolver::Options {
+                merge_program: false,
+                ..Default::default()
+            },
+        )
+        .handler
+        .diagnostics,
+    )
+    .classification()
 }
