@@ -100,6 +100,7 @@ impl Handler {
             None,
             range,
             Some(DiagnosticId::Error(E1001.kind)),
+            None,
         );
         self.add_diagnostic(diag);
 
@@ -114,6 +115,7 @@ impl Handler {
             None,
             range,
             Some(DiagnosticId::Error(E2G22.kind)),
+            None,
         );
         self.add_diagnostic(diag);
 
@@ -128,6 +130,7 @@ impl Handler {
             None,
             range,
             Some(DiagnosticId::Error(E2L23.kind)),
+            None,
         );
         self.add_diagnostic(diag);
 
@@ -151,6 +154,7 @@ impl Handler {
     ///         style: Style::LineAndColumn,
     ///         message: "Invalid syntax: expected '+', got '-'".to_string(),
     ///         note: None,
+    ///         suggested_replacement: Some("".to_string()),
     ///     }
     /// ]);
     /// ```
@@ -175,6 +179,7 @@ impl Handler {
     ///         style: Style::LineAndColumn,
     ///         message: "Module 'a' imported but unused.".to_string(),
     ///         note: None,
+    ///         suggested_replacement: Some("".to_string()),
     ///     }],
     /// );
     /// ```
@@ -211,7 +216,7 @@ impl Handler {
     /// ```
     /// use kclvm_error::*;
     /// let mut handler = Handler::default();
-    /// handler.add_diagnostic(Diagnostic::new_with_code(Level::Error, "error message", None, (Position::dummy_pos(), Position::dummy_pos()), Some(DiagnosticId::Error(E1001.kind))));
+    /// handler.add_diagnostic(Diagnostic::new_with_code(Level::Error, "error message", None, (Position::dummy_pos(), Position::dummy_pos()), Some(DiagnosticId::Error(E1001.kind)), None));
     /// ```
     #[inline]
     pub fn add_diagnostic(&mut self, diagnostic: Diagnostic) -> &mut Self {
@@ -235,7 +240,14 @@ impl From<PanicInfo> for Diagnostic {
                 line: panic_info.kcl_line as u64,
                 column: None,
             };
-            Diagnostic::new_with_code(Level::Error, &panic_msg, None, (pos.clone(), pos), None)
+            Diagnostic::new_with_code(
+                Level::Error,
+                &panic_msg,
+                None,
+                (pos.clone(), pos),
+                None,
+                None,
+            )
         } else {
             let mut backtrace_msg = "backtrace:\n".to_string();
             let mut backtrace = panic_info.backtrace.clone();
@@ -261,6 +273,7 @@ impl From<PanicInfo> for Diagnostic {
                 Some(&backtrace_msg),
                 (pos.clone(), pos),
                 None,
+                None,
             )
         };
 
@@ -277,6 +290,7 @@ impl From<PanicInfo> for Diagnostic {
             &panic_info.kcl_config_meta_arg_msg,
             None,
             (pos.clone(), pos),
+            None,
             None,
         );
         config_meta_diag.messages.append(&mut diag.messages);
@@ -334,6 +348,7 @@ impl ParseError {
             None,
             (pos.clone(), pos),
             Some(DiagnosticId::Error(ErrorKind::InvalidSyntax)),
+            None,
         ))
     }
 }

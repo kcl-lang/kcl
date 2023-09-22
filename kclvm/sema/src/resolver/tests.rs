@@ -313,6 +313,7 @@ fn test_lint() {
             style: Style::Line,
             message: format!("Importstmt should be placed at the top of the module"),
             note: Some("Consider moving tihs statement to the top of the file".to_string()),
+            suggested_replacement: None,
         }],
     );
     handler.add_warning(
@@ -333,6 +334,7 @@ fn test_lint() {
             style: Style::Line,
             message: format!("Module 'a' is reimported multiple times"),
             note: Some("Consider removing this statement".to_string()),
+            suggested_replacement: Some("".to_string()),
         }],
     );
     handler.add_warning(
@@ -353,6 +355,7 @@ fn test_lint() {
             style: Style::Line,
             message: format!("Module 'import_test.a' imported but unused"),
             note: Some("Consider removing this statement".to_string()),
+            suggested_replacement: Some("".to_string()),
         }],
     );
     for (d1, d2) in resolver
