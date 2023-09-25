@@ -407,8 +407,24 @@ impl<'ctx> Resolver<'ctx> {
         match self.find_type_in_scope(name) {
             Some(ty) => ty,
             None => {
+                let mut suggestion = String::new();
+                let names = self
+                    .scope
+                    .borrow()
+                    .all_usable_objects()
+                    .keys()
+                    .cloned()
+                    .collect::<Vec<String>>();
+                let suggs = suggestions::provide_suggestions(name, &names);
+                if suggs.len() > 0 {
+                    suggestion = format!(", did you mean '{:?}'?", suggs);
+                }
                 self.handler.add_compile_error(
-                    &format!("name '{}' is not defined", name.replace('@', "")),
+                    &format!(
+                        "name '{}' is not defined{}",
+                        name.replace('@', ""),
+                        suggestion
+                    ),
                     range,
                 );
                 self.any_ty()
