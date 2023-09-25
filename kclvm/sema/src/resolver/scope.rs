@@ -333,7 +333,7 @@ impl ProgramScope {
 }
 
 /// Construct a builtin scope
-pub(crate) fn builtin_scope() -> Scope {
+pub fn builtin_scope() -> Scope {
     let mut elems = IndexMap::default();
     for (name, builtin_func) in BUILTIN_FUNCTIONS.iter() {
         elems.insert(

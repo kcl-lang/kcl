@@ -21,3 +21,5 @@ p = Person{
 import base64
 abdc = base64.encode("1")
 abcd = "a".count()
+
+print(1)

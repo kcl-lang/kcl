@@ -79,13 +79,12 @@ register_builtin! {
     )
     print => Type::function(
         None,
-        Rc::new(Type::ANY),
+        Rc::new(Type::NONE),
         &[],
         r#"Prints the values to a stream, or to sys.stdout by default.
         Optional keyword arguments:
         sep:   string inserted between values, default a space.
-        end:   string appended after the last value, default a newline.
-        "#,
+        end:   string appended after the last value, default a newline."#,
         true,
         None,
     )

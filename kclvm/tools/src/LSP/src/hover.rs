@@ -143,7 +143,7 @@ fn build_func_hover_content(func_ty: &FunctionType, name: String) -> Vec<String>
     docs.push(sig);
 
     if !func_ty.doc.is_empty() {
-        docs.push(func_ty.doc.clone());
+        docs.push(func_ty.doc.clone().replace("\n", "\n\n"));
     }
     docs
 }
@@ -332,6 +332,26 @@ mod tests {
                 }
                 if let MarkedString::String(s) = vec[2].clone() {
                     assert_eq!(s, "Return the number of non-overlapping occurrences of substring sub in the range [start, end]. Optional arguments start and end are interpreted as in slice notation.");
+                }
+            }
+            _ => unreachable!("test error"),
+        }
+
+        let pos = KCLPos {
+            filename: file.clone(),
+            line: 25,
+            column: Some(4),
+        };
+        let got = hover(&program, &pos, &prog_scope).unwrap();
+
+        match got.contents {
+            lsp_types::HoverContents::Array(vec) => {
+                assert_eq!(vec.len(), 2);
+                if let MarkedString::String(s) = vec[0].clone() {
+                    assert_eq!(s, "fn print() -> NoneType");
+                }
+                if let MarkedString::String(s) = vec[1].clone() {
+                    assert_eq!(s, "Prints the values to a stream, or to sys.stdout by default.\n\n        Optional keyword arguments:\n\n        sep:   string inserted between values, default a space.\n\n        end:   string appended after the last value, default a newline.");
                 }
             }
             _ => unreachable!("test error"),

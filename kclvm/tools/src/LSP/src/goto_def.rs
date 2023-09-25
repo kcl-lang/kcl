@@ -15,7 +15,9 @@ use kclvm_compiler::pkgpath_without_prefix;
 use kclvm_error::Position as KCLPos;
 
 use kclvm_sema::builtin::get_system_member_function_ty;
-use kclvm_sema::resolver::scope::{ProgramScope, Scope, ScopeObject, ScopeObjectKind};
+use kclvm_sema::resolver::scope::{
+    builtin_scope, ProgramScope, Scope, ScopeObject, ScopeObjectKind,
+};
 use kclvm_sema::ty::{DictType, SchemaType};
 use lsp_types::{GotoDefinitionResponse, Url};
 use lsp_types::{Location, Range};
@@ -204,7 +206,23 @@ pub(crate) fn resolve_var(
                     }
                     _ => Some(Definition::Object(obj.borrow().clone())),
                 },
-                None => None,
+                None => match builtin_scope().lookup(&name) {
+                    Some(obj) => {
+                        let mut obj = obj.borrow().clone();
+                        let doc = {
+                            match &obj.ty.kind {
+                                kclvm_sema::ty::TypeKind::Function(func) => Some(func.doc.clone()),
+                                _ => None,
+                            }
+                        };
+                        obj.kind = ScopeObjectKind::FunctionCall;
+                        obj.doc = doc;
+                        obj.start = node_names[0].get_pos();
+                        obj.end = node_names[0].get_end_pos();
+                        Some(Definition::Object(obj))
+                    }
+                    None => None,
+                },
             }
         }
         _ => {
