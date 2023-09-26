@@ -498,3 +498,26 @@ fn test_system_package() {
         .ty
         .is_func());
 }
+
+#[test]
+fn test_resolve_program_import_suggest() {
+    let sess = Arc::new(ParseSession::default());
+    let mut program = load_program(
+        sess.clone(),
+        &["./src/resolver/test_fail_data/not_found_suggest/main.k"],
+        None,
+    )
+    .unwrap();
+    let scope = resolve_program(&mut program);
+    assert_eq!(scope.handler.diagnostics.len(), 2);
+    let diag = &scope.handler.diagnostics[0];
+    assert_eq!(
+        diag.code,
+        Some(DiagnosticId::Error(ErrorKind::CompileError))
+    );
+    assert_eq!(diag.messages.len(), 1);
+    assert_eq!(
+        diag.messages[0].message,
+        "name 's' is not defined, did you mean '[\"s1\"]'?"
+    );
+}
