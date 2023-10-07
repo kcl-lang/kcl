@@ -13,6 +13,7 @@
   <img src="https://coveralls.io/repos/github/kcl-lang/kcl/badge.svg">
   <img src="https://img.shields.io/github/release/kcl-lang/kcl.svg">
   <img src="https://img.shields.io/github/license/kcl-lang/kcl.svg">
+  <a href="https://www.bestpractices.dev/projects/7867"><img src="https://www.bestpractices.dev/projects/7867/badge"></a>
   <img src="https://img.shields.io/github/downloads/kcl-lang/kcl/total?label=Github%20downloads&logo=github">
 </p>
 
