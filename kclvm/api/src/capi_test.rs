@@ -87,6 +87,15 @@ fn test_c_api_lint_path() {
 }
 
 #[test]
+fn test_c_api_call_exec_program_with_compile_only() {
+    test_c_api_paniced::<ExecProgramArgs>(
+        "KclvmService.ExecProgram",
+        "exec-program-with-compile-only.json",
+        "exec-program-with-compile-only.response.panic",
+    );
+}
+
+#[test]
 fn test_c_api_validate_code() {
     test_c_api_without_wrapper::<ValidateCodeArgs, ValidateCodeResult>(
         "KclvmService.ValidateCode",
@@ -147,5 +156,49 @@ where
     unsafe {
         kclvm_service_delete(serv);
         kclvm_service_free_string(result_ptr);
+    }
+}
+
+fn test_c_api_paniced<A>(svc_name: &str, input: &str, output: &str)
+where
+    A: Message + DeserializeOwned,
+{
+    let _test_lock = TEST_MUTEX.lock().unwrap();
+    let serv = kclvm_service_new(0);
+
+    let input_path = Path::new(TEST_DATA_PATH).join(input);
+    let input = fs::read_to_string(&input_path)
+        .unwrap_or_else(|_| panic!("Something went wrong reading {}", input_path.display()));
+    let args = unsafe {
+        CString::from_vec_unchecked(serde_json::from_str::<A>(&input).unwrap().encode_to_vec())
+    };
+    let call = CString::new(svc_name).unwrap();
+    let prev_hook = std::panic::take_hook();
+    // disable print panic info
+    std::panic::set_hook(Box::new(|_info| {}));
+    let result = std::panic::catch_unwind(|| {
+        kclvm_service_call(serv, call.as_ptr(), args.as_ptr()) as *mut i8
+    });
+    std::panic::set_hook(prev_hook);
+    match result {
+        Ok(result_ptr) => {
+            let result = unsafe { CStr::from_ptr(result_ptr) };
+            let except_result_path = Path::new(TEST_DATA_PATH).join(output);
+            let except_result_panic_msg =
+                fs::read_to_string(&except_result_path).unwrap_or_else(|_| {
+                    panic!(
+                        "Something went wrong reading {}",
+                        except_result_path.display()
+                    )
+                });
+            assert!(result.to_string_lossy().contains(&except_result_panic_msg));
+            unsafe {
+                kclvm_service_delete(serv);
+                kclvm_service_free_string(result_ptr);
+            }
+        }
+        Err(_) => {
+            panic!("unreachable code")
+        }
     }
 }

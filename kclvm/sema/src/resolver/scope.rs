@@ -297,11 +297,18 @@ impl ProgramScope {
     }
 
     /// Return diagnostic pretty string but do not abort if the session exists any diagnostic.
-    pub fn emit_diagnostics_to_string(&self, sess: Arc<Session>) -> Result<(), String> {
+    pub fn emit_diagnostics_to_string(
+        &self,
+        sess: Arc<Session>,
+        include_warning: bool,
+    ) -> Result<(), String> {
         let emit_error = || -> anyhow::Result<()> {
             // Add resolve errors into the session
             for diag in &self.handler.diagnostics {
                 if matches!(diag.level, Level::Error) {
+                    sess.add_err(diag.clone())?;
+                }
+                if include_warning && matches!(diag.level, Level::Warning) {
                     sess.add_err(diag.clone())?;
                 }
             }

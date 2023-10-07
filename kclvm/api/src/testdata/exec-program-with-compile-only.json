@@ -1,0 +1,17 @@
+{
+	"work_dir" : "./src/testdata",
+	"k_filename_list":[
+		"test-lint-import.k"
+	],
+	"compile_only": true,
+	"external_pkgs": [
+		{
+		  "pkg_name": "external",
+		  "pkg_path": "./src/testdata_external/external"
+		},
+		{
+			"pkg_name": "external_1",
+			"pkg_path": "./src/testdata_external/external_1"
+		}
+	]
+}
