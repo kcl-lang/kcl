@@ -817,25 +817,22 @@ fn line_to_words(text: String) -> HashMap<String, Vec<Word>> {
         if is_id_start && !prev_word {
             start_pos = i;
         }
-        match is_id_continue {
-            true => {
-                // Continue searching for the end position.
-                if start_pos != usize::MAX {
-                    continue_pos = i;
-                }
+        if is_id_continue {
+            // Continue searching for the end position.
+            if start_pos != usize::MAX {
+                continue_pos = i;
             }
-            false => {
-                // Find out the end position.
-                if continue_pos + 1 == i {
-                    words.push(Word::new(
-                        start_pos as u32,
-                        i as u32,
-                        chars[start_pos..i].iter().collect::<String>().clone(),
-                    ));
-                }
-                // Reset the start position.
-                start_pos = usize::MAX;
+        } else {
+            // Find out the end position.
+            if continue_pos + 1 == i {
+                words.push(Word::new(
+                    start_pos as u32,
+                    i as u32,
+                    chars[start_pos..i].iter().collect::<String>().clone(),
+                ));
             }
+            // Reset the start position.
+            start_pos = usize::MAX;
         }
         prev_word = is_id_continue;
     }
