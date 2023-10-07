@@ -23,6 +23,10 @@ use lsp_types::TextDocumentIdentifier;
 use lsp_types::TextDocumentItem;
 use lsp_types::TextDocumentPositionParams;
 use lsp_types::TextEdit;
+use lsp_types::InitializeParams;
+use lsp_types::WorkspaceFolder;
+use lsp_types::Url;
+
 use serde::Serialize;
 use std::cell::Cell;
 use std::cell::RefCell;
@@ -43,7 +47,6 @@ use lsp_types::DiagnosticRelatedInformation;
 use lsp_types::DiagnosticSeverity;
 use lsp_types::Location;
 use lsp_types::NumberOrString;
-use lsp_types::Url;
 use lsp_types::{Position, Range, TextDocumentContentChangeEvent};
 use parking_lot::RwLock;
 use proc_macro_crate::bench_test;
@@ -415,9 +418,9 @@ pub struct Project {}
 
 impl Project {
     /// Instantiates a language server for this project.
-    pub fn server(self) -> Server {
+    pub fn server(self, initialize_params: InitializeParams) -> Server {
         let config = Config::default();
-        Server::new(config)
+        Server::new(config, initialize_params)
     }
 }
 
@@ -432,11 +435,11 @@ pub struct Server {
 
 impl Server {
     /// Constructs and initializes a new `Server`
-    pub fn new(config: Config) -> Self {
+    pub fn new(config: Config, initialize_params: InitializeParams) -> Self {
         let (connection, client) = Connection::memory();
 
         let worker = std::thread::spawn(move || {
-            main_loop(connection, config).unwrap();
+            main_loop(connection, config, initialize_params).unwrap();
         });
 
         Self {
@@ -539,7 +542,7 @@ fn notification_test() {
 
     let path = path.to_str().unwrap();
     let src = std::fs::read_to_string(path.clone()).unwrap();
-    let server = Project {}.server();
+    let server = Project {}.server(InitializeParams::default());
 
     // Mock open file
     server.notification::<lsp_types::notification::DidOpenTextDocument>(
@@ -588,7 +591,7 @@ fn goto_def_test() {
 
     let path = path.to_str().unwrap();
     let src = std::fs::read_to_string(path.clone()).unwrap();
-    let server = Project {}.server();
+    let server = Project {}.server(InitializeParams::default());
 
     // Mock open file
     server.notification::<lsp_types::notification::DidOpenTextDocument>(
@@ -645,7 +648,7 @@ fn complete_test() {
 
     let path = path.to_str().unwrap();
     let src = std::fs::read_to_string(path.clone()).unwrap();
-    let server = Project {}.server();
+    let server = Project {}.server(InitializeParams::default());
 
     // Mock open file
     server.notification::<lsp_types::notification::DidOpenTextDocument>(
@@ -709,7 +712,7 @@ fn hover_test() {
 
     let path = path.to_str().unwrap();
     let src = std::fs::read_to_string(path.clone()).unwrap();
-    let server = Project {}.server();
+    let server = Project {}.server(InitializeParams::default());
 
     // Mock open file
     server.notification::<lsp_types::notification::DidOpenTextDocument>(
@@ -821,7 +824,7 @@ fn formatting_test() {
 
     let path = path.to_str().unwrap();
     let src = std::fs::read_to_string(path.clone()).unwrap();
-    let server = Project {}.server();
+    let server = Project {}.server(InitializeParams::default());
 
     // Mock open file
     server.notification::<lsp_types::notification::DidOpenTextDocument>(
@@ -1314,7 +1317,12 @@ fn test_find_refs() {
 
     let path = path.to_str().unwrap();
     let src = std::fs::read_to_string(path.clone()).unwrap();
-    let server = Project {}.server();
+    let mut initialize_params = InitializeParams::default();
+    initialize_params.workspace_folders = Some(vec![WorkspaceFolder{
+        uri: Url::from_file_path(root.clone()).unwrap(),
+        name: "test".to_string(),
+    }]);
+    let server = Project {}.server(initialize_params);
     let url = Url::from_file_path(path).unwrap();
 
     // Mock open file

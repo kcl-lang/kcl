@@ -1,6 +1,8 @@
 use crate::main_loop::main_loop;
 use config::Config;
 use main_loop::app;
+use std::collections::HashMap;
+
 mod analysis;
 mod capabilities;
 mod completion;
@@ -78,9 +80,8 @@ fn run_server() -> anyhow::Result<()> {
         .map_err(|_| anyhow::anyhow!("Initialize result error"))?;
 
     connection.initialize_finish(initialize_id, initialize_result)?;
-
     let config = Config::default();
-    main_loop(connection, config)?;
+    main_loop(connection, config, initialize_params)?;
     io_threads.join()?;
     Ok(())
 }

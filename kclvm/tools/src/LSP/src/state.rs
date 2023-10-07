@@ -2,13 +2,14 @@ use crate::analysis::Analysis;
 use crate::config::Config;
 use crate::db::AnalysisDatabase;
 use crate::to_lsp::{kcl_diag_to_lsp_diags, url};
-use crate::util::{self, get_file_name, parse_param_and_compile, to_json, Param};
+use crate::util::{get_file_name, parse_param_and_compile, to_json, Param, build_word_index};
 use crossbeam_channel::{select, unbounded, Receiver, Sender};
 use indexmap::IndexSet;
 use lsp_server::{ReqQueue, Response};
 use lsp_types::{
     notification::{Notification, PublishDiagnostics},
     Diagnostic, Location, PublishDiagnosticsParams,
+    InitializeParams,
 };
 use parking_lot::RwLock;
 use ra_ap_vfs::{FileId, Vfs};
@@ -69,7 +70,7 @@ pub(crate) struct LanguageServerState {
     pub vfs_handle: Box<dyn ra_ap_vfs::loader::Handle>,
 
     /// The word index map
-    pub word_index: HashMap<String, Vec<Location>>,
+    pub word_index_map: HashMap<String, HashMap<String, Vec<Location>>>,
 }
 
 /// A snapshot of the state of the language server
@@ -82,19 +83,35 @@ pub(crate) struct LanguageServerSnapshot {
     /// Documents that are currently kept in memory from the client
     pub opened_files: IndexSet<FileId>,
     /// The word index map
-    pub word_index: HashMap<String, Vec<Location>>,
+    pub word_index_map: HashMap<String, HashMap<String, Vec<Location>>>,
 }
 
 #[allow(unused)]
 impl LanguageServerState {
-    pub fn new(sender: Sender<lsp_server::Message>, config: Config) -> Self {
+    pub fn new(sender: Sender<lsp_server::Message>, config: Config, initialize_params: InitializeParams) -> Self {
         let (task_sender, task_receiver) = unbounded::<Task>();
 
         let (vfs_sender, receiver) = unbounded::<ra_ap_vfs::loader::Message>();
         let handle: NotifyHandle =
             ra_ap_vfs::loader::Handle::spawn(Box::new(move |msg| vfs_sender.send(msg).unwrap()));
         let handle = Box::new(handle) as Box<dyn ra_ap_vfs::loader::Handle>;
-
+        
+        // build word index for all the workspace folders
+        // todo: async
+        let mut word_index_map = HashMap::new();
+        if let Some(workspace_folders) = initialize_params.workspace_folders {
+            for folder in workspace_folders {
+                let path = folder.uri.path();
+                if let Ok(word_index) = build_word_index(path.to_string()) {
+                    word_index_map.insert(folder.name, word_index);
+                }
+            }
+        } else if let Some(root_uri) = initialize_params.root_uri {
+            let path = root_uri.path();
+            if let Ok(word_index) = build_word_index(path.to_string()) {
+                word_index_map.insert("default".to_string(), word_index);
+            }
+        }
         LanguageServerState {
             sender,
             request_queue: ReqQueue::default(),
@@ -107,7 +124,7 @@ impl LanguageServerState {
             analysis: Analysis::default(),
             opened_files: IndexSet::new(),
             vfs_handle: handle,
-            word_index: HashMap::new(),
+            word_index_map: word_index_map,
         }
     }
 
@@ -251,7 +268,7 @@ impl LanguageServerState {
             vfs: self.vfs.clone(),
             db: self.analysis.db.clone(),
             opened_files: self.opened_files.clone(),
-            word_index: self.word_index.clone(),
+            word_index_map: self.word_index_map.clone(),
         }
     }
 

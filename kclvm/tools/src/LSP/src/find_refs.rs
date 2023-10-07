@@ -1,11 +1,12 @@
 use crate::from_lsp::kcl_pos;
 use crate::goto_def::goto_definition;
-use crate::util::{build_word_index, parse_param_and_compile, Param};
+use crate::util::{parse_param_and_compile, Param};
 use anyhow;
-use kclvm_config::modfile::get_pkg_root;
 use lsp_types::Location;
+use std::collections::HashMap;
 
 pub(crate) fn find_refs<F: Fn(String) -> Result<(), anyhow::Error>>(
+    word_index_map: HashMap<String, HashMap<String, Vec<Location>>>,
     def_loc: Location,
     name: String,
     cursor_path: String,
@@ -13,65 +14,59 @@ pub(crate) fn find_refs<F: Fn(String) -> Result<(), anyhow::Error>>(
 ) -> anyhow::Result<Option<Vec<Location>>> {
     // todo: decide the scope by the workspace root and the kcl.mod both, use the narrower scope
     // todo: should use the current file path
-    if let Some(root) = get_pkg_root(def_loc.uri.path()) {
-        match build_word_index(root) {
-            std::result::Result::Ok(word_index) => {
-                if let Some(locs) = word_index.get(name.as_str()).cloned() {
-                    return anyhow::Ok(Some(
-                        locs.into_iter()
-                            .filter(|ref_loc| {
-                                // from location to real def
-                                // return if the real def location matches the def_loc
-                                let file_path = ref_loc.uri.path().to_string();
-                                match parse_param_and_compile(
-                                    Param {
-                                        file: file_path.clone(),
-                                    },
-                                    None,
-                                ) {
-                                    Ok((prog, scope, _)) => {
-                                        let ref_pos = kcl_pos(&file_path, ref_loc.range.start);
-                                        // find def from the ref_pos
-                                        if let Some(real_def) =
-                                            goto_definition(&prog, &ref_pos, &scope)
-                                        {
-                                            match real_def {
-                                                lsp_types::GotoDefinitionResponse::Scalar(
-                                                    real_def_loc,
-                                                ) => real_def_loc == def_loc,
-                                                _ => false,
-                                            }
-                                        } else {
-                                            false
-                                        }
-                                    }
-                                    Err(_) => {
-                                        let _ = logger(format!("{cursor_path} compilation failed"));
-                                        return false;
-                                    }
+
+    let mut ref_locations = vec![];
+
+    for (_, word_index) in word_index_map {
+        if let Some(locs) = word_index.get(name.as_str()).cloned() {
+            let matched_locs: Vec<Location> = locs.into_iter()
+                .filter(|ref_loc| {
+                    // from location to real def
+                    // return if the real def location matches the def_loc
+                    let file_path = ref_loc.uri.path().to_string();
+                    match parse_param_and_compile(
+                        Param {
+                            file: file_path.clone(),
+                        },
+                        None,
+                    ) {
+                        Ok((prog, scope, _)) => {
+                            let ref_pos = kcl_pos(&file_path, ref_loc.range.start);
+                            // find def from the ref_pos
+                            if let Some(real_def) =
+                                goto_definition(&prog, &ref_pos, &scope)
+                            {
+                                match real_def {
+                                    lsp_types::GotoDefinitionResponse::Scalar(
+                                        real_def_loc,
+                                    ) => real_def_loc == def_loc,
+                                    _ => false,
                                 }
-                            })
-                            .collect(),
-                    ));
-                } else {
-                    return Ok(None);
-                }
-            }
-            Err(_) => {
-                logger("build word index failed".to_string())?;
-                return Ok(None);
-            }
+                            } else {
+                                false
+                            }
+                        }
+                        Err(_) => {
+                            let _ = logger(format!("{cursor_path} compilation failed"));
+                            return false;
+                        }
+                    }
+                })
+                .collect();
+            ref_locations.extend(matched_locs);
         }
-    } else {
-        return Ok(None);
     }
+    anyhow::Ok(Some(ref_locations))
 }
 
 #[cfg(test)]
 mod tests {
     use super::find_refs;
     use lsp_types::{Location, Position, Range};
+    use std::ops::Index;
     use std::path::PathBuf;
+    use std::collections::HashMap;
+    use crate::util::build_word_index;
 
     fn logger(msg: String) -> Result<(), anyhow::Error> {
         println!("{}", msg);
@@ -89,6 +84,10 @@ mod tests {
             }
             Err(_) => assert!(false),
         }
+    }
+
+    fn setup_word_index_map(root: &str) -> HashMap<String, HashMap<String, Vec<Location>>> {
+        HashMap::from([("default".to_string(), build_word_index(root.to_string()).unwrap())])
     }
 
     #[test]
@@ -138,7 +137,7 @@ mod tests {
                 ];
                 check_locations_match(
                     expect,
-                    find_refs(def_loc, "a".to_string(), path.to_string(), logger),
+                    find_refs(setup_word_index_map(path), def_loc, "a".to_string(), path.to_string(), logger),
                 );
             }
             Err(_) => assert!(false, "file not found"),
@@ -185,7 +184,7 @@ mod tests {
                 ];
                 check_locations_match(
                     expect,
-                    find_refs(def_loc, "Name".to_string(), path.to_string(), logger),
+                    find_refs(setup_word_index_map(path), def_loc, "Name".to_string(), path.to_string(), logger),
                 );
             }
             Err(_) => assert!(false, "file not found"),

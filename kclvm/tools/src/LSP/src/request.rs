@@ -146,6 +146,7 @@ pub(crate) fn handle_reference(
     let path = from_lsp::abs_path(&params.text_document_position.text_document.uri)?;
     let db = snapshot.get_db(&path.clone().into())?;
     let pos = kcl_pos(&file, params.text_document_position.position);
+    let word_index_map = snapshot.word_index_map.clone();
 
     let log = |msg: String| log_message(msg, &sender);
 
@@ -163,7 +164,7 @@ pub(crate) fn handle_reference(
                     },
                     None => None,
                 } {
-                    return find_refs(def_loc, def_name, file, log);
+                    return find_refs(word_index_map, def_loc, def_name, file, log);
                 }
             }
             _ => return Ok(None),
