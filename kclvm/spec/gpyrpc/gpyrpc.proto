@@ -149,6 +149,9 @@ message ExecProgram_Args {
 
 	// Whether including schema type in JSON/YAML result
 	bool include_schema_type_path = 14;
+
+	// Whether only compiling the program
+	bool compile_only = 15;
 }
 
 message ExecProgram_Result {

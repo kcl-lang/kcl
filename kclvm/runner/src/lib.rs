@@ -11,7 +11,9 @@ use kclvm_error::{Diagnostic, Handler};
 use kclvm_parser::{load_program, ParseSession};
 use kclvm_query::apply_overrides;
 use kclvm_runtime::{PanicInfo, PlanOptions, ValueRef};
-use kclvm_sema::resolver::{resolve_program, scope::ProgramScope};
+use kclvm_sema::resolver::{
+    resolve_program, resolve_program_with_opts, scope::ProgramScope, Options,
+};
 use linker::Command;
 pub use runner::ExecProgramArgs;
 use runner::{ExecProgramResult, KclvmRunner, KclvmRunnerOptions};
@@ -192,9 +194,18 @@ pub fn execute(
     mut program: Program,
     args: &ExecProgramArgs,
 ) -> Result<String, String> {
+    // If the user only wants to compile the kcl program, the following code will only resolve ast.
+    if args.compile_only {
+        let mut resolve_opts = Options::default();
+        resolve_opts.merge_program = false;
+        // Resolve ast
+        let scope = resolve_program_with_opts(&mut program, resolve_opts);
+        emit_compile_diag_to_string(sess, &scope, args.compile_only)?;
+        return Ok("".to_string());
+    }
     // Resolve ast
     let scope = resolve_program(&mut program);
-    emit_compile_diag_to_string(sess, &scope)?;
+    emit_compile_diag_to_string(sess, &scope, false)?;
 
     // Create a temp entry file and the temp dir will be delete automatically
     let temp_dir = tempdir().map_err(|e| e.to_string())?;
@@ -303,13 +314,14 @@ fn temp_file(dir: &str) -> Result<String> {
 fn emit_compile_diag_to_string(
     sess: Arc<ParseSession>,
     scope: &ProgramScope,
+    include_warnings: bool,
 ) -> Result<(), String> {
     let mut res_str = sess
         .1
         .borrow_mut()
         .emit_to_string()
         .map_err(|err| err.to_string())?;
-    let sema_err = scope.emit_diagnostics_to_string(sess.0.clone());
+    let sema_err = scope.emit_diagnostics_to_string(sess.0.clone(), include_warnings);
     if sema_err.is_err() {
         #[cfg(not(target_os = "windows"))]
         res_str.push_str("\n");

@@ -50,6 +50,8 @@ pub struct ExecProgramArgs {
     pub sort_keys: bool,
     /// Whether including schema type in JSON/YAML result
     pub include_schema_type_path: bool,
+    // Whether to compile only.
+    pub compile_only: bool,
     // plugin_agent is the address of plugin.
     #[serde(skip)]
     pub plugin_agent: u64,
