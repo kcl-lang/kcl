@@ -238,12 +238,7 @@ pub fn execute(
     }));
     let result = runner.run(&lib_path, args);
 
-    // Clean temp files.
-    // FIXME(issue #346): On windows, sometimes there will be an error that the file cannot be accessed.
-    // Therefore, the function of automatically deleting dll files on windows is temporarily turned off.
-    #[cfg(not(target_os = "windows"))]
     remove_file(&lib_path).map_err(|e| e.to_string())?;
-    #[cfg(not(target_os = "windows"))]
     clean_tmp_files(&temp_entry_file, &lib_suffix).map_err(|e| e.to_string())?;
     // Wrap runtime error into diagnostic style string.
     result.map_err(|err| {
