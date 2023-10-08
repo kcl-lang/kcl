@@ -1,6 +1,6 @@
 mod analysis;
-mod completion;
 mod capabilities;
+mod completion;
 mod config;
 mod db;
 mod dispatcher;

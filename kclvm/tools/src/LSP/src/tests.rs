@@ -55,7 +55,6 @@ use crate::config::Config;
 use crate::from_lsp::file_path_from_url;
 
 use crate::hover::hover;
-use crate::main_loop::_main;
 use crate::main_loop::main_loop;
 use crate::to_lsp::kcl_diag_to_lsp_diags;
 use crate::util::to_json;
@@ -1244,7 +1243,7 @@ fn lsp_invalid_subcommand_test() {
         .arg_required_else_help(false)
         .try_get_matches_from(args);
     match matches {
-        Ok(arg_match) => panic!("test failed"),
+        Ok(_) => panic!("test failed"),
         Err(e) => match e.kind() {
             clap::error::ErrorKind::InvalidSubcommand => {}
             _ => panic!("test failed"),
