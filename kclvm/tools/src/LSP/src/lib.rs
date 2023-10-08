@@ -1,4 +1,5 @@
 mod analysis;
+mod capabilities;
 mod completion;
 mod config;
 mod db;
