@@ -55,6 +55,7 @@ use crate::config::Config;
 use crate::from_lsp::file_path_from_url;
 
 use crate::hover::hover;
+use crate::main_loop::_main;
 use crate::main_loop::main_loop;
 use crate::to_lsp::kcl_diag_to_lsp_diags;
 use crate::util::to_json;
@@ -1203,5 +1204,35 @@ fn konfig_hover_test_main() {
             );
         }
         _ => unreachable!("test error"),
+    }
+}
+
+#[test]
+fn lsp_version_test() {
+    let args = vec!["kcl-language-server".to_string(), "version".to_string()];
+    let matches = crate::main_loop::app()
+        .arg_required_else_help(false)
+        .try_get_matches_from(args);
+    match matches {
+        Ok(arg_match) => match arg_match.subcommand() {
+            Some(("version", _)) => {}
+            _ => panic!("test failed"),
+        },
+        Err(_) => panic!("test failed"),
+    }
+}
+
+#[test]
+fn lsp_run_test() {
+    let args = vec!["kcl-language-server".to_string()];
+    let matches = crate::main_loop::app()
+        .arg_required_else_help(false)
+        .try_get_matches_from(args);
+    match matches {
+        Ok(arg_match) => match arg_match.subcommand() {
+            None => {}
+            _ => panic!("test failed"),
+        },
+        Err(_) => panic!("test failed"),
     }
 }
