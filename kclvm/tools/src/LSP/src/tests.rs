@@ -1236,3 +1236,18 @@ fn lsp_run_test() {
         Err(_) => panic!("test failed"),
     }
 }
+
+#[test]
+fn lsp_invalid_subcommand_test() {
+    let args = vec!["kcl-language-server".to_string(), "invalid".to_string()];
+    let matches = crate::main_loop::app()
+        .arg_required_else_help(false)
+        .try_get_matches_from(args);
+    match matches {
+        Ok(arg_match) => panic!("test failed"),
+        Err(e) => match e.kind() {
+            clap::error::ErrorKind::InvalidSubcommand => {}
+            _ => panic!("test failed"),
+        },
+    }
+}
