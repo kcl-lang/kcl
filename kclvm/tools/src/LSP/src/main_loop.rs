@@ -6,7 +6,11 @@ use lsp_types::InitializeParams;
 
 #[allow(dead_code)]
 /// Runs the main loop of the language server. This will receive requests and handle them.
-pub(crate) fn main_loop(connection: Connection, config: Config, initialize_params: InitializeParams) -> anyhow::Result<()> {
+pub(crate) fn main_loop(
+    connection: Connection,
+    config: Config,
+    initialize_params: InitializeParams,
+) -> anyhow::Result<()> {
     LanguageServerState::new(connection.sender, config, initialize_params).run(connection.receiver)
 }
 

@@ -19,7 +19,8 @@ pub(crate) fn find_refs<F: Fn(String) -> Result<(), anyhow::Error>>(
 
     for (_, word_index) in word_index_map {
         if let Some(locs) = word_index.get(name.as_str()).cloned() {
-            let matched_locs: Vec<Location> = locs.into_iter()
+            let matched_locs: Vec<Location> = locs
+                .into_iter()
                 .filter(|ref_loc| {
                     // from location to real def
                     // return if the real def location matches the def_loc
@@ -33,13 +34,11 @@ pub(crate) fn find_refs<F: Fn(String) -> Result<(), anyhow::Error>>(
                         Ok((prog, scope, _)) => {
                             let ref_pos = kcl_pos(&file_path, ref_loc.range.start);
                             // find def from the ref_pos
-                            if let Some(real_def) =
-                                goto_definition(&prog, &ref_pos, &scope)
-                            {
+                            if let Some(real_def) = goto_definition(&prog, &ref_pos, &scope) {
                                 match real_def {
-                                    lsp_types::GotoDefinitionResponse::Scalar(
-                                        real_def_loc,
-                                    ) => real_def_loc == def_loc,
+                                    lsp_types::GotoDefinitionResponse::Scalar(real_def_loc) => {
+                                        real_def_loc == def_loc
+                                    }
                                     _ => false,
                                 }
                             } else {
@@ -62,11 +61,11 @@ pub(crate) fn find_refs<F: Fn(String) -> Result<(), anyhow::Error>>(
 #[cfg(test)]
 mod tests {
     use super::find_refs;
+    use crate::util::build_word_index;
     use lsp_types::{Location, Position, Range};
+    use std::collections::HashMap;
     use std::ops::Index;
     use std::path::PathBuf;
-    use std::collections::HashMap;
-    use crate::util::build_word_index;
 
     fn logger(msg: String) -> Result<(), anyhow::Error> {
         println!("{}", msg);
@@ -87,7 +86,10 @@ mod tests {
     }
 
     fn setup_word_index_map(root: &str) -> HashMap<String, HashMap<String, Vec<Location>>> {
-        HashMap::from([("default".to_string(), build_word_index(root.to_string()).unwrap())])
+        HashMap::from([(
+            "default".to_string(),
+            build_word_index(root.to_string()).unwrap(),
+        )])
     }
 
     #[test]
@@ -137,7 +139,13 @@ mod tests {
                 ];
                 check_locations_match(
                     expect,
-                    find_refs(setup_word_index_map(path), def_loc, "a".to_string(), path.to_string(), logger),
+                    find_refs(
+                        setup_word_index_map(path),
+                        def_loc,
+                        "a".to_string(),
+                        path.to_string(),
+                        logger,
+                    ),
                 );
             }
             Err(_) => assert!(false, "file not found"),
@@ -184,7 +192,13 @@ mod tests {
                 ];
                 check_locations_match(
                     expect,
-                    find_refs(setup_word_index_map(path), def_loc, "Name".to_string(), path.to_string(), logger),
+                    find_refs(
+                        setup_word_index_map(path),
+                        def_loc,
+                        "Name".to_string(),
+                        path.to_string(),
+                        logger,
+                    ),
                 );
             }
             Err(_) => assert!(false, "file not found"),

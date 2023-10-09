@@ -2,14 +2,13 @@ use crate::analysis::Analysis;
 use crate::config::Config;
 use crate::db::AnalysisDatabase;
 use crate::to_lsp::{kcl_diag_to_lsp_diags, url};
-use crate::util::{get_file_name, parse_param_and_compile, to_json, Param, build_word_index};
+use crate::util::{build_word_index, get_file_name, parse_param_and_compile, to_json, Param};
 use crossbeam_channel::{select, unbounded, Receiver, Sender};
 use indexmap::IndexSet;
 use lsp_server::{ReqQueue, Response};
 use lsp_types::{
     notification::{Notification, PublishDiagnostics},
-    Diagnostic, Location, PublishDiagnosticsParams,
-    InitializeParams,
+    Diagnostic, InitializeParams, Location, PublishDiagnosticsParams,
 };
 use parking_lot::RwLock;
 use ra_ap_vfs::{FileId, Vfs};
@@ -88,14 +87,18 @@ pub(crate) struct LanguageServerSnapshot {
 
 #[allow(unused)]
 impl LanguageServerState {
-    pub fn new(sender: Sender<lsp_server::Message>, config: Config, initialize_params: InitializeParams) -> Self {
+    pub fn new(
+        sender: Sender<lsp_server::Message>,
+        config: Config,
+        initialize_params: InitializeParams,
+    ) -> Self {
         let (task_sender, task_receiver) = unbounded::<Task>();
 
         let (vfs_sender, receiver) = unbounded::<ra_ap_vfs::loader::Message>();
         let handle: NotifyHandle =
             ra_ap_vfs::loader::Handle::spawn(Box::new(move |msg| vfs_sender.send(msg).unwrap()));
         let handle = Box::new(handle) as Box<dyn ra_ap_vfs::loader::Handle>;
-        
+
         // build word index for all the workspace folders
         // todo: async
         let mut word_index_map = HashMap::new();
@@ -124,7 +127,7 @@ impl LanguageServerState {
             analysis: Analysis::default(),
             opened_files: IndexSet::new(),
             vfs_handle: handle,
-            word_index_map: word_index_map,
+            word_index_map,
         }
     }
 

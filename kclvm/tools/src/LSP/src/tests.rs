@@ -15,6 +15,7 @@ use lsp_types::GotoDefinitionResponse;
 use lsp_types::Hover;
 use lsp_types::HoverContents;
 use lsp_types::HoverParams;
+use lsp_types::InitializeParams;
 use lsp_types::MarkedString;
 use lsp_types::PublishDiagnosticsParams;
 use lsp_types::ReferenceContext;
@@ -23,9 +24,8 @@ use lsp_types::TextDocumentIdentifier;
 use lsp_types::TextDocumentItem;
 use lsp_types::TextDocumentPositionParams;
 use lsp_types::TextEdit;
-use lsp_types::InitializeParams;
-use lsp_types::WorkspaceFolder;
 use lsp_types::Url;
+use lsp_types::WorkspaceFolder;
 
 use serde::Serialize;
 use std::cell::Cell;
@@ -1318,7 +1318,7 @@ fn test_find_refs() {
     let path = path.to_str().unwrap();
     let src = std::fs::read_to_string(path.clone()).unwrap();
     let mut initialize_params = InitializeParams::default();
-    initialize_params.workspace_folders = Some(vec![WorkspaceFolder{
+    initialize_params.workspace_folders = Some(vec![WorkspaceFolder {
         uri: Url::from_file_path(root.clone()).unwrap(),
         name: "test".to_string(),
     }]);
