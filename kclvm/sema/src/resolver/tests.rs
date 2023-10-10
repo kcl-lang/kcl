@@ -521,3 +521,21 @@ fn test_resolve_program_import_suggest() {
         "name 's' is not defined, did you mean '[\"s1\"]'?"
     );
 }
+
+#[test]
+fn test_resolve_assignment_in_lambda() {
+    let sess = Arc::new(ParseSession::default());
+    let mut program = load_program(
+        sess.clone(),
+        &["./src/resolver/test_data/assign_in_lambda.k"],
+        None,
+    )
+    .unwrap();
+    let scope = resolve_program(&mut program);
+    let main_scope = scope.scope_map.get("__main__").unwrap().clone();
+    assert_eq!(main_scope.borrow().children.len(), 1);
+    let lambda_scope = main_scope.borrow().children[0].clone();
+    assert_eq!(lambda_scope.borrow().elems.len(), 2);
+    let images_scope_obj = lambda_scope.borrow().elems.get("images").unwrap().clone();
+    assert_eq!(images_scope_obj.borrow().ty.ty_str(), "[str]");
+}

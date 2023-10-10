@@ -7,7 +7,7 @@ use std::rc::Rc;
 
 use crate::info::is_private_field;
 use crate::ty::{
-    sup, DictType, FunctionType, Parameter, Type, TypeInferMethods, TypeKind,
+    is_upper_bound, sup, DictType, FunctionType, Parameter, Type, TypeInferMethods, TypeKind,
     RESERVED_TYPE_IDENTIFIERS,
 };
 
@@ -184,6 +184,51 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                             name,
                             self.ctx.ty_ctx.infer_to_variable_type(value_ty.clone()),
                         );
+                    }
+                    // If the assign statement has a type annotation like: `a: str = "test_str"`,
+                } else if assign_stmt.type_annotation.is_some() {
+                    // Get the type annotation.
+                    if let Some(ty_annotation) = &assign_stmt.ty {
+                        let annotation_ty = self
+                            .parse_ty_with_scope(&ty_annotation.node, ty_annotation.get_span_pos());
+                        // Set the type annotation as the target type.
+                        self.set_type_to_scope(name, annotation_ty.clone(), target.get_span_pos());
+                        // Check the type of target whether is upper bound of the type annotation.
+                        if let Some(obj) = self.scope.borrow().elems.get(name) {
+                            let obj = obj.borrow();
+                            if !is_upper_bound(obj.ty.clone(), annotation_ty.clone()) {
+                                self.handler.add_error(
+                                    ErrorKind::TypeError,
+                                    &[
+                                        Message {
+                                            range: target.get_span_pos(),
+                                            style: Style::LineAndColumn,
+                                            message: format!(
+                                                "can not change the type of '{}' to {}",
+                                                name,
+                                                annotation_ty.ty_str()
+                                            ),
+                                            note: None,
+                                            suggested_replacement: None,
+                                        },
+                                        Message {
+                                            range: obj.get_span_pos(),
+                                            style: Style::LineAndColumn,
+                                            message: format!("expected {}", obj.ty.ty_str()),
+                                            note: None,
+                                            suggested_replacement: None,
+                                        },
+                                    ],
+                                );
+                            }
+                        }
+                        // Check the type of value and the type annotation of target
+                        self.must_assignable_to(
+                            value_ty.clone(),
+                            annotation_ty,
+                            target.get_span_pos(),
+                            None,
+                        )
                     }
                 }
             } else {
