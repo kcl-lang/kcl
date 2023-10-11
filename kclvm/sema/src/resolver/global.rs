@@ -212,7 +212,7 @@ impl<'ctx> Resolver<'ctx> {
         }
     }
 
-    fn init_scope_with_assign_stmt(
+    pub fn init_scope_with_assign_stmt(
         &mut self,
         assign_stmt: &'ctx ast::AssignStmt,
         unique_check: bool,
@@ -227,6 +227,9 @@ impl<'ctx> Resolver<'ctx> {
             }
             let name = &target.node.names[0].node;
             let (start, end) = target.get_span_pos();
+            if !unique_check && self.contains_object(name) {
+                continue;
+            }
             if self.contains_object(name) && !is_private_field(name) && unique_check {
                 self.handler.add_error(
                     ErrorKind::ImmutableError,

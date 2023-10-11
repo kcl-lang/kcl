@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use crate::resolver::Resolver;
 use crate::ty::parser::parse_type_str;
-use crate::ty::{assignable_to, Attr, DictType, SchemaType, Type, TypeKind};
+use crate::ty::{assignable_to, is_upper_bound, Attr, DictType, SchemaType, Type, TypeKind};
 use indexmap::IndexMap;
 use kclvm_ast::ast;
 use kclvm_ast::pos::GetPos;
@@ -115,6 +115,66 @@ impl<'ctx> Resolver<'ctx> {
                 });
             }
             self.handler.add_error(ErrorKind::TypeError, &msgs);
+        }
+    }
+
+    /// Check the type assignment statement between type annotation and target.
+    pub fn check_assignment_type_annotation(
+        &mut self,
+        assign_stmt: &kclvm_ast::ast::AssignStmt,
+        value_ty: Rc<Type>,
+    ) {
+        if assign_stmt.type_annotation.is_none() {
+            return;
+        }
+        for target in &assign_stmt.targets {
+            if target.node.names.is_empty() {
+                continue;
+            }
+            let name = &target.node.names[0].node;
+            // If the assignment statement has type annotation, check the type of value and the type annotation of target
+
+            if let Some(ty_annotation) = &assign_stmt.ty {
+                let annotation_ty =
+                    self.parse_ty_with_scope(&ty_annotation.node, ty_annotation.get_span_pos());
+                // If the target defined in the scope, check the type of value and the type annotation of target
+                let target_ty = if let Some(obj) = self.scope.borrow().elems.get(name) {
+                    let obj = obj.borrow();
+                    if !is_upper_bound(obj.ty.clone(), annotation_ty.clone()) {
+                        self.handler.add_error(
+                            ErrorKind::TypeError,
+                            &[
+                                Message {
+                                    range: target.get_span_pos(),
+                                    style: Style::LineAndColumn,
+                                    message: format!(
+                                        "can not change the type of '{}' to {}",
+                                        name,
+                                        annotation_ty.ty_str()
+                                    ),
+                                    note: None,
+                                    suggested_replacement: None,
+                                },
+                                Message {
+                                    range: obj.get_span_pos(),
+                                    style: Style::LineAndColumn,
+                                    message: format!("expected {}", obj.ty.ty_str()),
+                                    note: None,
+                                    suggested_replacement: None,
+                                },
+                            ],
+                        );
+                    }
+                    obj.ty.clone()
+                } else {
+                    annotation_ty
+                };
+
+                self.set_type_to_scope(name, target_ty.clone(), target.get_span_pos());
+
+                // Check the type of value and the type annotation of target
+                self.must_assignable_to(value_ty.clone(), target_ty, target.get_span_pos(), None)
+            }
         }
     }
 

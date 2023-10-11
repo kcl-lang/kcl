@@ -35,7 +35,7 @@ schema Reviewer:
     teams?: [int]
     users?: [int]
 
-reviewers: [Reviewer] = [{team: [1]}]
+reviewers: [Reviewer] = [Reviewer {teams: [1]}]
 
 schema Fib:
     n1 = n - 1
