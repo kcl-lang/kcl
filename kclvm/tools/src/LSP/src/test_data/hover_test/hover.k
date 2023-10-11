@@ -23,3 +23,6 @@ abdc = base64.encode("1")
 abcd = "a".count()
 
 print(1)
+
+a = "".capitalize()
+b = a.capitalize()

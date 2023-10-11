@@ -377,4 +377,31 @@ mod tests {
             _ => unreachable!("test error"),
         }
     }
+
+    #[test]
+    #[bench_test]
+    fn str_var_func_hover() {
+        let (file, program, prog_scope, _) = compile_test_file("src/test_data/hover_test/hover.k");
+        let pos = KCLPos {
+            filename: file.clone(),
+            line: 28,
+            column: Some(12),
+        };
+        let got = hover(&program, &pos, &prog_scope).unwrap();
+        match got.contents {
+            lsp_types::HoverContents::Array(vec) => {
+                assert_eq!(vec.len(), 3);
+                if let MarkedString::String(s) = vec[0].clone() {
+                    assert_eq!(s, "str\n\n");
+                }
+                if let MarkedString::String(s) = vec[1].clone() {
+                    assert_eq!(s, "fn capitalize() -> str");
+                }
+                if let MarkedString::String(s) = vec[2].clone() {
+                    assert_eq!(s, "Return a copy of the string with its first character capitalized and the rest lowercased.");
+                }
+            }
+            _ => unreachable!("test error"),
+        }
+    }
 }

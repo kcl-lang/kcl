@@ -14,7 +14,7 @@ use kclvm_ast::ast::{Expr, Identifier, ImportStmt, Node, Program, Stmt};
 use kclvm_compiler::pkgpath_without_prefix;
 use kclvm_error::Position as KCLPos;
 
-use kclvm_sema::builtin::get_system_member_function_ty;
+use kclvm_sema::builtin::{get_system_member_function_ty, STRING_MEMBER_FUNCTIONS};
 use kclvm_sema::resolver::scope::{
     builtin_scope, ProgramScope, Scope, ScopeObject, ScopeObjectKind,
 };
@@ -333,6 +333,30 @@ pub(crate) fn resolve_var(
                             }
                             None => None,
                         }
+                    }
+                    kclvm_sema::ty::TypeKind::Str => {
+                        if names.len() == 2 {
+                            let func_name_node = node_names[1].clone();
+                            let func_name = func_name_node.node.clone();
+                            match STRING_MEMBER_FUNCTIONS.get(&func_name) {
+                                Some(ty) => match &ty.kind {
+                                    kclvm_sema::ty::TypeKind::Function(func_ty) => {
+                                        return Some(Definition::Object(ScopeObject {
+                                            name: func_name,
+                                            start: func_name_node.get_pos(),
+                                            end: func_name_node.get_end_pos(),
+                                            ty: Rc::new(ty.clone()),
+                                            kind: ScopeObjectKind::FunctionCall,
+                                            doc: Some(func_ty.doc.clone()),
+                                        }))
+                                    }
+                                    // unreachable
+                                    _ => {}
+                                },
+                                None => {}
+                            }
+                        }
+                        None
                     }
                     _ => None,
                 },
