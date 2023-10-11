@@ -984,7 +984,6 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 );
             }
         }
-
         let real_ret_ty = self.stmts(&lambda_expr.body);
         self.leave_scope();
         self.ctx.in_lambda_expr.pop();
