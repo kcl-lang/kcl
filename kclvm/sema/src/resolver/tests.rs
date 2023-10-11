@@ -539,19 +539,3 @@ fn test_resolve_assignment_in_lambda() {
     let images_scope_obj = lambda_scope.borrow().elems.get("images").unwrap().clone();
     assert_eq!(images_scope_obj.borrow().ty.ty_str(), "[str]");
 }
-
-// #[test]
-// fn test_xxxx() {
-//     let sess = Arc::new(ParseSession::default());
-//     let mut program = load_program(
-//         sess.clone(),
-//         &["/Users/zongz/Workspace/kusionstack/KCLVM/kclvm/tools/src/LSP/src/test_data/hover_test/assign_in_lambda.k"],
-//         // &["/Users/zongz/Workspace/kusionstack/KCLVM/kclvm/tools/src/LSP/src/test_data/goto_def_test/goto_def copy.k"],
-//         None,
-//     )
-//     .unwrap();
-//     let scope = resolve_program(&mut program);
-//     let main_scope = scope.scope_map.get("__main__").unwrap().clone();
-//     println!("{:?}", main_scope.borrow().children);
-//     println!("{:?}", main_scope.borrow().elems);
-// }
