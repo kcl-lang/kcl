@@ -338,8 +338,8 @@ pub(crate) fn resolve_var(
                         if names.len() == 2 {
                             let func_name_node = node_names[1].clone();
                             let func_name = func_name_node.node.clone();
-                            match STRING_MEMBER_FUNCTIONS.get(&func_name) {
-                                Some(ty) => match &ty.kind {
+                            if let Some(ty) = STRING_MEMBER_FUNCTIONS.get(&func_name) {
+                                match &ty.kind {
                                     kclvm_sema::ty::TypeKind::Function(func_ty) => {
                                         return Some(Definition::Object(ScopeObject {
                                             name: func_name,
@@ -352,8 +352,7 @@ pub(crate) fn resolve_var(
                                     }
                                     // unreachable
                                     _ => {}
-                                },
-                                None => {}
+                                }
                             }
                         }
                         None
