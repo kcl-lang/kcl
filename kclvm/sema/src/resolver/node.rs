@@ -985,13 +985,6 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             }
         }
 
-        // In the scope of lambda body, init the scope for assign stmt
-        for stmt in &lambda_expr.body {
-            if let ast::Stmt::Assign(assign_stmt) = &stmt.node {
-                self.init_scope_with_assign_stmt(assign_stmt, false)
-            }
-        }
-
         let real_ret_ty = self.stmts(&lambda_expr.body);
         self.leave_scope();
         self.ctx.in_lambda_expr.pop();

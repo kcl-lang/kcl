@@ -140,32 +140,36 @@ impl<'ctx> Resolver<'ctx> {
                 // If the target defined in the scope, check the type of value and the type annotation of target
                 let target_ty = if let Some(obj) = self.scope.borrow().elems.get(name) {
                     let obj = obj.borrow();
-                    if !is_upper_bound(obj.ty.clone(), annotation_ty.clone()) {
-                        self.handler.add_error(
-                            ErrorKind::TypeError,
-                            &[
-                                Message {
-                                    range: target.get_span_pos(),
-                                    style: Style::LineAndColumn,
-                                    message: format!(
-                                        "can not change the type of '{}' to {}",
-                                        name,
-                                        annotation_ty.ty_str()
-                                    ),
-                                    note: None,
-                                    suggested_replacement: None,
-                                },
-                                Message {
-                                    range: obj.get_span_pos(),
-                                    style: Style::LineAndColumn,
-                                    message: format!("expected {}", obj.ty.ty_str()),
-                                    note: None,
-                                    suggested_replacement: None,
-                                },
-                            ],
-                        );
+                    if obj.ty.is_any() {
+                        annotation_ty
+                    } else {
+                        if !is_upper_bound(annotation_ty.clone(), obj.ty.clone()) {
+                            self.handler.add_error(
+                                ErrorKind::TypeError,
+                                &[
+                                    Message {
+                                        range: target.get_span_pos(),
+                                        style: Style::LineAndColumn,
+                                        message: format!(
+                                            "can not change the type of '{}' to {}",
+                                            name,
+                                            annotation_ty.ty_str()
+                                        ),
+                                        note: None,
+                                        suggested_replacement: None,
+                                    },
+                                    Message {
+                                        range: obj.get_span_pos(),
+                                        style: Style::LineAndColumn,
+                                        message: format!("expected {}", obj.ty.ty_str()),
+                                        note: None,
+                                        suggested_replacement: None,
+                                    },
+                                ],
+                            );
+                        }
+                        obj.ty.clone()
                     }
-                    obj.ty.clone()
                 } else {
                     annotation_ty
                 };
