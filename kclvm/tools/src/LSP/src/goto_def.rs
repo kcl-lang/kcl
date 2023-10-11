@@ -128,46 +128,91 @@ pub(crate) fn find_def(
 
     let (inner_expr, parent) = inner_most_expr_in_stmt(&node.node, kcl_pos, None);
     if let Some(expr) = inner_expr {
-        if let Expr::Identifier(id) = expr.node {
-            let id_node = Node::node_with_pos(
-                id.clone(),
-                (
-                    expr.filename,
-                    expr.line,
-                    expr.column,
-                    expr.end_line,
-                    expr.end_column,
-                ),
-            );
-            let id = pre_process_identifier(id_node, kcl_pos);
-            match parent {
-                Some(schema_expr) => {
-                    if let Expr::Schema(schema_expr) = schema_expr.node {
-                        let schema_def =
-                            find_def(node, &schema_expr.name.get_end_pos(), prog_scope);
-                        if let Some(schema) = schema_def {
-                            match schema {
-                                Definition::Object(obj) => {
-                                    let schema_type = obj.ty.into_schema_type();
-                                    return find_attr_in_schema(
-                                        &schema_type,
-                                        &id.names,
-                                        &prog_scope.scope_map,
-                                    );
-                                }
-                                Definition::Scope(_) => {
-                                    //todo
+        match expr.node {
+            Expr::Identifier(id) => {
+                let id_node = Node::node_with_pos(
+                    id.clone(),
+                    (
+                        expr.filename,
+                        expr.line,
+                        expr.column,
+                        expr.end_line,
+                        expr.end_column,
+                    ),
+                );
+                let id = pre_process_identifier(id_node, kcl_pos);
+                match parent {
+                    Some(schema_expr) => {
+                        if let Expr::Schema(schema_expr) = schema_expr.node {
+                            let schema_def =
+                                find_def(node, &schema_expr.name.get_end_pos(), prog_scope);
+                            if let Some(schema) = schema_def {
+                                match schema {
+                                    Definition::Object(obj) => match &obj.ty.kind {
+                                        kclvm_sema::ty::TypeKind::Schema(schema_type) => {
+                                            return find_attr_in_schema(
+                                                &schema_type,
+                                                &id.names,
+                                                &prog_scope.scope_map,
+                                            )
+                                        }
+                                        _ => {}
+                                    },
+                                    Definition::Scope(_) => {}
                                 }
                             }
                         }
                     }
-                }
-                None => {
-                    if let Some(inner_most_scope) = prog_scope.inner_most_scope(kcl_pos) {
-                        return resolve_var(&id.names, &inner_most_scope, &prog_scope.scope_map);
+                    None => {
+                        if let Some(inner_most_scope) = prog_scope.inner_most_scope(kcl_pos) {
+                            return resolve_var(
+                                &id.names,
+                                &inner_most_scope,
+                                &prog_scope.scope_map,
+                            );
+                        }
                     }
                 }
             }
+            Expr::Selector(select_expr) => {
+                if select_expr.attr.contains_pos(kcl_pos) {
+                    let value_def = find_def(node, &select_expr.value.get_end_pos(), prog_scope);
+                    let id = select_expr.attr;
+                    match value_def {
+                        Some(def) => match def {
+                            Definition::Object(obj) => match &obj.ty.kind {
+                                kclvm_sema::ty::TypeKind::Schema(schema_type) => {
+                                    return find_attr_in_schema(
+                                        &schema_type,
+                                        &id.node.names,
+                                        &prog_scope.scope_map,
+                                    )
+                                }
+                                _ => {}
+                            },
+                            Definition::Scope(_) => {}
+                        },
+                        None => {
+                            if let Some(inner_most_scope) = prog_scope.inner_most_scope(kcl_pos) {
+                                return resolve_var(
+                                    &id.node.names,
+                                    &inner_most_scope,
+                                    &prog_scope.scope_map,
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+            Expr::Config(_) | Expr::ConfigIfEntry(_) => match parent {
+                Some(schema_expr) => {
+                    if let Expr::Schema(schema_expr) = schema_expr.node {
+                        return find_def(node, &schema_expr.name.get_end_pos(), prog_scope);
+                    }
+                }
+                None => {}
+            },
+            _ => {}
         }
     }
     None
@@ -187,7 +232,6 @@ pub(crate) fn resolve_var(
         0 => None,
         1 => {
             let name = names[0].clone();
-
             match current_scope.lookup(&name) {
                 Some(obj) => match &obj.borrow().kind {
                     kclvm_sema::resolver::scope::ScopeObjectKind::Module(_) => {
@@ -915,6 +959,24 @@ mod tests {
             filename: file.clone(),
             line: 51,
             column: Some(11),
+        };
+
+        let res = goto_definition(&program, &pos, &prog_scope);
+        compare_goto_res(res, (&file, 43, 4, 43, 9));
+    }
+
+    #[test]
+    #[bench_test]
+    fn complex_select_goto_def() {
+        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+
+        let (file, program, prog_scope, _) =
+            compile_test_file("src/test_data/goto_def_test/goto_def.k");
+
+        let pos = KCLPos {
+            filename: file.clone(),
+            line: 52,
+            column: Some(22),
         };
 
         let res = goto_definition(&program, &pos, &prog_scope);

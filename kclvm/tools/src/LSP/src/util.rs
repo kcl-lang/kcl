@@ -373,7 +373,6 @@ pub(crate) fn inner_most_expr(
     match &expr.node {
         Expr::Identifier(_) => (Some(expr.clone()), schema_def),
         Expr::Selector(select_expr) => {
-            walk_if_contains_with_new_expr!(select_expr.attr, pos, schema_def, Expr::Identifier);
             walk_if_contains!(select_expr.value, pos, schema_def);
             (Some(expr.clone()), schema_def)
         }

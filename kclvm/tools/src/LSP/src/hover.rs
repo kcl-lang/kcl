@@ -357,4 +357,24 @@ mod tests {
             _ => unreachable!("test error"),
         }
     }
+
+    #[test]
+    #[bench_test]
+    fn complex_select_hover() {
+        let (file, program, prog_scope, _) = compile_test_file("src/test_data/hover_test/fib.k");
+        let pos = KCLPos {
+            filename: file.clone(),
+            line: 14,
+            column: Some(22),
+        };
+        let got = hover(&program, &pos, &prog_scope).unwrap();
+        match got.contents {
+            lsp_types::HoverContents::Scalar(marked_string) => {
+                if let MarkedString::String(s) = marked_string {
+                    assert_eq!(s, "value: int");
+                }
+            }
+            _ => unreachable!("test error"),
+        }
+    }
 }
