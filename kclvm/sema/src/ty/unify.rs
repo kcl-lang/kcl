@@ -64,6 +64,8 @@ pub fn subsume(ty_lhs: Rc<Type>, ty_rhs: Rc<Type>, check_left_any: bool) -> bool
         let (ty_rhs_key, ty_rhs_val) = ty_rhs.dict_entry_ty();
         subsume(ty_lhs_key, ty_rhs_key, check_left_any)
             && subsume(ty_lhs_val, ty_rhs_val, check_left_any)
+    } else if ty_lhs.is_str() && ty_rhs.is_literal() && ty_rhs.is_str() {
+        return true;
     } else {
         equal(ty_lhs, ty_rhs)
     }

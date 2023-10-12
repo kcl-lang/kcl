@@ -195,6 +195,9 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 self.must_assignable_to(value_ty.clone(), expected_ty, target.get_span_pos(), None)
             }
         }
+        // Check type annotation if exists.
+        self.check_assignment_type_annotation(assign_stmt, value_ty.clone());
+
         value_ty
     }
 
