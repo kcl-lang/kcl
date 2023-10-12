@@ -350,14 +350,17 @@ pub(crate) fn resolve_var(
                             if let Some(ty) = STRING_MEMBER_FUNCTIONS.get(&func_name) {
                                 match &ty.kind {
                                     kclvm_sema::ty::TypeKind::Function(func_ty) => {
-                                        return Some(Definition::Object(ScopeObject {
-                                            name: func_name,
-                                            start: func_name_node.get_pos(),
-                                            end: func_name_node.get_end_pos(),
-                                            ty: Rc::new(ty.clone()),
-                                            kind: ScopeObjectKind::FunctionCall,
-                                            doc: Some(func_ty.doc.clone()),
-                                        }, func_name))
+                                        return Some(Definition::Object(
+                                            ScopeObject {
+                                                name: func_name.clone(),
+                                                start: func_name_node.get_pos(),
+                                                end: func_name_node.get_end_pos(),
+                                                ty: Rc::new(ty.clone()),
+                                                kind: ScopeObjectKind::FunctionCall,
+                                                doc: Some(func_ty.doc.clone()),
+                                            },
+                                            func_name,
+                                        ))
                                     }
                                     // unreachable
                                     _ => {}

@@ -6,6 +6,7 @@ use crate::util::{build_word_index, get_file_name, parse_param_and_compile, to_j
 use crossbeam_channel::{select, unbounded, Receiver, Sender};
 use indexmap::IndexSet;
 use lsp_server::{ReqQueue, Response};
+use lsp_types::Url;
 use lsp_types::{
     notification::{Notification, PublishDiagnostics},
     Diagnostic, InitializeParams, Location, PublishDiagnosticsParams,
@@ -69,7 +70,7 @@ pub(crate) struct LanguageServerState {
     pub vfs_handle: Box<dyn ra_ap_vfs::loader::Handle>,
 
     /// The word index map
-    pub word_index_map: HashMap<String, HashMap<String, Vec<Location>>>,
+    pub word_index_map: HashMap<Url, HashMap<String, Vec<Location>>>,
 }
 
 /// A snapshot of the state of the language server
@@ -82,7 +83,7 @@ pub(crate) struct LanguageServerSnapshot {
     /// Documents that are currently kept in memory from the client
     pub opened_files: IndexSet<FileId>,
     /// The word index map
-    pub word_index_map: HashMap<String, HashMap<String, Vec<Location>>>,
+    pub word_index_map: HashMap<Url, HashMap<String, Vec<Location>>>,
 }
 
 #[allow(unused)]
@@ -106,13 +107,13 @@ impl LanguageServerState {
             for folder in workspace_folders {
                 let path = folder.uri.path();
                 if let Ok(word_index) = build_word_index(path.to_string()) {
-                    word_index_map.insert(folder.name, word_index);
+                    word_index_map.insert(folder.uri, word_index);
                 }
             }
         } else if let Some(root_uri) = initialize_params.root_uri {
             let path = root_uri.path();
             if let Ok(word_index) = build_word_index(path.to_string()) {
-                word_index_map.insert("default".to_string(), word_index);
+                word_index_map.insert(root_uri, word_index);
             }
         }
         LanguageServerState {

@@ -164,7 +164,14 @@ pub(crate) fn handle_reference(
                     },
                     None => None,
                 } {
-                    return find_refs(word_index_map, def_loc, def_name, file, log);
+                    return find_refs(
+                        Some(snapshot.vfs),
+                        word_index_map,
+                        def_loc,
+                        def_name,
+                        file,
+                        log,
+                    );
                 }
             }
             _ => return Ok(None),

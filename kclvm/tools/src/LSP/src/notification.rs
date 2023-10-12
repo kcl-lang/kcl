@@ -1,11 +1,18 @@
 use lsp_types::notification::{
-    DidChangeTextDocument, DidChangeWatchedFiles, DidCloseTextDocument, DidOpenTextDocument,
-    DidSaveTextDocument,
+    DidChangeTextDocument,
+    DidChangeWatchedFiles,
+    DidCloseTextDocument,
+    DidOpenTextDocument,
+    DidSaveTextDocument, //DidDeleteFiles, DidRenameFiles, DidCreateFiles, //todo more
 };
+use std::path::Path;
 
 use crate::{
-    dispatcher::NotificationDispatcher, from_lsp, state::LanguageServerState,
+    dispatcher::NotificationDispatcher,
+    from_lsp,
+    state::LanguageServerState,
     util::apply_document_changes,
+    util::{build_word_index_for_file_content, word_index_add, word_index_subtract},
 };
 
 impl LanguageServerState {
@@ -71,14 +78,46 @@ impl LanguageServerState {
         let path = from_lsp::abs_path(&text_document.uri)?;
         self.log_message(format!("on did_change file: {:?}", path));
 
+        // update vfs
         let vfs = &mut *self.vfs.write();
         let file_id = vfs
             .file_id(&path.clone().into())
             .ok_or(anyhow::anyhow!("Already checked that the file_id exists!"))?;
 
         let mut text = String::from_utf8(vfs.file_contents(file_id).to_vec())?;
+        let old_text = text.clone();
         apply_document_changes(&mut text, content_changes);
-        vfs.set_file_contents(path.into(), Some(text.into_bytes()));
+        vfs.set_file_contents(path.into(), Some(text.clone().into_bytes()));
+
+        // update word index
+        let old_word_index = build_word_index_for_file_content(old_text, &text_document.uri);
+        let new_word_index = build_word_index_for_file_content(text.clone(), &text_document.uri);
+        let binding = text_document.uri.path();
+        let file_path = Path::new(binding); //todo rename
+        for (key, value) in &mut self.word_index_map {
+            let workspace_folder_path = Path::new(key.path());
+            if file_path.starts_with(workspace_folder_path) {
+                word_index_subtract(value, old_word_index.clone());
+                word_index_add(value, new_word_index.clone());
+            }
+        }
+        // let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        // let url = lsp_types::Url::from_file_path(root.clone()).unwrap();
+        // let mm = self.word_index_map.get(&url).unwrap();
+        // println!("word_index_map: {:?}", mm);
+
+        // let file = from_lsp::file_path_from_url(&text_document.uri)?;
+        // let old_word_index = build_word_index_for_file_content(old_text, &text_document.uri);
+        // let new_word_index = build_word_index_for_file_content(text.clone(), &text_document.uri);
+
+        // let file_path = Path::new(&text_document.uri.path());
+        // for (key, mut value) in &self.word_index_map {
+        //     let workspace_folder_path = Path::new(key.path());
+        //     if file_path.starts_with(workspace_folder_path) {
+        //         value = &word_index_subtract(value, old_word_index.clone());
+        //         value = &word_index_add(value, new_word_index.clone());
+        //     }
+        // }
 
         Ok(())
     }

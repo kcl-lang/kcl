@@ -755,26 +755,59 @@ pub fn build_word_index(path: String) -> anyhow::Result<HashMap<String, Vec<Loca
             if let Ok(url) = Url::from_file_path(file_path) {
                 // read file content and save the word to word index
                 let text = read_file(file_path)?;
-                let lines: Vec<&str> = text.lines().collect();
-                for (li, line) in lines.into_iter().enumerate() {
-                    let words = line_to_words(line.to_string());
-                    for (key, values) in words {
-                        index
-                            .entry(key)
-                            .or_insert_with(Vec::new)
-                            .extend(values.iter().map(|w| Location {
-                                uri: url.clone(),
-                                range: Range {
-                                    start: Position::new(li as u32, w.start_col),
-                                    end: Position::new(li as u32, w.end_col),
-                                },
-                            }));
-                    }
+                for (key, values) in build_word_index_for_file_content(text, &url) {
+                    index.entry(key).or_insert_with(Vec::new).extend(values);
                 }
             }
         }
     }
     return Ok(index);
+}
+
+pub fn build_word_index_for_file_content(
+    content: String,
+    url: &Url,
+) -> HashMap<String, Vec<Location>> {
+    let mut index: HashMap<String, Vec<Location>> = HashMap::new();
+    let lines: Vec<&str> = content.lines().collect();
+    for (li, line) in lines.into_iter().enumerate() {
+        let words = line_to_words(line.to_string());
+        for (key, values) in words {
+            index
+                .entry(key)
+                .or_insert_with(Vec::new)
+                .extend(values.iter().map(|w| Location {
+                    uri: url.clone(),
+                    range: Range {
+                        start: Position::new(li as u32, w.start_col),
+                        end: Position::new(li as u32, w.end_col),
+                    },
+                }));
+        }
+    }
+    index
+}
+
+pub fn word_index_add(
+    from: &mut HashMap<String, Vec<Location>>,
+    add: HashMap<String, Vec<Location>>,
+) {
+    for (key, value) in add {
+        from.entry(key).or_insert_with(Vec::new).extend(value);
+    }
+}
+
+pub fn word_index_subtract(
+    from: &mut HashMap<String, Vec<Location>>,
+    remove: HashMap<String, Vec<Location>>,
+) {
+    for (key, value) in remove {
+        for v in value {
+            from.entry(key.clone()).and_modify(|locations| {
+                locations.retain(|loc| loc != &v);
+            });
+        }
+    }
 }
 
 // Word describes an arbitrary word in a certain line including
@@ -845,8 +878,8 @@ fn line_to_words(text: String) -> HashMap<String, Vec<Word>> {
 
 #[cfg(test)]
 mod tests {
-    use super::{build_word_index, line_to_words, Word};
-    use lsp_types::{Location, Position, Range};
+    use super::{build_word_index, line_to_words, word_index_add, word_index_subtract, Word};
+    use lsp_types::{Location, Position, Range, Url};
     use std::collections::HashMap;
     use std::path::PathBuf;
     #[test]
@@ -1062,6 +1095,56 @@ mod tests {
             }
             Err(_) => assert!(false, "build word index failed. expect: {:?}", expect),
         }
+    }
+
+    #[test]
+    fn test_word_index_add() {
+        let loc1 = Location {
+            uri: Url::parse("file:///path/to/file.k").unwrap(),
+            range: Range {
+                start: Position::new(0, 0),
+                end: Position::new(0, 4),
+            },
+        };
+        let loc2 = Location {
+            uri: Url::parse("file:///path/to/file.k").unwrap(),
+            range: Range {
+                start: Position::new(1, 0),
+                end: Position::new(1, 4),
+            },
+        };
+        let mut from = HashMap::from([("name".to_string(), vec![loc1.clone()])]);
+        let add = HashMap::from([("name".to_string(), vec![loc2.clone()])]);
+        word_index_add(&mut from, add);
+        assert_eq!(
+            from,
+            HashMap::from([("name".to_string(), vec![loc1.clone(), loc2.clone()],)])
+        );
+    }
+
+    #[test]
+    fn test_word_index_subtract() {
+        let loc1 = Location {
+            uri: Url::parse("file:///path/to/file.k").unwrap(),
+            range: Range {
+                start: Position::new(0, 0),
+                end: Position::new(0, 4),
+            },
+        };
+        let loc2 = Location {
+            uri: Url::parse("file:///path/to/file.k").unwrap(),
+            range: Range {
+                start: Position::new(1, 0),
+                end: Position::new(1, 4),
+            },
+        };
+        let mut from = HashMap::from([("name".to_string(), vec![loc1.clone(), loc2.clone()])]);
+        let remove = HashMap::from([("name".to_string(), vec![loc2.clone()])]);
+        word_index_subtract(&mut from, remove);
+        assert_eq!(
+            from,
+            HashMap::from([("name".to_string(), vec![loc1.clone()],)])
+        );
     }
 
     #[test]

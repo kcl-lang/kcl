@@ -2,11 +2,15 @@ use crate::from_lsp::kcl_pos;
 use crate::goto_def::goto_definition;
 use crate::util::{parse_param_and_compile, Param};
 use anyhow;
-use lsp_types::Location;
+use lsp_types::{Location, Url};
+use parking_lot::RwLock;
+use ra_ap_vfs::Vfs;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 pub(crate) fn find_refs<F: Fn(String) -> Result<(), anyhow::Error>>(
-    word_index_map: HashMap<String, HashMap<String, Vec<Location>>>,
+    vfs: Option<Arc<RwLock<Vfs>>>,
+    word_index_map: HashMap<Url, HashMap<String, Vec<Location>>>,
     def_loc: Location,
     name: String,
     cursor_path: String,
@@ -29,7 +33,7 @@ pub(crate) fn find_refs<F: Fn(String) -> Result<(), anyhow::Error>>(
                         Param {
                             file: file_path.clone(),
                         },
-                        None,
+                        vfs.clone(),
                     ) {
                         Ok((prog, scope, _)) => {
                             let ref_pos = kcl_pos(&file_path, ref_loc.range.start);
@@ -62,9 +66,8 @@ pub(crate) fn find_refs<F: Fn(String) -> Result<(), anyhow::Error>>(
 mod tests {
     use super::find_refs;
     use crate::util::build_word_index;
-    use lsp_types::{Location, Position, Range};
+    use lsp_types::{Location, Position, Range, Url};
     use std::collections::HashMap;
-    use std::ops::Index;
     use std::path::PathBuf;
 
     fn logger(msg: String) -> Result<(), anyhow::Error> {
@@ -85,9 +88,9 @@ mod tests {
         }
     }
 
-    fn setup_word_index_map(root: &str) -> HashMap<String, HashMap<String, Vec<Location>>> {
+    fn setup_word_index_map(root: &str) -> HashMap<Url, HashMap<String, Vec<Location>>> {
         HashMap::from([(
-            "default".to_string(),
+            Url::from_file_path(root).unwrap(),
             build_word_index(root.to_string()).unwrap(),
         )])
     }
@@ -140,6 +143,7 @@ mod tests {
                 check_locations_match(
                     expect,
                     find_refs(
+                        None,
                         setup_word_index_map(path),
                         def_loc,
                         "a".to_string(),
@@ -193,6 +197,7 @@ mod tests {
                 check_locations_match(
                     expect,
                     find_refs(
+                        None,
                         setup_word_index_map(path),
                         def_loc,
                         "Name".to_string(),

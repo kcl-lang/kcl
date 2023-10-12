@@ -771,7 +771,7 @@ fn hover_assign_in_lambda_test() {
 
     let path = path.to_str().unwrap();
     let src = std::fs::read_to_string(path.clone()).unwrap();
-    let server = Project {}.server();
+    let server = Project {}.server(InitializeParams::default());
 
     // Mock open file
     server.notification::<lsp_types::notification::DidOpenTextDocument>(
@@ -1310,7 +1310,7 @@ fn lsp_invalid_subcommand_test() {
 }
 
 #[test]
-fn test_find_refs() {
+fn find_refs_test() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let mut path = root.clone();
     path.push("src/test_data/find_refs_test/main.k");
@@ -1388,6 +1388,103 @@ fn test_find_refs() {
                 range: Range {
                     start: Position::new(12, 14),
                     end: Position::new(12, 15),
+                },
+            },
+        ])
+        .unwrap()
+    );
+}
+
+#[test]
+fn find_refs_with_file_change_test() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let mut path = root.clone();
+    path.push("src/test_data/find_refs_test/main.k");
+
+    let path = path.to_str().unwrap();
+    let src = std::fs::read_to_string(path.clone()).unwrap();
+    let mut initialize_params = InitializeParams::default();
+    initialize_params.workspace_folders = Some(vec![WorkspaceFolder {
+        uri: Url::from_file_path(root.clone()).unwrap(),
+        name: "test".to_string(),
+    }]);
+    let server = Project {}.server(initialize_params);
+    let url = Url::from_file_path(path).unwrap();
+
+    // Mock open file
+    server.notification::<lsp_types::notification::DidOpenTextDocument>(
+        lsp_types::DidOpenTextDocumentParams {
+            text_document: TextDocumentItem {
+                uri: url.clone(),
+                language_id: "KCL".to_string(),
+                version: 0,
+                text: src,
+            },
+        },
+    );
+    // Mock change file content
+    server.notification::<lsp_types::notification::DidChangeTextDocument>(
+        lsp_types::DidChangeTextDocumentParams {
+            text_document: lsp_types::VersionedTextDocumentIdentifier {
+                uri: url.clone(),
+                version: 1,
+            },
+            content_changes: vec![lsp_types::TextDocumentContentChangeEvent {
+                range: None,
+                range_length: None,
+                text: r#"a = "demo"
+
+schema Name:
+    name: str
+
+schema Person:
+    n: Name
+
+p2 = Person {
+    n: Name{
+        name: a
+    }
+}"#
+                .to_string(),
+            }],
+        },
+    );
+    let id = server.next_request_id.get();
+    server.next_request_id.set(id.wrapping_add(1));
+    // Mock trigger find references
+    let r: Request = Request::new(
+        id.into(),
+        "textDocument/references".to_string(),
+        ReferenceParams {
+            text_document_position: TextDocumentPositionParams {
+                text_document: TextDocumentIdentifier { uri: url.clone() },
+                position: Position::new(0, 1),
+            },
+            work_done_progress_params: Default::default(),
+            partial_result_params: Default::default(),
+            context: ReferenceContext {
+                include_declaration: true,
+            },
+        },
+    );
+
+    // Send request and wait for it's response
+    let res = server.send_and_receive(r);
+    assert_eq!(
+        res.result.unwrap(),
+        to_json(vec![
+            Location {
+                uri: url.clone(),
+                range: Range {
+                    start: Position::new(0, 0),
+                    end: Position::new(0, 1),
+                },
+            },
+            Location {
+                uri: url.clone(),
+                range: Range {
+                    start: Position::new(10, 14),
+                    end: Position::new(10, 15),
                 },
             },
         ])
