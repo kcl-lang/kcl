@@ -1,6 +1,7 @@
 use anyhow::Ok;
 use crossbeam_channel::Sender;
-use lsp_types::TextEdit;
+use kclvm_ast::ast::Stmt;
+use lsp_types::{Location, TextEdit};
 use ra_ap_vfs::VfsPath;
 use std::time::Instant;
 
@@ -9,9 +10,10 @@ use crate::{
     db::AnalysisDatabase,
     dispatcher::RequestDispatcher,
     document_symbol::document_symbol,
+    find_refs::find_refs,
     formatting::format,
     from_lsp::{self, file_path_from_url, kcl_pos},
-    goto_def::goto_definition,
+    goto_def::{find_def, goto_definition},
     hover, quick_fix,
     state::{log_message, LanguageServerSnapshot, LanguageServerState, Task},
 };
@@ -43,6 +45,7 @@ impl LanguageServerState {
                 Ok(())
             })?
             .on::<lsp_types::request::GotoDefinition>(handle_goto_definition)?
+            .on::<lsp_types::request::References>(handle_reference)?
             .on::<lsp_types::request::Completion>(handle_completion)?
             .on::<lsp_types::request::HoverRequest>(handle_hover)?
             .on::<lsp_types::request::DocumentSymbolRequest>(handle_document_symbol)?
@@ -130,6 +133,57 @@ pub(crate) fn handle_goto_definition(
         log_message("Definition item not found".to_string(), &sender)?;
     }
     Ok(res)
+}
+
+/// Called when a `FindReferences` request was received
+pub(crate) fn handle_reference(
+    snapshot: LanguageServerSnapshot,
+    params: lsp_types::ReferenceParams,
+    sender: Sender<Task>,
+) -> anyhow::Result<Option<Vec<Location>>> {
+    // 1. find definition of current token
+    let file = file_path_from_url(&params.text_document_position.text_document.uri)?;
+    let path = from_lsp::abs_path(&params.text_document_position.text_document.uri)?;
+    let db = snapshot.get_db(&path.clone().into())?;
+    let pos = kcl_pos(&file, params.text_document_position.position);
+    let word_index_map = snapshot.word_index_map.clone();
+
+    let log = |msg: String| log_message(msg, &sender);
+
+    if let Some(def_resp) = goto_definition(&db.prog, &pos, &db.scope) {
+        match def_resp {
+            lsp_types::GotoDefinitionResponse::Scalar(def_loc) => {
+                // get the def location
+                if let Some(def_name) = match db.prog.pos_to_stmt(&pos) {
+                    Some(node) => match node.node {
+                        Stmt::Import(_) => None,
+                        _ => match find_def(node.clone(), &pos, &db.scope) {
+                            Some(def) => Some(def.get_name()),
+                            None => None,
+                        },
+                    },
+                    None => None,
+                } {
+                    return find_refs(
+                        Some(snapshot.vfs),
+                        word_index_map,
+                        def_loc,
+                        def_name,
+                        file,
+                        log,
+                    );
+                }
+            }
+            _ => return Ok(None),
+        }
+    } else {
+        log_message(
+            "Definition item not found, result in no reference".to_string(),
+            &sender,
+        )?;
+    }
+
+    return Ok(None);
 }
 
 /// Called when a `Completion` request was received.

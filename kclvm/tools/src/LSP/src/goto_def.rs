@@ -70,18 +70,18 @@ pub(crate) fn goto_definition(
 
 #[derive(Debug)]
 pub enum Definition {
-    Object(ScopeObject),
-    Scope(Scope),
+    Object(ScopeObject, String),
+    Scope(Scope, String),
 }
 
 impl Definition {
     pub(crate) fn get_positions(&self) -> IndexSet<(KCLPos, KCLPos)> {
         let mut positions = IndexSet::new();
         match self {
-            Definition::Object(obj) => {
+            Definition::Object(obj, _) => {
                 positions.insert((obj.start.clone(), obj.end.clone()));
             }
-            Definition::Scope(scope) => match &scope.kind {
+            Definition::Scope(scope, _) => match &scope.kind {
                 kclvm_sema::resolver::scope::ScopeKind::Package(filenames) => {
                     for file in filenames {
                         let dummy_pos = KCLPos {
@@ -98,6 +98,12 @@ impl Definition {
             },
         }
         positions
+    }
+    pub(crate) fn get_name(&self) -> String {
+        match self {
+            Definition::Object(_, name) => name.clone(),
+            Definition::Scope(_, name) => name.clone(),
+        }
     }
 }
 
@@ -148,7 +154,7 @@ pub(crate) fn find_def(
                                 find_def(node, &schema_expr.name.get_end_pos(), prog_scope);
                             if let Some(schema) = schema_def {
                                 match schema {
-                                    Definition::Object(obj) => match &obj.ty.kind {
+                                    Definition::Object(obj, _) => match &obj.ty.kind {
                                         kclvm_sema::ty::TypeKind::Schema(schema_type) => {
                                             return find_attr_in_schema(
                                                 &schema_type,
@@ -158,7 +164,7 @@ pub(crate) fn find_def(
                                         }
                                         _ => {}
                                     },
-                                    Definition::Scope(_) => {}
+                                    Definition::Scope(_, _) => {}
                                 }
                             }
                         }
@@ -180,7 +186,7 @@ pub(crate) fn find_def(
                     let id = select_expr.attr;
                     match value_def {
                         Some(def) => match def {
-                            Definition::Object(obj) => match &obj.ty.kind {
+                            Definition::Object(obj, _) => match &obj.ty.kind {
                                 kclvm_sema::ty::TypeKind::Schema(schema_type) => {
                                     return find_attr_in_schema(
                                         &schema_type,
@@ -190,7 +196,7 @@ pub(crate) fn find_def(
                                 }
                                 _ => {}
                             },
-                            Definition::Scope(_) => {}
+                            Definition::Scope(_, _) => {}
                         },
                         None => {
                             if let Some(inner_most_scope) = prog_scope.inner_most_scope(kcl_pos) {
@@ -239,16 +245,16 @@ pub(crate) fn resolve_var(
                             kclvm_sema::ty::TypeKind::Module(module_ty) => match module_ty.kind {
                                 kclvm_sema::ty::ModuleKind::User => scope_map
                                     .get(&pkgpath_without_prefix!(module_ty.pkgpath))
-                                    .map(|scope| Definition::Scope(scope.borrow().clone())),
+                                    .map(|scope| Definition::Scope(scope.borrow().clone(), name)),
                                 kclvm_sema::ty::ModuleKind::System => {
-                                    Some(Definition::Object(obj.borrow().clone()))
+                                    Some(Definition::Object(obj.borrow().clone(), name))
                                 }
                                 kclvm_sema::ty::ModuleKind::Plugin => None,
                             },
                             _ => None,
                         }
                     }
-                    _ => Some(Definition::Object(obj.borrow().clone())),
+                    _ => Some(Definition::Object(obj.borrow().clone(), name)),
                 },
                 None => match builtin_scope().lookup(&name) {
                     Some(obj) => {
@@ -263,7 +269,7 @@ pub(crate) fn resolve_var(
                         obj.doc = doc;
                         obj.start = node_names[0].get_pos();
                         obj.end = node_names[0].get_end_pos();
-                        Some(Definition::Object(obj))
+                        Some(Definition::Object(obj, name))
                     }
                     None => None,
                 },
@@ -296,14 +302,17 @@ pub(crate) fn resolve_var(
                                 let ty = get_system_member_function_ty(&name, &func_name);
                                 match &ty.kind {
                                     kclvm_sema::ty::TypeKind::Function(func_ty) => {
-                                        return Some(Definition::Object(ScopeObject {
-                                            name: func_name,
-                                            start: func_name_node.get_pos(),
-                                            end: func_name_node.get_end_pos(),
-                                            ty: ty.clone(),
-                                            kind: ScopeObjectKind::FunctionCall,
-                                            doc: Some(func_ty.doc.clone()),
-                                        }))
+                                        return Some(Definition::Object(
+                                            ScopeObject {
+                                                name: func_name.clone(),
+                                                start: func_name_node.get_pos(),
+                                                end: func_name_node.get_end_pos(),
+                                                ty: ty.clone(),
+                                                kind: ScopeObjectKind::FunctionCall,
+                                                doc: Some(func_ty.doc.clone()),
+                                            },
+                                            func_name,
+                                        ))
                                     }
                                     _ => return None,
                                 }
@@ -341,14 +350,17 @@ pub(crate) fn resolve_var(
                             if let Some(ty) = STRING_MEMBER_FUNCTIONS.get(&func_name) {
                                 match &ty.kind {
                                     kclvm_sema::ty::TypeKind::Function(func_ty) => {
-                                        return Some(Definition::Object(ScopeObject {
-                                            name: func_name,
-                                            start: func_name_node.get_pos(),
-                                            end: func_name_node.get_end_pos(),
-                                            ty: Rc::new(ty.clone()),
-                                            kind: ScopeObjectKind::FunctionCall,
-                                            doc: Some(func_ty.doc.clone()),
-                                        }))
+                                        return Some(Definition::Object(
+                                            ScopeObject {
+                                                name: func_name.clone(),
+                                                start: func_name_node.get_pos(),
+                                                end: func_name_node.get_end_pos(),
+                                                ty: Rc::new(ty.clone()),
+                                                kind: ScopeObjectKind::FunctionCall,
+                                                doc: Some(func_ty.doc.clone()),
+                                            },
+                                            func_name,
+                                        ))
                                     }
                                     // unreachable
                                     _ => {}

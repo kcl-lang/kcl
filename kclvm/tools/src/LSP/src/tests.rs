@@ -15,12 +15,18 @@ use lsp_types::GotoDefinitionResponse;
 use lsp_types::Hover;
 use lsp_types::HoverContents;
 use lsp_types::HoverParams;
+use lsp_types::InitializeParams;
 use lsp_types::MarkedString;
 use lsp_types::PublishDiagnosticsParams;
+use lsp_types::ReferenceContext;
+use lsp_types::ReferenceParams;
 use lsp_types::TextDocumentIdentifier;
 use lsp_types::TextDocumentItem;
 use lsp_types::TextDocumentPositionParams;
 use lsp_types::TextEdit;
+use lsp_types::Url;
+use lsp_types::WorkspaceFolder;
+
 use serde::Serialize;
 use std::cell::Cell;
 use std::cell::RefCell;
@@ -41,7 +47,6 @@ use lsp_types::DiagnosticRelatedInformation;
 use lsp_types::DiagnosticSeverity;
 use lsp_types::Location;
 use lsp_types::NumberOrString;
-use lsp_types::Url;
 use lsp_types::{Position, Range, TextDocumentContentChangeEvent};
 use parking_lot::RwLock;
 use proc_macro_crate::bench_test;
@@ -413,9 +418,9 @@ pub struct Project {}
 
 impl Project {
     /// Instantiates a language server for this project.
-    pub fn server(self) -> Server {
+    pub fn server(self, initialize_params: InitializeParams) -> Server {
         let config = Config::default();
-        Server::new(config)
+        Server::new(config, initialize_params)
     }
 }
 
@@ -430,11 +435,11 @@ pub struct Server {
 
 impl Server {
     /// Constructs and initializes a new `Server`
-    pub fn new(config: Config) -> Self {
+    pub fn new(config: Config, initialize_params: InitializeParams) -> Self {
         let (connection, client) = Connection::memory();
 
         let worker = std::thread::spawn(move || {
-            main_loop(connection, config).unwrap();
+            main_loop(connection, config, initialize_params).unwrap();
         });
 
         Self {
@@ -537,7 +542,7 @@ fn notification_test() {
 
     let path = path.to_str().unwrap();
     let src = std::fs::read_to_string(path.clone()).unwrap();
-    let server = Project {}.server();
+    let server = Project {}.server(InitializeParams::default());
 
     // Mock open file
     server.notification::<lsp_types::notification::DidOpenTextDocument>(
@@ -586,7 +591,7 @@ fn goto_def_test() {
 
     let path = path.to_str().unwrap();
     let src = std::fs::read_to_string(path.clone()).unwrap();
-    let server = Project {}.server();
+    let server = Project {}.server(InitializeParams::default());
 
     // Mock open file
     server.notification::<lsp_types::notification::DidOpenTextDocument>(
@@ -643,7 +648,7 @@ fn complete_test() {
 
     let path = path.to_str().unwrap();
     let src = std::fs::read_to_string(path.clone()).unwrap();
-    let server = Project {}.server();
+    let server = Project {}.server(InitializeParams::default());
 
     // Mock open file
     server.notification::<lsp_types::notification::DidOpenTextDocument>(
@@ -707,7 +712,7 @@ fn hover_test() {
 
     let path = path.to_str().unwrap();
     let src = std::fs::read_to_string(path.clone()).unwrap();
-    let server = Project {}.server();
+    let server = Project {}.server(InitializeParams::default());
 
     // Mock open file
     server.notification::<lsp_types::notification::DidOpenTextDocument>(
@@ -766,7 +771,7 @@ fn hover_assign_in_lambda_test() {
 
     let path = path.to_str().unwrap();
     let src = std::fs::read_to_string(path.clone()).unwrap();
-    let server = Project {}.server();
+    let server = Project {}.server(InitializeParams::default());
 
     // Mock open file
     server.notification::<lsp_types::notification::DidOpenTextDocument>(
@@ -819,7 +824,7 @@ fn formatting_test() {
 
     let path = path.to_str().unwrap();
     let src = std::fs::read_to_string(path.clone()).unwrap();
-    let server = Project {}.server();
+    let server = Project {}.server(InitializeParams::default());
 
     // Mock open file
     server.notification::<lsp_types::notification::DidOpenTextDocument>(
@@ -1302,4 +1307,187 @@ fn lsp_invalid_subcommand_test() {
             _ => panic!("test failed"),
         },
     }
+}
+
+#[test]
+fn find_refs_test() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let mut path = root.clone();
+    path.push("src/test_data/find_refs_test/main.k");
+
+    let path = path.to_str().unwrap();
+    let src = std::fs::read_to_string(path.clone()).unwrap();
+    let mut initialize_params = InitializeParams::default();
+    initialize_params.workspace_folders = Some(vec![WorkspaceFolder {
+        uri: Url::from_file_path(root.clone()).unwrap(),
+        name: "test".to_string(),
+    }]);
+    let server = Project {}.server(initialize_params);
+    let url = Url::from_file_path(path).unwrap();
+
+    // Mock open file
+    server.notification::<lsp_types::notification::DidOpenTextDocument>(
+        lsp_types::DidOpenTextDocumentParams {
+            text_document: TextDocumentItem {
+                uri: url.clone(),
+                language_id: "KCL".to_string(),
+                version: 0,
+                text: src,
+            },
+        },
+    );
+
+    let id = server.next_request_id.get();
+    server.next_request_id.set(id.wrapping_add(1));
+
+    let r: Request = Request::new(
+        id.into(),
+        "textDocument/references".to_string(),
+        ReferenceParams {
+            text_document_position: TextDocumentPositionParams {
+                text_document: TextDocumentIdentifier { uri: url.clone() },
+                position: Position::new(0, 1),
+            },
+            work_done_progress_params: Default::default(),
+            partial_result_params: Default::default(),
+            context: ReferenceContext {
+                include_declaration: true,
+            },
+        },
+    );
+
+    // Send request and wait for it's response
+    let res = server.send_and_receive(r);
+
+    assert_eq!(
+        res.result.unwrap(),
+        to_json(vec![
+            Location {
+                uri: url.clone(),
+                range: Range {
+                    start: Position::new(0, 0),
+                    end: Position::new(0, 1),
+                },
+            },
+            Location {
+                uri: url.clone(),
+                range: Range {
+                    start: Position::new(1, 4),
+                    end: Position::new(1, 5),
+                },
+            },
+            Location {
+                uri: url.clone(),
+                range: Range {
+                    start: Position::new(2, 4),
+                    end: Position::new(2, 5),
+                },
+            },
+            Location {
+                uri: url.clone(),
+                range: Range {
+                    start: Position::new(12, 14),
+                    end: Position::new(12, 15),
+                },
+            },
+        ])
+        .unwrap()
+    );
+}
+
+#[test]
+fn find_refs_with_file_change_test() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let mut path = root.clone();
+    path.push("src/test_data/find_refs_test/main.k");
+
+    let path = path.to_str().unwrap();
+    let src = std::fs::read_to_string(path.clone()).unwrap();
+    let mut initialize_params = InitializeParams::default();
+    initialize_params.workspace_folders = Some(vec![WorkspaceFolder {
+        uri: Url::from_file_path(root.clone()).unwrap(),
+        name: "test".to_string(),
+    }]);
+    let server = Project {}.server(initialize_params);
+    let url = Url::from_file_path(path).unwrap();
+
+    // Mock open file
+    server.notification::<lsp_types::notification::DidOpenTextDocument>(
+        lsp_types::DidOpenTextDocumentParams {
+            text_document: TextDocumentItem {
+                uri: url.clone(),
+                language_id: "KCL".to_string(),
+                version: 0,
+                text: src,
+            },
+        },
+    );
+    // Mock change file content
+    server.notification::<lsp_types::notification::DidChangeTextDocument>(
+        lsp_types::DidChangeTextDocumentParams {
+            text_document: lsp_types::VersionedTextDocumentIdentifier {
+                uri: url.clone(),
+                version: 1,
+            },
+            content_changes: vec![lsp_types::TextDocumentContentChangeEvent {
+                range: None,
+                range_length: None,
+                text: r#"a = "demo"
+
+schema Name:
+    name: str
+
+schema Person:
+    n: Name
+
+p2 = Person {
+    n: Name{
+        name: a
+    }
+}"#
+                .to_string(),
+            }],
+        },
+    );
+    let id = server.next_request_id.get();
+    server.next_request_id.set(id.wrapping_add(1));
+    // Mock trigger find references
+    let r: Request = Request::new(
+        id.into(),
+        "textDocument/references".to_string(),
+        ReferenceParams {
+            text_document_position: TextDocumentPositionParams {
+                text_document: TextDocumentIdentifier { uri: url.clone() },
+                position: Position::new(0, 1),
+            },
+            work_done_progress_params: Default::default(),
+            partial_result_params: Default::default(),
+            context: ReferenceContext {
+                include_declaration: true,
+            },
+        },
+    );
+
+    // Send request and wait for it's response
+    let res = server.send_and_receive(r);
+    assert_eq!(
+        res.result.unwrap(),
+        to_json(vec![
+            Location {
+                uri: url.clone(),
+                range: Range {
+                    start: Position::new(0, 0),
+                    end: Position::new(0, 1),
+                },
+            },
+            Location {
+                uri: url.clone(),
+                range: Range {
+                    start: Position::new(10, 14),
+                    end: Position::new(10, 15),
+                },
+            },
+        ])
+        .unwrap()
+    );
 }

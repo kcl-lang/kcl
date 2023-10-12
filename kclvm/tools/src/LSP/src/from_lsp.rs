@@ -19,11 +19,7 @@ pub(crate) fn kcl_pos(file: &str, pos: Position) -> KCLPos {
     KCLPos {
         filename: file.to_string(),
         line: (pos.line + 1) as u64,
-        column: if pos.character == 0 {
-            None
-        } else {
-            Some(pos.character as u64)
-        },
+        column: Some(pos.character as u64),
     }
 }
 

@@ -83,7 +83,7 @@ fn completion_attr(
     if let Some((node, schema_expr)) = is_in_schema(program, pos) {
         let schema_def = find_def(node, &schema_expr.name.get_end_pos(), prog_scope);
         if let Some(schema) = schema_def {
-            if let Definition::Object(obj) = schema {
+            if let Definition::Object(obj, _) = schema {
                 let schema_type = obj.ty.into_schema_type();
                 completions.extend(schema_type.attrs.keys().map(|attr| KCLCompletionItem {
                     label: attr.clone(),
@@ -178,7 +178,7 @@ pub(crate) fn get_completion(
                     let def = find_def(stmt, pos, prog_scope);
                     if let Some(def) = def {
                         match def {
-                            crate::goto_def::Definition::Object(obj) => {
+                            crate::goto_def::Definition::Object(obj, _) => {
                                 match &obj.ty.kind {
                                     // builtin (str) functions
                                     kclvm_sema::ty::TypeKind::Str => {
@@ -226,7 +226,7 @@ pub(crate) fn get_completion(
                                     _ => {}
                                 }
                             }
-                            crate::goto_def::Definition::Scope(s) => {
+                            crate::goto_def::Definition::Scope(s, _) => {
                                 for (name, obj) in &s.elems {
                                     if let ScopeObjectKind::Module(_) = obj.borrow().kind {
                                         continue;
@@ -259,7 +259,7 @@ pub(crate) fn get_completion(
                                 find_def(stmt, &schema_expr.name.get_end_pos(), prog_scope);
                             if let Some(schema) = schema_def {
                                 match schema {
-                                    Definition::Object(obj) => {
+                                    Definition::Object(obj, _) => {
                                         let schema_type = obj.ty.into_schema_type();
                                         items.extend(
                                             schema_type
@@ -271,7 +271,7 @@ pub(crate) fn get_completion(
                                                 .collect::<IndexSet<KCLCompletionItem>>(),
                                         );
                                     }
-                                    Definition::Scope(_) => {}
+                                    Definition::Scope(_, _) => {}
                                 }
                             }
                         }

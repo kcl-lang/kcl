@@ -16,11 +16,12 @@ use kclvm_sema::resolver::resolve_program_with_opts;
 use kclvm_sema::resolver::scope::ProgramScope;
 use kclvm_sema::resolver::scope::Scope;
 use kclvm_utils::pkgpath::rm_external_pkg_name;
-use lsp_types::Url;
+use lsp_types::{Location, Position, Range, Url};
 use parking_lot::{RwLock, RwLockReadGuard};
 use ra_ap_vfs::{FileId, Vfs};
 use serde::{de::DeserializeOwned, Serialize};
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::{fs, sync::Arc};
@@ -743,4 +744,492 @@ pub(crate) fn get_pkg_scope(
         .unwrap_or(scope_map.get(MAIN_PKG).unwrap())
         .borrow()
         .clone()
+}
+
+/// scan and build a word -> Locations index map
+pub fn build_word_index(path: String) -> anyhow::Result<HashMap<String, Vec<Location>>> {
+    let mut index: HashMap<String, Vec<Location>> = HashMap::new();
+    if let Ok(files) = get_kcl_files(path.clone(), true) {
+        for file_path in &files {
+            // str path to url
+            if let Ok(url) = Url::from_file_path(file_path) {
+                // read file content and save the word to word index
+                let text = read_file(file_path)?;
+                for (key, values) in build_word_index_for_file_content(text, &url) {
+                    index.entry(key).or_insert_with(Vec::new).extend(values);
+                }
+            }
+        }
+    }
+    return Ok(index);
+}
+
+pub fn build_word_index_for_file_content(
+    content: String,
+    url: &Url,
+) -> HashMap<String, Vec<Location>> {
+    let mut index: HashMap<String, Vec<Location>> = HashMap::new();
+    let lines: Vec<&str> = content.lines().collect();
+    for (li, line) in lines.into_iter().enumerate() {
+        let words = line_to_words(line.to_string());
+        for (key, values) in words {
+            index
+                .entry(key)
+                .or_insert_with(Vec::new)
+                .extend(values.iter().map(|w| Location {
+                    uri: url.clone(),
+                    range: Range {
+                        start: Position::new(li as u32, w.start_col),
+                        end: Position::new(li as u32, w.end_col),
+                    },
+                }));
+        }
+    }
+    index
+}
+
+pub fn word_index_add(
+    from: &mut HashMap<String, Vec<Location>>,
+    add: HashMap<String, Vec<Location>>,
+) {
+    for (key, value) in add {
+        from.entry(key).or_insert_with(Vec::new).extend(value);
+    }
+}
+
+pub fn word_index_subtract(
+    from: &mut HashMap<String, Vec<Location>>,
+    remove: HashMap<String, Vec<Location>>,
+) {
+    for (key, value) in remove {
+        for v in value {
+            from.entry(key.clone()).and_modify(|locations| {
+                locations.retain(|loc| loc != &v);
+            });
+        }
+    }
+}
+
+// Word describes an arbitrary word in a certain line including
+// start position, end position and the word itself.
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct Word {
+    start_col: u32,
+    end_col: u32,
+    word: String,
+}
+
+impl Word {
+    fn new(start_col: u32, end_col: u32, word: String) -> Self {
+        Self {
+            start_col,
+            end_col,
+            word,
+        }
+    }
+}
+
+fn read_file(path: &String) -> anyhow::Result<String> {
+    let text = std::fs::read_to_string(path)?;
+    Ok(text)
+}
+
+// Split one line into identifier words.
+fn line_to_words(text: String) -> HashMap<String, Vec<Word>> {
+    let mut result = HashMap::new();
+    let mut chars: Vec<char> = text.chars().collect();
+    chars.push('\n');
+    let mut start_pos = usize::MAX;
+    let mut continue_pos = usize::MAX - 1; // avoid overflow
+    let mut prev_word = false;
+    let mut words: Vec<Word> = vec![];
+    for (i, ch) in chars.iter().enumerate() {
+        let is_id_start = rustc_lexer::is_id_start(*ch);
+        let is_id_continue = rustc_lexer::is_id_continue(*ch);
+        // If the character is valid identfier start and the previous character is not valid identifier continue, mark the start position.
+        if is_id_start && !prev_word {
+            start_pos = i;
+        }
+        if is_id_continue {
+            // Continue searching for the end position.
+            if start_pos != usize::MAX {
+                continue_pos = i;
+            }
+        } else {
+            // Find out the end position.
+            if continue_pos + 1 == i {
+                words.push(Word::new(
+                    start_pos as u32,
+                    i as u32,
+                    chars[start_pos..i].iter().collect::<String>().clone(),
+                ));
+            }
+            // Reset the start position.
+            start_pos = usize::MAX;
+        }
+        prev_word = is_id_continue;
+    }
+
+    for w in words {
+        result.entry(w.word.clone()).or_insert(Vec::new()).push(w);
+    }
+    result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{build_word_index, line_to_words, word_index_add, word_index_subtract, Word};
+    use lsp_types::{Location, Position, Range, Url};
+    use std::collections::HashMap;
+    use std::path::PathBuf;
+    #[test]
+    fn test_build_word_index() {
+        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let mut path = root.clone();
+        path.push("src/test_data/find_refs_test/main.k");
+
+        let url = lsp_types::Url::from_file_path(path.clone()).unwrap();
+        let path = path.to_str().unwrap();
+        let expect: HashMap<String, Vec<Location>> = vec![
+            (
+                "a".to_string(),
+                vec![
+                    Location {
+                        uri: url.clone(),
+                        range: Range {
+                            start: Position::new(0, 0),
+                            end: Position::new(0, 1),
+                        },
+                    },
+                    Location {
+                        uri: url.clone(),
+                        range: Range {
+                            start: Position::new(1, 4),
+                            end: Position::new(1, 5),
+                        },
+                    },
+                    Location {
+                        uri: url.clone(),
+                        range: Range {
+                            start: Position::new(2, 4),
+                            end: Position::new(2, 5),
+                        },
+                    },
+                    Location {
+                        uri: url.clone(),
+                        range: Range {
+                            start: Position::new(12, 14),
+                            end: Position::new(12, 15),
+                        },
+                    },
+                ],
+            ),
+            (
+                "c".to_string(),
+                vec![Location {
+                    uri: url.clone(),
+                    range: Range {
+                        start: Position::new(2, 0),
+                        end: Position::new(2, 1),
+                    },
+                }],
+            ),
+            (
+                "b".to_string(),
+                vec![Location {
+                    uri: url.clone(),
+                    range: Range {
+                        start: Position::new(1, 0),
+                        end: Position::new(1, 1),
+                    },
+                }],
+            ),
+            (
+                "n".to_string(),
+                vec![
+                    Location {
+                        uri: url.clone(),
+                        range: Range {
+                            start: Position::new(8, 4),
+                            end: Position::new(8, 5),
+                        },
+                    },
+                    Location {
+                        uri: url.clone(),
+                        range: Range {
+                            start: Position::new(11, 4),
+                            end: Position::new(11, 5),
+                        },
+                    },
+                ],
+            ),
+            (
+                "schema".to_string(),
+                vec![
+                    Location {
+                        uri: url.clone(),
+                        range: Range {
+                            start: Position::new(4, 0),
+                            end: Position::new(4, 6),
+                        },
+                    },
+                    Location {
+                        uri: url.clone(),
+                        range: Range {
+                            start: Position::new(7, 0),
+                            end: Position::new(7, 6),
+                        },
+                    },
+                ],
+            ),
+            (
+                "b".to_string(),
+                vec![Location {
+                    uri: url.clone(),
+                    range: Range {
+                        start: Position::new(1, 0),
+                        end: Position::new(1, 1),
+                    },
+                }],
+            ),
+            (
+                "Name".to_string(),
+                vec![
+                    Location {
+                        uri: url.clone(),
+                        range: Range {
+                            start: Position::new(4, 7),
+                            end: Position::new(4, 11),
+                        },
+                    },
+                    Location {
+                        uri: url.clone(),
+                        range: Range {
+                            start: Position::new(8, 7),
+                            end: Position::new(8, 11),
+                        },
+                    },
+                    Location {
+                        uri: url.clone(),
+                        range: Range {
+                            start: Position::new(11, 7),
+                            end: Position::new(11, 11),
+                        },
+                    },
+                ],
+            ),
+            (
+                "name".to_string(),
+                vec![
+                    Location {
+                        uri: url.clone(),
+                        range: Range {
+                            start: Position::new(5, 4),
+                            end: Position::new(5, 8),
+                        },
+                    },
+                    Location {
+                        uri: url.clone(),
+                        range: Range {
+                            start: Position::new(12, 8),
+                            end: Position::new(12, 12),
+                        },
+                    },
+                ],
+            ),
+            (
+                "demo".to_string(),
+                vec![Location {
+                    uri: url.clone(),
+                    range: Range {
+                        start: Position::new(0, 5),
+                        end: Position::new(0, 9),
+                    },
+                }],
+            ),
+            (
+                "str".to_string(),
+                vec![Location {
+                    uri: url.clone(),
+                    range: Range {
+                        start: Position::new(5, 10),
+                        end: Position::new(5, 13),
+                    },
+                }],
+            ),
+            (
+                "Person".to_string(),
+                vec![
+                    Location {
+                        uri: url.clone(),
+                        range: Range {
+                            start: Position::new(7, 7),
+                            end: Position::new(7, 13),
+                        },
+                    },
+                    Location {
+                        uri: url.clone(),
+                        range: Range {
+                            start: Position::new(10, 5),
+                            end: Position::new(10, 11),
+                        },
+                    },
+                ],
+            ),
+            (
+                "p2".to_string(),
+                vec![Location {
+                    uri: url.clone(),
+                    range: Range {
+                        start: Position::new(10, 0),
+                        end: Position::new(10, 2),
+                    },
+                }],
+            ),
+        ]
+        .into_iter()
+        .collect();
+        match build_word_index(path.to_string()) {
+            Ok(actual) => {
+                assert_eq!(expect, actual)
+            }
+            Err(_) => assert!(false, "build word index failed. expect: {:?}", expect),
+        }
+    }
+
+    #[test]
+    fn test_word_index_add() {
+        let loc1 = Location {
+            uri: Url::parse("file:///path/to/file.k").unwrap(),
+            range: Range {
+                start: Position::new(0, 0),
+                end: Position::new(0, 4),
+            },
+        };
+        let loc2 = Location {
+            uri: Url::parse("file:///path/to/file.k").unwrap(),
+            range: Range {
+                start: Position::new(1, 0),
+                end: Position::new(1, 4),
+            },
+        };
+        let mut from = HashMap::from([("name".to_string(), vec![loc1.clone()])]);
+        let add = HashMap::from([("name".to_string(), vec![loc2.clone()])]);
+        word_index_add(&mut from, add);
+        assert_eq!(
+            from,
+            HashMap::from([("name".to_string(), vec![loc1.clone(), loc2.clone()],)])
+        );
+    }
+
+    #[test]
+    fn test_word_index_subtract() {
+        let loc1 = Location {
+            uri: Url::parse("file:///path/to/file.k").unwrap(),
+            range: Range {
+                start: Position::new(0, 0),
+                end: Position::new(0, 4),
+            },
+        };
+        let loc2 = Location {
+            uri: Url::parse("file:///path/to/file.k").unwrap(),
+            range: Range {
+                start: Position::new(1, 0),
+                end: Position::new(1, 4),
+            },
+        };
+        let mut from = HashMap::from([("name".to_string(), vec![loc1.clone(), loc2.clone()])]);
+        let remove = HashMap::from([("name".to_string(), vec![loc2.clone()])]);
+        word_index_subtract(&mut from, remove);
+        assert_eq!(
+            from,
+            HashMap::from([("name".to_string(), vec![loc1.clone()],)])
+        );
+    }
+
+    #[test]
+    fn test_line_to_words() {
+        let lines = ["schema Person:", "name. name again", "some_word word !word"];
+
+        let expects: Vec<HashMap<String, Vec<Word>>> = vec![
+            vec![
+                (
+                    "schema".to_string(),
+                    vec![Word {
+                        start_col: 0,
+                        end_col: 6,
+                        word: "schema".to_string(),
+                    }],
+                ),
+                (
+                    "Person".to_string(),
+                    vec![Word {
+                        start_col: 7,
+                        end_col: 13,
+                        word: "Person".to_string(),
+                    }],
+                ),
+            ]
+            .into_iter()
+            .collect(),
+            vec![
+                (
+                    "name".to_string(),
+                    vec![
+                        Word {
+                            start_col: 0,
+                            end_col: 4,
+                            word: "name".to_string(),
+                        },
+                        Word {
+                            start_col: 6,
+                            end_col: 10,
+                            word: "name".to_string(),
+                        },
+                    ],
+                ),
+                (
+                    "again".to_string(),
+                    vec![Word {
+                        start_col: 11,
+                        end_col: 16,
+                        word: "again".to_string(),
+                    }],
+                ),
+            ]
+            .into_iter()
+            .collect(),
+            vec![
+                (
+                    "some_word".to_string(),
+                    vec![Word {
+                        start_col: 0,
+                        end_col: 9,
+                        word: "some_word".to_string(),
+                    }],
+                ),
+                (
+                    "word".to_string(),
+                    vec![
+                        Word {
+                            start_col: 10,
+                            end_col: 14,
+                            word: "word".to_string(),
+                        },
+                        Word {
+                            start_col: 16,
+                            end_col: 20,
+                            word: "word".to_string(),
+                        },
+                    ],
+                ),
+            ]
+            .into_iter()
+            .collect(),
+        ];
+        for i in 0..lines.len() {
+            let got = line_to_words(lines[i].to_string());
+            assert_eq!(expects[i], got)
+        }
+    }
 }
