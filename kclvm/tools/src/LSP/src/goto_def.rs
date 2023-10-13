@@ -1003,8 +1003,6 @@ mod tests {
     #[test]
     #[bench_test]
     fn complex_select_goto_def() {
-        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-
         let (file, program, prog_scope, _) =
             compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
@@ -1016,5 +1014,21 @@ mod tests {
 
         let res = goto_definition(&program, &pos, &prog_scope);
         compare_goto_res(res, (&file, 43, 4, 43, 9));
+    }
+
+    #[test]
+    #[bench_test]
+    fn schema_attribute_def_goto_def() {
+        let (file, program, prog_scope, _) =
+            compile_test_file("src/test_data/goto_def_test/goto_def.k");
+
+        let pos = KCLPos {
+            filename: file.clone(),
+            line: 19,
+            column: Some(5),
+        };
+
+        let res = goto_definition(&program, &pos, &prog_scope);
+        compare_goto_res(res, (&file, 18, 4, 18, 8));
     }
 }

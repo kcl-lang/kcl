@@ -333,6 +333,24 @@ pub(crate) fn inner_most_expr_in_stmt(
             (None, schema_def)
         }
         Stmt::SchemaAttr(schema_attr_expr) => {
+            walk_if_contains!(
+                Node::node_with_pos(
+                    Expr::Identifier(Identifier {
+                        names: vec![*schema_attr_expr.name.clone()],
+                        pkgpath: "".to_string(),
+                        ctx: kclvm_ast::ast::ExprContext::Load,
+                    }),
+                    (
+                        schema_attr_expr.name.filename.clone(),
+                        schema_attr_expr.name.line,
+                        schema_attr_expr.name.column,
+                        schema_attr_expr.name.end_line,
+                        schema_attr_expr.name.end_column,
+                    ),
+                ),
+                pos,
+                schema_def
+            );
             if schema_attr_expr.ty.contains_pos(pos) {
                 return (
                     build_identifier_from_ty_string(&schema_attr_expr.ty, pos),
