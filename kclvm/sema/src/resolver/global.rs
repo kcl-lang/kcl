@@ -9,7 +9,6 @@ use crate::ty::{
 };
 use indexmap::IndexMap;
 use kclvm_ast::ast;
-use kclvm_ast::walker::MutSelfTypedResultWalker;
 use kclvm_ast_pretty::{print_ast_node, print_schema_expr, ASTNode};
 use kclvm_error::*;
 

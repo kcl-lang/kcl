@@ -1,7 +1,6 @@
 use crate::main_loop::main_loop;
 use config::Config;
 use main_loop::app;
-use std::collections::HashMap;
 
 mod analysis;
 mod capabilities;

@@ -16,9 +16,6 @@ pub(crate) fn find_refs<F: Fn(String) -> Result<(), anyhow::Error>>(
     cursor_path: String,
     logger: F,
 ) -> anyhow::Result<Option<Vec<Location>>> {
-    // todo: decide the scope by the workspace root and the kcl.mod both, use the narrower scope
-    // todo: should use the current file path
-
     let mut ref_locations = vec![];
 
     for (_, word_index) in word_index_map {
