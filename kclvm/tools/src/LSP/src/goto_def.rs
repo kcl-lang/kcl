@@ -147,7 +147,7 @@ pub(crate) fn find_def(
                     ),
                 );
                 let id = pre_process_identifier(id_node, kcl_pos);
-                match parent {
+                                match parent {
                     Some(schema_expr) => {
                         if let Expr::Schema(schema_expr) = schema_expr.node {
                             let schema_def =
@@ -171,7 +171,7 @@ pub(crate) fn find_def(
                     }
                     None => {
                         if let Some(inner_most_scope) = prog_scope.inner_most_scope(kcl_pos) {
-                            return resolve_var(
+                                                        return resolve_var(
                                 &id.names,
                                 &inner_most_scope,
                                 &prog_scope.scope_map,
@@ -220,7 +220,7 @@ pub(crate) fn find_def(
             },
             _ => {}
         }
-    }
+        }
     None
 }
 
@@ -1016,5 +1016,27 @@ mod tests {
 
         let res = goto_definition(&program, &pos, &prog_scope);
         compare_goto_res(res, (&file, 43, 4, 43, 9));
+    }
+
+// this test case if to ensure the go-to-def result of schema attribute def
+// schema Person {
+//     target: str
+// }
+    #[test]
+    #[bench_test]
+    fn schema_attribute_def_goto_def() {
+        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+
+        let (file, program, prog_scope, _) =
+            compile_test_file("src/test_data/goto_def_test/goto_def.k");
+
+        let pos = KCLPos {
+            filename: file.clone(),
+            line: 19,
+            column: Some(5),
+        };
+
+        let res = goto_definition(&program, &pos, &prog_scope);
+        compare_goto_res(res, (&file, 19, 4, 19, 8));
     }
 }
