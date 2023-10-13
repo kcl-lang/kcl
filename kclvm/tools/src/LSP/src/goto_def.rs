@@ -1003,8 +1003,6 @@ mod tests {
     #[test]
     #[bench_test]
     fn complex_select_goto_def() {
-        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-
         let (file, program, prog_scope, _) =
             compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
@@ -1021,8 +1019,6 @@ mod tests {
     #[test]
     #[bench_test]
     fn schema_attribute_def_goto_def() {
-        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-
         let (file, program, prog_scope, _) =
             compile_test_file("src/test_data/goto_def_test/goto_def.k");
 

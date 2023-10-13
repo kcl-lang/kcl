@@ -253,9 +253,4 @@ mod tests {
             Err(_) => assert!(false, "file not found"),
         }
     }
-
-    #[test]
-    fn find_refs_from_none_kpm_package() {
-
-    }
 }
