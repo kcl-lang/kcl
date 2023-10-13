@@ -5,20 +5,26 @@ jobs:
     # Ref: https://github.com/actions/runner-images/tree/main/images/linux
     name: Test
     runs-on: ubuntu-latest
-    container:
-      image: kcllang/kcl-builder
     steps:
       - name: Check out code
         uses: actions/checkout@v3
         with:
           submodules: "true"
-      - name: Set up Go 1.18
+      - name: Set up Go 1.19
         uses: actions/setup-go@v2
         with:
           go-version: 1.19
-      - name: Delete rust cargo
-        run: rm -rf /root/.cargo/bin
+
+      # Prerequisite
+
+      - name: Install Python3 and LLVM
         shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git wget curl make
+          sudo apt-get install python3 python3-pip -y
+          sudo apt-get install -y clang-12 lld-12
+          sudo ln -sf /usr/bin/clang-12 /usr/bin/clang
       - name: Install rust nightly toolchain
         uses: actions-rs/toolchain@v1
         with:
