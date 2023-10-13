@@ -101,23 +101,6 @@ impl LanguageServerState {
                 word_index_add(value, new_word_index.clone());
             }
         }
-        // let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        // let url = lsp_types::Url::from_file_path(root.clone()).unwrap();
-        // let mm = self.word_index_map.get(&url).unwrap();
-        // println!("word_index_map: {:?}", mm);
-
-        // let file = from_lsp::file_path_from_url(&text_document.uri)?;
-        // let old_word_index = build_word_index_for_file_content(old_text, &text_document.uri);
-        // let new_word_index = build_word_index_for_file_content(text.clone(), &text_document.uri);
-
-        // let file_path = Path::new(&text_document.uri.path());
-        // for (key, mut value) in &self.word_index_map {
-        //     let workspace_folder_path = Path::new(key.path());
-        //     if file_path.starts_with(workspace_folder_path) {
-        //         value = &word_index_subtract(value, old_word_index.clone());
-        //         value = &word_index_add(value, new_word_index.clone());
-        //     }
-        // }
 
         Ok(())
     }
