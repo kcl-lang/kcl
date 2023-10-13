@@ -223,13 +223,13 @@ mod tests {
                     },
                 };
                 let expect = vec![
-                    // Location {
-                    //     uri: url.clone(),
-                    //     range: Range {
-                    //         start: Position::new(5, 4),
-                    //         end: Position::new(5, 8),
-                    //     },
-                    // },
+                    Location {
+                        uri: url.clone(),
+                        range: Range {
+                            start: Position::new(5, 4),
+                            end: Position::new(5, 8),
+                        },
+                    },
                     Location {
                         uri: url.clone(),
                         range: Range {
