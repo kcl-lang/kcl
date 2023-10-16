@@ -1031,4 +1031,20 @@ mod tests {
         let res = goto_definition(&program, &pos, &prog_scope);
         compare_goto_res(res, (&file, 18, 4, 18, 8));
     }
+
+    #[test]
+    #[bench_test]
+    fn config_desuger_def_goto_def() {
+        let (file, program, prog_scope, _) =
+            compile_test_file("src/test_data/goto_def_test/goto_def.k");
+
+        let pos = KCLPos {
+            filename: file.clone(),
+            line: 82,
+            column: Some(9),
+        };
+
+        let res = goto_definition(&program, &pos, &prog_scope);
+        compare_goto_res(res, (&file, 81, 6, 81, 10));
+    }
 }
