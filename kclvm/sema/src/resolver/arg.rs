@@ -66,10 +66,15 @@ impl<'ctx> Resolver<'ctx> {
             }
             got_count += args.len();
             if got_count < expect_count {
+                let expect_err_msg = if expect_count > 1 {
+                    format!("expected {} positional arguments", expect_count)
+                } else {
+                    format!("expected {} positional argument", expect_count)
+                };
                 self.handler.add_compile_error(
                     &format!(
-                        "expected {} positional argument, found {}",
-                        expect_count, got_count
+                        "{}, found {}",
+                        expect_err_msg, got_count
                     ),
                     func.get_span_pos(),
                 );
@@ -81,11 +86,15 @@ impl<'ctx> Resolver<'ctx> {
                 Some(param) => param.ty.clone(),
                 None => {
                     if !func_ty.is_variadic {
+                        let expect_err_msg = if func_ty.params.len() > 1 {
+                            format!("{} takes {} positional arguments", func_name, func_ty.params.len())
+                        } else {
+                            format!("{} takes {} positional argument", func_name, func_ty.params.len())
+                        };
                         self.handler.add_compile_error(
                             &format!(
-                                "{} takes {} positional argument but {} were given",
-                                func_name,
-                                func_ty.params.len(),
+                                "{} but {} were given",
+                                expect_err_msg,
                                 args.len(),
                             ),
                             args[i].get_span_pos(),
