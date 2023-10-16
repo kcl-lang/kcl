@@ -77,3 +77,7 @@ items1 = [item | {
             "securityContext": {"capabilities": {"add" += [cc] if cc not in (container?.securityContext?.capabilities?.drop or []) else [] for cc in capabilities}}
         } for container in item.spec.containers]
 } for item in option("items")]
+
+p4 = Person {
+    n.name: "a"
+}
