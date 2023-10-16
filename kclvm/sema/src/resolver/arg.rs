@@ -1,5 +1,6 @@
 use crate::resolver::Resolver;
 use crate::ty::{FunctionType, Type};
+use compiler_base_error::unit_type::{TypeWithUnit, UnitUsize};
 use indexmap::IndexSet;
 use kclvm_ast::ast;
 use std::rc::Rc;
@@ -66,13 +67,13 @@ impl<'ctx> Resolver<'ctx> {
             }
             got_count += args.len();
             if got_count < expect_count {
-                let expect_err_msg = if expect_count > 1 {
-                    format!("expected {} positional arguments", expect_count)
-                } else {
-                    format!("expected {} positional argument", expect_count)
-                };
                 self.handler.add_compile_error(
-                    &format!("{}, found {}", expect_err_msg, got_count),
+                    &format!(
+                        "expected {}, found {}",
+                        UnitUsize(expect_count, "positional argument".to_string())
+                            .into_string_with_unit(),
+                        got_count
+                    ),
                     func.get_span_pos(),
                 );
             }
@@ -83,21 +84,14 @@ impl<'ctx> Resolver<'ctx> {
                 Some(param) => param.ty.clone(),
                 None => {
                     if !func_ty.is_variadic {
-                        let expect_err_msg = if func_ty.params.len() > 1 {
-                            format!(
-                                "{} takes {} positional arguments",
-                                func_name,
-                                func_ty.params.len()
-                            )
-                        } else {
-                            format!(
-                                "{} takes {} positional argument",
-                                func_name,
-                                func_ty.params.len()
-                            )
-                        };
                         self.handler.add_compile_error(
-                            &format!("{} but {} were given", expect_err_msg, args.len(),),
+                            &format!(
+                                "{} takes {} but {} were given",
+                                func_name,
+                                UnitUsize(func_ty.params.len(), "positional argument".to_string())
+                                    .into_string_with_unit(),
+                                args.len(),
+                            ),
                             args[i].get_span_pos(),
                         );
                     }
