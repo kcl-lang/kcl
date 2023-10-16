@@ -72,10 +72,7 @@ impl<'ctx> Resolver<'ctx> {
                     format!("expected {} positional argument", expect_count)
                 };
                 self.handler.add_compile_error(
-                    &format!(
-                        "{}, found {}",
-                        expect_err_msg, got_count
-                    ),
+                    &format!("{}, found {}", expect_err_msg, got_count),
                     func.get_span_pos(),
                 );
             }
@@ -87,16 +84,20 @@ impl<'ctx> Resolver<'ctx> {
                 None => {
                     if !func_ty.is_variadic {
                         let expect_err_msg = if func_ty.params.len() > 1 {
-                            format!("{} takes {} positional arguments", func_name, func_ty.params.len())
+                            format!(
+                                "{} takes {} positional arguments",
+                                func_name,
+                                func_ty.params.len()
+                            )
                         } else {
-                            format!("{} takes {} positional argument", func_name, func_ty.params.len())
+                            format!(
+                                "{} takes {} positional argument",
+                                func_name,
+                                func_ty.params.len()
+                            )
                         };
                         self.handler.add_compile_error(
-                            &format!(
-                                "{} but {} were given",
-                                expect_err_msg,
-                                args.len(),
-                            ),
+                            &format!("{} but {} were given", expect_err_msg, args.len(),),
                             args[i].get_span_pos(),
                         );
                     }
