@@ -20,16 +20,19 @@ use lsp_types::MarkedString;
 use lsp_types::PublishDiagnosticsParams;
 use lsp_types::ReferenceContext;
 use lsp_types::ReferenceParams;
+use lsp_types::RenameParams;
 use lsp_types::TextDocumentIdentifier;
 use lsp_types::TextDocumentItem;
 use lsp_types::TextDocumentPositionParams;
 use lsp_types::TextEdit;
 use lsp_types::Url;
+use lsp_types::WorkspaceEdit;
 use lsp_types::WorkspaceFolder;
 
 use serde::Serialize;
 use std::cell::Cell;
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::env;
 use std::path::Path;
 use std::path::PathBuf;
@@ -1490,4 +1493,96 @@ p2 = Person {
         ])
         .unwrap()
     );
+}
+
+#[test]
+fn rename_test() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let mut path = root.clone();
+    let mut main_path = root.clone();
+    path.push("src/test_data/rename_test/pkg/vars.k");
+    main_path.push("src/test_data/rename_test/main.k");
+
+    let path = path.to_str().unwrap();
+    let src = std::fs::read_to_string(path.clone()).unwrap();
+    let mut initialize_params = InitializeParams::default();
+    initialize_params.workspace_folders = Some(vec![WorkspaceFolder {
+        uri: Url::from_file_path(root.clone()).unwrap(),
+        name: "test".to_string(),
+    }]);
+    let server = Project {}.server(initialize_params);
+    let url = Url::from_file_path(path).unwrap();
+    let main_url = Url::from_file_path(main_path).unwrap();
+
+    // Mock open file
+    server.notification::<lsp_types::notification::DidOpenTextDocument>(
+        lsp_types::DidOpenTextDocumentParams {
+            text_document: TextDocumentItem {
+                uri: url.clone(),
+                language_id: "KCL".to_string(),
+                version: 0,
+                text: src,
+            },
+        },
+    );
+
+    let id = server.next_request_id.get();
+    server.next_request_id.set(id.wrapping_add(1));
+
+    let new_name = String::from("Person2");
+    let r: Request = Request::new(
+        id.into(),
+        "textDocument/rename".to_string(),
+        RenameParams {
+            text_document_position: TextDocumentPositionParams {
+                text_document: TextDocumentIdentifier { uri: url.clone() },
+                position: Position::new(0, 7),
+            },
+            new_name: new_name.clone(),
+            work_done_progress_params: Default::default(),
+        },
+    );
+
+    // Send request and wait for it's response
+    let res = server.send_and_receive(r);
+    let mut expect = WorkspaceEdit::default();
+    expect.changes = Some(HashMap::from_iter(vec![
+        (
+            url.clone(),
+            vec![
+                TextEdit {
+                    range: Range {
+                        start: Position::new(0, 7),
+                        end: Position::new(0, 13),
+                    },
+                    new_text: new_name.clone(),
+                },
+                TextEdit {
+                    range: Range {
+                        start: Position::new(4, 7),
+                        end: Position::new(4, 13),
+                    },
+                    new_text: new_name.clone(),
+                },
+                TextEdit {
+                    range: Range {
+                        start: Position::new(9, 8),
+                        end: Position::new(9, 14),
+                    },
+                    new_text: new_name.clone(),
+                },
+            ],
+        ),
+        (
+            main_url.clone(),
+            vec![TextEdit {
+                range: Range {
+                    start: Position::new(2, 11),
+                    end: Position::new(2, 17),
+                },
+                new_text: new_name.clone(),
+            }],
+        ),
+    ]));
+    assert_eq!(res.result.unwrap(), to_json(expect).unwrap());
 }

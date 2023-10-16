@@ -21,6 +21,16 @@ pub fn lsp_pos(pos: &KCLPos) -> Position {
     }
 }
 
+pub fn lsp_location(file_path: String, start: &KCLPos, end: &KCLPos) -> Location {
+    Location {
+        uri: Url::from_file_path(file_path).unwrap(),
+        range: Range {
+            start: lsp_pos(start),
+            end: lsp_pos(end),
+        },
+    }
+}
+
 /// Convert KCL Message to LSP Diagnostic
 fn kcl_msg_to_lsp_diags(
     msg: &Message,

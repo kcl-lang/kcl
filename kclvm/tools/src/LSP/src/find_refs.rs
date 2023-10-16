@@ -1,7 +1,11 @@
 use crate::from_lsp::kcl_pos;
-use crate::goto_def::goto_definition;
+use crate::goto_def::{find_def, goto_definition};
+use crate::to_lsp::lsp_location;
 use crate::util::{parse_param_and_compile, Param};
 use anyhow;
+use kclvm_ast::ast::{Program, Stmt};
+use kclvm_error::Position as KCLPos;
+use kclvm_sema::resolver::scope::ProgramScope;
 use lsp_types::{Location, Url};
 use parking_lot::RwLock;
 use ra_ap_vfs::Vfs;
@@ -9,15 +13,52 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 pub(crate) fn find_refs<F: Fn(String) -> Result<(), anyhow::Error>>(
+    program: &Program,
+    kcl_pos: &KCLPos,
+    prog_scope: &ProgramScope,
+    word_index_map: HashMap<Url, HashMap<String, Vec<Location>>>,
+    vfs: Option<Arc<RwLock<Vfs>>>,
+    logger: F,
+) -> Result<Vec<Location>, String> {
+    // find the definition at the position
+    let def = match program.pos_to_stmt(kcl_pos) {
+        Some(node) => match node.node {
+            Stmt::Import(_) => None,
+            _ => find_def(node.clone(), kcl_pos, prog_scope),
+        },
+        None => None,
+    };
+    if def.is_none() {
+        return Err(String::from(
+            "Definition item not found, result in no reference",
+        ));
+    }
+    let def = def.unwrap();
+    if def.get_positions().len() != 1 {
+        return Err(String::from(
+            "Found more than one definitions, reference not supported",
+        ));
+    }
+    let (start, end) = def.get_positions().iter().next().unwrap().clone();
+    let def_loc = lsp_location(start.filename.clone(), &start, &end);
+    // find all the refs of the def
+    Ok(find_refs_from_def(
+        vfs,
+        word_index_map,
+        def_loc,
+        def.get_name(),
+        logger,
+    ))
+}
+
+pub(crate) fn find_refs_from_def<F: Fn(String) -> Result<(), anyhow::Error>>(
     vfs: Option<Arc<RwLock<Vfs>>>,
     word_index_map: HashMap<Url, HashMap<String, Vec<Location>>>,
     def_loc: Location,
     name: String,
-    cursor_path: String,
     logger: F,
-) -> anyhow::Result<Option<Vec<Location>>> {
+) -> Vec<Location> {
     let mut ref_locations = vec![];
-
     for (_, word_index) in word_index_map {
         if let Some(locs) = word_index.get(name.as_str()).cloned() {
             let matched_locs: Vec<Location> = locs
@@ -47,7 +88,8 @@ pub(crate) fn find_refs<F: Fn(String) -> Result<(), anyhow::Error>>(
                             }
                         }
                         Err(_) => {
-                            let _ = logger(format!("{cursor_path} compilation failed"));
+                            let file_path = def_loc.uri.path();
+                            let _ = logger(format!("{file_path} compilation failed"));
                             return false;
                         }
                     }
@@ -56,12 +98,12 @@ pub(crate) fn find_refs<F: Fn(String) -> Result<(), anyhow::Error>>(
             ref_locations.extend(matched_locs);
         }
     }
-    anyhow::Ok(Some(ref_locations))
+    ref_locations
 }
 
 #[cfg(test)]
 mod tests {
-    use super::find_refs;
+    use super::find_refs_from_def;
     use crate::util::build_word_index;
     use lsp_types::{Location, Position, Range, Url};
     use std::collections::HashMap;
@@ -72,17 +114,8 @@ mod tests {
         anyhow::Ok(())
     }
 
-    fn check_locations_match(expect: Vec<Location>, actual: anyhow::Result<Option<Vec<Location>>>) {
-        match actual {
-            Ok(act) => {
-                if let Some(locations) = act {
-                    assert_eq!(expect, locations)
-                } else {
-                    assert!(false, "got empty result. expect: {:?}", expect)
-                }
-            }
-            Err(_) => assert!(false),
-        }
+    fn check_locations_match(expect: Vec<Location>, actual: Vec<Location>) {
+        assert_eq!(expect, actual)
     }
 
     fn setup_word_index_map(root: &str) -> HashMap<Url, HashMap<String, Vec<Location>>> {
@@ -139,12 +172,11 @@ mod tests {
                 ];
                 check_locations_match(
                     expect,
-                    find_refs(
+                    find_refs_from_def(
                         None,
                         setup_word_index_map(path),
                         def_loc,
                         "a".to_string(),
-                        path.to_string(),
                         logger,
                     ),
                 );
@@ -193,12 +225,11 @@ mod tests {
                 ];
                 check_locations_match(
                     expect,
-                    find_refs(
+                    find_refs_from_def(
                         None,
                         setup_word_index_map(path),
                         def_loc,
                         "Name".to_string(),
-                        path.to_string(),
                         logger,
                     ),
                 );
@@ -240,12 +271,11 @@ mod tests {
                 ];
                 check_locations_match(
                     expect,
-                    find_refs(
+                    find_refs_from_def(
                         None,
                         setup_word_index_map(path),
                         def_loc,
                         "name".to_string(),
-                        path.to_string(),
                         logger,
                     ),
                 );

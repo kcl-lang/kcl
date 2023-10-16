@@ -19,13 +19,12 @@ use kclvm_sema::resolver::scope::{
     builtin_scope, ProgramScope, Scope, ScopeObject, ScopeObjectKind,
 };
 use kclvm_sema::ty::{DictType, SchemaType};
-use lsp_types::{GotoDefinitionResponse, Url};
-use lsp_types::{Location, Range};
+use lsp_types::GotoDefinitionResponse;
 use std::cell::RefCell;
 use std::path::Path;
 use std::rc::Rc;
 
-use crate::to_lsp::lsp_pos;
+use crate::to_lsp::lsp_location;
 use crate::util::{
     fix_missing_identifier, get_pkg_scope, get_pos_from_real_path, get_real_path_from_external,
     inner_most_expr_in_stmt,
@@ -408,24 +407,16 @@ fn positions_to_goto_def_resp(
         0 => None,
         1 => {
             let (start, end) = positions.iter().next().unwrap().clone();
-            Some(lsp_types::GotoDefinitionResponse::Scalar(Location {
-                uri: Url::from_file_path(start.filename.clone()).unwrap(),
-                range: Range {
-                    start: lsp_pos(&start),
-                    end: lsp_pos(&end),
-                },
-            }))
+            Some(lsp_types::GotoDefinitionResponse::Scalar(lsp_location(
+                start.filename.clone(),
+                &start,
+                &end,
+            )))
         }
         _ => {
             let mut res = vec![];
             for (start, end) in positions {
-                res.push(Location {
-                    uri: Url::from_file_path(start.filename.clone()).unwrap(),
-                    range: Range {
-                        start: lsp_pos(start),
-                        end: lsp_pos(end),
-                    },
-                })
+                res.push(lsp_location(start.filename.clone(), &start, &end))
             }
             Some(lsp_types::GotoDefinitionResponse::Array(res))
         }
