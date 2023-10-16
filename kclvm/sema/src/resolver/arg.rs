@@ -1,5 +1,6 @@
 use crate::resolver::Resolver;
 use crate::ty::{FunctionType, Type};
+use compiler_base_error::unit_type::{TypeWithUnit, UnitUsize};
 use indexmap::IndexSet;
 use kclvm_ast::ast;
 use std::rc::Rc;
@@ -68,8 +69,10 @@ impl<'ctx> Resolver<'ctx> {
             if got_count < expect_count {
                 self.handler.add_compile_error(
                     &format!(
-                        "expected {} positional argument, found {}",
-                        expect_count, got_count
+                        "expected {}, found {}",
+                        UnitUsize(expect_count, "positional argument".to_string())
+                            .into_string_with_unit(),
+                        got_count
                     ),
                     func.get_span_pos(),
                 );
@@ -83,9 +86,10 @@ impl<'ctx> Resolver<'ctx> {
                     if !func_ty.is_variadic {
                         self.handler.add_compile_error(
                             &format!(
-                                "{} takes {} positional argument but {} were given",
+                                "{} takes {} but {} were given",
                                 func_name,
-                                func_ty.params.len(),
+                                UnitUsize(func_ty.params.len(), "positional argument".to_string())
+                                    .into_string_with_unit(),
                                 args.len(),
                             ),
                             args[i].get_span_pos(),

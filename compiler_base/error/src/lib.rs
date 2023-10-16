@@ -14,6 +14,7 @@ mod emitter;
 mod tests;
 
 pub mod errors;
+pub mod unit_type;
 
 pub use diagnostic::{
     components, diagnostic_handler, style::DiagnosticStyle, Component, Diagnostic, StyledBuffer,
