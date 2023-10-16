@@ -228,7 +228,7 @@ fn test_resolve_program_illegal_attr_fail() {
 fn test_resolve_program_unmatched_args_fail() {
     let mut program = parse_program("./src/resolver/test_fail_data/unmatched_args.k").unwrap();
     let scope = resolve_program(&mut program);
-    assert_eq!(scope.handler.diagnostics.len(), 2);
+    assert_eq!(scope.handler.diagnostics.len(), 3);
     let expect_err_msg = "\"Foo\" takes 1 positional argument but 3 were given";
     let diag = &scope.handler.diagnostics[0];
     assert_eq!(
@@ -247,6 +247,16 @@ fn test_resolve_program_unmatched_args_fail() {
     );
     assert_eq!(diag.messages.len(), 1);
     assert_eq!(diag.messages[0].range.0.line, 7);
+    assert_eq!(diag.messages[0].message, expect_err_msg);
+
+    let expect_err_msg = "\"Foo2\" takes 2 positional arguments but 3 were given";
+    let diag = &scope.handler.diagnostics[2];
+    assert_eq!(
+        diag.code,
+        Some(DiagnosticId::Error(ErrorKind::CompileError))
+    );
+    assert_eq!(diag.messages.len(), 1);
+    assert_eq!(diag.messages[0].range.0.line, 12);
     assert_eq!(diag.messages[0].message, expect_err_msg);
 }
 
