@@ -555,7 +555,7 @@ fn test_resolve_lambda_assignment_diagnostic() {
     let sess = Arc::new(ParseSession::default());
     let mut program = load_program(
         sess.clone(),
-        &["./src/resolver/test_data/lambda_ty_error.k"],
+        &["./src/resolver/test_fail_data/lambda_ty_error.k"],
         None,
     )
     .unwrap();
