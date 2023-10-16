@@ -80,7 +80,7 @@ impl Type {
                 .join("|"),
             TypeKind::Schema(schema_ty) => schema_ty.name.to_string(),
             TypeKind::NumberMultiplier(number_multiplier) => number_multiplier.ty_str(),
-            TypeKind::Function(_) => FUNCTION_TYPE_STR.to_string(),
+            TypeKind::Function(func_ty) => func_ty.ty_str(),
             TypeKind::Void => VOID_TYPE_STR.to_string(),
             TypeKind::Module(module_ty) => format!("{} '{}'", MODULE_TYPE_STR, module_ty.pkgpath),
             TypeKind::Named(name) => name.to_string(),
@@ -385,6 +385,20 @@ pub struct FunctionType {
     pub return_ty: TypeRef,
     pub is_variadic: bool,
     pub kw_only_index: Option<usize>,
+}
+
+impl FunctionType {
+    pub fn ty_str(&self) -> String {
+        format!(
+            "function ({}) -> {}",
+            self.params
+                .iter()
+                .map(|param| param.ty.ty_str())
+                .collect::<Vec<String>>()
+                .join(", "),
+            self.return_ty.ty_str()
+        )
+    }
 }
 
 impl FunctionType {
