@@ -1,4 +1,4 @@
-use anyhow::Ok;
+use anyhow::{anyhow, Ok};
 use crossbeam_channel::Sender;
 use lsp_types::{Location, TextEdit};
 use ra_ap_vfs::VfsPath;
@@ -16,6 +16,7 @@ use crate::{
     goto_def::goto_definition,
     hover, quick_fix,
     state::{log_message, LanguageServerSnapshot, LanguageServerState, Task},
+    util,
 };
 
 impl LanguageServerState {
@@ -223,8 +224,11 @@ pub(crate) fn handle_rename(
     params: lsp_types::RenameParams,
     sender: Sender<Task>,
 ) -> anyhow::Result<Option<lsp_types::WorkspaceEdit>> {
-    // 1. check the new name validity, todo
-    // let new_name = params.new_name;
+    // 1. check the new name validity
+    let new_name = params.new_name;
+    if !util::is_valid_kcl_name(new_name.clone()) {
+        return Err(anyhow!("Can not rename to: {new_name}, invalid name"));
+    }
 
     // 2. find all the references of the symbol
     let file = file_path_from_url(&params.text_document_position.text_document.uri)?;
@@ -241,11 +245,11 @@ pub(crate) fn handle_rename(
         log,
     );
     match references {
-        core::result::Result::Ok(locations) => {
+        Result::Ok(locations) => {
             match locations.len() {
                 0 => {
                     let _ = log("Symbol not found".to_string());
-                    Ok(None)
+                    anyhow::Ok(None)
                 }
                 _ => {
                     // 3. return the workspaceEdit to rename all the references with the new name
@@ -260,18 +264,19 @@ pub(crate) fn handle_rename(
                                     .or_insert_with(Vec::new)
                                     .push(TextEdit {
                                         range: location.range,
-                                        new_text: params.new_name.clone(),
+                                        new_text: new_name.clone(),
                                     });
                                 map
                             });
                     workspace_edit.changes = Some(changes);
-                    Ok(Some(workspace_edit))
+                    anyhow::Ok(Some(workspace_edit))
                 }
             }
         }
         Err(msg) => {
-            log(format!("Can not rename symbol: {msg}"))?;
-            Ok(None)
+            let err_msg = format!("Can not rename symbol: {msg}");
+            log(err_msg.clone())?;
+            return Err(anyhow!(err_msg));
         }
     }
 }
