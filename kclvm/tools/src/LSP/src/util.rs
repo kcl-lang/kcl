@@ -19,7 +19,6 @@ use kclvm_utils::pkgpath::rm_external_pkg_name;
 use lsp_types::{Location, Position, Range, Url};
 use parking_lot::{RwLock, RwLockReadGuard};
 use ra_ap_vfs::{FileId, Vfs};
-use regex::Regex;
 use serde::{de::DeserializeOwned, Serialize};
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -893,11 +892,6 @@ fn line_to_words(text: String) -> HashMap<String, Vec<Word>> {
         result.entry(w.word.clone()).or_insert(Vec::new()).push(w);
     }
     result
-}
-
-pub fn is_valid_kcl_name(name: String) -> bool {
-    let re = Regex::new(r#"^[a-zA-Z_][a-zA-Z0-9_]*$"#).unwrap();
-    re.is_match(&name)
 }
 
 #[cfg(test)]

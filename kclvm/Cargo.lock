@@ -1416,7 +1416,6 @@ dependencies = [
  "proc_macro_crate",
  "ra_ap_vfs",
  "ra_ap_vfs-notify",
- "regex",
  "ropey",
  "rustc-hash",
  "rustc_lexer",

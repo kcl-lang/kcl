@@ -1,5 +1,6 @@
 use anyhow::{anyhow, Ok};
 use crossbeam_channel::Sender;
+use kclvm_sema::info::is_valid_kcl_name;
 use lsp_types::{Location, TextEdit};
 use ra_ap_vfs::VfsPath;
 use std::collections::HashMap;
@@ -16,7 +17,6 @@ use crate::{
     goto_def::goto_definition,
     hover, quick_fix,
     state::{log_message, LanguageServerSnapshot, LanguageServerState, Task},
-    util,
 };
 
 impl LanguageServerState {
@@ -226,7 +226,7 @@ pub(crate) fn handle_rename(
 ) -> anyhow::Result<Option<lsp_types::WorkspaceEdit>> {
     // 1. check the new name validity
     let new_name = params.new_name;
-    if !util::is_valid_kcl_name(new_name.clone()) {
+    if !is_valid_kcl_name(new_name.as_str()) {
         return Err(anyhow!("Can not rename to: {new_name}, invalid name"));
     }
 
