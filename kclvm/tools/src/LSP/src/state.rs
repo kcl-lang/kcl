@@ -13,7 +13,6 @@ use lsp_types::{
 };
 use parking_lot::RwLock;
 use ra_ap_vfs::{FileId, Vfs};
-use ra_ap_vfs_notify::NotifyHandle;
 use std::collections::HashMap;
 use std::{sync::Arc, time::Instant};
 
@@ -32,6 +31,11 @@ pub(crate) enum Task {
 pub(crate) enum Event {
     Task(Task),
     Lsp(lsp_server::Message),
+}
+
+pub(crate) struct Handle<H, C> {
+    pub(crate) handle: H,
+    pub(crate) _receiver: C,
 }
 
 /// State for the language server
@@ -67,7 +71,7 @@ pub(crate) struct LanguageServerState {
     pub opened_files: IndexSet<FileId>,
 
     /// The VFS loader
-    pub vfs_handle: Box<dyn ra_ap_vfs::loader::Handle>,
+    pub loader: Handle<Box<dyn ra_ap_vfs::loader::Handle>, Receiver<ra_ap_vfs::loader::Message>>,
 
     /// The word index map
     pub word_index_map: HashMap<Url, HashMap<String, Vec<Location>>>,
@@ -95,10 +99,13 @@ impl LanguageServerState {
     ) -> Self {
         let (task_sender, task_receiver) = unbounded::<Task>();
 
-        let (vfs_sender, receiver) = unbounded::<ra_ap_vfs::loader::Message>();
-        let handle: NotifyHandle =
-            ra_ap_vfs::loader::Handle::spawn(Box::new(move |msg| vfs_sender.send(msg).unwrap()));
-        let handle = Box::new(handle) as Box<dyn ra_ap_vfs::loader::Handle>;
+        let loader = {
+            let (sender, _receiver) = unbounded::<ra_ap_vfs::loader::Message>();
+            let handle: ra_ap_vfs_notify::NotifyHandle =
+                ra_ap_vfs::loader::Handle::spawn(Box::new(move |msg| sender.send(msg).unwrap()));
+            let handle = Box::new(handle) as Box<dyn ra_ap_vfs::loader::Handle>;
+            Handle { handle, _receiver }
+        };
 
         // build word index for all the workspace folders
         // todo: async
@@ -127,8 +134,8 @@ impl LanguageServerState {
             shutdown_requested: false,
             analysis: Analysis::default(),
             opened_files: IndexSet::new(),
-            vfs_handle: handle,
             word_index_map,
+            loader,
         }
     }
 

@@ -115,7 +115,7 @@ impl LanguageServerState {
         if let Some(id) = self.vfs.read().file_id(&path.clone().into()) {
             self.opened_files.remove(&id);
         }
-        self.vfs_handle.invalidate(path);
+        self.loader.handle.invalidate(path);
 
         Ok(())
     }
@@ -127,7 +127,7 @@ impl LanguageServerState {
     ) -> anyhow::Result<()> {
         for change in params.changes {
             let path = from_lsp::abs_path(&change.uri)?;
-            self.vfs_handle.invalidate(path);
+            self.loader.handle.invalidate(path);
         }
         Ok(())
     }
