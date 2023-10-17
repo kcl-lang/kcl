@@ -1,8 +1,9 @@
-use anyhow::Ok;
+use anyhow::{anyhow, Ok};
 use crossbeam_channel::Sender;
-use kclvm_ast::ast::Stmt;
+use kclvm_sema::info::is_valid_kcl_name;
 use lsp_types::{Location, TextEdit};
 use ra_ap_vfs::VfsPath;
+use std::collections::HashMap;
 use std::time::Instant;
 
 use crate::{
@@ -13,7 +14,7 @@ use crate::{
     find_refs::find_refs,
     formatting::format,
     from_lsp::{self, file_path_from_url, kcl_pos},
-    goto_def::{find_def, goto_definition},
+    goto_def::goto_definition,
     hover, quick_fix,
     state::{log_message, LanguageServerSnapshot, LanguageServerState, Task},
 };
@@ -52,6 +53,7 @@ impl LanguageServerState {
             .on::<lsp_types::request::CodeActionRequest>(handle_code_action)?
             .on::<lsp_types::request::Formatting>(handle_formatting)?
             .on::<lsp_types::request::RangeFormatting>(handle_range_formatting)?
+            .on::<lsp_types::request::Rename>(handle_rename)?
             .finish();
 
         Ok(())
@@ -141,49 +143,25 @@ pub(crate) fn handle_reference(
     params: lsp_types::ReferenceParams,
     sender: Sender<Task>,
 ) -> anyhow::Result<Option<Vec<Location>>> {
-    // 1. find definition of current token
     let file = file_path_from_url(&params.text_document_position.text_document.uri)?;
     let path = from_lsp::abs_path(&params.text_document_position.text_document.uri)?;
     let db = snapshot.get_db(&path.clone().into())?;
     let pos = kcl_pos(&file, params.text_document_position.position);
-    let word_index_map = snapshot.word_index_map.clone();
-
     let log = |msg: String| log_message(msg, &sender);
-
-    if let Some(def_resp) = goto_definition(&db.prog, &pos, &db.scope) {
-        match def_resp {
-            lsp_types::GotoDefinitionResponse::Scalar(def_loc) => {
-                // get the def location
-                if let Some(def_name) = match db.prog.pos_to_stmt(&pos) {
-                    Some(node) => match node.node {
-                        Stmt::Import(_) => None,
-                        _ => match find_def(node.clone(), &pos, &db.scope) {
-                            Some(def) => Some(def.get_name()),
-                            None => None,
-                        },
-                    },
-                    None => None,
-                } {
-                    return find_refs(
-                        Some(snapshot.vfs),
-                        word_index_map,
-                        def_loc,
-                        def_name,
-                        file,
-                        log,
-                    );
-                }
-            }
-            _ => return Ok(None),
+    match find_refs(
+        &db.prog,
+        &pos,
+        &db.scope,
+        snapshot.word_index_map.clone(),
+        Some(snapshot.vfs.clone()),
+        log,
+    ) {
+        core::result::Result::Ok(locations) => Ok(Some(locations)),
+        Err(msg) => {
+            log(format!("Find references failed: {msg}"))?;
+            Ok(None)
         }
-    } else {
-        log_message(
-            "Definition item not found, result in no reference".to_string(),
-            &sender,
-        )?;
     }
-
-    return Ok(None);
 }
 
 /// Called when a `Completion` request was received.
@@ -238,4 +216,63 @@ pub(crate) fn handle_document_symbol(
         log_message(format!("File {file} Document symbol not found"), &sender)?;
     }
     Ok(res)
+}
+
+/// Called when a `Rename` request was received.
+pub(crate) fn handle_rename(
+    snapshot: LanguageServerSnapshot,
+    params: lsp_types::RenameParams,
+    sender: Sender<Task>,
+) -> anyhow::Result<Option<lsp_types::WorkspaceEdit>> {
+    // 1. check the new name validity
+    let new_name = params.new_name;
+    if !is_valid_kcl_name(new_name.as_str()) {
+        return Err(anyhow!("Can not rename to: {new_name}, invalid name"));
+    }
+
+    // 2. find all the references of the symbol
+    let file = file_path_from_url(&params.text_document_position.text_document.uri)?;
+    let path = from_lsp::abs_path(&params.text_document_position.text_document.uri)?;
+    let db = snapshot.get_db(&path.into())?;
+    let kcl_pos = kcl_pos(&file, params.text_document_position.position);
+    let log = |msg: String| log_message(msg, &sender);
+    let references = find_refs(
+        &db.prog,
+        &kcl_pos,
+        &db.scope,
+        snapshot.word_index_map.clone(),
+        Some(snapshot.vfs.clone()),
+        log,
+    );
+    match references {
+        Result::Ok(locations) => {
+            if locations.is_empty() {
+                let _ = log("Symbol not found".to_string());
+                anyhow::Ok(None)
+            } else {
+                // 3. return the workspaceEdit to rename all the references with the new name
+                let mut workspace_edit = lsp_types::WorkspaceEdit::default();
+
+                let changes = locations
+                    .into_iter()
+                    .fold(HashMap::new(), |mut map, location| {
+                        let uri = location.uri;
+                        map.entry(uri.clone())
+                            .or_insert_with(Vec::new)
+                            .push(TextEdit {
+                                range: location.range,
+                                new_text: new_name.clone(),
+                            });
+                        map
+                    });
+                workspace_edit.changes = Some(changes);
+                anyhow::Ok(Some(workspace_edit))
+            }
+        }
+        Err(msg) => {
+            let err_msg = format!("Can not rename symbol: {msg}");
+            log(err_msg.clone())?;
+            return Err(anyhow!(err_msg));
+        }
+    }
 }
