@@ -583,6 +583,51 @@ fn notification_test() {
 }
 
 #[test]
+fn close_file_test() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let mut path = root.clone();
+
+    path.push("src/test_data/diagnostics.k");
+
+    let path = path.to_str().unwrap();
+    let src = std::fs::read_to_string(path.clone()).unwrap();
+    let server = Project {}.server(InitializeParams::default());
+
+    // Mock open file
+    server.notification::<lsp_types::notification::DidOpenTextDocument>(
+        lsp_types::DidOpenTextDocumentParams {
+            text_document: TextDocumentItem {
+                uri: Url::from_file_path(path).unwrap(),
+                language_id: "KCL".to_string(),
+                version: 0,
+                text: src.clone(),
+            },
+        },
+    );
+
+    // Mock close file
+    server.notification::<lsp_types::notification::DidCloseTextDocument>(
+        lsp_types::DidCloseTextDocumentParams {
+            text_document: TextDocumentIdentifier {
+                uri: Url::from_file_path(path).unwrap(),
+            },
+        },
+    );
+
+    // Mock reopen file
+    server.notification::<lsp_types::notification::DidOpenTextDocument>(
+        lsp_types::DidOpenTextDocumentParams {
+            text_document: TextDocumentItem {
+                uri: Url::from_file_path(path).unwrap(),
+                language_id: "KCL".to_string(),
+                version: 0,
+                text: src,
+            },
+        },
+    );
+}
+
+#[test]
 fn goto_def_test() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let mut path = root.clone();

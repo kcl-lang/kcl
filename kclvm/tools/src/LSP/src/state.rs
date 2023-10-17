@@ -13,7 +13,6 @@ use lsp_types::{
 };
 use parking_lot::RwLock;
 use ra_ap_vfs::{FileId, Vfs};
-use ra_ap_vfs_notify::NotifyHandle;
 use std::collections::HashMap;
 use std::{sync::Arc, time::Instant};
 
@@ -103,7 +102,7 @@ impl LanguageServerState {
         let loader = {
             let (sender, _receiver) = unbounded::<ra_ap_vfs::loader::Message>();
             let handle: ra_ap_vfs_notify::NotifyHandle =
-            ra_ap_vfs::loader::Handle::spawn(Box::new(move |msg| sender.send(msg).unwrap()));
+                ra_ap_vfs::loader::Handle::spawn(Box::new(move |msg| sender.send(msg).unwrap()));
             let handle = Box::new(handle) as Box<dyn ra_ap_vfs::loader::Handle>;
             Handle { handle, _receiver }
         };
@@ -136,7 +135,7 @@ impl LanguageServerState {
             analysis: Analysis::default(),
             opened_files: IndexSet::new(),
             word_index_map,
-            loader
+            loader,
         }
     }
 
