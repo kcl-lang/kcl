@@ -246,31 +246,27 @@ pub(crate) fn handle_rename(
     );
     match references {
         Result::Ok(locations) => {
-            match locations.len() {
-                0 => {
-                    let _ = log("Symbol not found".to_string());
-                    anyhow::Ok(None)
-                }
-                _ => {
-                    // 3. return the workspaceEdit to rename all the references with the new name
-                    let mut workspace_edit = lsp_types::WorkspaceEdit::default();
+            if locations.is_empty() {
+                let _ = log("Symbol not found".to_string());
+                anyhow::Ok(None)
+            } else {
+                // 3. return the workspaceEdit to rename all the references with the new name
+                let mut workspace_edit = lsp_types::WorkspaceEdit::default();
 
-                    let changes =
-                        locations
-                            .into_iter()
-                            .fold(HashMap::new(), |mut map, location| {
-                                let uri = location.uri;
-                                map.entry(uri.clone())
-                                    .or_insert_with(Vec::new)
-                                    .push(TextEdit {
-                                        range: location.range,
-                                        new_text: new_name.clone(),
-                                    });
-                                map
+                let changes = locations
+                    .into_iter()
+                    .fold(HashMap::new(), |mut map, location| {
+                        let uri = location.uri;
+                        map.entry(uri.clone())
+                            .or_insert_with(Vec::new)
+                            .push(TextEdit {
+                                range: location.range,
+                                new_text: new_name.clone(),
                             });
-                    workspace_edit.changes = Some(changes);
-                    anyhow::Ok(Some(workspace_edit))
-                }
+                        map
+                    });
+                workspace_edit.changes = Some(changes);
+                anyhow::Ok(Some(workspace_edit))
             }
         }
         Err(msg) => {

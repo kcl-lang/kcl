@@ -407,16 +407,14 @@ fn positions_to_goto_def_resp(
         0 => None,
         1 => {
             let (start, end) = positions.iter().next().unwrap().clone();
-            Some(lsp_types::GotoDefinitionResponse::Scalar(lsp_location(
-                start.filename.clone(),
-                &start,
-                &end,
-            )))
+            let loc = lsp_location(start.filename.clone(), &start, &end)?;
+            Some(lsp_types::GotoDefinitionResponse::Scalar(loc))
         }
         _ => {
             let mut res = vec![];
             for (start, end) in positions {
-                res.push(lsp_location(start.filename.clone(), &start, &end))
+                let loc = lsp_location(start.filename.clone(), &start, &end)?;
+                res.push(loc)
             }
             Some(lsp_types::GotoDefinitionResponse::Array(res))
         }

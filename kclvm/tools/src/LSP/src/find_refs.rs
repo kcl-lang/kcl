@@ -34,21 +34,24 @@ pub(crate) fn find_refs<F: Fn(String) -> Result<(), anyhow::Error>>(
         ));
     }
     let def = def.unwrap();
-    if def.get_positions().len() != 1 {
+    if def.get_positions().len() > 1 {
         return Err(String::from(
             "Found more than one definitions, reference not supported",
         ));
     }
     let (start, end) = def.get_positions().iter().next().unwrap().clone();
-    let def_loc = lsp_location(start.filename.clone(), &start, &end);
     // find all the refs of the def
-    Ok(find_refs_from_def(
-        vfs,
-        word_index_map,
-        def_loc,
-        def.get_name(),
-        logger,
-    ))
+    if let Some(def_loc) = lsp_location(start.filename.clone(), &start, &end) {
+        Ok(find_refs_from_def(
+            vfs,
+            word_index_map,
+            def_loc,
+            def.get_name(),
+            logger,
+        ))
+    } else {
+        Err(format!("Invalid file path: {0}", start.filename))
+    }
 }
 
 pub(crate) fn find_refs_from_def<F: Fn(String) -> Result<(), anyhow::Error>>(
