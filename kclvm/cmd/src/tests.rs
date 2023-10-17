@@ -228,6 +228,9 @@ fn test_run_command() {
     test_conflict_mod_file();
     test_instances_with_yaml();
     test_plugin_not_found();
+    test_error_message_fuzz_matched();
+    test_error_message_fuzz_unmatched();
+    test_keyword_argument_error_message();
 }
 
 fn test_run_command_with_import() {
@@ -560,7 +563,6 @@ fn test_plugin_not_found() {
     }
 }
 
-#[test]
 fn test_error_message_fuzz_matched() {
     let test_case_path = PathBuf::from("./src/test_data/fuzz_match/main.k");
     let matches = app().arg_required_else_help(true).get_matches_from(&[
@@ -579,7 +581,6 @@ fn test_error_message_fuzz_matched() {
     }
 }
 
-#[test]
 fn test_error_message_fuzz_unmatched() {
     let test_case_path = PathBuf::from("./src/test_data/fuzz_match/main_unmatched.k");
     let matches = app().arg_required_else_help(true).get_matches_from(&[
@@ -593,6 +594,23 @@ fn test_error_message_fuzz_unmatched() {
         Ok(_) => panic!("unreachable code."),
         Err(msg) => {
             assert!(msg.contains("attribute 'a' not found in schema 'Person'"))
+        }
+    }
+}
+
+fn test_keyword_argument_error_message() {
+    let test_case_path = PathBuf::from("./src/test_data/failed/keyword_argument_error.k");
+    let matches = app().arg_required_else_help(true).get_matches_from(&[
+        ROOT_CMD,
+        "run",
+        &test_case_path.canonicalize().unwrap().display().to_string(),
+    ]);
+    let settings = must_build_settings(matches.subcommand_matches("run").unwrap());
+    let sess = Arc::new(ParseSession::default());
+    match exec_program(sess.clone(), &settings.try_into().unwrap()) {
+        Ok(_) => panic!("unreachable code."),
+        Err(msg) => {
+            assert!(msg.contains("keyword argument 'ID' not found"));
         }
     }
 }

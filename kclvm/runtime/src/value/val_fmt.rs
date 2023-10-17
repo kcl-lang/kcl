@@ -901,7 +901,7 @@ impl FormatString {
                         }
                         FieldType::Keyword(keyword) => kwargs
                             .dict_get_value(keyword.as_str())
-                            .expect("keyword argument not found")
+                            .expect(&format!("keyword argument '{}' not found", keyword))
                             .clone(),
                     };
                     for name_part in parts {
