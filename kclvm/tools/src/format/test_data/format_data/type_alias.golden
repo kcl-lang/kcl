@@ -4,4 +4,4 @@ schema Person:
 
 type PersonOther = Person
 type Int = int
-type UnionType = int|float|str
+type UnionType = int | float | str
