@@ -10,6 +10,7 @@ use crate::*;
 
 use core::any::Any;
 
+mod ast;
 mod error_recovery;
 mod expr;
 mod types;
@@ -50,6 +51,16 @@ macro_rules! parse_type_node_snapshot {
         #[test]
         fn $name() {
             insta::assert_snapshot!($crate::tests::parsing_type_node_string($src));
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! parse_file_ast_json_snapshot {
+    ($name:ident, $filename:expr, $src:expr) => {
+        #[test]
+        fn $name() {
+            insta::assert_snapshot!($crate::tests::parsing_file_ast_json($filename, $src));
         }
     };
 }
@@ -110,6 +121,16 @@ pub(crate) fn parsing_type_node_string(src: &str) -> String {
         let typ = parser.parse_type_annotation();
         typ.node.to_string()
     })
+}
+
+pub(crate) fn parsing_file_ast_json(filename: &str, src: &str) -> String {
+    let m = crate::parse_file_with_global_session(
+        Arc::new(ParseSession::default()),
+        filename,
+        Some(src.into()),
+    )
+    .unwrap();
+    serde_json::ser::to_string(&m).unwrap()
 }
 
 pub fn check_result_panic_info(result: Result<(), Box<dyn Any + Send>>) {
