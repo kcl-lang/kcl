@@ -13,6 +13,7 @@ use core::any::Any;
 mod ast;
 mod error_recovery;
 mod expr;
+mod file;
 mod types;
 
 #[macro_export]
@@ -61,6 +62,16 @@ macro_rules! parse_file_ast_json_snapshot {
         #[test]
         fn $name() {
             insta::assert_snapshot!($crate::tests::parsing_file_ast_json($filename, $src));
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! parse_file_snapshot {
+    ($name:ident, $filename:expr) => {
+        #[test]
+        fn $name() {
+            insta::assert_snapshot!($crate::tests::parsing_file_string($filename));
         }
     };
 }
@@ -130,6 +141,13 @@ pub(crate) fn parsing_file_ast_json(filename: &str, src: &str) -> String {
         Some(src.into()),
     )
     .unwrap();
+    serde_json::ser::to_string(&m).unwrap()
+}
+
+pub(crate) fn parsing_file_string(filename: &str) -> String {
+    let code = std::fs::read_to_string(filename).unwrap();
+    let m =
+        crate::parse_file(filename.trim_start_matches("testdata/"), Some(code)).expect(filename);
     serde_json::ser::to_string(&m).unwrap()
 }
 
