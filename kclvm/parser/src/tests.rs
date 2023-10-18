@@ -12,6 +12,7 @@ use core::any::Any;
 
 mod error_recovery;
 mod expr;
+mod types;
 
 #[macro_export]
 macro_rules! parse_expr_snapshot {
@@ -29,6 +30,16 @@ macro_rules! parse_module_snapshot {
         #[test]
         fn $name() {
             insta::assert_snapshot!($crate::tests::parsing_module_string($src));
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! parse_type_snapshot {
+    ($name:ident, $src:expr) => {
+        #[test]
+        fn $name() {
+            insta::assert_snapshot!($crate::tests::parsing_type_string($src));
         }
     };
 }
@@ -63,6 +74,19 @@ pub(crate) fn parsing_module_string(src: &str) -> String {
         }),
         None => "".to_string(),
     }
+}
+
+pub(crate) fn parsing_type_string(src: &str) -> String {
+    let sm = SourceMap::new(FilePathMapping::empty());
+    sm.new_source_file(PathBuf::from("").into(), src.to_string());
+    let sess = &ParseSession::with_source_map(Arc::new(sm));
+
+    create_session_globals_then(|| {
+        let stream = parse_token_streams(sess, src, new_byte_pos(0));
+        let mut parser = Parser::new(sess, stream);
+        let typ = parser.parse_type_annotation();
+        format!("{typ:?}\n")
+    })
 }
 
 pub fn check_result_panic_info(result: Result<(), Box<dyn Any + Send>>) {
