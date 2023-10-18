@@ -1,0 +1,61 @@
+---
+source: parser/src/tests/expr.rs
+expression: "crate::tests::parsing_expr_string(r####\"a[:0:]\"####)"
+---
+Node {
+    node: Subscript(
+        Subscript {
+            value: Node {
+                node: Identifier(
+                    Identifier {
+                        names: [
+                            Node {
+                                node: "a",
+                                filename: "",
+                                line: 1,
+                                column: 0,
+                                end_line: 1,
+                                end_column: 1,
+                            },
+                        ],
+                        pkgpath: "",
+                        ctx: Load,
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 0,
+                end_line: 1,
+                end_column: 1,
+            },
+            index: None,
+            lower: None,
+            upper: Some(
+                Node {
+                    node: NumberLit(
+                        NumberLit {
+                            binary_suffix: None,
+                            value: Int(
+                                0,
+                            ),
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 3,
+                    end_line: 1,
+                    end_column: 4,
+                },
+            ),
+            step: None,
+            ctx: Load,
+            has_question: false,
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 6,
+}
+

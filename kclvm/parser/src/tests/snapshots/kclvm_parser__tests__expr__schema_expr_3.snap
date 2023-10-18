@@ -1,0 +1,142 @@
+---
+source: parser/src/tests/expr.rs
+expression: "crate::tests::parsing_expr_string(r####\"Schema (1, 2) {k=v}\"####)"
+---
+Node {
+    node: Schema(
+        SchemaExpr {
+            name: Node {
+                node: Identifier {
+                    names: [
+                        Node {
+                            node: "Schema",
+                            filename: "",
+                            line: 1,
+                            column: 0,
+                            end_line: 1,
+                            end_column: 6,
+                        },
+                    ],
+                    pkgpath: "",
+                    ctx: Load,
+                },
+                filename: "",
+                line: 1,
+                column: 0,
+                end_line: 1,
+                end_column: 6,
+            },
+            args: [
+                Node {
+                    node: NumberLit(
+                        NumberLit {
+                            binary_suffix: None,
+                            value: Int(
+                                1,
+                            ),
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 8,
+                    end_line: 1,
+                    end_column: 9,
+                },
+                Node {
+                    node: NumberLit(
+                        NumberLit {
+                            binary_suffix: None,
+                            value: Int(
+                                2,
+                            ),
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 11,
+                    end_line: 1,
+                    end_column: 12,
+                },
+            ],
+            kwargs: [],
+            config: Node {
+                node: Config(
+                    ConfigExpr {
+                        items: [
+                            Node {
+                                node: ConfigEntry {
+                                    key: Some(
+                                        Node {
+                                            node: Identifier(
+                                                Identifier {
+                                                    names: [
+                                                        Node {
+                                                            node: "k",
+                                                            filename: "",
+                                                            line: 1,
+                                                            column: 15,
+                                                            end_line: 1,
+                                                            end_column: 16,
+                                                        },
+                                                    ],
+                                                    pkgpath: "",
+                                                    ctx: Load,
+                                                },
+                                            ),
+                                            filename: "",
+                                            line: 1,
+                                            column: 15,
+                                            end_line: 1,
+                                            end_column: 16,
+                                        },
+                                    ),
+                                    value: Node {
+                                        node: Identifier(
+                                            Identifier {
+                                                names: [
+                                                    Node {
+                                                        node: "v",
+                                                        filename: "",
+                                                        line: 1,
+                                                        column: 17,
+                                                        end_line: 1,
+                                                        end_column: 18,
+                                                    },
+                                                ],
+                                                pkgpath: "",
+                                                ctx: Load,
+                                            },
+                                        ),
+                                        filename: "",
+                                        line: 1,
+                                        column: 17,
+                                        end_line: 1,
+                                        end_column: 18,
+                                    },
+                                    operation: Override,
+                                    insert_index: -1,
+                                },
+                                filename: "",
+                                line: 1,
+                                column: 15,
+                                end_line: 1,
+                                end_column: 18,
+                            },
+                        ],
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 14,
+                end_line: 1,
+                end_column: 19,
+            },
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 19,
+}
+

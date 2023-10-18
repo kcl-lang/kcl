@@ -1,0 +1,118 @@
+---
+source: parser/src/tests/expr.rs
+expression: "crate::tests::parsing_expr_string(r####\"1*(2+3)-4\"####)"
+---
+Node {
+    node: Binary(
+        BinaryExpr {
+            left: Node {
+                node: Binary(
+                    BinaryExpr {
+                        left: Node {
+                            node: NumberLit(
+                                NumberLit {
+                                    binary_suffix: None,
+                                    value: Int(
+                                        1,
+                                    ),
+                                },
+                            ),
+                            filename: "",
+                            line: 1,
+                            column: 0,
+                            end_line: 1,
+                            end_column: 1,
+                        },
+                        op: Bin(
+                            Mul,
+                        ),
+                        right: Node {
+                            node: Paren(
+                                ParenExpr {
+                                    expr: Node {
+                                        node: Binary(
+                                            BinaryExpr {
+                                                left: Node {
+                                                    node: NumberLit(
+                                                        NumberLit {
+                                                            binary_suffix: None,
+                                                            value: Int(
+                                                                2,
+                                                            ),
+                                                        },
+                                                    ),
+                                                    filename: "",
+                                                    line: 1,
+                                                    column: 3,
+                                                    end_line: 1,
+                                                    end_column: 4,
+                                                },
+                                                op: Bin(
+                                                    Add,
+                                                ),
+                                                right: Node {
+                                                    node: NumberLit(
+                                                        NumberLit {
+                                                            binary_suffix: None,
+                                                            value: Int(
+                                                                3,
+                                                            ),
+                                                        },
+                                                    ),
+                                                    filename: "",
+                                                    line: 1,
+                                                    column: 5,
+                                                    end_line: 1,
+                                                    end_column: 6,
+                                                },
+                                            },
+                                        ),
+                                        filename: "",
+                                        line: 1,
+                                        column: 3,
+                                        end_line: 1,
+                                        end_column: 6,
+                                    },
+                                },
+                            ),
+                            filename: "",
+                            line: 1,
+                            column: 2,
+                            end_line: 1,
+                            end_column: 7,
+                        },
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 0,
+                end_line: 1,
+                end_column: 7,
+            },
+            op: Bin(
+                Sub,
+            ),
+            right: Node {
+                node: NumberLit(
+                    NumberLit {
+                        binary_suffix: None,
+                        value: Int(
+                            4,
+                        ),
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 8,
+                end_line: 1,
+                end_column: 9,
+            },
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 9,
+}
+

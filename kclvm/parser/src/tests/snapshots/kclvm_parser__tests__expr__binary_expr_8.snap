@@ -1,0 +1,72 @@
+---
+source: parser/src/tests/expr.rs
+expression: "crate::tests::parsing_expr_string(r####\"key not in ['key']\"####)"
+---
+Node {
+    node: Compare(
+        Compare {
+            left: Node {
+                node: Identifier(
+                    Identifier {
+                        names: [
+                            Node {
+                                node: "key",
+                                filename: "",
+                                line: 1,
+                                column: 0,
+                                end_line: 1,
+                                end_column: 3,
+                            },
+                        ],
+                        pkgpath: "",
+                        ctx: Load,
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 0,
+                end_line: 1,
+                end_column: 3,
+            },
+            ops: [
+                NotIn,
+            ],
+            comparators: [
+                Node {
+                    node: List(
+                        ListExpr {
+                            elts: [
+                                Node {
+                                    node: StringLit(
+                                        StringLit {
+                                            is_long_string: false,
+                                            raw_value: "'key'",
+                                            value: "key",
+                                        },
+                                    ),
+                                    filename: "",
+                                    line: 1,
+                                    column: 12,
+                                    end_line: 1,
+                                    end_column: 17,
+                                },
+                            ],
+                            ctx: Load,
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 11,
+                    end_line: 1,
+                    end_column: 18,
+                },
+            ],
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 18,
+}
+

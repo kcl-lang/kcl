@@ -1,0 +1,93 @@
+---
+source: parser/src/tests/expr.rs
+expression: "crate::tests::parsing_expr_string(r####\"a[1:3:1]\"####)"
+---
+Node {
+    node: Subscript(
+        Subscript {
+            value: Node {
+                node: Identifier(
+                    Identifier {
+                        names: [
+                            Node {
+                                node: "a",
+                                filename: "",
+                                line: 1,
+                                column: 0,
+                                end_line: 1,
+                                end_column: 1,
+                            },
+                        ],
+                        pkgpath: "",
+                        ctx: Load,
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 0,
+                end_line: 1,
+                end_column: 1,
+            },
+            index: None,
+            lower: Some(
+                Node {
+                    node: NumberLit(
+                        NumberLit {
+                            binary_suffix: None,
+                            value: Int(
+                                1,
+                            ),
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 2,
+                    end_line: 1,
+                    end_column: 3,
+                },
+            ),
+            upper: Some(
+                Node {
+                    node: NumberLit(
+                        NumberLit {
+                            binary_suffix: None,
+                            value: Int(
+                                3,
+                            ),
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 4,
+                    end_line: 1,
+                    end_column: 5,
+                },
+            ),
+            step: Some(
+                Node {
+                    node: NumberLit(
+                        NumberLit {
+                            binary_suffix: None,
+                            value: Int(
+                                1,
+                            ),
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 6,
+                    end_line: 1,
+                    end_column: 7,
+                },
+            ),
+            ctx: Load,
+            has_question: false,
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 8,
+}
+

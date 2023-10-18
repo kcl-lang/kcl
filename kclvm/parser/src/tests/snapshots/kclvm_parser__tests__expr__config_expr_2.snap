@@ -1,0 +1,140 @@
+---
+source: parser/src/tests/expr.rs
+expression: "crate::tests::parsing_expr_string(r####\"{\n    \"name\" = {\n        \"name\": \"alice\",\n    }\n    \"gender\" = \"female\"\n}\"####)"
+---
+Node {
+    node: Config(
+        ConfigExpr {
+            items: [
+                Node {
+                    node: ConfigEntry {
+                        key: Some(
+                            Node {
+                                node: StringLit(
+                                    StringLit {
+                                        is_long_string: false,
+                                        raw_value: "\"name\"",
+                                        value: "name",
+                                    },
+                                ),
+                                filename: "",
+                                line: 2,
+                                column: 4,
+                                end_line: 2,
+                                end_column: 10,
+                            },
+                        ),
+                        value: Node {
+                            node: Config(
+                                ConfigExpr {
+                                    items: [
+                                        Node {
+                                            node: ConfigEntry {
+                                                key: Some(
+                                                    Node {
+                                                        node: StringLit(
+                                                            StringLit {
+                                                                is_long_string: false,
+                                                                raw_value: "\"name\"",
+                                                                value: "name",
+                                                            },
+                                                        ),
+                                                        filename: "",
+                                                        line: 3,
+                                                        column: 8,
+                                                        end_line: 3,
+                                                        end_column: 14,
+                                                    },
+                                                ),
+                                                value: Node {
+                                                    node: StringLit(
+                                                        StringLit {
+                                                            is_long_string: false,
+                                                            raw_value: "\"alice\"",
+                                                            value: "alice",
+                                                        },
+                                                    ),
+                                                    filename: "",
+                                                    line: 3,
+                                                    column: 16,
+                                                    end_line: 3,
+                                                    end_column: 23,
+                                                },
+                                                operation: Union,
+                                                insert_index: -1,
+                                            },
+                                            filename: "",
+                                            line: 3,
+                                            column: 8,
+                                            end_line: 3,
+                                            end_column: 23,
+                                        },
+                                    ],
+                                },
+                            ),
+                            filename: "",
+                            line: 2,
+                            column: 13,
+                            end_line: 4,
+                            end_column: 5,
+                        },
+                        operation: Override,
+                        insert_index: -1,
+                    },
+                    filename: "",
+                    line: 2,
+                    column: 4,
+                    end_line: 4,
+                    end_column: 5,
+                },
+                Node {
+                    node: ConfigEntry {
+                        key: Some(
+                            Node {
+                                node: StringLit(
+                                    StringLit {
+                                        is_long_string: false,
+                                        raw_value: "\"gender\"",
+                                        value: "gender",
+                                    },
+                                ),
+                                filename: "",
+                                line: 5,
+                                column: 4,
+                                end_line: 5,
+                                end_column: 12,
+                            },
+                        ),
+                        value: Node {
+                            node: StringLit(
+                                StringLit {
+                                    is_long_string: false,
+                                    raw_value: "\"female\"",
+                                    value: "female",
+                                },
+                            ),
+                            filename: "",
+                            line: 5,
+                            column: 15,
+                            end_line: 5,
+                            end_column: 23,
+                        },
+                        operation: Override,
+                        insert_index: -1,
+                    },
+                    filename: "",
+                    line: 5,
+                    column: 4,
+                    end_line: 5,
+                    end_column: 23,
+                },
+            ],
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 6,
+    end_column: 1,
+}
+

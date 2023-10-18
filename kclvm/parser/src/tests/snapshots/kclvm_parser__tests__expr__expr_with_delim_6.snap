@@ -1,0 +1,69 @@
+---
+source: parser/src/tests/expr.rs
+expression: "crate::tests::parsing_expr_string(r####\"{\n    a = 1\n}\"####)"
+---
+Node {
+    node: Config(
+        ConfigExpr {
+            items: [
+                Node {
+                    node: ConfigEntry {
+                        key: Some(
+                            Node {
+                                node: Identifier(
+                                    Identifier {
+                                        names: [
+                                            Node {
+                                                node: "a",
+                                                filename: "",
+                                                line: 2,
+                                                column: 4,
+                                                end_line: 2,
+                                                end_column: 5,
+                                            },
+                                        ],
+                                        pkgpath: "",
+                                        ctx: Load,
+                                    },
+                                ),
+                                filename: "",
+                                line: 2,
+                                column: 4,
+                                end_line: 2,
+                                end_column: 5,
+                            },
+                        ),
+                        value: Node {
+                            node: NumberLit(
+                                NumberLit {
+                                    binary_suffix: None,
+                                    value: Int(
+                                        1,
+                                    ),
+                                },
+                            ),
+                            filename: "",
+                            line: 2,
+                            column: 8,
+                            end_line: 2,
+                            end_column: 9,
+                        },
+                        operation: Override,
+                        insert_index: -1,
+                    },
+                    filename: "",
+                    line: 2,
+                    column: 4,
+                    end_line: 2,
+                    end_column: 9,
+                },
+            ],
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 3,
+    end_column: 1,
+}
+

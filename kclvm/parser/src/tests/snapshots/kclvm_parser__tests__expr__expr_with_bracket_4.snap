@@ -1,0 +1,18 @@
+---
+source: parser/src/tests/expr.rs
+expression: "crate::tests::parsing_expr_string(r####\"[\"####)"
+---
+Node {
+    node: List(
+        ListExpr {
+            elts: [],
+            ctx: Load,
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 1,
+}
+

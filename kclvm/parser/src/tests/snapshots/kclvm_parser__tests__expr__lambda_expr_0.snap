@@ -1,0 +1,20 @@
+---
+source: parser/src/tests/expr.rs
+expression: "crate::tests::parsing_expr_string(r####\"lambda {}\"####)"
+---
+Node {
+    node: Lambda(
+        LambdaExpr {
+            args: None,
+            return_type_str: None,
+            body: [],
+            return_ty: None,
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 9,
+}
+

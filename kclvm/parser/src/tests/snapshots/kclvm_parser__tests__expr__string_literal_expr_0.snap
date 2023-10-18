@@ -1,0 +1,19 @@
+---
+source: parser/src/tests/expr.rs
+expression: "crate::tests::parsing_expr_string(r####\"'1234'\"####)"
+---
+Node {
+    node: StringLit(
+        StringLit {
+            is_long_string: false,
+            raw_value: "'1234'",
+            value: "1234",
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 6,
+}
+

@@ -1,0 +1,49 @@
+---
+source: parser/src/tests/expr.rs
+expression: "crate::tests::parsing_expr_string(r####\"[2,3]\"####)"
+---
+Node {
+    node: List(
+        ListExpr {
+            elts: [
+                Node {
+                    node: NumberLit(
+                        NumberLit {
+                            binary_suffix: None,
+                            value: Int(
+                                2,
+                            ),
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 1,
+                    end_line: 1,
+                    end_column: 2,
+                },
+                Node {
+                    node: NumberLit(
+                        NumberLit {
+                            binary_suffix: None,
+                            value: Int(
+                                3,
+                            ),
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 3,
+                    end_line: 1,
+                    end_column: 4,
+                },
+            ],
+            ctx: Load,
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 5,
+}
+

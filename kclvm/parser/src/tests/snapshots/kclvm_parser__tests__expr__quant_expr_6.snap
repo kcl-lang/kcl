@@ -1,0 +1,268 @@
+---
+source: parser/src/tests/expr.rs
+expression: "crate::tests::parsing_expr_string(r####\"map i, e in [{k1 = \"v1\", k2 = \"v2\"}] { e if i > 0 }\"####)"
+---
+Node {
+    node: Quant(
+        QuantExpr {
+            target: Node {
+                node: List(
+                    ListExpr {
+                        elts: [
+                            Node {
+                                node: Config(
+                                    ConfigExpr {
+                                        items: [
+                                            Node {
+                                                node: ConfigEntry {
+                                                    key: Some(
+                                                        Node {
+                                                            node: Identifier(
+                                                                Identifier {
+                                                                    names: [
+                                                                        Node {
+                                                                            node: "k1",
+                                                                            filename: "",
+                                                                            line: 1,
+                                                                            column: 14,
+                                                                            end_line: 1,
+                                                                            end_column: 16,
+                                                                        },
+                                                                    ],
+                                                                    pkgpath: "",
+                                                                    ctx: Load,
+                                                                },
+                                                            ),
+                                                            filename: "",
+                                                            line: 1,
+                                                            column: 14,
+                                                            end_line: 1,
+                                                            end_column: 16,
+                                                        },
+                                                    ),
+                                                    value: Node {
+                                                        node: StringLit(
+                                                            StringLit {
+                                                                is_long_string: false,
+                                                                raw_value: "\"v1\"",
+                                                                value: "v1",
+                                                            },
+                                                        ),
+                                                        filename: "",
+                                                        line: 1,
+                                                        column: 19,
+                                                        end_line: 1,
+                                                        end_column: 23,
+                                                    },
+                                                    operation: Override,
+                                                    insert_index: -1,
+                                                },
+                                                filename: "",
+                                                line: 1,
+                                                column: 14,
+                                                end_line: 1,
+                                                end_column: 23,
+                                            },
+                                            Node {
+                                                node: ConfigEntry {
+                                                    key: Some(
+                                                        Node {
+                                                            node: Identifier(
+                                                                Identifier {
+                                                                    names: [
+                                                                        Node {
+                                                                            node: "k2",
+                                                                            filename: "",
+                                                                            line: 1,
+                                                                            column: 25,
+                                                                            end_line: 1,
+                                                                            end_column: 27,
+                                                                        },
+                                                                    ],
+                                                                    pkgpath: "",
+                                                                    ctx: Load,
+                                                                },
+                                                            ),
+                                                            filename: "",
+                                                            line: 1,
+                                                            column: 25,
+                                                            end_line: 1,
+                                                            end_column: 27,
+                                                        },
+                                                    ),
+                                                    value: Node {
+                                                        node: StringLit(
+                                                            StringLit {
+                                                                is_long_string: false,
+                                                                raw_value: "\"v2\"",
+                                                                value: "v2",
+                                                            },
+                                                        ),
+                                                        filename: "",
+                                                        line: 1,
+                                                        column: 30,
+                                                        end_line: 1,
+                                                        end_column: 34,
+                                                    },
+                                                    operation: Override,
+                                                    insert_index: -1,
+                                                },
+                                                filename: "",
+                                                line: 1,
+                                                column: 25,
+                                                end_line: 1,
+                                                end_column: 34,
+                                            },
+                                        ],
+                                    },
+                                ),
+                                filename: "",
+                                line: 1,
+                                column: 13,
+                                end_line: 1,
+                                end_column: 35,
+                            },
+                        ],
+                        ctx: Load,
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 12,
+                end_line: 1,
+                end_column: 36,
+            },
+            variables: [
+                Node {
+                    node: Identifier {
+                        names: [
+                            Node {
+                                node: "i",
+                                filename: "",
+                                line: 1,
+                                column: 4,
+                                end_line: 1,
+                                end_column: 5,
+                            },
+                        ],
+                        pkgpath: "",
+                        ctx: Load,
+                    },
+                    filename: "",
+                    line: 1,
+                    column: 4,
+                    end_line: 1,
+                    end_column: 5,
+                },
+                Node {
+                    node: Identifier {
+                        names: [
+                            Node {
+                                node: "e",
+                                filename: "",
+                                line: 1,
+                                column: 7,
+                                end_line: 1,
+                                end_column: 8,
+                            },
+                        ],
+                        pkgpath: "",
+                        ctx: Load,
+                    },
+                    filename: "",
+                    line: 1,
+                    column: 7,
+                    end_line: 1,
+                    end_column: 8,
+                },
+            ],
+            op: Map,
+            test: Node {
+                node: Identifier(
+                    Identifier {
+                        names: [
+                            Node {
+                                node: "e",
+                                filename: "",
+                                line: 1,
+                                column: 39,
+                                end_line: 1,
+                                end_column: 40,
+                            },
+                        ],
+                        pkgpath: "",
+                        ctx: Load,
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 39,
+                end_line: 1,
+                end_column: 40,
+            },
+            if_cond: Some(
+                Node {
+                    node: Compare(
+                        Compare {
+                            left: Node {
+                                node: Identifier(
+                                    Identifier {
+                                        names: [
+                                            Node {
+                                                node: "i",
+                                                filename: "",
+                                                line: 1,
+                                                column: 44,
+                                                end_line: 1,
+                                                end_column: 45,
+                                            },
+                                        ],
+                                        pkgpath: "",
+                                        ctx: Load,
+                                    },
+                                ),
+                                filename: "",
+                                line: 1,
+                                column: 44,
+                                end_line: 1,
+                                end_column: 45,
+                            },
+                            ops: [
+                                Gt,
+                            ],
+                            comparators: [
+                                Node {
+                                    node: NumberLit(
+                                        NumberLit {
+                                            binary_suffix: None,
+                                            value: Int(
+                                                0,
+                                            ),
+                                        },
+                                    ),
+                                    filename: "",
+                                    line: 1,
+                                    column: 48,
+                                    end_line: 1,
+                                    end_column: 49,
+                                },
+                            ],
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 44,
+                    end_line: 1,
+                    end_column: 49,
+                },
+            ),
+            ctx: Load,
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 51,
+}
+

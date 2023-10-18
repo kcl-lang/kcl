@@ -11,6 +11,7 @@ use crate::*;
 use core::any::Any;
 
 mod error_recovery;
+mod expr;
 
 #[macro_export]
 macro_rules! parse_expr_snapshot {

@@ -1,0 +1,104 @@
+---
+source: parser/src/tests/expr.rs
+expression: "crate::tests::parsing_expr_string(r####\"str(1).isdigit()\"####)"
+---
+Node {
+    node: Call(
+        CallExpr {
+            func: Node {
+                node: Selector(
+                    SelectorExpr {
+                        value: Node {
+                            node: Call(
+                                CallExpr {
+                                    func: Node {
+                                        node: Identifier(
+                                            Identifier {
+                                                names: [
+                                                    Node {
+                                                        node: "str",
+                                                        filename: "",
+                                                        line: 1,
+                                                        column: 0,
+                                                        end_line: 1,
+                                                        end_column: 3,
+                                                    },
+                                                ],
+                                                pkgpath: "",
+                                                ctx: Load,
+                                            },
+                                        ),
+                                        filename: "",
+                                        line: 1,
+                                        column: 0,
+                                        end_line: 1,
+                                        end_column: 3,
+                                    },
+                                    args: [
+                                        Node {
+                                            node: NumberLit(
+                                                NumberLit {
+                                                    binary_suffix: None,
+                                                    value: Int(
+                                                        1,
+                                                    ),
+                                                },
+                                            ),
+                                            filename: "",
+                                            line: 1,
+                                            column: 4,
+                                            end_line: 1,
+                                            end_column: 5,
+                                        },
+                                    ],
+                                    keywords: [],
+                                },
+                            ),
+                            filename: "",
+                            line: 1,
+                            column: 0,
+                            end_line: 1,
+                            end_column: 6,
+                        },
+                        attr: Node {
+                            node: Identifier {
+                                names: [
+                                    Node {
+                                        node: "isdigit",
+                                        filename: "",
+                                        line: 1,
+                                        column: 7,
+                                        end_line: 1,
+                                        end_column: 14,
+                                    },
+                                ],
+                                pkgpath: "",
+                                ctx: Load,
+                            },
+                            filename: "",
+                            line: 1,
+                            column: 7,
+                            end_line: 1,
+                            end_column: 14,
+                        },
+                        ctx: Load,
+                        has_question: false,
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 0,
+                end_line: 1,
+                end_column: 14,
+            },
+            args: [],
+            keywords: [],
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 16,
+}
+

@@ -1,0 +1,51 @@
+---
+source: parser/src/tests/expr.rs
+expression: "crate::tests::parsing_expr_string(r####\"Schema {}\"####)"
+---
+Node {
+    node: Schema(
+        SchemaExpr {
+            name: Node {
+                node: Identifier {
+                    names: [
+                        Node {
+                            node: "Schema",
+                            filename: "",
+                            line: 1,
+                            column: 0,
+                            end_line: 1,
+                            end_column: 6,
+                        },
+                    ],
+                    pkgpath: "",
+                    ctx: Load,
+                },
+                filename: "",
+                line: 1,
+                column: 0,
+                end_line: 1,
+                end_column: 6,
+            },
+            args: [],
+            kwargs: [],
+            config: Node {
+                node: Config(
+                    ConfigExpr {
+                        items: [],
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 7,
+                end_line: 1,
+                end_column: 9,
+            },
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 9,
+}
+

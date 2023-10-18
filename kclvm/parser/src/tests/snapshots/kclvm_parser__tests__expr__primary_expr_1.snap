@@ -1,0 +1,82 @@
+---
+source: parser/src/tests/expr.rs
+expression: "crate::tests::parsing_expr_string(r####\"'{}'.format(1)\"####)"
+---
+Node {
+    node: Call(
+        CallExpr {
+            func: Node {
+                node: Selector(
+                    SelectorExpr {
+                        value: Node {
+                            node: StringLit(
+                                StringLit {
+                                    is_long_string: false,
+                                    raw_value: "'{}'",
+                                    value: "{}",
+                                },
+                            ),
+                            filename: "",
+                            line: 1,
+                            column: 0,
+                            end_line: 1,
+                            end_column: 4,
+                        },
+                        attr: Node {
+                            node: Identifier {
+                                names: [
+                                    Node {
+                                        node: "format",
+                                        filename: "",
+                                        line: 1,
+                                        column: 5,
+                                        end_line: 1,
+                                        end_column: 11,
+                                    },
+                                ],
+                                pkgpath: "",
+                                ctx: Load,
+                            },
+                            filename: "",
+                            line: 1,
+                            column: 5,
+                            end_line: 1,
+                            end_column: 11,
+                        },
+                        ctx: Load,
+                        has_question: false,
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 0,
+                end_line: 1,
+                end_column: 11,
+            },
+            args: [
+                Node {
+                    node: NumberLit(
+                        NumberLit {
+                            binary_suffix: None,
+                            value: Int(
+                                1,
+                            ),
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 12,
+                    end_line: 1,
+                    end_column: 13,
+                },
+            ],
+            keywords: [],
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 14,
+}
+
