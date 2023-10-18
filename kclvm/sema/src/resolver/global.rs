@@ -574,7 +574,7 @@ impl<'ctx> Resolver<'ctx> {
                 ast::Stmt::Unification(unification_stmt) => {
                     let name = unification_stmt.value.node.name.node.get_name();
                     let ty = self.parse_ty_str_with_scope(&name, stmt.get_span_pos());
-                    let is_optional = true;
+                    let is_optional = false;
                     let default = if self.options.resolve_val {
                         print_schema_expr(&unification_stmt.value.node)
                     } else {
