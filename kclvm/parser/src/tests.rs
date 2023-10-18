@@ -44,6 +44,16 @@ macro_rules! parse_type_snapshot {
     };
 }
 
+#[macro_export]
+macro_rules! parse_type_node_snapshot {
+    ($name:ident, $src:expr) => {
+        #[test]
+        fn $name() {
+            insta::assert_snapshot!($crate::tests::parsing_type_node_string($src));
+        }
+    };
+}
+
 pub(crate) fn parsing_expr_string(src: &str) -> String {
     let sm = SourceMap::new(FilePathMapping::empty());
     let sf = sm.new_source_file(PathBuf::from("").into(), src.to_string());
@@ -86,6 +96,19 @@ pub(crate) fn parsing_type_string(src: &str) -> String {
         let mut parser = Parser::new(sess, stream);
         let typ = parser.parse_type_annotation();
         format!("{typ:?}\n")
+    })
+}
+
+pub(crate) fn parsing_type_node_string(src: &str) -> String {
+    let sm = SourceMap::new(FilePathMapping::empty());
+    sm.new_source_file(PathBuf::from("").into(), src.to_string());
+    let sess = &ParseSession::with_source_map(Arc::new(sm));
+
+    create_session_globals_then(|| {
+        let stream = parse_token_streams(sess, src, new_byte_pos(0));
+        let mut parser = Parser::new(sess, stream);
+        let typ = parser.parse_type_annotation();
+        typ.node.to_string()
     })
 }
 

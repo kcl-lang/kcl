@@ -1,13 +1,7 @@
-use crate::lexer::parse_token_streams;
 use crate::parse_file;
-use crate::parser::Parser;
 use crate::session::ParseSession;
-use compiler_base_span::span::new_byte_pos;
-use compiler_base_span::{FilePathMapping, SourceMap};
 use expect_test::{expect, Expect};
-use kclvm_span::create_session_globals_then;
 use regex::Regex;
-use std::path::PathBuf;
 use std::sync::Arc;
 
 fn check_parsing_file_ast_json(filename: &str, src: &str, expect: Expect) {
@@ -22,39 +16,10 @@ fn check_parsing_file_ast_json(filename: &str, src: &str, expect: Expect) {
     expect.assert_eq(&actual)
 }
 
-fn check_type_str(src: &str, expect: Expect) {
-    let sm = SourceMap::new(FilePathMapping::empty());
-    sm.new_source_file(PathBuf::from("").into(), src.to_string());
-    let sess = &ParseSession::with_source_map(Arc::new(sm));
-
-    create_session_globals_then(|| {
-        let stream = parse_token_streams(sess, src, new_byte_pos(0));
-        let mut parser = Parser::new(sess, stream);
-        let typ = parser.parse_type_annotation();
-        let actual = typ.node.to_string();
-        expect.assert_eq(&actual)
-    });
-}
-
 fn check_parsing_module(filename: &str, src: &str, expect: &str) {
     let m = crate::parse_file(filename, Some(src.to_string())).expect(filename);
     let actual = format!("{}\n", serde_json::ser::to_string(&m).unwrap());
     assert_eq!(actual.trim(), expect.trim());
-}
-
-#[test]
-fn test_type_str() {
-    check_type_str(r####"int"####, expect![[r#"int"#]]);
-    check_type_str(r####"  int    "####, expect![[r#"int"#]]);
-
-    check_type_str(
-        r####"bool | True |  int  | str|str"####,
-        expect![[r#"bool | True | int | str | str"#]],
-    );
-    check_type_str(
-        r####"[ [{str: float}] | int]"####,
-        expect![[r#"[[{str:float}] | int]"#]],
-    );
 }
 
 #[test]

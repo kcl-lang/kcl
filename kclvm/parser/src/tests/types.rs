@@ -1,4 +1,4 @@
-use crate::tests::parse_type_snapshot;
+use crate::tests::{parse_type_node_snapshot, parse_type_snapshot};
 
 parse_type_snapshot!(basic_type_0, r####"bool"####);
 parse_type_snapshot!(basic_type_1, r####"int"####);
@@ -25,3 +25,8 @@ parse_type_snapshot!(literal_type_2, r####"123"####);
 parse_type_snapshot!(literal_type_3, r####"123.0"####);
 parse_type_snapshot!(literal_type_4, r####""abc""####);
 parse_type_snapshot!(literal_type_5, r####"''"####);
+
+parse_type_node_snapshot!(type_str_0, r####"int"####);
+parse_type_node_snapshot!(type_str_1, r####"  int    "####);
+parse_type_node_snapshot!(type_str_2, r####"bool | True |  int  | str|str"####);
+parse_type_node_snapshot!(type_str_3, r####"[ [{str: float}] | int]"####);
