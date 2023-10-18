@@ -1,0 +1,6 @@
+import a.b.c
+import d
+
+schema A:
+    name: str
+
