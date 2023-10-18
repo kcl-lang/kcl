@@ -261,7 +261,7 @@ impl<'p> Printer<'p> {
     }
 }
 
-/// Print AST to string
+/// Print AST to string. The default format is according to the KCL code style defined here: https://kcl-lang.io/docs/reference/lang/spec/codestyle
 pub fn print_ast_module(module: &Module) -> String {
     let mut printer = Printer::default();
     printer.write_module(module);

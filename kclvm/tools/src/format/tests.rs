@@ -24,6 +24,9 @@ const TEST_CASES: &[&str; 18] = &[
     "string",
     "type_alias",
     "unary",
+    // "union_types",
+    // "different_stmts_line_breaks",
+    // "list_dict_schema_expr",
 ];
 
 fn read_data(data_name: &str) -> (String, String) {

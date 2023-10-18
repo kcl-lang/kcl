@@ -1,0 +1,5 @@
+workloadType: "Deployment" | "StatefulSet" = "Deployment"
+ServiceType: "LoadBalance" | "ClusterIP" = "LoadBalance"
+abc: A | B | C = A {}
+
+# In union types, there should be one and only one whitespace both before and after the union operator |
