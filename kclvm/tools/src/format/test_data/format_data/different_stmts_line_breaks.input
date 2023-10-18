@@ -1,0 +1,6 @@
+import a
+schema A:
+    name: str = a.name
+A{}
+
+# Break one blank line between different statements e.g., import, schema and expression statements.

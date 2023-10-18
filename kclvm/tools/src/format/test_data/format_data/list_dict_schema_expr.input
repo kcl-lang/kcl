@@ -1,0 +1,20 @@
+dict = {
+    "key": "value"
+}
+
+dict2 = {"key": "value"}
+
+list = [
+    first
+    second
+]
+
+list2 = [first, second]
+
+expr = Person {
+    name: "Alice"
+}
+
+expr2 = Person {name: "Alice"}
+
+# It's both acceptable to write each entry in the list/dict/schema expr without line breaks, or separate each entry with one line break.
