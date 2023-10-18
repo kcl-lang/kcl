@@ -605,8 +605,15 @@ fn is_number_multiplier_literal_type(tpe: &str) -> bool {
     }
 }
 
+#[inline]
+fn ty_str_strip(ty_str: &str) -> &str {
+    // Empty and tab chars.
+    let chars = " \t";
+    ty_str.trim_matches(|c| chars.contains(c))
+}
+
 /// separate_kv split the union type and do not split '|' in dict and list
-/// e.g., "int|str" -> vec!["int", "str"]
+/// e.g., "int|str" -> vec!["int", "str"], "int | str" -> vec!["int", "str"]
 pub fn split_type_union(tpe: &str) -> Vec<&str> {
     let mut i = 0;
     let mut s_index = 0;
@@ -645,7 +652,8 @@ pub fn split_type_union(tpe: &str) -> Vec<&str> {
         i += 1;
     }
     types.push(&tpe[s_index..]);
-    types
+    // Remove empty and tab chars in the type string.
+    types.iter().map(|ty| ty_str_strip(ty)).collect()
 }
 
 /// separate_kv function separates key_type and value_type in the dictionary type strings,
@@ -954,7 +962,9 @@ mod test_value_type {
         let cases = [
             ("", vec![""]),
             ("str|int", vec!["str", "int"]),
+            ("str | int", vec!["str", "int"]),
             ("str|int|bool", vec!["str", "int", "bool"]),
+            ("str | int | bool", vec!["str", "int", "bool"]),
             ("str|[str]", vec!["str", "[str]"]),
             ("str|{str:int}", vec!["str", "{str:int}"]),
             ("A|B|C", vec!["A", "B", "C"]),
