@@ -1,0 +1,20 @@
+---
+source: parser/src/tests/expr.rs
+expression: "crate::tests::parsing_expr_string(\"1\\n\")"
+---
+Node {
+    node: NumberLit(
+        NumberLit {
+            binary_suffix: None,
+            value: Int(
+                1,
+            ),
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 1,
+}
+

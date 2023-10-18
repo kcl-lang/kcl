@@ -1,0 +1,111 @@
+---
+source: parser/src/tests/expr.rs
+expression: "crate::tests::parsing_expr_string(r####\"Schema {k=v}\"####)"
+---
+Node {
+    node: Schema(
+        SchemaExpr {
+            name: Node {
+                node: Identifier {
+                    names: [
+                        Node {
+                            node: "Schema",
+                            filename: "",
+                            line: 1,
+                            column: 0,
+                            end_line: 1,
+                            end_column: 6,
+                        },
+                    ],
+                    pkgpath: "",
+                    ctx: Load,
+                },
+                filename: "",
+                line: 1,
+                column: 0,
+                end_line: 1,
+                end_column: 6,
+            },
+            args: [],
+            kwargs: [],
+            config: Node {
+                node: Config(
+                    ConfigExpr {
+                        items: [
+                            Node {
+                                node: ConfigEntry {
+                                    key: Some(
+                                        Node {
+                                            node: Identifier(
+                                                Identifier {
+                                                    names: [
+                                                        Node {
+                                                            node: "k",
+                                                            filename: "",
+                                                            line: 1,
+                                                            column: 8,
+                                                            end_line: 1,
+                                                            end_column: 9,
+                                                        },
+                                                    ],
+                                                    pkgpath: "",
+                                                    ctx: Load,
+                                                },
+                                            ),
+                                            filename: "",
+                                            line: 1,
+                                            column: 8,
+                                            end_line: 1,
+                                            end_column: 9,
+                                        },
+                                    ),
+                                    value: Node {
+                                        node: Identifier(
+                                            Identifier {
+                                                names: [
+                                                    Node {
+                                                        node: "v",
+                                                        filename: "",
+                                                        line: 1,
+                                                        column: 10,
+                                                        end_line: 1,
+                                                        end_column: 11,
+                                                    },
+                                                ],
+                                                pkgpath: "",
+                                                ctx: Load,
+                                            },
+                                        ),
+                                        filename: "",
+                                        line: 1,
+                                        column: 10,
+                                        end_line: 1,
+                                        end_column: 11,
+                                    },
+                                    operation: Override,
+                                    insert_index: -1,
+                                },
+                                filename: "",
+                                line: 1,
+                                column: 8,
+                                end_line: 1,
+                                end_column: 11,
+                            },
+                        ],
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 7,
+                end_line: 1,
+                end_column: 12,
+            },
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 12,
+}
+

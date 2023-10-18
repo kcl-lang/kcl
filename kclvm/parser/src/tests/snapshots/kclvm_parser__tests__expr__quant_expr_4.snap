@@ -1,0 +1,119 @@
+---
+source: parser/src/tests/expr.rs
+expression: "crate::tests::parsing_expr_string(r####\"filter x in collection {x > 1}\"####)"
+---
+Node {
+    node: Quant(
+        QuantExpr {
+            target: Node {
+                node: Identifier(
+                    Identifier {
+                        names: [
+                            Node {
+                                node: "collection",
+                                filename: "",
+                                line: 1,
+                                column: 12,
+                                end_line: 1,
+                                end_column: 22,
+                            },
+                        ],
+                        pkgpath: "",
+                        ctx: Load,
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 12,
+                end_line: 1,
+                end_column: 22,
+            },
+            variables: [
+                Node {
+                    node: Identifier {
+                        names: [
+                            Node {
+                                node: "x",
+                                filename: "",
+                                line: 1,
+                                column: 7,
+                                end_line: 1,
+                                end_column: 8,
+                            },
+                        ],
+                        pkgpath: "",
+                        ctx: Load,
+                    },
+                    filename: "",
+                    line: 1,
+                    column: 7,
+                    end_line: 1,
+                    end_column: 8,
+                },
+            ],
+            op: Filter,
+            test: Node {
+                node: Compare(
+                    Compare {
+                        left: Node {
+                            node: Identifier(
+                                Identifier {
+                                    names: [
+                                        Node {
+                                            node: "x",
+                                            filename: "",
+                                            line: 1,
+                                            column: 24,
+                                            end_line: 1,
+                                            end_column: 25,
+                                        },
+                                    ],
+                                    pkgpath: "",
+                                    ctx: Load,
+                                },
+                            ),
+                            filename: "",
+                            line: 1,
+                            column: 24,
+                            end_line: 1,
+                            end_column: 25,
+                        },
+                        ops: [
+                            Gt,
+                        ],
+                        comparators: [
+                            Node {
+                                node: NumberLit(
+                                    NumberLit {
+                                        binary_suffix: None,
+                                        value: Int(
+                                            1,
+                                        ),
+                                    },
+                                ),
+                                filename: "",
+                                line: 1,
+                                column: 28,
+                                end_line: 1,
+                                end_column: 29,
+                            },
+                        ],
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 24,
+                end_line: 1,
+                end_column: 29,
+            },
+            if_cond: None,
+            ctx: Load,
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 30,
+}
+

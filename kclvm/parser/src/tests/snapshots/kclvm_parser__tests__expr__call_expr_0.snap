@@ -1,0 +1,41 @@
+---
+source: parser/src/tests/expr.rs
+expression: "crate::tests::parsing_expr_string(r####\"func0()\"####)"
+---
+Node {
+    node: Call(
+        CallExpr {
+            func: Node {
+                node: Identifier(
+                    Identifier {
+                        names: [
+                            Node {
+                                node: "func0",
+                                filename: "",
+                                line: 1,
+                                column: 0,
+                                end_line: 1,
+                                end_column: 5,
+                            },
+                        ],
+                        pkgpath: "",
+                        ctx: Load,
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 0,
+                end_line: 1,
+                end_column: 5,
+            },
+            args: [],
+            keywords: [],
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 7,
+}
+

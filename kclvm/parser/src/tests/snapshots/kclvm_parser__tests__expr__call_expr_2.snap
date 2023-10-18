@@ -1,0 +1,89 @@
+---
+source: parser/src/tests/expr.rs
+expression: "crate::tests::parsing_expr_string(r####\"func2(x=2)\"####)"
+---
+Node {
+    node: Call(
+        CallExpr {
+            func: Node {
+                node: Identifier(
+                    Identifier {
+                        names: [
+                            Node {
+                                node: "func2",
+                                filename: "",
+                                line: 1,
+                                column: 0,
+                                end_line: 1,
+                                end_column: 5,
+                            },
+                        ],
+                        pkgpath: "",
+                        ctx: Load,
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 0,
+                end_line: 1,
+                end_column: 5,
+            },
+            args: [],
+            keywords: [
+                Node {
+                    node: Keyword {
+                        arg: Node {
+                            node: Identifier {
+                                names: [
+                                    Node {
+                                        node: "x",
+                                        filename: "",
+                                        line: 1,
+                                        column: 6,
+                                        end_line: 1,
+                                        end_column: 7,
+                                    },
+                                ],
+                                pkgpath: "",
+                                ctx: Load,
+                            },
+                            filename: "",
+                            line: 1,
+                            column: 6,
+                            end_line: 1,
+                            end_column: 7,
+                        },
+                        value: Some(
+                            Node {
+                                node: NumberLit(
+                                    NumberLit {
+                                        binary_suffix: None,
+                                        value: Int(
+                                            2,
+                                        ),
+                                    },
+                                ),
+                                filename: "",
+                                line: 1,
+                                column: 8,
+                                end_line: 1,
+                                end_column: 9,
+                            },
+                        ),
+                    },
+                    filename: "",
+                    line: 1,
+                    column: 6,
+                    end_line: 1,
+                    end_column: 9,
+                },
+            ],
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 10,
+}
+

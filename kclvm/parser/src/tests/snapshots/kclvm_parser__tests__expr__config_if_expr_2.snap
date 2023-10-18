@@ -1,0 +1,292 @@
+---
+source: parser/src/tests/expr.rs
+expression: "crate::tests::parsing_expr_string(r####\"{\n    if True:\n        a = 1\n    elif x > 1:\n        a = 2\n    else:\n        a = 3\n}\"####)"
+---
+Node {
+    node: Config(
+        ConfigExpr {
+            items: [
+                Node {
+                    node: ConfigEntry {
+                        key: None,
+                        value: Node {
+                            node: ConfigIfEntry(
+                                ConfigIfEntryExpr {
+                                    if_cond: Node {
+                                        node: NameConstantLit(
+                                            NameConstantLit {
+                                                value: True,
+                                            },
+                                        ),
+                                        filename: "",
+                                        line: 2,
+                                        column: 7,
+                                        end_line: 2,
+                                        end_column: 11,
+                                    },
+                                    items: [
+                                        Node {
+                                            node: ConfigEntry {
+                                                key: Some(
+                                                    Node {
+                                                        node: Identifier(
+                                                            Identifier {
+                                                                names: [
+                                                                    Node {
+                                                                        node: "a",
+                                                                        filename: "",
+                                                                        line: 3,
+                                                                        column: 8,
+                                                                        end_line: 3,
+                                                                        end_column: 9,
+                                                                    },
+                                                                ],
+                                                                pkgpath: "",
+                                                                ctx: Load,
+                                                            },
+                                                        ),
+                                                        filename: "",
+                                                        line: 3,
+                                                        column: 8,
+                                                        end_line: 3,
+                                                        end_column: 9,
+                                                    },
+                                                ),
+                                                value: Node {
+                                                    node: NumberLit(
+                                                        NumberLit {
+                                                            binary_suffix: None,
+                                                            value: Int(
+                                                                1,
+                                                            ),
+                                                        },
+                                                    ),
+                                                    filename: "",
+                                                    line: 3,
+                                                    column: 12,
+                                                    end_line: 3,
+                                                    end_column: 13,
+                                                },
+                                                operation: Override,
+                                                insert_index: -1,
+                                            },
+                                            filename: "",
+                                            line: 3,
+                                            column: 8,
+                                            end_line: 3,
+                                            end_column: 13,
+                                        },
+                                    ],
+                                    orelse: Some(
+                                        Node {
+                                            node: ConfigIfEntry(
+                                                ConfigIfEntryExpr {
+                                                    if_cond: Node {
+                                                        node: Compare(
+                                                            Compare {
+                                                                left: Node {
+                                                                    node: Identifier(
+                                                                        Identifier {
+                                                                            names: [
+                                                                                Node {
+                                                                                    node: "x",
+                                                                                    filename: "",
+                                                                                    line: 4,
+                                                                                    column: 9,
+                                                                                    end_line: 4,
+                                                                                    end_column: 10,
+                                                                                },
+                                                                            ],
+                                                                            pkgpath: "",
+                                                                            ctx: Load,
+                                                                        },
+                                                                    ),
+                                                                    filename: "",
+                                                                    line: 4,
+                                                                    column: 9,
+                                                                    end_line: 4,
+                                                                    end_column: 10,
+                                                                },
+                                                                ops: [
+                                                                    Gt,
+                                                                ],
+                                                                comparators: [
+                                                                    Node {
+                                                                        node: NumberLit(
+                                                                            NumberLit {
+                                                                                binary_suffix: None,
+                                                                                value: Int(
+                                                                                    1,
+                                                                                ),
+                                                                            },
+                                                                        ),
+                                                                        filename: "",
+                                                                        line: 4,
+                                                                        column: 13,
+                                                                        end_line: 4,
+                                                                        end_column: 14,
+                                                                    },
+                                                                ],
+                                                            },
+                                                        ),
+                                                        filename: "",
+                                                        line: 4,
+                                                        column: 9,
+                                                        end_line: 4,
+                                                        end_column: 14,
+                                                    },
+                                                    items: [
+                                                        Node {
+                                                            node: ConfigEntry {
+                                                                key: Some(
+                                                                    Node {
+                                                                        node: Identifier(
+                                                                            Identifier {
+                                                                                names: [
+                                                                                    Node {
+                                                                                        node: "a",
+                                                                                        filename: "",
+                                                                                        line: 5,
+                                                                                        column: 8,
+                                                                                        end_line: 5,
+                                                                                        end_column: 9,
+                                                                                    },
+                                                                                ],
+                                                                                pkgpath: "",
+                                                                                ctx: Load,
+                                                                            },
+                                                                        ),
+                                                                        filename: "",
+                                                                        line: 5,
+                                                                        column: 8,
+                                                                        end_line: 5,
+                                                                        end_column: 9,
+                                                                    },
+                                                                ),
+                                                                value: Node {
+                                                                    node: NumberLit(
+                                                                        NumberLit {
+                                                                            binary_suffix: None,
+                                                                            value: Int(
+                                                                                2,
+                                                                            ),
+                                                                        },
+                                                                    ),
+                                                                    filename: "",
+                                                                    line: 5,
+                                                                    column: 12,
+                                                                    end_line: 5,
+                                                                    end_column: 13,
+                                                                },
+                                                                operation: Override,
+                                                                insert_index: -1,
+                                                            },
+                                                            filename: "",
+                                                            line: 5,
+                                                            column: 8,
+                                                            end_line: 5,
+                                                            end_column: 13,
+                                                        },
+                                                    ],
+                                                    orelse: Some(
+                                                        Node {
+                                                            node: Config(
+                                                                ConfigExpr {
+                                                                    items: [
+                                                                        Node {
+                                                                            node: ConfigEntry {
+                                                                                key: Some(
+                                                                                    Node {
+                                                                                        node: Identifier(
+                                                                                            Identifier {
+                                                                                                names: [
+                                                                                                    Node {
+                                                                                                        node: "a",
+                                                                                                        filename: "",
+                                                                                                        line: 7,
+                                                                                                        column: 8,
+                                                                                                        end_line: 7,
+                                                                                                        end_column: 9,
+                                                                                                    },
+                                                                                                ],
+                                                                                                pkgpath: "",
+                                                                                                ctx: Load,
+                                                                                            },
+                                                                                        ),
+                                                                                        filename: "",
+                                                                                        line: 7,
+                                                                                        column: 8,
+                                                                                        end_line: 7,
+                                                                                        end_column: 9,
+                                                                                    },
+                                                                                ),
+                                                                                value: Node {
+                                                                                    node: NumberLit(
+                                                                                        NumberLit {
+                                                                                            binary_suffix: None,
+                                                                                            value: Int(
+                                                                                                3,
+                                                                                            ),
+                                                                                        },
+                                                                                    ),
+                                                                                    filename: "",
+                                                                                    line: 7,
+                                                                                    column: 12,
+                                                                                    end_line: 7,
+                                                                                    end_column: 13,
+                                                                                },
+                                                                                operation: Override,
+                                                                                insert_index: -1,
+                                                                            },
+                                                                            filename: "",
+                                                                            line: 7,
+                                                                            column: 8,
+                                                                            end_line: 7,
+                                                                            end_column: 13,
+                                                                        },
+                                                                    ],
+                                                                },
+                                                            ),
+                                                            filename: "",
+                                                            line: 6,
+                                                            column: 4,
+                                                            end_line: 8,
+                                                            end_column: 0,
+                                                        },
+                                                    ),
+                                                },
+                                            ),
+                                            filename: "",
+                                            line: 4,
+                                            column: 4,
+                                            end_line: 6,
+                                            end_column: 4,
+                                        },
+                                    ),
+                                },
+                            ),
+                            filename: "",
+                            line: 2,
+                            column: 4,
+                            end_line: 8,
+                            end_column: 0,
+                        },
+                        operation: Union,
+                        insert_index: -1,
+                    },
+                    filename: "",
+                    line: 2,
+                    column: 4,
+                    end_line: 8,
+                    end_column: 0,
+                },
+            ],
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 8,
+    end_column: 1,
+}
+

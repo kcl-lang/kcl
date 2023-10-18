@@ -1,0 +1,56 @@
+---
+source: parser/src/tests/expr.rs
+expression: "crate::tests::parsing_expr_string(r####\"a is not True\"####)"
+---
+Node {
+    node: Compare(
+        Compare {
+            left: Node {
+                node: Identifier(
+                    Identifier {
+                        names: [
+                            Node {
+                                node: "a",
+                                filename: "",
+                                line: 1,
+                                column: 0,
+                                end_line: 1,
+                                end_column: 1,
+                            },
+                        ],
+                        pkgpath: "",
+                        ctx: Load,
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 0,
+                end_line: 1,
+                end_column: 1,
+            },
+            ops: [
+                IsNot,
+            ],
+            comparators: [
+                Node {
+                    node: NameConstantLit(
+                        NameConstantLit {
+                            value: True,
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 9,
+                    end_line: 1,
+                    end_column: 13,
+                },
+            ],
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 13,
+}
+

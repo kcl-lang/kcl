@@ -1,0 +1,62 @@
+---
+source: parser/src/tests/expr.rs
+expression: "crate::tests::parsing_expr_string(r####\"lambda x {}\"####)"
+---
+Node {
+    node: Lambda(
+        LambdaExpr {
+            args: Some(
+                Node {
+                    node: Arguments {
+                        args: [
+                            Node {
+                                node: Identifier {
+                                    names: [
+                                        Node {
+                                            node: "x",
+                                            filename: "",
+                                            line: 1,
+                                            column: 7,
+                                            end_line: 1,
+                                            end_column: 8,
+                                        },
+                                    ],
+                                    pkgpath: "",
+                                    ctx: Load,
+                                },
+                                filename: "",
+                                line: 1,
+                                column: 7,
+                                end_line: 1,
+                                end_column: 8,
+                            },
+                        ],
+                        defaults: [
+                            None,
+                        ],
+                        type_annotation_list: [
+                            None,
+                        ],
+                        ty_list: [
+                            None,
+                        ],
+                    },
+                    filename: "",
+                    line: 1,
+                    column: 7,
+                    end_line: 1,
+                    end_column: 8,
+                },
+            ),
+            return_type_str: None,
+            body: [],
+            return_ty: None,
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 11,
+}
+

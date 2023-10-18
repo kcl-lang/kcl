@@ -1,0 +1,44 @@
+---
+source: parser/src/tests/expr.rs
+expression: "crate::tests::parsing_expr_string(r####\"a.b.c\"####)"
+---
+Node {
+    node: Identifier(
+        Identifier {
+            names: [
+                Node {
+                    node: "a",
+                    filename: "",
+                    line: 1,
+                    column: 0,
+                    end_line: 1,
+                    end_column: 1,
+                },
+                Node {
+                    node: "b",
+                    filename: "",
+                    line: 1,
+                    column: 2,
+                    end_line: 1,
+                    end_column: 3,
+                },
+                Node {
+                    node: "c",
+                    filename: "",
+                    line: 1,
+                    column: 4,
+                    end_line: 1,
+                    end_column: 5,
+                },
+            ],
+            pkgpath: "",
+            ctx: Load,
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 5,
+}
+
