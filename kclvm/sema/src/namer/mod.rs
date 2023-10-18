@@ -6,7 +6,7 @@ use kclvm_ast::walker::MutSelfTypedResultWalker;
 use kclvm_error::Position;
 mod node;
 
-struct Namer<'ctx> {
+pub struct Namer<'ctx> {
     gs: GlobalState,
     ctx: NamerContext<'ctx>,
 }
@@ -128,15 +128,22 @@ mod tests {
             ("__main__.Main.person", SymbolKind::Attribute),
             ("__main__.Main.list_union_type", SymbolKind::Attribute),
             ("__main__.Main.dict_union_type", SymbolKind::Attribute),
+            ("__main__.p", SymbolKind::Value),
+            ("__main__.person", SymbolKind::Value),
+            ("import_test.a._a", SymbolKind::Value),
+            ("import_test.b._b", SymbolKind::Value),
         ];
 
         assert_eq!(
-            symbols.fully_qualified_name_map.len(),
+            symbols.symbols_info.fully_qualified_name_map.len(),
             excepts_symbols.len()
         );
 
         for (fqn, kind) in excepts_symbols {
-            assert!(symbols.fully_qualified_name_map.contains_key(fqn));
+            assert!(symbols
+                .symbols_info
+                .fully_qualified_name_map
+                .contains_key(fqn));
             assert_eq!(
                 symbols
                     .get_symbol_by_fully_qualified_name(fqn)

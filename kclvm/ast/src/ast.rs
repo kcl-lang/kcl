@@ -39,6 +39,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use compiler_base_span::{Loc, Span};
+use std::fmt::Debug;
+use uuid;
 
 use super::token;
 use crate::{node_ref, pos::ContainsPos};
@@ -79,18 +81,41 @@ impl Into<Range> for Pos {
     }
 }
 
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+pub struct AstIndex(uuid::Uuid);
+
+impl Default for AstIndex {
+    fn default() -> Self {
+        Self(uuid::Uuid::new_v4())
+    }
+}
 /// Node is the file, line and column number information
 /// that all AST nodes need to contain.
 /// In fact, column and end_column are the counts of character,
 /// For example, `\t` is counted as 1 character, so it is recorded as 1 here, but generally col is 4.
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, PartialEq)]
 pub struct Node<T> {
+    #[serde(skip_serializing, skip_deserializing, default)]
+    pub id: AstIndex,
     pub node: T,
     pub filename: String,
     pub line: u64,
     pub column: u64,
     pub end_line: u64,
     pub end_column: u64,
+}
+
+impl<T: Debug> Debug for Node<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Node")
+            .field("node", &self.node)
+            .field("filename", &self.filename)
+            .field("line", &self.line)
+            .field("column", &self.column)
+            .field("end_line", &self.end_line)
+            .field("end_column", &self.end_column)
+            .finish()
+    }
 }
 
 impl<T> Node<T> {
@@ -103,6 +128,7 @@ impl<T> Node<T> {
         end_column: u64,
     ) -> Self {
         Self {
+            id: AstIndex::default(),
             node,
             filename,
             line,
@@ -114,6 +140,7 @@ impl<T> Node<T> {
 
     pub fn dummy_node(node: T) -> Self {
         Self {
+            id: AstIndex::default(),
             node,
             filename: "".to_string(),
             line: 1,
@@ -125,6 +152,7 @@ impl<T> Node<T> {
 
     pub fn node(node: T, (lo, hi): (Loc, Loc)) -> Self {
         Self {
+            id: AstIndex::default(),
             node,
             filename: format!("{}", lo.file.name.prefer_remapped()),
             line: lo.line as u64,
@@ -136,6 +164,7 @@ impl<T> Node<T> {
 
     pub fn node_with_pos(node: T, pos: PosTuple) -> Self {
         Self {
+            id: AstIndex::default(),
             node,
             filename: pos.0.clone(),
             line: pos.1,
@@ -178,6 +207,7 @@ impl TryInto<Node<Identifier>> for Node<Expr> {
     fn try_into(self) -> Result<Node<Identifier>, Self::Error> {
         match self.node {
             Expr::Identifier(ident) => Ok(Node {
+                id: self.id,
                 node: ident,
                 filename: self.filename,
                 line: self.line,
@@ -194,6 +224,7 @@ impl Node<Expr> {
     /// Into a missing identifier.
     pub fn into_missing_identifier(&self) -> Node<Identifier> {
         Node {
+            id: self.id.clone(),
             node: Identifier {
                 names: vec![],
                 pkgpath: String::new(),
@@ -214,6 +245,7 @@ impl TryInto<Node<SchemaExpr>> for Node<Expr> {
     fn try_into(self) -> Result<Node<SchemaExpr>, Self::Error> {
         match self.node {
             Expr::Schema(schema_expr) => Ok(Node {
+                id: self.id,
                 node: schema_expr,
                 filename: self.filename,
                 line: self.line,

@@ -1171,6 +1171,7 @@ impl<'a> Parser<'a> {
             x.node.orelse = if_item.orelse;
 
             let t = Node {
+                id: AstIndex::default(),
                 node: Expr::ListIfItem(x.node),
                 filename: x.filename,
                 line: x.line,
@@ -1607,6 +1608,7 @@ impl<'a> Parser<'a> {
             x.node.orelse = if_entry.node.orelse;
 
             let t = Node {
+                id: AstIndex::default(),
                 node: Expr::ConfigIfEntry(x.node),
                 filename: x.filename,
                 line: x.line,
@@ -1646,6 +1648,7 @@ impl<'a> Parser<'a> {
 
         let mut body = {
             let node = Node {
+                id: AstIndex::default(),
                 node: Expr::NameConstantLit(NameConstantLit {
                     value: NameConstant::None, // ignore
                 }),

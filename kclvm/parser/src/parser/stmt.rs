@@ -1021,6 +1021,7 @@ impl<'a> Parser<'a> {
             index_signature: body_index_signature,
 
             name: Box::new(Node {
+                id: AstIndex::default(),
                 node: "".to_string(),
                 filename: "".to_string(),
                 line: 0,
