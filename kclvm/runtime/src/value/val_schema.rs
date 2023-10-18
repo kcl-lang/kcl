@@ -249,6 +249,8 @@ impl ValueRef {
             let values = &mut schema.config.values;
             let ops = &mut schema.config.ops;
             let insert_indexs = &mut schema.config.insert_indexs;
+            // Reserve config keys for the schema update process. Issue: #785
+            schema.config_keys = value.config_keys.clone();
             for (k, v) in &value.config.values {
                 let op = value
                     .config
