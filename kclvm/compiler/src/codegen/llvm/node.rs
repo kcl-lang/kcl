@@ -2459,6 +2459,99 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                                         right_value.expect(kcl_error::INTERNAL_ERROR_MSG),
                                     ],
                                 );
+
+                                let is_local_var = {
+                                    let local_vars = self.local_vars.borrow_mut();
+                                    local_vars.contains(name)
+                                };
+                                let is_not_in_lambda = self.lambda_stack.borrow().is_empty();
+                                // Set config value for the schema attribute if the attribute is in the schema and
+                                // it is not a local variable in the lambda function.
+                                if self.scope_level() >= INNER_LEVEL
+                                    && is_in_schema
+                                    && !is_not_in_lambda
+                                    && !is_local_var
+                                {
+                                    let schema_value = self
+                                        .get_variable(value::SCHEMA_SELF_NAME)
+                                        .expect(kcl_error::INTERNAL_ERROR_MSG);
+                                    let config_value = self
+                                        .get_variable(value::SCHEMA_CONFIG_NAME)
+                                        .expect(kcl_error::INTERNAL_ERROR_MSG);
+                                    let string_ptr_value =
+                                        self.native_global_string(name, "").into();
+                                    let has_key = self
+                                        .build_call(
+                                            &ApiFunc::kclvm_dict_has_value.name(),
+                                            &[config_value, string_ptr_value],
+                                        )
+                                        .into_int_value();
+                                    // The config has the attribute key?
+                                    let has_key = self.builder.build_int_compare(
+                                        IntPredicate::NE,
+                                        has_key,
+                                        self.native_i8_zero(),
+                                        "",
+                                    );
+                                    let last_block = self.append_block("");
+                                    let then_block = self.append_block("");
+                                    let else_block = self.append_block("");
+                                    self.br(last_block);
+                                    self.builder.position_at_end(last_block);
+                                    let none_value = self.none_value();
+                                    self.builder
+                                        .build_conditional_branch(has_key, then_block, else_block);
+                                    self.builder.position_at_end(then_block);
+                                    let config_entry = self.build_call(
+                                        &ApiFunc::kclvm_dict_get_entry.name(),
+                                        &[config_value, string_ptr_value],
+                                    );
+                                    self.br(else_block);
+                                    self.builder.position_at_end(else_block);
+                                    let tpe = self.value_ptr_type();
+                                    let phi = self.builder.build_phi(tpe, "");
+                                    phi.add_incoming(&[
+                                        (&none_value, last_block),
+                                        (&config_entry, then_block),
+                                    ]);
+                                    let config_value = phi.as_basic_value();
+                                    self.value_union(schema_value, config_value);
+                                    let cal_map = self
+                                        .get_variable(value::SCHEMA_CAL_MAP)
+                                        .expect(kcl_error::INTERNAL_ERROR_MSG);
+                                    let backtrack_cache = self
+                                        .get_variable(value::BACKTRACK_CACHE)
+                                        .expect(kcl_error::INTERNAL_ERROR_MSG);
+                                    let runtime_type = self
+                                        .get_variable(value::SCHEMA_RUNTIME_TYPE)
+                                        .expect(kcl_error::INTERNAL_ERROR_MSG);
+                                    let name_native_str = self.native_global_string_value(name);
+                                    self.build_void_call(
+                                        &ApiFunc::kclvm_schema_backtrack_cache.name(),
+                                        &[
+                                            schema_value,
+                                            backtrack_cache,
+                                            cal_map,
+                                            name_native_str,
+                                            runtime_type,
+                                        ],
+                                    );
+                                    // Update backtrack meta
+                                    {
+                                        if let Some(backtrack_meta) =
+                                            self.backtrack_meta.borrow_mut().as_mut()
+                                        {
+                                            if name == backtrack_meta.target {
+                                                backtrack_meta.count += 1;
+                                                if backtrack_meta.count == backtrack_meta.level {
+                                                    backtrack_meta.stop = true;
+                                                    self.ret(schema_value);
+                                                    return Ok(schema_value);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }

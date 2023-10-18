@@ -10,8 +10,8 @@
 //! For more information about template loader, see doc in "compiler_base/error/src/diagnostic/diagnostic_message.rs".
 
 use crate::{
-    diagnostic::diagnostic_message::TemplateLoader, emit_diagnostic_to_uncolored_text,
-    emitter::EmitResultText, Diagnostic, DiagnosticStyle, Emitter, EmitterWriter,
+    diagnostic::diagnostic_message::TemplateLoader, emit_diagnostic_to_uncolored_text, Diagnostic,
+    DiagnosticStyle, Emitter, EmitterWriter,
 };
 use anyhow::{bail, Context, Result};
 use compiler_base_span::fatal_error::FatalError;

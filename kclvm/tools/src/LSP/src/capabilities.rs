@@ -5,6 +5,7 @@ use lsp_types::{
 };
 
 /// Returns the capabilities of this LSP server implementation given the capabilities of the client.
+#[allow(dead_code)]
 pub fn server_capabilities(client_caps: &ClientCapabilities) -> ServerCapabilities {
     ServerCapabilities {
         text_document_sync: Some(TextDocumentSyncCapability::Kind(TextDocumentSyncKind::FULL)),
