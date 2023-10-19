@@ -2,6 +2,7 @@
 Module documents
 """
 import math as alias_math
+
 schema Person(Base):
     name: str
     age: int
