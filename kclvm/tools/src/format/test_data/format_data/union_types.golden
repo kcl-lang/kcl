@@ -2,4 +2,10 @@ workloadType: "Deployment" | "StatefulSet" = "Deployment"
 ServiceType: "LoadBalance" | "ClusterIP" = "LoadBalance"
 abc: A | B | C = A {}
 
+schema Server:
+    [name: str | int]: str | int
+    workloadType: "Deployment" | "StatefulSet"
+    dict: {str:str | int}
+
+type some_alias = "abc" | "def" | {str | int:}
 # In union types, there should be one and only one whitespace both before and after the union operator |

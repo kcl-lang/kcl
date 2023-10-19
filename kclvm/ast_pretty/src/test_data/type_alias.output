@@ -1,4 +1,4 @@
-type Color = "Red"|"Yellow"|"Blue"
+type Color = "Red" | "Yellow" | "Blue"
 colorRed: Color = "Red"
 colorYellow: Color = "Yellow"
 colorBlue: Color = "Blue"

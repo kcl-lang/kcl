@@ -1556,7 +1556,7 @@ impl ToString for Type {
                     }
                     for (i, t) in x.type_elements.iter().enumerate() {
                         if i > 0 {
-                            w.push('|');
+                            w.push_str(" | ")
                         }
                         to_str(&t.node, w);
                     }

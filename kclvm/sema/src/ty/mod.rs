@@ -77,7 +77,7 @@ impl Type {
                 .iter()
                 .map(|ty| ty.ty_str())
                 .collect::<Vec<String>>()
-                .join("|"),
+                .join(" | "),
             TypeKind::Schema(schema_ty) => schema_ty.name.to_string(),
             TypeKind::NumberMultiplier(number_multiplier) => number_multiplier.ty_str(),
             TypeKind::Function(func_ty) => func_ty.ty_str(),
