@@ -24,7 +24,7 @@ impl Type {
                 _ => {
                     let mut types = Vec::new();
                     let _ = v.elem_types.iter().map(|e| types.push(e.type_str()));
-                    types.join("|")
+                    types.join(" | ")
                 }
             },
             Type::schema_type(ref v) => v.name.to_string(),

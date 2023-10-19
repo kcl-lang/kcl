@@ -239,11 +239,11 @@ fn test_type_str() {
 
     check_type_str(
         r####"bool | True |  int  | str|str"####,
-        expect![[r#"bool|True|int|str|str"#]],
+        expect![[r#"bool | True | int | str | str"#]],
     );
     check_type_str(
         r####"[ [{str: float}] | int]"####,
-        expect![[r#"[[{str:float}]|int]"#]],
+        expect![[r#"[[{str:float}] | int]"#]],
     );
 }
 
