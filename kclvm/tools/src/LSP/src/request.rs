@@ -106,7 +106,7 @@ pub(crate) fn handle_range_formatting(
     }
 }
 
-/// Called when a `GotoDefinition` request was received.
+/// Called when a `textDocument/codeAction` request was received.
 pub(crate) fn handle_code_action(
     _snapshot: LanguageServerSnapshot,
     params: lsp_types::CodeActionParams,
@@ -120,7 +120,7 @@ pub(crate) fn handle_code_action(
     Ok(Some(code_actions))
 }
 
-/// Called when a `GotoDefinition` request was received.
+/// Called when a `textDocument/definition` request was received.
 pub(crate) fn handle_goto_definition(
     snapshot: LanguageServerSnapshot,
     params: lsp_types::GotoDefinitionParams,
@@ -137,7 +137,7 @@ pub(crate) fn handle_goto_definition(
     Ok(res)
 }
 
-/// Called when a `FindReferences` request was received
+/// Called when a `textDocument/references` request was received
 pub(crate) fn handle_reference(
     snapshot: LanguageServerSnapshot,
     params: lsp_types::ReferenceParams,
@@ -164,7 +164,7 @@ pub(crate) fn handle_reference(
     }
 }
 
-/// Called when a `Completion` request was received.
+/// Called when a `textDocument/completion` request was received.
 pub(crate) fn handle_completion(
     snapshot: LanguageServerSnapshot,
     params: lsp_types::CompletionParams,
@@ -185,7 +185,7 @@ pub(crate) fn handle_completion(
     Ok(res)
 }
 
-/// Called when a `Completion` request was received.
+/// Called when a `textDocument/hover` request was received.
 pub(crate) fn handle_hover(
     snapshot: LanguageServerSnapshot,
     params: lsp_types::HoverParams,
@@ -202,7 +202,7 @@ pub(crate) fn handle_hover(
     Ok(res)
 }
 
-/// Called when a `GotoDefinition` request was received.
+/// Called when a `textDocument/documentSymbol` request was received.
 pub(crate) fn handle_document_symbol(
     snapshot: LanguageServerSnapshot,
     params: lsp_types::DocumentSymbolParams,
@@ -218,7 +218,7 @@ pub(crate) fn handle_document_symbol(
     Ok(res)
 }
 
-/// Called when a `Rename` request was received.
+/// Called when a `textDocument/rename` request was received.
 pub(crate) fn handle_rename(
     snapshot: LanguageServerSnapshot,
     params: lsp_types::RenameParams,
