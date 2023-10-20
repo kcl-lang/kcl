@@ -479,21 +479,21 @@ mod tests {
         };
 
         let res = goto_definition(&program, &pos, &prog_scope);
-        let mut expeced_files = IndexSet::new();
+        let mut expected_files = IndexSet::new();
         let path_str = path.to_str().unwrap();
         let test_files = [
             "src/test_data/goto_def_test/pkg/schema_def1.k",
             "src/test_data/goto_def_test/pkg/schema_def.k",
         ];
-        expeced_files.insert(format!("{}/{}", path_str, test_files[0]));
-        expeced_files.insert(format!("{}/{}", path_str, test_files[1]));
+        expected_files.insert(format!("{}/{}", path_str, test_files[0]));
+        expected_files.insert(format!("{}/{}", path_str, test_files[1]));
 
         match res.unwrap() {
             lsp_types::GotoDefinitionResponse::Array(arr) => {
-                assert_eq!(expeced_files.len(), arr.len());
+                assert_eq!(expected_files.len(), arr.len());
                 for loc in arr {
                     let got_path = loc.uri.path().to_string();
-                    assert!(expeced_files.contains(&got_path));
+                    assert!(expected_files.contains(&got_path));
                 }
             }
             _ => {
@@ -546,21 +546,21 @@ mod tests {
             column: Some(7),
         };
         let res = goto_definition(&program, &pos, &prog_scope);
-        let mut expeced_files = IndexSet::new();
+        let mut expected_files = IndexSet::new();
         let path_str = path.to_str().unwrap();
         let test_files = [
             "src/test_data/goto_def_test/pkg/schema_def1.k",
             "src/test_data/goto_def_test/pkg/schema_def.k",
         ];
-        expeced_files.insert(format!("{}/{}", path_str, test_files[0]));
-        expeced_files.insert(format!("{}/{}", path_str, test_files[1]));
+        expected_files.insert(format!("{}/{}", path_str, test_files[0]));
+        expected_files.insert(format!("{}/{}", path_str, test_files[1]));
 
         match res.unwrap() {
             lsp_types::GotoDefinitionResponse::Array(arr) => {
-                assert_eq!(expeced_files.len(), arr.len());
+                assert_eq!(expected_files.len(), arr.len());
                 for loc in arr {
                     let got_path = loc.uri.path().to_string();
-                    assert!(expeced_files.contains(&got_path));
+                    assert!(expected_files.contains(&got_path));
                 }
             }
             _ => {
