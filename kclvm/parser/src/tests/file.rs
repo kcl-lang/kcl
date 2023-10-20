@@ -1,0 +1,19 @@
+use crate::tests::parse_file_snapshot;
+
+parse_file_snapshot!(assert_1, "testdata/assert-01.k");
+parse_file_snapshot!(assert_2, "testdata/assert-02.k");
+parse_file_snapshot!(assert_3, "testdata/assert-03.k");
+parse_file_snapshot!(assert_if_0, "testdata/assert-if-0.k");
+parse_file_snapshot!(assert_if_1, "testdata/assert-if-1.k");
+parse_file_snapshot!(assert_if_2, "testdata/assert-if-2.k");
+parse_file_snapshot!(assign_1, "testdata/assign-01.k");
+parse_file_snapshot!(config_expr_1, "testdata/config_expr-01.k");
+parse_file_snapshot!(config_expr_2, "testdata/config_expr-02.k");
+parse_file_snapshot!(config_expr_3, "testdata/config_expr-03.k");
+parse_file_snapshot!(config_expr_4, "testdata/config_expr-04.k");
+parse_file_snapshot!(import_1, "testdata/import-01.k");
+parse_file_snapshot!(if_1, "testdata/if-01.k");
+parse_file_snapshot!(if_2, "testdata/if-02.k");
+parse_file_snapshot!(if_3, "testdata/if-03.k");
+parse_file_snapshot!(type_1, "testdata/type-01.k");
+parse_file_snapshot!(hello_win, "testdata/hello_win.k");
