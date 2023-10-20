@@ -189,6 +189,7 @@ impl<'a> Parser<'a> {
                             let filename: String = format!("{}", lo.file.name.prefer_remapped());
 
                             let node = kclvm_ast::ast::Node {
+                                id: kclvm_ast::ast::AstIndex::default(),
                                 node: Comment {
                                     text: x.as_str().to_string(),
                                 },
