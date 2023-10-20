@@ -904,8 +904,18 @@ impl<'p> Printer<'p> {
     }
 
     pub fn stmts(&mut self, stmts: &[ast::NodeRef<ast::Stmt>]) {
+        let mut prev_stmt: Option<ast::Stmt> = None;
         for stmt in stmts {
+            let import_stmt_alter = match (prev_stmt.as_ref(), stmt.as_ref().node.to_owned()) {
+                (Some(ast::Stmt::Import(_)), ast::Stmt::Import(_)) => false,
+                (Some(ast::Stmt::Import(_)), _) => true,
+                _ => false,
+            };
+            if import_stmt_alter {
+                self.write_newline();
+            }
             self.stmt(stmt);
+            prev_stmt = Some(stmt.node.to_owned());
         }
     }
 }
