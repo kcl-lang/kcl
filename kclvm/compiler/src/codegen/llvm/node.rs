@@ -1391,10 +1391,6 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
             self.walk_decorator_with_name(&decorator.node, Some(name), false)
                 .expect(kcl_error::COMPILE_ERROR_MSG);
         }
-        let value = match &schema_attr.value {
-            Some(value) => self.walk_expr(value).expect(kcl_error::COMPILE_ERROR_MSG),
-            None => self.undefined_value(),
-        };
         let config_value = self
             .get_variable(value::SCHEMA_CONFIG_NAME)
             .expect(kcl_error::INTERNAL_ERROR_MSG);
@@ -1409,6 +1405,51 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
             &ApiFunc::kclvm_config_attr_map.name(),
             &[schema_value, string_ptr_value, type_str_ptr_value],
         );
+        let has_key = self
+            .build_call(
+                &ApiFunc::kclvm_dict_has_value.name(),
+                &[config_value, string_ptr_value],
+            )
+            .into_int_value();
+        let has_key =
+            self.builder
+                .build_int_compare(IntPredicate::NE, has_key, self.native_i8_zero(), "");
+        let then_block = self.append_block("");
+        let else_block = self.append_block("");
+        let end_block = self.append_block("");
+        self.builder
+            .build_conditional_branch(has_key, then_block, else_block);
+        self.builder.position_at_end(then_block);
+        let config_attr_value = self.build_call(
+            &ApiFunc::kclvm_dict_get_entry.name(),
+            &[config_value, string_ptr_value],
+        );
+        // If the attribute operator is not `=`, eval the schema attribute value.
+        // if is_not_override:
+        let is_override_attr = self
+            .build_call(
+                &ApiFunc::kclvm_dict_is_override_attr.name(),
+                &[config_value, string_ptr_value],
+            )
+            .into_int_value();
+        let is_not_override_attr = self.builder.build_int_compare(
+            IntPredicate::EQ,
+            is_override_attr,
+            self.native_i8_zero(),
+            "",
+        );
+        let is_not_override_then_block = self.append_block("");
+        let is_not_override_else_block = self.append_block("");
+        self.builder.build_conditional_branch(
+            is_not_override_attr,
+            is_not_override_then_block,
+            is_not_override_else_block,
+        );
+        self.builder.position_at_end(is_not_override_then_block);
+        let value = match &schema_attr.value {
+            Some(value) => self.walk_expr(value).expect(kcl_error::COMPILE_ERROR_MSG),
+            None => self.undefined_value(),
+        };
         if let Some(op) = &schema_attr.op {
             match op {
                 // Union
@@ -1425,24 +1466,8 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
                 _ => self.dict_merge(schema_value, name, value, 1, -1),
             }
         }
-        let has_key = self
-            .build_call(
-                &ApiFunc::kclvm_dict_has_value.name(),
-                &[config_value, string_ptr_value],
-            )
-            .into_int_value();
-        let has_key =
-            self.builder
-                .build_int_compare(IntPredicate::NE, has_key, self.native_i8_zero(), "");
-        let then_block = self.append_block("");
-        let else_block = self.append_block("");
-        self.builder
-            .build_conditional_branch(has_key, then_block, else_block);
-        self.builder.position_at_end(then_block);
-        let config_attr_value = self.build_call(
-            &ApiFunc::kclvm_dict_get_entry.name(),
-            &[config_value, string_ptr_value],
-        );
+        self.br(is_not_override_else_block);
+        self.builder.position_at_end(is_not_override_else_block);
         self.value_union(schema_value, config_attr_value);
         let cal_map = self
             .get_variable(value::SCHEMA_CAL_MAP)
@@ -1476,8 +1501,31 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
                 }
             }
         }
-        self.br(else_block);
+        self.br(end_block);
         self.builder.position_at_end(else_block);
+        // Lazy eval for the schema attribute.
+        let value = match &schema_attr.value {
+            Some(value) => self.walk_expr(value).expect(kcl_error::COMPILE_ERROR_MSG),
+            None => self.undefined_value(),
+        };
+        if let Some(op) = &schema_attr.op {
+            match op {
+                // Union
+                ast::BinOrAugOp::Aug(ast::AugOp::BitOr) => {
+                    let org_value = self.build_call(
+                        &ApiFunc::kclvm_dict_get_value.name(),
+                        &[schema_value, string_ptr_value],
+                    );
+                    let fn_name = ApiFunc::kclvm_value_op_bit_or;
+                    let value = self.build_call(&fn_name.name(), &[org_value, value]);
+                    self.dict_merge(schema_value, name, value, 1, -1);
+                }
+                // Assign
+                _ => self.dict_merge(schema_value, name, value, 1, -1),
+            }
+        }
+        self.br(end_block);
+        self.builder.position_at_end(end_block);
         Ok(schema_value)
     }
 

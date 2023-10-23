@@ -145,6 +145,7 @@ pub fn _kclvm_get_fn_ptr_by_name(name: &str) -> u64 {
         "kclvm_dict_insert" => crate::kclvm_dict_insert as *const () as u64,
         "kclvm_dict_insert_unpack" => crate::kclvm_dict_insert_unpack as *const () as u64,
         "kclvm_dict_insert_value" => crate::kclvm_dict_insert_value as *const () as u64,
+        "kclvm_dict_is_override_attr" => crate::kclvm_dict_is_override_attr as *const () as u64,
         "kclvm_dict_keys" => crate::kclvm_dict_keys as *const () as u64,
         "kclvm_dict_len" => crate::kclvm_dict_len as *const () as u64,
         "kclvm_dict_merge" => crate::kclvm_dict_merge as *const () as u64,

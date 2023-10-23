@@ -116,6 +116,15 @@ impl ValueRef {
         }
     }
 
+    /// Dict get value e.g., {k1 = v1, k2 = v2}.get_attr_operator(k1) == Some(ConfigEntryOperationKind::Override)
+    pub fn dict_get_attr_operator(&self, key: &str) -> Option<ConfigEntryOperationKind> {
+        match &*self.rc.borrow() {
+            Value::dict_value(ref dict) => dict.ops.get(key).cloned(),
+            Value::schema_value(ref schema) => schema.config.ops.get(key).cloned(),
+            _ => None,
+        }
+    }
+
     /// Dict get entry e.g., {k1: v1, k2, v2}.get_entry(k1) == {k1: v1}
     pub fn dict_get_entry(&self, key: &str) -> Option<ValueRef> {
         match &*self.rc.borrow() {

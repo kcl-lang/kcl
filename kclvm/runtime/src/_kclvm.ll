@@ -252,6 +252,8 @@ declare void @kclvm_dict_insert_unpack(%kclvm_value_ref_t* %p, %kclvm_value_ref_
 
 declare void @kclvm_dict_insert_value(%kclvm_value_ref_t* %p, %kclvm_value_ref_t* %key, %kclvm_value_ref_t* %v, %kclvm_size_t %op, %kclvm_size_t %insert_index);
 
+declare %kclvm_bool_t @kclvm_dict_is_override_attr(%kclvm_value_ref_t* %p, %kclvm_char_t* %key);
+
 declare %kclvm_value_ref_t* @kclvm_dict_keys(%kclvm_value_ref_t* %p);
 
 declare %kclvm_size_t @kclvm_dict_len(%kclvm_value_ref_t* %p);
@@ -284,7 +286,7 @@ declare %kclvm_value_ref_t* @kclvm_iterator_next_value(%kclvm_iterator_t* %p, %k
 
 declare %kclvm_value_ref_t* @kclvm_json_decode(%kclvm_context_t* %_ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
 
-declare %kclvm_value_ref_t* @kclvm_json_dump_to_file(%kclvm_context_t* %_ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+declare %kclvm_value_ref_t* @kclvm_json_dump_to_file(%kclvm_context_t* %_ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 declare %kclvm_value_ref_t* @kclvm_json_encode(%kclvm_context_t* %_ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
@@ -429,10 +431,6 @@ declare void @kclvm_schema_value_check(%kclvm_value_ref_t* %schema_value, %kclvm
 declare %kclvm_value_ref_t* @kclvm_schema_value_new(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs, %kclvm_value_ref_t* %schema_value_or_func, %kclvm_value_ref_t* %config, %kclvm_value_ref_t* %config_meta, %kclvm_char_t* %pkgpath);
 
 declare %kclvm_size_t @kclvm_strlen(i8* %ptr);
-
-declare void @kclvm_testing_arguments(%kclvm_context_t* %_ctx, %kclvm_value_ref_t* %_args, %kclvm_value_ref_t* %_kwargs);
-
-declare void @kclvm_testing_setting_file(%kclvm_context_t* %_ctx, %kclvm_value_ref_t* %_args, %kclvm_value_ref_t* %_kwargs);
 
 declare %kclvm_value_ref_t* @kclvm_units_to_G(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
@@ -654,7 +652,7 @@ declare %kclvm_value_ref_t* @kclvm_value_union_all(%kclvm_context_t* %_ctx, %kcl
 
 declare %kclvm_value_ref_t* @kclvm_yaml_decode(%kclvm_context_t* %_ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
 
-declare %kclvm_value_ref_t* @kclvm_yaml_dump_to_file(%kclvm_context_t* %_ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+declare %kclvm_value_ref_t* @kclvm_yaml_dump_to_file(%kclvm_context_t* %_ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 declare %kclvm_value_ref_t* @kclvm_yaml_encode(%kclvm_context_t* %_ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
