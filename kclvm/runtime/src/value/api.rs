@@ -1058,10 +1058,12 @@ pub unsafe extern "C" fn kclvm_dict_is_override_attr(
 ) -> kclvm_bool_t {
     let p = ptr_as_ref(p);
     let key = c2str(key);
-    matches!(
+    let is_override_op = matches!(
         p.dict_get_attr_operator(key),
         Some(ConfigEntryOperationKind::Override)
-    ) as kclvm_bool_t
+    );
+    let without_index = matches!(p.dict_get_insert_index(key), Some(-1) | None);
+    (is_override_op && without_index) as kclvm_bool_t
 }
 
 #[no_mangle]

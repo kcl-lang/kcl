@@ -125,6 +125,17 @@ impl ValueRef {
         }
     }
 
+    /// Dict get value e.g., {k1 = v1, k2 = v2}.get_attr_operator(k1) == Some(ConfigEntryOperationKind::Override)
+    pub fn dict_get_insert_index(&self, key: &str) -> Option<i32> {
+        match &*self.rc.borrow() {
+            Value::dict_value(ref dict) => Some(*dict.insert_indexs.get(key).unwrap_or(&-1)),
+            Value::schema_value(ref schema) => {
+                Some(*schema.config.insert_indexs.get(key).unwrap_or(&-1))
+            }
+            _ => None,
+        }
+    }
+
     /// Dict get entry e.g., {k1: v1, k2, v2}.get_entry(k1) == {k1: v1}
     pub fn dict_get_entry(&self, key: &str) -> Option<ValueRef> {
         match &*self.rc.borrow() {
