@@ -1052,6 +1052,22 @@ pub unsafe extern "C" fn kclvm_dict_clear(p: *mut kclvm_value_ref_t) {
 
 #[no_mangle]
 #[runtime_fn]
+pub unsafe extern "C" fn kclvm_dict_is_override_attr(
+    p: *const kclvm_value_ref_t,
+    key: *const kclvm_char_t,
+) -> kclvm_bool_t {
+    let p = ptr_as_ref(p);
+    let key = c2str(key);
+    let is_override_op = matches!(
+        p.dict_get_attr_operator(key),
+        Some(ConfigEntryOperationKind::Override)
+    );
+    let without_index = matches!(p.dict_get_insert_index(key), Some(-1) | None);
+    (is_override_op && without_index) as kclvm_bool_t
+}
+
+#[no_mangle]
+#[runtime_fn]
 pub unsafe extern "C" fn kclvm_dict_get(
     p: *const kclvm_value_ref_t,
     key: *const kclvm_value_ref_t,

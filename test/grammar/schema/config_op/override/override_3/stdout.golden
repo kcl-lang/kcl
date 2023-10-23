@@ -1,0 +1,7 @@
+instance:
+  field1:
+  - a: 1
+    b: key
+    c:
+      key: value
+    d: value

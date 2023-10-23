@@ -138,6 +138,7 @@ pub enum ApiFunc {
     kclvm_dict_insert,
     kclvm_dict_insert_unpack,
     kclvm_dict_insert_value,
+    kclvm_dict_is_override_attr,
     kclvm_dict_keys,
     kclvm_dict_len,
     kclvm_dict_merge,
