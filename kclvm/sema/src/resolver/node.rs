@@ -941,8 +941,19 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
         if let Some(args) = &lambda_expr.args {
             for (i, arg) in args.node.args.iter().enumerate() {
                 let name = arg.node.get_name();
-                let arg_ty = args.node.get_arg_type(i);
+                let arg_ty = args.node.get_arg_type(i); 
                 let ty = self.parse_ty_with_scope(&arg_ty, arg.get_span_pos());
+                
+                // If the arguments type of a lambda is a schema type,
+                // It should be marked as an schema instance type.
+                let ty = if let TypeKind::Schema(sty) = &ty.kind {
+                    let mut arg_ty = sty.clone();
+                    arg_ty.is_instance = true;
+                    Rc::new(Type::schema(arg_ty))
+                } else {
+                    ty.clone()
+                };
+                
                 params.push(Parameter {
                     name,
                     ty: ty.clone(),
