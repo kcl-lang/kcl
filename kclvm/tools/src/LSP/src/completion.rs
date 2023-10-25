@@ -217,7 +217,7 @@ pub(crate) fn get_completion(
                                             get_system_module_members(name.as_str())
                                                 .iter()
                                                 .map(|s| KCLCompletionItem {
-                                                    label: s.to_string(),
+                                                    label: format!("{}()", s),
                                                 })
                                                 .collect::<IndexSet<KCLCompletionItem>>(),
                                         ),
@@ -457,7 +457,7 @@ mod tests {
         let got = completion(Some('.'), &program, &pos, &prog_scope).unwrap();
 
         items.extend(MATH_FUNCTION_NAMES.iter().map(|s| KCLCompletionItem {
-            label: s.to_string(),
+            label: format!("{}{}", s, "()"),
         }));
         let expect: CompletionResponse = into_completion_items(&items).into();
         assert_eq!(got, expect);
@@ -592,7 +592,7 @@ mod tests {
         let got = completion(Some('.'), &program, &pos, &prog_scope).unwrap();
 
         items.extend(MATH_FUNCTION_NAMES.iter().map(|s| KCLCompletionItem {
-            label: s.to_string(),
+            label: format!("{}{}", s, "()"),
         }));
         let expect: CompletionResponse = into_completion_items(&items).into();
         assert_eq!(got, expect);
