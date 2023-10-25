@@ -1,7 +1,5 @@
 use anyhow::{anyhow, Ok};
 use crossbeam_channel::Sender;
-use kclvm_config::modfile::KCL_FILE_EXTENSION;
-use kclvm_config::modfile::KCL_FILE_EXTENSION;
 use kclvm_sema::info::is_valid_kcl_name;
 use lsp_types::{Location, TextEdit};
 use ra_ap_vfs::VfsPath;
@@ -64,29 +62,25 @@ impl LanguageServerState {
 
 impl LanguageServerSnapshot {
     // defend against non-kcl files
-    pub(crate) fn get_db(&self, path: &VfsPath) -> anyhow::Result<Option<&AnalysisDatabase>> {
+    pub(crate) fn verify_request_path(&self, path: &VfsPath, sender: &Sender<Task>) -> bool {
+        let res = self.vfs.read().file_id(path).is_some()
+            && self
+                .db
+                .get(&self.vfs.read().file_id(path).unwrap())
+                .is_some();
+        if !res {
+            let _ = log_message("Not a valid kcl path, request failed".to_string(), &sender);
+        }
+        res
+    }
+
+    pub(crate) fn get_db(&self, path: &VfsPath) -> anyhow::Result<&AnalysisDatabase> {
         match self.vfs.read().file_id(path) {
             Some(id) => match self.db.get(&id) {
-                Some(db) => Ok(Some(db)),
-                None => match path.name_and_extension() {
-                    Some((_, extension)) => {
-                        if let Some(extension) = extension {
-                            if extension == KCL_FILE_EXTENSION {
-                                Err(anyhow::anyhow!(format!(
-                                    "Path {path} AnalysisDatabase not found"
-                                )))
-                            } else {
-                                // not a kcl file
-                                Ok(None)
-                            }
-                        } else {
-                            // not a kcl file
-                            Ok(None)
-                        }
-                    }
-                    // not a kcl file
-                    None => Ok(None),
-                },
+                Some(db) => Ok(db),
+                None => Err(anyhow::anyhow!(format!(
+                    "Path {path} AnalysisDatabase not found"
+                ))),
             },
             None => Err(anyhow::anyhow!(format!("Path {path} fileId not found"))),
         }
@@ -147,16 +141,10 @@ pub(crate) fn handle_goto_definition(
 ) -> anyhow::Result<Option<lsp_types::GotoDefinitionResponse>> {
     let file = file_path_from_url(&params.text_document_position_params.text_document.uri)?;
     let path = from_lsp::abs_path(&params.text_document_position_params.text_document.uri)?;
-    let db = match snapshot.get_db(&path.clone().into())? {
-        Some(db) => db,
-        None => {
-            log_message(
-                "AnalysisDatebase not found, maybe not a kcl file".to_string(),
-                &sender,
-            )?;
-            return Ok(None);
-        }
-    };
+    if !snapshot.verify_request_path(&path.clone().into(), &sender) {
+        return Ok(None);
+    }
+    let db = snapshot.get_db(&path.clone().into())?;
     let kcl_pos = kcl_pos(&file, params.text_document_position_params.position);
     let res = goto_definition(&db.prog, &kcl_pos, &db.scope);
     if res.is_none() {
@@ -173,16 +161,10 @@ pub(crate) fn handle_reference(
 ) -> anyhow::Result<Option<Vec<Location>>> {
     let file = file_path_from_url(&params.text_document_position.text_document.uri)?;
     let path = from_lsp::abs_path(&params.text_document_position.text_document.uri)?;
-    let db = match snapshot.get_db(&path.clone().into())? {
-        Some(db) => db,
-        None => {
-            log_message(
-                "AnalysisDatebase not found, maybe not a kcl file".to_string(),
-                &sender,
-            )?;
-            return Ok(None);
-        }
-    };
+    if !snapshot.verify_request_path(&path.clone().into(), &sender) {
+        return Ok(None);
+    }
+    let db = snapshot.get_db(&path.clone().into())?;
     let pos = kcl_pos(&file, params.text_document_position.position);
     let log = |msg: String| log_message(msg, &sender);
     match find_refs(
@@ -209,16 +191,10 @@ pub(crate) fn handle_completion(
 ) -> anyhow::Result<Option<lsp_types::CompletionResponse>> {
     let file = file_path_from_url(&params.text_document_position.text_document.uri)?;
     let path = from_lsp::abs_path(&params.text_document_position.text_document.uri)?;
-    let db = match snapshot.get_db(&path.clone().into())? {
-        Some(db) => db,
-        None => {
-            log_message(
-                "AnalysisDatebase not found, maybe not a kcl file".to_string(),
-                &sender,
-            )?;
-            return Ok(None);
-        }
-    };
+    if !snapshot.verify_request_path(&path.clone().into(), &sender) {
+        return Ok(None);
+    }
+    let db = snapshot.get_db(&path.clone().into())?;
     let kcl_pos = kcl_pos(&file, params.text_document_position.position);
     let completion_trigger_character = params
         .context
@@ -239,16 +215,10 @@ pub(crate) fn handle_hover(
 ) -> anyhow::Result<Option<lsp_types::Hover>> {
     let file = file_path_from_url(&params.text_document_position_params.text_document.uri)?;
     let path = from_lsp::abs_path(&params.text_document_position_params.text_document.uri)?;
-    let db = match snapshot.get_db(&path.clone().into())? {
-        Some(db) => db,
-        None => {
-            log_message(
-                "AnalysisDatebase not found, maybe not a kcl file".to_string(),
-                &sender,
-            )?;
-            return Ok(None);
-        }
-    };
+    if !snapshot.verify_request_path(&path.clone().into(), &sender) {
+        return Ok(None);
+    }
+    let db = snapshot.get_db(&path.clone().into())?;
     let kcl_pos = kcl_pos(&file, params.text_document_position_params.position);
     let res = hover::hover(&db.prog, &kcl_pos, &db.scope);
     if res.is_none() {
@@ -265,16 +235,10 @@ pub(crate) fn handle_document_symbol(
 ) -> anyhow::Result<Option<lsp_types::DocumentSymbolResponse>> {
     let file = file_path_from_url(&params.text_document.uri)?;
     let path = from_lsp::abs_path(&params.text_document.uri)?;
-    let db = match snapshot.get_db(&path.clone().into())? {
-        Some(db) => db,
-        None => {
-            log_message(
-                "AnalysisDatebase not found, maybe not a kcl file".to_string(),
-                &sender,
-            )?;
-            return Ok(None);
-        }
-    };
+    if !snapshot.verify_request_path(&path.clone().into(), &sender) {
+        return Ok(None);
+    }
+    let db = snapshot.get_db(&path.clone().into())?;
     let res = document_symbol(&file, &db.prog, &db.scope);
     if res.is_none() {
         log_message(format!("File {file} Document symbol not found"), &sender)?;
@@ -297,16 +261,10 @@ pub(crate) fn handle_rename(
     // 2. find all the references of the symbol
     let file = file_path_from_url(&params.text_document_position.text_document.uri)?;
     let path = from_lsp::abs_path(&params.text_document_position.text_document.uri)?;
-    let db = match snapshot.get_db(&path.clone().into())? {
-        Some(db) => db,
-        None => {
-            log_message(
-                "AnalysisDatebase not found, maybe not a kcl file".to_string(),
-                &sender,
-            )?;
-            return Ok(None);
-        }
-    };
+    if !snapshot.verify_request_path(&path.clone().into(), &sender) {
+        return Ok(None);
+    }
+    let db = snapshot.get_db(&path.clone().into())?;
     let kcl_pos = kcl_pos(&file, params.text_document_position.position);
     let log = |msg: String| log_message(msg, &sender);
     let references = find_refs(
