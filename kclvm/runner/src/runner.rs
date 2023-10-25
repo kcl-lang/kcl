@@ -33,7 +33,6 @@ pub struct ExecProgramArgs {
     // -O override_spec
     pub overrides: Vec<ast::OverrideSpec>,
     // -S path_selector
-    #[serde(skip)]
     pub path_selector: Vec<String>,
     pub disable_yaml_result: bool,
     // Whether to apply overrides on the source code.

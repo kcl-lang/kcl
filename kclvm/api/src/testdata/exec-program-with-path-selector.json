@@ -1,0 +1,9 @@
+{
+	"work_dir" : "./src/testdata",
+	"k_filename_list": [
+		"test.k"
+	],
+	"path_selector": [
+		"alice"
+	]
+}
