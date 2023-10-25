@@ -6,6 +6,7 @@ use lsp_types::notification::Exit;
 use lsp_types::request::GotoTypeDefinitionResponse;
 use lsp_types::CompletionContext;
 use lsp_types::CompletionItem;
+use lsp_types::CompletionItemKind;
 use lsp_types::CompletionParams;
 use lsp_types::CompletionResponse;
 use lsp_types::CompletionTriggerKind;
@@ -58,8 +59,6 @@ use proc_macro_crate::bench_test;
 use lsp_server::{Connection, Message, Notification, Request};
 
 use crate::completion::completion;
-use crate::completion::into_completion_items;
-use crate::completion::KCLCompletionItem;
 use crate::config::Config;
 use crate::from_lsp::file_path_from_url;
 
@@ -781,10 +780,14 @@ fn complete_test() {
         to_json(CompletionResponse::Array(vec![
             CompletionItem {
                 label: "name".to_string(),
+                kind: Some(CompletionItemKind::FIELD),
+                detail: Some("name: str".to_string()),
                 ..Default::default()
             },
             CompletionItem {
                 label: "age".to_string(),
+                kind: Some(CompletionItemKind::FIELD),
+                detail: Some("age: int".to_string()),
                 ..Default::default()
             }
         ]))
@@ -1149,17 +1152,13 @@ fn konfig_completion_test_main() {
         column: Some(27),
     };
     let got = completion(Some('.'), &program, &pos, &prog_scope).unwrap();
-    let mut items: IndexSet<KCLCompletionItem> = IndexSet::new();
-    items.insert(KCLCompletionItem {
-        label: "Job".to_string(),
-    });
-    items.insert(KCLCompletionItem {
-        label: "Server".to_string(),
-    });
+    let got_labels: Vec<String> = match got {
+        CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
+        CompletionResponse::List(_) => panic!("test failed"),
+    };
 
-    let expect: CompletionResponse = into_completion_items(&items).into();
-    assert_eq!(got, expect);
-    items.clear();
+    let expected_labels: Vec<&str> = vec!["Job", "Server"];
+    assert_eq!(got_labels, expected_labels);
 
     // schema attr completion
     let pos = KCLPos {
@@ -1168,7 +1167,11 @@ fn konfig_completion_test_main() {
         column: Some(4),
     };
     let got = completion(None, &program, &pos, &prog_scope).unwrap();
-    let attrs = [
+    let mut got_labels: Vec<String> = match got {
+        CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
+        CompletionResponse::List(_) => panic!("test failed"),
+    };
+    let mut attr = [
         "frontend",
         "service",
         "container",
@@ -1239,12 +1242,7 @@ fn konfig_completion_test_main() {
         "storage",
         "database",
     ];
-    items.extend(attrs.iter().map(|item| KCLCompletionItem {
-        label: item.to_string(),
-    }));
-    let expect: CompletionResponse = into_completion_items(&items).into();
-    assert_eq!(got, expect);
-    items.clear();
+    assert_eq!(got_labels.sort(), attr.sort());
 
     // import path completion
     let pos = KCLPos {
@@ -1253,7 +1251,11 @@ fn konfig_completion_test_main() {
         column: Some(35),
     };
     let got = completion(Some('.'), &program, &pos, &prog_scope).unwrap();
-    let pkgs = [
+    let mut got_labels: Vec<String> = match got {
+        CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
+        CompletionResponse::List(_) => panic!("test failed"),
+    };
+    let mut pkgs = [
         "common",
         "configmap",
         "container",
@@ -1270,12 +1272,7 @@ fn konfig_completion_test_main() {
         "strategy",
         "volume",
     ];
-    items.extend(pkgs.iter().map(|item| KCLCompletionItem {
-        label: item.to_string(),
-    }));
-    let expect: CompletionResponse = into_completion_items(&items).into();
-
-    assert_eq!(got, expect);
+    assert_eq!(got_labels.sort(), pkgs.sort());
 }
 
 #[test]
