@@ -86,6 +86,21 @@ impl Type {
             TypeKind::Named(name) => name.to_string(),
         }
     }
+
+    pub fn ty_doc(&self) -> Option<String> {
+        match &self.kind {
+            TypeKind::Schema(schema) => Some(schema.doc.clone()),
+            TypeKind::Function(func) => Some(func.doc.clone()),
+            _ => None,
+        }
+    }
+
+    pub fn into_function_ty(&self) -> FunctionType {
+        match &self.kind {
+            TypeKind::Function(func) => func.clone(),
+            _ => panic!("Not a function type"),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -394,6 +409,19 @@ impl FunctionType {
             self.params
                 .iter()
                 .map(|param| param.ty.ty_str())
+                .collect::<Vec<String>>()
+                .join(", "),
+            self.return_ty.ty_str()
+        )
+    }
+
+    pub fn func_signature_str(&self, name: &String) -> String {
+        format!(
+            "function {}({}) -> {}",
+            name,
+            self.params
+                .iter()
+                .map(|param| format!("{}: {}", param.name, param.ty.ty_str()))
                 .collect::<Vec<String>>()
                 .join(", "),
             self.return_ty.ty_str()
