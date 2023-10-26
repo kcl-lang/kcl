@@ -12,7 +12,11 @@ pub fn server_capabilities(client_caps: &ClientCapabilities) -> ServerCapabiliti
         document_symbol_provider: Some(OneOf::Left(true)),
         completion_provider: Some(CompletionOptions {
             resolve_provider: None,
-            trigger_characters: Some(vec![String::from(".")]),
+            trigger_characters: Some(vec![
+                String::from("."),
+                String::from("="),
+                String::from(":"),
+            ]),
             all_commit_characters: None,
             work_done_progress_options: WorkDoneProgressOptions {
                 work_done_progress: None,
