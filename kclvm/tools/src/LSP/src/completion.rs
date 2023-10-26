@@ -18,7 +18,9 @@ use kclvm_compiler::pkgpath_without_prefix;
 use kclvm_config::modfile::KCL_FILE_EXTENSION;
 
 use kclvm_error::Position as KCLPos;
-use kclvm_sema::builtin::{get_system_module_members, STRING_MEMBER_FUNCTIONS};
+use kclvm_sema::builtin::{
+    get_system_module_members, STANDARD_SYSTEM_MODULES, STRING_MEMBER_FUNCTIONS,
+};
 use kclvm_sema::resolver::scope::{ProgramScope, ScopeObjectKind};
 use lsp_types::CompletionItem;
 
@@ -40,6 +42,8 @@ pub(crate) fn completion(
         completions.extend(completion_variable(pos, prog_scope));
 
         completions.extend(completion_attr(program, pos, prog_scope));
+
+        completions.extend(completion_import_builtin_pkg(program, pos, prog_scope));
 
         Some(into_completion_items(&completions).into())
     }
@@ -70,6 +74,32 @@ fn completion_dot(
         },
         None => None,
     }
+}
+
+fn completion_import_builtin_pkg(
+    program: &Program,
+    pos: &KCLPos,
+    _prog_scope: &ProgramScope,
+) -> IndexSet<KCLCompletionItem> {
+    let mut completions: IndexSet<KCLCompletionItem> = IndexSet::new();
+    // completion position not contained in import stmt
+    // import <space>  <cursor>
+    // |             | |  <- input `m` here for complete `math`
+    // |<----------->| <- import stmt only contains this range, so we need to check the beginning of line
+    let line_start_pos = &KCLPos {
+        filename: pos.filename.clone(),
+        line: pos.line,
+        column: Some(0),
+    };
+
+    if let Some(node) = program.pos_to_stmt(line_start_pos) {
+        if let Stmt::Import(_) = node.node {
+            completions.extend(STANDARD_SYSTEM_MODULES.iter().map(|s| KCLCompletionItem {
+                label: s.to_string(),
+            }))
+        }
+    }
+    completions
 }
 
 /// Complete schema attr
@@ -630,6 +660,47 @@ mod tests {
         items.insert(KCLCompletionItem {
             label: "a".to_string(),
         });
+        let expect: CompletionResponse = into_completion_items(&items).into();
+        assert_eq!(got, expect);
+    }
+
+    #[test]
+    #[bench_test]
+    fn import_builtin_package() {
+        let (file, program, prog_scope, _) =
+            compile_test_file("src/test_data/completion_test/import/import.k");
+        let mut items: IndexSet<KCLCompletionItem> = IndexSet::new();
+
+        // test completion for builtin packages
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 1,
+            column: Some(8),
+        };
+
+        let got = completion(None, &program, &pos, &prog_scope).unwrap();
+
+        items.extend(
+            [
+                "", // generate from error recovery
+                "collection",
+                "net",
+                "manifests",
+                "math",
+                "datetime",
+                "regex",
+                "yaml",
+                "json",
+                "crypto",
+                "base64",
+                "units",
+            ]
+            .iter()
+            .map(|name| KCLCompletionItem {
+                label: name.to_string(),
+            })
+            .collect::<IndexSet<KCLCompletionItem>>(),
+        );
         let expect: CompletionResponse = into_completion_items(&items).into();
         assert_eq!(got, expect);
     }

@@ -38,9 +38,6 @@ pub fn fix_import_path(root: &str, filepath: &str, import_path: &str) -> String 
     // abspath: import path.to.sub
     // FixImportPath(root, "path/to/app/file.k", "path.to.sub") => path.to.sub
 
-    debug_assert!(!filepath.is_empty());
-    debug_assert!(!import_path.is_empty());
-
     if !import_path.starts_with('.') {
         return import_path.to_string();
     }
