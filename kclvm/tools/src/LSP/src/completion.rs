@@ -158,7 +158,7 @@ fn completion_import_builtin_pkg(
 /// complete to
 /// ```no_run
 /// p = Person {
-///     name: <cursor>
+///     name<cursor>
 /// }
 /// ```
 fn completion_attr(
