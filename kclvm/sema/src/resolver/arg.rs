@@ -1,11 +1,12 @@
 use crate::resolver::Resolver;
-use crate::ty::{FunctionType, Type};
+use crate::ty::FunctionType;
 use compiler_base_error::unit_type::{TypeWithUnit, UnitUsize};
 use indexmap::IndexSet;
 use kclvm_ast::ast;
-use std::rc::Rc;
 
 use kclvm_ast::pos::GetPos;
+
+use crate::ty::TypeRef;
 
 impl<'ctx> Resolver<'ctx> {
     fn get_func_name(&mut self, func: &ast::Expr) -> String {
@@ -34,7 +35,7 @@ impl<'ctx> Resolver<'ctx> {
     ) {
         let func_name = self.get_func_name(&func.node);
         let arg_types = self.exprs(args);
-        let mut kwarg_types: Vec<(String, Rc<Type>)> = vec![];
+        let mut kwarg_types: Vec<(String, TypeRef)> = vec![];
         let mut check_table: IndexSet<String> = IndexSet::default();
         for kw in kwargs {
             if !kw.node.arg.node.names.is_empty() {
@@ -47,6 +48,8 @@ impl<'ctx> Resolver<'ctx> {
                 }
                 check_table.insert(arg_name.to_string());
                 let arg_value_type = self.expr_or_any_type(&kw.node.value);
+                self.node_ty_map
+                    .insert(kw.id.clone(), arg_value_type.clone());
                 kwarg_types.push((arg_name.to_string(), arg_value_type.clone()));
             } else {
                 self.handler
@@ -117,7 +120,7 @@ impl<'ctx> Resolver<'ctx> {
                     kwargs[i].get_span_pos(),
                 );
             }
-            let expected_types: Vec<Rc<Type>> = func_ty
+            let expected_types: Vec<TypeRef> = func_ty
                 .params
                 .iter()
                 .filter(|p| p.name == *arg_name)

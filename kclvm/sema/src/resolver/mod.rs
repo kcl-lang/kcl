@@ -11,7 +11,7 @@ mod node;
 mod para;
 mod schema;
 pub mod scope;
-mod ty;
+pub(crate) mod ty;
 mod ty_alias;
 mod var;
 
@@ -26,8 +26,9 @@ use crate::lint::{CombinedLintPass, Linter};
 use crate::pre_process::pre_process_program;
 use crate::resolver::scope::ScopeObject;
 use crate::resolver::ty_alias::process_program_type_alias;
-use crate::ty::TypeContext;
+use crate::ty::{TypeContext, TypeRef};
 use crate::{resolver::scope::Scope, ty::SchemaType};
+use kclvm_ast::ast::AstIndex;
 use kclvm_ast::ast::Program;
 use kclvm_error::*;
 
@@ -40,6 +41,7 @@ pub struct Resolver<'ctx> {
     pub scope_map: IndexMap<String, Rc<RefCell<Scope>>>,
     pub scope: Rc<RefCell<Scope>>,
     pub scope_level: usize,
+    pub node_ty_map: IndexMap<AstIndex, TypeRef>,
     pub builtin_scope: Rc<RefCell<Scope>>,
     pub ctx: Context,
     pub options: Options,
@@ -57,6 +59,7 @@ impl<'ctx> Resolver<'ctx> {
             builtin_scope,
             scope,
             scope_level: 0,
+            node_ty_map: IndexMap::default(),
             ctx: Context::default(),
             options,
             handler: Handler::default(),
@@ -88,6 +91,7 @@ impl<'ctx> Resolver<'ctx> {
         ProgramScope {
             scope_map: self.scope_map.clone(),
             import_names: self.ctx.import_names.clone(),
+            node_ty_map: self.node_ty_map.clone(),
             handler: self.handler.clone(),
         }
     }

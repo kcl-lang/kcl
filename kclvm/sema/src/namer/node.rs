@@ -1,7 +1,6 @@
-use crate::core::package::{ImportInfo, ModuleInfo};
+use crate::core::package::ImportInfo;
 use crate::core::symbol::{
-    AttributeSymbol, RuleSymbol, SchemaSymbol, SymbolKind, SymbolRef, TypeAliasSymbol,
-    UnresolvedSymbol, ValueSymbol,
+    AttributeSymbol, RuleSymbol, SchemaSymbol, SymbolKind, SymbolRef, TypeAliasSymbol, ValueSymbol,
 };
 
 use super::Namer;
@@ -25,21 +24,20 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Namer<'ctx> {
                         .get_fully_qualified_name(symbol_ref)
                         .unwrap();
                     let name = full_name.split(".").last().unwrap().to_string();
-                    self.gs
+
+                    let package_symbol = self
+                        .gs
                         .get_symbols_mut()
                         .packages
                         .get_mut(owner.get_id())
-                        .unwrap()
-                        .members
-                        .insert(name, symbol_ref);
+                        .unwrap();
+
+                    if !package_symbol.members.contains_key(&name) {
+                        package_symbol.members.insert(name, symbol_ref);
+                    }
                 }
             }
         }
-        self.ctx
-            .current_package_info
-            .as_mut()
-            .unwrap()
-            .add_module_info(ModuleInfo::new(module.filename.clone()));
 
         None
     }
@@ -59,7 +57,8 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Namer<'ctx> {
                 unification_stmt.target.node.get_name(),
                 start_pos,
                 end_pos,
-                owner,
+                Some(owner),
+                true,
             ),
             &unification_stmt.target.id,
         );
@@ -88,7 +87,13 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Namer<'ctx> {
             let (start_pos, end_pos): Range = target.get_span_pos();
             let owner = self.ctx.owner_symbols.last().unwrap().clone();
             let value_ref = self.gs.get_symbols_mut().alloc_value_symbol(
-                ValueSymbol::new(target.node.get_name(), start_pos, end_pos, owner),
+                ValueSymbol::new(
+                    target.node.get_name(),
+                    start_pos,
+                    end_pos,
+                    Some(owner),
+                    true,
+                ),
                 &target.id,
             );
             value_symbols.push(value_ref)
@@ -104,13 +109,26 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Namer<'ctx> {
         None
     }
 
-    fn walk_if_stmt(&mut self, _if_stmt: &'ctx ast::IfStmt) -> Self::Result {
-        None
+    fn walk_if_stmt(&mut self, if_stmt: &'ctx ast::IfStmt) -> Self::Result {
+        let mut all_symbols = vec![];
+        for stmt in if_stmt.body.iter() {
+            let mut symbols = self.walk_stmt(&stmt.node);
+            if let Some(symbols) = &mut symbols {
+                all_symbols.append(symbols);
+            }
+        }
+        for stmt in if_stmt.orelse.iter() {
+            let mut symbols = self.walk_stmt(&stmt.node);
+            if let Some(symbols) = &mut symbols {
+                all_symbols.append(symbols);
+            }
+        }
+        Some(all_symbols)
     }
 
     fn walk_import_stmt(&mut self, import_stmt: &'ctx ast::ImportStmt) -> Self::Result {
         self.ctx
-            .current_package_info
+            .current_module_info
             .as_mut()
             .unwrap()
             .add_import_info(ImportInfo::new(
@@ -130,39 +148,14 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Namer<'ctx> {
         );
         self.ctx.owner_symbols.push(shcema_ref);
 
-        self.gs
-            .get_symbols_mut()
-            .schemas
-            .get_mut(shcema_ref.get_id())
-            .unwrap()
-            .parent_schema = schema_stmt.parent_name.as_ref().map(|name| {
-            let (start_pos, end_pos) = name.get_span_pos();
-            self.gs.get_symbols_mut().alloc_unresolved_symbol(
-                UnresolvedSymbol::new(name.node.get_name(), start_pos, end_pos, shcema_ref),
-                &name.id,
-            )
-        });
-
-        for mixin in schema_stmt.mixins.iter() {
-            let (start_pos, end_pos) = schema_stmt.name.get_span_pos();
-            let mixin_ref = self.gs.get_symbols_mut().alloc_unresolved_symbol(
-                UnresolvedSymbol::new(mixin.node.get_name(), start_pos, end_pos, shcema_ref),
-                &mixin.id,
-            );
-            self.gs
-                .get_symbols_mut()
-                .schemas
-                .get_mut(shcema_ref.get_id())
-                .unwrap()
-                .mixins
-                .push(mixin_ref);
-        }
-
         for stmt in schema_stmt.body.iter() {
             let symbol_refs = self.walk_stmt(&stmt.node);
             if let Some(symbol_refs) = symbol_refs {
                 for symbol_ref in symbol_refs {
-                    if matches!(&symbol_ref.get_kind(), SymbolKind::Attribute) {
+                    if matches!(
+                        &symbol_ref.get_kind(),
+                        SymbolKind::Attribute | SymbolKind::Value
+                    ) {
                         let full_attribute_name = self
                             .gs
                             .get_symbols()
@@ -170,14 +163,16 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Namer<'ctx> {
                             .unwrap();
                         let attribute_name =
                             full_attribute_name.split(".").last().unwrap().to_string();
+
                         let schema_symbol = self
                             .gs
                             .get_symbols_mut()
                             .schemas
                             .get_mut(shcema_ref.get_id())
                             .unwrap();
-
-                        schema_symbol.attributes.insert(attribute_name, symbol_ref);
+                        if !schema_symbol.attributes.contains_key(&attribute_name) {
+                            schema_symbol.attributes.insert(attribute_name, symbol_ref);
+                        }
                     }
                 }
             }
@@ -189,11 +184,11 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Namer<'ctx> {
     fn walk_rule_stmt(&mut self, rule_stmt: &'ctx ast::RuleStmt) -> Self::Result {
         let (start_pos, end_pos): Range = rule_stmt.name.get_span_pos();
         let owner = self.ctx.owner_symbols.last().unwrap().clone();
-        let attribute_ref = self.gs.get_symbols_mut().alloc_rule_symbol(
+        let rule_ref = self.gs.get_symbols_mut().alloc_rule_symbol(
             RuleSymbol::new(rule_stmt.name.node.clone(), start_pos, end_pos, owner),
             &rule_stmt.name.id,
         );
-        Some(vec![attribute_ref])
+        Some(vec![rule_ref])
     }
 
     fn walk_quant_expr(&mut self, _quant_expr: &'ctx ast::QuantExpr) -> Self::Result {

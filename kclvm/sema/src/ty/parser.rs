@@ -3,7 +3,7 @@ use crate::eval::str_literal_eval;
 use super::*;
 
 /// Parse type string
-pub fn parse_type_str(ty_str: &str) -> Rc<Type> {
+pub fn parse_type_str(ty_str: &str) -> TypeRef {
     if ty_str.is_empty() {
         return Rc::new(Type::ANY);
     }
@@ -157,16 +157,16 @@ pub fn split_type_union(ty_str: &str) -> Vec<&str> {
 }
 
 /// Parse union type string.
-pub fn parse_union_type_str(ty_str: &str) -> Rc<Type> {
+pub fn parse_union_type_str(ty_str: &str) -> TypeRef {
     let types = split_type_union(ty_str)
         .iter()
         .map(|ty_str| parse_type_str(ty_str))
-        .collect::<Vec<Rc<Type>>>();
+        .collect::<Vec<TypeRef>>();
     sup(&types)
 }
 
 /// Parse literal type string.
-pub fn parse_lit_type_str(ty_str: &str) -> Rc<Type> {
+pub fn parse_lit_type_str(ty_str: &str) -> TypeRef {
     // Bool literal type.
     if ty_str == NAME_CONSTANT_TRUE {
         return Rc::new(Type::bool_lit(true));
@@ -189,7 +189,7 @@ pub fn parse_lit_type_str(ty_str: &str) -> Rc<Type> {
 }
 
 /// Parse number multiplier literal type.
-pub fn parse_number_multiplier_literal_type_str(ty_str: &str) -> Rc<Type> {
+pub fn parse_number_multiplier_literal_type_str(ty_str: &str) -> TypeRef {
     let suffix_index = if &ty_str[ty_str.len() - 1..] == kclvm_runtime::IEC_SUFFIX {
         ty_str.len() - 2
     } else {
@@ -211,7 +211,7 @@ pub fn parse_number_multiplier_literal_type_str(ty_str: &str) -> Rc<Type> {
 
 /// Please note Named type to find it in the scope (e.g. schema type, type alias).
 #[inline]
-pub fn parse_named_type_str(ty_str: &str) -> Rc<Type> {
+pub fn parse_named_type_str(ty_str: &str) -> TypeRef {
     Rc::new(Type::named(ty_str))
 }
 

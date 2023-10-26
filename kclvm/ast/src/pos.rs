@@ -25,6 +25,12 @@ impl<T> ContainsPos for ast::Node<T> {
     }
 }
 
+impl ContainsPos for Range {
+    fn contains_pos(&self, pos: &Position) -> bool {
+        self.0.filename == pos.filename && self.0.less_equal(pos) && pos.less_equal(&self.1)
+    }
+}
+
 impl<T> GetPos for ast::Node<T> {
     fn get_pos(&self) -> Position {
         Position {

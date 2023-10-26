@@ -1,9 +1,9 @@
 use std::rc::Rc;
 
-use super::{Attr, DictType, Type};
+use super::{Attr, DictType, Type, TypeRef};
 
 /// Walk one type recursively and deal the type using the `walk_fn`
-pub fn walk_type(ty: &Type, walk_fn: impl Fn(&Type) -> Rc<Type> + Copy) -> Rc<Type> {
+pub fn walk_type(ty: &Type, walk_fn: impl Fn(&Type) -> TypeRef + Copy) -> TypeRef {
     let ty = walk_fn(ty);
     match &ty.kind {
         super::TypeKind::List(item_ty) => Rc::new(Type::list(walk_type(item_ty, walk_fn))),
@@ -31,7 +31,7 @@ pub fn walk_type(ty: &Type, walk_fn: impl Fn(&Type) -> Rc<Type> + Copy) -> Rc<Ty
             &types
                 .iter()
                 .map(|ty| walk_type(ty, walk_fn))
-                .collect::<Vec<Rc<Type>>>(),
+                .collect::<Vec<TypeRef>>(),
         )),
         _ => ty,
     }

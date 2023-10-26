@@ -1780,6 +1780,7 @@ dependencies = [
  "petgraph",
  "phf",
  "regex",
+ "serde_json",
  "suggestions",
  "unicode_names2",
 ]

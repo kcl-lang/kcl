@@ -262,8 +262,8 @@ impl<'ctx> Resolver<'ctx> {
                 continue;
             }
             let ty = if let Some(ty_annotation) = &assign_stmt.ty {
-                let ty = &ty_annotation.node;
-                let ty = self.parse_ty_with_scope(ty, ty_annotation.get_span_pos());
+                let ty =
+                    self.parse_ty_with_scope(Some(&ty_annotation), ty_annotation.get_span_pos());
                 if let Some(obj) = self.scope.borrow().elems.get(name) {
                     let obj = obj.borrow();
                     if !is_upper_bound(obj.ty.clone(), ty.clone()) {
@@ -521,7 +521,7 @@ impl<'ctx> Resolver<'ctx> {
                 index_signature.node.key_type.get_span_pos(),
             );
             let val_ty = self.parse_ty_with_scope(
-                &index_signature.node.value_ty.node,
+                Some(&index_signature.node.value_ty),
                 index_signature.node.value_type.get_span_pos(),
             );
             if !self
@@ -591,10 +591,8 @@ impl<'ctx> Resolver<'ctx> {
                 }
                 ast::Stmt::SchemaAttr(schema_attr) => {
                     let name = schema_attr.name.node.clone();
-                    let ty = self.parse_ty_with_scope(
-                        &schema_attr.ty.node.clone(),
-                        schema_attr.ty.get_span_pos(),
-                    );
+                    let ty = self
+                        .parse_ty_with_scope(Some(&schema_attr.ty), schema_attr.ty.get_span_pos());
                     let is_optional = schema_attr.is_optional;
                     let default = schema_attr.value.as_ref().map(|v| {
                         if self.options.resolve_val {
@@ -752,8 +750,8 @@ impl<'ctx> Resolver<'ctx> {
                         para.get_span_pos(),
                     );
                 }
-                let ty = args.node.get_arg_type(i);
-                let ty = self.parse_ty_with_scope(&ty, para.get_span_pos());
+                let ty = args.node.get_arg_type_node(i);
+                let ty = self.parse_ty_with_scope(ty, para.get_span_pos());
                 params.push(Parameter {
                     name,
                     ty: ty.clone(),
@@ -863,8 +861,8 @@ impl<'ctx> Resolver<'ctx> {
         if let Some(args) = &rule_stmt.args {
             for (i, para) in args.node.args.iter().enumerate() {
                 let name = para.node.get_name();
-                let ty = args.node.get_arg_type(i);
-                let ty = self.parse_ty_with_scope(&ty, para.get_span_pos());
+                let ty = args.node.get_arg_type_node(i);
+                let ty = self.parse_ty_with_scope(ty, para.get_span_pos());
                 params.push(Parameter {
                     name,
                     ty: ty.clone(),
