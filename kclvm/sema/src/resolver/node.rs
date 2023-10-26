@@ -160,11 +160,16 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                     }
                     TypeKind::Dict(_) => {
                         value_ty = self.expr(&assign_stmt.value);
-                        // update attrs
+                        if !assign_stmt.type_annotation.is_none() {
+                            // Check type annotation if exists.
+                            self.check_assignment_type_annotation(assign_stmt, value_ty.clone());
+                        }
                         self.set_type_to_scope(name, value_ty.clone(), target.get_span_pos());
                     }
                     _ => {
                         value_ty = self.expr(&assign_stmt.value);
+                        // Check type annotation if exists.
+                        self.check_assignment_type_annotation(assign_stmt, value_ty.clone());
                     }
                 }
                 self.must_assignable_to(
@@ -192,12 +197,11 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 let expected_ty = self.walk_identifier_expr(target);
                 self.ctx.l_value = false;
                 value_ty = self.expr(&assign_stmt.value);
+                // Check type annotation if exists.
+                self.check_assignment_type_annotation(assign_stmt, value_ty.clone());
                 self.must_assignable_to(value_ty.clone(), expected_ty, target.get_span_pos(), None)
             }
         }
-        // Check type annotation if exists.
-        self.check_assignment_type_annotation(assign_stmt, value_ty.clone());
-
         value_ty
     }
 

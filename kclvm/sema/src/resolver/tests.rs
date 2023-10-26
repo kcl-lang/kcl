@@ -6,8 +6,10 @@ use crate::resolver::resolve_program;
 use crate::resolver::scope::*;
 use crate::ty::{Type, TypeKind};
 use kclvm_ast::ast;
+use kclvm_ast::ast::CmdArgSpec;
 use kclvm_ast::pos::ContainsPos;
 use kclvm_error::*;
+use kclvm_parser::LoadProgramOptions;
 use kclvm_parser::ParseSession;
 use kclvm_parser::{load_program, parse_program};
 use std::path::Path;
@@ -548,6 +550,30 @@ fn test_resolve_assignment_in_lambda() {
     assert_eq!(lambda_scope.borrow().elems.len(), 2);
     let images_scope_obj = lambda_scope.borrow().elems.get("images").unwrap().clone();
     assert_eq!(images_scope_obj.borrow().ty.ty_str(), "[str]");
+}
+
+#[test]
+fn test_assignment_type_annotation_check_in_lambda() {
+    let sess = Arc::new(ParseSession::default());
+    let mut opts = LoadProgramOptions::default();
+    opts.cmd_args = vec![
+        CmdArgSpec {
+            name: "params".to_string(),
+            value: "annotations: {a: b}".to_string(),
+        },
+        CmdArgSpec {
+            name: "items".to_string(),
+            value: "metadata: {annotations:{c: d}}".to_string(),
+        },
+    ];
+    let mut program = load_program(
+        sess.clone(),
+        &["./src/resolver/test_data/annotation_check_assignment.k"],
+        Some(opts),
+    )
+    .unwrap();
+    let scope = resolve_program(&mut program);
+    assert_eq!(scope.handler.diagnostics.len(), 0);
 }
 
 #[test]
