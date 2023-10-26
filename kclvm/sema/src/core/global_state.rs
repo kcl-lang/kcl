@@ -8,28 +8,20 @@ use super::{
     symbol::{KCLSymbolData, SymbolKind, SymbolRef},
 };
 
+/// GlobalState is used to store semantic information of KCL source code
 #[derive(Default, Debug)]
 pub struct GlobalState {
+    // store all allocated symbols
     symbols: KCLSymbolData,
-    packages: PackageDB,
+    // store all allocated scopes
     scopes: ScopeData,
+    // store package infomation for name mapping
+    packages: PackageDB,
+    // store semantic information after analysis
     pub(crate) sema_db: SemanticDB,
 }
 
 impl GlobalState {
-    pub fn look_up_symbol(
-        &self,
-        name: &str,
-        scope_ref: ScopeRef,
-        module_info: Option<&ModuleInfo>,
-    ) -> Option<SymbolRef> {
-        self.scopes.get_scope(scope_ref)?.look_up_def(
-            name,
-            &self.scopes,
-            &self.symbols,
-            module_info,
-        )
-    }
     pub fn get_symbols(&self) -> &KCLSymbolData {
         &self.symbols
     }
@@ -56,6 +48,50 @@ impl GlobalState {
 }
 
 impl GlobalState {
+    /// look up symbol by name within specific scope
+    ///
+    /// # Parameters
+    ///
+    ///
+    /// `name`: [&str]
+    ///     The name of symbol
+    ///
+    /// `scope_ref`: [ScopeRef]
+    ///     the reference of scope which was allocated by [ScopeData]
+    ///
+    /// `module_info`: [Option<&ModuleInfo>]
+    ///     the module import infomation
+    ///
+    /// # Returns
+    ///
+    /// result: [Option<SymbolRef>]
+    ///     the matched symbol
+    pub fn look_up_symbol(
+        &self,
+        name: &str,
+        scope_ref: ScopeRef,
+        module_info: Option<&ModuleInfo>,
+    ) -> Option<SymbolRef> {
+        self.scopes.get_scope(scope_ref)?.look_up_def(
+            name,
+            &self.scopes,
+            &self.symbols,
+            module_info,
+        )
+    }
+
+    /// look up scope by specific position
+    ///
+    /// # Parameters
+    ///
+    /// `pos`: [&Position]
+    ///     The pos within the scope
+    ///
+    ///
+    /// # Returns
+    ///
+    /// result: [Option<ScopeRef>]
+    ///     the matched scope
     pub fn look_up_scope(&self, pos: &Position) -> Option<ScopeRef> {
         let scopes = &self.scopes;
         for root_ref in scopes.root_map.values() {
@@ -72,6 +108,18 @@ impl GlobalState {
         None
     }
 
+    /// get all definition symbols within specific scope
+    ///
+    /// # Parameters
+    ///
+    /// `scope`: [ScopeRef]
+    ///     the reference of scope which was allocated by [ScopeData]
+    ///
+    ///
+    /// # Returns
+    ///
+    /// result: [Option<Vec<SymbolRef>>]
+    ///      all definition symbols in the scope
     pub fn get_all_defs_in_scope(&self, scope: ScopeRef) -> Option<Vec<SymbolRef>> {
         let scopes = &self.scopes;
         let scope = scopes.get_scope(scope)?;
@@ -85,6 +133,20 @@ impl GlobalState {
         Some(all_defs)
     }
 
+    /// look up closest symbol by specific position, which means  
+    /// the specified position is located after the starting position of the returned symbol
+    /// and before the starting position of the next symbol
+    ///
+    /// # Parameters
+    ///
+    /// `pos`: [&Position]
+    ///     The target pos
+    ///
+    ///
+    /// # Returns
+    ///
+    /// result: [Option<SymbolRef>]
+    ///     the closest symbol to the target pos
     pub fn look_up_closest_symbol(&self, pos: &Position) -> Option<SymbolRef> {
         Some(
             self.sema_db
@@ -97,6 +159,19 @@ impl GlobalState {
         )
     }
 
+    /// look up exact symbol by specific position, which means  
+    /// the specified position is within the range of the returned symbol
+    ///
+    /// # Parameters
+    ///
+    /// `pos`: [&Position]
+    ///     The target pos
+    ///
+    ///
+    /// # Returns
+    ///
+    /// result: [Option<SymbolRef>]
+    ///     the exact symbol to the target pos
     pub fn look_up_exact_symbol(&self, pos: &Position) -> Option<SymbolRef> {
         let candidate = self
             .sema_db
@@ -137,7 +212,7 @@ impl GlobalState {
 }
 
 impl GlobalState {
-    pub fn build_sema_db(&mut self) {
+    pub(crate) fn build_sema_db(&mut self) {
         let mut file_sema_map = IndexMap::<String, FileSemanticInfo>::default();
 
         // put symbols

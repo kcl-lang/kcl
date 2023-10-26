@@ -69,6 +69,7 @@ impl ImportInfo {
         }
     }
 }
+#[allow(unused)]
 #[derive(Debug)]
 pub struct ModuleInfo {
     pub(crate) filename: String,
