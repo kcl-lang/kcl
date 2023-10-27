@@ -1,19 +1,26 @@
 //! Complete for KCL
-//! Github Issue: https://github.com/kcl-lang/kcl/issues/476
-//! Now supports code completion in treigger mode (triggered when user enters `.`),
+//! Now supports code completion in treigger mode (triggered when user enters `.`, `:` and `=`), schema attr and global variables
 //! and the content of the completion includes:
-//!  + import path
-//!  + schema attr
-//!  + builtin function(str function)
-//!  + defitions in pkg
-//!  + system module functions
+//! variable
+//! + schema attr name
+//! + dot(.)
+//!     + import path
+//!     + schema attr
+//!     + builtin function(str function)
+//!     + defitions in pkg
+//!     + system module functions
+//! + assign(=, :)
+//!     + schema attr value
+//!     + variable value
 
 use std::io;
 use std::{fs, path::Path};
 
+use chumsky::primitive::todo;
 use indexmap::IndexSet;
 use kclvm_ast::ast::{Expr, ImportStmt, Node, Program, Stmt};
 use kclvm_ast::pos::GetPos;
+use kclvm_ast::MAIN_PKG;
 use kclvm_compiler::pkgpath_without_prefix;
 use kclvm_config::modfile::KCL_FILE_EXTENSION;
 
@@ -23,7 +30,7 @@ use kclvm_sema::builtin::{
     STRING_MEMBER_FUNCTIONS,
 };
 use kclvm_sema::resolver::scope::{ProgramScope, ScopeObjectKind};
-use kclvm_sema::ty::FunctionType;
+use kclvm_sema::ty::{FunctionType, Type};
 use lsp_types::{CompletionItem, CompletionItemKind};
 
 use crate::goto_def::{find_def, get_identifier_last_name, Definition};
@@ -67,6 +74,41 @@ fn func_ty_complete_label(func_name: &String, func_type: &FunctionType) -> Strin
     )
 }
 
+fn ty_complete_label(ty: &Type) -> Vec<String> {
+    match &ty.kind {
+        kclvm_sema::ty::TypeKind::Bool => vec!["True".to_string(), "False".to_string()],
+        kclvm_sema::ty::TypeKind::BoolLit(b) => {
+            vec![if *b {
+                "True".to_string()
+            } else {
+                "False".to_string()
+            }]
+        }
+        kclvm_sema::ty::TypeKind::IntLit(i) => vec![i.to_string()],
+        kclvm_sema::ty::TypeKind::FloatLit(f) => vec![f.to_string()],
+        kclvm_sema::ty::TypeKind::Str => vec![r#""""#.to_string()],
+        kclvm_sema::ty::TypeKind::StrLit(s) => vec![format!("{:?}", s)],
+        kclvm_sema::ty::TypeKind::List(_) => vec!["[]".to_string()],
+        kclvm_sema::ty::TypeKind::Dict(_) => vec!["{}".to_string()],
+        kclvm_sema::ty::TypeKind::Union(types) => {
+            types.iter().flat_map(|ty| ty_complete_label(ty)).collect()
+        }
+        kclvm_sema::ty::TypeKind::Schema(schema) => {
+            vec![format!(
+                "{}{}{}",
+                if schema.pkgpath.is_empty() || schema.pkgpath == MAIN_PKG {
+                    "".to_string()
+                } else {
+                    format!("{}.", schema.pkgpath.split(".").last().unwrap())
+                },
+                schema.name,
+                "{}"
+            )]
+        }
+        _ => vec![],
+    }
+}
+
 /// Computes completions at the given position.
 pub(crate) fn completion(
     trigger_character: Option<char>,
@@ -74,23 +116,28 @@ pub(crate) fn completion(
     pos: &KCLPos,
     prog_scope: &ProgramScope,
 ) -> Option<lsp_types::CompletionResponse> {
-    if let Some('.') = trigger_character {
-        completion_dot(program, pos, prog_scope)
-    } else {
-        let mut completions: IndexSet<KCLCompletionItem> = IndexSet::new();
+    match trigger_character {
+        Some(c) => match c {
+            '.' => completion_dot(program, pos, prog_scope),
+            '=' | ':' => completion_assign(program, pos, prog_scope),
+            _ => None,
+        },
+        None => {
+            let mut completions: IndexSet<KCLCompletionItem> = IndexSet::new();
 
-        completions.extend(completion_variable(pos, prog_scope));
+            completions.extend(completion_variable(pos, prog_scope));
 
-        completions.extend(completion_attr(program, pos, prog_scope));
+            completions.extend(completion_attr(program, pos, prog_scope));
 
-        completions.extend(completion_import_builtin_pkg(program, pos, prog_scope));
+            completions.extend(completion_import_builtin_pkg(program, pos, prog_scope));
 
-        Some(into_completion_items(&completions).into())
+            Some(into_completion_items(&completions).into())
+        }
     }
 }
 
 /// Abstraction of CompletionItem in KCL
-#[derive(Debug, Clone, PartialEq, Hash, Eq)]
+#[derive(Debug, Clone, PartialEq, Hash, Eq, Default)]
 pub(crate) struct KCLCompletionItem {
     pub label: String,
     pub detail: Option<String>,
@@ -113,8 +160,28 @@ fn completion_dot(
     match program.pos_to_stmt(pos) {
         Some(node) => match node.node {
             Stmt::Import(stmt) => completion_for_import(&stmt, pos, prog_scope, program),
-            _ => Some(into_completion_items(&get_completion(node, pos, prog_scope)).into()),
+            _ => Some(into_completion_items(&get_doc_completion(node, pos, prog_scope)).into()),
         },
+        None => None,
+    }
+}
+
+fn completion_assign(
+    program: &Program,
+    pos: &KCLPos,
+    prog_scope: &ProgramScope,
+) -> Option<lsp_types::CompletionResponse> {
+    // Get the position of trigger_character '=' or ':'
+    let pos = &KCLPos {
+        filename: pos.filename.clone(),
+        line: pos.line,
+        column: pos.column.map(|c| c - 1),
+    };
+
+    match program.pos_to_stmt(pos) {
+        Some(node) => Some(
+            into_completion_items(&get_schema_attr_value_completion(node, pos, prog_scope)).into(),
+        ),
         None => None,
     }
 }
@@ -276,7 +343,45 @@ fn completion_for_import(
     Some(into_completion_items(&items).into())
 }
 
-pub(crate) fn get_completion(
+/// Get completion items for trigger '=' or ':'
+/// Now, just completion for schema attr value
+pub(crate) fn get_schema_attr_value_completion(
+    stmt: Node<Stmt>,
+    pos: &KCLPos,
+    prog_scope: &ProgramScope,
+) -> IndexSet<KCLCompletionItem> {
+    let mut items: IndexSet<KCLCompletionItem> = IndexSet::new();
+    let (expr, _) = inner_most_expr_in_stmt(&stmt.node, pos, None);
+    if let Some(node) = expr {
+        if let Expr::Identifier(_) = node.node {
+            let def = find_def(stmt, pos, prog_scope);
+            if let Some(def) = def {
+                match def {
+                    crate::goto_def::Definition::Object(obj, _) => match obj.kind {
+                        ScopeObjectKind::Attribute => {
+                            let ty = obj.ty;
+                            items.extend(ty_complete_label(&ty).iter().map(|label| {
+                                KCLCompletionItem {
+                                    label: format!(" {}", label),
+                                    detail: Some(format!("{}: {}", obj.name, ty.ty_str())),
+                                    kind: Some(KCLCompletionItemKind::Variable),
+                                    documentation: obj.doc.clone(),
+                                }
+                            }))
+                        }
+                        _ => {}
+                    },
+                    _ => {}
+                }
+            }
+        }
+    }
+
+    items
+}
+
+/// Get completion items for trigger '.'
+pub(crate) fn get_doc_completion(
     stmt: Node<Stmt>,
     pos: &KCLPos,
     prog_scope: &ProgramScope,
@@ -399,7 +504,8 @@ pub(crate) fn get_completion(
                     }
                 }
                 Expr::Selector(select_expr) => {
-                    let res = get_completion(stmt, &select_expr.value.get_end_pos(), prog_scope);
+                    let res =
+                        get_doc_completion(stmt, &select_expr.value.get_end_pos(), prog_scope);
                     items.extend(res);
                 }
                 Expr::StringLit(_) => {
@@ -819,5 +925,104 @@ mod tests {
         );
         let expect: CompletionResponse = into_completion_items(&items).into();
         assert_eq!(got, expect);
+    }
+
+    #[test]
+    #[bench_test]
+    fn attr_value_completion() {
+        let (file, program, prog_scope, _) =
+            compile_test_file("src/test_data/completion_test/assign/completion.k");
+
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 14,
+            column: Some(6),
+        };
+
+        let got = completion(Some(':'), &program, &pos, &prog_scope).unwrap();
+        let got_labels: Vec<String> = match got {
+            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
+            CompletionResponse::List(_) => panic!("test failed"),
+        };
+        let expected_labels: Vec<&str> = vec![" True", " False"];
+        assert_eq!(got_labels, expected_labels);
+
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 16,
+            column: Some(6),
+        };
+        let got = completion(Some(':'), &program, &pos, &prog_scope).unwrap();
+        let got_labels: Vec<String> = match got {
+            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
+            CompletionResponse::List(_) => panic!("test failed"),
+        };
+        let expected_labels: Vec<&str> = vec![" \"abc\"", " \"def\""];
+        assert_eq!(got_labels, expected_labels);
+
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 18,
+            column: Some(6),
+        };
+        let got = completion(Some(':'), &program, &pos, &prog_scope).unwrap();
+        let got_labels: Vec<String> = match got {
+            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
+            CompletionResponse::List(_) => panic!("test failed"),
+        };
+        let expected_labels: Vec<&str> = vec![" []"];
+        assert_eq!(got_labels, expected_labels);
+
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 20,
+            column: Some(6),
+        };
+        let got = completion(Some(':'), &program, &pos, &prog_scope).unwrap();
+        let got_labels: Vec<String> = match got {
+            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
+            CompletionResponse::List(_) => panic!("test failed"),
+        };
+        let expected_labels: Vec<&str> = vec![" 1"];
+        assert_eq!(got_labels, expected_labels);
+
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 22,
+            column: Some(6),
+        };
+        let got = completion(Some(':'), &program, &pos, &prog_scope).unwrap();
+        let got_labels: Vec<String> = match got {
+            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
+            CompletionResponse::List(_) => panic!("test failed"),
+        };
+        let expected_labels: Vec<&str> = vec![" True"];
+        assert_eq!(got_labels, expected_labels);
+
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 24,
+            column: Some(6),
+        };
+        let got = completion(Some(':'), &program, &pos, &prog_scope).unwrap();
+        let got_labels: Vec<String> = match got {
+            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
+            CompletionResponse::List(_) => panic!("test failed"),
+        };
+        let expected_labels: Vec<&str> = vec![" {}"];
+        assert_eq!(got_labels, expected_labels);
+
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 26,
+            column: Some(6),
+        };
+        let got = completion(Some(':'), &program, &pos, &prog_scope).unwrap();
+        let got_labels: Vec<String> = match got {
+            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
+            CompletionResponse::List(_) => panic!("test failed"),
+        };
+        let expected_labels: Vec<&str> = vec![" subpkg.Person1{}"];
+        assert_eq!(got_labels, expected_labels);
     }
 }
