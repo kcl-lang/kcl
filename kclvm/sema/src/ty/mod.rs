@@ -126,11 +126,11 @@ pub enum TypeKind {
     /// A primitive string literal type.
     StrLit(String),
     /// The pointer of an array slice. Written as `[T]`.
-    List(Rc<Type>),
+    List(TypeRef),
     /// A map type. Written as `{kT, vT}`.
     Dict(DictType),
     /// A union type. Written as ty1 | ty2 | ... | tyn
-    Union(Vec<Rc<Type>>),
+    Union(Vec<TypeRef>),
     /// A schema type.
     Schema(SchemaType),
     /// A number multiplier type.
@@ -247,7 +247,7 @@ impl SchemaType {
         !self.is_instance && SCHEMA_MEMBER_FUNCTIONS.contains(&name)
     }
 
-    pub fn set_type_of_attr(&mut self, attr: &str, ty: Rc<Type>) {
+    pub fn set_type_of_attr(&mut self, attr: &str, ty: TypeRef) {
         match self.attrs.get_mut(attr) {
             Some(attr) => attr.ty = ty,
             None => {
@@ -266,7 +266,7 @@ impl SchemaType {
     }
 
     #[inline]
-    pub fn get_type_of_attr(&self, attr: &str) -> Option<Rc<Type>> {
+    pub fn get_type_of_attr(&self, attr: &str) -> Option<TypeRef> {
         self.get_obj_of_attr(attr).map(|attr| attr.ty.clone())
     }
 
@@ -283,11 +283,11 @@ impl SchemaType {
         }
     }
 
-    pub fn key_ty(&self) -> Rc<Type> {
+    pub fn key_ty(&self) -> TypeRef {
         Rc::new(Type::STR)
     }
 
-    pub fn val_ty(&self) -> Rc<Type> {
+    pub fn val_ty(&self) -> TypeRef {
         if let Some(index_signature) = &self.index_signature {
             index_signature.val_ty.clone()
         } else {
@@ -328,7 +328,7 @@ pub struct SchemaAttr {
     /// For the schema attribute definition `name?: str`, the value of `default`
     /// is [None].
     pub default: Option<String>,
-    pub ty: Rc<Type>,
+    pub ty: TypeRef,
     pub range: Range,
     pub doc: Option<String>,
     pub decorators: Vec<Decorator>,
@@ -337,8 +337,8 @@ pub struct SchemaAttr {
 #[derive(Debug, Clone, PartialEq)]
 pub struct SchemaIndexSignature {
     pub key_name: Option<String>,
-    pub key_ty: Rc<Type>,
-    pub val_ty: Rc<Type>,
+    pub key_ty: TypeRef,
+    pub val_ty: TypeRef,
     pub any_other: bool,
 }
 
@@ -469,6 +469,6 @@ impl FunctionType {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Parameter {
     pub name: String,
-    pub ty: Rc<Type>,
+    pub ty: TypeRef,
     pub has_default: bool,
 }

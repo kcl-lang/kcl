@@ -14,8 +14,9 @@ use std::{
 };
 
 use crate::resolver::Resolver;
-use crate::ty::Type;
+use crate::ty::TypeRef;
 use crate::{builtin::BUILTIN_FUNCTIONS, ty::TypeInferMethods};
+use kclvm_ast::ast::AstIndex;
 use kclvm_ast::pos::ContainsPos;
 use kclvm_ast::pos::GetPos;
 use kclvm_error::Position;
@@ -30,7 +31,7 @@ pub struct ScopeObject {
     /// The scope object end position.
     pub end: Position,
     /// The type of the scope object.
-    pub ty: Rc<Type>,
+    pub ty: TypeRef,
     /// The scope object kind.
     pub kind: ScopeObjectKind,
     /// The doc of the scope object, will be None unless the scope object represents a schema or schema attribute.
@@ -149,7 +150,7 @@ impl Scope {
     }
 
     /// Set a type by name to existed object, return true if found.
-    pub fn set_ty(&mut self, name: &str, ty: Rc<Type>) -> bool {
+    pub fn set_ty(&mut self, name: &str, ty: TypeRef) -> bool {
         match self.elems.get_mut(name) {
             Some(obj) => {
                 let mut obj = obj.borrow_mut();
@@ -278,6 +279,7 @@ impl Scope {
 pub struct ProgramScope {
     pub scope_map: IndexMap<String, Rc<RefCell<Scope>>>,
     pub import_names: IndexMap<String, IndexMap<String, String>>,
+    pub node_ty_map: IndexMap<AstIndex, TypeRef>,
     pub handler: Handler,
 }
 
@@ -401,7 +403,7 @@ impl<'ctx> Resolver<'ctx> {
 
     /// Find scope object type by name.
     #[inline]
-    pub fn find_type_in_scope(&mut self, name: &str) -> Option<Rc<Type>> {
+    pub fn find_type_in_scope(&mut self, name: &str) -> Option<TypeRef> {
         self.scope
             .borrow()
             .lookup(name)
@@ -410,7 +412,7 @@ impl<'ctx> Resolver<'ctx> {
 
     /// Lookup type from the scope by name, if not found, emit a compile error and
     /// return the any type.
-    pub fn lookup_type_from_scope(&mut self, name: &str, range: Range) -> Rc<Type> {
+    pub fn lookup_type_from_scope(&mut self, name: &str, range: Range) -> TypeRef {
         match self.find_type_in_scope(name) {
             Some(ty) => ty,
             None => {
@@ -440,7 +442,7 @@ impl<'ctx> Resolver<'ctx> {
     }
 
     /// Set type to the scope exited object, if not found, emit a compile error.
-    pub fn set_type_to_scope(&mut self, name: &str, ty: Rc<Type>, range: Range) {
+    pub fn set_type_to_scope(&mut self, name: &str, ty: TypeRef, range: Range) {
         let mut scope = self.scope.borrow_mut();
         match scope.elems.get_mut(name) {
             Some(obj) => {

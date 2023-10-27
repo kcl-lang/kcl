@@ -22,6 +22,8 @@ impl<'ctx> Resolver<'ctx> {
         self.resolve_unique_key(&schema_stmt.name.node, &schema_stmt.name.get_span_pos());
         let ty =
             self.lookup_type_from_scope(&schema_stmt.name.node, schema_stmt.name.get_span_pos());
+        self.node_ty_map
+            .insert(schema_stmt.name.id.clone(), ty.clone());
         let scope_ty = if ty.is_schema() {
             ty.into_schema_type()
         } else {
@@ -111,6 +113,8 @@ impl<'ctx> Resolver<'ctx> {
     pub(crate) fn resolve_rule_stmt(&mut self, rule_stmt: &'ctx ast::RuleStmt) -> ResolvedResult {
         self.resolve_unique_key(&rule_stmt.name.node, &rule_stmt.name.get_span_pos());
         let ty = self.lookup_type_from_scope(&rule_stmt.name.node, rule_stmt.name.get_span_pos());
+        self.node_ty_map
+            .insert(rule_stmt.name.id.clone(), ty.clone());
         let scope_ty = if ty.is_schema() {
             ty.into_schema_type()
         } else {

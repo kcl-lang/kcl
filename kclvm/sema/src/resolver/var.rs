@@ -10,7 +10,12 @@ use super::scope::{ScopeObject, ScopeObjectKind};
 
 impl<'ctx> Resolver<'ctx> {
     /// Resolve variables.
-    pub fn resolve_var(&mut self, names: &[String], pkgpath: &str, range: Range) -> ResolvedResult {
+    pub fn resolve_var(
+        &mut self,
+        names: &[String],
+        pkgpath: &str,
+        range: Range,
+    ) -> Vec<ResolvedResult> {
         if !pkgpath.is_empty() && self.ctx.l_value {
             self.handler.add_compile_error(
                 "only schema and dict object can be updated attribute",
@@ -27,13 +32,13 @@ impl<'ctx> Resolver<'ctx> {
                 if !self.ctx.l_value {
                     let scope_ty = self.find_type_in_scope(name);
                     if self.ctx.local_vars.contains(name) {
-                        return scope_ty.map_or(self.any_ty(), |ty| ty);
+                        return vec![scope_ty.map_or(self.any_ty(), |ty| ty)];
                     } else if let Some(ref ty) = ty {
                         if !ty.is_any() {
-                            return ty.clone();
+                            return vec![ty.clone()];
                         }
                     }
-                    scope_ty.map_or(self.any_ty(), |ty| ty)
+                    vec![scope_ty.map_or(self.any_ty(), |ty| ty)]
                 }
                 // Store
                 else {
@@ -52,15 +57,15 @@ impl<'ctx> Resolver<'ctx> {
                         if ty.is_none() {
                             schema_ty.set_type_of_attr(name, self.any_ty())
                         }
-                        return self.any_ty();
+                        return vec![self.any_ty()];
                     }
                     // FIXME: self.check_config_attr(name, &pos, &schema_ty);
-                    ty.map_or(self.lookup_type_from_scope(name, range.clone()), |ty| ty)
+                    vec![ty.map_or(self.lookup_type_from_scope(name, range.clone()), |ty| ty)]
                 }
             } else {
                 // Load from schema if in schema
                 if !self.ctx.l_value {
-                    self.lookup_type_from_scope(name, range)
+                    vec![self.lookup_type_from_scope(name, range)]
                 }
                 // Store
                 else {
@@ -76,9 +81,9 @@ impl<'ctx> Resolver<'ctx> {
                                 doc: None,
                             },
                         );
-                        return self.any_ty();
+                        return vec![self.any_ty()];
                     }
-                    self.lookup_type_from_scope(name, range)
+                    vec![self.lookup_type_from_scope(name, range)]
                 }
             }
         } else if !names.is_empty() {
@@ -96,7 +101,7 @@ impl<'ctx> Resolver<'ctx> {
                 }
             }
             // Load type
-            let mut ty = self.resolve_var(
+            let mut tys = self.resolve_var(
                 &[if !pkgpath.is_empty() {
                     pkgpath.to_string()
                 } else {
@@ -105,6 +110,8 @@ impl<'ctx> Resolver<'ctx> {
                 pkgpath,
                 range.clone(),
             );
+            let mut ty = tys[0].clone();
+
             for name in &names[1..] {
                 // Store and config attr check
                 if self.ctx.l_value {
@@ -112,13 +119,14 @@ impl<'ctx> Resolver<'ctx> {
                         self.check_config_attr(name, &range, schema_ty);
                     }
                 }
-                ty = self.load_attr(ty, name, range.clone())
+                ty = self.load_attr(ty, name, range.clone());
+                tys.push(ty.clone());
             }
-            ty
+            tys
         } else {
             self.handler
                 .add_compile_error("missing variable", range.clone());
-            self.any_ty()
+            vec![self.any_ty()]
         }
     }
 

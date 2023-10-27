@@ -70,7 +70,7 @@ fn test_sup() {
 
 #[test]
 fn test_type_walker() {
-    fn walk_fn(ty: &Type) -> Rc<Type> {
+    fn walk_fn(ty: &Type) -> TypeRef {
         if ty.is_int() {
             Rc::new(Type::STR)
         } else {

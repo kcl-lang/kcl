@@ -1031,6 +1031,18 @@ impl Arguments {
             .as_ref()
             .map_or(Type::Any, |ty| ty.node.clone())
     }
+
+    pub fn get_arg_type_node(&self, i: usize) -> Option<&Node<Type>> {
+        if let Some(ty) = self.ty_list.get(i) {
+            if let Some(ty) = ty {
+                Some(ty.as_ref())
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
 }
 
 /// Compare, e.g.

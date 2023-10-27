@@ -4,7 +4,7 @@ use crate::builtin::system_module::{get_system_module_members, UNITS, UNITS_NUMB
 use crate::builtin::{get_system_member_function_ty, STRING_MEMBER_FUNCTIONS};
 use crate::resolver::Resolver;
 use crate::ty::TypeKind::Schema;
-use crate::ty::{DictType, ModuleKind, Type, TypeKind};
+use crate::ty::{DictType, ModuleKind, Type, TypeKind, TypeRef};
 use kclvm_error::diagnostic::Range;
 use kclvm_error::*;
 
@@ -29,7 +29,7 @@ impl<'ctx> Resolver<'ctx> {
         }
     }
 
-    pub fn load_attr(&mut self, obj: Rc<Type>, attr: &str, range: Range) -> ResolvedResult {
+    pub fn load_attr(&mut self, obj: TypeRef, attr: &str, range: Range) -> ResolvedResult {
         let (result, return_ty) = match &obj.kind {
             TypeKind::Any => (true, self.any_ty()),
             TypeKind::None

@@ -1,7 +1,9 @@
 use std::rc::Rc;
 
 use crate::resolver::Resolver;
-use crate::ty::{has_any_type, is_upper_bound, sup, Type, TypeInferMethods, ZERO_LIT_TYPES};
+use crate::ty::{
+    has_any_type, is_upper_bound, sup, Type, TypeInferMethods, TypeRef, ZERO_LIT_TYPES,
+};
 use kclvm_ast::ast;
 use kclvm_error::diagnostic::Range;
 
@@ -53,11 +55,11 @@ impl<'ctx> Resolver<'ctx> {
     /// Or: any_type1 or any_type1 -> sup([any_type1, any_type2])
     pub fn binary(
         &mut self,
-        left: Rc<Type>,
-        right: Rc<Type>,
+        left: TypeRef,
+        right: TypeRef,
         op: &ast::BinOp,
         range: Range,
-    ) -> Rc<Type> {
+    ) -> TypeRef {
         let t1 = self
             .ctx
             .ty_ctx
@@ -69,7 +71,7 @@ impl<'ctx> Resolver<'ctx> {
         if has_any_type(&[t1.clone(), t2.clone()]) {
             return self.any_ty();
         }
-        let number_binary = |left: &Rc<Type>, right: &Rc<Type>| {
+        let number_binary = |left: &TypeRef, right: &TypeRef| {
             if left.is_float() || right.is_float() {
                 Rc::new(Type::FLOAT)
             } else {
@@ -213,7 +215,7 @@ impl<'ctx> Resolver<'ctx> {
     /// - number        unary negation          (int, float)
     /// ~ number        unary bitwise inversion (int)
     /// not x           logical negation        (any type)
-    pub fn unary(&mut self, ty: Rc<Type>, op: &ast::UnaryOp, range: Range) -> Rc<Type> {
+    pub fn unary(&mut self, ty: TypeRef, op: &ast::UnaryOp, range: Range) -> TypeRef {
         if has_any_type(&[ty.clone()]) {
             return self.any_ty();
         }
@@ -251,11 +253,11 @@ impl<'ctx> Resolver<'ctx> {
     /// iterable        # 1 in [1, 2, 3], "s" in "ss", "key" in Schema
     pub fn compare(
         &mut self,
-        left: Rc<Type>,
-        right: Rc<Type>,
+        left: TypeRef,
+        right: TypeRef,
         op: &ast::CmpOp,
         range: Range,
-    ) -> Rc<Type> {
+    ) -> TypeRef {
         let t1 = self.ctx.ty_ctx.literal_union_type_to_variable_type(left);
         let t2 = self.ctx.ty_ctx.literal_union_type_to_variable_type(right);
         if has_any_type(&[t1.clone(), t2.clone()]) {

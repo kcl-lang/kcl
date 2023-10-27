@@ -1,5 +1,45 @@
+/*
+  ┌─────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │                                              namer                                              │
+  ├─────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │       ┌─────────────────┐             ┌─────────────────┐             ┌─────────────────┐       │
+  │       │ ast::Expression │             │ ast::Expression │             │ ast::Expression │       │
+  │       └─────────────────┘             └─────────────────┘             └─────────────────┘       │
+  │                │                               │                               │                │
+  │                │ find_symbols                  │ find_symbols                  │ find_symbols   │
+  │                ▼                               ▼                               ▼                │
+  │   ┌─────────────────────────┐     ┌─────────────────────────┐     ┌─────────────────────────┐   │
+  │   │      core::SymbolRef    │     │     core::SymbolRef     │     │     core::SymbolRef     │   │
+  │   └─────────────────────────┘     └─────────────────────────┘     └─────────────────────────┘   │
+  │                │                               │                               │                │
+  │                │                               │                               │                │
+  │                └───────────────────────────────┼───────────────────────────────┘                │
+  │                                                │                                                │
+  │                                                │ merge findSymbols results                      │
+  │                                                ▼                                                │
+  │                                   ┌─────────────────────────┐                                   │
+  │                                   │     core::SymbolRef     │                                   │
+  │                                   └─────────────────────────┘                                   │
+  │                                                │                                                │
+  │                                                │ define_symbols(FQN)                            │
+  │                                                ■                                                │
+  │                                                  (mutates GlobalState)                          |
+  │                                                                                                 │
+  └─────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+   The early stage of the namer will be based on file level , which collects global symbols defined in the file,
+   and then merges the symbols based on FQN to obtain a unique GlobalState
+
+   Based on file level, it means that we can easily perform incremental compilation in the future
+
+   Now we just run namer pass serially
+
+*/
+
+use std::path::Path;
+
 use crate::core::global_state::GlobalState;
-use crate::core::package::PackageInfo;
+use crate::core::package::{ModuleInfo, PackageInfo};
 use crate::core::symbol::{PackageSymbol, SymbolRef};
 use kclvm_ast::ast::Program;
 use kclvm_ast::walker::MutSelfTypedResultWalker;
@@ -14,6 +54,7 @@ pub struct Namer<'ctx> {
 struct NamerContext<'ctx> {
     pub program: &'ctx Program,
     pub current_package_info: Option<PackageInfo>,
+    pub current_module_info: Option<ModuleInfo>,
     pub owner_symbols: Vec<SymbolRef>,
 }
 
@@ -23,6 +64,7 @@ impl<'ctx> Namer<'ctx> {
             ctx: NamerContext {
                 program,
                 current_package_info: None,
+                current_module_info: None,
                 owner_symbols: Vec::default(),
             },
             gs,
@@ -38,10 +80,17 @@ impl<'ctx> Namer<'ctx> {
                 if modules.is_empty() {
                     continue;
                 }
-
+                let mut real_path = Path::new(&program.root)
+                    .join(name.replace('.', &std::path::MAIN_SEPARATOR.to_string()))
+                    .to_str()
+                    .unwrap()
+                    .to_string();
+                if name == kclvm_ast::MAIN_PKG {
+                    real_path = program.root.clone()
+                }
                 let pkg_pos = Position {
-                    filename: modules.last().unwrap().filename.clone(),
-                    line: 1,
+                    filename: real_path.clone(),
+                    line: 0,
                     column: None,
                 };
 
@@ -49,11 +98,18 @@ impl<'ctx> Namer<'ctx> {
                 let symbol_ref = namer.gs.get_symbols_mut().alloc_package_symbol(pkg_symbol);
                 namer.ctx.owner_symbols.push(symbol_ref);
 
-                namer.ctx.current_package_info = Some(PackageInfo::new(name.to_string()));
+                namer.ctx.current_package_info =
+                    Some(PackageInfo::new(name.to_string(), real_path));
             }
 
             for module in modules.iter() {
+                namer.ctx.current_module_info =
+                    Some(ModuleInfo::new(module.filename.clone(), name.to_string()));
                 namer.walk_module(module);
+                namer
+                    .gs
+                    .get_packages_mut()
+                    .add_module_info(namer.ctx.current_module_info.take().unwrap());
             }
 
             namer.ctx.owner_symbols.pop();
@@ -70,8 +126,6 @@ impl<'ctx> Namer<'ctx> {
 
     pub fn define_symbols(&mut self) {
         self.gs.get_symbols_mut().build_fully_qualified_name_map();
-
-        self.gs.resolve_symbols()
     }
 }
 
@@ -80,8 +134,8 @@ mod tests {
     use super::Namer;
     use crate::core::global_state::GlobalState;
     use crate::core::symbol::SymbolKind;
+    use kclvm_parser::load_program;
     use kclvm_parser::ParseSession;
-    use kclvm_parser::{load_program, parse_program};
     use std::sync::Arc;
 
     #[test]
@@ -99,6 +153,7 @@ mod tests {
         let symbols = gs.get_symbols();
 
         let excepts_symbols = vec![
+            // package
             ("import_test.a", SymbolKind::Package),
             ("import_test.b", SymbolKind::Package),
             ("import_test.c", SymbolKind::Package),
@@ -107,6 +162,7 @@ mod tests {
             ("import_test.f", SymbolKind::Package),
             ("__main__", SymbolKind::Package),
             ("pkg", SymbolKind::Package),
+            // schema
             ("import_test.f.UnionType", SymbolKind::Schema),
             ("import_test.a.Person", SymbolKind::Schema),
             ("import_test.c.TestOfMixin", SymbolKind::Schema),
@@ -115,6 +171,7 @@ mod tests {
             ("pkg.Name", SymbolKind::Schema),
             ("pkg.Person", SymbolKind::Schema),
             ("__main__.Main", SymbolKind::Schema),
+            // attribute
             ("import_test.f.UnionType.b", SymbolKind::Attribute),
             ("import_test.a.Person.name", SymbolKind::Attribute),
             ("import_test.a.Person.age", SymbolKind::Attribute),
@@ -128,8 +185,10 @@ mod tests {
             ("__main__.Main.person", SymbolKind::Attribute),
             ("__main__.Main.list_union_type", SymbolKind::Attribute),
             ("__main__.Main.dict_union_type", SymbolKind::Attribute),
+            // value
             ("__main__.p", SymbolKind::Value),
             ("__main__.person", SymbolKind::Value),
+            ("__main__._c", SymbolKind::Value),
             ("import_test.a._a", SymbolKind::Value),
             ("import_test.b._b", SymbolKind::Value),
         ];

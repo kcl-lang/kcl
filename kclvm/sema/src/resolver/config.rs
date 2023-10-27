@@ -1,11 +1,10 @@
 use std::rc::Rc;
 
 use super::{
-    node::TypeRef,
     scope::{ScopeKind, ScopeObject, ScopeObjectKind},
     Resolver,
 };
-use crate::ty::{sup, DictType};
+use crate::ty::{sup, DictType, TypeRef};
 use crate::ty::{Attr, SchemaType};
 use crate::ty::{Type, TypeKind};
 use indexmap::IndexMap;
@@ -34,7 +33,7 @@ impl<'ctx> Resolver<'ctx> {
     pub(crate) fn new_config_expr_context_item(
         &mut self,
         name: &str,
-        ty: Rc<Type>,
+        ty: TypeRef,
         start: Position,
         end: Position,
     ) -> ScopeObject {
@@ -356,7 +355,7 @@ impl<'ctx> Resolver<'ctx> {
         &mut self,
         schema_ty: &SchemaType,
         attr: &str,
-    ) -> (bool, Rc<Type>) {
+    ) -> (bool, TypeRef) {
         let runtime_type = kclvm_runtime::schema_runtime_type(&schema_ty.name, &schema_ty.pkgpath);
         match self.ctx.schema_mapping.get(&runtime_type) {
             Some(schema_mapping_ty) => {

@@ -1,3 +1,4 @@
+pub mod advanced_resolver;
 pub mod builtin;
 pub mod core;
 pub mod eval;

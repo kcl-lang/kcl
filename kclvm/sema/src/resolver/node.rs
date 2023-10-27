@@ -7,7 +7,7 @@ use std::rc::Rc;
 
 use crate::info::is_private_field;
 use crate::ty::{
-    sup, DictType, FunctionType, Parameter, Type, TypeInferMethods, TypeKind,
+    sup, DictType, FunctionType, Parameter, Type, TypeInferMethods, TypeKind, TypeRef,
     RESERVED_TYPE_IDENTIFIERS,
 };
 
@@ -15,8 +15,6 @@ use super::format::VALID_FORMAT_SPEC_SET;
 use super::scope::{ScopeKind, ScopeObject, ScopeObjectKind};
 use super::ty::ty_str_replace_pkgpath;
 use super::Resolver;
-
-pub type TypeRef = Rc<Type>;
 /// ResolvedResult denotes the result, when the result is error,
 /// put the message string into the diagnostic vector.
 pub type ResolvedResult = TypeRef;
@@ -86,7 +84,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
     fn walk_type_alias_stmt(&mut self, type_alias_stmt: &'ctx ast::TypeAliasStmt) -> Self::Result {
         let (start, end) = type_alias_stmt.type_name.get_span_pos();
         let mut ty = self
-            .parse_ty_with_scope(&type_alias_stmt.ty.node, (start.clone(), end.clone()))
+            .parse_ty_with_scope(Some(&type_alias_stmt.ty), (start.clone(), end.clone()))
             .as_ref()
             .clone();
         if let TypeKind::Schema(schema_ty) = &mut ty.kind {
@@ -120,6 +118,8 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 doc: None,
             },
         );
+        self.node_ty_map
+            .insert(type_alias_stmt.type_name.id.clone(), ty.clone());
         ty
     }
 
@@ -300,6 +300,8 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
         self.enter_scope(start, end, ScopeKind::Loop);
         let (mut key_name, mut val_name) = (None, None);
         let mut target_node = None;
+        let mut first_node = None;
+        let mut second_node = None;
         for (i, target) in quant_expr.variables.iter().enumerate() {
             if target.node.names.is_empty() {
                 continue;
@@ -313,8 +315,10 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             target_node = Some(target);
             let name = &target.node.names[0].node;
             if i == 0 {
+                first_node = Some(target);
                 key_name = Some(name.to_string());
             } else if i == 1 {
+                second_node = Some(target);
                 val_name = Some(name.to_string())
             } else {
                 self.handler.add_compile_error(
@@ -341,6 +345,8 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             );
         }
         self.do_loop_type_check(
+            first_node.unwrap(),
+            second_node,
             target_node.unwrap(),
             key_name,
             val_name,
@@ -374,6 +380,8 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             .borrow()
             .get_type_of_attr(name)
             .map_or(self.any_ty(), |ty| ty);
+        self.node_ty_map
+            .insert(schema_attr.name.id.clone(), expected_ty.clone());
 
         let doc_str = schema
             .borrow()
@@ -511,6 +519,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 &name.node,
                 selector_expr.attr.get_span_pos(),
             );
+            self.node_ty_map.insert(name.id.clone(), value_ty.clone());
         }
 
         if let TypeKind::Function(func) = &value_ty.kind {
@@ -788,6 +797,8 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
         let iter_ty = self.expr(&comp_clause.iter);
         let (mut key_name, mut val_name) = (None, None);
         let mut target_node = None;
+        let mut first_node = None;
+        let mut second_node = None;
         for (i, target) in comp_clause.targets.iter().enumerate() {
             if target.node.names.is_empty() {
                 continue;
@@ -801,8 +812,10 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             target_node = Some(target);
             let name = &target.node.names[0].node;
             if i == 0 {
+                first_node = Some(target);
                 key_name = Some(name.to_string());
             } else if i == 1 {
+                second_node = Some(target);
                 val_name = Some(name.to_string())
             } else {
                 self.handler.add_compile_error(
@@ -832,6 +845,8 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             iter_ty
         } else {
             self.do_loop_type_check(
+                first_node.unwrap(),
+                second_node,
                 target_node.unwrap(),
                 key_name,
                 val_name,
@@ -945,8 +960,8 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
         if let Some(args) = &lambda_expr.args {
             for (i, arg) in args.node.args.iter().enumerate() {
                 let name = arg.node.get_name();
-                let arg_ty = args.node.get_arg_type(i);
-                let ty = self.parse_ty_with_scope(&arg_ty, arg.get_span_pos());
+                let arg_ty = args.node.get_arg_type_node(i);
+                let ty = self.parse_ty_with_scope(arg_ty, arg.get_span_pos());
 
                 // If the arguments type of a lambda is a schema type,
                 // It should be marked as an schema instance type.
@@ -970,7 +985,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
         let (start, end) = (self.ctx.start_pos.clone(), self.ctx.end_pos.clone());
         if let Some(ret_annotation_ty) = &lambda_expr.return_ty {
             ret_ty =
-                self.parse_ty_with_scope(&ret_annotation_ty.node, (start.clone(), end.clone()));
+                self.parse_ty_with_scope(Some(&ret_annotation_ty), (start.clone(), end.clone()));
         }
         self.enter_scope(start.clone(), end.clone(), ScopeKind::Lambda);
         self.ctx.in_lambda_expr.push(true);
@@ -1016,8 +1031,8 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
 
     fn walk_arguments(&mut self, arguments: &'ctx ast::Arguments) -> Self::Result {
         for (i, arg) in arguments.args.iter().enumerate() {
-            let ty = arguments.get_arg_type(i);
-            self.parse_ty_with_scope(&ty, arg.get_span_pos());
+            let ty = arguments.get_arg_type_node(i);
+            self.parse_ty_with_scope(ty, arg.get_span_pos());
             let value = &arguments.defaults[i];
             self.expr_or_any_type(value);
         }
@@ -1035,6 +1050,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
         );
         for i in 1..compare.comparators.len() - 1 {
             let op = &compare.ops[i + 1];
+            let t2 = self.expr(&compare.comparators[i]);
             self.compare(
                 t1.clone(),
                 t2.clone(),
@@ -1046,11 +1062,15 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
     }
 
     fn walk_identifier(&mut self, identifier: &'ctx ast::Identifier) -> Self::Result {
-        self.resolve_var(
+        let tys = self.resolve_var(
             &identifier.get_names(),
             &identifier.pkgpath,
             (self.ctx.start_pos.clone(), self.ctx.end_pos.clone()),
-        )
+        );
+        for (index, name) in identifier.names.iter().enumerate() {
+            self.node_ty_map.insert(name.id.clone(), tys[index].clone());
+        }
+        tys.last().unwrap().clone()
     }
 
     fn walk_number_lit(&mut self, number_lit: &'ctx ast::NumberLit) -> Self::Result {
@@ -1148,7 +1168,9 @@ impl<'ctx> Resolver<'ctx> {
             self.ctx.start_pos = start;
             self.ctx.end_pos = end;
         }
-        self.walk_expr(&expr.node)
+        let ty = self.walk_expr(&expr.node);
+        self.node_ty_map.insert(expr.id.clone(), ty.clone());
+        ty
     }
 
     #[inline]
@@ -1156,7 +1178,9 @@ impl<'ctx> Resolver<'ctx> {
         let (start, end) = stmt.get_span_pos();
         self.ctx.start_pos = start;
         self.ctx.end_pos = end;
-        self.walk_stmt(&stmt.node)
+        let ty = self.walk_stmt(&stmt.node);
+        self.node_ty_map.insert(stmt.id.clone(), ty.clone());
+        ty
     }
 
     #[inline]
@@ -1165,7 +1189,11 @@ impl<'ctx> Resolver<'ctx> {
         expr: &'ctx Option<ast::NodeRef<ast::Expr>>,
     ) -> ResolvedResult {
         match expr {
-            Some(expr) => self.walk_expr(&expr.node),
+            Some(expr) => {
+                let ty = self.walk_expr(&expr.node);
+                self.node_ty_map.insert(expr.id.clone(), ty.clone());
+                ty
+            }
             None => self.any_ty(),
         }
     }
@@ -1175,10 +1203,18 @@ impl<'ctx> Resolver<'ctx> {
         &mut self,
         identifier: &'ctx ast::NodeRef<ast::Identifier>,
     ) -> ResolvedResult {
-        self.resolve_var(
+        let tys = self.resolve_var(
             &identifier.node.get_names(),
             &identifier.node.pkgpath,
             identifier.get_span_pos(),
-        )
+        );
+        for (index, name) in identifier.node.names.iter().enumerate() {
+            self.node_ty_map.insert(name.id.clone(), tys[index].clone());
+        }
+        let ident_ty = tys.last().unwrap().clone();
+        self.node_ty_map
+            .insert(identifier.id.clone(), ident_ty.clone());
+
+        ident_ty
     }
 }

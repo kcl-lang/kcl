@@ -2,7 +2,9 @@ use std::rc::Rc;
 
 use crate::resolver::Resolver;
 use crate::ty::parser::parse_type_str;
-use crate::ty::{assignable_to, is_upper_bound, Attr, DictType, SchemaType, Type, TypeKind};
+use crate::ty::{
+    assignable_to, is_upper_bound, Attr, DictType, SchemaType, Type, TypeKind, TypeRef,
+};
 use indexmap::IndexMap;
 use kclvm_ast::ast;
 use kclvm_ast::pos::GetPos;
@@ -28,57 +30,68 @@ pub fn ty_str_replace_pkgpath(ty_str: &str, pkgpath: &str) -> String {
 
 impl<'ctx> Resolver<'ctx> {
     #[inline]
-    pub fn any_ty(&self) -> Rc<Type> {
+    pub fn any_ty(&self) -> TypeRef {
         self.ctx.ty_ctx.builtin_types.any.clone()
     }
     #[inline]
-    pub fn int_ty(&self) -> Rc<Type> {
+    pub fn int_ty(&self) -> TypeRef {
         self.ctx.ty_ctx.builtin_types.int.clone()
     }
     #[inline]
-    pub fn float_ty(&self) -> Rc<Type> {
+    pub fn float_ty(&self) -> TypeRef {
         self.ctx.ty_ctx.builtin_types.float.clone()
     }
     #[inline]
-    pub fn bool_ty(&self) -> Rc<Type> {
+    pub fn bool_ty(&self) -> TypeRef {
         self.ctx.ty_ctx.builtin_types.bool.clone()
     }
     #[inline]
-    pub fn str_ty(&self) -> Rc<Type> {
+    pub fn str_ty(&self) -> TypeRef {
         self.ctx.ty_ctx.builtin_types.str.clone()
     }
     #[inline]
-    pub fn none_ty(&self) -> Rc<Type> {
+    pub fn none_ty(&self) -> TypeRef {
         self.ctx.ty_ctx.builtin_types.none.clone()
     }
     #[inline]
-    pub fn void_ty(&self) -> Rc<Type> {
+    pub fn void_ty(&self) -> TypeRef {
         self.ctx.ty_ctx.builtin_types.void.clone()
     }
     /// Parse the type string with the scope, if parse_ty returns a Named type(schema type or type alias),
     /// found it from the scope.
-    pub fn parse_ty_with_scope(&mut self, ty: &ast::Type, range: Range) -> ResolvedResult {
-        let ty: Rc<Type> = Rc::new(ty.clone().into());
+    pub fn parse_ty_with_scope(
+        &mut self,
+        ty_node: Option<&ast::Node<ast::Type>>,
+        range: Range,
+    ) -> ResolvedResult {
+        let ty: TypeRef = if let Some(ty) = ty_node {
+            Rc::new(ty.node.clone().into())
+        } else {
+            Rc::new(Type::ANY)
+        };
         // If a named type, find it from scope to get the specific type
-        let ret_ty = self.upgrade_named_ty_with_scope(ty.clone(), &range);
+        let ret_ty = self.upgrade_named_ty_with_scope(ty.clone(), &range, ty_node);
         self.add_type_alias(
             &ty.into_type_annotation_str(),
             &ret_ty.into_type_annotation_str(),
         );
+        if let Some(ty) = ty_node {
+            self.node_ty_map.insert(ty.id.clone(), ret_ty.clone());
+        };
         ret_ty
     }
 
     pub fn parse_ty_str_with_scope(&mut self, ty_str: &str, range: Range) -> ResolvedResult {
-        let ty: Rc<Type> = parse_type_str(ty_str);
+        let ty: TypeRef = parse_type_str(ty_str);
         // If a named type, find it from scope to get the specific type
-        let ret_ty = self.upgrade_named_ty_with_scope(ty, &range);
+        let ret_ty = self.upgrade_named_ty_with_scope(ty, &range, None);
         self.add_type_alias(ty_str, &ret_ty.into_type_annotation_str());
         ret_ty
     }
 
     /// The given expression must be the expected type.
     #[inline]
-    pub fn must_be_type(&mut self, expr: &'ctx ast::NodeRef<ast::Expr>, expected_ty: Rc<Type>) {
+    pub fn must_be_type(&mut self, expr: &'ctx ast::NodeRef<ast::Expr>, expected_ty: TypeRef) {
         let ty = self.expr(expr);
         self.must_assignable_to(ty, expected_ty, expr.get_span_pos(), None);
     }
@@ -87,8 +100,8 @@ impl<'ctx> Resolver<'ctx> {
     #[inline]
     pub fn must_assignable_to(
         &mut self,
-        ty: Rc<Type>,
-        expected_ty: Rc<Type>,
+        ty: TypeRef,
+        expected_ty: TypeRef,
         range: Range,
         expected_pos: Option<Range>,
     ) {
@@ -122,7 +135,7 @@ impl<'ctx> Resolver<'ctx> {
     pub fn check_assignment_type_annotation(
         &mut self,
         assign_stmt: &kclvm_ast::ast::AssignStmt,
-        value_ty: Rc<Type>,
+        value_ty: TypeRef,
     ) {
         if assign_stmt.type_annotation.is_none() {
             return;
@@ -136,7 +149,7 @@ impl<'ctx> Resolver<'ctx> {
 
             if let Some(ty_annotation) = &assign_stmt.ty {
                 let annotation_ty =
-                    self.parse_ty_with_scope(&ty_annotation.node, ty_annotation.get_span_pos());
+                    self.parse_ty_with_scope(Some(&ty_annotation), ty_annotation.get_span_pos());
                 // If the target defined in the scope, check the type of value and the type annotation of target
                 let target_ty = if let Some(obj) = self.scope.borrow().elems.get(name) {
                     let obj = obj.borrow();
@@ -184,7 +197,7 @@ impl<'ctx> Resolver<'ctx> {
 
     /// The check type main function, returns a boolean result.
     #[inline]
-    pub fn check_type(&mut self, ty: Rc<Type>, expected_ty: Rc<Type>, range: &Range) -> bool {
+    pub fn check_type(&mut self, ty: TypeRef, expected_ty: TypeRef, range: &Range) -> bool {
         match (&ty.kind, &expected_ty.kind) {
             (TypeKind::List(item_ty), TypeKind::List(expected_item_ty)) => {
                 self.check_type(item_ty.clone(), expected_item_ty.clone(), range)
@@ -217,8 +230,8 @@ impl<'ctx> Resolver<'ctx> {
     /// Do relaxed schema check key and value type check.
     pub fn dict_assignable_to_schema(
         &mut self,
-        key_ty: Rc<Type>,
-        val_ty: Rc<Type>,
+        key_ty: TypeRef,
+        val_ty: TypeRef,
         schema_ty: &SchemaType,
         range: &Range,
     ) -> bool {
@@ -243,36 +256,71 @@ impl<'ctx> Resolver<'ctx> {
         }
     }
 
-    fn upgrade_named_ty_with_scope(&mut self, ty: Rc<Type>, range: &Range) -> ResolvedResult {
+    fn upgrade_named_ty_with_scope(
+        &mut self,
+        ty: TypeRef,
+        range: &Range,
+        ty_node: Option<&ast::Node<ast::Type>>,
+    ) -> ResolvedResult {
         match &ty.kind {
             TypeKind::List(item_ty) => {
-                Type::list_ref(self.upgrade_named_ty_with_scope(item_ty.clone(), range))
+                let mut inner_node = None;
+                if let Some(ty_node) = ty_node {
+                    if let ast::Type::List(list_type) = &ty_node.node {
+                        inner_node = list_type.inner_type.as_ref().map(|ty| ty.as_ref())
+                    }
+                };
+                Type::list_ref(self.upgrade_named_ty_with_scope(item_ty.clone(), range, inner_node))
             }
             TypeKind::Dict(DictType {
                 key_ty,
                 val_ty,
                 attrs,
-            }) => Type::dict_ref_with_attrs(
-                self.upgrade_named_ty_with_scope(key_ty.clone(), range),
-                self.upgrade_named_ty_with_scope(val_ty.clone(), range),
-                attrs
-                    .into_iter()
-                    .map(|(key, attr)| {
-                        (
-                            key.to_string(),
-                            Attr {
-                                ty: self.upgrade_named_ty_with_scope(val_ty.clone(), range),
-                                range: attr.range.clone(),
-                            },
-                        )
-                    })
-                    .collect(),
-            ),
+            }) => {
+                let mut key_node = None;
+                let mut value_node = None;
+                if let Some(ty_node) = ty_node {
+                    if let ast::Type::Dict(dict_type) = &ty_node.node {
+                        key_node = dict_type.key_type.as_ref().map(|ty| ty.as_ref());
+                        value_node = dict_type.value_type.as_ref().map(|ty| ty.as_ref());
+                    }
+                };
+                Type::dict_ref_with_attrs(
+                    self.upgrade_named_ty_with_scope(key_ty.clone(), range, key_node),
+                    self.upgrade_named_ty_with_scope(val_ty.clone(), range, value_node),
+                    attrs
+                        .into_iter()
+                        .map(|(key, attr)| {
+                            (
+                                key.to_string(),
+                                Attr {
+                                    ty: self.upgrade_named_ty_with_scope(
+                                        val_ty.clone(),
+                                        range,
+                                        None,
+                                    ),
+                                    range: attr.range.clone(),
+                                },
+                            )
+                        })
+                        .collect(),
+                )
+            }
             TypeKind::Union(types) => Type::union_ref(
                 &types
                     .iter()
-                    .map(|ty| self.upgrade_named_ty_with_scope(ty.clone(), range))
-                    .collect::<Vec<Rc<Type>>>(),
+                    .enumerate()
+                    .map(|(index, ty)| {
+                        let mut elem_node = None;
+                        if let Some(ty_node) = ty_node {
+                            if let ast::Type::Union(union_type) = &ty_node.node {
+                                elem_node =
+                                    union_type.type_elements.get(index).map(|ty| ty.as_ref())
+                            }
+                        };
+                        self.upgrade_named_ty_with_scope(ty.clone(), range, elem_node)
+                    })
+                    .collect::<Vec<TypeRef>>(),
             ),
             TypeKind::Named(ty_str) => {
                 let ty_str = ty_str_replace_pkgpath(ty_str, &self.ctx.pkgpath);
@@ -297,11 +345,23 @@ impl<'ctx> Resolver<'ctx> {
                     }
                 }
                 self.ctx.l_value = false;
-                self.resolve_var(
+                let tys = self.resolve_var(
                     &names.iter().map(|n| n.to_string()).collect::<Vec<String>>(),
                     &pkgpath,
                     range.clone(),
-                )
+                );
+
+                if let Some(ty_node) = ty_node {
+                    if let ast::Type::Named(identifier) = &ty_node.node {
+                        for (index, name) in identifier.names.iter().enumerate() {
+                            self.node_ty_map.insert(name.id.clone(), tys[index].clone());
+                        }
+                        let ident_ty = tys.last().unwrap().clone();
+                        self.node_ty_map
+                            .insert(ty_node.id.clone(), ident_ty.clone());
+                    }
+                };
+                tys.last().unwrap().clone()
             }
             _ => ty.clone(),
         }

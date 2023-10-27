@@ -3,7 +3,7 @@ use super::*;
 impl Type {
     /// Downcast ty into the list type.
     #[inline]
-    pub fn list_item_ty(&self) -> Rc<Type> {
+    pub fn list_item_ty(&self) -> TypeRef {
         match &self.kind {
             TypeKind::List(item_ty) => item_ty.clone(),
             _ => bug!("invalid list type {}", self.ty_str()),
@@ -11,7 +11,7 @@ impl Type {
     }
     /// Downcast ty into the dict entry type.
     #[inline]
-    pub fn dict_entry_ty(&self) -> (Rc<Type>, Rc<Type>) {
+    pub fn dict_entry_ty(&self) -> (TypeRef, TypeRef) {
         match &self.kind {
             TypeKind::Dict(DictType { key_ty, val_ty, .. }) => (key_ty.clone(), val_ty.clone()),
             _ => bug!("invalid dict type {}", self.ty_str()),
@@ -19,7 +19,7 @@ impl Type {
     }
     /// Downcast ty into the config key type.
     #[inline]
-    pub fn config_key_ty(&self) -> Rc<Type> {
+    pub fn config_key_ty(&self) -> TypeRef {
         match &self.kind {
             TypeKind::Dict(DictType { key_ty, .. }) => key_ty.clone(),
             TypeKind::Schema(schema_ty) => schema_ty.key_ty(),
@@ -28,7 +28,7 @@ impl Type {
     }
     /// Downcast ty into the config value type.
     #[inline]
-    pub fn config_val_ty(&self) -> Rc<Type> {
+    pub fn config_val_ty(&self) -> TypeRef {
         match &self.kind {
             TypeKind::Dict(DictType {
                 key_ty: _, val_ty, ..
@@ -39,7 +39,7 @@ impl Type {
     }
     /// Get types from the union type.
     #[inline]
-    pub fn union_types(&self) -> Vec<Rc<Type>> {
+    pub fn union_types(&self) -> Vec<TypeRef> {
         match &self.kind {
             TypeKind::Union(types) => types.clone(),
             _ => bug!("invalid {} into union type", self.ty_str()),
@@ -143,7 +143,7 @@ impl From<ast::Type> for Type {
                     .type_elements
                     .iter()
                     .map(|ty| Rc::new(ty.node.clone().into()))
-                    .collect::<Vec<Rc<Type>>>(),
+                    .collect::<Vec<TypeRef>>(),
             ),
             ast::Type::Literal(literal_ty) => match literal_ty {
                 ast::LiteralType::Bool(v) => Type::bool_lit(v),

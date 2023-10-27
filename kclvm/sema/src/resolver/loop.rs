@@ -1,7 +1,5 @@
-use std::rc::Rc;
-
 use crate::resolver::Resolver;
-use crate::ty::{sup, DictType, Type, TypeKind};
+use crate::ty::{sup, DictType, TypeKind, TypeRef};
 use kclvm_ast::ast;
 use kclvm_ast::pos::GetPos;
 use kclvm_error::diagnostic::Range;
@@ -10,10 +8,12 @@ impl<'ctx> Resolver<'ctx> {
     /// Do loop type check including quant and comp for expression.
     pub(crate) fn do_loop_type_check(
         &mut self,
+        first_node: &'ctx ast::NodeRef<ast::Identifier>,
+        second_node: Option<&'ctx ast::NodeRef<ast::Identifier>>,
         target_node: &'ctx ast::NodeRef<ast::Identifier>,
         first_var_name: Option<String>,
         second_var_name: Option<String>,
-        iter_ty: Rc<Type>,
+        iter_ty: TypeRef,
         iter_range: Range,
     ) {
         let types = match &iter_ty.kind {
@@ -110,6 +110,12 @@ impl<'ctx> Resolver<'ctx> {
                     }
                 }
                 _ => {}
+            }
+            self.node_ty_map
+                .insert(first_node.id.clone(), first_var_ty.clone());
+            if let Some(second_node) = second_node {
+                self.node_ty_map
+                    .insert(second_node.id.clone(), second_var_ty.clone());
             }
         }
     }

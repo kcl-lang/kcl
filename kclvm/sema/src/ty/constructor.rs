@@ -28,7 +28,7 @@ impl Type {
     }
     /// Construct a union type
     #[inline]
-    pub fn union(types: &[Rc<Type>]) -> Type {
+    pub fn union(types: &[TypeRef]) -> Type {
         Type {
             kind: TypeKind::Union(types.to_owned()),
             flags: TypeFlags::UNION,
@@ -37,12 +37,12 @@ impl Type {
     }
     /// Construct an union type reference.
     #[inline]
-    pub fn union_ref(types: &[Rc<Type>]) -> Rc<Type> {
+    pub fn union_ref(types: &[TypeRef]) -> TypeRef {
         Rc::new(Self::union(types))
     }
     /// Construct a list type
     #[inline]
-    pub fn list(item_ty: Rc<Type>) -> Type {
+    pub fn list(item_ty: TypeRef) -> Type {
         Type {
             kind: TypeKind::List(item_ty),
             flags: TypeFlags::LIST,
@@ -51,12 +51,12 @@ impl Type {
     }
     /// Construct a list type ref
     #[inline]
-    pub fn list_ref(item_ty: Rc<Type>) -> Rc<Type> {
+    pub fn list_ref(item_ty: TypeRef) -> TypeRef {
         Rc::new(Self::list(item_ty))
     }
     /// Construct a dict type
     #[inline]
-    pub fn dict(key_ty: Rc<Type>, val_ty: Rc<Type>) -> Type {
+    pub fn dict(key_ty: TypeRef, val_ty: TypeRef) -> Type {
         Type {
             kind: TypeKind::Dict(DictType {
                 key_ty,
@@ -69,7 +69,7 @@ impl Type {
     }
     /// Construct a dict type ref
     #[inline]
-    pub fn dict_ref(key_ty: Rc<Type>, val_ty: Rc<Type>) -> Rc<Type> {
+    pub fn dict_ref(key_ty: TypeRef, val_ty: TypeRef) -> TypeRef {
         Rc::new(Self::dict(key_ty, val_ty))
     }
     /// Construct a dict type with attrs
@@ -173,8 +173,8 @@ impl Type {
     /// Construct a function type.
     #[inline]
     pub fn function(
-        self_ty: Option<Rc<Type>>,
-        return_ty: Rc<Type>,
+        self_ty: Option<TypeRef>,
+        return_ty: TypeRef,
         params: &[Parameter],
         doc: &str,
         is_variadic: bool,
@@ -215,7 +215,7 @@ impl Type {
     }
     /// Construct a iterable type
     #[inline]
-    pub fn iterable() -> Rc<Type> {
+    pub fn iterable() -> TypeRef {
         Rc::new(Type::union(&[
             Rc::new(Type::STR),
             Rc::new(Type::dict(Rc::new(Type::ANY), Rc::new(Type::ANY))),

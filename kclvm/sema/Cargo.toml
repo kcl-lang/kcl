@@ -6,6 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+serde_json = "1.0"
 generational-arena = "0.2.9"
 phf = { version = "0.9", features = ["macros"] }
 ahash = "0.7.2"
@@ -29,7 +30,7 @@ kclvm-span = { path = "../span" }
 compiler_base_span = { path = "../../compiler_base/span", version = "0.0.2" }
 compiler_base_session = { path = "../../compiler_base/session" }
 compiler_base_macros = "0.0.1"
-compiler_base_error = {path = "../../compiler_base/error"}
+compiler_base_error = { path = "../../compiler_base/error" }
 suggestions = "0.1.1"
 
 [dev-dependencies]
