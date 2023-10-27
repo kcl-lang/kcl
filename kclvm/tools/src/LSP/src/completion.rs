@@ -16,7 +16,6 @@
 use std::io;
 use std::{fs, path::Path};
 
-use chumsky::primitive::todo;
 use indexmap::IndexSet;
 use kclvm_ast::ast::{Expr, ImportStmt, Node, Program, Stmt};
 use kclvm_ast::pos::GetPos;
@@ -30,7 +29,7 @@ use kclvm_sema::builtin::{
     STRING_MEMBER_FUNCTIONS,
 };
 use kclvm_sema::resolver::scope::{ProgramScope, ScopeObjectKind};
-use kclvm_sema::ty::{FunctionType, Type};
+use kclvm_sema::ty::{FunctionType, SchemaType, Type};
 use lsp_types::{CompletionItem, CompletionItemKind};
 
 use crate::goto_def::{find_def, get_identifier_last_name, Definition};
@@ -275,6 +274,10 @@ fn completion_variable(pos: &KCLPos, prog_scope: &ProgramScope) -> IndexSet<KCLC
                         }
                     }
                 }
+                kclvm_sema::resolver::scope::ScopeObjectKind::Definition => {
+                    let schema_ty = obj.borrow().ty.clone().into_schema_type();
+                    completions.insert(schema_ty_completion_item(&schema_ty));
+                }
                 _ => {
                     completions.insert(KCLCompletionItem {
                         label: name,
@@ -284,13 +287,63 @@ fn completion_variable(pos: &KCLPos, prog_scope: &ProgramScope) -> IndexSet<KCLC
                             obj.borrow().ty.ty_str()
                         )),
                         documentation: obj.borrow().doc.clone(),
-                        kind: Some(KCLCompletionItemKind::Variable),
+                        kind: Some(KCLCompletionItemKind::Schema),
                     });
                 }
             }
         }
     }
     completions
+}
+
+/// Complete schema name
+///
+/// ```no_run
+/// p = P<cursor>
+/// ```
+/// complete to
+/// ```no_run
+/// p = Person(param1, param2){}<cursor>
+/// ```
+fn schema_ty_completion_item(schema_ty: &SchemaType) -> KCLCompletionItem {
+    let param = schema_ty.func.params.clone();
+    let label = format!(
+        "{}{}{}",
+        schema_ty.name.clone(),
+        if param.is_empty() {
+            "".to_string()
+        } else {
+            format!(
+                "({})",
+                param
+                    .iter()
+                    .map(|p| p.name.clone())
+                    .collect::<Vec<String>>()
+                    .join(", ")
+            )
+        },
+        "{}"
+    );
+    let detail = {
+        let mut details = vec![];
+        details.push(schema_ty.schema_ty_signature_str());
+        details.push("Attributes:".to_string());
+        for (name, attr) in &schema_ty.attrs {
+            details.push(format!(
+                "{}{}:{}",
+                name,
+                if attr.is_optional { "?" } else { "" },
+                format!(" {}", attr.ty.ty_str()),
+            ));
+        }
+        details.join("\n")
+    };
+    KCLCompletionItem {
+        label,
+        detail: Some(detail),
+        documentation: Some(schema_ty.doc.clone()),
+        kind: Some(KCLCompletionItemKind::Schema),
+    }
 }
 
 fn completion_for_import(
@@ -488,15 +541,21 @@ pub(crate) fn get_doc_completion(
                             }
                             crate::goto_def::Definition::Scope(s, _) => {
                                 for (name, obj) in &s.elems {
-                                    if let ScopeObjectKind::Module(_) = obj.borrow().kind {
-                                        continue;
-                                    } else {
-                                        items.insert(KCLCompletionItem {
-                                            label: name.clone(),
-                                            detail: None,
-                                            documentation: None,
-                                            kind: None,
-                                        });
+                                    match obj.borrow().kind {
+                                        ScopeObjectKind::Definition => {
+                                            items.insert(schema_ty_completion_item(
+                                                &obj.borrow().ty.into_schema_type(),
+                                            ));
+                                        }
+                                        ScopeObjectKind::Module(_) => continue,
+                                        _ => {
+                                            items.insert(KCLCompletionItem {
+                                                label: name.clone(),
+                                                detail: None,
+                                                documentation: None,
+                                                kind: None,
+                                            });
+                                        }
                                     }
                                 }
                             }
@@ -582,7 +641,7 @@ mod tests {
     use indexmap::IndexSet;
     use kclvm_error::Position as KCLPos;
     use kclvm_sema::builtin::{MATH_FUNCTION_TYPES, STRING_MEMBER_FUNCTIONS};
-    use lsp_types::CompletionResponse;
+    use lsp_types::{CompletionItem, CompletionItemKind, CompletionResponse};
     use proc_macro_crate::bench_test;
 
     use crate::{
@@ -614,7 +673,7 @@ mod tests {
 
         let mut expected_labels: Vec<&str> = vec![
             "", // generate from error recovery of "pkg."
-            "subpkg", "math", "Person", "P", "p", "p1", "p2", "p3", "p4", "aaaa",
+            "subpkg", "math", "Person{}", "P{}", "p", "p1", "p2", "p3", "p4", "aaaa",
         ];
 
         assert_eq!(got_labels, expected_labels);
@@ -705,7 +764,7 @@ mod tests {
             CompletionResponse::List(_) => panic!("test failed"),
         };
 
-        let expected_labels: Vec<&str> = vec!["Person1"];
+        let expected_labels: Vec<&str> = vec!["Person1{}"];
         assert_eq!(got_labels, expected_labels);
 
         let pos = KCLPos {
@@ -829,7 +888,7 @@ mod tests {
             CompletionResponse::List(_) => panic!("test failed"),
         };
 
-        let expected_labels: Vec<&str> = vec!["Person1"];
+        let expected_labels: Vec<&str> = vec!["Person1{}"];
         assert_eq!(got_labels, expected_labels);
 
         let pos = KCLPos {
@@ -1024,5 +1083,36 @@ mod tests {
         };
         let expected_labels: Vec<&str> = vec![" subpkg.Person1{}"];
         assert_eq!(got_labels, expected_labels);
+    }
+
+    #[test]
+    #[bench_test]
+    fn schema_sig_completion() {
+        let (file, program, prog_scope, _) =
+            compile_test_file("src/test_data/completion_test/schema/schema.k");
+
+        // test completion for builtin packages
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 7,
+            column: Some(5),
+        };
+
+        let got = completion(None, &program, &pos, &prog_scope).unwrap();
+        match got {
+            CompletionResponse::Array(arr) => {
+                assert_eq!(
+                    arr[1],
+                    CompletionItem {
+                        label: "Person(b){}".to_string(),
+                        kind: Some(CompletionItemKind:: CLASS),
+                        detail: Some("__main__\n\nschema Person[b: int](Base)\nAttributes:\n__settings__?: {str:any}\nc: int".to_string()),
+                        documentation: Some(lsp_types::Documentation::String("".to_string())),
+                        ..Default::default()
+                    }
+                )
+            }
+            CompletionResponse::List(_) => panic!("test failed"),
+        }
     }
 }

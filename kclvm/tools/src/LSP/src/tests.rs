@@ -1157,7 +1157,10 @@ fn konfig_completion_test_main() {
         CompletionResponse::List(_) => panic!("test failed"),
     };
 
-    let expected_labels: Vec<&str> = vec!["Job", "Server"];
+    let expected_labels: Vec<String> = vec!["Job", "Server"]
+        .iter()
+        .map(|attr| format!("{}{}", attr, "{}"))
+        .collect();
     assert_eq!(got_labels, expected_labels);
 
     // schema attr completion
