@@ -294,6 +294,28 @@ impl SchemaType {
             Rc::new(Type::ANY)
         }
     }
+
+    pub fn schema_ty_signature_str(&self) -> String {
+        let base: String = if let Some(base) = &self.base {
+            format!("({})", base.name)
+        } else {
+            "".to_string()
+        };
+        let params: String = if self.func.params.is_empty() {
+            "".to_string()
+        } else {
+            format!(
+                "[{}]",
+                self.func
+                    .params
+                    .iter()
+                    .map(|p| format!("{}: {}", p.name.clone(), p.ty.ty_str()))
+                    .collect::<Vec<String>>()
+                    .join(", ")
+            )
+        };
+        format!("{}\n\nschema {}{}{}", self.pkgpath, self.name, params, base)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]

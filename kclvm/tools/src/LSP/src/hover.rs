@@ -76,7 +76,7 @@ fn docs_to_hover(docs: Vec<String>) -> Option<lsp_types::Hover> {
 // Schema Definition hover
 // ```
 // pkg
-// schema Foo(Base)
+// schema Foo(Base)[param: type]
 // -----------------
 // doc
 // -----------------
@@ -86,15 +86,7 @@ fn docs_to_hover(docs: Vec<String>) -> Option<lsp_types::Hover> {
 // ```
 fn build_schema_hover_content(schema_ty: &SchemaType) -> Vec<String> {
     let mut docs = vec![];
-    let base: String = if let Some(base) = &schema_ty.base {
-        format!("({})", base.name)
-    } else {
-        "".to_string()
-    };
-    docs.push(format!(
-        "{}\n\nschema {}{}",
-        schema_ty.pkgpath, schema_ty.name, base
-    ));
+    docs.push(schema_ty.schema_ty_signature_str());
     if !schema_ty.doc.is_empty() {
         docs.push(schema_ty.doc.clone());
     }
