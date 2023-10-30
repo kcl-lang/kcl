@@ -595,3 +595,24 @@ fn test_resolve_lambda_assignment_diagnostic() {
         "expected function (int, int) -> int, got function (int, int) -> str"
     );
 }
+
+#[test]
+fn test_ty_check_in_dict_assign_to_schema() {
+    let sess = Arc::new(ParseSession::default());
+    let mut program = load_program(
+        sess.clone(),
+        &["./src/resolver/test_data/attr_ty_check.k"],
+        None,
+    )
+    .unwrap();
+    let scope = resolve_program(&mut program);
+    assert_eq!(scope.handler.diagnostics.len(), 1);
+    let diag = &scope.handler.diagnostics[0];
+    assert_eq!(diag.code, Some(DiagnosticId::Error(ErrorKind::TypeError)));
+    assert_eq!(diag.messages.len(), 2);
+    assert_eq!(diag.messages[0].message, "expected int, got str(1)");
+    assert_eq!(
+        diag.messages[1].message,
+        "variable is defined here, its type is int, but got str(1)"
+    );
+}
