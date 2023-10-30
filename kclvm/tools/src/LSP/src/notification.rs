@@ -10,7 +10,7 @@ use std::path::Path;
 use crate::{
     dispatcher::NotificationDispatcher,
     from_lsp,
-    state::LanguageServerState,
+    state::{log_message, LanguageServerState},
     util::apply_document_changes,
     util::{build_word_index_for_file_content, word_index_add, word_index_subtract},
 };
