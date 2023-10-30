@@ -162,7 +162,7 @@ fn completion_dot(
     match program.pos_to_stmt(pos) {
         Some(node) => match node.node {
             Stmt::Import(stmt) => completion_for_import(&stmt, pos, prog_scope, program),
-            _ => Some(into_completion_items(&get_doc_completion(node, pos, prog_scope)).into()),
+            _ => Some(into_completion_items(&get_dot_completion(node, pos, prog_scope)).into()),
         },
         None => None,
     }
@@ -474,7 +474,7 @@ pub(crate) fn get_schema_attr_value_completion(
 }
 
 /// Get completion items for trigger '.'
-pub(crate) fn get_doc_completion(
+pub(crate) fn get_dot_completion(
     stmt: Node<Stmt>,
     pos: &KCLPos,
     prog_scope: &ProgramScope,
@@ -604,7 +604,7 @@ pub(crate) fn get_doc_completion(
                 }
                 Expr::Selector(select_expr) => {
                     let res =
-                        get_doc_completion(stmt, &select_expr.value.get_end_pos(), prog_scope);
+                        get_dot_completion(stmt, &select_expr.value.get_end_pos(), prog_scope);
                     items.extend(res);
                 }
                 Expr::StringLit(_) => {
