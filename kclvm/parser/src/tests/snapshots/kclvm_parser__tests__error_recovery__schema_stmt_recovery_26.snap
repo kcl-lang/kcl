@@ -5,13 +5,13 @@ expression: "crate::tests::parsing_module_string(r#\"\nschema A:\n    check: \n 
 Module {
     filename: "",
     pkg: "",
-    doc: "",
+    doc: None,
     name: "",
     body: [
         Node {
             node: Schema(
                 SchemaStmt {
-                    doc: "",
+                    doc: None,
                     name: Node {
                         node: "A",
                         filename: "",

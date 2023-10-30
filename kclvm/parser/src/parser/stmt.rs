@@ -708,7 +708,7 @@ impl<'a> Parser<'a> {
             let pos = self.token_span_pos(token, self.prev_token);
             node_ref!(
                 Stmt::Schema(SchemaStmt {
-                    doc: Some(node_ref!("".to_string())),
+                    doc: None,
                     name,
                     parent_name,
                     for_host_name,
