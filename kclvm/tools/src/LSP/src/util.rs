@@ -1,8 +1,9 @@
 use indexmap::{IndexMap, IndexSet};
 use kclvm_ast::ast::{
-    ConfigEntry, Expr, Identifier, Node, NodeRef, PosTuple, Program, SchemaExpr, Stmt, Type,
+    ConfigEntry, Expr, Identifier, Node, NodeRef, PosTuple, Program, SchemaExpr, SchemaStmt, Stmt,
+    Type,
 };
-use kclvm_ast::pos::ContainsPos;
+use kclvm_ast::pos::{ContainsPos, GetPos};
 use kclvm_ast::MAIN_PKG;
 use kclvm_compiler::pkgpath_without_prefix;
 use kclvm_config::modfile::KCL_FILE_EXTENSION;
@@ -22,6 +23,7 @@ use ra_ap_vfs::{FileId, Vfs};
 use serde::{de::DeserializeOwned, Serialize};
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::{fs, sync::Arc};
@@ -583,7 +585,10 @@ fn inner_most_expr_in_config_entry(
     }
 }
 
-pub(crate) fn is_in_schema(program: &Program, pos: &KCLPos) -> Option<(Node<Stmt>, SchemaExpr)> {
+pub(crate) fn is_in_schema_expr(
+    program: &Program,
+    pos: &KCLPos,
+) -> Option<(Node<Stmt>, SchemaExpr)> {
     match program.pos_to_stmt(pos) {
         Some(node) => {
             let parent_expr = inner_most_expr_in_stmt(&node.node, pos, None).1;
@@ -598,6 +603,28 @@ pub(crate) fn is_in_schema(program: &Program, pos: &KCLPos) -> Option<(Node<Stmt
         None => None,
     }
 }
+
+pub(crate) fn is_in_schema_stmt(
+    program: &Program,
+    pos: &KCLPos,
+) -> Option<(Node<Stmt>, SchemaStmt)> {
+    match program.pos_to_stmt(pos) {
+        Some(node) => match node.node.clone() {
+            Stmt::Schema(schema) => Some((node, schema)),
+            _ => None,
+        },
+        None => None,
+    }
+}
+
+// pub(crate) fn is_in_docstring(node: &Node<SchemaStmt>, pos: &KCLPos) -> bool {
+//     node.contains_pos(pos) &&
+//     node.node.body.iter().all(|stmt| pos.less(&stmt.get_pos())) &&
+//     node.node.name.get_pos().less(pos) &&
+
+//     schema name:
+
+// }
 
 /// Build a temp identifier expr with string
 fn build_identifier_from_string(s: &NodeRef<String>) -> Node<Expr> {

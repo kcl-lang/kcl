@@ -184,7 +184,7 @@ fn test_filter_schema_with_no_schema() {
     let ast_mod = Module {
         filename: "".to_string(),
         pkg: "".to_string(),
-        doc: "".to_string(),
+        doc: Some(node_ref!("".to_string())),
         name: "".to_string(),
         body: vec![],
         comments: vec![],
@@ -198,7 +198,7 @@ fn test_filter_schema_with_one_schema() {
     let mut ast_mod = Module {
         filename: "".to_string(),
         pkg: "".to_string(),
-        doc: "".to_string(),
+        doc: Some(node_ref!("".to_string())),
         name: "".to_string(),
         body: vec![],
         comments: vec![],
@@ -215,7 +215,7 @@ fn test_filter_schema_with_mult_schema() {
     let mut ast_mod = Module {
         filename: "".to_string(),
         pkg: "".to_string(),
-        doc: "".to_string(),
+        doc: Some(node_ref!("".to_string())),
         name: "".to_string(),
         body: vec![],
         comments: vec![],
@@ -268,7 +268,7 @@ fn gen_schema_stmt(count: i32) -> Vec<NodeRef<ast::Stmt>> {
     let mut schema_stmts = Vec::new();
     for c in 0..count {
         schema_stmts.push(node_ref!(ast::Stmt::Schema(SchemaStmt {
-            doc: "".to_string(),
+            doc: Some(node_ref!("".to_string())),
             name: node_ref!("schema_stmt_".to_string() + &c.to_string()),
             parent_name: None,
             for_host_name: None,

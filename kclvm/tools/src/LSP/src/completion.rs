@@ -35,7 +35,7 @@ use kclvm_sema::ty::{FunctionType, SchemaType, Type};
 use lsp_types::{CompletionItem, CompletionItemKind};
 
 use crate::goto_def::{find_def, get_identifier_last_name, Definition};
-use crate::util::{inner_most_expr_in_stmt, is_in_schema};
+use crate::util::{inner_most_expr_in_stmt, is_in_schema_expr, is_in_schema_stmt};
 
 #[derive(Debug, Clone, PartialEq, Hash, Eq)]
 pub enum KCLCompletionItemKind {
@@ -203,7 +203,7 @@ fn completion_newline(
     match program.pos_to_stmt(pos) {
         Some(node) => {
             let end_pos = node.get_end_pos();
-            if let Some((node, schema_expr)) = is_in_schema(program, &end_pos) {
+            if let Some((node, schema_expr)) = is_in_schema_expr(program, &end_pos) {
                 let schema_def = find_def(node, &schema_expr.name.get_end_pos(), prog_scope);
                 if let Some(schema) = schema_def {
                     if let Definition::Object(obj, _) = schema {
@@ -219,6 +219,11 @@ fn completion_newline(
                     }
                 }
             }
+            // else if let Some((node, schema_stmt)) = is_in_schema_stmt(program, &end_pos) {
+            //     // docstring completion: check if the position is surrounding by triple quotes
+            //     pos
+
+            // }
         }
         None => {}
     }
@@ -274,7 +279,7 @@ fn completion_attr(
 ) -> IndexSet<KCLCompletionItem> {
     let mut completions: IndexSet<KCLCompletionItem> = IndexSet::new();
 
-    if let Some((node, schema_expr)) = is_in_schema(program, pos) {
+    if let Some((node, schema_expr)) = is_in_schema_expr(program, pos) {
         let schema_def = find_def(node, &schema_expr.name.get_end_pos(), prog_scope);
         if let Some(schema) = schema_def {
             if let Definition::Object(obj, _) = schema {

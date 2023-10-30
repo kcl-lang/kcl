@@ -326,7 +326,7 @@ impl Program {
 pub struct Module {
     pub filename: String,
     pub pkg: String,
-    pub doc: String,
+    pub doc: Option<NodeRef<String>>,
     pub name: String,
     pub body: Vec<NodeRef<Stmt>>,
     pub comments: Vec<NodeRef<Comment>>,
@@ -498,7 +498,7 @@ pub struct ImportStmt {
 /// ```
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct SchemaStmt {
-    pub doc: String,
+    pub doc: Option<NodeRef<String>>,
     pub name: NodeRef<String>,
     pub parent_name: Option<NodeRef<Identifier>>,
     pub for_host_name: Option<NodeRef<Identifier>>,
@@ -623,7 +623,7 @@ pub struct SchemaAttr {
 /// ```
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct RuleStmt {
-    pub doc: String,
+    pub doc: Option<NodeRef<String>>,
     pub name: NodeRef<String>,
     pub parent_rules: Vec<NodeRef<Identifier>>,
     pub decorators: Vec<NodeRef<CallExpr>>,

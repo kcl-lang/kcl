@@ -708,7 +708,7 @@ impl<'a> Parser<'a> {
             let pos = self.token_span_pos(token, self.prev_token);
             node_ref!(
                 Stmt::Schema(SchemaStmt {
-                    doc: "".to_string(),
+                    doc: Some(node_ref!("".to_string())),
                     name,
                     parent_name,
                     for_host_name,
@@ -1396,15 +1396,19 @@ impl<'a> Parser<'a> {
                     let doc_expr = self.parse_str_expr(lit);
                     self.skip_newlines();
                     match &doc_expr.node {
-                        Expr::StringLit(str) => str.raw_value.clone(),
-                        Expr::JoinedString(str) => str.raw_value.clone(),
-                        _ => "".to_string(),
+                        Expr::StringLit(str) => {
+                            Some(node_ref!(str.raw_value.clone(), doc_expr.pos()))
+                        }
+                        Expr::JoinedString(str) => {
+                            Some(node_ref!(str.raw_value.clone(), doc_expr.pos()))
+                        }
+                        _ => None,
                     }
                 } else {
-                    "".to_string()
+                    None
                 }
             }
-            _ => "".to_string(),
+            _ => None,
         };
 
         let mut check_expr_list = vec![];
