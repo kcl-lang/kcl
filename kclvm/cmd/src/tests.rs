@@ -225,7 +225,7 @@ fn test_run_command() {
     test_kcl_path_is_sym_link();
     test_compile_two_kcl_mod();
     test_main_pkg_not_found();
-    test_conflict_mod_file();
+    test_multi_mod_file();
     test_instances_with_yaml();
     test_plugin_not_found();
     test_error_message_fuzz_matched();
@@ -531,7 +531,7 @@ fn test_main_pkg_not_found() {
     }
 }
 
-fn test_conflict_mod_file() {
+fn test_multi_mod_file() {
     let test_case_path = PathBuf::from("./src/test_data/multimod");
 
     let matches = app().arg_required_else_help(true).get_matches_from(&[
@@ -543,8 +543,14 @@ fn test_conflict_mod_file() {
     let settings = must_build_settings(matches.subcommand_matches("run").unwrap());
     let sess = Arc::new(ParseSession::default());
     match exec_program(sess.clone(), &settings.try_into().unwrap()) {
-        Ok(_) => panic!("unreachable code."),
-        Err(msg) => assert!(msg.contains("conflict kcl.mod file paths")),
+        Ok(res) => {
+            assert_eq!(res.yaml_result, "kcl1: hello 1\nkcl2: hello 2");
+            assert_eq!(
+                res.json_result,
+                "[{\"kcl1\": \"hello 1\", \"kcl2\": \"hello 2\"}]"
+            );
+        }
+        Err(_) => panic!("unreachable code."),
     }
 }
 
