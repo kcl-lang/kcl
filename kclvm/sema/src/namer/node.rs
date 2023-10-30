@@ -52,18 +52,33 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Namer<'ctx> {
     ) -> Self::Result {
         let (start_pos, end_pos): Range = unification_stmt.target.get_span_pos();
         let owner = self.ctx.owner_symbols.last().unwrap().clone();
-        let value_ref = self.gs.get_symbols_mut().alloc_value_symbol(
-            ValueSymbol::new(
-                unification_stmt.target.node.get_name(),
-                start_pos,
-                end_pos,
-                Some(owner),
-                true,
-            ),
-            &unification_stmt.target.id,
-        );
-
-        Some(vec![value_ref])
+        if unification_stmt.target.node.names.len() == 1 {
+            let owner_fully_qualified_name = self
+                .gs
+                .get_symbols()
+                .get_fully_qualified_name(owner)
+                .unwrap();
+            let value_name = unification_stmt.target.node.get_name();
+            let value_fully_qualified_name = owner_fully_qualified_name + "." + &value_name;
+            if !self
+                .ctx
+                .value_fully_qualified_name_set
+                .contains(&value_fully_qualified_name)
+            {
+                let value_ref = self.gs.get_symbols_mut().alloc_value_symbol(
+                    ValueSymbol::new(value_name, start_pos, end_pos, Some(owner), true),
+                    &unification_stmt.target.id,
+                );
+                self.ctx
+                    .value_fully_qualified_name_set
+                    .insert(value_fully_qualified_name);
+                Some(vec![value_ref])
+            } else {
+                None
+            }
+        } else {
+            None
+        }
     }
 
     fn walk_type_alias_stmt(&mut self, type_alias_stmt: &'ctx ast::TypeAliasStmt) -> Self::Result {
@@ -86,17 +101,29 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Namer<'ctx> {
         for target in assign_stmt.targets.iter() {
             let (start_pos, end_pos): Range = target.get_span_pos();
             let owner = self.ctx.owner_symbols.last().unwrap().clone();
-            let value_ref = self.gs.get_symbols_mut().alloc_value_symbol(
-                ValueSymbol::new(
-                    target.node.get_name(),
-                    start_pos,
-                    end_pos,
-                    Some(owner),
-                    true,
-                ),
-                &target.id,
-            );
-            value_symbols.push(value_ref)
+            if target.node.names.len() == 1 {
+                let owner_fully_qualified_name = self
+                    .gs
+                    .get_symbols()
+                    .get_fully_qualified_name(owner)
+                    .unwrap();
+                let value_name = target.node.get_name();
+                let value_fully_qualified_name = owner_fully_qualified_name + "." + &value_name;
+                if !self
+                    .ctx
+                    .value_fully_qualified_name_set
+                    .contains(&value_fully_qualified_name)
+                {
+                    let value_ref = self.gs.get_symbols_mut().alloc_value_symbol(
+                        ValueSymbol::new(value_name, start_pos, end_pos, Some(owner), true),
+                        &target.id,
+                    );
+                    self.ctx
+                        .value_fully_qualified_name_set
+                        .insert(value_fully_qualified_name);
+                    value_symbols.push(value_ref)
+                }
+            }
         }
         Some(value_symbols)
     }
@@ -152,15 +179,15 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Namer<'ctx> {
             let symbol_refs = self.walk_stmt(&stmt.node);
             if let Some(symbol_refs) = symbol_refs {
                 for symbol_ref in symbol_refs {
-                    if matches!(
-                        &symbol_ref.get_kind(),
-                        SymbolKind::Attribute | SymbolKind::Value
-                    ) {
+                    if matches!(&symbol_ref.get_kind(), SymbolKind::Attribute) {
                         let full_attribute_name = self
                             .gs
                             .get_symbols()
                             .get_fully_qualified_name(symbol_ref)
                             .unwrap();
+                        self.ctx
+                            .value_fully_qualified_name_set
+                            .insert(full_attribute_name.clone());
                         let attribute_name =
                             full_attribute_name.split(".").last().unwrap().to_string();
 

@@ -1,10 +1,12 @@
+use std::sync::Arc;
+
 use generational_arena::Arena;
 use indexmap::IndexMap;
 
 use kclvm_error::{diagnostic::Range, Position};
 
 use super::package::ModuleInfo;
-use crate::ty::{Type, TypeRef};
+use crate::ty::Type;
 use kclvm_ast::ast::AstIndex;
 
 pub trait Symbol {
@@ -39,7 +41,7 @@ pub trait Symbol {
     fn full_dump(&self, data: &Self::SymbolData) -> Option<String>;
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct KCLSymbolData {
     pub(crate) values: Arena<ValueSymbol>,
     pub(crate) packages: Arena<PackageSymbol>,
@@ -52,14 +54,62 @@ pub struct KCLSymbolData {
     pub(crate) symbols_info: SymbolDB,
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct SymbolDB {
     pub(crate) fully_qualified_name_map: IndexMap<String, SymbolRef>,
     pub(crate) ast_id_map: IndexMap<AstIndex, SymbolRef>,
-    pub(crate) symbol_ty_map: IndexMap<SymbolRef, TypeRef>,
+    pub(crate) symbol_ty_map: IndexMap<SymbolRef, Arc<Type>>,
 }
 
 impl KCLSymbolData {
+    pub fn get_package_symbol(&self, id: SymbolRef) -> Option<&PackageSymbol> {
+        if matches!(id.get_kind(), SymbolKind::Package) {
+            self.packages.get(id.get_id())
+        } else {
+            None
+        }
+    }
+
+    pub fn get_value_symbol(&self, id: SymbolRef) -> Option<&ValueSymbol> {
+        if matches!(id.get_kind(), SymbolKind::Value) {
+            self.values.get(id.get_id())
+        } else {
+            None
+        }
+    }
+
+    pub fn get_attribue_symbol(&self, id: SymbolRef) -> Option<&AttributeSymbol> {
+        if matches!(id.get_kind(), SymbolKind::Attribute) {
+            self.attributes.get(id.get_id())
+        } else {
+            None
+        }
+    }
+
+    pub fn get_type_alias_symbol(&self, id: SymbolRef) -> Option<&TypeAliasSymbol> {
+        if matches!(id.get_kind(), SymbolKind::TypeAlias) {
+            self.type_aliases.get(id.get_id())
+        } else {
+            None
+        }
+    }
+
+    pub fn get_schema_symbol(&self, id: SymbolRef) -> Option<&SchemaSymbol> {
+        if matches!(id.get_kind(), SymbolKind::Schema) {
+            self.schemas.get(id.get_id())
+        } else {
+            None
+        }
+    }
+
+    pub fn get_rule_symbol(&self, id: SymbolRef) -> Option<&RuleSymbol> {
+        if matches!(id.get_kind(), SymbolKind::Rule) {
+            self.rules.get(id.get_id())
+        } else {
+            None
+        }
+    }
+
     pub fn get_symbol(&self, id: SymbolRef) -> Option<&dyn Symbol<SymbolData = Self>> {
         match id.get_kind() {
             SymbolKind::Schema => self
@@ -185,7 +235,7 @@ impl KCLSymbolData {
         }
     }
 
-    pub fn add_symbol_info(&mut self, symbol: SymbolRef, ty: TypeRef, ast_id: AstIndex) {
+    pub fn add_symbol_info(&mut self, symbol: SymbolRef, ty: Arc<Type>, ast_id: AstIndex) {
         self.symbols_info.ast_id_map.insert(ast_id, symbol);
         self.symbols_info.symbol_ty_map.insert(symbol, ty);
     }
@@ -409,7 +459,7 @@ impl SymbolRef {
     }
 }
 #[allow(unused)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SchemaSymbol {
     pub(crate) id: Option<SymbolRef>,
     pub(crate) name: String,
@@ -602,7 +652,7 @@ impl SchemaSymbol {
 }
 
 #[allow(unused)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ValueSymbol {
     pub(crate) id: Option<SymbolRef>,
     pub(crate) name: String,
@@ -727,7 +777,7 @@ impl ValueSymbol {
 }
 
 #[allow(unused)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct AttributeSymbol {
     pub(crate) id: Option<SymbolRef>,
     pub(crate) name: String,
@@ -842,7 +892,7 @@ impl AttributeSymbol {
     }
 }
 #[allow(unused)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PackageSymbol {
     pub(crate) id: Option<SymbolRef>,
     pub(crate) name: String,
@@ -954,7 +1004,7 @@ impl PackageSymbol {
     }
 }
 #[allow(unused)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TypeAliasSymbol {
     pub(crate) id: Option<SymbolRef>,
     pub(crate) name: String,
@@ -1071,7 +1121,7 @@ impl TypeAliasSymbol {
     }
 }
 #[allow(unused)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RuleSymbol {
     pub(crate) id: Option<SymbolRef>,
     pub(crate) name: String,
@@ -1192,7 +1242,7 @@ impl RuleSymbol {
     }
 }
 #[allow(unused)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct UnresolvedSymbol {
     pub(crate) id: Option<SymbolRef>,
     pub(crate) def: Option<SymbolRef>,

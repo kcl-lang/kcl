@@ -9,7 +9,7 @@ use super::{
 };
 
 /// GlobalState is used to store semantic information of KCL source code
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct GlobalState {
     // store all allocated symbols
     symbols: KCLSymbolData,
@@ -181,7 +181,6 @@ impl GlobalState {
                 line: pos.line,
                 column: pos.column.unwrap_or(0),
             });
-
         let (start, end) = self.symbols.get_symbol(candidate)?.get_range();
         if start.less_equal(pos) && pos.less_equal(&end) {
             Some(candidate)

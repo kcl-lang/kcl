@@ -40,6 +40,8 @@ pub struct Type {
     flags: TypeFlags,
 }
 
+unsafe impl Send for Type {}
+
 impl Type {
     /// Whether the type contains the flag.
     #[inline]
@@ -102,6 +104,9 @@ impl Type {
         }
     }
 }
+
+unsafe impl Send for TypeKind {}
+unsafe impl Sync for TypeKind {}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TypeKind {

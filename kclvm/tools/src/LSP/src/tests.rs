@@ -1,6 +1,7 @@
 use crossbeam_channel::after;
 use crossbeam_channel::select;
 use indexmap::IndexSet;
+use kclvm_sema::core::global_state::GlobalState;
 use lsp_server::Response;
 use lsp_types::notification::Exit;
 use lsp_types::request::GotoTypeDefinitionResponse;
@@ -62,14 +63,12 @@ use crate::completion::completion;
 use crate::config::Config;
 use crate::from_lsp::file_path_from_url;
 
+use crate::goto_def::goto_definition_with_gs;
 use crate::hover::hover;
 use crate::main_loop::main_loop;
 use crate::to_lsp::kcl_diag_to_lsp_diags;
 use crate::util::to_json;
-use crate::{
-    goto_def::goto_definition,
-    util::{apply_document_changes, parse_param_and_compile, Param},
-};
+use crate::util::{apply_document_changes, parse_param_and_compile, Param};
 
 pub(crate) fn compare_goto_res(
     res: Option<GotoTypeDefinitionResponse>,
@@ -102,19 +101,25 @@ pub(crate) fn compare_goto_res(
 
 pub(crate) fn compile_test_file(
     testfile: &str,
-) -> (String, Program, ProgramScope, IndexSet<KCLDiagnostic>) {
+) -> (
+    String,
+    Program,
+    ProgramScope,
+    IndexSet<KCLDiagnostic>,
+    GlobalState,
+) {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let mut test_file = path;
     test_file.push(testfile);
 
     let file = test_file.to_str().unwrap().to_string();
 
-    let (program, prog_scope, diags) = parse_param_and_compile(
+    let (program, prog_scope, diags, gs) = parse_param_and_compile(
         Param { file: file.clone() },
         Some(Arc::new(RwLock::new(Default::default()))),
     )
     .unwrap();
-    (file, program, prog_scope, diags)
+    (file, program, prog_scope, diags, gs)
 }
 
 fn build_lsp_diag(
@@ -250,7 +255,7 @@ fn diagnostics_test() {
     test_file.push("src/test_data/diagnostics.k");
     let file = test_file.to_str().unwrap();
 
-    let (_, _, diags) = parse_param_and_compile(
+    let (_, _, diags, _) = parse_param_and_compile(
         Param {
             file: file.to_string(),
         },
@@ -393,7 +398,7 @@ fn goto_import_external_file_test() {
         .output()
         .unwrap();
 
-    let (program, prog_scope, diags) = parse_param_and_compile(
+    let (program, prog_scope, diags, gs) = parse_param_and_compile(
         Param {
             file: path.to_string(),
         },
@@ -409,7 +414,7 @@ fn goto_import_external_file_test() {
         line: 1,
         column: Some(15),
     };
-    let res = goto_definition(&program, &pos, &prog_scope);
+    let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
     assert!(res.is_some());
 }
 
@@ -719,8 +724,8 @@ fn goto_def_test() {
         to_json(GotoDefinitionResponse::Scalar(Location {
             uri: Url::from_file_path(path).unwrap(),
             range: Range {
-                start: Position::new(20, 0),
-                end: Position::new(23, 0),
+                start: Position::new(20, 7),
+                end: Position::new(20, 13),
             },
         }))
         .unwrap()
@@ -983,7 +988,7 @@ fn konfig_goto_def_test_base() {
     let mut base_path = konfig_path.clone();
     base_path.push("appops/nginx-example/base/base.k");
     let base_path_str = base_path.to_str().unwrap().to_string();
-    let (program, prog_scope, _) = parse_param_and_compile(
+    let (program, prog_scope, _, gs) = parse_param_and_compile(
         Param {
             file: base_path_str.clone(),
         },
@@ -997,12 +1002,12 @@ fn konfig_goto_def_test_base() {
         line: 7,
         column: Some(30),
     };
-    let res = goto_definition(&program, &pos, &prog_scope);
+    let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
     let mut expected_path = konfig_path.clone();
     expected_path.push("base/pkg/kusion_models/kube/frontend/server.k");
     compare_goto_res(
         res,
-        (&expected_path.to_str().unwrap().to_string(), 12, 0, 142, 31),
+        (&expected_path.to_str().unwrap().to_string(), 12, 7, 12, 13),
     );
 
     // schema def
@@ -1011,12 +1016,12 @@ fn konfig_goto_def_test_base() {
         line: 9,
         column: Some(32),
     };
-    let res = goto_definition(&program, &pos, &prog_scope);
+    let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
     let mut expected_path = konfig_path.clone();
     expected_path.push("base/pkg/kusion_models/kube/frontend/container/container.k");
     compare_goto_res(
         res,
-        (&expected_path.to_str().unwrap().to_string(), 5, 0, 80, 111),
+        (&expected_path.to_str().unwrap().to_string(), 5, 7, 5, 11),
     );
 
     // schema attr
@@ -1025,7 +1030,7 @@ fn konfig_goto_def_test_base() {
         line: 9,
         column: Some(9),
     };
-    let res = goto_definition(&program, &pos, &prog_scope);
+    let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
     let mut expected_path = konfig_path.clone();
     expected_path.push("base/pkg/kusion_models/kube/frontend/server.k");
     compare_goto_res(
@@ -1045,7 +1050,7 @@ fn konfig_goto_def_test_base() {
         line: 10,
         column: Some(10),
     };
-    let res = goto_definition(&program, &pos, &prog_scope);
+    let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
     let mut expected_path = konfig_path.clone();
     expected_path.push("base/pkg/kusion_models/kube/frontend/container/container.k");
     compare_goto_res(
@@ -1059,7 +1064,7 @@ fn konfig_goto_def_test_base() {
         line: 2,
         column: Some(49),
     };
-    let res = goto_definition(&program, &pos, &prog_scope);
+    let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
     let mut expected_path = konfig_path.clone();
     expected_path.push("base/pkg/kusion_models/kube/frontend/service/service.k");
     compare_goto_res(
@@ -1074,7 +1079,7 @@ fn konfig_goto_def_test_main() {
     let mut main_path = konfig_path.clone();
     main_path.push("appops/nginx-example/dev/main.k");
     let main_path_str = main_path.to_str().unwrap().to_string();
-    let (program, prog_scope, _) = parse_param_and_compile(
+    let (program, prog_scope, _, gs) = parse_param_and_compile(
         Param {
             file: main_path_str.clone(),
         },
@@ -1088,12 +1093,12 @@ fn konfig_goto_def_test_main() {
         line: 6,
         column: Some(31),
     };
-    let res = goto_definition(&program, &pos, &prog_scope);
+    let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
     let mut expected_path = konfig_path.clone();
     expected_path.push("base/pkg/kusion_models/kube/frontend/server.k");
     compare_goto_res(
         res,
-        (&expected_path.to_str().unwrap().to_string(), 12, 0, 142, 31),
+        (&expected_path.to_str().unwrap().to_string(), 12, 7, 12, 13),
     );
 
     // schema attr
@@ -1102,7 +1107,7 @@ fn konfig_goto_def_test_main() {
         line: 7,
         column: Some(14),
     };
-    let res = goto_definition(&program, &pos, &prog_scope);
+    let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
     let mut expected_path = konfig_path.clone();
     expected_path.push("base/pkg/kusion_models/kube/frontend/server.k");
     compare_goto_res(
@@ -1122,7 +1127,7 @@ fn konfig_goto_def_test_main() {
         line: 2,
         column: Some(61),
     };
-    let res = goto_definition(&program, &pos, &prog_scope);
+    let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
     let mut expected_path = konfig_path.clone();
     expected_path.push("base/pkg/kusion_models/kube/templates/resource.k");
     compare_goto_res(
@@ -1137,7 +1142,7 @@ fn konfig_completion_test_main() {
     let mut main_path = konfig_path.clone();
     main_path.push("appops/nginx-example/dev/main.k");
     let main_path_str = main_path.to_str().unwrap().to_string();
-    let (program, prog_scope, _) = parse_param_and_compile(
+    let (program, prog_scope, _, _) = parse_param_and_compile(
         Param {
             file: main_path_str.clone(),
         },
@@ -1284,7 +1289,7 @@ fn konfig_hover_test_main() {
     let mut main_path = konfig_path.clone();
     main_path.push("appops/nginx-example/dev/main.k");
     let main_path_str = main_path.to_str().unwrap().to_string();
-    let (program, prog_scope, _) = parse_param_and_compile(
+    let (program, prog_scope, _, _) = parse_param_and_compile(
         Param {
             file: main_path_str.clone(),
         },

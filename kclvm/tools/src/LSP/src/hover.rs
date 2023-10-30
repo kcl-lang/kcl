@@ -157,7 +157,7 @@ mod tests {
     fn schema_doc_hover_test() {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-        let (file, program, prog_scope, _) =
+        let (file, program, prog_scope, _, _gs) =
             compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         let mut expected_path = path;
@@ -206,7 +206,8 @@ mod tests {
     #[test]
     #[bench_test]
     fn schema_doc_hover_test1() {
-        let (file, program, prog_scope, _) = compile_test_file("src/test_data/hover_test/hover.k");
+        let (file, program, prog_scope, _, _gs) =
+            compile_test_file("src/test_data/hover_test/hover.k");
 
         let pos = KCLPos {
             filename: file.clone(),
@@ -237,7 +238,8 @@ mod tests {
     #[test]
     #[bench_test]
     fn schema_attr_hover_test() {
-        let (file, program, prog_scope, _) = compile_test_file("src/test_data/hover_test/hover.k");
+        let (file, program, prog_scope, _, _gs) =
+            compile_test_file("src/test_data/hover_test/hover.k");
 
         let pos = KCLPos {
             filename: file.clone(),
@@ -281,7 +283,8 @@ mod tests {
     #[test]
     #[bench_test]
     fn func_def_hover() {
-        let (file, program, prog_scope, _) = compile_test_file("src/test_data/hover_test/hover.k");
+        let (file, program, prog_scope, _, _gs) =
+            compile_test_file("src/test_data/hover_test/hover.k");
 
         let pos = KCLPos {
             filename: file.clone(),
@@ -353,7 +356,8 @@ mod tests {
     #[test]
     #[bench_test]
     fn complex_select_hover() {
-        let (file, program, prog_scope, _) = compile_test_file("src/test_data/hover_test/fib.k");
+        let (file, program, prog_scope, _, _gs) =
+            compile_test_file("src/test_data/hover_test/fib.k");
         let pos = KCLPos {
             filename: file.clone(),
             line: 14,
@@ -373,7 +377,8 @@ mod tests {
     #[test]
     #[bench_test]
     fn str_var_func_hover() {
-        let (file, program, prog_scope, _) = compile_test_file("src/test_data/hover_test/hover.k");
+        let (file, program, prog_scope, _, _gs) =
+            compile_test_file("src/test_data/hover_test/hover.k");
         let pos = KCLPos {
             filename: file.clone(),
             line: 28,

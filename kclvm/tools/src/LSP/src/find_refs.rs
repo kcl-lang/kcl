@@ -76,7 +76,7 @@ pub(crate) fn find_refs_from_def<F: Fn(String) -> Result<(), anyhow::Error>>(
                         },
                         vfs.clone(),
                     ) {
-                        Ok((prog, scope, _)) => {
+                        Ok((prog, scope, _, _gs)) => {
                             let ref_pos = kcl_pos(&file_path, ref_loc.range.start);
                             // find def from the ref_pos
                             if let Some(real_def) = goto_definition(&prog, &ref_pos, &scope) {
