@@ -1,0 +1,12 @@
+deployment:
+  metadata:
+    labels:
+      k1: v1
+    namespace: default
+  spec:
+    selector:
+      matchLabels:
+        k1: v1
+        k2: v2
+labels:
+  k1: v1
