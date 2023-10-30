@@ -239,6 +239,19 @@ impl<'ctx> Resolver<'ctx> {
             }
             true
         } else {
+            // When assigning a dict type to an instance of a schema type,
+            // check whether the type of key value pair in dict matches the attribute type in the schema.
+            if let TypeKind::StrLit(key_name) = &key_ty.kind {
+                if let Some(attr_obj) = schema_ty.attrs.get(key_name) {
+                    self.must_assignable_to(
+                        val_ty.clone(),
+                        attr_obj.ty.clone(),
+                        range.clone(),
+                        Some(attr_obj.range.clone()),
+                    );
+                    return true;
+                }
+            }
             true
         }
     }
