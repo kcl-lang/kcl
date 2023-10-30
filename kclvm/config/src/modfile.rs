@@ -109,9 +109,9 @@ pub fn get_pkg_root_from_paths(file_paths: &[String], workdir: String) -> Result
         return Ok(last_root);
     } else if !workdir.is_empty() {
         return Ok(workdir);
+    } else {
+        return Ok("".to_string())
     }
-
-    Err(format!("conflict kcl.mod file paths: {:?}", m))
 }
 
 pub fn get_pkg_root(k_file_path: &str) -> Option<String> {

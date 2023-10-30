@@ -371,12 +371,7 @@ pub fn get_compile_entries_from_paths(
             "".to_string()
         }
     } else {
-        // If there are more than one main 'kcl.mod' files, return error.
-        // the root path of package '__main__' can only one.
-        return Err(format!(
-            "conflict kcl.mod file paths: {:?}",
-            result.get_unique_normal_paths_by_name(kclvm_ast::MAIN_PKG)
-        ));
+        "".to_string()
     };
     result.root_path = pkg_root.clone();
     // Replace the '${KCL_MOD}' of all the paths with package name '__main__'.
