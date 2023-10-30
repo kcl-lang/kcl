@@ -2964,11 +2964,8 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                     _ => None,
                 };
                 // Store a local variable for every entry key.
-                let key = match optional_name {
-                    Some(name) => {
-                        self.add_or_update_local_variable(&name, value);
-                        self.string_value(&name)
-                    }
+                let key = match &optional_name {
+                    Some(name) => self.string_value(name),
                     None => self.walk_expr(key)?,
                 };
                 self.dict_insert_with_key_value(
@@ -2978,6 +2975,11 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                     item.node.operation.value(),
                     insert_index as i32,
                 );
+                if let Some(name) = &optional_name {
+                    let value =
+                        self.dict_get(config_value, self.native_global_string(name, "").into());
+                    self.add_or_update_local_variable(name, value);
+                }
             } else {
                 // If the key does not exist, execute the logic of unpacking expression `**expr` here.
                 self.build_void_call(

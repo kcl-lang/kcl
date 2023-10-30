@@ -399,7 +399,7 @@ impl<'ctx> Resolver<'ctx> {
         self.enter_scope(start, end, ScopeKind::Config);
         let mut key_types: Vec<TypeRef> = vec![];
         let mut val_types: Vec<TypeRef> = vec![];
-        let mut attrs = IndexMap::new();
+        let mut attrs: IndexMap<String, Attr> = IndexMap::new();
         for item in entries {
             let key = &item.node.key;
             let value = &item.node.value;
@@ -423,10 +423,15 @@ impl<'ctx> Resolver<'ctx> {
                                 Rc::new(Type::str_lit(name))
                             };
                             self.check_attr_ty(&key_ty, key.get_span_pos());
+                            let ty = if let Some(attr) = attrs.get(name) {
+                                sup(&[attr.ty.clone(), val_ty.clone()])
+                            } else {
+                                val_ty.clone()
+                            };
                             attrs.insert(
                                 name.to_string(),
                                 Attr {
-                                    ty: val_ty.clone(),
+                                    ty: ty.clone(),
                                     range: key.get_span_pos(),
                                 },
                             );
@@ -436,7 +441,7 @@ impl<'ctx> Resolver<'ctx> {
                                     name: name.to_string(),
                                     start: key.get_pos(),
                                     end: key.get_end_pos(),
-                                    ty: val_ty.clone(),
+                                    ty,
                                     kind: ScopeObjectKind::Attribute,
                                     doc: None,
                                 },
@@ -463,22 +468,27 @@ impl<'ctx> Resolver<'ctx> {
                         let val_ty = self.expr(value);
                         self.check_attr_ty(&key_ty, key.get_span_pos());
                         if let ast::Expr::StringLit(string_lit) = &key.node {
+                            let ty = if let Some(attr) = attrs.get(&string_lit.value) {
+                                sup(&[attr.ty.clone(), val_ty.clone()])
+                            } else {
+                                val_ty.clone()
+                            };
+                            attrs.insert(
+                                string_lit.value.clone(),
+                                Attr {
+                                    ty: ty.clone(),
+                                    range: key.get_span_pos(),
+                                },
+                            );
                             self.insert_object(
                                 &string_lit.value,
                                 ScopeObject {
                                     name: string_lit.value.clone(),
                                     start: key.get_pos(),
                                     end: key.get_end_pos(),
-                                    ty: val_ty.clone(),
+                                    ty,
                                     kind: ScopeObjectKind::Attribute,
                                     doc: None,
-                                },
-                            );
-                            attrs.insert(
-                                string_lit.value.clone(),
-                                Attr {
-                                    ty: val_ty.clone(),
-                                    range: key.get_span_pos(),
                                 },
                             );
                         }
