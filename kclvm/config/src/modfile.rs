@@ -110,7 +110,7 @@ pub fn get_pkg_root_from_paths(file_paths: &[String], workdir: String) -> Result
     } else if !workdir.is_empty() {
         return Ok(workdir);
     } else {
-        return Ok("".to_string())
+        return Ok("".to_string());
     }
 }
 

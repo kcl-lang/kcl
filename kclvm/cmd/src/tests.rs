@@ -545,8 +545,11 @@ fn test_multi_mod_file() {
     match exec_program(sess.clone(), &settings.try_into().unwrap()) {
         Ok(res) => {
             assert_eq!(res.yaml_result, "kcl1: hello 1\nkcl2: hello 2");
-            assert_eq!(res.json_result, "[{\"kcl1\": \"hello 1\", \"kcl2\": \"hello 2\"}]");
-        },
+            assert_eq!(
+                res.json_result,
+                "[{\"kcl1\": \"hello 1\", \"kcl2\": \"hello 2\"}]"
+            );
+        }
         Err(_) => panic!("unreachable code."),
     }
 }
