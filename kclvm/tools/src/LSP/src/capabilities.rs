@@ -16,6 +16,7 @@ pub fn server_capabilities(client_caps: &ClientCapabilities) -> ServerCapabiliti
                 String::from("."),
                 String::from("="),
                 String::from(":"),
+                String::from("\n"),
             ]),
             all_commit_characters: None,
             work_done_progress_options: WorkDoneProgressOptions {

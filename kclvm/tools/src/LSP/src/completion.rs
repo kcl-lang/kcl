@@ -1,7 +1,7 @@
 //! Complete for KCL
 //! Now supports code completion in treigger mode (triggered when user enters `.`, `:` and `=`), schema attr and global variables
 //! and the content of the completion includes:
-//! variable
+//! + variable
 //! + schema attr name
 //! + dot(.)
 //!     + import path
@@ -12,6 +12,8 @@
 //! + assign(=, :)
 //!     + schema attr value
 //!     + variable value
+//! + new line
+//!     + schema init
 
 use std::io;
 use std::{fs, path::Path};
@@ -119,6 +121,7 @@ pub(crate) fn completion(
         Some(c) => match c {
             '.' => completion_dot(program, pos, prog_scope),
             '=' | ':' => completion_assign(program, pos, prog_scope),
+            '\n' => completion_newline(program, pos, prog_scope),
             _ => None,
         },
         None => {
@@ -183,6 +186,43 @@ fn completion_assign(
         ),
         None => None,
     }
+}
+
+fn completion_newline(
+    program: &Program,
+    pos: &KCLPos,
+    prog_scope: &ProgramScope,
+) -> Option<lsp_types::CompletionResponse> {
+    let mut completions: IndexSet<KCLCompletionItem> = IndexSet::new();
+    let pos = &KCLPos {
+        filename: pos.filename.clone(),
+        line: pos.line - 1,
+        column: Some(1),
+    };
+
+    match program.pos_to_stmt(pos) {
+        Some(node) => {
+            let end_pos = node.get_end_pos();
+            if let Some((node, schema_expr)) = is_in_schema(program, &end_pos) {
+                let schema_def = find_def(node, &schema_expr.name.get_end_pos(), prog_scope);
+                if let Some(schema) = schema_def {
+                    if let Definition::Object(obj, _) = schema {
+                        let schema_type = obj.ty.into_schema_type();
+                        completions.extend(schema_type.attrs.iter().map(|(name, attr)| {
+                            KCLCompletionItem {
+                                label: name.clone(),
+                                detail: Some(format!("{}: {}", name, attr.ty.ty_str())),
+                                documentation: attr.doc.clone(),
+                                kind: Some(KCLCompletionItemKind::SchemaAttr),
+                            }
+                        }));
+                    }
+                }
+            }
+        }
+        None => {}
+    }
+    Some(into_completion_items(&completions).into())
 }
 
 fn completion_import_builtin_pkg(
@@ -1108,6 +1148,36 @@ mod tests {
                         kind: Some(CompletionItemKind:: CLASS),
                         detail: Some("__main__\n\nschema Person[b: int](Base)\nAttributes:\n__settings__?: {str:any}\nc: int".to_string()),
                         documentation: Some(lsp_types::Documentation::String("".to_string())),
+                        ..Default::default()
+                    }
+                )
+            }
+            CompletionResponse::List(_) => panic!("test failed"),
+        }
+    }
+
+    #[test]
+    fn schema_attr_newline_completion() {
+        let (file, program, prog_scope, _) =
+            compile_test_file("src/test_data/completion_test/newline/newline.k");
+
+        // test completion for builtin packages
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 8,
+            column: Some(4),
+        };
+
+        let got = completion(Some('\n'), &program, &pos, &prog_scope).unwrap();
+        match got {
+            CompletionResponse::Array(arr) => {
+                assert_eq!(
+                    arr[1],
+                    CompletionItem {
+                        label: "c".to_string(),
+                        kind: Some(CompletionItemKind::FIELD),
+                        detail: Some("c: int".to_string()),
+                        documentation: None,
                         ..Default::default()
                     }
                 )

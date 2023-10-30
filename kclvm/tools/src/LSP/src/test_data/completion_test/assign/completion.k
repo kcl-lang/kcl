@@ -10,7 +10,7 @@ schema Person2:
     f: {str:str}
     g: subpkg.Person1
 
-p5 = Person2{
+p: Person2{
     a  # complete `True` and `False`
 
     b # complete `"abc"` and `"def"`
