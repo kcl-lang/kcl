@@ -507,6 +507,23 @@ fn clean_dir(path: String) {
     }
 }
 
+fn test_compile_dir_recursive() {
+    let path = PathBuf::from("./src/test_datas/compile_recursive")
+        .canonicalize()
+        .unwrap();
+    let mut args = ExecProgramArgs::default();
+    args.k_filename_list.push(path.display().to_string());
+    let mut opts: kclvm_parser::LoadProgramOptions = args.get_load_program_options();
+    opts.recursive = true;
+    let sess = Arc::new(ParseSession::default());
+    // Load AST program
+    let program = load_program(sess.clone(), &[&path.display().to_string()], Some(opts)).unwrap();
+    // Resolve ATS, generate libs, link libs and execute.
+    let res = execute(sess, program, &args);
+    assert!(res.is_ok());
+    assert_eq!(res.unwrap(), "{\"k1\": \"Hello k1!\", \"k2\": \"Hello k2!\", \"The_first_kcl_program\": \"Hello World!\"}");
+}
+
 #[test]
 fn test_exec() {
     clean_dir(
@@ -538,6 +555,9 @@ fn test_exec() {
 
     test_exec_with_err_result();
     println!("test_exec_with_err_result - PASS");
+
+    test_compile_dir_recursive();
+    println!("test_compile_dir_recursive - PASS");
 }
 
 fn exec(file: &str) -> Result<String, String> {

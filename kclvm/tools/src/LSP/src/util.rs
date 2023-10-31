@@ -131,7 +131,7 @@ fn load_files_code_from_vfs(files: &[&str], vfs: Arc<RwLock<Vfs>>) -> anyhow::Re
                             .map_err(|_| anyhow::anyhow!("can't convert file to url: {}", file))?,
                     );
                 } else if p.is_dir() {
-                    let k_files = get_dir_files(p.to_str().unwrap())
+                    let k_files = get_dir_files(p.to_str().unwrap(), false)
                         .map_err(|_| anyhow::anyhow!("can't get dir files: {} ", file))?;
                     for k_file in k_files {
                         let k_file_path = Path::new(k_file.as_str());

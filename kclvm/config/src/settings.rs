@@ -60,6 +60,8 @@ pub struct Config {
     pub verbose: Option<u32>,
     pub debug: Option<bool>,
     pub sort_keys: Option<bool>,
+    /// Whether recursively compile all sub directories.
+    pub recursive: Option<bool>,
     /// Whether including schema type in JSON/YAML result.
     pub include_schema_type_path: Option<bool>,
     /// kcl needs a mapping between the package name and the package path
@@ -83,6 +85,7 @@ impl SettingsFile {
                 sort_keys: Some(false),
                 include_schema_type_path: Some(false),
                 package_maps: Some(HashMap::default()),
+                recursive: Some(false),
             }),
             kcl_options: Some(vec![]),
         }
@@ -381,6 +384,7 @@ pub fn merge_settings(settings: &[SettingsFile]) -> SettingsFile {
                 set_if!(result_kcl_cli_configs, verbose, kcl_cli_configs);
                 set_if!(result_kcl_cli_configs, debug, kcl_cli_configs);
                 set_if!(result_kcl_cli_configs, sort_keys, kcl_cli_configs);
+                set_if!(result_kcl_cli_configs, recursive, kcl_cli_configs);
                 set_if!(
                     result_kcl_cli_configs,
                     include_schema_type_path,

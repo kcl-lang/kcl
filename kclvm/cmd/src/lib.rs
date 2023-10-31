@@ -61,6 +61,7 @@ pub fn app() -> Command {
             .arg(arg!(path_selector: -S --path_selector <path_selector> ... "Specify the path selector").num_args(1..))
             .arg(arg!(overrides: -O --overrides <overrides> ... "Specify the configuration override path and value").num_args(1..))
             .arg(arg!(target: --target <target> "Specify the target type"))
+            .arg(arg!(recursive: -R --recursive "Compile the files directory recursively"))
             .arg(arg!(package_map: -E --external <package_map> ... "Mapping of package name and path where the package is located").num_args(1..)),
         )
         .subcommand(
@@ -79,6 +80,7 @@ pub fn app() -> Command {
             .arg(arg!(path_selector: -S --path_selector <path_selector> ... "Specify the path selector").num_args(1..))
             .arg(arg!(overrides: -O --overrides <overrides> ... "Specify the configuration override path and value").num_args(1..))
             .arg(arg!(target: --target <target> "Specify the target type"))
+            .arg(arg!(recursive: -R --recursive "Compile the files directory recursively"))
             .arg(arg!(package_map: -E --external <package_map> ... "Mapping of package name and path where the package is located").num_args(1..))
             .arg(arg!(fix: -f --fix "Auto fix")),
         )

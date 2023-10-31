@@ -106,6 +106,16 @@ fn test_c_api_call_exec_program_with_compile_only() {
 }
 
 #[test]
+fn test_c_api_call_exec_program_with_recursive() {
+    test_c_api::<ExecProgramArgs, ExecProgramResult, _>(
+        "KclvmService.ExecProgram",
+        "exec-program-with-recursive.json",
+        "exec-program-with-recursive.response.json",
+        |res| res.escaped_time = "0".to_owned(),
+    );
+}
+
+#[test]
 fn test_c_api_validate_code() {
     test_c_api_without_wrapper::<ValidateCodeArgs, ValidateCodeResult>(
         "KclvmService.ValidateCode",

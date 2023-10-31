@@ -5,6 +5,8 @@ use kclvm_config::path::ModRelativePath;
 use kclvm_utils::path::PathPrefix;
 use kclvm_utils::path::{is_absolute, is_dir, path_exist};
 use std::collections::VecDeque;
+use std::fs;
+use std::path::Path;
 
 use crate::LoadProgramOptions;
 
@@ -436,6 +438,7 @@ fn get_main_files_from_pkg_path(
 
     // get k files
     let mut k_files: Vec<String> = Vec::new();
+
     for (i, path) in path_list.iter().enumerate() {
         // read dir/*.k
         if is_dir(path) {
@@ -443,7 +446,7 @@ fn get_main_files_from_pkg_path(
                 return Err("Invalid code list".to_string());
             }
             //k_code_list
-            for s in get_dir_files(path)? {
+            for s in get_dir_files(path, opts.recursive)? {
                 k_files.push(s);
             }
             continue;
@@ -473,34 +476,55 @@ fn get_main_files_from_pkg_path(
 }
 
 /// Get file list in the directory.
-pub fn get_dir_files(dir: &str) -> Result<Vec<String>, String> {
+pub fn get_dir_files(dir: &str, is_recursive: bool) -> Result<Vec<String>, String> {
     if !std::path::Path::new(dir).exists() {
         return Ok(Vec::new());
     }
 
     let mut list = Vec::new();
-
-    for path in std::fs::read_dir(dir).unwrap() {
-        let path = path.unwrap();
-        if !path
-            .file_name()
-            .to_str()
-            .unwrap()
-            .ends_with(KCL_FILE_SUFFIX)
-        {
-            continue;
+    let mut queue: VecDeque<String> = VecDeque::new();
+    queue.push_back(dir.to_string());
+    // BFS all the files in the directory.
+    while let Some(path) = queue.pop_front() {
+        let path = Path::new(&path);
+        if path.is_dir() {
+            match fs::read_dir(path) {
+                Ok(entries) => {
+                    for entry in entries {
+                        if let Ok(entry) = entry {
+                            let path = entry.path();
+                            if path.is_dir() && is_recursive {
+                                queue.push_back(path.to_string_lossy().to_string());
+                            } else if !is_ignored_file(&path.display().to_string()) {
+                                list.push(path.display().to_string());
+                            }
+                        }
+                    }
+                }
+                Err(err) => {
+                    return Err(format!(
+                        "Failed to read directory: {},{}",
+                        path.display(),
+                        err
+                    ));
+                }
+            }
+        } else if !is_ignored_file(&path.display().to_string()) {
+            list.push(path.display().to_string());
         }
-        if path.file_name().to_str().unwrap().ends_with("_test.k") {
-            continue;
-        }
-        if path.file_name().to_str().unwrap().starts_with('_') {
-            continue;
-        }
-
-        let s = format!("{}", path.path().display());
-        list.push(s);
     }
 
     list.sort();
     Ok(list)
+}
+
+/// Check if the file is ignored.
+/// The file is ignored if
+///     it is not a kcl file (end with '*.k')
+///     or it is a test file (end with '_test.k')
+///     or it is a hidden file. (start with '_')
+fn is_ignored_file(filename: &str) -> bool {
+    (!filename.ends_with(KCL_FILE_SUFFIX))
+        || (filename.ends_with("_test.k"))
+        || (filename.starts_with('_'))
 }

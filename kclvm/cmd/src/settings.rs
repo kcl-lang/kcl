@@ -52,6 +52,7 @@ pub(crate) fn build_settings(matches: &ArgMatches) -> Result<SettingsPathBuf> {
                 verbose: u32_from_matches(matches, "verbose"),
                 debug: bool_from_matches(matches, "debug"),
                 sort_keys: bool_from_matches(matches, "sort_keys"),
+                recursive: bool_from_matches(matches, "recursive"),
                 package_maps,
                 ..Default::default()
             }),
