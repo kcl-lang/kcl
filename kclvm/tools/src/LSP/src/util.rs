@@ -3,7 +3,7 @@ use kclvm_ast::ast::{
     ConfigEntry, Expr, Identifier, Node, NodeRef, PosTuple, Program, SchemaExpr, SchemaStmt, Stmt,
     Type,
 };
-use kclvm_ast::pos::{ContainsPos, GetPos};
+use kclvm_ast::pos::ContainsPos;
 use kclvm_ast::MAIN_PKG;
 use kclvm_compiler::pkgpath_without_prefix;
 use kclvm_config::modfile::KCL_FILE_EXTENSION;
@@ -23,7 +23,6 @@ use ra_ap_vfs::{FileId, Vfs};
 use serde::{de::DeserializeOwned, Serialize};
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::{fs, sync::Arc};
@@ -604,27 +603,27 @@ pub(crate) fn is_in_schema_expr(
     }
 }
 
-pub(crate) fn is_in_schema_stmt(
+pub(crate) fn is_in_docstring(
     program: &Program,
     pos: &KCLPos,
-) -> Option<(Node<Stmt>, SchemaStmt)> {
+) -> Option<(NodeRef<String>, SchemaStmt)> {
     match program.pos_to_stmt(pos) {
         Some(node) => match node.node.clone() {
-            Stmt::Schema(schema) => Some((node, schema)),
+            Stmt::Schema(schema) => match schema.doc {
+                Some(ref doc) => {
+                    if doc.contains_pos(pos) {
+                        return Some((doc.clone(), schema));
+                    } else {
+                        return None;
+                    }
+                }
+                None => None,
+            },
             _ => None,
         },
         None => None,
     }
 }
-
-// pub(crate) fn is_in_docstring(node: &Node<SchemaStmt>, pos: &KCLPos) -> bool {
-//     node.contains_pos(pos) &&
-//     node.node.body.iter().all(|stmt| pos.less(&stmt.get_pos())) &&
-//     node.node.name.get_pos().less(pos) &&
-
-//     schema name:
-
-// }
 
 /// Build a temp identifier expr with string
 fn build_identifier_from_string(s: &NodeRef<String>) -> Node<Expr> {

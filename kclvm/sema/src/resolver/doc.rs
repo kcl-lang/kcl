@@ -1,3 +1,4 @@
+use kclvm_ast::ast::SchemaStmt;
 use pcre2::bytes::Regex;
 use std::collections::{HashMap, HashSet};
 use std::iter::Iterator;
@@ -257,7 +258,7 @@ fn parse_summary(doc: &mut Reader) -> String {
 /// parse the schema docstring to Doc.
 /// The summary of the schema content will be concatenated to a single line string by whitespaces.
 /// The description of each attribute will be returned as separate lines.
-pub(crate) fn parse_doc_string(ori: &String) -> Doc {
+pub fn parse_doc_string(ori: &String) -> Doc {
     if ori.is_empty() {
         return Doc::new("".to_string(), vec![], HashMap::new());
     }
@@ -291,25 +292,62 @@ pub(crate) fn parse_doc_string(ori: &String) -> Doc {
 
 /// The Doc struct contains a summary of schema and all the attributes described in the the docstring.
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub(crate) struct Doc {
+pub struct Doc {
     pub summary: String,
     pub attrs: Vec<Attribute>,
     pub examples: HashMap<String, Example>,
 }
 
 impl Doc {
-    fn new(summary: String, attrs: Vec<Attribute>, examples: HashMap<String, Example>) -> Self {
+    pub fn new(summary: String, attrs: Vec<Attribute>, examples: HashMap<String, Example>) -> Self {
         Self {
             summary,
             attrs,
             examples,
         }
     }
+    pub fn new_from_schema_stmt(schema: &SchemaStmt) -> Self {
+        let attrs = schema
+            .get_left_identifier_list()
+            .iter()
+            .map(|(_, _, attr_name)| attr_name.clone())
+            .collect::<Vec<String>>();
+        Self {
+            summary: "".to_string(),
+            attrs: attrs
+                .iter()
+                .map(|name| Attribute::new(name.clone(), vec![]))
+                .collect(),
+            examples: HashMap::new(),
+        }
+    }
+
+    pub fn to_doc_string(self) -> String {
+        let summary = self.summary;
+        let attrs_string = self
+            .attrs
+            .iter()
+            .map(|attr| format!("{}: {}", attr.name, attr.desc.join("\n")))
+            .collect::<Vec<String>>()
+            .join("\n");
+        let examples_string = self
+            .examples
+            .values()
+            .map(|example| {
+                format!(
+                    "{}\n{}\n{}",
+                    example.summary, example.description, example.value
+                )
+            })
+            .collect::<Vec<String>>()
+            .join("\n");
+        format!("{summary}\n\nAttributes\n---------\n{attrs_string}\n\nExamples\n--------{examples_string}\n")
+    }
 }
 
 /// The Attribute struct contains the attribute name and the corresponding description.
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub(crate) struct Attribute {
+pub struct Attribute {
     pub name: String,
     pub desc: Vec<String>,
 }

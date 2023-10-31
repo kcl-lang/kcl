@@ -28,8 +28,12 @@ impl<'a> Parser<'a> {
                     let doc_expr = self.parse_str_expr(lit);
                     self.skip_newlines();
                     match &doc_expr.node {
-                        Expr::StringLit(str) => Some(node_ref!(str.raw_value.clone())),
-                        Expr::JoinedString(str) => Some(node_ref!(str.raw_value.clone())),
+                        Expr::StringLit(str) => {
+                            Some(node_ref!(str.raw_value.clone(), doc_expr.pos()))
+                        }
+                        Expr::JoinedString(str) => {
+                            Some(node_ref!(str.raw_value.clone(), doc_expr.pos()))
+                        }
                         _ => None,
                     }
                 } else {

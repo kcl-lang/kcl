@@ -30,12 +30,13 @@ use kclvm_sema::builtin::{
     get_system_member_function_ty, get_system_module_members, STANDARD_SYSTEM_MODULES,
     STRING_MEMBER_FUNCTIONS,
 };
+use kclvm_sema::resolver::doc::{parse_doc_string, Doc};
 use kclvm_sema::resolver::scope::{ProgramScope, ScopeObjectKind};
 use kclvm_sema::ty::{FunctionType, SchemaType, Type};
 use lsp_types::{CompletionItem, CompletionItemKind};
 
 use crate::goto_def::{find_def, get_identifier_last_name, Definition};
-use crate::util::{inner_most_expr_in_stmt, is_in_schema_expr, is_in_schema_stmt};
+use crate::util::{inner_most_expr_in_stmt, is_in_docstring, is_in_schema_expr};
 
 #[derive(Debug, Clone, PartialEq, Hash, Eq)]
 pub enum KCLCompletionItemKind {
@@ -46,6 +47,7 @@ pub enum KCLCompletionItemKind {
     Schema,
     SchemaAttr,
     Module,
+    Doc,
 }
 
 impl Into<CompletionItemKind> for KCLCompletionItemKind {
@@ -58,6 +60,7 @@ impl Into<CompletionItemKind> for KCLCompletionItemKind {
             KCLCompletionItemKind::SchemaAttr => CompletionItemKind::FIELD,
             KCLCompletionItemKind::Module => CompletionItemKind::MODULE,
             KCLCompletionItemKind::Dir => CompletionItemKind::FOLDER,
+            KCLCompletionItemKind::Doc => CompletionItemKind::SNIPPET,
         }
     }
 }
@@ -197,7 +200,7 @@ fn completion_newline(
     let pos = &KCLPos {
         filename: pos.filename.clone(),
         line: pos.line - 1,
-        column: Some(1),
+        column: pos.column,
     };
 
     match program.pos_to_stmt(pos) {
@@ -218,12 +221,21 @@ fn completion_newline(
                         }));
                     }
                 }
+            } else if let Some((doc, schema)) = is_in_docstring(program, &pos) {
+                let doc = parse_doc_string(&doc.node);
+                if doc.summary.is_empty() && doc.attrs.len() == 0 && doc.examples.len() == 0 {
+                    // empty docstring, provide total completion
+                    let doc_parsed = Doc::new_from_schema_stmt(&schema);
+                    let label = doc_parsed.to_doc_string();
+                    // generate docstring from doc
+                    completions.insert(KCLCompletionItem {
+                        label,
+                        detail: Some("generate docstring".to_string()),
+                        documentation: Some(format!("docstring for {}", schema.name.node.clone())),
+                        kind: Some(KCLCompletionItemKind::Doc),
+                    });
+                }
             }
-            // else if let Some((node, schema_stmt)) = is_in_schema_stmt(program, &end_pos) {
-            //     // docstring completion: check if the position is surrounding by triple quotes
-            //     pos
-
-            // }
         }
         None => {}
     }
@@ -1183,6 +1195,36 @@ mod tests {
                         kind: Some(CompletionItemKind::FIELD),
                         detail: Some("c: int".to_string()),
                         documentation: None,
+                        ..Default::default()
+                    }
+                )
+            }
+            CompletionResponse::List(_) => panic!("test failed"),
+        }
+    }
+
+    #[test]
+    fn schema_docstring_newline_completion() {
+        let (file, program, prog_scope, _) =
+            compile_test_file("src/test_data/completion_test/newline/docstring_newline.k");
+
+        // test completion for builtin packages
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 3,
+            column: Some(4),
+        };
+
+        let got = completion(Some('\n'), &program, &pos, &prog_scope).unwrap();
+        match got {
+            CompletionResponse::Array(arr) => {
+                assert_eq!(
+                    arr[0],
+                    CompletionItem {
+                        label: "\n\nAttributes\n---------\nname: \nworkloadType: \nreplica: \n\nExamples\n--------\n".to_string(),
+                        detail: Some("generate docstring".to_string()),
+                        kind: Some(CompletionItemKind::SNIPPET),
+                        documentation: Some(lsp_types::Documentation::String("docstring for Server".to_string())),
                         ..Default::default()
                     }
                 )
