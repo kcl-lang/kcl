@@ -247,6 +247,7 @@ pub struct LoadProgramOptions {
     pub work_dir: String,
     pub k_code_list: Vec<String>,
     pub vendor_dirs: Vec<String>,
+    pub recursive: bool,
     pub package_maps: HashMap<String, String>,
 
     pub cmd_args: Vec<ast::CmdArgSpec>,
@@ -271,6 +272,7 @@ impl Default for LoadProgramOptions {
             mode: ParseMode::ParseComments,
             load_packages: true,
             load_plugins: false,
+            recursive: false,
         }
     }
 }

@@ -153,8 +153,11 @@ message ExecProgram_Args {
 	// Whether only compiling the program
 	bool compile_only = 15;
 
+	// Compile the dir recursively 
+	bool recursive = 16;
+
 	// -S --path_selector
-	repeated string path_selector = 16;
+	repeated string path_selector = 17;
 }
 
 message ExecProgram_Result {
