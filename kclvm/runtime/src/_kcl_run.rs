@@ -4,9 +4,6 @@
 use crate::*;
 
 #[allow(dead_code, non_camel_case_types)]
-type kclvm_buffer_t = Buffer;
-
-#[allow(dead_code, non_camel_case_types)]
 type kclvm_context_t = Context;
 
 #[allow(dead_code, non_camel_case_types)]

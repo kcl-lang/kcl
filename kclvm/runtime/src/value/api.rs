@@ -6,9 +6,6 @@ use std::mem::transmute_copy;
 use crate::*;
 
 #[allow(non_camel_case_types)]
-pub type kclvm_buffer_t = Buffer;
-
-#[allow(non_camel_case_types)]
 pub type kclvm_context_t = Context;
 
 #[allow(non_camel_case_types)]
@@ -229,24 +226,6 @@ pub extern "C" fn kclvm_value_List10(
 
 #[no_mangle]
 #[runtime_fn]
-pub unsafe extern "C" fn kclvm_value_ListN(
-    n: kclvm_int_t,
-    elem_values: *const *const kclvm_value_ref_t,
-) -> *mut kclvm_value_ref_t {
-    let mut list = ListValue::default();
-
-    unsafe {
-        for xi in std::slice::from_raw_parts(elem_values, n as usize).iter() {
-            let v: &ValueRef = ptr_as_ref(*xi);
-            list.values.push(v.clone());
-        }
-
-        ValueRef::from(Value::list_value(Box::new(list))).into_raw()
-    }
-}
-
-#[no_mangle]
-#[runtime_fn]
 pub extern "C" fn kclvm_value_Dict() -> *mut kclvm_value_ref_t {
     new_mut_ptr(ValueRef::dict(None))
 }
@@ -431,15 +410,6 @@ pub unsafe extern "C" fn kclvm_value_from_json(s: *const kclvm_char_t) -> *mut k
 
 #[no_mangle]
 #[runtime_fn]
-pub unsafe extern "C" fn kclvm_value_to_json(p: *const kclvm_value_ref_t) -> *mut kclvm_buffer_t {
-    let p = ptr_as_ref(p);
-    let x = p.to_json();
-    let buf = Buffer::new_with_buf(&x);
-    buf.into_raw()
-}
-
-#[no_mangle]
-#[runtime_fn]
 pub unsafe extern "C" fn kclvm_value_to_json_value(
     p: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
@@ -526,58 +496,12 @@ pub unsafe extern "C" fn kclvm_value_to_str_value(
 
 #[no_mangle]
 #[runtime_fn]
-pub unsafe extern "C" fn kclvm_value_Bool_ptr(p: *const kclvm_value_ref_t) -> *const kclvm_bool_t {
-    let p = ptr_as_ref(p);
-    match &*p.rc.borrow() {
-        Value::bool_value(ref v) => v as *const bool as *const kclvm_bool_t, // sizeof(bool) == sizeof(i8)
-        _ => std::ptr::null(),
-    }
-}
-
-#[no_mangle]
-#[runtime_fn]
-pub unsafe extern "C" fn kclvm_value_Int_ptr(p: *const kclvm_value_ref_t) -> *const kclvm_int_t {
-    let p = ptr_as_ref(p);
-    match &*p.rc.borrow() {
-        Value::int_value(ref v) => v as *const kclvm_int_t,
-        _ => std::ptr::null(),
-    }
-}
-
-#[no_mangle]
-#[runtime_fn]
-pub unsafe extern "C" fn kclvm_value_Float_ptr(
-    p: *const kclvm_value_ref_t,
-) -> *const kclvm_float_t {
-    let p = ptr_as_ref(p);
-    match &*p.rc.borrow() {
-        Value::float_value(ref v) => v as *const kclvm_float_t,
-        _ => std::ptr::null(),
-    }
-}
-
-#[no_mangle]
-#[runtime_fn]
 pub unsafe extern "C" fn kclvm_value_Str_ptr(p: *const kclvm_value_ref_t) -> *const kclvm_char_t {
     let p = ptr_as_ref(p);
     match &*p.rc.borrow() {
         Value::str_value(ref v) => v.as_ptr() as *const i8,
         _ => std::ptr::null(),
     }
-}
-
-#[no_mangle]
-#[runtime_fn]
-pub unsafe extern "C" fn kclvm_value_Str_len(p: *const kclvm_value_ref_t) -> kclvm_size_t {
-    let p = ptr_as_ref(p);
-    p.str_len() as kclvm_size_t
-}
-
-#[no_mangle]
-#[runtime_fn]
-pub unsafe extern "C" fn kclvm_value_Str_resize(p: *mut kclvm_value_ref_t, n: kclvm_size_t) {
-    let p = mut_ptr_as_ref(p);
-    p.str_resize(n as usize)
 }
 
 #[no_mangle]
@@ -597,35 +521,6 @@ pub unsafe extern "C" fn kclvm_value_check_function_ptr(p: *const kclvm_value_re
     match &*p.rc.borrow() {
         Value::func_value(ref v) => v.check_fn_ptr as *const u64,
         _ => std::ptr::null::<u64>(),
-    }
-}
-
-#[no_mangle]
-#[runtime_fn]
-pub unsafe extern "C" fn kclvm_value_function_is_external(
-    p: *const kclvm_value_ref_t,
-) -> kclvm_bool_t {
-    let p = ptr_as_ref(p);
-    match &*p.rc.borrow() {
-        Value::func_value(ref v) => v.is_external as kclvm_bool_t,
-        _ => false as kclvm_bool_t,
-    }
-}
-
-#[no_mangle]
-#[runtime_fn]
-pub unsafe extern "C" fn kclvm_value_function_external_invoke(
-    p: *const kclvm_value_ref_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
-    let p = ptr_as_ref(p);
-    match &*p.rc.borrow() {
-        Value::func_value(ref v) => {
-            let name = format!("{}\0", v.name);
-            kclvm_plugin_invoke(name.as_ptr() as *const i8, args, kwargs)
-        }
-        _ => kclvm_value_None(),
     }
 }
 
@@ -711,31 +606,9 @@ pub unsafe extern "C" fn kclvm_value_function_invoke(
     kclvm_value_None()
 }
 
-#[no_mangle]
-#[runtime_fn]
-pub unsafe extern "C" fn kclvm_value_function_get_closure(
-    p: *const kclvm_value_ref_t,
-) -> *mut kclvm_value_ref_t {
-    let p = ptr_as_ref(p);
-    match &*p.rc.borrow() {
-        Value::func_value(ref v) => v.closure.deep_copy().into_raw(),
-        Value::none | Value::undefined => kclvm_value_None(),
-        _ => panic!("invalid value of function self value function"),
-    }
-}
-
 // ----------------------------------------------------------------------------
 // values: method
 // ----------------------------------------------------------------------------
-
-// kind
-
-#[no_mangle]
-#[runtime_fn]
-pub unsafe extern "C" fn kclvm_value_kind(p: *const kclvm_value_ref_t) -> kclvm_kind_t {
-    let p = ptr_as_ref(p);
-    p.kind()
-}
 
 // clone
 
