@@ -106,10 +106,6 @@ pub fn _kclvm_get_fn_ptr_by_name(name: &str) -> u64 {
         "kclvm_context_set_strict_range_check" => {
             crate::kclvm_context_set_strict_range_check as *const () as u64
         }
-        "kclvm_context_symbol_init" => crate::kclvm_context_symbol_init as *const () as u64,
-        "kclvm_context_symbol_name" => crate::kclvm_context_symbol_name as *const () as u64,
-        "kclvm_context_symbol_num" => crate::kclvm_context_symbol_num as *const () as u64,
-        "kclvm_context_symbol_value" => crate::kclvm_context_symbol_value as *const () as u64,
         "kclvm_convert_collection_value" => {
             crate::kclvm_convert_collection_value as *const () as u64
         }

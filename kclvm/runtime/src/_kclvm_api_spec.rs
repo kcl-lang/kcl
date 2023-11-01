@@ -42,22 +42,6 @@
 // api-spec(c):    void kclvm_context_set_kcl_line_col(int32_t line, int32_t col);
 // api-spec(llvm): declare void @kclvm_context_set_kcl_line_col(i32 %line, i32 %col);
 
-// api-spec:       kclvm_context_symbol_init
-// api-spec(c):    void kclvm_context_symbol_init(kclvm_context_t* p, kclvm_size_t n, kclvm_char_t** symbol_names);
-// api-spec(llvm): declare void @kclvm_context_symbol_init(%kclvm_context_t* %p, %kclvm_size_t %n, %kclvm_char_t** %symbol_names);
-
-// api-spec:       kclvm_context_symbol_num
-// api-spec(c):    kclvm_size_t kclvm_context_symbol_num(kclvm_context_t* p);
-// api-spec(llvm): declare %kclvm_size_t @kclvm_context_symbol_num(%kclvm_context_t* %p);
-
-// api-spec:       kclvm_context_symbol_name
-// api-spec(c):    kclvm_char_t* kclvm_context_symbol_name(kclvm_context_t* p, kclvm_size_t i);
-// api-spec(llvm): declare %kclvm_char_t* @kclvm_context_symbol_name(%kclvm_context_t* %p, %kclvm_size_t %i);
-
-// api-spec:       kclvm_context_symbol_value
-// api-spec(c):    kclvm_value_t* kclvm_context_symbol_value(kclvm_context_t* p, kclvm_size_t i);
-// api-spec(llvm): declare %kclvm_value_t* @kclvm_context_symbol_value(%kclvm_context_t* %p, %kclvm_size_t %i);
-
 // api-spec:       kclvm_context_set_debug_mode
 // api-spec(c):    void kclvm_context_set_debug_mode(kclvm_context_t* p, kclvm_bool_t v);
 // api-spec(llvm): declare void @kclvm_context_set_debug_mode(%kclvm_context_t* %p, %kclvm_bool_t %v);

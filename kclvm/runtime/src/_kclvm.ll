@@ -186,14 +186,6 @@ declare void @kclvm_context_set_list_option_mode(%kclvm_context_t* %p, %kclvm_bo
 
 declare void @kclvm_context_set_strict_range_check(%kclvm_context_t* %p, %kclvm_bool_t %v);
 
-declare void @kclvm_context_symbol_init(%kclvm_context_t* %p, %kclvm_size_t %n, %kclvm_char_t** %symbol_names);
-
-declare %kclvm_char_t* @kclvm_context_symbol_name(%kclvm_context_t* %p, %kclvm_size_t %i);
-
-declare %kclvm_size_t @kclvm_context_symbol_num(%kclvm_context_t* %p);
-
-declare %kclvm_value_t* @kclvm_context_symbol_value(%kclvm_context_t* %p, %kclvm_size_t %i);
-
 declare %kclvm_value_ref_t* @kclvm_convert_collection_value(%kclvm_value_ref_t* %value, %kclvm_char_t* %tpe, %kclvm_value_ref_t* %is_in_schema);
 
 declare %kclvm_value_ref_t* @kclvm_crypto_md5(%kclvm_context_t* %_ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
