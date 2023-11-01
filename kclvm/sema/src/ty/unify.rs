@@ -66,6 +66,27 @@ pub fn subsume(ty_lhs: TypeRef, ty_rhs: TypeRef, check_left_any: bool) -> bool {
             && subsume(ty_lhs_val, ty_rhs_val, check_left_any)
     } else if ty_lhs.is_str() && ty_rhs.is_literal() && ty_rhs.is_str() {
         return true;
+    } else if ty_lhs.is_func() && ty_rhs.is_func() {
+        let ty_lhs_fn_ty = ty_lhs.into_func_type();
+        let ty_rhs_fn_ty = ty_rhs.into_func_type();
+        let mut is_ok = ty_lhs_fn_ty.params.len() == ty_rhs_fn_ty.params.len();
+        for (ty_lhs_param, ty_rhs_param) in
+            ty_lhs_fn_ty.params.iter().zip(ty_rhs_fn_ty.params.iter())
+        {
+            is_ok = is_ok
+                && (subsume(
+                    ty_lhs_param.ty.clone(),
+                    ty_rhs_param.ty.clone(),
+                    check_left_any,
+                ));
+        }
+        is_ok = is_ok
+            && (subsume(
+                ty_lhs_fn_ty.return_ty.clone(),
+                ty_rhs_fn_ty.return_ty.clone(),
+                check_left_any,
+            ));
+        is_ok
     } else {
         equal(ty_lhs, ty_rhs)
     }

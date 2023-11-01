@@ -175,7 +175,6 @@ const PARSE_FILE_INVALID_TEST_CASES: &[&str] = &[
     "a: int",                   // No initial value error
     "a -",                      // Invalid binary expression error
     "a?: int",                  // Invalid optional annotation error
-    "a: () = 1",                // Type annotation error
     "if a not is not b: a = 1", // Logic operator error
     "if True:\n  a=1\n b=2",    // Indent error with recovery
     "a[1::::]",                 // List slice error

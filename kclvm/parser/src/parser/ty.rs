@@ -219,7 +219,44 @@ impl<'a> Parser<'a> {
                 self.sess.struct_token_loc(token, self.prev_token),
             ));
         }
+        // (type) -> type
+        else if let TokenKind::OpenDelim(DelimToken::Paren) = self.token.kind {
+            // Parse function type start with '('
+            self.bump_token(TokenKind::OpenDelim(DelimToken::Paren));
 
+            let mut params_type = vec![];
+            // Parse all the params type until the params list end ')'
+            while self.token.kind != TokenKind::CloseDelim(DelimToken::Paren) {
+                params_type.push(self.parse_type_annotation());
+                // All the params type should be separated by ','
+                if let TokenKind::Comma = self.token.kind {
+                    self.bump_token(TokenKind::Comma);
+                }
+            }
+            // If there is no params type, set it to None
+            let params_ty = if params_type.len() == 0 {
+                None
+            } else {
+                Some(params_type)
+            };
+
+            self.bump_token(TokenKind::CloseDelim(DelimToken::Paren));
+            // If there is a return type, parse it
+            // Return type start with '->'
+            let ret_ty = if let TokenKind::RArrow = self.token.kind {
+                self.bump_token(TokenKind::RArrow);
+                Some(self.parse_type_annotation())
+            } else {
+                None
+            };
+
+            let t = Type::Function(ast::FunctionType { params_ty, ret_ty });
+
+            return Box::new(Node::node(
+                t,
+                self.sess.struct_token_loc(token, self.prev_token),
+            ));
+        }
         // Expect type tokens
         self.sess.struct_token_error(
             &[
