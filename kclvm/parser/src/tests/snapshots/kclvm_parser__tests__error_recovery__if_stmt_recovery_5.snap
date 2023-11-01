@@ -5,7 +5,7 @@ expression: "crate::tests::parsing_module_string(r#\"if\"#)"
 Module {
     filename: "",
     pkg: "",
-    doc: "",
+    doc: None,
     name: "",
     body: [
         Node {

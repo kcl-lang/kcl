@@ -39,14 +39,31 @@ impl<'ctx> Resolver<'ctx> {
                         let (name, doc, is_mixin, is_protocol, is_rule) = match &stmt.node {
                             ast::Stmt::Schema(schema_stmt) => (
                                 &schema_stmt.name.node,
-                                &schema_stmt.doc,
+                                {
+                                    if let Some(doc) = &schema_stmt.doc {
+                                        doc.node.clone()
+                                    } else {
+                                        "".to_string()
+                                    }
+                                },
                                 schema_stmt.is_mixin,
                                 schema_stmt.is_protocol,
                                 false,
                             ),
-                            ast::Stmt::Rule(rule_stmt) => {
-                                (&rule_stmt.name.node, &rule_stmt.doc, false, false, true)
-                            }
+                            ast::Stmt::Rule(rule_stmt) => (
+                                &rule_stmt.name.node,
+                                {
+                                    if let Some(doc) = &rule_stmt.doc {
+                                        doc.node.clone()
+                                    } else {
+                                        "".to_string()
+                                    }
+                                },
+                                false,
+                                false,
+                                true,
+                            ),
+
                             _ => continue,
                         };
                         if self.contains_object(name) {
@@ -568,7 +585,13 @@ impl<'ctx> Resolver<'ctx> {
                 decorators: vec![],
             },
         );
-        let parsed_doc = parse_doc_string(&schema_stmt.doc);
+        let parsed_doc = parse_doc_string(
+            &schema_stmt
+                .doc
+                .as_ref()
+                .map(|doc| doc.node.clone())
+                .unwrap_or_default(),
+        );
         for stmt in &schema_stmt.body {
             let (name, ty, is_optional, default, decorators, range) = match &stmt.node {
                 ast::Stmt::Unification(unification_stmt) => {
@@ -895,7 +918,13 @@ impl<'ctx> Resolver<'ctx> {
             &rule_stmt.name.node,
         );
 
-        let parsed_doc = parse_doc_string(&rule_stmt.doc);
+        let parsed_doc = parse_doc_string(
+            &rule_stmt
+                .doc
+                .as_ref()
+                .map(|doc| doc.node.clone())
+                .unwrap_or_default(),
+        );
         SchemaType {
             name: rule_stmt.name.node.clone(),
             pkgpath: self.ctx.pkgpath.clone(),
@@ -911,7 +940,11 @@ impl<'ctx> Resolver<'ctx> {
             mixins: parent_types,
             attrs: IndexMap::default(),
             func: Box::new(FunctionType {
-                doc: rule_stmt.doc.clone(),
+                doc: rule_stmt
+                    .doc
+                    .as_ref()
+                    .map(|doc| doc.node.clone())
+                    .unwrap_or_default(),
                 params,
                 self_ty: None,
                 return_ty: Rc::new(Type::ANY),

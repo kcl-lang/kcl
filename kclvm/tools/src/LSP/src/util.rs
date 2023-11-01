@@ -1,6 +1,7 @@
 use indexmap::{IndexMap, IndexSet};
 use kclvm_ast::ast::{
-    ConfigEntry, Expr, Identifier, Node, NodeRef, PosTuple, Program, SchemaExpr, Stmt, Type,
+    ConfigEntry, Expr, Identifier, Node, NodeRef, PosTuple, Program, SchemaExpr, SchemaStmt, Stmt,
+    Type,
 };
 use kclvm_ast::pos::ContainsPos;
 use kclvm_ast::MAIN_PKG;
@@ -583,7 +584,10 @@ fn inner_most_expr_in_config_entry(
     }
 }
 
-pub(crate) fn is_in_schema(program: &Program, pos: &KCLPos) -> Option<(Node<Stmt>, SchemaExpr)> {
+pub(crate) fn is_in_schema_expr(
+    program: &Program,
+    pos: &KCLPos,
+) -> Option<(Node<Stmt>, SchemaExpr)> {
     match program.pos_to_stmt(pos) {
         Some(node) => {
             let parent_expr = inner_most_expr_in_stmt(&node.node, pos, None).1;
@@ -595,6 +599,28 @@ pub(crate) fn is_in_schema(program: &Program, pos: &KCLPos) -> Option<(Node<Stmt
                 None => None,
             }
         }
+        None => None,
+    }
+}
+
+pub(crate) fn is_in_docstring(
+    program: &Program,
+    pos: &KCLPos,
+) -> Option<(NodeRef<String>, SchemaStmt)> {
+    match program.pos_to_stmt(pos) {
+        Some(node) => match node.node.clone() {
+            Stmt::Schema(schema) => match schema.doc {
+                Some(ref doc) => {
+                    if doc.contains_pos(pos) {
+                        return Some((doc.clone(), schema));
+                    } else {
+                        return None;
+                    }
+                }
+                None => None,
+            },
+            _ => None,
+        },
         None => None,
     }
 }

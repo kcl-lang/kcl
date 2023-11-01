@@ -1,4 +1,5 @@
 use kclvm_ast::ast::*;
+use kclvm_ast::node_ref;
 use kclvm_ast::{token::LitKind, token::TokenKind};
 
 use super::Parser;
@@ -19,7 +20,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub(crate) fn parse_doc(&mut self) -> String {
+    pub(crate) fn parse_doc(&mut self) -> Option<NodeRef<String>> {
         // doc string
         match self.token.kind {
             TokenKind::Literal(lit) => {
@@ -27,15 +28,19 @@ impl<'a> Parser<'a> {
                     let doc_expr = self.parse_str_expr(lit);
                     self.skip_newlines();
                     match &doc_expr.node {
-                        Expr::StringLit(str) => str.raw_value.clone(),
-                        Expr::JoinedString(str) => str.raw_value.clone(),
-                        _ => "".to_string(),
+                        Expr::StringLit(str) => {
+                            Some(node_ref!(str.raw_value.clone(), doc_expr.pos()))
+                        }
+                        Expr::JoinedString(str) => {
+                            Some(node_ref!(str.raw_value.clone(), doc_expr.pos()))
+                        }
+                        _ => None,
                     }
                 } else {
-                    "".to_string()
+                    None
                 }
             }
-            _ => "".to_string(),
+            _ => None,
         }
     }
 

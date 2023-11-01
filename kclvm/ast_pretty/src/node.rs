@@ -39,10 +39,11 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
         for comment in &module.comments {
             self.comments.push_back(comment.clone());
         }
-        if !module.doc.is_empty() {
-            self.write(&module.doc);
+        if let Some(doc) = &module.doc {
+            self.write(&doc.node);
             self.write_newline();
         }
+
         self.stmts(&module.body);
     }
 
@@ -190,11 +191,13 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
         self.write_token(TokenKind::Colon);
         self.write_newline_without_fill();
         self.write_indentation(Indentation::Indent);
-        if !schema_stmt.doc.is_empty() {
+
+        if let Some(doc) = &schema_stmt.doc {
             self.fill("");
-            self.write(&schema_stmt.doc);
+            self.write(&doc.node);
             self.write_newline_without_fill();
         }
+
         if !schema_stmt.mixins.is_empty() {
             self.fill("");
             self.write("mixin [");
@@ -287,8 +290,8 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
         self.write_token(TokenKind::Colon);
         // Rule Stmt indent
         self.write_indentation(Indentation::IndentWithNewline);
-        if !rule_stmt.doc.is_empty() {
-            self.write(&rule_stmt.doc);
+        if let Some(doc) = &rule_stmt.doc {
+            self.write(&doc.node);
             self.write_newline();
         }
         if !rule_stmt.checks.is_empty() {

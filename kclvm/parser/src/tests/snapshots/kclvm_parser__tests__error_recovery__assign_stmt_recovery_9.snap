@@ -1,12 +1,11 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 154
 expression: "crate::tests::parsing_module_string(r#\"a ++= 1\"#)"
 ---
 Module {
     filename: "",
     pkg: "",
-    doc: "",
+    doc: None,
     name: "",
     body: [
         Node {

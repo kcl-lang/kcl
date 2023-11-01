@@ -1,12 +1,11 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 168
 expression: "crate::tests::parsing_module_string(r#\"type 'pkg_path'\"#)"
 ---
 Module {
     filename: "",
     pkg: "",
-    doc: "",
+    doc: None,
     name: "",
     body: [
         Node {
