@@ -281,16 +281,7 @@ pub fn _kclvm_get_fn_ptr_by_name(name: &str) -> u64 {
         "kclvm_value_deep_copy" => crate::kclvm_value_deep_copy as *const () as u64,
         "kclvm_value_delete" => crate::kclvm_value_delete as *const () as u64,
         "kclvm_value_from_json" => crate::kclvm_value_from_json as *const () as u64,
-        "kclvm_value_function_external_invoke" => {
-            crate::kclvm_value_function_external_invoke as *const () as u64
-        }
-        "kclvm_value_function_get_closure" => {
-            crate::kclvm_value_function_get_closure as *const () as u64
-        }
         "kclvm_value_function_invoke" => crate::kclvm_value_function_invoke as *const () as u64,
-        "kclvm_value_function_is_external" => {
-            crate::kclvm_value_function_is_external as *const () as u64
-        }
         "kclvm_value_function_ptr" => crate::kclvm_value_function_ptr as *const () as u64,
         "kclvm_value_in" => crate::kclvm_value_in as *const () as u64,
         "kclvm_value_is" => crate::kclvm_value_is as *const () as u64,

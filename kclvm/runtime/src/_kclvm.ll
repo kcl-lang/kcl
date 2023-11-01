@@ -488,13 +488,7 @@ declare void @kclvm_value_delete(%kclvm_value_ref_t* %p);
 
 declare %kclvm_value_ref_t* @kclvm_value_from_json(%kclvm_char_t* %s);
 
-declare %kclvm_value_ref_t* @kclvm_value_function_external_invoke(%kclvm_value_ref_t* %p, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
-
-declare %kclvm_value_ref_t* @kclvm_value_function_get_closure(%kclvm_value_ref_t* %p);
-
 declare %kclvm_value_ref_t* @kclvm_value_function_invoke(%kclvm_value_ref_t* %p, %kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs, %kclvm_char_t* %pkgpath, %kclvm_value_ref_t* %is_in_schema);
-
-declare %kclvm_bool_t @kclvm_value_function_is_external(%kclvm_value_ref_t* %p);
 
 declare i64* @kclvm_value_function_ptr(%kclvm_value_ref_t* %p);
 

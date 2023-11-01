@@ -526,35 +526,6 @@ pub unsafe extern "C" fn kclvm_value_check_function_ptr(p: *const kclvm_value_re
 
 #[no_mangle]
 #[runtime_fn]
-pub unsafe extern "C" fn kclvm_value_function_is_external(
-    p: *const kclvm_value_ref_t,
-) -> kclvm_bool_t {
-    let p = ptr_as_ref(p);
-    match &*p.rc.borrow() {
-        Value::func_value(ref v) => v.is_external as kclvm_bool_t,
-        _ => false as kclvm_bool_t,
-    }
-}
-
-#[no_mangle]
-#[runtime_fn]
-pub unsafe extern "C" fn kclvm_value_function_external_invoke(
-    p: *const kclvm_value_ref_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
-    let p = ptr_as_ref(p);
-    match &*p.rc.borrow() {
-        Value::func_value(ref v) => {
-            let name = format!("{}\0", v.name);
-            kclvm_plugin_invoke(name.as_ptr() as *const i8, args, kwargs)
-        }
-        _ => kclvm_value_None(),
-    }
-}
-
-#[no_mangle]
-#[runtime_fn]
 pub unsafe extern "C" fn kclvm_value_function_invoke(
     p: *const kclvm_value_ref_t,
     ctx: *mut kclvm_context_t,
@@ -633,19 +604,6 @@ pub unsafe extern "C" fn kclvm_value_function_invoke(
         };
     }
     kclvm_value_None()
-}
-
-#[no_mangle]
-#[runtime_fn]
-pub unsafe extern "C" fn kclvm_value_function_get_closure(
-    p: *const kclvm_value_ref_t,
-) -> *mut kclvm_value_ref_t {
-    let p = ptr_as_ref(p);
-    match &*p.rc.borrow() {
-        Value::func_value(ref v) => v.closure.deep_copy().into_raw(),
-        Value::none | Value::undefined => kclvm_value_None(),
-        _ => panic!("invalid value of function self value function"),
-    }
 }
 
 // ----------------------------------------------------------------------------
