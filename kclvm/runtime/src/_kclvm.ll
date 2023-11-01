@@ -452,19 +452,13 @@ declare %kclvm_value_ref_t* @kclvm_value_List10(%kclvm_value_ref_t* %v1, %kclvm_
 
 declare %kclvm_value_ref_t* @kclvm_value_List6(%kclvm_value_ref_t* %v1, %kclvm_value_ref_t* %v2, %kclvm_value_ref_t* %v3, %kclvm_value_ref_t* %v4, %kclvm_value_ref_t* %v5, %kclvm_value_ref_t* %v6);
 
-declare %kclvm_value_ref_t* @kclvm_value_ListN(%kclvm_int_t %n, %kclvm_value_ref_t** %elem_values);
-
 declare %kclvm_value_ref_t* @kclvm_value_None();
 
 declare %kclvm_value_ref_t* @kclvm_value_Schema();
 
 declare %kclvm_value_ref_t* @kclvm_value_Str(%kclvm_char_t* %v);
 
-declare %kclvm_size_t @kclvm_value_Str_len(%kclvm_value_ref_t* %p);
-
 declare %kclvm_char_t* @kclvm_value_Str_ptr(%kclvm_value_ref_t* %p);
-
-declare void @kclvm_value_Str_resize(%kclvm_value_ref_t* %p, %kclvm_size_t %n);
 
 declare %kclvm_value_ref_t* @kclvm_value_True();
 

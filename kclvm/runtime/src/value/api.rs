@@ -226,24 +226,6 @@ pub extern "C" fn kclvm_value_List10(
 
 #[no_mangle]
 #[runtime_fn]
-pub unsafe extern "C" fn kclvm_value_ListN(
-    n: kclvm_int_t,
-    elem_values: *const *const kclvm_value_ref_t,
-) -> *mut kclvm_value_ref_t {
-    let mut list = ListValue::default();
-
-    unsafe {
-        for xi in std::slice::from_raw_parts(elem_values, n as usize).iter() {
-            let v: &ValueRef = ptr_as_ref(*xi);
-            list.values.push(v.clone());
-        }
-
-        ValueRef::from(Value::list_value(Box::new(list))).into_raw()
-    }
-}
-
-#[no_mangle]
-#[runtime_fn]
 pub extern "C" fn kclvm_value_Dict() -> *mut kclvm_value_ref_t {
     new_mut_ptr(ValueRef::dict(None))
 }
@@ -520,20 +502,6 @@ pub unsafe extern "C" fn kclvm_value_Str_ptr(p: *const kclvm_value_ref_t) -> *co
         Value::str_value(ref v) => v.as_ptr() as *const i8,
         _ => std::ptr::null(),
     }
-}
-
-#[no_mangle]
-#[runtime_fn]
-pub unsafe extern "C" fn kclvm_value_Str_len(p: *const kclvm_value_ref_t) -> kclvm_size_t {
-    let p = ptr_as_ref(p);
-    p.str_len() as kclvm_size_t
-}
-
-#[no_mangle]
-#[runtime_fn]
-pub unsafe extern "C" fn kclvm_value_Str_resize(p: *mut kclvm_value_ref_t, n: kclvm_size_t) {
-    let p = mut_ptr_as_ref(p);
-    p.str_resize(n as usize)
 }
 
 #[no_mangle]

@@ -118,10 +118,6 @@
 // api-spec(c):    kclvm_value_ref_t* kclvm_value_List10(kclvm_value_ref_t* v1, kclvm_value_ref_t* v2, kclvm_value_ref_t* v3, kclvm_value_ref_t* v4, kclvm_value_ref_t* v5, kclvm_value_ref_t* v6, kclvm_value_ref_t* v7, kclvm_value_ref_t* v8, kclvm_value_ref_t* v9, kclvm_value_ref_t* v10);
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_value_List10(%kclvm_value_ref_t* %v1, %kclvm_value_ref_t* %v2, %kclvm_value_ref_t* %v3, %kclvm_value_ref_t* %v4, %kclvm_value_ref_t* %v5, %kclvm_value_ref_t* %v6, %kclvm_value_ref_t* %v7, %kclvm_value_ref_t* %v8, %kclvm_value_ref_t* %v9, %kclvm_value_ref_t* %v10);
 
-// api-spec:       kclvm_value_ListN
-// api-spec(c):    kclvm_value_ref_t* kclvm_value_ListN(kclvm_int_t n, kclvm_value_ref_t** elem_values);
-// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_value_ListN(%kclvm_int_t %n, %kclvm_value_ref_t** %elem_values);
-
 // api-spec:       kclvm_value_Dict
 // api-spec(c):    kclvm_value_ref_t* kclvm_value_Dict();
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_value_Dict();
@@ -177,14 +173,6 @@
 // api-spec:       kclvm_value_Str_ptr
 // api-spec(c):    kclvm_char_t* kclvm_value_Str_ptr(kclvm_value_ref_t* p);
 // api-spec(llvm): declare %kclvm_char_t* @kclvm_value_Str_ptr(%kclvm_value_ref_t* %p);
-
-// api-spec:       kclvm_value_Str_len
-// api-spec(c):    kclvm_size_t kclvm_value_Str_len(kclvm_value_ref_t* p);
-// api-spec(llvm): declare %kclvm_size_t @kclvm_value_Str_len(%kclvm_value_ref_t* %p);
-
-// api-spec:       kclvm_value_Str_resize
-// api-spec(c):    void kclvm_value_Str_resize(kclvm_value_ref_t* p, kclvm_size_t n);
-// api-spec(llvm): declare void @kclvm_value_Str_resize(%kclvm_value_ref_t* %p, %kclvm_size_t %n);
 
 // api-spec:       kclvm_value_function_ptr
 // api-spec(c):    uint64_t* kclvm_value_function_ptr(kclvm_value_ref_t* p);
