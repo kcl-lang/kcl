@@ -86,14 +86,6 @@ kclvm_value_ref_t* kclvm_base64_decode(kclvm_context_t* _ctx, kclvm_value_ref_t*
 
 kclvm_value_ref_t* kclvm_base64_encode(kclvm_context_t* _ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
 
-kclvm_char_t* kclvm_buffer_data(kclvm_buffer_t* p);
-
-void kclvm_buffer_delete(kclvm_buffer_t* p);
-
-kclvm_buffer_t* kclvm_buffer_new(kclvm_size_t size);
-
-kclvm_size_t kclvm_buffer_size(kclvm_buffer_t* p);
-
 kclvm_value_ref_t* kclvm_builtin_abs(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
 kclvm_value_ref_t* kclvm_builtin_all_true(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
@@ -324,8 +316,6 @@ void kclvm_dict_update_key_value(kclvm_value_ref_t* p, kclvm_value_ref_t* key, k
 
 kclvm_value_ref_t* kclvm_dict_values(kclvm_value_ref_t* p);
 
-void kclvm_free(uint8_t* ptr);
-
 kclvm_value_ref_t* kclvm_iterator_cur_key(kclvm_iterator_t* p);
 
 kclvm_value_ref_t* kclvm_iterator_cur_value(kclvm_iterator_t* p);
@@ -377,8 +367,6 @@ void kclvm_list_remove_at(kclvm_value_ref_t* p, kclvm_size_t i);
 void kclvm_list_resize(kclvm_value_ref_t* p, kclvm_size_t newsize);
 
 void kclvm_list_set(kclvm_value_ref_t* p, kclvm_size_t i, kclvm_value_ref_t* v);
-
-uint8_t* kclvm_malloc(int32_t n);
 
 void kclvm_manifests_yaml_stream(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
@@ -679,8 +667,6 @@ kclvm_value_ref_t* kclvm_value_slice_option(kclvm_value_ref_t* x, kclvm_value_re
 kclvm_value_ref_t* kclvm_value_subscr(kclvm_value_ref_t* a, kclvm_value_ref_t* b);
 
 kclvm_value_ref_t* kclvm_value_subscr_option(kclvm_value_ref_t* a, kclvm_value_ref_t* b);
-
-kclvm_buffer_t* kclvm_value_to_json(kclvm_value_ref_t* p);
 
 kclvm_value_ref_t* kclvm_value_to_json_value(kclvm_value_ref_t* p);
 

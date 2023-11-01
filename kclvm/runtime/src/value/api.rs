@@ -6,9 +6,6 @@ use std::mem::transmute_copy;
 use crate::*;
 
 #[allow(non_camel_case_types)]
-pub type kclvm_buffer_t = Buffer;
-
-#[allow(non_camel_case_types)]
 pub type kclvm_context_t = Context;
 
 #[allow(non_camel_case_types)]
@@ -427,15 +424,6 @@ pub unsafe extern "C" fn kclvm_value_from_json(s: *const kclvm_char_t) -> *mut k
         Ok(x) => x.into_raw(),
         _ => kclvm_value_Undefined(),
     }
-}
-
-#[no_mangle]
-#[runtime_fn]
-pub unsafe extern "C" fn kclvm_value_to_json(p: *const kclvm_value_ref_t) -> *mut kclvm_buffer_t {
-    let p = ptr_as_ref(p);
-    let x = p.to_json();
-    let buf = Buffer::new_with_buf(&x);
-    buf.into_raw()
 }
 
 #[no_mangle]

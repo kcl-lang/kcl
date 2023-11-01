@@ -3,9 +3,6 @@
 pub mod kclvm;
 pub use self::kclvm::*;
 
-pub mod buf;
-pub use self::buf::*;
-
 pub mod malloc;
 pub use self::malloc::*;
 

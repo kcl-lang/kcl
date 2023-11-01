@@ -34,14 +34,6 @@ declare %kclvm_value_ref_t* @kclvm_base64_decode(%kclvm_context_t* %_ctx, %kclvm
 
 declare %kclvm_value_ref_t* @kclvm_base64_encode(%kclvm_context_t* %_ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
 
-declare %kclvm_char_t* @kclvm_buffer_data(%kclvm_buffer_t* %p);
-
-declare void @kclvm_buffer_delete(%kclvm_buffer_t* %p);
-
-declare %kclvm_buffer_t* @kclvm_buffer_new(%kclvm_size_t %size);
-
-declare %kclvm_size_t @kclvm_buffer_size(%kclvm_buffer_t* %p);
-
 declare %kclvm_value_ref_t* @kclvm_builtin_abs(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 declare %kclvm_value_ref_t* @kclvm_builtin_all_true(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
@@ -272,8 +264,6 @@ declare void @kclvm_dict_update_key_value(%kclvm_value_ref_t* %p, %kclvm_value_r
 
 declare %kclvm_value_ref_t* @kclvm_dict_values(%kclvm_value_ref_t* %p);
 
-declare void @kclvm_free(i8* %ptr);
-
 declare %kclvm_value_ref_t* @kclvm_iterator_cur_key(%kclvm_iterator_t* %p);
 
 declare %kclvm_value_ref_t* @kclvm_iterator_cur_value(%kclvm_iterator_t* %p);
@@ -325,8 +315,6 @@ declare void @kclvm_list_remove_at(%kclvm_value_ref_t* %p, %kclvm_size_t %i);
 declare void @kclvm_list_resize(%kclvm_value_ref_t* %p, %kclvm_size_t %newsize);
 
 declare void @kclvm_list_set(%kclvm_value_ref_t* %p, %kclvm_size_t %i, %kclvm_value_ref_t* %v);
-
-declare i8* @kclvm_malloc(i32 %n);
 
 declare void @kclvm_manifests_yaml_stream(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
@@ -627,8 +615,6 @@ declare %kclvm_value_ref_t* @kclvm_value_slice_option(%kclvm_value_ref_t* %x, %k
 declare %kclvm_value_ref_t* @kclvm_value_subscr(%kclvm_value_ref_t* %a, %kclvm_value_ref_t* %b);
 
 declare %kclvm_value_ref_t* @kclvm_value_subscr_option(%kclvm_value_ref_t* %a, %kclvm_value_ref_t* %b);
-
-declare %kclvm_buffer_t* @kclvm_value_to_json(%kclvm_value_ref_t* %p);
 
 declare %kclvm_value_ref_t* @kclvm_value_to_json_value(%kclvm_value_ref_t* %p);
 
