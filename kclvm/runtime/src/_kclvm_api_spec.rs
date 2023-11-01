@@ -174,18 +174,6 @@
 // api-spec(c):    kclvm_value_ref_t* kclvm_value_to_str_value(kclvm_value_ref_t* p);
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_value_to_str_value(%kclvm_value_ref_t* %p);
 
-// api-spec:       kclvm_value_Bool_ptr
-// api-spec(c):    kclvm_bool_t* kclvm_value_Bool_ptr(kclvm_value_ref_t* p);
-// api-spec(llvm): declare %kclvm_bool_t* @kclvm_value_Bool_ptr(%kclvm_value_ref_t* %p);
-
-// api-spec:       kclvm_value_Int_ptr
-// api-spec(c):    kclvm_int_t* kclvm_value_Int_ptr(kclvm_value_ref_t* p);
-// api-spec(llvm): declare %kclvm_int_t* @kclvm_value_Int_ptr(%kclvm_value_ref_t* %p);
-
-// api-spec:       kclvm_value_Float_ptr
-// api-spec(c):    kclvm_float_t* kclvm_value_Float_ptr(kclvm_value_ref_t* p);
-// api-spec(llvm): declare %kclvm_float_t* @kclvm_value_Float_ptr(%kclvm_value_ref_t* %p);
-
 // api-spec:       kclvm_value_Str_ptr
 // api-spec(c):    kclvm_char_t* kclvm_value_Str_ptr(kclvm_value_ref_t* p);
 // api-spec(llvm): declare %kclvm_char_t* @kclvm_value_Str_ptr(%kclvm_value_ref_t* %p);

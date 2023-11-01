@@ -245,18 +245,15 @@ pub fn _kclvm_get_fn_ptr_by_name(name: &str) -> u64 {
         "kclvm_units_to_n" => crate::kclvm_units_to_n as *const () as u64,
         "kclvm_units_to_u" => crate::kclvm_units_to_u as *const () as u64,
         "kclvm_value_Bool" => crate::kclvm_value_Bool as *const () as u64,
-        "kclvm_value_Bool_ptr" => crate::kclvm_value_Bool_ptr as *const () as u64,
         "kclvm_value_Decorator" => crate::kclvm_value_Decorator as *const () as u64,
         "kclvm_value_Dict" => crate::kclvm_value_Dict as *const () as u64,
         "kclvm_value_False" => crate::kclvm_value_False as *const () as u64,
         "kclvm_value_Float" => crate::kclvm_value_Float as *const () as u64,
-        "kclvm_value_Float_ptr" => crate::kclvm_value_Float_ptr as *const () as u64,
         "kclvm_value_Function" => crate::kclvm_value_Function as *const () as u64,
         "kclvm_value_Function_using_ptr" => {
             crate::kclvm_value_Function_using_ptr as *const () as u64
         }
         "kclvm_value_Int" => crate::kclvm_value_Int as *const () as u64,
-        "kclvm_value_Int_ptr" => crate::kclvm_value_Int_ptr as *const () as u64,
         "kclvm_value_List" => crate::kclvm_value_List as *const () as u64,
         "kclvm_value_List10" => crate::kclvm_value_List10 as *const () as u64,
         "kclvm_value_List6" => crate::kclvm_value_List6 as *const () as u64,

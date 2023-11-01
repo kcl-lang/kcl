@@ -514,38 +514,6 @@ pub unsafe extern "C" fn kclvm_value_to_str_value(
 
 #[no_mangle]
 #[runtime_fn]
-pub unsafe extern "C" fn kclvm_value_Bool_ptr(p: *const kclvm_value_ref_t) -> *const kclvm_bool_t {
-    let p = ptr_as_ref(p);
-    match &*p.rc.borrow() {
-        Value::bool_value(ref v) => v as *const bool as *const kclvm_bool_t, // sizeof(bool) == sizeof(i8)
-        _ => std::ptr::null(),
-    }
-}
-
-#[no_mangle]
-#[runtime_fn]
-pub unsafe extern "C" fn kclvm_value_Int_ptr(p: *const kclvm_value_ref_t) -> *const kclvm_int_t {
-    let p = ptr_as_ref(p);
-    match &*p.rc.borrow() {
-        Value::int_value(ref v) => v as *const kclvm_int_t,
-        _ => std::ptr::null(),
-    }
-}
-
-#[no_mangle]
-#[runtime_fn]
-pub unsafe extern "C" fn kclvm_value_Float_ptr(
-    p: *const kclvm_value_ref_t,
-) -> *const kclvm_float_t {
-    let p = ptr_as_ref(p);
-    match &*p.rc.borrow() {
-        Value::float_value(ref v) => v as *const kclvm_float_t,
-        _ => std::ptr::null(),
-    }
-}
-
-#[no_mangle]
-#[runtime_fn]
 pub unsafe extern "C" fn kclvm_value_Str_ptr(p: *const kclvm_value_ref_t) -> *const kclvm_char_t {
     let p = ptr_as_ref(p);
     match &*p.rc.borrow() {

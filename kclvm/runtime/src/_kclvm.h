@@ -484,8 +484,6 @@ kclvm_value_ref_t* kclvm_units_to_u(kclvm_context_t* ctx, kclvm_value_ref_t* arg
 
 kclvm_value_ref_t* kclvm_value_Bool(kclvm_bool_t v);
 
-kclvm_bool_t* kclvm_value_Bool_ptr(kclvm_value_ref_t* p);
-
 kclvm_decorator_value_t* kclvm_value_Decorator(kclvm_char_t* name, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs, kclvm_value_ref_t* config_meta, kclvm_char_t* attr_name, kclvm_value_ref_t* config_value, kclvm_value_ref_t* is_schema_target);
 
 kclvm_value_ref_t* kclvm_value_Dict();
@@ -494,15 +492,11 @@ kclvm_value_ref_t* kclvm_value_False();
 
 kclvm_value_ref_t* kclvm_value_Float(kclvm_float_t v);
 
-kclvm_float_t* kclvm_value_Float_ptr(kclvm_value_ref_t* p);
-
 kclvm_value_ref_t* kclvm_value_Function(uint64_t* fn_ptr, kclvm_value_ref_t* closure, kclvm_char_t* name, kclvm_bool_t is_external);
 
 kclvm_value_ref_t* kclvm_value_Function_using_ptr(uint64_t* fn_ptr, kclvm_char_t* name);
 
 kclvm_value_ref_t* kclvm_value_Int(kclvm_int_t v);
-
-kclvm_int_t* kclvm_value_Int_ptr(kclvm_value_ref_t* p);
 
 kclvm_value_ref_t* kclvm_value_List();
 
