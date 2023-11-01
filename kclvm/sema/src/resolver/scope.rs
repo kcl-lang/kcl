@@ -351,7 +351,7 @@ pub fn builtin_scope() -> Scope {
                 name: name.to_string(),
                 start: Position::dummy_pos(),
                 end: Position::dummy_pos(),
-                ty: Rc::new(builtin_func.clone()),
+                ty: Arc::new(builtin_func.clone()),
                 kind: ScopeObjectKind::Definition,
                 doc: None,
             })),

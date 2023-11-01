@@ -126,23 +126,23 @@ impl From<ast::Type> for Type {
                 list_ty
                     .inner_type
                     .as_ref()
-                    .map_or(Rc::new(Type::ANY), |ty| Rc::new(ty.node.clone().into())),
+                    .map_or(Arc::new(Type::ANY), |ty| Arc::new(ty.node.clone().into())),
             ),
             ast::Type::Dict(dict_ty) => Type::dict(
                 dict_ty
                     .key_type
                     .as_ref()
-                    .map_or(Rc::new(Type::ANY), |ty| Rc::new(ty.node.clone().into())),
+                    .map_or(Arc::new(Type::ANY), |ty| Arc::new(ty.node.clone().into())),
                 dict_ty
                     .value_type
                     .as_ref()
-                    .map_or(Rc::new(Type::ANY), |ty| Rc::new(ty.node.clone().into())),
+                    .map_or(Arc::new(Type::ANY), |ty| Arc::new(ty.node.clone().into())),
             ),
             ast::Type::Union(union_ty) => Type::union(
                 &union_ty
                     .type_elements
                     .iter()
-                    .map(|ty| Rc::new(ty.node.clone().into()))
+                    .map(|ty| Arc::new(ty.node.clone().into()))
                     .collect::<Vec<TypeRef>>(),
             ),
             ast::Type::Literal(literal_ty) => match literal_ty {

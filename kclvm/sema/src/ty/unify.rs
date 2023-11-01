@@ -1,4 +1,4 @@
-use std::{collections::HashSet, rc::Rc};
+use std::{collections::HashSet, sync::Arc};
 
 use super::{SchemaType, Type, TypeKind, TypeRef};
 
@@ -143,11 +143,11 @@ pub fn r#typeof(types: &[TypeRef], should_remove_sub_types: bool) -> TypeRef {
             .collect();
     }
     if type_set.is_empty() {
-        Rc::new(Type::ANY)
+        Arc::new(Type::ANY)
     } else if type_set.len() == 1 {
         type_set[0].clone()
     } else {
-        Rc::new(Type::union(&type_set))
+        Arc::new(Type::union(&type_set))
     }
 }
 

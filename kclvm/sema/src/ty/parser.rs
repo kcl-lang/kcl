@@ -5,11 +5,11 @@ use super::*;
 /// Parse type string
 pub fn parse_type_str(ty_str: &str) -> TypeRef {
     if ty_str.is_empty() {
-        return Rc::new(Type::ANY);
+        return Arc::new(Type::ANY);
     }
     let ty_str = ty_str_strip(ty_str);
     match TYPES_MAPPING.get(ty_str) {
-        Some(ty) => Rc::new(ty.clone()),
+        Some(ty) => Arc::new(ty.clone()),
         None => {
             if is_union_type_str(ty_str) {
                 parse_union_type_str(ty_str)
@@ -19,12 +19,12 @@ pub fn parse_type_str(ty_str: &str) -> TypeRef {
                 parse_number_multiplier_literal_type_str(ty_str)
             } else if is_dict_type_str(ty_str) {
                 let (key_ty_str, val_ty_str) = separate_kv(&dereference_type(ty_str));
-                Rc::new(Type::dict(
+                Arc::new(Type::dict(
                     parse_type_str(&key_ty_str),
                     parse_type_str(&val_ty_str),
                 ))
             } else if is_list_type_str(ty_str) {
-                Rc::new(Type::list(parse_type_str(&dereference_type(ty_str))))
+                Arc::new(Type::list(parse_type_str(&dereference_type(ty_str))))
             } else {
                 parse_named_type_str(ty_str)
             }
@@ -169,19 +169,19 @@ pub fn parse_union_type_str(ty_str: &str) -> TypeRef {
 pub fn parse_lit_type_str(ty_str: &str) -> TypeRef {
     // Bool literal type.
     if ty_str == NAME_CONSTANT_TRUE {
-        return Rc::new(Type::bool_lit(true));
+        return Arc::new(Type::bool_lit(true));
     } else if ty_str == NAME_CONSTANT_FALSE {
-        return Rc::new(Type::bool_lit(false));
+        return Arc::new(Type::bool_lit(false));
     }
     match ty_str.parse::<i64>() {
         // Float literal type.
-        Ok(v) => Rc::new(Type::int_lit(v)),
+        Ok(v) => Arc::new(Type::int_lit(v)),
         Err(_) => match ty_str.parse::<f64>() {
             // Int literal type.
-            Ok(v) => Rc::new(Type::float_lit(v)),
+            Ok(v) => Arc::new(Type::float_lit(v)),
             // Maybe string literal type
             Err(_) => match str_literal_eval(ty_str, false, false) {
-                Some(v) => Rc::new(Type::str_lit(&v)),
+                Some(v) => Arc::new(Type::str_lit(&v)),
                 None => bug!("invalid literal type string {}", ty_str),
             },
         },
@@ -202,7 +202,7 @@ pub fn parse_number_multiplier_literal_type_str(ty_str: &str) -> TypeRef {
         },
         &ty_str[suffix_index..],
     );
-    Rc::new(Type::number_multiplier(
+    Arc::new(Type::number_multiplier(
         kclvm_runtime::cal_num(value, suffix),
         value,
         suffix,
@@ -212,7 +212,7 @@ pub fn parse_number_multiplier_literal_type_str(ty_str: &str) -> TypeRef {
 /// Please note Named type to find it in the scope (e.g. schema type, type alias).
 #[inline]
 pub fn parse_named_type_str(ty_str: &str) -> TypeRef {
-    Rc::new(Type::named(ty_str))
+    Arc::new(Type::named(ty_str))
 }
 
 /// separate_kv function separates key_type and value_type in the dictionary type strings,

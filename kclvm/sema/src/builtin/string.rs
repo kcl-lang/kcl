@@ -1,6 +1,7 @@
+use std::sync::Arc;
+
 use indexmap::IndexMap;
 use once_cell::sync::Lazy;
-use std::rc::Rc;
 
 use crate::ty::{Parameter, Type};
 
@@ -17,16 +18,16 @@ macro_rules! register_string_member {
 
 register_string_member! {
     capitalize => Type::function(
-        Some(Rc::new(Type::STR)),
-        Rc::new(Type::STR),
+        Some(Arc::new(Type::STR)),
+        Arc::new(Type::STR),
         &[],
         r#"Return a copy of the string with its first character capitalized and the rest lowercased."#,
         false,
         None,
     )
     count => Type::function(
-        Some(Rc::new(Type::STR)),
-        Rc::new(Type::INT),
+        Some(Arc::new(Type::STR)),
+        Arc::new(Type::INT),
         &[
             Parameter {
                 name: "sub".to_string(),
@@ -49,8 +50,8 @@ register_string_member! {
         None,
     )
     endswith => Type::function(
-        Some(Rc::new(Type::STR)),
-        Rc::new(Type::BOOL),
+        Some(Arc::new(Type::STR)),
+        Arc::new(Type::BOOL),
         &[
             Parameter {
                 name: "val".to_string(),
@@ -73,8 +74,8 @@ register_string_member! {
         None,
     )
     find => Type::function(
-        Some(Rc::new(Type::STR)),
-        Rc::new(Type::INT),
+        Some(Arc::new(Type::STR)),
+        Arc::new(Type::INT),
         &[
             Parameter {
                 name: "sub".to_string(),
@@ -97,16 +98,16 @@ register_string_member! {
         None,
     )
     format => Type::function(
-        Some(Rc::new(Type::STR)),
-        Rc::new(Type::STR),
+        Some(Arc::new(Type::STR)),
+        Arc::new(Type::STR),
         &[],
         r#"Perform a string formatting operation. The string on which this method is called can contain literal text or replacement fields delimited by braces {}. Each replacement field contains either the numeric index of a positional argument, or the name of a keyword argument. Returns a copy of the string where each replacement field is replaced with the string value of the corresponding argument."#,
         true,
         None,
     )
     index => Type::function(
-        Some(Rc::new(Type::STR)),
-        Rc::new(Type::INT),
+        Some(Arc::new(Type::STR)),
+        Arc::new(Type::INT),
         &[
             Parameter {
                 name: "sub".to_string(),
@@ -129,64 +130,64 @@ register_string_member! {
         None,
     )
     isalpha => Type::function(
-        Some(Rc::new(Type::STR)),
-        Rc::new(Type::BOOL),
+        Some(Arc::new(Type::STR)),
+        Arc::new(Type::BOOL),
         &[],
         r#"Return True if all characters in the string are alphabetic and there is at least one character, False otherwise. Alphabetic characters are those characters defined in the Unicode character database as “Letter”, i.e., those with general category property being one of “Lm”, “Lt”, “Lu”, “Ll”, or “Lo”. Note that this is different from the “Alphabetic” property defined in the Unicode Standard."#,
         false,
         None,
     )
     isalnum => Type::function(
-        Some(Rc::new(Type::STR)),
-        Rc::new(Type::BOOL),
+        Some(Arc::new(Type::STR)),
+        Arc::new(Type::BOOL),
         &[],
         r#"Return True if all characters in the string are alphanumeric and there is at least one character, False otherwise. A character c is alphanumeric if one of the following returns True: c.isalpha(), c.isdecimal(), c.isdigit(), or c.isnumeric()."#,
         false,
         None,
     )
     isdigit => Type::function(
-        Some(Rc::new(Type::STR)),
-        Rc::new(Type::BOOL),
+        Some(Arc::new(Type::STR)),
+        Arc::new(Type::BOOL),
         &[],
         r#"Return True if all characters in the string are digits and there is at least one character, False otherwise. Digits include decimal characters and digits that need special handling, such as the compatibility superscript digits. This covers digits which cannot be used to form numbers in base 10, like the Kharosthi numbers. Formally, a digit is a character that has the property value Numeric_Type=Digit or Numeric_Type=Decimal."#,
         false,
         None,
     )
     islower => Type::function(
-        Some(Rc::new(Type::STR)),
-        Rc::new(Type::BOOL),
+        Some(Arc::new(Type::STR)),
+        Arc::new(Type::BOOL),
         &[],
         r#"Return True if all cased characters in the string are lowercase and there is at least one cased character, False otherwise."#,
         false,
         None,
     )
     isspace => Type::function(
-        Some(Rc::new(Type::STR)),
-        Rc::new(Type::BOOL),
+        Some(Arc::new(Type::STR)),
+        Arc::new(Type::BOOL),
         &[],
         r#"Return True if there are only whitespace characters in the string and there is at least one character, False otherwise."#,
         false,
         None,
     )
     istitle => Type::function(
-        Some(Rc::new(Type::STR)),
-        Rc::new(Type::BOOL),
+        Some(Arc::new(Type::STR)),
+        Arc::new(Type::BOOL),
         &[],
         r#"Return True if the string is a titlecased string and there is at least one character, for example uppercase characters may only follow uncased characters and lowercase characters only cased ones. Return False otherwise."#,
         false,
         None,
     )
     isupper => Type::function(
-        Some(Rc::new(Type::STR)),
-        Rc::new(Type::BOOL),
+        Some(Arc::new(Type::STR)),
+        Arc::new(Type::BOOL),
         &[],
         r#"Return True if all cased characters in the string are uppercase and there is at least one cased character, False otherwise."#,
         false,
         None,
     )
     join => Type::function(
-        Some(Rc::new(Type::STR)),
-        Rc::new(Type::STR),
+        Some(Arc::new(Type::STR)),
+        Arc::new(Type::STR),
         &[
             Parameter {
                 name: "iter".to_string(),
@@ -199,24 +200,24 @@ register_string_member! {
         None,
     )
     lower => Type::function(
-        Some(Rc::new(Type::STR)),
-        Rc::new(Type::STR),
+        Some(Arc::new(Type::STR)),
+        Arc::new(Type::STR),
         &[],
         r#"Return a copy of the string with all the cased characters converted to lowercase."#,
         false,
         None,
     )
     upper => Type::function(
-        Some(Rc::new(Type::STR)),
-        Rc::new(Type::STR),
+        Some(Arc::new(Type::STR)),
+        Arc::new(Type::STR),
         &[],
         r#""#,
         false,
         None,
     )
     lstrip => Type::function(
-        Some(Rc::new(Type::STR)),
-        Rc::new(Type::STR),
+        Some(Arc::new(Type::STR)),
+        Arc::new(Type::STR),
         &[
             Parameter {
                 name: "chars".to_string(),
@@ -229,8 +230,8 @@ register_string_member! {
         None,
     )
     rstrip => Type::function(
-        Some(Rc::new(Type::STR)),
-        Rc::new(Type::STR),
+        Some(Arc::new(Type::STR)),
+        Arc::new(Type::STR),
         &[
             Parameter {
                 name: "chars".to_string(),
@@ -243,8 +244,8 @@ register_string_member! {
         None,
     )
     replace => Type::function(
-        Some(Rc::new(Type::STR)),
-        Rc::new(Type::STR),
+        Some(Arc::new(Type::STR)),
+        Arc::new(Type::STR),
         &[
             Parameter {
                 name: "old".to_string(),
@@ -267,8 +268,8 @@ register_string_member! {
         None,
     )
     removeprefix => Type::function(
-        Some(Rc::new(Type::STR)),
-        Rc::new(Type::STR),
+        Some(Arc::new(Type::STR)),
+        Arc::new(Type::STR),
         &[
             Parameter {
                 name: "prefix".to_string(),
@@ -281,8 +282,8 @@ register_string_member! {
         None,
     )
     removesuffix => Type::function(
-        Some(Rc::new(Type::STR)),
-        Rc::new(Type::STR),
+        Some(Arc::new(Type::STR)),
+        Arc::new(Type::STR),
         &[
             Parameter {
                 name: "suffix".to_string(),
@@ -295,8 +296,8 @@ register_string_member! {
         None,
     )
     rfind => Type::function(
-        Some(Rc::new(Type::STR)),
-        Rc::new(Type::INT),
+        Some(Arc::new(Type::STR)),
+        Arc::new(Type::INT),
         &[
             Parameter {
                 name: "sub".to_string(),
@@ -319,8 +320,8 @@ register_string_member! {
         None,
     )
     rindex => Type::function(
-        Some(Rc::new(Type::STR)),
-        Rc::new(Type::INT),
+        Some(Arc::new(Type::STR)),
+        Arc::new(Type::INT),
         &[
             Parameter {
                 name: "sub".to_string(),
@@ -343,8 +344,8 @@ register_string_member! {
         None,
     )
     rsplit => Type::function(
-        Some(Rc::new(Type::STR)),
-        Type::list_ref(Rc::new(Type::STR)),
+        Some(Arc::new(Type::STR)),
+        Type::list_ref(Arc::new(Type::STR)),
         &[
             Parameter {
                 name: "sep".to_string(),
@@ -362,8 +363,8 @@ register_string_member! {
         None,
     )
     split => Type::function(
-        Some(Rc::new(Type::STR)),
-        Type::list_ref(Rc::new(Type::STR)),
+        Some(Arc::new(Type::STR)),
+        Type::list_ref(Arc::new(Type::STR)),
         &[
             Parameter {
                 name: "sep".to_string(),
@@ -381,8 +382,8 @@ register_string_member! {
         None,
     )
     splitlines => Type::function(
-        Some(Rc::new(Type::STR)),
-        Type::list_ref(Rc::new(Type::STR)),
+        Some(Arc::new(Type::STR)),
+        Type::list_ref(Arc::new(Type::STR)),
         &[
             Parameter {
                 name: "keepends".to_string(),
@@ -395,8 +396,8 @@ register_string_member! {
         None,
     )
     startswith => Type::function(
-        Some(Rc::new(Type::STR)),
-        Rc::new(Type::BOOL),
+        Some(Arc::new(Type::STR)),
+        Arc::new(Type::BOOL),
         &[
             Parameter {
                 name: "val".to_string(),
@@ -419,8 +420,8 @@ register_string_member! {
         None,
     )
     strip => Type::function(
-        Some(Rc::new(Type::STR)),
-        Rc::new(Type::STR),
+        Some(Arc::new(Type::STR)),
+        Arc::new(Type::STR),
         &[
             Parameter {
                 name: "chars".to_string(),
@@ -433,8 +434,8 @@ register_string_member! {
         None,
     )
     title => Type::function(
-        Some(Rc::new(Type::STR)),
-        Rc::new(Type::STR),
+        Some(Arc::new(Type::STR)),
+        Arc::new(Type::STR),
         &[],
         r#"Return a titlecased version of the string where words start with an uppercase character and the remaining characters are lowercase."#,
         false,

@@ -7,7 +7,7 @@ mod unify;
 mod walker;
 
 use std::collections::HashMap;
-use std::rc::Rc;
+use std::sync::Arc;
 
 pub use constants::*;
 pub use context::{TypeContext, TypeInferMethods};
@@ -27,7 +27,7 @@ mod tests;
 /// TypeRef represents a reference to a type that exists to avoid copying types everywhere affecting
 /// performance. For example, for two instances that are both integer types, there is actually no
 /// difference between them.
-pub type TypeRef = Rc<Type>;
+pub type TypeRef = Arc<Type>;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Type {
@@ -284,14 +284,14 @@ impl SchemaType {
     }
 
     pub fn key_ty(&self) -> TypeRef {
-        Rc::new(Type::STR)
+        Arc::new(Type::STR)
     }
 
     pub fn val_ty(&self) -> TypeRef {
         if let Some(index_signature) = &self.index_signature {
             index_signature.val_ty.clone()
         } else {
-            Rc::new(Type::ANY)
+            Arc::new(Type::ANY)
         }
     }
 

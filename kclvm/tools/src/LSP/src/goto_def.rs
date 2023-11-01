@@ -23,6 +23,7 @@ use lsp_types::GotoDefinitionResponse;
 use std::cell::RefCell;
 use std::path::Path;
 use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::to_lsp::lsp_location;
 use crate::util::{
@@ -354,7 +355,7 @@ pub(crate) fn resolve_var(
                                                 name: func_name.clone(),
                                                 start: func_name_node.get_pos(),
                                                 end: func_name_node.get_end_pos(),
-                                                ty: Rc::new(ty.clone()),
+                                                ty: Arc::new(ty.clone()),
                                                 kind: ScopeObjectKind::FunctionCall,
                                                 doc: Some(func_ty.doc.clone()),
                                             },
