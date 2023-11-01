@@ -193,17 +193,18 @@ impl ValueRef {
 
     pub fn schema_default_settings(&mut self, config: &ValueRef, runtime_type: &str) {
         let settings = self.dict_get_value(SCHEMA_SETTINGS_ATTR_NAME);
-        if settings.is_none() || (settings.is_some() && !settings.as_ref().unwrap().is_config()) {
+        if let Some(mut settings) = settings {
+            if settings.is_config() {
+                settings
+                    .dict_update_key_value(SETTINGS_SCHEMA_TYPE_KEY, ValueRef::str(runtime_type));
+            }
+        } else {
             let mut default_settings = ValueRef::dict(None);
             default_settings
                 .dict_update_key_value(SETTINGS_OUTPUT_KEY, ValueRef::str(SETTINGS_OUTPUT_INLINE));
             default_settings
                 .dict_update_key_value(SETTINGS_SCHEMA_TYPE_KEY, ValueRef::str(runtime_type));
             self.dict_update_key_value(SCHEMA_SETTINGS_ATTR_NAME, default_settings);
-        } else {
-            settings
-                .unwrap()
-                .dict_update_key_value(SETTINGS_SCHEMA_TYPE_KEY, ValueRef::str(runtime_type));
         }
         if let Some(v) = config.dict_get_value(SCHEMA_SETTINGS_ATTR_NAME) {
             self.dict_update_key_value(SCHEMA_SETTINGS_ATTR_NAME, v);

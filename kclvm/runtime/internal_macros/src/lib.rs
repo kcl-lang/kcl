@@ -19,6 +19,7 @@ pub fn runtime_fn(_attr: TokenStream, item: TokenStream) -> TokenStream {
 }
 
 // ----------------------------------------------------------------------------
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Debug)]
 enum TargetName {
     C,

@@ -14,7 +14,7 @@ pub fn new_mut_ptr(x: ValueRef) -> *mut ValueRef {
 }
 
 /// Free a mutable raw pointer.
-pub fn free_mut_ptr<T>(p: *mut T) {
+pub(crate) fn free_mut_ptr<T>(p: *mut T) {
     if !p.is_null() {
         unsafe {
             drop(Box::from_raw(p));
@@ -23,7 +23,7 @@ pub fn free_mut_ptr<T>(p: *mut T) {
 }
 
 /// Convert a const raw pointer to a immutable borrow.
-pub fn ptr_as_ref<'a, T>(p: *const T) -> &'a T {
+pub(crate) fn ptr_as_ref<'a, T>(p: *const T) -> &'a T {
     unsafe {
         if p.is_null() {
             let v = kclvm_value_Undefined();
@@ -35,7 +35,7 @@ pub fn ptr_as_ref<'a, T>(p: *const T) -> &'a T {
 }
 
 /// Convert a mutable raw pointer to a mutable borrow.
-pub unsafe fn mut_ptr_as_ref<'a, T>(p: *mut T) -> &'a mut T {
+pub(crate) fn mut_ptr_as_ref<'a, T>(p: *mut T) -> &'a mut T {
     assert!(!p.is_null());
 
     if p.is_null() {
@@ -47,27 +47,9 @@ pub unsafe fn mut_ptr_as_ref<'a, T>(p: *mut T) -> &'a mut T {
 }
 
 /// Convert a C str pointer to a Rust &str.
-pub fn c2str<'a>(s: *const i8) -> &'a str {
+pub(crate) fn c2str<'a>(s: *const i8) -> &'a str {
     let s = unsafe { std::ffi::CStr::from_ptr(s) }.to_str().unwrap();
     s
-}
-
-/// Convert a raw double pinter to a Rust Vec.
-pub fn convert_double_pointer_to_vec(data: &mut &mut i8, len: usize) -> Vec<String> {
-    unsafe {
-        match std::slice::from_raw_parts(data, len)
-            .iter()
-            .map(|arg| {
-                std::ffi::CStr::from_ptr(*arg)
-                    .to_str()
-                    .map(ToString::to_string)
-            })
-            .collect()
-        {
-            Err(_error) => Vec::<String>::new(),
-            Ok(x) => x,
-        }
-    }
 }
 
 pub fn assert_panic<F: FnOnce() + std::panic::UnwindSafe>(msg: &str, func: F) {

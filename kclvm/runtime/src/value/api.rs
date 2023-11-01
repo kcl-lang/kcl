@@ -2077,11 +2077,7 @@ pub unsafe extern "C" fn kclvm_schema_value_check(
             // related to the index signature key name.
             let should_update =
                 if let Some(index_key_value) = schema_value.dict_get_value(index_key_name) {
-                    if index_key_value.is_str() && key == &index_key_value.as_str() {
-                        true
-                    } else {
-                        false
-                    }
+                    index_key_value.is_str() && key == &index_key_value.as_str()
                 } else {
                     true
                 };
@@ -2096,7 +2092,7 @@ pub unsafe extern "C" fn kclvm_schema_value_check(
                     &ConfigEntryOperationKind::Override,
                     &-1,
                 );
-                schema_value.dict_insert(key.as_str(), &value, op.clone(), -1);
+                schema_value.dict_insert(key.as_str(), value, op.clone(), -1);
                 let value = schema_value.dict_get_value(key).unwrap();
                 schema_value.dict_update_key_value(
                     key.as_str(),

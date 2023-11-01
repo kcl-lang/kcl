@@ -420,7 +420,6 @@ impl FormatSpec {
             .collect::<String>()
     }
 
-    #[allow(dead_code)]
     fn add_magnitude_separators_for_char(
         magnitude_string: String,
         interval: usize,
@@ -446,7 +445,6 @@ impl FormatSpec {
         result
     }
 
-    #[allow(dead_code)]
     fn get_separator_interval(&self) -> usize {
         match self.format_type {
             Some(FormatType::Binary) => 4,
@@ -461,7 +459,6 @@ impl FormatSpec {
         }
     }
 
-    #[allow(dead_code)]
     fn add_magnitude_separators(&self, magnitude_string: String) -> String {
         match self.grouping_option {
             Some(FormatGrouping::Comma) => FormatSpec::add_magnitude_separators_for_char(
@@ -601,15 +598,6 @@ impl FormatSpec {
         self.format_sign_and_align(&magnitude_string, sign_str)
     }
 
-    #[allow(dead_code)]
-    pub(crate) fn format_string(&self, s: &str) -> Result<String, &'static str> {
-        match self.format_type {
-            Some(FormatType::String) | None => self.format_sign_and_align(s, ""),
-            _ => Err("Unknown format code for object of type 'str'"),
-        }
-    }
-
-    #[allow(dead_code)]
     fn format_sign_and_align(
         &self,
         magnitude_string: &str,
@@ -901,7 +889,7 @@ impl FormatString {
                         }
                         FieldType::Keyword(keyword) => kwargs
                             .dict_get_value(keyword.as_str())
-                            .expect(&format!("keyword argument '{}' not found", keyword))
+                            .unwrap_or_else(|| panic!("keyword argument '{keyword}' not found"))
                             .clone(),
                     };
                     for name_part in parts {
