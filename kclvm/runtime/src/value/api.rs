@@ -610,15 +610,6 @@ pub unsafe extern "C" fn kclvm_value_function_invoke(
 // values: method
 // ----------------------------------------------------------------------------
 
-// kind
-
-#[no_mangle]
-#[runtime_fn]
-pub unsafe extern "C" fn kclvm_value_kind(p: *const kclvm_value_ref_t) -> kclvm_kind_t {
-    let p = ptr_as_ref(p);
-    p.kind()
-}
-
 // clone
 
 #[no_mangle]

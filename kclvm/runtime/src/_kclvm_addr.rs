@@ -288,7 +288,6 @@ pub fn _kclvm_get_fn_ptr_by_name(name: &str) -> u64 {
         "kclvm_value_is_not" => crate::kclvm_value_is_not as *const () as u64,
         "kclvm_value_is_truthy" => crate::kclvm_value_is_truthy as *const () as u64,
         "kclvm_value_iter" => crate::kclvm_value_iter as *const () as u64,
-        "kclvm_value_kind" => crate::kclvm_value_kind as *const () as u64,
         "kclvm_value_len" => crate::kclvm_value_len as *const () as u64,
         "kclvm_value_load_attr" => crate::kclvm_value_load_attr as *const () as u64,
         "kclvm_value_load_attr_option" => crate::kclvm_value_load_attr_option as *const () as u64,

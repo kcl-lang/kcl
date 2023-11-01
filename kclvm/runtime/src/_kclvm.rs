@@ -263,7 +263,6 @@ pub enum ApiFunc {
     kclvm_value_is_not,
     kclvm_value_is_truthy,
     kclvm_value_iter,
-    kclvm_value_kind,
     kclvm_value_len,
     kclvm_value_load_attr,
     kclvm_value_load_attr_option,

@@ -502,8 +502,6 @@ declare %kclvm_bool_t @kclvm_value_is_truthy(%kclvm_value_ref_t* %p);
 
 declare %kclvm_iterator_t* @kclvm_value_iter(%kclvm_value_ref_t* %p);
 
-declare %kclvm_kind_t @kclvm_value_kind(%kclvm_value_ref_t* %p);
-
 declare %kclvm_size_t @kclvm_value_len(%kclvm_value_ref_t* %p);
 
 declare %kclvm_value_ref_t* @kclvm_value_load_attr(%kclvm_value_ref_t* %obj, %kclvm_char_t* %key);

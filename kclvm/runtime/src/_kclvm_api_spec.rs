@@ -186,10 +186,6 @@
 // api-spec(c):    kclvm_value_ref_t* kclvm_value_function_invoke(kclvm_value_ref_t* p, kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs, kclvm_char_t* pkgpath, kclvm_value_ref_t* is_in_schema);
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_value_function_invoke(%kclvm_value_ref_t* %p, %kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs, %kclvm_char_t* %pkgpath, %kclvm_value_ref_t* %is_in_schema);
 
-// api-spec:       kclvm_value_kind
-// api-spec(c):    kclvm_kind_t kclvm_value_kind(kclvm_value_ref_t* p);
-// api-spec(llvm): declare %kclvm_kind_t @kclvm_value_kind(%kclvm_value_ref_t* %p);
-
 // api-spec:       kclvm_value_deep_copy
 // api-spec(c):    kclvm_value_ref_t* kclvm_value_deep_copy(kclvm_value_ref_t* p);
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_value_deep_copy(%kclvm_value_ref_t* %p);
