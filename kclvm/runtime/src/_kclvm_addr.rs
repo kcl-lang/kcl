@@ -231,7 +231,6 @@ pub fn _kclvm_get_fn_ptr_by_name(name: &str) -> u64 {
         "kclvm_schema_optional_check" => crate::kclvm_schema_optional_check as *const () as u64,
         "kclvm_schema_value_check" => crate::kclvm_schema_value_check as *const () as u64,
         "kclvm_schema_value_new" => crate::kclvm_schema_value_new as *const () as u64,
-        "kclvm_strlen" => crate::kclvm_strlen as *const () as u64,
         "kclvm_units_to_G" => crate::kclvm_units_to_G as *const () as u64,
         "kclvm_units_to_Gi" => crate::kclvm_units_to_Gi as *const () as u64,
         "kclvm_units_to_K" => crate::kclvm_units_to_K as *const () as u64,

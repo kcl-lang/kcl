@@ -214,7 +214,6 @@ pub enum ApiFunc {
     kclvm_schema_optional_check,
     kclvm_schema_value_check,
     kclvm_schema_value_new,
-    kclvm_strlen,
     kclvm_units_to_G,
     kclvm_units_to_Gi,
     kclvm_units_to_K,
