@@ -204,12 +204,6 @@ kclvm_value_ref_t* kclvm_builtin_zip(kclvm_context_t* ctx, kclvm_value_ref_t* ar
 
 void kclvm_config_attr_map(kclvm_value_ref_t* value, kclvm_char_t* name, kclvm_char_t* type_str);
 
-void kclvm_context_args_clear(kclvm_context_t* p);
-
-kclvm_char_t* kclvm_context_args_get(kclvm_context_t* _p, kclvm_char_t* _key);
-
-void kclvm_context_args_set(kclvm_context_t* _p, kclvm_char_t* _key, kclvm_char_t* _value);
-
 kclvm_context_t* kclvm_context_current();
 
 void kclvm_context_delete(kclvm_context_t* p);

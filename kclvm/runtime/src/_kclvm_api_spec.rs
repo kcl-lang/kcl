@@ -58,18 +58,6 @@
 // api-spec(c):    kclvm_value_t* kclvm_context_symbol_value(kclvm_context_t* p, kclvm_size_t i);
 // api-spec(llvm): declare %kclvm_value_t* @kclvm_context_symbol_value(%kclvm_context_t* %p, %kclvm_size_t %i);
 
-// api-spec:       kclvm_context_args_get
-// api-spec(c):    kclvm_char_t* kclvm_context_args_get(kclvm_context_t* _p, kclvm_char_t* _key);
-// api-spec(llvm): declare %kclvm_char_t* @kclvm_context_args_get(%kclvm_context_t* %_p, %kclvm_char_t* %_key);
-
-// api-spec:       kclvm_context_args_set
-// api-spec(c):    void kclvm_context_args_set(kclvm_context_t* _p, kclvm_char_t* _key, kclvm_char_t* _value);
-// api-spec(llvm): declare void @kclvm_context_args_set(%kclvm_context_t* %_p, %kclvm_char_t* %_key, %kclvm_char_t* %_value);
-
-// api-spec:       kclvm_context_args_clear
-// api-spec(c):    void kclvm_context_args_clear(kclvm_context_t* p);
-// api-spec(llvm): declare void @kclvm_context_args_clear(%kclvm_context_t* %p);
-
 // api-spec:       kclvm_context_set_debug_mode
 // api-spec(c):    void kclvm_context_set_debug_mode(kclvm_context_t* p, kclvm_bool_t v);
 // api-spec(llvm): declare void @kclvm_context_set_debug_mode(%kclvm_context_t* %p, %kclvm_bool_t %v);

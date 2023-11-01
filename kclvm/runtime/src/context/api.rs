@@ -210,43 +210,6 @@ pub unsafe extern "C" fn kclvm_context_symbol_value(
 }
 
 // ----------------------------------------------------------------------------
-// args
-// ----------------------------------------------------------------------------
-
-#[no_mangle]
-#[runtime_fn]
-pub unsafe extern "C" fn kclvm_context_args_get(
-    _p: *const kclvm_context_t,
-    _key: *const kclvm_char_t,
-) -> *const kclvm_char_t {
-    //let p = ptr_as_ref(p);
-    //match p.app_args.get(c2str(key)) {
-    //    Some(value) => (*value).as_bytes().as_ptr() as *const kclvm_char_t,
-    //    None => std::ptr::null(),
-    //};
-    std::ptr::null()
-}
-
-#[no_mangle]
-#[runtime_fn]
-pub unsafe extern "C" fn kclvm_context_args_set(
-    _p: *mut kclvm_context_t,
-    _key: *const kclvm_char_t,
-    _value: *const kclvm_char_t,
-) {
-    //let p = mut_ptr_as_ref(p);
-    //p.app_args
-    //    .insert(c2str(key).to_string(), c2str(value).to_string());
-}
-
-#[no_mangle]
-#[runtime_fn]
-pub unsafe extern "C" fn kclvm_context_args_clear(p: *mut kclvm_context_t) {
-    let p = mut_ptr_as_ref(p);
-    p.app_args.clear();
-}
-
-// ----------------------------------------------------------------------------
 // CLI config
 // ----------------------------------------------------------------------------
 
