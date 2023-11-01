@@ -198,7 +198,7 @@ fn value_type_path(v: &ValueRef) -> String {
         Some(type_path) => match &*type_path.rc.borrow() {
             Value::str_value(ty_str) => {
                 let parts: Vec<&str> = ty_str.rsplit('.').collect();
-                match parts.get(0) {
+                match parts.first() {
                     Some(v) => v.to_string(),
                     None => v.type_str(),
                 }
@@ -289,7 +289,7 @@ impl ValueRef {
             } else {
                 let mut values = ValueRef::list(None);
                 for path in path_selector {
-                    let value = match self.get_by_path(&path) {
+                    let value = match self.get_by_path(path) {
                         Some(value) => value,
                         None => {
                             return Err(format!(

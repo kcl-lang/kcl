@@ -537,7 +537,7 @@ pub fn is_literal_type(tpe: &str) -> bool {
 pub fn is_dict_type(tpe: &str) -> bool {
     let count = tpe.chars().count();
     count >= 2
-        && matches!(tpe.chars().nth(0), Some('{'))
+        && matches!(tpe.chars().next(), Some('{'))
         && matches!(tpe.chars().nth(count - 1), Some('}'))
 }
 
@@ -546,7 +546,7 @@ pub fn is_dict_type(tpe: &str) -> bool {
 pub fn is_list_type(tpe: &str) -> bool {
     let count = tpe.chars().count();
     count >= 2
-        && matches!(tpe.chars().nth(0), Some('['))
+        && matches!(tpe.chars().next(), Some('['))
         && matches!(tpe.chars().nth(count - 1), Some(']'))
 }
 

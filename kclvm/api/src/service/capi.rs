@@ -2,7 +2,6 @@ use prost::Message;
 
 use crate::gpyrpc::*;
 use crate::service::service_impl::KclvmServiceImpl;
-use kclvm_runtime::utils::*;
 use std::ffi::CString;
 use std::os::raw::c_char;
 
@@ -21,7 +20,11 @@ pub extern "C" fn kclvm_service_new(plugin_agent: u64) -> *mut kclvm_service {
 /// Delete KclvmService
 #[no_mangle]
 pub unsafe extern "C" fn kclvm_service_delete(serv: *mut kclvm_service) {
-    free_mut_ptr(serv);
+    if !serv.is_null() {
+        unsafe {
+            drop(Box::from_raw(serv));
+        }
+    }
 }
 
 /// # Safety
@@ -39,7 +42,7 @@ pub unsafe extern "C" fn kclvm_service_free_string(res: *mut c_char) {
 
 macro_rules! call {
     ($serv:expr, $args:expr, $arg_name:ident, $serv_name:ident) => {{
-        let serv_ref = unsafe { mut_ptr_as_ref($serv) };
+        let serv_ref = unsafe { &mut *$serv };
         let args = unsafe { std::ffi::CStr::from_ptr($args) }.to_bytes();
         let args = $arg_name::decode(args).unwrap();
         let res = serv_ref.$serv_name(&args);
@@ -77,7 +80,7 @@ pub extern "C" fn kclvm_service_call(
     args: *const c_char,
 ) -> *const c_char {
     let result = std::panic::catch_unwind(|| {
-        let call = c2str(call);
+        let call = unsafe { std::ffi::CStr::from_ptr(call) }.to_str().unwrap();
         let call = kclvm_get_service_fn_ptr_by_name(call);
         if call == 0 {
             panic!("null fn ptr");

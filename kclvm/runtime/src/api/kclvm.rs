@@ -60,13 +60,6 @@ impl Default for Type {
     }
 }
 
-impl Type {
-    #[allow(dead_code)]
-    pub fn into_raw(self) -> *mut Self {
-        Box::into_raw(Box::new(self))
-    }
-}
-
 #[derive(PartialEq, Clone, Default, Debug)]
 pub struct ListType {
     pub elem_type: Box<Type>,

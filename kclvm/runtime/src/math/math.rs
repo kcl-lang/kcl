@@ -121,13 +121,13 @@ pub unsafe extern "C" fn kclvm_math_isfinite(
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
 
-    if let Some(_) = args.arg_i_int_or_bool(0, None) {
+    if args.arg_i_int_or_bool(0, None).is_some() {
         return kclvm_value_Bool(true as i8);
     }
     if let Some(x) = args.arg_i_float(0, None) {
         return kclvm_value_Bool(x.is_finite() as i8);
     }
-    if let Some(_) = args.arg_i_bool(0, None) {
+    if args.arg_i_bool(0, None).is_some() {
         return kclvm_value_Bool(true as i8);
     }
 
@@ -143,13 +143,13 @@ pub unsafe extern "C" fn kclvm_math_isinf(
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
 
-    if let Some(_x) = args.arg_i_int_or_bool(0, None) {
+    if args.arg_i_int_or_bool(0, None).is_some() {
         return kclvm_value_Bool(false as i8);
     }
     if let Some(x) = args.arg_i_float(0, None) {
         return kclvm_value_Bool(x.is_infinite() as i8);
     }
-    if let Some(_) = args.arg_i_bool(0, None) {
+    if args.arg_i_bool(0, None).is_some() {
         return kclvm_value_Bool(false as i8);
     }
 

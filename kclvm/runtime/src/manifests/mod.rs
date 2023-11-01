@@ -61,26 +61,26 @@ pub unsafe extern "C" fn kclvm_manifests_yaml_stream(
     let ctx = mut_ptr_as_ref(ctx);
 
     // Get the YAML encode options from the second keyword argument `opts`.
-    let opts = match kwargs.kwarg("opts").or(args.arg_i(1)) {
+    let opts = match kwargs.kwarg("opts").or_else(|| args.arg_i(1)) {
         Some(opts) => {
             if opts.is_config() {
                 // Get options or default.
                 YamlEncodeOptions {
                     sort_keys: opts
                         .get_by_key("sort_keys")
-                        .unwrap_or(ValueRef::bool(false))
+                        .unwrap_or_else(|| ValueRef::bool(false))
                         .as_bool(),
                     ignore_private: opts
                         .get_by_key("ignore_private")
-                        .unwrap_or(ValueRef::bool(false))
+                        .unwrap_or_else(|| ValueRef::bool(false))
                         .as_bool(),
                     ignore_none: opts
                         .get_by_key("ignore_none")
-                        .unwrap_or(ValueRef::bool(false))
+                        .unwrap_or_else(|| ValueRef::bool(false))
                         .as_bool(),
                     sep: opts
                         .get_by_key("sep")
-                        .unwrap_or(ValueRef::str("---"))
+                        .unwrap_or_else(|| ValueRef::str("---"))
                         .as_str(),
                 }
             } else {
