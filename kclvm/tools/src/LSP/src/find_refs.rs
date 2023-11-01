@@ -16,7 +16,7 @@ pub(crate) fn find_refs<F: Fn(String) -> Result<(), anyhow::Error>>(
     program: &Program,
     kcl_pos: &KCLPos,
     prog_scope: &ProgramScope,
-    word_index_map: HashMap<Url, HashMap<String, Vec<Location>>>,
+    word_index_map: Arc<RwLock<HashMap<Url, HashMap<String, Vec<Location>>>>>,
     vfs: Option<Arc<RwLock<Vfs>>>,
     logger: F,
 ) -> Result<Vec<Location>, String> {
@@ -56,13 +56,13 @@ pub(crate) fn find_refs<F: Fn(String) -> Result<(), anyhow::Error>>(
 
 pub(crate) fn find_refs_from_def<F: Fn(String) -> Result<(), anyhow::Error>>(
     vfs: Option<Arc<RwLock<Vfs>>>,
-    word_index_map: HashMap<Url, HashMap<String, Vec<Location>>>,
+    word_index_map: Arc<RwLock<HashMap<Url, HashMap<String, Vec<Location>>>>>,
     def_loc: Location,
     name: String,
     logger: F,
 ) -> Vec<Location> {
     let mut ref_locations = vec![];
-    for (_, word_index) in word_index_map {
+    for (_, word_index) in &mut *word_index_map.write() {
         if let Some(locs) = word_index.get(name.as_str()).cloned() {
             let matched_locs: Vec<Location> = locs
                 .into_iter()
@@ -109,8 +109,10 @@ mod tests {
     use super::find_refs_from_def;
     use crate::util::build_word_index;
     use lsp_types::{Location, Position, Range, Url};
+    use parking_lot::RwLock;
     use std::collections::HashMap;
     use std::path::PathBuf;
+    use std::sync::Arc;
 
     fn logger(msg: String) -> Result<(), anyhow::Error> {
         println!("{}", msg);
@@ -177,7 +179,7 @@ mod tests {
                     expect,
                     find_refs_from_def(
                         None,
-                        setup_word_index_map(path),
+                        Arc::new(RwLock::new(setup_word_index_map(path))),
                         def_loc,
                         "a".to_string(),
                         logger,
@@ -230,7 +232,7 @@ mod tests {
                     expect,
                     find_refs_from_def(
                         None,
-                        setup_word_index_map(path),
+                        Arc::new(RwLock::new(setup_word_index_map(path))),
                         def_loc,
                         "Name".to_string(),
                         logger,
@@ -276,7 +278,7 @@ mod tests {
                     expect,
                     find_refs_from_def(
                         None,
-                        setup_word_index_map(path),
+                        Arc::new(RwLock::new(setup_word_index_map(path))),
                         def_loc,
                         "name".to_string(),
                         logger,

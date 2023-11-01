@@ -4,7 +4,7 @@ use crate::db::AnalysisDatabase;
 use crate::to_lsp::{kcl_diag_to_lsp_diags, url};
 use crate::util::{build_word_index, get_file_name, parse_param_and_compile, to_json, Param};
 use crossbeam_channel::{select, unbounded, Receiver, Sender};
-use indexmap::IndexSet;
+use indexmap::{IndexMap, IndexSet};
 use lsp_server::{ReqQueue, Response};
 use lsp_types::Url;
 use lsp_types::{
@@ -74,7 +74,7 @@ pub(crate) struct LanguageServerState {
     pub loader: Handle<Box<dyn ra_ap_vfs::loader::Handle>, Receiver<ra_ap_vfs::loader::Message>>,
 
     /// The word index map
-    pub word_index_map: HashMap<Url, HashMap<String, Vec<Location>>>,
+    pub word_index_map: Arc<RwLock<HashMap<Url, HashMap<String, Vec<Location>>>>>,
 }
 
 /// A snapshot of the state of the language server
@@ -87,7 +87,7 @@ pub(crate) struct LanguageServerSnapshot {
     /// Documents that are currently kept in memory from the client
     pub opened_files: IndexSet<FileId>,
     /// The word index map
-    pub word_index_map: HashMap<Url, HashMap<String, Vec<Location>>>,
+    pub word_index_map: Arc<RwLock<HashMap<Url, HashMap<String, Vec<Location>>>>>,
 }
 
 #[allow(unused)]
@@ -123,6 +123,7 @@ impl LanguageServerState {
                 word_index_map.insert(root_uri, word_index);
             }
         }
+
         LanguageServerState {
             sender,
             request_queue: ReqQueue::default(),
@@ -134,7 +135,7 @@ impl LanguageServerState {
             shutdown_requested: false,
             analysis: Analysis::default(),
             opened_files: IndexSet::new(),
-            word_index_map,
+            word_index_map: Arc::new(RwLock::new(word_index_map)),
             loader,
         }
     }
