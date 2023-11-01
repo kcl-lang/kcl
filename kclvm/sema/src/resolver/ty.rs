@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::resolver::Resolver;
 use crate::ty::parser::parse_type_str;
@@ -65,9 +65,9 @@ impl<'ctx> Resolver<'ctx> {
         range: Range,
     ) -> ResolvedResult {
         let ty: TypeRef = if let Some(ty) = ty_node {
-            Rc::new(ty.node.clone().into())
+            Arc::new(ty.node.clone().into())
         } else {
-            Rc::new(Type::ANY)
+            Arc::new(Type::ANY)
         };
         // If a named type, find it from scope to get the specific type
         let ret_ty = self.upgrade_named_ty_with_scope(ty.clone(), &range, ty_node);

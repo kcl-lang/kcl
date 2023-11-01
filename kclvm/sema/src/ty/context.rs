@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::rc::Rc;
+use std::sync::Arc;
 
 use super::{sup, Attr, DictType, Type, TypeFlags, TypeKind, TypeRef};
 use petgraph::algo::is_cyclic_directed;
@@ -37,13 +37,13 @@ impl TypeContext {
         TypeContext {
             dep_graph: DiGraph::new(),
             builtin_types: BuiltinTypes {
-                any: Rc::new(Type::ANY),
-                bool: Rc::new(Type::BOOL),
-                int: Rc::new(Type::INT),
-                float: Rc::new(Type::FLOAT),
-                str: Rc::new(Type::STR),
-                void: Rc::new(Type::VOID),
-                none: Rc::new(Type::NONE),
+                any: Arc::new(Type::ANY),
+                bool: Arc::new(Type::BOOL),
+                int: Arc::new(Type::INT),
+                float: Arc::new(Type::FLOAT),
+                str: Arc::new(Type::STR),
+                void: Arc::new(Type::VOID),
+                none: Arc::new(Type::NONE),
             },
             node_index_map: HashMap::new(),
         }

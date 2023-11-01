@@ -4,7 +4,7 @@ pub mod decorator;
 pub mod string;
 pub mod system_module;
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 use indexmap::IndexMap;
 use once_cell::sync::Lazy;
@@ -35,41 +35,41 @@ macro_rules! register_builtin {
 register_builtin! {
     option => Type::function(
         None,
-        Rc::new(Type::ANY),
+        Arc::new(Type::ANY),
         &[
             Parameter {
                 name: "key".to_string(),
-                ty: Rc::new(Type::STR),
+                ty: Arc::new(Type::STR),
                 has_default: false,
             },
             Parameter {
                 name: "type".to_string(),
-                ty: Rc::new(Type::STR),
+                ty: Arc::new(Type::STR),
                 has_default: true,
             },
             Parameter {
                 name: "required".to_string(),
-                ty: Rc::new(Type::BOOL),
+                ty: Arc::new(Type::BOOL),
                 has_default: true,
             },
             Parameter {
                 name: "default".to_string(),
-                ty: Rc::new(Type::ANY),
+                ty: Arc::new(Type::ANY),
                 has_default: true,
             },
             Parameter {
                 name: "help".to_string(),
-                ty: Rc::new(Type::STR),
+                ty: Arc::new(Type::STR),
                 has_default: true,
             },
             Parameter {
                 name: "file".to_string(),
-                ty: Rc::new(Type::STR),
+                ty: Arc::new(Type::STR),
                 has_default: true,
             },
             Parameter {
                 name: "line".to_string(),
-                ty: Rc::new(Type::INT),
+                ty: Arc::new(Type::INT),
                 has_default: true,
             },
         ],
@@ -79,7 +79,7 @@ register_builtin! {
     )
     print => Type::function(
         None,
-        Rc::new(Type::NONE),
+        Arc::new(Type::NONE),
         &[],
         r#"Prints the values to a stream, or to sys.stdout by default.
         Optional keyword arguments:
@@ -90,16 +90,16 @@ register_builtin! {
     )
     multiplyof => Type::function(
         None,
-        Rc::new(Type::BOOL),
+        Arc::new(Type::BOOL),
         &[
             Parameter {
                 name: "a".to_string(),
-                ty: Rc::new(Type::INT),
+                ty: Arc::new(Type::INT),
                 has_default: false,
             },
             Parameter {
                 name: "b".to_string(),
-                ty: Rc::new(Type::INT),
+                ty: Arc::new(Type::INT),
                 has_default: false,
             },
         ],
@@ -109,11 +109,11 @@ register_builtin! {
     )
     isunique => Type::function(
         None,
-        Rc::new(Type::BOOL),
+        Arc::new(Type::BOOL),
         &[
             Parameter {
                 name: "inval".to_string(),
-                ty: Type::list_ref(Rc::new(Type::ANY)),
+                ty: Type::list_ref(Arc::new(Type::ANY)),
                 has_default: false,
             },
         ],
@@ -123,7 +123,7 @@ register_builtin! {
     )
     len => Type::function(
         None,
-        Rc::new(Type::INT),
+        Arc::new(Type::INT),
         &[
             Parameter {
                 name: "inval".to_string(),
@@ -137,11 +137,11 @@ register_builtin! {
     )
     abs => Type::function(
         None,
-        Rc::new(Type::ANY),
+        Arc::new(Type::ANY),
         &[
             Parameter {
                 name: "inval".to_string(),
-                ty: Rc::new(Type::ANY),
+                ty: Arc::new(Type::ANY),
                 has_default: false,
             },
         ],
@@ -151,11 +151,11 @@ register_builtin! {
     )
     all_true => Type::function(
         None,
-        Rc::new(Type::BOOL),
+        Arc::new(Type::BOOL),
         &[
             Parameter {
                 name: "inval".to_string(),
-                ty: Type::list_ref(Rc::new(Type::ANY)),
+                ty: Type::list_ref(Arc::new(Type::ANY)),
                 has_default: false,
             },
         ],
@@ -167,11 +167,11 @@ register_builtin! {
     )
     any_true => Type::function(
         None,
-        Rc::new(Type::BOOL),
+        Arc::new(Type::BOOL),
         &[
             Parameter {
                 name: "inval".to_string(),
-                ty: Type::list_ref(Rc::new(Type::ANY)),
+                ty: Type::list_ref(Arc::new(Type::ANY)),
                 has_default: false,
             },
         ],
@@ -183,11 +183,11 @@ register_builtin! {
     )
     hex => Type::function(
         None,
-        Rc::new(Type::STR),
+        Arc::new(Type::STR),
         &[
             Parameter {
                 name: "number".to_string(),
-                ty: Rc::new(Type::INT),
+                ty: Arc::new(Type::INT),
                 has_default: false,
             },
         ],
@@ -197,11 +197,11 @@ register_builtin! {
     )
     bin => Type::function(
         None,
-        Rc::new(Type::STR),
+        Arc::new(Type::STR),
         &[
             Parameter {
                 name: "number".to_string(),
-                ty: Rc::new(Type::INT),
+                ty: Arc::new(Type::INT),
                 has_default: false,
             },
         ],
@@ -211,11 +211,11 @@ register_builtin! {
     )
     oct => Type::function(
         None,
-        Rc::new(Type::STR),
+        Arc::new(Type::STR),
         &[
             Parameter {
                 name: "number".to_string(),
-                ty: Rc::new(Type::INT),
+                ty: Arc::new(Type::INT),
                 has_default: false,
             },
         ],
@@ -225,11 +225,11 @@ register_builtin! {
     )
     ord => Type::function(
         None,
-        Rc::new(Type::INT),
+        Arc::new(Type::INT),
         &[
             Parameter {
                 name: "c".to_string(),
-                ty: Rc::new(Type::STR),
+                ty: Arc::new(Type::STR),
                 has_default: false,
             },
         ],
@@ -239,7 +239,7 @@ register_builtin! {
     )
     sorted => Type::function(
         None,
-        Type::list_ref(Rc::new(Type::ANY)),
+        Type::list_ref(Arc::new(Type::ANY)),
         &[
             Parameter {
                 name: "inval".to_string(),
@@ -248,7 +248,7 @@ register_builtin! {
             },
             Parameter {
                 name: "reverse".to_string(),
-                ty: Rc::new(Type::BOOL),
+                ty: Arc::new(Type::BOOL),
                 has_default: true,
             },
         ],
@@ -261,21 +261,21 @@ register_builtin! {
     )
     range => Type::function(
         None,
-        Type::list_ref(Rc::new(Type::INT)),
+        Type::list_ref(Arc::new(Type::INT)),
         &[
             Parameter {
                 name: "start".to_string(),
-                ty: Rc::new(Type::INT),
+                ty: Arc::new(Type::INT),
                 has_default: true,
             },
             Parameter {
                 name: "stop".to_string(),
-                ty: Rc::new(Type::INT),
+                ty: Arc::new(Type::INT),
                 has_default: true,
             },
             Parameter {
                 name: "step".to_string(),
-                ty: Rc::new(Type::INT),
+                ty: Arc::new(Type::INT),
                 has_default: true,
             },
         ],
@@ -285,7 +285,7 @@ register_builtin! {
     )
     max => Type::function(
         None,
-        Rc::new(Type::ANY),
+        Arc::new(Type::ANY),
         &[],
         r#"With a single iterable argument, return its biggest item.
         The default keyword-only argument specifies an object to return
@@ -296,7 +296,7 @@ register_builtin! {
     )
     min => Type::function(
         None,
-        Rc::new(Type::ANY),
+        Arc::new(Type::ANY),
         &[],
         r#"With a single iterable argument, return its smallest item.
         The default keyword-only argument specifies an object to return
@@ -307,16 +307,16 @@ register_builtin! {
     )
     sum => Type::function(
         None,
-        Rc::new(Type::ANY),
+        Arc::new(Type::ANY),
         &[
             Parameter {
                 name: "iterable".to_string(),
-                ty: Type::list_ref(Rc::new(Type::ANY)),
+                ty: Type::list_ref(Arc::new(Type::ANY)),
                 has_default: false,
             },
             Parameter {
                 name: "start".to_string(),
-                ty: Rc::new(Type::ANY),
+                ty: Arc::new(Type::ANY),
                 has_default: true,
             },
         ],
@@ -364,7 +364,7 @@ register_builtin! {
             },
             Parameter {
                 name: "ndigits".to_string(),
-                ty: Rc::new(Type::INT),
+                ty: Arc::new(Type::INT),
                 has_default: true,
             },
         ],
@@ -378,7 +378,7 @@ register_builtin! {
     )
     zip => Type::function(
         None,
-        Type::list_ref(Rc::new(Type::ANY)),
+        Type::list_ref(Arc::new(Type::ANY)),
         &[],
         r#"Return a zip object whose next method returns
         a tuple where the i-th element comes from the i-th iterable
@@ -388,16 +388,16 @@ register_builtin! {
     )
     int => Type::function(
         None,
-        Rc::new(Type::INT),
+        Arc::new(Type::INT),
         &[
             Parameter {
                 name: "number".to_string(),
-                ty: Rc::new(Type::ANY),
+                ty: Arc::new(Type::ANY),
                 has_default: false,
             },
             Parameter {
                 name: "base".to_string(),
-                ty: Rc::new(Type::INT),
+                ty: Arc::new(Type::INT),
                 has_default: true,
             },
         ],
@@ -408,11 +408,11 @@ register_builtin! {
     )
     float => Type::function(
         None,
-        Rc::new(Type::FLOAT),
+        Arc::new(Type::FLOAT),
         &[
             Parameter {
                 name: "number".to_string(),
-                ty: Rc::new(Type::ANY),
+                ty: Arc::new(Type::ANY),
                 has_default: false,
             },
         ],
@@ -422,11 +422,11 @@ register_builtin! {
     )
     bool => Type::function(
         None,
-        Rc::new(Type::BOOL),
+        Arc::new(Type::BOOL),
         &[
             Parameter {
                 name: "x".to_string(),
-                ty: Rc::new(Type::ANY),
+                ty: Arc::new(Type::ANY),
                 has_default: true,
             },
         ],
@@ -438,11 +438,11 @@ register_builtin! {
     )
     str => Type::function(
         None,
-        Rc::new(Type::STR),
+        Arc::new(Type::STR),
         &[
             Parameter {
                 name: "x".to_string(),
-                ty: Rc::new(Type::ANY),
+                ty: Arc::new(Type::ANY),
                 has_default: true,
             },
         ],
@@ -455,11 +455,11 @@ register_builtin! {
     )
     list => Type::function(
         None,
-        Type::list_ref(Rc::new(Type::ANY)),
+        Type::list_ref(Arc::new(Type::ANY)),
         &[
             Parameter {
                 name: "x".to_string(),
-                ty: Rc::new(Type::ANY),
+                ty: Arc::new(Type::ANY),
                 has_default: true,
             },
         ],
@@ -472,11 +472,11 @@ register_builtin! {
     )
     dict => Type::function(
         None,
-        Type::dict_ref(Rc::new(Type::ANY), Rc::new(Type::ANY)),
+        Type::dict_ref(Arc::new(Type::ANY), Arc::new(Type::ANY)),
         &[
             Parameter {
                 name: "x".to_string(),
-                ty: Rc::new(Type::ANY),
+                ty: Arc::new(Type::ANY),
                 has_default: true,
             },
         ],
@@ -486,16 +486,16 @@ register_builtin! {
     )
     typeof => Type::function(
         None,
-        Rc::new(Type::STR),
+        Arc::new(Type::STR),
         &[
             Parameter {
                 name: "x".to_string(),
-                ty: Rc::new(Type::ANY),
+                ty: Arc::new(Type::ANY),
                 has_default: false,
             },
             Parameter {
                 name: "full_name".to_string(),
-                ty: Rc::new(Type::BOOL),
+                ty: Arc::new(Type::BOOL),
                 has_default: true,
             },
         ],

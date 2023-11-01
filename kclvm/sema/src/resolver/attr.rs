@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::builtin::system_module::{get_system_module_members, UNITS, UNITS_NUMBER_MULTIPLIER};
 use crate::builtin::{get_system_member_function_ty, STRING_MEMBER_FUNCTIONS};
@@ -45,7 +45,7 @@ impl<'ctx> Resolver<'ctx> {
             | TypeKind::Named(_)
             | TypeKind::Void => (false, self.any_ty()),
             TypeKind::Str | TypeKind::StrLit(_) => match STRING_MEMBER_FUNCTIONS.get(attr) {
-                Some(ty) => (true, Rc::new(ty.clone())),
+                Some(ty) => (true, Arc::new(ty.clone())),
                 None => (false, self.any_ty()),
             },
             TypeKind::Dict(DictType {
@@ -57,7 +57,7 @@ impl<'ctx> Resolver<'ctx> {
                 attrs
                     .get(attr)
                     .map(|attr| attr.ty.clone())
-                    .unwrap_or(Rc::new(val_ty.as_ref().clone())),
+                    .unwrap_or(Arc::new(val_ty.as_ref().clone())),
             ),
             // union type load attr based the type guard. e.g, a: str|int; if a is str: xxx; if a is int: xxx;
             // return sup([self.load_attr_type(t, attr, filename, line, column) for t in obj.types])
@@ -69,7 +69,7 @@ impl<'ctx> Resolver<'ctx> {
                 } else if schema_ty.is_member_functions(attr) {
                     (
                         true,
-                        Rc::new(Type::function(
+                        Arc::new(Type::function(
                             Some(obj.clone()),
                             Type::list_ref(self.any_ty()),
                             &[],
@@ -99,7 +99,7 @@ impl<'ctx> Resolver<'ctx> {
                     },
                     ModuleKind::System => {
                         if module_ty.pkgpath == UNITS && attr == UNITS_NUMBER_MULTIPLIER {
-                            (true, Rc::new(Type::number_multiplier_non_lit_ty()))
+                            (true, Arc::new(Type::number_multiplier_non_lit_ty()))
                         } else {
                             let members = get_system_module_members(&module_ty.pkgpath);
                             (

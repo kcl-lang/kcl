@@ -1,6 +1,6 @@
 // Copyright The KCL Authors. All rights reserved.
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::ty::{Parameter, Type, TypeRef};
 use indexmap::IndexMap;
@@ -1525,5 +1525,7 @@ pub fn get_system_member_function_ty(name: &str, func: &str) -> TypeRef {
         }
         _ => None,
     };
-    optional_ty.map(|ty| Rc::new(ty)).unwrap_or(Type::any_ref())
+    optional_ty
+        .map(|ty| Arc::new(ty))
+        .unwrap_or(Type::any_ref())
 }

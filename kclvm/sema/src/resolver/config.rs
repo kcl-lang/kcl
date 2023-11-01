@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use super::{
     scope::{ScopeKind, ScopeObject, ScopeObjectKind},
@@ -420,7 +420,7 @@ impl<'ctx> Resolver<'ctx> {
                             let key_ty = if self.ctx.local_vars.contains(name) {
                                 self.expr(key)
                             } else {
-                                Rc::new(Type::str_lit(name))
+                                Arc::new(Type::str_lit(name))
                             };
                             self.check_attr_ty(&key_ty, key.get_span_pos());
                             let ty = if let Some(attr) = attrs.get(name) {

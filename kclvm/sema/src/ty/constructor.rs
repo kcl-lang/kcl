@@ -4,27 +4,27 @@ impl Type {
     /// Construct an int type reference.
     #[inline]
     pub fn int_ref() -> TypeRef {
-        Rc::new(Type::INT)
+        Arc::new(Type::INT)
     }
     /// Construct a float type reference.
     #[inline]
     pub fn float_ref() -> TypeRef {
-        Rc::new(Type::FLOAT)
+        Arc::new(Type::FLOAT)
     }
     /// Construct a bool type reference.
     #[inline]
     pub fn bool_ref() -> TypeRef {
-        Rc::new(Type::BOOL)
+        Arc::new(Type::BOOL)
     }
     /// Construct a str type reference.
     #[inline]
     pub fn str_ref() -> TypeRef {
-        Rc::new(Type::STR)
+        Arc::new(Type::STR)
     }
     /// Construct a any type reference.
     #[inline]
     pub fn any_ref() -> TypeRef {
-        Rc::new(Type::ANY)
+        Arc::new(Type::ANY)
     }
     /// Construct a union type
     #[inline]
@@ -38,7 +38,7 @@ impl Type {
     /// Construct an union type reference.
     #[inline]
     pub fn union_ref(types: &[TypeRef]) -> TypeRef {
-        Rc::new(Self::union(types))
+        Arc::new(Self::union(types))
     }
     /// Construct a list type
     #[inline]
@@ -52,7 +52,7 @@ impl Type {
     /// Construct a list type ref
     #[inline]
     pub fn list_ref(item_ty: TypeRef) -> TypeRef {
-        Rc::new(Self::list(item_ty))
+        Arc::new(Self::list(item_ty))
     }
     /// Construct a dict type
     #[inline]
@@ -70,7 +70,7 @@ impl Type {
     /// Construct a dict type ref
     #[inline]
     pub fn dict_ref(key_ty: TypeRef, val_ty: TypeRef) -> TypeRef {
-        Rc::new(Self::dict(key_ty, val_ty))
+        Arc::new(Self::dict(key_ty, val_ty))
     }
     /// Construct a dict type with attrs
     #[inline]
@@ -96,7 +96,7 @@ impl Type {
         val_ty: TypeRef,
         attrs: IndexMap<String, Attr>,
     ) -> TypeRef {
-        Rc::new(Self::dict_with_attrs(key_ty, val_ty, attrs))
+        Arc::new(Self::dict_with_attrs(key_ty, val_ty, attrs))
     }
     /// Construct a bool literal type.
     #[inline]
@@ -216,10 +216,10 @@ impl Type {
     /// Construct a iterable type
     #[inline]
     pub fn iterable() -> TypeRef {
-        Rc::new(Type::union(&[
-            Rc::new(Type::STR),
-            Rc::new(Type::dict(Rc::new(Type::ANY), Rc::new(Type::ANY))),
-            Rc::new(Type::list(Rc::new(Type::ANY))),
+        Arc::new(Type::union(&[
+            Arc::new(Type::STR),
+            Arc::new(Type::dict(Arc::new(Type::ANY), Arc::new(Type::ANY))),
+            Arc::new(Type::list(Arc::new(Type::ANY))),
         ]))
     }
     /// Construct a number type

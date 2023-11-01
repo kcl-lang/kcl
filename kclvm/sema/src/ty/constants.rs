@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use super::{Type, TypeFlags, TypeKind};
 
@@ -57,24 +57,24 @@ pub const TYPES_MAPPING: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
     mapping.insert(STR_TYPE_STR.to_string(), Type::STR);
     mapping.insert(BOOL_TYPE_STR.to_string(), Type::BOOL);
     mapping.insert(ANY_TYPE_STR.to_string(), Type::ANY);
-    mapping.insert("[]".to_string(), Type::list(Rc::new(Type::ANY)));
-    mapping.insert("[any]".to_string(), Type::list(Rc::new(Type::ANY)));
-    mapping.insert("[str]".to_string(), Type::list(Rc::new(Type::STR)));
+    mapping.insert("[]".to_string(), Type::list(Arc::new(Type::ANY)));
+    mapping.insert("[any]".to_string(), Type::list(Arc::new(Type::ANY)));
+    mapping.insert("[str]".to_string(), Type::list(Arc::new(Type::STR)));
     mapping.insert(
         "{:}".to_string(),
-        Type::dict(Rc::new(Type::ANY), Rc::new(Type::ANY)),
+        Type::dict(Arc::new(Type::ANY), Arc::new(Type::ANY)),
     );
     mapping.insert(
         "{str:}".to_string(),
-        Type::dict(Rc::new(Type::STR), Rc::new(Type::ANY)),
+        Type::dict(Arc::new(Type::STR), Arc::new(Type::ANY)),
     );
     mapping.insert(
         "{str:any}".to_string(),
-        Type::dict(Rc::new(Type::STR), Rc::new(Type::ANY)),
+        Type::dict(Arc::new(Type::STR), Arc::new(Type::ANY)),
     );
     mapping.insert(
         "{str:str}".to_string(),
-        Type::dict(Rc::new(Type::STR), Rc::new(Type::STR)),
+        Type::dict(Arc::new(Type::STR), Arc::new(Type::STR)),
     );
     mapping
 });

@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use super::{Attr, DictType, Type, TypeRef};
 
@@ -6,12 +6,12 @@ use super::{Attr, DictType, Type, TypeRef};
 pub fn walk_type(ty: &Type, walk_fn: impl Fn(&Type) -> TypeRef + Copy) -> TypeRef {
     let ty = walk_fn(ty);
     match &ty.kind {
-        super::TypeKind::List(item_ty) => Rc::new(Type::list(walk_type(item_ty, walk_fn))),
+        super::TypeKind::List(item_ty) => Arc::new(Type::list(walk_type(item_ty, walk_fn))),
         super::TypeKind::Dict(DictType {
             key_ty,
             val_ty,
             attrs,
-        }) => Rc::new(Type::dict_with_attrs(
+        }) => Arc::new(Type::dict_with_attrs(
             walk_type(key_ty, walk_fn),
             walk_type(val_ty, walk_fn),
             attrs
@@ -27,7 +27,7 @@ pub fn walk_type(ty: &Type, walk_fn: impl Fn(&Type) -> TypeRef + Copy) -> TypeRe
                 })
                 .collect(),
         )),
-        super::TypeKind::Union(types) => Rc::new(Type::union(
+        super::TypeKind::Union(types) => Arc::new(Type::union(
             &types
                 .iter()
                 .map(|ty| walk_type(ty, walk_fn))

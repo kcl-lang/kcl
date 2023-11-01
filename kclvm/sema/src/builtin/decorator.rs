@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use indexmap::IndexMap;
 use once_cell::sync::Lazy;
@@ -22,21 +22,21 @@ macro_rules! register_decorator {
 register_decorator! {
     deprecated => Type::function(
         None,
-        Rc::new(Type::ANY),
+        Arc::new(Type::ANY),
         &[
             Parameter {
                 name: "version".to_string(),
-                ty: Rc::new(Type::STR),
+                ty: Arc::new(Type::STR),
                 has_default: true,
             },
             Parameter {
                 name: "reason".to_string(),
-                ty: Rc::new(Type::STR),
+                ty: Arc::new(Type::STR),
                 has_default: true,
             },
             Parameter {
                 name: "strict".to_string(),
-                ty: Rc::new(Type::BOOL),
+                ty: Arc::new(Type::BOOL),
                 has_default: true,
             },
         ],
@@ -54,7 +54,7 @@ register_decorator! {
     )
     info => Type::function(
         None,
-        Rc::new(Type::ANY),
+        Arc::new(Type::ANY),
         &[],
         r#"Info decorator is used to mark some compile-time information for external API queries
 

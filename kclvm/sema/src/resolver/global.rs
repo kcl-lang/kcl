@@ -1,5 +1,5 @@
 use std::cell::RefCell;
-use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::info::is_private_field;
 use crate::resolver::Resolver;
@@ -98,7 +98,7 @@ impl<'ctx> Resolver<'ctx> {
                                 doc: parsed_doc.summary.clone(),
                                 params: vec![],
                                 self_ty: None,
-                                return_ty: Rc::new(Type::VOID),
+                                return_ty: Arc::new(Type::VOID),
                                 is_variadic: false,
                                 kw_only_index: None,
                             }),
@@ -111,7 +111,7 @@ impl<'ctx> Resolver<'ctx> {
                                 name: name.to_string(),
                                 start,
                                 end,
-                                ty: Rc::new(Type::schema(schema_ty.clone())),
+                                ty: Arc::new(Type::schema(schema_ty.clone())),
                                 kind: ScopeObjectKind::Definition,
                                 doc: Some(parsed_doc.summary.clone()),
                             },
@@ -155,7 +155,7 @@ impl<'ctx> Resolver<'ctx> {
                                     name: schema_ty.name.to_string(),
                                     start,
                                     end,
-                                    ty: Rc::new(Type::schema(schema_ty.clone())),
+                                    ty: Arc::new(Type::schema(schema_ty.clone())),
                                     kind: ScopeObjectKind::Definition,
                                     doc: Some(schema_ty.doc),
                                 },
@@ -824,7 +824,7 @@ impl<'ctx> Resolver<'ctx> {
                 doc: parsed_doc.summary.clone(),
                 params,
                 self_ty: None,
-                return_ty: Rc::new(Type::ANY),
+                return_ty: Arc::new(Type::ANY),
                 is_variadic: false,
                 kw_only_index: None,
             }),
@@ -833,7 +833,7 @@ impl<'ctx> Resolver<'ctx> {
         };
         self.ctx
             .schema_mapping
-            .insert(schema_runtime_ty, Rc::new(RefCell::new(schema_ty.clone())));
+            .insert(schema_runtime_ty, Arc::new(RefCell::new(schema_ty.clone())));
         schema_ty
     }
 
@@ -947,7 +947,7 @@ impl<'ctx> Resolver<'ctx> {
                     .unwrap_or_default(),
                 params,
                 self_ty: None,
-                return_ty: Rc::new(Type::ANY),
+                return_ty: Arc::new(Type::ANY),
                 is_variadic: false,
                 kw_only_index: None,
             }),

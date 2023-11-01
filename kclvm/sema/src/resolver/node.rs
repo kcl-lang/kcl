@@ -3,7 +3,7 @@ use kclvm_ast::ast;
 use kclvm_ast::pos::GetPos;
 use kclvm_ast::walker::MutSelfTypedResultWalker;
 use kclvm_error::*;
-use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::info::is_private_field;
 use crate::ty::{
@@ -91,7 +91,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             schema_ty.is_instance = false;
         }
         ty.is_type_alias = true;
-        let ty = Rc::new(ty);
+        let ty = Arc::new(ty);
         let ty_str = ty.into_type_annotation_str();
         let name = type_alias_stmt.type_name.node.get_name();
         let mut mapping = IndexMap::default();
@@ -359,7 +359,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
         match &quant_expr.op {
             ast::QuantOperation::All | ast::QuantOperation::Any => self.bool_ty(),
             ast::QuantOperation::Filter => iter_ty,
-            ast::QuantOperation::Map => Rc::new(Type::list(item_ty)),
+            ast::QuantOperation::Map => Arc::new(Type::list(item_ty)),
         }
     }
 
@@ -476,7 +476,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                         if right_ty.is_schema() {
                             let mut schema_ty = right_ty.into_schema_type();
                             schema_ty.is_instance = true;
-                            right_ty = Rc::new(Type::schema(schema_ty));
+                            right_ty = Arc::new(Type::schema(schema_ty));
                         }
                         let ty_annotation_str = right_ty.into_type_annotation_str();
                         self.add_type_alias(
@@ -574,7 +574,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 );
                 let mut return_ty = schema_ty.clone();
                 return_ty.is_instance = true;
-                Rc::new(Type::schema(return_ty))
+                Arc::new(Type::schema(return_ty))
             }
         } else {
             self.handler.add_compile_error(
@@ -763,7 +763,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                         results.iter().all(|(_, r)| *r),
                     )
                 }
-                _ => (Rc::new(Type::ANY), false),
+                _ => (Arc::new(Type::ANY), false),
             }
         }
         let (ty, result) = starred_ty_walk_fn(&value_ty);
@@ -934,7 +934,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             schema_ty.is_instance = true;
         }
         if def_ty_clone.is_schema() {
-            Rc::new(def_ty_clone)
+            Arc::new(def_ty_clone)
         } else {
             ret_ty
         }
@@ -968,7 +968,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 let ty = if let TypeKind::Schema(sty) = &ty.kind {
                     let mut arg_ty = sty.clone();
                     arg_ty.is_instance = true;
-                    Rc::new(Type::schema(arg_ty))
+                    Arc::new(Type::schema(arg_ty))
                 } else {
                     ty.clone()
                 };
@@ -1021,7 +1021,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
         if !real_ret_ty.is_any() && ret_ty.is_any() && lambda_expr.return_type_str.is_none() {
             ret_ty = real_ret_ty;
         }
-        Rc::new(Type::function(None, ret_ty, &params, "", false, None))
+        Arc::new(Type::function(None, ret_ty, &params, "", false, None))
     }
 
     fn walk_keyword(&mut self, keyword: &'ctx ast::Keyword) -> Self::Result {
@@ -1088,21 +1088,21 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 };
                 let binary_suffix_str: String = binary_suffix.value();
                 let value = kclvm_runtime::units::cal_num(raw_value, &binary_suffix_str);
-                Rc::new(Type::number_multiplier(
+                Arc::new(Type::number_multiplier(
                     value,
                     raw_value,
                     &binary_suffix_str,
                 ))
             }
             None => match number_lit.value {
-                ast::NumberLitValue::Int(int_val) => Rc::new(Type::int_lit(int_val)),
-                ast::NumberLitValue::Float(float_val) => Rc::new(Type::float_lit(float_val)),
+                ast::NumberLitValue::Int(int_val) => Arc::new(Type::int_lit(int_val)),
+                ast::NumberLitValue::Float(float_val) => Arc::new(Type::float_lit(float_val)),
             },
         }
     }
 
     fn walk_string_lit(&mut self, string_lit: &'ctx ast::StringLit) -> Self::Result {
-        Rc::new(Type::str_lit(&string_lit.value))
+        Arc::new(Type::str_lit(&string_lit.value))
     }
 
     fn walk_name_constant_lit(
@@ -1110,8 +1110,8 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
         name_constant_lit: &'ctx ast::NameConstantLit,
     ) -> Self::Result {
         match &name_constant_lit.value {
-            ast::NameConstant::True => Rc::new(Type::bool_lit(true)),
-            ast::NameConstant::False => Rc::new(Type::bool_lit(false)),
+            ast::NameConstant::True => Arc::new(Type::bool_lit(true)),
+            ast::NameConstant::False => Arc::new(Type::bool_lit(false)),
             ast::NameConstant::None | ast::NameConstant::Undefined => self.none_ty(),
         }
     }

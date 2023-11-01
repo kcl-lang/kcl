@@ -9,7 +9,9 @@ use crate::{
 use indexmap::{IndexMap, IndexSet};
 use kclvm_ast::ast;
 use kclvm_error::*;
-use std::{cell::RefCell, path::Path, rc::Rc};
+use std::rc::Rc;
+use std::sync::Arc;
+use std::{cell::RefCell, path::Path};
 
 use super::scope::{Scope, ScopeKind, ScopeObject, ScopeObjectKind};
 use kclvm_ast::pos::GetPos;
@@ -142,7 +144,7 @@ impl<'ctx> Resolver<'ctx> {
                                                 module_ty
                                                     .imported
                                                     .push(self.ctx.filename.to_string());
-                                                obj.ty = Rc::new(Type::module(
+                                                obj.ty = Arc::new(Type::module(
                                                     &module_ty.pkgpath,
                                                     &module_ty.imported,
                                                     module_ty.kind.clone(),
@@ -184,7 +186,7 @@ impl<'ctx> Resolver<'ctx> {
                                                 name,
                                                 start: start.clone(),
                                                 end: end.clone(),
-                                                ty: Rc::new(ty.clone()),
+                                                ty: Arc::new(ty.clone()),
                                                 kind: ScopeObjectKind::Module(Module {
                                                     import_stmts: vec![(stmt.clone(), true)],
                                                 }),
@@ -197,7 +199,7 @@ impl<'ctx> Resolver<'ctx> {
                                                 name: import_stmt.path.to_string(),
                                                 start,
                                                 end,
-                                                ty: Rc::new(ty),
+                                                ty: Arc::new(ty),
                                                 kind: ScopeObjectKind::Module(Module {
                                                     import_stmts: vec![(stmt.clone(), false)],
                                                 }),

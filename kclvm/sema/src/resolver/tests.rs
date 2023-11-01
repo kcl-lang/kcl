@@ -13,7 +13,6 @@ use kclvm_parser::LoadProgramOptions;
 use kclvm_parser::ParseSession;
 use kclvm_parser::{load_program, parse_program};
 use std::path::Path;
-use std::rc::Rc;
 use std::sync::Arc;
 
 #[test]
@@ -25,7 +24,7 @@ fn test_scope() {
         assert!(obj_ref.ty.is_func());
     }
     for name in BUILTIN_FUNCTION_NAMES {
-        scope.set_ty(name, Rc::new(Type::ANY));
+        scope.set_ty(name, Arc::new(Type::ANY));
     }
     for name in BUILTIN_FUNCTION_NAMES {
         let obj = scope.lookup(name).unwrap();

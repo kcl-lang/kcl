@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::resolver::Resolver;
 use crate::ty::{
@@ -73,9 +73,9 @@ impl<'ctx> Resolver<'ctx> {
         }
         let number_binary = |left: &TypeRef, right: &TypeRef| {
             if left.is_float() || right.is_float() {
-                Rc::new(Type::FLOAT)
+                Arc::new(Type::FLOAT)
             } else {
-                Rc::new(Type::INT)
+                Arc::new(Type::INT)
             }
         };
         let (result, return_ty) = match op {

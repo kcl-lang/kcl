@@ -20,6 +20,7 @@ mod tests;
 
 use indexmap::IndexMap;
 use kclvm_error::diagnostic::Range;
+use std::sync::Arc;
 use std::{cell::RefCell, rc::Rc};
 
 use crate::lint::{CombinedLintPass, Linter};
@@ -116,7 +117,7 @@ pub struct Context {
     /// What schema are we in.
     pub schema: Option<Rc<RefCell<SchemaType>>>,
     /// What schema are we in.
-    pub schema_mapping: IndexMap<String, Rc<RefCell<SchemaType>>>,
+    pub schema_mapping: IndexMap<String, Arc<RefCell<SchemaType>>>,
     /// For loop local vars.
     pub local_vars: Vec<String>,
     /// Import pkgpath and name
