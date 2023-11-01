@@ -89,11 +89,6 @@ impl<'ctx> AdvancedResolver<'ctx> {
         gs: GlobalState,
         node_ty_map: IndexMap<AstIndex, TypeRef>,
     ) -> GlobalState {
-        let node_ty_map = node_ty_map
-            .iter()
-            .map(|(k, v)| (k.clone(), Arc::new(v.as_ref().clone())))
-            .collect();
-
         let mut advanced_resolver = Self {
             gs,
             ctx: Context {
@@ -113,7 +108,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
         for (name, modules) in advanced_resolver.ctx.program.pkgs.iter() {
             advanced_resolver.ctx.current_pkgpath = Some(name.clone());
             if let Some(pkg_info) = advanced_resolver.gs.get_packages().get_package_info(name) {
-                advanced_resolver.enter_root_scope(name.clone(), pkg_info.filename.clone());
+                advanced_resolver.enter_root_scope(name.clone(), pkg_info.pkg_filepath.clone());
                 if modules.is_empty() {
                     continue;
                 }
@@ -281,7 +276,6 @@ mod tests {
         let gs = Namer::find_symbols(&program, gs);
         let node_ty_map = resolver::resolve_program(&mut program).node_ty_map;
         let gs = AdvancedResolver::resolve_program(&program, gs, node_ty_map);
-        // print_symbols_info(&gs);
         let except_symbols = vec![
             (
                 "src/advanced_resolver/test_data/import_test/d.k"

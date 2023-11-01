@@ -43,15 +43,15 @@ impl PackageDB {
 #[derive(Debug, Clone)]
 pub struct PackageInfo {
     pub(crate) fully_qualified_name: String,
-    pub(crate) filename: String,
+    pub(crate) pkg_filepath: String,
     pub(crate) kfile_paths: IndexSet<String>,
 }
 
 impl PackageInfo {
-    pub fn new(fully_qualified_name: String, filename: String) -> Self {
+    pub fn new(fully_qualified_name: String, pkg_filepath: String) -> Self {
         Self {
             fully_qualified_name,
-            filename,
+            pkg_filepath,
             kfile_paths: IndexSet::default(),
         }
     }

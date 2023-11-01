@@ -1058,4 +1058,29 @@ mod tests {
         let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
         compare_goto_res(res, (&file, 81, 6, 81, 10));
     }
+
+    #[test]
+    #[bench_test]
+    fn lambda_param_goto_def() {
+        let (file, program, prog_scope, _, gs) =
+            compile_test_file("src/test_data/goto_def_test/goto_def.k");
+
+        let pos = KCLPos {
+            filename: file.clone(),
+            line: 86,
+            column: Some(4),
+        };
+
+        let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
+        compare_goto_res(res, (&file, 84, 14, 84, 15));
+
+        let pos = KCLPos {
+            filename: file.clone(),
+            line: 86,
+            column: Some(8),
+        };
+
+        let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
+        compare_goto_res(res, (&file, 84, 22, 84, 23));
+    }
 }

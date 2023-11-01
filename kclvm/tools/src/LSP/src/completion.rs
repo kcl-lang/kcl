@@ -1175,7 +1175,7 @@ mod tests {
 
     #[test]
     fn schema_attr_newline_completion() {
-        let (file, program, prog_scope, _) =
+        let (file, program, prog_scope, _, _) =
             compile_test_file("src/test_data/completion_test/newline/newline.k");
 
         // test completion for builtin packages
@@ -1205,7 +1205,7 @@ mod tests {
 
     #[test]
     fn schema_docstring_newline_completion() {
-        let (file, program, prog_scope, _) =
+        let (file, program, prog_scope, _, _) =
             compile_test_file("src/test_data/completion_test/newline/docstring_newline.k");
 
         // test completion for builtin packages
