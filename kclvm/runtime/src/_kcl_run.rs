@@ -33,7 +33,18 @@ type kclvm_int_t = i64;
 #[allow(dead_code, non_camel_case_types)]
 type kclvm_float_t = f64;
 
-// const SHOULD_PROFILE: bool = false;
+#[derive(Debug, Default)]
+pub(crate) struct RuntimePanicRecord {
+    pub kcl_panic_info: bool,
+    pub message: String,
+    pub rust_file: String,
+    pub rust_line: i32,
+    pub rust_col: i32,
+}
+
+thread_local! {
+    static KCL_RUNTIME_PANIC_RECORD: std::cell::RefCell<RuntimePanicRecord>  = std::cell::RefCell::new(RuntimePanicRecord::default())
+}
 
 #[no_mangle]
 #[runtime_fn]
@@ -56,9 +67,25 @@ pub unsafe extern "C" fn _kcl_run(
 
     let prev_hook = std::panic::take_hook();
     std::panic::set_hook(Box::new(|info: &std::panic::PanicInfo| {
-        let ctx = Context::current_context_mut();
-        ctx.set_panic_info(info);
-        let _ = ctx;
+        KCL_RUNTIME_PANIC_RECORD.with(|record| {
+            let mut record = record.borrow_mut();
+            record.kcl_panic_info = true;
+
+            record.message = if let Some(s) = info.payload().downcast_ref::<&str>() {
+                s.to_string()
+            } else if let Some(s) = info.payload().downcast_ref::<&String>() {
+                (*s).clone()
+            } else if let Some(s) = info.payload().downcast_ref::<String>() {
+                (*s).clone()
+            } else {
+                "".to_string()
+            };
+            if let Some(location) = info.location() {
+                record.rust_file = location.file().to_string();
+                record.rust_line = location.line() as i32;
+                record.rust_col = location.column() as i32;
+            }
+        })
     }));
 
     let result = std::panic::catch_unwind(|| {
@@ -77,6 +104,10 @@ pub unsafe extern "C" fn _kcl_run(
         )
     });
     std::panic::set_hook(prev_hook);
+    KCL_RUNTIME_PANIC_RECORD.with(|record| {
+        let record = record.borrow();
+        Context::current_context_mut().set_panic_info(&record);
+    });
     match result {
         Ok(n) => {
             let json_panic_info = Context::current_context().get_panic_info_json_string();
