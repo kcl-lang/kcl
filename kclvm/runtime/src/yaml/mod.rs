@@ -1,5 +1,4 @@
 // Copyright 2021 The KCL Authors. All rights reserved.
-
 use crate::*;
 
 // encode(data, sort_keys=False, ignore_private=False, ignore_none=False):
