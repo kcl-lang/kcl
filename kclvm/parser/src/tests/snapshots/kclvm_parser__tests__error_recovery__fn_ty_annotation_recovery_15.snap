@@ -1,0 +1,142 @@
+---
+source: parser/src/tests/error_recovery.rs
+expression: "crate::tests::parsing_module_string(r#\"a:({i:int]\"#)"
+---
+Module {
+    filename: "",
+    pkg: "",
+    doc: None,
+    name: "",
+    body: [
+        Node {
+            node: Assign(
+                AssignStmt {
+                    targets: [
+                        Node {
+                            node: Identifier {
+                                names: [
+                                    Node {
+                                        node: "a",
+                                        filename: "",
+                                        line: 1,
+                                        column: 0,
+                                        end_line: 1,
+                                        end_column: 1,
+                                    },
+                                ],
+                                pkgpath: "",
+                                ctx: Store,
+                            },
+                            filename: "",
+                            line: 1,
+                            column: 0,
+                            end_line: 1,
+                            end_column: 1,
+                        },
+                    ],
+                    value: Node {
+                        node: Missing(
+                            MissingExpr,
+                        ),
+                        filename: "",
+                        line: 1,
+                        column: 10,
+                        end_line: 1,
+                        end_column: 10,
+                    },
+                    type_annotation: Some(
+                        Node {
+                            node: "({i:int}, any)",
+                            filename: "",
+                            line: 1,
+                            column: 2,
+                            end_line: 1,
+                            end_column: 10,
+                        },
+                    ),
+                    ty: Some(
+                        Node {
+                            node: Function(
+                                FunctionType {
+                                    params_ty: Some(
+                                        [
+                                            Node {
+                                                node: Dict(
+                                                    DictType {
+                                                        key_type: Some(
+                                                            Node {
+                                                                node: Named(
+                                                                    Identifier {
+                                                                        names: [
+                                                                            Node {
+                                                                                node: "i",
+                                                                                filename: "",
+                                                                                line: 1,
+                                                                                column: 4,
+                                                                                end_line: 1,
+                                                                                end_column: 5,
+                                                                            },
+                                                                        ],
+                                                                        pkgpath: "",
+                                                                        ctx: Load,
+                                                                    },
+                                                                ),
+                                                                filename: "",
+                                                                line: 1,
+                                                                column: 4,
+                                                                end_line: 1,
+                                                                end_column: 5,
+                                                            },
+                                                        ),
+                                                        value_type: Some(
+                                                            Node {
+                                                                node: Basic(
+                                                                    Int,
+                                                                ),
+                                                                filename: "",
+                                                                line: 1,
+                                                                column: 6,
+                                                                end_line: 1,
+                                                                end_column: 9,
+                                                            },
+                                                        ),
+                                                    },
+                                                ),
+                                                filename: "",
+                                                line: 1,
+                                                column: 3,
+                                                end_line: 1,
+                                                end_column: 10,
+                                            },
+                                            Node {
+                                                node: Any,
+                                                filename: "",
+                                                line: 1,
+                                                column: 10,
+                                                end_line: 1,
+                                                end_column: 10,
+                                            },
+                                        ],
+                                    ),
+                                    ret_ty: None,
+                                },
+                            ),
+                            filename: "",
+                            line: 1,
+                            column: 2,
+                            end_line: 1,
+                            end_column: 10,
+                        },
+                    ),
+                },
+            ),
+            filename: "",
+            line: 1,
+            column: 0,
+            end_line: 1,
+            end_column: 1,
+        },
+    ],
+    comments: [],
+}
+

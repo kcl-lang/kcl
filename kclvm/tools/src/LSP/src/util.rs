@@ -710,6 +710,7 @@ fn build_identifier_from_ty_string(ty: &NodeRef<Type>, pos: &KCLPos) -> Option<N
             None
         }
         Type::Literal(_) => None,
+        Type::Function(_) => None,
     }
 }
 

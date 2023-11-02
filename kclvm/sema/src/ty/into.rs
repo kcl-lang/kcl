@@ -53,6 +53,14 @@ impl Type {
             _ => bug!("invalid type {} into schema type", self.ty_str()),
         }
     }
+    /// Into function type.
+    #[inline]
+    pub fn into_func_type(&self) -> FunctionType {
+        match &self.kind {
+            TypeKind::Function(func_ty) => func_ty.clone(),
+            _ => bug!("invalid type {} into function type", self.ty_str()),
+        }
+    }
     /// Into number multiplier type.
     #[inline]
     pub fn into_number_multiplier(&self) -> NumberMultiplierType {
@@ -106,6 +114,7 @@ impl Type {
                     NUMBER_MULTIPLIER_PKG_TYPE_STR.to_string()
                 }
             }
+            TypeKind::Function(fn_ty) => fn_ty.ty_str(),
             _ => self.ty_str(),
         }
     }
@@ -158,6 +167,29 @@ impl From<ast::Type> for Type {
                 ast::LiteralType::Float(v) => Type::float_lit(v),
                 ast::LiteralType::Str(v) => Type::str_lit(&v),
             },
+            // Ast::function => Sema::function,
+            ast::Type::Function(func_ty) => Type::function(
+                None,
+                func_ty
+                    .ret_ty
+                    .as_ref()
+                    .map_or(Arc::new(Type::ANY), |ty| Arc::new(ty.node.clone().into())),
+                func_ty
+                    .params_ty
+                    .map_or(vec![], |tys| {
+                        tys.iter()
+                            .map(|ty| Parameter {
+                                name: "".to_string(),
+                                ty: Arc::new(ty.node.clone().into()),
+                                has_default: false,
+                            })
+                            .collect::<Vec<Parameter>>()
+                    })
+                    .as_slice(),
+                "",
+                false,
+                None,
+            ),
         }
     }
 }

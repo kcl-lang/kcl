@@ -753,6 +753,16 @@ impl<'ctx> AdvancedResolver<'ctx> {
                     }
                 }
                 ast::Type::Literal(_) => {}
+                ast::Type::Function(func_type) => {
+                    if let Some(params_ty) = &func_type.params_ty {
+                        for param_ty in params_ty.iter() {
+                            self.walk_type_expr(Some(param_ty));
+                        }
+                    }
+                    if let Some(ret_ty) = &func_type.ret_ty {
+                        self.walk_type_expr(Some(&ret_ty));
+                    }
+                }
             }
         }
         None

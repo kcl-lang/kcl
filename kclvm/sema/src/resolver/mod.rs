@@ -13,6 +13,7 @@ mod schema;
 pub mod scope;
 pub(crate) mod ty;
 mod ty_alias;
+mod type_erasure;
 mod var;
 
 #[cfg(test)]
@@ -27,6 +28,7 @@ use crate::lint::{CombinedLintPass, Linter};
 use crate::pre_process::pre_process_program;
 use crate::resolver::scope::ScopeObject;
 use crate::resolver::ty_alias::process_program_type_alias;
+use crate::resolver::type_erasure::type_erasure;
 use crate::ty::{TypeContext, TypeRef};
 use crate::{resolver::scope::Scope, ty::SchemaType};
 use kclvm_ast::ast::AstIndex;
@@ -178,5 +180,7 @@ pub fn resolve_program_with_opts(program: &mut Program, opts: Options) -> Progra
         let type_alias_mapping = resolver.ctx.type_alias_mapping.clone();
         process_program_type_alias(program, type_alias_mapping);
     }
+    // erase all the function type to "function" on ast
+    type_erasure(program);
     scope
 }

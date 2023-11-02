@@ -9,30 +9,76 @@ Module {
     name: "",
     body: [
         Node {
-            node: Expr(
-                ExprStmt {
-                    exprs: [
+            node: Assign(
+                AssignStmt {
+                    targets: [
                         Node {
-                            node: NumberLit(
-                                NumberLit {
-                                    binary_suffix: None,
-                                    value: Int(
-                                        0,
-                                    ),
+                            node: Identifier {
+                                names: [
+                                    Node {
+                                        node: "a",
+                                        filename: "",
+                                        line: 1,
+                                        column: 0,
+                                        end_line: 1,
+                                        end_column: 1,
+                                    },
+                                ],
+                                pkgpath: "",
+                                ctx: Store,
+                            },
+                            filename: "",
+                            line: 1,
+                            column: 0,
+                            end_line: 1,
+                            end_column: 1,
+                        },
+                    ],
+                    value: Node {
+                        node: NumberLit(
+                            NumberLit {
+                                binary_suffix: None,
+                                value: Int(
+                                    0,
+                                ),
+                            },
+                        ),
+                        filename: "",
+                        line: 1,
+                        column: 8,
+                        end_line: 1,
+                        end_column: 9,
+                    },
+                    type_annotation: Some(
+                        Node {
+                            node: "()",
+                            filename: "",
+                            line: 1,
+                            column: 3,
+                            end_line: 1,
+                            end_column: 5,
+                        },
+                    ),
+                    ty: Some(
+                        Node {
+                            node: Function(
+                                FunctionType {
+                                    params_ty: None,
+                                    ret_ty: None,
                                 },
                             ),
                             filename: "",
                             line: 1,
-                            column: 8,
+                            column: 3,
                             end_line: 1,
-                            end_column: 9,
+                            end_column: 5,
                         },
-                    ],
+                    ),
                 },
             ),
             filename: "",
             line: 1,
-            column: 8,
+            column: 0,
             end_line: 1,
             end_column: 9,
         },

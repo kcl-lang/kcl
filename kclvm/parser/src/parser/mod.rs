@@ -107,6 +107,12 @@ impl<'a> Parser<'a> {
         self.cursor.next().is_some()
     }
 
+    #[inline]
+    /// Whether the parser has the next token in the token stream.
+    pub(crate) fn peek_has_next(&mut self) -> bool {
+        self.cursor.peek().is_some()
+    }
+
     pub(crate) fn bump_keyword(&mut self, kw: Symbol) {
         if !self.token.is_keyword(kw) {
             self.sess.struct_token_error(&[kw.into()], self.token);

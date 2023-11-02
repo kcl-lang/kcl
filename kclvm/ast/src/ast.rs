@@ -1525,6 +1525,13 @@ pub enum Type {
     Dict(DictType),
     Union(UnionType),
     Literal(LiteralType),
+    Function(FunctionType),
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct FunctionType {
+    pub params_ty: Option<Vec<NodeRef<Type>>>,
+    pub ret_ty: Option<NodeRef<Type>>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -1632,6 +1639,22 @@ impl ToString for Type {
                         w.push_str(&format!("\"{}\"", v.replace('"', "\\\"")));
                     }
                 },
+                Type::Function(v) => {
+                    w.push_str("(");
+                    if let Some(params) = &v.params_ty {
+                        for (i, param) in params.iter().enumerate() {
+                            if i > 0 {
+                                w.push_str(", ");
+                            }
+                            to_str(&param.node, w);
+                        }
+                    }
+                    w.push_str(")");
+                    if let Some(ret) = &v.ret_ty {
+                        w.push_str(" -> ");
+                        to_str(&ret.node, w);
+                    }
+                }
             }
         }
 

@@ -130,6 +130,29 @@ Module {
                             end_line: 3,
                             end_column: 13,
                         },
+                        Node {
+                            node: Expr(
+                                ExprStmt {
+                                    exprs: [
+                                        Node {
+                                            node: Missing(
+                                                MissingExpr,
+                                            ),
+                                            filename: "",
+                                            line: 3,
+                                            column: 19,
+                                            end_line: 3,
+                                            end_column: 19,
+                                        },
+                                    ],
+                                },
+                            ),
+                            filename: "",
+                            line: 3,
+                            column: 19,
+                            end_line: 3,
+                            end_column: 19,
+                        },
                     ],
                     decorators: [],
                     checks: [],

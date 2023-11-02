@@ -107,6 +107,29 @@ Module {
                             end_line: 3,
                             end_column: 10,
                         },
+                        Node {
+                            node: Expr(
+                                ExprStmt {
+                                    exprs: [
+                                        Node {
+                                            node: Missing(
+                                                MissingExpr,
+                                            ),
+                                            filename: "",
+                                            line: 3,
+                                            column: 16,
+                                            end_line: 3,
+                                            end_column: 16,
+                                        },
+                                    ],
+                                },
+                            ),
+                            filename: "",
+                            line: 3,
+                            column: 16,
+                            end_line: 3,
+                            end_column: 16,
+                        },
                     ],
                     decorators: [],
                     checks: [],

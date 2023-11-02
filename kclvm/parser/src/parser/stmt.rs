@@ -345,9 +345,42 @@ impl<'a> Parser<'a> {
 
                 Some(t)
             } else {
+                let miss_expr = self.missing_expr();
+                self.skip_newlines();
                 self.sess
                     .struct_token_error(&[TokenKind::Assign.into()], self.token);
-                None
+                if type_annotation.is_some() && !targets.is_empty() && !is_in_schema_stmt {
+                    let mut pos = targets[0].pos();
+                    pos.3 = targets.last().unwrap().end_line;
+                    pos.4 = targets.last().unwrap().end_column;
+
+                    let targets: Vec<_> = targets
+                        .iter()
+                        .map(|expr| match &expr.node {
+                            Expr::Identifier(x) => {
+                                let mut x = x.clone();
+                                x.ctx = ExprContext::Store;
+                                Box::new(Node::node_with_pos(x, expr.pos()))
+                            }
+                            _ => {
+                                self.sess
+                                    .struct_token_error(&[TokenKind::ident_value()], self.token);
+                                Box::new(expr.into_missing_identifier())
+                            }
+                        })
+                        .collect();
+                    Some(Box::new(Node::node_with_pos(
+                        Stmt::Assign(AssignStmt {
+                            targets: targets.clone(),
+                            value: miss_expr,
+                            type_annotation,
+                            ty,
+                        }),
+                        pos,
+                    )))
+                } else {
+                    None
+                }
             }
         }
     }

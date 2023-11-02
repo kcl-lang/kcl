@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::resolver::Resolver;
 use crate::ty::parser::parse_type_str;
 use crate::ty::{
-    assignable_to, is_upper_bound, Attr, DictType, SchemaType, Type, TypeKind, TypeRef,
+    assignable_to, is_upper_bound, Attr, DictType, Parameter, SchemaType, Type, TypeKind, TypeRef,
 };
 use indexmap::IndexMap;
 use kclvm_ast::ast;
@@ -375,6 +375,47 @@ impl<'ctx> Resolver<'ctx> {
                     }
                 };
                 tys.last().unwrap().clone()
+            }
+            TypeKind::Function(fn_ty) => {
+                // Replace the type 'Named' to the real type in function params and return type
+                let mut params_ty = vec![];
+                let mut ret_ty = Type::any_ref();
+                if let Some(ty_node) = ty_node {
+                    if let ast::Type::Function(fn_ast_type) = &ty_node.node {
+                        if let Some(params_ast_ty) = fn_ast_type.params_ty.as_ref() {
+                            for (ast_ty, ty) in params_ast_ty.iter().zip(fn_ty.params.iter()) {
+                                params_ty.push(Parameter {
+                                    name: ty.name.clone(),
+                                    ty: self.upgrade_named_ty_with_scope(
+                                        ty.ty.clone(),
+                                        range,
+                                        Some(ast_ty.as_ref()),
+                                    ),
+                                    has_default: ty.has_default,
+                                });
+                            }
+                        }
+
+                        ret_ty = if let Some(ret_ast_ty) = fn_ast_type.ret_ty.as_ref() {
+                            self.upgrade_named_ty_with_scope(
+                                fn_ty.return_ty.clone(),
+                                range,
+                                Some(ret_ast_ty.as_ref()),
+                            )
+                        } else {
+                            Type::any_ref()
+                        };
+                    }
+                };
+
+                Arc::new(Type::function(
+                    fn_ty.self_ty.clone(),
+                    ret_ty,
+                    params_ty.as_slice(),
+                    &fn_ty.doc,
+                    fn_ty.is_variadic,
+                    fn_ty.kw_only_index,
+                ))
             }
             _ => ty.clone(),
         }

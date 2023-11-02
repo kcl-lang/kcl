@@ -591,7 +591,7 @@ fn test_resolve_lambda_assignment_diagnostic() {
     assert_eq!(diag.messages.len(), 1);
     assert_eq!(
         diag.messages[0].message,
-        "expected function (int, int) -> int, got function (int, int) -> str"
+        "expected (int, int) -> int, got (int, int) -> str"
     );
 }
 
