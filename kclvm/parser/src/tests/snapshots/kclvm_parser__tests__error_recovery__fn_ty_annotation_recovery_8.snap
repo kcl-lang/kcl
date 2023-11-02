@@ -1,6 +1,6 @@
 ---
 source: parser/src/tests/error_recovery.rs
-expression: "crate::tests::parsing_module_string(r#\"a:\"#)"
+expression: "crate::tests::parsing_module_string(r#\"a:([int\"#)"
 ---
 Module {
     filename: "",
@@ -40,28 +40,59 @@ Module {
                         ),
                         filename: "",
                         line: 1,
-                        column: 2,
+                        column: 7,
                         end_line: 1,
-                        end_column: 2,
+                        end_column: 7,
                     },
                     type_annotation: Some(
                         Node {
-                            node: "any",
+                            node: "([int])",
                             filename: "",
                             line: 1,
                             column: 2,
                             end_line: 1,
-                            end_column: 2,
+                            end_column: 7,
                         },
                     ),
                     ty: Some(
                         Node {
-                            node: Any,
+                            node: Function(
+                                FunctionType {
+                                    params_ty: Some(
+                                        [
+                                            Node {
+                                                node: List(
+                                                    ListType {
+                                                        inner_type: Some(
+                                                            Node {
+                                                                node: Basic(
+                                                                    Int,
+                                                                ),
+                                                                filename: "",
+                                                                line: 1,
+                                                                column: 4,
+                                                                end_line: 1,
+                                                                end_column: 7,
+                                                            },
+                                                        ),
+                                                    },
+                                                ),
+                                                filename: "",
+                                                line: 1,
+                                                column: 3,
+                                                end_line: 1,
+                                                end_column: 7,
+                                            },
+                                        ],
+                                    ),
+                                    ret_ty: None,
+                                },
+                            ),
                             filename: "",
                             line: 1,
                             column: 2,
                             end_line: 1,
-                            end_column: 2,
+                            end_column: 7,
                         },
                     ),
                 },

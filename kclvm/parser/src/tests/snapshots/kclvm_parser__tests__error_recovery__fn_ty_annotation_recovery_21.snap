@@ -1,0 +1,153 @@
+---
+source: parser/src/tests/error_recovery.rs
+expression: "crate::tests::parsing_module_string(r#\"a:(str|int, int) -> i\"#)"
+---
+Module {
+    filename: "",
+    pkg: "",
+    doc: None,
+    name: "",
+    body: [
+        Node {
+            node: Assign(
+                AssignStmt {
+                    targets: [
+                        Node {
+                            node: Identifier {
+                                names: [
+                                    Node {
+                                        node: "a",
+                                        filename: "",
+                                        line: 1,
+                                        column: 0,
+                                        end_line: 1,
+                                        end_column: 1,
+                                    },
+                                ],
+                                pkgpath: "",
+                                ctx: Store,
+                            },
+                            filename: "",
+                            line: 1,
+                            column: 0,
+                            end_line: 1,
+                            end_column: 1,
+                        },
+                    ],
+                    value: Node {
+                        node: Missing(
+                            MissingExpr,
+                        ),
+                        filename: "",
+                        line: 1,
+                        column: 21,
+                        end_line: 1,
+                        end_column: 21,
+                    },
+                    type_annotation: Some(
+                        Node {
+                            node: "(str | int, int) -> i",
+                            filename: "",
+                            line: 1,
+                            column: 2,
+                            end_line: 1,
+                            end_column: 21,
+                        },
+                    ),
+                    ty: Some(
+                        Node {
+                            node: Function(
+                                FunctionType {
+                                    params_ty: Some(
+                                        [
+                                            Node {
+                                                node: Union(
+                                                    UnionType {
+                                                        type_elements: [
+                                                            Node {
+                                                                node: Basic(
+                                                                    Str,
+                                                                ),
+                                                                filename: "",
+                                                                line: 1,
+                                                                column: 3,
+                                                                end_line: 1,
+                                                                end_column: 6,
+                                                            },
+                                                            Node {
+                                                                node: Basic(
+                                                                    Int,
+                                                                ),
+                                                                filename: "",
+                                                                line: 1,
+                                                                column: 7,
+                                                                end_line: 1,
+                                                                end_column: 10,
+                                                            },
+                                                        ],
+                                                    },
+                                                ),
+                                                filename: "",
+                                                line: 1,
+                                                column: 3,
+                                                end_line: 1,
+                                                end_column: 10,
+                                            },
+                                            Node {
+                                                node: Basic(
+                                                    Int,
+                                                ),
+                                                filename: "",
+                                                line: 1,
+                                                column: 12,
+                                                end_line: 1,
+                                                end_column: 15,
+                                            },
+                                        ],
+                                    ),
+                                    ret_ty: Some(
+                                        Node {
+                                            node: Named(
+                                                Identifier {
+                                                    names: [
+                                                        Node {
+                                                            node: "i",
+                                                            filename: "",
+                                                            line: 1,
+                                                            column: 20,
+                                                            end_line: 1,
+                                                            end_column: 21,
+                                                        },
+                                                    ],
+                                                    pkgpath: "",
+                                                    ctx: Load,
+                                                },
+                                            ),
+                                            filename: "",
+                                            line: 1,
+                                            column: 20,
+                                            end_line: 1,
+                                            end_column: 21,
+                                        },
+                                    ),
+                                },
+                            ),
+                            filename: "",
+                            line: 1,
+                            column: 2,
+                            end_line: 1,
+                            end_column: 21,
+                        },
+                    ),
+                },
+            ),
+            filename: "",
+            line: 1,
+            column: 0,
+            end_line: 1,
+            end_column: 1,
+        },
+    ],
+    comments: [],
+}
+

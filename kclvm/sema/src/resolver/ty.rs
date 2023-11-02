@@ -408,7 +408,7 @@ impl<'ctx> Resolver<'ctx> {
                     }
                 };
 
-                Rc::new(Type::function(
+                Arc::new(Type::function(
                     fn_ty.self_ty.clone(),
                     ret_ty,
                     params_ty.as_slice(),

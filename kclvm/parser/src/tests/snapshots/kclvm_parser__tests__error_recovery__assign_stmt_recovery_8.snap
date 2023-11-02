@@ -51,7 +51,7 @@ Module {
                     },
                     type_annotation: Some(
                         Node {
-                            node: "function",
+                            node: "()",
                             filename: "",
                             line: 1,
                             column: 3,

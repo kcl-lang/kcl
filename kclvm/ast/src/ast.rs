@@ -1639,8 +1639,21 @@ impl ToString for Type {
                         w.push_str(&format!("\"{}\"", v.replace('"', "\\\"")));
                     }
                 },
-                Type::Function(_) => {
-                    w.push_str("function");
+                Type::Function(v) => {
+                    w.push_str("(");
+                    if let Some(params) = &v.params_ty {
+                        for (i, param) in params.iter().enumerate() {
+                            if i > 0 {
+                                w.push_str(", ");
+                            }
+                            to_str(&param.node, w);
+                        }
+                    }
+                    w.push_str(")");
+                    if let Some(ret) = &v.ret_ty {
+                        w.push_str(" -> ");
+                        to_str(&ret.node, w);
+                    }
                 }
             }
         }

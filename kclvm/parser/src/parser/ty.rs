@@ -221,12 +221,12 @@ impl<'a> Parser<'a> {
         }
         // (type) -> type
         else if let TokenKind::OpenDelim(DelimToken::Paren) = self.token.kind {
-            // Parse function type start with '('
             self.bump_token(TokenKind::OpenDelim(DelimToken::Paren));
-
             let mut params_type = vec![];
             // Parse all the params type until the params list end ')'
-            while self.token.kind != TokenKind::CloseDelim(DelimToken::Paren) {
+            while self.token.kind != TokenKind::CloseDelim(DelimToken::Paren)
+                && self.peek_has_next()
+            {
                 params_type.push(self.parse_type_annotation());
                 // All the params type should be separated by ','
                 if let TokenKind::Comma = self.token.kind {
@@ -271,9 +271,11 @@ impl<'a> Parser<'a> {
                 TokenKind::literal_value(),
                 TokenKind::OpenDelim(DelimToken::Bracket).into(),
                 TokenKind::OpenDelim(DelimToken::Brace).into(),
+                TokenKind::CloseDelim(DelimToken::Paren).into(),
             ],
             self.token,
         );
+        self.bump();
         Box::new(Node::node(
             Type::Any,
             self.sess.struct_token_loc(token, self.prev_token),

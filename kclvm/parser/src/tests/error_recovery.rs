@@ -286,3 +286,31 @@ parse_module_snapshot! { rule_stmt_recovery_7, r#"
 rule A:
     @
 "#}
+parse_module_snapshot! { fn_ty_annotation_recovery_0, r#"a:("#}
+parse_module_snapshot! { fn_ty_annotation_recovery_1, r#"a:(i"#}
+parse_module_snapshot! { fn_ty_annotation_recovery_2, r#"a:(int"#}
+parse_module_snapshot! { fn_ty_annotation_recovery_3, r#"a:i)"#}
+parse_module_snapshot! { fn_ty_annotation_recovery_4, r#"a:([i"#}
+parse_module_snapshot! { fn_ty_annotation_recovery_5, r#"a:([i:"#}
+parse_module_snapshot! { fn_ty_annotation_recovery_6, r#"a:([i]"#}
+parse_module_snapshot! { fn_ty_annotation_recovery_7, r#"a:([int]"#}
+parse_module_snapshot! { fn_ty_annotation_recovery_8, r#"a:([int"#}
+parse_module_snapshot! { fn_ty_annotation_recovery_9, r#"a:({}"#}
+parse_module_snapshot! { fn_ty_annotation_recovery_10, r#"a:({"#}
+parse_module_snapshot! { fn_ty_annotation_recovery_11, r#"a:({i"#}
+parse_module_snapshot! { fn_ty_annotation_recovery_12, r#"a:({i:"#}
+parse_module_snapshot! { fn_ty_annotation_recovery_13, r#"a:({i:i"#}
+parse_module_snapshot! { fn_ty_annotation_recovery_14, r#"a:({i:int"#}
+parse_module_snapshot! { fn_ty_annotation_recovery_15, r#"a:({i:int]"#}
+parse_module_snapshot! { fn_ty_annotation_recovery_16, r#"a:({str:int]"#}
+parse_module_snapshot! { fn_ty_annotation_recovery_17, r#"a:({str:int}"#}
+parse_module_snapshot! { fn_ty_annotation_recovery_18, r#"a:({str:int} ->"#}
+parse_module_snapshot! { fn_ty_annotation_recovery_19, r#"a:({str:int}) -> i"#}
+
+parse_module_snapshot! { fn_ty_annotation_recovery_20, r#"a:(str|int) -> i"#}
+
+parse_module_snapshot! { fn_ty_annotation_recovery_21, r#"a:(str|int, int) -> i"#}
+
+parse_module_snapshot! { fn_ty_annotation_recovery_22, r#"a:(str|int, int|"#}
+
+parse_module_snapshot! { fn_ty_annotation_recovery_23, r#"a:(str|int, int|) ->"#}

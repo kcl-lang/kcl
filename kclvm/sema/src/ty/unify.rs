@@ -75,8 +75,8 @@ pub fn subsume(ty_lhs: TypeRef, ty_rhs: TypeRef, check_left_any: bool) -> bool {
         {
             is_ok = is_ok
                 && (subsume(
-                    ty_lhs_param.ty.clone(),
                     ty_rhs_param.ty.clone(),
+                    ty_lhs_param.ty.clone(),
                     check_left_any,
                 ));
         }

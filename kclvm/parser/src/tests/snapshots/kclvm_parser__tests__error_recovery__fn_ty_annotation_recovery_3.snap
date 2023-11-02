@@ -1,6 +1,6 @@
 ---
 source: parser/src/tests/error_recovery.rs
-expression: "crate::tests::parsing_module_string(r#\"a:\"#)"
+expression: "crate::tests::parsing_module_string(r#\"a:i)\"#)"
 ---
 Module {
     filename: "",
@@ -40,28 +40,43 @@ Module {
                         ),
                         filename: "",
                         line: 1,
-                        column: 2,
+                        column: 3,
                         end_line: 1,
-                        end_column: 2,
+                        end_column: 4,
                     },
                     type_annotation: Some(
                         Node {
-                            node: "any",
+                            node: "i",
                             filename: "",
                             line: 1,
                             column: 2,
                             end_line: 1,
-                            end_column: 2,
+                            end_column: 3,
                         },
                     ),
                     ty: Some(
                         Node {
-                            node: Any,
+                            node: Named(
+                                Identifier {
+                                    names: [
+                                        Node {
+                                            node: "i",
+                                            filename: "",
+                                            line: 1,
+                                            column: 2,
+                                            end_line: 1,
+                                            end_column: 3,
+                                        },
+                                    ],
+                                    pkgpath: "",
+                                    ctx: Load,
+                                },
+                            ),
                             filename: "",
                             line: 1,
                             column: 2,
                             end_line: 1,
-                            end_column: 2,
+                            end_column: 3,
                         },
                     ),
                 },

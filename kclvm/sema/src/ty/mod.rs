@@ -432,7 +432,7 @@ pub struct FunctionType {
 impl FunctionType {
     pub fn ty_str(&self) -> String {
         format!(
-            "function ({}) -> {}",
+            "({}) -> {}",
             self.params
                 .iter()
                 .map(|param| param.ty.ty_str())

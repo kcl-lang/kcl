@@ -114,6 +114,7 @@ impl Type {
                     NUMBER_MULTIPLIER_PKG_TYPE_STR.to_string()
                 }
             }
+            TypeKind::Function(fn_ty) => fn_ty.ty_str(),
             _ => self.ty_str(),
         }
     }
@@ -172,14 +173,14 @@ impl From<ast::Type> for Type {
                 func_ty
                     .ret_ty
                     .as_ref()
-                    .map_or(Rc::new(Type::ANY), |ty| Rc::new(ty.node.clone().into())),
+                    .map_or(Arc::new(Type::ANY), |ty| Arc::new(ty.node.clone().into())),
                 func_ty
                     .params_ty
                     .map_or(vec![], |tys| {
                         tys.iter()
                             .map(|ty| Parameter {
                                 name: "".to_string(),
-                                ty: Rc::new(ty.node.clone().into()),
+                                ty: Arc::new(ty.node.clone().into()),
                                 has_default: false,
                             })
                             .collect::<Vec<Parameter>>()
