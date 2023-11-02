@@ -306,11 +306,7 @@ parse_module_snapshot! { fn_ty_annotation_recovery_16, r#"a:({str:int]"#}
 parse_module_snapshot! { fn_ty_annotation_recovery_17, r#"a:({str:int}"#}
 parse_module_snapshot! { fn_ty_annotation_recovery_18, r#"a:({str:int} ->"#}
 parse_module_snapshot! { fn_ty_annotation_recovery_19, r#"a:({str:int}) -> i"#}
-
 parse_module_snapshot! { fn_ty_annotation_recovery_20, r#"a:(str|int) -> i"#}
-
 parse_module_snapshot! { fn_ty_annotation_recovery_21, r#"a:(str|int, int) -> i"#}
-
 parse_module_snapshot! { fn_ty_annotation_recovery_22, r#"a:(str|int, int|"#}
-
 parse_module_snapshot! { fn_ty_annotation_recovery_23, r#"a:(str|int, int|) ->"#}
