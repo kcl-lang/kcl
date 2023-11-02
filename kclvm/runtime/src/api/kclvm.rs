@@ -6,11 +6,12 @@ use crate::{new_mut_ptr, IndexMap};
 use indexmap::IndexSet;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
+use std::panic::UnwindSafe;
+use std::rc::Rc;
 use std::{
     cell::RefCell,
     cmp::Ordering,
     hash::{Hash, Hasher},
-    rc::Rc,
 };
 
 #[allow(non_upper_case_globals)]
@@ -376,8 +377,8 @@ pub struct Context {
 
     pub imported_pkgpath: HashSet<String>,
     pub app_args: HashMap<String, u64>,
-    pub instances: RefCell<HashMap<String, Vec<ValueRef>>>,
-    pub all_schemas: RefCell<HashMap<String, SchemaType>>,
+    pub instances: HashMap<String, Vec<ValueRef>>,
+    pub all_schemas: HashMap<String, SchemaType>,
     pub import_names: IndexMap<String, IndexMap<String, String>>,
     pub symbol_names: Vec<String>,
     pub symbol_values: Vec<Value>,
@@ -388,6 +389,8 @@ pub struct Context {
     /// objects is to store all KCL object pointers.
     pub objects: IndexSet<usize>,
 }
+
+impl UnwindSafe for Context {}
 
 #[derive(PartialEq, Eq, Clone, Debug, Serialize, Deserialize)]
 pub struct BacktraceFrame {
@@ -421,7 +424,7 @@ impl BacktraceFrame {
 impl Context {
     pub fn new() -> Self {
         Context {
-            instances: RefCell::new(HashMap::new()),
+            instances: HashMap::new(),
             panic_info: PanicInfo {
                 kcl_func: "kclvm_main".to_string(),
                 ..Default::default()

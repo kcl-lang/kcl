@@ -72,15 +72,9 @@ pub fn resolve_schema(schema: &ValueRef, keys: &[String]) -> ValueRef {
     let schema_type_name = schema_runtime_type(&schema_value.name, &schema_value.pkgpath);
     let ctx = Context::current_context_mut();
     let now_meta_info = ctx.panic_info.clone();
-    let has_schema_type = {
-        let all_schemas = ctx.all_schemas.borrow_mut();
-        all_schemas.contains_key(&schema_type_name)
-    };
+    let has_schema_type = { ctx.all_schemas.contains_key(&schema_type_name) };
     if has_schema_type {
-        let schema_type = {
-            let all_schemas = ctx.all_schemas.borrow_mut();
-            all_schemas.get(&schema_type_name).unwrap().clone()
-        };
+        let schema_type = { ctx.all_schemas.get(&schema_type_name).unwrap().clone() };
         let schema_type = schema_type.func.as_function();
         let schema_fn_ptr = schema_type.fn_ptr;
         let keys = keys.iter().map(|v| v.as_str()).collect();
@@ -276,15 +270,9 @@ pub fn convert_collection_value(value: &ValueRef, tpe: &str) -> ValueRef {
                 }
             }
         }
-        let has_schema_type = {
-            let all_schemas = ctx.all_schemas.borrow_mut();
-            all_schemas.contains_key(&schema_type_name)
-        };
+        let has_schema_type = { ctx.all_schemas.contains_key(&schema_type_name) };
         if has_schema_type {
-            let schema_type = {
-                let all_schemas = ctx.all_schemas.borrow_mut();
-                all_schemas.get(&schema_type_name).unwrap().clone()
-            };
+            let schema_type = { ctx.all_schemas.get(&schema_type_name).unwrap().clone() };
             let schema_fn = schema_type.func.as_function();
             let schema_fn_ptr = schema_fn.fn_ptr;
             let value = unsafe {

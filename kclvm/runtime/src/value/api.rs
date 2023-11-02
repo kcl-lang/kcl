@@ -272,16 +272,15 @@ pub unsafe extern "C" fn kclvm_value_schema_with_config(
     let schema =
         schema_dict.dict_to_schema(name, pkgpath, &config_keys, config_meta, optional_mapping);
     // Runtime context
-    let ctx = Context::current_context();
+    let ctx = Context::current_context_mut();
     if record_instance.is_truthy()
         && (instance_pkgpath.is_empty() || instance_pkgpath == MAIN_PKG_PATH)
     {
         // Record schema instance in the context
-        let mut instance_map = ctx.instances.borrow_mut();
-        if !instance_map.contains_key(&runtime_type) {
-            instance_map.insert(runtime_type.clone(), vec![]);
+        if !ctx.instances.contains_key(&runtime_type) {
+            ctx.instances.insert(runtime_type.clone(), vec![]);
         }
-        instance_map
+        ctx.instances
             .get_mut(&runtime_type)
             .unwrap()
             .push(schema_dict.clone());
@@ -377,7 +376,6 @@ pub unsafe extern "C" fn kclvm_value_schema_function(
     let attr_map = ptr_as_ref(attr_map);
     let attr_dict = attr_map.as_dict_ref();
     let ctx = Context::current_context_mut();
-    let mut all_schemas = ctx.all_schemas.borrow_mut();
     let schema_ty = SchemaType {
         name: runtime_type.to_string(),
         attrs: attr_dict
@@ -388,7 +386,7 @@ pub unsafe extern "C" fn kclvm_value_schema_function(
         has_index_signature: attr_dict.attr_map.contains_key(CAL_MAP_INDEX_SIGNATURE),
         func: schema_func.clone(),
     };
-    all_schemas.insert(runtime_type.to_string(), schema_ty);
+    ctx.all_schemas.insert(runtime_type.to_string(), schema_ty);
     new_mut_ptr(schema_func)
 }
 
@@ -2000,10 +1998,9 @@ pub unsafe extern "C" fn kclvm_schema_instances(
             true
         };
         let runtime_type = &function.runtime_type;
-        let instance_map = ctx.instances.borrow_mut();
-        if instance_map.contains_key(runtime_type) {
+        if ctx.instances.contains_key(runtime_type) {
             let mut list = ValueRef::list(None);
-            for v in instance_map.get(runtime_type).unwrap() {
+            for v in ctx.instances.get(runtime_type).unwrap() {
                 if v.is_schema() {
                     let schema = v.as_schema();
                     if main_pkg {

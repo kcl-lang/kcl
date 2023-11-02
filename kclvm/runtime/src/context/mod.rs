@@ -4,7 +4,7 @@ pub mod api;
 pub use api::*;
 use std::fmt;
 
-use crate::{BacktraceFrame, PanicInfo};
+use crate::{BacktraceFrame, PanicInfo, RuntimePanicRecord};
 
 #[allow(non_camel_case_types)]
 type kclvm_value_ref_t = crate::ValueRef;
@@ -186,18 +186,10 @@ impl crate::Context {
         self.panic_info.is_warning = true;
     }
 
-    pub fn set_panic_info(&mut self, info: &std::panic::PanicInfo) {
+    pub(crate) fn set_panic_info(&mut self, record: &RuntimePanicRecord) {
         self.panic_info.__kcl_PanicInfo__ = true;
 
-        self.panic_info.message = if let Some(s) = info.payload().downcast_ref::<&str>() {
-            s.to_string()
-        } else if let Some(s) = info.payload().downcast_ref::<&String>() {
-            (*s).clone()
-        } else if let Some(s) = info.payload().downcast_ref::<String>() {
-            (*s).clone()
-        } else {
-            "".to_string()
-        };
+        self.panic_info.message = record.message.clone();
         if self.cfg.debug_mode {
             self.panic_info.backtrace = self.backtrace.clone();
             self.panic_info.backtrace.push(BacktraceFrame {
@@ -207,15 +199,10 @@ impl crate::Context {
                 line: self.panic_info.kcl_line,
             });
         }
-        if let Some(location) = info.location() {
-            self.panic_info.rust_file = location.file().to_string();
-            self.panic_info.rust_line = location.line() as i32;
-            self.panic_info.rust_col = location.column() as i32;
-        } else {
-            self.panic_info.rust_file = "".to_string();
-            self.panic_info.rust_line = 0;
-            self.panic_info.rust_col = 0;
-        }
+
+        self.panic_info.rust_file = record.rust_file.clone();
+        self.panic_info.rust_line = record.rust_line;
+        self.panic_info.rust_col = record.rust_col;
     }
 }
 
