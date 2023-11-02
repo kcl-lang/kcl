@@ -107,24 +107,7 @@ impl LanguageServerState {
             Handle { handle, _receiver }
         };
 
-        // build word index for all the workspace folders
-        // todo: async
-        let mut word_index_map = HashMap::new();
-        if let Some(workspace_folders) = initialize_params.workspace_folders {
-            for folder in workspace_folders {
-                let path = folder.uri.path();
-                if let Ok(word_index) = build_word_index(path.to_string()) {
-                    word_index_map.insert(folder.uri, word_index);
-                }
-            }
-        } else if let Some(root_uri) = initialize_params.root_uri {
-            let path = root_uri.path();
-            if let Ok(word_index) = build_word_index(path.to_string()) {
-                word_index_map.insert(root_uri, word_index);
-            }
-        }
-
-        LanguageServerState {
+        let state = LanguageServerState {
             sender,
             request_queue: ReqQueue::default(),
             _config: config,
@@ -135,9 +118,16 @@ impl LanguageServerState {
             shutdown_requested: false,
             analysis: Analysis::default(),
             opened_files: IndexSet::new(),
-            word_index_map: Arc::new(RwLock::new(word_index_map)),
+            word_index_map: Arc::new(RwLock::new(HashMap::new())),
             loader,
-        }
+        };
+
+        let word_index_map = state.word_index_map.clone();
+        state
+            .thread_pool
+            .execute(move || build_word_index_map(word_index_map, initialize_params));
+
+        state
     }
 
     /// Blocks until a new event is received from one of the many channels the language server
@@ -339,4 +329,23 @@ pub(crate) fn log_message(message: String, sender: &Sender<Task>) -> anyhow::Res
         lsp_types::LogMessageParams { typ, message },
     )))?;
     Ok(())
+}
+
+fn build_word_index_map(
+    word_index_map: Arc<RwLock<HashMap<Url, HashMap<String, Vec<Location>>>>>,
+    initialize_params: InitializeParams,
+) {
+    if let Some(workspace_folders) = initialize_params.workspace_folders {
+        for folder in workspace_folders {
+            let path = folder.uri.path();
+            if let Ok(word_index) = build_word_index(path.to_string()) {
+                word_index_map.write().insert(folder.uri, word_index);
+            }
+        }
+    } else if let Some(root_uri) = initialize_params.root_uri {
+        let path = root_uri.path();
+        if let Ok(word_index) = build_word_index(path.to_string()) {
+            word_index_map.write().insert(root_uri, word_index);
+        }
+    }
 }

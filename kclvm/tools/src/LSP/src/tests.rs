@@ -41,6 +41,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 use std::sync::Arc;
+use std::thread;
 use std::time::Duration;
 
 use kclvm_ast::ast::Program;
@@ -1616,6 +1617,8 @@ fn rename_test() {
             },
         },
     );
+    // Wait fro async build word_index_map
+    thread::sleep(Duration::from_secs(1));
 
     let id = server.next_request_id.get();
     server.next_request_id.set(id.wrapping_add(1));
