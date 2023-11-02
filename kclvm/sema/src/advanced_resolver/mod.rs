@@ -34,8 +34,6 @@
                         └─────────────────────┘
 */
 
-use std::sync::Arc;
-
 use indexmap::IndexMap;
 use kclvm_error::Position;
 
@@ -46,7 +44,7 @@ use crate::{
         scope::{LocalSymbolScope, RootSymbolScope, ScopeKind, ScopeRef},
         symbol::SymbolRef,
     },
-    ty::{Type, TypeRef},
+    ty::TypeRef,
 };
 use kclvm_ast::ast;
 use kclvm_ast::ast::AstIndex;
@@ -67,7 +65,7 @@ pub struct AdvancedResolver<'ctx> {
 
 pub struct Context<'ctx> {
     pub program: &'ctx Program,
-    node_ty_map: IndexMap<AstIndex, Arc<Type>>,
+    node_ty_map: IndexMap<AstIndex, TypeRef>,
     scopes: Vec<ScopeRef>,
     current_pkgpath: Option<String>,
     current_filename: Option<String>,
