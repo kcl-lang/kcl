@@ -57,6 +57,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
             self.walk_identifier_expr(target);
             self.ctx.maybe_def = false;
         }
+        self.walk_type_expr(assign_stmt.ty.as_ref().map(|ty| ty.as_ref()));
         self.expr(&assign_stmt.value);
         None
     }
@@ -88,8 +89,30 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
         None
     }
 
-    fn walk_import_stmt(&mut self, _import_stmt: &'ctx ast::ImportStmt) -> Self::Result {
-        None
+    fn walk_import_stmt(&mut self, import_stmt: &'ctx ast::ImportStmt) -> Self::Result {
+        let ast_id = self.ctx.cur_node.clone();
+        let (start_pos, end_pos) = (self.ctx.start_pos.clone(), self.ctx.end_pos.clone());
+        let mut unresolved =
+            UnresolvedSymbol::new(import_stmt.path.clone(), start_pos, end_pos, None);
+        let package_symbol = self
+            .gs
+            .get_symbols()
+            .get_symbol_by_fully_qualified_name(&import_stmt.path)?;
+        unresolved.def = Some(package_symbol);
+        let unresolved_ref = self
+            .gs
+            .get_symbols_mut()
+            .alloc_unresolved_symbol(unresolved, &ast_id);
+        self.gs
+            .get_symbols_mut()
+            .symbols_info
+            .ast_id_map
+            .insert(ast_id, unresolved_ref);
+        let cur_scope = *self.ctx.scopes.last().unwrap();
+        self.gs
+            .get_scopes_mut()
+            .add_ref_to_scope(cur_scope, unresolved_ref);
+        Some(unresolved_ref)
     }
 
     fn walk_schema_stmt(&mut self, schema_stmt: &'ctx ast::SchemaStmt) -> Self::Result {
@@ -363,6 +386,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
             self.walk_comp_clause(&comp_clause.node);
         }
         self.expr(key);
+        self.expr(&dict_comp.entry.value);
         self.leave_scope();
         None
     }
@@ -544,6 +568,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
             self.ctx.start_pos = start;
             self.ctx.end_pos = end;
         }
+        self.ctx.cur_node = expr.id.clone();
         let result = self.walk_expr(&expr.node);
         if let Some(symbol_ref) = result {
             self.update_symbol_info_by_node(symbol_ref, expr);
@@ -557,6 +582,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
         let (start, end) = stmt.get_span_pos();
         self.ctx.start_pos = start;
         self.ctx.end_pos = end;
+        self.ctx.cur_node = stmt.id.clone();
         let result = self.walk_stmt(&stmt.node);
         if let Some(symbol_ref) = result {
             self.update_symbol_info_by_node(symbol_ref, stmt);

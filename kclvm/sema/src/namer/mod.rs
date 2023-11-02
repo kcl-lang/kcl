@@ -41,6 +41,7 @@ use std::path::Path;
 use crate::core::global_state::GlobalState;
 use crate::core::package::{ModuleInfo, PackageInfo};
 use crate::core::symbol::{PackageSymbol, SymbolRef};
+use indexmap::IndexSet;
 use kclvm_ast::ast::Program;
 use kclvm_ast::walker::MutSelfTypedResultWalker;
 use kclvm_error::Position;
@@ -56,6 +57,7 @@ struct NamerContext<'ctx> {
     pub current_package_info: Option<PackageInfo>,
     pub current_module_info: Option<ModuleInfo>,
     pub owner_symbols: Vec<SymbolRef>,
+    pub value_fully_qualified_name_set: IndexSet<String>,
 }
 
 impl<'ctx> Namer<'ctx> {
@@ -66,6 +68,7 @@ impl<'ctx> Namer<'ctx> {
                 current_package_info: None,
                 current_module_info: None,
                 owner_symbols: Vec::default(),
+                value_fully_qualified_name_set: IndexSet::default(),
             },
             gs,
         }
@@ -80,6 +83,7 @@ impl<'ctx> Namer<'ctx> {
                 if modules.is_empty() {
                     continue;
                 }
+                namer.ctx.value_fully_qualified_name_set.clear();
                 let mut real_path = Path::new(&program.root)
                     .join(name.replace('.', &std::path::MAIN_SEPARATOR.to_string()))
                     .to_str()
@@ -103,6 +107,13 @@ impl<'ctx> Namer<'ctx> {
             }
 
             for module in modules.iter() {
+                namer
+                    .ctx
+                    .current_package_info
+                    .as_mut()
+                    .unwrap()
+                    .kfile_paths
+                    .insert(module.filename.clone());
                 namer.ctx.current_module_info =
                     Some(ModuleInfo::new(module.filename.clone(), name.to_string()));
                 namer.walk_module(module);

@@ -58,7 +58,7 @@ impl ScopeRef {
     }
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct ScopeData {
     /// map pkgpath to root_scope
     pub(crate) root_map: IndexMap<String, ScopeRef>,
@@ -141,7 +141,7 @@ impl ScopeData {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RootSymbolScope {
     pub(crate) pkgpath: String,
 
@@ -256,7 +256,7 @@ impl Scope for RootSymbolScope {
             for (index, scope) in scopes.iter().enumerate() {
                 let scope = scope_data.get_scope(*scope)?;
                 output.push_str(&format!("{}", scope.dump(scope_data, symbol_data)?));
-                if index + 1 < self.children.len() {
+                if index + 1 < scopes.len() {
                     output.push_str(",\n");
                 }
             }
@@ -293,7 +293,7 @@ impl RootSymbolScope {
 }
 
 #[allow(unused)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct LocalSymbolScope {
     pub(crate) parent: ScopeRef,
     pub(crate) owner: Option<SymbolRef>,

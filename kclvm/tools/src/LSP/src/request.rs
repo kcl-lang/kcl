@@ -14,7 +14,7 @@ use crate::{
     find_refs::find_refs,
     formatting::format,
     from_lsp::{self, file_path_from_url, kcl_pos},
-    goto_def::goto_definition,
+    goto_def::goto_definition_with_gs,
     hover, quick_fix,
     state::{log_message, LanguageServerSnapshot, LanguageServerState, Task},
 };
@@ -146,7 +146,7 @@ pub(crate) fn handle_goto_definition(
     }
     let db = snapshot.get_db(&path.clone().into())?;
     let kcl_pos = kcl_pos(&file, params.text_document_position_params.position);
-    let res = goto_definition(&db.prog, &kcl_pos, &db.scope);
+    let res = goto_definition_with_gs(&db.prog, &kcl_pos, &db.scope, &db.gs);
     if res.is_none() {
         log_message("Definition item not found".to_string(), &sender)?;
     }

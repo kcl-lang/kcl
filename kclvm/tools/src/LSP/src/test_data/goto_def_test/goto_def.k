@@ -81,3 +81,7 @@ items1 = [item | {
 p4 = Person {
     n.name: "a"
 }
+
+func = lambda x: int, y: int -> int {
+    x + y
+}

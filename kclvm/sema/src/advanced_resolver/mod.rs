@@ -72,6 +72,7 @@ pub struct Context<'ctx> {
     current_schema_symbol: Option<SymbolRef>,
     start_pos: Position,
     end_pos: Position,
+    cur_node: AstIndex,
 
     // whether the identifier currently being visited may be a definition
     // it will only be true when visiting a lvalue or parameter,
@@ -97,6 +98,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
                 current_schema_symbol: None,
                 start_pos: Position::dummy_pos(),
                 end_pos: Position::dummy_pos(),
+                cur_node: AstIndex::default(),
                 maybe_def: false,
             },
         };
@@ -104,7 +106,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
         for (name, modules) in advanced_resolver.ctx.program.pkgs.iter() {
             advanced_resolver.ctx.current_pkgpath = Some(name.clone());
             if let Some(pkg_info) = advanced_resolver.gs.get_packages().get_package_info(name) {
-                advanced_resolver.enter_root_scope(name.clone(), pkg_info.filename.clone());
+                advanced_resolver.enter_root_scope(name.clone(), pkg_info.pkg_filepath.clone());
                 if modules.is_empty() {
                     continue;
                 }
@@ -272,8 +274,16 @@ mod tests {
         let gs = Namer::find_symbols(&program, gs);
         let node_ty_map = resolver::resolve_program(&mut program).node_ty_map;
         let gs = AdvancedResolver::resolve_program(&program, gs, node_ty_map);
-        //print_symbols_info(&gs);
         let except_symbols = vec![
+            (
+                "src/advanced_resolver/test_data/import_test/d.k"
+                    .to_string()
+                    .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
+                vec![
+                    (1, 7, 1, 13, "Parent".to_string(), SymbolKind::Schema),
+                    (2, 4, 2, 8, "age1".to_string(), SymbolKind::Attribute),
+                ],
+            ),
             (
                 "src/advanced_resolver/test_data/import_test/f.k"
                     .to_string()
@@ -284,19 +294,129 @@ mod tests {
                 ],
             ),
             (
-                "src/advanced_resolver/test_data/import_test/c.k"
-                    .to_string()
-                    .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
-                vec![
-                    (1, 7, 1, 18, "TestOfMixin".to_string(), SymbolKind::Schema),
-                    (2, 4, 2, 7, "age".to_string(), SymbolKind::Attribute),
-                ],
-            ),
-            (
                 "src/advanced_resolver/test_data/schema_symbols.k"
                     .to_string()
                     .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
                 vec![
+                    (
+                        1,
+                        0,
+                        1,
+                        20,
+                        "import_test.a".to_string(),
+                        SymbolKind::Unresolved,
+                    ),
+                    (
+                        0,
+                        0,
+                        0,
+                        0,
+                        "src/advanced_resolver/test_data/import_test/a"
+                            .to_string()
+                            .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
+                        SymbolKind::Package,
+                    ),
+                    (
+                        2,
+                        0,
+                        2,
+                        20,
+                        "import_test.b".to_string(),
+                        SymbolKind::Unresolved,
+                    ),
+                    (
+                        0,
+                        0,
+                        0,
+                        0,
+                        "src/advanced_resolver/test_data/import_test/b"
+                            .to_string()
+                            .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
+                        SymbolKind::Package,
+                    ),
+                    (
+                        3,
+                        0,
+                        3,
+                        20,
+                        "import_test.c".to_string(),
+                        SymbolKind::Unresolved,
+                    ),
+                    (
+                        0,
+                        0,
+                        0,
+                        0,
+                        "src/advanced_resolver/test_data/import_test/c"
+                            .to_string()
+                            .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
+                        SymbolKind::Package,
+                    ),
+                    (
+                        4,
+                        0,
+                        4,
+                        20,
+                        "import_test.d".to_string(),
+                        SymbolKind::Unresolved,
+                    ),
+                    (
+                        0,
+                        0,
+                        0,
+                        0,
+                        "src/advanced_resolver/test_data/import_test/d"
+                            .to_string()
+                            .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
+                        SymbolKind::Package,
+                    ),
+                    (
+                        5,
+                        0,
+                        5,
+                        20,
+                        "import_test.e".to_string(),
+                        SymbolKind::Unresolved,
+                    ),
+                    (
+                        0,
+                        0,
+                        0,
+                        0,
+                        "src/advanced_resolver/test_data/import_test/e"
+                            .to_string()
+                            .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
+                        SymbolKind::Package,
+                    ),
+                    (
+                        6,
+                        0,
+                        6,
+                        25,
+                        "import_test.f".to_string(),
+                        SymbolKind::Unresolved,
+                    ),
+                    (
+                        0,
+                        0,
+                        0,
+                        0,
+                        "src/advanced_resolver/test_data/import_test/f"
+                            .to_string()
+                            .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
+                        SymbolKind::Package,
+                    ),
+                    (7, 0, 7, 10, "pkg".to_string(), SymbolKind::Unresolved),
+                    (
+                        0,
+                        0,
+                        0,
+                        0,
+                        "src/advanced_resolver/test_data/pkg"
+                            .to_string()
+                            .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
+                        SymbolKind::Package,
+                    ),
                     (10, 7, 10, 11, "Main".to_string(), SymbolKind::Schema),
                     (10, 12, 10, 13, "d".to_string(), SymbolKind::Unresolved),
                     (
@@ -515,8 +635,28 @@ mod tests {
                             .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
                         SymbolKind::Value,
                     ),
-                    (24, 4, 24, 6, "_c".to_string(), SymbolKind::Value),
-                    (26, 4, 26, 6, "_c".to_string(), SymbolKind::Value),
+                    (24, 4, 24, 6, "_c".to_string(), SymbolKind::Unresolved),
+                    (
+                        22,
+                        4,
+                        22,
+                        6,
+                        "src/advanced_resolver/test_data/schema_symbols.k"
+                            .to_string()
+                            .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
+                        SymbolKind::Value,
+                    ),
+                    (26, 4, 26, 6, "_c".to_string(), SymbolKind::Unresolved),
+                    (
+                        22,
+                        4,
+                        22,
+                        6,
+                        "src/advanced_resolver/test_data/schema_symbols.k"
+                            .to_string()
+                            .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
+                        SymbolKind::Value,
+                    ),
                     (28, 0, 28, 1, "p".to_string(), SymbolKind::Value),
                     (28, 4, 28, 8, "Main".to_string(), SymbolKind::Unresolved),
                     (
@@ -755,12 +895,47 @@ mod tests {
                 ],
             ),
             (
-                "src/advanced_resolver/test_data/import_test/e.k"
+                "src/advanced_resolver/test_data/pkg/pkg.k"
                     .to_string()
                     .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
                 vec![
-                    (1, 7, 1, 16, "UnionType".to_string(), SymbolKind::Schema),
-                    (2, 4, 2, 5, "a".to_string(), SymbolKind::Attribute),
+                    (1, 7, 1, 11, "Name".to_string(), SymbolKind::Schema),
+                    (2, 4, 2, 8, "name".to_string(), SymbolKind::Attribute),
+                    (4, 7, 4, 13, "Person".to_string(), SymbolKind::Schema),
+                    (5, 4, 5, 8, "name".to_string(), SymbolKind::Attribute),
+                    (5, 10, 5, 14, "Name".to_string(), SymbolKind::Unresolved),
+                    (
+                        1,
+                        7,
+                        1,
+                        11,
+                        "src/advanced_resolver/test_data/pkg/pkg.k"
+                            .to_string()
+                            .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
+                        SymbolKind::Schema,
+                    ),
+                    (5, 17, 5, 21, "Name".to_string(), SymbolKind::Unresolved),
+                    (
+                        1,
+                        7,
+                        1,
+                        11,
+                        "src/advanced_resolver/test_data/pkg/pkg.k"
+                            .to_string()
+                            .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
+                        SymbolKind::Schema,
+                    ),
+                    (5, 23, 5, 27, "name".to_string(), SymbolKind::Unresolved),
+                    (
+                        2,
+                        4,
+                        2,
+                        8,
+                        "src/advanced_resolver/test_data/pkg/pkg.k"
+                            .to_string()
+                            .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
+                        SymbolKind::Attribute,
+                    ),
                 ],
             ),
             (
@@ -870,56 +1045,21 @@ mod tests {
                 ],
             ),
             (
-                "src/advanced_resolver/test_data/import_test/d.k"
+                "src/advanced_resolver/test_data/import_test/c.k"
                     .to_string()
                     .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
                 vec![
-                    (1, 7, 1, 13, "Parent".to_string(), SymbolKind::Schema),
-                    (2, 4, 2, 8, "age1".to_string(), SymbolKind::Attribute),
+                    (1, 7, 1, 18, "TestOfMixin".to_string(), SymbolKind::Schema),
+                    (2, 4, 2, 7, "age".to_string(), SymbolKind::Attribute),
                 ],
             ),
             (
-                "src/advanced_resolver/test_data/pkg/pkg.k"
+                "src/advanced_resolver/test_data/import_test/e.k"
                     .to_string()
                     .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
                 vec![
-                    (1, 7, 1, 11, "Name".to_string(), SymbolKind::Schema),
-                    (2, 4, 2, 8, "name".to_string(), SymbolKind::Attribute),
-                    (4, 7, 4, 13, "Person".to_string(), SymbolKind::Schema),
-                    (5, 4, 5, 8, "name".to_string(), SymbolKind::Attribute),
-                    (5, 10, 5, 14, "Name".to_string(), SymbolKind::Unresolved),
-                    (
-                        1,
-                        7,
-                        1,
-                        11,
-                        "src/advanced_resolver/test_data/pkg/pkg.k"
-                            .to_string()
-                            .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
-                        SymbolKind::Schema,
-                    ),
-                    (5, 17, 5, 21, "Name".to_string(), SymbolKind::Unresolved),
-                    (
-                        1,
-                        7,
-                        1,
-                        11,
-                        "src/advanced_resolver/test_data/pkg/pkg.k"
-                            .to_string()
-                            .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
-                        SymbolKind::Schema,
-                    ),
-                    (5, 23, 5, 27, "name".to_string(), SymbolKind::Unresolved),
-                    (
-                        2,
-                        4,
-                        2,
-                        8,
-                        "src/advanced_resolver/test_data/pkg/pkg.k"
-                            .to_string()
-                            .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
-                        SymbolKind::Attribute,
-                    ),
+                    (1, 7, 1, 16, "UnionType".to_string(), SymbolKind::Schema),
+                    (2, 4, 2, 5, "a".to_string(), SymbolKind::Attribute),
                 ],
             ),
             (

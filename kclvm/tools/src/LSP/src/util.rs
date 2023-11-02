@@ -13,6 +13,9 @@ use kclvm_error::Diagnostic;
 use kclvm_error::Position as KCLPos;
 use kclvm_parser::entry::get_dir_files;
 use kclvm_parser::{load_program, ParseSession};
+use kclvm_sema::advanced_resolver::AdvancedResolver;
+use kclvm_sema::core::global_state::GlobalState;
+use kclvm_sema::namer::Namer;
 use kclvm_sema::resolver::resolve_program_with_opts;
 use kclvm_sema::resolver::scope::ProgramScope;
 use kclvm_sema::resolver::scope::Scope;
@@ -66,7 +69,7 @@ pub(crate) struct Param {
 pub(crate) fn parse_param_and_compile(
     param: Param,
     vfs: Option<Arc<RwLock<Vfs>>>,
-) -> anyhow::Result<(Program, ProgramScope, IndexSet<Diagnostic>)> {
+) -> anyhow::Result<(Program, ProgramScope, IndexSet<Diagnostic>, GlobalState)> {
     let (files, opt) = lookup_compile_unit(&param.file, true);
     let files: Vec<&str> = files.iter().map(|s| s.as_str()).collect();
     let mut opt = opt.unwrap_or_default();
@@ -85,12 +88,19 @@ pub(crate) fn parse_param_and_compile(
         &mut program,
         kclvm_sema::resolver::Options {
             merge_program: false,
+            type_alise: false,
             ..Default::default()
         },
     );
+
+    let gs = GlobalState::default();
+    let gs = Namer::find_symbols(&program, gs);
+    let node_ty_map = prog_scope.node_ty_map.clone();
+    let global_state = AdvancedResolver::resolve_program(&program, gs, node_ty_map);
+
     sess.append_diagnostic(prog_scope.handler.diagnostics.clone());
     let diags = sess.1.borrow().diagnostics.clone();
-    Ok((program, prog_scope, diags))
+    Ok((program, prog_scope, diags, global_state))
 }
 
 /// Update text with TextDocumentContentChangeEvent param

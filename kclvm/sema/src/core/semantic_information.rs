@@ -1,17 +1,18 @@
 use indexmap::IndexMap;
+use kclvm_ast::ast::AstIndex;
+use std::sync::Arc;
 
 use super::{scope::ScopeRef, symbol::SymbolRef};
-use crate::ty::TypeRef;
-use kclvm_ast::ast::AstIndex;
+use crate::ty::Type;
 #[allow(unused)]
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct SemanticDB {
-    pub(crate) tys: IndexMap<AstIndex, TypeRef>,
+    pub(crate) tys: IndexMap<AstIndex, Arc<Type>>,
     pub(crate) file_sema_map: IndexMap<String, FileSemanticInfo>,
 }
 
 #[allow(unused)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FileSemanticInfo {
     pub(crate) filename: String,
     pub(crate) symbols: Vec<SymbolRef>,
@@ -46,7 +47,7 @@ impl FileSemanticInfo {
     }
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct SymbolLocation {
     pub(crate) line: u64,
     pub(crate) column: u64,

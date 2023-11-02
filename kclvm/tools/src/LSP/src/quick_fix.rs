@@ -103,7 +103,7 @@ mod tests {
         test_file.push("src/test_data/quick_fix.k");
         let file = test_file.to_str().unwrap();
 
-        let (_, _, diags) = parse_param_and_compile(
+        let (_, _, diags, _) = parse_param_and_compile(
             Param {
                 file: file.to_string(),
             },

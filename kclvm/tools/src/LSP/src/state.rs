@@ -217,9 +217,16 @@ impl LanguageServerState {
                         },
                         Some(self.vfs.clone()),
                     ) {
-                        Ok((prog, scope, diags)) => {
-                            self.analysis
-                                .set_db(file.file_id, AnalysisDatabase { prog, scope, diags });
+                        Ok((prog, scope, diags, gs)) => {
+                            self.analysis.set_db(
+                                file.file_id,
+                                AnalysisDatabase {
+                                    prog,
+                                    scope,
+                                    diags,
+                                    gs,
+                                },
+                            );
                         }
                         Err(_) => self.log_message(format!("{filename} compilation failed")),
                     }
