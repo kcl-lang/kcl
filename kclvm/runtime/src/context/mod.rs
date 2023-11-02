@@ -80,20 +80,6 @@ impl crate::Context {
         Box::into_raw(Box::new(self))
     }
 
-    pub fn current_context() -> &'static crate::Context {
-        unsafe {
-            let ctx = kclvm_context_current();
-            &*ctx
-        }
-    }
-
-    pub fn current_context_mut() -> &'static mut crate::Context {
-        unsafe {
-            let ctx = kclvm_context_current();
-            &mut *ctx
-        }
-    }
-
     pub fn main_begin_hook(&mut self) {
         // Nothing to do
     }
@@ -106,10 +92,10 @@ impl crate::Context {
 
         if self.cfg.list_option_mode {
             self.output.return_value =
-                crate::ValueRef::str(self.list_option_help().as_str()).into_raw();
+                crate::ValueRef::str(self.list_option_help().as_str()).into_raw(self);
         // If there is a custom manifests, output them.
         } else if let Some(output) = &self.buffer.custom_manifests_output {
-            self.output.return_value = crate::ValueRef::str(output.as_str()).into_raw();
+            self.output.return_value = crate::ValueRef::str(output.as_str()).into_raw(self);
         }
 
         self.output.return_value

@@ -71,7 +71,6 @@ pub fn _kclvm_get_fn_ptr_by_name(name: &str) -> u64 {
         "kclvm_builtin_typeof" => crate::kclvm_builtin_typeof as *const () as u64,
         "kclvm_builtin_zip" => crate::kclvm_builtin_zip as *const () as u64,
         "kclvm_config_attr_map" => crate::kclvm_config_attr_map as *const () as u64,
-        "kclvm_context_current" => crate::kclvm_context_current as *const () as u64,
         "kclvm_context_delete" => crate::kclvm_context_delete as *const () as u64,
         "kclvm_context_invoke" => crate::kclvm_context_invoke as *const () as u64,
         "kclvm_context_main_begin_hook" => crate::kclvm_context_main_begin_hook as *const () as u64,

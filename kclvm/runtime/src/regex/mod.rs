@@ -9,7 +9,7 @@ use crate::*;
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_regex_match(
-    _ctx: *mut kclvm_context_t,
+    ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
@@ -21,12 +21,12 @@ pub extern "C" fn kclvm_regex_match(
             match re.is_match(string.as_ref()) {
                 Ok(ok) => {
                     if ok {
-                        return kclvm_value_Bool(1);
+                        return kclvm_value_Bool(ctx, 1);
                     } else {
-                        return kclvm_value_Bool(0);
+                        return kclvm_value_Bool(ctx, 0);
                     }
                 }
-                _ => return kclvm_value_Bool(0),
+                _ => return kclvm_value_Bool(ctx, 0),
             }
         }
     }
@@ -39,19 +39,19 @@ pub extern "C" fn kclvm_regex_match(
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_regex_replace(
-    _ctx: *mut kclvm_context_t,
+    ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
     let args = ptr_as_ref(args);
-
+    let ctx = mut_ptr_as_ref(ctx);
     if let Some(string) = args.arg_i_str(0, None) {
         if let Some(pattern) = args.arg_i_str(1, None) {
             if let Some(replace) = args.arg_i_str(2, None) {
                 if let Some(count) = args.arg_i_int(3, Some(0)) {
                     let re = fancy_regex::Regex::new(pattern.as_ref()).unwrap();
                     let s = re.replacen(string.as_ref(), count as usize, replace.as_ref() as &str);
-                    return ValueRef::str(&s).into_raw();
+                    return ValueRef::str(&s).into_raw(ctx);
                 }
             }
         }
@@ -64,7 +64,7 @@ pub extern "C" fn kclvm_regex_replace(
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_regex_compile(
-    _ctx: *mut kclvm_context_t,
+    ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
@@ -72,8 +72,8 @@ pub extern "C" fn kclvm_regex_compile(
 
     if let Some(pattern) = args.arg_i_str(0, None) {
         match fancy_regex::Regex::new(pattern.as_ref()) {
-            Ok(_) => return kclvm_value_Bool(1),
-            _ => return kclvm_value_Bool(0),
+            Ok(_) => return kclvm_value_Bool(ctx, 1),
+            _ => return kclvm_value_Bool(ctx, 0),
         }
     }
     panic!("compile() missing 2 required positional arguments: 'string' and 'pattern'")
@@ -84,12 +84,12 @@ pub extern "C" fn kclvm_regex_compile(
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_regex_findall(
-    _ctx: *mut kclvm_context_t,
+    ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
     let args = ptr_as_ref(args);
-
+    let ctx = mut_ptr_as_ref(ctx);
     if let Some(string) = args.arg_i_str(0, None) {
         if let Some(pattern) = args.arg_i_str(1, None) {
             let mut list = ValueRef::list(None);
@@ -111,7 +111,7 @@ pub extern "C" fn kclvm_regex_findall(
                 }
             }
 
-            return list.into_raw();
+            return list.into_raw(ctx);
         }
     }
 
@@ -123,7 +123,7 @@ pub extern "C" fn kclvm_regex_findall(
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_regex_search(
-    _ctx: *mut kclvm_context_t,
+    ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
@@ -134,9 +134,9 @@ pub extern "C" fn kclvm_regex_search(
             let re = fancy_regex::Regex::new(pattern.as_ref()).unwrap();
 
             if let Ok(Some(..)) = re.find(string.as_ref()) {
-                return kclvm_value_Bool(1);
+                return kclvm_value_Bool(ctx, 1);
             }
-            return kclvm_value_Bool(0);
+            return kclvm_value_Bool(ctx, 0);
         }
     }
     panic!("search() missing 2 required positional arguments: 'string' and 'pattern'");
@@ -147,12 +147,12 @@ pub extern "C" fn kclvm_regex_search(
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_regex_split(
-    _ctx: *mut kclvm_context_t,
+    ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
     let args = ptr_as_ref(args);
-
+    let ctx = mut_ptr_as_ref(ctx);
     if let Some(string) = args.arg_i_str(0, None) {
         if let Some(pattern) = args.arg_i_str(1, None) {
             if let Some(maxsplit) = args.arg_i_int(2, Some(0)) {
@@ -181,7 +181,7 @@ pub extern "C" fn kclvm_regex_split(
                 for s in fields {
                     list.list_append(&ValueRef::str(s.as_ref()));
                 }
-                return list.into_raw();
+                return list.into_raw(ctx);
             }
         }
     }

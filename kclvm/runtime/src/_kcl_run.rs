@@ -90,6 +90,7 @@ pub unsafe extern "C" fn _kcl_run(
 
     let result = std::panic::catch_unwind(|| {
         _kcl_run_in_closure(
+            ctx,
             kclvm_main_ptr,
             option_len,
             option_keys,
@@ -106,11 +107,13 @@ pub unsafe extern "C" fn _kcl_run(
     std::panic::set_hook(prev_hook);
     KCL_RUNTIME_PANIC_RECORD.with(|record| {
         let record = record.borrow();
-        Context::current_context_mut().set_panic_info(&record);
+        let ctx = mut_ptr_as_ref(ctx);
+        ctx.set_panic_info(&record);
     });
     match result {
         Ok(n) => {
-            let json_panic_info = Context::current_context().get_panic_info_json_string();
+            let ctx_ref = ptr_as_ref(ctx);
+            let json_panic_info = ctx_ref.get_panic_info_json_string();
 
             let c_str_ptr = json_panic_info.as_ptr() as *const i8;
             let c_str_len = json_panic_info.len() as i32;
@@ -125,7 +128,8 @@ pub unsafe extern "C" fn _kcl_run(
             n
         }
         Err(_) => {
-            let json_panic_info = Context::current_context().get_panic_info_json_string();
+            let ctx_ref = ptr_as_ref(ctx);
+            let json_panic_info = ctx_ref.get_panic_info_json_string();
 
             let c_str_ptr = json_panic_info.as_ptr() as *const i8;
             let c_str_len = json_panic_info.len() as i32;
@@ -149,6 +153,7 @@ pub unsafe extern "C" fn _kcl_run(
 
 #[allow(clippy::too_many_arguments)]
 unsafe fn _kcl_run_in_closure(
+    ctx: *mut Context,
     kclvm_main_ptr: u64, // main.k => kclvm_main
     option_len: kclvm_size_t,
     option_keys: *const *const kclvm_char_t,
@@ -161,8 +166,6 @@ unsafe fn _kcl_run_in_closure(
     result_buffer_len: kclvm_size_t,
     result_buffer: *mut kclvm_char_t,
 ) -> kclvm_size_t {
-    let ctx = kclvm_context_current();
-
     let kclvm_main = (&kclvm_main_ptr as *const u64) as *const ()
         as *const extern "C" fn(ctx: *mut kclvm_context_t) -> *mut kclvm_value_ref_t;
 
@@ -181,7 +184,7 @@ unsafe fn _kcl_run_in_closure(
         }
 
         let value = if kclvm_main.is_null() {
-            kclvm_value_Str(b"{}\0" as *const u8 as *const kclvm_char_t)
+            kclvm_value_Str(ctx, b"{}\0" as *const u8 as *const kclvm_char_t)
         } else {
             kclvm_context_main_begin_hook(ctx);
             let x = (*kclvm_main)(ctx);

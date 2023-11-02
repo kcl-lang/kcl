@@ -6,7 +6,7 @@ use crate::{new_mut_ptr, IndexMap};
 use indexmap::IndexSet;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
-use std::panic::UnwindSafe;
+use std::panic::{RefUnwindSafe, UnwindSafe};
 use std::rc::Rc;
 use std::{
     cell::RefCell,
@@ -198,8 +198,8 @@ impl ValueRef {
         std::ptr::eq(&*self.rc.borrow(), &*x.rc.borrow())
     }
 
-    pub fn into_raw(self) -> *mut Self {
-        new_mut_ptr(self)
+    pub fn into_raw(self, ctx: &mut Context) -> *mut Self {
+        new_mut_ptr(ctx, self)
     }
 
     pub fn from_raw(&self) {
@@ -391,6 +391,7 @@ pub struct Context {
 }
 
 impl UnwindSafe for Context {}
+impl RefUnwindSafe for Context {}
 
 #[derive(PartialEq, Eq, Clone, Debug, Serialize, Deserialize)]
 pub struct BacktraceFrame {

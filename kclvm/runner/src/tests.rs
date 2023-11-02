@@ -479,9 +479,6 @@ fn test_from_setting_file_program_arg() {
 }
 
 fn test_exec_file() {
-    let prev_hook = std::panic::take_hook();
-    // disable print panic info
-    std::panic::set_hook(Box::new(|_| {}));
     let result = std::panic::catch_unwind(|| {
         for file in get_files(exec_data_path(), false, true, ".k") {
             exec(&file).unwrap();
@@ -489,7 +486,6 @@ fn test_exec_file() {
         }
     });
     assert!(result.is_ok());
-    std::panic::set_hook(prev_hook);
 }
 
 fn test_custom_manifests_output() {

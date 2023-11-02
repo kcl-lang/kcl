@@ -30,12 +30,13 @@ pub extern "C" fn kclvm_plugin_init(
 #[no_mangle]
 #[runtime_fn]
 pub unsafe extern "C" fn kclvm_plugin_invoke(
+    ctx: *mut kclvm_context_t,
     method: *const i8,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
-    let args_s = kclvm_value_to_json_value_with_null(args);
-    let kwargs_s = kclvm_value_to_json_value_with_null(kwargs);
+    let args_s = kclvm_value_to_json_value_with_null(ctx, args);
+    let kwargs_s = kclvm_value_to_json_value_with_null(ctx, kwargs);
 
     let args_json = kclvm_value_Str_ptr(args_s);
     let kwargs_json = kclvm_value_Str_ptr(kwargs_s);
@@ -46,10 +47,10 @@ pub unsafe extern "C" fn kclvm_plugin_invoke(
     // kclvm_value_delete(args_s);
     // kclvm_value_delete(kwargs_s);
 
-    let ptr = kclvm_value_from_json(result_json);
+    let ptr = kclvm_value_from_json(ctx, result_json);
     {
         if let Some(msg) = ptr_as_ref(ptr).dict_get_value("__kcl_PanicInfo__") {
-            let ctx = Context::current_context_mut();
+            let ctx = mut_ptr_as_ref(ctx);
             ctx.set_err_type(&ErrType::EvaluationError_TYPE);
 
             panic!("{}", msg.as_str());

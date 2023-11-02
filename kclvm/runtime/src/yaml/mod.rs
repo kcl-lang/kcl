@@ -6,7 +6,7 @@ use crate::*;
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_yaml_encode(
-    _ctx: *mut kclvm_context_t,
+    ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
@@ -18,7 +18,7 @@ pub extern "C" fn kclvm_yaml_encode(
             arg0.to_yaml_string_with_options(&kwargs_to_opts(kwargs))
                 .as_ref(),
         );
-        return s.into_raw();
+        return s.into_raw(mut_ptr_as_ref(ctx));
     }
     panic!("encode() missing 1 required positional argument: 'value'")
 }
@@ -26,15 +26,16 @@ pub extern "C" fn kclvm_yaml_encode(
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_yaml_decode(
-    _ctx: *mut kclvm_context_t,
+    ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
 
+    let ctx = mut_ptr_as_ref(ctx);
     if let Some(arg0) = args.arg_i(0) {
-        match ValueRef::from_yaml(arg0.as_str().as_ref()) {
-            Ok(x) => return x.into_raw(),
+        match ValueRef::from_yaml(ctx, arg0.as_str().as_ref()) {
+            Ok(x) => return x.into_raw(ctx),
             Err(err) => panic!("{}", err),
         }
     }

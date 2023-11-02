@@ -41,8 +41,8 @@ pub trait ValueMethods: BackendTypes {
     fn builtin_function_value(&self, function_name: &str) -> Self::Value;
     /// Get a global value pointer named `name`.
     fn global_value_ptr(&self, name: &str) -> Self::Value;
-    /// Get the global runtime context pointer.
-    fn global_ctx_ptr(&self) -> Self::Value;
+    /// Get current runtime context pointer.
+    fn current_runtime_ctx_ptr(&self) -> Self::Value;
 }
 
 /// DerivedValueCalculationMethods defines all value base calculation APIs.

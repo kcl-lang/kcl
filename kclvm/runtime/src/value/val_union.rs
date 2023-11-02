@@ -37,6 +37,7 @@ impl Default for UnionOptions {
 impl ValueRef {
     fn do_union(
         &mut self,
+        ctx: &mut Context,
         x: &Self,
         opts: &UnionOptions,
         union_context: &mut UnionContext,
@@ -91,7 +92,7 @@ impl ValueRef {
                                 };
                                 return;
                             }
-                            obj_value.union(v, false, opts, union_context);
+                            obj_value.union(ctx, v, false, opts, union_context);
                             if union_context.conflict {
                                 union_context.path_backtrace.push(k.clone());
                                 return;
@@ -166,7 +167,13 @@ impl ValueRef {
                         if idx >= obj_len {
                             obj.values.push(delta.values[idx].clone());
                         } else if idx < delta_len {
-                            obj.values[idx].union(&delta.values[idx], false, opts, union_context);
+                            obj.values[idx].union(
+                                ctx,
+                                &delta.values[idx],
+                                false,
+                                opts,
+                                union_context,
+                            );
                             if union_context.conflict {
                                 union_context.path_backtrace.push(format!("list[{idx}]"));
                             }
@@ -229,7 +236,7 @@ impl ValueRef {
                 &optional_mapping,
             );
             if opts.config_resolve {
-                *self = resolve_schema(&schema, &common_keys);
+                *self = resolve_schema(ctx, &schema, &common_keys);
             } else {
                 *self = schema;
             }
@@ -238,6 +245,7 @@ impl ValueRef {
     }
     fn union(
         &mut self,
+        ctx: &mut Context,
         x: &Self,
         or_mode: bool,
         opts: &UnionOptions,
@@ -251,7 +259,7 @@ impl ValueRef {
             return self.clone();
         }
         if self.is_list_or_config() && x.is_list_or_config() {
-            self.do_union(x, opts, union_context);
+            self.do_union(ctx, x, opts, union_context);
         } else if or_mode {
             if let (Value::int_value(a), Value::int_value(b)) =
                 (&mut *self.rc.borrow_mut(), &*x.rc.borrow())
@@ -270,9 +278,15 @@ impl ValueRef {
         self.clone()
     }
 
-    pub fn union_entry(&mut self, x: &Self, or_mode: bool, opts: &UnionOptions) -> Self {
+    pub fn union_entry(
+        &mut self,
+        ctx: &mut Context,
+        x: &Self,
+        or_mode: bool,
+        opts: &UnionOptions,
+    ) -> Self {
         let mut union_context = UnionContext::default();
-        let ret = self.union(x, or_mode, opts, &mut union_context);
+        let ret = self.union(ctx, x, or_mode, opts, &mut union_context);
         if union_context.conflict {
             union_context.path_backtrace.reverse();
             let conflict_key = union_context.path_backtrace.last().unwrap();
@@ -317,21 +331,23 @@ mod test_value_union {
 
     #[test]
     fn test_list_union() {
+        let mut ctx = Context::new();
         let cases = [
             ("[0]", "[1, 2]", "[1, 2]"),
             ("[1, 2]", "[2]", "[2, 2]"),
             ("[0, 0]", "[1, 2]", "[1, 2]"),
         ];
         for (left, right, expected) in cases {
-            let left_value = ValueRef::from_json(left).unwrap();
-            let right_value = ValueRef::from_json(right).unwrap();
-            let value = left_value.bin_bit_or(&right_value);
+            let left_value = ValueRef::from_json(&mut ctx, left).unwrap();
+            let right_value = ValueRef::from_json(&mut ctx, right).unwrap();
+            let value = left_value.bin_bit_or(&mut ctx, &right_value);
             assert_eq!(value.to_json_string(), expected);
         }
     }
 
     #[test]
     fn test_dict_union() {
+        let mut ctx = Context::new();
         let cases = [
             (
                 vec![("key", "value", ConfigEntryOperationKind::Union, -1)],
@@ -392,7 +408,7 @@ mod test_value_union {
             for (key, val, op, index) in right_entries {
                 right_value.dict_update_entry(key, &ValueRef::str(val), &op, &index);
             }
-            let result = left_value.bin_bit_or(&right_value);
+            let result = left_value.bin_bit_or(&mut ctx, &right_value);
             for (key, val, op, index) in expected {
                 let result_dict = result.as_dict_ref();
                 let result_val = result_dict.values.get(key).unwrap().as_str();
@@ -406,6 +422,7 @@ mod test_value_union {
     }
     #[test]
     fn test_dict_union_insert() {
+        let mut ctx = Context::new();
         let cases = [
             (
                 vec![("key", vec![0, 1], ConfigEntryOperationKind::Override, -1)],
@@ -442,7 +459,7 @@ mod test_value_union {
                     &index,
                 );
             }
-            let result = left_value.bin_bit_or(&right_value);
+            let result = left_value.bin_bit_or(&mut ctx, &right_value);
             for (key, val, op, index) in expected {
                 let result_dict = result.as_dict_ref();
                 let result_val = result_dict.values.get(key).unwrap();
@@ -457,6 +474,7 @@ mod test_value_union {
 
     #[test]
     fn test_dict_union_same_ref() {
+        let mut ctx = Context::new();
         let cases = [
             (
                 vec![("key1", "value", ConfigEntryOperationKind::Union, -1)],
@@ -536,7 +554,7 @@ mod test_value_union {
                 left_value.dict_update_entry(key, &both_val, &op, &index);
                 left_value.dict_update_entry(key, &both_val, &op, &index);
             }
-            let result = left_value.bin_bit_or(&right_value);
+            let result = left_value.bin_bit_or(&mut ctx, &right_value);
             for (key, val, op, index) in expected {
                 let result_dict = result.as_dict_ref();
                 let result_val = result_dict.values.get(key).unwrap().as_str();
@@ -637,9 +655,10 @@ try operator '=' to override the attribute, like:
         ];
         for (left, right, expected) in cases {
             assert_panic(expected, || {
-                let left_value = ValueRef::from_json(left).unwrap();
-                let right_value = ValueRef::from_json(right).unwrap();
-                left_value.bin_bit_or(&right_value);
+                let mut ctx = Context::new();
+                let left_value = ValueRef::from_json(&mut ctx, left).unwrap();
+                let right_value = ValueRef::from_json(&mut ctx, right).unwrap();
+                left_value.bin_bit_or(&mut ctx, &right_value);
             });
         }
         std::panic::set_hook(pre_hook);

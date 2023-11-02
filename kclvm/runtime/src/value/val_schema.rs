@@ -129,7 +129,7 @@ impl ValueRef {
     }
 
     /// Check schema optional attributes.
-    pub fn schema_check_attr_optional(&self, recursive: bool) {
+    pub fn schema_check_attr_optional(&self, ctx: &mut Context, recursive: bool) {
         let binding = self.rc.borrow();
         let attr_map = match &*binding {
             Value::schema_value(schema) => &schema.config.values,
@@ -148,7 +148,6 @@ impl ValueRef {
                     if is_required && value.is_none_or_undefined() {
                         let filename = config_meta.get_by_key(CONFIG_META_FILENAME);
                         let line = config_meta.get_by_key(CONFIG_META_LINE);
-                        let ctx = Context::current_context_mut();
                         if let Some(filename) = filename {
                             ctx.set_kcl_filename(&filename.as_str());
                         }
@@ -167,17 +166,17 @@ impl ValueRef {
                     for value in attr_map.values() {
                         // For composite type structures, we recursively check the schema within them.
                         if value.is_schema() {
-                            value.schema_check_attr_optional(recursive);
+                            value.schema_check_attr_optional(ctx, recursive);
                         } else if value.is_list() {
                             for v in &value.as_list_ref().values {
                                 if v.is_schema() {
-                                    v.schema_check_attr_optional(recursive)
+                                    v.schema_check_attr_optional(ctx, recursive)
                                 }
                             }
                         } else if value.is_dict() {
                             for v in value.as_dict_ref().values.values() {
                                 if v.is_schema() {
-                                    v.schema_check_attr_optional(recursive)
+                                    v.schema_check_attr_optional(ctx, recursive)
                                 }
                             }
                         }
@@ -316,6 +315,7 @@ mod test_value_schema {
 
     #[test]
     fn test_schema_check_attr_optional() {
+        let mut ctx = Context::new();
         let dict = ValueRef::dict_str(&[("key", "value")]);
         let config_meta = ValueRef::dict(None);
         let optional_mapping = ValueRef::dict_bool(&[("key", true)]);
@@ -326,13 +326,14 @@ mod test_value_schema {
             &config_meta,
             &optional_mapping,
         );
-        schema.schema_check_attr_optional(true);
-        schema.schema_check_attr_optional(false);
+        schema.schema_check_attr_optional(&mut ctx, true);
+        schema.schema_check_attr_optional(&mut ctx, false);
     }
 
     #[test]
     fn test_schema_check_attr_optional_invalid() {
         let err = std::panic::catch_unwind(|| {
+            let mut ctx = Context::new();
             let dict = ValueRef::dict_str(&[("key", "value")]);
             let config_meta = ValueRef::dict(None);
             let optional_mapping = ValueRef::dict_bool(&[("another_key", false)]);
@@ -343,7 +344,7 @@ mod test_value_schema {
                 &config_meta,
                 &optional_mapping,
             );
-            schema.schema_check_attr_optional(true);
+            schema.schema_check_attr_optional(&mut ctx, true);
         });
         assert!(err.is_err())
     }

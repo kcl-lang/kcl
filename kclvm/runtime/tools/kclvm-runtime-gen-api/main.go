@@ -294,7 +294,7 @@ const tmplLLApi = `
 {{end}}
 
 define void @__kcl_keep_link_runtime(%kclvm_value_ref_t* %_a, %kclvm_context_t* %_b) {
-	call %kclvm_value_ref_t*() @kclvm_value_None()
+	call %kclvm_value_ref_t* @kclvm_value_None(%kclvm_context_t* %_b)
 	ret void
 }
 `

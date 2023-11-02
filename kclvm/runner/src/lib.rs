@@ -10,7 +10,7 @@ use kclvm_driver::canonicalize_input_files;
 use kclvm_error::{Diagnostic, Handler};
 use kclvm_parser::{load_program, ParseSession};
 use kclvm_query::apply_overrides;
-use kclvm_runtime::{PanicInfo, PlanOptions, ValueRef};
+use kclvm_runtime::{Context, PanicInfo, PlanOptions, ValueRef};
 use kclvm_sema::resolver::{
     resolve_program, resolve_program_with_opts, scope::ProgramScope, Options,
 };
@@ -121,17 +121,21 @@ pub fn exec_program(
             }
         }
     };
-    let kcl_val = match ValueRef::from_yaml_stream(&exec_result) {
+    let mut ctx = Context::new();
+    let kcl_val = match ValueRef::from_yaml_stream(&mut ctx, &exec_result) {
         Ok(v) => v,
         Err(err) => return Err(err.to_string()),
     };
     // Filter values with the path selector.
     let kcl_val = kcl_val.filter_by_path(&args.path_selector)?;
     // Plan values.
-    let (json_result, yaml_result) = kcl_val.plan(&PlanOptions {
-        sort_keys: args.sort_keys,
-        include_schema_type_path: args.include_schema_type_path,
-    });
+    let (json_result, yaml_result) = kcl_val.plan(
+        &mut ctx,
+        &PlanOptions {
+            sort_keys: args.sort_keys,
+            include_schema_type_path: args.include_schema_type_path,
+        },
+    );
     result.json_result = json_result;
     if !args.disable_yaml_result {
         result.yaml_result = yaml_result;

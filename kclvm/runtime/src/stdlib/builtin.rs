@@ -6,12 +6,13 @@ use crate::*;
 
 impl Context {
     pub fn builtin_option_init(&mut self, key: &str, value: &str) {
-        if let Ok(x) = ValueRef::from_json(value) {
-            self.app_args.insert(key.to_string(), x.into_raw() as u64);
+        if let Ok(x) = ValueRef::from_json(self, value) {
+            let addr = x.into_raw(self) as u64;
+            self.app_args.insert(key.to_string(), addr);
             return;
         }
-        self.app_args
-            .insert(key.to_string(), ValueRef::str(value).into_raw() as u64);
+        let addr = ValueRef::str(value).into_raw(self) as u64;
+        self.app_args.insert(key.to_string(), addr);
     }
 
     pub fn builtin_option_reset(&mut self) {
@@ -153,8 +154,7 @@ impl ValueRef {
         }
     }
 
-    pub fn convert_to_int(&self, base: Option<&ValueRef>) -> ValueRef {
-        let ctx = crate::Context::current_context_mut();
+    pub fn convert_to_int(&self, ctx: &mut Context, base: Option<&ValueRef>) -> ValueRef {
         let strict_range_check_i32 = ctx.cfg.strict_range_check;
         let strict_range_check_i64 = ctx.cfg.debug_mode || !ctx.cfg.strict_range_check;
 
@@ -168,13 +168,11 @@ impl ValueRef {
 
                 if ctx.cfg.debug_mode {
                     if int_32_overflow {
-                        let ctx = Context::current_context_mut();
                         ctx.set_err_type(&ErrType::IntOverflow_TYPE);
 
                         panic!("{v_i128}: A 32 bit integer overflow");
                     }
                     if int_64_overflow {
-                        let ctx = Context::current_context_mut();
                         ctx.set_err_type(&ErrType::IntOverflow_TYPE);
 
                         panic!("{v_i128}: A 64 bit integer overflow");
@@ -200,8 +198,7 @@ impl ValueRef {
         }
     }
 
-    pub fn convert_to_float(&self) -> ValueRef {
-        let ctx = crate::Context::current_context_mut();
+    pub fn convert_to_float(&self, ctx: &mut Context) -> ValueRef {
         let strict_range_check_i32 = ctx.cfg.strict_range_check;
         let strict_range_check_i64 = ctx.cfg.debug_mode || !ctx.cfg.strict_range_check;
 
@@ -361,7 +358,7 @@ impl ValueRef {
         }
     }
 
-    pub fn sum(&self, init_value: &ValueRef) -> ValueRef {
+    pub fn sum(&self, ctx: &mut Context, init_value: &ValueRef) -> ValueRef {
         match &*self.rc.borrow() {
             Value::list_value(list) => {
                 let mut result = match &*init_value.rc.borrow() {
@@ -370,7 +367,7 @@ impl ValueRef {
                 };
                 for val in list.values.iter() {
                     //xx_bin_aug_add() might modify the value of init_value
-                    result = result.bin_add(val)
+                    result = result.bin_add(ctx, val)
                 }
                 result
             }
@@ -451,7 +448,7 @@ pub fn list(iterable: Option<&ValueRef>) -> ValueRef {
     }
 }
 
-pub fn dict(iterable: Option<&ValueRef>) -> ValueRef {
+pub fn dict(ctx: &mut Context, iterable: Option<&ValueRef>) -> ValueRef {
     match iterable {
         Some(val) => {
             let mut iter = val.iter();
@@ -462,7 +459,7 @@ pub fn dict(iterable: Option<&ValueRef>) -> ValueRef {
                 let k = iter.cur_key.clone();
                 match &*k.rc.borrow() {
                     Value::str_value(str) => {
-                        result.dict_insert(str.as_str(), &elem, Default::default(), -1);
+                        result.dict_insert(ctx, str.as_str(), &elem, Default::default(), -1);
                     }
                     _ => {
                         let mut elem_iter = elem.iter();
@@ -471,7 +468,7 @@ pub fn dict(iterable: Option<&ValueRef>) -> ValueRef {
                         }
                         let k = elem_iter.next(val).unwrap().to_string();
                         let v = elem_iter.next(val).unwrap();
-                        result.dict_insert(k.as_str(), v, Default::default(), -1);
+                        result.dict_insert(ctx, k.as_str(), v, Default::default(), -1);
                     }
                 };
             }

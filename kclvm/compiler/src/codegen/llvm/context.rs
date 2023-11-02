@@ -353,7 +353,10 @@ impl<'ctx> ValueMethods for LLVMCodeGenContext<'ctx> {
         let i64_type = self.context.i64_type();
         self.build_call(
             &ApiFunc::kclvm_value_Int.name(),
-            &[i64_type.const_int(v as u64, false).into()],
+            &[
+                self.current_runtime_ctx_ptr(),
+                i64_type.const_int(v as u64, false).into(),
+            ],
         )
     }
 
@@ -362,14 +365,20 @@ impl<'ctx> ValueMethods for LLVMCodeGenContext<'ctx> {
         let f64_type = self.context.f64_type();
         self.build_call(
             &ApiFunc::kclvm_value_Float.name(),
-            &[f64_type.const_float(v).into()],
+            &[
+                self.current_runtime_ctx_ptr(),
+                f64_type.const_float(v).into(),
+            ],
         )
     }
 
     /// Construct a string value using &str
     fn string_value(&self, v: &str) -> Self::Value {
         let string_ptr_value = self.native_global_string(v, "");
-        self.build_call(&ApiFunc::kclvm_value_Str.name(), &[string_ptr_value.into()])
+        self.build_call(
+            &ApiFunc::kclvm_value_Str.name(),
+            &[self.current_runtime_ctx_ptr(), string_ptr_value.into()],
+        )
     }
 
     /// Construct a bool value
@@ -377,36 +386,55 @@ impl<'ctx> ValueMethods for LLVMCodeGenContext<'ctx> {
         let i8_type = self.context.i8_type();
         self.build_call(
             &ApiFunc::kclvm_value_Bool.name(),
-            &[i8_type.const_int(v as u64, false).into()],
+            &[
+                self.current_runtime_ctx_ptr(),
+                i8_type.const_int(v as u64, false).into(),
+            ],
         )
     }
 
     /// Construct a None value
     fn none_value(&self) -> Self::Value {
-        self.build_call(&ApiFunc::kclvm_value_None.name(), &[])
+        self.build_call(
+            &ApiFunc::kclvm_value_None.name(),
+            &[self.current_runtime_ctx_ptr()],
+        )
     }
 
     /// Construct a Undefined value
     fn undefined_value(&self) -> Self::Value {
-        self.build_call(&ApiFunc::kclvm_value_Undefined.name(), &[])
+        self.build_call(
+            &ApiFunc::kclvm_value_Undefined.name(),
+            &[self.current_runtime_ctx_ptr()],
+        )
     }
 
     /// Construct a empty kcl list value
     fn list_value(&self) -> Self::Value {
-        self.build_call(&ApiFunc::kclvm_value_List.name(), &[])
+        self.build_call(
+            &ApiFunc::kclvm_value_List.name(),
+            &[self.current_runtime_ctx_ptr()],
+        )
     }
 
     /// Construct a list value with `n` elements
     fn list_values(&self, values: &[Self::Value]) -> Self::Value {
+        let mut args = vec![self.current_runtime_ctx_ptr()];
+        for value in values {
+            args.push(*value);
+        }
         self.build_call(
             &format!("{}{}", ApiFunc::kclvm_value_List.name(), values.len()),
-            values,
+            args.as_slice(),
         )
     }
 
     /// Construct a empty kcl dict value.
     fn dict_value(&self) -> Self::Value {
-        self.build_call(&ApiFunc::kclvm_value_Dict.name(), &[])
+        self.build_call(
+            &ApiFunc::kclvm_value_Dict.name(),
+            &[self.current_runtime_ctx_ptr()],
+        )
     }
 
     /// Construct a unit value
@@ -417,6 +445,7 @@ impl<'ctx> ValueMethods for LLVMCodeGenContext<'ctx> {
         self.build_call(
             &ApiFunc::kclvm_value_Unit.name(),
             &[
+                self.current_runtime_ctx_ptr(),
                 f64_type.const_float(v).into(),
                 i64_type.const_int(raw as u64, false).into(),
                 unit_native_str.into(),
@@ -434,7 +463,7 @@ impl<'ctx> ValueMethods for LLVMCodeGenContext<'ctx> {
         );
         self.build_call(
             &ApiFunc::kclvm_value_Function_using_ptr.name(),
-            &[lambda_fn_ptr, func_name_ptr],
+            &[self.current_runtime_ctx_ptr(), lambda_fn_ptr, func_name_ptr],
         )
     }
     /// Construct a closure function value with the closure variable.
@@ -449,7 +478,13 @@ impl<'ctx> ValueMethods for LLVMCodeGenContext<'ctx> {
         );
         self.build_call(
             &ApiFunc::kclvm_value_Function.name(),
-            &[fn_ptr, closure, func_name_ptr, self.native_i8_zero().into()],
+            &[
+                self.current_runtime_ctx_ptr(),
+                fn_ptr,
+                closure,
+                func_name_ptr,
+                self.native_i8_zero().into(),
+            ],
         )
     }
     /// Construct a schema function value using native functions.
@@ -491,6 +526,7 @@ impl<'ctx> ValueMethods for LLVMCodeGenContext<'ctx> {
             .build_call(
                 self.lookup_function(&ApiFunc::kclvm_value_schema_function.name()),
                 &[
+                    self.current_runtime_ctx_ptr().into(),
                     schema_body_fn_ptr.into(),
                     check_block_fn_ptr.into(),
                     attr_map.into(),
@@ -537,126 +573,192 @@ impl<'ctx> ValueMethods for LLVMCodeGenContext<'ctx> {
         global_var.as_pointer_value().into()
     }
     /// Get the global runtime context pointer.
-    fn global_ctx_ptr(&self) -> Self::Value {
-        if self.no_link {
-            self.build_call(&ApiFunc::kclvm_context_current.name(), &[])
-        } else {
-            let ctx_ptr = self
-                .module
-                .get_global(KCL_CONTEXT_VAR_NAME)
-                .expect(kcl_error::CONTEXT_VAR_NOT_FOUND_MSG)
-                .as_pointer_value();
-            self.builder.build_load(ctx_ptr, "")
-        }
+    fn current_runtime_ctx_ptr(&self) -> Self::Value {
+        self.builder
+            .get_insert_block()
+            .unwrap()
+            .get_parent()
+            .unwrap()
+            .get_first_param()
+            .expect(kcl_error::CONTEXT_VAR_NOT_FOUND_MSG)
     }
 }
 
 impl<'ctx> ValueCalculationMethods for LLVMCodeGenContext<'ctx> {
     /// lhs + rhs
     fn add(&self, lhs: Self::Value, rhs: Self::Value) -> Self::Value {
-        self.build_call(&ApiFunc::kclvm_value_op_add.name(), &[lhs, rhs])
+        self.build_call(
+            &ApiFunc::kclvm_value_op_add.name(),
+            &[self.current_runtime_ctx_ptr(), lhs, rhs],
+        )
     }
     /// lhs - rhs
     fn sub(&self, lhs: Self::Value, rhs: Self::Value) -> Self::Value {
-        self.build_call(&ApiFunc::kclvm_value_op_sub.name(), &[lhs, rhs])
+        self.build_call(
+            &ApiFunc::kclvm_value_op_sub.name(),
+            &[self.current_runtime_ctx_ptr(), lhs, rhs],
+        )
     }
     /// lhs * rhs
     fn mul(&self, lhs: Self::Value, rhs: Self::Value) -> Self::Value {
-        self.build_call(&ApiFunc::kclvm_value_op_mul.name(), &[lhs, rhs])
+        self.build_call(
+            &ApiFunc::kclvm_value_op_mul.name(),
+            &[self.current_runtime_ctx_ptr(), lhs, rhs],
+        )
     }
     /// lhs / rhs
     fn div(&self, lhs: Self::Value, rhs: Self::Value) -> Self::Value {
-        self.build_call(&ApiFunc::kclvm_value_op_div.name(), &[lhs, rhs])
+        self.build_call(
+            &ApiFunc::kclvm_value_op_div.name(),
+            &[self.current_runtime_ctx_ptr(), lhs, rhs],
+        )
     }
     /// lhs // rhs
     fn floor_div(&self, lhs: Self::Value, rhs: Self::Value) -> Self::Value {
-        self.build_call(&ApiFunc::kclvm_value_op_floor_div.name(), &[lhs, rhs])
+        self.build_call(
+            &ApiFunc::kclvm_value_op_floor_div.name(),
+            &[self.current_runtime_ctx_ptr(), lhs, rhs],
+        )
     }
     /// lhs % rhs
     fn r#mod(&self, lhs: Self::Value, rhs: Self::Value) -> Self::Value {
-        self.build_call(&ApiFunc::kclvm_value_op_mod.name(), &[lhs, rhs])
+        self.build_call(
+            &ApiFunc::kclvm_value_op_mod.name(),
+            &[self.current_runtime_ctx_ptr(), lhs, rhs],
+        )
     }
     /// lhs ** rhs
     fn pow(&self, lhs: Self::Value, rhs: Self::Value) -> Self::Value {
-        self.build_call(&ApiFunc::kclvm_value_op_pow.name(), &[lhs, rhs])
+        self.build_call(
+            &ApiFunc::kclvm_value_op_pow.name(),
+            &[self.current_runtime_ctx_ptr(), lhs, rhs],
+        )
     }
     /// lhs << rhs
     fn bit_lshift(&self, lhs: Self::Value, rhs: Self::Value) -> Self::Value {
-        self.build_call(&ApiFunc::kclvm_value_op_bit_lshift.name(), &[lhs, rhs])
+        self.build_call(
+            &ApiFunc::kclvm_value_op_bit_lshift.name(),
+            &[self.current_runtime_ctx_ptr(), lhs, rhs],
+        )
     }
     /// lhs >> rhs
     fn bit_rshift(&self, lhs: Self::Value, rhs: Self::Value) -> Self::Value {
-        self.build_call(&ApiFunc::kclvm_value_op_bit_rshift.name(), &[lhs, rhs])
+        self.build_call(
+            &ApiFunc::kclvm_value_op_bit_rshift.name(),
+            &[self.current_runtime_ctx_ptr(), lhs, rhs],
+        )
     }
     /// lhs & rhs
     fn bit_and(&self, lhs: Self::Value, rhs: Self::Value) -> Self::Value {
-        self.build_call(&ApiFunc::kclvm_value_op_bit_and.name(), &[lhs, rhs])
+        self.build_call(
+            &ApiFunc::kclvm_value_op_bit_and.name(),
+            &[self.current_runtime_ctx_ptr(), lhs, rhs],
+        )
     }
     /// lhs | rhs
     fn bit_or(&self, lhs: Self::Value, rhs: Self::Value) -> Self::Value {
-        self.build_call(&ApiFunc::kclvm_value_op_bit_or.name(), &[lhs, rhs])
+        self.build_call(
+            &ApiFunc::kclvm_value_op_bit_or.name(),
+            &[self.current_runtime_ctx_ptr(), lhs, rhs],
+        )
     }
     /// lhs ^ rhs
     fn bit_xor(&self, lhs: Self::Value, rhs: Self::Value) -> Self::Value {
-        self.build_call(&ApiFunc::kclvm_value_op_bit_xor.name(), &[lhs, rhs])
+        self.build_call(
+            &ApiFunc::kclvm_value_op_bit_xor.name(),
+            &[self.current_runtime_ctx_ptr(), lhs, rhs],
+        )
     }
     /// lhs and rhs
     fn logic_and(&self, lhs: Self::Value, rhs: Self::Value) -> Self::Value {
-        self.build_call(&ApiFunc::kclvm_value_logic_and.name(), &[lhs, rhs])
+        self.build_call(
+            &ApiFunc::kclvm_value_logic_and.name(),
+            &[self.current_runtime_ctx_ptr(), lhs, rhs],
+        )
     }
     /// lhs or rhs
     fn logic_or(&self, lhs: Self::Value, rhs: Self::Value) -> Self::Value {
-        self.build_call(&ApiFunc::kclvm_value_logic_or.name(), &[lhs, rhs])
+        self.build_call(
+            &ApiFunc::kclvm_value_logic_or.name(),
+            &[self.current_runtime_ctx_ptr(), lhs, rhs],
+        )
     }
     /// lhs == rhs
     fn cmp_equal_to(&self, lhs: Self::Value, rhs: Self::Value) -> Self::Value {
-        self.build_call(&ApiFunc::kclvm_value_cmp_equal_to.name(), &[lhs, rhs])
+        self.build_call(
+            &ApiFunc::kclvm_value_cmp_equal_to.name(),
+            &[self.current_runtime_ctx_ptr(), lhs, rhs],
+        )
     }
     /// lhs != rhs
     fn cmp_not_equal_to(&self, lhs: Self::Value, rhs: Self::Value) -> Self::Value {
-        self.build_call(&ApiFunc::kclvm_value_cmp_not_equal_to.name(), &[lhs, rhs])
+        self.build_call(
+            &ApiFunc::kclvm_value_cmp_not_equal_to.name(),
+            &[self.current_runtime_ctx_ptr(), lhs, rhs],
+        )
     }
     /// lhs > rhs
     fn cmp_greater_than(&self, lhs: Self::Value, rhs: Self::Value) -> Self::Value {
-        self.build_call(&ApiFunc::kclvm_value_cmp_greater_than.name(), &[lhs, rhs])
+        self.build_call(
+            &ApiFunc::kclvm_value_cmp_greater_than.name(),
+            &[self.current_runtime_ctx_ptr(), lhs, rhs],
+        )
     }
     /// lhs >= rhs
     fn cmp_greater_than_or_equal(&self, lhs: Self::Value, rhs: Self::Value) -> Self::Value {
         self.build_call(
             &ApiFunc::kclvm_value_cmp_greater_than_or_equal.name(),
-            &[lhs, rhs],
+            &[self.current_runtime_ctx_ptr(), lhs, rhs],
         )
     }
     /// lhs < rhs
     fn cmp_less_than(&self, lhs: Self::Value, rhs: Self::Value) -> Self::Value {
-        self.build_call(&ApiFunc::kclvm_value_cmp_less_than.name(), &[lhs, rhs])
+        self.build_call(
+            &ApiFunc::kclvm_value_cmp_less_than.name(),
+            &[self.current_runtime_ctx_ptr(), lhs, rhs],
+        )
     }
     /// lhs <= rhs
     fn cmp_less_than_or_equal(&self, lhs: Self::Value, rhs: Self::Value) -> Self::Value {
         self.build_call(
             &ApiFunc::kclvm_value_cmp_less_than_or_equal.name(),
-            &[lhs, rhs],
+            &[self.current_runtime_ctx_ptr(), lhs, rhs],
         )
     }
     /// lhs as rhs
     fn r#as(&self, lhs: Self::Value, rhs: Self::Value) -> Self::Value {
-        self.build_call(&ApiFunc::kclvm_value_as.name(), &[lhs, rhs])
+        self.build_call(
+            &ApiFunc::kclvm_value_as.name(),
+            &[self.current_runtime_ctx_ptr(), lhs, rhs],
+        )
     }
     /// lhs is rhs
     fn is(&self, lhs: Self::Value, rhs: Self::Value) -> Self::Value {
-        self.build_call(&ApiFunc::kclvm_value_is.name(), &[lhs, rhs])
+        self.build_call(
+            &ApiFunc::kclvm_value_is.name(),
+            &[self.current_runtime_ctx_ptr(), lhs, rhs],
+        )
     }
     /// lhs is not rhs
     fn is_not(&self, lhs: Self::Value, rhs: Self::Value) -> Self::Value {
-        self.build_call(&ApiFunc::kclvm_value_is_not.name(), &[lhs, rhs])
+        self.build_call(
+            &ApiFunc::kclvm_value_is_not.name(),
+            &[self.current_runtime_ctx_ptr(), lhs, rhs],
+        )
     }
     /// lhs in rhs
     fn r#in(&self, lhs: Self::Value, rhs: Self::Value) -> Self::Value {
-        self.build_call(&ApiFunc::kclvm_value_in.name(), &[lhs, rhs])
+        self.build_call(
+            &ApiFunc::kclvm_value_in.name(),
+            &[self.current_runtime_ctx_ptr(), lhs, rhs],
+        )
     }
     /// lhs not in rhs
     fn not_in(&self, lhs: Self::Value, rhs: Self::Value) -> Self::Value {
-        self.build_call(&ApiFunc::kclvm_value_not_in.name(), &[lhs, rhs])
+        self.build_call(
+            &ApiFunc::kclvm_value_not_in.name(),
+            &[self.current_runtime_ctx_ptr(), lhs, rhs],
+        )
     }
 }
 
@@ -664,7 +766,10 @@ impl<'ctx> DerivedValueCalculationMethods for LLVMCodeGenContext<'ctx> {
     /// Value subscript a[b]
     #[inline]
     fn value_subscript(&self, value: Self::Value, item: Self::Value) -> Self::Value {
-        self.build_call(&ApiFunc::kclvm_value_subscr.name(), &[value, item])
+        self.build_call(
+            &ApiFunc::kclvm_value_subscr.name(),
+            &[self.current_runtime_ctx_ptr(), value, item],
+        )
     }
     /// Value is truth function, return i1 value.
     fn value_is_truthy(&self, value: Self::Value) -> Self::Value {
@@ -678,17 +783,26 @@ impl<'ctx> DerivedValueCalculationMethods for LLVMCodeGenContext<'ctx> {
     /// Value deep copy
     #[inline]
     fn value_deep_copy(&self, value: Self::Value) -> Self::Value {
-        self.build_call(&ApiFunc::kclvm_value_deep_copy.name(), &[value])
+        self.build_call(
+            &ApiFunc::kclvm_value_deep_copy.name(),
+            &[self.current_runtime_ctx_ptr(), value],
+        )
     }
     /// value_union unions two collection elements.
     #[inline]
     fn value_union(&self, lhs: Self::Value, rhs: Self::Value) {
-        self.build_void_call(&ApiFunc::kclvm_value_union.name(), &[lhs, rhs]);
+        self.build_void_call(
+            &ApiFunc::kclvm_value_union.name(),
+            &[self.current_runtime_ctx_ptr(), lhs, rhs],
+        );
     }
     // List get the item using the index.
     #[inline]
     fn list_get(&self, list: Self::Value, index: Self::Value) -> Self::Value {
-        self.build_call(&ApiFunc::kclvm_list_get.name(), &[list, index])
+        self.build_call(
+            &ApiFunc::kclvm_list_get.name(),
+            &[self.current_runtime_ctx_ptr(), list, index],
+        )
     }
     // List set the item using the index.
     #[inline]
@@ -706,7 +820,7 @@ impl<'ctx> DerivedValueCalculationMethods for LLVMCodeGenContext<'ctx> {
     ) -> Self::Value {
         self.build_call(
             &ApiFunc::kclvm_value_slice.name(),
-            &[list, start, stop, step],
+            &[self.current_runtime_ctx_ptr(), list, start, stop, step],
         )
     }
     /// Append a item into the list.
@@ -722,12 +836,18 @@ impl<'ctx> DerivedValueCalculationMethods for LLVMCodeGenContext<'ctx> {
     /// Runtime list value pop
     #[inline]
     fn list_pop(&self, list: Self::Value) -> Self::Value {
-        self.build_call(&ApiFunc::kclvm_list_pop.name(), &[list])
+        self.build_call(
+            &ApiFunc::kclvm_list_pop.name(),
+            &[self.current_runtime_ctx_ptr(), list],
+        )
     }
     /// Runtime list pop the first value
     #[inline]
     fn list_pop_first(&self, list: Self::Value) -> Self::Value {
-        self.build_call(&ApiFunc::kclvm_list_pop_first.name(), &[list])
+        self.build_call(
+            &ApiFunc::kclvm_list_pop_first.name(),
+            &[self.current_runtime_ctx_ptr(), list],
+        )
     }
     /// List clear value.
     #[inline]
@@ -737,12 +857,18 @@ impl<'ctx> DerivedValueCalculationMethods for LLVMCodeGenContext<'ctx> {
     /// Return number of occurrences of the list value.
     #[inline]
     fn list_count(&self, list: Self::Value, item: Self::Value) -> Self::Value {
-        self.build_call(&ApiFunc::kclvm_list_count.name(), &[list, item])
+        self.build_call(
+            &ApiFunc::kclvm_list_count.name(),
+            &[self.current_runtime_ctx_ptr(), list, item],
+        )
     }
     /// Return first index of the list value. Panic if the value is not present.
     #[inline]
     fn list_find(&self, list: Self::Value, item: Self::Value) -> Self::Value {
-        self.build_call(&ApiFunc::kclvm_list_find.name(), &[list, item])
+        self.build_call(
+            &ApiFunc::kclvm_list_find.name(),
+            &[self.current_runtime_ctx_ptr(), list, item],
+        )
     }
     /// Insert object before index of the list value.
     #[inline]
@@ -757,27 +883,42 @@ impl<'ctx> DerivedValueCalculationMethods for LLVMCodeGenContext<'ctx> {
     /// Dict get the value of the key.
     #[inline]
     fn dict_get(&self, dict: Self::Value, key: Self::Value) -> Self::Value {
-        self.build_call(&ApiFunc::kclvm_dict_get_value.name(), &[dict, key])
+        self.build_call(
+            &ApiFunc::kclvm_dict_get_value.name(),
+            &[self.current_runtime_ctx_ptr(), dict, key],
+        )
     }
     /// Dict set the value of the key.
     #[inline]
     fn dict_set(&self, dict: Self::Value, key: Self::Value, value: Self::Value) {
-        self.build_void_call(&ApiFunc::kclvm_dict_set_value.name(), &[dict, key, value])
+        self.build_void_call(
+            &ApiFunc::kclvm_dict_set_value.name(),
+            &[self.current_runtime_ctx_ptr(), dict, key, value],
+        )
     }
     /// Return all dict keys.
     #[inline]
     fn dict_keys(&self, dict: Self::Value) -> Self::Value {
-        self.build_call(&ApiFunc::kclvm_dict_keys.name(), &[dict])
+        self.build_call(
+            &ApiFunc::kclvm_dict_keys.name(),
+            &[self.current_runtime_ctx_ptr(), dict],
+        )
     }
     /// Return all dict values.
     #[inline]
     fn dict_values(&self, dict: Self::Value) -> Self::Value {
-        self.build_call(&ApiFunc::kclvm_dict_values.name(), &[dict])
+        self.build_call(
+            &ApiFunc::kclvm_dict_values.name(),
+            &[self.current_runtime_ctx_ptr(), dict],
+        )
     }
     /// Dict clear value.
     #[inline]
     fn dict_clear(&self, dict: Self::Value) {
-        self.build_void_call(&ApiFunc::kclvm_dict_insert_value.name(), &[dict])
+        self.build_void_call(
+            &ApiFunc::kclvm_dict_insert_value.name(),
+            &[self.current_runtime_ctx_ptr(), dict],
+        )
     }
     /// Dict pop the value of the key.
     #[inline]
@@ -805,7 +946,14 @@ impl<'ctx> DerivedValueCalculationMethods for LLVMCodeGenContext<'ctx> {
         let insert_index = self.native_int_value(insert_index);
         self.build_void_call(
             &ApiFunc::kclvm_dict_insert.name(),
-            &[dict, name, value, op, insert_index],
+            &[
+                self.current_runtime_ctx_ptr(),
+                dict,
+                name,
+                value,
+                op,
+                insert_index,
+            ],
         );
     }
 
@@ -824,7 +972,14 @@ impl<'ctx> DerivedValueCalculationMethods for LLVMCodeGenContext<'ctx> {
         let insert_index = self.native_int_value(insert_index);
         self.build_void_call(
             &ApiFunc::kclvm_dict_insert_value.name(),
-            &[dict, key, value, op, insert_index],
+            &[
+                self.current_runtime_ctx_ptr(),
+                dict,
+                key,
+                value,
+                op,
+                insert_index,
+            ],
         );
     }
 }
@@ -1640,6 +1795,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             self.build_call(
                 &ApiFunc::kclvm_schema_get_value.name(),
                 &[
+                    self.current_runtime_ctx_ptr(),
                     schema_value,
                     string_ptr_value,
                     config,
@@ -1716,6 +1872,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 self.build_call(
                     &ApiFunc::kclvm_value_Function.name(),
                     &[
+                        self.current_runtime_ctx_ptr(),
                         lambda_fn_ptr,
                         none_value,
                         func_name_ptr,
@@ -1738,7 +1895,13 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             let none_value = self.none_value();
             return Ok(self.build_call(
                 &ApiFunc::kclvm_value_Function.name(),
-                &[null_fn_ptr, none_value, name, self.native_i8(1).into()],
+                &[
+                    self.current_runtime_ctx_ptr(),
+                    null_fn_ptr,
+                    none_value,
+                    name,
+                    self.native_i8(1).into(),
+                ],
             ));
         // User pkgpath
         } else {
@@ -1765,7 +1928,11 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                                 let string_ptr_value = self.native_global_string(name, "").into();
                                 self.build_call(
                                     &ApiFunc::kclvm_dict_get_value.name(),
-                                    &[closure_map, string_ptr_value],
+                                    &[
+                                        self.current_runtime_ctx_ptr(),
+                                        closure_map,
+                                        string_ptr_value,
+                                    ],
                                 )
                             }
                             None => self.builder.build_load(*var, name),
@@ -1948,10 +2115,13 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         // Plan result to json string.
         self.build_call(
             &ApiFunc::kclvm_value_plan_to_json.name(),
-            &[self.dict_get(
-                global_dict,
-                self.native_global_string(SCALAR_KEY, "").into(),
-            )],
+            &[
+                self.current_runtime_ctx_ptr(),
+                self.dict_get(
+                    global_dict,
+                    self.native_global_string(SCALAR_KEY, "").into(),
+                ),
+            ],
         )
     }
 
@@ -1970,7 +2140,14 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         let insert_index = self.native_int_value(insert_index);
         self.build_void_call(
             &ApiFunc::kclvm_dict_safe_insert.name(),
-            &[dict, name, value, op, insert_index],
+            &[
+                self.current_runtime_ctx_ptr(),
+                dict,
+                name,
+                value,
+                op,
+                insert_index,
+            ],
         );
     }
 
@@ -1990,7 +2167,14 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         let insert_index = self.native_int_value(insert_index);
         self.build_void_call(
             &ApiFunc::kclvm_dict_merge.name(),
-            &[dict, name, value, op, insert_index],
+            &[
+                self.current_runtime_ctx_ptr(),
+                dict,
+                name,
+                value,
+                op,
+                insert_index,
+            ],
         );
     }
 

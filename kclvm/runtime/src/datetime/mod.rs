@@ -11,12 +11,13 @@ use crate::*;
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_datetime_today(
-    _ctx: *mut kclvm_context_t,
+    ctx: *mut kclvm_context_t,
     _args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let s = Local::now().to_string();
-    return ValueRef::str(s.as_ref()).into_raw();
+    let ctx = mut_ptr_as_ref(ctx);
+    return ValueRef::str(s.as_ref()).into_raw(ctx);
 }
 
 // now() -> str:
@@ -24,12 +25,13 @@ pub extern "C" fn kclvm_datetime_today(
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_datetime_now(
-    _ctx: *mut kclvm_context_t,
+    ctx: *mut kclvm_context_t,
     _args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let s = Local::now().to_string();
-    return ValueRef::str(s.as_ref()).into_raw();
+    let ctx = mut_ptr_as_ref(ctx);
+    return ValueRef::str(s.as_ref()).into_raw(ctx);
 }
 
 // ticks() -> float:
@@ -37,12 +39,13 @@ pub extern "C" fn kclvm_datetime_now(
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_datetime_ticks(
-    _ctx: *mut kclvm_context_t,
+    ctx: *mut kclvm_context_t,
     _args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
+    let ctx = mut_ptr_as_ref(ctx);
     let x = Local::now().timestamp();
-    ValueRef::float(x as f64).into_raw()
+    ValueRef::float(x as f64).into_raw(ctx)
 }
 
 // date() -> str:
@@ -50,10 +53,11 @@ pub extern "C" fn kclvm_datetime_ticks(
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_datetime_date(
-    _ctx: *mut kclvm_context_t,
+    ctx: *mut kclvm_context_t,
     _args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let s = Local::now().to_string();
-    return ValueRef::str(s.as_ref()).into_raw();
+    let ctx = mut_ptr_as_ref(ctx);
+    return ValueRef::str(s.as_ref()).into_raw(ctx);
 }

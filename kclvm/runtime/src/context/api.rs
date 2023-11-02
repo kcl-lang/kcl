@@ -38,30 +38,10 @@ type kclvm_float_t = f64;
 // new/delete
 // ----------------------------------------------------------------------------
 
-// singleton
-
-#[allow(non_camel_case_types, non_upper_case_globals)]
-static mut _kclvm_context_current: u64 = 0;
-
-#[no_mangle]
-#[runtime_fn]
-pub unsafe extern "C" fn kclvm_context_current() -> *mut kclvm_context_t {
-    unsafe {
-        if _kclvm_context_current == 0 {
-            _kclvm_context_current = kclvm_context_new() as u64;
-        }
-        _kclvm_context_current as *mut kclvm_context_t
-    }
-}
-
 #[no_mangle]
 #[runtime_fn]
 pub unsafe extern "C" fn kclvm_context_new() -> *mut kclvm_context_t {
-    let p = Box::into_raw(Box::new(Context::new()));
-    unsafe {
-        _kclvm_context_current = p as u64;
-    }
-    p
+    Box::into_raw(Box::new(Context::new()))
 }
 
 #[no_mangle]
@@ -71,11 +51,6 @@ pub unsafe extern "C" fn kclvm_context_delete(p: *mut kclvm_context_t) {
     for o in &ctx.objects {
         let ptr = (*o) as *mut kclvm_value_ref_t;
         kclvm_value_delete(ptr);
-    }
-    unsafe {
-        //todo: remove global _kclvm_context_current
-        //set _kclvm_context_current to null to invoid internal unsoundness
-        _kclvm_context_current = 0;
     }
     free_mut_ptr(p);
 }
@@ -135,18 +110,25 @@ pub unsafe extern "C" fn kclvm_context_set_kcl_pkgpath(
 
 #[no_mangle]
 #[runtime_fn]
-pub unsafe extern "C" fn kclvm_context_set_kcl_filename(filename: *const i8) {
-    let p = Context::current_context_mut();
+pub unsafe extern "C" fn kclvm_context_set_kcl_filename(
+    ctx: *mut kclvm_context_t,
+    filename: *const i8,
+) {
+    let ctx = mut_ptr_as_ref(ctx);
     if !filename.is_null() {
-        p.set_kcl_filename(c2str(filename));
+        ctx.set_kcl_filename(c2str(filename));
     }
 }
 
 #[no_mangle]
 #[runtime_fn]
-pub unsafe extern "C" fn kclvm_context_set_kcl_line_col(line: i32, col: i32) {
-    let p = Context::current_context_mut();
-    p.set_kcl_line_col(line, col);
+pub unsafe extern "C" fn kclvm_context_set_kcl_line_col(
+    ctx: *mut kclvm_context_t,
+    line: i32,
+    col: i32,
+) {
+    let ctx = mut_ptr_as_ref(ctx);
+    ctx.set_kcl_line_col(line, col);
 }
 
 // ----------------------------------------------------------------------------
@@ -212,8 +194,8 @@ pub unsafe extern "C" fn kclvm_context_invoke(
     let p = mut_ptr_as_ref(p);
     let method = c2str(method);
 
-    let args = kclvm_value_from_json(args);
-    let kwargs = kclvm_value_from_json(kwargs);
+    let args = kclvm_value_from_json(p, args);
+    let kwargs = kclvm_value_from_json(p, kwargs);
     let result = _kclvm_context_invoke(p, method, args, kwargs);
 
     p.buffer.kclvm_context_invoke_result = ptr_as_ref(result).to_json_string_with_null();
@@ -252,10 +234,11 @@ unsafe fn _kclvm_context_invoke(
 #[no_mangle]
 #[runtime_fn]
 pub unsafe extern "C" fn kclvm_context_pkgpath_is_imported(
+    ctx: *mut kclvm_context_t,
     pkgpath: *const kclvm_char_t,
 ) -> kclvm_bool_t {
     let pkgpath = c2str(pkgpath);
-    let ctx = Context::current_context_mut();
+    let ctx = mut_ptr_as_ref(ctx);
     let result = ctx.imported_pkgpath.contains(pkgpath);
     ctx.imported_pkgpath.insert(pkgpath.to_string());
     result as kclvm_bool_t

@@ -69,7 +69,13 @@ fn test_kclvm_manifests_yaml_stream() {
         let mut args = ValueRef::list(None);
         args.list_append(&value);
         let mut kwargs = ValueRef::dict(None);
-        kwargs.dict_insert("opts", &opts, ConfigEntryOperationKind::Override, -1);
+        kwargs.dict_insert(
+            &mut ctx,
+            "opts",
+            &opts,
+            ConfigEntryOperationKind::Override,
+            -1,
+        );
         unsafe {
             kclvm_manifests_yaml_stream(&mut ctx, &args, &kwargs);
         }
@@ -88,33 +94,34 @@ fn test_kclvm_manifests_yaml_stream_invalid() {
     assert_panic(
         "yaml_stream() missing 1 required positional argument: 'values'",
         || {
-            let ctx = Context::new();
-            let args = ValueRef::list(None);
-            let kwargs = ValueRef::dict(None);
+            let mut ctx = Context::new();
+            let args = ValueRef::list(None).into_raw(&mut ctx);
+            let kwargs = ValueRef::dict(None).into_raw(&mut ctx);
             unsafe {
-                kclvm_manifests_yaml_stream(ctx.into_raw(), args.into_raw(), kwargs.into_raw());
+                kclvm_manifests_yaml_stream(ctx.into_raw(), args, kwargs);
             }
         },
     );
     assert_panic(
         "Invalid options arguments in yaml_stream(): expect config, got str",
         || {
-            let ctx = Context::new();
-            let args = ValueRef::list(None);
-            let kwargs = ValueRef::dict(Some(&[("opts", &ValueRef::str("invalid_kwarg"))]));
+            let mut ctx = Context::new();
+            let args = ValueRef::list(None).into_raw(&mut ctx);
+            let kwargs = ValueRef::dict(Some(&[("opts", &ValueRef::str("invalid_kwarg"))]))
+                .into_raw(&mut ctx);
             unsafe {
-                kclvm_manifests_yaml_stream(ctx.into_raw(), args.into_raw(), kwargs.into_raw());
+                kclvm_manifests_yaml_stream(ctx.into_raw(), args, kwargs);
             }
         },
     );
     assert_panic(
         "Invalid options arguments in yaml_stream(): expect config, got NoneType",
         || {
-            let ctx = Context::new();
-            let args = ValueRef::list(None);
-            let kwargs = ValueRef::dict(Some(&[("opts", &ValueRef::none())]));
+            let mut ctx = Context::new();
+            let args = ValueRef::list(None).into_raw(&mut ctx);
+            let kwargs = ValueRef::dict(Some(&[("opts", &ValueRef::none())])).into_raw(&mut ctx);
             unsafe {
-                kclvm_manifests_yaml_stream(ctx.into_raw(), args.into_raw(), kwargs.into_raw());
+                kclvm_manifests_yaml_stream(ctx.into_raw(), args, kwargs);
             }
         },
     );
