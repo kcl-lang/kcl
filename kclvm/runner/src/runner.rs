@@ -6,7 +6,7 @@ use kclvm_config::{
     settings::{SettingsFile, SettingsPathBuf},
 };
 use kclvm_query::r#override::parse_override_spec;
-use kclvm_runtime::ValueRef;
+use kclvm_runtime::{Context, ValueRef};
 use serde::{Deserialize, Serialize};
 
 const RESULT_SIZE: usize = 2048 * 2048;
@@ -343,8 +343,9 @@ impl KclvmRunner {
 }
 
 fn wrap_msg_in_result(msg: &str) -> Result<String, String> {
+    let mut ctx = Context::new();
     // YAML is compatible with JSON. We can use YAML library for result parsing.
-    let kcl_val = match ValueRef::from_yaml_stream(msg) {
+    let kcl_val = match ValueRef::from_yaml_stream(&mut ctx, msg) {
         Ok(msg) => msg,
         Err(err) => {
             return Err(err.to_string());

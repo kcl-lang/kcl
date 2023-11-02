@@ -274,36 +274,37 @@ impl ValueRef {
     /// Insert key value pair with the idempotent check
     pub fn dict_insert(
         &mut self,
+        ctx: &mut Context,
         key: &str,
         v: &ValueRef,
         op: ConfigEntryOperationKind,
         insert_index: i32,
     ) {
-        self.dict_merge_key_value_pair(key, v, op, insert_index, true);
+        self.dict_merge_key_value_pair(ctx, key, v, op, insert_index, true);
     }
 
     /// Merge key value pair without the idempotent check
     pub fn dict_merge(
         &mut self,
+        ctx: &mut Context,
         key: &str,
         v: &ValueRef,
         op: ConfigEntryOperationKind,
         insert_index: i32,
     ) {
-        self.dict_merge_key_value_pair(key, v, op, insert_index, false);
+        self.dict_merge_key_value_pair(ctx, key, v, op, insert_index, false);
     }
 
     /// Private dict merge key value pair with the idempotent check option
     fn dict_merge_key_value_pair(
         &mut self,
+        ctx: &mut Context,
         key: &str,
         v: &ValueRef,
         op: ConfigEntryOperationKind,
         insert_index: i32,
         idempotent_check: bool,
     ) {
-        let ctx = crate::Context::current_context_mut();
-
         if ctx.cfg.debug_mode {
             if let Value::int_value(ref x) = *v.rc.borrow() {
                 let strict_range_check_i32 = ctx.cfg.strict_range_check;
@@ -312,13 +313,11 @@ impl ValueRef {
 
                 if strict_range_check_i32 {
                     if v_i128 != ((v_i128 as i32) as i128) {
-                        let ctx = Context::current_context_mut();
                         ctx.set_err_type(&ErrType::IntOverflow_TYPE);
 
                         panic!("{v_i128}: A 32 bit integer overflow");
                     }
                 } else if strict_range_check_i64 && v_i128 != ((v_i128 as i64) as i128) {
-                    let ctx = Context::current_context_mut();
                     ctx.set_err_type(&ErrType::IntOverflow_TYPE);
 
                     panic!("{v_i128}: A 64 bit integer overflow");
@@ -332,6 +331,7 @@ impl ValueRef {
             dict.ops.insert(key.to_string(), op);
             dict.insert_indexs.insert(key.to_string(), insert_index);
             self.union_entry(
+                ctx,
                 &ValueRef::from(Value::dict_value(Box::new(dict))),
                 true,
                 &UnionOptions {
@@ -346,7 +346,7 @@ impl ValueRef {
     }
 
     /// Dict insert unpack value e.g., data = {**v}
-    pub fn dict_insert_unpack(&mut self, v: &ValueRef) {
+    pub fn dict_insert_unpack(&mut self, ctx: &mut Context, v: &ValueRef) {
         let mut union = false;
         match (&*self.rc.borrow(), &*v.rc.borrow()) {
             (
@@ -362,7 +362,7 @@ impl ValueRef {
             _ => panic!("only list, dict and schema object can be used with unpack operators * and **, got {v}"),
         }
         if union {
-            self.bin_aug_bit_or(&v.schema_to_dict().deep_copy());
+            self.bin_aug_bit_or(ctx, &v.schema_to_dict().deep_copy());
         }
     }
 

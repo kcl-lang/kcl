@@ -88,7 +88,6 @@ pub enum ApiFunc {
     kclvm_builtin_typeof,
     kclvm_builtin_zip,
     kclvm_config_attr_map,
-    kclvm_context_current,
     kclvm_context_delete,
     kclvm_context_invoke,
     kclvm_context_main_begin_hook,

@@ -18,19 +18,18 @@ pub struct PlanOptions {
     pub include_schema_type_path: bool,
 }
 
-fn filter_results(key_values: &ValueRef, opts: &PlanOptions) -> Vec<ValueRef> {
+fn filter_results(ctx: &Context, key_values: &ValueRef, opts: &PlanOptions) -> Vec<ValueRef> {
     let mut results: Vec<ValueRef> = vec![];
     // Plan list value with the yaml stream format.
     if key_values.is_list() {
         let key_values_list = &key_values.as_list_ref().values;
         for key_values in key_values_list {
-            results.append(&mut filter_results(key_values, opts));
+            results.append(&mut filter_results(ctx, key_values, opts));
         }
         results
     }
     // Plan dict value
     else if key_values.is_config() {
-        let ctx = Context::current_context();
         // index 0 for in-line keyvalues output, index 1: for standalone keyvalues outputs
         let result = ValueRef::dict(None);
         results.push(result);
@@ -42,7 +41,7 @@ fn filter_results(key_values: &ValueRef, opts: &PlanOptions) -> Vec<ValueRef> {
             if key.starts_with(KCL_PRIVATE_VAR_PREFIX) || value.is_undefined() || value.is_func() {
                 continue;
             } else if value.is_schema() || value.has_key(SCHEMA_SETTINGS_ATTR_NAME) {
-                let (filtered, standalone) = handle_schema(value, opts);
+                let (filtered, standalone) = handle_schema(ctx, value, opts);
                 if !filtered.is_empty() {
                     if standalone {
                         // if the instance is marked as 'STANDALONE', treat it as a separate one and
@@ -63,7 +62,7 @@ fn filter_results(key_values: &ValueRef, opts: &PlanOptions) -> Vec<ValueRef> {
                     }
                 }
             } else if value.is_dict() {
-                let filtered = filter_results(value, opts);
+                let filtered = filter_results(ctx, value, opts);
                 if !results.is_empty() {
                     let result = results.get_mut(0).unwrap();
                     if !filtered.is_empty() {
@@ -83,7 +82,7 @@ fn filter_results(key_values: &ValueRef, opts: &PlanOptions) -> Vec<ValueRef> {
                 let list_value = value.as_list_ref();
                 for v in &list_value.values {
                     if v.is_schema() || v.has_key(SCHEMA_SETTINGS_ATTR_NAME) {
-                        let (filtered, standalone) = handle_schema(v, opts);
+                        let (filtered, standalone) = handle_schema(ctx, v, opts);
                         if filtered.is_empty() {
                             ignore_schema_count += 1;
                             continue;
@@ -97,7 +96,7 @@ fn filter_results(key_values: &ValueRef, opts: &PlanOptions) -> Vec<ValueRef> {
                             }
                         }
                     } else if v.is_dict() {
-                        let filtered = filter_results(v, opts);
+                        let filtered = filter_results(ctx, v, opts);
                         for v in filtered {
                             filtered_list.push(v);
                         }
@@ -105,7 +104,7 @@ fn filter_results(key_values: &ValueRef, opts: &PlanOptions) -> Vec<ValueRef> {
                         continue;
                     } else if !v.is_undefined() {
                         let list_dict = ValueRef::dict(Some(&[(LIST_DICT_TEMP_KEY, v)]));
-                        let filtered = filter_results(&list_dict, opts);
+                        let filtered = filter_results(ctx, &list_dict, opts);
                         if !filtered.is_empty() {
                             if let Some(v) = filtered[0].get_by_key(LIST_DICT_TEMP_KEY) {
                                 filtered_list.push(v.clone());
@@ -152,8 +151,8 @@ fn filter_results(key_values: &ValueRef, opts: &PlanOptions) -> Vec<ValueRef> {
     }
 }
 
-fn handle_schema(value: &ValueRef, opts: &PlanOptions) -> (Vec<ValueRef>, bool) {
-    let mut filtered = filter_results(value, opts);
+fn handle_schema(ctx: &Context, value: &ValueRef, opts: &PlanOptions) -> (Vec<ValueRef>, bool) {
+    let mut filtered = filter_results(ctx, value, opts);
     if filtered.is_empty() {
         return (filtered, false);
     }
@@ -214,22 +213,22 @@ impl ValueRef {
         (self.is_dict() && !self.is_truthy()) || self.is_undefined()
     }
 
-    pub fn plan_to_json_string(&self) -> String {
-        let result = self.filter_results();
+    pub fn plan_to_json_string(&self, ctx: &mut Context) -> String {
+        let result = self.filter_results(ctx);
         if result.is_planned_empty() {
             return "".to_string();
         }
         result.to_json_string()
     }
 
-    pub fn plan_to_yaml_string(&self) -> String {
-        let result = self.filter_results();
+    pub fn plan_to_yaml_string(&self, ctx: &mut Context) -> String {
+        let result = self.filter_results(ctx);
         result.to_yaml_string()
     }
 
     /// Plan the value to the YAML string with delimiter `---`.
-    pub fn plan_to_yaml_string_with_delimiter(&self) -> String {
-        let results = filter_results(self, &PlanOptions::default());
+    pub fn plan_to_yaml_string_with_delimiter(&self, ctx: &Context) -> String {
+        let results = filter_results(ctx, self, &PlanOptions::default());
         let results = results
             .iter()
             .map(|r| r.to_yaml_string())
@@ -238,7 +237,7 @@ impl ValueRef {
     }
 
     /// Plan the value to JSON and YAML strings.
-    pub fn plan(&self, opts: &PlanOptions) -> (String, String) {
+    pub fn plan(&self, ctx: &Context, opts: &PlanOptions) -> (String, String) {
         let json_opt = JsonEncodeOptions {
             sort_keys: opts.sort_keys,
             ..Default::default()
@@ -248,7 +247,7 @@ impl ValueRef {
             ..Default::default()
         };
         if self.is_list_or_config() {
-            let results = filter_results(self, opts);
+            let results = filter_results(ctx, self, opts);
             let yaml_result = results
                 .iter()
                 .map(|r| {
@@ -306,8 +305,7 @@ impl ValueRef {
         }
     }
 
-    fn filter_results(&self) -> ValueRef {
-        let ctx = Context::current_context();
+    fn filter_results(&self, ctx: &mut Context) -> ValueRef {
         match &*self.rc.borrow() {
             Value::undefined => ValueRef {
                 rc: Rc::new(RefCell::new(Value::undefined)),
@@ -341,7 +339,7 @@ impl ValueRef {
                 };
                 for x in v.values.iter() {
                     if !(x.is_undefined() || x.is_func() || ctx.cfg.disable_none && x.is_none()) {
-                        list.list_append(&x.filter_results());
+                        list.list_append(&x.filter_results(ctx));
                     }
                 }
                 list
@@ -360,12 +358,8 @@ impl ValueRef {
                         || val.is_func()
                         || ctx.cfg.disable_none && val.is_none())
                     {
-                        dict.dict_insert(
-                            key,
-                            &val.filter_results(),
-                            ConfigEntryOperationKind::Override,
-                            -1,
-                        );
+                        let v = val.filter_results(ctx);
+                        dict.dict_insert(ctx, key, &v, ConfigEntryOperationKind::Override, -1);
                     }
                 }
                 dict
@@ -388,12 +382,8 @@ impl ValueRef {
                 };
                 for (key, val) in v.config.values.iter() {
                     if !val.is_undefined() && !val.is_func() {
-                        schema.dict_insert(
-                            key,
-                            &val.filter_results(),
-                            ConfigEntryOperationKind::Union,
-                            -1,
-                        );
+                        let v = val.filter_results(ctx);
+                        schema.dict_insert(ctx, key, &v, ConfigEntryOperationKind::Union, -1);
                     }
                 }
                 schema
@@ -404,19 +394,20 @@ impl ValueRef {
 
 #[cfg(test)]
 mod test_value_plan {
-    use crate::ValueRef;
+    use crate::{Context, ValueRef};
 
     use super::filter_results;
 
     #[test]
     fn test_filter_results() {
+        let ctx = Context::new();
         let dict1 = ValueRef::dict_int(&[("k1", 1)]);
         let dict2 = ValueRef::dict_int(&[("k2", 2)]);
         let dict3 = ValueRef::dict_int(&[("k3", 3)]);
         let dict_list = vec![&dict1, &dict2, &dict3];
         let list_data = ValueRef::list(Some(&dict_list));
         assert_eq!(
-            filter_results(&list_data, &Default::default()),
+            filter_results(&ctx, &list_data, &Default::default()),
             dict_list
                 .iter()
                 .map(|v| v.deep_copy())
@@ -424,7 +415,7 @@ mod test_value_plan {
         );
         for dict in dict_list {
             assert_eq!(
-                filter_results(dict, &Default::default()),
+                filter_results(&ctx, dict, &Default::default()),
                 vec![dict.deep_copy()]
             );
         }

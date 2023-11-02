@@ -7,7 +7,7 @@ use serde::{
     Deserialize, Serialize,
 };
 
-use crate::{ConfigEntryOperationKind, ValueRef, KCL_PRIVATE_VAR_PREFIX};
+use crate::{ConfigEntryOperationKind, Context, ValueRef, KCL_PRIVATE_VAR_PREFIX};
 
 macro_rules! tri {
     ($e:expr $(,)?) => {
@@ -356,30 +356,26 @@ where
 }
 
 impl ValueRef {
-    pub fn from_json(s: &str) -> Result<Self, serde_json::Error> {
+    pub fn from_json(ctx: &mut Context, s: &str) -> Result<Self, serde_json::Error> {
         match serde_json::de::from_str::<JsonValue>(s) {
-            Ok(json) => Ok(Self::parse_json(&json)),
+            Ok(json) => Ok(Self::parse_json(ctx, &json)),
             Err(err) => Err(err),
         }
     }
-    pub(crate) fn parse_json(json: &JsonValue) -> Self {
+    pub(crate) fn parse_json(ctx: &mut Context, json: &JsonValue) -> Self {
         match json {
             JsonValue::Object(values) => {
                 let mut dict = Self::dict(None);
                 for (name, value) in values {
-                    dict.dict_insert(
-                        name.as_ref(),
-                        &Self::parse_json(value),
-                        ConfigEntryOperationKind::Union,
-                        -1,
-                    );
+                    let v = Self::parse_json(ctx, value);
+                    dict.dict_insert(ctx, name.as_ref(), &v, ConfigEntryOperationKind::Union, -1);
                 }
                 dict
             }
             JsonValue::Array(values) => {
                 let mut list = Self::list(None);
                 for value in values {
-                    list.list_append(&Self::parse_json(value));
+                    list.list_append(&Self::parse_json(ctx, value));
                 }
                 list
             }
@@ -550,6 +546,7 @@ mod test_value_json {
 
     #[test]
     fn test_value_from_correct_json() {
+        let mut ctx = Context::new();
         let cases = [
             (
                 "{\"a\": 1}\n",
@@ -569,13 +566,14 @@ mod test_value_json {
             ("\n{}", ValueRef::dict(Some(&[]))),
         ];
         for (json_str, expected) in cases {
-            let result = ValueRef::from_json(json_str).unwrap();
+            let result = ValueRef::from_json(&mut ctx, json_str).unwrap();
             assert_eq!(result, expected);
         }
     }
 
     #[test]
     fn test_value_from_err_json() {
+        let mut ctx = Context::new();
         let cases = [
             ("{", "EOF while parsing an object at line 1 column 1"),
             ("{\"a\": 1,}", "trailing comma at line 1 column 9"),
@@ -583,7 +581,7 @@ mod test_value_json {
             ("[}", "expected value at line 1 column 2"),
         ];
         for (json_str, expected) in cases {
-            let result = ValueRef::from_json(json_str);
+            let result = ValueRef::from_json(&mut ctx, json_str);
             assert_eq!(result.err().unwrap().to_string(), expected);
         }
     }

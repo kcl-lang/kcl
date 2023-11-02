@@ -7,11 +7,12 @@ use crate::*;
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_json_encode(
-    _ctx: *mut kclvm_context_t,
+    ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
+    let ctx = mut_ptr_as_ref(ctx);
     let kwargs = ptr_as_ref(kwargs);
 
     if let Some(arg0) = args.arg_i(0) {
@@ -19,7 +20,7 @@ pub extern "C" fn kclvm_json_encode(
             arg0.to_json_string_with_option(&kwargs_to_opts(kwargs))
                 .as_ref(),
         );
-        return s.into_raw();
+        return s.into_raw(ctx);
     }
     panic!("encode() missing 1 required positional argument: 'value'")
 }
@@ -27,15 +28,16 @@ pub extern "C" fn kclvm_json_encode(
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_json_decode(
-    _ctx: *mut kclvm_context_t,
+    ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
+    let ctx = mut_ptr_as_ref(ctx);
 
     if let Some(arg0) = args.arg_i(0) {
-        match ValueRef::from_json(arg0.as_str().as_ref()) {
-            Ok(x) => return x.into_raw(),
+        match ValueRef::from_json(ctx, arg0.as_str().as_ref()) {
+            Ok(x) => return x.into_raw(ctx),
             Err(err) => panic!("{}", err),
         }
     }

@@ -17,7 +17,7 @@ pub fn update_ctx_pkgpath<'ctx>(gen: &'ctx LLVMCodeGenContext, pkgpath: &str) {
     gen.build_void_call(
         &ApiFunc::kclvm_context_set_kcl_pkgpath.name(),
         &[
-            gen.global_ctx_ptr(),
+            gen.current_runtime_ctx_ptr(),
             gen.native_global_string_value(pkgpath),
         ],
     );
@@ -28,7 +28,10 @@ pub fn update_ctx_filename<'ctx, T>(gen: &'ctx LLVMCodeGenContext, node: &'ctx a
     if !node.filename.is_empty() {
         gen.build_void_call(
             &ApiFunc::kclvm_context_set_kcl_filename.name(),
-            &[gen.native_global_string_value(&node.filename)],
+            &[
+                gen.current_runtime_ctx_ptr(),
+                gen.native_global_string_value(&node.filename),
+            ],
         );
     }
 }
@@ -41,6 +44,7 @@ pub fn update_ctx_line_col<'ctx, T>(gen: &'ctx LLVMCodeGenContext, node: &'ctx a
         gen.build_void_call(
             &ApiFunc::kclvm_context_set_kcl_line_col.name(),
             &[
+                gen.current_runtime_ctx_ptr(),
                 gen.native_int_value(node.line as i32),
                 gen.native_int_value(0),
             ],
@@ -54,6 +58,7 @@ pub fn update_ctx_current_line(gen: &LLVMCodeGenContext) {
     gen.build_void_call(
         &ApiFunc::kclvm_context_set_kcl_line_col.name(),
         &[
+            gen.current_runtime_ctx_ptr(),
             gen.native_int_value(*current_line as i32),
             gen.native_int_value(0),
         ],

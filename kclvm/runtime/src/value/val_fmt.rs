@@ -1049,6 +1049,7 @@ mod test_value_fmt {
 
     #[test]
     fn test_string_format() {
+        let mut ctx = Context::new();
         let cases = [
             (r#""{} {}""#, r#"["Hello","World"]"#, "\"Hello World\""),
             (r#""{:.0f}""#, r#"[1.0]"#, "\"1\""),
@@ -1061,7 +1062,7 @@ mod test_value_fmt {
         ];
         for (format_string, args, expected) in cases {
             let format_string = FormatString::from_str(format_string).unwrap();
-            let args = ValueRef::from_json(args).unwrap();
+            let args = ValueRef::from_json(&mut ctx, args).unwrap();
             let kwargs = ValueRef::dict(None);
             let result = format_string.format(&args, &kwargs);
             assert_eq!(&result, expected)

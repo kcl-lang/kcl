@@ -16,15 +16,16 @@ type kclvm_value_ref_t = ValueRef;
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_crypto_md5(
-    _ctx: *mut kclvm_context_t,
+    ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
+    let ctx = mut_ptr_as_ref(ctx);
 
     if let Some(s) = args.arg_i_str(0, None) {
         let hex = format!("{:x}", md5::compute(s));
-        return ValueRef::str(hex.as_ref()).into_raw();
+        return ValueRef::str(hex.as_ref()).into_raw(ctx);
     }
     panic!("md5() missing 1 required positional argument: 'value'");
 }
@@ -34,15 +35,16 @@ pub extern "C" fn kclvm_crypto_md5(
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_crypto_sha1(
-    _ctx: *mut kclvm_context_t,
+    ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
+    let ctx = mut_ptr_as_ref(ctx);
 
     if let Some(s) = args.arg_i_str(0, None) {
         let hex = sha1::Sha1::from(s).digest().to_string();
-        return ValueRef::str(hex.as_ref()).into_raw();
+        return ValueRef::str(hex.as_ref()).into_raw(ctx);
     }
     panic!("sha1() missing 1 required positional argument: 'value'");
 }
@@ -52,11 +54,12 @@ pub extern "C" fn kclvm_crypto_sha1(
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_crypto_sha224(
-    _ctx: *mut kclvm_context_t,
+    ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
+    let ctx = mut_ptr_as_ref(ctx);
 
     if let Some(s) = args.arg_i_str(0, None) {
         let mut hasher = Sha224::new();
@@ -70,7 +73,7 @@ pub extern "C" fn kclvm_crypto_sha224(
             let _ = write!(&mut hex, "{byte:02x}");
         }
 
-        return ValueRef::str(hex.as_ref()).into_raw();
+        return ValueRef::str(hex.as_ref()).into_raw(ctx);
     }
     panic!("sha224() missing 1 required positional argument: 'value'");
 }
@@ -80,12 +83,12 @@ pub extern "C" fn kclvm_crypto_sha224(
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_crypto_sha256(
-    _ctx: *mut kclvm_context_t,
+    ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
-
+    let ctx = mut_ptr_as_ref(ctx);
     if let Some(s) = args.arg_i_str(0, None) {
         let mut hasher = Sha256::new();
         hasher.update(&s);
@@ -98,7 +101,7 @@ pub extern "C" fn kclvm_crypto_sha256(
             let _ = write!(&mut hex, "{byte:02x}");
         }
 
-        return ValueRef::str(hex.as_ref()).into_raw();
+        return ValueRef::str(hex.as_ref()).into_raw(ctx);
     }
     panic!("sha256() missing 1 required positional argument: 'value'");
 }
@@ -108,11 +111,12 @@ pub extern "C" fn kclvm_crypto_sha256(
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_crypto_sha384(
-    _ctx: *mut kclvm_context_t,
+    ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
+    let ctx = mut_ptr_as_ref(ctx);
 
     if let Some(s) = args.arg_i_str(0, None) {
         let mut hasher = Sha384::new();
@@ -126,7 +130,7 @@ pub extern "C" fn kclvm_crypto_sha384(
             let _ = write!(&mut hex, "{byte:02x}");
         }
 
-        return ValueRef::str(hex.as_ref()).into_raw();
+        return ValueRef::str(hex.as_ref()).into_raw(ctx);
     }
     panic!("sha384() missing 1 required positional argument: 'value'");
 }
@@ -136,12 +140,12 @@ pub extern "C" fn kclvm_crypto_sha384(
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_crypto_sha512(
-    _ctx: *mut kclvm_context_t,
+    ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
-
+    let ctx = mut_ptr_as_ref(ctx);
     if let Some(s) = args.arg_i_str(0, None) {
         let mut hasher = Sha512::new();
         hasher.update(&s);
@@ -154,7 +158,7 @@ pub extern "C" fn kclvm_crypto_sha512(
             let _ = write!(&mut hex, "{byte:02x}");
         }
 
-        return ValueRef::str(hex.as_ref()).into_raw();
+        return ValueRef::str(hex.as_ref()).into_raw(ctx);
     }
     panic!("sha512() missing 1 required positional argument: 'value'");
 }

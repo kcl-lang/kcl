@@ -36,10 +36,22 @@ mod test_value_get {
     #[test]
     fn test_get() {
         let mut list_int = ValueRef::list_int(&[10_i64, 20, 30]);
-
+        let mut ctx = Context::new();
         let mut dict = ValueRef::dict(None);
-        dict.dict_insert("a", &ValueRef::str("a-value"), Default::default(), 0);
-        dict.dict_insert("b", &ValueRef::str("b-value"), Default::default(), 0);
+        dict.dict_insert(
+            &mut ctx,
+            "a",
+            &ValueRef::str("a-value"),
+            Default::default(),
+            0,
+        );
+        dict.dict_insert(
+            &mut ctx,
+            "b",
+            &ValueRef::str("b-value"),
+            Default::default(),
+            0,
+        );
 
         list_int.list_set(1, &dict);
         list_int.list_set(2, &ValueRef::list_int(&[100_i64, 200, 300]));

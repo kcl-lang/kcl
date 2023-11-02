@@ -11,18 +11,19 @@ use crate::*;
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_net_split_host_port(
-    _ctx: *mut kclvm_context_t,
+    ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
+    let ctx = mut_ptr_as_ref(ctx);
 
     if let Some(string) = args.arg_i_str(0, None) {
         let mut list = ValueRef::list(None);
         for s in string.split(':') {
             list.list_append(&ValueRef::str(s));
         }
-        return list.into_raw();
+        return list.into_raw(ctx);
     }
 
     panic!("split_host_port() missing 1 required positional argument: 'ip_end_point'");
@@ -33,20 +34,21 @@ pub extern "C" fn kclvm_net_split_host_port(
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_net_join_host_port(
-    _ctx: *mut kclvm_context_t,
+    ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
+    let ctx = mut_ptr_as_ref(ctx);
 
     if let Some(host) = args.arg_i_str(0, None) {
         if let Some(port) = args.arg_i_int(1, None) {
             let s = format!("{host}:{port}");
-            return ValueRef::str(s.as_ref()).into_raw();
+            return ValueRef::str(s.as_ref()).into_raw(ctx);
         }
         if let Some(port) = args.arg_i_str(1, None) {
             let s = format!("{host}:{port}");
-            return ValueRef::str(s.as_ref()).into_raw();
+            return ValueRef::str(s.as_ref()).into_raw(ctx);
         }
     }
     panic!("join_host_port() missing 2 required positional arguments: 'host' and 'port'");
@@ -110,23 +112,23 @@ pub extern "C" fn kclvm_net_to_IP16(
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_net_IP_string(
-    _ctx: *mut kclvm_context_t,
+    ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
-
+    let ctx = mut_ptr_as_ref(ctx);
     if let Some(ip) = args.arg_i_str(0, None) {
         if let Ok(addr) = Ipv4Addr::from_str(ip.as_ref()) {
             let s = format!("{addr}");
-            return ValueRef::str(s.as_ref()).into_raw();
+            return ValueRef::str(s.as_ref()).into_raw(ctx);
         }
         if let Ok(addr) = Ipv6Addr::from_str(ip.as_ref()) {
             let s = format!("{addr}");
-            return ValueRef::str(s.as_ref()).into_raw();
+            return ValueRef::str(s.as_ref()).into_raw(ctx);
         }
 
-        return ValueRef::str("").into_raw();
+        return ValueRef::str("").into_raw(ctx);
     }
 
     panic!("IP_string() missing 1 required positional argument: 'ip'");
@@ -137,7 +139,7 @@ pub extern "C" fn kclvm_net_IP_string(
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_net_is_IPv4(
-    _ctx: *mut kclvm_context_t,
+    ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
@@ -145,13 +147,13 @@ pub extern "C" fn kclvm_net_is_IPv4(
 
     if let Some(ip) = args.arg_i_str(0, None) {
         if let Ok(_addr) = Ipv4Addr::from_str(ip.as_ref()) {
-            return kclvm_value_True();
+            return kclvm_value_True(ctx);
         }
         if let Ok(_addr) = Ipv6Addr::from_str(ip.as_ref()) {
-            return kclvm_value_False();
+            return kclvm_value_False(ctx);
         }
 
-        return kclvm_value_False();
+        return kclvm_value_False(ctx);
     }
 
     panic!("is_IPv4() missing 1 required positional argument: 'ip'");
@@ -162,7 +164,7 @@ pub extern "C" fn kclvm_net_is_IPv4(
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_net_is_IP(
-    _ctx: *mut kclvm_context_t,
+    ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
@@ -170,13 +172,13 @@ pub extern "C" fn kclvm_net_is_IP(
 
     if let Some(ip) = args.arg_i_str(0, None) {
         if let Ok(..) = Ipv4Addr::from_str(ip.as_ref()) {
-            return kclvm_value_True();
+            return kclvm_value_True(ctx);
         }
         if let Ok(..) = Ipv6Addr::from_str(ip.as_ref()) {
-            return kclvm_value_True();
+            return kclvm_value_True(ctx);
         }
 
-        return kclvm_value_False();
+        return kclvm_value_False(ctx);
     }
 
     panic!("is_IP() missing 1 required positional argument: 'ip'");
@@ -187,7 +189,7 @@ pub extern "C" fn kclvm_net_is_IP(
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_net_is_loopback_IP(
-    _ctx: *mut kclvm_context_t,
+    ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
@@ -196,14 +198,14 @@ pub extern "C" fn kclvm_net_is_loopback_IP(
     if let Some(ip) = args.arg_i_str(0, None) {
         if let Ok(addr) = Ipv4Addr::from_str(ip.as_ref()) {
             let x = addr.is_loopback();
-            return kclvm_value_Bool(x as i8);
+            return kclvm_value_Bool(ctx, x as i8);
         }
         if let Ok(addr) = Ipv6Addr::from_str(ip.as_ref()) {
             let x = addr.is_loopback();
-            return kclvm_value_Bool(x as i8);
+            return kclvm_value_Bool(ctx, x as i8);
         }
 
-        return kclvm_value_False();
+        return kclvm_value_False(ctx);
     }
 
     panic!("is_loopback_IP() missing 1 required positional argument: 'ip'");
@@ -214,7 +216,7 @@ pub extern "C" fn kclvm_net_is_loopback_IP(
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_net_is_multicast_IP(
-    _ctx: *mut kclvm_context_t,
+    ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
@@ -223,14 +225,14 @@ pub extern "C" fn kclvm_net_is_multicast_IP(
     if let Some(ip) = args.arg_i_str(0, None) {
         if let Ok(addr) = Ipv4Addr::from_str(ip.as_ref()) {
             let x = addr.is_multicast();
-            return kclvm_value_Bool(x as i8);
+            return kclvm_value_Bool(ctx, x as i8);
         }
         if let Ok(addr) = Ipv6Addr::from_str(ip.as_ref()) {
             let x = addr.is_multicast();
-            return kclvm_value_Bool(x as i8);
+            return kclvm_value_Bool(ctx, x as i8);
         }
 
-        return kclvm_value_False();
+        return kclvm_value_False(ctx);
     }
 
     panic!("kclvm_net_is_multicast_IP() missing 1 required positional argument: 'ip'");
@@ -241,7 +243,7 @@ pub extern "C" fn kclvm_net_is_multicast_IP(
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_net_is_interface_local_multicast_IP(
-    _ctx: *mut kclvm_context_t,
+    ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
@@ -251,13 +253,13 @@ pub extern "C" fn kclvm_net_is_interface_local_multicast_IP(
         if let Ok(addr) = Ipv4Addr::from_str(ip.as_ref()) {
             let is_site_local = false; // TODO
             let x = is_site_local && addr.is_multicast();
-            return kclvm_value_Bool(x as i8);
+            return kclvm_value_Bool(ctx, x as i8);
         }
         if let Ok(_addr) = Ipv6Addr::from_str(ip.as_ref()) {
             todo!("todo");
         }
 
-        return kclvm_value_False();
+        return kclvm_value_False(ctx);
     }
 
     panic!("is_interface_local_multicast_IP() missing 1 required positional argument: 'ip'");
@@ -268,7 +270,7 @@ pub extern "C" fn kclvm_net_is_interface_local_multicast_IP(
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_net_is_link_local_multicast_IP(
-    _ctx: *mut kclvm_context_t,
+    ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
@@ -277,15 +279,15 @@ pub extern "C" fn kclvm_net_is_link_local_multicast_IP(
     if let Some(ip) = args.arg_i_str(0, None) {
         if let Ok(addr) = Ipv4Addr::from_str(ip.as_ref()) {
             let x = addr.is_link_local() && addr.is_multicast();
-            return kclvm_value_Bool(x as i8);
+            return kclvm_value_Bool(ctx, x as i8);
         }
         if let Ok(addr) = Ipv6Addr::from_str(ip.as_ref()) {
             let is_link_local = false; // TODO
             let x = is_link_local && addr.is_multicast();
-            return kclvm_value_Bool(x as i8);
+            return kclvm_value_Bool(ctx, x as i8);
         }
 
-        return kclvm_value_False();
+        return kclvm_value_False(ctx);
     }
 
     panic!("is_link_local_multicast_IP() missing 1 required positional argument: 'ip'");
@@ -300,20 +302,19 @@ pub extern "C" fn kclvm_net_is_link_local_unicast_IP(
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
-    let _ctx = mut_ptr_as_ref(ctx);
     let args = ptr_as_ref(args);
     let _kwargs = ptr_as_ref(kwargs);
 
     if let Some(ip) = args.arg_i_str(0, None) {
         if let Ok(addr) = Ipv4Addr::from_str(ip.as_ref()) {
             let x = addr.is_link_local() && (!addr.is_multicast());
-            return kclvm_value_Bool(x as i8);
+            return kclvm_value_Bool(ctx, x as i8);
         }
         if let Ok(_addr) = Ipv6Addr::from_str(ip.as_ref()) {
             let x = Ipv6Addr_is_unicast_link_local(&_addr) && (!_addr.is_multicast());
-            return kclvm_value_Bool(x as i8);
+            return kclvm_value_Bool(ctx, x as i8);
         }
-        return kclvm_value_False();
+        return kclvm_value_False(ctx);
     }
 
     panic!("is_link_local_unicast_IP() missing 1 required positional argument: 'ip'");
@@ -329,7 +330,7 @@ pub const fn Ipv6Addr_is_unicast_link_local(_self: &Ipv6Addr) -> bool {
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_net_is_global_unicast_IP(
-    _ctx: *mut kclvm_context_t,
+    ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
@@ -338,13 +339,13 @@ pub extern "C" fn kclvm_net_is_global_unicast_IP(
     if let Some(ip) = args.arg_i_str(0, None) {
         if let Ok(addr) = Ipv4Addr::from_str(ip.as_ref()) {
             let x = Ipv4Addr_is_global(&addr) && (!addr.is_multicast());
-            return kclvm_value_Bool(x as i8);
+            return kclvm_value_Bool(ctx, x as i8);
         }
         if let Ok(addr) = Ipv6Addr::from_str(ip.as_ref()) {
-            return kclvm_value_Bool(addr.is_multicast() as i8);
+            return kclvm_value_Bool(ctx, addr.is_multicast() as i8);
         }
 
-        return kclvm_value_False();
+        return kclvm_value_False(ctx);
     }
 
     panic!("is_global_unicast_IP() missing 1 required positional argument: 'ip'");
@@ -394,7 +395,7 @@ const fn Ipv4Addr_is_benchmarking(_self: &std::net::Ipv4Addr) -> bool {
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_net_is_unspecified_IP(
-    _ctx: *mut kclvm_context_t,
+    ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
@@ -402,12 +403,12 @@ pub extern "C" fn kclvm_net_is_unspecified_IP(
 
     if let Some(ip) = args.arg_i_str(0, None) {
         if let Ok(addr) = Ipv4Addr::from_str(ip.as_ref()) {
-            return kclvm_value_Bool(addr.is_unspecified() as i8);
+            return kclvm_value_Bool(ctx, addr.is_unspecified() as i8);
         }
         if let Ok(addr) = Ipv6Addr::from_str(ip.as_ref()) {
-            return kclvm_value_Bool(addr.is_unspecified() as i8);
+            return kclvm_value_Bool(ctx, addr.is_unspecified() as i8);
         }
-        return kclvm_value_False();
+        return kclvm_value_False(ctx);
     }
     panic!("is_unspecified_IP() missing 1 required positional argument: 'ip'");
 }
