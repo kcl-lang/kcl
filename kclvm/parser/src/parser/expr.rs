@@ -1244,19 +1244,16 @@ impl<'a> Parser<'a> {
 
         let has_newline = if self.token.kind == TokenKind::Newline {
             self.skip_newlines();
-            if self.token.kind == TokenKind::Indent {
+            while self.token.kind == TokenKind::Indent {
                 self.bump();
-            } else if self.token.kind == TokenKind::CloseDelim(DelimToken::Brace) {
+            } 
+            if self.token.kind == TokenKind::CloseDelim(DelimToken::Brace) {
                 self.bump();
                 return Box::new(Node::node(
                     Expr::Config(ConfigExpr { items: vec![] }),
                     self.sess.struct_token_loc(token, self.prev_token),
                 ));
-            } else {
-                // If we don't find the indentation, skip and parse the next statement.
-                self.sess
-                    .struct_token_error(&[TokenKind::Indent.into()], self.token);
-            }
+            } 
             true
         } else {
             false
@@ -1269,12 +1266,9 @@ impl<'a> Parser<'a> {
         // _DEDENT
         if has_newline {
             self.skip_newlines();
-            if self.token.kind == TokenKind::Dedent {
+            while self.token.kind == TokenKind::Dedent {
                 self.bump();
-            } else {
-                self.sess
-                    .struct_token_error(&[TokenKind::Dedent.into()], self.token)
-            }
+            } 
         }
 
         // RIGHT_BRACE
@@ -1333,8 +1327,16 @@ impl<'a> Parser<'a> {
     /// Syntax:
     /// config_entries: config_entry ((COMMA [NEWLINE] | NEWLINE) config_entry)* [COMMA] [NEWLINE]
     fn parse_config_entries(&mut self, has_newline: bool) -> Vec<NodeRef<ConfigEntry>> {
+        while let TokenKind::Dedent = self.token.kind {
+            self.bump()
+        }
+
+        while let TokenKind::Indent = self.token.kind {
+            self.bump()
+        }
+        
         let is_terminator = |token: &kclvm_ast::token::Token| match &token.kind {
-            TokenKind::CloseDelim(DelimToken::Brace) | TokenKind::Dedent | TokenKind::Eof => true,
+            TokenKind::CloseDelim(DelimToken::Brace) | TokenKind::Eof => true,
             TokenKind::Newline if !has_newline => true,
             _ => token.is_keyword(kw::For),
         };
@@ -1353,11 +1355,20 @@ impl<'a> Parser<'a> {
         }
 
         loop {
+            while let TokenKind::Dedent = self.token.kind {
+                self.bump()
+            }
+    
+            while let TokenKind::Indent = self.token.kind {
+                self.bump()
+            }
             let marker = self.mark();
 
             if is_terminator(&self.token) {
                 break;
             }
+
+            println!("{:?}", self.token);
 
             entries.push(self.parse_config_entry());
 
@@ -1380,6 +1391,13 @@ impl<'a> Parser<'a> {
     /// Note: use the same ast node here for simplicity, do semantic checking later
     fn parse_config_entry(&mut self) -> NodeRef<ConfigEntry> {
         let token = self.token;
+        while let TokenKind::Dedent = self.token.kind {
+            self.bump()
+        }
+
+        while let TokenKind::Indent = self.token.kind {
+            self.bump()
+        }
         let key;
         let value;
         let operation;
@@ -1425,7 +1443,13 @@ impl<'a> Parser<'a> {
                 }
             }
         }
+        while let TokenKind::Dedent = self.token.kind {
+            self.bump()
+        }
 
+        while let TokenKind::Indent = self.token.kind {
+            self.bump()
+        }
         Box::new(Node::node(
             ConfigEntry {
                 key,

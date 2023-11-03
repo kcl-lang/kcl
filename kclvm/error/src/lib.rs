@@ -351,6 +351,23 @@ impl ParseError {
             None,
         ))
     }
+
+    pub fn into_warning_diag(self, sess: &Session) -> Result<Diagnostic> {
+        let span = match self {
+            ParseError::UnexpectedToken { span, .. } => span,
+            ParseError::Message { span, .. } => span,
+        };
+        let loc = sess.sm.lookup_char_pos(span.lo());
+        let pos: Position = loc.into();
+        Ok(Diagnostic::new_with_code(
+            Level::Warning,
+            &self.to_string(),
+            None,
+            (pos.clone(), pos),
+            Some(DiagnosticId::Warning(WarningKind::CompilerWarning)),
+            None,
+        ))
+    }
 }
 
 impl ToString for ParseError {

@@ -620,3 +620,21 @@ fn test_keyword_argument_error_message() {
         }
     }
 }
+
+#[test]
+fn test_xxx() {
+    let test_case_path = PathBuf::from("/Users/zongz/Workspace/kusionstack/kcl/kclvm/cmd/src/test_data/main.k");
+    let matches = app().arg_required_else_help(true).get_matches_from(&[
+        ROOT_CMD,
+        "run",
+        &test_case_path.canonicalize().unwrap().display().to_string(),
+    ]);
+    let settings = must_build_settings(matches.subcommand_matches("run").unwrap());
+    let sess = Arc::new(ParseSession::default());
+    match exec_program(sess.clone(), &settings.try_into().unwrap()) {
+        Ok(res) => println!("{:?}", res),
+        Err(msg) => {
+            println!("{}", msg);
+        }
+    }
+}

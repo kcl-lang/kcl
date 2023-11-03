@@ -84,6 +84,7 @@ impl<'a> Lexer<'a> {
             Ok(order) => {
                 Some(match order {
                     Ordering::Greater => {
+                        
                         self.indent_cxt.indents.push(indent);
 
                         // For indent token, we ignore the length
