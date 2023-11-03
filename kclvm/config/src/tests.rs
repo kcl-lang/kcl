@@ -58,7 +58,8 @@ fn test_pkg_cache() {
         "test_data",
         CacheOption::default(),
         &external_pkgs,
-    ).unwrap();
+    )
+    .unwrap();
 
     assert_eq!(
         load_pkg_cache(
