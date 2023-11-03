@@ -378,6 +378,7 @@ impl KclvmAssembler {
                                 &pkgpath,
                                 lib_relative_path,
                                 CacheOption::default(),
+                                &self.external_pkgs,
                             );
                             file_path
                         }

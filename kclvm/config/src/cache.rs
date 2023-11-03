@@ -4,7 +4,7 @@ use super::modfile::KCL_FILE_SUFFIX;
 use crypto::digest::Digest;
 use crypto::md5::Md5;
 use fslock::LockFile;
-use kclvm_utils::pkgpath::parse_external_pkg_name;
+use kclvm_utils::pkgpath::{parse_external_pkg_name, rm_external_pkg_name};
 use serde::{de::DeserializeOwned, Serialize};
 use std::collections::HashMap;
 use std::error;
@@ -49,6 +49,7 @@ where
     if root.is_empty() || pkgpath.is_empty() {
         None
     } else {
+        // The cache file path
         let filename = get_cache_filename(root, target, pkgpath, Some(&option.cache_dir));
         if !Path::new(&filename).exists() {
             None
@@ -58,43 +59,75 @@ where
             // If the file exists and it is an internal package or an external package,
             // Check the cache info.
             let pkg_name = parse_external_pkg_name(pkgpath).ok()?;
-            if Path::new(&real_path).exists()
-                || (external_pkgs.get(&pkg_name).is_some()
-                    && Path::new(external_pkgs.get(&pkg_name)?).exists())
+
+            // If it is an internal package
+            let real_path = if Path::new(&real_path).exists() {
+                real_path
+                // If it is an external package
+            } else if external_pkgs.get(&pkg_name).is_some()
+                && Path::new(external_pkgs.get(&pkg_name)?).exists()
             {
-                let cache_info = read_info_cache(root, target, Some(&option.cache_dir));
-                let relative_path = real_path.replacen(root, ".", 1);
-                match cache_info.get(&relative_path) {
-                    Some(path_info_in_cache) => {
-                        if get_cache_info(&real_path).ne(path_info_in_cache) {
-                            return None;
-                        }
+                get_pkg_realpath_from_pkgpath(
+                    external_pkgs.get(&pkg_name)?,
+                    &rm_external_pkg_name(pkgpath).ok()?,
+                )
+            } else {
+                return None;
+            };
+
+            // get the cache info from cache file "info"
+            let cache_info = read_info_cache(root, target, Some(&option.cache_dir));
+            let relative_path = real_path.replacen(root, ".", 1);
+            match cache_info.get(&relative_path) {
+                Some(path_info_in_cache) => {
+                    // calculate the md5 of the file and compare it with the cache info
+                    if get_cache_info(&real_path).ne(path_info_in_cache) {
+                        return None;
                     }
-                    None => return None,
-                };
-            }
+                }
+                None => return None,
+            };
+            // If the md5 is the same, load the cache file
             load_data_from_file(&filename)
         }
     }
 }
 
 /// Save pkg cache.
-pub fn save_pkg_cache<T>(root: &str, target: &str, pkgpath: &str, data: T, option: CacheOption)
+pub fn save_pkg_cache<T>(
+    root: &str,
+    target: &str,
+    pkgpath: &str,
+    data: T,
+    option: CacheOption,
+    external_pkgs: &HashMap<String, String>,
+) -> Result<(), String>
 where
     T: Serialize,
 {
     if root.is_empty() || pkgpath.is_empty() {
-        return;
+        return Err("failed to save cache".to_string());
     }
     let dst_filename = get_cache_filename(root, target, pkgpath, Some(&option.cache_dir));
     let real_path = get_pkg_realpath_from_pkgpath(root, pkgpath);
     if Path::new(&real_path).exists() {
         write_info_cache(root, target, Some(&option.cache_dir), &real_path).unwrap();
+    } else {
+        // If the file does not exist, it is an external package.
+        let pkg_name = parse_external_pkg_name(pkgpath)?;
+        let real_path = get_pkg_realpath_from_pkgpath(
+            external_pkgs.get(&pkg_name).ok_or("failed to save cache")?,
+            &rm_external_pkg_name(pkgpath)?,
+        );
+        if Path::new(&real_path).exists() {
+            write_info_cache(root, target, Some(&option.cache_dir), &real_path).unwrap();
+        }
     }
     let cache_dir = get_cache_dir(root, Some(&option.cache_dir));
     create_dir_all(&cache_dir).unwrap();
     let tmp_filename = temp_file(&cache_dir, pkgpath);
-    save_data_to_file(&dst_filename, &tmp_filename, data)
+    save_data_to_file(&dst_filename, &tmp_filename, data);
+    return Ok(());
 }
 
 #[inline]
