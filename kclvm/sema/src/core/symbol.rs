@@ -11,6 +11,8 @@ use kclvm_ast::ast::AstIndex;
 
 pub trait Symbol {
     type SymbolData;
+    type SemanticInfo;
+    fn get_sema_info(&self) -> &Self::SemanticInfo;
     fn is_global(&self) -> bool;
     fn get_range(&self) -> Range;
     fn get_owner(&self) -> Option<SymbolRef>;
@@ -39,6 +41,12 @@ pub trait Symbol {
     fn simple_dump(&self) -> String;
 
     fn full_dump(&self, data: &Self::SymbolData) -> Option<String>;
+}
+
+type KCLSymbol = dyn Symbol<SymbolData = KCLSymbolData, SemanticInfo = KCLSymbolSemanticInfo>;
+pub struct KCLSymbolSemanticInfo {
+    pub ty: Option<Arc<Type>>,
+    pub doc: Option<String>,
 }
 
 #[derive(Default, Debug, Clone)]
@@ -110,36 +118,36 @@ impl KCLSymbolData {
         }
     }
 
-    pub fn get_symbol(&self, id: SymbolRef) -> Option<&dyn Symbol<SymbolData = Self>> {
+    pub fn get_symbol(&self, id: SymbolRef) -> Option<&KCLSymbol> {
         match id.get_kind() {
             SymbolKind::Schema => self
                 .schemas
                 .get(id.get_id())
-                .map(|symbol| symbol as &dyn Symbol<SymbolData = Self>),
+                .map(|symbol| symbol as &KCLSymbol),
             SymbolKind::Attribute => self
                 .attributes
                 .get(id.get_id())
-                .map(|symbol| symbol as &dyn Symbol<SymbolData = Self>),
+                .map(|symbol| symbol as &KCLSymbol),
             SymbolKind::Value => self
                 .values
                 .get(id.get_id())
-                .map(|symbol| symbol as &dyn Symbol<SymbolData = Self>),
+                .map(|symbol| symbol as &KCLSymbol),
             SymbolKind::Package => self
                 .packages
                 .get(id.get_id())
-                .map(|symbol| symbol as &dyn Symbol<SymbolData = Self>),
+                .map(|symbol| symbol as &KCLSymbol),
             SymbolKind::TypeAlias => self
                 .type_aliases
                 .get(id.get_id())
-                .map(|symbol| symbol as &dyn Symbol<SymbolData = Self>),
+                .map(|symbol| symbol as &KCLSymbol),
             SymbolKind::Unresolved => self
                 .unresolved
                 .get(id.get_id())
-                .map(|symbol| symbol as &dyn Symbol<SymbolData = Self>),
+                .map(|symbol| symbol as &KCLSymbol),
             SymbolKind::Rule => self
                 .rules
                 .get(id.get_id())
-                .map(|symbol| symbol as &dyn Symbol<SymbolData = Self>),
+                .map(|symbol| symbol as &KCLSymbol),
         }
     }
 
@@ -475,6 +483,7 @@ pub struct SchemaSymbol {
 
 impl Symbol for SchemaSymbol {
     type SymbolData = KCLSymbolData;
+    type SemanticInfo = KCLSymbolSemanticInfo;
 
     fn is_global(&self) -> bool {
         true
@@ -633,6 +642,10 @@ impl Symbol for SchemaSymbol {
         output.push_str("\n}\n}\n}");
         Some(output)
     }
+
+    fn get_sema_info(&self) -> &Self::SemanticInfo {
+        todo!()
+    }
 }
 
 impl SchemaSymbol {
@@ -664,6 +677,8 @@ pub struct ValueSymbol {
 
 impl Symbol for ValueSymbol {
     type SymbolData = KCLSymbolData;
+    type SemanticInfo = KCLSymbolSemanticInfo;
+
     fn is_global(&self) -> bool {
         self.is_global
     }
@@ -755,6 +770,10 @@ impl Symbol for ValueSymbol {
         output.push_str("\n}\n}");
         Some(output)
     }
+
+    fn get_sema_info(&self) -> &Self::SemanticInfo {
+        todo!()
+    }
 }
 
 impl ValueSymbol {
@@ -788,6 +807,8 @@ pub struct AttributeSymbol {
 
 impl Symbol for AttributeSymbol {
     type SymbolData = KCLSymbolData;
+    type SemanticInfo = KCLSymbolSemanticInfo;
+
     fn is_global(&self) -> bool {
         true
     }
@@ -878,6 +899,10 @@ impl Symbol for AttributeSymbol {
         output.push_str("\n}\n}");
         Some(output)
     }
+
+    fn get_sema_info(&self) -> &Self::SemanticInfo {
+        todo!()
+    }
 }
 
 impl AttributeSymbol {
@@ -903,6 +928,8 @@ pub struct PackageSymbol {
 
 impl Symbol for PackageSymbol {
     type SymbolData = KCLSymbolData;
+    type SemanticInfo = KCLSymbolSemanticInfo;
+
     fn is_global(&self) -> bool {
         true
     }
@@ -990,6 +1017,10 @@ impl Symbol for PackageSymbol {
         output.push_str("\n}\n}\n}");
         Some(output)
     }
+
+    fn get_sema_info(&self) -> &Self::SemanticInfo {
+        todo!()
+    }
 }
 
 impl PackageSymbol {
@@ -1015,6 +1046,8 @@ pub struct TypeAliasSymbol {
 
 impl Symbol for TypeAliasSymbol {
     type SymbolData = KCLSymbolData;
+    type SemanticInfo = KCLSymbolSemanticInfo;
+
     fn is_global(&self) -> bool {
         true
     }
@@ -1107,6 +1140,10 @@ impl Symbol for TypeAliasSymbol {
         ));
         Some(output)
     }
+
+    fn get_sema_info(&self) -> &Self::SemanticInfo {
+        todo!()
+    }
 }
 
 impl TypeAliasSymbol {
@@ -1135,6 +1172,8 @@ pub struct RuleSymbol {
 
 impl Symbol for RuleSymbol {
     type SymbolData = KCLSymbolData;
+    type SemanticInfo = KCLSymbolSemanticInfo;
+
     fn is_global(&self) -> bool {
         true
     }
@@ -1226,6 +1265,10 @@ impl Symbol for RuleSymbol {
 
         Some(output)
     }
+
+    fn get_sema_info(&self) -> &Self::SemanticInfo {
+        todo!()
+    }
 }
 
 impl RuleSymbol {
@@ -1254,6 +1297,8 @@ pub struct UnresolvedSymbol {
 
 impl Symbol for UnresolvedSymbol {
     type SymbolData = KCLSymbolData;
+    type SemanticInfo = KCLSymbolSemanticInfo;
+
     fn is_global(&self) -> bool {
         false
     }
@@ -1337,6 +1382,10 @@ impl Symbol for UnresolvedSymbol {
         }
         output.push_str("\n}\n}");
         Some(output)
+    }
+
+    fn get_sema_info(&self) -> &Self::SemanticInfo {
+        todo!()
     }
 }
 
