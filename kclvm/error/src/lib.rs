@@ -419,6 +419,7 @@ impl SessionDiagnostic for Diagnostic {
                     let line = source.get_line((msg.range.0.line - 1) as usize);
                     match line.as_ref() {
                         Some(content) => {
+                            let length = content.chars().count();
                             let snippet = Snippet {
                                 title: None,
                                 footer: vec![],
@@ -428,12 +429,12 @@ impl SessionDiagnostic for Diagnostic {
                                     origin: Some(&msg.range.0.filename),
                                     annotations: vec![SourceAnnotation {
                                         range: match msg.range.0.column {
-                                            Some(column) if content.len() >= 1 => {
+                                            Some(column) if length >= 1 => {
                                                 let column = column as usize;
                                                 // If the position exceeds the length of the content,
                                                 // put the annotation at the end of the line.
-                                                if column >= content.len() {
-                                                    (content.len() - 1, content.len())
+                                                if column >= length {
+                                                    (length - 1, length)
                                                 } else {
                                                     (column, column + 1)
                                                 }
