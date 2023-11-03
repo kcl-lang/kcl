@@ -84,6 +84,9 @@ service KclvmService {
 
 	rpc ListDepFiles(ListDepFiles_Args) returns(ListDepFiles_Result);
 	rpc LoadSettingsFiles(LoadSettingsFiles_Args) returns(LoadSettingsFiles_Result);
+
+	rpc Rename(Rename_Args) returns(Rename_Result);
+	rpc RenameCode(RenameCode_Args) returns(RenameCode_Result);
 }
 
 message Ping_Args {
@@ -289,6 +292,36 @@ message CliConfig {
 message KeyValuePair {
 	string key = 1;
 	string value = 2;
+}
+
+// ---------------------------------------------------------------------------------
+// Rename API
+//    find all the occurrences of the target symbol and rename them. This API will rewrite files if they contain symbols to be renamed.
+// ---------------------------------------------------------------------------------
+
+message Rename_Args {
+    string symbol_path = 1;               // the path to the target symbol to be renamed. The symbol path should conform to format: `<pkgpath>:<field_path>` When the pkgpath is '__main__', `<pkgpath>:` can be omitted.
+    repeated string file_paths = 2;       // the paths to the source code files
+    string newName = 3;                   // the new name of the symbol
+}
+
+message Rename_Result {
+    repeated string changed_files = 1;    // the file paths got changed
+}
+
+// ---------------------------------------------------------------------------------
+// RenameCode API
+//    find all the occurrences of the target symbol and rename them. This API won't rewrite files but return the modified code if any code has been changed.
+// ---------------------------------------------------------------------------------
+
+message RenameCode_Args {
+    string symbol_path = 1;               // the path to the target symbol to be renamed. The symbol path should conform to format: `<pkgpath>:<field_path>` When the pkgpath is '__main__', `<pkgpath>:` can be omitted.
+    map<string, string> source_codes = 2; // the source code. a <filename>:<code> map
+    string newName = 3;                   // the new name of the symbol
+}
+
+message RenameCode_Result {
+    map<string, string> changed_codes = 1; // the changed code. a <filename>:<code> map
 }
 
 // ----------------------------------------------------------------------------

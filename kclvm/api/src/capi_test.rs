@@ -133,6 +133,24 @@ fn test_c_api_load_settings_files() {
     );
 }
 
+#[test]
+fn test_c_api_rename() {
+    test_c_api_without_wrapper::<RenameArgs, RenameResult>(
+        "KclvmService.Rename",
+        "rename.json",
+        "rename.response.json",
+    );
+}
+
+#[test]
+fn test_c_api_rename_code() {
+    test_c_api_without_wrapper::<RenameCodeArgs, RenameCodeResult>(
+        "KclvmService.RenameCode",
+        "rename-code.json",
+        "rename-code.response.json",
+    );
+}
+
 fn test_c_api_without_wrapper<A, R>(svc_name: &str, input: &str, output: &str)
 where
     A: Message + DeserializeOwned,
