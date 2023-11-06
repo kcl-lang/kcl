@@ -1418,6 +1418,10 @@ fn find_refs_test() {
         name: "test".to_string(),
     }]);
     let server = Project {}.server(initialize_params);
+
+    // Wait for async build word_index_map
+    thread::sleep(Duration::from_secs(1));
+
     let url = Url::from_file_path(path).unwrap();
 
     // Mock open file
@@ -1504,6 +1508,10 @@ fn find_refs_with_file_change_test() {
         name: "test".to_string(),
     }]);
     let server = Project {}.server(initialize_params);
+
+    // Wait for async build word_index_map
+    thread::sleep(Duration::from_secs(1));
+
     let url = Url::from_file_path(path).unwrap();
 
     // Mock open file
@@ -1603,6 +1611,10 @@ fn rename_test() {
         name: "test".to_string(),
     }]);
     let server = Project {}.server(initialize_params);
+
+    // Wait for async build word_index_map
+    thread::sleep(Duration::from_secs(1));
+
     let url = Url::from_file_path(path).unwrap();
     let main_url = Url::from_file_path(main_path).unwrap();
 
@@ -1617,8 +1629,6 @@ fn rename_test() {
             },
         },
     );
-    // Wait fro async build word_index_map
-    thread::sleep(Duration::from_secs(1));
 
     let id = server.next_request_id.get();
     server.next_request_id.set(id.wrapping_add(1));
