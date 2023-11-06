@@ -631,8 +631,8 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                                 range,
                             );
                             self.any_ty()
-                        } else if let ast::Expr::StringLit(string_lit) = &subscript.value.node {
-                            self.load_attr(value_ty, &string_lit.value, range)
+                        } else if let TypeKind::StrLit(lit_value) = &index_key_ty.kind {
+                            self.load_attr(value_ty, lit_value, range)
                         } else {
                             val_ty.clone()
                         }
@@ -656,8 +656,8 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                                 range,
                             );
                             self.any_ty()
-                        } else if let ast::Expr::StringLit(string_lit) = &subscript.value.node {
-                            self.load_attr(value_ty, &string_lit.value, range)
+                        } else if let TypeKind::StrLit(lit_value) = &index_key_ty.kind {
+                            self.load_attr(value_ty, lit_value, range)
                         } else {
                             schema_ty.val_ty()
                         }

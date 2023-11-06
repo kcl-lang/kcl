@@ -909,8 +909,16 @@ impl<'a> Parser<'a> {
     fn parse_schema_body(&mut self) -> SchemaStmt {
         self.bump_token(TokenKind::Indent);
 
-        // doc string
-        let body_doc = self.parse_doc();
+        // doc string when it is not a string-like attribute statement.
+        let body_doc = if let Some(peek) = self.cursor.peek() {
+            if matches!(peek.kind, TokenKind::Colon) {
+                None
+            } else {
+                self.parse_doc()
+            }
+        } else {
+            self.parse_doc()
+        };
 
         // mixin
         let body_mixins = if self.token.is_keyword(kw::Mixin) {
@@ -941,6 +949,20 @@ impl<'a> Parser<'a> {
             else if self.token.is_keyword(kw::If) {
                 body_body.push(self.parse_if_stmt());
                 continue;
+            }
+            // schema_attribute_stmt: string COLON type_annotation
+            else if self.token.is_string_lit() {
+                if let Some(peek) = self.cursor.peek() {
+                    if let TokenKind::Colon = peek.kind {
+                        let token = self.token;
+                        let attr = self.parse_schema_attribute();
+                        body_body.push(node_ref!(
+                            Stmt::SchemaAttr(attr),
+                            self.token_span_pos(token, self.prev_token)
+                        ));
+                        continue;
+                    }
+                }
             }
             // schema_attribute_stmt
             else if let TokenKind::At = self.token.kind {
@@ -1133,7 +1155,7 @@ impl<'a> Parser<'a> {
 
     /// Syntax:
     /// schema_attribute_stmt: attribute_stmt NEWLINE
-    /// attribute_stmt: [decorators] identifier [QUESTION] COLON type [(ASSIGN|COMP_OR) test]
+    /// attribute_stmt: [decorators] (identifier | string) [QUESTION] COLON type [(ASSIGN|COMP_OR) test]
     fn parse_schema_attribute(&mut self) -> SchemaAttr {
         let doc = "".to_string();
 
@@ -1146,12 +1168,17 @@ impl<'a> Parser<'a> {
             Vec::new()
         };
 
-        let name_expr = self.parse_identifier();
+        // Parse schema identifier-like or string-like attributes
+        let name = if let Some(name) = self.parse_string_attribute() {
+            name
+        } else {
+            let name_expr = self.parse_identifier();
+            let name_pos = name_expr.pos();
+            let name = name_expr.node;
+            node_ref!(name.get_names().join("."), name_pos)
+        };
 
-        let name_pos = name_expr.pos();
-        let name = name_expr.node;
-        let name = node_ref!(name.get_names().join("."), name_pos);
-
+        // Parse attribute optional annotation `?`
         let is_optional = if let TokenKind::Question = self.token.kind {
             self.bump_token(TokenKind::Question);
             true
@@ -1159,8 +1186,10 @@ impl<'a> Parser<'a> {
             false
         };
 
+        // Bump the schema attribute annotation token `:`
         self.bump_token(TokenKind::Colon);
 
+        // Parse the schema attribute type annotation.
         let typ = self.parse_type_annotation();
         let type_str = node_ref!(typ.node.to_string(), typ.pos());
 
@@ -1477,6 +1506,23 @@ impl<'a> Parser<'a> {
             }),
             pos
         )
+    }
+
+    pub(crate) fn parse_string_attribute(&mut self) -> Option<NodeRef<String>> {
+        match self.token.kind {
+            TokenKind::Literal(lit) => {
+                if let LitKind::Str { .. } = lit.kind {
+                    let str_expr = self.parse_str_expr(lit);
+                    match &str_expr.node {
+                        Expr::StringLit(str) => Some(node_ref!(str.value.clone(), str_expr.pos())),
+                        _ => None,
+                    }
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        }
     }
 
     pub(crate) fn parse_joined_string(

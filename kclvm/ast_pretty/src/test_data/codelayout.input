@@ -7,6 +7,8 @@ import           math   as  alias_math
 schema Person (  Base):
   name:str
   age:int
+  "attr": str
+  "attr-x":  str
   check   :
         age>0 if    age ,   "age must > 0"
 person = Person{

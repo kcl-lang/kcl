@@ -1,0 +1,6 @@
+data:
+  spec:
+    config:
+      template:
+        name: template
+name: template

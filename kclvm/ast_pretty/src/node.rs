@@ -345,7 +345,7 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
         if !schema_attr.decorators.is_empty() {
             self.write_newline();
         }
-        self.write(&schema_attr.name.node);
+        self.write_attribute(&schema_attr.name);
         if schema_attr.is_optional {
             self.write("?");
         }
@@ -877,6 +877,16 @@ impl<'p> Printer<'p> {
                 0
             }
         }
+    }
+
+    fn write_attribute(&mut self, attr: &ast::NodeRef<String>) {
+        let re = fancy_regex::Regex::new(IDENTIFIER_REGEX).unwrap();
+        let need_quote = !re.is_match(&attr.node).unwrap();
+        if need_quote {
+            self.write(&format!("{:?}", attr.node));
+        } else {
+            self.write(&attr.node);
+        };
     }
 }
 
