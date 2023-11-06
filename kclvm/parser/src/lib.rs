@@ -337,7 +337,6 @@ impl Loader {
 
             // Insert an empty vec to determine whether there is a circular import.
             pkgs.insert(kclvm_ast::MAIN_PKG.to_string(), vec![]);
-
             self.load_import_package(
                 &entry.path(),
                 entry.name().to_string(),
@@ -527,7 +526,7 @@ impl Loader {
 
         if pkg_info.k_files.is_empty() {
             self.missing_pkgs.push(pkgpath);
-            return Ok(None);
+            return Ok(Some(pkg_info));
         }
 
         let mut pkg_files = Vec::new();
