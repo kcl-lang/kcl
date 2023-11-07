@@ -274,6 +274,19 @@ parse_module_snapshot! { schema_stmt_recovery_31, r#"
 schema A:
     [str]: str
     [str]: int"#}
+parse_module_snapshot! { schema_stmt_recovery_32, r#"
+schema A:
+    "attr": str"#}
+parse_module_snapshot! { schema_stmt_recovery_33, r#"
+schema A:
+    """Schema Doc"""
+    "attr": str"#}
+parse_module_snapshot! { schema_stmt_recovery_34, r#"
+schema A:
+    "attr: str"#}
+parse_module_snapshot! { schema_stmt_recovery_35, r#"
+schema A:
+    "attr":"#}
 parse_module_snapshot! { rule_stmt_recovery_0, r#"rule"#}
 parse_module_snapshot! { rule_stmt_recovery_1, r#"rule A"#}
 parse_module_snapshot! { rule_stmt_recovery_2, r#"rule A["#}

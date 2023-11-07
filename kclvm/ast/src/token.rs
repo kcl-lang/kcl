@@ -334,6 +334,20 @@ impl Token {
         self.run_on_ident(|id| id.name == kw)
     }
 
+    /// Whether the token is a string literal token.
+    pub fn is_string_lit(&self) -> bool {
+        match self.kind {
+            TokenKind::Literal(lit) => {
+                if let LitKind::Str { .. } = lit.kind {
+                    true
+                } else {
+                    false
+                }
+            }
+            _ => false,
+        }
+    }
+
     fn run_on_ident(&self, pred: impl FnOnce(Ident) -> bool) -> bool {
         match self.ident() {
             Some(id) => pred(id),

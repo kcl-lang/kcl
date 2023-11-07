@@ -1,0 +1,54 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 284
+expression: "crate::tests::parsing_module_string(r#\"\nschema A:\n    \"attr: str\"#)"
+---
+Module {
+    filename: "",
+    pkg: "",
+    doc: None,
+    name: "",
+    body: [
+        Node {
+            node: Schema(
+                SchemaStmt {
+                    doc: Some(
+                        Node {
+                            node: "\"attr: str",
+                            filename: "",
+                            line: 3,
+                            column: 4,
+                            end_line: 3,
+                            end_column: 14,
+                        },
+                    ),
+                    name: Node {
+                        node: "A",
+                        filename: "",
+                        line: 2,
+                        column: 7,
+                        end_line: 2,
+                        end_column: 8,
+                    },
+                    parent_name: None,
+                    for_host_name: None,
+                    is_mixin: false,
+                    is_protocol: false,
+                    args: None,
+                    mixins: [],
+                    body: [],
+                    decorators: [],
+                    checks: [],
+                    index_signature: None,
+                },
+            ),
+            filename: "",
+            line: 2,
+            column: 0,
+            end_line: 3,
+            end_column: 14,
+        },
+    ],
+    comments: [],
+}
+
