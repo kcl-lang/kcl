@@ -46,7 +46,7 @@ use crate::{
     },
     ty::TypeRef,
 };
-use kclvm_ast::ast;
+
 use kclvm_ast::ast::AstIndex;
 use kclvm_ast::ast::Program;
 use kclvm_ast::walker::MutSelfTypedResultWalker;
@@ -255,7 +255,7 @@ mod tests {
     }
 
     #[test]
-    fn test_basic_sema_query() {
+    fn test_look_up_exact_symbol() {
         let sess = Arc::new(ParseSession::default());
 
         let path = "src/advanced_resolver/test_data/schema_symbols.k"
@@ -266,6 +266,7 @@ mod tests {
         let gs = Namer::find_symbols(&program, gs);
         let node_ty_map = resolver::resolve_program(&mut program).node_ty_map;
         let gs = AdvancedResolver::resolve_program(&program, gs, node_ty_map);
+        let base_path = Path::new(".").canonicalize().unwrap();
         let except_symbols = vec![
             (
                 "src/advanced_resolver/test_data/import_test/d.k"
@@ -1062,8 +1063,6 @@ mod tests {
             ),
         ];
 
-        let base_path = Path::new(".").canonicalize().unwrap();
-
         for (filepath, symbols) in except_symbols.iter() {
             let abs_filepath = adjust_canonicalization(base_path.join(filepath));
             let file_sema_info = gs.sema_db.file_sema_map.get(&abs_filepath).unwrap();
@@ -1121,8 +1120,97 @@ mod tests {
                 }
             }
         }
+    }
 
-        // test look up scope
+    #[test]
+    fn test_look_up_cloest_symbol() {
+        let sess = Arc::new(ParseSession::default());
+
+        let path = "src/advanced_resolver/test_data/schema_symbols.k"
+            .to_string()
+            .replace("/", &std::path::MAIN_SEPARATOR.to_string());
+        let mut program = load_program(sess.clone(), &[&path], None).unwrap();
+        let gs = GlobalState::default();
+        let gs = Namer::find_symbols(&program, gs);
+        let node_ty_map = resolver::resolve_program(&mut program).node_ty_map;
+        let gs = AdvancedResolver::resolve_program(&program, gs, node_ty_map);
+        let base_path = Path::new(".").canonicalize().unwrap();
+
+        let test_cases = vec![
+            (
+                "src/advanced_resolver/test_data/schema_symbols.k"
+                    .to_string()
+                    .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
+                19_u64,
+                25_u64,
+                Some((19, 20, 19, 24, "name".to_string(), SymbolKind::Unresolved)),
+            ),
+            (
+                "src/advanced_resolver/test_data/schema_symbols.k"
+                    .to_string()
+                    .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
+                32_u64,
+                7_u64,
+                Some((28, 4, 28, 8, "Main".to_string(), SymbolKind::Unresolved)),
+            ),
+            (
+                "src/advanced_resolver/test_data/schema_symbols.k"
+                    .to_string()
+                    .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
+                34_u64,
+                5_u64,
+                Some((33, 13, 33, 19, "Person".to_string(), SymbolKind::Unresolved)),
+            ),
+            (
+                "src/advanced_resolver/test_data/schema_symbols.k"
+                    .to_string()
+                    .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
+                28_u64,
+                30_u64,
+                None,
+            ),
+        ];
+
+        for (filepath, line, col, symbol_info) in test_cases.iter() {
+            let abs_scope_file_path = adjust_canonicalization(base_path.join(filepath));
+            let symbol_ref = gs.look_up_closest_symbol(&Position {
+                filename: abs_scope_file_path.clone(),
+                line: *line,
+                column: Some(*col),
+            });
+
+            match symbol_info {
+                Some((start_line, start_col, end_line, end_col, name, kind)) => {
+                    let symbol_ref = symbol_ref.unwrap();
+                    let symbol = gs.get_symbols().get_symbol(symbol_ref).unwrap();
+
+                    // println!("{}", symbol.simple_dump());
+                    let (start, end) = symbol.get_range();
+                    assert_eq!(start.line, *start_line);
+                    assert_eq!(start.column.unwrap_or(0), *start_col);
+                    assert_eq!(end.line, *end_line);
+                    assert_eq!(end.column.unwrap_or(0), *end_col);
+                    assert_eq!(*name, symbol.get_name());
+                    assert_eq!(symbol_ref.get_kind(), *kind);
+                }
+                None => assert!(symbol_ref.is_none()),
+            }
+        }
+    }
+
+    #[test]
+    fn test_look_up_scope() {
+        let sess = Arc::new(ParseSession::default());
+
+        let path = "src/advanced_resolver/test_data/schema_symbols.k"
+            .to_string()
+            .replace("/", &std::path::MAIN_SEPARATOR.to_string());
+        let mut program = load_program(sess.clone(), &[&path], None).unwrap();
+        let gs = GlobalState::default();
+        let gs = Namer::find_symbols(&program, gs);
+        let node_ty_map = resolver::resolve_program(&mut program).node_ty_map;
+        let gs = AdvancedResolver::resolve_program(&program, gs, node_ty_map);
+        let base_path = Path::new(".").canonicalize().unwrap();
 
         let scope_test_cases = vec![
             // __main__.Main schema stmt scope
