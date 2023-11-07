@@ -372,6 +372,67 @@ fn file_path_from_url_test() {
 }
 
 #[test]
+fn complete_import_external_file_test() {
+    let path = PathBuf::from(".")
+        .join("src")
+        .join("test_data")
+        .join("completion_test")
+        .join("import")
+        .join("external")
+        .join("main.k")
+        .canonicalize()
+        .unwrap()
+        .display()
+        .to_string();
+
+    let _ = Command::new("kpm")
+        .arg("metadata")
+        .arg("--update")
+        .current_dir(
+            PathBuf::from(".")
+                .join("src")
+                .join("test_data")
+                .join("completion_test")
+                .join("import")
+                .join("external")
+                .canonicalize()
+                .unwrap()
+                .display()
+                .to_string(),
+        )
+        .output()
+        .unwrap();
+
+    let (program, prog_scope, _, _) = parse_param_and_compile(
+        Param {
+            file: path.to_string(),
+        },
+        Some(Arc::new(RwLock::new(Default::default()))),
+    )
+    .unwrap();
+
+    let pos = KCLPos {
+        filename: path.to_string(),
+        line: 1,
+        column: Some(11),
+    };
+    let res = completion(Some('.'), &program, &pos, &prog_scope).unwrap();
+
+    let got_labels: Vec<String> = match &res {
+        CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
+        CompletionResponse::List(_) => panic!("test failed"),
+    };
+    let expected_labels: Vec<&str> = vec![
+        "api",
+        "apiextensions_apiserver",
+        "apimachinery",
+        "kube_aggregator",
+        "vendor",
+    ];
+    assert_eq!(got_labels, expected_labels);
+}
+
+#[test]
 fn goto_import_external_file_test() {
     let path = PathBuf::from(".")
         .join("src")

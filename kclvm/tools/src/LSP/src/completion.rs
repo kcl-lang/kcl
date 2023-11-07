@@ -36,6 +36,7 @@ use kclvm_sema::ty::{FunctionType, SchemaType, Type};
 use lsp_types::{CompletionItem, CompletionItemKind};
 
 use crate::goto_def::{find_def, get_identifier_last_name, Definition};
+use crate::util::get_real_path_from_external;
 use crate::util::{inner_most_expr_in_stmt, is_in_docstring, is_in_schema_expr};
 
 #[derive(Debug, Clone, PartialEq, Hash, Eq)]
@@ -411,8 +412,12 @@ fn completion_for_import(
 ) -> Option<lsp_types::CompletionResponse> {
     let mut items: IndexSet<KCLCompletionItem> = IndexSet::new();
     let pkgpath = &stmt.path;
-    let real_path =
+    let mut real_path =
         Path::new(&program.root).join(pkgpath.replace('.', &std::path::MAIN_SEPARATOR.to_string()));
+    if !real_path.exists() {
+        real_path =
+            get_real_path_from_external(&stmt.pkg_name, pkgpath, program.root.clone().into());
+    }
     if real_path.is_dir() {
         if let Ok(entries) = fs::read_dir(real_path) {
             let mut entries = entries
@@ -1003,7 +1008,7 @@ mod tests {
     #[bench_test]
     fn import_builtin_package() {
         let (file, program, prog_scope, _, gs) =
-            compile_test_file("src/test_data/completion_test/import/import.k");
+            compile_test_file("src/test_data/completion_test/import/builtin_pkg.k");
         let mut items: IndexSet<KCLCompletionItem> = IndexSet::new();
 
         // test completion for builtin packages
