@@ -972,13 +972,12 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 } else {
                     ty.clone()
                 };
-
+                let value = &args.node.defaults[i];
                 params.push(Parameter {
                     name,
                     ty: ty.clone(),
-                    has_default: false,
+                    has_default: value.is_some(),
                 });
-                let value = &args.node.defaults[i];
                 self.expr_or_any_type(value);
             }
         }
