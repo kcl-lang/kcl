@@ -552,6 +552,27 @@ fn test_resolve_assignment_in_lambda() {
 }
 
 #[test]
+fn test_resolve_function_with_default_values() {
+    let sess = Arc::new(ParseSession::default());
+    let mut program = load_program(
+        sess.clone(),
+        &["./src/resolver/test_data/function_with_default_values.k"],
+        None,
+    )
+    .unwrap();
+    let scope = resolve_program(&mut program);
+    assert!(!scope.handler.has_errors());
+    let main_scope = scope.main_scope().unwrap();
+    let func = main_scope.borrow().lookup("is_alpha").unwrap();
+    assert!(func.borrow().ty.is_func());
+    let func_ty = func.borrow().ty.into_function_ty();
+    assert_eq!(func_ty.params.len(), 3);
+    assert_eq!(func_ty.params[0].has_default, false);
+    assert_eq!(func_ty.params[1].has_default, true);
+    assert_eq!(func_ty.params[2].has_default, true);
+}
+
+#[test]
 fn test_assignment_type_annotation_check_in_lambda() {
     let sess = Arc::new(ParseSession::default());
     let mut opts = LoadProgramOptions::default();
