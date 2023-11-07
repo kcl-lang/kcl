@@ -16,8 +16,6 @@ pub trait Scope {
     fn contains_pos(&self, pos: &Position) -> bool;
 
     fn get_owner(&self) -> Option<SymbolRef>;
-    fn get_defs(&self) -> Option<&IndexMap<String, SymbolRef>>;
-    fn get_refs(&self) -> &Vec<SymbolRef>;
     fn look_up_def(
         &self,
         name: &str,
@@ -199,14 +197,6 @@ impl Scope for RootSymbolScope {
         Some(self.owner)
     }
 
-    fn get_defs(&self) -> Option<&IndexMap<String, SymbolRef>> {
-        None
-    }
-
-    fn get_refs(&self) -> &Vec<SymbolRef> {
-        &self.refs
-    }
-
     fn look_up_def(
         &self,
         name: &str,
@@ -328,14 +318,6 @@ impl Scope for LocalSymbolScope {
 
     fn get_owner(&self) -> Option<SymbolRef> {
         self.owner.clone()
-    }
-
-    fn get_defs(&self) -> Option<&IndexMap<String, SymbolRef>> {
-        Some(&self.defs)
-    }
-
-    fn get_refs(&self) -> &Vec<SymbolRef> {
-        &self.refs
     }
 
     fn look_up_def(

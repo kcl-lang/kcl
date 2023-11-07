@@ -3,8 +3,8 @@ use kclvm_error::Position;
 
 use super::{
     package::{ModuleInfo, PackageDB},
-    scope::{Scope, ScopeData, ScopeKind, ScopeRef},
-    semantic_information::{FileSemanticInfo, SemanticDB, SymbolLocation},
+    scope::{ScopeData, ScopeKind, ScopeRef},
+    semantic_information::{CachedLocation, CachedRange, FileSemanticInfo, SemanticDB},
     symbol::{KCLSymbolData, SymbolKind, SymbolRef},
 };
 
@@ -97,7 +97,7 @@ impl GlobalState {
         for root_ref in scopes.root_map.values() {
             if let Some(root) = scopes.get_scope(*root_ref) {
                 if root.contains_pos(pos) {
-                    if let Some(inner_ref) = self.look_up_into_scope(root, pos) {
+                    if let Some(inner_ref) = self.look_up_into_scope(*root_ref, pos) {
                         return Some(inner_ref);
                     } else {
                         return Some(*root_ref);
@@ -106,6 +106,41 @@ impl GlobalState {
             }
         }
         None
+    }
+
+    fn look_up_closest_sub_scope(&self, parent: ScopeRef, pos: &Position) -> Option<ScopeRef> {
+        let file_sema_info = self.sema_db.file_sema_map.get(&pos.filename)?;
+        let loc = CachedLocation {
+            line: pos.line,
+            column: pos.column.unwrap_or(0),
+        };
+        let children = match parent.kind {
+            ScopeKind::Local => &self.scopes.locals.get(parent.id)?.children,
+            ScopeKind::Root => &self
+                .scopes
+                .roots
+                .get(parent.id)?
+                .children
+                .get(&pos.filename)?,
+        };
+
+        match children.binary_search_by(|scope_ref| {
+            file_sema_info
+                .local_scope_locs
+                .get(scope_ref)
+                .unwrap()
+                .start
+                .cmp(&loc)
+        }) {
+            Ok(symbol_index) => Some(children[symbol_index]),
+            Err(symbol_index) => {
+                if symbol_index > 0 {
+                    Some(children[symbol_index - 1])
+                } else {
+                    None
+                }
+            }
+        }
     }
 
     /// get all definition symbols within specific scope
@@ -148,15 +183,43 @@ impl GlobalState {
     /// result: [Option<SymbolRef>]
     ///     the closest symbol to the target pos
     pub fn look_up_closest_symbol(&self, pos: &Position) -> Option<SymbolRef> {
-        Some(
-            self.sema_db
-                .file_sema_map
-                .get(&pos.filename)?
-                .look_up_closest_symbol(&SymbolLocation {
-                    line: pos.line,
-                    column: pos.column.unwrap_or(0),
-                }),
-        )
+        let file_sema_info = self.sema_db.file_sema_map.get(&pos.filename)?;
+        let candidate = file_sema_info.look_up_closest_symbol(&CachedLocation {
+            line: pos.line,
+            column: pos.column.unwrap_or(0),
+        });
+        match self.look_up_scope(pos) {
+            Some(parent_scope_ref) => {
+                let candidate_symbol = self.symbols.get_symbol(candidate?)?;
+                let (start, _) = candidate_symbol.get_range();
+                let parent_scope = self.scopes.get_scope(parent_scope_ref)?;
+                if parent_scope.contains_pos(&start) {
+                    let barrier_scope = self.look_up_closest_sub_scope(parent_scope_ref, pos);
+                    match barrier_scope {
+                        Some(barrier_scope) => {
+                            let barrier_scope = self.scopes.locals.get(barrier_scope.id)?;
+                            // there is no local scope between the candidate and the specified position
+                            // the candidate is the answer
+                            if barrier_scope.end.less(&candidate_symbol.get_range().0) {
+                                candidate
+                            }
+                            // otherwise, it indicates that the found symbol is shadowed by the local scope.
+                            // we just skip the scope and directly look up its start pos
+                            else {
+                                file_sema_info.look_up_closest_symbol(&CachedLocation {
+                                    line: barrier_scope.start.line,
+                                    column: barrier_scope.start.column.unwrap_or(0),
+                                })
+                            }
+                        }
+                        None => candidate,
+                    }
+                } else {
+                    None
+                }
+            }
+            None => None,
+        }
     }
 
     /// look up exact symbol by specific position, which means  
@@ -177,33 +240,27 @@ impl GlobalState {
             .sema_db
             .file_sema_map
             .get(&pos.filename)?
-            .look_up_closest_symbol(&SymbolLocation {
+            .look_up_closest_symbol(&CachedLocation {
                 line: pos.line,
                 column: pos.column.unwrap_or(0),
             });
-        let (start, end) = self.symbols.get_symbol(candidate)?.get_range();
+        let (start, end) = self.symbols.get_symbol(candidate?)?.get_range();
         if start.less_equal(pos) && pos.less_equal(&end) {
-            Some(candidate)
+            candidate
         } else {
             None
         }
     }
 
-    fn look_up_into_scope(
-        &self,
-        root: &dyn Scope<SymbolData = KCLSymbolData>,
-        pos: &Position,
-    ) -> Option<ScopeRef> {
-        let children = root.get_children();
-        for child_ref in children {
-            if let Some(child) = self.scopes.get_scope(child_ref) {
-                if child.contains_pos(pos) {
-                    if let Some(inner_ref) = self.look_up_into_scope(child, pos) {
-                        return Some(inner_ref);
-                    } else {
-                        return Some(child_ref);
-                    }
-                }
+    fn look_up_into_scope(&self, parent: ScopeRef, pos: &Position) -> Option<ScopeRef> {
+        let candidate_ref = self.look_up_closest_sub_scope(parent, pos)?;
+
+        let candidate = self.scopes.get_scope(candidate_ref)?;
+        if candidate.contains_pos(pos) {
+            if let Some(inner_ref) = self.look_up_into_scope(candidate_ref, pos) {
+                return Some(inner_ref);
+            } else {
+                return Some(candidate_ref);
             }
         }
         None
@@ -211,9 +268,7 @@ impl GlobalState {
 }
 
 impl GlobalState {
-    pub(crate) fn build_sema_db(&mut self) {
-        let mut file_sema_map = IndexMap::<String, FileSemanticInfo>::default();
-
+    fn build_sema_db_with_symbols(&self, file_sema_map: &mut IndexMap<String, FileSemanticInfo>) {
         // put symbols
         for (index, symbol) in self.symbols.schemas.iter() {
             let symbol_ref = SymbolRef {
@@ -228,7 +283,7 @@ impl GlobalState {
             file_sema_info.symbols.push(symbol_ref);
             file_sema_info.symbol_locs.insert(
                 symbol_ref,
-                SymbolLocation {
+                CachedLocation {
                     line: symbol.start.line,
                     column: symbol.start.column.unwrap_or(0),
                 },
@@ -247,7 +302,7 @@ impl GlobalState {
             file_sema_info.symbols.push(symbol_ref);
             file_sema_info.symbol_locs.insert(
                 symbol_ref,
-                SymbolLocation {
+                CachedLocation {
                     line: symbol.start.line,
                     column: symbol.start.column.unwrap_or(0),
                 },
@@ -266,7 +321,7 @@ impl GlobalState {
             file_sema_info.symbols.push(symbol_ref);
             file_sema_info.symbol_locs.insert(
                 symbol_ref,
-                SymbolLocation {
+                CachedLocation {
                     line: symbol.start.line,
                     column: symbol.start.column.unwrap_or(0),
                 },
@@ -285,7 +340,7 @@ impl GlobalState {
             file_sema_info.symbols.push(symbol_ref);
             file_sema_info.symbol_locs.insert(
                 symbol_ref,
-                SymbolLocation {
+                CachedLocation {
                     line: symbol.start.line,
                     column: symbol.start.column.unwrap_or(0),
                 },
@@ -304,7 +359,7 @@ impl GlobalState {
             file_sema_info.symbols.push(symbol_ref);
             file_sema_info.symbol_locs.insert(
                 symbol_ref,
-                SymbolLocation {
+                CachedLocation {
                     line: symbol.start.line,
                     column: symbol.start.column.unwrap_or(0),
                 },
@@ -323,13 +378,20 @@ impl GlobalState {
             file_sema_info.symbols.push(symbol_ref);
             file_sema_info.symbol_locs.insert(
                 symbol_ref,
-                SymbolLocation {
+                CachedLocation {
                     line: symbol.start.line,
                     column: symbol.start.column.unwrap_or(0),
                 },
             );
         }
 
+        for (_, sema_info) in file_sema_map.iter_mut() {
+            sema_info
+                .symbols
+                .sort_by_key(|symbol_ref| sema_info.symbol_locs.get(symbol_ref).unwrap())
+        }
+    }
+    fn build_sema_db_with_scopes(&self, file_sema_map: &mut IndexMap<String, FileSemanticInfo>) {
         // put scope
         for (index, scope) in self.scopes.locals.iter() {
             let scope_ref = ScopeRef {
@@ -340,18 +402,60 @@ impl GlobalState {
             if !file_sema_map.contains_key(&filename) {
                 file_sema_map.insert(filename.clone(), FileSemanticInfo::new(filename.clone()));
             }
+            let file_sema_info = file_sema_map.get_mut(&filename).unwrap();
+            file_sema_info.local_scope_locs.insert(
+                scope_ref,
+                CachedRange {
+                    start: CachedLocation {
+                        line: scope.start.line,
+                        column: scope.start.column.unwrap_or(0),
+                    },
+                    end: CachedLocation {
+                        line: scope.end.line,
+                        column: scope.end.column.unwrap_or(0),
+                    },
+                },
+            );
             file_sema_map
                 .get_mut(&filename)
                 .unwrap()
                 .scopes
                 .push(scope_ref);
         }
+    }
 
-        for (_, sema_info) in file_sema_map.iter_mut() {
-            sema_info
-                .symbols
-                .sort_by_key(|symbol_ref| sema_info.symbol_locs.get(symbol_ref).unwrap())
+    fn sort_local_scopes(&mut self, file_sema_map: &IndexMap<String, FileSemanticInfo>) {
+        // Direct sub scopes do not overlap, so we can directly sort them by start loc
+        for (_, root) in self.scopes.roots.iter_mut() {
+            for (filename, scopes) in root.children.iter_mut() {
+                let file_sema_info = file_sema_map.get(filename).unwrap();
+                scopes.sort_by_key(|scope_ref| {
+                    &file_sema_info
+                        .local_scope_locs
+                        .get(scope_ref)
+                        .unwrap()
+                        .start
+                })
+            }
         }
+        // Direct sub scopes do not overlap, so we can directly sort them by start loc
+        for (_, scope) in self.scopes.locals.iter_mut() {
+            let file_sema_info = file_sema_map.get(&scope.start.filename).unwrap();
+            scope.children.sort_by_key(|scope_ref| {
+                &file_sema_info
+                    .local_scope_locs
+                    .get(scope_ref)
+                    .unwrap()
+                    .start
+            })
+        }
+    }
+
+    pub(crate) fn build_sema_db(&mut self) {
+        let mut file_sema_map = IndexMap::<String, FileSemanticInfo>::default();
+        self.build_sema_db_with_symbols(&mut file_sema_map);
+        self.build_sema_db_with_scopes(&mut file_sema_map);
+        self.sort_local_scopes(&mut file_sema_map);
 
         self.sema_db.file_sema_map = file_sema_map;
     }
