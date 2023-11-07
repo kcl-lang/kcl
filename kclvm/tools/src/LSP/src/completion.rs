@@ -1237,33 +1237,4 @@ mod tests {
             CompletionResponse::List(_) => panic!("test failed"),
         }
     }
-
-    use crate::util::parse_param_and_compile;
-    use crate::util::Param;
-    use parking_lot::RwLock;
-    use std::sync::Arc;
-
-    #[test]
-    fn schema_docstring_newl111ine_completion() {
-        let (file, program, prog_scope, _, _) = {
-            let file = "/Users/zz/code/KCLVM/kclvm/tools/src/LSP/src/test_data/goto_import_def_test/main.k".to_string();
-
-            let (program, prog_scope, diags, gs) = parse_param_and_compile(
-                Param { file: file.clone() },
-                Some(Arc::new(RwLock::new(Default::default()))),
-            )
-            .unwrap();
-            (file, program, prog_scope, diags, gs)
-        };
-
-        // test completion for builtin packages
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 1,
-            column: Some(14),
-        };
-
-        let got = completion(Some('.'), &program, &pos, &prog_scope).unwrap();
-        println!("{:?}", got);
-    }
 }
