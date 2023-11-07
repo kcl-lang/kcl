@@ -7,7 +7,6 @@ use std::rc::Rc;
 
 pub const KCL_PRIVATE_VAR_PREFIX: &str = "_";
 const LIST_DICT_TEMP_KEY: &str = "$";
-const YAML_STREAM_SEP: &str = "\n---\n";
 const SCHEMA_TYPE_META_ATTR: &str = "_type";
 
 /// PlanOptions denotes the configuration required to execute the KCL

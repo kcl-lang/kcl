@@ -12,13 +12,5 @@ _person = Person {
     name: "Alice"
     age: 18
 }
-# print(yaml.encode(_person), end="")
-# print("---")
-# print(yaml.encode(_person, ignore_private=True), end="")
-# print("---")
-# print(yaml.encode(_person, ignore_none=True), end="")
-# print("---")
-# print(yaml.encode(_person, ignore_private=True, ignore_none=True), end="")
-
 a1 = yaml.encode(_person, ignore_private=True)
 a2 = yaml.encode(_person, ignore_private=True, ignore_none=True)

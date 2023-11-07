@@ -1,0 +1,19 @@
+yamlStrList:
+- 'key: value'
+- |-
+  - 1
+  - 2
+  - 3
+- '1'
+- '1.1'
+- 'null'
+- 'true'
+data:
+- key: value
+- - 1
+  - 2
+  - 3
+- 1
+- 1.1
+- null
+- true

@@ -1,8 +1,9 @@
 // Copyright 2021 The KCL Authors. All rights reserved.
 use crate::*;
 
-// encode(data, sort_keys=False, ignore_private=False, ignore_none=False):
+pub const YAML_STREAM_SEP: &str = "\n---\n";
 
+/// encode(data, sort_keys=False, ignore_private=False, ignore_none=False)
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_yaml_encode(
@@ -20,9 +21,35 @@ pub extern "C" fn kclvm_yaml_encode(
         );
         return s.into_raw(mut_ptr_as_ref(ctx));
     }
-    panic!("encode() missing 1 required positional argument: 'value'")
+    panic!("encode_all() missing 1 required positional argument: 'data'")
 }
 
+/// encode_all(data, sort_keys=False, ignore_private=False, ignore_none=False)
+#[no_mangle]
+#[runtime_fn]
+pub extern "C" fn kclvm_yaml_encode_all(
+    ctx: *mut kclvm_context_t,
+    args: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
+) -> *const kclvm_value_ref_t {
+    let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
+
+    if let Some(arg0) = args.arg_i(0) {
+        let opts = kwargs_to_opts(kwargs);
+        let results = arg0
+            .as_list_ref()
+            .values
+            .iter()
+            .map(|r| r.to_yaml_string_with_options(&opts))
+            .collect::<Vec<String>>();
+        let s = ValueRef::str(&results.join(YAML_STREAM_SEP));
+        return s.into_raw(mut_ptr_as_ref(ctx));
+    }
+    panic!("encode() missing 1 required positional argument: 'data'")
+}
+
+/// decode(value)
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_yaml_decode(
@@ -42,6 +69,27 @@ pub extern "C" fn kclvm_yaml_decode(
     panic!("decode() missing 1 required positional argument: 'value'")
 }
 
+/// decode_all(value)
+#[no_mangle]
+#[runtime_fn]
+pub extern "C" fn kclvm_yaml_decode_all(
+    ctx: *mut kclvm_context_t,
+    args: *const kclvm_value_ref_t,
+    _kwargs: *const kclvm_value_ref_t,
+) -> *const kclvm_value_ref_t {
+    let args = ptr_as_ref(args);
+
+    let ctx = mut_ptr_as_ref(ctx);
+    if let Some(arg0) = args.arg_i(0) {
+        match ValueRef::from_yaml_stream(ctx, arg0.as_str().as_ref()) {
+            Ok(x) => return x.into_raw(ctx),
+            Err(err) => panic!("{}", err),
+        }
+    }
+    panic!("decode_all() missing 1 required positional argument: 'value'")
+}
+
+/// dump_to_file(data, sort_keys=False, ignore_private=False, ignore_none=False)
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_yaml_dump_to_file(
@@ -61,6 +109,34 @@ pub extern "C" fn kclvm_yaml_dump_to_file(
         }
     }
     panic!("dump_to_file() missing 2 required positional arguments: 'data' and 'filename'")
+}
+
+/// dump_all_to_file(data, sort_keys=False, ignore_private=False, ignore_none=False)
+#[no_mangle]
+#[runtime_fn]
+pub extern "C" fn kclvm_yaml_dump_all_to_file(
+    _ctx: *mut kclvm_context_t,
+    args: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
+) -> *const kclvm_value_ref_t {
+    let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
+
+    if let Some(data) = args.arg_i(0) {
+        if let Some(filename) = args.arg_i(0) {
+            let filename = filename.as_str();
+            let opts = kwargs_to_opts(kwargs);
+            let results = data
+                .as_list_ref()
+                .values
+                .iter()
+                .map(|r| r.to_yaml_string_with_options(&opts))
+                .collect::<Vec<String>>();
+
+            std::fs::write(filename, results.join(YAML_STREAM_SEP)).expect("Unable to write file");
+        }
+    }
+    panic!("dump_all_to_file() missing 2 required positional arguments: 'data' and 'filename'")
 }
 
 fn kwargs_to_opts(kwargs: &ValueRef) -> YamlEncodeOptions {

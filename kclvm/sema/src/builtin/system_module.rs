@@ -842,7 +842,14 @@ register_regex_member! {
 // ------------------------------
 
 pub const YAML: &str = "yaml";
-pub const YAML_FUNCTION_NAMES: &[&str] = &["encode", "decode", "dump_to_file"];
+pub const YAML_FUNCTION_NAMES: &[&str] = &[
+    "encode",
+    "encode_all",
+    "decode",
+    "decode_all",
+    "dump_to_file",
+    "dump_all_to_file",
+];
 macro_rules! register_yaml_member {
     ($($name:ident => $ty:expr)*) => (
         pub const YAML_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
@@ -882,6 +889,35 @@ register_yaml_member! {
         false,
         Some(1),
     )
+    encode_all => Type::function(
+        None,
+        Type::str_ref(),
+        &[
+            Parameter {
+                name: "data".to_string(),
+                ty: Type::list_ref(Type::any_ref()),
+                has_default: false,
+            },
+            Parameter {
+                name: "sort_keys".to_string(),
+                ty: Type::bool_ref(),
+                has_default: true,
+            },
+            Parameter {
+                name: "ignore_private".to_string(),
+                ty: Type::bool_ref(),
+                has_default: true,
+            },
+            Parameter {
+                name: "ignore_none".to_string(),
+                ty: Type::bool_ref(),
+                has_default: true,
+            },
+        ],
+        r#"Serialize a sequence of KCL objects into a YAML stream str."#,
+        false,
+        Some(1),
+    )
     decode => Type::function(
         None,
         Type::any_ref(),
@@ -893,6 +929,20 @@ register_yaml_member! {
             },
         ],
         r#"Deserialize `value` (a string instance containing a YAML document) to a KCL object."#,
+        false,
+        None,
+    )
+    decode_all => Type::function(
+        None,
+        Type::list_ref(Type::any_ref()),
+        &[
+            Parameter {
+                name: "value".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+        ],
+        r#"Parse all YAML documents in a stream and produce corresponding KCL objects."#,
         false,
         None,
     )
@@ -927,6 +977,40 @@ register_yaml_member! {
             },
         ],
         r#"Serialize a KCL object `data` to a YAML formatted str and write it into the file `filename`."#,
+        false,
+        Some(2),
+    )
+    dump_all_to_file => Type::function(
+        None,
+        Type::str_ref(),
+        &[
+            Parameter {
+                name: "data".to_string(),
+                ty: Type::list_ref(Type::any_ref()),
+                has_default: false,
+            },
+            Parameter {
+                name: "filename".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+            Parameter {
+                name: "sort_keys".to_string(),
+                ty: Type::bool_ref(),
+                has_default: true,
+            },
+            Parameter {
+                name: "ignore_private".to_string(),
+                ty: Type::bool_ref(),
+                has_default: true,
+            },
+            Parameter {
+                name: "ignore_none".to_string(),
+                ty: Type::bool_ref(),
+                has_default: true,
+            },
+        ],
+        r#"Serialize a sequence of KCL objects into a YAML stream str and write it into the file `filename`."#,
         false,
         Some(2),
     )
