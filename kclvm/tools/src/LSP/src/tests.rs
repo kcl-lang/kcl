@@ -392,7 +392,9 @@ fn complete_import_external_file_test() {
             PathBuf::from(".")
                 .join("src")
                 .join("test_data")
-                .join("goto_import_def_test")
+                .join("completion_test")
+                .join("import")
+                .join("external")
                 .canonicalize()
                 .unwrap()
                 .display()
@@ -409,7 +411,6 @@ fn complete_import_external_file_test() {
     )
     .unwrap();
 
-    // test goto import file: import .pkg.schema_def
     let pos = KCLPos {
         filename: path.to_string(),
         line: 1,
