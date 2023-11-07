@@ -312,8 +312,11 @@ pub enum ApiFunc {
     kclvm_value_union,
     kclvm_value_union_all,
     kclvm_yaml_decode,
+    kclvm_yaml_decode_all,
+    kclvm_yaml_dump_all_to_file,
     kclvm_yaml_dump_to_file,
     kclvm_yaml_encode,
+    kclvm_yaml_encode_all,
 }
 
 impl std::fmt::Display for ApiFunc {
