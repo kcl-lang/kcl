@@ -170,14 +170,6 @@ impl<'ctx> AdvancedResolver<'ctx> {
             .get_packages()
             .get_module_info(self.ctx.current_filename.as_ref()?)
     }
-
-    fn update_symbol_info_by_node<T>(&mut self, symbol: SymbolRef, node: &ast::Node<T>) {
-        if let Some(symbol_ty) = self.ctx.node_ty_map.get(&node.id) {
-            self.gs
-                .get_symbols_mut()
-                .add_symbol_info(symbol, symbol_ty.clone(), node.id.clone())
-        }
-    }
 }
 
 #[cfg(test)]
