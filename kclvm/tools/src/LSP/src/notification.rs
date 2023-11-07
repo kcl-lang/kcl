@@ -94,7 +94,7 @@ impl LanguageServerState {
         let new_word_index = build_word_index_for_file_content(text.clone(), &text_document.uri);
         let binding = text_document.uri.path();
         let file_path = Path::new(binding); //todo rename
-        let mut word_index_map = &mut *self.word_index_map.write();
+        let word_index_map = &mut *self.word_index_map.write();
         for (key, value) in word_index_map {
             let workspace_folder_path = Path::new(key.path());
             if file_path.starts_with(workspace_folder_path) {

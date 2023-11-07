@@ -3,6 +3,7 @@
 use inkwell::values::{BasicValueEnum, FunctionValue};
 use inkwell::AddressSpace;
 use kclvm_ast::ast;
+use kclvm_sema::pkgpath_without_prefix;
 use std::collections::HashMap;
 use std::str;
 
@@ -10,8 +11,6 @@ use super::context::LLVMCodeGenContext;
 use crate::codegen::error as kcl_error;
 use crate::codegen::traits::{BuilderMethods, DerivedValueCalculationMethods, ValueMethods};
 use crate::value;
-
-use crate::pkgpath_without_prefix;
 
 impl<'ctx> LLVMCodeGenContext<'ctx> {
     /// Emit all schema left identifiers because all the schema attribute can be forward referenced

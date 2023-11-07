@@ -22,8 +22,8 @@ use indexmap::IndexSet;
 use kclvm_ast::ast::{Expr, ImportStmt, Node, Program, Stmt};
 use kclvm_ast::pos::GetPos;
 use kclvm_ast::MAIN_PKG;
-use kclvm_compiler::pkgpath_without_prefix;
 use kclvm_config::modfile::KCL_FILE_EXTENSION;
+use kclvm_sema::pkgpath_without_prefix;
 
 use kclvm_error::Position as KCLPos;
 use kclvm_sema::builtin::{
@@ -533,18 +533,16 @@ pub(crate) fn get_dot_completion(
                                     // ```
                                     kclvm_sema::ty::TypeKind::Schema(schema) => {
                                         for (name, attr) in &schema.attrs {
-                                            if name != "__settings__" {
-                                                items.insert(KCLCompletionItem {
-                                                    label: name.clone(),
-                                                    detail: Some(format!(
-                                                        "{}: {}",
-                                                        name,
-                                                        attr.ty.ty_str()
-                                                    )),
-                                                    documentation: attr.doc.clone(),
-                                                    kind: Some(KCLCompletionItemKind::SchemaAttr),
-                                                });
-                                            }
+                                            items.insert(KCLCompletionItem {
+                                                label: name.clone(),
+                                                detail: Some(format!(
+                                                    "{}: {}",
+                                                    name,
+                                                    attr.ty.ty_str()
+                                                )),
+                                                documentation: attr.doc.clone(),
+                                                kind: Some(KCLCompletionItemKind::SchemaAttr),
+                                            });
                                         }
                                     }
 
@@ -748,7 +746,7 @@ mod tests {
             CompletionResponse::List(_) => panic!("test failed"),
         };
 
-        expected_labels.extend(["__settings__", "name", "age"]);
+        expected_labels.extend(["name", "age"]);
         assert_eq!(got_labels, expected_labels);
     }
 
@@ -871,7 +869,7 @@ mod tests {
             CompletionResponse::List(_) => panic!("test failed"),
         };
 
-        let expected_labels: Vec<&str> = vec!["__settings__", "a"];
+        let expected_labels: Vec<&str> = vec!["a"];
         assert_eq!(got_labels, expected_labels);
     }
 
@@ -995,7 +993,7 @@ mod tests {
             CompletionResponse::List(_) => panic!("test failed"),
         };
 
-        let expected_labels: Vec<&str> = vec!["__settings__", "a"];
+        let expected_labels: Vec<&str> = vec!["a"];
         assert_eq!(got_labels, expected_labels);
     }
 
@@ -1162,8 +1160,11 @@ mod tests {
                     arr[1],
                     CompletionItem {
                         label: "Person(b){}".to_string(),
-                        kind: Some(CompletionItemKind:: CLASS),
-                        detail: Some("__main__\n\nschema Person[b: int](Base)\nAttributes:\n__settings__?: {str:any}\nc: int".to_string()),
+                        kind: Some(CompletionItemKind::CLASS),
+                        detail: Some(
+                            "__main__\n\nschema Person[b: int](Base)\nAttributes:\nc: int"
+                                .to_string()
+                        ),
                         documentation: Some(lsp_types::Documentation::String("".to_string())),
                         ..Default::default()
                     }
@@ -1189,7 +1190,7 @@ mod tests {
         match got {
             CompletionResponse::Array(arr) => {
                 assert_eq!(
-                    arr[1],
+                    arr[0],
                     CompletionItem {
                         label: "c".to_string(),
                         kind: Some(CompletionItemKind::FIELD),

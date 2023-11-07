@@ -11,12 +11,12 @@ use indexmap::{IndexMap, IndexSet};
 use kclvm_ast::pos::{ContainsPos, GetPos};
 
 use kclvm_ast::ast::{Expr, Identifier, ImportStmt, Node, Program, Stmt};
-use kclvm_compiler::pkgpath_without_prefix;
 use kclvm_error::Position as KCLPos;
 
 use kclvm_sema::builtin::{get_system_member_function_ty, STRING_MEMBER_FUNCTIONS};
 use kclvm_sema::core::global_state::GlobalState;
 use kclvm_sema::core::symbol::SymbolRef;
+use kclvm_sema::pkgpath_without_prefix;
 use kclvm_sema::resolver::scope::{
     builtin_scope, ProgramScope, Scope, ScopeObject, ScopeObjectKind,
 };

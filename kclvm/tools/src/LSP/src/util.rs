@@ -5,7 +5,6 @@ use kclvm_ast::ast::{
 };
 use kclvm_ast::pos::ContainsPos;
 use kclvm_ast::MAIN_PKG;
-use kclvm_compiler::pkgpath_without_prefix;
 use kclvm_config::modfile::KCL_FILE_EXTENSION;
 use kclvm_driver::kpm_metadata::fetch_metadata;
 use kclvm_driver::{get_kcl_files, lookup_compile_unit};
@@ -16,6 +15,7 @@ use kclvm_parser::{load_program, ParseSession};
 use kclvm_sema::advanced_resolver::AdvancedResolver;
 use kclvm_sema::core::global_state::GlobalState;
 use kclvm_sema::namer::Namer;
+use kclvm_sema::pkgpath_without_prefix;
 use kclvm_sema::resolver::resolve_program_with_opts;
 use kclvm_sema::resolver::scope::ProgramScope;
 use kclvm_sema::resolver::scope::Scope;

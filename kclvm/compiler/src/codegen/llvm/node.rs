@@ -11,13 +11,14 @@ use inkwell::{AddressSpace, IntPredicate};
 use kclvm_ast::ast::{self, CallExpr, ConfigEntry, NodeRef};
 use kclvm_ast::walker::TypedResultWalker;
 use kclvm_runtime::{ApiFunc, PKG_PATH_PREFIX};
+use kclvm_sema::pkgpath_without_prefix;
 
+use crate::check_backtrack_stop;
 use crate::codegen::error as kcl_error;
 use crate::codegen::llvm::context::BacktrackMeta;
 use crate::codegen::llvm::utils;
 use crate::codegen::traits::*;
 use crate::codegen::{ENTRY_NAME, GLOBAL_LEVEL, INNER_LEVEL, PKG_INIT_FUNCTION_SUFFIX};
-use crate::{check_backtrack_stop, pkgpath_without_prefix};
 
 use super::context::{CompileResult, LLVMCodeGenContext};
 use crate::value;

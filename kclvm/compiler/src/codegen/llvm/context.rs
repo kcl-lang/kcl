@@ -26,6 +26,7 @@ use kclvm_ast::walker::TypedResultWalker;
 use kclvm_error::*;
 use kclvm_runtime::{ApiFunc, MAIN_PKG_PATH, PKG_PATH_PREFIX};
 use kclvm_sema::builtin;
+use kclvm_sema::pkgpath_without_prefix;
 use kclvm_sema::plugin;
 
 use crate::codegen::abi::Align;
@@ -35,7 +36,6 @@ use crate::codegen::{
     PKG_INIT_FUNCTION_SUFFIX,
 };
 use crate::codegen::{CodeGenContext, GLOBAL_LEVEL};
-use crate::pkgpath_without_prefix;
 use crate::value;
 
 use super::OBJECT_FILE_SUFFIX;

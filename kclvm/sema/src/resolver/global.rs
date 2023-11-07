@@ -470,7 +470,6 @@ impl<'ctx> Resolver<'ctx> {
         should_add_schema_ref: bool,
     ) -> SchemaType {
         let name = &schema_stmt.name.node;
-        let pos = schema_stmt.name.get_end_pos();
         if RESERVED_TYPE_IDENTIFIERS.contains(&name.as_str()) {
             self.handler.add_compile_error(
                 &format!(
@@ -568,23 +567,6 @@ impl<'ctx> Resolver<'ctx> {
         };
         // Schema attributes
         let mut attr_obj_map: IndexMap<String, SchemaAttr> = IndexMap::default();
-        let settings_dummy_pos = Position {
-            filename: self.ctx.filename.clone(),
-            line: pos.line,
-            column: pos.column,
-        };
-        attr_obj_map.insert(
-            kclvm_runtime::SCHEMA_SETTINGS_ATTR_NAME.to_string(),
-            SchemaAttr {
-                is_optional: true,
-                has_default: false,
-                default: None,
-                ty: Type::dict_ref(self.str_ty(), self.any_ty()),
-                range: (settings_dummy_pos.clone(), settings_dummy_pos),
-                doc: None,
-                decorators: vec![],
-            },
-        );
         let parsed_doc = parse_doc_string(
             &schema_stmt
                 .doc

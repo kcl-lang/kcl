@@ -372,7 +372,7 @@ impl KclvmAssembler {
                                 &code_file_path,
                             )?;
                             let lib_relative_path = file_path.replacen(root, ".", 1);
-                            save_pkg_cache(
+                            let _ = save_pkg_cache(
                                 root,
                                 &target,
                                 &pkgpath,
