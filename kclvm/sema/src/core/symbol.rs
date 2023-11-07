@@ -44,6 +44,7 @@ pub trait Symbol {
 }
 
 type KCLSymbol = dyn Symbol<SymbolData = KCLSymbolData, SemanticInfo = KCLSymbolSemanticInfo>;
+#[derive(Debug, Clone, Default)]
 pub struct KCLSymbolSemanticInfo {
     pub ty: Option<Arc<Type>>,
     pub doc: Option<String>,
@@ -474,6 +475,7 @@ pub struct SchemaSymbol {
     pub(crate) start: Position,
     pub(crate) end: Position,
     pub(crate) owner: SymbolRef,
+    pub(crate) sema_info: KCLSymbolSemanticInfo,
 
     pub(crate) parent_schema: Option<SymbolRef>,
     pub(crate) for_host: Option<SymbolRef>,
@@ -644,7 +646,7 @@ impl Symbol for SchemaSymbol {
     }
 
     fn get_sema_info(&self) -> &Self::SemanticInfo {
-        todo!()
+        &self.sema_info
     }
 }
 
@@ -658,6 +660,7 @@ impl SchemaSymbol {
             owner,
             parent_schema: None,
             for_host: None,
+            sema_info: KCLSymbolSemanticInfo::default(),
             mixins: Vec::default(),
             attributes: IndexMap::default(),
         }
@@ -672,6 +675,8 @@ pub struct ValueSymbol {
     pub(crate) start: Position,
     pub(crate) end: Position,
     pub(crate) owner: Option<SymbolRef>,
+    pub(crate) sema_info: KCLSymbolSemanticInfo,
+
     pub(crate) is_global: bool,
 }
 
@@ -772,7 +777,7 @@ impl Symbol for ValueSymbol {
     }
 
     fn get_sema_info(&self) -> &Self::SemanticInfo {
-        todo!()
+        &self.sema_info
     }
 }
 
@@ -790,6 +795,7 @@ impl ValueSymbol {
             start,
             end,
             owner,
+            sema_info: KCLSymbolSemanticInfo::default(),
             is_global,
         }
     }
@@ -803,6 +809,7 @@ pub struct AttributeSymbol {
     pub(crate) start: Position,
     pub(crate) end: Position,
     pub(crate) owner: SymbolRef,
+    pub(crate) sema_info: KCLSymbolSemanticInfo,
 }
 
 impl Symbol for AttributeSymbol {
@@ -901,7 +908,7 @@ impl Symbol for AttributeSymbol {
     }
 
     fn get_sema_info(&self) -> &Self::SemanticInfo {
-        todo!()
+        &self.sema_info
     }
 }
 
@@ -912,6 +919,7 @@ impl AttributeSymbol {
             name,
             start,
             end,
+            sema_info: KCLSymbolSemanticInfo::default(),
             owner,
         }
     }
@@ -924,6 +932,7 @@ pub struct PackageSymbol {
     pub(crate) members: IndexMap<String, SymbolRef>,
     pub(crate) start: Position,
     pub(crate) end: Position,
+    pub(crate) sema_info: KCLSymbolSemanticInfo,
 }
 
 impl Symbol for PackageSymbol {
@@ -1019,7 +1028,7 @@ impl Symbol for PackageSymbol {
     }
 
     fn get_sema_info(&self) -> &Self::SemanticInfo {
-        todo!()
+        &self.sema_info
     }
 }
 
@@ -1030,6 +1039,7 @@ impl PackageSymbol {
             name,
             start,
             end,
+            sema_info: KCLSymbolSemanticInfo::default(),
             members: IndexMap::default(),
         }
     }
@@ -1042,6 +1052,7 @@ pub struct TypeAliasSymbol {
     pub(crate) start: Position,
     pub(crate) end: Position,
     pub(crate) owner: SymbolRef,
+    pub(crate) sema_info: KCLSymbolSemanticInfo,
 }
 
 impl Symbol for TypeAliasSymbol {
@@ -1142,7 +1153,7 @@ impl Symbol for TypeAliasSymbol {
     }
 
     fn get_sema_info(&self) -> &Self::SemanticInfo {
-        todo!()
+        &self.sema_info
     }
 }
 
@@ -1153,6 +1164,7 @@ impl TypeAliasSymbol {
             name,
             start,
             end,
+            sema_info: KCLSymbolSemanticInfo::default(),
             owner,
         }
     }
@@ -1165,6 +1177,7 @@ pub struct RuleSymbol {
     pub(crate) start: Position,
     pub(crate) end: Position,
     pub(crate) owner: SymbolRef,
+    pub(crate) sema_info: KCLSymbolSemanticInfo,
 
     pub(crate) parent_rules: Vec<SymbolRef>,
     pub(crate) for_host: Option<SymbolRef>,
@@ -1267,7 +1280,7 @@ impl Symbol for RuleSymbol {
     }
 
     fn get_sema_info(&self) -> &Self::SemanticInfo {
-        todo!()
+        &self.sema_info
     }
 }
 
@@ -1279,6 +1292,7 @@ impl RuleSymbol {
             start,
             end,
             owner,
+            sema_info: KCLSymbolSemanticInfo::default(),
             parent_rules: vec![],
             for_host: None,
         }
@@ -1293,6 +1307,7 @@ pub struct UnresolvedSymbol {
     pub(crate) start: Position,
     pub(crate) end: Position,
     pub(crate) owner: Option<SymbolRef>,
+    pub(crate) sema_info: KCLSymbolSemanticInfo,
 }
 
 impl Symbol for UnresolvedSymbol {
@@ -1385,7 +1400,7 @@ impl Symbol for UnresolvedSymbol {
     }
 
     fn get_sema_info(&self) -> &Self::SemanticInfo {
-        todo!()
+        &self.sema_info
     }
 }
 
@@ -1397,6 +1412,7 @@ impl UnresolvedSymbol {
             name,
             start,
             end,
+            sema_info: KCLSymbolSemanticInfo::default(),
             owner,
         }
     }
