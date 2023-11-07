@@ -1407,7 +1407,6 @@ dependencies = [
  "im-rc",
  "indexmap 1.9.3",
  "kclvm-ast",
- "kclvm-compiler",
  "kclvm-config",
  "kclvm-driver",
  "kclvm-error",

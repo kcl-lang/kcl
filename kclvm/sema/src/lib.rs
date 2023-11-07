@@ -11,4 +11,7 @@ pub mod resolver;
 pub mod ty;
 
 #[macro_use]
+mod macros;
+
+#[macro_use]
 extern crate compiler_base_macros;

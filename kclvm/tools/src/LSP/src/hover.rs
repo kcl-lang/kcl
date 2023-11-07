@@ -179,10 +179,7 @@ mod tests {
                     assert_eq!(s, "hover doc test");
                 }
                 if let MarkedString::String(s) = vec[2].clone() {
-                    assert_eq!(
-                        s,
-                        "Attributes:\n\n__settings__?: {str:any}\n\nname: str\n\nage: int"
-                    );
+                    assert_eq!(s, "Attributes:\n\nname: str\n\nage: int");
                 }
             }
             _ => unreachable!("test error"),
@@ -225,10 +222,7 @@ mod tests {
                     assert_eq!(s, "hover doc test");
                 }
                 if let MarkedString::String(s) = vec[2].clone() {
-                    assert_eq!(
-                        s,
-                        "Attributes:\n\n__settings__?: {str:any}\n\nname: str\n\nage?: int"
-                    );
+                    assert_eq!(s, "Attributes:\n\nname: str\n\nage?: int");
                 }
             }
             _ => unreachable!("test error"),

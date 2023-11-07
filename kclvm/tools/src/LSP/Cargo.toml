@@ -28,7 +28,6 @@ kclvm-parser = { path = "../../../parser" }
 kclvm-sema = { path = "../../../sema" }
 kclvm-ast = { path = "../../../ast" }
 kclvm-utils = { path = "../../../utils" }
-kclvm-compiler = { path = "../../../compiler" }
 kclvm-version = { path = "../../../version" }
 compiler_base_session = { path = "../../../../compiler_base/session" }
 
