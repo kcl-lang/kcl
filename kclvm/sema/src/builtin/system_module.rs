@@ -849,6 +849,7 @@ pub const YAML_FUNCTION_NAMES: &[&str] = &[
     "decode_all",
     "dump_to_file",
     "dump_all_to_file",
+    "validate",
 ];
 macro_rules! register_yaml_member {
     ($($name:ident => $ty:expr)*) => (
@@ -1014,6 +1015,20 @@ register_yaml_member! {
         false,
         Some(2),
     )
+    validate => Type::function(
+        None,
+        Type::bool_ref(),
+        &[
+            Parameter {
+                name: "value".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+        ],
+        r#"Validate whether the given string is a valid YAML or YAML stream document."#,
+        false,
+        None,
+    )
 }
 
 // ------------------------------
@@ -1021,7 +1036,7 @@ register_yaml_member! {
 // ------------------------------
 
 pub const JSON: &str = "json";
-pub const JSON_FUNCTION_NAMES: &[&str] = &["encode", "decode", "dump_to_file"];
+pub const JSON_FUNCTION_NAMES: &[&str] = &["encode", "decode", "dump_to_file", "validate"];
 macro_rules! register_json_member {
     ($($name:ident => $ty:expr)*) => (
         pub const JSON_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
@@ -1118,6 +1133,20 @@ register_json_member! {
         r#"Serialize a KCL object `data` to a YAML formatted str and write it into the file `filename`."#,
         false,
         Some(2),
+    )
+    validate => Type::function(
+        None,
+        Type::bool_ref(),
+        &[
+            Parameter {
+                name: "value".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+        ],
+        r#"Validate whether the given string is a valid JSON"#,
+        false,
+        None,
     )
 }
 

@@ -151,6 +151,7 @@ pub fn _kclvm_get_fn_ptr_by_name(name: &str) -> u64 {
         "kclvm_json_decode" => crate::kclvm_json_decode as *const () as u64,
         "kclvm_json_dump_to_file" => crate::kclvm_json_dump_to_file as *const () as u64,
         "kclvm_json_encode" => crate::kclvm_json_encode as *const () as u64,
+        "kclvm_json_validate" => crate::kclvm_json_validate as *const () as u64,
         "kclvm_list_append" => crate::kclvm_list_append as *const () as u64,
         "kclvm_list_append_bool" => crate::kclvm_list_append_bool as *const () as u64,
         "kclvm_list_append_float" => crate::kclvm_list_append_float as *const () as u64,
@@ -346,6 +347,7 @@ pub fn _kclvm_get_fn_ptr_by_name(name: &str) -> u64 {
         "kclvm_yaml_dump_to_file" => crate::kclvm_yaml_dump_to_file as *const () as u64,
         "kclvm_yaml_encode" => crate::kclvm_yaml_encode as *const () as u64,
         "kclvm_yaml_encode_all" => crate::kclvm_yaml_encode_all as *const () as u64,
+        "kclvm_yaml_validate" => crate::kclvm_yaml_validate as *const () as u64,
         _ => panic!("unknown {name}"),
     }
 }

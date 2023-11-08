@@ -144,6 +144,7 @@ pub enum ApiFunc {
     kclvm_json_decode,
     kclvm_json_dump_to_file,
     kclvm_json_encode,
+    kclvm_json_validate,
     kclvm_list_append,
     kclvm_list_append_bool,
     kclvm_list_append_float,
@@ -317,6 +318,7 @@ pub enum ApiFunc {
     kclvm_yaml_dump_to_file,
     kclvm_yaml_encode,
     kclvm_yaml_encode_all,
+    kclvm_yaml_validate,
 }
 
 impl std::fmt::Display for ApiFunc {

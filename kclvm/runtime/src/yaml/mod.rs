@@ -139,6 +139,26 @@ pub extern "C" fn kclvm_yaml_dump_all_to_file(
     panic!("dump_all_to_file() missing 2 required positional arguments: 'data' and 'filename'")
 }
 
+/// validate(value: str) -> bool
+#[no_mangle]
+#[runtime_fn]
+pub extern "C" fn kclvm_yaml_validate(
+    ctx: *mut kclvm_context_t,
+    args: *const kclvm_value_ref_t,
+    _kwargs: *const kclvm_value_ref_t,
+) -> *const kclvm_value_ref_t {
+    let args = ptr_as_ref(args);
+
+    let ctx = mut_ptr_as_ref(ctx);
+    if let Some(arg0) = args.arg_i(0) {
+        match ValueRef::from_yaml_stream(ctx, arg0.as_str().as_ref()) {
+            Ok(_) => return kclvm_value_True(ctx),
+            Err(_) => return kclvm_value_False(ctx),
+        }
+    }
+    panic!("validate() missing 1 required positional argument: 'value'")
+}
+
 fn kwargs_to_opts(kwargs: &ValueRef) -> YamlEncodeOptions {
     let mut opts = YamlEncodeOptions::default();
     if let Some(sort_keys) = kwargs.kwarg_bool("sort_keys", None) {
