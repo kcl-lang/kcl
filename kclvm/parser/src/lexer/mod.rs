@@ -23,6 +23,7 @@ mod tests;
 use compiler_base_macros::bug;
 use compiler_base_span::{self, span::new_byte_pos, BytePos, Span};
 use kclvm_ast::ast::NumberBinarySuffix;
+use kclvm_ast::token::VALID_SPACES_LENGTH;
 use kclvm_ast::token::{self, BinOpToken, CommentKind, Token, TokenKind};
 use kclvm_ast::token_stream::TokenStream;
 use kclvm_lexer::Base;
@@ -700,7 +701,10 @@ impl<'a> Lexer<'a> {
 
         while self.indent_cxt.indents.len() > 1 {
             self.indent_cxt.indents.pop();
-            buf.push(Token::new(token::Dedent, self.span(self.pos, self.pos)));
+            buf.push(Token::new(
+                token::Dedent(VALID_SPACES_LENGTH),
+                self.span(self.pos, self.pos),
+            ));
         }
 
         buf.push(Token::new(token::Eof, self.span(self.pos, self.pos)));

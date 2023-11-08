@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 compiler_base_span = {path = "../../compiler_base/span"}
 compiler_base_session = {path = "../../compiler_base/session"}
+compiler_base_error_dev = {package = "compiler_base_error",  path = "../../compiler_base/error/"}
 compiler_base_error = "0.0.10"
 compiler_base_macros = "0.0.1"
 tracing = "0.1"

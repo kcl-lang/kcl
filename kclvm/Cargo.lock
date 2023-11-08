@@ -1648,6 +1648,7 @@ version = "0.7.0-alpha.2"
 dependencies = [
  "anyhow",
  "bstr",
+ "compiler_base_error 0.0.10",
  "compiler_base_error 0.0.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "compiler_base_macros",
  "compiler_base_session",

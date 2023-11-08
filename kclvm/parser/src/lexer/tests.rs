@@ -402,29 +402,29 @@ println("end")
             Token { kind: Ident(Symbol(SymbolIndex { idx: 42 })), span: Span { base_or_index: 4, len_or_tag: 5 } }
             Token { kind: Colon, span: Span { base_or_index: 9, len_or_tag: 1 } }
             Token { kind: Newline, span: Span { base_or_index: 10, len_or_tag: 1 } }
-            Token { kind: Indent, span: Span { base_or_index: 15, len_or_tag: 0 } }
+            Token { kind: Indent(0), span: Span { base_or_index: 15, len_or_tag: 0 } }
             Token { kind: Ident(Symbol(SymbolIndex { idx: 10 })), span: Span { base_or_index: 15, len_or_tag: 2 } }
             Token { kind: Ident(Symbol(SymbolIndex { idx: 43 })), span: Span { base_or_index: 18, len_or_tag: 5 } }
             Token { kind: Colon, span: Span { base_or_index: 23, len_or_tag: 1 } }
             Token { kind: Newline, span: Span { base_or_index: 24, len_or_tag: 1 } }
-            Token { kind: Indent, span: Span { base_or_index: 33, len_or_tag: 0 } }
+            Token { kind: Indent(0), span: Span { base_or_index: 33, len_or_tag: 0 } }
             Token { kind: Ident(Symbol(SymbolIndex { idx: 44 })), span: Span { base_or_index: 33, len_or_tag: 7 } }
             Token { kind: OpenDelim(Paren), span: Span { base_or_index: 40, len_or_tag: 1 } }
             Token { kind: Literal(Lit { kind: Str { is_long_string: false, is_raw: false }, symbol: Symbol(SymbolIndex { idx: 45 }), suffix: None, raw: Some(Symbol(SymbolIndex { idx: 46 })) }), span: Span { base_or_index: 41, len_or_tag: 11 } }
             Token { kind: CloseDelim(Paren), span: Span { base_or_index: 52, len_or_tag: 1 } }
             Token { kind: Newline, span: Span { base_or_index: 53, len_or_tag: 1 } }
-            Token { kind: Dedent, span: Span { base_or_index: 58, len_or_tag: 0 } }
+            Token { kind: Dedent(0), span: Span { base_or_index: 58, len_or_tag: 0 } }
             Token { kind: Ident(Symbol(SymbolIndex { idx: 12 })), span: Span { base_or_index: 58, len_or_tag: 4 } }
             Token { kind: Colon, span: Span { base_or_index: 62, len_or_tag: 1 } }
             Token { kind: Newline, span: Span { base_or_index: 63, len_or_tag: 1 } }
-            Token { kind: Indent, span: Span { base_or_index: 72, len_or_tag: 0 } }
+            Token { kind: Indent(0), span: Span { base_or_index: 72, len_or_tag: 0 } }
             Token { kind: Ident(Symbol(SymbolIndex { idx: 44 })), span: Span { base_or_index: 72, len_or_tag: 7 } }
             Token { kind: OpenDelim(Paren), span: Span { base_or_index: 79, len_or_tag: 1 } }
             Token { kind: Literal(Lit { kind: Str { is_long_string: false, is_raw: false }, symbol: Symbol(SymbolIndex { idx: 47 }), suffix: None, raw: Some(Symbol(SymbolIndex { idx: 48 })) }), span: Span { base_or_index: 80, len_or_tag: 12 } }
             Token { kind: CloseDelim(Paren), span: Span { base_or_index: 92, len_or_tag: 1 } }
             Token { kind: Newline, span: Span { base_or_index: 93, len_or_tag: 1 } }
-            Token { kind: Dedent, span: Span { base_or_index: 94, len_or_tag: 0 } }
-            Token { kind: Dedent, span: Span { base_or_index: 94, len_or_tag: 0 } }
+            Token { kind: Dedent(0), span: Span { base_or_index: 94, len_or_tag: 0 } }
+            Token { kind: Dedent(0), span: Span { base_or_index: 94, len_or_tag: 0 } }
             Token { kind: Ident(Symbol(SymbolIndex { idx: 44 })), span: Span { base_or_index: 94, len_or_tag: 7 } }
             Token { kind: OpenDelim(Paren), span: Span { base_or_index: 101, len_or_tag: 1 } }
             Token { kind: Literal(Lit { kind: Str { is_long_string: false, is_raw: false }, symbol: Symbol(SymbolIndex { idx: 49 }), suffix: None, raw: Some(Symbol(SymbolIndex { idx: 50 })) }), span: Span { base_or_index: 102, len_or_tag: 5 } }
@@ -469,12 +469,12 @@ Schema (1, 2) {
         Token { kind: CloseDelim(Paren), span: Span { base_or_index: 13, len_or_tag: 1 } }
         Token { kind: OpenDelim(Brace), span: Span { base_or_index: 15, len_or_tag: 1 } }
         Token { kind: Newline, span: Span { base_or_index: 16, len_or_tag: 1 } }
-        Token { kind: Indent, span: Span { base_or_index: 21, len_or_tag: 0 } }
+        Token { kind: Indent(0), span: Span { base_or_index: 21, len_or_tag: 0 } }
         Token { kind: Ident(Symbol(SymbolIndex { idx: 43 })), span: Span { base_or_index: 21, len_or_tag: 1 } }
         Token { kind: Assign, span: Span { base_or_index: 22, len_or_tag: 1 } }
         Token { kind: Ident(Symbol(SymbolIndex { idx: 44 })), span: Span { base_or_index: 23, len_or_tag: 1 } }
         Token { kind: Newline, span: Span { base_or_index: 24, len_or_tag: 1 } }
-        Token { kind: Dedent, span: Span { base_or_index: 25, len_or_tag: 0 } }
+        Token { kind: Dedent(0), span: Span { base_or_index: 25, len_or_tag: 0 } }
         Token { kind: CloseDelim(Brace), span: Span { base_or_index: 25, len_or_tag: 1 } }
         Token { kind: Newline, span: Span { base_or_index: 26, len_or_tag: 1 } }
         Token { kind: Eof, span: Span { base_or_index: 27, len_or_tag: 0 } }
@@ -497,12 +497,12 @@ fn schema_expr_1() {
         Token { kind: CloseDelim(Paren), span: Span { base_or_index: 12, len_or_tag: 1 } }
         Token { kind: OpenDelim(Brace), span: Span { base_or_index: 14, len_or_tag: 1 } }
         Token { kind: Newline, span: Span { base_or_index: 15, len_or_tag: 1 } }
-        Token { kind: Indent, span: Span { base_or_index: 20, len_or_tag: 0 } }
+        Token { kind: Indent(0), span: Span { base_or_index: 20, len_or_tag: 0 } }
         Token { kind: Ident(Symbol(SymbolIndex { idx: 43 })), span: Span { base_or_index: 20, len_or_tag: 1 } }
         Token { kind: Assign, span: Span { base_or_index: 21, len_or_tag: 1 } }
         Token { kind: Ident(Symbol(SymbolIndex { idx: 44 })), span: Span { base_or_index: 22, len_or_tag: 1 } }
         Token { kind: Newline, span: Span { base_or_index: 23, len_or_tag: 1 } }
-        Token { kind: Dedent, span: Span { base_or_index: 24, len_or_tag: 0 } }
+        Token { kind: Dedent(0), span: Span { base_or_index: 24, len_or_tag: 0 } }
         Token { kind: CloseDelim(Brace), span: Span { base_or_index: 24, len_or_tag: 1 } }
         Token { kind: Newline, span: Span { base_or_index: 25, len_or_tag: 0 } }
         Token { kind: Eof, span: Span { base_or_index: 25, len_or_tag: 0 } }

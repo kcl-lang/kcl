@@ -13,6 +13,7 @@ pub use UnaryOpToken::*;
 
 use compiler_base_span::{Span, DUMMY_SP};
 pub use kclvm_span::symbol::{Ident, Symbol};
+pub const VALID_SPACES_LENGTH: usize = 0;
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum CommentKind {
@@ -180,10 +181,10 @@ pub enum TokenKind {
     DocComment(CommentKind),
 
     /// '\t' or ' '
-    Indent,
+    Indent(usize),
 
     /// Remove an indent
-    Dedent,
+    Dedent(usize),
 
     /// '\n'
     Newline,
@@ -280,8 +281,8 @@ impl From<TokenKind> for String {
             DocComment(kind) => match kind {
                 CommentKind::Line(_) => "inline_comment",
             },
-            Indent => "indent",
-            Dedent => "dedent",
+            Indent(_) => "indent",
+            Dedent(_) => "dedent",
             Newline => "newline",
             Dummy => "dummy",
             Eof => "eof",
@@ -358,7 +359,10 @@ impl Token {
     /// Whether the token kind is in the recovery token set, when meets errors, drop it.
     #[inline]
     pub fn is_in_recovery_set(&self) -> bool {
-        matches!(self.kind, TokenKind::Indent | TokenKind::Dummy)
+        matches!(
+            self.kind,
+            TokenKind::Indent(VALID_SPACES_LENGTH) | TokenKind::Dummy
+        )
     }
 }
 

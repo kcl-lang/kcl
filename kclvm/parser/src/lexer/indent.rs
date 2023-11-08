@@ -4,6 +4,7 @@ use std::cmp::Ordering;
 
 use crate::lexer::IndentOrDedents;
 use crate::lexer::Lexer;
+use kclvm_ast::token::VALID_SPACES_LENGTH;
 use kclvm_ast::token::{self, Token};
 
 #[derive(Clone, Copy, PartialEq, Debug, Default)]
@@ -87,7 +88,10 @@ impl<'a> Lexer<'a> {
                         self.indent_cxt.indents.push(indent);
 
                         // For indent token, we ignore the length
-                        let indent = Token::new(token::Indent, self.span(self.pos, self.pos));
+                        let indent = Token::new(
+                            token::Indent(VALID_SPACES_LENGTH),
+                            self.span(self.pos, self.pos),
+                        );
                         IndentOrDedents::Indent { token: indent }
                     }
                     Ordering::Less => {
@@ -106,7 +110,7 @@ impl<'a> Lexer<'a> {
                                             // update pos & collect dedent
                                             // For dedent token, we ignore the length
                                             let dedent = Token::new(
-                                                token::Dedent,
+                                                token::Dedent(VALID_SPACES_LENGTH),
                                                 self.span(self.pos, self.pos),
                                             );
                                             dedents.push(dedent);
@@ -116,14 +120,15 @@ impl<'a> Lexer<'a> {
                                             break;
                                         }
                                         Ordering::Greater => {
+                                            let spaces_diff = indent.spaces - cur_indent.spaces;
                                             if let Some(indent) = indents.pop() {
                                                 self.indent_cxt.indents.push(indent);
                                             }
                                             dedents.pop();
-                                            self.sess.struct_span_error(
-                                            &format!("unindent {} does not match any outer indentation level", indent.spaces),
-                                            self.span(self.pos, self.pos),
-                                        );
+                                            dedents.push(Token::new(
+                                                token::Dedent(spaces_diff),
+                                                self.span(self.pos, self.pos),
+                                            ));
                                             break;
                                         }
                                     }
@@ -139,7 +144,6 @@ impl<'a> Lexer<'a> {
                                 }
                             }
                         }
-
                         IndentOrDedents::Dedents { tokens: dedents }
                     }
                     _ => return None,

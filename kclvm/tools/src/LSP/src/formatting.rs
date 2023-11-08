@@ -78,7 +78,9 @@ mod tests {
                 .unwrap()
                 .to_string();
             let test_src = std::fs::read_to_string(&test_file).unwrap();
-            let got = format(test_file, test_src, None).unwrap().unwrap();
+            let got = format(test_file.to_string(), test_src, None)
+                .unwrap()
+                .unwrap();
             let data_output = std::fs::read_to_string(
                 test_dir
                     .join(format!("{}{}", case, FILE_OUTPUT_SUFFIX))
@@ -94,7 +96,7 @@ mod tests {
                 range: Range::new(Position::new(0, 0), Position::new(u32::MAX, u32::MAX)),
                 new_text: data_output,
             }];
-
+            println!("{:?}", test_file);
             assert_eq!(expect, got);
         }
 
