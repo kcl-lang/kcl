@@ -83,7 +83,7 @@ pub fn exec_program(
 
     let kcl_paths_str = kcl_paths.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
 
-    let mut program = load_program(sess.clone(), kcl_paths_str.as_slice(), Some(opts))?;
+    let mut program = load_program(sess.clone(), kcl_paths_str.as_slice(), Some(opts), None)?;
 
     if let Err(err) = apply_overrides(
         &mut program,
@@ -187,7 +187,7 @@ pub fn exec_program(
 ///
 /// // Parse kcl file
 /// let kcl_path = "./src/test_datas/init_check_order_0/main.k";
-/// let prog = load_program(sess.clone(), &[kcl_path], Some(opts)).unwrap();
+/// let prog = load_program(sess.clone(), &[kcl_path], Some(opts), None).unwrap();
 ///     
 /// // Resolve ast, generate libs, link libs and execute.
 /// // Result is the kcl in json format.

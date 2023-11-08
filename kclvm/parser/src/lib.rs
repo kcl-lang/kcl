@@ -15,6 +15,7 @@ pub use crate::session::ParseSession;
 use compiler_base_macros::bug;
 use compiler_base_session::Session;
 use compiler_base_span::span::new_byte_pos;
+use indexmap::IndexMap;
 use kclvm_ast::ast;
 use kclvm_config::modfile::{get_vendor_home, KCL_FILE_EXTENSION, KCL_FILE_SUFFIX, KCL_MOD_FILE};
 use kclvm_error::diagnostic::Range;
@@ -26,6 +27,7 @@ use kclvm_utils::pkgpath::rm_external_pkg_name;
 
 use lexer::parse_token_streams;
 use parser::Parser;
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -277,33 +279,59 @@ impl Default for LoadProgramOptions {
     }
 }
 
+/// Load the KCL program by paths and options,
+/// "module_cache" is used to cache parsed asts to support incremental parse,
+/// if it is None, module caching will be disabled
+///
+/// # Examples
+///
+/// ```
+/// use kclvm_parser::{load_program, ParseSession};
+/// use kclvm_parser::KCLModuleCache;
+/// use kclvm_ast::ast::Program;
+/// use std::sync::Arc;
+///
+/// // Create sessions
+/// let sess = Arc::new(ParseSession::default());
+/// // Create module cache
+/// let module_cache = KCLModuleCache::default();
+///
+/// // Parse kcl file
+/// let kcl_path = "./testdata/import-01.k";
+/// let prog = load_program(sess.clone(), &[kcl_path], None, Some(module_cache.clone())).unwrap();
+///     
+/// ```
 pub fn load_program(
     sess: Arc<ParseSession>,
     paths: &[&str],
     opts: Option<LoadProgramOptions>,
+    module_cache: Option<KCLModuleCache>,
 ) -> Result<ast::Program, String> {
-    // todo: support cache
-    if let Some(opts) = opts {
-        Loader::new(sess, paths, Some(opts)).load_main()
-    } else {
-        Loader::new(sess, paths, None).load_main()
-    }
+    Loader::new(sess, paths, opts, module_cache).load_main()
 }
 
+pub type KCLModuleCache = Arc<RefCell<IndexMap<String, ast::Module>>>;
 struct Loader {
     sess: Arc<ParseSession>,
     paths: Vec<String>,
     opts: LoadProgramOptions,
     missing_pkgs: Vec<String>,
+    module_cache: Option<KCLModuleCache>,
 }
 
 impl Loader {
-    fn new(sess: Arc<ParseSession>, paths: &[&str], opts: Option<LoadProgramOptions>) -> Self {
+    fn new(
+        sess: Arc<ParseSession>,
+        paths: &[&str],
+        opts: Option<LoadProgramOptions>,
+        module_cache: Option<Arc<RefCell<IndexMap<String, ast::Module>>>>,
+    ) -> Self {
         Self {
             sess,
             paths: paths.iter().map(|s| s.to_string()).collect(),
             opts: opts.unwrap_or_default(),
             missing_pkgs: Default::default(),
+            module_cache,
         }
     }
 
@@ -329,8 +357,18 @@ impl Loader {
             // load module
 
             for (i, filename) in k_files.iter().enumerate() {
-                let mut m =
-                    parse_file_with_session(self.sess.clone(), filename, maybe_k_codes[i].clone())?;
+                let mut m = if let Some(module_cache) = self.module_cache.as_ref() {
+                    let m = parse_file_with_session(
+                        self.sess.clone(),
+                        filename,
+                        maybe_k_codes[i].clone(),
+                    )?;
+                    let mut module_cache_ref = module_cache.borrow_mut();
+                    module_cache_ref.insert(filename.clone(), m.clone());
+                    m
+                } else {
+                    parse_file_with_session(self.sess.clone(), filename, maybe_k_codes[i].clone())?
+                };
                 self.fix_rel_import_path(entry.path(), &mut m);
                 pkg_files.push(m);
             }
@@ -532,7 +570,20 @@ impl Loader {
         let mut pkg_files = Vec::new();
         let k_files = pkg_info.k_files.clone();
         for filename in k_files {
-            let mut m = parse_file_with_session(self.sess.clone(), filename.as_str(), None)?;
+            let mut m = if let Some(module_cache) = self.module_cache.as_ref() {
+                let module_cache_ref = module_cache.borrow();
+                if let Some(module) = module_cache_ref.get(&filename) {
+                    module.clone()
+                } else {
+                    let m = parse_file_with_session(self.sess.clone(), &filename, None)?;
+                    drop(module_cache_ref);
+                    let mut module_cache_ref = module_cache.borrow_mut();
+                    module_cache_ref.insert(filename.clone(), m.clone());
+                    m
+                }
+            } else {
+                parse_file_with_session(self.sess.clone(), &filename, None)?
+            };
 
             m.pkg = pkg_info.pkg_path.clone();
             m.name = "".to_string();

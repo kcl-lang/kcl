@@ -156,6 +156,7 @@ mod tests {
             sess.clone(),
             &["./src/namer/test_data/schema_symbols.k"],
             None,
+            None,
         )
         .unwrap();
         let gs = GlobalState::default();

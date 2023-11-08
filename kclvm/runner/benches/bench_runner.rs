@@ -35,7 +35,7 @@ fn exec(file: &str) -> Result<String, String> {
     let opts = args.get_load_program_options();
     let sess = Arc::new(ParseSession::default());
     // Load AST program
-    let program = load_program(sess.clone(), &[file], Some(opts)).unwrap();
+    let program = load_program(sess.clone(), &[file], Some(opts), None).unwrap();
     // Resolve ATS, generate libs, link libs and execute.
     execute(sess, program, &args)
 }

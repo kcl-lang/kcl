@@ -72,6 +72,7 @@ fn test_config_merge() {
             "./src/pre_process/test_data/config_merge/config2.k",
         ],
         None,
+        None,
     )
     .unwrap();
     merge_program(&mut program);
@@ -112,6 +113,7 @@ fn test_config_override() {
     let mut program = load_program(
         sess,
         &["./src/pre_process/test_data/config_override.k"],
+        None,
         None,
     )
     .unwrap();
@@ -155,6 +157,7 @@ fn test_skip_merge_program() {
             "./src/pre_process/test_data/config_merge/config1.k",
             "./src/pre_process/test_data/config_merge/config2.k",
         ],
+        None,
         None,
     )
     .unwrap();
