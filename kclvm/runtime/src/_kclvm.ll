@@ -264,6 +264,8 @@ declare %kclvm_value_ref_t* @kclvm_json_dump_to_file(%kclvm_context_t* %_ctx, %k
 
 declare %kclvm_value_ref_t* @kclvm_json_encode(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
+declare %kclvm_value_ref_t* @kclvm_json_validate(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+
 declare void @kclvm_list_append(%kclvm_value_ref_t* %p, %kclvm_value_ref_t* %v);
 
 declare void @kclvm_list_append_bool(%kclvm_value_ref_t* %p, %kclvm_bool_t %v);
@@ -609,6 +611,8 @@ declare %kclvm_value_ref_t* @kclvm_yaml_dump_to_file(%kclvm_context_t* %_ctx, %k
 declare %kclvm_value_ref_t* @kclvm_yaml_encode(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 declare %kclvm_value_ref_t* @kclvm_yaml_encode_all(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
+
+declare %kclvm_value_ref_t* @kclvm_yaml_validate(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
 
 define void @__kcl_keep_link_runtime(%kclvm_value_ref_t* %_a, %kclvm_context_t* %_b) {
 	call %kclvm_value_ref_t* @kclvm_value_None(%kclvm_context_t* %_b)

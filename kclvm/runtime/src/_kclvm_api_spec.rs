@@ -798,6 +798,10 @@
 // api-spec(c):    kclvm_value_ref_t* kclvm_json_decode(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_json_decode(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
 
+// api-spec:       kclvm_json_validate
+// api-spec(c):    kclvm_value_ref_t* kclvm_json_validate(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_json_validate(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+
 // api-spec:       kclvm_json_dump_to_file
 // api-spec(c):    kclvm_value_ref_t* kclvm_json_dump_to_file(kclvm_context_t* _ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_json_dump_to_file(%kclvm_context_t* %_ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
@@ -1165,4 +1169,8 @@
 // api-spec:       kclvm_yaml_dump_all_to_file
 // api-spec(c):    kclvm_value_ref_t* kclvm_yaml_dump_all_to_file(kclvm_context_t* _ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_yaml_dump_all_to_file(%kclvm_context_t* %_ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
+
+// api-spec:       kclvm_yaml_validate
+// api-spec(c):    kclvm_value_ref_t* kclvm_yaml_validate(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_yaml_validate(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
 

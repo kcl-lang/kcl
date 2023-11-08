@@ -316,6 +316,8 @@ kclvm_value_ref_t* kclvm_json_dump_to_file(kclvm_context_t* _ctx, kclvm_value_re
 
 kclvm_value_ref_t* kclvm_json_encode(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
+kclvm_value_ref_t* kclvm_json_validate(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
+
 void kclvm_list_append(kclvm_value_ref_t* p, kclvm_value_ref_t* v);
 
 void kclvm_list_append_bool(kclvm_value_ref_t* p, kclvm_bool_t v);
@@ -661,6 +663,8 @@ kclvm_value_ref_t* kclvm_yaml_dump_to_file(kclvm_context_t* _ctx, kclvm_value_re
 kclvm_value_ref_t* kclvm_yaml_encode(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
 kclvm_value_ref_t* kclvm_yaml_encode_all(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+
+kclvm_value_ref_t* kclvm_yaml_validate(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
 
 #ifdef __cplusplus
 } // extern "C"
