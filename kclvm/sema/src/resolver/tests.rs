@@ -52,6 +52,7 @@ fn test_pkg_init_in_schema_resolve() {
         sess.clone(),
         &["./src/resolver/test_data/pkg_init_in_schema.k"],
         None,
+        None,
     )
     .unwrap();
     let scope = resolve_program(&mut program);
@@ -115,6 +116,7 @@ fn test_resolve_program_redefine() {
         sess.clone(),
         &["./src/resolver/test_fail_data/redefine_import/main.k"],
         None,
+        None,
     )
     .unwrap();
 
@@ -153,6 +155,7 @@ fn test_resolve_program_cycle_reference_fail() {
         sess.clone(),
         &["./src/resolver/test_fail_data/cycle_reference/file1.k"],
         None,
+        None,
     )
     .unwrap();
     let scope = resolve_program(&mut program);
@@ -177,6 +180,7 @@ fn test_record_used_module() {
     let mut program = load_program(
         sess.clone(),
         &["./src/resolver/test_data/record_used_module.k"],
+        None,
         None,
     )
     .unwrap();
@@ -292,8 +296,13 @@ fn test_resolve_program_module_optional_select_fail() {
 #[test]
 fn test_lint() {
     let sess = Arc::new(ParseSession::default());
-    let mut program =
-        load_program(sess.clone(), &["./src/resolver/test_data/lint.k"], None).unwrap();
+    let mut program = load_program(
+        sess.clone(),
+        &["./src/resolver/test_data/lint.k"],
+        None,
+        None,
+    )
+    .unwrap();
     let opts = Options::default();
     pre_process_program(&mut program, &opts);
     let mut resolver = Resolver::new(&program, opts);
@@ -436,6 +445,7 @@ fn test_pkg_scope() {
         sess.clone(),
         &["./src/resolver/test_data/pkg_scope.k"],
         None,
+        None,
     )
     .unwrap();
     let scope = resolve_program(&mut program);
@@ -485,6 +495,7 @@ fn test_system_package() {
         sess.clone(),
         &["./src/resolver/test_data/system_package.k"],
         None,
+        None,
     )
     .unwrap();
     let scope = resolve_program(&mut program);
@@ -517,6 +528,7 @@ fn test_resolve_program_import_suggest() {
         sess.clone(),
         &["./src/resolver/test_fail_data/not_found_suggest/main.k"],
         None,
+        None,
     )
     .unwrap();
     let scope = resolve_program(&mut program);
@@ -540,6 +552,7 @@ fn test_resolve_assignment_in_lambda() {
         sess.clone(),
         &["./src/resolver/test_data/assign_in_lambda.k"],
         None,
+        None,
     )
     .unwrap();
     let scope = resolve_program(&mut program);
@@ -557,6 +570,7 @@ fn test_resolve_function_with_default_values() {
     let mut program = load_program(
         sess.clone(),
         &["./src/resolver/test_data/function_with_default_values.k"],
+        None,
         None,
     )
     .unwrap();
@@ -590,6 +604,7 @@ fn test_assignment_type_annotation_check_in_lambda() {
         sess.clone(),
         &["./src/resolver/test_data/annotation_check_assignment.k"],
         Some(opts),
+        None,
     )
     .unwrap();
     let scope = resolve_program(&mut program);
@@ -602,6 +617,7 @@ fn test_resolve_lambda_assignment_diagnostic() {
     let mut program = load_program(
         sess.clone(),
         &["./src/resolver/test_fail_data/lambda_ty_error.k"],
+        None,
         None,
     )
     .unwrap();
@@ -622,6 +638,7 @@ fn test_ty_check_in_dict_assign_to_schema() {
     let mut program = load_program(
         sess.clone(),
         &["./src/resolver/test_data/attr_ty_check.k"],
+        None,
         None,
     )
     .unwrap();

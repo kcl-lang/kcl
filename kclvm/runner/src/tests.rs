@@ -151,6 +151,7 @@ fn parse_program(test_kcl_case_path: &str) -> Program {
         Arc::new(ParseSession::default()),
         &[test_kcl_case_path],
         Some(opts),
+        None,
     )
     .unwrap()
 }
@@ -261,7 +262,7 @@ fn assemble_lib_for_test(
     let opts = args.get_load_program_options();
     let sess = Arc::new(ParseSession::default());
     // parse and resolve kcl
-    let mut program = load_program(sess, &files, Some(opts)).unwrap();
+    let mut program = load_program(sess, &files, Some(opts), None).unwrap();
 
     let scope = resolve_program(&mut program);
 
@@ -513,7 +514,13 @@ fn test_compile_dir_recursive() {
     opts.recursive = true;
     let sess = Arc::new(ParseSession::default());
     // Load AST program
-    let program = load_program(sess.clone(), &[&path.display().to_string()], Some(opts)).unwrap();
+    let program = load_program(
+        sess.clone(),
+        &[&path.display().to_string()],
+        Some(opts),
+        None,
+    )
+    .unwrap();
     // Resolve ATS, generate libs, link libs and execute.
     let res = execute(sess, program, &args);
     assert!(res.is_ok());
@@ -562,7 +569,7 @@ fn exec(file: &str) -> Result<String, String> {
     let opts = args.get_load_program_options();
     let sess = Arc::new(ParseSession::default());
     // Load AST program
-    let program = load_program(sess.clone(), &[file], Some(opts)).unwrap();
+    let program = load_program(sess.clone(), &[file], Some(opts), None).unwrap();
     // Resolve ATS, generate libs, link libs and execute.
     execute(sess, program, &args)
 }

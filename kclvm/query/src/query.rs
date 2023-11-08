@@ -115,6 +115,7 @@ fn resolve_file(file: &str, code: Option<&str>) -> Result<Rc<RefCell<Scope>>> {
             k_code_list: vec![c.to_string()],
             ..Default::default()
         }),
+        None,
     ) {
         Ok(p) => p,
         Err(err) => {

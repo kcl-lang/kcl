@@ -243,6 +243,7 @@ fn test_in_order() {
 }
 
 pub fn test_import_vendor() {
+    let module_cache = KCLModuleCache::default();
     let vendor = set_vendor_home();
     let sm = SourceMap::new(FilePathMapping::empty());
     let sess = Arc::new(ParseSession::with_source_map(Arc::new(sm)));
@@ -285,27 +286,36 @@ pub fn test_import_vendor() {
         .canonicalize()
         .unwrap();
 
-    test_cases.into_iter().for_each(|(test_case_name, pkgs)| {
-        let test_case_path = dir.join(test_case_name).display().to_string();
-        let m = load_program(sess.clone(), &[&test_case_path], None).unwrap();
-        assert_eq!(m.pkgs.len(), pkgs.len());
-        m.pkgs.into_iter().for_each(|(name, modules)| {
-            println!("{:?} - {:?}", test_case_name, name);
-            assert!(pkgs.contains(&name.as_str()));
-            for pkg in pkgs.clone() {
-                if name == pkg {
-                    if name == "__main__" {
-                        assert_eq!(modules.len(), 1);
-                        assert_eq!(modules.get(0).unwrap().filename, test_case_path);
-                    } else {
-                        modules.into_iter().for_each(|module| {
-                            assert!(module.filename.contains(&vendor));
-                        });
+    let test_fn =
+        |test_case_name: &&str, pkgs: &Vec<&str>, module_cache: Option<KCLModuleCache>| {
+            let test_case_path = dir.join(test_case_name).display().to_string();
+            let m = load_program(sess.clone(), &[&test_case_path], None, module_cache).unwrap();
+            assert_eq!(m.pkgs.len(), pkgs.len());
+            m.pkgs.into_iter().for_each(|(name, modules)| {
+                println!("{:?} - {:?}", test_case_name, name);
+                assert!(pkgs.contains(&name.as_str()));
+                for pkg in pkgs.clone() {
+                    if name == pkg {
+                        if name == "__main__" {
+                            assert_eq!(modules.len(), 1);
+                            assert_eq!(modules.get(0).unwrap().filename, test_case_path);
+                        } else {
+                            modules.into_iter().for_each(|module| {
+                                assert!(module.filename.contains(&vendor));
+                            });
+                        }
+                        break;
                     }
-                    break;
                 }
-            }
-        });
+            });
+        };
+
+    test_cases
+        .iter()
+        .for_each(|(test_case_name, pkgs)| test_fn(test_case_name, pkgs, None));
+
+    test_cases.iter().for_each(|(test_case_name, pkgs)| {
+        test_fn(test_case_name, pkgs, Some(module_cache.clone()))
     });
 }
 
@@ -323,7 +333,7 @@ pub fn test_import_vendor_without_kclmod() {
 
     test_cases.into_iter().for_each(|(test_case_name, pkgs)| {
         let test_case_path = dir.join(test_case_name).display().to_string();
-        let m = load_program(sess.clone(), &[&test_case_path], None).unwrap();
+        let m = load_program(sess.clone(), &[&test_case_path], None, None).unwrap();
         assert_eq!(m.pkgs.len(), pkgs.len());
         m.pkgs.into_iter().for_each(|(name, modules)| {
             assert!(pkgs.contains(&name.as_str()));
@@ -354,7 +364,29 @@ pub fn test_import_vendor_without_vendor_home() {
         .canonicalize()
         .unwrap();
     let test_case_path = dir.join("assign.k").display().to_string();
-    match load_program(sess.clone(), &[&test_case_path], None) {
+    match load_program(sess.clone(), &[&test_case_path], None, None) {
+        Ok(_) => {
+            let errors = sess.classification().0;
+            let msgs = [
+                "pkgpath assign not found in the program",
+                "pkgpath assign.assign not found in the program",
+            ];
+            assert_eq!(errors.len(), msgs.len());
+            for (diag, m) in errors.iter().zip(msgs.iter()) {
+                assert_eq!(diag.messages[0].message, m.to_string());
+            }
+        }
+        Err(_) => {
+            panic!("Unreachable code.")
+        }
+    }
+
+    match load_program(
+        sess.clone(),
+        &[&test_case_path],
+        None,
+        Some(KCLModuleCache::default()),
+    ) {
         Ok(_) => {
             let errors = sess.classification().0;
             let msgs = [
@@ -382,7 +414,27 @@ fn test_import_vendor_with_same_internal_pkg() {
         .canonicalize()
         .unwrap();
     let test_case_path = dir.join("same_name.k").display().to_string();
-    match load_program(sess.clone(), &[&test_case_path], None) {
+    match load_program(sess.clone(), &[&test_case_path], None, None) {
+        Ok(_) => {
+            let errors = sess.classification().0;
+            let msgs = [
+                "the `same_vendor` is found multiple times in the current package and vendor package"
+            ];
+            assert_eq!(errors.len(), msgs.len());
+            for (diag, m) in errors.iter().zip(msgs.iter()) {
+                assert_eq!(diag.messages[0].message, m.to_string());
+            }
+        }
+        Err(_) => {
+            panic!("Unreachable code.")
+        }
+    }
+    match load_program(
+        sess.clone(),
+        &[&test_case_path],
+        None,
+        Some(KCLModuleCache::default()),
+    ) {
         Ok(_) => {
             let errors = sess.classification().0;
             let msgs = [
@@ -409,7 +461,28 @@ fn test_import_vendor_without_kclmod_and_same_name() {
         .canonicalize()
         .unwrap();
     let test_case_path = dir.join("assign.k").display().to_string();
-    match load_program(sess.clone(), &[&test_case_path], None) {
+    match load_program(sess.clone(), &[&test_case_path], None, None) {
+        Ok(_) => {
+            let errors = sess.classification().0;
+            let msgs = [
+                "the `assign` is found multiple times in the current package and vendor package",
+            ];
+            assert_eq!(errors.len(), msgs.len());
+            for (diag, m) in errors.iter().zip(msgs.iter()) {
+                assert_eq!(diag.messages[0].message, m.to_string());
+            }
+        }
+        Err(_) => {
+            panic!("Unreachable code.")
+        }
+    }
+
+    match load_program(
+        sess.clone(),
+        &[&test_case_path],
+        None,
+        Some(KCLModuleCache::default()),
+    ) {
         Ok(_) => {
             let errors = sess.classification().0;
             let msgs = [
@@ -430,7 +503,7 @@ fn test_import_vendor_by_external_arguments() {
     let vendor = set_vendor_home();
     let sm = SourceMap::new(FilePathMapping::empty());
     let sess = Arc::new(ParseSession::with_source_map(Arc::new(sm)));
-
+    let module_cache = KCLModuleCache::default();
     let external_dir = &PathBuf::from(".")
         .join("testdata")
         .join("test_vendor")
@@ -480,34 +553,45 @@ fn test_import_vendor_by_external_arguments() {
         .canonicalize()
         .unwrap();
 
-    test_cases
-        .into_iter()
-        .for_each(|(test_case_name, dep_name, pkgs)| {
-            let mut opts = LoadProgramOptions::default();
-            opts.package_maps.insert(
-                dep_name.to_string(),
-                external_dir.join(dep_name).display().to_string(),
-            );
-            let test_case_path = dir.join(test_case_name).display().to_string();
-            let m = load_program(sess.clone(), &[&test_case_path], None).unwrap();
+    let test_fn = |test_case_name: &&str,
+                   dep_name: &&str,
+                   pkgs: &Vec<&str>,
+                   module_cache: Option<KCLModuleCache>| {
+        let mut opts = LoadProgramOptions::default();
+        opts.package_maps.insert(
+            dep_name.to_string(),
+            external_dir.join(dep_name).display().to_string(),
+        );
+        let test_case_path = dir.join(test_case_name).display().to_string();
+        let m = load_program(sess.clone(), &[&test_case_path], None, module_cache).unwrap();
 
-            assert_eq!(m.pkgs.len(), pkgs.len());
-            m.pkgs.into_iter().for_each(|(name, modules)| {
-                assert!(pkgs.contains(&name.as_str()));
-                for pkg in pkgs.clone() {
-                    if name == pkg {
-                        if name == "__main__" {
-                            assert_eq!(modules.len(), 1);
-                            assert_eq!(modules.get(0).unwrap().filename, test_case_path);
-                        } else {
-                            modules.into_iter().for_each(|module| {
-                                assert!(module.filename.contains(&vendor));
-                            });
-                        }
-                        break;
+        assert_eq!(m.pkgs.len(), pkgs.len());
+        m.pkgs.into_iter().for_each(|(name, modules)| {
+            assert!(pkgs.contains(&name.as_str()));
+            for pkg in pkgs.clone() {
+                if name == pkg {
+                    if name == "__main__" {
+                        assert_eq!(modules.len(), 1);
+                        assert_eq!(modules.get(0).unwrap().filename, test_case_path);
+                    } else {
+                        modules.into_iter().for_each(|module| {
+                            assert!(module.filename.contains(&vendor));
+                        });
                     }
+                    break;
                 }
-            });
+            }
+        });
+    };
+
+    test_cases
+        .iter()
+        .for_each(|(test_case_name, dep_name, pkgs)| test_fn(test_case_name, dep_name, pkgs, None));
+
+    test_cases
+        .iter()
+        .for_each(|(test_case_name, dep_name, pkgs)| {
+            test_fn(test_case_name, dep_name, pkgs, Some(module_cache.clone()))
         });
 }
 
@@ -595,7 +679,22 @@ fn test_dir_with_k_code_list() {
     let mut opts = LoadProgramOptions::default();
     opts.k_code_list = vec!["test_code = 1".to_string()];
 
-    match load_program(sess.clone(), &[&testpath.display().to_string()], Some(opts)) {
+    match load_program(
+        sess.clone(),
+        &[&testpath.display().to_string()],
+        Some(opts.clone()),
+        None,
+    ) {
+        Ok(_) => panic!("unreachable code"),
+        Err(err) => assert_eq!(err, "Invalid code list"),
+    }
+
+    match load_program(
+        sess.clone(),
+        &[&testpath.display().to_string()],
+        Some(opts),
+        Some(KCLModuleCache::default()),
+    ) {
         Ok(_) => panic!("unreachable code"),
         Err(err) => assert_eq!(err, "Invalid code list"),
     }

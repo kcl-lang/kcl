@@ -29,7 +29,7 @@ const IMPORT_STMT_COLUMN_OFFSET: u64 = 1;
 /// use kclvm_parser::load_program;
 /// use kclvm_tools::query::r#override::apply_overrides;
 ///
-/// let mut prog = load_program(&["config.k"], None).unwrap();
+/// let mut prog = load_program(&["config.k"], None, None).unwrap();
 /// let overrides = vec![parse_override_spec("config.id=1").unwrap()];
 /// let import_paths = vec!["path.to.pkg".to_string()];
 /// let result = apply_overrides(&mut prog, &overrides, &import_paths, true).unwrap();
