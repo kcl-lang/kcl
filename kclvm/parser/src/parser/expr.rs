@@ -11,9 +11,10 @@ use either::{self, Either};
 use kclvm_ast::node_ref;
 
 use crate::parser::precedence::Precedence;
+use compiler_base_error_dev::unit_type::{TypeWithUnit, UnitUsize};
 use kclvm_ast::ast::*;
 use kclvm_ast::token;
-use kclvm_ast::token::{BinOpToken, DelimToken, TokenKind};
+use kclvm_ast::token::{BinOpToken, DelimToken, TokenKind, VALID_SPACES_LENGTH};
 use kclvm_span::symbol::kw;
 
 /// Parser implementation of expressions, which consists of sub-expressions,
@@ -23,6 +24,42 @@ use kclvm_span::symbol::kw;
 /// TODO: operand design is quite complex, can be simplified later.
 impl<'a> Parser<'a> {
     /// ~~~ Entrances
+
+    /// [`clean_all_indentations`] will bump all indent and dedent tokens.
+    pub(crate) fn clean_all_indentations(&mut self) {
+        self.clean_all_indent();
+        self.clean_all_dedent();
+    }
+
+    // [`clean_all_indent`] will bump all indent tokens.
+    fn clean_all_indent(&mut self) {
+        while matches!(self.token.kind, TokenKind::Indent(_)) {
+            self.bump();
+        }
+    }
+
+    /// [`clean_all_dedent`] will bump all dedent tokens.
+    fn clean_all_dedent(&mut self) {
+        while matches!(self.token.kind, TokenKind::Dedent(_)) {
+            self.bump();
+        }
+    }
+
+    /// validate_dedent will check the number of spaces in indent and dedent tokens.
+    pub(crate) fn validate_dedent(&mut self) {
+        if let TokenKind::Dedent(n) = self.token.kind {
+            if n != 0 {
+                self.sess.struct_span_error(
+                    &format!(
+                        "invalid indentation with {}, try to align indents by adding or removing spaces",
+                        UnitUsize(n, "space".to_string()).into_string_with_unit(),
+                    ),
+                    self.token.span,
+                );
+                self.bump();
+            }
+        }
+    }
 
     /// Syntax:
     /// expr_list: expr (COMMA expr)*
@@ -50,8 +87,10 @@ impl<'a> Parser<'a> {
     /// test: if_expr | simple_expr
     pub(crate) fn parse_expr(&mut self) -> NodeRef<Expr> {
         if self.token.is_in_recovery_set() {
-            self.sess
-                .struct_span_error("expected expression", self.token.span);
+            self.sess.struct_span_error(
+                &format!("unexpected '{:?}'", self.token.kind),
+                self.token.span,
+            );
             self.bump();
         }
 
@@ -729,11 +768,13 @@ impl<'a> Parser<'a> {
         let has_newline = if self.token.kind == TokenKind::Newline {
             self.skip_newlines();
 
-            if self.token.kind == TokenKind::Indent {
+            if self.token.kind == TokenKind::Indent(VALID_SPACES_LENGTH) {
                 self.bump();
             } else {
-                self.sess
-                    .struct_token_error(&[TokenKind::Indent.into()], self.token)
+                self.sess.struct_token_error(
+                    &[TokenKind::Indent(VALID_SPACES_LENGTH).into()],
+                    self.token,
+                )
             }
 
             true
@@ -761,12 +802,14 @@ impl<'a> Parser<'a> {
                 self.sess
                     .struct_token_error(&[TokenKind::Newline.into()], self.token)
             }
-
-            if self.token.kind == TokenKind::Dedent {
+            self.validate_dedent();
+            if self.token.kind == TokenKind::Dedent(VALID_SPACES_LENGTH) {
                 self.bump();
             } else {
-                self.sess
-                    .struct_token_error(&[TokenKind::Dedent.into()], self.token)
+                self.sess.struct_token_error(
+                    &[TokenKind::Dedent(VALID_SPACES_LENGTH).into()],
+                    self.token,
+                )
             }
         }
 
@@ -902,9 +945,8 @@ impl<'a> Parser<'a> {
 
         let has_newline = if self.token.kind == TokenKind::Newline {
             self.skip_newlines();
-            if self.token.kind == TokenKind::Indent {
-                self.bump();
-            } else if self.token.kind == TokenKind::CloseDelim(DelimToken::Bracket) {
+            self.clean_all_indentations();
+            if self.token.kind == TokenKind::CloseDelim(DelimToken::Bracket) {
                 // bump bracket close delim token `]`
                 self.bump();
                 return Box::new(Node::node(
@@ -914,10 +956,6 @@ impl<'a> Parser<'a> {
                     }),
                     self.sess.struct_token_loc(token, self.prev_token),
                 ));
-            } else {
-                // If we don't find the indentation, skip and parse the next statement.
-                self.sess
-                    .struct_token_error(&[TokenKind::Indent.into()], self.token);
             }
             true
         } else {
@@ -929,15 +967,8 @@ impl<'a> Parser<'a> {
         let generators = self.parse_comp_clauses();
 
         // _DEDENT
-        if has_newline {
-            self.skip_newlines();
-            if self.token.kind == TokenKind::Dedent {
-                self.bump();
-            } else {
-                self.sess
-                    .struct_token_error(&[TokenKind::Dedent.into()], self.token)
-            }
-        }
+        self.skip_newlines();
+        self.clean_all_indentations();
 
         // RIGHT_BRACKETS
         match self.token.kind {
@@ -1002,7 +1033,7 @@ impl<'a> Parser<'a> {
     /// list_items: expr ((COMMA [NEWLINE] | NEWLINE) expr)* [COMMA] [NEWLINE]
     pub(crate) fn parse_list_items(&mut self, has_newline: bool) -> Vec<NodeRef<Expr>> {
         let is_terminator = |token: &kclvm_ast::token::Token| match &token.kind {
-            TokenKind::CloseDelim(DelimToken::Bracket) | TokenKind::Dedent | TokenKind::Eof => true,
+            TokenKind::CloseDelim(DelimToken::Bracket) | TokenKind::Eof => true,
             TokenKind::Newline if !has_newline => true,
             _ => token.is_keyword(kw::For),
         };
@@ -1021,6 +1052,7 @@ impl<'a> Parser<'a> {
         }
         loop {
             let marker = self.mark();
+            self.clean_all_indentations();
             if is_terminator(&self.token) {
                 break;
             }
@@ -1202,12 +1234,13 @@ impl<'a> Parser<'a> {
         }
 
         self.skip_newlines();
-        self.bump_token(TokenKind::Indent);
+        self.bump_token(TokenKind::Indent(VALID_SPACES_LENGTH));
 
         let mut body = Vec::new();
 
         loop {
-            if matches!(self.token.kind, TokenKind::Dedent) {
+            self.validate_dedent();
+            if matches!(self.token.kind, TokenKind::Dedent(VALID_SPACES_LENGTH)) {
                 break;
             }
 
@@ -1218,8 +1251,8 @@ impl<'a> Parser<'a> {
             }
             self.skip_newlines();
         }
-
-        self.bump_token(TokenKind::Dedent);
+        self.validate_dedent();
+        self.bump_token(TokenKind::Dedent(VALID_SPACES_LENGTH));
         body
     }
 
@@ -1244,18 +1277,13 @@ impl<'a> Parser<'a> {
 
         let has_newline = if self.token.kind == TokenKind::Newline {
             self.skip_newlines();
-            if self.token.kind == TokenKind::Indent {
-                self.bump();
-            } else if self.token.kind == TokenKind::CloseDelim(DelimToken::Brace) {
+            self.clean_all_indentations();
+            if self.token.kind == TokenKind::CloseDelim(DelimToken::Brace) {
                 self.bump();
                 return Box::new(Node::node(
                     Expr::Config(ConfigExpr { items: vec![] }),
                     self.sess.struct_token_loc(token, self.prev_token),
                 ));
-            } else {
-                // If we don't find the indentation, skip and parse the next statement.
-                self.sess
-                    .struct_token_error(&[TokenKind::Indent.into()], self.token);
             }
             true
         } else {
@@ -1267,15 +1295,8 @@ impl<'a> Parser<'a> {
         let generators = self.parse_comp_clauses();
 
         // _DEDENT
-        if has_newline {
-            self.skip_newlines();
-            if self.token.kind == TokenKind::Dedent {
-                self.bump();
-            } else {
-                self.sess
-                    .struct_token_error(&[TokenKind::Dedent.into()], self.token)
-            }
-        }
+        self.skip_newlines();
+        self.clean_all_indentations();
 
         // RIGHT_BRACE
         match self.token.kind {
@@ -1334,7 +1355,7 @@ impl<'a> Parser<'a> {
     /// config_entries: config_entry ((COMMA [NEWLINE] | NEWLINE) config_entry)* [COMMA] [NEWLINE]
     fn parse_config_entries(&mut self, has_newline: bool) -> Vec<NodeRef<ConfigEntry>> {
         let is_terminator = |token: &kclvm_ast::token::Token| match &token.kind {
-            TokenKind::CloseDelim(DelimToken::Brace) | TokenKind::Dedent | TokenKind::Eof => true,
+            TokenKind::CloseDelim(DelimToken::Brace) | TokenKind::Eof => true,
             TokenKind::Newline if !has_newline => true,
             _ => token.is_keyword(kw::For),
         };
@@ -1354,6 +1375,7 @@ impl<'a> Parser<'a> {
 
         loop {
             let marker = self.mark();
+            self.clean_all_indentations();
 
             if is_terminator(&self.token) {
                 break;
@@ -1641,11 +1663,10 @@ impl<'a> Parser<'a> {
     ) -> NodeRef<ConfigIfEntryExpr> {
         if need_skip_newlines {
             self.skip_newlines();
-            self.bump_token(TokenKind::Indent);
+            self.bump_token(TokenKind::Indent(VALID_SPACES_LENGTH));
         }
 
         let token = self.token;
-
         let mut body = {
             let node = Node {
                 id: AstIndex::default(),
@@ -1672,7 +1693,8 @@ impl<'a> Parser<'a> {
         ) -> bool {
             let marker = this.mark();
             if need_skip_newlines {
-                if let TokenKind::Dedent = this.token.kind {
+                if let TokenKind::Dedent(VALID_SPACES_LENGTH) = this.token.kind {
+                    this.bump();
                     return false;
                 }
             } else if let TokenKind::Newline = this.token.kind {
@@ -1701,8 +1723,8 @@ impl<'a> Parser<'a> {
 
                 return true;
             }
-
-            if let TokenKind::Dedent = this.token.kind {
+            this.validate_dedent();
+            if let TokenKind::Dedent(VALID_SPACES_LENGTH) = this.token.kind {
                 return false;
             }
             if let TokenKind::Newline = this.token.kind {
@@ -1731,8 +1753,8 @@ impl<'a> Parser<'a> {
 
                 return true;
             }
-
-            if let TokenKind::Dedent = this.token.kind {
+            this.validate_dedent();
+            if let TokenKind::Dedent(VALID_SPACES_LENGTH) = this.token.kind {
                 return false;
             }
             if let TokenKind::Newline = this.token.kind {
@@ -1809,7 +1831,6 @@ impl<'a> Parser<'a> {
 
         if need_skip_newlines {
             self.skip_newlines();
-            self.bump_token(TokenKind::Dedent);
             Box::new(Node::node(
                 body,
                 self.sess.struct_token_loc(token, self.prev_token),
@@ -1918,13 +1939,7 @@ impl<'a> Parser<'a> {
         // NEWLINE _INDENT
         let has_newline = if self.token.kind == TokenKind::Newline {
             self.skip_newlines();
-
-            if self.token.kind == TokenKind::Indent {
-                self.bump();
-            } else {
-                self.sess
-                    .struct_token_error(&[TokenKind::Indent.into()], self.token)
-            }
+            self.clean_all_indentations();
             true
         } else {
             false
@@ -1932,10 +1947,10 @@ impl<'a> Parser<'a> {
 
         loop {
             let marker = self.mark();
-
+            self.clean_all_indentations();
             if matches!(
                 self.token.kind,
-                TokenKind::CloseDelim(DelimToken::Brace) | TokenKind::Dedent | TokenKind::Eof
+                TokenKind::CloseDelim(DelimToken::Brace) | TokenKind::Eof
             ) {
                 break;
             }
@@ -1951,12 +1966,7 @@ impl<'a> Parser<'a> {
 
         // _DEDENT
         if has_newline {
-            if self.token.kind == TokenKind::Dedent {
-                self.bump();
-            } else {
-                self.sess
-                    .struct_token_error(&[TokenKind::Dedent.into()], self.token)
-            }
+            self.clean_all_dedent();
         }
 
         self.bump_token(TokenKind::CloseDelim(DelimToken::Brace));

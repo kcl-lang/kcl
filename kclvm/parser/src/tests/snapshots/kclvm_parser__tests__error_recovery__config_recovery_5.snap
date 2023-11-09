@@ -108,6 +108,39 @@ Node {
                     end_line: 3,
                     end_column: 9,
                 },
+                Node {
+                    node: ConfigEntry {
+                        key: Some(
+                            Node {
+                                node: Missing(
+                                    MissingExpr,
+                                ),
+                                filename: "",
+                                line: 4,
+                                column: 4,
+                                end_line: 4,
+                                end_column: 4,
+                            },
+                        ),
+                        value: Node {
+                            node: Missing(
+                                MissingExpr,
+                            ),
+                            filename: "",
+                            line: 4,
+                            column: 4,
+                            end_line: 4,
+                            end_column: 4,
+                        },
+                        operation: Override,
+                        insert_index: -1,
+                    },
+                    filename: "",
+                    line: 4,
+                    column: 4,
+                    end_line: 4,
+                    end_column: 4,
+                },
             ],
         },
     ),

@@ -561,6 +561,26 @@ fn test_exec() {
 
     test_compile_dir_recursive();
     println!("test_compile_dir_recursive - PASS");
+
+    test_indent_error();
+    println!("test_indent_error - PASS");
+}
+
+fn test_indent_error() {
+    let test_path = PathBuf::from("./src/test_indent_error");
+    let kcl_files = get_files(test_path.clone(), false, true, ".k");
+    let output_files = get_files(test_path, false, true, ".stderr");
+
+    for (kcl_file, err_file) in kcl_files.iter().zip(&output_files) {
+        let mut args = ExecProgramArgs::default();
+        args.k_filename_list.push(kcl_file.to_string());
+        let res = exec_program(Arc::new(ParseSession::default()), &args);
+        assert!(res.is_err());
+        if let Err(err_msg) = res {
+            let expect_err = fs::read_to_string(err_file).expect("Failed to read file");
+            assert!(err_msg.contains(&expect_err));
+        }
+    }
 }
 
 fn exec(file: &str) -> Result<String, String> {

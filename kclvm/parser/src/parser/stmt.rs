@@ -2,6 +2,7 @@
 #![allow(unused_macros)]
 
 use compiler_base_span::{span::new_byte_pos, BytePos, Span};
+use kclvm_ast::token::VALID_SPACES_LENGTH;
 use kclvm_ast::token::{CommentKind, DelimToken, LitKind, Token, TokenKind};
 use kclvm_ast::{ast::*, expr_as, node_ref};
 use kclvm_span::symbol::kw;
@@ -38,8 +39,10 @@ impl<'a> Parser<'a> {
             return Some(stmt);
         }
 
-        self.sess
-            .struct_span_error("expected statement", self.token.span);
+        self.sess.struct_span_error(
+            &format!("unexpected '{:?}'", self.token.kind),
+            self.token.span,
+        );
 
         None
     }
@@ -134,7 +137,7 @@ impl<'a> Parser<'a> {
         close_tok: TokenKind,
     ) -> Vec<NodeRef<Stmt>> {
         let mut stmt_list = Vec::new();
-
+        self.validate_dedent();
         self.bump_token(open_tok);
         loop {
             if self.token.kind == TokenKind::Eof {
@@ -142,6 +145,7 @@ impl<'a> Parser<'a> {
                 break;
             }
 
+            self.validate_dedent();
             if self.token.kind == close_tok {
                 self.bump_token(close_tok);
                 break;
@@ -525,7 +529,10 @@ impl<'a> Parser<'a> {
                 }
             } else {
                 self.skip_newlines();
-                self.parse_block_stmt_list(TokenKind::Indent, TokenKind::Dedent)
+                self.parse_block_stmt_list(
+                    TokenKind::Indent(VALID_SPACES_LENGTH),
+                    TokenKind::Dedent(VALID_SPACES_LENGTH),
+                )
             };
 
             IfStmt {
@@ -559,7 +566,10 @@ impl<'a> Parser<'a> {
                 }
             } else {
                 self.skip_newlines();
-                self.parse_block_stmt_list(TokenKind::Indent, TokenKind::Dedent)
+                self.parse_block_stmt_list(
+                    TokenKind::Indent(VALID_SPACES_LENGTH),
+                    TokenKind::Dedent(VALID_SPACES_LENGTH),
+                )
             };
 
             let t = node_ref!(
@@ -593,7 +603,10 @@ impl<'a> Parser<'a> {
                 }
             } else {
                 self.skip_newlines();
-                self.parse_block_stmt_list(TokenKind::Indent, TokenKind::Dedent)
+                self.parse_block_stmt_list(
+                    TokenKind::Indent(VALID_SPACES_LENGTH),
+                    TokenKind::Dedent(VALID_SPACES_LENGTH),
+                )
             };
 
             if_stmt.orelse = else_body;
@@ -715,7 +728,7 @@ impl<'a> Parser<'a> {
 
         self.skip_newlines();
 
-        if let TokenKind::Indent = self.token.kind {
+        if let TokenKind::Indent(VALID_SPACES_LENGTH) = self.token.kind {
             let body = self.parse_schema_body();
 
             let pos = self.token_span_pos(token, self.prev_token);
@@ -907,7 +920,8 @@ impl<'a> Parser<'a> {
     ///   LEFT_BRACKETS [NAME COLON] [ELLIPSIS] basic_type RIGHT_BRACKETS
     ///   COLON type [ASSIGN test] NEWLINE
     fn parse_schema_body(&mut self) -> SchemaStmt {
-        self.bump_token(TokenKind::Indent);
+        self.validate_dedent();
+        self.bump_token(TokenKind::Indent(VALID_SPACES_LENGTH));
 
         // doc string when it is not a string-like attribute statement.
         let body_doc = if let Some(peek) = self.cursor.peek() {
@@ -935,8 +949,11 @@ impl<'a> Parser<'a> {
 
         loop {
             let marker = self.mark();
-            if matches!(self.token.kind, TokenKind::Dedent | TokenKind::Eof)
-                || self.token.is_keyword(kw::Check)
+            self.validate_dedent();
+            if matches!(
+                self.token.kind,
+                TokenKind::Dedent(VALID_SPACES_LENGTH) | TokenKind::Eof
+            ) || self.token.is_keyword(kw::Check)
             {
                 break;
             }
@@ -1064,8 +1081,8 @@ impl<'a> Parser<'a> {
 
         // check_block
         let body_checks = self.parse_schema_check_block();
-
-        self.bump_token(TokenKind::Dedent);
+        self.validate_dedent();
+        self.bump_token(TokenKind::Dedent(VALID_SPACES_LENGTH));
         self.skip_newlines();
 
         SchemaStmt {
@@ -1107,12 +1124,13 @@ impl<'a> Parser<'a> {
         // NEWLINE _INDENT
         let has_newline = if self.token.kind == TokenKind::Newline {
             self.skip_newlines();
-
-            if self.token.kind == TokenKind::Indent {
+            if self.token.kind == TokenKind::Indent(VALID_SPACES_LENGTH) {
                 self.bump();
             } else {
-                self.sess
-                    .struct_token_error(&[TokenKind::Indent.into()], self.token)
+                self.sess.struct_token_error(
+                    &[TokenKind::Indent(VALID_SPACES_LENGTH).into()],
+                    self.token,
+                )
             }
             true
         } else {
@@ -1120,9 +1138,10 @@ impl<'a> Parser<'a> {
         };
 
         loop {
+            self.validate_dedent();
             if matches!(
                 self.token.kind,
-                TokenKind::CloseDelim(DelimToken::Bracket) | TokenKind::Dedent
+                TokenKind::CloseDelim(DelimToken::Bracket) | TokenKind::Dedent(VALID_SPACES_LENGTH)
             ) {
                 break;
             }
@@ -1140,11 +1159,14 @@ impl<'a> Parser<'a> {
 
         // _DEDENT
         if has_newline {
-            if self.token.kind == TokenKind::Dedent {
+            self.validate_dedent();
+            if self.token.kind == TokenKind::Dedent(VALID_SPACES_LENGTH) {
                 self.bump();
             } else {
-                self.sess
-                    .struct_token_error(&[TokenKind::Dedent.into()], self.token)
+                self.sess.struct_token_error(
+                    &[TokenKind::Dedent(VALID_SPACES_LENGTH).into()],
+                    self.token,
+                )
             }
         }
 
@@ -1334,9 +1356,8 @@ impl<'a> Parser<'a> {
             self.bump_keyword(kw::Check);
             self.bump_token(TokenKind::Colon);
             self.skip_newlines();
-
-            self.bump_token(TokenKind::Indent);
-            while self.token.kind != TokenKind::Dedent {
+            self.bump_token(TokenKind::Indent(VALID_SPACES_LENGTH));
+            while self.token.kind != TokenKind::Dedent(VALID_SPACES_LENGTH) {
                 let marker = self.mark();
                 if matches!(self.token.kind, TokenKind::Eof) {
                     self.sess
@@ -1352,7 +1373,8 @@ impl<'a> Parser<'a> {
                 self.skip_newlines();
                 self.drop(marker);
             }
-            self.bump_token(TokenKind::Dedent);
+            self.validate_dedent();
+            self.bump_token(TokenKind::Dedent(VALID_SPACES_LENGTH));
         }
 
         check_expr_list
@@ -1448,8 +1470,7 @@ impl<'a> Parser<'a> {
 
         self.bump_token(TokenKind::Colon);
         self.skip_newlines();
-
-        self.bump_token(TokenKind::Indent);
+        self.bump_token(TokenKind::Indent(VALID_SPACES_LENGTH));
 
         // doc string
         let body_doc = match self.token.kind {
@@ -1474,7 +1495,8 @@ impl<'a> Parser<'a> {
         };
 
         let mut check_expr_list = vec![];
-        while self.token.kind != TokenKind::Dedent {
+        self.validate_dedent();
+        while self.token.kind != TokenKind::Dedent(VALID_SPACES_LENGTH) {
             let marker = self.mark();
             if matches!(self.token.kind, TokenKind::Eof) {
                 self.sess
@@ -1490,7 +1512,8 @@ impl<'a> Parser<'a> {
             self.skip_newlines();
             self.drop(marker);
         }
-        self.bump_token(TokenKind::Dedent);
+        self.validate_dedent();
+        self.bump_token(TokenKind::Dedent(VALID_SPACES_LENGTH));
 
         let pos = self.token_span_pos(token, self.prev_token);
 
