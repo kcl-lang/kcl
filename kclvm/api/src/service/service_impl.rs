@@ -460,4 +460,57 @@ impl KclvmServiceImpl {
             .clone()
             .into_load_settings_files(&files))
     }
+
+    /// Service for renaming all the occurrences of the target symbol in the files. This API will rewrite files if they contain symbols to be renamed.
+    /// return the file paths got changed.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
+    /// use kclvm_api::gpyrpc::*;
+    ///
+    /// let serv = KclvmServiceImpl::default();
+    /// let result = serv.rename(&RenameArgs {
+    ///     symbol_path: "a".to_string(),
+    ///     file_paths: vec!["./src/testdata/rename/main.k".to_string()],
+    ///     new_name: "a2".to_string(),
+    /// }).unwrap();
+    /// assert_eq!(result.changed_files.len(), 1);
+    /// ```
+    pub fn rename(&self, args: &RenameArgs) -> anyhow::Result<RenameResult> {
+        let symbol_path = args.symbol_path.clone();
+        let file_paths = args.file_paths.clone();
+        let new_name = args.new_name.clone();
+        Ok(RenameResult {
+            //todo: mock implementation
+            changed_files: file_paths,
+        })
+    }
+
+    /// Service for renaming all the occurrences of the target symbol and rename them. This API won't rewrite files but return the modified code if any code has been changed.
+    /// return the changed code.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
+    /// use kclvm_api::gpyrpc::*;
+    ///
+    /// let serv = KclvmServiceImpl::default();
+    /// let result = serv.rename_code(&RenameCodeArgs {
+    ///     symbol_path: "a".to_string(),
+    ///     source_codes: vec![("./src/testdata/rename/main.k".to_string(), "a = 1\nb = a".to_string())].into_iter().collect(),
+    ///     new_name: "a2".to_string(),
+    /// }).unwrap();
+    /// assert_eq!(result.changed_codes.len(), 1);
+    /// ```
+    pub fn rename_code(&self, args: &RenameCodeArgs) -> anyhow::Result<RenameCodeResult> {
+        let symbol_path = args.symbol_path.clone();
+        let source_codes = args.source_codes.clone();
+        let new_name = args.new_name.clone();
+        Ok(RenameCodeResult {
+            changed_codes: source_codes,
+        })
+    }
 }

@@ -115,6 +115,8 @@ pub(crate) fn kclvm_get_service_fn_ptr_by_name(name: &str) -> u64 {
         "KclvmService.LintPath" => lint_path as *const () as u64,
         "KclvmService.ValidateCode" => validate_code as *const () as u64,
         "KclvmService.LoadSettingsFiles" => load_settings_files as *const () as u64,
+        "KclvmService.Rename" => rename as *const () as u64,
+        "KclvmService.RenameCode" => rename_code as *const () as u64,
         _ => panic!("unknown method name : {name}"),
     }
 }
@@ -224,4 +226,16 @@ pub(crate) fn validate_code(serv: *mut kclvm_service, args: *const c_char) -> *c
 /// Service for building setting file config from args.
 pub(crate) fn load_settings_files(serv: *mut kclvm_service, args: *const c_char) -> *const c_char {
     call!(serv, args, LoadSettingsFilesArgs, load_settings_files)
+}
+
+/// Service for renaming all the occurrences of the target symbol in the files. This API will rewrite files if they contain symbols to be renamed.
+/// return the file paths got changed.
+pub(crate) fn rename(serv: *mut kclvm_service, args: *const c_char) -> *const c_char {
+    call!(serv, args, RenameArgs, rename)
+}
+
+/// Service for renaming all the occurrences of the target symbol in the code. This API won't rewrite files but return the modified code if any code has been changed.
+/// return the changed code.
+pub(crate) fn rename_code(serv: *mut kclvm_service, args: *const c_char) -> *const c_char {
+    call!(serv, args, RenameCodeArgs, rename_code)
 }

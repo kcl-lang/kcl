@@ -1,0 +1,5 @@
+{
+	"source_codes": {"./src/testdata/rename/main.k": "a = 1\nb = a"},
+	"symbol_path": "a",
+	"new_name": "a2"
+}

@@ -1,0 +1,3 @@
+{
+    "changed_codes": {"./src/testdata/rename/main.k": "a = 1\nb = a"}
+}

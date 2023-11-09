@@ -1,0 +1,5 @@
+{
+	"file_paths": ["./testdata/rename/main.k"],
+	"symbol_path": "a",
+	"new_name": "a2"
+}
