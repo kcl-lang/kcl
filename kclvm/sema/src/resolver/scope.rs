@@ -307,7 +307,7 @@ impl ProgramScope {
         let emit_error = || -> anyhow::Result<()> {
             // Add resolve errors into the session
             for diag in &self.handler.diagnostics {
-                if matches!(diag.level, Level::Error) {
+                if matches!(diag.level, Level::Error) || matches!(diag.level, Level::Suggestions) {
                     sess.add_err(diag.clone())?;
                 }
                 if include_warning && matches!(diag.level, Level::Warning) {

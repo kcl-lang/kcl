@@ -142,6 +142,7 @@ pub struct Message {
 pub enum DiagnosticId {
     Error(ErrorKind),
     Warning(WarningKind),
+    Suggestions,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
@@ -149,6 +150,7 @@ pub enum Level {
     Error,
     Warning,
     Note,
+    Suggestions,
 }
 
 impl Level {
@@ -157,6 +159,7 @@ impl Level {
             Level::Error => "error",
             Level::Warning => "warning",
             Level::Note => "note",
+            Level::Suggestions => "suggestions",
         }
     }
 }

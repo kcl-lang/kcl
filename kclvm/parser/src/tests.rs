@@ -240,6 +240,8 @@ fn test_in_order() {
     );
     test_vendor_home();
     println!("{:?} PASS", "test_vendor_home");
+    test_pkg_not_found_suggestion();
+    println!("{:?} PASS", "test_pkg_not_found_suggestion");
 }
 
 pub fn test_import_vendor() {
@@ -369,6 +371,8 @@ pub fn test_import_vendor_without_vendor_home() {
             let errors = sess.classification().0;
             let msgs = [
                 "pkgpath assign not found in the program",
+                "try 'kcl mod add assign' to download the package not found",
+                "find more package on 'https://artifacthub.io'",
                 "pkgpath assign.assign not found in the program",
             ];
             assert_eq!(errors.len(), msgs.len());
@@ -391,6 +395,8 @@ pub fn test_import_vendor_without_vendor_home() {
             let errors = sess.classification().0;
             let msgs = [
                 "pkgpath assign not found in the program",
+                "try 'kcl mod add assign' to download the package not found",
+                "find more package on 'https://artifacthub.io'",
                 "pkgpath assign.assign not found in the program",
             ];
             assert_eq!(errors.len(), msgs.len());
@@ -697,5 +703,31 @@ fn test_dir_with_k_code_list() {
     ) {
         Ok(_) => panic!("unreachable code"),
         Err(err) => assert_eq!(err, "Invalid code list"),
+    }
+}
+
+pub fn test_pkg_not_found_suggestion() {
+    let sm = SourceMap::new(FilePathMapping::empty());
+    let sess = Arc::new(ParseSession::with_source_map(Arc::new(sm)));
+    let dir = &PathBuf::from("./src/testdata/pkg_not_found")
+        .canonicalize()
+        .unwrap();
+    let test_case_path = dir.join("suggestions.k").display().to_string();
+    match load_program(sess.clone(), &[&test_case_path], None, None) {
+        Ok(_) => {
+            let errors = sess.classification().0;
+            let msgs = [
+                "pkgpath k9s not found in the program",
+                "try 'kcl mod add k9s' to download the package not found",
+                "find more package on 'https://artifacthub.io'",
+            ];
+            assert_eq!(errors.len(), msgs.len());
+            for (diag, m) in errors.iter().zip(msgs.iter()) {
+                assert_eq!(diag.messages[0].message, m.to_string());
+            }
+        }
+        Err(_) => {
+            panic!("Unreachable code.")
+        }
     }
 }
