@@ -6,6 +6,7 @@ pub const DEFAULT_PROJECT_FILE: &str = "project.yaml";
 #[cfg(test)]
 mod tests;
 
+use glob::glob;
 use kclvm_ast::ast;
 use kclvm_config::{
     modfile::{KCL_FILE_EXTENSION, KCL_FILE_SUFFIX, KCL_MOD_PATH_ENV},
@@ -16,11 +17,27 @@ use kclvm_parser::LoadProgramOptions;
 use kclvm_utils::path::PathPrefix;
 use kpm_metadata::fill_pkg_maps_for_k_file;
 use std::{
-    fs::read_dir,
+    collections::VecDeque,
+    fs::{self, read_dir},
     io::{self, ErrorKind},
     path::{Path, PathBuf},
 };
 use walkdir::WalkDir;
+
+/// Expand the file pattern to a list of files and canonicalize the files.
+pub fn expand_if_file_pattern(file_pattern: String) -> Result<Vec<String>, String> {
+    let paths = glob(&file_pattern).map_err(|_| "Invalid file pattern")?;
+    let mut matched_files = vec![];
+
+    for path in paths {
+        if let Ok(path) = path {
+            let abs_path = fs::canonicalize(path).map_err(|err| err.to_string())?;
+            matched_files.push(abs_path.to_string_lossy().to_string());
+        }
+    }
+
+    Ok(matched_files)
+}
 
 /// Normalize input files with the working directory and replace ${KCL_MOD} with the module root path.
 pub fn canonicalize_input_files(
@@ -29,17 +46,30 @@ pub fn canonicalize_input_files(
     check_exist: bool,
 ) -> Result<Vec<String>, String> {
     let mut kcl_paths = Vec::<String>::new();
+    let mut k_files_queue: VecDeque<String> = k_files.iter().map(|f| f.to_string()).collect();
 
-    // The first traversal changes the relative path to an absolute path
-    for (_, file) in k_files.iter().enumerate() {
-        let path = Path::new(file);
+    // The first traversal expands the file pattern and converts the relative path to an absolute path.
+    while !k_files_queue.is_empty() {
+        let file = k_files_queue.pop_front().unwrap();
+        let path = Path::new(&file);
+        if !path.exists() {
+            if let Ok(res) = expand_if_file_pattern(file.to_string()) {
+                res.iter().for_each(|p| {
+                    if !kcl_paths.contains(p) {
+                        k_files_queue.push_back(p.to_string());
+                    }
+                });
+                continue;
+            }
+        }
+
         let is_absolute = path.is_absolute();
         let is_exist_maybe_symlink = path.exists();
         // If the input file or path is a relative path and it is not a absolute path in the KCL module VFS,
         // join with the work directory path and convert it to a absolute path.
         let path = ModRelativePath::from(file.to_string());
         let abs_path = if !is_absolute && !path.is_relative_path().map_err(|err| err.to_string())? {
-            let filepath = Path::new(&work_dir).join(file);
+            let filepath = Path::new(&work_dir).join(file.to_string());
             match filepath.canonicalize() {
                 Ok(path) => Some(path.adjust_canonicalization()),
                 Err(_) => {
@@ -57,7 +87,7 @@ pub fn canonicalize_input_files(
         };
         // If the input file or path is a symlink, convert it to a real path.
         let real_path = if is_exist_maybe_symlink {
-            match PathBuf::from(file).canonicalize() {
+            match PathBuf::from(file.to_string()).canonicalize() {
                 Ok(real_path) => Some(String::from(real_path.to_str().unwrap())),
                 Err(_) => {
                     if check_exist {

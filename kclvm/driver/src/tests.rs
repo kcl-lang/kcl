@@ -26,6 +26,132 @@ fn test_canonicalize_input_files() {
 }
 
 #[test]
+fn test_expand_if_file_pattern() {
+    let input_files = vec!["./src/test_data/expand_file_pattern/**/main.k".to_string()];
+    let work_dir = ".".to_string();
+    let expected_files = vec![
+        Path::new("./src/test_data/expand_file_pattern/kcl1/kcl2/main.k")
+            .canonicalize()
+            .unwrap()
+            .to_string_lossy()
+            .to_string(),
+        Path::new("./src/test_data/expand_file_pattern/kcl1/kcl4/main.k")
+            .canonicalize()
+            .unwrap()
+            .to_string_lossy()
+            .to_string(),
+        Path::new("./src/test_data/expand_file_pattern/kcl1/main.k")
+            .canonicalize()
+            .unwrap()
+            .to_string_lossy()
+            .to_string(),
+        Path::new("./src/test_data/expand_file_pattern/kcl3/main.k")
+            .canonicalize()
+            .unwrap()
+            .to_string_lossy()
+            .to_string(),
+        Path::new("./src/test_data/expand_file_pattern/main.k")
+            .canonicalize()
+            .unwrap()
+            .to_string_lossy()
+            .to_string(),
+    ];
+    assert_eq!(
+        canonicalize_input_files(&input_files, work_dir.clone(), false).unwrap(),
+        expected_files
+    );
+
+    let input_files = vec![
+        "./src/test_data/expand_file_pattern/**/main.k".to_string(),
+        "${KCL_MOD/aaa".to_string(),
+    ];
+    let work_dir = ".".to_string();
+    let expected_files = vec![
+        Path::new("./src/test_data/expand_file_pattern/kcl1/kcl2/main.k")
+            .canonicalize()
+            .unwrap()
+            .to_string_lossy()
+            .to_string(),
+        Path::new("./src/test_data/expand_file_pattern/kcl1/kcl4/main.k")
+            .canonicalize()
+            .unwrap()
+            .to_string_lossy()
+            .to_string(),
+        Path::new("./src/test_data/expand_file_pattern/kcl1/main.k")
+            .canonicalize()
+            .unwrap()
+            .to_string_lossy()
+            .to_string(),
+        Path::new("./src/test_data/expand_file_pattern/kcl3/main.k")
+            .canonicalize()
+            .unwrap()
+            .to_string_lossy()
+            .to_string(),
+        Path::new("./src/test_data/expand_file_pattern/main.k")
+            .canonicalize()
+            .unwrap()
+            .to_string_lossy()
+            .to_string(),
+    ];
+    assert_eq!(
+        canonicalize_input_files(&input_files, work_dir.clone(), false).unwrap(),
+        expected_files
+    );
+
+    let input_files = vec![
+        "./src/test_data/expand_file_pattern/kcl1/main.k".to_string(),
+        "${KCL_MOD/aaa".to_string(),
+    ];
+    let work_dir = ".".to_string();
+    let expected_files = vec![Path::new("./src/test_data/expand_file_pattern/kcl1/main.k")
+        .canonicalize()
+        .unwrap()
+        .to_string_lossy()
+        .to_string()];
+    assert_eq!(
+        canonicalize_input_files(&input_files, work_dir.clone(), false).unwrap(),
+        expected_files
+    );
+
+    let input_files = vec![
+        "./src/test_data/expand_file_pattern/kcl1/main.k".to_string(),
+        "./src/test_data/expand_file_pattern/**/main.k".to_string(),
+    ];
+    let work_dir = ".".to_string();
+    let expected_files = vec![
+        Path::new("./src/test_data/expand_file_pattern/kcl1/main.k")
+            .canonicalize()
+            .unwrap()
+            .to_string_lossy()
+            .to_string(),
+        Path::new("./src/test_data/expand_file_pattern/kcl1/kcl2/main.k")
+            .canonicalize()
+            .unwrap()
+            .to_string_lossy()
+            .to_string(),
+        Path::new("./src/test_data/expand_file_pattern/kcl1/kcl4/main.k")
+            .canonicalize()
+            .unwrap()
+            .to_string_lossy()
+            .to_string(),
+        Path::new("./src/test_data/expand_file_pattern/kcl3/main.k")
+            .canonicalize()
+            .unwrap()
+            .to_string_lossy()
+            .to_string(),
+        Path::new("./src/test_data/expand_file_pattern/main.k")
+            .canonicalize()
+            .unwrap()
+            .to_string_lossy()
+            .to_string(),
+    ];
+    assert_eq!(
+        canonicalize_input_files(&input_files, work_dir.clone(), false).unwrap(),
+        expected_files
+    );
+}
+
+#[test]
 fn test_parse_key_value_pair() {
     let cases = [
         (

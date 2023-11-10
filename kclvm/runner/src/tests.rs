@@ -564,6 +564,9 @@ fn test_exec() {
 
     test_indent_error();
     println!("test_indent_error - PASS");
+
+    test_compile_with_file_pattern();
+    println!("test_compile_with_file_pattern - PASS");
 }
 
 fn test_indent_error() {
@@ -661,4 +664,20 @@ fn get_files<P: AsRef<Path>>(
         files.sort();
     }
     files
+}
+
+fn test_compile_with_file_pattern() {
+    let test_path = PathBuf::from("./src/test_file_pattern/**/main.k");
+    let mut args = ExecProgramArgs::default();
+    args.k_filename_list.push(test_path.display().to_string());
+    let res = exec_program(Arc::new(ParseSession::default()), &args);
+    assert!(res.is_ok());
+    assert_eq!(
+        res.clone().unwrap().yaml_result,
+        "k3: Hello World!\nk1: Hello World!\nk2: Hello World!"
+    );
+    assert_eq!(
+        res.unwrap().json_result,
+        "[{\"k3\": \"Hello World!\", \"k1\": \"Hello World!\", \"k2\": \"Hello World!\"}]"
+    );
 }
