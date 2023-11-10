@@ -7,6 +7,7 @@ use kclvm_utils::path::{is_absolute, is_dir, path_exist};
 use std::collections::VecDeque;
 use std::fs;
 use std::path::Path;
+use std::sync::Arc;
 
 use crate::LoadProgramOptions;
 
