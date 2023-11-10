@@ -54,12 +54,14 @@ pub fn canonicalize_input_files(
         let path = Path::new(&file);
         if !path.exists() {
             if let Ok(res) = expand_if_file_pattern(file.to_string()) {
-                res.iter().for_each(|p| {
-                    if !kcl_paths.contains(p) {
-                        k_files_queue.push_back(p.to_string());
-                    }
-                });
-                continue;
+                if !res.is_empty() {
+                    res.iter().for_each(|p| {
+                        if !kcl_paths.contains(p) {
+                            k_files_queue.push_back(p.to_string());
+                        }
+                    });
+                    continue;
+                }
             }
         }
 
