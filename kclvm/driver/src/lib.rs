@@ -17,7 +17,7 @@ use kclvm_parser::LoadProgramOptions;
 use kclvm_utils::path::PathPrefix;
 use kpm_metadata::fill_pkg_maps_for_k_file;
 use std::{
-    collections::VecDeque,
+    collections::{HashSet, VecDeque},
     fs::{self, read_dir},
     io::{self, ErrorKind},
     path::{Path, PathBuf},
@@ -31,7 +31,7 @@ pub fn expand_if_file_pattern(file_pattern: String) -> Result<Vec<String>, Strin
 
     for path in paths {
         if let Ok(path) = path {
-            let abs_path = fs::canonicalize(path).map_err(|err| err.to_string())?;
+            let abs_path: PathBuf = fs::canonicalize(path).map_err(|err| err.to_string())?;
             matched_files.push(abs_path.to_string_lossy().to_string());
         }
     }
@@ -43,9 +43,13 @@ pub fn expand_input_files(k_files: &[String]) -> Vec<String> {
     let mut res = vec![];
     for file in k_files {
         if let Ok(files) = expand_if_file_pattern(file.to_string()) {
-            res.extend(files);
+            if !files.is_empty() {
+                res.extend(files);
+            } else {
+                res.push(file.to_string())
+            }
         } else {
-            res.push(file.to_string());
+            res.push(file.to_string())
         }
     }
     res

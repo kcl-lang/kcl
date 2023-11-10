@@ -7,8 +7,8 @@ use kclvm_parser::LoadProgramOptions;
 use walkdir::WalkDir;
 
 use crate::arguments::parse_key_value_pair;
-use crate::canonicalize_input_files;
 use crate::kpm_metadata::{fetch_metadata, fill_pkg_maps_for_k_file, lookup_the_nearest_file_dir};
+use crate::{canonicalize_input_files, expand_input_files};
 
 #[test]
 fn test_canonicalize_input_files() {
@@ -26,13 +26,12 @@ fn test_canonicalize_input_files() {
 }
 
 #[test]
-fn test_expand_if_file_pattern_with_kcl_mod() {
+fn test_expand_input_files_with_kcl_mod() {
     let path = PathBuf::from("./src/test_data/expand_file_pattern");
     let input_files = vec![
         path.join("**").join("main.k").to_string_lossy().to_string(),
         "${KCL_MOD}/src/test_data/expand_file_pattern/KCL_MOD".to_string(),
     ];
-    let work_dir = ".".to_string();
     let expected_files = vec![
         path.join("kcl1/kcl2/main.k")
             .canonicalize()
@@ -59,29 +58,16 @@ fn test_expand_if_file_pattern_with_kcl_mod() {
             .unwrap()
             .to_string_lossy()
             .to_string(),
+        "${KCL_MOD}/src/test_data/expand_file_pattern/KCL_MOD".to_string(),
     ];
-    assert_eq!(
-        canonicalize_input_files(&input_files, work_dir.clone(), false).unwrap(),
-        expected_files
-    );
+    assert_eq!(expand_input_files(&input_files), expected_files);
 }
 
 #[test]
-fn test_expand_if_file_pattern() {
+fn test_expand_input_files() {
     let input_files = vec!["./src/test_data/expand_file_pattern/**/main.k".to_string()];
-    let work_dir = ".".to_string();
-    let expected_files = vec![
+    let mut expected_files = vec![
         Path::new("./src/test_data/expand_file_pattern/kcl1/kcl2/main.k")
-            .canonicalize()
-            .unwrap()
-            .to_string_lossy()
-            .to_string(),
-        Path::new("./src/test_data/expand_file_pattern/kcl1/kcl4/main.k")
-            .canonicalize()
-            .unwrap()
-            .to_string_lossy()
-            .to_string(),
-        Path::new("./src/test_data/expand_file_pattern/kcl1/main.k")
             .canonicalize()
             .unwrap()
             .to_string_lossy()
@@ -96,18 +82,22 @@ fn test_expand_if_file_pattern() {
             .unwrap()
             .to_string_lossy()
             .to_string(),
+        Path::new("./src/test_data/expand_file_pattern/kcl1/kcl4/main.k")
+            .canonicalize()
+            .unwrap()
+            .to_string_lossy()
+            .to_string(),
     ];
     assert_eq!(
-        canonicalize_input_files(&input_files, work_dir.clone(), false).unwrap(),
-        expected_files
+        expand_input_files(&input_files).sort(),
+        expected_files.sort()
     );
 
     let input_files = vec![
         "./src/test_data/expand_file_pattern/kcl1/main.k".to_string(),
         "./src/test_data/expand_file_pattern/**/main.k".to_string(),
     ];
-    let work_dir = ".".to_string();
-    let expected_files = vec![
+    let mut expected_files = vec![
         Path::new("./src/test_data/expand_file_pattern/kcl1/main.k")
             .canonicalize()
             .unwrap()
@@ -135,8 +125,8 @@ fn test_expand_if_file_pattern() {
             .to_string(),
     ];
     assert_eq!(
-        canonicalize_input_files(&input_files, work_dir.clone(), false).unwrap(),
-        expected_files
+        expand_input_files(&input_files).sort(),
+        expected_files.sort()
     );
 }
 
