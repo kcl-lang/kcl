@@ -653,3 +653,31 @@ fn test_ty_check_in_dict_assign_to_schema() {
         "variable is defined here, its type is int, but got str(1)"
     );
 }
+
+#[test]
+fn test_pkg_not_found_suggestion() {
+    let sess = Arc::new(ParseSession::default());
+    let mut program = load_program(
+        sess.clone(),
+        &["./src/resolver/test_data/pkg_not_found_suggestion.k"],
+        None,
+        None,
+    )
+    .unwrap();
+    let scope = resolve_program(&mut program);
+    assert_eq!(scope.handler.diagnostics.len(), 4);
+    let diag = &scope.handler.diagnostics[1];
+    assert_eq!(diag.code, Some(DiagnosticId::Suggestions));
+    assert_eq!(diag.messages.len(), 1);
+    assert_eq!(
+        diag.messages[0].message,
+        "try 'kpm add k9s' to download the package not found"
+    );
+    let diag = &scope.handler.diagnostics[2];
+    assert_eq!(diag.code, Some(DiagnosticId::Suggestions));
+    assert_eq!(diag.messages.len(), 1);
+    assert_eq!(
+        diag.messages[0].message,
+        "find more package on 'https://artifacthub.io'"
+    );
+}

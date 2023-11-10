@@ -81,6 +81,7 @@ fn kcl_err_level_to_severity(level: Level) -> DiagnosticSeverity {
         Level::Error => DiagnosticSeverity::ERROR,
         Level::Warning => DiagnosticSeverity::WARNING,
         Level::Note => DiagnosticSeverity::HINT,
+        Level::Suggestions => DiagnosticSeverity::HINT,
     }
 }
 
@@ -113,6 +114,7 @@ pub(crate) fn kcl_diag_id_to_lsp_diag_code(id: DiagnosticId) -> NumberOrString {
     match id {
         DiagnosticId::Error(err) => NumberOrString::String(err.name()),
         DiagnosticId::Warning(warn) => NumberOrString::String(warn.name()),
+        DiagnosticId::Suggestions => NumberOrString::String("suggestion".to_string()),
     }
 }
 

@@ -55,6 +55,7 @@ pub(crate) fn quick_fix(uri: &Url, diags: &Vec<Diagnostic>) -> Vec<lsp_types::Co
                         }
                         _ => continue,
                     },
+                    DiagnosticId::Suggestions => continue,
                 }
             }
         }

@@ -12,9 +12,11 @@ use annotate_snippets::{
     snippet::{AnnotationType, Slice, Snippet, SourceAnnotation},
 };
 use anyhow::Result;
+use compiler_base_error::errors::ComponentFormatError;
+use compiler_base_error::StyledBuffer;
 use compiler_base_error::{
     components::{CodeSnippet, Label},
-    Diagnostic as DiagnosticTrait, DiagnosticStyle,
+    Component, Diagnostic as DiagnosticTrait, DiagnosticStyle,
 };
 use compiler_base_session::{Session, SessionDiagnostic};
 use compiler_base_span::{span::new_byte_pos, Span};
@@ -169,6 +171,24 @@ impl Handler {
         self
     }
 
+    pub fn add_suggestions(&mut self, msgs: Vec<String>) -> &mut Self {
+        msgs.iter().for_each(|s| {
+            self.add_diagnostic(Diagnostic {
+                level: Level::Suggestions,
+                messages: vec![Message {
+                    range: Range::default(),
+                    style: Style::Line,
+                    message: s.to_string(),
+                    note: None,
+                    suggested_replacement: None,
+                }],
+                code: Some(DiagnosticId::Suggestions),
+            });
+        });
+
+        self
+    }
+
     /// Add an warning into the handler
     /// ```
     /// use kclvm_error::*;
@@ -198,7 +218,7 @@ impl Handler {
     pub fn classification(&self) -> (IndexSet<Diagnostic>, IndexSet<Diagnostic>) {
         let (mut errs, mut warnings) = (IndexSet::new(), IndexSet::new());
         for diag in &self.diagnostics {
-            if diag.level == Level::Error {
+            if diag.level == Level::Error || diag.level == Level::Suggestions {
                 errs.insert(diag.clone());
             } else if diag.level == Level::Warning {
                 warnings.insert(diag.clone());
@@ -386,6 +406,15 @@ impl SessionDiagnostic for ParseError {
     }
 }
 
+#[derive(Default)]
+pub struct SuggestionsLabel;
+
+impl Component<DiagnosticStyle> for SuggestionsLabel {
+    fn format(&self, sb: &mut StyledBuffer<DiagnosticStyle>, _: &mut Vec<ComponentFormatError>) {
+        sb.appendl("suggestion: ", Some(DiagnosticStyle::NeedAttention));
+    }
+}
+
 impl SessionDiagnostic for Diagnostic {
     fn into_diagnostic(self, _: &Session) -> Result<DiagnosticTrait<DiagnosticStyle>> {
         let mut diag = DiagnosticTrait::<DiagnosticStyle>::new();
@@ -399,6 +428,9 @@ impl SessionDiagnostic for Diagnostic {
                     diag.append_component(Box::new(Label::Warning(warning.code())));
                     diag.append_component(Box::new(format!(": {}\n", warning.name())));
                 }
+                DiagnosticId::Suggestions => {
+                    diag.append_component(Box::new(SuggestionsLabel::default()));
+                }
             },
             None => match self.level {
                 Level::Error => {
@@ -409,6 +441,9 @@ impl SessionDiagnostic for Diagnostic {
                 }
                 Level::Note => {
                     diag.append_component(Box::new(Label::Note));
+                }
+                Level::Suggestions => {
+                    diag.append_component(Box::new(SuggestionsLabel::default()));
                 }
             },
         }

@@ -15,6 +15,7 @@ use std::{cell::RefCell, path::Path};
 
 use super::scope::{Scope, ScopeKind, ScopeObject, ScopeObjectKind};
 use kclvm_ast::pos::GetPos;
+use kclvm_utils::pkgpath::parse_external_pkg_name;
 
 impl<'ctx> Resolver<'ctx> {
     /// Check import error
@@ -50,6 +51,20 @@ impl<'ctx> Resolver<'ctx> {
                                     suggested_replacement: None,
                                 }],
                             );
+
+                            let mut suggestions =
+                                vec![format!("find more package on 'https://artifacthub.io'")];
+
+                            if let Ok(pkg_name) = parse_external_pkg_name(pkgpath) {
+                                suggestions.insert(
+                                    0,
+                                    format!(
+                                        "try 'kpm add {}' to download the package not found",
+                                        pkg_name
+                                    ),
+                                );
+                            }
+                            self.handler.add_suggestions(suggestions);
                         } else {
                             let file = real_path.to_str().unwrap().to_string();
                             if real_path.is_file() && main_files.contains(&file) {

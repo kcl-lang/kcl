@@ -19,7 +19,7 @@ use indexmap::IndexMap;
 use kclvm_ast::ast;
 use kclvm_config::modfile::{get_vendor_home, KCL_FILE_EXTENSION, KCL_FILE_SUFFIX, KCL_MOD_FILE};
 use kclvm_error::diagnostic::Range;
-use kclvm_error::{ErrorKind, Message, Style};
+use kclvm_error::{ErrorKind, Level, Message, Style};
 use kclvm_sema::plugin::PLUGIN_MODULE_PREFIX;
 use kclvm_utils::path::PathPrefix;
 use kclvm_utils::pkgpath::parse_external_pkg_name;
@@ -445,6 +445,19 @@ impl Loader {
                         suggested_replacement: None,
                     }],
                 );
+                let mut suggestions =
+                    vec![format!("find more package on 'https://artifacthub.io'")];
+
+                if let Ok(pkg_name) = parse_external_pkg_name(pkg_path) {
+                    suggestions.insert(
+                        0,
+                        format!(
+                            "try 'kpm add {}' to download the package not found",
+                            pkg_name
+                        ),
+                    );
+                }
+                self.sess.1.borrow_mut().add_suggestions(suggestions);
                 return Ok(None);
             }
         };
