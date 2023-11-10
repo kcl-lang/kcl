@@ -240,6 +240,8 @@ fn test_in_order() {
     );
     test_vendor_home();
     println!("{:?} PASS", "test_vendor_home");
+    test_pkg_not_found_suggestion();
+    println!("{:?} PASS", "test_pkg_not_found_suggestion");
 }
 
 pub fn test_import_vendor() {
@@ -700,7 +702,6 @@ fn test_dir_with_k_code_list() {
     }
 }
 
-#[test]
 pub fn test_pkg_not_found_suggestion() {
     let sm = SourceMap::new(FilePathMapping::empty());
     let sess = Arc::new(ParseSession::with_source_map(Arc::new(sm)));
