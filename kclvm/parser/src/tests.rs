@@ -713,7 +713,7 @@ pub fn test_pkg_not_found_suggestion() {
             let errors = sess.classification().0;
             let msgs = [
                 "pkgpath k9s not found in the program",
-                "try 'kpm add k9s' to download the package not found",
+                "try 'kcl mod add k9s' to download the package not found",
                 "find more package on 'https://artifacthub.io'",
             ];
             assert_eq!(errors.len(), msgs.len());

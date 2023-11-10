@@ -452,7 +452,7 @@ impl Loader {
                     suggestions.insert(
                         0,
                         format!(
-                            "try 'kpm add {}' to download the package not found",
+                            "try 'kcl mod add {}' to download the package not found",
                             pkg_name
                         ),
                     );

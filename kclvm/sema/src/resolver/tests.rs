@@ -671,7 +671,7 @@ fn test_pkg_not_found_suggestion() {
     assert_eq!(diag.messages.len(), 1);
     assert_eq!(
         diag.messages[0].message,
-        "try 'kpm add k9s' to download the package not found"
+        "try 'kcl mod add k9s' to download the package not found"
     );
     let diag = &scope.handler.diagnostics[2];
     assert_eq!(diag.code, Some(DiagnosticId::Suggestions));
