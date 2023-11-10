@@ -643,7 +643,7 @@ fn test_parse_token_stream_on_win() {
             Token { kind: Ident(Symbol(SymbolIndex { idx: 42 })), span: Span { base_or_index: 8, len_or_tag: 6 } }
             Token { kind: Colon, span: Span { base_or_index: 14, len_or_tag: 1 } }
             Token { kind: Newline, span: Span { base_or_index: 15, len_or_tag: 1 } }
-            Token { kind: Indent, span: Span { base_or_index: 20, len_or_tag: 0 } }
+            Token { kind: Indent(0), span: Span { base_or_index: 20, len_or_tag: 0 } }
             Token { kind: Ident(Symbol(SymbolIndex { idx: 43 })), span: Span { base_or_index: 20, len_or_tag: 4 } }
             Token { kind: Colon, span: Span { base_or_index: 24, len_or_tag: 1 } }
             Token { kind: Ident(Symbol(SymbolIndex { idx: 31 })), span: Span { base_or_index: 26, len_or_tag: 3 } }
@@ -651,7 +651,7 @@ fn test_parse_token_stream_on_win() {
             Token { kind: Literal(Lit { kind: Str { is_long_string: false, is_raw: false }, symbol: Symbol(SymbolIndex { idx: 44 }), suffix: None, raw: Some(Symbol(SymbolIndex { idx: 45 })) }), span: Span { base_or_index: 32, len_or_tag: 5 } }
             Token { kind: Newline, span: Span { base_or_index: 37, len_or_tag: 1 } }
             Token { kind: Newline, span: Span { base_or_index: 38, len_or_tag: 1 } }
-            Token { kind: Dedent, span: Span { base_or_index: 39, len_or_tag: 0 } }
+            Token { kind: Dedent(0), span: Span { base_or_index: 39, len_or_tag: 0 } }
             Token { kind: Ident(Symbol(SymbolIndex { idx: 46 })), span: Span { base_or_index: 39, len_or_tag: 2 } }
             Token { kind: Assign, span: Span { base_or_index: 42, len_or_tag: 1 } }
             Token { kind: Ident(Symbol(SymbolIndex { idx: 42 })), span: Span { base_or_index: 44, len_or_tag: 6 } }
