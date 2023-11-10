@@ -39,6 +39,18 @@ pub fn expand_if_file_pattern(file_pattern: String) -> Result<Vec<String>, Strin
     Ok(matched_files)
 }
 
+pub fn expand_input_files(k_files: &[String]) -> Vec<String> {
+    let mut res = vec![];
+    for file in k_files {
+        if let Ok(files) = expand_if_file_pattern(file.to_string()) {
+            res.extend(files);
+        } else {
+            res.push(file.to_string());
+        }
+    }
+    res
+}
+
 /// Normalize input files with the working directory and replace ${KCL_MOD} with the module root path.
 pub fn canonicalize_input_files(
     k_files: &[String],
@@ -46,24 +58,9 @@ pub fn canonicalize_input_files(
     check_exist: bool,
 ) -> Result<Vec<String>, String> {
     let mut kcl_paths = Vec::<String>::new();
-    let mut k_files_queue: VecDeque<String> = k_files.iter().map(|f| f.to_string()).collect();
-
-    // The first traversal expands the file pattern and converts the relative path to an absolute path.
-    while !k_files_queue.is_empty() {
-        let file = k_files_queue.pop_front().unwrap();
-        let path = Path::new(&file);
-        if !path.exists() {
-            if let Ok(res) = expand_if_file_pattern(file.to_string()) {
-                if !res.is_empty() {
-                    res.iter().for_each(|p| {
-                        if !kcl_paths.contains(p) {
-                            k_files_queue.push_back(p.to_string());
-                        }
-                    });
-                    continue;
-                }
-            }
-        }
+    // The first traversal changes the relative path to an absolute path
+    for (_, file) in k_files.iter().enumerate() {
+        let path = Path::new(file);
 
         let is_absolute = path.is_absolute();
         let is_exist_maybe_symlink = path.exists();
