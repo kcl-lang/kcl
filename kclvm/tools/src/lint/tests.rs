@@ -24,6 +24,8 @@ fn test_lint() {
 
     let msgs = [
         "pkgpath abc not found in the program",
+        "try 'kcl mod add abc' to download the package not found",
+        "find more package on 'https://artifacthub.io'",
         &format!("Cannot find the module abc from {}", path.to_str().unwrap()),
     ];
     assert_eq!(errors.len(), msgs.len());
