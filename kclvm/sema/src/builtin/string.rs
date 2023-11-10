@@ -211,7 +211,7 @@ register_string_member! {
         Some(Arc::new(Type::STR)),
         Arc::new(Type::STR),
         &[],
-        r#""#,
+        r#"Return a copy of the string with all the cased characters converted to uppercase."#,
         false,
         None,
     )
