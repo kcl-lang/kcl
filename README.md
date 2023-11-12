@@ -35,9 +35,9 @@ You can use KCL to
 
 ## Features
 
-+ **Easy-to-use**: Originated from high-level languages ​​such as Python and Golang, incorporating functional language features with low side-effects.
++ **Easy-to-use**: Originated from high-level languages ​​such as Python and Golang, incorporating functional language features with low side effects.
 + **Well-designed**: Independent spec-driven syntax, semantics, runtime and system modules design.
-+ **Quick modeling**: [Schema](https://kcl-lang.io/docs/reference/lang/tour#schema)-centric configuration types and modular abstraction.
++ **Quick modeling**: [Out-of-the-box modules](https://artifacthub.io/packages/search?org=kcl&sort=relevance&page=1) and [Schema](https://kcl-lang.io/docs/reference/lang/tour#schema)-centric configuration types and modular abstraction.
 + **Rich capabilities**: Configuration with type, logic and policy based on [Config](https://kcl-lang.io/docs/reference/lang/tour#config-operations), [Schema](https://kcl-lang.io/docs/reference/lang/tour#schema), [Lambda](https://kcl-lang.io/docs/reference/lang/tour#function), [Rule](https://kcl-lang.io/docs/reference/lang/tour#rule).
 + **Stability**: Configuration stability is achieved through a [static type system](https://kcl-lang.io/docs/reference/lang/tour/#type-system), [constraints](https://kcl-lang.io/docs/reference/lang/tour/#validation), and [rules](https://kcl-lang.io/docs/reference/lang/tour#rule).
 + **Scalability**: High scalability is assured with an [automatic merge mechanism](https://kcl-lang.io/docs/reference/lang/tour/#-operators-1) of isolated config blocks.
@@ -63,13 +63,11 @@ A detailed feature and scenario comparison is [here](https://kcl-lang.io/docs/us
 
 ## Installation
 
-[Download](https://github.com/kcl-lang/kcl/releases) the latest release from GitHub and add `{install-location}/kclvm/bin` to the environment `PATH`.
-
-> For more information about installation, please check the [Installation Guide](https://kcl-lang.io/docs/user_docs/getting-started/install/) on the KCL official website.
+For more information about installation, please check the [Installation Guide](https://kcl-lang.io/docs/user_docs/getting-started/install/) on the KCL official website.
 
 ## Showcase
 
-`./samples/kubernetes.k` is an example of generating kubernetes manifests.
+`./samples/kubernetes.k` is an example of generating Kubernetes manifests.
 
 ```python
 apiVersion = "apps/v1"
