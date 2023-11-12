@@ -36,8 +36,8 @@ KCL 是一个开源的基于约束的记录及函数语言并通过成熟的编�
 ## 特性
 
 + **简单易用**：源于 Python、Golang 等高级语言，采纳函数式编程语言特性，低副作用
-+ **设计良好**：独立的 Spec 驱动的语法、语义、运行时和系统库设计
-+ **快速建模**：以 [Schema](https://kcl-lang.io/docs/reference/lang/tour#schema) 为中心的配置类型及模块化抽象
++ **设计良好**：独立的规范驱动的语法、语义、运行时和系统库设计
++ **快速建模**：[开箱即用的模型库](https://artifacthub.io/packages/search?org=kcl&sort=relevance&page=1)和以 [Schema](https://kcl-lang.io/docs/reference/lang/tour#schema) 为中心的配置类型及模块化抽象
 + **功能完备**：基于 [Config](https://kcl-lang.io/docs/reference/lang/tour#config-operations)、[Schema](https://kcl-lang.io/docs/reference/lang/tour#schema)、[Lambda](https://kcl-lang.io/docs/reference/lang/tour#function)、[Rule](https://kcl-lang.io/docs/reference/lang/tour#rule) 的配置及其模型、逻辑和策略编写
 + **可靠稳定**：依赖[静态类型系统](https://kcl-lang.io/docs/reference/lang/tour/#type-system)、[约束](https://kcl-lang.io/docs/reference/lang/tour/#validation)和[自定义规则](https://kcl-lang.io/docs/reference/lang/tour#rule)的配置稳定性
 + **强可扩展**：通过独立配置块[自动合并机制](https://kcl-lang.io/docs/reference/lang/tour/#-operators-1)保证配置编写的高可扩展性
@@ -64,13 +64,11 @@ KCL 是一个开源的基于约束的记录及函数语言并通过成熟的编�
 
 ## 安装
 
-从 Github releases 页面[下载](https://github.com/kcl-lang/kcl/releases)，并且将 `{install-location}/kclvm/bin` 添加到您的环境变量中
-
-> 有关安装的更多信息，请查看 KCL 官网的[安装指南](https://kcl-lang.io/docs/user_docs/getting-started/install/)
+有关安装的更多信息，请查看 KCL 官网的[安装指南](https://kcl-lang.io/docs/user_docs/getting-started/install/)
 
 ## 快速开始
 
-`./samples/kubernetes.k` 是一个生成 kubernetes 资源的例子
+`./samples/kubernetes.k` 是一个生成 Kubernetes 资源的例子
 
 ```python
 apiVersion = "apps/v1"
