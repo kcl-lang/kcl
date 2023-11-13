@@ -1,7 +1,6 @@
 use std::path::{Path, PathBuf};
 use std::{env, fs, panic};
 
-use kclvm_ast::expr_as;
 use kclvm_config::modfile::get_vendor_home;
 use kclvm_config::settings::KeyValuePair;
 use kclvm_parser::LoadProgramOptions;
