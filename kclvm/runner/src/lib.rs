@@ -6,7 +6,7 @@ use kclvm_ast::{
     ast::{Module, Program},
     MAIN_PKG,
 };
-use kclvm_driver::canonicalize_input_files;
+use kclvm_driver::{canonicalize_input_files, expand_input_files};
 use kclvm_error::{Diagnostic, Handler};
 use kclvm_parser::{load_program, ParseSession};
 use kclvm_query::apply_overrides;
@@ -79,7 +79,8 @@ pub fn exec_program(
     let opts = args.get_load_program_options();
     let k_files = &args.k_filename_list;
     let work_dir = args.work_dir.clone().unwrap_or_default();
-    let kcl_paths = canonicalize_input_files(k_files, work_dir, false)?;
+    let k_files = expand_input_files(k_files);
+    let kcl_paths = canonicalize_input_files(&k_files, work_dir, false)?;
 
     let kcl_paths_str = kcl_paths.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
 
