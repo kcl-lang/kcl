@@ -71,7 +71,7 @@ impl<'ctx> Resolver<'ctx> {
     }
 
     /// The check main function.
-    pub(crate) fn check(&mut self, pkgpath: &str) -> ProgramScope {
+    pub(crate) fn check(&mut self, pkgpath: &str) {
         self.check_import(pkgpath);
         self.init_global_types();
         match self.program.pkgs.get(pkgpath) {
@@ -91,16 +91,16 @@ impl<'ctx> Resolver<'ctx> {
             }
             None => {}
         }
-        ProgramScope {
+    }
+
+    pub(crate) fn check_and_lint(&mut self, pkgpath: &str) -> ProgramScope {
+        self.check(pkgpath);
+        let mut scope = ProgramScope {
             scope_map: self.scope_map.clone(),
             import_names: self.ctx.import_names.clone(),
             node_ty_map: self.node_ty_map.clone(),
             handler: self.handler.clone(),
-        }
-    }
-
-    pub(crate) fn check_and_lint(&mut self, pkgpath: &str) -> ProgramScope {
-        let mut scope = self.check(pkgpath);
+        };
         self.lint_check_scope_map();
         for diag in &self.linter.handler.diagnostics {
             scope.handler.diagnostics.insert(diag.clone());

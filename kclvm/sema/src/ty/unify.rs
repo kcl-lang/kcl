@@ -1,5 +1,7 @@
 use std::{collections::HashSet, sync::Arc};
 
+use indexmap::IndexMap;
+
 use super::{SchemaType, Type, TypeKind, TypeRef};
 
 /// The type can be assigned to the expected type.
@@ -140,53 +142,53 @@ pub fn sup(types: &[TypeRef]) -> TypeRef {
 /// Typeof types
 pub fn r#typeof(types: &[TypeRef], should_remove_sub_types: bool) -> TypeRef {
     // 1. Initialize an ordered set to store the type array
-    let mut type_set: Vec<TypeRef> = vec![];
+    let mut type_set: IndexMap<*const Type, TypeRef> = IndexMap::default();
     // 2. Add the type array to the ordered set for sorting by the type id and de-duplication.
     add_types_to_type_set(&mut type_set, types);
     // 3. Remove sub types according to partial order relation rules e.g. sub schema types.
     if should_remove_sub_types {
         let mut remove_index_set = HashSet::new();
-        for (i, source) in type_set.iter().enumerate() {
-            for (j, target) in type_set.iter().enumerate() {
-                if i != j && subsume(source.clone(), target.clone(), false) {
-                    remove_index_set.insert(i);
+        for (i, (source_addr, source)) in type_set.iter().enumerate() {
+            for j in i + 1..type_set.len() {
+                let (target_addr, target) = type_set.get_index(j).unwrap();
+                if subsume(source.clone(), target.clone(), false) {
+                    remove_index_set.insert(*source_addr);
+                } else if subsume(target.clone(), source.clone(), false) {
+                    remove_index_set.insert(*target_addr);
                 }
             }
         }
-        let types: Vec<(usize, &TypeRef)> = type_set
-            .iter()
-            .enumerate()
-            .filter(|(i, _)| !remove_index_set.contains(i))
-            .collect();
-        type_set = types
-            .iter()
-            .map(|(_, ty)| <&TypeRef>::clone(ty).clone())
-            .collect();
+        for i in remove_index_set {
+            type_set.remove(&i);
+        }
     }
     if type_set.is_empty() {
         Arc::new(Type::ANY)
     } else if type_set.len() == 1 {
         type_set[0].clone()
     } else {
-        Arc::new(Type::union(&type_set))
+        Arc::new(Type::union(
+            &type_set.values().cloned().collect::<Vec<TypeRef>>(),
+        ))
     }
 }
 
-fn add_types_to_type_set(type_set: &mut Vec<TypeRef>, types: &[TypeRef]) {
+fn add_types_to_type_set(type_set: &mut IndexMap<*const Type, TypeRef>, types: &[TypeRef]) {
     for ty in types {
         add_type_to_type_set(type_set, ty.clone());
     }
 }
 
-fn add_type_to_type_set(type_set: &mut Vec<TypeRef>, ty: TypeRef) {
+fn add_type_to_type_set(type_set: &mut IndexMap<*const Type, TypeRef>, ty: TypeRef) {
     match &ty.kind {
         TypeKind::Union(types) => {
             add_types_to_type_set(type_set, types);
         }
         _ => {
+            let ref_addr = ty.as_ref() as *const Type;
             // Remove the bottom type.
-            if !ty.is_void() && !type_set.contains(&ty) {
-                type_set.push(ty.clone())
+            if !ty.is_void() && !type_set.contains_key(&ref_addr) {
+                type_set.insert(ref_addr, ty.clone());
             }
         }
     }
