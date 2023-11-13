@@ -1,9 +1,6 @@
 use lsp_types::notification::{
-    DidChangeTextDocument,
-    DidChangeWatchedFiles,
-    DidCloseTextDocument,
-    DidOpenTextDocument,
-    DidSaveTextDocument, //DidDeleteFiles, DidRenameFiles, DidCreateFiles, //todo more
+    Cancel, DidChangeTextDocument, DidChangeWatchedFiles, DidCloseTextDocument,
+    DidOpenTextDocument, DidSaveTextDocument,
 };
 use std::path::Path;
 
@@ -27,7 +24,17 @@ impl LanguageServerState {
             .on::<DidSaveTextDocument>(LanguageServerState::on_did_save_text_document)?
             .on::<DidCloseTextDocument>(LanguageServerState::on_did_close_text_document)?
             .on::<DidChangeWatchedFiles>(LanguageServerState::on_did_change_watched_files)?
+            .on::<Cancel>(LanguageServerState::cancel)?
             .finish();
+        Ok(())
+    }
+
+    fn cancel(&mut self, params: lsp_types::CancelParams) -> anyhow::Result<()> {
+        let id: lsp_server::RequestId = match params.id {
+            lsp_types::NumberOrString::Number(id) => id.into(),
+            lsp_types::NumberOrString::String(id) => id.into(),
+        };
+        self.request_queue.incoming.complete(id);
         Ok(())
     }
 
