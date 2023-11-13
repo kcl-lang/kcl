@@ -27,37 +27,17 @@ fn test_canonicalize_input_files() {
 
 #[test]
 fn test_expand_input_files_with_kcl_mod() {
-    let path = PathBuf::from("./src/test_data/expand_file_pattern");
+    let path = PathBuf::from("src/test_data/expand_file_pattern");
     let input_files = vec![
         path.join("**").join("main.k").to_string_lossy().to_string(),
         "${KCL_MOD}/src/test_data/expand_file_pattern/KCL_MOD".to_string(),
     ];
     let expected_files = vec![
-        path.join("kcl1/kcl2/main.k")
-            .canonicalize()
-            .unwrap()
-            .to_string_lossy()
-            .to_string(),
-        path.join("kcl1/kcl4/main.k")
-            .canonicalize()
-            .unwrap()
-            .to_string_lossy()
-            .to_string(),
-        path.join("kcl1/main.k")
-            .canonicalize()
-            .unwrap()
-            .to_string_lossy()
-            .to_string(),
-        path.join("kcl3/main.k")
-            .canonicalize()
-            .unwrap()
-            .to_string_lossy()
-            .to_string(),
-        path.join("main.k")
-            .canonicalize()
-            .unwrap()
-            .to_string_lossy()
-            .to_string(),
+        path.join("kcl1/kcl2/main.k").to_string_lossy().to_string(),
+        path.join("kcl1/kcl4/main.k").to_string_lossy().to_string(),
+        path.join("kcl1/main.k").to_string_lossy().to_string(),
+        path.join("kcl3/main.k").to_string_lossy().to_string(),
+        path.join("main.k").to_string_lossy().to_string(),
         "${KCL_MOD}/src/test_data/expand_file_pattern/KCL_MOD".to_string(),
     ];
     assert_eq!(expand_input_files(&input_files), expected_files);

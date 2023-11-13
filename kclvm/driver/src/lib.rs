@@ -17,22 +17,20 @@ use kclvm_parser::LoadProgramOptions;
 use kclvm_utils::path::PathPrefix;
 use kpm_metadata::fill_pkg_maps_for_k_file;
 use std::{
-    collections::{HashSet, VecDeque},
-    fs::{self, read_dir},
+    fs::read_dir,
     io::{self, ErrorKind},
     path::{Path, PathBuf},
 };
 use walkdir::WalkDir;
 
-/// Expand the file pattern to a list of files and canonicalize the files.
+/// Expand the file pattern to a list of files.
 pub fn expand_if_file_pattern(file_pattern: String) -> Result<Vec<String>, String> {
     let paths = glob(&file_pattern).map_err(|_| "Invalid file pattern")?;
     let mut matched_files = vec![];
 
     for path in paths {
         if let Ok(path) = path {
-            let abs_path: PathBuf = fs::canonicalize(path).map_err(|err| err.to_string())?;
-            matched_files.push(abs_path.to_string_lossy().to_string());
+            matched_files.push(path.to_string_lossy().to_string());
         }
     }
 
