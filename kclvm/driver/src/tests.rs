@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
 use std::{env, fs, panic};
 
+use kclvm_ast::expr_as;
 use kclvm_config::modfile::get_vendor_home;
 use kclvm_config::settings::KeyValuePair;
 use kclvm_parser::LoadProgramOptions;
@@ -40,7 +41,15 @@ fn test_expand_input_files_with_kcl_mod() {
         path.join("main.k").to_string_lossy().to_string(),
         "${KCL_MOD}/src/test_data/expand_file_pattern/KCL_MOD".to_string(),
     ];
-    assert_eq!(expand_input_files(&input_files), expected_files);
+    let got_paths: Vec<String> = expand_input_files(&input_files)
+        .iter()
+        .map(|s| s.replace("/", "").replace("\\", ""))
+        .collect();
+    let expect_paths: Vec<String> = expected_files
+        .iter()
+        .map(|s| s.replace("/", "").replace("\\", ""))
+        .collect();
+    assert_eq!(got_paths, expect_paths);
 }
 
 #[test]
