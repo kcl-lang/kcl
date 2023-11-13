@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use super::{sup, Attr, DictType, Type, TypeFlags, TypeKind, TypeRef};
+use super::{sup, DictType, Type, TypeFlags, TypeKind, TypeRef};
 use petgraph::algo::is_cyclic_directed;
 use petgraph::graph::{DiGraph, NodeIndex};
 
@@ -173,18 +173,7 @@ impl TypeInferMethods for TypeContext {
             }) => Type::dict_ref_with_attrs(
                 self.infer_to_variable_type(key_ty.clone()),
                 self.infer_to_variable_type(val_ty.clone()),
-                attrs
-                    .into_iter()
-                    .map(|(key, attr)| {
-                        (
-                            key.to_string(),
-                            Attr {
-                                ty: self.infer_to_variable_type(attr.ty.clone()),
-                                range: attr.range.clone(),
-                            },
-                        )
-                    })
-                    .collect(),
+                attrs.clone(),
             ),
             // Union type e.g., 1|2|"s" -> int|str
             TypeKind::Union(types) => sup(&types

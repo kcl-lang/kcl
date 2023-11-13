@@ -4,7 +4,7 @@ use super::{
     scope::{ScopeKind, ScopeObject, ScopeObjectKind},
     Resolver,
 };
-use crate::ty::{sup, DictType, TypeRef};
+use crate::ty::{sup, DictType, TypeInferMethods, TypeRef};
 use crate::ty::{Attr, SchemaType};
 use crate::ty::{Type, TypeKind};
 use indexmap::IndexMap;
@@ -431,7 +431,7 @@ impl<'ctx> Resolver<'ctx> {
                             attrs.insert(
                                 name.to_string(),
                                 Attr {
-                                    ty: ty.clone(),
+                                    ty: self.ctx.ty_ctx.infer_to_variable_type(ty.clone()),
                                     range: key.get_span_pos(),
                                 },
                             );
@@ -476,7 +476,7 @@ impl<'ctx> Resolver<'ctx> {
                             attrs.insert(
                                 string_lit.value.clone(),
                                 Attr {
-                                    ty: ty.clone(),
+                                    ty: self.ctx.ty_ctx.infer_to_variable_type(ty.clone()),
                                     range: key.get_span_pos(),
                                 },
                             );
