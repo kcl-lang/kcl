@@ -25,7 +25,7 @@ use walkdir::WalkDir;
 
 /// Expand the file pattern to a list of files.
 pub fn expand_if_file_pattern(file_pattern: String) -> Result<Vec<String>, String> {
-    let paths = glob(&file_pattern).map_err(|_| "Invalid file pattern")?;
+    let paths = glob(&file_pattern).map_err(|_| format!("invalid file pattern {file_pattern}"))?;
     let mut matched_files = vec![];
 
     for path in paths {
