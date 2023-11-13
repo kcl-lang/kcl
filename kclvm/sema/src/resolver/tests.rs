@@ -681,3 +681,41 @@ fn test_pkg_not_found_suggestion() {
         "find more package on 'https://artifacthub.io'"
     );
 }
+
+#[test]
+fn undef_lambda_param() {
+    let sess = Arc::new(ParseSession::default());
+    let mut program = load_program(
+        sess.clone(),
+        &["./src/resolver/test_data/undef_lambda_param.k"],
+        None,
+        None,
+    )
+    .unwrap();
+    let scope = resolve_program(&mut program);
+    assert_eq!(scope.handler.diagnostics.len(), 1);
+
+    let root = &program.root.clone();
+    let filename = Path::new(&root.clone())
+        .join("undef_lambda_param.k")
+        .display()
+        .to_string();
+
+    let range = scope.handler.diagnostics[0].messages[0].range.clone();
+
+    assert_eq!(
+        range,
+        (
+            Position {
+                filename: filename.clone(),
+                line: 1,
+                column: Some(10),
+            },
+            Position {
+                filename: filename.clone(),
+                line: 1,
+                column: Some(15),
+            }
+        )
+    );
+}

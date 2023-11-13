@@ -961,7 +961,11 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             for (i, arg) in args.node.args.iter().enumerate() {
                 let name = arg.node.get_name();
                 let arg_ty = args.node.get_arg_type_node(i);
-                let ty = self.parse_ty_with_scope(arg_ty, arg.get_span_pos());
+                let range = match arg_ty {
+                    Some(arg_type_node) => arg_type_node.get_span_pos(),
+                    None => arg.get_span_pos(),
+                };
+                let ty = self.parse_ty_with_scope(arg_ty, range);
 
                 // If the arguments type of a lambda is a schema type,
                 // It should be marked as an schema instance type.
