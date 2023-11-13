@@ -2,9 +2,11 @@ use crossbeam_channel::after;
 use crossbeam_channel::select;
 use indexmap::IndexSet;
 use kclvm_sema::core::global_state::GlobalState;
+use lsp_server::RequestId;
 use lsp_server::Response;
 use lsp_types::notification::Exit;
 use lsp_types::request::GotoTypeDefinitionResponse;
+use lsp_types::CancelParams;
 use lsp_types::CompletionContext;
 use lsp_types::CompletionItem;
 use lsp_types::CompletionItemKind;
@@ -571,6 +573,19 @@ impl Server {
         msg
     }
 
+    /// Receives a message from the message, if timeout, return None.
+    pub(crate) fn recv_without_timeout(&self) -> Option<Message> {
+        let timeout = Duration::from_secs(5);
+        let msg = select! {
+            recv(self.client.receiver) -> msg => msg.ok(),
+            recv(after(timeout)) -> _ => return None,
+        };
+        if let Some(ref msg) = msg {
+            self.messages.borrow_mut().push(msg.clone());
+        }
+        msg
+    }
+
     /// Sends a request to the main loop and receives its response
     fn send_and_receive(&self, r: Request) -> Response {
         let id = r.id.clone();
@@ -588,6 +603,23 @@ impl Server {
             }
         }
         panic!("did not receive a response to our request");
+    }
+
+    fn receive_response(&self, id: RequestId) -> Option<Response> {
+        while let Some(msg) = self.recv_without_timeout() {
+            match msg {
+                Message::Request(req) => {
+                    panic!("did not expect a request as a response to a request: {req:?}")
+                }
+                Message::Notification(_) => (),
+                Message::Response(res) => {
+                    if res.id == id {
+                        return Some(res);
+                    }
+                }
+            }
+        }
+        None
     }
 }
 
@@ -735,6 +767,52 @@ fn non_kcl_file_test() {
     // Send request and wait for it's response
     let res = server.send_and_receive(r);
     assert!(res.result.is_some());
+}
+
+#[test]
+fn cancel_test() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let mut path = root.clone();
+
+    path.push("src/test_data/goto_def_test/goto_def.k");
+
+    let path = path.to_str().unwrap();
+    let src = std::fs::read_to_string(path.clone()).unwrap();
+    let server = Project {}.server(InitializeParams::default());
+
+    // Mock open file
+    server.notification::<lsp_types::notification::DidOpenTextDocument>(
+        lsp_types::DidOpenTextDocumentParams {
+            text_document: TextDocumentItem {
+                uri: Url::from_file_path(path).unwrap(),
+                language_id: "KCL".to_string(),
+                version: 0,
+                text: src,
+            },
+        },
+    );
+
+    let id = server.next_request_id.get();
+    server.next_request_id.set(id.wrapping_add(1));
+
+    // send request
+    server.send_request::<lsp_types::request::GotoDefinition>(GotoDefinitionParams {
+        text_document_position_params: TextDocumentPositionParams {
+            text_document: TextDocumentIdentifier {
+                uri: Url::from_file_path(path).unwrap(),
+            },
+            position: Position::new(23, 9),
+        },
+        work_done_progress_params: Default::default(),
+        partial_result_params: Default::default(),
+    });
+
+    // cancel request
+    server.notification::<lsp_types::notification::Cancel>(lsp_types::CancelParams {
+        id: NumberOrString::Number(id),
+    });
+
+    assert!(server.receive_response(id.into()).is_none());
 }
 
 #[test]
