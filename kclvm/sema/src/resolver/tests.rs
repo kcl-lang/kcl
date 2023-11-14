@@ -719,3 +719,27 @@ fn undef_lambda_param() {
         )
     );
 }
+
+#[test]
+fn test_schema_params_count() {
+    let sess = Arc::new(ParseSession::default());
+    let mut program = load_program(
+        sess.clone(),
+        &["./src/resolver/test_data/schema_params_miss.k"],
+        None,
+        None,
+    )
+    .unwrap();
+    let scope = resolve_program(&mut program);
+    assert_eq!(scope.handler.diagnostics.len(), 1);
+    let diag = &scope.handler.diagnostics[0];
+    assert_eq!(
+        diag.code,
+        Some(DiagnosticId::Error(ErrorKind::CompileError))
+    );
+    assert_eq!(diag.messages.len(), 1);
+    assert_eq!(
+        diag.messages[0].message,
+        "expected 1 positional argument, found 0"
+    );
+}
