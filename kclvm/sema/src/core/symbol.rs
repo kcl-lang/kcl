@@ -6,7 +6,7 @@ use indexmap::IndexMap;
 use kclvm_error::{diagnostic::Range, Position};
 
 use super::package::ModuleInfo;
-use crate::ty::Type;
+use crate::ty::{Type, TypeKind};
 use kclvm_ast::ast::AstIndex;
 
 pub trait Symbol {
@@ -50,6 +50,8 @@ pub struct KCLSymbolSemanticInfo {
     pub doc: Option<String>,
 }
 
+pub(crate) const BUILTIN_STR_PACKAGE: &'static str = "@str";
+
 #[derive(Default, Debug, Clone)]
 pub struct KCLSymbolData {
     pub(crate) values: Arena<ValueSymbol>,
@@ -65,7 +67,9 @@ pub struct KCLSymbolData {
 
 #[derive(Default, Debug, Clone)]
 pub struct SymbolDB {
+    pub(crate) global_builtin_symbols: IndexMap<String, SymbolRef>,
     pub(crate) fully_qualified_name_map: IndexMap<String, SymbolRef>,
+    pub(crate) schema_builtin_symbols: IndexMap<SymbolRef, IndexMap<String, SymbolRef>>,
     pub(crate) ast_id_map: IndexMap<AstIndex, SymbolRef>,
     pub(crate) symbol_ty_map: IndexMap<SymbolRef, Arc<Type>>,
 }
@@ -159,32 +163,32 @@ impl KCLSymbolData {
     ) -> Option<SymbolRef> {
         match &ty.kind {
             //TODO: builtin ty symbol,now we just return none
-            crate::ty::TypeKind::None => None,
-            crate::ty::TypeKind::Any => None,
-            crate::ty::TypeKind::Void => None,
-            crate::ty::TypeKind::Bool => None,
-            crate::ty::TypeKind::BoolLit(_) => None,
-            crate::ty::TypeKind::Int => None,
-            crate::ty::TypeKind::IntLit(_) => None,
-            crate::ty::TypeKind::Float => None,
-            crate::ty::TypeKind::FloatLit(_) => None,
-            crate::ty::TypeKind::Str => None,
-            crate::ty::TypeKind::StrLit(_) => None,
-            crate::ty::TypeKind::List(_) => None,
-            crate::ty::TypeKind::Dict(_) => None,
-            crate::ty::TypeKind::NumberMultiplier(_) => None,
-            crate::ty::TypeKind::Function(_) => None,
-            crate::ty::TypeKind::Union(_) => None,
+            TypeKind::None => None,
+            TypeKind::Any => None,
+            TypeKind::Void => None,
+            TypeKind::Bool => None,
+            TypeKind::BoolLit(_) => None,
+            TypeKind::Int => None,
+            TypeKind::IntLit(_) => None,
+            TypeKind::Float => None,
+            TypeKind::FloatLit(_) => None,
+            TypeKind::Str => self.get_symbol_by_fully_qualified_name(BUILTIN_STR_PACKAGE),
+            TypeKind::StrLit(_) => self.get_symbol_by_fully_qualified_name(BUILTIN_STR_PACKAGE),
+            TypeKind::List(_) => None,
+            TypeKind::Dict(_) => None,
+            TypeKind::NumberMultiplier(_) => None,
+            TypeKind::Function(_) => None,
+            TypeKind::Union(_) => None,
 
-            crate::ty::TypeKind::Schema(schema_ty) => {
+            TypeKind::Schema(schema_ty) => {
                 let fully_qualified_ty_name = schema_ty.pkgpath.clone() + "." + &schema_ty.name;
 
                 self.get_symbol_by_fully_qualified_name(&fully_qualified_ty_name)
             }
-            crate::ty::TypeKind::Module(module_ty) => {
+            TypeKind::Module(module_ty) => {
                 self.get_symbol_by_fully_qualified_name(&module_ty.pkgpath)
             }
-            crate::ty::TypeKind::Named(name) => {
+            TypeKind::Named(name) => {
                 let splits: Vec<&str> = name.rsplitn(2, '.').collect();
                 let len = splits.len();
                 let pkgname = splits[len - 1];
@@ -201,6 +205,74 @@ impl KCLSymbolData {
         }
     }
 
+    pub fn get_type_all_attribute(
+        &self,
+        ty: &Type,
+        name: &str,
+        module_info: Option<&ModuleInfo>,
+    ) -> Vec<SymbolRef> {
+        match &ty.kind {
+            //TODO: builtin ty symbol,now we just return none
+            TypeKind::None => vec![],
+            TypeKind::Any => vec![],
+            TypeKind::Void => vec![],
+            TypeKind::Bool => vec![],
+            TypeKind::BoolLit(_) => vec![],
+            TypeKind::Int => vec![],
+            TypeKind::IntLit(_) => vec![],
+            TypeKind::Float => vec![],
+            TypeKind::FloatLit(_) => vec![],
+            TypeKind::Str => {
+                let mut result = vec![];
+                if let Some(symbol_ref) = self.get_type_symbol(ty, module_info) {
+                    if let Some(symbol) = self.get_symbol(symbol_ref) {
+                        result = symbol.get_all_attributes(self, module_info);
+                    }
+                }
+                result
+            }
+            TypeKind::StrLit(_) => vec![],
+            TypeKind::List(_) => vec![],
+            TypeKind::Dict(_) => vec![],
+            TypeKind::NumberMultiplier(_) => vec![],
+            TypeKind::Function(_) => vec![],
+            TypeKind::Union(tys) => {
+                let mut result = vec![];
+                for ty in tys.iter() {
+                    result.append(&mut self.get_type_all_attribute(ty, name, module_info));
+                }
+                result
+            }
+            TypeKind::Schema(_) => {
+                let mut result = vec![];
+                if let Some(symbol_ref) = self.get_type_symbol(ty, module_info) {
+                    if let Some(symbol) = self.get_symbol(symbol_ref) {
+                        result = symbol.get_all_attributes(self, module_info);
+                    }
+                }
+                result
+            }
+            TypeKind::Module(_) => {
+                let mut result = vec![];
+                if let Some(symbol_ref) = self.get_type_symbol(ty, module_info) {
+                    if let Some(symbol) = self.get_symbol(symbol_ref) {
+                        result = symbol.get_all_attributes(self, module_info);
+                    }
+                }
+                result
+            }
+            TypeKind::Named(_) => {
+                let mut result = vec![];
+                if let Some(symbol_ref) = self.get_type_symbol(ty, module_info) {
+                    if let Some(symbol) = self.get_symbol(symbol_ref) {
+                        result = symbol.get_all_attributes(self, module_info);
+                    }
+                }
+                result
+            }
+        }
+    }
+
     pub fn get_type_attribute(
         &self,
         ty: &Type,
@@ -208,23 +280,26 @@ impl KCLSymbolData {
         module_info: Option<&ModuleInfo>,
     ) -> Option<SymbolRef> {
         match &ty.kind {
-            //TODO: builtin ty symbol,now we just return none
-            crate::ty::TypeKind::None => None,
-            crate::ty::TypeKind::Any => None,
-            crate::ty::TypeKind::Void => None,
-            crate::ty::TypeKind::Bool => None,
-            crate::ty::TypeKind::BoolLit(_) => None,
-            crate::ty::TypeKind::Int => None,
-            crate::ty::TypeKind::IntLit(_) => None,
-            crate::ty::TypeKind::Float => None,
-            crate::ty::TypeKind::FloatLit(_) => None,
-            crate::ty::TypeKind::Str => None,
-            crate::ty::TypeKind::StrLit(_) => None,
-            crate::ty::TypeKind::List(_) => None,
-            crate::ty::TypeKind::Dict(_) => None,
-            crate::ty::TypeKind::NumberMultiplier(_) => None,
-            crate::ty::TypeKind::Function(_) => None,
-            crate::ty::TypeKind::Union(tys) => {
+            TypeKind::None => None,
+            TypeKind::Any => None,
+            TypeKind::Void => None,
+            TypeKind::Bool => None,
+            TypeKind::BoolLit(_) => None,
+            TypeKind::Int => None,
+            TypeKind::IntLit(_) => None,
+            TypeKind::Float => None,
+            TypeKind::FloatLit(_) => None,
+            TypeKind::Str => self
+                .get_symbol(self.get_type_symbol(ty, module_info)?)?
+                .get_attribute(name, self, module_info),
+            TypeKind::StrLit(_) => self
+                .get_symbol(self.get_type_symbol(ty, module_info)?)?
+                .get_attribute(name, self, module_info),
+            TypeKind::List(_) => None,
+            TypeKind::Dict(_) => None,
+            TypeKind::NumberMultiplier(_) => None,
+            TypeKind::Function(_) => None,
+            TypeKind::Union(tys) => {
                 for ty in tys.iter() {
                     if let Some(symbol_ref) = self.get_type_attribute(ty, name, module_info) {
                         return Some(symbol_ref);
@@ -232,13 +307,13 @@ impl KCLSymbolData {
                 }
                 None
             }
-            crate::ty::TypeKind::Schema(_) => self
+            TypeKind::Schema(_) => self
                 .get_symbol(self.get_type_symbol(ty, module_info)?)?
                 .get_attribute(name, self, module_info),
-            crate::ty::TypeKind::Module(_) => self
+            TypeKind::Module(_) => self
                 .get_symbol(self.get_type_symbol(ty, module_info)?)?
                 .get_attribute(name, self, module_info),
-            crate::ty::TypeKind::Named(_) => self
+            TypeKind::Named(_) => self
                 .get_symbol(self.get_type_symbol(ty, module_info)?)?
                 .get_attribute(name, self, module_info),
         }
@@ -713,8 +788,7 @@ impl Symbol for ValueSymbol {
         data: &Self::SymbolData,
         module_info: Option<&ModuleInfo>,
     ) -> Option<SymbolRef> {
-        let ty = data.symbols_info.symbol_ty_map.get(&self.id?)?;
-        data.get_type_attribute(ty, name, module_info)
+        data.get_type_attribute(self.sema_info.ty.as_ref()?, name, module_info)
     }
 
     fn get_all_attributes(
@@ -723,10 +797,7 @@ impl Symbol for ValueSymbol {
         module_info: Option<&ModuleInfo>,
     ) -> Vec<SymbolRef> {
         let mut result = vec![];
-        if module_info.is_none() {
-            return result;
-        }
-        if let Some(ty) = data.symbols_info.symbol_ty_map.get(&self.id.unwrap()) {
+        if let Some(ty) = self.sema_info.ty.as_ref() {
             if let Some(symbol_ref) = data.get_type_symbol(ty, module_info) {
                 if let Some(symbol) = data.get_symbol(symbol_ref) {
                     result.append(&mut symbol.get_all_attributes(data, module_info))
@@ -845,7 +916,7 @@ impl Symbol for AttributeSymbol {
         data: &Self::SymbolData,
         module_info: Option<&ModuleInfo>,
     ) -> Option<SymbolRef> {
-        let ty = data.symbols_info.symbol_ty_map.get(&self.id?)?;
+        let ty = self.sema_info.ty.as_ref()?;
         data.get_type_attribute(ty, name, module_info)
     }
 
@@ -858,7 +929,7 @@ impl Symbol for AttributeSymbol {
         if module_info.is_none() {
             return result;
         }
-        if let Some(ty) = data.symbols_info.symbol_ty_map.get(&self.id.unwrap()) {
+        if let Some(ty) = self.sema_info.ty.as_ref() {
             if let Some(symbol_ref) = data.get_type_symbol(ty, module_info) {
                 if let Some(symbol) = data.get_symbol(symbol_ref) {
                     result.append(&mut symbol.get_all_attributes(data, module_info))
@@ -1088,7 +1159,7 @@ impl Symbol for TypeAliasSymbol {
         data: &Self::SymbolData,
         module_info: Option<&ModuleInfo>,
     ) -> Option<SymbolRef> {
-        let ty = data.symbols_info.symbol_ty_map.get(&self.id?)?;
+        let ty = self.sema_info.ty.as_ref()?;
         data.get_type_attribute(ty, name, module_info)
     }
 
@@ -1098,17 +1169,13 @@ impl Symbol for TypeAliasSymbol {
         module_info: Option<&ModuleInfo>,
     ) -> Vec<SymbolRef> {
         let mut result = vec![];
-        if module_info.is_none() {
-            return result;
-        }
-        if let Some(ty) = data.symbols_info.symbol_ty_map.get(&self.id.unwrap()) {
+        if let Some(ty) = self.sema_info.ty.as_ref() {
             if let Some(symbol_ref) = data.get_type_symbol(ty, module_info) {
                 if let Some(symbol) = data.get_symbol(symbol_ref) {
                     result.append(&mut symbol.get_all_attributes(data, module_info))
                 }
             }
         }
-
         result
     }
 

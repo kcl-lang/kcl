@@ -1,9 +1,15 @@
+use std::sync::Arc;
+
+use indexmap::IndexMap;
 use kclvm_ast::ast;
 use kclvm_ast::pos::GetPos;
 use kclvm_ast::walker::MutSelfTypedResultWalker;
-use kclvm_error::diagnostic::Range;
+use kclvm_error::{diagnostic::Range, Position};
 
-use crate::core::symbol::{KCLSymbolSemanticInfo, SymbolRef, UnresolvedSymbol, ValueSymbol};
+use crate::{
+    core::symbol::{KCLSymbolSemanticInfo, SymbolRef, UnresolvedSymbol, ValueSymbol},
+    ty::{Type, SCHEMA_MEMBER_FUNCTIONS},
+};
 
 use super::AdvancedResolver;
 
@@ -136,13 +142,47 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
             .get_symbols()
             .get_type_symbol(&schema_ty, self.get_current_module_info())?;
 
-        if let Some(symbol) = self
+        if self
             .gs
-            .get_symbols_mut()
+            .get_symbols()
             .schemas
-            .get_mut(schema_symbol.get_id())
+            .contains(schema_symbol.get_id())
         {
-            symbol.sema_info = KCLSymbolSemanticInfo {
+            let mut schema_builtin_member = IndexMap::new();
+            for name in SCHEMA_MEMBER_FUNCTIONS.iter() {
+                let func_ty = Arc::new(Type::function(
+                    Some(schema_ty.clone()),
+                    Type::list_ref(Type::any_ref()),
+                    &[],
+                    "",
+                    false,
+                    None,
+                ));
+                let mut func_value = ValueSymbol::new(
+                    name.to_string(),
+                    Position::dummy_pos(),
+                    Position::dummy_pos(),
+                    Some(schema_symbol),
+                    false,
+                );
+                func_value.sema_info.ty = Some(func_ty);
+                let func_symbol_ref = self
+                    .gs
+                    .get_symbols_mut()
+                    .alloc_value_symbol(func_value, &ast::AstIndex::default());
+                schema_builtin_member.insert(name.to_string(), func_symbol_ref);
+            }
+            self.gs
+                .get_symbols_mut()
+                .symbols_info
+                .schema_builtin_symbols
+                .insert(schema_symbol, schema_builtin_member);
+            self.gs
+                .get_symbols_mut()
+                .schemas
+                .get_mut(schema_symbol.get_id())
+                .unwrap()
+                .sema_info = KCLSymbolSemanticInfo {
                 ty: Some(schema_ty.clone()),
                 doc: schema_stmt.doc.as_ref().map(|doc| doc.node.clone()),
             };
@@ -800,8 +840,24 @@ impl<'ctx> AdvancedResolver<'ctx> {
             .symbols_info
             .ast_id_map
             .get(&identifier.id)
+            .map(|symbol_ref| *symbol_ref)
         {
-            *identifier_symbol
+            if let Some(symbol) = self
+                .gs
+                .get_symbols_mut()
+                .values
+                .get_mut(identifier_symbol.get_id())
+            {
+                symbol.sema_info = KCLSymbolSemanticInfo {
+                    ty: self
+                        .ctx
+                        .node_ty_map
+                        .get(&identifier.id)
+                        .map(|ty| ty.clone()),
+                    doc: None,
+                };
+            }
+            identifier_symbol
         } else {
             self.resolve_names(&identifier.node.names, self.ctx.maybe_def)?
         };

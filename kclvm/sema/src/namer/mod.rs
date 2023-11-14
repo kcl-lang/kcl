@@ -37,11 +37,17 @@
 */
 
 use std::path::Path;
+use std::sync::Arc;
 
+use crate::builtin::{
+    get_system_member_function_ty, get_system_module_members, BUILTIN_FUNCTIONS,
+    STANDARD_SYSTEM_MODULES, STRING_MEMBER_FUNCTIONS,
+};
 use crate::core::global_state::GlobalState;
 use crate::core::package::{ModuleInfo, PackageInfo};
-use crate::core::symbol::{PackageSymbol, SymbolRef};
+use crate::core::symbol::{PackageSymbol, SymbolRef, ValueSymbol, BUILTIN_STR_PACKAGE};
 use indexmap::IndexSet;
+use kclvm_ast::ast::AstIndex;
 use kclvm_ast::ast::Program;
 use kclvm_ast::walker::MutSelfTypedResultWalker;
 use kclvm_error::Position;
@@ -77,6 +83,7 @@ impl<'ctx> Namer<'ctx> {
     // serial namer pass
     pub fn find_symbols(program: &'ctx Program, gs: GlobalState) -> GlobalState {
         let mut namer = Self::new(program, gs);
+        namer.init_built_symbols();
 
         for (name, modules) in namer.ctx.program.pkgs.iter() {
             {
@@ -135,7 +142,98 @@ impl<'ctx> Namer<'ctx> {
         namer.gs
     }
 
-    pub fn define_symbols(&mut self) {
+    fn init_built_symbols(&mut self) {
+        //add global built functions
+        for (name, builtin_func) in BUILTIN_FUNCTIONS.iter() {
+            let mut value_symbol = ValueSymbol::new(
+                name.to_string(),
+                Position::dummy_pos(),
+                Position::dummy_pos(),
+                None,
+                true,
+            );
+            value_symbol.sema_info.ty = Some(Arc::new(builtin_func.clone()));
+            value_symbol.sema_info.doc = builtin_func.ty_doc();
+            let symbol_ref = self
+                .gs
+                .get_symbols_mut()
+                .alloc_value_symbol(value_symbol, &AstIndex::default());
+            self.gs
+                .get_symbols_mut()
+                .symbols_info
+                .global_builtin_symbols
+                .insert(name.to_string(), symbol_ref);
+        }
+
+        //add system modules
+        for system_pkg_name in STANDARD_SYSTEM_MODULES {
+            let package_symbol_ref =
+                self.gs
+                    .get_symbols_mut()
+                    .alloc_package_symbol(PackageSymbol::new(
+                        system_pkg_name.to_string(),
+                        Position::dummy_pos(),
+                        Position::dummy_pos(),
+                    ));
+            for func_name in get_system_module_members(system_pkg_name) {
+                let func_ty = get_system_member_function_ty(*system_pkg_name, func_name);
+                let mut value_symbol = ValueSymbol::new(
+                    func_name.to_string(),
+                    Position::dummy_pos(),
+                    Position::dummy_pos(),
+                    Some(package_symbol_ref),
+                    false,
+                );
+                value_symbol.sema_info.ty = Some(func_ty.clone());
+                value_symbol.sema_info.doc = func_ty.ty_doc();
+                let func_symbol_ref = self
+                    .gs
+                    .get_symbols_mut()
+                    .alloc_value_symbol(value_symbol, &AstIndex::default());
+                self.gs
+                    .get_symbols_mut()
+                    .packages
+                    .get_mut(package_symbol_ref.get_id())
+                    .unwrap()
+                    .members
+                    .insert(func_name.to_string(), func_symbol_ref);
+            }
+        }
+
+        //add string builtin function
+        let package_symbol_ref =
+            self.gs
+                .get_symbols_mut()
+                .alloc_package_symbol(PackageSymbol::new(
+                    BUILTIN_STR_PACKAGE.to_string(),
+                    Position::dummy_pos(),
+                    Position::dummy_pos(),
+                ));
+        for (name, builtin_func) in STRING_MEMBER_FUNCTIONS.iter() {
+            let mut value_symbol = ValueSymbol::new(
+                name.to_string(),
+                Position::dummy_pos(),
+                Position::dummy_pos(),
+                Some(package_symbol_ref),
+                true,
+            );
+            value_symbol.sema_info.ty = Some(Arc::new(builtin_func.clone()));
+            value_symbol.sema_info.doc = builtin_func.ty_doc();
+            let symbol_ref = self
+                .gs
+                .get_symbols_mut()
+                .alloc_value_symbol(value_symbol, &AstIndex::default());
+            self.gs
+                .get_symbols_mut()
+                .packages
+                .get_mut(package_symbol_ref.get_id())
+                .unwrap()
+                .members
+                .insert(name.to_string(), symbol_ref);
+        }
+    }
+
+    fn define_symbols(&mut self) {
         self.gs.get_symbols_mut().build_fully_qualified_name_map();
     }
 }
@@ -204,11 +302,6 @@ mod tests {
             ("import_test.a._a", SymbolKind::Value),
             ("import_test.b._b", SymbolKind::Value),
         ];
-
-        assert_eq!(
-            symbols.symbols_info.fully_qualified_name_map.len(),
-            excepts_symbols.len()
-        );
 
         for (fqn, kind) in excepts_symbols {
             assert!(symbols

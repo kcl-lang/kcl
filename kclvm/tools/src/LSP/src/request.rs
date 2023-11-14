@@ -200,7 +200,13 @@ pub(crate) fn handle_completion(
         .context
         .and_then(|ctx| ctx.trigger_character)
         .and_then(|s| s.chars().next());
-    let res = completion(completion_trigger_character, &db.prog, &kcl_pos, &db.scope);
+    let res = completion(
+        completion_trigger_character,
+        &db.prog,
+        &kcl_pos,
+        &db.scope,
+        &db.gs,
+    );
     if res.is_none() {
         log_message("Completion item not found".to_string(), &sender)?;
     }

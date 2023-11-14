@@ -442,17 +442,19 @@ impl<'ctx> Resolver<'ctx> {
     }
 
     /// Set type to the scope exited object, if not found, emit a compile error.
-    pub fn set_type_to_scope(&mut self, name: &str, ty: TypeRef, range: Range) {
+    pub fn set_type_to_scope<T>(&mut self, name: &str, ty: TypeRef, node: &ast::Node<T>) {
         let mut scope = self.scope.borrow_mut();
         match scope.elems.get_mut(name) {
             Some(obj) => {
                 let mut obj = obj.borrow_mut();
-                obj.ty = self.ctx.ty_ctx.infer_to_variable_type(ty);
+                let infer_ty = self.ctx.ty_ctx.infer_to_variable_type(ty);
+                self.node_ty_map.insert(node.id.clone(), infer_ty.clone());
+                obj.ty = infer_ty;
             }
             None => {
                 self.handler.add_compile_error(
                     &format!("name '{}' is not defined", name.replace('@', "")),
-                    range,
+                    node.get_span_pos(),
                 );
             }
         }

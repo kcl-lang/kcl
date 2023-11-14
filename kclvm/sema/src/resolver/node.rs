@@ -76,7 +76,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             None,
         );
         if !ty.is_any() && expected_ty.is_any() {
-            self.set_type_to_scope(&names[0].node, ty, unification_stmt.target.get_span_pos());
+            self.set_type_to_scope(&names[0].node, ty, &unification_stmt.target);
         }
         expected_ty
     }
@@ -164,7 +164,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                             // Check type annotation if exists.
                             self.check_assignment_type_annotation(assign_stmt, value_ty.clone());
                         }
-                        self.set_type_to_scope(name, value_ty.clone(), target.get_span_pos());
+                        self.set_type_to_scope(name, value_ty.clone(), &target);
                     }
                     _ => {
                         value_ty = self.expr(&assign_stmt.value);
@@ -182,7 +182,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                     && expected_ty.is_any()
                     && assign_stmt.type_annotation.is_none()
                 {
-                    self.set_type_to_scope(name, value_ty.clone(), target.get_span_pos());
+                    self.set_type_to_scope(name, value_ty.clone(), &target);
                     if let Some(schema_ty) = &self.ctx.schema {
                         let mut schema_ty = schema_ty.borrow_mut();
                         schema_ty.set_type_of_attr(
