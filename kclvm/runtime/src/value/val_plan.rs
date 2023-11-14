@@ -119,7 +119,7 @@ fn filter_results(ctx: &Context, key_values: &ValueRef, opts: &PlanOptions) -> V
                 let schema_in_list_count = ignore_schema_count + standalone_list.len();
                 let value = &value.as_list_ref().values;
                 // Plan empty list to values.
-                if value.is_empty() && ctx.cfg.plan_empty_list {
+                if value.is_empty() && !ctx.cfg.disable_empty_list {
                     let result = results.get_mut(0).unwrap();
                     result.dict_update_key_value(key.as_str(), ValueRef::list(None));
                 }

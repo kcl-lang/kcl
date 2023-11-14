@@ -327,8 +327,8 @@ pub struct ContextConfig {
     pub list_option_mode: bool,
     /// Whether to emit none value in the plan process.
     pub disable_none: bool,
-    /// Whether to output empty list in the plan process.
-    pub plan_empty_list: bool,
+    /// Whether to emit empty list in the plan process.
+    pub disable_empty_list: bool,
 }
 
 #[derive(PartialEq, Eq, Clone, Debug)]

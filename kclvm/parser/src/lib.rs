@@ -19,7 +19,7 @@ use indexmap::IndexMap;
 use kclvm_ast::ast;
 use kclvm_config::modfile::{get_vendor_home, KCL_FILE_EXTENSION, KCL_FILE_SUFFIX, KCL_MOD_FILE};
 use kclvm_error::diagnostic::Range;
-use kclvm_error::{ErrorKind, Level, Message, Style};
+use kclvm_error::{ErrorKind, Message, Style};
 use kclvm_sema::plugin::PLUGIN_MODULE_PREFIX;
 use kclvm_utils::path::PathPrefix;
 use kclvm_utils::pkgpath::parse_external_pkg_name;

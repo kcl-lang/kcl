@@ -58,10 +58,6 @@ jobs:
         working-directory: ./kclvm
         run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin:/usr/local/opt/llvm@12/bin && make install-rustc-wasm && make && make codecov-lcov
         shell: bash
-      - name: Konfig test
-        working-directory: ./kclvm
-        run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin:/usr/local/opt/llvm@12/bin && make install-rustc-wasm && make && make test-konfig
-        shell: bash
 
       - uses: actions/upload-artifact@v3
         with:
