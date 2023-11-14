@@ -760,7 +760,7 @@ impl<'ctx> Resolver<'ctx> {
                 params.push(Parameter {
                     name,
                     ty: ty.clone(),
-                    has_default: args.node.defaults.get(i).is_some(),
+                    has_default: args.node.defaults.get(i).map_or(false, |arg| arg.is_some()),
                 });
             }
         }
