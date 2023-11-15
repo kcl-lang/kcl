@@ -2,7 +2,9 @@ use super::Options;
 use super::Resolver;
 use crate::builtin::BUILTIN_FUNCTION_NAMES;
 use crate::pre_process::pre_process_program;
+use crate::resolver::cache::CachedScope;
 use crate::resolver::resolve_program;
+use crate::resolver::resolve_program_with_opts;
 use crate::resolver::scope::*;
 use crate::ty::{Type, TypeKind};
 use kclvm_ast::ast;
@@ -37,6 +39,37 @@ fn test_scope() {
 fn test_resolve_program() {
     let mut program = parse_program("./src/resolver/test_data/assign.k").unwrap();
     let scope = resolve_program(&mut program);
+    assert_eq!(scope.pkgpaths(), vec!["__main__".to_string()]);
+    let main_scope = scope.main_scope().unwrap();
+    let main_scope = main_scope.borrow_mut();
+    assert!(main_scope.lookup("a").is_some());
+    assert!(main_scope.lookup("b").is_some());
+    assert!(main_scope.lookup("print").is_none());
+}
+
+#[test]
+fn test_resolve_program_with_cache() {
+    let mut program = parse_program("./src/resolver/test_data/assign.k").unwrap();
+
+    let scope = resolve_program_with_opts(
+        &mut program,
+        Options {
+            merge_program: false,
+            type_alise: false,
+            ..Default::default()
+        },
+        None,
+    );
+    let cached_scope = CachedScope::new(&scope, &program);
+    let scope = resolve_program_with_opts(
+        &mut program,
+        Options {
+            merge_program: false,
+            type_alise: false,
+            ..Default::default()
+        },
+        Some(cached_scope),
+    );
     assert_eq!(scope.pkgpaths(), vec!["__main__".to_string()]);
     let main_scope = scope.main_scope().unwrap();
     let main_scope = main_scope.borrow_mut();

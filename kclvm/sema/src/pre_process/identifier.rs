@@ -163,7 +163,13 @@ impl<'ctx> MutSelfMutWalker<'ctx> for RawIdentifierTransformer {
         identifier.names = identifier
             .names
             .iter()
-            .map(|name| Node::node_with_pos(remove_raw_ident_prefix(&name.node), name.pos()))
+            .map(|name| {
+                Node::node_with_pos_and_id(
+                    remove_raw_ident_prefix(&name.node),
+                    name.pos(),
+                    name.id.clone(),
+                )
+            })
             .collect::<Vec<Node<String>>>();
     }
     fn walk_schema_attr(&mut self, schema_attr: &'ctx mut ast::SchemaAttr) {

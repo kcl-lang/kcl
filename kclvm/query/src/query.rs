@@ -128,6 +128,7 @@ fn resolve_file(file: &str, code: Option<&str>) -> Result<Rc<RefCell<Scope>>> {
             resolve_val: true,
             ..Default::default()
         },
+        None,
     );
     match scope.main_scope() {
         Some(scope) => Ok(scope.clone()),

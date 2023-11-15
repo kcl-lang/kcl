@@ -204,7 +204,7 @@ pub fn execute(
         let mut resolve_opts = Options::default();
         resolve_opts.merge_program = false;
         // Resolve ast
-        let scope = resolve_program_with_opts(&mut program, resolve_opts);
+        let scope = resolve_program_with_opts(&mut program, resolve_opts, None);
         emit_compile_diag_to_string(sess, &scope, args.compile_only)?;
         return Ok("".to_string());
     }
