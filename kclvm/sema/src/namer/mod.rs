@@ -83,7 +83,7 @@ impl<'ctx> Namer<'ctx> {
     // serial namer pass
     pub fn find_symbols(program: &'ctx Program, gs: GlobalState) -> GlobalState {
         let mut namer = Self::new(program, gs);
-        namer.init_built_symbols();
+        namer.init_builtin_symbols();
 
         for (name, modules) in namer.ctx.program.pkgs.iter() {
             {
@@ -142,7 +142,7 @@ impl<'ctx> Namer<'ctx> {
         namer.gs
     }
 
-    fn init_built_symbols(&mut self) {
+    fn init_builtin_symbols(&mut self) {
         //add global built functions
         for (name, builtin_func) in BUILTIN_FUNCTIONS.iter() {
             let mut value_symbol = ValueSymbol::new(

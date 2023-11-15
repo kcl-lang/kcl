@@ -114,18 +114,20 @@ fn completion_dot(
     gs: &GlobalState,
 ) -> Option<lsp_types::CompletionResponse> {
     let mut items: IndexSet<KCLCompletionItem> = IndexSet::new();
-
-    let pos = KCLPos {
+    // get pre position of trigger character '.'
+    let pre_pos = KCLPos {
         filename: pos.filename.clone(),
         line: pos.line,
         column: pos.column.map(|c| c - 1),
     };
 
-    if let Some(stmt) = program.pos_to_stmt(&pos) {
+    if let Some(stmt) = program.pos_to_stmt(&pre_pos) {
         match stmt.node {
-            Stmt::Import(stmt) => return completion_import(&stmt, &pos, prog_scope, program),
+            Stmt::Import(stmt) => return completion_import(&stmt, &pre_pos, prog_scope, program),
             _ => {
-                let (expr, parent) = inner_most_expr_in_stmt(&stmt.node, &pos, None);
+                // Todo: string lit has not been processed using the new semantic model and need to handle here.
+                // It will be completed at the cursor inside the string literal instead of at the end.
+                let (expr, parent) = inner_most_expr_in_stmt(&stmt.node, &pre_pos, None);
                 if let Some(node) = expr {
                     if let Expr::StringLit(s) = node.node {
                         return Some(
@@ -148,19 +150,16 @@ fn completion_dot(
         }
     }
 
-    let mut def = find_def_with_gs(&pos, &gs, true);
+    // look_up_exact_symbol
+    let mut def = find_def_with_gs(&pre_pos, &gs, true);
     if def.is_none() {
-        let pos = KCLPos {
-            filename: pos.filename.clone(),
-            line: pos.line,
-            column: pos.column.map(|c| c + 1),
-        };
+        // look_up_closest_symbol
         def = find_def_with_gs(&pos, &gs, false);
     }
     match def {
         Some(def_ref) => {
             if let Some(def) = gs.get_symbols().get_symbol(def_ref) {
-                let module_info = gs.get_packages().get_module_info(&pos.filename);
+                let module_info = gs.get_packages().get_module_info(&pre_pos.filename);
                 let attrs = def.get_all_attributes(gs.get_symbols(), module_info);
                 for attr in attrs {
                     let attr_def = gs.get_symbols().get_symbol(attr);
