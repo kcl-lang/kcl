@@ -1,7 +1,6 @@
 use crate::resolver::Resolver;
 use crate::ty::{sup, DictType, TypeKind, TypeRef};
 use kclvm_ast::ast;
-use kclvm_ast::pos::GetPos;
 use kclvm_error::diagnostic::Range;
 
 impl<'ctx> Resolver<'ctx> {
@@ -37,19 +36,19 @@ impl<'ctx> Resolver<'ctx> {
                         self.set_type_to_scope(
                             first_var_name.as_ref().unwrap(),
                             first_var_ty.clone(),
-                            target_node.get_span_pos(),
+                            &target_node,
                         );
                         self.set_type_to_scope(
                             second_var_name.as_ref().unwrap(),
                             second_var_ty.clone(),
-                            target_node.get_span_pos(),
+                            &target_node,
                         );
                     } else {
                         first_var_ty = sup(&[item_ty.clone(), first_var_ty.clone()]);
                         self.set_type_to_scope(
                             first_var_name.as_ref().unwrap(),
                             first_var_ty.clone(),
-                            target_node.get_span_pos(),
+                            &target_node,
                         );
                     }
                 }
@@ -58,14 +57,14 @@ impl<'ctx> Resolver<'ctx> {
                     self.set_type_to_scope(
                         first_var_name.as_ref().unwrap(),
                         first_var_ty.clone(),
-                        target_node.get_span_pos(),
+                        &target_node,
                     );
                     if second_var_name.is_some() {
                         second_var_ty = sup(&[val_ty.clone(), second_var_ty.clone()]);
                         self.set_type_to_scope(
                             second_var_name.as_ref().unwrap(),
                             second_var_ty.clone(),
-                            target_node.get_span_pos(),
+                            &target_node,
                         );
                     }
                 }
@@ -75,14 +74,14 @@ impl<'ctx> Resolver<'ctx> {
                     self.set_type_to_scope(
                         first_var_name.as_ref().unwrap(),
                         first_var_ty.clone(),
-                        target_node.get_span_pos(),
+                        &target_node,
                     );
                     if second_var_name.is_some() {
                         second_var_ty = sup(&[val_ty, second_var_ty.clone()]);
                         self.set_type_to_scope(
                             second_var_name.as_ref().unwrap(),
                             second_var_ty.clone(),
-                            target_node.get_span_pos(),
+                            &target_node,
                         );
                     }
                 }
@@ -93,19 +92,19 @@ impl<'ctx> Resolver<'ctx> {
                         self.set_type_to_scope(
                             first_var_name.as_ref().unwrap(),
                             first_var_ty.clone(),
-                            target_node.get_span_pos(),
+                            &target_node,
                         );
                         self.set_type_to_scope(
                             second_var_name.as_ref().unwrap(),
                             second_var_ty.clone(),
-                            target_node.get_span_pos(),
+                            &target_node,
                         );
                     } else {
                         first_var_ty = sup(&[self.str_ty(), first_var_ty.clone()]);
                         self.set_type_to_scope(
                             first_var_name.as_ref().unwrap(),
                             first_var_ty.clone(),
-                            target_node.get_span_pos(),
+                            &target_node,
                         );
                     }
                 }

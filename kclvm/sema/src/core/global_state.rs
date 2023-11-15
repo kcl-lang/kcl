@@ -72,12 +72,20 @@ impl GlobalState {
         scope_ref: ScopeRef,
         module_info: Option<&ModuleInfo>,
     ) -> Option<SymbolRef> {
-        self.scopes.get_scope(scope_ref)?.look_up_def(
+        match self.scopes.get_scope(scope_ref)?.look_up_def(
             name,
             &self.scopes,
             &self.symbols,
             module_info,
-        )
+        ) {
+            None => self
+                .symbols
+                .symbols_info
+                .global_builtin_symbols
+                .get(name)
+                .cloned(),
+            some => some,
+        }
     }
 
     /// look up scope by specific position
@@ -384,6 +392,8 @@ impl GlobalState {
                 },
             );
         }
+        // remove dummy file
+        file_sema_map.remove("");
 
         for (_, sema_info) in file_sema_map.iter_mut() {
             sema_info

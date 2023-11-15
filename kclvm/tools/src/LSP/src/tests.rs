@@ -405,7 +405,7 @@ fn complete_import_external_file_test() {
         .output()
         .unwrap();
 
-    let (program, prog_scope, _, _) = parse_param_and_compile(
+    let (program, prog_scope, _, gs) = parse_param_and_compile(
         Param {
             file: path.to_string(),
         },
@@ -418,7 +418,7 @@ fn complete_import_external_file_test() {
         line: 1,
         column: Some(11),
     };
-    let res = completion(Some('.'), &program, &pos, &prog_scope).unwrap();
+    let res = completion(Some('.'), &program, &pos, &prog_scope, &gs).unwrap();
 
     let got_labels: Vec<String> = match &res {
         CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
@@ -1280,7 +1280,7 @@ fn konfig_completion_test_main() {
     let mut main_path = konfig_path.clone();
     main_path.push("appops/nginx-example/dev/main.k");
     let main_path_str = main_path.to_str().unwrap().to_string();
-    let (program, prog_scope, _, _) = parse_param_and_compile(
+    let (program, prog_scope, _, gs) = parse_param_and_compile(
         Param {
             file: main_path_str.clone(),
         },
@@ -1294,7 +1294,7 @@ fn konfig_completion_test_main() {
         line: 6,
         column: Some(27),
     };
-    let got = completion(Some('.'), &program, &pos, &prog_scope).unwrap();
+    let got = completion(Some('.'), &program, &pos, &prog_scope, &gs).unwrap();
     let got_labels: Vec<String> = match got {
         CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
         CompletionResponse::List(_) => panic!("test failed"),
@@ -1312,7 +1312,7 @@ fn konfig_completion_test_main() {
         line: 7,
         column: Some(4),
     };
-    let got = completion(None, &program, &pos, &prog_scope).unwrap();
+    let got = completion(None, &program, &pos, &prog_scope, &gs).unwrap();
     let mut got_labels: Vec<String> = match got {
         CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
         CompletionResponse::List(_) => panic!("test failed"),
@@ -1395,7 +1395,7 @@ fn konfig_completion_test_main() {
         line: 1,
         column: Some(35),
     };
-    let got = completion(Some('.'), &program, &pos, &prog_scope).unwrap();
+    let got = completion(Some('.'), &program, &pos, &prog_scope, &gs).unwrap();
     let mut got_labels: Vec<String> = match got {
         CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
         CompletionResponse::List(_) => panic!("test failed"),

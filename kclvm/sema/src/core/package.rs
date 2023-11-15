@@ -59,6 +59,10 @@ impl PackageInfo {
     pub fn get_kfile_paths(&self) -> &IndexSet<String> {
         &self.kfile_paths
     }
+
+    pub fn get_pkg_filepath(&self) -> &String {
+        &self.pkg_filepath
+    }
 }
 #[allow(unused)]
 #[derive(Debug, Clone)]
