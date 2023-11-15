@@ -6,7 +6,6 @@ use lsp_server::RequestId;
 use lsp_server::Response;
 use lsp_types::notification::Exit;
 use lsp_types::request::GotoTypeDefinitionResponse;
-use lsp_types::CancelParams;
 use lsp_types::CompletionContext;
 use lsp_types::CompletionItem;
 use lsp_types::CompletionItemKind;

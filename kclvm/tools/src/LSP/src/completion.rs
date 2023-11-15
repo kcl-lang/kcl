@@ -19,26 +19,21 @@ use std::io;
 use std::{fs, path::Path};
 
 use crate::goto_def::find_def_with_gs;
-use chumsky::primitive::todo;
 use indexmap::IndexSet;
 use kclvm_ast::ast::{Expr, ImportStmt, Node, Program, Stmt};
 use kclvm_ast::pos::GetPos;
 use kclvm_ast::MAIN_PKG;
 use kclvm_config::modfile::KCL_FILE_EXTENSION;
 use kclvm_sema::core::global_state::GlobalState;
-use kclvm_sema::pkgpath_without_prefix;
 
 use kclvm_error::Position as KCLPos;
-use kclvm_sema::builtin::{
-    get_system_member_function_ty, get_system_module_members, STANDARD_SYSTEM_MODULES,
-    STRING_MEMBER_FUNCTIONS,
-};
+use kclvm_sema::builtin::{STANDARD_SYSTEM_MODULES, STRING_MEMBER_FUNCTIONS};
 use kclvm_sema::resolver::doc::{parse_doc_string, Doc};
 use kclvm_sema::resolver::scope::{ProgramScope, ScopeObjectKind};
 use kclvm_sema::ty::{FunctionType, SchemaType, Type};
 use lsp_types::{CompletionItem, CompletionItemKind};
 
-use crate::goto_def::{find_def, get_identifier_last_name, Definition};
+use crate::goto_def::{find_def, Definition};
 use crate::util::get_real_path_from_external;
 use crate::util::{inner_most_expr_in_stmt, is_in_docstring, is_in_schema_expr};
 
@@ -89,7 +84,7 @@ pub(crate) fn completion(
     match trigger_character {
         Some(c) => match c {
             '.' => completion_dot(program, pos, prog_scope, gs),
-            '=' | ':' => completion_assign(program, pos, prog_scope),
+            '=' | ':' => completion_assign(pos, gs),
             '\n' => completion_newline(program, pos, prog_scope),
             _ => None,
         },
@@ -127,9 +122,9 @@ fn completion_dot(
             _ => {
                 // Todo: string lit has not been processed using the new semantic model and need to handle here.
                 // It will be completed at the cursor inside the string literal instead of at the end.
-                let (expr, parent) = inner_most_expr_in_stmt(&stmt.node, &pre_pos, None);
+                let (expr, _) = inner_most_expr_in_stmt(&stmt.node, &pre_pos, None);
                 if let Some(node) = expr {
-                    if let Expr::StringLit(s) = node.node {
+                    if let Expr::StringLit(_) = node.node {
                         return Some(
                             into_completion_items(
                                 &STRING_MEMBER_FUNCTIONS
@@ -179,7 +174,7 @@ fn completion_dot(
                                 };
                                 let kind = match &def.get_sema_info().ty {
                                     Some(ty) => match &ty.kind {
-                                        kclvm_sema::ty::TypeKind::Schema(schema) => {
+                                        kclvm_sema::ty::TypeKind::Schema(_) => {
                                             Some(KCLCompletionItemKind::SchemaAttr)
                                         }
                                         _ => None,
@@ -221,24 +216,41 @@ fn completion_dot(
     Some(into_completion_items(&items).into())
 }
 
-fn completion_assign(
-    program: &Program,
-    pos: &KCLPos,
-    prog_scope: &ProgramScope,
-) -> Option<lsp_types::CompletionResponse> {
-    // Get the position of trigger_character '=' or ':'
-    let pos = &KCLPos {
-        filename: pos.filename.clone(),
-        line: pos.line,
-        column: pos.column.map(|c| c - 1),
-    };
-
-    match program.pos_to_stmt(pos) {
-        Some(node) => Some(
-            into_completion_items(&get_schema_attr_value_completion(node, pos, prog_scope)).into(),
-        ),
-        None => None,
+/// Get completion items for trigger '=' or ':'
+/// Now, just completion for schema attr value
+fn completion_assign(pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::CompletionResponse> {
+    let mut items = IndexSet::new();
+    if let Some(symbol_ref) = find_def_with_gs(&pos, &gs, false) {
+        if let Some(symbol) = gs.get_symbols().get_symbol(symbol_ref) {
+            if let Some(def) = symbol.get_definition() {
+                match def.get_kind() {
+                    kclvm_sema::core::symbol::SymbolKind::Attribute => {
+                        let sema_info = symbol.get_sema_info();
+                        match &sema_info.ty {
+                            Some(ty) => {
+                                items.extend(ty_complete_label(&ty).iter().map(|label| {
+                                    KCLCompletionItem {
+                                        label: format!(" {}", label),
+                                        detail: Some(format!(
+                                            "{}: {}",
+                                            symbol.get_name(),
+                                            ty.ty_str()
+                                        )),
+                                        kind: Some(KCLCompletionItemKind::Variable),
+                                        documentation: sema_info.doc.clone(),
+                                    }
+                                }));
+                                return Some(into_completion_items(&items).into());
+                            }
+                            None => {}
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
     }
+    None
 }
 
 fn completion_newline(
@@ -507,43 +519,6 @@ fn completion_import(
     Some(into_completion_items(&items).into())
 }
 
-/// Get completion items for trigger '=' or ':'
-/// Now, just completion for schema attr value
-pub(crate) fn get_schema_attr_value_completion(
-    stmt: Node<Stmt>,
-    pos: &KCLPos,
-    prog_scope: &ProgramScope,
-) -> IndexSet<KCLCompletionItem> {
-    let mut items: IndexSet<KCLCompletionItem> = IndexSet::new();
-    let (expr, _) = inner_most_expr_in_stmt(&stmt.node, pos, None);
-    if let Some(node) = expr {
-        if let Expr::Identifier(_) = node.node {
-            let def = find_def(stmt, pos, prog_scope);
-            if let Some(def) = def {
-                match def {
-                    crate::goto_def::Definition::Object(obj, _) => match obj.kind {
-                        ScopeObjectKind::Attribute => {
-                            let ty = obj.ty;
-                            items.extend(ty_complete_label(&ty).iter().map(|label| {
-                                KCLCompletionItem {
-                                    label: format!(" {}", label),
-                                    detail: Some(format!("{}: {}", obj.name, ty.ty_str())),
-                                    kind: Some(KCLCompletionItemKind::Variable),
-                                    documentation: obj.doc.clone(),
-                                }
-                            }))
-                        }
-                        _ => {}
-                    },
-                    _ => {}
-                }
-            }
-        }
-    }
-
-    items
-}
-
 fn ty_complete_label(ty: &Type) -> Vec<String> {
     match &ty.kind {
         kclvm_sema::ty::TypeKind::Bool => vec!["True".to_string(), "False".to_string()],
@@ -795,7 +770,6 @@ mod tests {
     fn dot_completion_test_without_dot() {
         let (file, program, prog_scope, _, gs) =
             compile_test_file("src/test_data/completion_test/without_dot/completion.k");
-        // let mut items: IndexSet<KCLCompletionItem> = IndexSet::new();
 
         // test completion for schema attr
         let pos = KCLPos {
@@ -829,7 +803,7 @@ mod tests {
             .iter()
             .map(|(name, ty)| func_ty_complete_label(name, &ty.into_function_ty()))
             .collect();
-        // assert_eq!(got_labels, expected_labels);
+        assert_eq!(got_labels, expected_labels);
 
         // test completion for import pkg path
         let pos = KCLPos {
