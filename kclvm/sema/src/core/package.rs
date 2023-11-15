@@ -107,4 +107,8 @@ impl ModuleInfo {
     pub fn get_import_info(&self, name: &str) -> Option<&ImportInfo> {
         self.imports.get(name)
     }
+
+    pub fn get_imports(&self) -> IndexMap<String, ImportInfo> {
+        self.imports.clone()
+    }
 }

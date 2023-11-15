@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::{collections::HashMap, path::Path};
 
 use indexmap::IndexMap;
 use kclvm_error::Position;
@@ -29,7 +29,7 @@ pub trait Scope {
         scope_data: &ScopeData,
         symbol_data: &Self::SymbolData,
         module_info: Option<&ModuleInfo>,
-    ) -> Vec<SymbolRef>;
+    ) -> HashMap<String, SymbolRef>;
 
     fn dump(&self, scope_data: &ScopeData, symbol_data: &Self::SymbolData) -> Option<String>;
 }
@@ -214,12 +214,18 @@ impl Scope for RootSymbolScope {
         _scope_data: &ScopeData,
         symbol_data: &Self::SymbolData,
         module_info: Option<&ModuleInfo>,
-    ) -> Vec<SymbolRef> {
+    ) -> HashMap<String, SymbolRef> {
+        let mut all_defs_map = HashMap::new();
         if let Some(owner) = symbol_data.get_symbol(self.owner) {
-            owner.get_all_attributes(symbol_data, module_info)
-        } else {
-            vec![]
+            let all_defs = owner.get_all_attributes(symbol_data, module_info);
+
+            for def_ref in all_defs {
+                if let Some(def) = symbol_data.get_symbol(def_ref) {
+                    all_defs_map.insert(def.get_name(), def_ref);
+                }
+            }
         }
+        all_defs_map
     }
 
     fn dump(&self, scope_data: &ScopeData, symbol_data: &Self::SymbolData) -> Option<String> {
@@ -349,21 +355,33 @@ impl Scope for LocalSymbolScope {
         scope_data: &ScopeData,
         symbol_data: &Self::SymbolData,
         module_info: Option<&ModuleInfo>,
-    ) -> Vec<SymbolRef> {
-        let mut result = vec![];
-        for def in self.defs.values() {
-            result.push(*def);
+    ) -> HashMap<String, SymbolRef> {
+        let mut all_defs_map = HashMap::new();
+        for def_ref in self.defs.values() {
+            if let Some(def) = symbol_data.get_symbol(*def_ref) {
+                all_defs_map.insert(def.get_name(), *def_ref);
+            }
         }
         if let Some(owner) = self.owner {
             if let Some(owner) = symbol_data.get_symbol(owner) {
-                result.append(&mut owner.get_all_attributes(symbol_data, module_info));
+                for def_ref in owner.get_all_attributes(symbol_data, module_info) {
+                    if let Some(def) = symbol_data.get_symbol(def_ref) {
+                        let name = def.get_name();
+                        if !all_defs_map.contains_key(&name) {
+                            all_defs_map.insert(name, def_ref);
+                        }
+                    }
+                }
             }
         }
         if let Some(parent) = scope_data.get_scope(self.parent) {
-            result.append(&mut parent.get_all_defs(scope_data, symbol_data, module_info));
+            for (name, def_ref) in parent.get_all_defs(scope_data, symbol_data, module_info) {
+                if !all_defs_map.contains_key(&name) {
+                    all_defs_map.insert(name, def_ref);
+                }
+            }
         }
-        result.sort();
-        result
+        all_defs_map
     }
 
     fn dump(&self, scope_data: &ScopeData, symbol_data: &Self::SymbolData) -> Option<String> {

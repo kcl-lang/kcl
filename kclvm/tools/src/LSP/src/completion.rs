@@ -90,12 +90,60 @@ pub(crate) fn completion(
         },
         None => {
             let mut completions: IndexSet<KCLCompletionItem> = IndexSet::new();
-
-            completions.extend(completion_variable(pos, prog_scope));
-
-            completions.extend(completion_attr(program, pos, gs));
-
+            // Complete builtin pkgs if in import stmt
             completions.extend(completion_import_builtin_pkg(program, pos, prog_scope));
+            if !completions.is_empty() {
+                return Some(into_completion_items(&completions).into());
+            }
+
+            // Complete import pkgs name
+            if let Some(pkg_info) = gs.get_packages().get_module_info(&pos.filename) {
+                completions.extend(pkg_info.get_imports().keys().map(|key| KCLCompletionItem {
+                    label: key.clone(),
+                    detail: None,
+                    documentation: None,
+                    kind: Some(KCLCompletionItemKind::Module),
+                }));
+            }
+
+            // Complete all usable symbol obj in inner most scope
+            if let Some(scope) = gs.look_up_scope(pos) {
+                if let Some(defs) = gs.get_all_defs_in_scope(scope) {
+                    for symbol_ref in defs {
+                        match gs.get_symbols().get_symbol(symbol_ref) {
+                            Some(def) => {
+                                let sema_info = def.get_sema_info();
+                                let name = def.get_name();
+                                let ty = sema_info.ty.clone().unwrap();
+
+                                match symbol_ref.get_kind() {
+                                    kclvm_sema::core::symbol::SymbolKind::Schema => {
+                                        let schema_ty = ty.into_schema_type();
+                                        completions.insert(schema_ty_completion_item(&schema_ty));
+                                    }
+                                    kclvm_sema::core::symbol::SymbolKind::Package => {
+                                        completions.insert(KCLCompletionItem {
+                                            label: name,
+                                            detail: None,
+                                            documentation: None,
+                                            kind: Some(KCLCompletionItemKind::Module),
+                                        });
+                                    }
+                                    _ => {
+                                        completions.insert(KCLCompletionItem {
+                                            label: name,
+                                            detail: None,
+                                            documentation: None,
+                                            kind: None,
+                                        });
+                                    }
+                                }
+                            }
+                            None => {}
+                        }
+                    }
+                }
+            }
 
             Some(into_completion_items(&completions).into())
         }
@@ -333,105 +381,33 @@ fn completion_import_builtin_pkg(
     completions
 }
 
-/// Complete schema attr
-///
-/// ```no_run
-/// #[cfg(not(test))]
-/// p = Person {
-///     n<cursor>
-/// }
-/// ```
-/// complete to
-/// ```no_run
-/// #[cfg(not(test))]
-/// p = Person {
-///     name<cursor>
-/// }
-/// ```
-fn completion_attr(
-    program: &Program,
-    pos: &KCLPos,
-    gs: &GlobalState,
-) -> IndexSet<KCLCompletionItem> {
-    let mut items = IndexSet::new();
-    if let Some((_, schema_expr)) = is_in_schema_expr(program, pos) {
-        let pos = schema_expr.name.get_end_pos();
-        if let Some(symbol_ref) = find_def_with_gs(&pos, &gs, true) {
-            if let Some(symbol) = gs.get_symbols().get_symbol(symbol_ref) {
-                if let Some(def) = symbol.get_definition() {
-                    match def.get_kind() {
-                        kclvm_sema::core::symbol::SymbolKind::Schema => {
-                            if let Some(ty) = &symbol.get_sema_info().ty {
-                                match &ty.kind {
-                                    kclvm_sema::ty::TypeKind::Schema(schema_ty) => {
-                                        items.extend(schema_ty.attrs.iter().map(|(name, attr)| {
-                                            KCLCompletionItem {
-                                                label: name.clone(),
-                                                detail: Some(format!(
-                                                    "{}: {}",
-                                                    name,
-                                                    attr.ty.ty_str()
-                                                )),
-                                                documentation: attr.doc.clone(),
-                                                kind: Some(KCLCompletionItemKind::SchemaAttr),
-                                            }
-                                        }))
-                                    }
-                                    _ => {}
-                                }
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-            }
-        }
-    }
-    items
-}
-
-/// Complete all usable scope obj in inner_most_scope
-fn completion_variable(pos: &KCLPos, prog_scope: &ProgramScope) -> IndexSet<KCLCompletionItem> {
-    let mut completions: IndexSet<KCLCompletionItem> = IndexSet::new();
-    if let Some(inner_most_scope) = prog_scope.inner_most_scope(pos) {
-        for (name, obj) in inner_most_scope.all_usable_objects() {
-            match &obj.borrow().kind {
-                kclvm_sema::resolver::scope::ScopeObjectKind::Module(module) => {
-                    for stmt in &module.import_stmts {
-                        match &stmt.0.node {
-                            Stmt::Import(import_stmt) => {
-                                completions.insert(KCLCompletionItem {
-                                    label: import_stmt.name.clone(),
-                                    detail: None,
-                                    documentation: None,
-                                    kind: Some(KCLCompletionItemKind::Module),
-                                });
-                            }
-                            _ => {}
-                        }
-                    }
-                }
-                kclvm_sema::resolver::scope::ScopeObjectKind::Definition => {
-                    let schema_ty = obj.borrow().ty.clone().into_schema_type();
-                    completions.insert(schema_ty_completion_item(&schema_ty));
-                }
-                _ => {
-                    completions.insert(KCLCompletionItem {
-                        label: name,
-                        detail: Some(format!(
-                            "{}: {}",
-                            obj.borrow().name,
-                            obj.borrow().ty.ty_str()
-                        )),
-                        documentation: obj.borrow().doc.clone(),
-                        kind: Some(KCLCompletionItemKind::Schema),
-                    });
-                }
-            }
-        }
-    }
-    completions
-}
+// /// Complete all usable scope obj in inner_most_scope
+// fn completion_variable(pos: &KCLPos, prog_scope: &ProgramScope) -> IndexSet<KCLCompletionItem> {
+//     let mut completions: IndexSet<KCLCompletionItem> = IndexSet::new();
+//     if let Some(inner_most_scope) = prog_scope.inner_most_scope(pos) {
+//         for (_, obj) in inner_most_scope.all_usable_objects() {
+//             match &obj.borrow().kind {
+//                 kclvm_sema::resolver::scope::ScopeObjectKind::Module(module) => {
+//                     for stmt in &module.import_stmts {
+//                         match &stmt.0.node {
+//                             Stmt::Import(import_stmt) => {
+//                                 completions.insert(KCLCompletionItem {
+//                                     label: import_stmt.name.clone(),
+//                                     detail: None,
+//                                     documentation: None,
+//                                     kind: Some(KCLCompletionItemKind::Module),
+//                                 });
+//                             }
+//                             _ => {}
+//                         }
+//                     }
+//                 }
+//                 _ => {}
+//             }
+//         }
+//     }
+//     completions
+// }
 
 /// Complete schema name
 ///
@@ -629,11 +605,11 @@ mod tests {
         let pos = KCLPos {
             filename: file.to_owned(),
             line: 26,
-            column: Some(5),
+            column: Some(1),
         };
 
         let got = completion(None, &program, &pos, &prog_scope, &gs).unwrap();
-        let got_labels: Vec<String> = match got {
+        let mut got_labels: Vec<String> = match got {
             CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
             CompletionResponse::List(_) => panic!("test failed"),
         };
@@ -642,6 +618,8 @@ mod tests {
             "", // generate from error recovery of "pkg."
             "subpkg", "math", "Person{}", "P{}", "p", "p1", "p2", "p3", "p4", "aaaa",
         ];
+        got_labels.sort();
+        expected_labels.sort();
 
         assert_eq!(got_labels, expected_labels);
 
@@ -653,12 +631,14 @@ mod tests {
         };
 
         let got = completion(None, &program, &pos, &prog_scope, &gs).unwrap();
-        let got_labels: Vec<String> = match got {
+        let mut got_labels: Vec<String> = match got {
             CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
             CompletionResponse::List(_) => panic!("test failed"),
         };
 
         expected_labels.extend(["name", "age"]);
+        got_labels.sort();
+        expected_labels.sort();
         assert_eq!(got_labels, expected_labels);
     }
 
@@ -923,10 +903,12 @@ mod tests {
         };
 
         let got = completion(None, &program, &pos, &prog_scope, &gs).unwrap();
-
+        let got_labels: Vec<String> = match &got {
+            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
+            CompletionResponse::List(_) => panic!("test failed"),
+        };
         items.extend(
             [
-                "", // generate from error recovery
                 "collection",
                 "net",
                 "manifests",
@@ -1064,12 +1046,15 @@ mod tests {
             column: Some(5),
         };
 
-        let got = completion(None, &program, &pos, &prog_scope, &gs).unwrap();
-        match got {
+        let mut got = completion(None, &program, &pos, &prog_scope, &gs).unwrap();
+        match &mut got {
             CompletionResponse::Array(arr) => {
                 assert_eq!(
-                    arr[1],
-                    CompletionItem {
+                    arr.iter()
+                        .filter(|item| item.label == "Person(b){}")
+                        .next()
+                        .unwrap(),
+                    &CompletionItem {
                         label: "Person(b){}".to_string(),
                         kind: Some(CompletionItemKind::CLASS),
                         detail: Some(
