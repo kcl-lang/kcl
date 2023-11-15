@@ -20,7 +20,7 @@ use std::{fs, path::Path};
 
 use crate::goto_def::find_def_with_gs;
 use indexmap::IndexSet;
-use kclvm_ast::ast::{Expr, ImportStmt, Node, Program, Stmt};
+use kclvm_ast::ast::{Expr, ImportStmt, Program, Stmt};
 use kclvm_ast::pos::GetPos;
 use kclvm_ast::MAIN_PKG;
 use kclvm_config::modfile::KCL_FILE_EXTENSION;
@@ -29,7 +29,7 @@ use kclvm_sema::core::global_state::GlobalState;
 use kclvm_error::Position as KCLPos;
 use kclvm_sema::builtin::{STANDARD_SYSTEM_MODULES, STRING_MEMBER_FUNCTIONS};
 use kclvm_sema::resolver::doc::{parse_doc_string, Doc};
-use kclvm_sema::resolver::scope::{ProgramScope, ScopeObjectKind};
+use kclvm_sema::resolver::scope::ProgramScope;
 use kclvm_sema::ty::{FunctionType, SchemaType, Type};
 use lsp_types::{CompletionItem, CompletionItemKind};
 
@@ -93,7 +93,7 @@ pub(crate) fn completion(
 
             completions.extend(completion_variable(pos, prog_scope));
 
-            completions.extend(completion_attr(program, pos, prog_scope));
+            completions.extend(completion_attr(program, pos, gs));
 
             completions.extend(completion_import_builtin_pkg(program, pos, prog_scope));
 
@@ -336,12 +336,14 @@ fn completion_import_builtin_pkg(
 /// Complete schema attr
 ///
 /// ```no_run
+/// #[cfg(not(test))]
 /// p = Person {
 ///     n<cursor>
 /// }
 /// ```
 /// complete to
 /// ```no_run
+/// #[cfg(not(test))]
 /// p = Person {
 ///     name<cursor>
 /// }
@@ -349,27 +351,43 @@ fn completion_import_builtin_pkg(
 fn completion_attr(
     program: &Program,
     pos: &KCLPos,
-    prog_scope: &ProgramScope,
+    gs: &GlobalState,
 ) -> IndexSet<KCLCompletionItem> {
-    let mut completions: IndexSet<KCLCompletionItem> = IndexSet::new();
-
-    if let Some((node, schema_expr)) = is_in_schema_expr(program, pos) {
-        let schema_def = find_def(node, &schema_expr.name.get_end_pos(), prog_scope);
-        if let Some(schema) = schema_def {
-            if let Definition::Object(obj, _) = schema {
-                let schema_type = obj.ty.into_schema_type();
-                completions.extend(schema_type.attrs.iter().map(|(name, attr)| {
-                    KCLCompletionItem {
-                        label: name.clone(),
-                        detail: Some(format!("{}: {}", name, attr.ty.ty_str())),
-                        documentation: attr.doc.clone(),
-                        kind: Some(KCLCompletionItemKind::SchemaAttr),
+    let mut items = IndexSet::new();
+    if let Some((_, schema_expr)) = is_in_schema_expr(program, pos) {
+        let pos = schema_expr.name.get_end_pos();
+        if let Some(symbol_ref) = find_def_with_gs(&pos, &gs, true) {
+            if let Some(symbol) = gs.get_symbols().get_symbol(symbol_ref) {
+                if let Some(def) = symbol.get_definition() {
+                    match def.get_kind() {
+                        kclvm_sema::core::symbol::SymbolKind::Schema => {
+                            if let Some(ty) = &symbol.get_sema_info().ty {
+                                match &ty.kind {
+                                    kclvm_sema::ty::TypeKind::Schema(schema_ty) => {
+                                        items.extend(schema_ty.attrs.iter().map(|(name, attr)| {
+                                            KCLCompletionItem {
+                                                label: name.clone(),
+                                                detail: Some(format!(
+                                                    "{}: {}",
+                                                    name,
+                                                    attr.ty.ty_str()
+                                                )),
+                                                documentation: attr.doc.clone(),
+                                                kind: Some(KCLCompletionItemKind::SchemaAttr),
+                                            }
+                                        }))
+                                    }
+                                    _ => {}
+                                }
+                            }
+                        }
+                        _ => {}
                     }
-                }));
+                }
             }
         }
     }
-    completions
+    items
 }
 
 /// Complete all usable scope obj in inner_most_scope
@@ -418,10 +436,12 @@ fn completion_variable(pos: &KCLPos, prog_scope: &ProgramScope) -> IndexSet<KCLC
 /// Complete schema name
 ///
 /// ```no_run
+/// #[cfg(not(test))]
 /// p = P<cursor>
 /// ```
 /// complete to
 /// ```no_run
+/// #[cfg(not(test))]
 /// p = Person(param1, param2){}<cursor>
 /// ```
 fn schema_ty_completion_item(schema_ty: &SchemaType) -> KCLCompletionItem {

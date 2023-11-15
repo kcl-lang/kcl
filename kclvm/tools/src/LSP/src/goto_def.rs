@@ -497,22 +497,6 @@ fn goto_def_for_import(
     positions_to_goto_def_resp(&positions)
 }
 
-#[deprecated = "Wait for migrate to new sema model"]
-pub(crate) fn get_identifier_last_name(id: &Identifier) -> String {
-    match id.names.len() {
-        0 => "".to_string(),
-        1 => id.names[0].node.clone(),
-        _ => {
-            if id.names.last().unwrap().node == *"" {
-                // MissingExpr
-                id.names.get(id.names.len() - 2).unwrap().node.clone()
-            } else {
-                id.names.last().unwrap().node.clone()
-            }
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::goto_definition_with_gs;
