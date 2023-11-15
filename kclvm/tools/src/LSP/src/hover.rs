@@ -2,11 +2,11 @@ use kclvm_ast::ast::Program;
 use kclvm_error::Position as KCLPos;
 use kclvm_sema::{
     resolver::scope::{ProgramScope, ScopeObjectKind},
-    ty::{FunctionType, SchemaType},
+    ty::{FunctionType, SchemaType}, core::global_state::GlobalState,
 };
 use lsp_types::{Hover, HoverContents, MarkedString};
 
-use crate::goto_def::find_def;
+use crate::goto_def::{find_def_with_gs, find_def};
 
 /// Returns a short text describing element at position.
 /// Specifically, the doc for schema and schema attr(todo)
@@ -14,6 +14,52 @@ pub(crate) fn hover(
     program: &Program,
     kcl_pos: &KCLPos,
     prog_scope: &ProgramScope,
+    gs: &GlobalState,
+) -> Option<lsp_types::Hover> {
+    let mut docs: Vec<String> = vec![];
+    let def = find_def_with_gs(kcl_pos, &gs, true);
+    match def {
+        Some(def_ref) => match gs.get_symbols().get_symbol(def_ref) {
+           Some(obj) => match def_ref.get_kind() {
+            kclvm_sema::core::symbol::SymbolKind::Schema => {
+                match &obj.get_sema_info().ty {
+                    Some(schema_ty) => {
+                         docs.extend(build_schema_hover_content(&schema_ty.into_schema_type()));
+                    },
+                    _ => {},
+                }
+            },
+            kclvm_sema::core::symbol::SymbolKind::Value => {
+                 match &obj.get_sema_info().ty{
+                    Some(func_ty) => {
+                        build_func_hover_content(&func_ty.into_func_type(),obj.get_name().clone());
+                    },
+                    _ => {},
+                }
+            },
+            _=>{
+                // Variable
+                 // ```
+                 // name: type
+                 //```
+                 docs.push(format!("{}: {}", &obj.get_name(), obj.get_sema_info().ty.clone()?.into_type_annotation_str()));
+                 if let Some(doc) = obj.get_sema_info().doc.clone() {
+                    docs.push(doc);
+                 }
+            }
+        },
+        None =>{},
+        },
+        None => {},
+    }
+    docs_to_hover(docs)
+}
+
+pub(crate) fn hover2(
+    program: &Program,
+    kcl_pos: &KCLPos,
+    prog_scope: &ProgramScope,
+    gs: &GlobalState,
 ) -> Option<lsp_types::Hover> {
     match program.pos_to_stmt(kcl_pos) {
         Some(node) => {
@@ -157,7 +203,7 @@ mod tests {
     fn schema_doc_hover_test() {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-        let (file, program, prog_scope, _, _gs) =
+        let (file, program, prog_scope, _, gs) =
             compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         let mut expected_path = path;
@@ -169,7 +215,7 @@ mod tests {
             line: 4,
             column: Some(11),
         };
-        let got = hover(&program, &pos, &prog_scope).unwrap();
+        let got = hover(&program, &pos, &prog_scope,&gs).unwrap();
         match got.contents {
             lsp_types::HoverContents::Array(vec) => {
                 if let MarkedString::String(s) = vec[0].clone() {
@@ -189,7 +235,7 @@ mod tests {
             line: 5,
             column: Some(7),
         };
-        let got = hover(&program, &pos, &prog_scope).unwrap();
+        let got = hover(&program, &pos, &prog_scope,&gs).unwrap();
         match got.contents {
             lsp_types::HoverContents::Scalar(marked_string) => {
                 if let MarkedString::String(s) = marked_string {
@@ -203,7 +249,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn schema_doc_hover_test1() {
-        let (file, program, prog_scope, _, _gs) =
+        let (file, program, prog_scope, _, gs) =
             compile_test_file("src/test_data/hover_test/hover.k");
 
         let pos = KCLPos {
@@ -211,7 +257,7 @@ mod tests {
             line: 16,
             column: Some(8),
         };
-        let got = hover(&program, &pos, &prog_scope).unwrap();
+        let got = hover(&program, &pos, &prog_scope,&gs).unwrap();
 
         match got.contents {
             lsp_types::HoverContents::Array(vec) => {
@@ -232,7 +278,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn schema_attr_hover_test() {
-        let (file, program, prog_scope, _, _gs) =
+        let (file, program, prog_scope, _, gs) =
             compile_test_file("src/test_data/hover_test/hover.k");
 
         let pos = KCLPos {
@@ -240,7 +286,7 @@ mod tests {
             line: 17,
             column: Some(7),
         };
-        let got = hover(&program, &pos, &prog_scope).unwrap();
+        let got = hover(&program, &pos, &prog_scope,&gs).unwrap();
 
         match got.contents {
             lsp_types::HoverContents::Array(vec) => {
@@ -259,7 +305,7 @@ mod tests {
             line: 18,
             column: Some(7),
         };
-        let got = hover(&program, &pos, &prog_scope).unwrap();
+        let got = hover(&program, &pos, &prog_scope,&gs).unwrap();
 
         match got.contents {
             lsp_types::HoverContents::Array(vec) => {
@@ -277,7 +323,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn func_def_hover() {
-        let (file, program, prog_scope, _, _gs) =
+        let (file, program, prog_scope, _, gs) =
             compile_test_file("src/test_data/hover_test/hover.k");
 
         let pos = KCLPos {
@@ -285,7 +331,7 @@ mod tests {
             line: 22,
             column: Some(18),
         };
-        let got = hover(&program, &pos, &prog_scope).unwrap();
+        let got = hover(&program, &pos, &prog_scope,&gs).unwrap();
 
         match got.contents {
             lsp_types::HoverContents::Array(vec) => {
@@ -308,7 +354,7 @@ mod tests {
             line: 23,
             column: Some(14),
         };
-        let got = hover(&program, &pos, &prog_scope).unwrap();
+        let got = hover(&program, &pos, &prog_scope,&gs).unwrap();
 
         match got.contents {
             lsp_types::HoverContents::Array(vec) => {
@@ -331,7 +377,7 @@ mod tests {
             line: 25,
             column: Some(4),
         };
-        let got = hover(&program, &pos, &prog_scope).unwrap();
+        let got = hover(&program, &pos, &prog_scope,&gs).unwrap();
 
         match got.contents {
             lsp_types::HoverContents::Array(vec) => {
@@ -350,14 +396,14 @@ mod tests {
     #[test]
     #[bench_test]
     fn complex_select_hover() {
-        let (file, program, prog_scope, _, _gs) =
+        let (file, program, prog_scope, _, gs) =
             compile_test_file("src/test_data/hover_test/fib.k");
         let pos = KCLPos {
             filename: file.clone(),
             line: 14,
             column: Some(22),
         };
-        let got = hover(&program, &pos, &prog_scope).unwrap();
+        let got = hover(&program, &pos, &prog_scope,&gs).unwrap();
         match got.contents {
             lsp_types::HoverContents::Scalar(marked_string) => {
                 if let MarkedString::String(s) = marked_string {
@@ -371,14 +417,14 @@ mod tests {
     #[test]
     #[bench_test]
     fn str_var_func_hover() {
-        let (file, program, prog_scope, _, _gs) =
+        let (file, program, prog_scope, _, gs) =
             compile_test_file("src/test_data/hover_test/hover.k");
         let pos = KCLPos {
             filename: file.clone(),
             line: 28,
             column: Some(12),
         };
-        let got = hover(&program, &pos, &prog_scope).unwrap();
+        let got = hover(&program, &pos, &prog_scope,&gs).unwrap();
         match got.contents {
             lsp_types::HoverContents::Array(vec) => {
                 assert_eq!(vec.len(), 3);

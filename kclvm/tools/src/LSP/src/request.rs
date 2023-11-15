@@ -226,7 +226,7 @@ pub(crate) fn handle_hover(
     }
     let db = snapshot.get_db(&path.clone().into())?;
     let kcl_pos = kcl_pos(&file, params.text_document_position_params.position);
-    let res = hover::hover(&db.prog, &kcl_pos, &db.scope);
+    let res = hover::hover(&db.prog, &kcl_pos, &db.scope,&db.gs);
     if res.is_none() {
         log_message("Hover definition not found".to_string(), &sender)?;
     }
