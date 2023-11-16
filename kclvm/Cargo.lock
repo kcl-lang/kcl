@@ -1411,6 +1411,7 @@ dependencies = [
  "kclvm-driver",
  "kclvm-error",
  "kclvm-parser",
+ "kclvm-query",
  "kclvm-sema",
  "kclvm-tools",
  "kclvm-utils",

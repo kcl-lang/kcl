@@ -27,3 +27,12 @@ pub(crate) fn split_field_path(path: &str) -> Result<(String, String)> {
 pub(crate) fn invalid_spec_error(spec: &str) -> anyhow::Error {
     anyhow!("Invalid spec format '{}', expected <pkgpath>:<field_path>=<filed_value> or <pkgpath>:<field_path>-", spec)
 }
+
+/// Get the invalid symbol selector spec error message.
+#[inline]
+pub(crate) fn invalid_symbol_selector_spec_error(spec: &str) -> anyhow::Error {
+    anyhow!(
+        "Invalid spec format '{}', expected <pkgpath>:<field_path>",
+        spec
+    )
+}

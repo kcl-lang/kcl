@@ -5,6 +5,7 @@
 //! AST, recursively modifying or deleting the values of the nodes in the AST.
 pub mod r#override;
 pub mod query;
+pub mod selector;
 
 #[cfg(test)]
 mod tests;

@@ -13,6 +13,7 @@ mod hover;
 mod main_loop;
 mod notification;
 mod quick_fix;
+mod rename;
 mod request;
 mod state;
 #[cfg(test)]
