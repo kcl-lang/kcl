@@ -1255,7 +1255,7 @@ mod tests {
                     .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
                 17_u64,
                 26_u64,
-                11_usize,
+                9_usize,
             ),
             // __main__.Main schema expr scope
             (
@@ -1264,7 +1264,7 @@ mod tests {
                     .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
                 30,
                 41,
-                11,
+                9,
             ),
             // pkg.Person schema expr scope
             (
