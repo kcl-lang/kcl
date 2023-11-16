@@ -1069,11 +1069,12 @@ mod tests {
             column: Some(4),
         };
 
-        let got = completion(Some('\n'), &program, &pos, &prog_scope, &gs).unwrap();
-        match got {
+        let mut got = completion(Some('\n'), &program, &pos, &prog_scope, &gs).unwrap();
+        match &mut got {
             CompletionResponse::Array(arr) => {
+                arr.sort_by(|a, b| a.label.cmp(&b.label));
                 assert_eq!(
-                    arr[0],
+                    arr[1],
                     CompletionItem {
                         label: "c".to_string(),
                         kind: Some(CompletionItemKind::FIELD),
@@ -1099,9 +1100,10 @@ mod tests {
             column: Some(4),
         };
 
-        let got = completion(Some('\n'), &program, &pos, &prog_scope, &gs).unwrap();
-        match got {
+        let mut got = completion(Some('\n'), &program, &pos, &prog_scope, &gs).unwrap();
+        match &mut got {
             CompletionResponse::Array(arr) => {
+                arr.sort_by(|a, b| a.label.cmp(&b.label));
                 assert_eq!(
                     arr[0],
                     CompletionItem {
