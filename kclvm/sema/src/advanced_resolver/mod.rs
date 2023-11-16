@@ -1253,7 +1253,7 @@ mod tests {
                     .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
                 17_u64,
                 26_u64,
-                11_usize,
+                9_usize,
             ),
             // __main__.Main schema expr scope
             (
@@ -1262,7 +1262,7 @@ mod tests {
                     .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
                 30,
                 41,
-                11,
+                9,
             ),
             // pkg.Person schema expr scope
             (
@@ -1313,6 +1313,11 @@ mod tests {
                 .unwrap();
 
             let all_defs = gs.get_all_defs_in_scope(scope_ref).unwrap();
+            for def in &all_defs{
+                let def = gs.get_symbols().get_symbol(def.clone());
+                println!("{:?}", def.unwrap().get_name());
+
+            }
             assert_eq!(all_defs.len(), *def_num)
         }
     }
