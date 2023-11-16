@@ -1,5 +1,6 @@
 use anyhow::{anyhow, Ok};
 use crossbeam_channel::Sender;
+use kclvm_ast::pos::GetPos;
 use kclvm_sema::info::is_valid_kcl_name;
 use lsp_types::{Location, TextEdit};
 use ra_ap_vfs::VfsPath;
@@ -17,6 +18,7 @@ use crate::{
     goto_def::goto_definition_with_gs,
     hover, quick_fix,
     state::{log_message, LanguageServerSnapshot, LanguageServerState, Task},
+    util::{parse_param_and_compile, Param},
 };
 
 impl LanguageServerState {
@@ -194,19 +196,18 @@ pub(crate) fn handle_completion(
     if !snapshot.verify_request_path(&path.clone().into(), &sender) {
         return Ok(None);
     }
-    let db = snapshot.get_db(&path.clone().into())?;
+
+    let db =
+        parse_param_and_compile(Param { file: file.clone() }, Some(snapshot.vfs.clone())).unwrap();
+
     let kcl_pos = kcl_pos(&file, params.text_document_position.position);
     let completion_trigger_character = params
         .context
         .and_then(|ctx| ctx.trigger_character)
         .and_then(|s| s.chars().next());
-    let res = completion(
-        completion_trigger_character,
-        &db.prog,
-        &kcl_pos,
-        &db.scope,
-        &db.gs,
-    );
+
+    let res = completion(completion_trigger_character, &db.0, &kcl_pos, &db.1, &db.3);
+
     if res.is_none() {
         log_message("Completion item not found".to_string(), &sender)?;
     }
