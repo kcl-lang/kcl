@@ -1313,11 +1313,6 @@ mod tests {
                 .unwrap();
 
             let all_defs = gs.get_all_defs_in_scope(scope_ref).unwrap();
-            for def in &all_defs{
-                let def = gs.get_symbols().get_symbol(def.clone());
-                println!("{:?}", def.unwrap().get_name());
-
-            }
             assert_eq!(all_defs.len(), *def_num)
         }
     }

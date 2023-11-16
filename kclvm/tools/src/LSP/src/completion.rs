@@ -381,34 +381,6 @@ fn completion_import_builtin_pkg(
     completions
 }
 
-// /// Complete all usable scope obj in inner_most_scope
-// fn completion_variable(pos: &KCLPos, prog_scope: &ProgramScope) -> IndexSet<KCLCompletionItem> {
-//     let mut completions: IndexSet<KCLCompletionItem> = IndexSet::new();
-//     if let Some(inner_most_scope) = prog_scope.inner_most_scope(pos) {
-//         for (_, obj) in inner_most_scope.all_usable_objects() {
-//             match &obj.borrow().kind {
-//                 kclvm_sema::resolver::scope::ScopeObjectKind::Module(module) => {
-//                     for stmt in &module.import_stmts {
-//                         match &stmt.0.node {
-//                             Stmt::Import(import_stmt) => {
-//                                 completions.insert(KCLCompletionItem {
-//                                     label: import_stmt.name.clone(),
-//                                     detail: None,
-//                                     documentation: None,
-//                                     kind: Some(KCLCompletionItemKind::Module),
-//                                 });
-//                             }
-//                             _ => {}
-//                         }
-//                     }
-//                 }
-//                 _ => {}
-//             }
-//         }
-//     }
-//     completions
-// }
-
 /// Complete schema name
 ///
 /// ```no_run
