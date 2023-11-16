@@ -2,7 +2,6 @@ use super::Options;
 use super::Resolver;
 use crate::builtin::BUILTIN_FUNCTION_NAMES;
 use crate::pre_process::pre_process_program;
-use crate::resolver::cache::CachedScope;
 use crate::resolver::resolve_program;
 use crate::resolver::resolve_program_with_opts;
 use crate::resolver::scope::*;
