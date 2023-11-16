@@ -1,6 +1,5 @@
 mod arg;
 mod attr;
-pub mod cache;
 mod calculation;
 mod config;
 pub mod doc;
@@ -36,8 +35,7 @@ use kclvm_ast::ast::AstIndex;
 use kclvm_ast::ast::Program;
 use kclvm_error::*;
 
-use self::cache::CachedScope;
-use self::scope::{builtin_scope, ProgramScope};
+use self::scope::{builtin_scope, CachedScope, ProgramScope};
 
 /// Resolver is responsible for program semantic checking, mainly
 /// including type checking and contract model checking.
