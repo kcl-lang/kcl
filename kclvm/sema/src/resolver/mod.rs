@@ -1,5 +1,6 @@
 mod arg;
 mod attr;
+pub mod cache;
 mod calculation;
 mod config;
 pub mod doc;
@@ -35,6 +36,7 @@ use kclvm_ast::ast::AstIndex;
 use kclvm_ast::ast::Program;
 use kclvm_error::*;
 
+use self::cache::CachedScope;
 use self::scope::{builtin_scope, ProgramScope};
 
 /// Resolver is responsible for program semantic checking, mainly
@@ -167,15 +169,26 @@ impl Default for Options {
 /// Resolve program with default options.
 #[inline]
 pub fn resolve_program(program: &mut Program) -> ProgramScope {
-    resolve_program_with_opts(program, Options::default())
+    resolve_program_with_opts(program, Options::default(), None)
 }
 
 /// Resolve program with options. See [Options]
-pub fn resolve_program_with_opts(program: &mut Program, opts: Options) -> ProgramScope {
+pub fn resolve_program_with_opts(
+    program: &mut Program,
+    opts: Options,
+    cached_scope: Option<CachedScope>,
+) -> ProgramScope {
     pre_process_program(program, &opts);
     let mut resolver = Resolver::new(program, opts.clone());
+    if let Some(mut cached_scope) = cached_scope {
+        cached_scope.update(program);
+        resolver.scope_map = cached_scope.scope_map;
+        resolver.scope_map.remove(kclvm_ast::MAIN_PKG);
+        resolver.node_ty_map = cached_scope.node_ty_map
+    }
     resolver.resolve_import();
     let scope = resolver.check_and_lint(kclvm_ast::MAIN_PKG);
+
     if opts.type_alise {
         let type_alias_mapping = resolver.ctx.type_alias_mapping.clone();
         process_program_type_alias(program, type_alias_mapping);

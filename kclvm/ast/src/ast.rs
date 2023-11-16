@@ -162,6 +162,18 @@ impl<T> Node<T> {
         }
     }
 
+    pub fn node_with_pos_and_id(node: T, pos: PosTuple, id: AstIndex) -> Self {
+        Self {
+            id,
+            node,
+            filename: pos.0.clone(),
+            line: pos.1,
+            column: pos.2,
+            end_line: pos.3,
+            end_column: pos.4,
+        }
+    }
+
     pub fn node_with_pos(node: T, pos: PosTuple) -> Self {
         Self {
             id: AstIndex::default(),

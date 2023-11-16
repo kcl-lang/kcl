@@ -88,6 +88,7 @@ pub fn lint_files(
                 merge_program: false,
                 ..Default::default()
             },
+            None,
         )
         .handler
         .diagnostics,

@@ -106,10 +106,13 @@ impl<'ctx> AdvancedResolver<'ctx> {
         for (name, modules) in advanced_resolver.ctx.program.pkgs.iter() {
             advanced_resolver.ctx.current_pkgpath = Some(name.clone());
             if let Some(pkg_info) = advanced_resolver.gs.get_packages().get_package_info(name) {
-                advanced_resolver.enter_root_scope(name.clone(), pkg_info.pkg_filepath.clone());
                 if modules.is_empty() {
                     continue;
                 }
+                if !advanced_resolver.ctx.scopes.is_empty() {
+                    advanced_resolver.ctx.scopes.clear();
+                }
+                advanced_resolver.enter_root_scope(name.clone(), pkg_info.pkg_filepath.clone());
                 for module in modules.iter() {
                     advanced_resolver.ctx.current_filename = Some(module.filename.clone());
                     advanced_resolver.walk_module(module);
@@ -136,7 +139,6 @@ impl<'ctx> AdvancedResolver<'ctx> {
 
     fn enter_local_scope(&mut self, filepath: &str, start: Position, end: Position) {
         let parent = *self.ctx.scopes.last().unwrap();
-
         let local_scope = LocalSymbolScope::new(parent, start, end);
         let scope_ref = self.gs.get_scopes_mut().alloc_local_scope(local_scope);
 

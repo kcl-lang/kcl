@@ -136,11 +136,17 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
     }
 
     fn walk_schema_stmt(&mut self, schema_stmt: &'ctx ast::SchemaStmt) -> Self::Result {
-        let schema_ty = self.ctx.node_ty_map.get(&schema_stmt.name.id)?.clone();
+        let schema_ty = self
+            .ctx
+            .node_ty_map
+            .get(&schema_stmt.name.id)
+            .unwrap()
+            .clone();
         let schema_symbol = self
             .gs
             .get_symbols()
-            .get_type_symbol(&schema_ty, self.get_current_module_info())?;
+            .get_type_symbol(&schema_ty, self.get_current_module_info())
+            .unwrap();
 
         if self
             .gs
@@ -198,24 +204,29 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
             self.gs
                 .get_symbols_mut()
                 .schemas
-                .get_mut(schema_symbol.get_id())?
+                .get_mut(schema_symbol.get_id())
+                .unwrap()
                 .parent_schema = self.walk_identifier_expr(parent);
         }
         if let Some(for_host) = &schema_stmt.for_host_name {
             self.gs
                 .get_symbols_mut()
                 .schemas
-                .get_mut(schema_symbol.get_id())?
+                .get_mut(schema_symbol.get_id())
+                .unwrap()
                 .for_host = self.walk_identifier_expr(for_host);
         }
         let mut mixins = vec![];
         for mixin in schema_stmt.mixins.iter() {
-            mixins.push(self.walk_identifier_expr(mixin)?);
+            if let Some(mixin) = self.walk_identifier_expr(mixin) {
+                mixins.push(mixin);
+            }
         }
         self.gs
             .get_symbols_mut()
             .schemas
-            .get_mut(schema_symbol.get_id())?
+            .get_mut(schema_symbol.get_id())
+            .unwrap()
             .mixins = mixins;
 
         if let Some(args) = &schema_stmt.args {
@@ -254,12 +265,14 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
                 let name = self
                     .gs
                     .get_symbols()
-                    .get_symbol(attribute_symbol)?
+                    .get_symbol(attribute_symbol)
+                    .unwrap()
                     .get_name();
                 self.gs
                     .get_symbols_mut()
                     .schemas
-                    .get_mut(schema_symbol.get_id())?
+                    .get_mut(schema_symbol.get_id())
+                    .unwrap()
                     .attributes
                     .insert(name, attribute_symbol);
             }
