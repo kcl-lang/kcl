@@ -4,4 +4,6 @@ schema Base:
 schema Person[b: int](Base):
     c: int
 
-p1= Person(b){}
+p1= Person(b){
+    
+}

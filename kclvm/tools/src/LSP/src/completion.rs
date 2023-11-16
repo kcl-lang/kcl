@@ -85,7 +85,7 @@ pub(crate) fn completion(
         Some(c) => match c {
             '.' => completion_dot(program, pos, prog_scope, gs),
             '=' | ':' => completion_assign(pos, gs),
-            '\n' => completion_newline(program, pos, prog_scope),
+            '\n' => completion_newline(program, pos, prog_scope, gs),
             _ => None,
         },
         None => {
@@ -304,51 +304,66 @@ fn completion_assign(pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::Comple
 fn completion_newline(
     program: &Program,
     pos: &KCLPos,
-    prog_scope: &ProgramScope,
+    _prog_scope: &ProgramScope,
+    gs: &GlobalState,
 ) -> Option<lsp_types::CompletionResponse> {
     let mut completions: IndexSet<KCLCompletionItem> = IndexSet::new();
-    let pos = &KCLPos {
-        filename: pos.filename.clone(),
-        line: pos.line - 1,
-        column: pos.column,
-    };
 
-    match program.pos_to_stmt(pos) {
-        Some(node) => {
-            let end_pos = node.get_end_pos();
-            if let Some((node, schema_expr)) = is_in_schema_expr(program, &end_pos) {
-                let schema_def = find_def(node, &schema_expr.name.get_end_pos(), prog_scope);
-                if let Some(schema) = schema_def {
-                    if let Definition::Object(obj, _) = schema {
-                        let schema_type = obj.ty.into_schema_type();
-                        completions.extend(schema_type.attrs.iter().map(|(name, attr)| {
-                            KCLCompletionItem {
-                                label: name.clone(),
-                                detail: Some(format!("{}: {}", name, attr.ty.ty_str())),
-                                documentation: attr.doc.clone(),
-                                kind: Some(KCLCompletionItemKind::SchemaAttr),
+    if let Some((doc, schema)) = is_in_docstring(program, &pos) {
+        let doc = parse_doc_string(&doc.node);
+        if doc.summary.is_empty() && doc.attrs.len() == 0 && doc.examples.len() == 0 {
+            // empty docstring, provide total completion
+            let doc_parsed = Doc::new_from_schema_stmt(&schema);
+            let label = doc_parsed.to_doc_string();
+            // generate docstring from doc
+            completions.insert(KCLCompletionItem {
+                label,
+                detail: Some("generate docstring".to_string()),
+                documentation: Some(format!("docstring for {}", schema.name.node.clone())),
+                kind: Some(KCLCompletionItemKind::Doc),
+            });
+        }
+        return Some(into_completion_items(&completions).into());
+    }
+
+    // Complete schema attr when input newline in schema
+    if let Some(scope) = gs.look_up_scope(pos) {
+        if let Some(defs) = gs.get_all_defs_in_scope(scope) {
+            for symbol_ref in defs {
+                match gs.get_symbols().get_symbol(symbol_ref) {
+                    Some(def) => {
+                        let sema_info = def.get_sema_info();
+                        let name = def.get_name();
+                        match symbol_ref.get_kind() {
+                            kclvm_sema::core::symbol::SymbolKind::Attribute => {
+                                completions.insert(KCLCompletionItem {
+                                    label: name.clone(),
+                                    detail: match &sema_info.ty {
+                                        Some(ty) => Some(format!("{}: {}", name, ty.ty_str())),
+                                        None => None,
+                                    },
+                                    documentation: match &sema_info.doc {
+                                        Some(doc) => {
+                                            if doc.is_empty() {
+                                                None
+                                            } else {
+                                                Some(doc.clone())
+                                            }
+                                        }
+                                        None => None,
+                                    },
+                                    kind: Some(KCLCompletionItemKind::SchemaAttr),
+                                });
                             }
-                        }));
+                            _ => {}
+                        }
                     }
-                }
-            } else if let Some((doc, schema)) = is_in_docstring(program, &pos) {
-                let doc = parse_doc_string(&doc.node);
-                if doc.summary.is_empty() && doc.attrs.len() == 0 && doc.examples.len() == 0 {
-                    // empty docstring, provide total completion
-                    let doc_parsed = Doc::new_from_schema_stmt(&schema);
-                    let label = doc_parsed.to_doc_string();
-                    // generate docstring from doc
-                    completions.insert(KCLCompletionItem {
-                        label,
-                        detail: Some("generate docstring".to_string()),
-                        documentation: Some(format!("docstring for {}", schema.name.node.clone())),
-                        kind: Some(KCLCompletionItemKind::Doc),
-                    });
+                    None => {}
                 }
             }
         }
-        None => {}
     }
+
     Some(into_completion_items(&completions).into())
 }
 
@@ -1054,11 +1069,12 @@ mod tests {
             column: Some(4),
         };
 
-        let got = completion(Some('\n'), &program, &pos, &prog_scope, &gs).unwrap();
-        match got {
+        let mut got = completion(Some('\n'), &program, &pos, &prog_scope, &gs).unwrap();
+        match &mut got {
             CompletionResponse::Array(arr) => {
+                arr.sort_by(|a, b| a.label.cmp(&b.label));
                 assert_eq!(
-                    arr[0],
+                    arr[1],
                     CompletionItem {
                         label: "c".to_string(),
                         kind: Some(CompletionItemKind::FIELD),
@@ -1084,9 +1100,10 @@ mod tests {
             column: Some(4),
         };
 
-        let got = completion(Some('\n'), &program, &pos, &prog_scope, &gs).unwrap();
-        match got {
+        let mut got = completion(Some('\n'), &program, &pos, &prog_scope, &gs).unwrap();
+        match &mut got {
             CompletionResponse::Array(arr) => {
+                arr.sort_by(|a, b| a.label.cmp(&b.label));
                 assert_eq!(
                     arr[0],
                     CompletionItem {
