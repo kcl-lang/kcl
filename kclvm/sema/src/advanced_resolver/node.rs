@@ -363,6 +363,19 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
             .symbols_info
             .ast_id_map
             .get(&schema_attr.name.id)?;
+        let parent_scope = *self.ctx.scopes.last().unwrap();
+        let parent_scope = self.gs.get_scopes().get_scope(parent_scope).unwrap();
+        let mut doc = None;
+        if let Some(schema_symbol) = parent_scope.get_owner() {
+            let schema_symbol = self.gs.get_symbols().get_symbol(schema_symbol).unwrap();
+            if let Some(schema_ty) = schema_symbol.get_sema_info().ty.clone() {
+                let schema_ty = schema_ty.into_schema_type();
+                if let Some(attr) = schema_ty.attrs.get(&schema_attr.name.node) {
+                    doc = attr.doc.clone()
+                }
+            }
+        };
+
         if let Some(symbol) = self
             .gs
             .get_symbols_mut()
@@ -375,9 +388,9 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
                     .node_ty_map
                     .get(&schema_attr.name.id)
                     .map(|ty| ty.clone()),
-                doc: Some(schema_attr.doc.clone()),
+                doc,
             };
-        }
+        };
 
         self.walk_type_expr(Some(&schema_attr.ty));
         if let Some(value) = &schema_attr.value {
@@ -848,12 +861,13 @@ impl<'ctx> AdvancedResolver<'ctx> {
                 .values
                 .get_mut(identifier_symbol.get_id())
             {
+                let id = if identifier.node.names.is_empty() {
+                    &identifier.id
+                } else {
+                    &identifier.node.names.last().unwrap().id
+                };
                 symbol.sema_info = KCLSymbolSemanticInfo {
-                    ty: self
-                        .ctx
-                        .node_ty_map
-                        .get(&identifier.id)
-                        .map(|ty| ty.clone()),
+                    ty: self.ctx.node_ty_map.get(id).map(|ty| ty.clone()),
                     doc: None,
                 };
             }

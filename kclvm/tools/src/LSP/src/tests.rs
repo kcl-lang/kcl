@@ -1440,7 +1440,7 @@ fn konfig_hover_test_main() {
         line: 6,
         column: Some(32),
     };
-    let got = hover(&program, &pos, &prog_scope,&gs).unwrap();
+    let got = hover(&program, &pos, &prog_scope, &gs).unwrap();
     match got.contents {
         HoverContents::Array(arr) => {
             let expect: Vec<MarkedString> = vec![
@@ -1462,7 +1462,7 @@ fn konfig_hover_test_main() {
         line: 7,
         column: Some(15),
     };
-    let got = hover(&program, &pos, &prog_scope,&gs).unwrap();
+    let got = hover(&program, &pos, &prog_scope, &gs).unwrap();
     match got.contents {
         HoverContents::Array(arr) => {
             let expect: Vec<MarkedString> = vec![
@@ -1483,7 +1483,7 @@ fn konfig_hover_test_main() {
         line: 6,
         column: Some(3),
     };
-    let got = hover(&program, &pos, &prog_scope,&gs).unwrap();
+    let got = hover(&program, &pos, &prog_scope, &gs).unwrap();
     match got.contents {
         HoverContents::Scalar(s) => {
             assert_eq!(

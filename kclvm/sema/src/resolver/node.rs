@@ -76,7 +76,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             None,
         );
         if !ty.is_any() && expected_ty.is_any() {
-            self.set_type_to_scope(&names[0].node, ty, &unification_stmt.target);
+            self.set_type_to_scope(&names[0].node, ty, &names[0]);
         }
         expected_ty
     }
@@ -164,7 +164,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                             // Check type annotation if exists.
                             self.check_assignment_type_annotation(assign_stmt, value_ty.clone());
                         }
-                        self.set_type_to_scope(name, value_ty.clone(), &target);
+                        self.set_type_to_scope(name, value_ty.clone(), &target.node.names[0]);
                     }
                     _ => {
                         value_ty = self.expr(&assign_stmt.value);
@@ -182,7 +182,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                     && expected_ty.is_any()
                     && assign_stmt.type_annotation.is_none()
                 {
-                    self.set_type_to_scope(name, value_ty.clone(), &target);
+                    self.set_type_to_scope(name, value_ty.clone(), &target.node.names[0]);
                     if let Some(schema_ty) = &self.ctx.schema {
                         let mut schema_ty = schema_ty.borrow_mut();
                         schema_ty.set_type_of_attr(
@@ -299,9 +299,6 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
         }
         self.enter_scope(start, end, ScopeKind::Loop);
         let (mut key_name, mut val_name) = (None, None);
-        let mut target_node = None;
-        let mut first_node = None;
-        let mut second_node = None;
         for (i, target) in quant_expr.variables.iter().enumerate() {
             if target.node.names.is_empty() {
                 continue;
@@ -312,14 +309,11 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                     target.get_span_pos(),
                 );
             }
-            target_node = Some(target);
-            let name = &target.node.names[0].node;
+            let name = &target.node.names[0];
             if i == 0 {
-                first_node = Some(target);
-                key_name = Some(name.to_string());
+                key_name = Some(name);
             } else if i == 1 {
-                second_node = Some(target);
-                val_name = Some(name.to_string())
+                val_name = Some(name)
             } else {
                 self.handler.add_compile_error(
                     &format!(
@@ -330,12 +324,12 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 );
                 break;
             }
-            self.ctx.local_vars.push(name.to_string());
+            self.ctx.local_vars.push(name.node.to_string());
             let (start, end) = target.get_span_pos();
             self.insert_object(
-                name,
+                &name.node,
                 ScopeObject {
-                    name: name.to_string(),
+                    name: name.node.to_string(),
                     start,
                     end,
                     ty: self.any_ty(),
@@ -345,9 +339,6 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             );
         }
         self.do_loop_type_check(
-            first_node.unwrap(),
-            second_node,
-            target_node.unwrap(),
             key_name,
             val_name,
             iter_ty.clone(),
@@ -796,9 +787,6 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
     fn walk_comp_clause(&mut self, comp_clause: &'ctx ast::CompClause) -> Self::Result {
         let iter_ty = self.expr(&comp_clause.iter);
         let (mut key_name, mut val_name) = (None, None);
-        let mut target_node = None;
-        let mut first_node = None;
-        let mut second_node = None;
         for (i, target) in comp_clause.targets.iter().enumerate() {
             if target.node.names.is_empty() {
                 continue;
@@ -809,14 +797,11 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                     target.get_span_pos(),
                 );
             }
-            target_node = Some(target);
-            let name = &target.node.names[0].node;
+            let name = &target.node.names[0];
             if i == 0 {
-                first_node = Some(target);
-                key_name = Some(name.to_string());
+                key_name = Some(name);
             } else if i == 1 {
-                second_node = Some(target);
-                val_name = Some(name.to_string())
+                val_name = Some(name);
             } else {
                 self.handler.add_compile_error(
                     &format!(
@@ -827,12 +812,12 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 );
                 break;
             }
-            self.ctx.local_vars.push(name.to_string());
+            self.ctx.local_vars.push(name.node.to_string());
             let (start, end) = target.get_span_pos();
             self.insert_object(
-                name,
+                &name.node,
                 ScopeObject {
-                    name: name.to_string(),
+                    name: name.node.to_string(),
                     start,
                     end,
                     ty: self.any_ty(),
@@ -844,15 +829,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
         if iter_ty.is_any() {
             iter_ty
         } else {
-            self.do_loop_type_check(
-                first_node.unwrap(),
-                second_node,
-                target_node.unwrap(),
-                key_name,
-                val_name,
-                iter_ty,
-                comp_clause.iter.get_span_pos(),
-            );
+            self.do_loop_type_check(key_name, val_name, iter_ty, comp_clause.iter.get_span_pos());
             self.exprs(&comp_clause.ifs);
             self.any_ty()
         }
