@@ -20,7 +20,7 @@ use std::{collections::HashMap, ops::Deref};
 /// new_name: the new name of the symbol
 pub fn rename_symbol(
     pkg_root: &str,
-    file_paths: Vec<String>,
+    file_paths: &[String],
     symbol_path: &str,
     new_name: String,
 ) -> Result<HashMap<Url, Vec<TextEdit>>, String> {
@@ -44,7 +44,7 @@ pub fn rename_symbol(
                     _ => {
                         // 3. build word index on file_paths, find refs within file_paths scope
                         if let Ok(word_index) = build_word_index_for_file_paths(file_paths) {
-                            if let Some(locations) = word_index.get(name.as_str()) {
+                            if let Some(locations) = word_index.get(&name) {
                                 // 4. filter out the matched refs
                                 // 4.1 collect matched words(names) and remove Duplicates of the file paths
                                 let file_map = locations.iter().fold(
@@ -130,7 +130,7 @@ pub fn select_symbol(selector: &ast::SymbolSelectorSpec) -> Option<(String, Opti
                 None,
             ) {
                 if let Some(symbol_ref) = gs.get_symbols().get_symbol_by_fully_qualified_name(
-                    format!("{}.{}", prog.main, fields[0]).as_str(),
+                    &format!("{}.{}", prog.main, fields[0]),
                 ) {
                     let outer_symbol = gs.get_symbols().get_symbol(symbol_ref).unwrap();
                     if fields.len() == 1 {
