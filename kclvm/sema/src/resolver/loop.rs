@@ -7,11 +7,8 @@ impl<'ctx> Resolver<'ctx> {
     /// Do loop type check including quant and comp for expression.
     pub(crate) fn do_loop_type_check(
         &mut self,
-        first_node: &'ctx ast::NodeRef<ast::Identifier>,
-        second_node: Option<&'ctx ast::NodeRef<ast::Identifier>>,
-        target_node: &'ctx ast::NodeRef<ast::Identifier>,
-        first_var_name: Option<String>,
-        second_var_name: Option<String>,
+        first_var_name: Option<&ast::Node<String>>,
+        second_var_name: Option<&ast::Node<String>>,
         iter_ty: TypeRef,
         iter_range: Range,
     ) {
@@ -34,37 +31,37 @@ impl<'ctx> Resolver<'ctx> {
                         first_var_ty = sup(&[self.int_ty(), first_var_ty.clone()]);
                         second_var_ty = sup(&[item_ty.clone(), second_var_ty.clone()]);
                         self.set_type_to_scope(
-                            first_var_name.as_ref().unwrap(),
+                            &first_var_name.unwrap().node,
                             first_var_ty.clone(),
-                            &target_node,
+                            &first_var_name.unwrap(),
                         );
                         self.set_type_to_scope(
-                            second_var_name.as_ref().unwrap(),
+                            &second_var_name.unwrap().node,
                             second_var_ty.clone(),
-                            &target_node,
+                            &second_var_name.unwrap(),
                         );
                     } else {
                         first_var_ty = sup(&[item_ty.clone(), first_var_ty.clone()]);
                         self.set_type_to_scope(
-                            first_var_name.as_ref().unwrap(),
+                            &first_var_name.unwrap().node,
                             first_var_ty.clone(),
-                            &target_node,
+                            &first_var_name.unwrap(),
                         );
                     }
                 }
                 TypeKind::Dict(DictType { key_ty, val_ty, .. }) => {
                     first_var_ty = sup(&[key_ty.clone(), first_var_ty.clone()]);
                     self.set_type_to_scope(
-                        first_var_name.as_ref().unwrap(),
+                        &first_var_name.unwrap().node,
                         first_var_ty.clone(),
-                        &target_node,
+                        &first_var_name.unwrap(),
                     );
                     if second_var_name.is_some() {
                         second_var_ty = sup(&[val_ty.clone(), second_var_ty.clone()]);
                         self.set_type_to_scope(
-                            second_var_name.as_ref().unwrap(),
+                            &second_var_name.unwrap().node,
                             second_var_ty.clone(),
-                            &target_node,
+                            &second_var_name.unwrap(),
                         );
                     }
                 }
@@ -72,16 +69,16 @@ impl<'ctx> Resolver<'ctx> {
                     let (key_ty, val_ty) = (schema_ty.key_ty(), schema_ty.val_ty());
                     first_var_ty = sup(&[key_ty, first_var_ty.clone()]);
                     self.set_type_to_scope(
-                        first_var_name.as_ref().unwrap(),
+                        &first_var_name.unwrap().node,
                         first_var_ty.clone(),
-                        &target_node,
+                        &first_var_name.unwrap(),
                     );
                     if second_var_name.is_some() {
                         second_var_ty = sup(&[val_ty, second_var_ty.clone()]);
                         self.set_type_to_scope(
-                            second_var_name.as_ref().unwrap(),
+                            &second_var_name.unwrap().node,
                             second_var_ty.clone(),
-                            &target_node,
+                            &second_var_name.unwrap(),
                         );
                     }
                 }
@@ -90,31 +87,25 @@ impl<'ctx> Resolver<'ctx> {
                         first_var_ty = sup(&[self.int_ty(), first_var_ty.clone()]);
                         second_var_ty = sup(&[self.str_ty(), second_var_ty.clone()]);
                         self.set_type_to_scope(
-                            first_var_name.as_ref().unwrap(),
+                            &first_var_name.unwrap().node,
                             first_var_ty.clone(),
-                            &target_node,
+                            &first_var_name.unwrap(),
                         );
                         self.set_type_to_scope(
-                            second_var_name.as_ref().unwrap(),
+                            &second_var_name.unwrap().node,
                             second_var_ty.clone(),
-                            &target_node,
+                            &second_var_name.unwrap(),
                         );
                     } else {
                         first_var_ty = sup(&[self.str_ty(), first_var_ty.clone()]);
                         self.set_type_to_scope(
-                            first_var_name.as_ref().unwrap(),
+                            &first_var_name.unwrap().node,
                             first_var_ty.clone(),
-                            &target_node,
+                            &first_var_name.unwrap(),
                         );
                     }
                 }
                 _ => {}
-            }
-            self.node_ty_map
-                .insert(first_node.id.clone(), first_var_ty.clone());
-            if let Some(second_node) = second_node {
-                self.node_ty_map
-                    .insert(second_node.id.clone(), second_var_ty.clone());
             }
         }
     }

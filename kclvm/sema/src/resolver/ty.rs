@@ -187,7 +187,7 @@ impl<'ctx> Resolver<'ctx> {
                     annotation_ty
                 };
 
-                self.set_type_to_scope(name, target_ty.clone(), &target);
+                self.set_type_to_scope(name, target_ty.clone(), &target.node.names[0]);
 
                 // Check the type of value and the type annotation of target
                 self.must_assignable_to(value_ty.clone(), target_ty, target.get_span_pos(), None)
