@@ -304,6 +304,14 @@ pub enum OverrideAction {
     CreateOrUpdate,
 }
 
+/// KCL API symbol selector Spec, eg: `pkgpath:path.to.field`
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct SymbolSelectorSpec {
+    pub pkg_root: String,
+    pub pkgpath: String,
+    pub field_path: String,
+}
+
 /// Program is the AST collection of all files of the running KCL program.
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
 pub struct Program {

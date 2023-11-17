@@ -802,25 +802,32 @@ pub(crate) fn get_pkg_scope(
         .clone()
 }
 
-/// scan and build a word -> Locations index map
-pub fn build_word_index(path: String) -> anyhow::Result<HashMap<String, Vec<Location>>> {
+pub(crate) fn build_word_index_for_file_paths(
+    paths: &[String],
+) -> anyhow::Result<HashMap<String, Vec<Location>>> {
     let mut index: HashMap<String, Vec<Location>> = HashMap::new();
-    if let Ok(files) = get_kcl_files(path.clone(), true) {
-        for file_path in &files {
-            // str path to url
-            if let Ok(url) = Url::from_file_path(file_path) {
-                // read file content and save the word to word index
-                let text = read_file(file_path)?;
-                for (key, values) in build_word_index_for_file_content(text, &url) {
-                    index.entry(key).or_insert_with(Vec::new).extend(values);
-                }
+    for p in paths {
+        // str path to url
+        if let Ok(url) = Url::from_file_path(p) {
+            // read file content and save the word to word index
+            let text = read_file(p)?;
+            for (key, values) in build_word_index_for_file_content(text, &url) {
+                index.entry(key).or_insert_with(Vec::new).extend(values);
             }
         }
     }
     return Ok(index);
 }
 
-pub fn build_word_index_for_file_content(
+/// scan and build a word -> Locations index map
+pub(crate) fn build_word_index(path: String) -> anyhow::Result<HashMap<String, Vec<Location>>> {
+    if let Ok(files) = get_kcl_files(path.clone(), true) {
+        return build_word_index_for_file_paths(&files);
+    }
+    Ok(HashMap::new())
+}
+
+pub(crate) fn build_word_index_for_file_content(
     content: String,
     url: &Url,
 ) -> HashMap<String, Vec<Location>> {
@@ -844,7 +851,7 @@ pub fn build_word_index_for_file_content(
     index
 }
 
-pub fn word_index_add(
+pub(crate) fn word_index_add(
     from: &mut HashMap<String, Vec<Location>>,
     add: HashMap<String, Vec<Location>>,
 ) {
@@ -853,7 +860,7 @@ pub fn word_index_add(
     }
 }
 
-pub fn word_index_subtract(
+pub(crate) fn word_index_subtract(
     from: &mut HashMap<String, Vec<Location>>,
     remove: HashMap<String, Vec<Location>>,
 ) {
