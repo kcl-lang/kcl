@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Ok};
 use crossbeam_channel::Sender;
-use kclvm_ast::pos::GetPos;
+
 use kclvm_sema::info::is_valid_kcl_name;
 use lsp_types::{Location, TextEdit};
 use ra_ap_vfs::VfsPath;
@@ -291,9 +291,9 @@ pub(crate) fn handle_rename(
                 // 3. return the workspaceEdit to rename all the references with the new name
                 let mut workspace_edit = lsp_types::WorkspaceEdit::default();
 
-                let changes = locations
-                    .into_iter()
-                    .fold(HashMap::new(), |mut map, location| {
+                let changes = locations.into_iter().fold(
+                    HashMap::new(),
+                    |mut map: HashMap<lsp_types::Url, Vec<TextEdit>>, location| {
                         let uri = location.uri;
                         map.entry(uri.clone())
                             .or_insert_with(Vec::new)
@@ -302,7 +302,8 @@ pub(crate) fn handle_rename(
                                 new_text: new_name.clone(),
                             });
                         map
-                    });
+                    },
+                );
                 workspace_edit.changes = Some(changes);
                 anyhow::Ok(Some(workspace_edit))
             }

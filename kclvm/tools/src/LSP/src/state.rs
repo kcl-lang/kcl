@@ -4,7 +4,7 @@ use crate::db::AnalysisDatabase;
 use crate::to_lsp::{kcl_diag_to_lsp_diags, url};
 use crate::util::{build_word_index, get_file_name, parse_param_and_compile, to_json, Param};
 use crossbeam_channel::{select, unbounded, Receiver, Sender};
-use indexmap::{IndexMap, IndexSet};
+use indexmap::IndexSet;
 use lsp_server::{ReqQueue, Response};
 use lsp_types::Url;
 use lsp_types::{

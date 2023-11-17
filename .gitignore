@@ -94,5 +94,5 @@ _a.out_*.*
 llvm*
 llvm-*
 
-# kpm
+# KCL mod lock file
 !.mod.lock

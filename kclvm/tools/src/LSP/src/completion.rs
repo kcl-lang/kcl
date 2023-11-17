@@ -21,7 +21,7 @@ use std::{fs, path::Path};
 use crate::goto_def::find_def_with_gs;
 use indexmap::IndexSet;
 use kclvm_ast::ast::{Expr, ImportStmt, Program, Stmt};
-use kclvm_ast::pos::GetPos;
+
 use kclvm_ast::MAIN_PKG;
 use kclvm_config::modfile::KCL_FILE_EXTENSION;
 use kclvm_sema::core::global_state::GlobalState;
@@ -33,9 +33,8 @@ use kclvm_sema::resolver::scope::ProgramScope;
 use kclvm_sema::ty::{FunctionType, SchemaType, Type};
 use lsp_types::{CompletionItem, CompletionItemKind};
 
-use crate::goto_def::{find_def, Definition};
 use crate::util::get_real_path_from_external;
-use crate::util::{inner_most_expr_in_stmt, is_in_docstring, is_in_schema_expr};
+use crate::util::{inner_most_expr_in_stmt, is_in_docstring};
 
 #[derive(Debug, Clone, PartialEq, Hash, Eq)]
 pub enum KCLCompletionItemKind {
@@ -890,7 +889,7 @@ mod tests {
         };
 
         let got = completion(None, &program, &pos, &prog_scope, &gs).unwrap();
-        let got_labels: Vec<String> = match &got {
+        let _got_labels: Vec<String> = match &got {
             CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
             CompletionResponse::List(_) => panic!("test failed"),
         };
