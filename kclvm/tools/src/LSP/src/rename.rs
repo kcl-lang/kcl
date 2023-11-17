@@ -3,6 +3,7 @@ use crate::{
     goto_def::find_def_with_gs,
     util::{build_word_index_for_file_paths, parse_param_and_compile, Param},
 };
+use anyhow::{anyhow, Result};
 use kclvm_ast::ast;
 use kclvm_error::diagnostic;
 use kclvm_query::selector::parse_symbol_selector_spec;
@@ -21,73 +22,69 @@ pub fn rename_symbol(
     file_paths: &[String],
     symbol_path: &str,
     new_name: String,
-) -> Result<HashMap<Url, Vec<TextEdit>>, String> {
+) -> Result<HashMap<Url, Vec<TextEdit>>> {
     // 1. from symbol path to the symbol
-    match parse_symbol_selector_spec(pkg_root, symbol_path) {
-        Ok(symbol_spec) => {
-            // 2. get the symbol name and definition range from symbol path
-            if let Some((name, range)) = select_symbol(&symbol_spec) {
-                // 3. build word index on file_paths, find refs within file_paths scope
-                if let Ok(word_index) = build_word_index_for_file_paths(file_paths) {
-                    if let Some(locations) = word_index.get(&name) {
-                        // 4. filter out the matched refs
-                        // 4.1 collect matched words(names) and remove Duplicates of the file paths
-                        let file_map = locations.iter().fold(
-                            HashMap::<Url, Vec<&Location>>::new(),
-                            |mut acc, loc| {
-                                acc.entry(loc.uri.clone()).or_insert(Vec::new()).push(loc);
-                                acc
-                            },
-                        );
-                        let refs = file_map
-                            .iter()
-                            .flat_map(|(_, locs)| locs.iter())
-                            .filter(|&&loc| {
-                                // 4.2 filter out the words and remain those whose definition is the target def
-                                let p = loc.uri.path();
-                                if let Ok((_, _, _, gs)) = parse_param_and_compile(
-                                    Param {
-                                        file: p.to_string(),
-                                    },
-                                    None,
-                                ) {
-                                    let kcl_pos = kcl_pos(p, loc.range.start);
-                                    if let Some(symbol_ref) = find_def_with_gs(&kcl_pos, &gs, true)
-                                    {
-                                        if let Some(real_def) =
-                                            gs.get_symbols().get_symbol(symbol_ref)
-                                        {
-                                            return real_def.get_range() == range;
-                                        }
-                                    }
-                                }
-                                false
-                            })
-                            .cloned()
-                            .collect::<Vec<&Location>>();
-                        // 5. refs to rename actions
-                        let changes = refs.into_iter().fold(HashMap::new(), |mut map, location| {
-                            let uri = &location.uri;
-                            map.entry(uri.clone())
-                                .or_insert_with(Vec::new)
-                                .push(TextEdit {
-                                    range: location.range,
-                                    new_text: new_name.clone(),
-                                });
-                            map
+    let symbol_spec = parse_symbol_selector_spec(pkg_root, symbol_path)?;
+    // 2. get the symbol name and definition range from symbol path
+
+    match select_symbol(&symbol_spec) {
+        Some((name, range)) => {
+            // 3. build word index on file_paths, find refs within file_paths scope
+            let word_index = build_word_index_for_file_paths(file_paths)?;
+            if let Some(locations) = word_index.get(&name) {
+                // 4. filter out the matched refs
+                // 4.1 collect matched words(names) and remove Duplicates of the file paths
+                let file_map =
+                    locations
+                        .iter()
+                        .fold(HashMap::<Url, Vec<&Location>>::new(), |mut acc, loc| {
+                            acc.entry(loc.uri.clone()).or_insert(Vec::new()).push(loc);
+                            acc
                         });
-                        return Ok(changes);
-                    }
-                }
+                let refs = file_map
+                    .iter()
+                    .flat_map(|(_, locs)| locs.iter())
+                    .filter(|&&loc| {
+                        // 4.2 filter out the words and remain those whose definition is the target def
+                        let p = loc.uri.path();
+                        if let Ok((_, _, _, gs)) = parse_param_and_compile(
+                            Param {
+                                file: p.to_string(),
+                            },
+                            None,
+                        ) {
+                            let kcl_pos = kcl_pos(p, loc.range.start);
+                            if let Some(symbol_ref) = find_def_with_gs(&kcl_pos, &gs, true) {
+                                if let Some(real_def) = gs.get_symbols().get_symbol(symbol_ref) {
+                                    return real_def.get_range() == range;
+                                }
+                            }
+                        }
+                        false
+                    })
+                    .cloned()
+                    .collect::<Vec<&Location>>();
+                // 5. refs to rename actions
+                let changes = refs.into_iter().fold(HashMap::new(), |mut map, location| {
+                    let uri = &location.uri;
+                    map.entry(uri.clone())
+                        .or_insert_with(Vec::new)
+                        .push(TextEdit {
+                            range: location.range,
+                            new_text: new_name.clone(),
+                        });
+                    map
+                });
+                return Ok(changes);
+            } else {
+                return Ok(HashMap::new());
             }
-            Result::Err("rename failed".to_string())
         }
-        Result::Err(err) => {
-            return Result::Err(format!(
-                "get symbol from symbol path failed, {}, {}",
-                symbol_path, err
-            ));
-        }
+
+        None => Err(anyhow!(
+            "get symbol from symbol path failed, {}",
+            symbol_path
+        )),
     }
 }
 
