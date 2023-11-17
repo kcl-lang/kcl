@@ -803,10 +803,10 @@ pub(crate) fn get_pkg_scope(
 }
 
 pub(crate) fn build_word_index_for_file_paths(
-    paths: Vec<String>,
+    paths: &[String],
 ) -> anyhow::Result<HashMap<String, Vec<Location>>> {
     let mut index: HashMap<String, Vec<Location>> = HashMap::new();
-    for p in &paths {
+    for p in paths {
         // str path to url
         if let Ok(url) = Url::from_file_path(p) {
             // read file content and save the word to word index
@@ -822,7 +822,7 @@ pub(crate) fn build_word_index_for_file_paths(
 /// scan and build a word -> Locations index map
 pub(crate) fn build_word_index(path: String) -> anyhow::Result<HashMap<String, Vec<Location>>> {
     if let Ok(files) = get_kcl_files(path.clone(), true) {
-        return build_word_index_for_file_paths(files);
+        return build_word_index_for_file_paths(&files);
     }
     Ok(HashMap::new())
 }
