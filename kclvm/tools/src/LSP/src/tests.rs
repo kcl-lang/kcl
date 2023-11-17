@@ -642,7 +642,7 @@ fn notification_test() {
     path.push("src/test_data/diagnostics.k");
 
     let path = path.to_str().unwrap();
-    let src = std::fs::read_to_string(path.clone()).unwrap();
+    let src = std::fs::read_to_string(path).unwrap();
     let server = Project {}.server(InitializeParams::default());
 
     // Mock open file
@@ -691,7 +691,7 @@ fn close_file_test() {
     path.push("src/test_data/diagnostics.k");
 
     let path = path.to_str().unwrap();
-    let src = std::fs::read_to_string(path.clone()).unwrap();
+    let src = std::fs::read_to_string(path).unwrap();
     let server = Project {}.server(InitializeParams::default());
 
     // Mock open file
@@ -776,7 +776,7 @@ fn cancel_test() {
     path.push("src/test_data/goto_def_test/goto_def.k");
 
     let path = path.to_str().unwrap();
-    let src = std::fs::read_to_string(path.clone()).unwrap();
+    let src = std::fs::read_to_string(path).unwrap();
     let server = Project {}.server(InitializeParams::default());
 
     // Mock open file
@@ -822,7 +822,7 @@ fn goto_def_test() {
     path.push("src/test_data/goto_def_test/goto_def.k");
 
     let path = path.to_str().unwrap();
-    let src = std::fs::read_to_string(path.clone()).unwrap();
+    let src = std::fs::read_to_string(path).unwrap();
     let server = Project {}.server(InitializeParams::default());
 
     // Mock open file
@@ -879,7 +879,7 @@ fn complete_test() {
     path.push("src/test_data/completion_test/dot/completion.k");
 
     let path = path.to_str().unwrap();
-    let src = std::fs::read_to_string(path.clone()).unwrap();
+    let src = std::fs::read_to_string(path).unwrap();
     let server = Project {}.server(InitializeParams::default());
 
     // Mock open file
@@ -947,7 +947,7 @@ fn hover_test() {
     path.push("src/test_data/hover_test/hover.k");
 
     let path = path.to_str().unwrap();
-    let src = std::fs::read_to_string(path.clone()).unwrap();
+    let src = std::fs::read_to_string(path).unwrap();
     let server = Project {}.server(InitializeParams::default());
 
     // Mock open file
@@ -1004,7 +1004,7 @@ fn hover_assign_in_lambda_test() {
     path.push("src/test_data/hover_test/assign_in_lambda.k");
 
     let path = path.to_str().unwrap();
-    let src = std::fs::read_to_string(path.clone()).unwrap();
+    let src = std::fs::read_to_string(path).unwrap();
     let server = Project {}.server(InitializeParams::default());
 
     // Mock open file
@@ -1057,7 +1057,7 @@ fn formatting_test() {
     path.push("src/test_data/format/format_range.k");
 
     let path = path.to_str().unwrap();
-    let src = std::fs::read_to_string(path.clone()).unwrap();
+    let src = std::fs::read_to_string(path).unwrap();
     let server = Project {}.server(InitializeParams::default());
 
     // Mock open file
@@ -1546,7 +1546,7 @@ fn find_refs_test() {
     path.push("src/test_data/find_refs_test/main.k");
 
     let path = path.to_str().unwrap();
-    let src = std::fs::read_to_string(path.clone()).unwrap();
+    let src = std::fs::read_to_string(path).unwrap();
     let mut initialize_params = InitializeParams::default();
     initialize_params.workspace_folders = Some(vec![WorkspaceFolder {
         uri: Url::from_file_path(root.clone()).unwrap(),
@@ -1636,7 +1636,7 @@ fn find_refs_with_file_change_test() {
     path.push("src/test_data/find_refs_test/main.k");
 
     let path = path.to_str().unwrap();
-    let src = std::fs::read_to_string(path.clone()).unwrap();
+    let src = std::fs::read_to_string(path).unwrap();
     let mut initialize_params = InitializeParams::default();
     initialize_params.workspace_folders = Some(vec![WorkspaceFolder {
         uri: Url::from_file_path(root.clone()).unwrap(),
@@ -1739,7 +1739,7 @@ fn rename_test() {
     main_path.push("src/test_data/rename_test/main.k");
 
     let path = path.to_str().unwrap();
-    let src = std::fs::read_to_string(path.clone()).unwrap();
+    let src = std::fs::read_to_string(path).unwrap();
     let mut initialize_params = InitializeParams::default();
     initialize_params.workspace_folders = Some(vec![WorkspaceFolder {
         uri: Url::from_file_path(root.clone()).unwrap(),

@@ -15,7 +15,7 @@ pub(crate) fn fill_pkg_maps_for_k_file(
     // 1. find the kcl.mod dir for the kcl package contains 'k_file_path'.
     match lookup_the_nearest_file_dir(k_file_path, MANIFEST_FILE) {
         Some(mod_dir) => {
-            // 2. call `kpm metadata`.
+            // 2. get the module metadata.
             let metadata = fetch_metadata(mod_dir.canonicalize()?)?;
             // 3. fill the external packages local paths into compilation option [`LoadProgramOptions`].
             let maps: HashMap<String, String> = metadata
@@ -32,7 +32,7 @@ pub(crate) fn fill_pkg_maps_for_k_file(
 }
 
 #[derive(Deserialize, Serialize, Default, Debug, Clone)]
-/// [`Metadata`] is the metadata of the current KCL package,
+/// [`Metadata`] is the metadata of the current KCL module,
 /// currently only the mapping between the name and path of the external dependent package is included.
 pub struct Metadata {
     pub packages: HashMap<String, Package>,
@@ -55,10 +55,43 @@ impl Metadata {
     }
 }
 
-/// [`fetch_metadata`] will call `kpm metadata` to obtain the metadata.
+/// [`fetch_metadata`] returns the KCL module metadata.
+#[inline]
 pub fn fetch_metadata(manifest_path: PathBuf) -> Result<Metadata> {
+    fetch_mod_metadata(manifest_path.clone()).or(fetch_kpm_metadata(manifest_path))
+}
+
+/// [`fetch_kpm_metadata`] will call `kpm metadata` to obtain the metadata.
+///
+/// TODO: this function will be removed at kcl v0.8.0 for the command migration
+/// `kpm -> kcl mod`.
+pub(crate) fn fetch_kpm_metadata(manifest_path: PathBuf) -> Result<Metadata> {
     use std::result::Result::Ok;
     match Command::new(kpm())
+        .arg("metadata")
+        .current_dir(manifest_path)
+        .output()
+    {
+        Ok(output) => {
+            if !output.status.success() {
+                bail!(
+                    "fetch metadata failed with error: {}",
+                    String::from_utf8_lossy(&output.stderr)
+                );
+            }
+            Ok(Metadata::parse(
+                String::from_utf8_lossy(&output.stdout).to_string(),
+            )?)
+        }
+        Err(err) => bail!("fetch metadata failed with error: {}", err),
+    }
+}
+
+/// [`fetch_mod_metadata`] will call `kcl mod metadata` to obtain the metadata.
+pub(crate) fn fetch_mod_metadata(manifest_path: PathBuf) -> Result<Metadata> {
+    use std::result::Result::Ok;
+    match Command::new(kcl())
+        .arg("mod")
         .arg("metadata")
         .current_dir(manifest_path)
         .output()
@@ -99,6 +132,11 @@ pub(crate) fn lookup_the_nearest_file_dir(
     }
 }
 
+/// [`kcl`] will return the path for executable kcl binary.
+pub fn kcl() -> PathBuf {
+    get_path_for_executable("kcl")
+}
+
 /// [`kpm`] will return the path for executable kpm binary.
 pub fn kpm() -> PathBuf {
     get_path_for_executable("kpm")
@@ -108,7 +146,7 @@ pub fn kpm() -> PathBuf {
 pub fn get_path_for_executable(executable_name: &'static str) -> PathBuf {
     // The current implementation checks $PATH for an executable to use:
     // `<executable_name>`
-    //  example: for kpm, this tries just `kpm`, which will succeed if `kpm` is on the $PATH
+    //  example: for <executable_name>, this tries just <executable_name>, which will succeed if <executable_name> is on the $PATH
 
     if lookup_in_path(executable_name) {
         return executable_name.into();
