@@ -388,6 +388,8 @@ pub struct Context {
     pub buffer: ContextBuffer,
     /// objects is to store all KCL object pointers.
     pub objects: IndexSet<usize>,
+    /// Log message used to store print results.
+    pub log_message: String,
 }
 
 impl UnwindSafe for Context {}

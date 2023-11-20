@@ -208,7 +208,9 @@ fn execute_for_test(kcl_path: &String) -> String {
     // Parse kcl file
     let program = load_test_program(kcl_path.to_string());
     // Generate libs, link libs and execute.
-    execute(Arc::new(ParseSession::default()), program, &args).unwrap()
+    execute(Arc::new(ParseSession::default()), program, &args)
+        .unwrap()
+        .json_result
 }
 
 fn gen_assembler(entry_file: &str, test_kcl_case_path: &str) -> KclvmAssembler {
@@ -524,7 +526,7 @@ fn test_compile_dir_recursive() {
     // Resolve ATS, generate libs, link libs and execute.
     let res = execute(sess, program, &args);
     assert!(res.is_ok());
-    assert_eq!(res.unwrap(), "{\"k1\": \"Hello k1!\", \"k2\": \"Hello k2!\", \"The_first_kcl_program\": \"Hello World!\"}");
+    assert_eq!(res.unwrap().json_result, "{\"k1\": \"Hello k1!\", \"k2\": \"Hello k2!\", \"The_first_kcl_program\": \"Hello World!\"}");
 }
 
 #[test]
@@ -581,7 +583,7 @@ fn test_indent_error() {
         assert!(res.is_err());
         if let Err(err_msg) = res {
             let expect_err = fs::read_to_string(err_file).expect("Failed to read file");
-            assert!(err_msg.contains(&expect_err));
+            assert!(err_msg.to_string().contains(&expect_err));
         }
     }
 }
@@ -594,7 +596,16 @@ fn exec(file: &str) -> Result<String, String> {
     // Load AST program
     let program = load_program(sess.clone(), &[file], Some(opts), None).unwrap();
     // Resolve ATS, generate libs, link libs and execute.
-    execute(sess, program, &args)
+    match execute(sess, program, &args) {
+        Ok(result) => {
+            if result.err_message.is_empty() {
+                Ok(result.json_result)
+            } else {
+                Err(result.err_message)
+            }
+        }
+        Err(err) => Err(err.to_string()),
+    }
 }
 
 /// Run all kcl files at path and compare the exec result with the expect output.
@@ -636,7 +647,12 @@ fn exec_with_err_result_at(path: &str) {
         for (kcl_file, _) in kcl_files.iter().zip(&output_files) {
             let mut args = ExecProgramArgs::default();
             args.k_filename_list.push(kcl_file.to_string());
-            assert!(exec_program(Arc::new(ParseSession::default()), &args).is_err());
+            let result = exec_program(Arc::new(ParseSession::default()), &args);
+            if let Ok(result) = result {
+                assert!(!result.err_message.is_empty(), "{}", result.err_message);
+            } else {
+                assert!(result.is_err());
+            }
         }
     });
     assert!(result.is_ok());
@@ -673,11 +689,11 @@ fn test_compile_with_file_pattern() {
     let res = exec_program(Arc::new(ParseSession::default()), &args);
     assert!(res.is_ok());
     assert_eq!(
-        res.clone().unwrap().yaml_result,
+        res.as_ref().unwrap().yaml_result,
         "k3: Hello World!\nk1: Hello World!\nk2: Hello World!"
     );
     assert_eq!(
-        res.unwrap().json_result,
+        res.as_ref().unwrap().json_result,
         "[{\"k3\": \"Hello World!\", \"k1\": \"Hello World!\", \"k2\": \"Hello World!\"}]"
     );
 }

@@ -1,0 +1,6 @@
+{
+        "json_result": "[{\"a\": 1}]",
+        "yaml_result": "a: 1",
+        "log_message": "Hello world\n",
+        "err_message": ""
+}

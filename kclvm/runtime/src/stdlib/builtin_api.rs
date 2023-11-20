@@ -258,18 +258,17 @@ pub unsafe extern "C" fn kclvm_builtin_print(
 ) -> *mut kclvm_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
+    let ctx_ref = mut_ptr_as_ref(ctx);
     // args
     let list = args.as_list_ref();
     let values: Vec<String> = list.values.iter().map(|v| v.to_string()).collect();
-    print!("{}", values.join(" "));
+    ctx_ref.log_message.push_str(&values.join(" "));
     let dict = kwargs.as_dict_ref();
     // kwargs: end
     if let Some(c) = dict.values.get("end") {
-        print!("{c}");
-        use std::io::Write;
-        let _ = std::io::stdout().flush();
+        ctx_ref.log_message.push_str(&format!("{c}"));
     } else {
-        println!();
+        ctx_ref.log_message.push('\n');
     }
     kclvm_value_None(ctx)
 }

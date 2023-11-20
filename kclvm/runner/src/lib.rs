@@ -1,6 +1,6 @@
-use std::{collections::HashMap, path::Path, sync::Arc, time::SystemTime};
+use std::{collections::HashMap, path::Path, sync::Arc};
 
-use anyhow::Result;
+use anyhow::{anyhow, bail, Result};
 use assembler::KclvmLibAssembler;
 use kclvm_ast::{
     ast::{Module, Program},
@@ -15,8 +15,8 @@ use kclvm_sema::resolver::{
     resolve_program, resolve_program_with_opts, scope::ProgramScope, Options,
 };
 use linker::Command;
-pub use runner::ExecProgramArgs;
-use runner::{ExecProgramResult, KclvmRunner, KclvmRunnerOptions};
+pub use runner::{ExecProgramArgs, ExecProgramResult, MapErrorResult};
+use runner::{KclLibRunner, KclLibRunnerOptions};
 use tempfile::tempdir;
 
 pub mod assembler;
@@ -50,7 +50,7 @@ pub mod tests;
 /// After linking all dynamic link libraries by KclvmLinker, method "KclvmLinker::link_all_libs" will return a path
 /// for dynamic link library after linking.
 ///
-/// At last, KclvmRunner will be constructed and call method "run" to execute the kcl program.
+/// At last, KclLibRunner will be constructed and call method "run" to execute the kcl program.
 ///
 /// **Note that it is not thread safe.**
 ///
@@ -71,64 +71,37 @@ pub mod tests;
 /// // Result is the kcl in json format.
 /// let result = exec_program(sess, &args).unwrap();
 /// ```
-pub fn exec_program(
-    sess: Arc<ParseSession>,
-    args: &ExecProgramArgs,
-) -> Result<ExecProgramResult, String> {
+pub fn exec_program(sess: Arc<ParseSession>, args: &ExecProgramArgs) -> Result<ExecProgramResult> {
     // parse args from json string
     let opts = args.get_load_program_options();
     let k_files = &args.k_filename_list;
     let work_dir = args.work_dir.clone().unwrap_or_default();
     let k_files = expand_input_files(k_files);
-    let kcl_paths = canonicalize_input_files(&k_files, work_dir, false)?;
+    let kcl_paths =
+        canonicalize_input_files(&k_files, work_dir, false).map_err(|err| anyhow!(err))?;
 
     let kcl_paths_str = kcl_paths.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
 
-    let mut program = load_program(sess.clone(), kcl_paths_str.as_slice(), Some(opts), None)?;
+    let mut program = load_program(sess.clone(), kcl_paths_str.as_slice(), Some(opts), None)
+        .map_err(|err| anyhow!(err))?;
 
-    if let Err(err) = apply_overrides(
+    apply_overrides(
         &mut program,
         &args.overrides,
         &[],
         args.print_override_ast || args.debug > 0,
-    ) {
-        return Err(err.to_string());
+    )?;
+    let mut result = execute(sess, program, args)?;
+    // If it is a empty result, return it directly
+    if result.json_result.is_empty() {
+        return Ok(result);
     }
-
-    let start_time = SystemTime::now();
-    let exec_result = execute(sess, program, args);
-    let escape_time = match SystemTime::now().duration_since(start_time) {
-        Ok(dur) => dur.as_secs_f32(),
-        Err(err) => return Err(err.to_string()),
-    };
-    let mut result = ExecProgramResult {
-        escaped_time: escape_time.to_string(),
-        ..Default::default()
-    };
-    // Exec result is a JSON or YAML string.
-    let exec_result = match exec_result {
-        Ok(res) => {
-            if res.is_empty() {
-                return Ok(result);
-            } else {
-                res
-            }
-        }
-        Err(res) => {
-            if res.is_empty() {
-                return Ok(result);
-            } else {
-                return Err(res);
-            }
-        }
-    };
-    let mut ctx = Context::new();
-    let kcl_val = match ValueRef::from_yaml_stream(&mut ctx, &exec_result) {
-        Ok(v) => v,
-        Err(err) => return Err(err.to_string()),
-    };
     // Filter values with the path selector.
-    let kcl_val = kcl_val.filter_by_path(&args.path_selector)?;
+    let mut ctx = Context::new();
+    let kcl_val = ValueRef::from_yaml_stream(&mut ctx, &result.json_result)?;
+    let kcl_val = kcl_val
+        .filter_by_path(&args.path_selector)
+        .map_err(|err| anyhow!(err))?;
     // Plan values.
     let (json_result, yaml_result) = kcl_val.plan(
         &mut ctx,
@@ -145,7 +118,7 @@ pub fn exec_program(
 }
 
 /// After the kcl program passed through kclvm-parser in the compiler frontend,
-/// KCLVM needs to resolve ast, generate corresponding LLVM IR, dynamic link library or
+/// KCL needs to resolve ast, generate corresponding LLVM IR, dynamic link library or
 /// executable file for kcl program in the compiler backend.
 ///
 /// Method “execute” is the entry point for the compiler backend.
@@ -168,7 +141,7 @@ pub fn exec_program(
 /// After linking all dynamic link libraries by KclvmLinker, method "KclvmLinker::link_all_libs" will return a path
 /// for dynamic link library after linking.
 ///
-/// At last, KclvmRunner will be constructed and call method "run" to execute the kcl program.
+/// At last, KclLibRunner will be constructed and call method "run" to execute the kcl program.
 ///
 /// **Note that it is not thread safe.**
 ///
@@ -198,7 +171,7 @@ pub fn execute(
     sess: Arc<ParseSession>,
     mut program: Program,
     args: &ExecProgramArgs,
-) -> Result<String, String> {
+) -> Result<ExecProgramResult> {
     // If the user only wants to compile the kcl program, the following code will only resolve ast.
     if args.compile_only {
         let mut resolve_opts = Options::default();
@@ -206,19 +179,19 @@ pub fn execute(
         // Resolve ast
         let scope = resolve_program_with_opts(&mut program, resolve_opts, None);
         emit_compile_diag_to_string(sess, &scope, args.compile_only)?;
-        return Ok("".to_string());
+        return Ok(ExecProgramResult::default());
     }
     // Resolve ast
     let scope = resolve_program(&mut program);
     emit_compile_diag_to_string(sess, &scope, false)?;
 
     // Create a temp entry file and the temp dir will be delete automatically
-    let temp_dir = tempdir().map_err(|e| e.to_string())?;
-    let temp_dir_path = temp_dir.path().to_str().ok_or(format!(
+    let temp_dir = tempdir()?;
+    let temp_dir_path = temp_dir.path().to_str().ok_or(anyhow!(
         "Internal error: {}: No such file or directory",
         temp_dir.path().display()
     ))?;
-    let temp_entry_file = temp_file(temp_dir_path).map_err(|e| e.to_string())?;
+    let temp_entry_file = temp_file(temp_dir_path)?;
 
     // Generate libs
     let lib_paths = assembler::KclvmAssembler::new(
@@ -228,33 +201,34 @@ pub fn execute(
         KclvmLibAssembler::LLVM,
         args.get_package_maps_from_external_pkg(),
     )
-    .gen_libs()
-    .map_err(|e| e.to_string())?;
+    .gen_libs()?;
 
-    // Link libs
+    // Link libs into one library
     let lib_suffix = Command::get_lib_suffix();
     let temp_out_lib_file = format!("{}{}", temp_entry_file, lib_suffix);
-    let lib_path = linker::KclvmLinker::link_all_libs(lib_paths, temp_out_lib_file)
-        .map_err(|e| e.to_string())?;
+    let lib_path = linker::KclvmLinker::link_all_libs(lib_paths, temp_out_lib_file)?;
 
-    // Run
-    let runner = KclvmRunner::new(Some(KclvmRunnerOptions {
+    // Run the library
+    let runner = KclLibRunner::new(Some(KclLibRunnerOptions {
         plugin_agent_ptr: args.plugin_agent,
     }));
-    let result = runner.run(&lib_path, args);
+    let mut result = runner.run(&lib_path, args)?;
 
-    remove_file(&lib_path).map_err(|e| e.to_string())?;
-    clean_tmp_files(&temp_entry_file, &lib_suffix).map_err(|e| e.to_string())?;
+    remove_file(&lib_path)?;
+    clean_tmp_files(&temp_entry_file, &lib_suffix)?;
     // Wrap runtime error into diagnostic style string.
-    result.map_err(|err| {
-        match Handler::default()
-            .add_diagnostic(<PanicInfo as Into<Diagnostic>>::into(PanicInfo::from(err)))
+    if !result.err_message.is_empty() {
+        result.err_message = match Handler::default()
+            .add_diagnostic(<PanicInfo as Into<Diagnostic>>::into(PanicInfo::from(
+                result.err_message.as_str(),
+            )))
             .emit_to_string()
         {
             Ok(msg) => msg,
             Err(err) => err.to_string(),
-        }
-    })
+        };
+    }
+    Ok(result)
 }
 
 /// `execute_module` can directly execute the ast `Module`.
@@ -263,7 +237,7 @@ pub fn execute(
 /// For more information, see doc above method `execute`.
 ///
 /// **Note that it is not thread safe.**
-pub fn execute_module(mut m: Module) -> Result<String, String> {
+pub fn execute_module(mut m: Module) -> Result<ExecProgramResult> {
     m.pkg = MAIN_PKG.to_string();
 
     let mut pkgs = HashMap::new();
@@ -315,12 +289,8 @@ fn emit_compile_diag_to_string(
     sess: Arc<ParseSession>,
     scope: &ProgramScope,
     include_warnings: bool,
-) -> Result<(), String> {
-    let mut res_str = sess
-        .1
-        .borrow_mut()
-        .emit_to_string()
-        .map_err(|err| err.to_string())?;
+) -> Result<()> {
+    let mut res_str = sess.1.borrow_mut().emit_to_string()?;
     let sema_err = scope.emit_diagnostics_to_string(sess.0.clone(), include_warnings);
     if sema_err.is_err() {
         #[cfg(not(target_os = "windows"))]
@@ -333,5 +303,5 @@ fn emit_compile_diag_to_string(
     res_str
         .is_empty()
         .then(|| Ok(()))
-        .unwrap_or_else(|| Err(res_str))
+        .unwrap_or_else(|| bail!(res_str))
 }

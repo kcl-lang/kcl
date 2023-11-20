@@ -30,8 +30,7 @@ pub fn vet_command(matches: &ArgMatches) -> Result<()> {
                 Some(kcl_file.to_string()),
                 None,
             ))
-            .map_err(|err| anyhow::anyhow!(err))?;
-            Ok(())
+            .map(|_| ())
         }
         _ => Err(anyhow::anyhow!("No input data file or kcl file")),
     }

@@ -58,10 +58,12 @@ pub unsafe extern "C" fn _kcl_run(
     disable_schema_check: i32,
     list_option_mode: i32,
     debug_mode: i32,
-    result_buffer_len: kclvm_size_t,
+    result_buffer_len: *mut kclvm_size_t,
     result_buffer: *mut kclvm_char_t,
-    warn_buffer_len: kclvm_size_t,
+    warn_buffer_len: *mut kclvm_size_t,
     warn_buffer: *mut kclvm_char_t,
+    log_buffer_len: *mut kclvm_size_t,
+    log_buffer: *mut kclvm_char_t,
 ) -> kclvm_size_t {
     let ctx = kclvm_context_new();
 
@@ -110,35 +112,36 @@ pub unsafe extern "C" fn _kcl_run(
         let ctx = mut_ptr_as_ref(ctx);
         ctx.set_panic_info(&record);
     });
+    // Get the runtime context.
+    let ctx_ref = ptr_as_ref(ctx);
+    // Copy log message pointer
+    let c_str_ptr = ctx_ref.log_message.as_ptr() as *const i8;
+    let c_str_len = ctx_ref.log_message.len() as i32;
+    if c_str_len <= *log_buffer_len {
+        std::ptr::copy(c_str_ptr, log_buffer, c_str_len as usize);
+        *log_buffer_len = c_str_len
+    }
+    // Copy panic info message pointer
+    let json_panic_info = ctx_ref.get_panic_info_json_string();
+    let c_str_ptr = json_panic_info.as_ptr() as *const i8;
+    let c_str_len = json_panic_info.len() as i32;
     match result {
         Ok(n) => {
-            let ctx_ref = ptr_as_ref(ctx);
-            let json_panic_info = ctx_ref.get_panic_info_json_string();
-
-            let c_str_ptr = json_panic_info.as_ptr() as *const i8;
-            let c_str_len = json_panic_info.len() as i32;
-
             unsafe {
-                if c_str_len <= warn_buffer_len {
+                if c_str_len <= *warn_buffer_len {
                     std::ptr::copy(c_str_ptr, warn_buffer, c_str_len as usize);
+                    *warn_buffer_len = c_str_len
                 }
             }
-
             kclvm_context_delete(ctx);
             n
         }
         Err(_) => {
-            let ctx_ref = ptr_as_ref(ctx);
-            let json_panic_info = ctx_ref.get_panic_info_json_string();
-
-            let c_str_ptr = json_panic_info.as_ptr() as *const i8;
-            let c_str_len = json_panic_info.len() as i32;
-
             let mut return_len = c_str_len;
-
             unsafe {
-                if return_len <= result_buffer_len {
+                if return_len <= *result_buffer_len {
                     std::ptr::copy(c_str_ptr, result_buffer, return_len as usize);
+                    *result_buffer_len = return_len
                 } else {
                     *result_buffer = '\0' as kclvm_char_t;
                     return_len = 0 - return_len;
@@ -163,7 +166,7 @@ unsafe fn _kcl_run_in_closure(
     disable_schema_check: i32,
     list_option_mode: i32,
     debug_mode: i32,
-    result_buffer_len: kclvm_size_t,
+    result_buffer_len: *mut kclvm_size_t,
     result_buffer: *mut kclvm_char_t,
 ) -> kclvm_size_t {
     let kclvm_main = (&kclvm_main_ptr as *const u64) as *const ()
@@ -196,8 +199,9 @@ unsafe fn _kcl_run_in_closure(
 
         let mut return_len = c_str_len;
 
-        if return_len <= result_buffer_len {
+        if return_len <= *result_buffer_len {
             std::ptr::copy(c_str_ptr, result_buffer, return_len as usize);
+            *result_buffer_len = return_len;
         } else {
             *result_buffer = '\0' as kclvm_char_t;
             return_len = 0 - return_len;

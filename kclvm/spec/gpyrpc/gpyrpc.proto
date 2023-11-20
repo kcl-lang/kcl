@@ -166,8 +166,8 @@ message ExecProgram_Args {
 message ExecProgram_Result {
 	string json_result = 1;
 	string yaml_result = 2;
-
-	string escaped_time = 101;
+	string log_message = 3;
+	string err_message = 4;
 }
 
 message ResetPlugin_Args {
