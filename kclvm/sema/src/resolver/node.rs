@@ -158,14 +158,6 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                         value_ty = self.expr(&assign_stmt.value);
                         self.clear_config_expr_context(init_stack_depth as usize, false)
                     }
-                    TypeKind::Dict(_) => {
-                        value_ty = self.expr(&assign_stmt.value);
-                        if !assign_stmt.type_annotation.is_none() {
-                            // Check type annotation if exists.
-                            self.check_assignment_type_annotation(assign_stmt, value_ty.clone());
-                        }
-                        self.set_type_to_scope(name, value_ty.clone(), &target.node.names[0]);
-                    }
                     _ => {
                         value_ty = self.expr(&assign_stmt.value);
                         // Check type annotation if exists.

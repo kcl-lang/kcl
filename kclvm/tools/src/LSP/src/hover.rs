@@ -386,6 +386,27 @@ mod tests {
 
     #[test]
     #[bench_test]
+    fn assignment_ty_in_lambda_hover() {
+        let (file, program, prog_scope, _, gs) =
+            compile_test_file("src/test_data/hover_test/ty_in_lambda.k");
+        let pos = KCLPos {
+            filename: file.clone(),
+            line: 3,
+            column: Some(8),
+        };
+        let got = hover(&program, &pos, &prog_scope, &gs).unwrap();
+        match got.contents {
+            lsp_types::HoverContents::Scalar(marked_string) => {
+                if let MarkedString::String(s) = marked_string {
+                    assert_eq!(s, "result: {str:str}");
+                }
+            }
+            _ => unreachable!("test error"),
+        }
+    }
+
+    #[test]
+    #[bench_test]
     fn str_var_func_hover() {
         let (file, program, prog_scope, _, gs) =
             compile_test_file("src/test_data/hover_test/hover.k");

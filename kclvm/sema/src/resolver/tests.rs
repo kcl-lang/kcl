@@ -775,3 +775,28 @@ fn test_schema_params_count() {
         "expected 1 positional argument, found 0"
     );
 }
+
+#[test]
+fn test_set_ty_in_lambda() {
+    let sess = Arc::new(ParseSession::default());
+    let mut program = load_program(
+        sess.clone(),
+        &["./src/resolver/test_data/ty_in_lambda.k"],
+        None,
+        None,
+    )
+    .unwrap();
+    assert_eq!(
+        resolve_program(&mut program)
+            .main_scope()
+            .unwrap()
+            .borrow()
+            .lookup("result")
+            .unwrap()
+            .borrow()
+            .ty
+            .clone()
+            .ty_str(),
+        "{str:str}"
+    );
+}
