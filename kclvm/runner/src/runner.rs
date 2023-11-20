@@ -1,3 +1,4 @@
+use anyhow::{anyhow, Result};
 use std::collections::HashMap;
 
 use kclvm_ast::ast;
@@ -85,8 +86,42 @@ impl ExecProgramArgs {
 pub struct ExecProgramResult {
     pub json_result: String,
     pub yaml_result: String,
+    pub log_message: String,
+    pub err_message: String,
+}
 
-    pub escaped_time: String,
+pub trait MapErrorResult {
+    /// Map execute error message into the [`Result::Err`]
+    fn map_err_to_result(self) -> Result<ExecProgramResult>
+    where
+        Self: Sized;
+}
+
+impl MapErrorResult for ExecProgramResult {
+    /// Map execute error message into the [`Result::Err`]
+    fn map_err_to_result(self) -> Result<ExecProgramResult>
+    where
+        Self: Sized,
+    {
+        if self.err_message.is_empty() {
+            Ok(self)
+        } else {
+            Err(anyhow!(self.err_message))
+        }
+    }
+}
+
+impl MapErrorResult for Result<ExecProgramResult> {
+    /// Map execute error message into the [`Result::Err`]
+    fn map_err_to_result(self) -> Result<ExecProgramResult>
+    where
+        Self: Sized,
+    {
+        match self {
+            Ok(result) => result.map_err_to_result(),
+            Err(err) => Err(err),
+        }
+    }
 }
 
 impl ExecProgramArgs {
@@ -172,42 +207,37 @@ impl TryFrom<SettingsPathBuf> for ExecProgramArgs {
 }
 
 #[derive(Debug, Default)]
-pub struct KclvmRunnerOptions {
+pub struct KclLibRunnerOptions {
     pub plugin_agent_ptr: u64,
 }
 
-pub struct KclvmRunner {
-    opts: KclvmRunnerOptions,
+pub struct KclLibRunner {
+    opts: KclLibRunnerOptions,
 }
 
-impl KclvmRunner {
+impl KclLibRunner {
     /// New a runner using the lib path and options.
-    pub fn new(opts: Option<KclvmRunnerOptions>) -> Self {
+    pub fn new(opts: Option<KclLibRunnerOptions>) -> Self {
         Self {
             opts: opts.unwrap_or_default(),
         }
     }
 
     /// Run kcl library with exec arguments.
-    pub fn run(&self, lib_path: &str, args: &ExecProgramArgs) -> Result<String, String> {
+    pub fn run(&self, lib_path: &str, args: &ExecProgramArgs) -> Result<ExecProgramResult> {
         unsafe {
-            let lib = libloading::Library::new(
-                std::path::PathBuf::from(lib_path)
-                    .canonicalize()
-                    .map_err(|e| e.to_string())?,
-            )
-            .map_err(|e| e.to_string())?;
+            let lib = libloading::Library::new(std::path::PathBuf::from(lib_path).canonicalize()?)?;
             Self::lib_kclvm_plugin_init(&lib, self.opts.plugin_agent_ptr)?;
             Self::lib_kcl_run(&lib, args)
         }
     }
 }
 
-impl KclvmRunner {
+impl KclLibRunner {
     unsafe fn lib_kclvm_plugin_init(
         lib: &libloading::Library,
         plugin_method_ptr: u64,
-    ) -> Result<(), String> {
+    ) -> Result<()> {
         // get kclvm_plugin_init
         let kclvm_plugin_init: libloading::Symbol<
             unsafe extern "C" fn(
@@ -217,7 +247,7 @@ impl KclvmRunner {
                     kwargs_json: *const i8,
                 ) -> *const i8,
             ),
-        > = lib.get(b"kclvm_plugin_init").map_err(|e| e.to_string())?;
+        > = lib.get(b"kclvm_plugin_init")?;
 
         // get plugin_method
         let plugin_method_ptr = plugin_method_ptr;
@@ -241,7 +271,7 @@ impl KclvmRunner {
     unsafe fn lib_kcl_run(
         lib: &libloading::Library,
         args: &ExecProgramArgs,
-    ) -> Result<String, String> {
+    ) -> Result<ExecProgramResult> {
         let kcl_run: libloading::Symbol<
             unsafe extern "C" fn(
                 kclvm_main_ptr: u64, // main.k => kclvm_main
@@ -253,17 +283,19 @@ impl KclvmRunner {
                 disable_schema_check: i32,
                 list_option_mode: i32,
                 debug_mode: i32,
-                result_buffer_len: kclvm_size_t,
+                result_buffer_len: *mut kclvm_size_t,
                 result_buffer: *mut kclvm_char_t,
-                warn_buffer_len: kclvm_size_t,
+                warn_buffer_len: *mut kclvm_size_t,
                 warn_buffer: *mut kclvm_char_t,
+                log_buffer_len: *mut kclvm_size_t,
+                log_buffer: *mut kclvm_char_t,
             ) -> kclvm_size_t,
-        > = lib.get(b"_kcl_run").map_err(|e| e.to_string())?;
+        > = lib.get(b"_kcl_run")?;
 
-        let kclvm_main: libloading::Symbol<u64> =
-            lib.get(b"kclvm_main").map_err(|e| e.to_string())?;
+        let kclvm_main: libloading::Symbol<u64> = lib.get(b"kclvm_main")?;
         let kclvm_main_ptr = kclvm_main.into_raw().into_raw() as u64;
 
+        // CLI configs
         let option_len = args.args.len() as kclvm_size_t;
 
         let cstr_argv: Vec<_> = args
@@ -295,20 +327,26 @@ impl KclvmRunner {
 
         let p: *const *const kclvm_char_t = p_argv.as_ptr();
         let option_values = p;
-
         let strict_range_check = args.strict_range_check as i32;
         let disable_none = args.disable_none as i32;
         let disable_schema_check = 0; // todo
         let list_option_mode = 0; // todo
         let debug_mode = args.debug;
 
-        let mut result = vec![0u8; RESULT_SIZE];
-        let result_buffer_len = result.len() as i32 - 1;
-        let result_buffer = result.as_mut_ptr() as *mut i8;
+        // Exec json result
+        let mut json_result = vec![0u8; RESULT_SIZE];
+        let mut result_buffer_len = json_result.len() as i32 - 1;
+        let json_result_buffer = json_result.as_mut_ptr() as *mut i8;
 
+        // Exec warning data
         let mut warn_data = vec![0u8; RESULT_SIZE];
-        let warn_buffer_len = warn_data.len() as i32 - 1;
+        let mut warn_buffer_len = warn_data.len() as i32 - 1;
         let warn_buffer = warn_data.as_mut_ptr() as *mut i8;
+
+        // Exec log data
+        let mut log_data = vec![0u8; RESULT_SIZE];
+        let mut log_buffer_len = log_data.len() as i32 - 1;
+        let log_buffer = log_data.as_mut_ptr() as *mut i8;
 
         let n = kcl_run(
             kclvm_main_ptr,
@@ -320,25 +358,28 @@ impl KclvmRunner {
             disable_schema_check,
             list_option_mode,
             debug_mode,
-            result_buffer_len,
-            result_buffer,
-            warn_buffer_len,
+            &mut result_buffer_len,
+            json_result_buffer,
+            &mut warn_buffer_len,
             warn_buffer,
+            &mut log_buffer_len,
+            log_buffer,
         );
-
-        if n == 0 {
-            Ok("".to_string())
-        } else if n > 0 {
-            let return_len = n;
-            let s =
-                std::str::from_utf8(&result[0..return_len as usize]).map_err(|e| e.to_string())?;
-            wrap_msg_in_result(s)
-        } else {
+        let mut result = ExecProgramResult {
+            log_message: String::from_utf8(log_data[0..log_buffer_len as usize].to_vec())?,
+            ..Default::default()
+        };
+        if n > 0 {
+            let s = std::str::from_utf8(&json_result[0..n as usize])?;
+            match wrap_msg_in_result(s) {
+                Ok(json) => result.json_result = json,
+                Err(err) => result.err_message = err,
+            }
+        } else if n < 0 {
             let return_len = 0 - n;
-            let s = std::str::from_utf8(&warn_data[0..return_len as usize])
-                .map_err(|e| e.to_string())?;
-            Err(s.to_string())
+            result.err_message = String::from_utf8(warn_data[0..return_len as usize].to_vec())?;
         }
+        Ok(result)
     }
 }
 

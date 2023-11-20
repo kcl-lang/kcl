@@ -28,7 +28,15 @@ fn test_lint() {
         "find more package on 'https://artifacthub.io'",
         &format!("Cannot find the module abc from {}", path.to_str().unwrap()),
     ];
-    assert_eq!(errors.len(), msgs.len());
+    assert_eq!(
+        errors.len(),
+        msgs.len(),
+        "{:?}",
+        errors
+            .iter()
+            .map(|e| e.messages[0].message.clone())
+            .collect::<Vec<String>>()
+    );
     for (diag, m) in errors.iter().zip(msgs.iter()) {
         assert_eq!(diag.messages[0].message, m.to_string());
     }

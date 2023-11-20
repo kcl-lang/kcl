@@ -102,12 +102,14 @@ impl KclvmServiceImpl {
         let result = exec_program(
             sess,
             &kclvm_runner::ExecProgramArgs::from_str(args_json.as_str()),
-        )?;
+        )
+        .map_err(|err| err.to_string())?;
 
         Ok(ExecProgramResult {
             json_result: result.json_result,
             yaml_result: result.yaml_result,
-            escaped_time: result.escaped_time,
+            log_message: result.log_message,
+            err_message: result.err_message,
         })
     }
 
@@ -415,7 +417,7 @@ impl KclvmServiceImpl {
             transform_str_para(&args.code),
         )) {
             Ok(success) => (success, "".to_string()),
-            Err(err) => (false, err),
+            Err(err) => (false, err.to_string()),
         };
         Ok(ValidateCodeResult {
             success,

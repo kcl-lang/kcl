@@ -7,7 +7,7 @@ use std::{
 
 use kclvm_config::modfile::KCL_PKG_PATH;
 use kclvm_parser::ParseSession;
-use kclvm_runner::exec_program;
+use kclvm_runner::{exec_program, MapErrorResult};
 
 use crate::{
     app,
@@ -522,7 +522,10 @@ fn test_main_pkg_not_found() {
     ]);
     let settings = must_build_settings(matches.subcommand_matches("run").unwrap());
     let sess = Arc::new(ParseSession::default());
-    match exec_program(sess.clone(), &settings.try_into().unwrap()) {
+    match exec_program(sess.clone(), &settings.try_into().unwrap())
+        .map_err_to_result()
+        .map_err(|e| e.to_string())
+    {
         Ok(_) => panic!("unreachable code."),
         Err(msg) => assert_eq!(
             msg,
@@ -563,7 +566,7 @@ fn test_plugin_not_found() {
     ]);
     let settings = must_build_settings(matches.subcommand_matches("run").unwrap());
     let sess = Arc::new(ParseSession::default());
-    match exec_program(sess.clone(), &settings.try_into().unwrap()) {
+    match exec_program(sess.clone(), &settings.try_into().unwrap()).map_err_to_result().map_err(|e|e.to_string()) {
         Ok(_) => panic!("unreachable code."),
         Err(msg) => assert!(msg.contains("the plugin package `kcl_plugin.not_exist` is not found, please confirm if plugin mode is enabled")),
     }
@@ -578,7 +581,10 @@ fn test_error_message_fuzz_matched() {
     ]);
     let settings = must_build_settings(matches.subcommand_matches("run").unwrap());
     let sess = Arc::new(ParseSession::default());
-    match exec_program(sess.clone(), &settings.try_into().unwrap()) {
+    match exec_program(sess.clone(), &settings.try_into().unwrap())
+        .map_err_to_result()
+        .map_err(|e| e.to_string())
+    {
         Ok(_) => panic!("unreachable code."),
         Err(msg) => {
             assert!(msg
@@ -596,7 +602,10 @@ fn test_error_message_fuzz_unmatched() {
     ]);
     let settings = must_build_settings(matches.subcommand_matches("run").unwrap());
     let sess = Arc::new(ParseSession::default());
-    match exec_program(sess.clone(), &settings.try_into().unwrap()) {
+    match exec_program(sess.clone(), &settings.try_into().unwrap())
+        .map_err_to_result()
+        .map_err(|e| e.to_string())
+    {
         Ok(_) => panic!("unreachable code."),
         Err(msg) => {
             assert!(msg.contains("attribute 'a' not found in schema 'Person'"))
@@ -613,7 +622,10 @@ fn test_keyword_argument_error_message() {
     ]);
     let settings = must_build_settings(matches.subcommand_matches("run").unwrap());
     let sess = Arc::new(ParseSession::default());
-    match exec_program(sess.clone(), &settings.try_into().unwrap()) {
+    match exec_program(sess.clone(), &settings.try_into().unwrap())
+        .map_err_to_result()
+        .map_err(|e| e.to_string())
+    {
         Ok(_) => panic!("unreachable code."),
         Err(msg) => {
             assert!(msg.contains("keyword argument 'ID' not found"));

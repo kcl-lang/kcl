@@ -17,7 +17,7 @@ fn test_c_api_call_exec_program() {
         "KclvmService.ExecProgram",
         "exec-program.json",
         "exec-program.response.json",
-        |res| res.escaped_time = "0".to_owned(),
+        |_| {},
     );
 }
 
@@ -27,7 +27,7 @@ fn test_c_api_call_exec_program_with_external_pkg() {
         "KclvmService.ExecProgram",
         "exec-program-with-external-pkg.json",
         "exec-program-with-external-pkg.response.json",
-        |res| res.escaped_time = "0".to_owned(),
+        |_| {},
     );
 }
 
@@ -37,7 +37,7 @@ fn test_c_api_call_exec_program_with_include_schema_type_path() {
         "KclvmService.ExecProgram",
         "exec-program-with-include-schema-type-path.json",
         "exec-program-with-include-schema-type-path.response.json",
-        |res| res.escaped_time = "0".to_owned(),
+        |_| {},
     );
 }
 
@@ -47,7 +47,17 @@ fn test_c_api_call_exec_program_with_path_selector() {
         "KclvmService.ExecProgram",
         "exec-program-with-path-selector.json",
         "exec-program-with-path-selector.response.json",
-        |res| res.escaped_time = "0".to_owned(),
+        |_| {},
+    );
+}
+
+#[test]
+fn test_c_api_call_exec_program_with_print() {
+    test_c_api::<ExecProgramArgs, ExecProgramResult, _>(
+        "KclvmService.ExecProgram",
+        "exec-program-with-print.json",
+        "exec-program-with-print.response.json",
+        |_| {},
     );
 }
 
@@ -111,7 +121,7 @@ fn test_c_api_call_exec_program_with_recursive() {
         "KclvmService.ExecProgram",
         "exec-program-with-recursive.json",
         "exec-program-with-recursive.response.json",
-        |res| res.escaped_time = "0".to_owned(),
+        |_| {},
     );
 }
 

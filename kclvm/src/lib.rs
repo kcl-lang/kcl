@@ -57,7 +57,7 @@ fn kclvm_cli_run_unsafe(args: *const i8, plugin_agent: *const i8) -> Result<Stri
         ExecProgramArgs::from_str(unsafe { std::ffi::CStr::from_ptr(args) }.to_str().unwrap());
     args.plugin_agent = plugin_agent as u64;
     exec_program(Arc::new(ParseSession::default()), &args)
-        .map_err(|e| PanicInfo::from(e).to_json_string())
+        .map_err(|e| PanicInfo::from(e.to_string()).to_json_string())
         .map(|r| r.json_result)
 }
 

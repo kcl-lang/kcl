@@ -437,7 +437,7 @@ mod test_validater {
                 );
 
                 let result = validate(opt).unwrap_err();
-                assert!(result.contains("Error"), "{result}");
+                assert!(result.to_string().contains("Error"), "{result}");
             }
         }
     }
@@ -461,7 +461,7 @@ mod test_validater {
                     r"^Failed to load KCL file 'validationTempKCLCode.k'. Because .*"
                 )
                 .unwrap()
-                .is_match(&err))
+                .is_match(&err.to_string()))
             }
         }
     }
@@ -475,7 +475,7 @@ mod test_validater {
         let opt = ValidateOption::new(
             None,
             "value".to_string(),
-            "The validated file path is invalid".to_string(),
+            "invalid/file/path".to_string(),
             LoaderKind::JSON,
             None,
             Some(kcl_code),
@@ -486,7 +486,7 @@ mod test_validater {
                 panic!("unreachable")
             }
             Err(err) => {
-                assert_eq!(err, "Failed to load validated file.")
+                assert_eq!(err.to_string(), "Failed to Load 'invalid/file/path'")
             }
         }
     }
@@ -514,7 +514,7 @@ mod test_validater {
                 panic!("unreachable")
             }
             Err(err) => {
-                assert_eq!(err, "Failed to load validated file.")
+                assert_eq!(err.to_string(), "Failed to Load JSON")
             }
         }
     }

@@ -1,0 +1,6 @@
+{
+	"work_dir" : "./src/testdata",
+	"k_filename_list":[
+		"hello_with_print.k"
+	]
+}
