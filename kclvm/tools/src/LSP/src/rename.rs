@@ -9,8 +9,8 @@ use kclvm_error::diagnostic;
 use kclvm_query::selector::parse_symbol_selector_spec;
 use lsp_types::{Location, Position, Range, TextEdit, Url};
 use std::collections::{HashMap, HashSet};
-use std::path::PathBuf;
 use std::fs;
+use std::path::PathBuf;
 
 pub fn rename_symbol_on_file(
     pkg_root: &str,
@@ -239,8 +239,8 @@ mod tests {
     use lsp_types::ChangeAnnotation;
     use lsp_types::{Position, Range, TextEdit, Url};
     use std::collections::{HashMap, HashSet};
-    use std::path::PathBuf;
     use std::fs;
+    use std::path::PathBuf;
 
     use super::{apply_rename_changes, rename_symbol, rename_symbol_on_file, select_symbol};
 
@@ -379,7 +379,6 @@ mod tests {
         } else {
             assert!(false, "select symbol failed")
         }
-
     }
 
     #[test]
@@ -552,18 +551,20 @@ mod tests {
         let result = rename_symbol_on_file(
             root.to_str().unwrap(),
             "base:Person",
-            &vec![
-                base_path_string.clone(),
-                main_path_string.clone(),
-            ],
+            &vec![base_path_string.clone(), main_path_string.clone()],
             "NewPerson".to_string(),
         );
-        let expect_changed_paths: HashSet<_> = [base_path_string.clone(),main_path_string.clone()].iter().cloned().collect();
+        let expect_changed_paths: HashSet<_> = [base_path_string.clone(), main_path_string.clone()]
+            .iter()
+            .cloned()
+            .collect();
         let got_changed_paths: HashSet<_> = result.unwrap().iter().cloned().collect();
         assert_eq!(expect_changed_paths, got_changed_paths);
         let base_new_content = fs::read_to_string(base_path.clone()).unwrap();
         let main_new_content = fs::read_to_string(main_path.clone()).unwrap();
-        assert_eq!(base_new_content, r#"schema NewPerson:
+        assert_eq!(
+            base_new_content,
+            r#"schema NewPerson:
     name: Name
     age: int
 
@@ -575,7 +576,8 @@ a = {
 }
 
 d = a.abc
-e = a["abc"]"#);
+e = a["abc"]"#
+        );
         assert_eq!(main_new_content, "import .base\n\na = base.NewPerson {\n    age: 1,\n    name: {\n        first: \"aa\"\n    }\n}");
 
         // after test, restore the old file content

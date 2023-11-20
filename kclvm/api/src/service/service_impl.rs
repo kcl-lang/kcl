@@ -551,8 +551,9 @@ impl KclvmServiceImpl {
         let file_paths = args.file_paths.clone();
         let new_name = args.new_name.clone();
 
-        let changed_files = rename::rename_symbol_on_file(&pkg_root, &symbol_path, &file_paths, new_name)?;
-        Ok(RenameResult { changed_files: changed_files })
+        let changed_files =
+            rename::rename_symbol_on_file(&pkg_root, &symbol_path, &file_paths, new_name)?;
+        Ok(RenameResult { changed_files })
     }
 
     /// Service for renaming all the occurrences of the target symbol and rename them. This API won't rewrite files but return the modified code if any code has been changed.
