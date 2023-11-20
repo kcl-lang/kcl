@@ -836,7 +836,7 @@ impl Word {
     }
 }
 
-fn read_file(path: &String) -> anyhow::Result<String> {
+pub fn read_file(path: &String) -> anyhow::Result<String> {
     let text = std::fs::read_to_string(path)?;
     Ok(text)
 }

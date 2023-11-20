@@ -308,9 +308,10 @@ message KeyValuePair {
 // ---------------------------------------------------------------------------------
 
 message Rename_Args {
-    string symbol_path = 1;               // the path to the target symbol to be renamed. The symbol path should conform to format: `<pkgpath>:<field_path>` When the pkgpath is '__main__', `<pkgpath>:` can be omitted.
-    repeated string file_paths = 2;       // the paths to the source code files
-    string new_name = 3;                   // the new name of the symbol
+	string package_root = 1;              // the file path to the package root
+    string symbol_path = 2;               // the path to the target symbol to be renamed. The symbol path should conform to format: `<pkgpath>:<field_path>` When the pkgpath is '__main__', `<pkgpath>:` can be omitted.
+    repeated string file_paths = 3;       // the paths to the source code files
+    string new_name = 4;                  // the new name of the symbol
 }
 
 message Rename_Result {
@@ -323,9 +324,10 @@ message Rename_Result {
 // ---------------------------------------------------------------------------------
 
 message RenameCode_Args {
-    string symbol_path = 1;               // the path to the target symbol to be renamed. The symbol path should conform to format: `<pkgpath>:<field_path>` When the pkgpath is '__main__', `<pkgpath>:` can be omitted.
-    map<string, string> source_codes = 2; // the source code. a <filename>:<code> map
-    string new_name = 3;                   // the new name of the symbol
+	string package_root = 1;              // the file path to the package root
+    string symbol_path = 2;               // the path to the target symbol to be renamed. The symbol path should conform to format: `<pkgpath>:<field_path>` When the pkgpath is '__main__', `<pkgpath>:` can be omitted.
+    map<string, string> source_codes = 3; // the source code. a <filename>:<code> map
+    string new_name = 4;                  // the new name of the symbol
 }
 
 message RenameCode_Result {

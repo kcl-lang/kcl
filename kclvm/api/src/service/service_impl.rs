@@ -6,6 +6,7 @@ use std::sync::Arc;
 use crate::gpyrpc::*;
 
 use anyhow::anyhow;
+use kcl_language_server::rename;
 use kclvm_config::settings::build_settings_pathbuf;
 use kclvm_driver::canonicalize_input_files;
 use kclvm_parser::ParseSession;
@@ -537,20 +538,21 @@ impl KclvmServiceImpl {
     ///
     /// let serv = KclvmServiceImpl::default();
     /// let result = serv.rename(&RenameArgs {
+    ///     package_root: "./src/testdata/rename".to_string(),
     ///     symbol_path: "a".to_string(),
-    ///     file_paths: vec!["./src/testdata/rename/main.k".to_string()],
+    ///     file_paths: vec!["main.k".to_string()],
     ///     new_name: "a2".to_string(),
     /// }).unwrap();
     /// assert_eq!(result.changed_files.len(), 1);
     /// ```
     pub fn rename(&self, args: &RenameArgs) -> anyhow::Result<RenameResult> {
+        let pkg_root = args.package_root.clone();
         let symbol_path = args.symbol_path.clone();
         let file_paths = args.file_paths.clone();
         let new_name = args.new_name.clone();
-        Ok(RenameResult {
-            //todo: mock implementation
-            changed_files: file_paths,
-        })
+
+        let changed_files = rename::rename_symbol_on_file(&pkg_root, &symbol_path, &file_paths, new_name)?;
+        Ok(RenameResult { changed_files: changed_files })
     }
 
     /// Service for renaming all the occurrences of the target symbol and rename them. This API won't rewrite files but return the modified code if any code has been changed.
@@ -564,8 +566,9 @@ impl KclvmServiceImpl {
     ///
     /// let serv = KclvmServiceImpl::default();
     /// let result = serv.rename_code(&RenameCodeArgs {
+    ///     package_root: "./src/testdata/rename".to_string(),
     ///     symbol_path: "a".to_string(),
-    ///     source_codes: vec![("./src/testdata/rename/main.k".to_string(), "a = 1\nb = a".to_string())].into_iter().collect(),
+    ///     source_codes: vec![("main.k".to_string(), "a = 1\nb = a".to_string())].into_iter().collect(),
     ///     new_name: "a2".to_string(),
     /// }).unwrap();
     /// assert_eq!(result.changed_codes.len(), 1);
