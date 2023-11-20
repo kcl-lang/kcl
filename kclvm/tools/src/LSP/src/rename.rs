@@ -12,16 +12,6 @@ use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::fs;
 
-// pub fn rename_symbol_on_code(
-//     pkg_root: &str,
-//     symbol_path: &str,
-//     source_codes: HashMap<String, String>,
-//     new_name: String,
-// ) -> Result<HashMap<String, String>> {
-//     let changes = rename_symbol(pkg_root, source_codes, symbol_path, new_name)?;
-//     Ok(apply_rename_changes(&changes))
-// }
-
 pub fn rename_symbol_on_file(
     pkg_root: &str,
     symbol_path: &str,
@@ -262,6 +252,8 @@ mod tests {
 
         let mut main_path = root.clone();
         main_path = main_path.join("base").join("person.k");
+        let mut server_path = root.clone();
+        server_path = server_path.join("server.k");
 
         if let Some((name, range)) = select_symbol(&ast::SymbolSelectorSpec {
             pkg_root: pkg_root.clone(),
@@ -362,6 +354,32 @@ mod tests {
         } else {
             assert!(false, "select symbol failed")
         }
+
+        if let Some((name, range)) = select_symbol(&ast::SymbolSelectorSpec {
+            pkg_root: pkg_root.clone(),
+            pkgpath: "".to_string(),
+            field_path: "Server.name".to_string(),
+        }) {
+            assert_eq!(name, "name");
+            assert_eq!(
+                range,
+                (
+                    diagnostic::Position {
+                        filename: server_path.as_path().to_str().unwrap().to_string(),
+                        line: 2,
+                        column: Some(4),
+                    },
+                    diagnostic::Position {
+                        filename: server_path.as_path().to_str().unwrap().to_string(),
+                        line: 2,
+                        column: Some(8),
+                    },
+                )
+            );
+        } else {
+            assert!(false, "select symbol failed")
+        }
+
     }
 
     #[test]
