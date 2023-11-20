@@ -15,6 +15,7 @@ use std::sync::Arc;
 pub(crate) fn find_refs<F: Fn(String) -> Result<(), anyhow::Error>>(
     program: &Program,
     kcl_pos: &KCLPos,
+    include_declaration: bool,
     prog_scope: &ProgramScope,
     word_index_map: Arc<RwLock<HashMap<Url, HashMap<String, Vec<Location>>>>>,
     vfs: Option<Arc<RwLock<Vfs>>>,
@@ -47,6 +48,7 @@ pub(crate) fn find_refs<F: Fn(String) -> Result<(), anyhow::Error>>(
             word_index_map,
             def_loc,
             def.get_name(),
+            include_declaration,
             logger,
         ))
     } else {
@@ -59,6 +61,7 @@ pub(crate) fn find_refs_from_def<F: Fn(String) -> Result<(), anyhow::Error>>(
     word_index_map: Arc<RwLock<HashMap<Url, HashMap<String, Vec<Location>>>>>,
     def_loc: Location,
     name: String,
+    include_declaration: bool,
     logger: F,
 ) -> Vec<Location> {
     let mut ref_locations = vec![];
@@ -78,6 +81,9 @@ pub(crate) fn find_refs_from_def<F: Fn(String) -> Result<(), anyhow::Error>>(
                     ) {
                         Ok((prog, scope, _, _gs)) => {
                             let ref_pos = kcl_pos(&file_path, ref_loc.range.start);
+                            if *ref_loc == def_loc && !include_declaration {
+                                return false;
+                            }
                             // find def from the ref_pos
                             if let Some(real_def) = goto_definition(&prog, &ref_pos, &scope) {
                                 match real_def {
@@ -182,6 +188,61 @@ mod tests {
                         Arc::new(RwLock::new(setup_word_index_map(path))),
                         def_loc,
                         "a".to_string(),
+                        true,
+                        logger,
+                    ),
+                );
+            }
+            Err(_) => assert!(false, "file not found"),
+        }
+    }
+
+    #[test]
+    fn find_refs_include_declaration_test() {
+        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let mut path = root.clone();
+        path.push("src/test_data/find_refs_test/main.k");
+        let path = path.to_str().unwrap();
+        match lsp_types::Url::from_file_path(path) {
+            Ok(url) => {
+                let def_loc = Location {
+                    uri: url.clone(),
+                    range: Range {
+                        start: Position::new(0, 0),
+                        end: Position::new(0, 1),
+                    },
+                };
+                let expect = vec![
+                    Location {
+                        uri: url.clone(),
+                        range: Range {
+                            start: Position::new(1, 4),
+                            end: Position::new(1, 5),
+                        },
+                    },
+                    Location {
+                        uri: url.clone(),
+                        range: Range {
+                            start: Position::new(2, 4),
+                            end: Position::new(2, 5),
+                        },
+                    },
+                    Location {
+                        uri: url.clone(),
+                        range: Range {
+                            start: Position::new(12, 14),
+                            end: Position::new(12, 15),
+                        },
+                    },
+                ];
+                check_locations_match(
+                    expect,
+                    find_refs_from_def(
+                        None,
+                        Arc::new(RwLock::new(setup_word_index_map(path))),
+                        def_loc,
+                        "a".to_string(),
+                        false,
                         logger,
                     ),
                 );
@@ -235,6 +296,7 @@ mod tests {
                         Arc::new(RwLock::new(setup_word_index_map(path))),
                         def_loc,
                         "Name".to_string(),
+                        true,
                         logger,
                     ),
                 );
@@ -281,6 +343,7 @@ mod tests {
                         Arc::new(RwLock::new(setup_word_index_map(path))),
                         def_loc,
                         "name".to_string(),
+                        true,
                         logger,
                     ),
                 );

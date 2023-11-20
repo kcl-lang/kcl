@@ -161,6 +161,7 @@ pub(crate) fn handle_reference(
     params: lsp_types::ReferenceParams,
     sender: Sender<Task>,
 ) -> anyhow::Result<Option<Vec<Location>>> {
+    let include_declaration = params.context.include_declaration;
     let file = file_path_from_url(&params.text_document_position.text_document.uri)?;
     let path = from_lsp::abs_path(&params.text_document_position.text_document.uri)?;
     if !snapshot.verify_request_path(&path.clone().into(), &sender) {
@@ -172,6 +173,7 @@ pub(crate) fn handle_reference(
     match find_refs(
         &db.prog,
         &pos,
+        include_declaration,
         &db.scope,
         snapshot.word_index_map.clone(),
         Some(snapshot.vfs.clone()),
@@ -277,6 +279,7 @@ pub(crate) fn handle_rename(
     let references = find_refs(
         &db.prog,
         &kcl_pos,
+        true,
         &db.scope,
         snapshot.word_index_map.clone(),
         Some(snapshot.vfs.clone()),
