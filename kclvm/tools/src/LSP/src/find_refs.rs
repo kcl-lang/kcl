@@ -1,9 +1,9 @@
 use crate::from_lsp::kcl_pos;
-use crate::goto_def::{find_def, find_def_with_gs, goto_definition};
+use crate::goto_def::{find_def_with_gs, goto_definition_with_gs};
 use crate::to_lsp::lsp_location;
 use crate::util::{parse_param_and_compile, Param};
 use anyhow;
-use kclvm_ast::ast::{Program, Stmt};
+use kclvm_ast::ast::Program;
 use kclvm_error::Position as KCLPos;
 use kclvm_sema::core::global_state::GlobalState;
 use kclvm_sema::resolver::scope::ProgramScope;
@@ -14,10 +14,10 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 pub(crate) fn find_refs<F: Fn(String) -> Result<(), anyhow::Error>>(
-    _program: &Program,
+    program: &Program,
     kcl_pos: &KCLPos,
     include_declaration: bool,
-    _prog_scope: &ProgramScope,
+    prog_scope: &ProgramScope,
     word_index_map: Arc<RwLock<HashMap<Url, HashMap<String, Vec<Location>>>>>,
     vfs: Option<Arc<RwLock<Vfs>>>,
     logger: F,
@@ -37,6 +37,7 @@ pub(crate) fn find_refs<F: Fn(String) -> Result<(), anyhow::Error>>(
                         obj.get_name(),
                         include_declaration,
                         logger,
+                        gs,
                     ))
                 } else {
                     Err(format!("Invalid file path: {0}", start.filename))
@@ -59,6 +60,7 @@ pub(crate) fn find_refs_from_def<F: Fn(String) -> Result<(), anyhow::Error>>(
     name: String,
     include_declaration: bool,
     logger: F,
+    gs: &GlobalState,
 ) -> Vec<Location> {
     let mut ref_locations = vec![];
     for (_, word_index) in &mut *word_index_map.write() {
@@ -81,7 +83,9 @@ pub(crate) fn find_refs_from_def<F: Fn(String) -> Result<(), anyhow::Error>>(
                                 return false;
                             }
                             // find def from the ref_pos
-                            if let Some(real_def) = goto_definition(&prog, &ref_pos, &scope) {
+                            if let Some(real_def) =
+                                goto_definition_with_gs(&prog, &ref_pos, &scope, gs)
+                            {
                                 match real_def {
                                     lsp_types::GotoDefinitionResponse::Scalar(real_def_loc) => {
                                         real_def_loc == def_loc
@@ -109,6 +113,7 @@ pub(crate) fn find_refs_from_def<F: Fn(String) -> Result<(), anyhow::Error>>(
 #[cfg(test)]
 mod tests {
     use super::find_refs_from_def;
+    use crate::tests::compile_test_file;
     use crate::util::build_word_index;
     use lsp_types::{Location, Position, Range, Url};
     use parking_lot::RwLock;
@@ -138,6 +143,10 @@ mod tests {
         let mut path = root.clone();
         path.push("src/test_data/find_refs_test/main.k");
         let path = path.to_str().unwrap();
+
+        let (_file, _program, _prog_scope, _, gs) =
+            compile_test_file("src/test_data/find_refs_test/main.k");
+
         match lsp_types::Url::from_file_path(path) {
             Ok(url) => {
                 let def_loc = Location {
@@ -186,6 +195,7 @@ mod tests {
                         "a".to_string(),
                         true,
                         logger,
+                        &gs,
                     ),
                 );
             }
@@ -199,6 +209,10 @@ mod tests {
         let mut path = root.clone();
         path.push("src/test_data/find_refs_test/main.k");
         let path = path.to_str().unwrap();
+
+        let (_file, _program, _prog_scope, _, gs) =
+            compile_test_file("src/test_data/find_refs_test/main.k");
+
         match lsp_types::Url::from_file_path(path) {
             Ok(url) => {
                 let def_loc = Location {
@@ -240,6 +254,7 @@ mod tests {
                         "a".to_string(),
                         false,
                         logger,
+                        &gs,
                     ),
                 );
             }
@@ -253,6 +268,10 @@ mod tests {
         let mut path = root.clone();
         path.push("src/test_data/find_refs_test/main.k");
         let path = path.to_str().unwrap();
+
+        let (_file, _program, _prog_scope, _, gs) =
+            compile_test_file("src/test_data/find_refs_test/main.k");
+
         match lsp_types::Url::from_file_path(path) {
             Ok(url) => {
                 let def_loc = Location {
@@ -294,6 +313,7 @@ mod tests {
                         "Name".to_string(),
                         true,
                         logger,
+                        &gs,
                     ),
                 );
             }
@@ -307,6 +327,8 @@ mod tests {
         let mut path = root.clone();
         path.push("src/test_data/find_refs_test/main.k");
         let path = path.to_str().unwrap();
+        let (_file, _program, _prog_scope, _, gs) =
+            compile_test_file("src/test_data/find_refs_test/main.k");
         match lsp_types::Url::from_file_path(path) {
             Ok(url) => {
                 let def_loc = Location {
@@ -341,6 +363,7 @@ mod tests {
                         "name".to_string(),
                         true,
                         logger,
+                        &gs,
                     ),
                 );
             }
