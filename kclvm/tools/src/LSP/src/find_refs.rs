@@ -1,5 +1,5 @@
 use crate::from_lsp::kcl_pos;
-use crate::goto_def::{find_def, goto_definition, find_def_with_gs};
+use crate::goto_def::{find_def, find_def_with_gs, goto_definition};
 use crate::to_lsp::lsp_location;
 use crate::util::{parse_param_and_compile, Param};
 use anyhow;
@@ -23,7 +23,7 @@ pub(crate) fn find_refs<F: Fn(String) -> Result<(), anyhow::Error>>(
     logger: F,
     gs: &GlobalState,
 ) -> Result<Vec<Location>, String> {
-   let def = find_def_with_gs(kcl_pos, &gs, true);
+    let def = find_def_with_gs(kcl_pos, &gs, true);
     match def {
         Some(def_ref) => match gs.get_symbols().get_symbol(def_ref) {
             Some(obj) => {
@@ -41,10 +41,14 @@ pub(crate) fn find_refs<F: Fn(String) -> Result<(), anyhow::Error>>(
                 } else {
                     Err(format!("Invalid file path: {0}", start.filename))
                 }
-            },
-            None =>  Err(String::from("Found more than one definitions, reference not supported")),
+            }
+            None => Err(String::from(
+                "Found more than one definitions, reference not supported",
+            )),
         },
-        None => Err(String::from("Definition item not found, result in no reference")),
+        None => Err(String::from(
+            "Definition item not found, result in no reference",
+        )),
     }
 }
 
