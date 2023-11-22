@@ -178,6 +178,7 @@ pub(crate) fn handle_reference(
         snapshot.word_index_map.clone(),
         Some(snapshot.vfs.clone()),
         log,
+        &db.gs,
     ) {
         core::result::Result::Ok(locations) => Ok(Some(locations)),
         Err(msg) => {
@@ -284,6 +285,7 @@ pub(crate) fn handle_rename(
         snapshot.word_index_map.clone(),
         Some(snapshot.vfs.clone()),
         log,
+        &db.gs,
     );
     match references {
         Result::Ok(locations) => {
