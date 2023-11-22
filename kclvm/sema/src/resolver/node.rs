@@ -945,6 +945,10 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 } else {
                     ty.clone()
                 };
+                if let Some(name) = arg.node.names.last() {
+                    self.node_ty_map.insert(name.id.clone(), ty.clone());
+                }
+
                 let value = &args.node.defaults[i];
                 params.push(Parameter {
                     name,
@@ -1007,7 +1011,10 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
     fn walk_arguments(&mut self, arguments: &'ctx ast::Arguments) -> Self::Result {
         for (i, arg) in arguments.args.iter().enumerate() {
             let ty = arguments.get_arg_type_node(i);
-            self.parse_ty_with_scope(ty, arg.get_span_pos());
+            let ty = self.parse_ty_with_scope(ty, arg.get_span_pos());
+            if let Some(name) = arg.node.names.last() {
+                self.node_ty_map.insert(name.id.clone(), ty.clone());
+            }
             let value = &arguments.defaults[i];
             self.expr_or_any_type(value);
         }
