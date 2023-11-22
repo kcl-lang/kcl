@@ -85,9 +85,9 @@ pub unsafe extern "C" fn kclvm_cli_main(argc: c_int, argv: *const *const c_char)
             Err(err) => {
                 let backtrace = format!("{}", err.backtrace());
                 if backtrace.is_empty() || backtrace.contains("disabled backtrace") {
-                    println!("Error: {err}");
+                    eprintln!("{err}");
                 } else {
-                    println!("Error: {err}\nStack backtrace:\n{backtrace}");
+                    eprintln!("{err}\nStack backtrace:\n{backtrace}");
                 }
                 Box::into_raw(Box::new(ExitCode::FAILURE))
             }
@@ -95,7 +95,7 @@ pub unsafe extern "C" fn kclvm_cli_main(argc: c_int, argv: *const *const c_char)
         Err(err) => {
             let err_str = kclvm_error::err_to_str(err);
             if !err_str.is_empty() {
-                println!("Error: {err_str}");
+                eprintln!("{err_str}");
             }
             Box::into_raw(Box::new(ExitCode::FAILURE))
         }
