@@ -126,7 +126,7 @@ mod tests {
     fn setup_word_index_map(root: &str) -> HashMap<Url, HashMap<String, Vec<Location>>> {
         HashMap::from([(
             Url::from_file_path(root).unwrap(),
-            build_word_index(root.to_string()).unwrap(),
+            build_word_index(root.to_string(), true).unwrap(),
         )])
     }
 

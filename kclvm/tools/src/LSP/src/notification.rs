@@ -97,8 +97,8 @@ impl LanguageServerState {
         vfs.set_file_contents(path.into(), Some(text.clone().into_bytes()));
 
         // update word index
-        let old_word_index = build_word_index_for_file_content(old_text, &text_document.uri);
-        let new_word_index = build_word_index_for_file_content(text.clone(), &text_document.uri);
+        let old_word_index = build_word_index_for_file_content(old_text, &text_document.uri, true);
+        let new_word_index = build_word_index_for_file_content(text.clone(), &text_document.uri, true);
         let binding = text_document.uri.path();
         let file_path = Path::new(binding); //todo rename
         let word_index_map = &mut *self.word_index_map.write();
