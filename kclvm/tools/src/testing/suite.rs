@@ -80,12 +80,11 @@ impl TestRun for TestSuite {
             result.info.insert(
                 name.clone(),
                 TestCaseInfo {
+                    log_message: exec_result.log_message.clone(),
                     duration: Instant::now() - start,
                     error,
                 },
             );
-            // Add the log message to the result.
-            result.log_message += &exec_result.log_message;
             if fail_fast {
                 break;
             }

@@ -14,6 +14,8 @@ use kclvm_query::override_file;
 use kclvm_runner::exec_program;
 use kclvm_tools::format::{format, format_source, FormatOptions};
 use kclvm_tools::lint::lint_files;
+use kclvm_tools::testing;
+use kclvm_tools::testing::TestRun;
 use kclvm_tools::vet::validator::validate;
 use kclvm_tools::vet::validator::LoaderKind;
 use kclvm_tools::vet::validator::ValidateOption;
@@ -514,5 +516,59 @@ impl KclvmServiceImpl {
         Ok(RenameCodeResult {
             changed_codes: source_codes,
         })
+    }
+
+    /// Service for the testing tool.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
+    /// use kclvm_api::gpyrpc::*;
+    ///
+    /// let serv = KclvmServiceImpl::default();
+    /// let result = serv.test(&TestArgs {
+    ///     pkg_list: vec!["./src/testdata/testing/module/...".to_string()],
+    ///     ..TestArgs::default()
+    /// }).unwrap();
+    /// assert_eq!(result.info.len(), 2);
+    /// // Passed case
+    /// assert!(result.info[0].error.is_empty());
+    /// // Failed case
+    /// assert!(result.info[1].error.is_empty());
+    /// ```
+    pub fn test(&self, args: &TestArgs) -> anyhow::Result<TestResult> {
+        let mut result = TestResult::default();
+        let exec_args = match &args.exec_args {
+            Some(exec_args) => {
+                let args_json = serde_json::to_string(exec_args)?;
+                kclvm_runner::ExecProgramArgs::from_str(args_json.as_str())
+            }
+            None => kclvm_runner::ExecProgramArgs::default(),
+        };
+        let opts = testing::TestOptions {
+            exec_args,
+            run_regexp: args.run_regexp.clone(),
+            fail_fast: args.fail_fast,
+        };
+        for pkg in &args.pkg_list {
+            let suites = testing::load_test_suites(pkg, &opts)?;
+            for suite in &suites {
+                let suite_result = suite.run(&opts)?;
+                for (name, info) in &suite_result.info {
+                    result.info.push(TestCaseInfo {
+                        name: name.clone(),
+                        error: info
+                            .error
+                            .as_ref()
+                            .map(|e| e.to_string())
+                            .unwrap_or_default(),
+                        duration: info.duration.as_micros() as u64,
+                        log_message: info.log_message.clone(),
+                    })
+                }
+            }
+        }
+        Ok(result)
     }
 }
