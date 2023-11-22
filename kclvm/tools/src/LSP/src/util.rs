@@ -784,7 +784,7 @@ pub(crate) fn get_pkg_scope(
 
 pub(crate) fn build_word_index_for_file_paths(
     paths: &[String],
-    prune_comments: bool,
+    prune: bool,
 ) -> anyhow::Result<HashMap<String, Vec<Location>>> {
     let mut index: HashMap<String, Vec<Location>> = HashMap::new();
     for p in paths {
@@ -792,7 +792,7 @@ pub(crate) fn build_word_index_for_file_paths(
         if let Ok(url) = Url::from_file_path(p) {
             // read file content and save the word to word index
             let text = read_file(p)?;
-            for (key, values) in build_word_index_for_file_content(text, &url, prune_comments) {
+            for (key, values) in build_word_index_for_file_content(text, &url, prune) {
                 index.entry(key).or_insert_with(Vec::new).extend(values);
             }
         }
@@ -803,10 +803,10 @@ pub(crate) fn build_word_index_for_file_paths(
 /// scan and build a word -> Locations index map
 pub(crate) fn build_word_index(
     path: String,
-    prune_comments: bool,
+    prune: bool,
 ) -> anyhow::Result<HashMap<String, Vec<Location>>> {
     if let Ok(files) = get_kcl_files(path.clone(), true) {
-        return build_word_index_for_file_paths(&files, prune_comments);
+        return build_word_index_for_file_paths(&files, prune);
     }
     Ok(HashMap::new())
 }
@@ -814,25 +814,25 @@ pub(crate) fn build_word_index(
 pub(crate) fn build_word_index_for_file_content(
     content: String,
     url: &Url,
-    prune_comments: bool,
+    prune: bool,
 ) -> HashMap<String, Vec<Location>> {
     let mut index: HashMap<String, Vec<Location>> = HashMap::new();
     let lines: Vec<&str> = content.lines().collect();
     let mut in_docstring = false;
     for (li, line) in lines.into_iter().enumerate() {
-        if prune_comments && !in_docstring {
+        if prune && !in_docstring {
             if line.trim_start().starts_with("\"\"\"") {
                 in_docstring = true;
                 continue;
             }
         }
-        if prune_comments && in_docstring {
+        if prune && in_docstring {
             if line.trim_end().ends_with("\"\"\"") {
                 in_docstring = false;
             }
             continue;
         }
-        let words = line_to_words(line.to_string(), prune_comments);
+        let words = line_to_words(line.to_string(), prune);
         for (key, values) in words {
             index
                 .entry(key)
@@ -896,7 +896,7 @@ fn read_file(path: &String) -> anyhow::Result<String> {
 }
 
 // Split one line into identifier words.
-fn line_to_words(text: String, prune_comments: bool) -> HashMap<String, Vec<Word>> {
+fn line_to_words(text: String, prune: bool) -> HashMap<String, Vec<Word>> {
     let mut result = HashMap::new();
     let mut chars: Vec<char> = text.chars().collect();
     chars.push('\n');
@@ -905,7 +905,7 @@ fn line_to_words(text: String, prune_comments: bool) -> HashMap<String, Vec<Word
     let mut prev_word = false;
     let mut words: Vec<Word> = vec![];
     for (i, ch) in chars.iter().enumerate() {
-        if prune_comments && *ch == '#' {
+        if prune && *ch == '#' {
             break;
         }
         let is_id_start = rustc_lexer::is_id_start(*ch);

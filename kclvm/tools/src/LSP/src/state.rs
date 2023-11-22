@@ -334,18 +334,18 @@ pub(crate) fn log_message(message: String, sender: &Sender<Task>) -> anyhow::Res
 fn build_word_index_map(
     word_index_map: Arc<RwLock<HashMap<Url, HashMap<String, Vec<Location>>>>>,
     initialize_params: InitializeParams,
-    prune_comments: bool,
+    prune: bool,
 ) {
     if let Some(workspace_folders) = initialize_params.workspace_folders {
         for folder in workspace_folders {
             let path = folder.uri.path();
-            if let Ok(word_index) = build_word_index(path.to_string(), prune_comments) {
+            if let Ok(word_index) = build_word_index(path.to_string(), prune) {
                 word_index_map.write().insert(folder.uri, word_index);
             }
         }
     } else if let Some(root_uri) = initialize_params.root_uri {
         let path = root_uri.path();
-        if let Ok(word_index) = build_word_index(path.to_string(), prune_comments) {
+        if let Ok(word_index) = build_word_index(path.to_string(), prune) {
             word_index_map.write().insert(root_uri, word_index);
         }
     }
