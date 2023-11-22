@@ -81,7 +81,18 @@ pub fn get_schema_type(
     opt: GetSchemaOption,
 ) -> Result<IndexMap<String, SchemaType>> {
     let mut result = IndexMap::new();
-    let scope = resolve_file(file, code)?;
+    let scope = resolve_file(&CompilationOptions {
+        k_files: vec![file.to_string()],
+        loader_opts: code.map(|c| LoadProgramOptions {
+            k_code_list: vec![c.to_string()],
+            ..Default::default()
+        }),
+        resolve_opts: Options {
+            resolve_val: true,
+            ..Default::default()
+        },
+        get_schema_opts: opt.clone(),
+    })?;
     for (name, o) in &scope.borrow().elems {
         if o.borrow().ty.is_schema() {
             let schema_ty = o.borrow().ty.into_schema_type();
@@ -106,15 +117,50 @@ pub fn get_schema_type(
     Ok(result)
 }
 
-fn resolve_file(file: &str, code: Option<&str>) -> Result<Rc<RefCell<Scope>>> {
+#[derive(Debug, Clone, Default)]
+pub struct CompilationOptions {
+    pub k_files: Vec<String>,
+    pub loader_opts: Option<LoadProgramOptions>,
+    pub resolve_opts: Options,
+    pub get_schema_opts: GetSchemaOption,
+}
+
+pub fn get_full_schema_type(
+    schema_name: Option<&str>,
+    opts: CompilationOptions,
+) -> Result<IndexMap<String, SchemaType>> {
+    let mut result = IndexMap::new();
+    let scope = resolve_file(&opts)?;
+    for (name, o) in &scope.borrow().elems {
+        if o.borrow().ty.is_schema() {
+            let schema_ty = o.borrow().ty.into_schema_type();
+            if opts.get_schema_opts == GetSchemaOption::All
+                || (opts.get_schema_opts == GetSchemaOption::Definitions && !schema_ty.is_instance)
+                || (opts.get_schema_opts == GetSchemaOption::Instances && schema_ty.is_instance)
+            {
+                // Schema name filter
+                match schema_name {
+                    Some(schema_name) => {
+                        if schema_name == name {
+                            result.insert(name.to_string(), schema_ty);
+                        }
+                    }
+                    None => {
+                        result.insert(name.to_string(), schema_ty);
+                    }
+                }
+            }
+        }
+    }
+    Ok(result)
+}
+
+fn resolve_file(opts: &CompilationOptions) -> Result<Rc<RefCell<Scope>>> {
     let sess = Arc::new(ParseSession::default());
     let mut program = match load_program(
         sess,
-        &[file],
-        code.map(|c| LoadProgramOptions {
-            k_code_list: vec![c.to_string()],
-            ..Default::default()
-        }),
+        &opts.k_files.iter().map(AsRef::as_ref).collect::<Vec<_>>(),
+        opts.loader_opts.clone(),
         None,
     ) {
         Ok(p) => p,
@@ -122,14 +168,7 @@ fn resolve_file(file: &str, code: Option<&str>) -> Result<Rc<RefCell<Scope>>> {
             return Err(anyhow::anyhow!("{err}"));
         }
     };
-    let scope = resolve_program_with_opts(
-        &mut program,
-        Options {
-            resolve_val: true,
-            ..Default::default()
-        },
-        None,
-    );
+    let scope = resolve_program_with_opts(&mut program, opts.resolve_opts.clone(), None);
     match scope.main_scope() {
         Some(scope) => Ok(scope.clone()),
         None => Err(anyhow::anyhow!("main scope is not found")),
