@@ -6,9 +6,11 @@ use kclvm_config::{
     modfile::get_vendor_home,
     settings::{SettingsFile, SettingsPathBuf},
 };
+use kclvm_error::{Diagnostic, Handler};
 use kclvm_query::r#override::parse_override_spec;
-use kclvm_runtime::{Context, ValueRef};
+use kclvm_runtime::{Context, PanicInfo, ValueRef};
 use serde::{Deserialize, Serialize};
+use std::ffi::OsStr;
 
 const RESULT_SIZE: usize = 2048 * 2048;
 
@@ -206,6 +208,31 @@ impl TryFrom<SettingsPathBuf> for ExecProgramArgs {
     }
 }
 
+/// A public struct named [Artifact] which wraps around the native library [libloading::Library].
+pub struct Artifact(libloading::Library);
+
+pub trait ProgramRunner {
+    /// Run with the arguments [ExecProgramArgs] and return the program execute result that
+    /// contains the planning result and the evaluation errors if any.
+    fn run(&self, args: &ExecProgramArgs) -> Result<ExecProgramResult>;
+}
+
+impl ProgramRunner for Artifact {
+    fn run(&self, args: &ExecProgramArgs) -> Result<ExecProgramResult> {
+        unsafe {
+            KclLibRunner::lib_kclvm_plugin_init(&self.0, args.plugin_agent)?;
+            KclLibRunner::lib_kcl_run(&self.0, args)
+        }
+    }
+}
+
+impl Artifact {
+    pub fn from_path<P: AsRef<OsStr>>(path: P) -> Result<Self> {
+        let lib = unsafe { libloading::Library::new(path)? };
+        Ok(Self(lib))
+    }
+}
+
 #[derive(Debug, Default)]
 pub struct KclLibRunnerOptions {
     pub plugin_agent_ptr: u64,
@@ -379,6 +406,20 @@ impl KclLibRunner {
             let return_len = 0 - n;
             result.err_message = String::from_utf8(warn_data[0..return_len as usize].to_vec())?;
         }
+
+        // Wrap runtime error into diagnostic style string.
+        if !result.err_message.is_empty() {
+            result.err_message = match Handler::default()
+                .add_diagnostic(<PanicInfo as Into<Diagnostic>>::into(PanicInfo::from(
+                    result.err_message.as_str(),
+                )))
+                .emit_to_string()
+            {
+                Ok(msg) => msg,
+                Err(err) => err.to_string(),
+            };
+        }
+
         Ok(result)
     }
 }

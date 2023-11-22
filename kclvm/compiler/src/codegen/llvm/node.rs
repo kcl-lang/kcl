@@ -261,7 +261,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         );
         self.br(end_block);
         self.builder.position_at_end(end_block);
-        self.ok_result()
+        Ok(self.undefined_value())
     }
 
     fn walk_if_stmt(&self, if_stmt: &'ctx ast::IfStmt) -> Self::Result {
