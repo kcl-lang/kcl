@@ -345,7 +345,11 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
             }
             let name = target.node.get_name();
             let (start_pos, end_pos): Range = target.get_span_pos();
-            let ast_id = target.id.clone();
+            let ast_id = if target.node.names.is_empty() {
+                &target.id
+            } else {
+                &target.node.names.last().unwrap().id
+            };
             let value = self.gs.get_symbols_mut().alloc_value_symbol(
                 ValueSymbol::new(name.clone(), start_pos, end_pos, None, false),
                 &ast_id,
@@ -355,7 +359,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
                 .add_def_to_scope(cur_scope, name, value);
             if let Some(symbol) = self.gs.get_symbols_mut().values.get_mut(value.get_id()) {
                 symbol.sema_info = KCLSymbolSemanticInfo {
-                    ty: self.ctx.node_ty_map.get(&target.id).map(|ty| ty.clone()),
+                    ty: self.ctx.node_ty_map.get(ast_id).map(|ty| ty.clone()),
                     doc: None,
                 };
             }
