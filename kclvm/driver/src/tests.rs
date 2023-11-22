@@ -270,12 +270,12 @@ fn test_fetch_metadata() {
     let path = PathBuf::from(".")
         .join("src")
         .join("test_data")
-        .join("kpm_metadata");
+        .join("test_fetch_metadata");
 
     let vendor_path = PathBuf::from(".")
         .join("src")
         .join("test_data")
-        .join("test_vendor");
+        .join("fetch_metadata_vendor");
 
     env::set_var(
         "KCL_PKG_PATH",
