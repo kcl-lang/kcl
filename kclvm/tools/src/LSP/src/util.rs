@@ -1032,25 +1032,6 @@ mod tests {
                 ],
             ),
             (
-                "schema".to_string(),
-                vec![
-                    Location {
-                        uri: url.clone(),
-                        range: Range {
-                            start: Position::new(4, 0),
-                            end: Position::new(4, 6),
-                        },
-                    },
-                    Location {
-                        uri: url.clone(),
-                        range: Range {
-                            start: Position::new(7, 0),
-                            end: Position::new(7, 6),
-                        },
-                    },
-                ],
-            ),
-            (
                 "b".to_string(),
                 vec![Location {
                     uri: url.clone(),
@@ -1112,16 +1093,6 @@ mod tests {
                     range: Range {
                         start: Position::new(0, 5),
                         end: Position::new(0, 9),
-                    },
-                }],
-            ),
-            (
-                "str".to_string(),
-                vec![Location {
-                    uri: url.clone(),
-                    range: Range {
-                        start: Position::new(5, 10),
-                        end: Position::new(5, 13),
                     },
                 }],
             ),
@@ -1226,24 +1197,14 @@ mod tests {
         ];
 
         let expects: Vec<HashMap<String, Vec<Word>>> = vec![
-            vec![
-                (
-                    "schema".to_string(),
-                    vec![Word {
-                        start_col: 0,
-                        end_col: 6,
-                        word: "schema".to_string(),
-                    }],
-                ),
-                (
-                    "Person".to_string(),
-                    vec![Word {
-                        start_col: 7,
-                        end_col: 13,
-                        word: "Person".to_string(),
-                    }],
-                ),
-            ]
+            vec![(
+                "Person".to_string(),
+                vec![Word {
+                    start_col: 7,
+                    end_col: 13,
+                    word: "Person".to_string(),
+                }],
+            )]
             .into_iter()
             .collect(),
             vec![
