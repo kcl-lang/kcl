@@ -18,6 +18,7 @@ use kclvm_sema::pkgpath_without_prefix;
 use kclvm_sema::resolver::resolve_program_with_opts;
 use kclvm_sema::resolver::scope::ProgramScope;
 use kclvm_sema::resolver::scope::Scope;
+use kclvm_span::symbol::reserved;
 use kclvm_utils::pkgpath::rm_external_pkg_name;
 use lsp_types::{Location, Position, Range, Url};
 use parking_lot::{RwLock, RwLockReadGuard};
@@ -784,6 +785,7 @@ pub(crate) fn get_pkg_scope(
 
 pub(crate) fn build_word_index_for_file_paths(
     paths: &[String],
+    prune: bool,
 ) -> anyhow::Result<HashMap<String, Vec<Location>>> {
     let mut index: HashMap<String, Vec<Location>> = HashMap::new();
     for p in paths {
@@ -791,7 +793,7 @@ pub(crate) fn build_word_index_for_file_paths(
         if let Ok(url) = Url::from_file_path(p) {
             // read file content and save the word to word index
             let text = read_file(p)?;
-            for (key, values) in build_word_index_for_file_content(text, &url) {
+            for (key, values) in build_word_index_for_file_content(text, &url, prune) {
                 index.entry(key).or_insert_with(Vec::new).extend(values);
             }
         }
@@ -800,9 +802,12 @@ pub(crate) fn build_word_index_for_file_paths(
 }
 
 /// scan and build a word -> Locations index map
-pub(crate) fn build_word_index(path: String) -> anyhow::Result<HashMap<String, Vec<Location>>> {
+pub(crate) fn build_word_index(
+    path: String,
+    prune: bool,
+) -> anyhow::Result<HashMap<String, Vec<Location>>> {
     if let Ok(files) = get_kcl_files(path.clone(), true) {
-        return build_word_index_for_file_paths(&files);
+        return build_word_index_for_file_paths(&files, prune);
     }
     Ok(HashMap::new())
 }
@@ -810,11 +815,25 @@ pub(crate) fn build_word_index(path: String) -> anyhow::Result<HashMap<String, V
 pub(crate) fn build_word_index_for_file_content(
     content: String,
     url: &Url,
+    prune: bool,
 ) -> HashMap<String, Vec<Location>> {
     let mut index: HashMap<String, Vec<Location>> = HashMap::new();
     let lines: Vec<&str> = content.lines().collect();
+    let mut in_docstring = false;
     for (li, line) in lines.into_iter().enumerate() {
-        let words = line_to_words(line.to_string());
+        if prune && !in_docstring {
+            if line.trim_start().starts_with("\"\"\"") {
+                in_docstring = true;
+                continue;
+            }
+        }
+        if prune && in_docstring {
+            if line.trim_end().ends_with("\"\"\"") {
+                in_docstring = false;
+            }
+            continue;
+        }
+        let words = line_to_words(line.to_string(), prune);
         for (key, values) in words {
             index
                 .entry(key)
@@ -878,7 +897,7 @@ fn read_file(path: &String) -> anyhow::Result<String> {
 }
 
 // Split one line into identifier words.
-fn line_to_words(text: String) -> HashMap<String, Vec<Word>> {
+fn line_to_words(text: String, prune: bool) -> HashMap<String, Vec<Word>> {
     let mut result = HashMap::new();
     let mut chars: Vec<char> = text.chars().collect();
     chars.push('\n');
@@ -887,6 +906,9 @@ fn line_to_words(text: String) -> HashMap<String, Vec<Word>> {
     let mut prev_word = false;
     let mut words: Vec<Word> = vec![];
     for (i, ch) in chars.iter().enumerate() {
+        if prune && *ch == '#' {
+            break;
+        }
         let is_id_start = rustc_lexer::is_id_start(*ch);
         let is_id_continue = rustc_lexer::is_id_continue(*ch);
         // If the character is valid identfier start and the previous character is not valid identifier continue, mark the start position.
@@ -901,11 +923,11 @@ fn line_to_words(text: String) -> HashMap<String, Vec<Word>> {
         } else {
             // Find out the end position.
             if continue_pos + 1 == i {
-                words.push(Word::new(
-                    start_pos as u32,
-                    i as u32,
-                    chars[start_pos..i].iter().collect::<String>().clone(),
-                ));
+                let word = chars[start_pos..i].iter().collect::<String>().clone();
+                // skip word if it should be pruned
+                if !prune || !reserved::is_reserved_word(&word) {
+                    words.push(Word::new(start_pos as u32, i as u32, word));
+                }
             }
             // Reset the start position.
             start_pos = usize::MAX;
@@ -921,7 +943,10 @@ fn line_to_words(text: String) -> HashMap<String, Vec<Word>> {
 
 #[cfg(test)]
 mod tests {
-    use super::{build_word_index, line_to_words, word_index_add, word_index_subtract, Word};
+    use super::{
+        build_word_index, build_word_index_for_file_content, line_to_words, word_index_add,
+        word_index_subtract, Word,
+    };
     use lsp_types::{Location, Position, Range, Url};
     use std::collections::HashMap;
     use std::path::PathBuf;
@@ -1007,25 +1032,6 @@ mod tests {
                 ],
             ),
             (
-                "schema".to_string(),
-                vec![
-                    Location {
-                        uri: url.clone(),
-                        range: Range {
-                            start: Position::new(4, 0),
-                            end: Position::new(4, 6),
-                        },
-                    },
-                    Location {
-                        uri: url.clone(),
-                        range: Range {
-                            start: Position::new(7, 0),
-                            end: Position::new(7, 6),
-                        },
-                    },
-                ],
-            ),
-            (
                 "b".to_string(),
                 vec![Location {
                     uri: url.clone(),
@@ -1091,16 +1097,6 @@ mod tests {
                 }],
             ),
             (
-                "str".to_string(),
-                vec![Location {
-                    uri: url.clone(),
-                    range: Range {
-                        start: Position::new(5, 10),
-                        end: Position::new(5, 13),
-                    },
-                }],
-            ),
-            (
                 "Person".to_string(),
                 vec![
                     Location {
@@ -1132,7 +1128,7 @@ mod tests {
         ]
         .into_iter()
         .collect();
-        match build_word_index(path.to_string()) {
+        match build_word_index(path.to_string(), true) {
             Ok(actual) => {
                 assert_eq!(expect, actual)
             }
@@ -1192,27 +1188,23 @@ mod tests {
 
     #[test]
     fn test_line_to_words() {
-        let lines = ["schema Person:", "name. name again", "some_word word !word"];
+        let lines = [
+            "schema Person:",
+            "name. name again",
+            "some_word word !word",
+            "# this line is a single-line comment",
+            "name # end of line comment",
+        ];
 
         let expects: Vec<HashMap<String, Vec<Word>>> = vec![
-            vec![
-                (
-                    "schema".to_string(),
-                    vec![Word {
-                        start_col: 0,
-                        end_col: 6,
-                        word: "schema".to_string(),
-                    }],
-                ),
-                (
-                    "Person".to_string(),
-                    vec![Word {
-                        start_col: 7,
-                        end_col: 13,
-                        word: "Person".to_string(),
-                    }],
-                ),
-            ]
+            vec![(
+                "Person".to_string(),
+                vec![Word {
+                    start_col: 7,
+                    end_col: 13,
+                    word: "Person".to_string(),
+                }],
+            )]
             .into_iter()
             .collect(),
             vec![
@@ -1269,10 +1261,72 @@ mod tests {
             ]
             .into_iter()
             .collect(),
+            HashMap::new(),
+            vec![(
+                "name".to_string(),
+                vec![Word {
+                    start_col: 0,
+                    end_col: 4,
+                    word: "name".to_string(),
+                }],
+            )]
+            .into_iter()
+            .collect(),
         ];
         for i in 0..lines.len() {
-            let got = line_to_words(lines[i].to_string());
+            let got = line_to_words(lines[i].to_string(), true);
             assert_eq!(expects[i], got)
         }
+    }
+
+    #[test]
+    fn test_build_word_index_for_file_content() {
+        let content = r#"schema Person:
+    """
+    This is a docstring.
+    Person is a schema which defines a person's name and age.
+    """
+    name: str # name must not be empty
+    # age is a positive integer
+    age: int
+"#;
+        let mock_url = Url::parse("file:///path/to/file.k").unwrap();
+        let expects: HashMap<String, Vec<Location>> = vec![
+            (
+                "Person".to_string(),
+                vec![Location {
+                    uri: mock_url.clone(),
+                    range: Range {
+                        start: Position::new(0, 7),
+                        end: Position::new(0, 13),
+                    },
+                }],
+            ),
+            (
+                "name".to_string(),
+                vec![Location {
+                    uri: mock_url.clone(),
+                    range: Range {
+                        start: Position::new(5, 4),
+                        end: Position::new(5, 8),
+                    },
+                }],
+            ),
+            (
+                "age".to_string(),
+                vec![Location {
+                    uri: mock_url.clone(),
+                    range: Range {
+                        start: Position::new(7, 4),
+                        end: Position::new(7, 7),
+                    },
+                }],
+            ),
+        ]
+        .into_iter()
+        .collect();
+
+        let got = build_word_index_for_file_content(content.to_string(), &mock_url.clone(), true);
+        assert_eq!(expects, got)
     }
 }

@@ -30,7 +30,7 @@ pub fn rename_symbol(
     match select_symbol(&symbol_spec) {
         Some((name, range)) => {
             // 3. build word index on file_paths, find refs within file_paths scope
-            let word_index = build_word_index_for_file_paths(file_paths)?;
+            let word_index = build_word_index_for_file_paths(file_paths, true)?;
             if let Some(locations) = word_index.get(&name) {
                 // 4. filter out the matched refs
                 // 4.1 collect matched words(names) and remove Duplicates of the file paths
