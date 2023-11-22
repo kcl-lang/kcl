@@ -8,7 +8,7 @@ use walkdir::WalkDir;
 
 use crate::arguments::parse_key_value_pair;
 use crate::kpm_metadata::{fetch_metadata, fill_pkg_maps_for_k_file, lookup_the_nearest_file_dir};
-use crate::{canonicalize_input_files, expand_input_files};
+use crate::{canonicalize_input_files, expand_input_files, get_pkg_list};
 
 #[test]
 fn test_canonicalize_input_files() {
@@ -323,4 +323,13 @@ fn test_fetch_metadata_invalid() {
         Ok(_) => println!("no panic"),
         Err(e) => panic!("The method should not panic forever.: {:?}", e),
     }
+}
+
+#[test]
+fn test_get_pkg_list() {
+    assert_eq!(get_pkg_list("./src/test_data/pkg_list/").unwrap().len(), 1);
+    assert_eq!(
+        get_pkg_list("./src/test_data/pkg_list/...").unwrap().len(),
+        3
+    );
 }

@@ -9,7 +9,7 @@ mod tests;
 use glob::glob;
 use kclvm_ast::ast;
 use kclvm_config::{
-    modfile::{KCL_FILE_EXTENSION, KCL_FILE_SUFFIX, KCL_MOD_PATH_ENV},
+    modfile::{get_pkg_root, KCL_FILE_EXTENSION, KCL_FILE_SUFFIX, KCL_MOD_PATH_ENV},
     path::ModRelativePath,
     settings::{build_settings_pathbuf, DEFAULT_SETTING_FILE},
 };
@@ -17,6 +17,7 @@ use kclvm_parser::LoadProgramOptions;
 use kclvm_utils::path::PathPrefix;
 use kpm_metadata::fill_pkg_maps_for_k_file;
 use std::{
+    collections::HashSet,
     fs::read_dir,
     io::{self, ErrorKind},
     path::{Path, PathBuf},
@@ -285,4 +286,85 @@ pub fn get_kcl_files<P: AsRef<Path>>(path: P, recursively: bool) -> Result<Vec<S
     }
     files.sort();
     Ok(files)
+}
+
+/// Get the package string list form the package path.
+pub fn get_pkg_list(pkgpath: &str) -> Result<Vec<String>> {
+    let mut dir_list: Vec<String> = Vec::new();
+    let mut dir_map: HashSet<String> = HashSet::new();
+    let cwd = std::env::current_dir()?;
+
+    let pkgpath = if pkgpath.is_empty() {
+        cwd.to_string_lossy().to_string()
+    } else {
+        pkgpath.to_string()
+    };
+
+    let include_sub_pkg = pkgpath.ends_with("/...");
+    let pkgpath = if include_sub_pkg {
+        pkgpath.trim_end_matches("/...").to_string()
+    } else {
+        pkgpath
+    };
+
+    if pkgpath != "." && pkgpath.ends_with(".") {
+        return Ok(Vec::new());
+    }
+
+    if pkgpath.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    match pkgpath.chars().next() {
+        Some('.') => {
+            let pkgpath = Path::new(&cwd).join(&pkgpath);
+            pkgpath.to_string_lossy().to_string()
+        }
+        _ => {
+            if Path::new(&pkgpath).is_absolute() {
+                pkgpath.clone()
+            } else {
+                if !pkgpath.contains('/') && !pkgpath.contains('\\') {
+                    pkgpath.replace(".", "/")
+                } else {
+                    let pkgroot =
+                        get_pkg_root(&cwd.to_str().ok_or(anyhow::anyhow!("cwd path not found"))?)
+                            .unwrap_or_default();
+                    if !pkgroot.is_empty() {
+                        PathBuf::from(pkgroot)
+                            .join(&pkgpath)
+                            .to_string_lossy()
+                            .to_string()
+                    } else {
+                        Path::new(&cwd).join(&pkgpath).to_string_lossy().to_string()
+                    }
+                }
+            }
+        }
+    };
+
+    if !include_sub_pkg {
+        return Ok(vec![pkgpath]);
+    }
+
+    for entry in WalkDir::new(&pkgpath).into_iter().filter_map(|e| e.ok()) {
+        let path = entry.path();
+        if !path.is_dir() {
+            if path.extension().and_then(|ext| ext.to_str()) == Some(KCL_FILE_EXTENSION)
+                && !path
+                    .file_name()
+                    .map(|name| name.to_string_lossy().starts_with("_"))
+                    .unwrap_or(false)
+            {
+                if let Some(dir) = path.parent().map(|p| p.to_string_lossy().to_string()) {
+                    if !dir_map.contains(&dir) {
+                        dir_list.push(dir.clone());
+                        dir_map.insert(dir);
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(dir_list)
 }
