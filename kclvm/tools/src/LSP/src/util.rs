@@ -801,7 +801,10 @@ pub(crate) fn build_word_index_for_file_paths(
 }
 
 /// scan and build a word -> Locations index map
-pub(crate) fn build_word_index(path: String, prune_comments: bool) -> anyhow::Result<HashMap<String, Vec<Location>>> {
+pub(crate) fn build_word_index(
+    path: String,
+    prune_comments: bool,
+) -> anyhow::Result<HashMap<String, Vec<Location>>> {
     if let Ok(files) = get_kcl_files(path.clone(), true) {
         return build_word_index_for_file_paths(&files, prune_comments);
     }
@@ -815,7 +818,20 @@ pub(crate) fn build_word_index_for_file_content(
 ) -> HashMap<String, Vec<Location>> {
     let mut index: HashMap<String, Vec<Location>> = HashMap::new();
     let lines: Vec<&str> = content.lines().collect();
+    let mut in_docstring = false;
     for (li, line) in lines.into_iter().enumerate() {
+        if prune_comments && !in_docstring {
+            if line.trim_start().starts_with("\"\"\"") {
+                in_docstring = true;
+                continue;
+            }
+        }
+        if prune_comments && in_docstring {
+            if line.trim_end().ends_with("\"\"\"") {
+                in_docstring = false;
+            }
+            continue;
+        }
         let words = line_to_words(line.to_string(), prune_comments);
         for (key, values) in words {
             index
@@ -926,7 +942,10 @@ fn line_to_words(text: String, prune_comments: bool) -> HashMap<String, Vec<Word
 
 #[cfg(test)]
 mod tests {
-    use super::{build_word_index, line_to_words, word_index_add, word_index_subtract, Word};
+    use super::{
+        build_word_index, build_word_index_for_file_content, line_to_words, word_index_add,
+        word_index_subtract, Word,
+    };
     use lsp_types::{Location, Position, Range, Url};
     use std::collections::HashMap;
     use std::path::PathBuf;
@@ -1197,7 +1216,13 @@ mod tests {
 
     #[test]
     fn test_line_to_words() {
-        let lines = ["schema Person:", "name. name again", "some_word word !word", "# this line is a single-line comment", "name # end of line comment"];
+        let lines = [
+            "schema Person:",
+            "name. name again",
+            "some_word word !word",
+            "# this line is a single-line comment",
+            "name # end of line comment",
+        ];
 
         let expects: Vec<HashMap<String, Vec<Word>>> = vec![
             vec![
@@ -1283,11 +1308,97 @@ mod tests {
                     word: "name".to_string(),
                 }],
             )]
-            .into_iter().collect(),
+            .into_iter()
+            .collect(),
         ];
         for i in 0..lines.len() {
             let got = line_to_words(lines[i].to_string(), true);
             assert_eq!(expects[i], got)
         }
+    }
+
+    #[test]
+    fn test_build_word_index_for_file_content() {
+        let content = r#"schema Person:
+    """
+    This is a docstring.
+    Person is a schema which defines a person's name and age.
+    """
+    name: str # name must not be empty
+    # age is a positive integer
+    age: int
+"#;
+        let mock_url = Url::parse("file:///path/to/file.k").unwrap();
+        let expects: HashMap<String, Vec<Location>> = vec![
+            (
+                "schema".to_string(),
+                vec![Location {
+                    uri: mock_url.clone(),
+                    range: Range {
+                        start: Position::new(0, 0),
+                        end: Position::new(0, 6),
+                    },
+                }],
+            ),
+            (
+                "Person".to_string(),
+                vec![Location {
+                    uri: mock_url.clone(),
+                    range: Range {
+                        start: Position::new(0, 7),
+                        end: Position::new(0, 13),
+                    },
+                }],
+            ),
+            (
+                "int".to_string(),
+                vec![Location {
+                    uri: mock_url.clone(),
+                    range: Range {
+                        start: Position::new(7, 9),
+                        end: Position::new(7, 12),
+                    },
+                }],
+            ),
+            (
+                "str".to_string(),
+                vec![Location {
+                    uri: mock_url.clone(),
+                    range: Range {
+                        start: Position::new(5, 10),
+                        end: Position::new(5, 13),
+                    },
+                }],
+            ),
+            (
+                "name".to_string(),
+                vec![Location {
+                    uri: mock_url.clone(),
+                    range: Range {
+                        start: Position::new(5, 4),
+                        end: Position::new(5, 8),
+                    },
+                }],
+            ),
+            (
+                "age".to_string(),
+                vec![Location {
+                    uri: mock_url.clone(),
+                    range: Range {
+                        start: Position::new(7, 4),
+                        end: Position::new(7, 7),
+                    },
+                }],
+            ),
+        ]
+        .into_iter()
+        .collect();
+
+        let got = build_word_index_for_file_content(
+            content.to_string(),
+            &mock_url.clone(),
+            true,
+        );
+        assert_eq!(expects, got)
     }
 }
