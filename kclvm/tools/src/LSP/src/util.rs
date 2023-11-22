@@ -18,6 +18,7 @@ use kclvm_sema::pkgpath_without_prefix;
 use kclvm_sema::resolver::resolve_program_with_opts;
 use kclvm_sema::resolver::scope::ProgramScope;
 use kclvm_sema::resolver::scope::Scope;
+use kclvm_span::symbol::reserved;
 use kclvm_utils::pkgpath::rm_external_pkg_name;
 use lsp_types::{Location, Position, Range, Url};
 use parking_lot::{RwLock, RwLockReadGuard};
@@ -922,11 +923,11 @@ fn line_to_words(text: String, prune: bool) -> HashMap<String, Vec<Word>> {
         } else {
             // Find out the end position.
             if continue_pos + 1 == i {
-                words.push(Word::new(
-                    start_pos as u32,
-                    i as u32,
-                    chars[start_pos..i].iter().collect::<String>().clone(),
-                ));
+                let word = chars[start_pos..i].iter().collect::<String>().clone();
+                // skip word if it should be pruned
+                if !prune || !reserved::is_reserved_word(&word) {
+                    words.push(Word::new(start_pos as u32, i as u32, word));
+                }
             }
             // Reset the start position.
             start_pos = usize::MAX;
@@ -1331,42 +1332,12 @@ mod tests {
         let mock_url = Url::parse("file:///path/to/file.k").unwrap();
         let expects: HashMap<String, Vec<Location>> = vec![
             (
-                "schema".to_string(),
-                vec![Location {
-                    uri: mock_url.clone(),
-                    range: Range {
-                        start: Position::new(0, 0),
-                        end: Position::new(0, 6),
-                    },
-                }],
-            ),
-            (
                 "Person".to_string(),
                 vec![Location {
                     uri: mock_url.clone(),
                     range: Range {
                         start: Position::new(0, 7),
                         end: Position::new(0, 13),
-                    },
-                }],
-            ),
-            (
-                "int".to_string(),
-                vec![Location {
-                    uri: mock_url.clone(),
-                    range: Range {
-                        start: Position::new(7, 9),
-                        end: Position::new(7, 12),
-                    },
-                }],
-            ),
-            (
-                "str".to_string(),
-                vec![Location {
-                    uri: mock_url.clone(),
-                    range: Range {
-                        start: Position::new(5, 10),
-                        end: Position::new(5, 13),
                     },
                 }],
             ),
@@ -1394,11 +1365,7 @@ mod tests {
         .into_iter()
         .collect();
 
-        let got = build_word_index_for_file_content(
-            content.to_string(),
-            &mock_url.clone(),
-            true,
-        );
+        let got = build_word_index_for_file_content(content.to_string(), &mock_url.clone(), true);
         assert_eq!(expects, got)
     }
 }

@@ -1413,6 +1413,7 @@ dependencies = [
  "kclvm-parser",
  "kclvm-query",
  "kclvm-sema",
+ "kclvm-span",
  "kclvm-tools",
  "kclvm-utils",
  "kclvm-version",

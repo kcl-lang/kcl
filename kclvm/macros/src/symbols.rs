@@ -115,6 +115,7 @@ fn symbols_with_errors(input: TokenStream) -> (TokenStream, Vec<syn::Error>) {
     let mut keyword_stream = quote! {};
     let mut symbols_stream = quote! {};
     let mut prefill_stream = quote! {};
+    let mut reserved_word_stream = quote! {};
     let mut counter = 0u32;
     let mut keys =
         HashMap::<String, Span>::with_capacity(input.keywords.len() + input.symbols.len() + 10);
@@ -151,6 +152,7 @@ fn symbols_with_errors(input: TokenStream) -> (TokenStream, Vec<syn::Error>) {
         let value = &keyword.value;
         let value_string = value.value();
         check_dup(keyword.name.span(), &value_string, &mut errors);
+        reserved_word_stream.extend(quote! {#value_string,});
         prefill_stream.extend(quote! {
             #value,
         });
@@ -170,6 +172,7 @@ fn symbols_with_errors(input: TokenStream) -> (TokenStream, Vec<syn::Error>) {
         check_dup(symbol.name.span(), &value, &mut errors);
         check_order(symbol.name.span(), &name.to_string(), &mut errors);
 
+        reserved_word_stream.extend(quote! {#value,});
         prefill_stream.extend(quote! {
             #value,
         });
@@ -178,6 +181,7 @@ fn symbols_with_errors(input: TokenStream) -> (TokenStream, Vec<syn::Error>) {
         });
         counter += 1;
     }
+    let reserved_count = counter as usize;
 
     // Generate symbols for the strings "0", "1", ..., "9".
     let digits_base = counter;
@@ -206,6 +210,12 @@ fn symbols_with_errors(input: TokenStream) -> (TokenStream, Vec<syn::Error>) {
         pub mod sym_generated {
             use super::Symbol;
             #symbols_stream
+        }
+
+        #[doc(hidden)]
+        #[allow(non_upper_case_globals)]
+        pub mod reserved_word {
+            pub const reserved_words : [&str; #reserved_count] = [#reserved_word_stream];
         }
 
         impl Interner {

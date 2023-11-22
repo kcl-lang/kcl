@@ -30,7 +30,8 @@ kclvm-ast = { path = "../../../ast" }
 kclvm-utils = { path = "../../../utils" }
 kclvm-version = { path = "../../../version" }
 compiler_base_session = { path = "../../../../compiler_base/session" }
-kclvm-query = {path = "../../../query"}
+kclvm-query = { path = "../../../query" }
+kclvm-span = { path = "../../../span" }
 
 lsp-server = { version = "0.6.0", default-features = false }
 anyhow = { version = "1.0", default-features = false, features = ["std"] }

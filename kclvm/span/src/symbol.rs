@@ -228,6 +228,15 @@ pub mod sym {
     }
 }
 
+pub mod reserved {
+
+    pub use super::reserved_word;
+
+    pub fn is_reserved_word(word: &str) -> bool {
+        reserved_word::reserved_words.contains(&word)
+    }
+}
+
 /// Special symbols related to KCL keywords.
 impl Symbol {
     /// Returns `true` if the symbol is `true` or `false`.
