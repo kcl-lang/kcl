@@ -31,8 +31,6 @@ pub trait TestRun {
 /// Represents the result of a test.
 #[derive(Debug, Default)]
 pub struct TestResult {
-    /// This field stores the log message of the test.
-    pub log_message: String,
     /// This field stores test case information in an [IndexMap], where the key is a [String] and the value is a [TestCaseInfo] struct.
     pub info: IndexMap<String, TestCaseInfo>,
 }
@@ -40,6 +38,8 @@ pub struct TestResult {
 /// Represents information about a test case.
 #[derive(Debug, Default)]
 pub struct TestCaseInfo {
+    /// This field stores the log message of the test.
+    pub log_message: String,
     /// This field stores the error associated with the test case, if any.
     pub error: Option<Error>,
     /// This field stores the duration of the test case.

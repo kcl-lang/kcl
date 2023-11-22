@@ -161,6 +161,20 @@ fn test_c_api_rename_code() {
     );
 }
 
+#[test]
+fn test_c_api_testing() {
+    test_c_api::<TestArgs, TestResult, _>(
+        "KclvmService.Test",
+        "test.json",
+        "test.response.json",
+        |r| {
+            for i in &mut r.info {
+                i.duration = 0;
+            }
+        },
+    );
+}
+
 fn test_c_api_without_wrapper<A, R>(svc_name: &str, input: &str, output: &str)
 where
     A: Message + DeserializeOwned,
@@ -190,6 +204,7 @@ where
 
     let mut result = R::decode(result.to_bytes()).unwrap();
     let result_json = serde_json::to_string(&result).unwrap();
+
     let except_result_path = Path::new(TEST_DATA_PATH).join(output);
     let except_result_json = fs::read_to_string(&except_result_path).unwrap_or_else(|_| {
         panic!(

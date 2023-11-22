@@ -117,6 +117,7 @@ pub(crate) fn kclvm_get_service_fn_ptr_by_name(name: &str) -> u64 {
         "KclvmService.LoadSettingsFiles" => load_settings_files as *const () as u64,
         "KclvmService.Rename" => rename as *const () as u64,
         "KclvmService.RenameCode" => rename_code as *const () as u64,
+        "KclvmService.Test" => test as *const () as u64,
         _ => panic!("unknown method name : {name}"),
     }
 }
@@ -238,4 +239,9 @@ pub(crate) fn rename(serv: *mut kclvm_service, args: *const c_char) -> *const c_
 /// return the changed code.
 pub(crate) fn rename_code(serv: *mut kclvm_service, args: *const c_char) -> *const c_char {
     call!(serv, args, RenameCodeArgs, rename_code)
+}
+
+/// Service for the testing tool.
+pub(crate) fn test(serv: *mut kclvm_service, args: *const c_char) -> *const c_char {
+    call!(serv, args, TestArgs, test)
 }

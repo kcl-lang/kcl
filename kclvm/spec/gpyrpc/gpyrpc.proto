@@ -87,6 +87,8 @@ service KclvmService {
 
 	rpc Rename(Rename_Args) returns(Rename_Result);
 	rpc RenameCode(RenameCode_Args) returns(RenameCode_Result);
+
+	rpc Test(Test_Args) returns (Test_Result);
 }
 
 message Ping_Args {
@@ -322,6 +324,29 @@ message RenameCode_Args {
 
 message RenameCode_Result {
     map<string, string> changed_codes = 1; // the changed code. a <filename>:<code> map
+}
+
+// ---------------------------------------------------------------------------------
+// Test API
+//    Test KCL packages with test arguments
+// ---------------------------------------------------------------------------------
+
+message Test_Args {
+	ExecProgram_Args exec_args = 1;      // This field stores the execution program arguments.
+	repeated string pkg_list = 2;        // The package path list to be tested e.g., "./...", "/path/to/package/", "/path/to/package/..."
+	string run_regexp = 3;               // This field stores a regular expression for filtering tests to run.
+	bool fail_fast = 4;                  // This field determines whether the test run should stop on the first failure.
+}
+
+message Test_Result {
+	repeated TestCaseInfo info = 2;
+}
+
+message TestCaseInfo {
+	string name = 1;          // Test case name
+	string error = 2;
+	uint64 duration = 3;         // Number of whole microseconds in the duration.
+	string log_message = 4;
 }
 
 // ----------------------------------------------------------------------------
