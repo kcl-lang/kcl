@@ -1,10 +1,9 @@
-use indexmap::{IndexMap, IndexSet};
+use indexmap::IndexSet;
 use kclvm_ast::ast::{
     ConfigEntry, Expr, Identifier, Node, NodeRef, PosTuple, Program, SchemaStmt, Stmt, Type,
 };
 use kclvm_ast::pos::ContainsPos;
-use kclvm_ast::MAIN_PKG;
-use kclvm_config::modfile::KCL_FILE_EXTENSION;
+
 use kclvm_driver::kpm_metadata::fetch_metadata;
 use kclvm_driver::{get_kcl_files, lookup_compile_unit};
 use kclvm_error::Diagnostic;
@@ -14,20 +13,20 @@ use kclvm_parser::{load_program, ParseSession};
 use kclvm_sema::advanced_resolver::AdvancedResolver;
 use kclvm_sema::core::global_state::GlobalState;
 use kclvm_sema::namer::Namer;
-use kclvm_sema::pkgpath_without_prefix;
+
 use kclvm_sema::resolver::resolve_program_with_opts;
 use kclvm_sema::resolver::scope::ProgramScope;
-use kclvm_sema::resolver::scope::Scope;
+
 use kclvm_span::symbol::reserved;
 use kclvm_utils::pkgpath::rm_external_pkg_name;
 use lsp_types::{Location, Position, Range, Url};
 use parking_lot::{RwLock, RwLockReadGuard};
 use ra_ap_vfs::{FileId, Vfs};
 use serde::{de::DeserializeOwned, Serialize};
-use std::cell::RefCell;
+
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::rc::Rc;
+
 use std::{fs, sync::Arc};
 
 use crate::from_lsp;
@@ -696,39 +695,6 @@ fn build_identifier_from_ty_string(ty: &NodeRef<Type>, pos: &KCLPos) -> Option<N
     }
 }
 
-/// [`get_pos_from_real_path`] will return the start and the end position [`kclvm_error::Position`]
-/// in an [`IndexSet`] from the [`real_path`].
-pub(crate) fn get_pos_from_real_path(
-    real_path: &PathBuf,
-) -> IndexSet<(kclvm_error::Position, kclvm_error::Position)> {
-    let mut positions = IndexSet::new();
-    let mut k_file = real_path.clone();
-    k_file.set_extension(KCL_FILE_EXTENSION);
-
-    if k_file.is_file() {
-        let start = KCLPos {
-            filename: k_file.to_str().unwrap().to_string(),
-            line: 1,
-            column: None,
-        };
-        let end = start.clone();
-        positions.insert((start, end));
-    } else if real_path.is_dir() {
-        if let Ok(files) = get_kcl_files(real_path, false) {
-            positions.extend(files.iter().map(|file| {
-                let start = KCLPos {
-                    filename: file.clone(),
-                    line: 1,
-                    column: None,
-                };
-                let end = start.clone();
-                (start, end)
-            }))
-        }
-    }
-    positions
-}
-
 /// [`get_real_path_from_external`] will ask for the local path for [`pkg_name`] with subdir [`pkgpath`] from `kpm`.
 /// If the external package, whose [`pkg_name`] is 'my_package', is stored in '\user\my_package_v0.0.1'.
 /// The [`pkgpath`] is 'my_package.examples.apps'.
@@ -759,28 +725,6 @@ pub(crate) fn get_real_path_from_external(
     };
     pkgpath.split('.').for_each(|s| real_path.push(s));
     real_path
-}
-
-/// Error recovery may generate an Identifier with an empty string at the end, e.g.,
-/// a. => vec["a", ""].
-/// When analyzing in LSP, the empty string needs to be removed and find definition of the second last name("a").
-pub(crate) fn fix_missing_identifier(names: &[Node<String>]) -> Vec<Node<String>> {
-    if !names.is_empty() && names.last().unwrap().node.is_empty() {
-        names[..names.len() - 1].to_vec()
-    } else {
-        names.to_vec()
-    }
-}
-
-pub(crate) fn get_pkg_scope(
-    pkgpath: &String,
-    scope_map: &IndexMap<String, Rc<RefCell<Scope>>>,
-) -> Scope {
-    scope_map
-        .get(&pkgpath_without_prefix!(pkgpath))
-        .unwrap_or(scope_map.get(MAIN_PKG).unwrap())
-        .borrow()
-        .clone()
 }
 
 pub(crate) fn build_word_index_for_file_paths(
