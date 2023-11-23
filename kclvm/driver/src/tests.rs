@@ -197,7 +197,6 @@ fn test_parse_key_value_pair_fail() {
     }
 }
 
-#[test]
 fn test_fill_pkg_maps_for_k_file() {
     let path = PathBuf::from(".")
         .join("src")
@@ -264,8 +263,14 @@ fn test_lookup_the_nearest_file_dir() {
         path.canonicalize().unwrap().display().to_string()
     );
 }
-
 #[test]
+fn test_fetch_metadata_in_order() {
+    test_fetch_metadata();
+    println!("test_fetch_metadata() passed");
+    test_fill_pkg_maps_for_k_file();
+    println!("test_fill_pkg_maps_for_k_file() passed");
+}
+
 fn test_fetch_metadata() {
     let path = PathBuf::from(".")
         .join("src")
