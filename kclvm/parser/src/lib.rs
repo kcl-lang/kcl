@@ -27,10 +27,9 @@ use kclvm_utils::pkgpath::rm_external_pkg_name;
 
 use lexer::parse_token_streams;
 use parser::Parser;
-use std::cell::RefCell;
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 use kclvm_span::create_session_globals_then;
 
@@ -310,7 +309,7 @@ pub fn load_program(
     Loader::new(sess, paths, opts, module_cache).load_main()
 }
 
-pub type KCLModuleCache = Arc<RefCell<IndexMap<String, ast::Module>>>;
+pub type KCLModuleCache = Arc<RwLock<IndexMap<String, ast::Module>>>;
 struct Loader {
     sess: Arc<ParseSession>,
     paths: Vec<String>,
@@ -324,7 +323,7 @@ impl Loader {
         sess: Arc<ParseSession>,
         paths: &[&str],
         opts: Option<LoadProgramOptions>,
-        module_cache: Option<Arc<RefCell<IndexMap<String, ast::Module>>>>,
+        module_cache: Option<Arc<RwLock<IndexMap<String, ast::Module>>>>,
     ) -> Self {
         Self {
             sess,
@@ -363,7 +362,7 @@ impl Loader {
                         filename,
                         maybe_k_codes[i].clone(),
                     )?;
-                    let mut module_cache_ref = module_cache.borrow_mut();
+                    let mut module_cache_ref = module_cache.write().unwrap();
                     module_cache_ref.insert(filename.clone(), m.clone());
                     m
                 } else {
@@ -584,13 +583,13 @@ impl Loader {
         let k_files = pkg_info.k_files.clone();
         for filename in k_files {
             let mut m = if let Some(module_cache) = self.module_cache.as_ref() {
-                let module_cache_ref = module_cache.borrow();
+                let module_cache_ref = module_cache.read().unwrap();
                 if let Some(module) = module_cache_ref.get(&filename) {
                     module.clone()
                 } else {
                     let m = parse_file_with_session(self.sess.clone(), &filename, None)?;
                     drop(module_cache_ref);
-                    let mut module_cache_ref = module_cache.borrow_mut();
+                    let mut module_cache_ref = module_cache.write().unwrap();
                     module_cache_ref.insert(filename.clone(), m.clone());
                     m
                 }

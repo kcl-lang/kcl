@@ -117,7 +117,10 @@ pub(crate) fn compile_test_file(
     let file = test_file.to_str().unwrap().to_string();
 
     let (program, prog_scope, diags, gs) = parse_param_and_compile(
-        Param { file: file.clone() },
+        Param {
+            file: file.clone(),
+            module_cache: None,
+        },
         Some(Arc::new(RwLock::new(Default::default()))),
     )
     .unwrap();
@@ -260,6 +263,7 @@ fn diagnostics_test() {
     let (_, _, diags, _) = parse_param_and_compile(
         Param {
             file: file.to_string(),
+            module_cache: None,
         },
         Some(Arc::new(RwLock::new(Default::default()))),
     )
@@ -407,6 +411,7 @@ fn complete_import_external_file_test() {
     let (program, prog_scope, _, gs) = parse_param_and_compile(
         Param {
             file: path.to_string(),
+            module_cache: None,
         },
         Some(Arc::new(RwLock::new(Default::default()))),
     )
@@ -464,6 +469,7 @@ fn goto_import_external_file_test() {
     let (program, prog_scope, diags, gs) = parse_param_and_compile(
         Param {
             file: path.to_string(),
+            module_cache: None,
         },
         Some(Arc::new(RwLock::new(Default::default()))),
     )
@@ -1128,6 +1134,7 @@ fn konfig_goto_def_test_base() {
     let (program, prog_scope, _, gs) = parse_param_and_compile(
         Param {
             file: base_path_str.clone(),
+            module_cache: None,
         },
         Some(Arc::new(RwLock::new(Default::default()))),
     )
@@ -1219,6 +1226,7 @@ fn konfig_goto_def_test_main() {
     let (program, prog_scope, _, gs) = parse_param_and_compile(
         Param {
             file: main_path_str.clone(),
+            module_cache: None,
         },
         Some(Arc::new(RwLock::new(Default::default()))),
     )
@@ -1282,6 +1290,7 @@ fn konfig_completion_test_main() {
     let (program, prog_scope, _, gs) = parse_param_and_compile(
         Param {
             file: main_path_str.clone(),
+            module_cache: None,
         },
         Some(Arc::new(RwLock::new(Default::default()))),
     )
@@ -1428,6 +1437,7 @@ fn konfig_hover_test_main() {
     let (program, prog_scope, _, gs) = parse_param_and_compile(
         Param {
             file: main_path_str.clone(),
+            module_cache: None,
         },
         Some(Arc::new(RwLock::new(Default::default()))),
     )

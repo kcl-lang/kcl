@@ -50,6 +50,7 @@ pub fn rename_symbol(
                         if let Ok((_, _, _, gs)) = parse_param_and_compile(
                             Param {
                                 file: p.to_string(),
+                                module_cache: None,
                             },
                             None,
                         ) {
@@ -105,6 +106,7 @@ pub fn select_symbol(selector: &ast::SymbolSelectorSpec) -> Option<(String, diag
             if let Ok((prog, _, _, gs)) = parse_param_and_compile(
                 Param {
                     file: pkgpath.to_string(),
+                    module_cache: None,
                 },
                 None,
             ) {
