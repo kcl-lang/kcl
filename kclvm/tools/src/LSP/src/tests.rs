@@ -1551,9 +1551,12 @@ fn lsp_invalid_subcommand_test() {
 
 #[test]
 fn find_refs_test() {
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("src")
+        .join("test_data")
+        .join("find_refs_test");
     let mut path = root.clone();
-    path.push("src/test_data/find_refs_test/main.k");
+    path.push("main.k");
 
     let path = path.to_str().unwrap();
     let src = std::fs::read_to_string(path).unwrap();
@@ -1641,9 +1644,12 @@ fn find_refs_test() {
 
 #[test]
 fn find_refs_with_file_change_test() {
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("src")
+        .join("test_data")
+        .join("find_refs_test");
     let mut path = root.clone();
-    path.push("src/test_data/find_refs_test/main.k");
+    path.push("main.k");
 
     let path = path.to_str().unwrap();
     let src = std::fs::read_to_string(path).unwrap();
@@ -1742,11 +1748,14 @@ p2 = Person {
 
 #[test]
 fn rename_test() {
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("src")
+        .join("test_data")
+        .join("rename_test");
     let mut path = root.clone();
     let mut main_path = root.clone();
-    path.push("src/test_data/rename_test/pkg/vars.k");
-    main_path.push("src/test_data/rename_test/main.k");
+    path.push("pkg/vars.k");
+    main_path.push("main.k");
 
     let path = path.to_str().unwrap();
     let src = std::fs::read_to_string(path).unwrap();
