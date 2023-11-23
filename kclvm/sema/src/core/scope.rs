@@ -1,6 +1,6 @@
-use std::{collections::HashMap, path::Path};
+use std::collections::HashMap;
 
-use indexmap::IndexMap;
+use indexmap::{IndexMap, IndexSet};
 use kclvm_error::Position;
 
 use crate::core::symbol::SymbolRef;
@@ -145,6 +145,8 @@ pub struct RootSymbolScope {
 
     pub(crate) filename: String,
 
+    pub(crate) kfile_path: IndexSet<String>,
+
     /// PackageSymbol of this scope
     pub(crate) owner: SymbolRef,
 
@@ -173,25 +175,7 @@ impl Scope for RootSymbolScope {
     }
 
     fn contains_pos(&self, pos: &Position) -> bool {
-        let real_pkg_path = if self.filename.ends_with(".k") {
-            Path::new(self.filename.strip_suffix(".k").unwrap())
-        } else {
-            Path::new(&self.filename)
-        };
-        let real_pos_path = if pos.filename.ends_with(".k") {
-            Path::new(pos.filename.strip_suffix(".k").unwrap())
-        } else {
-            Path::new(&pos.filename)
-        };
-        if real_pkg_path != real_pos_path {
-            if let Some(parent) = real_pos_path.parent() {
-                real_pkg_path == parent
-            } else {
-                false
-            }
-        } else {
-            true
-        }
+        self.kfile_path.contains(&pos.filename)
     }
     fn get_owner(&self) -> Option<SymbolRef> {
         Some(self.owner)
@@ -269,9 +253,15 @@ impl Scope for RootSymbolScope {
 }
 
 impl RootSymbolScope {
-    pub fn new(pkgpath: String, filename: String, owner: SymbolRef) -> Self {
+    pub fn new(
+        pkgpath: String,
+        filename: String,
+        owner: SymbolRef,
+        kfile_path: IndexSet<String>,
+    ) -> Self {
         Self {
             pkgpath,
+            kfile_path,
             filename,
             owner,
             children: IndexMap::default(),

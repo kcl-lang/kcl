@@ -34,7 +34,7 @@
                         └─────────────────────┘
 */
 
-use indexmap::IndexMap;
+use indexmap::{IndexMap, IndexSet};
 use kclvm_error::Position;
 
 use crate::{
@@ -112,7 +112,11 @@ impl<'ctx> AdvancedResolver<'ctx> {
                 if !advanced_resolver.ctx.scopes.is_empty() {
                     advanced_resolver.ctx.scopes.clear();
                 }
-                advanced_resolver.enter_root_scope(name.clone(), pkg_info.pkg_filepath.clone());
+                advanced_resolver.enter_root_scope(
+                    name.clone(),
+                    pkg_info.pkg_filepath.clone(),
+                    pkg_info.kfile_paths.clone(),
+                );
                 for module in modules.iter() {
                     advanced_resolver.ctx.current_filename = Some(module.filename.clone());
                     advanced_resolver.walk_module(module);
@@ -125,14 +129,19 @@ impl<'ctx> AdvancedResolver<'ctx> {
         advanced_resolver.gs
     }
 
-    fn enter_root_scope(&mut self, pkgpath: String, filename: String) {
+    fn enter_root_scope(
+        &mut self,
+        pkgpath: String,
+        filename: String,
+        kfile_paths: IndexSet<String>,
+    ) {
         let package_ref = self
             .gs
             .get_symbols_mut()
             .get_symbol_by_fully_qualified_name(&pkgpath)
             .unwrap();
 
-        let root_scope = RootSymbolScope::new(pkgpath, filename, package_ref);
+        let root_scope = RootSymbolScope::new(pkgpath, filename, package_ref, kfile_paths);
         let scope_ref = self.gs.get_scopes_mut().alloc_root_scope(root_scope);
         self.ctx.scopes.push(scope_ref);
     }
