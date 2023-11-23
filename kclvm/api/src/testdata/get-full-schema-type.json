@@ -1,5 +1,5 @@
 {
-	"exec_options": {
+	"exec_args": {
 		"work_dir" : "./src/testdata/get_schema_ty/aaa",
 		"k_filename_list":[
 			"./src/testdata/get_schema_ty/aaa/main.k"

@@ -231,7 +231,7 @@ impl KclvmServiceImpl {
     /// };
     ///
     /// let result = serv.get_full_schema_type(&GetFullSchemaTypeArgs {
-    ///     exec_options: Some(args),
+    ///     exec_args: Some(args),
     ///     schema_name: "a".to_string()
     /// }).unwrap();
     /// assert_eq!(result.schema_type_list.len(), 1);
@@ -240,7 +240,7 @@ impl KclvmServiceImpl {
         &self,
         args: &GetFullSchemaTypeArgs,
     ) -> anyhow::Result<GetSchemaTypeResult> {
-        let args_json = serde_json::to_string(&args.exec_options.clone().unwrap()).unwrap();
+        let args_json = serde_json::to_string(&args.exec_args.clone().unwrap()).unwrap();
 
         let mut type_list = Vec::new();
 

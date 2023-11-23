@@ -215,7 +215,7 @@ message OverrideFile_Result {
 }
 
 message GetFullSchemaType_Args {
-	ExecProgram_Args exec_options = 1;
+	ExecProgram_Args exec_args = 1;
 	string schema_name = 2;
 }
 

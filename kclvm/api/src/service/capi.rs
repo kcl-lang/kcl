@@ -184,7 +184,7 @@ pub(crate) fn get_schema_type(serv: *mut kclvm_service, args: *const c_char) -> 
 /// Get full schema types from a kcl file or code.
 ///
 /// # Parameters
-/// `exec_options`: [Option<ExecProgramArgs>]
+/// `exec_args`: [Option<ExecProgramArgs>]
 ///     the items and compile parameters selected by the user in the KCL CLI
 ///     serialized as protobuf byte sequence
 ///

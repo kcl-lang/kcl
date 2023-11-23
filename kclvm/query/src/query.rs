@@ -125,6 +125,37 @@ pub struct CompilationOptions {
     pub get_schema_opts: GetSchemaOption,
 }
 
+/// Service for getting the full schema type list.
+///
+/// # Examples
+///
+/// ```
+/// use kclvm_parser::LoadProgramOptions;
+/// use kclvm_query::query::CompilationOptions;
+/// use kclvm_query::query::get_full_schema_type;
+/// use std::path::Path;
+/// use maplit::hashmap;
+///
+/// let work_dir_parent = Path::new(".").join("src").join("test_data").join("get_schema_ty");
+///
+/// let result = get_full_schema_type(
+///     Some("a"),
+///     CompilationOptions {
+///         k_files: vec![
+///             work_dir_parent.join("aaa").join("main.k").canonicalize().unwrap().display().to_string()
+///         ],
+///         loader_opts: Some(LoadProgramOptions {
+///             work_dir: work_dir_parent.join("aaa").canonicalize().unwrap().display().to_string(),
+///             package_maps: hashmap!{
+///                 "bbb".to_string() => work_dir_parent.join("bbb").canonicalize().unwrap().display().to_string(),
+///             },
+///            ..Default::default()
+///          }),
+///          ..Default::default()
+///     }
+/// ).unwrap();
+/// assert_eq!(result.len(), 1);
+/// ```
 pub fn get_full_schema_type(
     schema_name: Option<&str>,
     opts: CompilationOptions,
