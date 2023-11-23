@@ -26,7 +26,7 @@ pub fn rename_symbol_on_file(
     new_name: String,
 ) -> Result<Vec<String>> {
     let changes = rename_symbol(pkg_root, file_paths, symbol_path, new_name)?;
-    let new_codes = apply_rename_changes(&changes);
+    let new_codes = apply_rename_changes(&changes)?;
     let mut changed_paths = vec![];
     for (path, content) in new_codes {
         fs::write(path.clone(), content)?;
@@ -35,10 +35,16 @@ pub fn rename_symbol_on_file(
     Ok(changed_paths)
 }
 
-fn apply_rename_changes(changes: &HashMap<Url, Vec<TextEdit>>) -> HashMap<String, String> {
+fn apply_rename_changes(changes: &HashMap<Url, Vec<TextEdit>>) -> Result<HashMap<String, String>> {
     let mut result = HashMap::new();
     for (url, edits) in changes {
-        let file_content = read_file(&url.path().to_string()).unwrap();
+        let file_content = read_file(
+            &url.to_file_path()
+                .map_err(|_| anyhow!("Failed to convert URL to file path"))?
+                .display()
+                .to_string(),
+        )
+        .unwrap();
 
         let file_content_lines: Vec<&str> = file_content.lines().collect();
         let mut updated_lines: Vec<String> = file_content_lines
@@ -101,9 +107,15 @@ fn apply_rename_changes(changes: &HashMap<Url, Vec<TextEdit>>) -> HashMap<String
             .collect();
 
         let new_file_content = retained_lines.join("\n");
-        result.insert(url.path().to_string(), new_file_content);
+        result.insert(
+            url.to_file_path()
+                .map_err(|_| anyhow!("Failed to convert URL to file path"))?
+                .display()
+                .to_string(),
+            new_file_content,
+        );
     }
-    result
+    Ok(result)
 }
 
 /// apply_text_edit applys the text edit to a single line
@@ -152,18 +164,32 @@ pub fn rename_symbol(
                     .flat_map(|(_, locs)| locs.iter())
                     .filter(|&&loc| {
                         // 4.2 filter out the words and remain those whose definition is the target def
-                        let p = loc.uri.path();
-                        if let Ok((_, _, _, gs)) = parse_param_and_compile(
-                            Param {
-                                file: p.to_string(),
-                                module_cache: None,
-                            },
-                            None,
-                        ) {
-                            let kcl_pos = kcl_pos(p, loc.range.start);
-                            if let Some(symbol_ref) = find_def_with_gs(&kcl_pos, &gs, true) {
-                                if let Some(symbol_def) = gs.get_symbols().get_symbol(symbol_ref) {
-                                    return symbol_def.get_range() == range;
+                        if let Ok(p) = loc.uri.to_file_path() {
+                            match p.canonicalize() {
+                                Ok(path) => {
+                                    let p = path.display().to_string();
+                                    if let Ok((_, _, _, gs)) = parse_param_and_compile(
+                                        Param {
+                                            file: p.to_string(),
+                                            module_cache: None,
+                                        },
+                                        None,
+                                    ) {
+                                        let kcl_pos = kcl_pos(&p, loc.range.start);
+                                        if let Some(symbol_ref) =
+                                            find_def_with_gs(&kcl_pos, &gs, true)
+                                        {
+                                            if let Some(symbol_def) =
+                                                gs.get_symbols().get_symbol(symbol_ref)
+                                            {
+                                                return symbol_def.get_range() == range;
+                                            }
+                                        }
+                                    }
+                                    return false;
+                                }
+                                Err(_) => {
+                                    return false;
                                 }
                             }
                         }
@@ -531,7 +557,7 @@ mod tests {
 
         for test_case in test_cases {
             let result = apply_rename_changes(&test_case.changes);
-            assert_eq!(result.get(&path).unwrap(), &test_case.expected);
+            assert_eq!(result.unwrap().get(&path).unwrap(), &test_case.expected);
         }
     }
 
