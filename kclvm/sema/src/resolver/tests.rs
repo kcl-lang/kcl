@@ -15,6 +15,7 @@ use kclvm_parser::ParseSession;
 use kclvm_parser::{load_program, parse_program};
 use std::path::Path;
 use std::sync::Arc;
+use std::sync::Mutex;
 
 #[test]
 fn test_scope() {
@@ -59,7 +60,7 @@ fn test_resolve_program_with_cache() {
         },
         None,
     );
-    let cached_scope = CachedScope::new(&scope, &program);
+    let cached_scope = Arc::new(Mutex::new(CachedScope::new(&scope, &program)));
     let scope = resolve_program_with_opts(
         &mut program,
         Options {
