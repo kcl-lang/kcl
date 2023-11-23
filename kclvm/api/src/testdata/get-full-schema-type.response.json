@@ -1,0 +1,41 @@
+{
+    "schema_type_list": [
+        {
+            "type": "schema",
+            "union_types": [],
+            "default": "",
+            "schema_name": "B",
+            "schema_doc": "",
+            "properties": {
+                "name": {
+                    "type": "str",
+                    "union_types": [],
+                    "default": "",
+                    "schema_name": "",
+                    "schema_doc": "",
+                    "properties": {},
+                    "required": [],
+                    "key": null,
+                    "item": null,
+                    "line": 1,
+                    "decorators": [],
+                    "filename": "",
+                    "pkg_path": "",
+                    "description": "",
+                    "examples": {}
+                }
+            },
+            "required": [
+                "name"
+            ],
+            "key": null,
+            "item": null,
+            "line": 0,
+            "decorators": [],
+            "filename": "./src/testdata/get_schema_ty/bbb/main.k",
+            "pkg_path": "bbb",
+            "description": "",
+            "examples": {}
+        }
+    ]
+}

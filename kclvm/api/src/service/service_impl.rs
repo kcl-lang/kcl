@@ -11,7 +11,11 @@ use kclvm_driver::canonicalize_input_files;
 use kclvm_parser::ParseSession;
 use kclvm_query::get_schema_type;
 use kclvm_query::override_file;
+use kclvm_query::query::get_full_schema_type;
+use kclvm_query::query::CompilationOptions;
+use kclvm_query::GetSchemaOption;
 use kclvm_runner::exec_program;
+use kclvm_sema::resolver::Options;
 use kclvm_tools::format::{format, format_source, FormatOptions};
 use kclvm_tools::lint::lint_files;
 use kclvm_tools::testing;
@@ -192,6 +196,63 @@ impl KclvmServiceImpl {
                 Some(&args.schema_name)
             },
             Default::default(),
+        )? {
+            type_list.push(kcl_schema_ty_to_pb_ty(&schema_ty));
+        }
+
+        Ok(GetSchemaTypeResult {
+            schema_type_list: type_list,
+        })
+    }
+
+    /// Service for getting the full schema type list.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
+    /// use kclvm_api::gpyrpc::*;
+    /// use std::path::Path;
+    ///
+    /// let serv = KclvmServiceImpl::default();
+    /// let work_dir_parent = Path::new(".").join("src").join("testdata").join("get_schema_ty");
+    /// let args = ExecProgramArgs {
+    ///     work_dir: work_dir_parent.join("aaa").canonicalize().unwrap().display().to_string(),
+    ///     k_filename_list: vec![
+    ///         work_dir_parent.join("aaa").join("main.k").canonicalize().unwrap().display().to_string()
+    ///     ],
+    ///     external_pkgs: vec![
+    ///         CmdExternalPkgSpec{
+    ///             pkg_name:"bbb".to_string(),
+    ///             pkg_path: work_dir_parent.join("bbb").canonicalize().unwrap().display().to_string()
+    ///         }
+    ///     ],
+    ///     ..Default::default()
+    /// };
+    ///
+    /// let result = serv.get_full_schema_type(&GetFullSchemaTypeArgs {
+    ///     exec_args: Some(args),
+    ///     schema_name: "a".to_string()
+    /// }).unwrap();
+    /// assert_eq!(result.schema_type_list.len(), 1);
+    /// ```
+    pub fn get_full_schema_type(
+        &self,
+        args: &GetFullSchemaTypeArgs,
+    ) -> anyhow::Result<GetSchemaTypeResult> {
+        let args_json = serde_json::to_string(&args.exec_args.clone().unwrap()).unwrap();
+
+        let mut type_list = Vec::new();
+
+        let exec_args = kclvm_runner::ExecProgramArgs::from_str(args_json.as_str());
+        for (_k, schema_ty) in get_full_schema_type(
+            Some(&args.schema_name),
+            CompilationOptions {
+                k_files: exec_args.clone().k_filename_list,
+                loader_opts: Some(exec_args.get_load_program_options()),
+                resolve_opts: Options::default(),
+                get_schema_opts: GetSchemaOption::default(),
+            },
         )? {
             type_list.push(kcl_schema_ty_to_pb_ty(&schema_ty));
         }

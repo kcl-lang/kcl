@@ -79,6 +79,7 @@ service KclvmService {
 	rpc OverrideFile(OverrideFile_Args) returns (OverrideFile_Result);
 
 	rpc GetSchemaType(GetSchemaType_Args) returns(GetSchemaType_Result);
+	rpc GetFullSchemaType(GetFullSchemaType_Args) returns(GetSchemaType_Result);
 	rpc GetSchemaTypeMapping(GetSchemaTypeMapping_Args) returns(GetSchemaTypeMapping_Result);
 	rpc ValidateCode(ValidateCode_Args) returns(ValidateCode_Result);
 
@@ -211,6 +212,11 @@ message OverrideFile_Args {
 
 message OverrideFile_Result {
 	bool result = 1;
+}
+
+message GetFullSchemaType_Args {
+	ExecProgram_Args exec_args = 1;
+	string schema_name = 2;
 }
 
 message GetSchemaType_Args {

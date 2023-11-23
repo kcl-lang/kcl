@@ -16,6 +16,7 @@ kclvm-ast-pretty = {path = "../ast_pretty"}
 kclvm-parser = {path = "../parser"}
 kclvm-sema = {path = "../sema"}
 kclvm-error = {path = "../error"}
+maplit = "1.0.2"
 
 [dev-dependencies]
 pretty_assertions = "1.2.1"

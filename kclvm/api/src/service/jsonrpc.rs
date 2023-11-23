@@ -91,6 +91,14 @@ fn register_kclvm_service(io: &mut IoHandler) {
         };
         futures::future::ready(catch!(kclvm_service_impl, args, get_schema_type))
     });
+    io.add_method("KclvmService.GetFullSchemaType", |params: Params| {
+        let kclvm_service_impl = KclvmServiceImpl::default();
+        let args: GetFullSchemaTypeArgs = match params.parse() {
+            Ok(val) => val,
+            Err(err) => return futures::future::ready(Err(err)),
+        };
+        futures::future::ready(catch!(kclvm_service_impl, args, get_full_schema_type))
+    });
     io.add_method("KclvmService.GetSchemaTypeMapping", |params: Params| {
         let kclvm_service_impl = KclvmServiceImpl::default();
         let args: GetSchemaTypeMappingArgs = match params.parse() {
@@ -139,6 +147,30 @@ fn register_kclvm_service(io: &mut IoHandler) {
         };
         futures::future::ready(catch!(kclvm_service_impl, args, load_settings_files))
     });
+    io.add_method("KclvmService.Rename", |params: Params| {
+        let kclvm_service_impl = KclvmServiceImpl::default();
+        let args: RenameArgs = match params.parse() {
+            Ok(val) => val,
+            Err(err) => return futures::future::ready(Err(err)),
+        };
+        futures::future::ready(catch!(kclvm_service_impl, args, rename))
+    });
+    io.add_method("KclvmService.RenameCode", |params: Params| {
+        let kclvm_service_impl = KclvmServiceImpl::default();
+        let args: RenameCodeArgs = match params.parse() {
+            Ok(val) => val,
+            Err(err) => return futures::future::ready(Err(err)),
+        };
+        futures::future::ready(catch!(kclvm_service_impl, args, rename_code))
+    });
+    io.add_method("KclvmService.Test", |params: Params| {
+        let kclvm_service_impl = KclvmServiceImpl::default();
+        let args: TestArgs = match params.parse() {
+            Ok(val) => val,
+            Err(err) => return futures::future::ready(Err(err)),
+        };
+        futures::future::ready(catch!(kclvm_service_impl, args, test))
+    });
 }
 
 fn register_builtin_service(io: &mut IoHandler) {
@@ -153,12 +185,17 @@ fn register_builtin_service(io: &mut IoHandler) {
                 "KclvmService.Ping".to_owned(),
                 "KclvmService.ExecProgram".to_owned(),
                 "KclvmService.OverrideFile".to_owned(),
+                "KclvmService.GetSchemaType".to_owned(),
+                "KclvmService.GetFullSchemaType".to_owned(),
                 "KclvmService.GetSchemaTypeMapping".to_owned(),
                 "KclvmService.FormatCode".to_owned(),
                 "KclvmService.FormatPath".to_owned(),
                 "KclvmService.LintPath".to_owned(),
                 "KclvmService.ValidateCode".to_owned(),
                 "KclvmService.LoadSettingsFiles".to_owned(),
+                "KclvmService.Rename".to_owned(),
+                "KclvmService.RenameCode".to_owned(),
+                "KclvmService.Test".to_owned(),
                 "BuiltinService.Ping".to_owned(),
                 "BuiltinService.PingListMethod".to_owned(),
             ],
