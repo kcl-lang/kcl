@@ -275,11 +275,16 @@ pub fn lookup_compile_unit_path(file: &str) -> io::Result<PathBuf> {
 /// Get kcl files from path.
 pub fn get_kcl_files<P: AsRef<Path>>(path: P, recursively: bool) -> Result<Vec<String>> {
     let mut files = vec![];
-    for entry in WalkDir::new(path).into_iter().filter_map(|e| e.ok()) {
+    let walkdir = if recursively {
+        WalkDir::new(path)
+    } else {
+        WalkDir::new(path).max_depth(1)
+    };
+    for entry in walkdir.into_iter().filter_map(|e| e.ok()) {
         let path = entry.path();
         if path.is_file() {
             let file = path.to_str().unwrap();
-            if file.ends_with(KCL_FILE_SUFFIX) && (recursively || entry.depth() == 1) {
+            if file.ends_with(KCL_FILE_SUFFIX) {
                 files.push(file.to_string())
             }
         }
