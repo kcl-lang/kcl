@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::io::Write;
+use std::path::PathBuf;
 use std::string::String;
 use std::sync::Arc;
 
@@ -535,25 +536,46 @@ impl KclvmServiceImpl {
     /// ```
     /// use kclvm_api::service::service_impl::KclvmServiceImpl;
     /// use kclvm_api::gpyrpc::*;
+    /// # use std::path::PathBuf;
+    /// # use std::fs;
+    /// #
+    /// # let serv = KclvmServiceImpl::default();
+    /// # // before test, load template from .bak
+    /// # let path = PathBuf::from(".").join("src").join("testdata").join("rename_doc").join("main.k");
+    /// # let backup_path = path.with_extension("bak");
+    /// # let content = fs::read_to_string(backup_path.clone()).unwrap();
+    /// # fs::write(path.clone(), content).unwrap();
     ///
-    /// let serv = KclvmServiceImpl::default();
     /// let result = serv.rename(&RenameArgs {
-    ///     package_root: "./src/testdata/rename".to_string(),
+    ///     package_root: "./src/testdata/rename_doc".to_string(),
     ///     symbol_path: "a".to_string(),
-    ///     file_paths: vec!["main.k".to_string()],
+    ///     file_paths: vec!["./src/testdata/rename_doc/main.k".to_string()],
     ///     new_name: "a2".to_string(),
     /// }).unwrap();
     /// assert_eq!(result.changed_files.len(), 1);
+    ///
+    /// # // after test, restore template from .bak
+    /// # fs::remove_file(path.clone()).unwrap();
     /// ```
     pub fn rename(&self, args: &RenameArgs) -> anyhow::Result<RenameResult> {
-        let pkg_root = args.package_root.clone();
+        let pkg_root = PathBuf::from(args.package_root.clone())
+            .canonicalize()?
+            .display()
+            .to_string();
         let symbol_path = args.symbol_path.clone();
-        let file_paths = args.file_paths.clone();
+        let mut file_paths = vec![];
+        for path in args.file_paths.iter() {
+            file_paths.push(PathBuf::from(path).canonicalize()?.display().to_string());
+        }
         let new_name = args.new_name.clone();
-
-        let changed_files =
-            rename::rename_symbol_on_file(&pkg_root, &symbol_path, &file_paths, new_name)?;
-        Ok(RenameResult { changed_files })
+        Ok(RenameResult {
+            changed_files: rename::rename_symbol_on_file(
+                &pkg_root,
+                &symbol_path,
+                &file_paths,
+                new_name,
+            )?,
+        })
     }
 
     /// Service for renaming all the occurrences of the target symbol and rename them. This API won't rewrite files but return the modified code if any code has been changed.

@@ -308,7 +308,7 @@ message KeyValuePair {
 // ---------------------------------------------------------------------------------
 
 message Rename_Args {
-	string package_root = 1;              // the file path to the package root
+    string package_root = 1;              // the file path to the package root
     string symbol_path = 2;               // the path to the target symbol to be renamed. The symbol path should conform to format: `<pkgpath>:<field_path>` When the pkgpath is '__main__', `<pkgpath>:` can be omitted.
     repeated string file_paths = 3;       // the paths to the source code files
     string new_name = 4;                  // the new name of the symbol
