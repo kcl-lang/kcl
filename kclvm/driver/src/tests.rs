@@ -9,6 +9,13 @@ use walkdir::WalkDir;
 use crate::arguments::parse_key_value_pair;
 use crate::kpm_metadata::{fetch_metadata, fill_pkg_maps_for_k_file, lookup_the_nearest_file_dir};
 use crate::{canonicalize_input_files, expand_input_files, get_pkg_list};
+use std::sync::Mutex;
+#[macro_use]
+extern crate lazy_static;
+
+lazy_static! {
+    static ref ENV_LOCK: Mutex<()> = Mutex::new(());
+}
 
 #[test]
 fn test_canonicalize_input_files() {
@@ -199,6 +206,7 @@ fn test_parse_key_value_pair_fail() {
 
 #[test]
 fn test_fill_pkg_maps_for_k_file() {
+    let _guard = ENV_LOCK.lock().unwrap();
     let path = PathBuf::from(".")
         .join("src")
         .join("test_data")
@@ -276,7 +284,7 @@ fn test_fetch_metadata() {
         .join("src")
         .join("test_data")
         .join("fetch_metadata_vendor");
-
+    let _guard = ENV_LOCK.lock().unwrap();
     env::set_var(
         "KCL_PKG_PATH",
         vendor_path.canonicalize().unwrap().display().to_string(),
