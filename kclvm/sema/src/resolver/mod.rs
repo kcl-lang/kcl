@@ -21,7 +21,7 @@ mod tests;
 
 use indexmap::IndexMap;
 use kclvm_error::diagnostic::Range;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::{cell::RefCell, rc::Rc};
 
 use crate::lint::{CombinedLintPass, Linter};
@@ -174,18 +174,28 @@ pub fn resolve_program(program: &mut Program) -> ProgramScope {
 pub fn resolve_program_with_opts(
     program: &mut Program,
     opts: Options,
-    cached_scope: Option<CachedScope>,
+    cached_scope: Option<Arc<Mutex<CachedScope>>>,
 ) -> ProgramScope {
     pre_process_program(program, &opts);
     let mut resolver = Resolver::new(program, opts.clone());
-    if let Some(mut cached_scope) = cached_scope {
-        cached_scope.update(program);
-        resolver.scope_map = cached_scope.scope_map;
-        resolver.scope_map.remove(kclvm_ast::MAIN_PKG);
-        resolver.node_ty_map = cached_scope.node_ty_map
-    }
     resolver.resolve_import();
+    if let Some(cached_scope) = cached_scope.as_ref() {
+        if let Ok(mut cached_scope) = cached_scope.try_lock() {
+            cached_scope.update(program);
+            resolver.scope_map = cached_scope.scope_map.clone();
+            resolver.scope_map.remove(kclvm_ast::MAIN_PKG);
+            resolver.node_ty_map = cached_scope.node_ty_map.clone()
+        }
+    }
     let scope = resolver.check_and_lint(kclvm_ast::MAIN_PKG);
+    if let Some(cached_scope) = cached_scope.as_ref() {
+        if let Ok(mut cached_scope) = cached_scope.try_lock() {
+            cached_scope.update(program);
+            cached_scope.scope_map = scope.scope_map.clone();
+            cached_scope.node_ty_map = scope.node_ty_map.clone();
+            cached_scope.scope_map.remove(kclvm_ast::MAIN_PKG);
+        }
+    }
 
     if opts.type_alise {
         let type_alias_mapping = resolver.ctx.type_alias_mapping.clone();
