@@ -5,6 +5,7 @@ use crate::to_lsp::{kcl_diag_to_lsp_diags, url};
 use crate::util::{build_word_index, get_file_name, parse_param_and_compile, to_json, Param};
 use crossbeam_channel::{select, unbounded, Receiver, Sender};
 use indexmap::IndexSet;
+use kclvm_parser::KCLModuleCache;
 use lsp_server::{ReqQueue, Response};
 use lsp_types::Url;
 use lsp_types::{
@@ -75,6 +76,9 @@ pub(crate) struct LanguageServerState {
 
     /// The word index map
     pub word_index_map: Arc<RwLock<HashMap<Url, HashMap<String, Vec<Location>>>>>,
+
+    /// KCL parse cache
+    pub module_cache: Option<KCLModuleCache>,
 }
 
 /// A snapshot of the state of the language server
@@ -88,6 +92,8 @@ pub(crate) struct LanguageServerSnapshot {
     pub opened_files: IndexSet<FileId>,
     /// The word index map
     pub word_index_map: Arc<RwLock<HashMap<Url, HashMap<String, Vec<Location>>>>>,
+    /// KCL parse cache
+    pub module_cache: Option<KCLModuleCache>,
 }
 
 #[allow(unused)]
@@ -120,6 +126,7 @@ impl LanguageServerState {
             opened_files: IndexSet::new(),
             word_index_map: Arc::new(RwLock::new(HashMap::new())),
             loader,
+            module_cache: Some(KCLModuleCache::default()),
         };
 
         let word_index_map = state.word_index_map.clone();
@@ -198,16 +205,19 @@ impl LanguageServerState {
         // Construct an AnalysisChange to apply to the analysis
         for file in changed_files {
             let vfs = self.vfs.read();
-
+            let start = Instant::now();
             match get_file_name(vfs, file.file_id) {
                 Ok(filename) => {
                     match parse_param_and_compile(
                         Param {
                             file: filename.clone(),
+                            module_cache: self.module_cache.clone(),
                         },
                         Some(self.vfs.clone()),
                     ) {
                         Ok((prog, scope, diags, gs)) => {
+                            let end = start.elapsed();
+                            self.log_message(format!("compile time: {:?}s", end.as_secs_f32()));
                             self.analysis.set_db(
                                 file.file_id,
                                 AnalysisDatabase {
@@ -278,6 +288,7 @@ impl LanguageServerState {
             db: self.analysis.db.clone(),
             opened_files: self.opened_files.clone(),
             word_index_map: self.word_index_map.clone(),
+            module_cache: self.module_cache.clone(),
         }
     }
 

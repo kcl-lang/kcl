@@ -9,7 +9,7 @@ use kclvm_driver::{get_kcl_files, lookup_compile_unit};
 use kclvm_error::Diagnostic;
 use kclvm_error::Position as KCLPos;
 use kclvm_parser::entry::get_dir_files;
-use kclvm_parser::{load_program, ParseSession};
+use kclvm_parser::{load_program, KCLModuleCache, ParseSession};
 use kclvm_sema::advanced_resolver::AdvancedResolver;
 use kclvm_sema::core::global_state::GlobalState;
 use kclvm_sema::namer::Namer;
@@ -63,6 +63,7 @@ pub fn get_file_name(vfs: RwLockReadGuard<Vfs>, file_id: FileId) -> anyhow::Resu
 
 pub(crate) struct Param {
     pub file: String,
+    pub module_cache: Option<KCLModuleCache>,
 }
 
 pub(crate) fn parse_param_and_compile(
@@ -80,7 +81,7 @@ pub(crate) fn parse_param_and_compile(
         opt.k_code_list.append(&mut k_code_list);
     }
     let sess = Arc::new(ParseSession::default());
-    let mut program = load_program(sess.clone(), &files, Some(opt), None)
+    let mut program = load_program(sess.clone(), &files, Some(opt), param.module_cache)
         .map_err(|err| anyhow::anyhow!("Compile failed: {}", err))?;
 
     let prog_scope = resolve_program_with_opts(

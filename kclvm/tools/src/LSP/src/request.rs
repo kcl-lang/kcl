@@ -170,6 +170,7 @@ pub(crate) fn handle_reference(
     let db = snapshot.get_db(&path.clone().into())?;
     let pos = kcl_pos(&file, params.text_document_position.position);
     let log = |msg: String| log_message(msg, &sender);
+    let module_cache = snapshot.module_cache.clone();
     match find_refs(
         &db.prog,
         &pos,
@@ -179,6 +180,7 @@ pub(crate) fn handle_reference(
         Some(snapshot.vfs.clone()),
         log,
         &db.gs,
+        module_cache,
     ) {
         core::result::Result::Ok(locations) => Ok(Some(locations)),
         Err(msg) => {
@@ -200,8 +202,14 @@ pub(crate) fn handle_completion(
         return Ok(None);
     }
 
-    let db =
-        parse_param_and_compile(Param { file: file.clone() }, Some(snapshot.vfs.clone())).unwrap();
+    let db = parse_param_and_compile(
+        Param {
+            file: file.clone(),
+            module_cache: snapshot.module_cache.clone(),
+        },
+        Some(snapshot.vfs.clone()),
+    )
+    .unwrap();
 
     let kcl_pos = kcl_pos(&file, params.text_document_position.position);
     let completion_trigger_character = params
@@ -286,6 +294,7 @@ pub(crate) fn handle_rename(
         Some(snapshot.vfs.clone()),
         log,
         &db.gs,
+        snapshot.module_cache.clone(),
     );
     match references {
         Result::Ok(locations) => {

@@ -107,6 +107,7 @@ mod tests {
         let (_, _, diags, _) = parse_param_and_compile(
             Param {
                 file: file.to_string(),
+                module_cache: None,
             },
             Some(Arc::new(RwLock::new(Default::default()))),
         )
