@@ -23,6 +23,8 @@ use std::{
     path::{Path, PathBuf},
 };
 use walkdir::WalkDir;
+#[macro_use]
+extern crate lazy_static;
 
 /// Expand the file pattern to a list of files.
 pub fn expand_if_file_pattern(file_pattern: String) -> Result<Vec<String>, String> {
