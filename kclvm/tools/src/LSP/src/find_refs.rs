@@ -14,10 +14,10 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 pub(crate) fn find_refs<F: Fn(String) -> Result<(), anyhow::Error>>(
-    program: &Program,
+    _program: &Program,
     kcl_pos: &KCLPos,
     include_declaration: bool,
-    prog_scope: &ProgramScope,
+    _prog_scope: &ProgramScope,
     word_index_map: Arc<RwLock<HashMap<Url, HashMap<String, Vec<Location>>>>>,
     vfs: Option<Arc<RwLock<Vfs>>>,
     logger: F,
