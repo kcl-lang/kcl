@@ -12,10 +12,9 @@ use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::PathBuf;
 
-
 /// Service for renaming all the occurrences of the target symbol in the files. This API will rewrite files if they contain symbols to be renamed.
 /// return the file paths got changed.
-/// 
+///
 /// pkg_root: the absolute file path to the root package.
 /// symbol_path: path to the symbol. The symbol path should be in the format of: `pkg.sub_pkg:name.sub_name`.
 /// file_paths: list of absolute file paths in which symbols can be renamed.
