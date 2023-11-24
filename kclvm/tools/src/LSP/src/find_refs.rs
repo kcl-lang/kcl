@@ -66,7 +66,13 @@ pub(crate) fn find_refs_from_def<F: Fn(String) -> Result<(), anyhow::Error>>(
 ) -> Vec<Location> {
     let mut ref_locations = vec![];
     for (_, word_index) in &mut *word_index_map.write() {
-        if let Some(locs) = word_index.get(name.as_str()).cloned() {
+        if let Some(mut locs) = word_index.get(name.as_str()).cloned() {
+            if locs.len() >= 20 {
+                let _ = logger(format!(
+                    "Found more than 20 matched symbols, only the first 20 will be processed"
+                ));
+                locs = locs[0..20].to_vec();
+            }
             let matched_locs: Vec<Location> = locs
                 .into_iter()
                 .filter(|ref_loc| {
