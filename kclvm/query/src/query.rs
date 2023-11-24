@@ -172,7 +172,7 @@ pub fn get_full_schema_type(
                 // Schema name filter
                 match schema_name {
                     Some(schema_name) => {
-                        if schema_name == name {
+                        if schema_name.is_empty() || schema_name == name {
                             result.insert(name.to_string(), schema_ty);
                         }
                     }
