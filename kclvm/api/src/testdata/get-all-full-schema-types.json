@@ -1,0 +1,19 @@
+{
+	"exec_args": {
+		"work_dir" : "./src/testdata/get_schema_ty/aaa",
+		"k_filename_list":[
+			"./src/testdata/get_schema_ty/aaa/main.k"
+		],
+		"external_pkgs": [
+			{
+			  "pkg_name": "bbb",
+			  "pkg_path": "./src/testdata/get_schema_ty/bbb"
+			},
+			{
+				"pkg_name": "ccc",
+				"pkg_path": "./src/testdata/get_schema_ty/ccc"
+			}
+		]
+	},
+	"schema_name": ""
+}

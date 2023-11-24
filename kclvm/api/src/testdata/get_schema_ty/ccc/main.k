@@ -1,0 +1,2 @@
+schema C:
+    name: str

@@ -246,7 +246,11 @@ impl KclvmServiceImpl {
 
         let exec_args = kclvm_runner::ExecProgramArgs::from_str(args_json.as_str());
         for (_k, schema_ty) in get_full_schema_type(
-            Some(&args.schema_name),
+            if args.schema_name.is_empty() {
+                None
+            } else {
+                Some(&args.schema_name)
+            },
             CompilationOptions {
                 k_files: exec_args.clone().k_filename_list,
                 loader_opts: Some(exec_args.get_load_program_options()),
