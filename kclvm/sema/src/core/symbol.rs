@@ -43,7 +43,7 @@ pub trait Symbol {
     fn full_dump(&self, data: &Self::SymbolData) -> Option<String>;
 }
 
-type KCLSymbol = dyn Symbol<SymbolData = KCLSymbolData, SemanticInfo = KCLSymbolSemanticInfo>;
+pub type KCLSymbol = dyn Symbol<SymbolData = KCLSymbolData, SemanticInfo = KCLSymbolSemanticInfo>;
 #[derive(Debug, Clone, Default)]
 pub struct KCLSymbolSemanticInfo {
     pub ty: Option<Arc<Type>>,

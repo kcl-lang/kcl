@@ -257,7 +257,7 @@ pub(crate) fn handle_document_symbol(
         return Ok(None);
     }
     let db = snapshot.get_db(&path.clone().into())?;
-    let res = document_symbol(&file, &db.prog, &db.scope);
+    let res = document_symbol(&file, &db.gs);
     if res.is_none() {
         log_message(format!("File {file} Document symbol not found"), &sender)?;
     }
