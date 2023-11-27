@@ -907,6 +907,10 @@ impl<'ctx> Resolver<'ctx> {
                 .map(|doc| doc.node.clone())
                 .unwrap_or_default(),
         );
+        let index_signature = match &protocol_ty {
+            Some(ty) => ty.index_signature.clone(),
+            None => None,
+        };
         SchemaType {
             name: rule_stmt.name.node.clone(),
             pkgpath: self.ctx.pkgpath.clone(),
@@ -933,7 +937,7 @@ impl<'ctx> Resolver<'ctx> {
                 is_variadic: false,
                 kw_only_index: None,
             }),
-            index_signature: None,
+            index_signature,
             decorators,
         }
     }
