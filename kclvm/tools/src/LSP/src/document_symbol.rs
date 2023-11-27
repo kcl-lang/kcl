@@ -1,12 +1,9 @@
 use std::path::Path;
 
-use kclvm_ast::ast::Program;
-use kclvm_ast::MAIN_PKG;
-use kclvm_sema::resolver::scope::ProgramScope;
-use kclvm_sema::resolver::scope::Scope;
-use kclvm_sema::resolver::scope::ScopeKind;
-use kclvm_sema::resolver::scope::ScopeObject;
-use kclvm_sema::resolver::scope::ScopeObjectKind;
+use kclvm_error::Position;
+use kclvm_sema::core::global_state::GlobalState;
+use kclvm_sema::core::symbol::KCLSymbol;
+use kclvm_sema::core::symbol::SymbolKind as KCLSymbolKind;
 use lsp_types::Range;
 use lsp_types::{DocumentSymbol, DocumentSymbolResponse, SymbolKind};
 
@@ -14,94 +11,124 @@ use crate::to_lsp::lsp_pos;
 
 pub(crate) fn document_symbol(
     file: &str,
-    _program: &Program,
-    prog_scope: &ProgramScope,
+    gs: &GlobalState,
 ) -> Option<lsp_types::DocumentSymbolResponse> {
     let mut documentsymbols: Vec<DocumentSymbol> = vec![];
-    let scope = prog_scope.scope_map.get(MAIN_PKG).unwrap().borrow();
-    // Get variable in scope
-    for obj in scope.elems.values().filter(|obj| {
-        if let Ok(canonicalized_path) = Path::new(&obj.borrow().start.filename).canonicalize() {
-            // skip schema definition
-            canonicalized_path.eq(Path::new(file))
-                && obj.borrow().kind != ScopeObjectKind::Definition
-        } else {
-            false
-        }
-    }) {
-        documentsymbols.push(scope_obj_to_document_symbol(obj.borrow().clone()));
-    }
-    // Get schema definition in scope
-    for child in scope.children.iter().filter(|child| {
-        if let Ok(canonicalized_path) = Path::new(&child.borrow().start.filename).canonicalize() {
-            canonicalized_path.eq(Path::new(file))
-        } else {
-            false
-        }
-    }) {
-        if let Some(symbol) = schema_scope_to_document_symbol(child.borrow().clone()) {
-            documentsymbols.push(symbol)
+
+    let dummy_pos = Position {
+        filename: file.to_string(),
+        line: 1,
+        column: Some(0),
+    };
+
+    if let Some(scope) = gs.look_up_scope(&dummy_pos) {
+        if let Some(defs) = gs.get_all_defs_in_scope(scope) {
+            for symbol_ref in defs {
+                match gs.get_symbols().get_symbol(symbol_ref) {
+                    Some(symbol) => {
+                        let def = symbol.get_definition();
+                        match def {
+                            Some(def) => {
+                                let symbol_range = symbol.get_range();
+                                // filter current file symbols
+                                if let Ok(canonicalized_path) =
+                                    Path::new(&symbol_range.0.filename).canonicalize()
+                                {
+                                    if canonicalized_path.eq(Path::new(file)) {
+                                        match def.get_kind() {
+                                            KCLSymbolKind::Schema => {
+                                                match &mut symbol_to_document_symbol(symbol) {
+                                                    Some(schema_symbol) => {
+                                                        let module_info = gs
+                                                            .get_packages()
+                                                            .get_module_info(&dummy_pos.filename);
+                                                        let attrs = symbol.get_all_attributes(
+                                                            gs.get_symbols(),
+                                                            module_info,
+                                                        );
+                                                        let mut children = vec![];
+
+                                                        for attr in attrs {
+                                                            match gs.get_symbols().get_symbol(attr)
+                                                            {
+                                                                Some(attr_symbol) => {
+                                                                    match symbol_to_document_symbol(
+                                                                        attr_symbol,
+                                                                    ) {
+                                                                        Some(symbol) => {
+                                                                            children.push(symbol)
+                                                                        }
+                                                                        None => {}
+                                                                    }
+                                                                }
+                                                                None => {}
+                                                            }
+                                                        }
+
+                                                        schema_symbol.children = Some(children);
+                                                        documentsymbols.push(schema_symbol.clone());
+                                                    }
+                                                    None => {}
+                                                }
+                                            }
+                                            _ => match symbol_to_document_symbol(symbol) {
+                                                Some(symbol) => documentsymbols.push(symbol),
+                                                None => {}
+                                            },
+                                        }
+                                    }
+                                }
+                            }
+                            None => {}
+                        }
+                    }
+                    None => {}
+                }
+            }
         }
     }
     Some(DocumentSymbolResponse::Nested(documentsymbols))
 }
 
-#[allow(deprecated)]
-fn schema_scope_to_document_symbol(scope: Scope) -> Option<DocumentSymbol> {
-    if let ScopeKind::Schema(schema_name) = &scope.kind {
-        let range = Range {
-            start: lsp_pos(&scope.start),
-            end: lsp_pos(&scope.end),
-        };
-        Some(DocumentSymbol {
-            name: schema_name.clone(),
-            kind: SymbolKind::STRUCT,
-            range,
-            selection_range: range,
-            children: Some(
-                scope
-                    .elems
-                    .iter()
-                    .map(|(_, obj)| scope_obj_to_document_symbol(obj.borrow().clone()))
-                    .collect(),
-            ),
-            detail: Some("schema".to_string()),
-            tags: None,
-            deprecated: None,
-        })
-    } else {
-        None
+fn symbol_to_document_symbol(symbol: &KCLSymbol) -> Option<DocumentSymbol> {
+    let sema_info = symbol.get_sema_info();
+    let def = symbol.get_definition();
+    match def {
+        Some(def) => {
+            let name = symbol.get_name();
+            let symbol_range = symbol.get_range();
+            let range = Range {
+                start: lsp_pos(&symbol_range.0),
+                end: lsp_pos(&symbol_range.1),
+            };
+            let kind = def.get_kind();
+            let kind = symbol_kind_to_document_symbol_kind(kind);
+            let detail = sema_info.ty.clone().map(|ty| ty.ty_str());
+
+            Some(DocumentSymbol {
+                name,
+                kind,
+                range,
+                selection_range: range,
+                detail,
+                tags: None,
+                children: None,
+                deprecated: None,
+            })
+        }
+        None => None,
     }
 }
 
-#[allow(deprecated)]
-fn scope_obj_to_document_symbol(obj: ScopeObject) -> DocumentSymbol {
-    let kind = scope_obj_kind_to_document_symbol_kind(obj.kind);
-    let range = Range {
-        start: lsp_pos(&obj.start),
-        end: lsp_pos(&obj.end),
-    };
-    DocumentSymbol {
-        name: obj.name.clone(),
-        kind,
-        range,
-        selection_range: range,
-        detail: Some(obj.ty.ty_str()),
-        tags: None,
-        children: None,
-        deprecated: None,
-    }
-}
-
-fn scope_obj_kind_to_document_symbol_kind(kind: ScopeObjectKind) -> SymbolKind {
+fn symbol_kind_to_document_symbol_kind(kind: KCLSymbolKind) -> SymbolKind {
     match kind {
-        ScopeObjectKind::Variable => SymbolKind::VARIABLE,
-        ScopeObjectKind::Attribute => SymbolKind::PROPERTY,
-        ScopeObjectKind::Definition => SymbolKind::STRUCT,
-        ScopeObjectKind::Parameter => SymbolKind::VARIABLE,
-        ScopeObjectKind::TypeAlias => SymbolKind::TYPE_PARAMETER,
-        ScopeObjectKind::Module(_) => SymbolKind::MODULE,
-        ScopeObjectKind::FunctionCall => SymbolKind::FUNCTION,
+        KCLSymbolKind::Schema => SymbolKind::STRUCT,
+        KCLSymbolKind::Attribute => SymbolKind::PROPERTY,
+        KCLSymbolKind::Value => SymbolKind::VARIABLE,
+        KCLSymbolKind::Package => SymbolKind::PACKAGE,
+        KCLSymbolKind::TypeAlias => SymbolKind::TYPE_PARAMETER,
+        KCLSymbolKind::Unresolved => SymbolKind::NULL,
+        KCLSymbolKind::Rule => SymbolKind::FUNCTION,
     }
 }
 
@@ -145,22 +172,14 @@ mod tests {
     #[test]
     #[bench_test]
     fn document_symbol_test() {
-        let (file, program, prog_scope, _, _gs) =
-            compile_test_file("src/test_data/document_symbol.k");
+        let (file, _, _, _, gs) = compile_test_file("src/test_data/document_symbol.k");
 
-        let res = document_symbol(file.as_str(), &program, &prog_scope).unwrap();
+        let mut res = document_symbol(file.as_str(), &gs).unwrap();
         let mut expect = vec![];
-        expect.push(build_document_symbol(
-            "p",
-            SymbolKind::VARIABLE,
-            ((3, 0), (3, 1)),
-            None,
-            Some("Person4".to_string()),
-        ));
         expect.push(build_document_symbol(
             "Person4",
             SymbolKind::STRUCT,
-            ((0, 7), (1, 13)),
+            ((0, 7), (0, 14)),
             Some(vec![build_document_symbol(
                 "name",
                 SymbolKind::PROPERTY,
@@ -168,9 +187,22 @@ mod tests {
                 None,
                 Some("str".to_string()),
             )]),
-            Some("schema".to_string()),
+            Some("Person4".to_string()),
         ));
-        let expect = DocumentSymbolResponse::Nested(expect);
-        assert_eq!(res, expect)
+        expect.push(build_document_symbol(
+            "p",
+            SymbolKind::VARIABLE,
+            ((3, 0), (3, 1)),
+            None,
+            Some("Person4".to_string()),
+        ));
+
+        match &mut res {
+            DocumentSymbolResponse::Flat(_) => panic!("test failed"),
+            DocumentSymbolResponse::Nested(got) => {
+                got.sort_by(|a, b| a.name.cmp(&b.name));
+                assert_eq!(got, &expect)
+            }
+        }
     }
 }
