@@ -7,7 +7,6 @@ use kclvm_ast::ast::Program;
 use kclvm_error::Position as KCLPos;
 use kclvm_parser::KCLModuleCache;
 use kclvm_sema::core::global_state::GlobalState;
-use kclvm_sema::resolver::scope::ProgramScope;
 use lsp_types::{Location, Url};
 use parking_lot::RwLock;
 use ra_ap_vfs::Vfs;
@@ -18,7 +17,6 @@ pub(crate) fn find_refs<F: Fn(String) -> Result<(), anyhow::Error>>(
     _program: &Program,
     kcl_pos: &KCLPos,
     include_declaration: bool,
-    _prog_scope: &ProgramScope,
     word_index_map: Arc<RwLock<HashMap<Url, HashMap<String, Vec<Location>>>>>,
     vfs: Option<Arc<RwLock<Vfs>>>,
     logger: F,
@@ -86,15 +84,13 @@ pub(crate) fn find_refs_from_def<F: Fn(String) -> Result<(), anyhow::Error>>(
                         },
                         vfs.clone(),
                     ) {
-                        Ok((prog, scope, _, gs)) => {
+                        Ok((prog, _, _, gs)) => {
                             let ref_pos = kcl_pos(&file_path, ref_loc.range.start);
                             if *ref_loc == def_loc && !include_declaration {
                                 return false;
                             }
                             // find def from the ref_pos
-                            if let Some(real_def) =
-                                goto_definition_with_gs(&prog, &ref_pos, &scope, &gs)
-                            {
+                            if let Some(real_def) = goto_definition_with_gs(&prog, &ref_pos, &gs) {
                                 match real_def {
                                     lsp_types::GotoDefinitionResponse::Scalar(real_def_loc) => {
                                         real_def_loc == def_loc

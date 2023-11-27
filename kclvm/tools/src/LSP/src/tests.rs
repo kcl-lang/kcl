@@ -408,7 +408,7 @@ fn complete_import_external_file_test() {
         .output()
         .unwrap();
 
-    let (program, prog_scope, _, gs) = parse_param_and_compile(
+    let (program, _, _, gs) = parse_param_and_compile(
         Param {
             file: path.to_string(),
             module_cache: None,
@@ -422,7 +422,7 @@ fn complete_import_external_file_test() {
         line: 1,
         column: Some(11),
     };
-    let res = completion(Some('.'), &program, &pos, &prog_scope, &gs).unwrap();
+    let res = completion(Some('.'), &program, &pos, &gs).unwrap();
 
     let got_labels: Vec<String> = match &res {
         CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
@@ -466,7 +466,7 @@ fn goto_import_external_file_test() {
         .output()
         .unwrap();
 
-    let (program, prog_scope, diags, gs) = parse_param_and_compile(
+    let (program, _, diags, gs) = parse_param_and_compile(
         Param {
             file: path.to_string(),
             module_cache: None,
@@ -483,7 +483,7 @@ fn goto_import_external_file_test() {
         line: 1,
         column: Some(15),
     };
-    let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
+    let res = goto_definition_with_gs(&program, &pos, &gs);
     assert!(res.is_some());
 }
 
@@ -843,6 +843,7 @@ fn goto_def_test() {
         },
     );
 
+    thread::sleep(Duration::from_secs(1));
     let id = server.next_request_id.get();
     server.next_request_id.set(id.wrapping_add(1));
 
@@ -899,6 +900,7 @@ fn complete_test() {
             },
         },
     );
+    thread::sleep(Duration::from_secs(1));
 
     let id = server.next_request_id.get();
     server.next_request_id.set(id.wrapping_add(1));
@@ -967,6 +969,7 @@ fn hover_test() {
             },
         },
     );
+    thread::sleep(Duration::from_secs(1));
 
     let id = server.next_request_id.get();
     server.next_request_id.set(id.wrapping_add(1));
@@ -1024,6 +1027,7 @@ fn hover_assign_in_lambda_test() {
             },
         },
     );
+    thread::sleep(Duration::from_secs(1));
 
     let id = server.next_request_id.get();
     server.next_request_id.set(id.wrapping_add(1));
@@ -1131,7 +1135,7 @@ fn konfig_goto_def_test_base() {
     let mut base_path = konfig_path.clone();
     base_path.push("appops/nginx-example/base/base.k");
     let base_path_str = base_path.to_str().unwrap().to_string();
-    let (program, prog_scope, _, gs) = parse_param_and_compile(
+    let (program, _, _, gs) = parse_param_and_compile(
         Param {
             file: base_path_str.clone(),
             module_cache: None,
@@ -1146,7 +1150,7 @@ fn konfig_goto_def_test_base() {
         line: 7,
         column: Some(30),
     };
-    let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
+    let res = goto_definition_with_gs(&program, &pos, &gs);
     let mut expected_path = konfig_path.clone();
     expected_path.push("base/pkg/kusion_models/kube/frontend/server.k");
     compare_goto_res(
@@ -1160,7 +1164,7 @@ fn konfig_goto_def_test_base() {
         line: 9,
         column: Some(32),
     };
-    let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
+    let res = goto_definition_with_gs(&program, &pos, &gs);
     let mut expected_path = konfig_path.clone();
     expected_path.push("base/pkg/kusion_models/kube/frontend/container/container.k");
     compare_goto_res(
@@ -1174,7 +1178,7 @@ fn konfig_goto_def_test_base() {
         line: 9,
         column: Some(9),
     };
-    let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
+    let res = goto_definition_with_gs(&program, &pos, &gs);
     let mut expected_path = konfig_path.clone();
     expected_path.push("base/pkg/kusion_models/kube/frontend/server.k");
     compare_goto_res(
@@ -1194,7 +1198,7 @@ fn konfig_goto_def_test_base() {
         line: 10,
         column: Some(10),
     };
-    let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
+    let res = goto_definition_with_gs(&program, &pos, &gs);
     let mut expected_path = konfig_path.clone();
     expected_path.push("base/pkg/kusion_models/kube/frontend/container/container.k");
     compare_goto_res(
@@ -1208,7 +1212,7 @@ fn konfig_goto_def_test_base() {
         line: 2,
         column: Some(49),
     };
-    let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
+    let res = goto_definition_with_gs(&program, &pos, &gs);
     let mut expected_path = konfig_path.clone();
     expected_path.push("base/pkg/kusion_models/kube/frontend/service/service.k");
     compare_goto_res(
@@ -1223,7 +1227,7 @@ fn konfig_goto_def_test_main() {
     let mut main_path = konfig_path.clone();
     main_path.push("appops/nginx-example/dev/main.k");
     let main_path_str = main_path.to_str().unwrap().to_string();
-    let (program, prog_scope, _, gs) = parse_param_and_compile(
+    let (program, _, _, gs) = parse_param_and_compile(
         Param {
             file: main_path_str.clone(),
             module_cache: None,
@@ -1238,7 +1242,7 @@ fn konfig_goto_def_test_main() {
         line: 6,
         column: Some(31),
     };
-    let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
+    let res = goto_definition_with_gs(&program, &pos, &gs);
     let mut expected_path = konfig_path.clone();
     expected_path.push("base/pkg/kusion_models/kube/frontend/server.k");
     compare_goto_res(
@@ -1252,7 +1256,7 @@ fn konfig_goto_def_test_main() {
         line: 7,
         column: Some(14),
     };
-    let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
+    let res = goto_definition_with_gs(&program, &pos, &gs);
     let mut expected_path = konfig_path.clone();
     expected_path.push("base/pkg/kusion_models/kube/frontend/server.k");
     compare_goto_res(
@@ -1272,7 +1276,7 @@ fn konfig_goto_def_test_main() {
         line: 2,
         column: Some(61),
     };
-    let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
+    let res = goto_definition_with_gs(&program, &pos, &gs);
     let mut expected_path = konfig_path.clone();
     expected_path.push("base/pkg/kusion_models/kube/templates/resource.k");
     compare_goto_res(
@@ -1287,7 +1291,7 @@ fn konfig_completion_test_main() {
     let mut main_path = konfig_path.clone();
     main_path.push("appops/nginx-example/dev/main.k");
     let main_path_str = main_path.to_str().unwrap().to_string();
-    let (program, prog_scope, _, gs) = parse_param_and_compile(
+    let (program, _, _, gs) = parse_param_and_compile(
         Param {
             file: main_path_str.clone(),
             module_cache: None,
@@ -1302,7 +1306,7 @@ fn konfig_completion_test_main() {
         line: 6,
         column: Some(27),
     };
-    let got = completion(Some('.'), &program, &pos, &prog_scope, &gs).unwrap();
+    let got = completion(Some('.'), &program, &pos, &gs).unwrap();
     let got_labels: Vec<String> = match got {
         CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
         CompletionResponse::List(_) => panic!("test failed"),
@@ -1320,7 +1324,7 @@ fn konfig_completion_test_main() {
         line: 7,
         column: Some(4),
     };
-    let got = completion(None, &program, &pos, &prog_scope, &gs).unwrap();
+    let got = completion(None, &program, &pos, &gs).unwrap();
     let mut got_labels: Vec<String> = match got {
         CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
         CompletionResponse::List(_) => panic!("test failed"),
@@ -1403,7 +1407,7 @@ fn konfig_completion_test_main() {
         line: 1,
         column: Some(35),
     };
-    let got = completion(Some('.'), &program, &pos, &prog_scope, &gs).unwrap();
+    let got = completion(Some('.'), &program, &pos, &gs).unwrap();
     let mut got_labels: Vec<String> = match got {
         CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
         CompletionResponse::List(_) => panic!("test failed"),
@@ -1434,7 +1438,7 @@ fn konfig_hover_test_main() {
     let mut main_path = konfig_path.clone();
     main_path.push("appops/nginx-example/dev/main.k");
     let main_path_str = main_path.to_str().unwrap().to_string();
-    let (program, prog_scope, _, gs) = parse_param_and_compile(
+    let (program, _, _, gs) = parse_param_and_compile(
         Param {
             file: main_path_str.clone(),
             module_cache: None,
@@ -1449,7 +1453,7 @@ fn konfig_hover_test_main() {
         line: 6,
         column: Some(32),
     };
-    let got = hover(&program, &pos, &prog_scope, &gs).unwrap();
+    let got = hover(&program, &pos, &gs).unwrap();
     match got.contents {
         HoverContents::Array(arr) => {
             let expect: Vec<MarkedString> = ["base.pkg.kusion_models.kube.frontend\n\nschema Server",
@@ -1469,7 +1473,7 @@ fn konfig_hover_test_main() {
         line: 7,
         column: Some(15),
     };
-    let got = hover(&program, &pos, &prog_scope, &gs).unwrap();
+    let got = hover(&program, &pos, &gs).unwrap();
     match got.contents {
         HoverContents::Array(arr) => {
             let expect: Vec<MarkedString> = [
@@ -1490,7 +1494,7 @@ fn konfig_hover_test_main() {
         line: 6,
         column: Some(3),
     };
-    let got = hover(&program, &pos, &prog_scope, &gs).unwrap();
+    let got = hover(&program, &pos, &gs).unwrap();
     match got.contents {
         HoverContents::Scalar(s) => {
             assert_eq!(
@@ -1581,6 +1585,8 @@ fn find_refs_test() {
             },
         },
     );
+
+    thread::sleep(Duration::from_secs(1));
 
     let id = server.next_request_id.get();
     server.next_request_id.set(id.wrapping_add(1));
@@ -1674,6 +1680,7 @@ fn find_refs_with_file_change_test() {
             },
         },
     );
+
     // Mock change file content
     server.notification::<lsp_types::notification::DidChangeTextDocument>(
         lsp_types::DidChangeTextDocumentParams {
@@ -1701,6 +1708,7 @@ p2 = Person {
             }],
         },
     );
+    thread::sleep(Duration::from_secs(1));
     let id = server.next_request_id.get();
     server.next_request_id.set(id.wrapping_add(1));
     // Mock trigger find references
@@ -1781,6 +1789,7 @@ fn rename_test() {
             },
         },
     );
+    thread::sleep(Duration::from_secs(1));
 
     let id = server.next_request_id.get();
     server.next_request_id.set(id.wrapping_add(1));

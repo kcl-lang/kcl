@@ -87,7 +87,7 @@ pub(crate) struct LanguageServerSnapshot {
     /// The virtual filesystem that holds all the file contents
     pub vfs: Arc<RwLock<Vfs>>,
     /// Holds the state of the analysis process
-    pub db: HashMap<FileId, AnalysisDatabase>,
+    pub db: Arc<RwLock<HashMap<FileId, AnalysisDatabase>>>,
     /// Documents that are currently kept in memory from the client
     pub opened_files: IndexSet<FileId>,
     /// The word index map
@@ -165,27 +165,18 @@ impl LanguageServerState {
         // 1. Process the incoming event
         match event {
             Event::Task(task) => self.handle_task(task)?,
-            Event::Lsp(msg) => match msg {
-                lsp_server::Message::Request(req) => self.on_request(req, start_time)?,
-                lsp_server::Message::Notification(not) => self.on_notification(not)?,
-                // lsp_server::Message::Response(resp) => self.complete_request(resp),
-                _ => {}
-            },
+            Event::Lsp(msg) => {
+                match msg {
+                    lsp_server::Message::Request(req) => self.on_request(req, start_time)?,
+                    lsp_server::Message::Notification(not) => self.on_notification(not)?,
+                    // lsp_server::Message::Response(resp) => self.complete_request(resp),
+                    _ => {}
+                }
+            }
         };
 
         // 2. Process changes
-        let state_changed: bool = self.process_vfs_changes();
-
-        // 3. Handle Diagnostics
-        if state_changed {
-            let mut snapshot = self.snapshot();
-            let task_sender = self.task_sender.clone();
-            // Spawn the diagnostics in the threadpool
-            self.thread_pool.execute(move || {
-                let _result = handle_diagnostics(snapshot, task_sender);
-            });
-        }
-
+        self.process_vfs_changes();
         Ok(())
     }
 
@@ -208,28 +199,48 @@ impl LanguageServerState {
             let start = Instant::now();
             match get_file_name(vfs, file.file_id) {
                 Ok(filename) => {
-                    match parse_param_and_compile(
-                        Param {
-                            file: filename.clone(),
-                            module_cache: self.module_cache.clone(),
-                        },
-                        Some(self.vfs.clone()),
-                    ) {
-                        Ok((prog, scope, diags, gs)) => {
-                            let end = start.elapsed();
-                            self.log_message(format!("compile time: {:?}s", end.as_secs_f32()));
-                            self.analysis.set_db(
-                                file.file_id,
-                                AnalysisDatabase {
-                                    prog,
-                                    scope,
-                                    diags,
-                                    gs,
-                                },
-                            );
+                    let mut snapshot = self.snapshot();
+
+                    self.thread_pool.execute({
+                        let mut snapshot = self.snapshot();
+                        let sender = self.task_sender.clone();
+                        let module_cache = self.module_cache.clone();
+                        let uri = url(&snapshot, file.file_id).unwrap();
+                        move || match parse_param_and_compile(
+                            Param {
+                                file: filename.clone(),
+                                module_cache,
+                            },
+                            Some(snapshot.vfs),
+                        ) {
+                            Ok((prog, _, diags, gs)) => {
+                                let mut db = snapshot.db.write();
+                                db.insert(
+                                    file.file_id,
+                                    AnalysisDatabase {
+                                        prog,
+                                        diags: diags.clone(),
+                                        gs,
+                                    },
+                                );
+
+                                let diagnostics = diags
+                                    .iter()
+                                    .flat_map(|diag| kcl_diag_to_lsp_diags(diag, filename.as_str()))
+                                    .collect::<Vec<Diagnostic>>();
+                                sender.send(Task::Notify(lsp_server::Notification {
+                                    method: PublishDiagnostics::METHOD.to_owned(),
+                                    params: to_json(PublishDiagnosticsParams {
+                                        uri,
+                                        diagnostics,
+                                        version: None,
+                                    })
+                                    .unwrap(),
+                                }));
+                            }
+                            Err(_) => {}
                         }
-                        Err(_) => self.log_message(format!("{filename} compilation failed")),
-                    }
+                    });
                 }
                 Err(_) => {
                     self.log_message(format!("{:?} not found", file.file_id));
@@ -300,37 +311,6 @@ impl LanguageServerState {
         );
         self.send(not.into());
     }
-}
-
-fn handle_diagnostics(
-    snapshot: LanguageServerSnapshot,
-    sender: Sender<Task>,
-) -> anyhow::Result<()> {
-    for file_id in &snapshot.opened_files {
-        let vfs = snapshot.vfs.read();
-        let filename = get_file_name(vfs, *file_id)?;
-        let uri = url(&snapshot, *file_id)?;
-
-        match snapshot.db.get(file_id) {
-            Some(db) => {
-                let diagnostics = db
-                    .diags
-                    .iter()
-                    .flat_map(|diag| kcl_diag_to_lsp_diags(diag, filename.as_str()))
-                    .collect::<Vec<Diagnostic>>();
-                sender.send(Task::Notify(lsp_server::Notification {
-                    method: PublishDiagnostics::METHOD.to_owned(),
-                    params: to_json(PublishDiagnosticsParams {
-                        uri,
-                        diagnostics,
-                        version: None,
-                    })?,
-                }))?;
-            }
-            None => continue,
-        }
-    }
-    Ok(())
 }
 
 pub(crate) fn log_message(message: String, sender: &Sender<Task>) -> anyhow::Result<()> {

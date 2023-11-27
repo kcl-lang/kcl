@@ -1,14 +1,9 @@
 use crate::db::AnalysisDatabase;
+use parking_lot::RwLock;
 use ra_ap_vfs::FileId;
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 #[derive(Default)]
 pub struct Analysis {
-    pub db: HashMap<FileId, AnalysisDatabase>,
-}
-
-impl Analysis {
-    pub fn set_db(&mut self, id: FileId, db: AnalysisDatabase) {
-        self.db.insert(id, db);
-    }
+    pub db: Arc<RwLock<HashMap<FileId, AnalysisDatabase>>>,
 }
