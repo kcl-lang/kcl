@@ -239,10 +239,11 @@ message GetSchemaTypeMapping_Result {
 
 message ValidateCode_Args {
 	string data = 1;
-	string code = 2;
-	string schema = 3;
-	string attribute_name = 4;
-	string format = 5;
+	string file = 2;
+	string code = 3;
+	string schema = 4;
+	string attribute_name = 5;
+	string format = 6;
 }
 
 message ValidateCode_Result {

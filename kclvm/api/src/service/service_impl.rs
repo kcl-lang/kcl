@@ -476,7 +476,7 @@ impl KclvmServiceImpl {
                 "json" => LoaderKind::JSON,
                 _ => LoaderKind::JSON,
             },
-            None,
+            transform_str_para(&args.file),
             transform_str_para(&args.code),
         )) {
             Ok(success) => (success, "".to_string()),
