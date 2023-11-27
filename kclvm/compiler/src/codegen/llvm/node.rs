@@ -12,6 +12,7 @@ use kclvm_ast::ast::{self, CallExpr, ConfigEntry, NodeRef};
 use kclvm_ast::walker::TypedResultWalker;
 use kclvm_runtime::{ApiFunc, PKG_PATH_PREFIX};
 use kclvm_sema::pkgpath_without_prefix;
+use kclvm_sema::ty::{ANY_TYPE_STR, STR_TYPE_STR};
 
 use crate::check_backtrack_stop;
 use crate::codegen::error as kcl_error;
@@ -1087,7 +1088,8 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
             );
             let fn_ty = self.function_type().ptr_type(AddressSpace::default());
             let func_ptr_cast = self.builder.build_bitcast(func_ptr, fn_ty, "");
-            self.builder
+            let schema_value = self
+                .builder
                 .build_call(
                     CallableValue::try_from(func_ptr_cast.into_pointer_value())
                         .expect(kcl_error::INTERNAL_ERROR_MSG),
@@ -1100,7 +1102,25 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
                 )
                 .try_as_basic_value()
                 .left()
-                .expect(kcl_error::FUNCTION_RETURN_VALUE_NOT_FOUND_MSG)
+                .expect(kcl_error::FUNCTION_RETURN_VALUE_NOT_FOUND_MSG);
+            let protocol_name_native_str =
+                self.native_global_string_value(&for_host_name.node.get_name());
+            self.build_void_call(
+                &ApiFunc::kclvm_schema_value_check.name(),
+                &[
+                    self.current_runtime_ctx_ptr(),
+                    schema_value,
+                    schema_config,
+                    schema_config_meta,
+                    protocol_name_native_str,
+                    self.undefined_value(),
+                    self.native_global_string("", "").into(),
+                    self.native_global_string(STR_TYPE_STR, "").into(),
+                    self.native_global_string(ANY_TYPE_STR, "").into(),
+                    self.native_i8(1).into(),
+                ],
+            );
+            schema_value
         } else {
             schema_value
         };
