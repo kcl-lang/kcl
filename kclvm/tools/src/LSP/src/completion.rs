@@ -48,9 +48,9 @@ pub enum KCLCompletionItemKind {
     Doc,
 }
 
-impl Into<CompletionItemKind> for KCLCompletionItemKind {
-    fn into(self) -> CompletionItemKind {
-        match self {
+impl From<KCLCompletionItemKind> for CompletionItemKind {
+    fn from(val: KCLCompletionItemKind) -> Self {
+        match val {
             KCLCompletionItemKind::Function => CompletionItemKind::FUNCTION,
             KCLCompletionItemKind::Variable => CompletionItemKind::VARIABLE,
             KCLCompletionItemKind::File => CompletionItemKind::FILE,
@@ -193,10 +193,10 @@ fn completion_dot(
     }
 
     // look_up_exact_symbol
-    let mut def = find_def_with_gs(&pre_pos, &gs, true);
+    let mut def = find_def_with_gs(&pre_pos, gs, true);
     if def.is_none() {
         // look_up_closest_symbol
-        def = find_def_with_gs(&pos, &gs, false);
+        def = find_def_with_gs(pos, gs, false);
     }
     match def {
         Some(def_ref) => {
@@ -215,7 +215,7 @@ fn completion_dot(
                                         schema_ty_completion_item(schema).label
                                     }
                                     kclvm_sema::ty::TypeKind::Function(func_ty) => {
-                                        func_ty_complete_label(&name, &func_ty)
+                                        func_ty_complete_label(&name, func_ty)
                                     }
                                     _ => name.clone(),
                                 };
@@ -267,7 +267,7 @@ fn completion_dot(
 /// Now, just completion for schema attr value
 fn completion_assign(pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::CompletionResponse> {
     let mut items = IndexSet::new();
-    if let Some(symbol_ref) = find_def_with_gs(&pos, &gs, false) {
+    if let Some(symbol_ref) = find_def_with_gs(pos, gs, false) {
         if let Some(symbol) = gs.get_symbols().get_symbol(symbol_ref) {
             if let Some(def) = symbol.get_definition() {
                 match def.get_kind() {
@@ -275,7 +275,7 @@ fn completion_assign(pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::Comple
                         let sema_info = symbol.get_sema_info();
                         match &sema_info.ty {
                             Some(ty) => {
-                                items.extend(ty_complete_label(&ty).iter().map(|label| {
+                                items.extend(ty_complete_label(ty).iter().map(|label| {
                                     KCLCompletionItem {
                                         label: format!(" {}", label),
                                         detail: Some(format!(
@@ -308,9 +308,9 @@ fn completion_newline(
 ) -> Option<lsp_types::CompletionResponse> {
     let mut completions: IndexSet<KCLCompletionItem> = IndexSet::new();
 
-    if let Some((doc, schema)) = is_in_docstring(program, &pos) {
+    if let Some((doc, schema)) = is_in_docstring(program, pos) {
         let doc = parse_doc_string(&doc.node);
-        if doc.summary.is_empty() && doc.attrs.len() == 0 && doc.examples.len() == 0 {
+        if doc.summary.is_empty() && doc.attrs.is_empty() && doc.examples.is_empty() {
             // empty docstring, provide total completion
             let doc_parsed = Doc::new_from_schema_stmt(&schema);
             let label = doc_parsed.to_doc_string();
@@ -337,10 +337,10 @@ fn completion_newline(
                             kclvm_sema::core::symbol::SymbolKind::Attribute => {
                                 completions.insert(KCLCompletionItem {
                                     label: name.clone(),
-                                    detail: match &sema_info.ty {
-                                        Some(ty) => Some(format!("{}: {}", name, ty.ty_str())),
-                                        None => None,
-                                    },
+                                    detail: sema_info
+                                        .ty
+                                        .as_ref()
+                                        .map(|ty| format!("{}: {}", name, ty.ty_str())),
                                     documentation: match &sema_info.doc {
                                         Some(doc) => {
                                             if doc.is_empty() {
@@ -456,7 +456,7 @@ fn completion_import(
     let mut items: IndexSet<KCLCompletionItem> = IndexSet::new();
     let pkgpath = &stmt.path;
     let mut real_path =
-        Path::new(&program.root).join(pkgpath.replace('.', &std::path::MAIN_SEPARATOR.to_string()));
+        Path::new(&program.root).join(pkgpath.replace('.', std::path::MAIN_SEPARATOR_STR));
     if !real_path.exists() {
         real_path =
             get_real_path_from_external(&stmt.pkg_name, pkgpath, program.root.clone().into());
@@ -526,7 +526,7 @@ fn ty_complete_label(ty: &Type) -> Vec<String> {
                 if schema.pkgpath.is_empty() || schema.pkgpath == MAIN_PKG {
                     "".to_string()
                 } else {
-                    format!("{}.", schema.pkgpath.split(".").last().unwrap())
+                    format!("{}.", schema.pkgpath.split('.').last().unwrap())
                 },
                 schema.name,
                 "{}"
@@ -558,7 +558,7 @@ pub(crate) fn into_completion_items(items: &IndexSet<KCLCompletionItem>) -> Vec<
             documentation: item
                 .documentation
                 .clone()
-                .map(|doc| lsp_types::Documentation::String(doc)),
+                .map(lsp_types::Documentation::String),
             kind: item.kind.clone().map(|kind| kind.into()),
             ..Default::default()
         })
@@ -1036,10 +1036,7 @@ mod tests {
         match &mut got {
             CompletionResponse::Array(arr) => {
                 assert_eq!(
-                    arr.iter()
-                        .filter(|item| item.label == "Person(b){}")
-                        .next()
-                        .unwrap(),
+                    arr.iter().find(|item| item.label == "Person(b){}").unwrap(),
                     &CompletionItem {
                         label: "Person(b){}".to_string(),
                         kind: Some(CompletionItemKind::CLASS),

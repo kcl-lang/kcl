@@ -18,7 +18,7 @@ pub(crate) fn hover(
     gs: &GlobalState,
 ) -> Option<lsp_types::Hover> {
     let mut docs: Vec<String> = vec![];
-    let def = find_def_with_gs(kcl_pos, &gs, true);
+    let def = find_def_with_gs(kcl_pos, gs, true);
     match def {
         Some(def_ref) => match gs.get_symbols().get_symbol(def_ref) {
             Some(obj) => match def_ref.get_kind() {
@@ -45,7 +45,7 @@ pub(crate) fn hover(
                 kclvm_sema::core::symbol::SymbolKind::Value => match &obj.get_sema_info().ty {
                     Some(ty) => match &ty.kind {
                         kclvm_sema::ty::TypeKind::Function(func_ty) => {
-                            docs.extend(build_func_hover_content(&func_ty, obj.get_name().clone()));
+                            docs.extend(build_func_hover_content(func_ty, obj.get_name().clone()));
                         }
                         _ => {
                             docs.push(format!("{}: {}", &obj.get_name(), ty.ty_str()));
@@ -136,7 +136,7 @@ fn build_func_hover_content(func_ty: &FunctionType, name: String) -> Vec<String>
 
     let mut sig = format!("fn {}(", name);
     if func_ty.params.is_empty() {
-        sig.push_str(")");
+        sig.push(')');
     } else {
         for (i, p) in func_ty.params.iter().enumerate() {
             sig.push_str(&format!("{}: {}", p.name, p.ty.ty_str()));
@@ -145,13 +145,13 @@ fn build_func_hover_content(func_ty: &FunctionType, name: String) -> Vec<String>
                 sig.push_str(", ");
             }
         }
-        sig.push_str(")");
+        sig.push(')');
     }
     sig.push_str(&format!(" -> {}", func_ty.return_ty.ty_str()));
     docs.push(sig);
 
     if !func_ty.doc.is_empty() {
-        docs.push(func_ty.doc.clone().replace("\n", "\n\n"));
+        docs.push(func_ty.doc.clone().replace('\n', "\n\n"));
     }
     docs
 }

@@ -24,7 +24,7 @@ pub(crate) fn goto_definition_with_gs(
     gs: &GlobalState,
 ) -> Option<lsp_types::GotoDefinitionResponse> {
     let mut res = IndexSet::new();
-    let def = find_def_with_gs(kcl_pos, &gs, true);
+    let def = find_def_with_gs(kcl_pos, gs, true);
     match def {
         Some(def_ref) => match gs.get_symbols().get_symbol(def_ref) {
             Some(def) => match def_ref.get_kind() {
@@ -58,10 +58,7 @@ pub(crate) fn find_def_with_gs(
     if exact {
         match gs.look_up_exact_symbol(kcl_pos) {
             Some(symbol_ref) => match gs.get_symbols().get_symbol(symbol_ref) {
-                Some(symbol) => match symbol.get_definition() {
-                    Some(symbol) => Some(symbol),
-                    None => None,
-                },
+                Some(symbol) => symbol.get_definition(),
                 None => None,
             },
             None => None,
@@ -69,10 +66,7 @@ pub(crate) fn find_def_with_gs(
     } else {
         match gs.look_up_closest_symbol(kcl_pos) {
             Some(symbol_ref) => match gs.get_symbols().get_symbol(symbol_ref) {
-                Some(symbol) => match symbol.get_definition() {
-                    Some(symbol) => Some(symbol),
-                    None => None,
-                },
+                Some(symbol) => symbol.get_definition(),
                 None => None,
             },
             None => None,
@@ -95,7 +89,7 @@ fn positions_to_goto_def_resp(
         _ => {
             let mut res = vec![];
             for (start, end) in positions {
-                let loc = lsp_location(start.filename.clone(), &start, &end)?;
+                let loc = lsp_location(start.filename.clone(), start, end)?;
                 res.push(loc)
             }
             Some(lsp_types::GotoDefinitionResponse::Array(res))

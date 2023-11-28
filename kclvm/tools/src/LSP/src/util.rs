@@ -604,9 +604,9 @@ pub(crate) fn is_in_docstring(
             Stmt::Schema(schema) => match schema.doc {
                 Some(ref doc) => {
                     if doc.contains_pos(pos) {
-                        return Some((doc.clone(), schema));
+                        Some((doc.clone(), schema))
                     } else {
-                        return None;
+                        None
                     }
                 }
                 None => None,
@@ -739,11 +739,11 @@ pub(crate) fn build_word_index_for_file_paths(
             // read file content and save the word to word index
             let text = read_file(p)?;
             for (key, values) in build_word_index_for_file_content(text, &url, prune) {
-                index.entry(key).or_insert_with(Vec::new).extend(values);
+                index.entry(key).or_default().extend(values);
             }
         }
     }
-    return Ok(index);
+    Ok(index)
 }
 
 /// scan and build a word -> Locations index map
@@ -766,11 +766,9 @@ pub(crate) fn build_word_index_for_file_content(
     let lines: Vec<&str> = content.lines().collect();
     let mut in_docstring = false;
     for (li, line) in lines.into_iter().enumerate() {
-        if prune && !in_docstring {
-            if line.trim_start().starts_with("\"\"\"") {
-                in_docstring = true;
-                continue;
-            }
+        if prune && !in_docstring && line.trim_start().starts_with("\"\"\"") {
+            in_docstring = true;
+            continue;
         }
         if prune && in_docstring {
             if line.trim_end().ends_with("\"\"\"") {
@@ -782,7 +780,7 @@ pub(crate) fn build_word_index_for_file_content(
         for (key, values) in words {
             index
                 .entry(key)
-                .or_insert_with(Vec::new)
+                .or_default()
                 .extend(values.iter().map(|w| Location {
                     uri: url.clone(),
                     range: Range {
@@ -800,7 +798,7 @@ pub(crate) fn word_index_add(
     add: HashMap<String, Vec<Location>>,
 ) {
     for (key, value) in add {
-        from.entry(key).or_insert_with(Vec::new).extend(value);
+        from.entry(key).or_default().extend(value);
     }
 }
 
@@ -836,7 +834,7 @@ impl Word {
     }
 }
 
-fn read_file(path: &String) -> anyhow::Result<String> {
+pub fn read_file(path: &String) -> anyhow::Result<String> {
     let text = std::fs::read_to_string(path)?;
     Ok(text)
 }

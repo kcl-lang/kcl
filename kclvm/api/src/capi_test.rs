@@ -6,7 +6,7 @@ use serde::de::DeserializeOwned;
 use std::default::Default;
 use std::ffi::{CStr, CString};
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 const TEST_DATA_PATH: &str = "./src/testdata";
 static TEST_MUTEX: Lazy<Mutex<i32>> = Lazy::new(|| Mutex::new(0i32));
@@ -173,11 +173,33 @@ fn test_c_api_load_settings_files() {
 
 #[test]
 fn test_c_api_rename() {
-    test_c_api_without_wrapper::<RenameArgs, RenameResult>(
+    // before test, load template from .bak
+    let path = Path::new(TEST_DATA_PATH).join("rename").join("main.k");
+    let backup_path = path.with_extension("bak");
+    let content = fs::read_to_string(backup_path.clone()).unwrap();
+    fs::write(path.clone(), content).unwrap();
+
+    test_c_api::<RenameArgs, RenameResult, _>(
         "KclvmService.Rename",
         "rename.json",
         "rename.response.json",
+        |r| {
+            r.changed_files = r
+                .changed_files
+                .iter()
+                .map(|f| {
+                    PathBuf::from(f)
+                        .canonicalize()
+                        .unwrap()
+                        .display()
+                        .to_string()
+                })
+                .collect();
+        },
     );
+
+    // after test, restore template from .bak
+    fs::remove_file(path.clone()).unwrap();
 }
 
 #[test]

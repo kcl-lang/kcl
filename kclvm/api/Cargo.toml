@@ -32,6 +32,7 @@ kclvm-ast-pretty = {path = "../ast_pretty"}
 kclvm-runtime = {path = "../runtime"}
 kclvm-tools = {path = "../tools" }
 kclvm-query = {path = "../query"}
+kcl-language-server = {path = "../tools/src/LSP"}
 
 [dev-dependencies]
 criterion = "0.4.0"

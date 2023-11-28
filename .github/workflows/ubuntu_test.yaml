@@ -28,7 +28,7 @@ jobs:
       - name: Install rust nightly toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: 1.67
+          toolchain: 1.73
           override: true
           components: clippy, rustfmt
       - name: Code format check
