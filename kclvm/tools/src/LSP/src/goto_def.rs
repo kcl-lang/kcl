@@ -663,7 +663,7 @@ mod tests {
         };
 
         let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
-        compare_goto_res(res, (&file, 81, 6, 81, 10));
+        compare_goto_res(res, (&file, 18, 4, 18, 8));
     }
 
     #[test]
