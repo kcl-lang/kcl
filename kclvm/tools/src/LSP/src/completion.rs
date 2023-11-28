@@ -1117,7 +1117,7 @@ mod tests {
 
     #[test]
     fn str_dot_completion() {
-        let (file, program, prog_scope, _, gs) =
+        let (file, program, _, _, gs) =
             compile_test_file("src/test_data/completion_test/dot/lit_str/lit_str.k");
 
         // test complete str functions when at the end of literal str
@@ -1127,7 +1127,7 @@ mod tests {
             column: Some(10),
         };
 
-        let got = completion(Some('.'), &program, &pos, &prog_scope, &gs).unwrap();
+        let got = completion(Some('.'), &program, &pos, &gs).unwrap();
         let got_labels: Vec<String> = match got {
             CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
             CompletionResponse::List(_) => panic!("test failed"),
@@ -1145,7 +1145,7 @@ mod tests {
             column: Some(6),
         };
 
-        let got = completion(Some('.'), &program, &pos, &prog_scope, &gs).unwrap();
+        let got = completion(Some('.'), &program, &pos, &gs).unwrap();
         let got_labels: Vec<String> = match got {
             CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
             CompletionResponse::List(_) => panic!("test failed"),
@@ -1159,7 +1159,7 @@ mod tests {
             column: Some(5),
         };
 
-        let got = completion(Some('.'), &program, &pos, &prog_scope, &gs).unwrap();
+        let got = completion(Some('.'), &program, &pos, &gs).unwrap();
         match got {
             CompletionResponse::Array(arr) => assert!(arr.is_empty()),
             CompletionResponse::List(_) => panic!("test failed"),
@@ -1172,7 +1172,7 @@ mod tests {
             column: Some(8),
         };
 
-        let got = completion(Some('.'), &program, &pos, &prog_scope, &gs).unwrap();
+        let got = completion(Some('.'), &program, &pos, &gs).unwrap();
         match got {
             CompletionResponse::Array(arr) => assert!(arr.is_empty()),
             CompletionResponse::List(_) => panic!("test failed"),
