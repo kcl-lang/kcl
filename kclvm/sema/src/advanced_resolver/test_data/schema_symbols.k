@@ -30,4 +30,9 @@ p = Main{
     age = b._b + a._person?.age
 }
 
-person = pkg.Person {}
+person = pkg.Person {
+    name.name = ""
+}
+
+x = "123"
+assert True, "${x}456"

@@ -95,6 +95,9 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
         if let Some(if_cond) = &assert_stmt.if_cond {
             self.expr(if_cond);
         }
+        if let Some(msg) = &assert_stmt.msg {
+            self.expr(msg);
+        }
         None
     }
 
@@ -762,38 +765,38 @@ impl<'ctx> AdvancedResolver<'ctx> {
                         .get_scopes_mut()
                         .add_ref_to_scope(cur_scope, first_unresolved_ref);
                 }
+                if names.len() > 1 {
+                    let mut parent_ty = self.ctx.node_ty_map.get(&first_name.id)?;
 
-                let mut parent_ty = self.ctx.node_ty_map.get(&first_name.id)?;
+                    for index in 1..names.len() {
+                        let name = names.get(index).unwrap();
+                        let def_symbol_ref = self.gs.get_symbols().get_type_attribute(
+                            &parent_ty,
+                            &name.node,
+                            self.get_current_module_info(),
+                        )?;
 
-                for index in 1..names.len() {
-                    let name = names.get(index).unwrap();
-                    let def_symbol_ref = self.gs.get_symbols().get_type_attribute(
-                        &parent_ty,
-                        &name.node,
-                        self.get_current_module_info(),
-                    )?;
+                        let (start_pos, end_pos): Range = name.get_span_pos();
+                        let ast_id = name.id.clone();
+                        let mut unresolved =
+                            UnresolvedSymbol::new(name.node.clone(), start_pos, end_pos, None);
+                        unresolved.def = Some(def_symbol_ref);
+                        let unresolved_ref = self
+                            .gs
+                            .get_symbols_mut()
+                            .alloc_unresolved_symbol(unresolved, &ast_id);
 
-                    let (start_pos, end_pos): Range = name.get_span_pos();
-                    let ast_id = name.id.clone();
-                    let mut unresolved =
-                        UnresolvedSymbol::new(name.node.clone(), start_pos, end_pos, None);
-                    unresolved.def = Some(def_symbol_ref);
-                    let unresolved_ref = self
-                        .gs
-                        .get_symbols_mut()
-                        .alloc_unresolved_symbol(unresolved, &ast_id);
+                        let cur_scope = *self.ctx.scopes.last().unwrap();
+                        self.gs
+                            .get_scopes_mut()
+                            .add_ref_to_scope(cur_scope, unresolved_ref);
 
-                    let cur_scope = *self.ctx.scopes.last().unwrap();
-                    self.gs
-                        .get_scopes_mut()
-                        .add_ref_to_scope(cur_scope, unresolved_ref);
-
-                    parent_ty = self.ctx.node_ty_map.get(&name.id)?;
-                    if index == names.len() - 1 {
-                        return Some(unresolved_ref);
+                        parent_ty = self.ctx.node_ty_map.get(&name.id)?;
+                        if index == names.len() - 1 {
+                            return Some(unresolved_ref);
+                        }
                     }
                 }
-
                 Some(symbol_ref)
             }
             None => {
@@ -975,17 +978,34 @@ impl<'ctx> AdvancedResolver<'ctx> {
             let cur_scope = self.ctx.scopes.last().unwrap();
             self.gs
                 .get_scopes_mut()
-                .set_owner_to_scope(*cur_scope, owner)
+                .set_owner_to_scope(*cur_scope, owner);
         }
 
         for entry in entries.iter() {
             if let Some(key) = &entry.node.key {
                 self.ctx.maybe_def = true;
-                self.expr(key);
+                if let Some(key_symbol_ref) = self.expr(key) {
+                    self.set_config_scope_owner(key_symbol_ref);
+                }
                 self.ctx.maybe_def = false;
             }
             self.expr(&entry.node.value);
         }
         self.leave_scope()
+    }
+
+    pub(crate) fn set_config_scope_owner(&mut self, key_symbol_ref: SymbolRef) {
+        let symbols = self.gs.get_symbols();
+
+        if let Some(def_symbol_ref) = symbols.get_symbol(key_symbol_ref).unwrap().get_definition() {
+            if let Some(def_ast_id) = symbols.symbols_info.symbol_ref_map.get(&def_symbol_ref) {
+                if let Some(def_ty) = self.ctx.node_ty_map.get(def_ast_id) {
+                    if def_ty.is_schema() {
+                        self.ctx.current_schema_symbol =
+                            self.gs.get_symbols().get_type_symbol(&def_ty, None);
+                    }
+                }
+            }
+        }
     }
 }
