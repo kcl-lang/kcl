@@ -13,14 +13,12 @@ use kclvm_ast::ast::Program;
 use kclvm_error::Position as KCLPos;
 use kclvm_sema::core::global_state::GlobalState;
 use kclvm_sema::core::symbol::SymbolRef;
-use kclvm_sema::resolver::scope::ProgramScope;
 use lsp_types::GotoDefinitionResponse;
 
 // Navigates to the definition of an identifier.
 pub(crate) fn goto_definition_with_gs(
     _program: &Program,
     kcl_pos: &KCLPos,
-    _prog_scope: &ProgramScope,
     gs: &GlobalState,
 ) -> Option<lsp_types::GotoDefinitionResponse> {
     let mut res = IndexSet::new();
@@ -110,15 +108,14 @@ mod tests {
     #[bench_test]
     fn goto_import_pkg_test() {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let (file, program, prog_scope, _, gs) =
-            compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
         let pos = KCLPos {
             filename: file,
             line: 1,
             column: Some(10),
         };
 
-        let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
+        let res = goto_definition_with_gs(&program, &pos, &gs);
 
         let mut expected_files = IndexSet::new();
         let path_str = path.to_str().unwrap();
@@ -148,8 +145,7 @@ mod tests {
     fn goto_import_file_test() {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-        let (file, program, prog_scope, _, gs) =
-            compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         let mut expected_path = path;
         expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
@@ -160,7 +156,7 @@ mod tests {
             line: 2,
             column: Some(10),
         };
-        let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
+        let res = goto_definition_with_gs(&program, &pos, &gs);
         match res.unwrap() {
             lsp_types::GotoDefinitionResponse::Scalar(loc) => {
                 let got_path = loc.uri.path();
@@ -177,8 +173,7 @@ mod tests {
     fn goto_pkg_prefix_def_test() {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-        let (file, program, prog_scope, _, gs) =
-            compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         // test goto pkg prefix def: p = pkg.Person {  <- pkg
         let pos = KCLPos {
@@ -186,7 +181,7 @@ mod tests {
             line: 4,
             column: Some(7),
         };
-        let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
+        let res = goto_definition_with_gs(&program, &pos, &gs);
         let mut expected_files = IndexSet::new();
         let path_str = path.to_str().unwrap();
         let test_files = [
@@ -215,8 +210,7 @@ mod tests {
     fn goto_schema_def_test() {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-        let (file, program, prog_scope, _, gs) =
-            compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         let mut expected_path = path;
         expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
@@ -228,7 +222,7 @@ mod tests {
             column: Some(11),
         };
 
-        let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
+        let res = goto_definition_with_gs(&program, &pos, &gs);
         compare_goto_res(
             res,
             (&expected_path.to_str().unwrap().to_string(), 0, 7, 0, 13),
@@ -240,8 +234,7 @@ mod tests {
     fn goto_var_def_in_config_and_config_if_test() {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-        let (file, program, prog_scope, _, gs) =
-            compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         let mut expected_path = path;
         expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
@@ -251,7 +244,7 @@ mod tests {
             line: 67,
             column: Some(36),
         };
-        let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
+        let res = goto_definition_with_gs(&program, &pos, &gs);
         compare_goto_res(res, (&file, 65, 11, 65, 14));
 
         let pos = KCLPos {
@@ -260,7 +253,7 @@ mod tests {
             column: Some(44),
         };
 
-        let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
+        let res = goto_definition_with_gs(&program, &pos, &gs);
         compare_goto_res(res, (&file, 65, 16, 65, 21));
         let pos = KCLPos {
             filename: file.clone(),
@@ -268,7 +261,7 @@ mod tests {
             column: Some(11),
         };
 
-        let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
+        let res = goto_definition_with_gs(&program, &pos, &gs);
         compare_goto_res(res, (&file, 69, 6, 69, 10));
         let pos = KCLPos {
             filename: file.clone(),
@@ -276,7 +269,7 @@ mod tests {
             column: Some(10),
         };
 
-        let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
+        let res = goto_definition_with_gs(&program, &pos, &gs);
         compare_goto_res(res, (&file, 69, 6, 69, 10));
     }
 
@@ -285,8 +278,7 @@ mod tests {
     fn goto_var_def_in_dict_comp_test() {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-        let (file, program, prog_scope, _, gs) =
-            compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         let mut expected_path = path;
         expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
@@ -297,7 +289,7 @@ mod tests {
             column: Some(68),
         };
 
-        let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
+        let res = goto_definition_with_gs(&program, &pos, &gs);
         compare_goto_res(res, (&file, 76, 143, 76, 145));
 
         let pos = KCLPos {
@@ -306,7 +298,7 @@ mod tests {
             column: Some(61),
         };
 
-        let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
+        let res = goto_definition_with_gs(&program, &pos, &gs);
         compare_goto_res(res, (&file, 76, 143, 76, 145));
     }
 
@@ -315,8 +307,7 @@ mod tests {
     fn goto_schema_attr_def_test() {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-        let (file, program, prog_scope, _m, gs) =
-            compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         let mut expected_path = path;
         expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
@@ -328,7 +319,7 @@ mod tests {
             column: Some(7),
         };
 
-        let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
+        let res = goto_definition_with_gs(&program, &pos, &gs);
         compare_goto_res(
             res,
             (&expected_path.to_str().unwrap().to_string(), 4, 4, 4, 8),
@@ -340,8 +331,7 @@ mod tests {
     fn goto_schema_attr_def_test1() {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-        let (file, program, prog_scope, _, gs) =
-            compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         let mut expected_path = path;
         expected_path.push("src/test_data/goto_def_test/goto_def.k");
@@ -353,7 +343,7 @@ mod tests {
             column: Some(12),
         };
 
-        let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
+        let res = goto_definition_with_gs(&program, &pos, &gs);
         compare_goto_res(
             res,
             (&expected_path.to_str().unwrap().to_string(), 18, 4, 18, 8),
@@ -365,8 +355,7 @@ mod tests {
     fn test_goto_identifier_names() {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-        let (file, program, prog_scope, _, gs) =
-            compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         let mut expected_path = path;
         expected_path.push("src/test_data/goto_def_test/goto_def.k");
@@ -378,7 +367,7 @@ mod tests {
             column: Some(5),
         };
 
-        let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
+        let res = goto_definition_with_gs(&program, &pos, &gs);
         compare_goto_res(
             res,
             (&expected_path.to_str().unwrap().to_string(), 23, 0, 23, 2),
@@ -391,7 +380,7 @@ mod tests {
             column: Some(8),
         };
 
-        let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
+        let res = goto_definition_with_gs(&program, &pos, &gs);
         compare_goto_res(
             res,
             (&expected_path.to_str().unwrap().to_string(), 21, 1, 21, 2),
@@ -404,7 +393,7 @@ mod tests {
             column: Some(12),
         };
 
-        let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
+        let res = goto_definition_with_gs(&program, &pos, &gs);
         compare_goto_res(
             res,
             (&expected_path.to_str().unwrap().to_string(), 18, 4, 18, 8),
@@ -414,8 +403,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn goto_identifier_def_test() {
-        let (file, program, prog_scope, _, gs) =
-            compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         // test goto identifier definition: p1 = p
         let pos = KCLPos {
@@ -424,7 +412,7 @@ mod tests {
             column: Some(6),
         };
 
-        let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
+        let res = goto_definition_with_gs(&program, &pos, &gs);
         compare_goto_res(res, (&file, 3, 0, 3, 1));
     }
 
@@ -433,8 +421,7 @@ mod tests {
     fn goto_assign_type_test() {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-        let (file, program, prog_scope, _, gs) =
-            compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         let mut expected_path = path;
         expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
@@ -446,7 +433,7 @@ mod tests {
             column: Some(17),
         };
 
-        let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
+        let res = goto_definition_with_gs(&program, &pos, &gs);
         compare_goto_res(res, (&file, 33, 7, 33, 15));
     }
 
@@ -456,8 +443,7 @@ mod tests {
         // test goto schema attr type definition: p1: pkg.Person
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-        let (file, program, prog_scope, _, gs) =
-            compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         let mut expected_path = path;
         expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
@@ -468,7 +454,7 @@ mod tests {
             column: Some(15),
         };
 
-        let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
+        let res = goto_definition_with_gs(&program, &pos, &gs);
         compare_goto_res(
             res,
             (&expected_path.to_str().unwrap().to_string(), 0, 7, 0, 13),
@@ -481,8 +467,7 @@ mod tests {
         // test goto schema attr type definition: p2: [pkg.Person]
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-        let (file, program, prog_scope, _, gs) =
-            compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         let mut expected_path = path;
         expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
@@ -492,7 +477,7 @@ mod tests {
             line: 13,
             column: Some(15),
         };
-        let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
+        let res = goto_definition_with_gs(&program, &pos, &gs);
         compare_goto_res(
             res,
             (&expected_path.to_str().unwrap().to_string(), 0, 7, 0, 13),
@@ -505,8 +490,7 @@ mod tests {
         // test goto schema attr type definition: p3: {str: pkg.Person}
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-        let (file, program, prog_scope, _, gs) =
-            compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         let mut expected_path = path;
         expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
@@ -516,7 +500,7 @@ mod tests {
             line: 14,
             column: Some(22),
         };
-        let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
+        let res = goto_definition_with_gs(&program, &pos, &gs);
         compare_goto_res(
             res,
             (&expected_path.to_str().unwrap().to_string(), 0, 7, 0, 13),
@@ -529,8 +513,7 @@ mod tests {
         // test goto schema attr type definition(Person): p4: pkg.Person | pkg.Person1
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-        let (file, program, prog_scope, _, gs) =
-            compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         let mut expected_path = path;
         expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
@@ -541,7 +524,7 @@ mod tests {
             column: Some(17),
         };
 
-        let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
+        let res = goto_definition_with_gs(&program, &pos, &gs);
         compare_goto_res(
             res,
             (&expected_path.to_str().unwrap().to_string(), 0, 7, 0, 13),
@@ -554,8 +537,7 @@ mod tests {
         // test goto schema attr type definition(Person1): p4: pkg.Person | pkg.Person1
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-        let (file, program, prog_scope, _, gs) =
-            compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         let mut expected_path = path;
         expected_path.push("src/test_data/goto_def_test/pkg/schema_def1.k");
@@ -565,7 +547,7 @@ mod tests {
             line: 15,
             column: Some(28),
         };
-        let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
+        let res = goto_definition_with_gs(&program, &pos, &gs);
         compare_goto_res(
             res,
             (&expected_path.to_str().unwrap().to_string(), 0, 7, 0, 14),
@@ -577,8 +559,7 @@ mod tests {
     fn goto_local_var_def_test() {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-        let (file, program, prog_scope, _, gs) =
-            compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         let mut expected_path = path;
         expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
@@ -590,7 +571,7 @@ mod tests {
             column: Some(11),
         };
 
-        let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
+        let res = goto_definition_with_gs(&program, &pos, &gs);
         compare_goto_res(res, (&file, 43, 4, 43, 9));
 
         let pos = KCLPos {
@@ -599,7 +580,7 @@ mod tests {
             column: Some(11),
         };
 
-        let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
+        let res = goto_definition_with_gs(&program, &pos, &gs);
         compare_goto_res(res, (&file, 43, 4, 43, 9));
 
         let pos = KCLPos {
@@ -608,15 +589,14 @@ mod tests {
             column: Some(11),
         };
 
-        let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
+        let res = goto_definition_with_gs(&program, &pos, &gs);
         compare_goto_res(res, (&file, 43, 4, 43, 9));
     }
 
     #[test]
     #[bench_test]
     fn complex_select_goto_def() {
-        let (file, program, prog_scope, _, gs) =
-            compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         let pos = KCLPos {
             filename: file.clone(),
@@ -624,15 +604,14 @@ mod tests {
             column: Some(22),
         };
 
-        let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
+        let res = goto_definition_with_gs(&program, &pos, &gs);
         compare_goto_res(res, (&file, 43, 4, 43, 9));
     }
 
     #[test]
     #[bench_test]
     fn schema_attribute_def_goto_def() {
-        let (file, program, prog_scope, _, gs) =
-            compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         let pos = KCLPos {
             filename: file.clone(),
@@ -640,15 +619,14 @@ mod tests {
             column: Some(5),
         };
 
-        let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
+        let res = goto_definition_with_gs(&program, &pos, &gs);
         compare_goto_res(res, (&file, 18, 4, 18, 8));
     }
 
     #[test]
     #[bench_test]
     fn config_desuger_def_goto_def() {
-        let (file, program, prog_scope, _, gs) =
-            compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         let pos = KCLPos {
             filename: file.clone(),
@@ -656,15 +634,14 @@ mod tests {
             column: Some(9),
         };
 
-        let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
+        let res = goto_definition_with_gs(&program, &pos, &gs);
         compare_goto_res(res, (&file, 18, 4, 18, 8));
     }
 
     #[test]
     #[bench_test]
     fn lambda_param_goto_def() {
-        let (file, program, prog_scope, _, gs) =
-            compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         let pos = KCLPos {
             filename: file.clone(),
@@ -672,7 +649,7 @@ mod tests {
             column: Some(4),
         };
 
-        let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
+        let res = goto_definition_with_gs(&program, &pos, &gs);
         compare_goto_res(res, (&file, 84, 14, 84, 15));
 
         let pos = KCLPos {
@@ -681,7 +658,7 @@ mod tests {
             column: Some(8),
         };
 
-        let res = goto_definition_with_gs(&program, &pos, &prog_scope, &gs);
+        let res = goto_definition_with_gs(&program, &pos, &gs);
         compare_goto_res(res, (&file, 84, 22, 84, 23));
     }
 }
