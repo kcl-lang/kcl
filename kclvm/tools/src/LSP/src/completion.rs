@@ -1128,7 +1128,7 @@ mod tests {
     #[test]
     fn str_dot_completion() {
         let (file, program, prog_scope, _, gs) =
-            compile_test_file("src/test_data/completion_test/dot/lit_str.k");
+            compile_test_file("src/test_data/completion_test/dot/lit_str/lit_str.k");
 
         // test complete str functions when at the end of literal str
         let pos = KCLPos {
