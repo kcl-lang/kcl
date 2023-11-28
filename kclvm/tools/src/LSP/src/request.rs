@@ -71,7 +71,7 @@ impl LanguageServerSnapshot {
                 .get(&self.vfs.read().file_id(path).unwrap())
                 .is_some();
         if !res {
-            let _ = log_message("Not a valid kcl path, request failed".to_string(), &sender);
+            let _ = log_message("Not a valid kcl path, request failed".to_string(), sender);
         }
         res
     }
@@ -309,12 +309,10 @@ pub(crate) fn handle_rename(
                     HashMap::new(),
                     |mut map: HashMap<lsp_types::Url, Vec<TextEdit>>, location| {
                         let uri = location.uri;
-                        map.entry(uri.clone())
-                            .or_insert_with(Vec::new)
-                            .push(TextEdit {
-                                range: location.range,
-                                new_text: new_name.clone(),
-                            });
+                        map.entry(uri.clone()).or_default().push(TextEdit {
+                            range: location.range,
+                            new_text: new_name.clone(),
+                        });
                         map
                     },
                 );
@@ -325,7 +323,7 @@ pub(crate) fn handle_rename(
         Err(msg) => {
             let err_msg = format!("Can not rename symbol: {msg}");
             log(err_msg.clone())?;
-            return Err(anyhow!(err_msg));
+            Err(anyhow!(err_msg))
         }
     }
 }

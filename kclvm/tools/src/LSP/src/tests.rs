@@ -1308,7 +1308,7 @@ fn konfig_completion_test_main() {
         CompletionResponse::List(_) => panic!("test failed"),
     };
 
-    let expected_labels: Vec<String> = vec!["Job", "Server"]
+    let expected_labels: Vec<String> = ["Job", "Server"]
         .iter()
         .map(|attr| format!("{}{}", attr, "{}"))
         .collect();
@@ -1452,11 +1452,9 @@ fn konfig_hover_test_main() {
     let got = hover(&program, &pos, &prog_scope, &gs).unwrap();
     match got.contents {
         HoverContents::Array(arr) => {
-            let expect: Vec<MarkedString> = vec![
-                "base.pkg.kusion_models.kube.frontend\n\nschema Server",
+            let expect: Vec<MarkedString> = ["base.pkg.kusion_models.kube.frontend\n\nschema Server",
                 "Server is abstaction of Deployment and StatefulSet.",
-                "Attributes:\n\nname?: str\n\nworkloadType: str(Deployment) | str(StatefulSet)\n\nrenderType?: str(Server) | str(KubeVelaApplication)\n\nreplicas: int\n\nimage: str\n\nschedulingStrategy: SchedulingStrategy\n\nmainContainer: Main\n\nsidecarContainers?: [Sidecar]\n\ninitContainers?: [Sidecar]\n\nuseBuiltInLabels?: bool\n\nlabels?: {str:str}\n\nannotations?: {str:str}\n\nuseBuiltInSelector?: bool\n\nselector?: {str:str}\n\npodMetadata?: ObjectMeta\n\nvolumes?: [Volume]\n\nneedNamespace?: bool\n\nenableMonitoring?: bool\n\nconfigMaps?: [ConfigMap]\n\nsecrets?: [Secret]\n\nservices?: [Service]\n\ningresses?: [Ingress]\n\nserviceAccount?: ServiceAccount\n\nstorage?: ObjectStorage\n\ndatabase?: DataBase"
-            ]
+                "Attributes:\n\nname?: str\n\nworkloadType: str(Deployment) | str(StatefulSet)\n\nrenderType?: str(Server) | str(KubeVelaApplication)\n\nreplicas: int\n\nimage: str\n\nschedulingStrategy: SchedulingStrategy\n\nmainContainer: Main\n\nsidecarContainers?: [Sidecar]\n\ninitContainers?: [Sidecar]\n\nuseBuiltInLabels?: bool\n\nlabels?: {str:str}\n\nannotations?: {str:str}\n\nuseBuiltInSelector?: bool\n\nselector?: {str:str}\n\npodMetadata?: ObjectMeta\n\nvolumes?: [Volume]\n\nneedNamespace?: bool\n\nenableMonitoring?: bool\n\nconfigMaps?: [ConfigMap]\n\nsecrets?: [Secret]\n\nservices?: [Service]\n\ningresses?: [Ingress]\n\nserviceAccount?: ServiceAccount\n\nstorage?: ObjectStorage\n\ndatabase?: DataBase"]
             .iter()
             .map(|s| MarkedString::String(s.to_string()))
             .collect();
@@ -1474,7 +1472,7 @@ fn konfig_hover_test_main() {
     let got = hover(&program, &pos, &prog_scope, &gs).unwrap();
     match got.contents {
         HoverContents::Array(arr) => {
-            let expect: Vec<MarkedString> = vec![
+            let expect: Vec<MarkedString> = [
                 "schedulingStrategy: SchedulingStrategy",
                 "SchedulingStrategy represents scheduling strategy.",
             ]

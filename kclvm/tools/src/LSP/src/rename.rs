@@ -43,8 +43,7 @@ fn apply_rename_changes(changes: &HashMap<Url, Vec<TextEdit>>) -> Result<HashMap
                 .map_err(|_| anyhow!("Failed to convert URL to file path"))?
                 .display()
                 .to_string(),
-        )
-        .unwrap();
+        )?;
 
         let file_content_lines: Vec<&str> = file_content.lines().collect();
         let mut updated_lines: Vec<String> = file_content_lines

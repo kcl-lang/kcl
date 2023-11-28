@@ -2,7 +2,7 @@ use crate::from_lsp::kcl_pos;
 use crate::goto_def::{find_def_with_gs, goto_definition_with_gs};
 use crate::to_lsp::lsp_location;
 use crate::util::{parse_param_and_compile, Param};
-use anyhow;
+
 use kclvm_ast::ast::Program;
 use kclvm_error::Position as KCLPos;
 use kclvm_parser::KCLModuleCache;
@@ -25,7 +25,7 @@ pub(crate) fn find_refs<F: Fn(String) -> Result<(), anyhow::Error>>(
     gs: &GlobalState,
     module_cache: Option<KCLModuleCache>,
 ) -> Result<Vec<Location>, String> {
-    let def = find_def_with_gs(kcl_pos, &gs, true);
+    let def = find_def_with_gs(kcl_pos, gs, true);
     match def {
         Some(def_ref) => match gs.get_symbols().get_symbol(def_ref) {
             Some(obj) => {
@@ -102,7 +102,7 @@ pub(crate) fn find_refs_from_def<F: Fn(String) -> Result<(), anyhow::Error>>(
                         Err(_) => {
                             let file_path = def_loc.uri.path();
                             let _ = logger(format!("{file_path} compilation failed"));
-                            return false;
+                            false
                         }
                     }
                 })
