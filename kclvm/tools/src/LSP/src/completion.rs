@@ -22,6 +22,7 @@ use crate::goto_def::find_def_with_gs;
 use indexmap::IndexSet;
 use kclvm_ast::ast::{Expr, ImportStmt, Program, Stmt};
 
+use kclvm_ast::pos::GetPos;
 use kclvm_ast::MAIN_PKG;
 use kclvm_config::modfile::KCL_FILE_EXTENSION;
 use kclvm_sema::core::global_state::GlobalState;
@@ -168,24 +169,30 @@ fn completion_dot(
             Stmt::Import(stmt) => return completion_import(&stmt, &pre_pos, prog_scope, program),
             _ => {
                 // Todo: string lit has not been processed using the new semantic model and need to handle here.
-                // It will be completed at the cursor inside the string literal instead of at the end.
                 let (expr, _) = inner_most_expr_in_stmt(&stmt.node, &pre_pos, None);
                 if let Some(node) = expr {
                     if let Expr::StringLit(_) = node.node {
-                        return Some(
-                            into_completion_items(
-                                &STRING_MEMBER_FUNCTIONS
-                                    .iter()
-                                    .map(|(name, ty)| KCLCompletionItem {
-                                        label: func_ty_complete_label(name, &ty.into_function_ty()),
-                                        detail: Some(ty.ty_str()),
-                                        documentation: ty.ty_doc(),
-                                        kind: Some(KCLCompletionItemKind::Function),
-                                    })
-                                    .collect(),
-                            )
-                            .into(),
-                        );
+                        if pre_pos == node.get_end_pos() {
+                            return Some(
+                                into_completion_items(
+                                    &STRING_MEMBER_FUNCTIONS
+                                        .iter()
+                                        .map(|(name, ty)| KCLCompletionItem {
+                                            label: func_ty_complete_label(
+                                                name,
+                                                &ty.into_function_ty(),
+                                            ),
+                                            detail: Some(ty.ty_str()),
+                                            documentation: ty.ty_doc(),
+                                            kind: Some(KCLCompletionItemKind::Function),
+                                        })
+                                        .collect(),
+                                )
+                                .into(),
+                            );
+                        } else {
+                            return Some(into_completion_items(&items).into());
+                        }
                     }
                 }
             }
@@ -1116,5 +1123,69 @@ mod tests {
             }
             CompletionResponse::List(_) => panic!("test failed"),
         }
+    }
+
+    #[test]
+    fn str_dot_completion() {
+        let (file, program, prog_scope, _, gs) =
+            compile_test_file("src/test_data/completion_test/dot/lit_str.k");
+
+        // test complete str functions when at the end of literal str
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 1,
+            column: Some(10),
+        };
+
+        let got = completion(Some('.'), &program, &pos, &prog_scope, &gs).unwrap();
+        let got_labels: Vec<String> = match got {
+            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
+            CompletionResponse::List(_) => panic!("test failed"),
+        };
+
+        let expected_labels: Vec<String> = STRING_MEMBER_FUNCTIONS
+            .iter()
+            .map(|(name, ty)| func_ty_complete_label(name, &ty.into_function_ty()))
+            .collect();
+        assert_eq!(got_labels, expected_labels);
+
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 2,
+            column: Some(6),
+        };
+
+        let got = completion(Some('.'), &program, &pos, &prog_scope, &gs).unwrap();
+        let got_labels: Vec<String> = match got {
+            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
+            CompletionResponse::List(_) => panic!("test failed"),
+        };
+        assert_eq!(got_labels, expected_labels);
+
+        // not complete inside literal str
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 2,
+            column: Some(5),
+        };
+
+        let got = completion(Some('.'), &program, &pos, &prog_scope, &gs).unwrap();
+        match got {
+            CompletionResponse::Array(arr) => assert!(arr.is_empty()),
+            CompletionResponse::List(_) => panic!("test failed"),
+        };
+
+        // not complete inside literal str
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 1,
+            column: Some(8),
+        };
+
+        let got = completion(Some('.'), &program, &pos, &prog_scope, &gs).unwrap();
+        match got {
+            CompletionResponse::Array(arr) => assert!(arr.is_empty()),
+            CompletionResponse::List(_) => panic!("test failed"),
+        };
     }
 }
