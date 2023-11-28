@@ -1,5 +1,6 @@
 {
-	"source_codes": {"./src/testdata/rename/main.k": "a = 1\nb = a"},
+	"package_root": "/mock/path",
+	"source_codes": {"/mock/path/main.k": "a = 1\nb = a"},
 	"symbol_path": "a",
 	"new_name": "a2"
 }

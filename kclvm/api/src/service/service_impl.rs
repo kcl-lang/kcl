@@ -592,19 +592,22 @@ impl KclvmServiceImpl {
     ///
     /// let serv = KclvmServiceImpl::default();
     /// let result = serv.rename_code(&RenameCodeArgs {
-    ///     package_root: "./src/testdata/rename".to_string(),
+    ///     package_root: "/mock/path".to_string(),
     ///     symbol_path: "a".to_string(),
-    ///     source_codes: vec![("main.k".to_string(), "a = 1\nb = a".to_string())].into_iter().collect(),
+    ///     source_codes: vec![("/mock/path/main.k".to_string(), "a = 1\nb = a".to_string())].into_iter().collect(),
     ///     new_name: "a2".to_string(),
     /// }).unwrap();
     /// assert_eq!(result.changed_codes.len(), 1);
+    /// assert_eq!(result.changed_codes.get("/mock/path/main.k").unwrap(), "a2 = 1\nb = a2");
     /// ```
     pub fn rename_code(&self, args: &RenameCodeArgs) -> anyhow::Result<RenameCodeResult> {
-        let symbol_path = args.symbol_path.clone();
-        let source_codes = args.source_codes.clone();
-        let new_name = args.new_name.clone();
         Ok(RenameCodeResult {
-            changed_codes: source_codes,
+            changed_codes: rename::rename_symbol_on_code(
+                &args.package_root,
+                &args.symbol_path,
+                args.source_codes.clone(),
+                args.new_name.clone(),
+            )?,
         })
     }
 

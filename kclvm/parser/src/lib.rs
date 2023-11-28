@@ -344,7 +344,8 @@ impl Loader {
         let mut pkgs = HashMap::new();
         let workdir = compile_entries.get_root_path().to_string();
 
-        debug_assert_eq!(compile_entries.len(), self.paths.len());
+        // debug_assert_eq!(compile_entries.len(), self.paths.len());
+        // todo: need to be removed after support vfs
 
         let mut pkg_files = Vec::new();
         for entry in compile_entries.iter() {

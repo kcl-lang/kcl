@@ -201,7 +201,8 @@ impl LanguageServerState {
         for file in changed_files {
             let vfs = self.vfs.read();
             let start = Instant::now();
-            match get_file_name(vfs, file.file_id) {
+            let filename = get_file_name(vfs, file.file_id);
+            match filename {
                 Ok(filename) => {
                     self.thread_pool.execute({
                         let mut snapshot = self.snapshot();
@@ -243,7 +244,12 @@ impl LanguageServerState {
                                             .unwrap(),
                                         }));
                                     }
-                                    Err(_) => {}
+                                    Err(err) => {
+                                        log_message(
+                                            format!("compile failed: {:?}", err.to_string()),
+                                            &sender,
+                                        );
+                                    }
                                 }
                             }
                             Err(_) => {

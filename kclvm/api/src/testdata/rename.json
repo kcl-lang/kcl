@@ -1,5 +1,5 @@
 {
-	"package_root": "./src/testdata/rename",
+	"package_root": "./src/testdata/rename/",
 	"file_paths": ["./src/testdata/rename/main.k"],
 	"symbol_path": "a",
 	"new_name": "a2"

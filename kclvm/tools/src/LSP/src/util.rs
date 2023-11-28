@@ -22,7 +22,7 @@ use kclvm_span::symbol::reserved;
 use kclvm_utils::pkgpath::rm_external_pkg_name;
 use lsp_types::{Location, Position, Range, Url};
 use parking_lot::{RwLock, RwLockReadGuard};
-use ra_ap_vfs::{FileId, Vfs};
+use ra_ap_vfs::{FileId, Vfs, VfsPath};
 use serde::{de::DeserializeOwned, Serialize};
 
 use std::collections::HashMap;
@@ -65,6 +65,35 @@ pub fn get_file_name(vfs: RwLockReadGuard<Vfs>, file_id: FileId) -> anyhow::Resu
 pub(crate) struct Param {
     pub file: String,
     pub module_cache: Option<KCLModuleCache>,
+}
+
+fn load_files_code_from_vfs_new(
+    files: &[&str],
+    vfs: Arc<RwLock<Vfs>>,
+) -> anyhow::Result<Vec<String>> {
+    let mut res = vec![];
+    let vfs = &mut vfs.read();
+    for file in files {
+        let vfs_path = VfsPath::new_virtual_path(file.to_string());
+        match vfs.file_id(&vfs_path) {
+            Some(id) => {
+                // Load code from vfs if exist
+                res.push(String::from_utf8(vfs.file_contents(id).to_vec()).unwrap());
+            }
+            None => {
+                let k_files = get_dir_files(&file, false)
+                    .map_err(|_| anyhow::anyhow!("can't get dir files: {} ", file))?;
+                for k_file in k_files {
+                    let k_file_path = Path::new(k_file.as_str());
+                    res.push(
+                        fs::read_to_string(k_file_path)
+                            .map_err(|_| anyhow::anyhow!("can't convert file to url: {}", file))?,
+                    );
+                }
+            }
+        }
+    }
+    Ok(res)
 }
 
 pub(crate) fn parse_param_and_compile(
@@ -748,6 +777,23 @@ pub(crate) fn get_real_path_from_external(
     real_path
 }
 
+pub(crate) fn build_word_index_for_source_codes(
+    source_codes: HashMap<String, String>,
+    prune: bool,
+) -> anyhow::Result<HashMap<String, Vec<VirtualLocation>>> {
+    let mut index: HashMap<String, Vec<VirtualLocation>> = HashMap::new();
+    for (filepath, content) in source_codes.iter() {
+        for (key, values) in build_word_index_for_file_content_with_vfs(
+            content.to_string(),
+            filepath.to_string(),
+            prune,
+        ) {
+            index.entry(key).or_default().extend(values);
+        }
+    }
+    Ok(index)
+}
+
 pub(crate) fn build_word_index_for_file_paths(
     paths: &[String],
     prune: bool,
@@ -771,10 +817,49 @@ pub(crate) fn build_word_index(
     path: String,
     prune: bool,
 ) -> anyhow::Result<HashMap<String, Vec<Location>>> {
-    if let Ok(files) = get_kcl_files(path.clone(), true) {
-        return build_word_index_for_file_paths(&files, prune);
+    let files = get_kcl_files(path.clone(), true)?;
+    build_word_index_for_file_paths(&files, prune)
+}
+
+pub struct VirtualLocation {
+    pub filepath: String,
+    pub range: Range,
+}
+
+pub(crate) fn build_word_index_for_file_content_with_vfs(
+    content: String,
+    filepath: String,
+    prune: bool,
+) -> HashMap<String, Vec<VirtualLocation>> {
+    let mut index: HashMap<String, Vec<VirtualLocation>> = HashMap::new();
+    let lines: Vec<&str> = content.lines().collect();
+    let mut in_docstring = false;
+    for (li, line) in lines.into_iter().enumerate() {
+        if prune && !in_docstring && line.trim_start().starts_with("\"\"\"") {
+            in_docstring = true;
+            continue;
+        }
+        if prune && in_docstring {
+            if line.trim_end().ends_with("\"\"\"") {
+                in_docstring = false;
+            }
+            continue;
+        }
+        let words = line_to_words(line.to_string(), prune);
+        for (key, values) in words {
+            index
+                .entry(key)
+                .or_default()
+                .extend(values.iter().map(|w| VirtualLocation {
+                    filepath: filepath.clone(),
+                    range: Range {
+                        start: Position::new(li as u32, w.start_col),
+                        end: Position::new(li as u32, w.end_col),
+                    },
+                }));
+        }
     }
-    Ok(HashMap::new())
+    index
 }
 
 pub(crate) fn build_word_index_for_file_content(

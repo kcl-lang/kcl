@@ -1,50 +1,200 @@
 use crate::{
     from_lsp::kcl_pos,
     goto_def::find_def_with_gs,
-    util::{build_word_index_for_file_paths, parse_param_and_compile, read_file, Param},
+    util::{build_word_index_for_source_codes, VirtualLocation},
 };
 use anyhow::{anyhow, Result};
-use kclvm_ast::ast;
+use chumsky::chain::Chain;
+use kclvm_ast::ast::{self, Program};
 use kclvm_error::diagnostic;
+use kclvm_parser::{load_program, LoadProgramOptions, ParseSession};
 use kclvm_query::selector::parse_symbol_selector_spec;
+use kclvm_sema::{
+    advanced_resolver::AdvancedResolver, core::global_state::GlobalState, namer::Namer,
+    resolver::resolve_program_with_opts,
+};
 use lsp_types::{Location, Position, Range, TextEdit, Url};
-use std::collections::{HashMap, HashSet};
+use parking_lot::RwLock;
+use ra_ap_vfs::{Vfs, VfsPath};
 use std::fs;
 use std::path::PathBuf;
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
-/// Service for renaming all the occurrences of the target symbol in the files. This API will rewrite files if they contain symbols to be renamed.
-/// return the file paths got changed.
-///
-/// pkg_root: the absolute file path to the root package.
-/// symbol_path: path to the symbol. The symbol path should be in the format of: `pkg.sub_pkg:name.sub_name`.
-/// file_paths: list of absolute file paths in which symbols can be renamed.
-/// new_name: the new name of the symbol.
 pub fn rename_symbol_on_file(
     pkg_root: &str,
     symbol_path: &str,
     file_paths: &[String],
     new_name: String,
 ) -> Result<Vec<String>> {
-    let changes = rename_symbol(pkg_root, file_paths, symbol_path, new_name)?;
-    let new_codes = apply_rename_changes(&changes)?;
+    // load file content from file system and save to vfs
+    let vfs: Arc<RwLock<Vfs>> = Arc::new(RwLock::new(Default::default()));
+    let mut source_codes = HashMap::<String, String>::new();
+    for path in file_paths {
+        let content = fs::read_to_string(path.clone())?;
+        vfs.write().set_file_contents(
+            VfsPath::new_virtual_path(path.to_string()),
+            Some(content.clone().into_bytes()),
+        );
+        source_codes.insert(path.to_string(), content.clone());
+    }
+    let changes = rename_symbol(pkg_root, vfs, symbol_path, new_name)?;
+    let new_codes = apply_rename_changes(&changes, source_codes)?;
     let mut changed_paths = vec![];
-    for (path, content) in new_codes {
+    for (path, content) in new_codes.iter() {
         fs::write(path.clone(), content)?;
         changed_paths.push(path.clone());
     }
     Ok(changed_paths)
 }
 
-fn apply_rename_changes(changes: &HashMap<Url, Vec<TextEdit>>) -> Result<HashMap<String, String>> {
-    let mut result = HashMap::new();
-    for (url, edits) in changes {
-        let file_content = read_file(
-            &url.to_file_path()
-                .map_err(|_| anyhow!("Failed to convert URL to file path"))?
-                .display()
-                .to_string(),
-        )?;
+pub fn rename_symbol_on_code(
+    pkg_root: &str,
+    symbol_path: &str,
+    source_codes: HashMap<String, String>,
+    new_name: String,
+) -> Result<HashMap<String, String>> {
+    // prepare a vfs from given file_paths
+    let vfs: Arc<RwLock<Vfs>> = Arc::new(RwLock::new(Default::default()));
+    for (filepath, code) in &source_codes {
+        vfs.write().set_file_contents(
+            VfsPath::new_virtual_path(filepath.clone()),
+            Some(code.as_bytes().to_vec()),
+        );
+    }
+    let changes: HashMap<String, Vec<TextEdit>> =
+        rename_symbol(pkg_root, vfs, symbol_path, new_name)?;
+    return apply_rename_changes(&changes, source_codes);
+}
 
+fn package_path_to_file_path(pkg_path: &str, vfs: Arc<RwLock<Vfs>>) -> Vec<String> {
+    let pkg = PathBuf::from(pkg_path);
+    let vfs_read = vfs.read();
+    let mut result: Vec<String> = vec![];
+
+    // first search as directory(KCL package in the strict sense)
+    result.extend(vfs_read.iter().filter_map(|(_, vfs_path)| {
+        let path = PathBuf::from(vfs_path.to_string());
+        if let Some(parent) = path.parent() {
+            if parent == pkg {
+                return Some(vfs_path.to_string());
+            }
+        }
+        None
+    }));
+
+    if result.is_empty() {
+        // then search as file(KCL module)
+        result.extend(vfs_read.iter().filter_map(|(_, vfs_path)| {
+            let path = PathBuf::from(vfs_path.to_string());
+            if pkg.with_extension("k") == path {
+                return Some(vfs_path.to_string());
+            }
+            None
+        }));
+    }
+
+    result
+}
+
+/// Select a symbol by the symbol path
+/// The symbol path should be in the format of: `pkg.sub_pkg:name.sub_name`
+/// returns the symbol name and definition range
+fn select_symbol(
+    symbol_spec: &ast::SymbolSelectorSpec,
+    vfs: Arc<RwLock<Vfs>>,
+) -> Option<(String, diagnostic::Range)> {
+    let mut pkg = PathBuf::from(&symbol_spec.pkg_root);
+    let fields: Vec<&str> = symbol_spec.field_path.split(".").collect();
+    if !symbol_spec.pkgpath.is_empty() {
+        let pkg_names = symbol_spec.pkgpath.split(".");
+        for n in pkg_names {
+            pkg = pkg.join(n)
+        }
+    }
+    let pkg_path = pkg.as_path().to_str().unwrap();
+
+    let file_paths = package_path_to_file_path(pkg_path, vfs.clone());
+
+    if let Ok((prog, gs)) = parse_files_with_vfs(pkg_path.to_string(), file_paths, vfs.clone()) {
+        if let Some(symbol_ref) = gs
+            .get_symbols()
+            .get_symbol_by_fully_qualified_name(&prog.main)
+        {
+            let mut owner_ref = symbol_ref;
+            let mut target = None;
+            for field in fields {
+                let owner = gs.get_symbols().get_symbol(owner_ref).unwrap();
+                target = owner.get_attribute(field, gs.get_symbols(), None);
+                if let Some(target) = target {
+                    owner_ref = target;
+                }
+            }
+            let target_symbol = gs.get_symbols().get_symbol(target?)?;
+            return Some((target_symbol.get_name(), target_symbol.get_range().clone()));
+        }
+    }
+    None
+}
+
+fn parse_files_with_vfs(
+    work_dir: String,
+    file_paths: Vec<String>,
+    vfs: Arc<RwLock<Vfs>>,
+) -> anyhow::Result<(Program, GlobalState)> {
+    let mut opt = LoadProgramOptions::default();
+    opt.work_dir = work_dir;
+    opt.load_plugins = true;
+    opt.k_code_list = {
+        let mut list = vec![];
+        let vfs = &vfs.read();
+        for file in &file_paths {
+            match vfs.file_id(&VfsPath::new_virtual_path(file.clone())) {
+                Some(id) => {
+                    // Load code from vfs
+                    list.push(String::from_utf8(vfs.file_contents(id).to_vec()).unwrap());
+                }
+                None => {}
+            }
+        }
+        list
+    };
+
+    let files: Vec<&str> = file_paths.iter().map(|s| s.as_str()).collect();
+    let sess = Arc::new(ParseSession::default());
+    let mut program = load_program(sess.clone(), &files, Some(opt), None)
+        .map_err(|err| anyhow::anyhow!("Compile failed: {}", err))?;
+
+    let prog_scope = resolve_program_with_opts(
+        &mut program,
+        kclvm_sema::resolver::Options {
+            merge_program: false,
+            type_alise: false,
+            ..Default::default()
+        },
+        None,
+    );
+
+    let gs = GlobalState::default();
+    let gs = Namer::find_symbols(&program, gs);
+    let node_ty_map = prog_scope.node_ty_map.clone();
+    let global_state = AdvancedResolver::resolve_program(&program, gs, node_ty_map);
+
+    Ok((program, global_state))
+}
+
+fn apply_rename_changes(
+    changes: &HashMap<String, Vec<TextEdit>>,
+    source_codes: HashMap<String, String>,
+) -> Result<HashMap<String, String>> {
+    let mut result = HashMap::new();
+    for (file_path, edits) in changes {
+        let file_content = source_codes
+            .get(file_path)
+            .ok_or(anyhow!("File content is None"))?
+            .to_string();
         let file_content_lines: Vec<&str> = file_content.lines().collect();
         let mut updated_lines: Vec<String> = file_content_lines
             .iter()
@@ -106,13 +256,7 @@ fn apply_rename_changes(changes: &HashMap<Url, Vec<TextEdit>>) -> Result<HashMap
             .collect();
 
         let new_file_content = retained_lines.join("\n");
-        result.insert(
-            url.to_file_path()
-                .map_err(|_| anyhow!("Failed to convert URL to file path"))?
-                .display()
-                .to_string(),
-            new_file_content,
-        );
+        result.insert(file_path.to_string(), new_file_content);
     }
     Ok(result)
 }
@@ -128,78 +272,84 @@ fn apply_text_edit(edit: &TextEdit, line: &str) -> String {
     updated_line
 }
 
+/// match_pkgpath_and_code matches the pkgpath and code from the symbol selector spec
+pub fn match_pkgpath_and_code(
+    selector: &ast::SymbolSelectorSpec,
+) -> (Option<String>, Option<String>) {
+    let mut pkg = PathBuf::from(&selector.pkg_root);
+    let pkg_names = selector.pkgpath.split(".");
+    if !selector.pkgpath.is_empty() {
+        for n in pkg_names {
+            pkg = pkg.join(n)
+        }
+    }
+
+    match pkg.as_path().to_str() {
+        Some(pkgpath) => (Some(pkgpath.to_string()), None),
+        None => (None, None),
+    }
+}
+
 /// the rename_symbol API
 /// find all the occurrences of the target symbol and return the text edit actions to rename them
 /// pkg_root: the absolute file path to the root package
-/// file_paths: list of files in which symbols can be renamed
+/// vfs: contains all the files and contents to be renamed
 /// symbol_path: path to the symbol. The symbol path should be in the format of: `pkg.sub_pkg:name.sub_name`
 /// new_name: the new name of the symbol
 pub fn rename_symbol(
     pkg_root: &str,
-    file_paths: &[String],
+    vfs: Arc<RwLock<Vfs>>,
     symbol_path: &str,
     new_name: String,
-) -> Result<HashMap<Url, Vec<TextEdit>>> {
+) -> Result<HashMap<String, Vec<TextEdit>>> {
     // 1. from symbol path to the symbol
     let symbol_spec = parse_symbol_selector_spec(pkg_root, symbol_path)?;
     // 2. get the symbol name and definition range from symbol path
-
-    match select_symbol(&symbol_spec) {
+    match select_symbol(&symbol_spec, vfs.clone()) {
         Some((name, range)) => {
-            // 3. build word index on file_paths, find refs within file_paths scope
-            let word_index = build_word_index_for_file_paths(file_paths, true)?;
+            // 3. build word index, find refs within given scope
+            // vfs to source code contents
+            let mut source_codes = HashMap::<String, String>::new();
+            let vfs_content = vfs.read();
+            for (file_id, vfspath) in vfs_content.iter() {
+                let content = std::str::from_utf8(vfs_content.file_contents(file_id)).unwrap();
+                source_codes.insert(vfspath.to_string(), content.to_string());
+            }
+            let word_index = build_word_index_for_source_codes(source_codes, true)?;
             if let Some(locations) = word_index.get(&name) {
                 // 4. filter out the matched refs
                 // 4.1 collect matched words(names) and remove Duplicates of the file paths
-                let file_map =
-                    locations
-                        .iter()
-                        .fold(HashMap::<Url, Vec<&Location>>::new(), |mut acc, loc| {
-                            acc.entry(loc.uri.clone()).or_insert(Vec::new()).push(loc);
-                            acc
-                        });
-                let refs = file_map
-                    .iter()
-                    .flat_map(|(_, locs)| locs.iter())
-                    .filter(|&&loc| {
-                        // 4.2 filter out the words and remain those whose definition is the target def
-                        if let Ok(p) = loc.uri.to_file_path() {
-                            match p.canonicalize() {
-                                Ok(path) => {
-                                    let p = path.display().to_string();
-                                    if let Ok((_, _, _, gs)) = parse_param_and_compile(
-                                        Param {
-                                            file: p.to_string(),
-                                            module_cache: None,
-                                        },
-                                        None,
-                                    ) {
-                                        let kcl_pos = kcl_pos(&p, loc.range.start);
-                                        if let Some(symbol_ref) =
-                                            find_def_with_gs(&kcl_pos, &gs, true)
-                                        {
-                                            if let Some(symbol_def) =
-                                                gs.get_symbols().get_symbol(symbol_ref)
-                                            {
-                                                return symbol_def.get_range() == range;
-                                            }
-                                        }
+                let file_map = locations.iter().fold(
+                    HashMap::<String, Vec<&VirtualLocation>>::new(),
+                    |mut acc, loc| {
+                        acc.entry(loc.filepath.clone())
+                            .or_insert(Vec::new())
+                            .push(loc);
+                        acc
+                    },
+                );
+                let mut refs = vec![];
+                for (fp, locs) in file_map.iter() {
+                    if let Ok((_, gs)) = parse_files_with_vfs(
+                        pkg_root.to_string(),
+                        vec![fp.to_string()],
+                        vfs.clone(),
+                    ) {
+                        for loc in locs {
+                            let kcl_pos = kcl_pos(fp, loc.range.start);
+                            if let Some(symbol_ref) = find_def_with_gs(&kcl_pos, &gs, true) {
+                                if let Some(symbol_def) = gs.get_symbols().get_symbol(symbol_ref) {
+                                    if symbol_def.get_range() == range {
+                                        refs.push(loc.clone())
                                     }
-                                    return false;
-                                }
-                                Err(_) => {
-                                    return false;
                                 }
                             }
                         }
-                        false
-                    })
-                    .cloned()
-                    .collect::<Vec<&Location>>();
+                    };
+                }
                 // 5. refs to rename actions
                 let changes = refs.into_iter().fold(HashMap::new(), |mut map, location| {
-                    let uri = &location.uri;
-                    map.entry(uri.clone())
+                    map.entry(location.filepath.clone())
                         .or_insert_with(Vec::new)
                         .push(TextEdit {
                             range: location.range,
@@ -212,7 +362,6 @@ pub fn rename_symbol(
                 return Ok(HashMap::new());
             }
         }
-
         None => Err(anyhow!(
             "get symbol from symbol path failed, {}",
             symbol_path
@@ -220,88 +369,141 @@ pub fn rename_symbol(
     }
 }
 
-/// Select a symbol by the symbol path
-/// The symbol path should be in the format of: `pkg.sub_pkg:name.sub_name`
-/// returns the symbol name and definition range
-pub fn select_symbol(selector: &ast::SymbolSelectorSpec) -> Option<(String, diagnostic::Range)> {
-    let mut pkg = PathBuf::from(&selector.pkg_root);
-    let pkg_names = selector.pkgpath.split(".");
-    for n in pkg_names {
-        pkg = pkg.join(n)
-    }
-
-    let fields: Vec<&str> = selector.field_path.split(".").collect();
-    match pkg.as_path().to_str() {
-        Some(pkgpath) => {
-            // resolve pkgpath and get the symbol data by the fully qualified name
-            if let Ok((prog, _, _, gs)) = parse_param_and_compile(
-                Param {
-                    file: pkgpath.to_string(),
-                    module_cache: None,
-                },
-                None,
-            ) {
-                if let Some(symbol_ref) = gs
-                    .get_symbols()
-                    .get_symbol_by_fully_qualified_name(&prog.main)
-                {
-                    let mut owner_ref = symbol_ref;
-                    let mut target = None;
-                    for field in fields {
-                        let owner = gs.get_symbols().get_symbol(owner_ref).unwrap();
-                        target = owner.get_attribute(field, gs.get_symbols(), None);
-                        if let Some(target) = target {
-                            owner_ref = target;
-                        }
-                    }
-
-                    let target_symbol = gs.get_symbols().get_symbol(target?)?;
-                    return Some((target_symbol.get_name(), target_symbol.get_range().clone()));
-                }
-            }
-            None
-        }
-        None => None,
-    }
-}
 #[cfg(test)]
 mod tests {
     use kclvm_ast::ast;
     use kclvm_error::diagnostic;
-    use lsp_types::{Position, Range, TextEdit, Url};
-    use std::collections::{HashMap, HashSet};
+    use lsp_types::{Location, Position, Range, TextEdit, Url};
+    use maplit::hashmap;
+    use parking_lot::RwLock;
     use std::fs;
     use std::path::PathBuf;
+    use std::{
+        collections::{HashMap, HashSet},
+        sync::Arc,
+    };
 
-    use super::{apply_rename_changes, rename_symbol, rename_symbol_on_file, select_symbol};
+    use crate::rename::rename_symbol_on_code;
+
+    use super::{
+        apply_rename_changes, package_path_to_file_path, rename_symbol, rename_symbol_on_file,
+        select_symbol,
+    };
+
+    use ra_ap_vfs::{Vfs, VfsPath};
+
+    /// prepare_vfs constructs a vfs for test:
+    /// /mock_root
+    /// ├── config.k
+    /// └── base
+    ///     ├── server.k
+    ///     └── person.k
+    fn prepare_vfs() -> (
+        PathBuf,
+        PathBuf,
+        PathBuf,
+        PathBuf,
+        PathBuf,
+        Arc<RwLock<Vfs>>,
+    ) {
+        // mock paths
+        let root = PathBuf::from("/mock_root");
+        let base_path = root.join("base");
+        let server_path = root.join("base").join("server.k");
+        let person_path = root.join("base").join("person.k");
+        let config_path = root.join("config.k");
+        // mock file contents
+        let person_content = r#"schema Person:
+    name: Name
+    age: int
+
+schema Name:
+    first: str
+
+a = {
+    abc: "d"
+}
+
+d = a.abc
+e = a["abc"]
+"#;
+        let server_content = r#"schema Server:
+    name: str
+"#;
+        let config_content = r#""#;
+
+        // set vfs
+        let vfs: Arc<RwLock<Vfs>> = Arc::new(RwLock::new(Default::default()));
+        vfs.write().set_file_contents(
+            VfsPath::new_virtual_path(person_path.as_path().to_str().unwrap().to_string()),
+            Some(person_content.as_bytes().to_owned()),
+        );
+        vfs.write().set_file_contents(
+            VfsPath::new_virtual_path(server_path.as_path().to_str().unwrap().to_string()),
+            Some(server_content.as_bytes().to_owned()),
+        );
+        vfs.write().set_file_contents(
+            VfsPath::new_virtual_path(config_path.as_path().to_str().unwrap().to_string()),
+            Some(config_content.as_bytes().to_owned()),
+        );
+
+        (root, base_path, person_path, server_path, config_path, vfs)
+    }
+
+    #[test]
+    fn test_package_path_to_file_path() {
+        let (root, base_path, person_path, server_path, config_path, vfs) = prepare_vfs();
+
+        let files = package_path_to_file_path(base_path.as_path().to_str().unwrap(), vfs.clone());
+        assert_eq!(
+            files,
+            vec![
+                person_path.as_path().to_str().unwrap().to_string(),
+                server_path.as_path().to_str().unwrap().to_string()
+            ]
+        );
+
+        let files = package_path_to_file_path(
+            root.join("base").join("person").as_path().to_str().unwrap(),
+            vfs.clone(),
+        );
+        assert_eq!(
+            files,
+            vec![person_path.as_path().to_str().unwrap().to_string()]
+        );
+
+        let files =
+            package_path_to_file_path(root.join("config").as_path().to_str().unwrap(), vfs.clone());
+        assert_eq!(
+            files,
+            vec![config_path.as_path().to_str().unwrap().to_string()]
+        );
+    }
 
     #[test]
     fn test_select_symbol() {
-        let mut root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        root.push("src/test_data/rename_test/");
-        let pkg_root = root.to_str().unwrap().to_string();
+        let (root, _, person_path, server_path, config_path, vfs) = prepare_vfs();
+        let pkg_root = root.as_path().to_str().unwrap().to_string();
 
-        let mut main_path = root.clone();
-        main_path = main_path.join("base").join("person.k");
-        let mut server_path = root.clone();
-        server_path = server_path.join("server.k");
-
-        if let Some((name, range)) = select_symbol(&ast::SymbolSelectorSpec {
-            pkg_root: pkg_root.clone(),
-            pkgpath: "base".to_string(),
-            field_path: "Person.name".to_string(),
-        }) {
+        if let Some((name, range)) = select_symbol(
+            &ast::SymbolSelectorSpec {
+                pkg_root: pkg_root.clone(),
+                pkgpath: "base".to_string(),
+                field_path: "Person.name".to_string(),
+            },
+            vfs.clone(),
+        ) {
             assert_eq!(name, "name");
             assert_eq!(
                 range,
                 (
                     diagnostic::Position {
-                        filename: main_path.as_path().to_str().unwrap().to_string(),
+                        filename: person_path.as_path().to_str().unwrap().to_string(),
                         line: 2,
                         column: Some(4),
                     },
                     diagnostic::Position {
-                        filename: main_path.as_path().to_str().unwrap().to_string(),
+                        filename: person_path.as_path().to_str().unwrap().to_string(),
                         line: 2,
                         column: Some(8),
                     },
@@ -311,22 +513,25 @@ mod tests {
             assert!(false, "select symbol failed")
         }
 
-        if let Some((name, range)) = select_symbol(&ast::SymbolSelectorSpec {
-            pkg_root: pkg_root.clone(),
-            pkgpath: "base".to_string(),
-            field_path: "Name.first".to_string(),
-        }) {
+        if let Some((name, range)) = select_symbol(
+            &ast::SymbolSelectorSpec {
+                pkg_root: pkg_root.clone(),
+                pkgpath: "base".to_string(),
+                field_path: "Name.first".to_string(),
+            },
+            vfs.clone(),
+        ) {
             assert_eq!(name, "first");
             assert_eq!(
                 range,
                 (
                     diagnostic::Position {
-                        filename: main_path.as_path().to_str().unwrap().to_string(),
+                        filename: person_path.as_path().to_str().unwrap().to_string(),
                         line: 6,
                         column: Some(4),
                     },
                     diagnostic::Position {
-                        filename: main_path.as_path().to_str().unwrap().to_string(),
+                        filename: person_path.as_path().to_str().unwrap().to_string(),
                         line: 6,
                         column: Some(9),
                     },
@@ -336,22 +541,25 @@ mod tests {
             assert!(false, "select symbol failed")
         }
 
-        if let Some((name, range)) = select_symbol(&ast::SymbolSelectorSpec {
-            pkg_root: pkg_root.clone(),
-            pkgpath: "base".to_string(),
-            field_path: "Person".to_string(),
-        }) {
+        if let Some((name, range)) = select_symbol(
+            &ast::SymbolSelectorSpec {
+                pkg_root: pkg_root.clone(),
+                pkgpath: "base".to_string(),
+                field_path: "Person".to_string(),
+            },
+            vfs.clone(),
+        ) {
             assert_eq!(name, "Person");
             assert_eq!(
                 range,
                 (
                     diagnostic::Position {
-                        filename: main_path.as_path().to_str().unwrap().to_string(),
+                        filename: person_path.as_path().to_str().unwrap().to_string(),
                         line: 1,
                         column: Some(7),
                     },
                     diagnostic::Position {
-                        filename: main_path.as_path().to_str().unwrap().to_string(),
+                        filename: person_path.as_path().to_str().unwrap().to_string(),
                         line: 1,
                         column: Some(13),
                     },
@@ -361,22 +569,25 @@ mod tests {
             assert!(false, "select symbol failed")
         }
 
-        if let Some((name, range)) = select_symbol(&ast::SymbolSelectorSpec {
-            pkg_root: pkg_root.clone(),
-            pkgpath: "base".to_string(),
-            field_path: "a".to_string(),
-        }) {
+        if let Some((name, range)) = select_symbol(
+            &ast::SymbolSelectorSpec {
+                pkg_root: pkg_root.clone(),
+                pkgpath: "base".to_string(),
+                field_path: "a".to_string(),
+            },
+            vfs.clone(),
+        ) {
             assert_eq!(name, "a");
             assert_eq!(
                 range,
                 (
                     diagnostic::Position {
-                        filename: main_path.as_path().to_str().unwrap().to_string(),
+                        filename: person_path.as_path().to_str().unwrap().to_string(),
                         line: 8,
                         column: Some(0),
                     },
                     diagnostic::Position {
-                        filename: main_path.as_path().to_str().unwrap().to_string(),
+                        filename: person_path.as_path().to_str().unwrap().to_string(),
                         line: 8,
                         column: Some(1),
                     },
@@ -386,11 +597,14 @@ mod tests {
             assert!(false, "select symbol failed")
         }
 
-        if let Some((name, range)) = select_symbol(&ast::SymbolSelectorSpec {
-            pkg_root: pkg_root.clone(),
-            pkgpath: "".to_string(),
-            field_path: "Server.name".to_string(),
-        }) {
+        if let Some((name, range)) = select_symbol(
+            &ast::SymbolSelectorSpec {
+                pkg_root: pkg_root.clone(),
+                pkgpath: "base".to_string(),
+                field_path: "Server.name".to_string(),
+            },
+            vfs.clone(),
+        ) {
             assert_eq!(name, "name");
             assert_eq!(
                 range,
@@ -414,14 +628,16 @@ mod tests {
 
     #[test]
     fn test_select_symbol_failed() {
-        let mut root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        root.push("src/test_data/rename_test/");
-
-        let result = select_symbol(&ast::SymbolSelectorSpec {
-            pkg_root: root.to_str().unwrap().to_string(),
-            pkgpath: "base".to_string(),
-            field_path: "name".to_string(),
-        });
+        let (root, _, _, _, _, vfs) = prepare_vfs();
+        let pkg_root = root.as_path().to_str().unwrap().to_string();
+        let result = select_symbol(
+            &ast::SymbolSelectorSpec {
+                pkg_root: pkg_root.clone(),
+                pkgpath: "base".to_string(),
+                field_path: "name".to_string(),
+            },
+            vfs.clone(),
+        );
         assert!(result.is_none(), "should not find the target symbol")
     }
 
@@ -435,47 +651,50 @@ mod tests {
         base_path.push("base/person.k");
         main_path.push("config.k");
 
-        let base_url = Url::from_file_path(base_path.clone()).unwrap();
-        let main_url = Url::from_file_path(main_path.clone()).unwrap();
+        let base_path = base_path.to_str().unwrap();
+        let main_path = main_path.to_str().unwrap();
+
+        let vfs: Arc<RwLock<Vfs>> = Arc::new(RwLock::new(Default::default()));
+        for path in vec![base_path, main_path] {
+            let content = fs::read_to_string(path.clone()).unwrap();
+            vfs.write().set_file_contents(
+                VfsPath::new_virtual_path(path.to_string()),
+                Some(content.into_bytes()),
+            );
+        }
 
         if let Ok(changes) = rename_symbol(
             root.to_str().unwrap(),
-            &vec![
-                base_path.to_str().unwrap().to_string(),
-                main_path.to_str().unwrap().to_string(),
-            ],
+            vfs.clone(),
             "base:Person",
             "NewPerson".to_string(),
         ) {
             assert_eq!(changes.len(), 2);
-            assert!(changes.contains_key(&base_url));
-            assert!(changes.contains_key(&main_url));
-            assert!(changes.get(&base_url).unwrap().len() == 1);
-            assert!(changes.get(&base_url).unwrap()[0].range.start == Position::new(0, 7));
-            assert!(changes.get(&main_url).unwrap().len() == 1);
-            assert!(changes.get(&main_url).unwrap()[0].range.start == Position::new(2, 9));
-            assert!(changes.get(&main_url).unwrap()[0].new_text == "NewPerson".to_string());
+            assert!(changes.contains_key(base_path));
+            assert!(changes.contains_key(main_path));
+            assert!(changes.get(base_path).unwrap().len() == 1);
+            assert!(changes.get(base_path).unwrap()[0].range.start == Position::new(0, 7));
+            assert!(changes.get(main_path).unwrap().len() == 1);
+            assert!(changes.get(main_path).unwrap()[0].range.start == Position::new(2, 9));
+            assert!(changes.get(main_path).unwrap()[0].new_text == "NewPerson".to_string());
         } else {
             assert!(false, "rename failed")
         }
 
         if let Ok(changes) = rename_symbol(
             root.to_str().unwrap(),
-            &vec![
-                base_path.to_str().unwrap().to_string(),
-                main_path.to_str().unwrap().to_string(),
-            ],
+            vfs.clone(),
             "base:Person.name",
             "new_name".to_string(),
         ) {
             assert_eq!(changes.len(), 2);
-            assert!(changes.contains_key(&base_url));
-            assert!(changes.contains_key(&main_url));
-            assert!(changes.get(&base_url).unwrap().len() == 1);
-            assert!(changes.get(&base_url).unwrap()[0].range.start == Position::new(1, 4));
-            assert!(changes.get(&main_url).unwrap().len() == 1);
-            assert!(changes.get(&main_url).unwrap()[0].range.start == Position::new(4, 4));
-            assert!(changes.get(&main_url).unwrap()[0].new_text == "new_name".to_string());
+            assert!(changes.contains_key(base_path));
+            assert!(changes.contains_key(main_path));
+            assert!(changes.get(base_path).unwrap().len() == 1);
+            assert!(changes.get(base_path).unwrap()[0].range.start == Position::new(1, 4));
+            assert!(changes.get(main_path).unwrap().len() == 1);
+            assert!(changes.get(main_path).unwrap()[0].range.start == Position::new(4, 4));
+            assert!(changes.get(main_path).unwrap()[0].new_text == "new_name".to_string());
         } else {
             assert!(false, "rename failed")
         }
@@ -483,79 +702,47 @@ mod tests {
 
     #[test]
     fn test_apply_rename_changes() {
-        let mut root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        root.push("src/test_data/rename_test/main.k");
-        let path = root.to_str().unwrap().to_string();
+        let path = "/mock_root/main.k".to_string();
+        let mut source_codes = HashMap::new();
+        source_codes.insert(
+            path.clone(),
+            r#"import .pkg.vars
+
+Bob = vars.Person {
+    name: "Bob"
+    age: 30
+}"#
+            .to_string(),
+        );
 
         struct TestCase {
-            changes: HashMap<Url, Vec<TextEdit>>,
+            changes: HashMap<String, Vec<TextEdit>>,
             expected: String,
         }
 
-        let test_cases = vec![
-            TestCase {
-                changes: HashMap::from([(
-                    Url::from_file_path(path.clone()).unwrap(),
-                    vec![TextEdit {
-                        range: Range {
-                            start: Position {
-                                line: 2,
-                                character: 11,
-                            },
-                            end: Position {
-                                line: 2,
-                                character: 17,
-                            },
+        let test_cases = vec![TestCase {
+            changes: HashMap::from([(
+                path.clone(),
+                vec![TextEdit {
+                    range: Range {
+                        start: Position {
+                            line: 2,
+                            character: 11,
                         },
-                        new_text: "Person2".to_string(),
-                    }],
-                )]),
-                expected:
-                    "import .pkg.vars\n\nBob = vars.Person2 {\n    name: \"Bob\"\n    age: 30\n}"
-                        .to_string(),
-            },
-            TestCase {
-                changes: HashMap::from([(
-                    Url::from_file_path(path.clone()).unwrap(),
-                    vec![TextEdit {
-                        range: Range {
-                            start: Position {
-                                line: 0,
-                                character: 0,
-                            },
-                            end: Position {
-                                line: 2,
-                                character: 6,
-                            },
+                        end: Position {
+                            line: 2,
+                            character: 17,
                         },
-                        new_text: "".to_string(),
-                    }],
-                )]),
-                expected: "vars.Person {\n    name: \"Bob\"\n    age: 30\n}".to_string(),
-            },
-            TestCase {
-                changes: HashMap::from([(
-                    Url::from_file_path(path.clone()).unwrap(),
-                    vec![TextEdit {
-                        range: Range {
-                            start: Position {
-                                line: 0,
-                                character: 0,
-                            },
-                            end: Position {
-                                line: 2,
-                                character: 6,
-                            },
-                        },
-                        new_text: "person = ".to_string(),
-                    }],
-                )]),
-                expected: "person = vars.Person {\n    name: \"Bob\"\n    age: 30\n}".to_string(),
-            },
-        ];
+                    },
+                    new_text: "Person2".to_string(),
+                }],
+            )]),
+            expected: "import .pkg.vars\n\nBob = vars.Person2 {\n    name: \"Bob\"\n    age: 30\n}"
+                .to_string(),
+        }];
 
         for test_case in test_cases {
-            let result = apply_rename_changes(&test_case.changes);
+            let result = apply_rename_changes(&test_case.changes, source_codes.clone());
             assert_eq!(result.unwrap().get(&path).unwrap(), &test_case.expected);
         }
     }
@@ -618,5 +805,86 @@ e = a["abc"]"#
             fs::write(path.clone(), content).unwrap();
             fs::remove_file(backup_path.clone()).unwrap();
         }
+    }
+
+    #[test]
+    fn test_rename_symbol_on_code() {
+        let mut root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+
+        root.push("src/test_data/rename_test/");
+
+        let mut base_path = root.clone();
+        let mut main_path = root.clone();
+
+        base_path.push("base/person.k");
+        main_path.push("config.k");
+
+        let base_path_string = base_path.to_str().unwrap().to_string();
+        let main_path_string = main_path.to_str().unwrap().to_string();
+
+        let base_source_code = r#"schema Person:
+    name: Name
+    age: int
+
+schema Name:
+    first: str
+
+a = {
+    abc: "d"
+}
+
+d = a.abc
+e = a["abc"]"#;
+
+        let main_source_code = r#"import .base
+
+a = base.Person {
+    age: 1,
+    name: {
+        first: "aa"
+    }
+}"#;
+
+        let result: HashMap<String, String> = rename_symbol_on_code(
+            root.to_str().unwrap(),
+            "base:Person",
+            hashmap! {
+                base_path_string.clone() => base_source_code.clone().to_string(),
+                main_path_string.clone() => main_source_code.clone().to_string(),
+            },
+            "NewPerson".to_string(),
+        )
+        .unwrap();
+
+        let base_new_content = result.get(base_path_string.clone().as_str()).unwrap();
+        assert_eq!(
+            base_new_content,
+            r#"schema NewPerson:
+    name: Name
+    age: int
+
+schema Name:
+    first: str
+
+a = {
+    abc: "d"
+}
+
+d = a.abc
+e = a["abc"]"#
+        );
+
+        let main_new_content = result.get(main_path_string.clone().as_str()).unwrap();
+        assert_eq!(
+            main_new_content,
+            r#"import .base
+
+a = base.NewPerson {
+    age: 1,
+    name: {
+        first: "aa"
+    }
+}"#
+        );
     }
 }
