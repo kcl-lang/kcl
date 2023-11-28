@@ -199,46 +199,55 @@ impl LanguageServerState {
             let start = Instant::now();
             match get_file_name(vfs, file.file_id) {
                 Ok(filename) => {
-                    let mut snapshot = self.snapshot();
-
                     self.thread_pool.execute({
                         let mut snapshot = self.snapshot();
                         let sender = self.task_sender.clone();
                         let module_cache = self.module_cache.clone();
-                        let uri = url(&snapshot, file.file_id).unwrap();
-                        move || match parse_param_and_compile(
-                            Param {
-                                file: filename.clone(),
-                                module_cache,
-                            },
-                            Some(snapshot.vfs),
-                        ) {
-                            Ok((prog, _, diags, gs)) => {
-                                let mut db = snapshot.db.write();
-                                db.insert(
-                                    file.file_id,
-                                    AnalysisDatabase {
-                                        prog,
-                                        diags: diags.clone(),
-                                        gs,
+                        move || match url(&snapshot, file.file_id) {
+                            Ok(uri) => {
+                                match parse_param_and_compile(
+                                    Param {
+                                        file: filename.clone(),
+                                        module_cache,
                                     },
-                                );
+                                    Some(snapshot.vfs),
+                                ) {
+                                    Ok((prog, _, diags, gs)) => {
+                                        let mut db = snapshot.db.write();
+                                        db.insert(
+                                            file.file_id,
+                                            AnalysisDatabase {
+                                                prog,
+                                                diags: diags.clone(),
+                                                gs,
+                                            },
+                                        );
 
-                                let diagnostics = diags
-                                    .iter()
-                                    .flat_map(|diag| kcl_diag_to_lsp_diags(diag, filename.as_str()))
-                                    .collect::<Vec<Diagnostic>>();
-                                sender.send(Task::Notify(lsp_server::Notification {
-                                    method: PublishDiagnostics::METHOD.to_owned(),
-                                    params: to_json(PublishDiagnosticsParams {
-                                        uri,
-                                        diagnostics,
-                                        version: None,
-                                    })
-                                    .unwrap(),
-                                }));
+                                        let diagnostics = diags
+                                            .iter()
+                                            .flat_map(|diag| {
+                                                kcl_diag_to_lsp_diags(diag, filename.as_str())
+                                            })
+                                            .collect::<Vec<Diagnostic>>();
+                                        sender.send(Task::Notify(lsp_server::Notification {
+                                            method: PublishDiagnostics::METHOD.to_owned(),
+                                            params: to_json(PublishDiagnosticsParams {
+                                                uri,
+                                                diagnostics,
+                                                version: None,
+                                            })
+                                            .unwrap(),
+                                        }));
+                                    }
+                                    Err(_) => {}
+                                }
                             }
-                            Err(_) => {}
+                            Err(_) => {
+                                log_message(
+                                    format!("Interal bug: not a valid file:{:?}", filename),
+                                    &sender,
+                                );
+                            }
                         }
                     });
                 }

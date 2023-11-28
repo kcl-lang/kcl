@@ -112,28 +112,31 @@ pub(crate) fn completion(
                             Some(def) => {
                                 let sema_info = def.get_sema_info();
                                 let name = def.get_name();
-                                let ty = sema_info.ty.clone().unwrap();
-                                match symbol_ref.get_kind() {
-                                    kclvm_sema::core::symbol::SymbolKind::Schema => {
-                                        let schema_ty = ty.into_schema_type();
-                                        completions.insert(schema_ty_completion_item(&schema_ty));
-                                    }
-                                    kclvm_sema::core::symbol::SymbolKind::Package => {
-                                        completions.insert(KCLCompletionItem {
-                                            label: name,
-                                            detail: Some(ty.ty_str()),
-                                            documentation: sema_info.doc.clone(),
-                                            kind: Some(KCLCompletionItemKind::Module),
-                                        });
-                                    }
-                                    _ => {
-                                        completions.insert(KCLCompletionItem {
-                                            label: name,
-                                            detail: Some(ty.ty_str()),
-                                            documentation: sema_info.doc.clone(),
-                                            kind: None,
-                                        });
-                                    }
+                                match &sema_info.ty {
+                                    Some(ty) => match symbol_ref.get_kind() {
+                                        kclvm_sema::core::symbol::SymbolKind::Schema => {
+                                            let schema_ty = ty.into_schema_type();
+                                            completions
+                                                .insert(schema_ty_completion_item(&schema_ty));
+                                        }
+                                        kclvm_sema::core::symbol::SymbolKind::Package => {
+                                            completions.insert(KCLCompletionItem {
+                                                label: name,
+                                                detail: Some(ty.ty_str()),
+                                                documentation: sema_info.doc.clone(),
+                                                kind: Some(KCLCompletionItemKind::Module),
+                                            });
+                                        }
+                                        _ => {
+                                            completions.insert(KCLCompletionItem {
+                                                label: name,
+                                                detail: Some(ty.ty_str()),
+                                                documentation: sema_info.doc.clone(),
+                                                kind: None,
+                                            });
+                                        }
+                                    },
+                                    None => {}
                                 }
                             }
                             None => {}
@@ -584,27 +587,27 @@ mod tests {
         let (file, program, _, _, gs) =
             compile_test_file("src/test_data/completion_test/dot/completion.k");
 
-        // // test completion for var
-        // let pos = KCLPos {
-        //     filename: file.to_owned(),
-        //     line: 26,
-        //     column: Some(1),
-        // };
+        // test completion for var
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 26,
+            column: Some(1),
+        };
 
-        // let got = completion(None, &program, &pos, &gs).unwrap();
-        // let mut got_labels: Vec<String> = match got {
-        //     CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
-        //     CompletionResponse::List(_) => panic!("test failed"),
-        // };
+        let got = completion(None, &program, &pos, &gs).unwrap();
+        let mut got_labels: Vec<String> = match got {
+            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
+            CompletionResponse::List(_) => panic!("test failed"),
+        };
 
         let mut expected_labels: Vec<&str> = vec![
             "", // generate from error recovery of "pkg."
             "subpkg", "math", "Person{}", "P{}", "p", "p1", "p2", "p3", "p4", "aaaa",
         ];
-        // got_labels.sort();
-        // expected_labels.sort();
+        got_labels.sort();
+        expected_labels.sort();
 
-        // assert_eq!(got_labels, expected_labels);
+        assert_eq!(got_labels, expected_labels);
 
         // test completion for schema attr
         let pos = KCLPos {

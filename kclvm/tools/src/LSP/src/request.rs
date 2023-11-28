@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Ok};
+use anyhow::anyhow;
 use crossbeam_channel::Sender;
 
 use kclvm_config::modfile::KCL_FILE_SUFFIX;
@@ -212,15 +212,16 @@ pub(crate) fn handle_completion(
         // Some trigger characters need to re-compile
         Some(ch) => match ch {
             '=' | ':' => {
-                let db = parse_param_and_compile(
+                match parse_param_and_compile(
                     Param {
                         file: file.clone(),
                         module_cache: snapshot.module_cache.clone(),
                     },
                     Some(snapshot.vfs.clone()),
-                )
-                .unwrap();
-                (db.0, db.3)
+                ) {
+                    Ok((prog, _, _, gs)) => (prog, gs),
+                    Err(_) => return Ok(None),
+                }
             }
             _ => {
                 let db = snapshot.get_db(&path.clone().into())?;
@@ -276,20 +277,22 @@ pub(crate) fn handle_document_symbol(
         return Ok(None);
     }
 
-    let db = parse_param_and_compile(
+    match parse_param_and_compile(
         Param {
             file: file.clone(),
             module_cache: snapshot.module_cache.clone(),
         },
         Some(snapshot.vfs.clone()),
-    )
-    .unwrap();
-
-    let res = document_symbol(&file, &db.3);
-    if res.is_none() {
-        log_message(format!("File {file} Document symbol not found"), &sender)?;
+    ) {
+        Ok((_, _, _, gs)) => {
+            let res = document_symbol(&file, &gs);
+            if res.is_none() {
+                log_message(format!("File {file} Document symbol not found"), &sender)?;
+            }
+            Ok(res)
+        }
+        Err(_) => return Ok(None),
     }
-    Ok(res)
 }
 
 /// Called when a `textDocument/rename` request was received.
