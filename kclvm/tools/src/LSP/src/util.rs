@@ -1,6 +1,7 @@
 use indexmap::IndexSet;
 use kclvm_ast::ast::{
-    ConfigEntry, Expr, Identifier, Node, NodeRef, PosTuple, Program, SchemaStmt, Stmt, Type, SchemaExpr,
+    ConfigEntry, Expr, Identifier, Node, NodeRef, PosTuple, Program, SchemaExpr, SchemaStmt, Stmt,
+    Type,
 };
 use kclvm_ast::pos::ContainsPos;
 
@@ -603,17 +604,16 @@ pub(crate) fn is_in_schema_expr(
         Some(node) => {
             let parent_expr = inner_most_expr_in_stmt(&node.node, pos, None).1;
             match parent_expr {
-                Some(expr) => match expr.node{
+                Some(expr) => match expr.node {
                     Expr::Schema(schema) => Some((node, schema)),
-                    _ => None
-                }
-                None => None
+                    _ => None,
+                },
+                None => None,
             }
-        },
+        }
         None => None,
     }
 }
-
 
 pub(crate) fn is_in_docstring(
     program: &Program,

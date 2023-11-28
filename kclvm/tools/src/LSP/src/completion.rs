@@ -158,12 +158,11 @@ fn completion_dot(
 ) -> Option<lsp_types::CompletionResponse> {
     let mut items: IndexSet<KCLCompletionItem> = IndexSet::new();
     // get pre position of trigger character '.'
-    let pre_pos =
-        KCLPos {
-            filename: pos.filename.clone(),
-            line: pos.line,
-            column: pos.column.map(|c| c - 1),
-        };
+    let pre_pos = KCLPos {
+        filename: pos.filename.clone(),
+        line: pos.line,
+        column: pos.column.map(|c| c - 1),
+    };
 
     if let Some(stmt) = program.pos_to_stmt(&pre_pos) {
         match stmt.node {
