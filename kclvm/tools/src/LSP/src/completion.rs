@@ -1086,7 +1086,7 @@ mod tests {
             line: 5,
             column: Some(4),
         };
-        let got = completion(Some('\n'), &program, &pos, &prog_scope, &gs).unwrap();
+        let got = completion(Some('\n'), &program, &pos, &gs).unwrap();
         match got {
             CompletionResponse::Array(arr) => {
                 assert!(arr.is_empty())
@@ -1191,7 +1191,7 @@ mod tests {
 
     #[test]
     fn schema_ty_attr_complete() {
-        let (file, program, prog_scope, _, gs) =
+        let (file, program, _, _, gs) =
             compile_test_file("src/test_data/completion_test/dot/schema_ty_attr/schema_ty_attr.k");
 
         let pos = KCLPos {
@@ -1200,7 +1200,7 @@ mod tests {
             column: Some(2),
         };
 
-        let got = completion(Some('.'), &program, &pos, &prog_scope, &gs).unwrap();
+        let got = completion(Some('.'), &program, &pos, &gs).unwrap();
         match got {
             CompletionResponse::Array(arr) => {
                 assert_eq!(
