@@ -1314,7 +1314,7 @@ fn konfig_completion_test_main() {
 
     let expected_labels: Vec<String> = ["Job", "Server"]
         .iter()
-        .map(|attr| format!("{}{}", attr, "{}"))
+        .map(|attr| attr.to_string())
         .collect();
     assert_eq!(got_labels, expected_labels);
 
