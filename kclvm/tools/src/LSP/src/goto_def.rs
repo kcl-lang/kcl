@@ -98,7 +98,10 @@ fn positions_to_goto_def_resp(
 #[cfg(test)]
 mod tests {
     use super::goto_definition_with_gs;
-    use crate::tests::{compare_goto_res, compile_test_file};
+    use crate::{
+        from_lsp::file_path_from_url,
+        tests::{compare_goto_res, compile_test_file},
+    };
     use indexmap::IndexSet;
     use kclvm_error::Position as KCLPos;
     use proc_macro_crate::bench_test;
@@ -130,7 +133,7 @@ mod tests {
             lsp_types::GotoDefinitionResponse::Array(arr) => {
                 assert_eq!(expected_files.len(), arr.len());
                 for loc in arr {
-                    let got_path = loc.uri.path().to_string();
+                    let got_path = file_path_from_url(&loc.uri).unwrap();
                     assert!(expected_files.contains(&got_path));
                 }
             }
@@ -159,7 +162,7 @@ mod tests {
         let res = goto_definition_with_gs(&program, &pos, &gs);
         match res.unwrap() {
             lsp_types::GotoDefinitionResponse::Scalar(loc) => {
-                let got_path = loc.uri.path();
+                let got_path = file_path_from_url(&loc.uri).unwrap();
                 assert_eq!(got_path, expected_path.to_str().unwrap())
             }
             _ => {
@@ -195,7 +198,7 @@ mod tests {
             lsp_types::GotoDefinitionResponse::Array(arr) => {
                 assert_eq!(expected_files.len(), arr.len());
                 for loc in arr {
-                    let got_path = loc.uri.path().to_string();
+                    let got_path = file_path_from_url(&loc.uri).unwrap();
                     assert!(expected_files.contains(&got_path));
                 }
             }

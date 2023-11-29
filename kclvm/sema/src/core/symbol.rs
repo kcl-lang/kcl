@@ -25,7 +25,7 @@ pub trait Symbol {
         data: &Self::SymbolData,
         module_info: Option<&ModuleInfo>,
     ) -> Option<SymbolRef>;
-    fn has_attribue(
+    fn has_attribute(
         &self,
         name: &str,
         data: &Self::SymbolData,
@@ -667,7 +667,7 @@ impl Symbol for SchemaSymbol {
         result
     }
 
-    fn has_attribue(
+    fn has_attribute(
         &self,
         name: &str,
         data: &Self::SymbolData,
@@ -821,7 +821,7 @@ impl Symbol for ValueSymbol {
         result
     }
 
-    fn has_attribue(
+    fn has_attribute(
         &self,
         name: &str,
         data: &Self::SymbolData,
@@ -953,7 +953,7 @@ impl Symbol for AttributeSymbol {
         result
     }
 
-    fn has_attribue(
+    fn has_attribute(
         &self,
         name: &str,
         data: &Self::SymbolData,
@@ -1067,7 +1067,7 @@ impl Symbol for PackageSymbol {
         result
     }
 
-    fn has_attribue(
+    fn has_attribute(
         &self,
         name: &str,
         _data: &Self::SymbolData,
@@ -1192,7 +1192,7 @@ impl Symbol for TypeAliasSymbol {
         result
     }
 
-    fn has_attribue(
+    fn has_attribute(
         &self,
         name: &str,
         data: &Self::SymbolData,
@@ -1307,7 +1307,7 @@ impl Symbol for RuleSymbol {
         vec![]
     }
 
-    fn has_attribue(
+    fn has_attribute(
         &self,
         _name: &str,
         _data: &Self::SymbolData,
@@ -1440,7 +1440,7 @@ impl Symbol for UnresolvedSymbol {
         vec![]
     }
 
-    fn has_attribue(
+    fn has_attribute(
         &self,
         name: &str,
         data: &Self::SymbolData,
