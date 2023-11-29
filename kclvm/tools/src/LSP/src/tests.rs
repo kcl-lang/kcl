@@ -72,14 +72,20 @@ use crate::to_lsp::kcl_diag_to_lsp_diags;
 use crate::util::to_json;
 use crate::util::{apply_document_changes, parse_param_and_compile, Param};
 
+macro_rules! wait_async_compile {
+    () => {
+        thread::sleep(Duration::from_secs(2));
+    };
+}
+
 pub(crate) fn compare_goto_res(
     res: Option<GotoTypeDefinitionResponse>,
     pos: (&String, u32, u32, u32, u32),
 ) {
     match res.unwrap() {
         lsp_types::GotoDefinitionResponse::Scalar(loc) => {
-            let got_path = loc.uri.path();
-            assert_eq!(got_path, pos.0);
+            let got_path = file_path_from_url(&loc.uri).unwrap();
+            assert_eq!(got_path, pos.0.to_string());
 
             let (got_start, got_end) = (loc.range.start, loc.range.end);
 
@@ -843,7 +849,7 @@ fn goto_def_test() {
         },
     );
 
-    thread::sleep(Duration::from_secs(1));
+    wait_async_compile!();
     let id = server.next_request_id.get();
     server.next_request_id.set(id.wrapping_add(1));
 
@@ -900,7 +906,7 @@ fn complete_test() {
             },
         },
     );
-    thread::sleep(Duration::from_secs(1));
+    wait_async_compile!();
 
     let id = server.next_request_id.get();
     server.next_request_id.set(id.wrapping_add(1));
@@ -969,7 +975,7 @@ fn hover_test() {
             },
         },
     );
-    thread::sleep(Duration::from_secs(1));
+    wait_async_compile!();
 
     let id = server.next_request_id.get();
     server.next_request_id.set(id.wrapping_add(1));
@@ -1027,7 +1033,7 @@ fn hover_assign_in_lambda_test() {
             },
         },
     );
-    thread::sleep(Duration::from_secs(1));
+    wait_async_compile!();
 
     let id = server.next_request_id.get();
     server.next_request_id.set(id.wrapping_add(1));
@@ -1570,7 +1576,7 @@ fn find_refs_test() {
     let server = Project {}.server(initialize_params);
 
     // Wait for async build word_index_map
-    thread::sleep(Duration::from_secs(1));
+    wait_async_compile!();
 
     let url = Url::from_file_path(path).unwrap();
 
@@ -1586,7 +1592,7 @@ fn find_refs_test() {
         },
     );
 
-    thread::sleep(Duration::from_secs(1));
+    wait_async_compile!();
 
     let id = server.next_request_id.get();
     server.next_request_id.set(id.wrapping_add(1));
@@ -1665,7 +1671,7 @@ fn find_refs_with_file_change_test() {
     let server = Project {}.server(initialize_params);
 
     // Wait for async build word_index_map
-    thread::sleep(Duration::from_secs(1));
+    wait_async_compile!();
 
     let url = Url::from_file_path(path).unwrap();
 
@@ -1708,7 +1714,7 @@ p2 = Person {
             }],
         },
     );
-    thread::sleep(Duration::from_secs(1));
+    wait_async_compile!();
     let id = server.next_request_id.get();
     server.next_request_id.set(id.wrapping_add(1));
     // Mock trigger find references
@@ -1773,7 +1779,7 @@ fn rename_test() {
     let server = Project {}.server(initialize_params);
 
     // Wait for async build word_index_map
-    thread::sleep(Duration::from_secs(1));
+    wait_async_compile!();
 
     let url = Url::from_file_path(path).unwrap();
     let main_url = Url::from_file_path(main_path).unwrap();
@@ -1789,7 +1795,7 @@ fn rename_test() {
             },
         },
     );
-    thread::sleep(Duration::from_secs(1));
+    wait_async_compile!();
 
     let id = server.next_request_id.get();
     server.next_request_id.set(id.wrapping_add(1));

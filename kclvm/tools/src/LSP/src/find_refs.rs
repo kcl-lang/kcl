@@ -1,8 +1,9 @@
-use crate::from_lsp::kcl_pos;
+use crate::from_lsp::{file_path_from_url, kcl_pos};
 use crate::goto_def::{find_def_with_gs, goto_definition_with_gs};
 use crate::to_lsp::lsp_location;
 use crate::util::{parse_param_and_compile, Param};
 
+use anyhow::Result;
 use kclvm_ast::ast::Program;
 use kclvm_error::Position as KCLPos;
 use kclvm_parser::KCLModuleCache;
@@ -76,34 +77,45 @@ pub(crate) fn find_refs_from_def<F: Fn(String) -> Result<(), anyhow::Error>>(
                 .filter(|ref_loc| {
                     // from location to real def
                     // return if the real def location matches the def_loc
-                    let file_path = ref_loc.uri.path().to_string();
-                    match parse_param_and_compile(
-                        Param {
-                            file: file_path.clone(),
-                            module_cache: module_cache.clone(),
-                        },
-                        vfs.clone(),
-                    ) {
-                        Ok((prog, _, _, gs)) => {
-                            let ref_pos = kcl_pos(&file_path, ref_loc.range.start);
-                            if *ref_loc == def_loc && !include_declaration {
-                                return false;
-                            }
-                            // find def from the ref_pos
-                            if let Some(real_def) = goto_definition_with_gs(&prog, &ref_pos, &gs) {
-                                match real_def {
-                                    lsp_types::GotoDefinitionResponse::Scalar(real_def_loc) => {
-                                        real_def_loc == def_loc
+                    match file_path_from_url(&ref_loc.uri) {
+                        Ok(file_path) => {
+                            match parse_param_and_compile(
+                                Param {
+                                    file: file_path.clone(),
+                                    module_cache: module_cache.clone(),
+                                },
+                                vfs.clone(),
+                            ) {
+                                Ok((prog, _, _, gs)) => {
+                                    let ref_pos = kcl_pos(&file_path, ref_loc.range.start);
+                                    if *ref_loc == def_loc && !include_declaration {
+                                        return false;
                                     }
-                                    _ => false,
+                                    // find def from the ref_pos
+                                    if let Some(real_def) =
+                                        goto_definition_with_gs(&prog, &ref_pos, &gs)
+                                    {
+                                        match real_def {
+                                            lsp_types::GotoDefinitionResponse::Scalar(
+                                                real_def_loc,
+                                            ) => real_def_loc == def_loc,
+                                            _ => false,
+                                        }
+                                    } else {
+                                        false
+                                    }
                                 }
-                            } else {
-                                false
+                                Err(err) => {
+                                    let _ = logger(format!(
+                                        "{file_path} compilation failed: {}",
+                                        err.to_string()
+                                    ));
+                                    false
+                                }
                             }
                         }
-                        Err(_) => {
-                            let file_path = def_loc.uri.path();
-                            let _ = logger(format!("{file_path} compilation failed"));
+                        Err(err) => {
+                            let _ = logger(format!("compilation failed: {}", err.to_string()));
                             false
                         }
                     }

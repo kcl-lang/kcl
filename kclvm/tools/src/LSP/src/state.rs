@@ -1,8 +1,10 @@
 use crate::analysis::Analysis;
 use crate::config::Config;
 use crate::db::AnalysisDatabase;
+use crate::from_lsp::file_path_from_url;
 use crate::to_lsp::{kcl_diag_to_lsp_diags, url};
 use crate::util::{build_word_index, get_file_name, parse_param_and_compile, to_json, Param};
+use anyhow::Result;
 use crossbeam_channel::{select, unbounded, Receiver, Sender};
 use indexmap::IndexSet;
 use kclvm_parser::KCLModuleCache;
@@ -119,7 +121,7 @@ impl LanguageServerState {
             _config: config,
             vfs: Arc::new(RwLock::new(Default::default())),
             thread_pool: threadpool::ThreadPool::default(),
-            task_sender,
+            task_sender: task_sender.clone(),
             task_receiver,
             shutdown_requested: false,
             analysis: Analysis::default(),
@@ -130,9 +132,11 @@ impl LanguageServerState {
         };
 
         let word_index_map = state.word_index_map.clone();
-        state
-            .thread_pool
-            .execute(move || build_word_index_map(word_index_map, initialize_params, true));
+        state.thread_pool.execute(move || {
+            if let Err(err) = build_word_index_map(word_index_map, initialize_params, true) {
+                log_message(err.to_string(), &task_sender);
+            }
+        });
 
         state
     }
@@ -335,18 +339,19 @@ fn build_word_index_map(
     word_index_map: Arc<RwLock<HashMap<Url, HashMap<String, Vec<Location>>>>>,
     initialize_params: InitializeParams,
     prune: bool,
-) {
+) -> Result<()> {
     if let Some(workspace_folders) = initialize_params.workspace_folders {
         for folder in workspace_folders {
-            let path = folder.uri.path();
+            let path = file_path_from_url(&folder.uri)?;
             if let Ok(word_index) = build_word_index(path.to_string(), prune) {
                 word_index_map.write().insert(folder.uri, word_index);
             }
         }
     } else if let Some(root_uri) = initialize_params.root_uri {
-        let path = root_uri.path();
+        let path = file_path_from_url(&root_uri)?;
         if let Ok(word_index) = build_word_index(path.to_string(), prune) {
             word_index_map.write().insert(root_uri, word_index);
         }
     }
+    Ok(())
 }
