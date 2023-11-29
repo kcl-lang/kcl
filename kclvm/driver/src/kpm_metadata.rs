@@ -58,7 +58,11 @@ impl Metadata {
 /// [`fetch_metadata`] returns the KCL module metadata.
 #[inline]
 pub fn fetch_metadata(manifest_path: PathBuf) -> Result<Metadata> {
-    fetch_mod_metadata(manifest_path.clone()).or(fetch_kpm_metadata(manifest_path))
+    use std::result::Result::Ok;
+    match fetch_mod_metadata(manifest_path.clone()) {
+        Ok(result) => Ok(result),
+        Err(_) => fetch_kpm_metadata(manifest_path),
+    }
 }
 
 /// [`fetch_kpm_metadata`] will call `kpm metadata` to obtain the metadata.
