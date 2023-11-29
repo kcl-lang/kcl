@@ -397,12 +397,12 @@ fn completion_import_builtin_pkg(program: &Program, pos: &KCLPos) -> IndexSet<KC
 
 /// Complete schema name
 ///
-/// ```no_run
+/// ```no_check
 /// #[cfg(not(test))]
 /// p = P<cursor>
 /// ```
 /// complete to
-/// ```no_run
+/// ```no_check
 /// #[cfg(not(test))]
 /// p = Person(param1, param2){}<cursor>
 /// ```
