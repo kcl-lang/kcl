@@ -171,7 +171,7 @@ impl Session {
     pub fn emit_stashed_diagnostics_and_abort(&self) -> Result<&Self> {
         self.diag_handler
             .abort_if_errors()
-            .with_context(|| "Internale Bug: Fail to display error diagnostic")?;
+            .with_context(|| "Internal Bug: Fail to display error diagnostic")?;
         Ok(self)
     }
 
