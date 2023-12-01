@@ -41,6 +41,15 @@ impl<'ctx> Resolver<'ctx> {
         };
         self.ctx.schema = Some(Rc::new(RefCell::new(scope_ty.clone())));
         let (start, end) = schema_stmt.get_span_pos();
+        if let Some(args) = &schema_stmt.args {
+            for (i, arg) in args.node.args.iter().enumerate() {
+                let ty = args.node.get_arg_type_node(i);
+                let ty = self.parse_ty_with_scope(ty, arg.get_span_pos());
+                if let Some(name) = arg.node.names.last() {
+                    self.node_ty_map.insert(name.id.clone(), ty.clone());
+                }
+            }
+        }
         self.do_parameters_check(&schema_stmt.args);
         self.enter_scope(
             start.clone(),
