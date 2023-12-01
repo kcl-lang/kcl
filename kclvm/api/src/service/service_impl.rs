@@ -252,7 +252,10 @@ impl KclvmServiceImpl {
             CompilationOptions {
                 k_files: exec_args.clone().k_filename_list,
                 loader_opts: Some(exec_args.get_load_program_options()),
-                resolve_opts: Options::default(),
+                resolve_opts: Options {
+                    resolve_val: true,
+                    ..Default::default()
+                },
                 get_schema_opts: GetSchemaOption::default(),
             },
         )? {
