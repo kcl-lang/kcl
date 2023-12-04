@@ -1,7 +1,0 @@
-#!/bin/sh
-
-kclvm_path=$(cd `dirname $0`; pwd)/kclvm
-install_dir=$(cd `dirname $0`/..; pwd)
-export KCLVM_CLI_BIN_PATH=$install_dir/bin
-export PATHONPATH=''
-$kclvm_path -m kclvm.tools.docs "$@"

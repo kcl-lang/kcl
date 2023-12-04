@@ -46,6 +46,10 @@ jobs:
         working-directory: ./kclvm
         run: cargo fmt --check
         shell: bash
+      - name: Unit test
+        working-directory: ./kclvm
+        run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin:/usr/local/opt/llvm@12/bin && make install-rustc-wasm && make && make codecov-lcov
+        shell: bash
       - name: Grammar test
         working-directory: ./kclvm
         run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin:/usr/local/opt/llvm@12/bin && make install-rustc-wasm && make && make test-grammar
@@ -53,10 +57,6 @@ jobs:
       - name: Runtime test
         working-directory: ./kclvm
         run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin:/usr/local/opt/llvm@12/bin && make install-rustc-wasm && make && make test-runtime
-        shell: bash
-      - name: Unit test
-        working-directory: ./kclvm
-        run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin:/usr/local/opt/llvm@12/bin && make install-rustc-wasm && make && make codecov-lcov
         shell: bash
 
       - uses: actions/upload-artifact@v3
