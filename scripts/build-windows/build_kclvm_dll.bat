@@ -8,10 +8,9 @@ cd ..\..\kclvm
 cargo build --release
 cd %~dp0
 
-go run .\copy-file.go -src=..\..\kclvm\target\release\kclvm_cli_cdylib.dll     -dst=.\_output\kclvm-windows\bin\kclvm_cli_cdylib.dll
-go run .\copy-file.go -src=..\..\kclvm\target\release\kclvm_cli_cdylib.dll.lib -dst=.\_output\kclvm-windows\bin\kclvm_cli_cdylib.lib
-go run .\copy-file.go -src=..\..\kclvm\target\release\kclvm_cli_cdylib.dll.lib -dst=..\..\kclvm\target\release\kclvm_cli_cdylib.lib
+copy ..\..\kclvm\target\release\kclvm_cli_cdylib.dll .\_output\kclvm-windows\bin\kclvm_cli_cdylib.dll
+copy ..\..\kclvm\target\release\kclvm_cli_cdylib.dll.lib .\_output\kclvm-windows\bin\kclvm_cli_cdylib.lib
+copy .\copy-file.go -src=..\..\kclvm\target\release\kclvm_cli_cdylib.dll.lib ..\..\kclvm\target\release\kclvm_cli_cdylib.lib
 
 :: install hello.k
-go run .\copy-file.go --src=..\..\samples\hello.k --dst=.\_output\kclvm-windows\hello.k
-
+copy ..\..\samples\hello.k .\_output\kclvm-windows\hello.k

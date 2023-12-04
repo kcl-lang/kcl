@@ -2,6 +2,6 @@
 
 default:
 	python3 -m black .
-	kclvm -m pytest
+	python3 -m pytest
 
 clean:

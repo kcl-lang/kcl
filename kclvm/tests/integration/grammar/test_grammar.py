@@ -110,7 +110,7 @@ test_dirs = find_test_dirs(str(test_path), "")
 def test_grammar(test_dir):
     print("Testing {}".format(test_dir))
     test_settings = read_settings_file(os.path.join(test_dir, SETTINGS_FILE))
-    kcl_command = ["kcl", "--target", "native", TEST_FILE]
+    kcl_command = ["kclvm_cli", "run", TEST_FILE]
     if test_settings and test_settings["kcl_options"]:
         kcl_command.extend(test_settings["kcl_options"].split())
     process = subprocess.Popen(

@@ -12,7 +12,7 @@ cd %~dp0
 
 @REM rust runtime test
 cd .\\kclvm\\tests\\test_units
-kclvm -m pytest -vv
+python3 -m pytest -vv
 cd %~dp0
 
 @REM konfig test

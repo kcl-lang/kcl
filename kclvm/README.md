@@ -43,9 +43,8 @@ You can choose any IDE you like for development, but we recommend a combination 
 
 ## Notes
 
-1. If you encounter problems compiling KCLVM and using LLVM 12 on Apple M1, you can refer to the [documentation](./docs/m1-mac-setup.md)
-2. If you wanna start over, you `MUST` clean up all cached building files, such as `LLVM build files`, `kclvm/target`, etc.
-3. If your updating-cargo-index is extremely slow, setup `~/.cargo/config` file.
+1. If you wanna start over, you `MUST` clean up all cached building files, such as `LLVM build files`, `kclvm/target`, etc.
+2. If your updating-cargo-index is extremely slow, setup `~/.cargo/config` file.
 
 ```toml
 [source.crates-io]
