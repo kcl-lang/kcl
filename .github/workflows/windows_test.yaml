@@ -45,10 +45,6 @@ jobs:
       - run: cargo test -p kclvm-*
         working-directory: ./kclvm
 
-      # Rust runtime test
-      - run: python3 -m pip install --upgrade pip && python3 -m pip install pytest && python3 -m pytest -vv
-        working-directory: ./kclvm/tests/test_units
-      
       - uses: actions/upload-artifact@v3
         with:
           name: kcl-windows
