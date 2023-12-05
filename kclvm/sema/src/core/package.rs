@@ -78,6 +78,10 @@ impl ImportInfo {
             fully_qualified_name,
         }
     }
+
+    pub fn get_fully_qualified_name(&self) -> String {
+        self.fully_qualified_name.clone()
+    }
 }
 #[allow(unused)]
 #[derive(Debug, Clone)]
