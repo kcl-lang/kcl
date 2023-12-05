@@ -189,29 +189,10 @@ impl<'ctx> Resolver<'ctx> {
                                             kind.clone(),
                                         );
                                         let (start, end) = stmt.get_span_pos();
-
-                                        let name = match &import_stmt.asname {
-                                            Some(name) => name.clone(),
-                                            None => import_stmt.name.clone(),
-                                        };
-
                                         scope.elems.insert(
-                                            name.clone(),
+                                            import_stmt.name.clone(),
                                             Rc::new(RefCell::new(ScopeObject {
-                                                name,
-                                                start: start.clone(),
-                                                end: end.clone(),
-                                                ty: Arc::new(ty.clone()),
-                                                kind: ScopeObjectKind::Module(Module {
-                                                    import_stmts: vec![(stmt.clone(), true)],
-                                                }),
-                                                doc: None,
-                                            })),
-                                        );
-                                        scope.elems.insert(
-                                            import_stmt.path.to_string(),
-                                            Rc::new(RefCell::new(ScopeObject {
-                                                name: import_stmt.path.to_string(),
+                                                name: import_stmt.name.clone(),
                                                 start,
                                                 end,
                                                 ty: Arc::new(ty),

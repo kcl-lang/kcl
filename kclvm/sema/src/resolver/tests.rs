@@ -154,7 +154,7 @@ fn test_resolve_program_redefine() {
     .unwrap();
 
     let scope = resolve_program(&mut program);
-    assert_eq!(scope.handler.diagnostics.len(), 2);
+    assert_eq!(scope.handler.diagnostics.len(), 1);
     let diag = &scope.handler.diagnostics[0];
     assert_eq!(
         diag.code,
@@ -396,17 +396,17 @@ fn test_lint() {
             range: (
                 Position {
                     filename: filename.clone(),
-                    line: 1,
+                    line: 2,
                     column: Some(0),
                 },
                 Position {
                     filename: filename.clone(),
-                    line: 1,
+                    line: 2,
                     column: Some(20),
                 },
             ),
             style: Style::Line,
-            message: format!("Module 'import_test.a' imported but unused"),
+            message: format!("Module 'a' imported but unused"),
             note: Some("Consider removing this statement".to_string()),
             suggested_replacement: Some("".to_string()),
         }],
@@ -800,4 +800,20 @@ fn test_set_ty_in_lambda() {
             .ty_str(),
         "{str:str}"
     );
+}
+
+#[test]
+fn test_pkg_asname() {
+    let sess = Arc::new(ParseSession::default());
+    let mut program = load_program(
+        sess.clone(),
+        &["./src/resolver/test_data/pkg_asname.k"],
+        None,
+        None,
+    )
+    .unwrap();
+    let scope = resolve_program(&mut program);
+    let diags = scope.handler.diagnostics;
+    assert_eq!(diags.len(), 3);
+    assert_eq!(diags[0].messages[0].message, "name 'pkg' is not defined");
 }

@@ -1046,7 +1046,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
     fn walk_identifier(&mut self, identifier: &'ctx ast::Identifier) -> Self::Result {
         let tys = self.resolve_var(
             &identifier.get_names(),
-            &identifier.pkgpath,
+            "",
             (self.ctx.start_pos.clone(), self.ctx.end_pos.clone()),
         );
         for (index, name) in identifier.names.iter().enumerate() {
@@ -1185,11 +1185,7 @@ impl<'ctx> Resolver<'ctx> {
         &mut self,
         identifier: &'ctx ast::NodeRef<ast::Identifier>,
     ) -> ResolvedResult {
-        let tys = self.resolve_var(
-            &identifier.node.get_names(),
-            &identifier.node.pkgpath,
-            identifier.get_span_pos(),
-        );
+        let tys = self.resolve_var(&identifier.node.get_names(), "", identifier.get_span_pos());
         for (index, name) in identifier.node.names.iter().enumerate() {
             self.node_ty_map.insert(name.id.clone(), tys[index].clone());
         }

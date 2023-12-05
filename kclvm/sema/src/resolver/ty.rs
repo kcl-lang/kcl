@@ -348,19 +348,10 @@ impl<'ctx> Resolver<'ctx> {
                         .add_compile_error("missing type annotation", range.clone());
                     return self.any_ty();
                 }
-                let mut pkgpath = "".to_string();
-                let name = names[0];
-                if names.len() > 1 && !self.ctx.local_vars.contains(&name.to_string()) {
-                    if let Some(mapping) = self.ctx.import_names.get(&self.ctx.filename) {
-                        pkgpath = mapping
-                            .get(name)
-                            .map_or("".to_string(), |pkgpath| pkgpath.to_string());
-                    }
-                }
                 self.ctx.l_value = false;
                 let tys = self.resolve_var(
                     &names.iter().map(|n| n.to_string()).collect::<Vec<String>>(),
-                    &pkgpath,
+                    "",
                     range.clone(),
                 );
 
