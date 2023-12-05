@@ -801,3 +801,20 @@ fn test_set_ty_in_lambda() {
         "{str:str}"
     );
 }
+
+#[test]
+fn test_pkg_asname() {
+    let sess = Arc::new(ParseSession::default());
+    let mut program = load_program(
+        sess.clone(),
+        &["./src/resolver/test_data/pkg_asname/pkg_asname.k"],
+        None,
+        None,
+    )
+    .unwrap();
+    let scope = resolve_program(&mut program);
+    let diags = scope.handler.diagnostics;
+    assert_eq!(diags.len(), 6);
+    assert_eq!(diags[0].messages[0].message, "name 'pkg' is not defined");
+    assert_eq!(diags[2].messages[0].message, "name 'subpkg' is not defined");
+}
