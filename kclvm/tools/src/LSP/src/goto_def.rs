@@ -22,7 +22,7 @@ pub(crate) fn goto_definition_with_gs(
     gs: &GlobalState,
 ) -> Option<lsp_types::GotoDefinitionResponse> {
     let mut res = IndexSet::new();
-    let def = find_def_with_gs(kcl_pos, gs, true);
+    let def = find_def_with_gs(kcl_pos, gs, true, true);
     match def {
         Some(def_ref) => match gs.get_symbols().get_symbol(def_ref) {
             Some(def) => match def_ref.get_kind() {
@@ -52,6 +52,7 @@ pub(crate) fn find_def_with_gs(
     kcl_pos: &KCLPos,
     gs: &GlobalState,
     exact: bool,
+    within_same_line: bool,
 ) -> Option<SymbolRef> {
     if exact {
         match gs.look_up_exact_symbol(kcl_pos) {
@@ -64,7 +65,17 @@ pub(crate) fn find_def_with_gs(
     } else {
         match gs.look_up_closest_symbol(kcl_pos) {
             Some(symbol_ref) => match gs.get_symbols().get_symbol(symbol_ref) {
-                Some(symbol) => symbol.get_definition(),
+                Some(symbol) => {
+                    if within_same_line {
+                        if symbol.get_range().0.line == kcl_pos.line {
+                            symbol.get_definition()
+                        } else {
+                            None
+                        }
+                    } else {
+                        symbol.get_definition()
+                    }
+                }
                 None => None,
             },
             None => None,

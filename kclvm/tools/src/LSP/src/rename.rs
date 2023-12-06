@@ -176,7 +176,7 @@ pub fn rename_symbol(
                                     ) {
                                         let kcl_pos = kcl_pos(&p, loc.range.start);
                                         if let Some(symbol_ref) =
-                                            find_def_with_gs(&kcl_pos, &gs, true)
+                                            find_def_with_gs(&kcl_pos, &gs, true, true)
                                         {
                                             if let Some(symbol_def) =
                                                 gs.get_symbols().get_symbol(symbol_ref)

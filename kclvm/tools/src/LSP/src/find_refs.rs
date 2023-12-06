@@ -24,7 +24,7 @@ pub(crate) fn find_refs<F: Fn(String) -> Result<(), anyhow::Error>>(
     gs: &GlobalState,
     module_cache: Option<KCLModuleCache>,
 ) -> Result<Vec<Location>, String> {
-    let def = find_def_with_gs(kcl_pos, gs, true);
+    let def = find_def_with_gs(kcl_pos, gs, true, true);
     match def {
         Some(def_ref) => match gs.get_symbols().get_symbol(def_ref) {
             Some(obj) => {

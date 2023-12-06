@@ -16,7 +16,7 @@ pub(crate) fn hover(
     gs: &GlobalState,
 ) -> Option<lsp_types::Hover> {
     let mut docs: Vec<String> = vec![];
-    let def = find_def_with_gs(kcl_pos, gs, true);
+    let def = find_def_with_gs(kcl_pos, gs, true, true);
     match def {
         Some(def_ref) => match gs.get_symbols().get_symbol(def_ref) {
             Some(obj) => match def_ref.get_kind() {

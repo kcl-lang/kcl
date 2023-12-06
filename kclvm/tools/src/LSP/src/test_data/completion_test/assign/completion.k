@@ -25,3 +25,7 @@ p: Person2{
 
     g # complete `subpkg.Person1{}`
 }
+
+schema Person3:
+    name: str
+    check:

@@ -199,10 +199,10 @@ fn completion_dot(
     }
 
     // look_up_exact_symbol
-    let mut def = find_def_with_gs(&pre_pos, gs, true);
+    let mut def = find_def_with_gs(&pre_pos, gs, true, true);
     if def.is_none() {
         // look_up_closest_symbol
-        def = find_def_with_gs(pos, gs, false);
+        def = find_def_with_gs(pos, gs, false, true);
     }
     match def {
         Some(def_ref) => {
@@ -270,7 +270,7 @@ fn completion_dot(
 /// Now, just completion for schema attr value
 fn completion_assign(pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::CompletionResponse> {
     let mut items = IndexSet::new();
-    if let Some(symbol_ref) = find_def_with_gs(pos, gs, false) {
+    if let Some(symbol_ref) = find_def_with_gs(pos, gs, false, true) {
         if let Some(symbol) = gs.get_symbols().get_symbol(symbol_ref) {
             if let Some(def) = symbol.get_definition() {
                 match def.get_kind() {
@@ -1016,6 +1016,14 @@ mod tests {
         };
         let expected_labels: Vec<&str> = vec![" subpkg.Person1{}"];
         assert_eq!(got_labels, expected_labels);
+
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 31,
+            column: Some(10),
+        };
+        let got = completion(Some(':'), &program, &pos, &gs);
+        assert!(got.is_none());
     }
 
     #[test]
@@ -1182,6 +1190,18 @@ mod tests {
             column: Some(8),
         };
 
+        let got = completion(Some('.'), &program, &pos, &gs).unwrap();
+        match got {
+            CompletionResponse::Array(arr) => assert!(arr.is_empty()),
+            CompletionResponse::List(_) => panic!("test failed"),
+        };
+
+        // not complete inside literal str
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 4,
+            column: Some(4),
+        };
         let got = completion(Some('.'), &program, &pos, &gs).unwrap();
         match got {
             CompletionResponse::Array(arr) => assert!(arr.is_empty()),
