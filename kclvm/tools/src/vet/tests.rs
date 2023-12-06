@@ -82,7 +82,7 @@ mod test_expr_builder {
     use std::{
         fs::{self, File},
         panic,
-        path::Path,
+        path::{Path, PathBuf},
     };
 
     #[test]
@@ -115,9 +115,11 @@ mod test_expr_builder {
 
             let f = File::open(expect_file_path.clone()).unwrap();
             let expect_ast_json: serde_json::Value = serde_json::from_reader(f).unwrap();
+            let mut expect_path = PathBuf::from(construct_full_path("json").unwrap());
+            expect_path.push("");
             let expect_ast_json_str = serde_json::to_string(&expect_ast_json)
                 .unwrap()
-                .replace("<workspace>", &construct_full_path("json").unwrap());
+                .replace("<workspace>", &expect_path.display().to_string());
             let expect_ast_json: Value = serde_json::from_str(&expect_ast_json_str).unwrap();
             assert_eq!(expect_ast_json, got_ast_json)
         }
@@ -171,9 +173,11 @@ mod test_expr_builder {
 
             let f = File::open(expect_file_path.clone()).unwrap();
             let expect_ast_json: serde_json::Value = serde_json::from_reader(f).unwrap();
+            let mut expect_path = PathBuf::from(construct_full_path("json").unwrap());
+            expect_path.push("");
             let expect_ast_json_str = serde_json::to_string(&expect_ast_json)
                 .unwrap()
-                .replace("<workspace>", &construct_full_path("json").unwrap());
+                .replace("<workspace>", &expect_path.display().to_string());
             let expect_ast_json: Value = serde_json::from_str(&expect_ast_json_str).unwrap();
             assert_eq!(expect_ast_json, got_ast_json)
         }
@@ -202,9 +206,11 @@ mod test_expr_builder {
             .unwrap();
             let f = File::open(expect_file_path.clone()).unwrap();
             let expect_ast_json: serde_json::Value = serde_json::from_reader(f).unwrap();
+            let mut expect_path = PathBuf::from(construct_full_path("json").unwrap());
+            expect_path.push("");
             let expect_ast_json_str = serde_json::to_string(&expect_ast_json)
                 .unwrap()
-                .replace("<workspace>", &construct_full_path("json").unwrap());
+                .replace("<workspace>", &expect_path.display().to_string());
             let expect_ast_json: Value = serde_json::from_str(&expect_ast_json_str).unwrap();
             assert_eq!(expect_ast_json, got_ast_json)
         }

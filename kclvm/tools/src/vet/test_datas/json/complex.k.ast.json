@@ -2,7 +2,7 @@
   "column": 0,
   "end_column": 1,
   "end_line": 13,
-  "filename": "<workspace>/complex.k.json",
+  "filename": "<workspace>complex.k.json",
   "line": 1,
   "node": {
     "Schema": {
@@ -11,7 +11,7 @@
         "column": 0,
         "end_column": 1,
         "end_line": 13,
-        "filename": "<workspace>/complex.k.json",
+        "filename": "<workspace>complex.k.json",
         "line": 1,
         "node": {
           "Config": {
@@ -20,7 +20,7 @@
                 "column": 0,
                 "end_column": 1,
                 "end_line": 13,
-                "filename": "<workspace>/complex.k.json",
+                "filename": "<workspace>complex.k.json",
                 "line": 1,
                 "node": {
                   "insert_index": -1,
@@ -28,7 +28,7 @@
                     "column": 4,
                     "end_column": 9,
                     "end_line": 3,
-                    "filename": "<workspace>/complex.k.json",
+                    "filename": "<workspace>complex.k.json",
                     "line": 3,
                     "node": {
                       "StringLit": {
@@ -43,7 +43,7 @@
                     "column": 11,
                     "end_column": 13,
                     "end_line": 3,
-                    "filename": "<workspace>/complex.k.json",
+                    "filename": "<workspace>complex.k.json",
                     "line": 3,
                     "node": {
                       "NumberLit": {
@@ -60,7 +60,7 @@
                 "column": 0,
                 "end_column": 1,
                 "end_line": 13,
-                "filename": "<workspace>/complex.k.json",
+                "filename": "<workspace>complex.k.json",
                 "line": 1,
                 "node": {
                   "insert_index": -1,
@@ -68,7 +68,7 @@
                     "column": 4,
                     "end_column": 10,
                     "end_line": 5,
-                    "filename": "<workspace>/complex.k.json",
+                    "filename": "<workspace>complex.k.json",
                     "line": 5,
                     "node": {
                       "StringLit": {
@@ -83,7 +83,7 @@
                     "column": 12,
                     "end_column": 5,
                     "end_line": 8,
-                    "filename": "<workspace>/complex.k.json",
+                    "filename": "<workspace>complex.k.json",
                     "line": 5,
                     "node": {
                       "Config": {
@@ -92,7 +92,7 @@
                             "column": 12,
                             "end_column": 5,
                             "end_line": 8,
-                            "filename": "<workspace>/complex.k.json",
+                            "filename": "<workspace>complex.k.json",
                             "line": 5,
                             "node": {
                               "insert_index": -1,
@@ -100,7 +100,7 @@
                                 "column": 8,
                                 "end_column": 12,
                                 "end_line": 6,
-                                "filename": "<workspace>/complex.k.json",
+                                "filename": "<workspace>complex.k.json",
                                 "line": 6,
                                 "node": {
                                   "StringLit": {
@@ -115,7 +115,7 @@
                                 "column": 14,
                                 "end_column": 15,
                                 "end_line": 6,
-                                "filename": "<workspace>/complex.k.json",
+                                "filename": "<workspace>complex.k.json",
                                 "line": 6,
                                 "node": {
                                   "NumberLit": {
@@ -132,7 +132,7 @@
                             "column": 12,
                             "end_column": 5,
                             "end_line": 8,
-                            "filename": "<workspace>/complex.k.json",
+                            "filename": "<workspace>complex.k.json",
                             "line": 5,
                             "node": {
                               "insert_index": -1,
@@ -140,7 +140,7 @@
                                 "column": 8,
                                 "end_column": 15,
                                 "end_line": 7,
-                                "filename": "<workspace>/complex.k.json",
+                                "filename": "<workspace>complex.k.json",
                                 "line": 7,
                                 "node": {
                                   "StringLit": {
@@ -155,7 +155,7 @@
                                 "column": 17,
                                 "end_column": 25,
                                 "end_line": 7,
-                                "filename": "<workspace>/complex.k.json",
+                                "filename": "<workspace>complex.k.json",
                                 "line": 7,
                                 "node": {
                                   "StringLit": {
@@ -177,7 +177,7 @@
                 "column": 0,
                 "end_column": 1,
                 "end_line": 13,
-                "filename": "<workspace>/complex.k.json",
+                "filename": "<workspace>complex.k.json",
                 "line": 1,
                 "node": {
                   "insert_index": -1,
@@ -185,7 +185,7 @@
                     "column": 4,
                     "end_column": 8,
                     "end_line": 12,
-                    "filename": "<workspace>/complex.k.json",
+                    "filename": "<workspace>complex.k.json",
                     "line": 12,
                     "node": {
                       "StringLit": {
@@ -200,7 +200,7 @@
                     "column": 10,
                     "end_column": 19,
                     "end_line": 12,
-                    "filename": "<workspace>/complex.k.json",
+                    "filename": "<workspace>complex.k.json",
                     "line": 12,
                     "node": {
                       "List": {
@@ -210,7 +210,7 @@
                             "column": 11,
                             "end_column": 12,
                             "end_line": 12,
-                            "filename": "<workspace>/complex.k.json",
+                            "filename": "<workspace>complex.k.json",
                             "line": 12,
                             "node": {
                               "NumberLit": {
@@ -225,7 +225,7 @@
                             "column": 14,
                             "end_column": 15,
                             "end_line": 12,
-                            "filename": "<workspace>/complex.k.json",
+                            "filename": "<workspace>complex.k.json",
                             "line": 12,
                             "node": {
                               "NumberLit": {
@@ -240,7 +240,7 @@
                             "column": 17,
                             "end_column": 18,
                             "end_line": 12,
-                            "filename": "<workspace>/complex.k.json",
+                            "filename": "<workspace>complex.k.json",
                             "line": 12,
                             "node": {
                               "NumberLit": {
@@ -261,7 +261,7 @@
                 "column": 0,
                 "end_column": 1,
                 "end_line": 13,
-                "filename": "<workspace>/complex.k.json",
+                "filename": "<workspace>complex.k.json",
                 "line": 1,
                 "node": {
                   "insert_index": -1,
@@ -269,7 +269,7 @@
                     "column": 4,
                     "end_column": 12,
                     "end_line": 9,
-                    "filename": "<workspace>/complex.k.json",
+                    "filename": "<workspace>complex.k.json",
                     "line": 9,
                     "node": {
                       "StringLit": {
@@ -284,7 +284,7 @@
                     "column": 14,
                     "end_column": 5,
                     "end_line": 11,
-                    "filename": "<workspace>/complex.k.json",
+                    "filename": "<workspace>complex.k.json",
                     "line": 9,
                     "node": {
                       "Config": {
@@ -293,7 +293,7 @@
                             "column": 14,
                             "end_column": 5,
                             "end_line": 11,
-                            "filename": "<workspace>/complex.k.json",
+                            "filename": "<workspace>complex.k.json",
                             "line": 9,
                             "node": {
                               "insert_index": -1,
@@ -301,7 +301,7 @@
                                 "column": 8,
                                 "end_column": 13,
                                 "end_line": 10,
-                                "filename": "<workspace>/complex.k.json",
+                                "filename": "<workspace>complex.k.json",
                                 "line": 10,
                                 "node": {
                                   "StringLit": {
@@ -316,7 +316,7 @@
                                 "column": 15,
                                 "end_column": 22,
                                 "end_line": 10,
-                                "filename": "<workspace>/complex.k.json",
+                                "filename": "<workspace>complex.k.json",
                                 "line": 10,
                                 "node": {
                                   "StringLit": {
@@ -338,7 +338,7 @@
                 "column": 0,
                 "end_column": 1,
                 "end_line": 13,
-                "filename": "<workspace>/complex.k.json",
+                "filename": "<workspace>complex.k.json",
                 "line": 1,
                 "node": {
                   "insert_index": -1,
@@ -346,7 +346,7 @@
                     "column": 4,
                     "end_column": 13,
                     "end_line": 4,
-                    "filename": "<workspace>/complex.k.json",
+                    "filename": "<workspace>complex.k.json",
                     "line": 4,
                     "node": {
                       "StringLit": {
@@ -361,7 +361,7 @@
                     "column": 15,
                     "end_column": 30,
                     "end_line": 4,
-                    "filename": "<workspace>/complex.k.json",
+                    "filename": "<workspace>complex.k.json",
                     "line": 4,
                     "node": {
                       "StringLit": {
@@ -377,7 +377,7 @@
                 "column": 0,
                 "end_column": 1,
                 "end_line": 13,
-                "filename": "<workspace>/complex.k.json",
+                "filename": "<workspace>complex.k.json",
                 "line": 1,
                 "node": {
                   "insert_index": -1,
@@ -385,7 +385,7 @@
                     "column": 4,
                     "end_column": 10,
                     "end_line": 2,
-                    "filename": "<workspace>/complex.k.json",
+                    "filename": "<workspace>complex.k.json",
                     "line": 2,
                     "node": {
                       "StringLit": {
@@ -400,7 +400,7 @@
                     "column": 12,
                     "end_column": 19,
                     "end_line": 2,
-                    "filename": "<workspace>/complex.k.json",
+                    "filename": "<workspace>complex.k.json",
                     "line": 2,
                     "node": {
                       "StringLit": {
@@ -421,7 +421,7 @@
         "column": 0,
         "end_column": 1,
         "end_line": 13,
-        "filename": "<workspace>/complex.k.json",
+        "filename": "<workspace>complex.k.json",
         "line": 1,
         "node": {
           "ctx": "Load",
@@ -430,7 +430,7 @@
               "column": 0,
               "end_column": 1,
               "end_line": 13,
-              "filename": "<workspace>/complex.k.json",
+              "filename": "<workspace>complex.k.json",
               "line": 1,
               "node": "complex"
             }

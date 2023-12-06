@@ -2,7 +2,7 @@
   "column": 0,
   "end_column": 1,
   "end_line": 5,
-  "filename": "<workspace>/simple.k.json",
+  "filename": "<workspace>simple.k.json",
   "line": 1,
   "node": {
     "Config": {
@@ -11,7 +11,7 @@
           "column": 0,
           "end_column": 1,
           "end_line": 5,
-          "filename": "<workspace>/simple.k.json",
+          "filename": "<workspace>simple.k.json",
           "line": 1,
           "node": {
             "insert_index": -1,
@@ -19,7 +19,7 @@
               "column": 4,
               "end_column": 9,
               "end_line": 3,
-              "filename": "<workspace>/simple.k.json",
+              "filename": "<workspace>simple.k.json",
               "line": 3,
               "node": {
                 "StringLit": {
@@ -34,7 +34,7 @@
               "column": 11,
               "end_column": 13,
               "end_line": 3,
-              "filename": "<workspace>/simple.k.json",
+              "filename": "<workspace>simple.k.json",
               "line": 3,
               "node": {
                 "NumberLit": {
@@ -51,7 +51,7 @@
           "column": 0,
           "end_column": 1,
           "end_line": 5,
-          "filename": "<workspace>/simple.k.json",
+          "filename": "<workspace>simple.k.json",
           "line": 1,
           "node": {
             "insert_index": -1,
@@ -59,7 +59,7 @@
               "column": 4,
               "end_column": 13,
               "end_line": 4,
-              "filename": "<workspace>/simple.k.json",
+              "filename": "<workspace>simple.k.json",
               "line": 4,
               "node": {
                 "StringLit": {
@@ -74,7 +74,7 @@
               "column": 15,
               "end_column": 30,
               "end_line": 4,
-              "filename": "<workspace>/simple.k.json",
+              "filename": "<workspace>simple.k.json",
               "line": 4,
               "node": {
                 "StringLit": {
@@ -90,7 +90,7 @@
           "column": 0,
           "end_column": 1,
           "end_line": 5,
-          "filename": "<workspace>/simple.k.json",
+          "filename": "<workspace>simple.k.json",
           "line": 1,
           "node": {
             "insert_index": -1,
@@ -98,7 +98,7 @@
               "column": 4,
               "end_column": 10,
               "end_line": 2,
-              "filename": "<workspace>/simple.k.json",
+              "filename": "<workspace>simple.k.json",
               "line": 2,
               "node": {
                 "StringLit": {
@@ -113,7 +113,7 @@
               "column": 12,
               "end_column": 19,
               "end_line": 2,
-              "filename": "<workspace>/simple.k.json",
+              "filename": "<workspace>simple.k.json",
               "line": 2,
               "node": {
                 "StringLit": {

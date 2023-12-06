@@ -2,7 +2,7 @@
   "column": 0,
   "end_column": 1,
   "end_line": 3,
-  "filename": "<workspace>/only_with_null.json",
+  "filename": "<workspace>only_with_null.json",
   "line": 1,
   "node": {
     "Schema": {
@@ -11,7 +11,7 @@
         "column": 0,
         "end_column": 1,
         "end_line": 3,
-        "filename": "<workspace>/only_with_null.json",
+        "filename": "<workspace>only_with_null.json",
         "line": 1,
         "node": {
           "Config": {
@@ -20,7 +20,7 @@
                 "column": 0,
                 "end_column": 1,
                 "end_line": 3,
-                "filename": "<workspace>/only_with_null.json",
+                "filename": "<workspace>only_with_null.json",
                 "line": 1,
                 "node": {
                   "insert_index": -1,
@@ -28,7 +28,7 @@
                     "column": 4,
                     "end_column": 16,
                     "end_line": 2,
-                    "filename": "<workspace>/only_with_null.json",
+                    "filename": "<workspace>only_with_null.json",
                     "line": 2,
                     "node": {
                       "StringLit": {
@@ -43,7 +43,7 @@
                     "column": 18,
                     "end_column": 22,
                     "end_line": 2,
-                    "filename": "<workspace>/only_with_null.json",
+                    "filename": "<workspace>only_with_null.json",
                     "line": 2,
                     "node": {
                       "NameConstantLit": {
@@ -62,7 +62,7 @@
         "column": 0,
         "end_column": 1,
         "end_line": 3,
-        "filename": "<workspace>/only_with_null.json",
+        "filename": "<workspace>only_with_null.json",
         "line": 1,
         "node": {
           "ctx": "Load",
@@ -71,7 +71,7 @@
               "column": 0,
               "end_column": 1,
               "end_line": 3,
-              "filename": "<workspace>/only_with_null.json",
+              "filename": "<workspace>only_with_null.json",
               "line": 1,
               "node": "only_with_null"
             }

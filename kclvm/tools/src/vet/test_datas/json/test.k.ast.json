@@ -2,7 +2,7 @@
   "column": 0,
   "end_column": 1,
   "end_line": 12,
-  "filename": "<workspace>/test.k.json",
+  "filename": "<workspace>test.k.json",
   "line": 1,
   "node": {
     "Schema": {
@@ -11,7 +11,7 @@
         "column": 0,
         "end_column": 1,
         "end_line": 12,
-        "filename": "<workspace>/test.k.json",
+        "filename": "<workspace>test.k.json",
         "line": 1,
         "node": {
           "Config": {
@@ -20,7 +20,7 @@
                 "column": 0,
                 "end_column": 1,
                 "end_line": 12,
-                "filename": "<workspace>/test.k.json",
+                "filename": "<workspace>test.k.json",
                 "line": 1,
                 "node": {
                   "insert_index": -1,
@@ -28,7 +28,7 @@
                     "column": 4,
                     "end_column": 13,
                     "end_line": 4,
-                    "filename": "<workspace>/test.k.json",
+                    "filename": "<workspace>test.k.json",
                     "line": 4,
                     "node": {
                       "StringLit": {
@@ -43,7 +43,7 @@
                     "column": 15,
                     "end_column": 5,
                     "end_line": 7,
-                    "filename": "<workspace>/test.k.json",
+                    "filename": "<workspace>test.k.json",
                     "line": 4,
                     "node": {
                       "Config": {
@@ -52,7 +52,7 @@
                             "column": 15,
                             "end_column": 5,
                             "end_line": 7,
-                            "filename": "<workspace>/test.k.json",
+                            "filename": "<workspace>test.k.json",
                             "line": 4,
                             "node": {
                               "insert_index": -1,
@@ -60,7 +60,7 @@
                                 "column": 8,
                                 "end_column": 14,
                                 "end_line": 6,
-                                "filename": "<workspace>/test.k.json",
+                                "filename": "<workspace>test.k.json",
                                 "line": 6,
                                 "node": {
                                   "StringLit": {
@@ -75,7 +75,7 @@
                                 "column": 16,
                                 "end_column": 24,
                                 "end_line": 6,
-                                "filename": "<workspace>/test.k.json",
+                                "filename": "<workspace>test.k.json",
                                 "line": 6,
                                 "node": {
                                   "StringLit": {
@@ -91,7 +91,7 @@
                             "column": 15,
                             "end_column": 5,
                             "end_line": 7,
-                            "filename": "<workspace>/test.k.json",
+                            "filename": "<workspace>test.k.json",
                             "line": 4,
                             "node": {
                               "insert_index": -1,
@@ -99,7 +99,7 @@
                                 "column": 8,
                                 "end_column": 16,
                                 "end_line": 5,
-                                "filename": "<workspace>/test.k.json",
+                                "filename": "<workspace>test.k.json",
                                 "line": 5,
                                 "node": {
                                   "StringLit": {
@@ -114,7 +114,7 @@
                                 "column": 18,
                                 "end_column": 37,
                                 "end_line": 5,
-                                "filename": "<workspace>/test.k.json",
+                                "filename": "<workspace>test.k.json",
                                 "line": 5,
                                 "node": {
                                   "StringLit": {
@@ -136,7 +136,7 @@
                 "column": 0,
                 "end_column": 1,
                 "end_line": 12,
-                "filename": "<workspace>/test.k.json",
+                "filename": "<workspace>test.k.json",
                 "line": 1,
                 "node": {
                   "insert_index": -1,
@@ -144,7 +144,7 @@
                     "column": 4,
                     "end_column": 9,
                     "end_line": 3,
-                    "filename": "<workspace>/test.k.json",
+                    "filename": "<workspace>test.k.json",
                     "line": 3,
                     "node": {
                       "StringLit": {
@@ -159,7 +159,7 @@
                     "column": 11,
                     "end_column": 13,
                     "end_line": 3,
-                    "filename": "<workspace>/test.k.json",
+                    "filename": "<workspace>test.k.json",
                     "line": 3,
                     "node": {
                       "NumberLit": {
@@ -176,7 +176,7 @@
                 "column": 0,
                 "end_column": 1,
                 "end_line": 12,
-                "filename": "<workspace>/test.k.json",
+                "filename": "<workspace>test.k.json",
                 "line": 1,
                 "node": {
                   "insert_index": -1,
@@ -184,7 +184,7 @@
                     "column": 4,
                     "end_column": 10,
                     "end_line": 2,
-                    "filename": "<workspace>/test.k.json",
+                    "filename": "<workspace>test.k.json",
                     "line": 2,
                     "node": {
                       "StringLit": {
@@ -199,7 +199,7 @@
                     "column": 12,
                     "end_column": 22,
                     "end_line": 2,
-                    "filename": "<workspace>/test.k.json",
+                    "filename": "<workspace>test.k.json",
                     "line": 2,
                     "node": {
                       "StringLit": {
@@ -215,7 +215,7 @@
                 "column": 0,
                 "end_column": 1,
                 "end_line": 12,
-                "filename": "<workspace>/test.k.json",
+                "filename": "<workspace>test.k.json",
                 "line": 1,
                 "node": {
                   "insert_index": -1,
@@ -223,7 +223,7 @@
                     "column": 4,
                     "end_column": 12,
                     "end_line": 8,
-                    "filename": "<workspace>/test.k.json",
+                    "filename": "<workspace>test.k.json",
                     "line": 8,
                     "node": {
                       "StringLit": {
@@ -238,7 +238,7 @@
                     "column": 14,
                     "end_column": 5,
                     "end_line": 11,
-                    "filename": "<workspace>/test.k.json",
+                    "filename": "<workspace>test.k.json",
                     "line": 8,
                     "node": {
                       "List": {
@@ -248,7 +248,7 @@
                             "column": 8,
                             "end_column": 21,
                             "end_line": 9,
-                            "filename": "<workspace>/test.k.json",
+                            "filename": "<workspace>test.k.json",
                             "line": 9,
                             "node": {
                               "StringLit": {
@@ -262,7 +262,7 @@
                             "column": 8,
                             "end_column": 21,
                             "end_line": 10,
-                            "filename": "<workspace>/test.k.json",
+                            "filename": "<workspace>test.k.json",
                             "line": 10,
                             "node": {
                               "StringLit": {
@@ -287,7 +287,7 @@
         "column": 0,
         "end_column": 1,
         "end_line": 12,
-        "filename": "<workspace>/test.k.json",
+        "filename": "<workspace>test.k.json",
         "line": 1,
         "node": {
           "ctx": "Load",
@@ -296,7 +296,7 @@
               "column": 0,
               "end_column": 1,
               "end_line": 12,
-              "filename": "<workspace>/test.k.json",
+              "filename": "<workspace>test.k.json",
               "line": 1,
               "node": "test"
             }
