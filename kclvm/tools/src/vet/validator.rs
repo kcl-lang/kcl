@@ -66,7 +66,7 @@
 //! ```
 use super::expr_builder::ExprBuilder;
 pub use crate::util::loader::LoaderKind;
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, bail, Result};
 use kclvm_ast::{
     ast::{AssignStmt, Expr, ExprContext, Identifier, Module, Node, NodeRef, SchemaStmt, Stmt},
     node_ref,

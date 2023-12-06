@@ -340,7 +340,10 @@ mod test_expr_builder {
 }
 
 mod test_validater {
-    use std::{fs, panic, path::Path};
+    use std::{
+        fs, panic,
+        path::{Path, PathBuf},
+    };
 
     use regex::Regex;
 
@@ -399,6 +402,104 @@ mod test_validater {
                     Ok(res) => assert!(res),
                     Err(_) => panic!("Unreachable"),
                 }
+            }
+        }
+    }
+
+    #[test]
+    fn test_invalid_validate_with_json_pos() {
+        let root_path = PathBuf::from("./src/vet/test_datas/invalid_vet_cases_json")
+            .canonicalize()
+            .unwrap();
+        for (i, _) in VALIDATED_FILE_TYPE.iter().enumerate() {
+            for case in KCL_TEST_CASES {
+                let validated_file_path = construct_full_path(&format!(
+                    "{}.{}",
+                    Path::new("invalid_vet_cases_json")
+                        .join(case)
+                        .display()
+                        .to_string(),
+                    "json"
+                ))
+                .unwrap();
+
+                let kcl_code = fs::read_to_string(
+                    construct_full_path(
+                        &Path::new("invalid_vet_cases_json")
+                            .join(case)
+                            .display()
+                            .to_string(),
+                    )
+                    .unwrap(),
+                )
+                .expect("Something went wrong reading the file");
+
+                let kcl_path = construct_full_path(
+                    &Path::new("invalid_vet_cases_json")
+                        .join(case)
+                        .display()
+                        .to_string(),
+                )
+                .unwrap();
+
+                let opt = ValidateOption::new(
+                    None,
+                    "value".to_string(),
+                    validated_file_path.clone(),
+                    *LOADER_KIND[i],
+                    Some(kcl_path),
+                    Some(kcl_code),
+                );
+
+                let result = validate(opt).unwrap_err();
+                println!("{}", result.to_string());
+                assert!(
+                    result
+                        .to_string()
+                        .contains(&root_path.join(case).display().to_string()),
+                    "{result}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_invalid_validate_with_yaml_pos() {
+        for (i, file_suffix) in VALIDATED_FILE_TYPE.iter().enumerate() {
+            for case in KCL_TEST_CASES {
+                let validated_file_path = construct_full_path(&format!(
+                    "{}.{}",
+                    Path::new("invalid_validate_cases")
+                        .join(case)
+                        .display()
+                        .to_string(),
+                    file_suffix
+                ))
+                .unwrap();
+
+                let kcl_code = fs::read_to_string(
+                    construct_full_path(
+                        &Path::new("invalid_validate_cases")
+                            .join(case)
+                            .display()
+                            .to_string(),
+                    )
+                    .unwrap(),
+                )
+                .expect("Something went wrong reading the file");
+
+                let opt = ValidateOption::new(
+                    None,
+                    "value".to_string(),
+                    validated_file_path.clone(),
+                    *LOADER_KIND[i],
+                    None,
+                    Some(kcl_code),
+                );
+
+                let result = validate(opt).unwrap_err();
+                println!("{}", result.to_string());
+                assert!(result.to_string().contains("Error"), "{result}");
             }
         }
     }
