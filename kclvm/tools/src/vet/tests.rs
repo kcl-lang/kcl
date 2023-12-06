@@ -118,8 +118,8 @@ mod test_expr_builder {
             let expect_ast_json_str = serde_json::to_string(&expect_ast_json)
                 .unwrap()
                 .replace("<workspace>", &construct_full_path("json").unwrap());
-            let got_ast_json_str = serde_json::to_string(&got_ast_json).unwrap();
-            assert_eq!(expect_ast_json_str, got_ast_json_str)
+            let expect_ast_json: Value = serde_json::from_str(&expect_ast_json_str).unwrap();
+            assert_eq!(expect_ast_json, got_ast_json)
         }
     }
 
@@ -174,8 +174,8 @@ mod test_expr_builder {
             let expect_ast_json_str = serde_json::to_string(&expect_ast_json)
                 .unwrap()
                 .replace("<workspace>", &construct_full_path("json").unwrap());
-            let got_ast_json_str = serde_json::to_string(&got_ast_json).unwrap();
-            assert_eq!(expect_ast_json_str, got_ast_json_str)
+            let expect_ast_json: Value = serde_json::from_str(&expect_ast_json_str).unwrap();
+            assert_eq!(expect_ast_json, got_ast_json)
         }
     }
 
@@ -205,8 +205,8 @@ mod test_expr_builder {
             let expect_ast_json_str = serde_json::to_string(&expect_ast_json)
                 .unwrap()
                 .replace("<workspace>", &construct_full_path("json").unwrap());
-            let got_ast_json_str = serde_json::to_string(&got_ast_json).unwrap();
-            assert_eq!(expect_ast_json_str, got_ast_json_str)
+            let expect_ast_json: Value = serde_json::from_str(&expect_ast_json_str).unwrap();
+            assert_eq!(expect_ast_json, got_ast_json)
         }
     }
 
@@ -423,7 +423,7 @@ mod test_validater {
 
     #[test]
     fn test_invalid_validate_with_json_pos() {
-        let root_path = PathBuf::from("./src/vet/test_datas/invalid_vet_cases_json")
+        let root_path = PathBuf::from(construct_full_path("invalid_vet_cases_json").unwrap())
             .canonicalize()
             .unwrap();
         for (i, _) in VALIDATED_FILE_TYPE.iter().enumerate() {

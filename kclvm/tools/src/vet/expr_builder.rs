@@ -1,13 +1,11 @@
 use compiler_base_span::span::new_byte_pos;
-use json_spanned_value::spanned;
 use kclvm_ast::{
     ast::{
         ConfigEntry, ConfigEntryOperation, ConfigExpr, Expr, ExprContext, Identifier, ListExpr,
-        NameConstant, NameConstantLit, Node, NodeRef, NumberLit, NumberLitValue, PosTuple,
-        SchemaExpr, SchemaStmt, StringLit,
+        NameConstant, NameConstantLit, Node, NodeRef, NumberLit, NumberLitValue, SchemaExpr,
+        StringLit,
     },
     node_ref,
-    pos::GetPos,
 };
 
 use crate::util::loader::{DataLoader, Loader, LoaderKind};

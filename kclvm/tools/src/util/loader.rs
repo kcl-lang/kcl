@@ -1,7 +1,6 @@
 use std::{fs, path::PathBuf};
 
 use anyhow::{bail, Context, Result};
-use compiler_base_session::Session;
 use compiler_base_span::{BytePos, FilePathMapping, SourceMap};
 use json_spanned_value::{self as jsv, spanned};
 use kclvm_ast::ast::PosTuple;
