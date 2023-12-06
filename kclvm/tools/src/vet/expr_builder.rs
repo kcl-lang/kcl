@@ -264,10 +264,7 @@ impl ExprGenerator<json_spanned_value::Spanned<json_spanned_value::Value>> for E
                     }
                 };
 
-                Ok(node_ref!(
-                    Expr::StringLit(str_lit),
-                    loc
-                ))
+                Ok(node_ref!(Expr::StringLit(str_lit), loc))
             }
             json_spanned_value::Value::Array(j_arr) => {
                 let mut j_arr_ast_nodes: Vec<NodeRef<Expr>> = Vec::new();
@@ -329,7 +326,14 @@ impl ExprGenerator<json_spanned_value::Spanned<json_spanned_value::Value>> for E
                     Some(s_name) => {
                         let iden = node_ref!(
                             Identifier {
-                                names: vec![Node::new(s_name.to_string(), loc.0.clone(), loc.1.clone(), loc.2.clone(), loc.3.clone(), loc.4.clone())],
+                                names: vec![Node::new(
+                                    s_name.to_string(),
+                                    loc.0.clone(),
+                                    loc.1.clone(),
+                                    loc.2.clone(),
+                                    loc.3.clone(),
+                                    loc.4.clone()
+                                )],
                                 pkgpath: String::new(),
                                 ctx: ExprContext::Load
                             },
