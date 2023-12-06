@@ -139,6 +139,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
     }
 
     fn walk_schema_stmt(&mut self, schema_stmt: &'ctx ast::SchemaStmt) -> Self::Result {
+        let (start, end) = (self.ctx.start_pos.clone(), self.ctx.end_pos.clone());
         let schema_ty = self
             .ctx
             .node_ty_map
@@ -197,7 +198,6 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
             };
         }
 
-        let (start, end) = schema_stmt.get_span_pos();
         self.enter_local_scope(&self.ctx.current_filename.clone().unwrap(), start, end);
         let cur_scope = *self.ctx.scopes.last().unwrap();
         self.gs
