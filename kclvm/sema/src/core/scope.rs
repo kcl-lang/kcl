@@ -76,6 +76,10 @@ impl ScopeData {
         }
     }
 
+    pub fn get_root_scope(&self, name: String) -> Option<ScopeRef> {
+        self.root_map.get(&name).copied()
+    }
+
     pub fn add_def_to_scope(&mut self, scope: ScopeRef, name: String, symbol: SymbolRef) {
         match scope.get_kind() {
             ScopeKind::Local => {
