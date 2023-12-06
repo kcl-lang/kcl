@@ -29,6 +29,7 @@ use kclvm_sema::core::global_state::GlobalState;
 
 use kclvm_error::Position as KCLPos;
 use kclvm_sema::builtin::{STANDARD_SYSTEM_MODULES, STRING_MEMBER_FUNCTIONS};
+use kclvm_sema::core::package::ModuleInfo;
 use kclvm_sema::resolver::doc::{parse_doc_string, Doc};
 use kclvm_sema::ty::{FunctionType, SchemaType, Type};
 use lsp_types::{CompletionItem, CompletionItemKind};
@@ -278,18 +279,25 @@ fn completion_assign(pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::Comple
                         let sema_info = symbol.get_sema_info();
                         match &sema_info.ty {
                             Some(ty) => {
-                                items.extend(ty_complete_label(ty).iter().map(|label| {
-                                    KCLCompletionItem {
-                                        label: format!(" {}", label),
-                                        detail: Some(format!(
-                                            "{}: {}",
-                                            symbol.get_name(),
-                                            ty.ty_str()
-                                        )),
-                                        kind: Some(KCLCompletionItemKind::Variable),
-                                        documentation: sema_info.doc.clone(),
-                                    }
-                                }));
+                                items.extend(
+                                    ty_complete_label(
+                                        ty,
+                                        gs.get_packages().get_module_info(&pos.filename),
+                                    )
+                                    .iter()
+                                    .map(|label| {
+                                        KCLCompletionItem {
+                                            label: format!(" {}", label),
+                                            detail: Some(format!(
+                                                "{}: {}",
+                                                symbol.get_name(),
+                                                ty.ty_str()
+                                            )),
+                                            kind: Some(KCLCompletionItemKind::Variable),
+                                            documentation: sema_info.doc.clone(),
+                                        }
+                                    }),
+                                );
                                 return Some(into_completion_items(&items).into());
                             }
                             None => {}
@@ -500,7 +508,7 @@ fn completion_import(
     Some(into_completion_items(&items).into())
 }
 
-fn ty_complete_label(ty: &Type) -> Vec<String> {
+fn ty_complete_label(ty: &Type, module: Option<&ModuleInfo>) -> Vec<String> {
     match &ty.kind {
         kclvm_sema::ty::TypeKind::Bool => vec!["True".to_string(), "False".to_string()],
         kclvm_sema::ty::TypeKind::BoolLit(b) => {
@@ -516,16 +524,21 @@ fn ty_complete_label(ty: &Type) -> Vec<String> {
         kclvm_sema::ty::TypeKind::StrLit(s) => vec![format!("{:?}", s)],
         kclvm_sema::ty::TypeKind::List(_) => vec!["[]".to_string()],
         kclvm_sema::ty::TypeKind::Dict(_) => vec!["{}".to_string()],
-        kclvm_sema::ty::TypeKind::Union(types) => {
-            types.iter().flat_map(|ty| ty_complete_label(ty)).collect()
-        }
+        kclvm_sema::ty::TypeKind::Union(types) => types
+            .iter()
+            .flat_map(|ty| ty_complete_label(ty, module))
+            .collect(),
         kclvm_sema::ty::TypeKind::Schema(schema) => {
             vec![format!(
                 "{}{}{}",
                 if schema.pkgpath.is_empty() || schema.pkgpath == MAIN_PKG {
                     "".to_string()
                 } else {
-                    format!("{}.", schema.pkgpath.split('.').last().unwrap())
+                    if let Some(m) = module {
+                        format!("{}.", pkg_real_name(&schema.pkgpath, m))
+                    } else {
+                        format!("{}.", schema.pkgpath.split('.').last().unwrap())
+                    }
                 },
                 schema.name,
                 "{}"
@@ -533,6 +546,17 @@ fn ty_complete_label(ty: &Type) -> Vec<String> {
         }
         _ => vec![],
     }
+}
+
+/// get pkg_path real name: as_name if not none or pkg last name
+fn pkg_real_name(pkg: &String, module: &ModuleInfo) -> String {
+    let imports = module.get_imports();
+    for (name, import_info) in imports {
+        if &import_info.get_fully_qualified_name() == pkg {
+            return name;
+        }
+    }
+    pkg.split('.').last().unwrap().to_string()
 }
 
 fn func_ty_complete_label(func_name: &String, func_type: &FunctionType) -> String {
@@ -1014,7 +1038,7 @@ mod tests {
             CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
             CompletionResponse::List(_) => panic!("test failed"),
         };
-        let expected_labels: Vec<&str> = vec![" subpkg.Person1{}"];
+        let expected_labels: Vec<&str> = vec![" sub.Person1{}"];
         assert_eq!(got_labels, expected_labels);
     }
 
