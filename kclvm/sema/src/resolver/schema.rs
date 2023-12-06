@@ -19,6 +19,7 @@ impl<'ctx> Resolver<'ctx> {
         &mut self,
         schema_stmt: &'ctx ast::SchemaStmt,
     ) -> ResolvedResult {
+        let (start, end) = (self.ctx.start_pos.clone(), self.ctx.end_pos.clone());
         self.resolve_unique_key(&schema_stmt.name.node, &schema_stmt.name.get_span_pos());
         let ty =
             self.lookup_type_from_scope(&schema_stmt.name.node, schema_stmt.name.get_span_pos());
@@ -40,7 +41,6 @@ impl<'ctx> Resolver<'ctx> {
             return ty;
         };
         self.ctx.schema = Some(Rc::new(RefCell::new(scope_ty.clone())));
-        let (start, end) = schema_stmt.get_span_pos();
         if let Some(args) = &schema_stmt.args {
             for (i, arg) in args.node.args.iter().enumerate() {
                 let ty = args.node.get_arg_type_node(i);

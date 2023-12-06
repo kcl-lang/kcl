@@ -1240,4 +1240,27 @@ mod tests {
             CompletionResponse::List(_) => panic!("test failed"),
         }
     }
+
+    #[test]
+    fn schema_end_pos() {
+        let (file, program, _, _, gs) =
+            compile_test_file("src/test_data/completion_test/schema/schema_pos/schema_pos.k");
+
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 6,
+            column: Some(16),
+        };
+
+        let got = completion(None, &program, &pos, &gs).unwrap();
+        match got {
+            CompletionResponse::Array(arr) => {
+                assert_eq!(arr.len(), 3);
+                let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
+                assert!(labels.contains(&"min".to_string()));
+                assert!(labels.contains(&"max".to_string()));
+            }
+            CompletionResponse::List(_) => panic!("test failed"),
+        }
+    }
 }

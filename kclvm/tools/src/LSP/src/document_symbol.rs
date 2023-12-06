@@ -1,5 +1,6 @@
 use std::path::Path;
 
+use kclvm_ast::MAIN_PKG;
 use kclvm_error::Position;
 use kclvm_sema::core::global_state::GlobalState;
 use kclvm_sema::core::symbol::KCLSymbol;
@@ -20,8 +21,7 @@ pub(crate) fn document_symbol(
         line: 1,
         column: Some(0),
     };
-
-    if let Some(scope) = gs.look_up_scope(&dummy_pos) {
+    if let Some(scope) = gs.get_scopes().get_root_scope(MAIN_PKG.to_owned()) {
         if let Some(defs) = gs.get_all_defs_in_scope(scope) {
             for symbol_ref in defs {
                 match gs.get_symbols().get_symbol(symbol_ref) {
