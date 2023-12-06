@@ -7,6 +7,7 @@ use kclvm_ast::{
     },
     node_ref,
 };
+use serde_json::json;
 
 use crate::util::loader::{DataLoader, Loader, LoaderKind};
 use anyhow::{bail, Context, Result};
@@ -53,7 +54,7 @@ impl ExprBuilder {
                     .with_context(|| "Failed to Load JSON".to_string())?)
             }
             LoaderKind::YAML => {
-                let value = <DataLoader as Loader<serde_yaml::Value>>::load(&self.loader)
+                let value = <DataLoader as Loader<located_yaml::Yaml>>::load(&self.loader)
                     .with_context(|| "Failed to Load YAML".to_string())?;
                 Ok(self
                     .generate(&value, &schema_name)
@@ -183,6 +184,161 @@ impl ExprGenerator<serde_yaml::Value> for ExprBuilder {
                     "{FAIL_LOAD_VALIDATED_ERR_MSG}, Unsupported Yaml tag {}",
                     v.tag
                 )
+            }
+        }
+    }
+}
+
+impl ExprGenerator<located_yaml::Yaml> for ExprBuilder {
+    fn generate(
+        &self,
+        value: &located_yaml::Yaml,
+        schema_name: &Option<String>,
+    ) -> Result<NodeRef<Expr>> {
+        let loc = (
+            self.loader.file_name(),
+            value.marker.line as u64,
+            value.marker.col as u64,
+            0,
+            0,
+        );
+        match &value.yaml {
+            located_yaml::YamlElt::Null => Ok(node_ref!(
+                Expr::NameConstantLit(NameConstantLit {
+                    value: NameConstant::None,
+                }),
+                loc
+            )),
+            located_yaml::YamlElt::Boolean(j_bool) => {
+                let name_const = match NameConstant::try_from(*j_bool) {
+                    Ok(nc) => nc,
+                    Err(err) => {
+                        bail!("{FAIL_LOAD_VALIDATED_ERR_MSG}, {err}")
+                    }
+                };
+
+                Ok(node_ref!(
+                    Expr::NameConstantLit(NameConstantLit { value: name_const }),
+                    loc
+                ))
+            }
+            located_yaml::YamlElt::Integer(j_int) => {
+                if json!(j_int).is_i64() {
+                    Ok(node_ref!(
+                        Expr::NumberLit(NumberLit {
+                            binary_suffix: None,
+                            value: NumberLitValue::Int(*j_int)
+                        }),
+                        loc
+                    ))
+                } else {
+                    bail!("{FAIL_LOAD_VALIDATED_ERR_MSG}, Unsupported Number Type");
+                }
+            }
+            located_yaml::YamlElt::Real(j_float) => {
+                if let Some(number_lit) = j_float.parse::<f64>().ok() {
+                    if format!("{}", number_lit) != j_float.to_string() {
+                        bail!("{FAIL_LOAD_VALIDATED_ERR_MSG}, Unsupported Number Type",)
+                    }
+                    Ok(node_ref!(
+                        Expr::NumberLit(NumberLit {
+                            binary_suffix: None,
+                            value: NumberLitValue::Float(number_lit)
+                        }),
+                        loc
+                    ))
+                } else {
+                    bail!("{FAIL_LOAD_VALIDATED_ERR_MSG}, Unsupported Number Type",)
+                }
+            }
+            located_yaml::YamlElt::String(j_string) => {
+                let str_lit = match StringLit::try_from(j_string.to_string()) {
+                    Ok(s) => s,
+                    Err(_) => {
+                        bail!("{FAIL_LOAD_VALIDATED_ERR_MSG}")
+                    }
+                };
+                Ok(node_ref!(Expr::StringLit(str_lit), loc))
+            }
+            located_yaml::YamlElt::Array(j_arr) => {
+                let mut j_arr_ast_nodes: Vec<NodeRef<Expr>> = Vec::new();
+                for j_arr_item in j_arr {
+                    j_arr_ast_nodes.push(
+                        self.generate(j_arr_item, schema_name)
+                            .with_context(|| FAIL_LOAD_VALIDATED_ERR_MSG)?,
+                    );
+                }
+                Ok(node_ref!(
+                    Expr::List(ListExpr {
+                        ctx: ExprContext::Load,
+                        elts: j_arr_ast_nodes
+                    }),
+                    loc
+                ))
+            }
+            located_yaml::YamlElt::Hash(j_map) => {
+                let mut config_entries: Vec<NodeRef<ConfigEntry>> = Vec::new();
+
+                for (k, v) in j_map.iter() {
+                    // The configuration builder already in the schema no longer needs a schema name
+                    let k = self
+                        .generate(k, &None)
+                        .with_context(|| FAIL_LOAD_VALIDATED_ERR_MSG)?;
+                    let v = self
+                        .generate(v, &None)
+                        .with_context(|| FAIL_LOAD_VALIDATED_ERR_MSG)?;
+
+                    let config_entry = node_ref!(
+                        ConfigEntry {
+                            key: Some(k),
+                            value: v,
+                            operation: ConfigEntryOperation::Union,
+                            insert_index: -1
+                        },
+                        loc.clone()
+                    );
+                    config_entries.push(config_entry);
+                }
+
+                let config_expr = node_ref!(
+                    Expr::Config(ConfigExpr {
+                        items: config_entries
+                    }),
+                    loc.clone()
+                );
+
+                match schema_name {
+                    Some(s_name) => {
+                        let iden = node_ref!(
+                            Identifier {
+                                names: vec![Node::new(
+                                    s_name.to_string(),
+                                    loc.0.clone(),
+                                    loc.1.clone() as u64,
+                                    loc.2.clone() as u64,
+                                    loc.3.clone() as u64,
+                                    loc.4.clone() as u64
+                                )],
+                                pkgpath: String::new(),
+                                ctx: ExprContext::Load
+                            },
+                            loc.clone()
+                        );
+                        Ok(node_ref!(
+                            Expr::Schema(SchemaExpr {
+                                name: iden,
+                                config: config_expr,
+                                args: vec![],
+                                kwargs: vec![]
+                            }),
+                            loc.clone()
+                        ))
+                    }
+                    None => Ok(config_expr),
+                }
+            }
+            _ => {
+                bail!("{FAIL_LOAD_VALIDATED_ERR_MSG}, Unsupported Yaml Element",)
             }
         }
     }

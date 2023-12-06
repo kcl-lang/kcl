@@ -1,0 +1,18 @@
+{
+    "__kcl_PanicInfo__": true,
+    "rust_file": "runtime/src/stdlib/assert_api.rs",
+    "rust_line": 19,
+    "rust_col": 9,
+    "kcl_pkgpath": "",
+    "kcl_file": "validationTempKCLCode.k",
+    "kcl_line": 2,
+    "kcl_col": 0,
+    "kcl_arg_msg": "",
+    "kcl_config_meta_file": "",
+    "kcl_config_meta_line": 0,
+    "kcl_config_meta_col": 0,
+    "kcl_config_meta_arg_msg": "",
+    "message": "",
+    "err_type_code": 29,
+    "is_warning": false
+}
