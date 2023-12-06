@@ -197,15 +197,16 @@ impl ExprGenerator<json_spanned_value::Spanned<json_spanned_value::Value>> for E
         value: &json_spanned_value::Spanned<json_spanned_value::Value>,
         schema_name: &Option<String>,
     ) -> Result<NodeRef<Expr>> {
+        let loc = self.loader.byte_pos_to_pos_in_sourcemap(
+            new_byte_pos(value.span().0 as u32),
+            new_byte_pos(value.span().1 as u32),
+        );
         match value.get_ref() {
             json_spanned_value::Value::Null => Ok(node_ref!(
                 Expr::NameConstantLit(NameConstantLit {
                     value: NameConstant::None,
                 }),
-                self.loader.byte_pos_to_pos_in_sourcemap(
-                    new_byte_pos(value.span().0 as u32),
-                    new_byte_pos(value.span().1 as u32)
-                )
+                loc
             )),
             json_spanned_value::Value::Bool(j_bool) => {
                 let name_const = match NameConstant::try_from(j_bool.clone()) {
@@ -217,10 +218,7 @@ impl ExprGenerator<json_spanned_value::Spanned<json_spanned_value::Value>> for E
 
                 Ok(node_ref!(
                     Expr::NameConstantLit(NameConstantLit { value: name_const }),
-                    self.loader.byte_pos_to_pos_in_sourcemap(
-                        new_byte_pos(value.span().0 as u32),
-                        new_byte_pos(value.span().1 as u32)
-                    )
+                    loc
                 ))
             }
             json_spanned_value::Value::Number(j_num) => {
@@ -237,10 +235,7 @@ impl ExprGenerator<json_spanned_value::Spanned<json_spanned_value::Value>> for E
                             binary_suffix: None,
                             value: NumberLitValue::Float(number_lit)
                         }),
-                        self.loader.byte_pos_to_pos_in_sourcemap(
-                            new_byte_pos(value.span().0 as u32),
-                            new_byte_pos(value.span().1 as u32)
-                        )
+                        loc
                     ))
                 } else if j_num.is_i64() {
                     let number_lit = match j_num.as_i64() {
@@ -255,10 +250,7 @@ impl ExprGenerator<json_spanned_value::Spanned<json_spanned_value::Value>> for E
                             binary_suffix: None,
                             value: NumberLitValue::Int(number_lit)
                         }),
-                        self.loader.byte_pos_to_pos_in_sourcemap(
-                            new_byte_pos(value.span().0 as u32),
-                            new_byte_pos(value.span().1 as u32)
-                        )
+                        loc
                     ))
                 } else {
                     bail!("{FAIL_LOAD_VALIDATED_ERR_MSG}, Unsupported Unsigned 64");
@@ -274,10 +266,7 @@ impl ExprGenerator<json_spanned_value::Spanned<json_spanned_value::Value>> for E
 
                 Ok(node_ref!(
                     Expr::StringLit(str_lit),
-                    self.loader.byte_pos_to_pos_in_sourcemap(
-                        new_byte_pos(value.span().0 as u32),
-                        new_byte_pos(value.span().1 as u32)
-                    )
+                    loc
                 ))
             }
             json_spanned_value::Value::Array(j_arr) => {
@@ -293,10 +282,7 @@ impl ExprGenerator<json_spanned_value::Spanned<json_spanned_value::Value>> for E
                         ctx: ExprContext::Load,
                         elts: j_arr_ast_nodes
                     }),
-                    self.loader.byte_pos_to_pos_in_sourcemap(
-                        new_byte_pos(value.span().0 as u32),
-                        new_byte_pos(value.span().1 as u32)
-                    )
+                    loc
                 ))
             }
             json_spanned_value::Value::Object(j_map) => {
@@ -327,10 +313,7 @@ impl ExprGenerator<json_spanned_value::Spanned<json_spanned_value::Value>> for E
                             operation: ConfigEntryOperation::Union,
                             insert_index: -1
                         },
-                        self.loader.byte_pos_to_pos_in_sourcemap(
-                            new_byte_pos(value.span().0 as u32),
-                            new_byte_pos(value.span().1 as u32)
-                        )
+                        loc.clone()
                     );
                     config_entries.push(config_entry);
                 }
@@ -339,24 +322,18 @@ impl ExprGenerator<json_spanned_value::Spanned<json_spanned_value::Value>> for E
                     Expr::Config(ConfigExpr {
                         items: config_entries
                     }),
-                    self.loader.byte_pos_to_pos_in_sourcemap(
-                        new_byte_pos(value.span().0 as u32),
-                        new_byte_pos(value.span().1 as u32)
-                    )
+                    loc.clone()
                 );
 
                 match schema_name {
                     Some(s_name) => {
                         let iden = node_ref!(
                             Identifier {
-                                names: vec![Node::dummy_node(s_name.to_string())],
+                                names: vec![Node::new(s_name.to_string(), loc.0.clone(), loc.1.clone(), loc.2.clone(), loc.3.clone(), loc.4.clone())],
                                 pkgpath: String::new(),
                                 ctx: ExprContext::Load
                             },
-                            self.loader.byte_pos_to_pos_in_sourcemap(
-                                new_byte_pos(value.span().0 as u32),
-                                new_byte_pos(value.span().1 as u32),
-                            )
+                            loc.clone()
                         );
                         Ok(node_ref!(
                             Expr::Schema(SchemaExpr {
@@ -365,10 +342,7 @@ impl ExprGenerator<json_spanned_value::Spanned<json_spanned_value::Value>> for E
                                 args: vec![],
                                 kwargs: vec![]
                             }),
-                            self.loader.byte_pos_to_pos_in_sourcemap(
-                                new_byte_pos(value.span().0 as u32),
-                                new_byte_pos(value.span().1 as u32)
-                            )
+                            loc
                         ))
                     }
                     None => Ok(config_expr),

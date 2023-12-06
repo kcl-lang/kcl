@@ -68,10 +68,10 @@
           "ctx": "Load",
           "names": [
             {
-              "column": 1,
+              "column": 0,
               "end_column": 1,
-              "end_line": 1,
-              "filename": "",
+              "end_line": 3,
+              "filename": "<workspace>/only_with_bool.json",
               "line": 1,
               "node": "only_with_bool"
             }

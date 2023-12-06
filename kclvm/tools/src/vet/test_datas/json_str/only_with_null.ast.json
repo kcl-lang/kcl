@@ -68,9 +68,9 @@
           "ctx": "Load",
           "names": [
             {
-              "column": 1,
+              "column": 0,
               "end_column": 1,
-              "end_line": 1,
+              "end_line": 3,
               "filename": "",
               "line": 1,
               "node": "only_with_null"
