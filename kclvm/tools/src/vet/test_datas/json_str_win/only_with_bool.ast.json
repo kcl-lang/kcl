@@ -1,34 +1,34 @@
 {
   "column": 0,
-  "end_column": 1,
+  "end_column": 3,
   "end_line": 3,
-  "filename": "<workspace>/only_with_bool.json",
+  "filename": "",
   "line": 1,
   "node": {
     "Schema": {
       "args": [],
       "config": {
         "column": 0,
-        "end_column": 1,
+        "end_column": 3,
         "end_line": 3,
-        "filename": "<workspace>/only_with_bool.json",
+        "filename": "",
         "line": 1,
         "node": {
           "Config": {
             "items": [
               {
                 "column": 0,
-                "end_column": 1,
+                "end_column": 3,
                 "end_line": 3,
-                "filename": "<workspace>/only_with_bool.json",
+                "filename": "",
                 "line": 1,
                 "node": {
                   "insert_index": -1,
                   "key": {
-                    "column": 4,
-                    "end_column": 10,
+                    "column": 5,
+                    "end_column": 11,
                     "end_line": 2,
-                    "filename": "<workspace>/only_with_bool.json",
+                    "filename": "",
                     "line": 2,
                     "node": {
                       "StringLit": {
@@ -40,10 +40,10 @@
                   },
                   "operation": "Union",
                   "value": {
-                    "column": 12,
-                    "end_column": 16,
-                    "end_line": 2,
-                    "filename": "<workspace>/only_with_bool.json",
+                    "column": 13,
+                    "end_column": 0,
+                    "end_line": 3,
+                    "filename": "",
                     "line": 2,
                     "node": {
                       "NameConstantLit": {
@@ -60,18 +60,18 @@
       "kwargs": [],
       "name": {
         "column": 0,
-        "end_column": 1,
+        "end_column": 3,
         "end_line": 3,
-        "filename": "<workspace>/only_with_bool.json",
+        "filename": "",
         "line": 1,
         "node": {
           "ctx": "Load",
           "names": [
             {
               "column": 0,
-              "end_column": 1,
+              "end_column": 3,
               "end_line": 3,
-              "filename": "<workspace>/only_with_bool.json",
+              "filename": "",
               "line": 1,
               "node": "only_with_bool"
             }

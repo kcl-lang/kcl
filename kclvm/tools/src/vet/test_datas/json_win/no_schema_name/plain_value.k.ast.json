@@ -2,7 +2,7 @@
   "column": 0,
   "end_column": 1,
   "end_line": 1,
-  "filename": "<workspace>/plain_value.k.json",
+  "filename": "<workspace>\\plain_value.k.json",
   "line": 1,
   "node": {
     "NumberLit": {

@@ -1833,6 +1833,7 @@ dependencies = [
  "kclvm-runner",
  "kclvm-runtime",
  "kclvm-sema",
+ "kclvm-utils",
  "once_cell",
  "pretty_assertions",
  "regex",

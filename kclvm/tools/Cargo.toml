@@ -23,6 +23,7 @@ kclvm-query = {path = "../query"}
 kclvm-runner = {path = "../runner"}
 kclvm-runtime = {path = "../runtime"}
 kclvm-driver = {path = "../driver"}
+kclvm-utils ={ path = "../utils"}
 
 serde_json = "1.0.85"
 serde_yaml = "0.9.25"

@@ -1,34 +1,34 @@
 {
   "column": 0,
-  "end_column": 1,
+  "end_column": 13,
   "end_line": 13,
-  "filename": "<workspace>/complex.k.json",
+  "filename": "",
   "line": 1,
   "node": {
     "Schema": {
       "args": [],
       "config": {
         "column": 0,
-        "end_column": 1,
+        "end_column": 13,
         "end_line": 13,
-        "filename": "<workspace>/complex.k.json",
+        "filename": "",
         "line": 1,
         "node": {
           "Config": {
             "items": [
               {
                 "column": 0,
-                "end_column": 1,
+                "end_column": 13,
                 "end_line": 13,
-                "filename": "<workspace>/complex.k.json",
+                "filename": "",
                 "line": 1,
                 "node": {
                   "insert_index": -1,
                   "key": {
-                    "column": 4,
-                    "end_column": 9,
+                    "column": 6,
+                    "end_column": 11,
                     "end_line": 3,
-                    "filename": "<workspace>/complex.k.json",
+                    "filename": "",
                     "line": 3,
                     "node": {
                       "StringLit": {
@@ -40,10 +40,10 @@
                   },
                   "operation": "Union",
                   "value": {
-                    "column": 11,
-                    "end_column": 13,
-                    "end_line": 3,
-                    "filename": "<workspace>/complex.k.json",
+                    "column": 13,
+                    "end_column": 0,
+                    "end_line": 4,
+                    "filename": "",
                     "line": 3,
                     "node": {
                       "NumberLit": {
@@ -58,17 +58,17 @@
               },
               {
                 "column": 0,
-                "end_column": 1,
+                "end_column": 13,
                 "end_line": 13,
-                "filename": "<workspace>/complex.k.json",
+                "filename": "",
                 "line": 1,
                 "node": {
                   "insert_index": -1,
                   "key": {
-                    "column": 4,
-                    "end_column": 10,
-                    "end_line": 5,
-                    "filename": "<workspace>/complex.k.json",
+                    "column": 8,
+                    "end_column": 0,
+                    "end_line": 6,
+                    "filename": "",
                     "line": 5,
                     "node": {
                       "StringLit": {
@@ -80,27 +80,27 @@
                   },
                   "operation": "Union",
                   "value": {
-                    "column": 12,
+                    "column": 2,
                     "end_column": 5,
-                    "end_line": 8,
-                    "filename": "<workspace>/complex.k.json",
-                    "line": 5,
+                    "end_line": 9,
+                    "filename": "",
+                    "line": 6,
                     "node": {
                       "Config": {
                         "items": [
                           {
-                            "column": 12,
+                            "column": 2,
                             "end_column": 5,
-                            "end_line": 8,
-                            "filename": "<workspace>/complex.k.json",
-                            "line": 5,
+                            "end_line": 9,
+                            "filename": "",
+                            "line": 6,
                             "node": {
                               "insert_index": -1,
                               "key": {
-                                "column": 8,
-                                "end_column": 12,
-                                "end_line": 6,
-                                "filename": "<workspace>/complex.k.json",
+                                "column": 13,
+                                "end_column": 0,
+                                "end_line": 7,
+                                "filename": "",
                                 "line": 6,
                                 "node": {
                                   "StringLit": {
@@ -112,11 +112,11 @@
                               },
                               "operation": "Union",
                               "value": {
-                                "column": 14,
-                                "end_column": 15,
-                                "end_line": 6,
-                                "filename": "<workspace>/complex.k.json",
-                                "line": 6,
+                                "column": 2,
+                                "end_column": 3,
+                                "end_line": 7,
+                                "filename": "",
+                                "line": 7,
                                 "node": {
                                   "NumberLit": {
                                     "binary_suffix": null,
@@ -129,18 +129,18 @@
                             }
                           },
                           {
-                            "column": 12,
+                            "column": 2,
                             "end_column": 5,
-                            "end_line": 8,
-                            "filename": "<workspace>/complex.k.json",
-                            "line": 5,
+                            "end_line": 9,
+                            "filename": "",
+                            "line": 6,
                             "node": {
                               "insert_index": -1,
                               "key": {
-                                "column": 8,
-                                "end_column": 15,
+                                "column": 14,
+                                "end_column": 21,
                                 "end_line": 7,
-                                "filename": "<workspace>/complex.k.json",
+                                "filename": "",
                                 "line": 7,
                                 "node": {
                                   "StringLit": {
@@ -152,10 +152,10 @@
                               },
                               "operation": "Union",
                               "value": {
-                                "column": 17,
-                                "end_column": 25,
-                                "end_line": 7,
-                                "filename": "<workspace>/complex.k.json",
+                                "column": 23,
+                                "end_column": 5,
+                                "end_line": 8,
+                                "filename": "",
                                 "line": 7,
                                 "node": {
                                   "StringLit": {
@@ -175,17 +175,17 @@
               },
               {
                 "column": 0,
-                "end_column": 1,
+                "end_column": 13,
                 "end_line": 13,
-                "filename": "<workspace>/complex.k.json",
+                "filename": "",
                 "line": 1,
                 "node": {
                   "insert_index": -1,
                   "key": {
-                    "column": 4,
-                    "end_column": 8,
+                    "column": 15,
+                    "end_column": 19,
                     "end_line": 12,
-                    "filename": "<workspace>/complex.k.json",
+                    "filename": "",
                     "line": 12,
                     "node": {
                       "StringLit": {
@@ -197,21 +197,21 @@
                   },
                   "operation": "Union",
                   "value": {
-                    "column": 10,
-                    "end_column": 19,
-                    "end_line": 12,
-                    "filename": "<workspace>/complex.k.json",
-                    "line": 12,
+                    "column": 1,
+                    "end_column": 10,
+                    "end_line": 13,
+                    "filename": "",
+                    "line": 13,
                     "node": {
                       "List": {
                         "ctx": "Load",
                         "elts": [
                           {
-                            "column": 11,
-                            "end_column": 12,
-                            "end_line": 12,
-                            "filename": "<workspace>/complex.k.json",
-                            "line": 12,
+                            "column": 2,
+                            "end_column": 3,
+                            "end_line": 13,
+                            "filename": "",
+                            "line": 13,
                             "node": {
                               "NumberLit": {
                                 "binary_suffix": null,
@@ -222,11 +222,11 @@
                             }
                           },
                           {
-                            "column": 14,
-                            "end_column": 15,
-                            "end_line": 12,
-                            "filename": "<workspace>/complex.k.json",
-                            "line": 12,
+                            "column": 5,
+                            "end_column": 6,
+                            "end_line": 13,
+                            "filename": "",
+                            "line": 13,
                             "node": {
                               "NumberLit": {
                                 "binary_suffix": null,
@@ -237,11 +237,11 @@
                             }
                           },
                           {
-                            "column": 17,
-                            "end_column": 18,
-                            "end_line": 12,
-                            "filename": "<workspace>/complex.k.json",
-                            "line": 12,
+                            "column": 8,
+                            "end_column": 9,
+                            "end_line": 13,
+                            "filename": "",
+                            "line": 13,
                             "node": {
                               "NumberLit": {
                                 "binary_suffix": null,
@@ -259,17 +259,17 @@
               },
               {
                 "column": 0,
-                "end_column": 1,
+                "end_column": 13,
                 "end_line": 13,
-                "filename": "<workspace>/complex.k.json",
+                "filename": "",
                 "line": 1,
                 "node": {
                   "insert_index": -1,
                   "key": {
-                    "column": 4,
-                    "end_column": 12,
-                    "end_line": 9,
-                    "filename": "<workspace>/complex.k.json",
+                    "column": 12,
+                    "end_column": 4,
+                    "end_line": 10,
+                    "filename": "",
                     "line": 9,
                     "node": {
                       "StringLit": {
@@ -281,27 +281,27 @@
                   },
                   "operation": "Union",
                   "value": {
-                    "column": 14,
-                    "end_column": 5,
-                    "end_line": 11,
-                    "filename": "<workspace>/complex.k.json",
-                    "line": 9,
+                    "column": 6,
+                    "end_column": 8,
+                    "end_line": 12,
+                    "filename": "",
+                    "line": 10,
                     "node": {
                       "Config": {
                         "items": [
                           {
-                            "column": 14,
-                            "end_column": 5,
-                            "end_line": 11,
-                            "filename": "<workspace>/complex.k.json",
-                            "line": 9,
+                            "column": 6,
+                            "end_column": 8,
+                            "end_line": 12,
+                            "filename": "",
+                            "line": 10,
                             "node": {
                               "insert_index": -1,
                               "key": {
-                                "column": 8,
-                                "end_column": 13,
+                                "column": 17,
+                                "end_column": 22,
                                 "end_line": 10,
-                                "filename": "<workspace>/complex.k.json",
+                                "filename": "",
                                 "line": 10,
                                 "node": {
                                   "StringLit": {
@@ -313,11 +313,11 @@
                               },
                               "operation": "Union",
                               "value": {
-                                "column": 15,
-                                "end_column": 22,
-                                "end_line": 10,
-                                "filename": "<workspace>/complex.k.json",
-                                "line": 10,
+                                "column": 1,
+                                "end_column": 1,
+                                "end_line": 12,
+                                "filename": "",
+                                "line": 11,
                                 "node": {
                                   "StringLit": {
                                     "is_long_string": false,
@@ -336,17 +336,17 @@
               },
               {
                 "column": 0,
-                "end_column": 1,
+                "end_column": 13,
                 "end_line": 13,
-                "filename": "<workspace>/complex.k.json",
+                "filename": "",
                 "line": 1,
                 "node": {
                   "insert_index": -1,
                   "key": {
-                    "column": 4,
-                    "end_column": 13,
+                    "column": 7,
+                    "end_column": 16,
                     "end_line": 4,
-                    "filename": "<workspace>/complex.k.json",
+                    "filename": "",
                     "line": 4,
                     "node": {
                       "StringLit": {
@@ -358,10 +358,10 @@
                   },
                   "operation": "Union",
                   "value": {
-                    "column": 15,
-                    "end_column": 30,
-                    "end_line": 4,
-                    "filename": "<workspace>/complex.k.json",
+                    "column": 18,
+                    "end_column": 1,
+                    "end_line": 5,
+                    "filename": "",
                     "line": 4,
                     "node": {
                       "StringLit": {
@@ -375,17 +375,17 @@
               },
               {
                 "column": 0,
-                "end_column": 1,
+                "end_column": 13,
                 "end_line": 13,
-                "filename": "<workspace>/complex.k.json",
+                "filename": "",
                 "line": 1,
                 "node": {
                   "insert_index": -1,
                   "key": {
-                    "column": 4,
-                    "end_column": 10,
+                    "column": 5,
+                    "end_column": 11,
                     "end_line": 2,
-                    "filename": "<workspace>/complex.k.json",
+                    "filename": "",
                     "line": 2,
                     "node": {
                       "StringLit": {
@@ -397,10 +397,10 @@
                   },
                   "operation": "Union",
                   "value": {
-                    "column": 12,
-                    "end_column": 19,
+                    "column": 13,
+                    "end_column": 20,
                     "end_line": 2,
-                    "filename": "<workspace>/complex.k.json",
+                    "filename": "",
                     "line": 2,
                     "node": {
                       "StringLit": {
@@ -419,18 +419,18 @@
       "kwargs": [],
       "name": {
         "column": 0,
-        "end_column": 1,
+        "end_column": 13,
         "end_line": 13,
-        "filename": "<workspace>/complex.k.json",
+        "filename": "",
         "line": 1,
         "node": {
           "ctx": "Load",
           "names": [
             {
               "column": 0,
-              "end_column": 1,
+              "end_column": 13,
               "end_line": 13,
-              "filename": "<workspace>/complex.k.json",
+              "filename": "",
               "line": 1,
               "node": "complex"
             }

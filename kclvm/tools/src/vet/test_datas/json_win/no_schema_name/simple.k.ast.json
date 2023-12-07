@@ -1,25 +1,25 @@
 {
   "column": 0,
-  "end_column": 1,
+  "end_column": 5,
   "end_line": 5,
-  "filename": "<workspace>/simple.k.json",
+  "filename": "<workspace>\\simple.k.json",
   "line": 1,
   "node": {
     "Config": {
       "items": [
         {
           "column": 0,
-          "end_column": 1,
+          "end_column": 5,
           "end_line": 5,
-          "filename": "<workspace>/simple.k.json",
+          "filename": "<workspace>\\simple.k.json",
           "line": 1,
           "node": {
             "insert_index": -1,
             "key": {
-              "column": 4,
-              "end_column": 9,
+              "column": 6,
+              "end_column": 11,
               "end_line": 3,
-              "filename": "<workspace>/simple.k.json",
+              "filename": "<workspace>\\simple.k.json",
               "line": 3,
               "node": {
                 "StringLit": {
@@ -31,10 +31,10 @@
             },
             "operation": "Union",
             "value": {
-              "column": 11,
-              "end_column": 13,
-              "end_line": 3,
-              "filename": "<workspace>/simple.k.json",
+              "column": 13,
+              "end_column": 0,
+              "end_line": 4,
+              "filename": "<workspace>\\simple.k.json",
               "line": 3,
               "node": {
                 "NumberLit": {
@@ -49,17 +49,17 @@
         },
         {
           "column": 0,
-          "end_column": 1,
+          "end_column": 5,
           "end_line": 5,
-          "filename": "<workspace>/simple.k.json",
+          "filename": "<workspace>\\simple.k.json",
           "line": 1,
           "node": {
             "insert_index": -1,
             "key": {
-              "column": 4,
-              "end_column": 13,
+              "column": 7,
+              "end_column": 16,
               "end_line": 4,
-              "filename": "<workspace>/simple.k.json",
+              "filename": "<workspace>\\simple.k.json",
               "line": 4,
               "node": {
                 "StringLit": {
@@ -71,10 +71,10 @@
             },
             "operation": "Union",
             "value": {
-              "column": 15,
-              "end_column": 30,
-              "end_line": 4,
-              "filename": "<workspace>/simple.k.json",
+              "column": 18,
+              "end_column": 2,
+              "end_line": 5,
+              "filename": "<workspace>\\simple.k.json",
               "line": 4,
               "node": {
                 "StringLit": {
@@ -88,17 +88,17 @@
         },
         {
           "column": 0,
-          "end_column": 1,
+          "end_column": 5,
           "end_line": 5,
-          "filename": "<workspace>/simple.k.json",
+          "filename": "<workspace>\\simple.k.json",
           "line": 1,
           "node": {
             "insert_index": -1,
             "key": {
-              "column": 4,
-              "end_column": 10,
+              "column": 5,
+              "end_column": 11,
               "end_line": 2,
-              "filename": "<workspace>/simple.k.json",
+              "filename": "<workspace>\\simple.k.json",
               "line": 2,
               "node": {
                 "StringLit": {
@@ -110,10 +110,10 @@
             },
             "operation": "Union",
             "value": {
-              "column": 12,
-              "end_column": 19,
+              "column": 13,
+              "end_column": 20,
               "end_line": 2,
-              "filename": "<workspace>/simple.k.json",
+              "filename": "<workspace>\\simple.k.json",
               "line": 2,
               "node": {
                 "StringLit": {

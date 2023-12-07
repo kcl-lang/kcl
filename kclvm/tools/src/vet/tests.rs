@@ -74,8 +74,8 @@ mod test_expr_builder {
         vet::{
             expr_builder::ExprBuilder,
             tests::{
-                construct_full_path, FILE_EXTENSIONS, INVALID_FILE_RESULT, LOADER_KIND,
-                NO_SCHEMA_NAME_PATH, SCHEMA_NAMES, TEST_CASES,
+                construct_full_path, deal_windows_filepath, FILE_EXTENSIONS, INVALID_FILE_RESULT,
+                LOADER_KIND, NO_SCHEMA_NAME_PATH, SCHEMA_NAMES, TEST_CASES,
             },
         },
     };
@@ -102,9 +102,23 @@ mod test_expr_builder {
             let expr_ast = expr_builder.build(None).unwrap();
             let got_ast_json = serde_json::to_value(&expr_ast).unwrap();
 
+            let got_ast_json_str = serde_json::to_string_pretty(&got_ast_json)
+                .unwrap()
+                .replace(
+                    &deal_windows_filepath(construct_full_path("json").unwrap()),
+                    "<workspace>",
+                );
+
+            let got_ast_json: Value = serde_json::from_str(&got_ast_json_str).unwrap();
+
+            #[cfg(not(target_os = "windows"))]
+            let test_case_ty = "json";
+            #[cfg(target_os = "windows")]
+            let test_case_ty = "json_win";
+
             let expect_file_path = construct_full_path(&format!(
                 "{}.{}",
-                Path::new(FILE_EXTENSIONS[0])
+                Path::new(test_case_ty)
                     .join(NO_SCHEMA_NAME_PATH)
                     .join(test_name)
                     .display()
@@ -115,12 +129,6 @@ mod test_expr_builder {
 
             let f = File::open(expect_file_path.clone()).unwrap();
             let expect_ast_json: serde_json::Value = serde_json::from_reader(f).unwrap();
-            let mut expect_path = PathBuf::from(construct_full_path("json").unwrap());
-            expect_path.push("");
-            let expect_ast_json_str = serde_json::to_string(&expect_ast_json)
-                .unwrap()
-                .replace("<workspace>", &expect_path.display().to_string());
-            let expect_ast_json: Value = serde_json::from_str(&expect_ast_json_str).unwrap();
             assert_eq!(expect_ast_json, got_ast_json)
         }
     }
@@ -165,20 +173,28 @@ mod test_expr_builder {
                 .unwrap();
             let got_ast_json = serde_json::to_value(&expr_ast).unwrap();
 
+            let got_ast_json_str = serde_json::to_string_pretty(&got_ast_json)
+                .unwrap()
+                .replace(
+                    &deal_windows_filepath(construct_full_path("json").unwrap()),
+                    "<workspace>",
+                );
+
+            let got_ast_json: Value = serde_json::from_str(&got_ast_json_str).unwrap();
+
+            #[cfg(not(target_os = "windows"))]
+            let test_case_ty = "json";
+            #[cfg(target_os = "windows")]
+            let test_case_ty = "json_win";
             let expect_file_path = construct_full_path(&format!(
                 "{}/{}.{}",
-                FILE_EXTENSIONS[0], TEST_CASES[i], FILE_EXTENSIONS[2]
+                test_case_ty, TEST_CASES[i], FILE_EXTENSIONS[2]
             ))
             .unwrap();
 
             let f = File::open(expect_file_path.clone()).unwrap();
             let expect_ast_json: serde_json::Value = serde_json::from_reader(f).unwrap();
-            let mut expect_path = PathBuf::from(construct_full_path("json").unwrap());
-            expect_path.push("");
-            let expect_ast_json_str = serde_json::to_string(&expect_ast_json)
-                .unwrap()
-                .replace("<workspace>", &expect_path.display().to_string());
-            let expect_ast_json: Value = serde_json::from_str(&expect_ast_json_str).unwrap();
+
             assert_eq!(expect_ast_json, got_ast_json)
         }
     }
@@ -199,9 +215,23 @@ mod test_expr_builder {
                 .unwrap();
             let got_ast_json = serde_json::to_value(&expr_ast).unwrap();
 
+            let got_ast_json_str = serde_json::to_string_pretty(&got_ast_json)
+                .unwrap()
+                .replace(
+                    &deal_windows_filepath(construct_full_path("json").unwrap()),
+                    "<workspace>",
+                );
+
+            let got_ast_json: Value = serde_json::from_str(&got_ast_json_str).unwrap();
+
+            #[cfg(not(target_os = "windows"))]
+            let test_case_ty = "json_str";
+            #[cfg(target_os = "windows")]
+            let test_case_ty = "json_str_win";
+
             let expect_file_path = construct_full_path(&format!(
                 "{}/{}.{}",
-                "json_str", TEST_CASES[i], FILE_EXTENSIONS[2]
+                test_case_ty, TEST_CASES[i], FILE_EXTENSIONS[2]
             ))
             .unwrap();
             let f = File::open(expect_file_path.clone()).unwrap();
@@ -370,7 +400,10 @@ mod test_validater {
 
     use crate::{
         util::loader::LoaderKind,
-        vet::validator::{validate, ValidateOption},
+        vet::{
+            tests::deal_windows_filepath,
+            validator::{validate, ValidateOption},
+        },
     };
 
     use super::{construct_full_path, LOADER_KIND};
@@ -393,6 +426,8 @@ mod test_validater {
         println!("test_validate_with_invalid_file_path - PASS");
         test_validate_with_invalid_file_type();
         println!("test_validate_with_invalid_file_type - PASS");
+        test_invalid_validate_with_json_pos();
+        println!("test_invalid_validate_with_json_pos - PASS");
     }
 
     fn test_validate() {
@@ -427,7 +462,6 @@ mod test_validater {
         }
     }
 
-    #[test]
     fn test_invalid_validate_with_json_pos() {
         let root_path = PathBuf::from(construct_full_path("invalid_vet_cases_json").unwrap())
             .canonicalize()
@@ -475,9 +509,10 @@ mod test_validater {
                 let result = validate(opt).unwrap_err();
                 println!("{}", result.to_string());
                 assert!(
-                    result
-                        .to_string()
-                        .contains(&root_path.join(case).display().to_string()),
+                    result.to_string().replace("\\", "").contains(
+                        &deal_windows_filepath(root_path.join(case).display().to_string())
+                            .replace("\\", "")
+                    ),
                     "{result}"
                 );
             }
@@ -639,5 +674,23 @@ mod test_validater {
                 assert_eq!(err.to_string(), "Failed to Load JSON")
             }
         }
+    }
+}
+
+/// Deal with windows filepath
+fn deal_windows_filepath(filepath: String) -> String {
+    #[cfg(not(target_os = "windows"))]
+    return filepath;
+    #[cfg(target_os = "windows")]
+    {
+        use kclvm_utils::path::PathPrefix;
+        let path = PathBuf::from(filepath)
+            .canonicalize()
+            .unwrap()
+            .display()
+            .to_string();
+        Path::new(&path)
+            .adjust_canonicalization()
+            .replace("\\", "\\\\")
     }
 }
