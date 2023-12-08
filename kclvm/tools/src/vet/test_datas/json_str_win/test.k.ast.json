@@ -1,0 +1,309 @@
+{
+  "column": 0,
+  "end_column": 12,
+  "end_line": 12,
+  "filename": "",
+  "line": 1,
+  "node": {
+    "Schema": {
+      "args": [],
+      "config": {
+        "column": 0,
+        "end_column": 12,
+        "end_line": 12,
+        "filename": "",
+        "line": 1,
+        "node": {
+          "Config": {
+            "items": [
+              {
+                "column": 0,
+                "end_column": 12,
+                "end_line": 12,
+                "filename": "",
+                "line": 1,
+                "node": {
+                  "insert_index": -1,
+                  "key": {
+                    "column": 7,
+                    "end_column": 16,
+                    "end_line": 4,
+                    "filename": "",
+                    "line": 4,
+                    "node": {
+                      "StringLit": {
+                        "is_long_string": false,
+                        "raw_value": "\"address\"",
+                        "value": "address"
+                      }
+                    }
+                  },
+                  "operation": "Union",
+                  "value": {
+                    "column": 1,
+                    "end_column": 4,
+                    "end_line": 8,
+                    "filename": "",
+                    "line": 5,
+                    "node": {
+                      "Config": {
+                        "items": [
+                          {
+                            "column": 1,
+                            "end_column": 4,
+                            "end_line": 8,
+                            "filename": "",
+                            "line": 5,
+                            "node": {
+                              "insert_index": -1,
+                              "key": {
+                                "column": 13,
+                                "end_column": 19,
+                                "end_line": 6,
+                                "filename": "",
+                                "line": 6,
+                                "node": {
+                                  "StringLit": {
+                                    "is_long_string": false,
+                                    "raw_value": "\"city\"",
+                                    "value": "city"
+                                  }
+                                }
+                              },
+                              "operation": "Union",
+                              "value": {
+                                "column": 21,
+                                "end_column": 4,
+                                "end_line": 7,
+                                "filename": "",
+                                "line": 6,
+                                "node": {
+                                  "StringLit": {
+                                    "is_long_string": false,
+                                    "raw_value": "\"London\"",
+                                    "value": "London"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "column": 1,
+                            "end_column": 4,
+                            "end_line": 8,
+                            "filename": "",
+                            "line": 5,
+                            "node": {
+                              "insert_index": -1,
+                              "key": {
+                                "column": 12,
+                                "end_column": 20,
+                                "end_line": 5,
+                                "filename": "",
+                                "line": 5,
+                                "node": {
+                                  "StringLit": {
+                                    "is_long_string": false,
+                                    "raw_value": "\"street\"",
+                                    "value": "street"
+                                  }
+                                }
+                              },
+                              "operation": "Union",
+                              "value": {
+                                "column": 22,
+                                "end_column": 2,
+                                "end_line": 6,
+                                "filename": "",
+                                "line": 5,
+                                "node": {
+                                  "StringLit": {
+                                    "is_long_string": false,
+                                    "raw_value": "\"10 Downing Street\"",
+                                    "value": "10 Downing Street"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "column": 0,
+                "end_column": 12,
+                "end_line": 12,
+                "filename": "",
+                "line": 1,
+                "node": {
+                  "insert_index": -1,
+                  "key": {
+                    "column": 6,
+                    "end_column": 11,
+                    "end_line": 3,
+                    "filename": "",
+                    "line": 3,
+                    "node": {
+                      "StringLit": {
+                        "is_long_string": false,
+                        "raw_value": "\"age\"",
+                        "value": "age"
+                      }
+                    }
+                  },
+                  "operation": "Union",
+                  "value": {
+                    "column": 13,
+                    "end_column": 0,
+                    "end_line": 4,
+                    "filename": "",
+                    "line": 3,
+                    "node": {
+                      "NumberLit": {
+                        "binary_suffix": null,
+                        "value": {
+                          "Int": 43
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "column": 0,
+                "end_column": 12,
+                "end_line": 12,
+                "filename": "",
+                "line": 1,
+                "node": {
+                  "insert_index": -1,
+                  "key": {
+                    "column": 5,
+                    "end_column": 11,
+                    "end_line": 2,
+                    "filename": "",
+                    "line": 2,
+                    "node": {
+                      "StringLit": {
+                        "is_long_string": false,
+                        "raw_value": "\"name\"",
+                        "value": "name"
+                      }
+                    }
+                  },
+                  "operation": "Union",
+                  "value": {
+                    "column": 13,
+                    "end_column": 23,
+                    "end_line": 2,
+                    "filename": "",
+                    "line": 2,
+                    "node": {
+                      "StringLit": {
+                        "is_long_string": false,
+                        "raw_value": "\"John Doe\"",
+                        "value": "John Doe"
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "column": 0,
+                "end_column": 12,
+                "end_line": 12,
+                "filename": "",
+                "line": 1,
+                "node": {
+                  "insert_index": -1,
+                  "key": {
+                    "column": 11,
+                    "end_column": 3,
+                    "end_line": 9,
+                    "filename": "",
+                    "line": 8,
+                    "node": {
+                      "StringLit": {
+                        "is_long_string": false,
+                        "raw_value": "\"phones\"",
+                        "value": "phones"
+                      }
+                    }
+                  },
+                  "operation": "Union",
+                  "value": {
+                    "column": 5,
+                    "end_column": 9,
+                    "end_line": 12,
+                    "filename": "",
+                    "line": 9,
+                    "node": {
+                      "List": {
+                        "ctx": "Load",
+                        "elts": [
+                          {
+                            "column": 16,
+                            "end_column": 6,
+                            "end_line": 10,
+                            "filename": "",
+                            "line": 9,
+                            "node": {
+                              "StringLit": {
+                                "is_long_string": false,
+                                "raw_value": "\"+44 1234567\"",
+                                "value": "+44 1234567"
+                              }
+                            }
+                          },
+                          {
+                            "column": 17,
+                            "end_column": 2,
+                            "end_line": 12,
+                            "filename": "",
+                            "line": 10,
+                            "node": {
+                              "StringLit": {
+                                "is_long_string": false,
+                                "raw_value": "\"+44 2345678\"",
+                                "value": "+44 2345678"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "kwargs": [],
+      "name": {
+        "column": 0,
+        "end_column": 12,
+        "end_line": 12,
+        "filename": "",
+        "line": 1,
+        "node": {
+          "ctx": "Load",
+          "names": [
+            {
+              "column": 0,
+              "end_column": 12,
+              "end_line": 12,
+              "filename": "",
+              "line": 1,
+              "node": "test"
+            }
+          ],
+          "pkgpath": ""
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,165 @@
+{
+  "column": 0,
+  "end_column": 5,
+  "end_line": 5,
+  "filename": "",
+  "line": 1,
+  "node": {
+    "Schema": {
+      "args": [],
+      "config": {
+        "column": 0,
+        "end_column": 5,
+        "end_line": 5,
+        "filename": "",
+        "line": 1,
+        "node": {
+          "Config": {
+            "items": [
+              {
+                "column": 0,
+                "end_column": 5,
+                "end_line": 5,
+                "filename": "",
+                "line": 1,
+                "node": {
+                  "insert_index": -1,
+                  "key": {
+                    "column": 6,
+                    "end_column": 11,
+                    "end_line": 3,
+                    "filename": "",
+                    "line": 3,
+                    "node": {
+                      "StringLit": {
+                        "is_long_string": false,
+                        "raw_value": "\"age\"",
+                        "value": "age"
+                      }
+                    }
+                  },
+                  "operation": "Union",
+                  "value": {
+                    "column": 13,
+                    "end_column": 0,
+                    "end_line": 4,
+                    "filename": "",
+                    "line": 3,
+                    "node": {
+                      "NumberLit": {
+                        "binary_suffix": null,
+                        "value": {
+                          "Int": 18
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "column": 0,
+                "end_column": 5,
+                "end_line": 5,
+                "filename": "",
+                "line": 1,
+                "node": {
+                  "insert_index": -1,
+                  "key": {
+                    "column": 7,
+                    "end_column": 16,
+                    "end_line": 4,
+                    "filename": "",
+                    "line": 4,
+                    "node": {
+                      "StringLit": {
+                        "is_long_string": false,
+                        "raw_value": "\"message\"",
+                        "value": "message"
+                      }
+                    }
+                  },
+                  "operation": "Union",
+                  "value": {
+                    "column": 18,
+                    "end_column": 2,
+                    "end_line": 5,
+                    "filename": "",
+                    "line": 4,
+                    "node": {
+                      "StringLit": {
+                        "is_long_string": false,
+                        "raw_value": "\"This is Alice\"",
+                        "value": "This is Alice"
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "column": 0,
+                "end_column": 5,
+                "end_line": 5,
+                "filename": "",
+                "line": 1,
+                "node": {
+                  "insert_index": -1,
+                  "key": {
+                    "column": 5,
+                    "end_column": 11,
+                    "end_line": 2,
+                    "filename": "",
+                    "line": 2,
+                    "node": {
+                      "StringLit": {
+                        "is_long_string": false,
+                        "raw_value": "\"name\"",
+                        "value": "name"
+                      }
+                    }
+                  },
+                  "operation": "Union",
+                  "value": {
+                    "column": 13,
+                    "end_column": 20,
+                    "end_line": 2,
+                    "filename": "",
+                    "line": 2,
+                    "node": {
+                      "StringLit": {
+                        "is_long_string": false,
+                        "raw_value": "\"Alice\"",
+                        "value": "Alice"
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "kwargs": [],
+      "name": {
+        "column": 0,
+        "end_column": 5,
+        "end_line": 5,
+        "filename": "",
+        "line": 1,
+        "node": {
+          "ctx": "Load",
+          "names": [
+            {
+              "column": 0,
+              "end_column": 5,
+              "end_line": 5,
+              "filename": "",
+              "line": 1,
+              "node": "simple"
+            }
+          ],
+          "pkgpath": ""
+        }
+      }
+    }
+  }
+}

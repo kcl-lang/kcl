@@ -1,0 +1,179 @@
+{
+  "column": 0,
+  "end_column": 7,
+  "end_line": 7,
+  "filename": "",
+  "line": 1,
+  "node": {
+    "List": {
+      "ctx": "Load",
+      "elts": [
+        {
+          "column": 5,
+          "end_column": 4,
+          "end_line": 7,
+          "filename": "",
+          "line": 2,
+          "node": {
+            "Schema": {
+              "args": [],
+              "config": {
+                "column": 5,
+                "end_column": 4,
+                "end_line": 7,
+                "filename": "",
+                "line": 2,
+                "node": {
+                  "Config": {
+                    "items": [
+                      {
+                        "column": 5,
+                        "end_column": 4,
+                        "end_line": 7,
+                        "filename": "",
+                        "line": 2,
+                        "node": {
+                          "insert_index": -1,
+                          "key": {
+                            "column": 11,
+                            "end_column": 16,
+                            "end_line": 4,
+                            "filename": "",
+                            "line": 4,
+                            "node": {
+                              "StringLit": {
+                                "is_long_string": false,
+                                "raw_value": "\"age\"",
+                                "value": "age"
+                              }
+                            }
+                          },
+                          "operation": "Union",
+                          "value": {
+                            "column": 18,
+                            "end_column": 1,
+                            "end_line": 5,
+                            "filename": "",
+                            "line": 4,
+                            "node": {
+                              "NumberLit": {
+                                "binary_suffix": null,
+                                "value": {
+                                  "Int": 18
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "column": 5,
+                        "end_column": 4,
+                        "end_line": 7,
+                        "filename": "",
+                        "line": 2,
+                        "node": {
+                          "insert_index": -1,
+                          "key": {
+                            "column": 12,
+                            "end_column": 21,
+                            "end_line": 5,
+                            "filename": "",
+                            "line": 5,
+                            "node": {
+                              "StringLit": {
+                                "is_long_string": false,
+                                "raw_value": "\"message\"",
+                                "value": "message"
+                              }
+                            }
+                          },
+                          "operation": "Union",
+                          "value": {
+                            "column": 23,
+                            "end_column": 3,
+                            "end_line": 6,
+                            "filename": "",
+                            "line": 5,
+                            "node": {
+                              "StringLit": {
+                                "is_long_string": false,
+                                "raw_value": "\"This is Alice\"",
+                                "value": "This is Alice"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "column": 5,
+                        "end_column": 4,
+                        "end_line": 7,
+                        "filename": "",
+                        "line": 2,
+                        "node": {
+                          "insert_index": -1,
+                          "key": {
+                            "column": 10,
+                            "end_column": 16,
+                            "end_line": 3,
+                            "filename": "",
+                            "line": 3,
+                            "node": {
+                              "StringLit": {
+                                "is_long_string": false,
+                                "raw_value": "\"name\"",
+                                "value": "name"
+                              }
+                            }
+                          },
+                          "operation": "Union",
+                          "value": {
+                            "column": 18,
+                            "end_column": 0,
+                            "end_line": 4,
+                            "filename": "",
+                            "line": 3,
+                            "node": {
+                              "StringLit": {
+                                "is_long_string": false,
+                                "raw_value": "\"Alice\"",
+                                "value": "Alice"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              },
+              "kwargs": [],
+              "name": {
+                "column": 5,
+                "end_column": 4,
+                "end_line": 7,
+                "filename": "",
+                "line": 2,
+                "node": {
+                  "ctx": "Load",
+                  "names": [
+                    {
+                      "column": 5,
+                      "end_column": 4,
+                      "end_line": 7,
+                      "filename": "",
+                      "line": 2,
+                      "node": "list"
+                    }
+                  ],
+                  "pkgpath": ""
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

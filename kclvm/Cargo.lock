@@ -1269,15 +1269,16 @@ dependencies = [
 
 [[package]]
 name = "insta"
-version = "1.31.0"
+version = "1.17.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a0770b0a3d4c70567f0d58331f3088b0e4c4f56c9b8d764efe654b4a5d46de3a"
+checksum = "f6de657c6e99c9f665a595db63c6342de64cbd076a817f24c4a548847a81aee5"
 dependencies = [
  "console",
- "lazy_static",
- "linked-hash-map",
+ "once_cell",
+ "serde",
+ "serde_json",
+ "serde_yaml 0.8.26",
  "similar",
- "yaml-rust",
 ]
 
 [[package]]
@@ -1362,6 +1363,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c5f195fe497f702db0f318b07fdd68edb16955aed830df8363d837542f8f935a"
 dependencies = [
  "wasm-bindgen",
+]
+
+[[package]]
+name = "json-spanned-value"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bb343fa4e3b1b22b344937deedac88da995abf139c2232cbeaa436c38380a210"
+dependencies = [
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -1498,7 +1509,7 @@ dependencies = [
  "protoc-bin-vendored",
  "serde",
  "serde_json",
- "serde_yaml",
+ "serde_yaml 0.9.25",
  "tempfile",
  "tokio",
 ]
@@ -1588,7 +1599,7 @@ dependencies = [
  "rust-crypto",
  "serde",
  "serde_json",
- "serde_yaml",
+ "serde_yaml 0.9.25",
  "toml",
 ]
 
@@ -1749,7 +1760,7 @@ dependencies = [
  "regex",
  "serde",
  "serde_json",
- "serde_yaml",
+ "serde_yaml 0.9.25",
  "sha1",
  "sha2 0.9.9",
  "unic-ucd-bidi",
@@ -1807,9 +1818,11 @@ version = "0.7.0"
 dependencies = [
  "anyhow",
  "compiler_base_session",
+ "compiler_base_span 0.0.1",
  "criterion 0.3.6",
  "fancy-regex",
  "indexmap 1.9.3",
+ "json-spanned-value",
  "kclvm-ast",
  "kclvm-ast-pretty",
  "kclvm-config",
@@ -1820,12 +1833,13 @@ dependencies = [
  "kclvm-runner",
  "kclvm-runtime",
  "kclvm-sema",
+ "kclvm-utils",
  "once_cell",
  "pretty_assertions",
  "regex",
  "rustc_lexer",
  "serde_json",
- "serde_yaml",
+ "serde_yaml 0.9.25",
  "walkdir",
 ]
 
@@ -1893,9 +1907,9 @@ dependencies = [
 
 [[package]]
 name = "linked-hash-map"
-version = "0.5.6"
+version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0717cef1bc8b636c6e1c1bbdefc09e6322da8a9321966e8928ef80d20f7f770f"
+checksum = "8dd5a6d5999d9907cda8ed67bbd137d3af8085216c2ac62de5be860bd41f304a"
 
 [[package]]
 name = "linux-raw-sys"
@@ -3128,6 +3142,18 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.29",
+]
+
+[[package]]
+name = "serde_yaml"
+version = "0.8.26"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "578a7433b776b56a35785ed5ce9a7e777ac0598aac5a6dd1b4b18a307c7fc71b"
+dependencies = [
+ "indexmap 1.9.3",
+ "ryu",
+ "serde",
+ "yaml-rust",
 ]
 
 [[package]]

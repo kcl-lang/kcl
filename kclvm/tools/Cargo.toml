@@ -23,11 +23,14 @@ kclvm-query = {path = "../query"}
 kclvm-runner = {path = "../runner"}
 kclvm-runtime = {path = "../runtime"}
 kclvm-driver = {path = "../driver"}
+kclvm-utils ={ path = "../utils"}
 
 serde_json = "1.0.85"
 serde_yaml = "0.9.25"
 once_cell = "1.15.0"
 regex = "1.3"
+json-spanned-value = "0.2.2"
+compiler_base_span = "0.0.1"
 
 [dev-dependencies]
 pretty_assertions = "1.2.1"

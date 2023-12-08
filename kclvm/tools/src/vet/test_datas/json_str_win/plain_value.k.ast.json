@@ -1,0 +1,15 @@
+{
+  "column": 0,
+  "end_column": 1,
+  "end_line": 1,
+  "filename": "",
+  "line": 1,
+  "node": {
+    "NumberLit": {
+      "binary_suffix": null,
+      "value": {
+        "Int": 1
+      }
+    }
+  }
+}

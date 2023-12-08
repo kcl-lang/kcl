@@ -1,0 +1,84 @@
+{
+  "column": 0,
+  "end_column": 3,
+  "end_line": 3,
+  "filename": "<workspace>/only_with_null.json",
+  "line": 1,
+  "node": {
+    "Schema": {
+      "args": [],
+      "config": {
+        "column": 0,
+        "end_column": 3,
+        "end_line": 3,
+        "filename": "<workspace>/only_with_null.json",
+        "line": 1,
+        "node": {
+          "Config": {
+            "items": [
+              {
+                "column": 0,
+                "end_column": 3,
+                "end_line": 3,
+                "filename": "<workspace>/only_with_null.json",
+                "line": 1,
+                "node": {
+                  "insert_index": -1,
+                  "key": {
+                    "column": 5,
+                    "end_column": 17,
+                    "end_line": 2,
+                    "filename": "<workspace>/only_with_null.json",
+                    "line": 2,
+                    "node": {
+                      "StringLit": {
+                        "is_long_string": false,
+                        "raw_value": "\"null_value\"",
+                        "value": "null_value"
+                      }
+                    }
+                  },
+                  "operation": "Union",
+                  "value": {
+                    "column": 19,
+                    "end_column": 0,
+                    "end_line": 3,
+                    "filename": "<workspace>/only_with_null.json",
+                    "line": 2,
+                    "node": {
+                      "NameConstantLit": {
+                        "value": "None"
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "kwargs": [],
+      "name": {
+        "column": 0,
+        "end_column": 3,
+        "end_line": 3,
+        "filename": "<workspace>/only_with_null.json",
+        "line": 1,
+        "node": {
+          "ctx": "Load",
+          "names": [
+            {
+              "column": 0,
+              "end_column": 3,
+              "end_line": 3,
+              "filename": "<workspace>/only_with_null.json",
+              "line": 1,
+              "node": "only_with_null"
+            }
+          ],
+          "pkgpath": ""
+        }
+      }
+    }
+  }
+}

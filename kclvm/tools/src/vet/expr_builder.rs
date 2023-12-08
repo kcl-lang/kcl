@@ -1,3 +1,4 @@
+use compiler_base_span::span::new_byte_pos;
 use kclvm_ast::{
     ast::{
         ConfigEntry, ConfigEntryOperation, ConfigExpr, Expr, ExprContext, Identifier, ListExpr,
@@ -43,8 +44,10 @@ impl ExprBuilder {
     pub(crate) fn build(&self, schema_name: Option<String>) -> Result<NodeRef<Expr>> {
         match self.loader.get_kind() {
             LoaderKind::JSON => {
-                let value = <DataLoader as Loader<serde_json::Value>>::load(&self.loader)
-                    .with_context(|| "Failed to Load JSON".to_string())?;
+                let value = <DataLoader as Loader<
+                    json_spanned_value::Spanned<json_spanned_value::Value>,
+                >>::load(&self.loader)
+                .with_context(|| "Failed to Load JSON".to_string())?;
                 Ok(self
                     .generate(&value, &schema_name)
                     .with_context(|| "Failed to Load JSON".to_string())?)
@@ -180,6 +183,172 @@ impl ExprGenerator<serde_yaml::Value> for ExprBuilder {
                     "{FAIL_LOAD_VALIDATED_ERR_MSG}, Unsupported Yaml tag {}",
                     v.tag
                 )
+            }
+        }
+    }
+}
+
+/// `ExprBuilder` will generate ast expr from Json with span.
+impl ExprGenerator<json_spanned_value::Spanned<json_spanned_value::Value>> for ExprBuilder {
+    fn generate(
+        &self,
+        value: &json_spanned_value::Spanned<json_spanned_value::Value>,
+        schema_name: &Option<String>,
+    ) -> Result<NodeRef<Expr>> {
+        let loc = self.loader.byte_pos_to_pos_in_sourcemap(
+            new_byte_pos(value.span().0 as u32),
+            new_byte_pos(value.span().1 as u32),
+        );
+        match value.get_ref() {
+            json_spanned_value::Value::Null => Ok(node_ref!(
+                Expr::NameConstantLit(NameConstantLit {
+                    value: NameConstant::None,
+                }),
+                loc
+            )),
+            json_spanned_value::Value::Bool(j_bool) => {
+                let name_const = match NameConstant::try_from(j_bool.clone()) {
+                    Ok(nc) => nc,
+                    Err(err) => {
+                        bail!("{FAIL_LOAD_VALIDATED_ERR_MSG}, {err}")
+                    }
+                };
+
+                Ok(node_ref!(
+                    Expr::NameConstantLit(NameConstantLit { value: name_const }),
+                    loc
+                ))
+            }
+            json_spanned_value::Value::Number(j_num) => {
+                if j_num.is_f64() {
+                    let number_lit = match j_num.as_f64() {
+                        Some(num_f64) => num_f64,
+                        None => {
+                            bail!("{FAIL_LOAD_VALIDATED_ERR_MSG}")
+                        }
+                    };
+
+                    Ok(node_ref!(
+                        Expr::NumberLit(NumberLit {
+                            binary_suffix: None,
+                            value: NumberLitValue::Float(number_lit)
+                        }),
+                        loc
+                    ))
+                } else if j_num.is_i64() {
+                    let number_lit = match j_num.as_i64() {
+                        Some(j_num) => j_num,
+                        None => {
+                            bail!("{FAIL_LOAD_VALIDATED_ERR_MSG}")
+                        }
+                    };
+
+                    Ok(node_ref!(
+                        Expr::NumberLit(NumberLit {
+                            binary_suffix: None,
+                            value: NumberLitValue::Int(number_lit)
+                        }),
+                        loc
+                    ))
+                } else {
+                    bail!("{FAIL_LOAD_VALIDATED_ERR_MSG}, Unsupported Unsigned 64");
+                }
+            }
+            json_spanned_value::Value::String(j_string) => {
+                let str_lit = match StringLit::try_from(j_string.to_string()) {
+                    Ok(s) => s,
+                    Err(_) => {
+                        bail!("{FAIL_LOAD_VALIDATED_ERR_MSG}")
+                    }
+                };
+
+                Ok(node_ref!(Expr::StringLit(str_lit), loc))
+            }
+            json_spanned_value::Value::Array(j_arr) => {
+                let mut j_arr_ast_nodes: Vec<NodeRef<Expr>> = Vec::new();
+                for j_arr_item in j_arr {
+                    j_arr_ast_nodes.push(
+                        self.generate(j_arr_item, schema_name)
+                            .with_context(|| FAIL_LOAD_VALIDATED_ERR_MSG)?,
+                    );
+                }
+                Ok(node_ref!(
+                    Expr::List(ListExpr {
+                        ctx: ExprContext::Load,
+                        elts: j_arr_ast_nodes
+                    }),
+                    loc
+                ))
+            }
+            json_spanned_value::Value::Object(j_map) => {
+                let mut config_entries: Vec<NodeRef<ConfigEntry>> = Vec::new();
+
+                for (k, v) in j_map.iter() {
+                    let k_span = k.span();
+                    let k = match StringLit::try_from(k.to_string()) {
+                        Ok(s) => s,
+                        Err(err) => {
+                            bail!("{FAIL_LOAD_VALIDATED_ERR_MSG}, {err}")
+                        }
+                    };
+                    let v = self
+                        .generate(v, &None)
+                        .with_context(|| FAIL_LOAD_VALIDATED_ERR_MSG)?;
+
+                    let config_entry = node_ref!(
+                        ConfigEntry {
+                            key: Some(node_ref!(
+                                Expr::StringLit(k),
+                                self.loader.byte_pos_to_pos_in_sourcemap(
+                                    new_byte_pos(k_span.0 as u32),
+                                    new_byte_pos(k_span.1 as u32)
+                                )
+                            )),
+                            value: v,
+                            operation: ConfigEntryOperation::Union,
+                            insert_index: -1
+                        },
+                        loc.clone()
+                    );
+                    config_entries.push(config_entry);
+                }
+
+                let config_expr = node_ref!(
+                    Expr::Config(ConfigExpr {
+                        items: config_entries
+                    }),
+                    loc.clone()
+                );
+
+                match schema_name {
+                    Some(s_name) => {
+                        let iden = node_ref!(
+                            Identifier {
+                                names: vec![Node::new(
+                                    s_name.to_string(),
+                                    loc.0.clone(),
+                                    loc.1.clone(),
+                                    loc.2.clone(),
+                                    loc.3.clone(),
+                                    loc.4.clone()
+                                )],
+                                pkgpath: String::new(),
+                                ctx: ExprContext::Load
+                            },
+                            loc.clone()
+                        );
+                        Ok(node_ref!(
+                            Expr::Schema(SchemaExpr {
+                                name: iden,
+                                config: config_expr,
+                                args: vec![],
+                                kwargs: vec![]
+                            }),
+                            loc
+                        ))
+                    }
+                    None => Ok(config_expr),
+                }
             }
         }
     }

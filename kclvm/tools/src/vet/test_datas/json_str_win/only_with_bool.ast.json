@@ -1,0 +1,84 @@
+{
+  "column": 0,
+  "end_column": 3,
+  "end_line": 3,
+  "filename": "",
+  "line": 1,
+  "node": {
+    "Schema": {
+      "args": [],
+      "config": {
+        "column": 0,
+        "end_column": 3,
+        "end_line": 3,
+        "filename": "",
+        "line": 1,
+        "node": {
+          "Config": {
+            "items": [
+              {
+                "column": 0,
+                "end_column": 3,
+                "end_line": 3,
+                "filename": "",
+                "line": 1,
+                "node": {
+                  "insert_index": -1,
+                  "key": {
+                    "column": 5,
+                    "end_column": 11,
+                    "end_line": 2,
+                    "filename": "",
+                    "line": 2,
+                    "node": {
+                      "StringLit": {
+                        "is_long_string": false,
+                        "raw_value": "\"flag\"",
+                        "value": "flag"
+                      }
+                    }
+                  },
+                  "operation": "Union",
+                  "value": {
+                    "column": 13,
+                    "end_column": 0,
+                    "end_line": 3,
+                    "filename": "",
+                    "line": 2,
+                    "node": {
+                      "NameConstantLit": {
+                        "value": "True"
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "kwargs": [],
+      "name": {
+        "column": 0,
+        "end_column": 3,
+        "end_line": 3,
+        "filename": "",
+        "line": 1,
+        "node": {
+          "ctx": "Load",
+          "names": [
+            {
+              "column": 0,
+              "end_column": 3,
+              "end_line": 3,
+              "filename": "",
+              "line": 1,
+              "node": "only_with_bool"
+            }
+          ],
+          "pkgpath": ""
+        }
+      }
+    }
+  }
+}

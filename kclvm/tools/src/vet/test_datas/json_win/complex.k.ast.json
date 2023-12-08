@@ -1,0 +1,443 @@
+{
+  "column": 0,
+  "end_column": 13,
+  "end_line": 13,
+  "filename": "<workspace>/complex.k.json",
+  "line": 1,
+  "node": {
+    "Schema": {
+      "args": [],
+      "config": {
+        "column": 0,
+        "end_column": 13,
+        "end_line": 13,
+        "filename": "<workspace>/complex.k.json",
+        "line": 1,
+        "node": {
+          "Config": {
+            "items": [
+              {
+                "column": 0,
+                "end_column": 13,
+                "end_line": 13,
+                "filename": "<workspace>/complex.k.json",
+                "line": 1,
+                "node": {
+                  "insert_index": -1,
+                  "key": {
+                    "column": 6,
+                    "end_column": 11,
+                    "end_line": 3,
+                    "filename": "<workspace>/complex.k.json",
+                    "line": 3,
+                    "node": {
+                      "StringLit": {
+                        "is_long_string": false,
+                        "raw_value": "\"age\"",
+                        "value": "age"
+                      }
+                    }
+                  },
+                  "operation": "Union",
+                  "value": {
+                    "column": 13,
+                    "end_column": 0,
+                    "end_line": 4,
+                    "filename": "<workspace>/complex.k.json",
+                    "line": 3,
+                    "node": {
+                      "NumberLit": {
+                        "binary_suffix": null,
+                        "value": {
+                          "Int": 18
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "column": 0,
+                "end_column": 13,
+                "end_line": 13,
+                "filename": "<workspace>/complex.k.json",
+                "line": 1,
+                "node": {
+                  "insert_index": -1,
+                  "key": {
+                    "column": 8,
+                    "end_column": 0,
+                    "end_line": 6,
+                    "filename": "<workspace>/complex.k.json",
+                    "line": 5,
+                    "node": {
+                      "StringLit": {
+                        "is_long_string": false,
+                        "raw_value": "\"data\"",
+                        "value": "data"
+                      }
+                    }
+                  },
+                  "operation": "Union",
+                  "value": {
+                    "column": 2,
+                    "end_column": 5,
+                    "end_line": 9,
+                    "filename": "<workspace>/complex.k.json",
+                    "line": 6,
+                    "node": {
+                      "Config": {
+                        "items": [
+                          {
+                            "column": 2,
+                            "end_column": 5,
+                            "end_line": 9,
+                            "filename": "<workspace>/complex.k.json",
+                            "line": 6,
+                            "node": {
+                              "insert_index": -1,
+                              "key": {
+                                "column": 13,
+                                "end_column": 0,
+                                "end_line": 7,
+                                "filename": "<workspace>/complex.k.json",
+                                "line": 6,
+                                "node": {
+                                  "StringLit": {
+                                    "is_long_string": false,
+                                    "raw_value": "\"id\"",
+                                    "value": "id"
+                                  }
+                                }
+                              },
+                              "operation": "Union",
+                              "value": {
+                                "column": 2,
+                                "end_column": 3,
+                                "end_line": 7,
+                                "filename": "<workspace>/complex.k.json",
+                                "line": 7,
+                                "node": {
+                                  "NumberLit": {
+                                    "binary_suffix": null,
+                                    "value": {
+                                      "Int": 1
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "column": 2,
+                            "end_column": 5,
+                            "end_line": 9,
+                            "filename": "<workspace>/complex.k.json",
+                            "line": 6,
+                            "node": {
+                              "insert_index": -1,
+                              "key": {
+                                "column": 14,
+                                "end_column": 21,
+                                "end_line": 7,
+                                "filename": "<workspace>/complex.k.json",
+                                "line": 7,
+                                "node": {
+                                  "StringLit": {
+                                    "is_long_string": false,
+                                    "raw_value": "\"value\"",
+                                    "value": "value"
+                                  }
+                                }
+                              },
+                              "operation": "Union",
+                              "value": {
+                                "column": 23,
+                                "end_column": 5,
+                                "end_line": 8,
+                                "filename": "<workspace>/complex.k.json",
+                                "line": 7,
+                                "node": {
+                                  "StringLit": {
+                                    "is_long_string": false,
+                                    "raw_value": "\"value1\"",
+                                    "value": "value1"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "column": 0,
+                "end_column": 13,
+                "end_line": 13,
+                "filename": "<workspace>/complex.k.json",
+                "line": 1,
+                "node": {
+                  "insert_index": -1,
+                  "key": {
+                    "column": 15,
+                    "end_column": 19,
+                    "end_line": 12,
+                    "filename": "<workspace>/complex.k.json",
+                    "line": 12,
+                    "node": {
+                      "StringLit": {
+                        "is_long_string": false,
+                        "raw_value": "\"hc\"",
+                        "value": "hc"
+                      }
+                    }
+                  },
+                  "operation": "Union",
+                  "value": {
+                    "column": 1,
+                    "end_column": 10,
+                    "end_line": 13,
+                    "filename": "<workspace>/complex.k.json",
+                    "line": 13,
+                    "node": {
+                      "List": {
+                        "ctx": "Load",
+                        "elts": [
+                          {
+                            "column": 2,
+                            "end_column": 3,
+                            "end_line": 13,
+                            "filename": "<workspace>/complex.k.json",
+                            "line": 13,
+                            "node": {
+                              "NumberLit": {
+                                "binary_suffix": null,
+                                "value": {
+                                  "Int": 1
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "column": 5,
+                            "end_column": 6,
+                            "end_line": 13,
+                            "filename": "<workspace>/complex.k.json",
+                            "line": 13,
+                            "node": {
+                              "NumberLit": {
+                                "binary_suffix": null,
+                                "value": {
+                                  "Int": 2
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "column": 8,
+                            "end_column": 9,
+                            "end_line": 13,
+                            "filename": "<workspace>/complex.k.json",
+                            "line": 13,
+                            "node": {
+                              "NumberLit": {
+                                "binary_suffix": null,
+                                "value": {
+                                  "Int": 3
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "column": 0,
+                "end_column": 13,
+                "end_line": 13,
+                "filename": "<workspace>/complex.k.json",
+                "line": 1,
+                "node": {
+                  "insert_index": -1,
+                  "key": {
+                    "column": 12,
+                    "end_column": 4,
+                    "end_line": 10,
+                    "filename": "<workspace>/complex.k.json",
+                    "line": 9,
+                    "node": {
+                      "StringLit": {
+                        "is_long_string": false,
+                        "raw_value": "\"labels\"",
+                        "value": "labels"
+                      }
+                    }
+                  },
+                  "operation": "Union",
+                  "value": {
+                    "column": 6,
+                    "end_column": 8,
+                    "end_line": 12,
+                    "filename": "<workspace>/complex.k.json",
+                    "line": 10,
+                    "node": {
+                      "Config": {
+                        "items": [
+                          {
+                            "column": 6,
+                            "end_column": 8,
+                            "end_line": 12,
+                            "filename": "<workspace>/complex.k.json",
+                            "line": 10,
+                            "node": {
+                              "insert_index": -1,
+                              "key": {
+                                "column": 17,
+                                "end_column": 22,
+                                "end_line": 10,
+                                "filename": "<workspace>/complex.k.json",
+                                "line": 10,
+                                "node": {
+                                  "StringLit": {
+                                    "is_long_string": false,
+                                    "raw_value": "\"key\"",
+                                    "value": "key"
+                                  }
+                                }
+                              },
+                              "operation": "Union",
+                              "value": {
+                                "column": 1,
+                                "end_column": 1,
+                                "end_line": 12,
+                                "filename": "<workspace>/complex.k.json",
+                                "line": 11,
+                                "node": {
+                                  "StringLit": {
+                                    "is_long_string": false,
+                                    "raw_value": "\"value\"",
+                                    "value": "value"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "column": 0,
+                "end_column": 13,
+                "end_line": 13,
+                "filename": "<workspace>/complex.k.json",
+                "line": 1,
+                "node": {
+                  "insert_index": -1,
+                  "key": {
+                    "column": 7,
+                    "end_column": 16,
+                    "end_line": 4,
+                    "filename": "<workspace>/complex.k.json",
+                    "line": 4,
+                    "node": {
+                      "StringLit": {
+                        "is_long_string": false,
+                        "raw_value": "\"message\"",
+                        "value": "message"
+                      }
+                    }
+                  },
+                  "operation": "Union",
+                  "value": {
+                    "column": 18,
+                    "end_column": 1,
+                    "end_line": 5,
+                    "filename": "<workspace>/complex.k.json",
+                    "line": 4,
+                    "node": {
+                      "StringLit": {
+                        "is_long_string": false,
+                        "raw_value": "\"This is Alice\"",
+                        "value": "This is Alice"
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "column": 0,
+                "end_column": 13,
+                "end_line": 13,
+                "filename": "<workspace>/complex.k.json",
+                "line": 1,
+                "node": {
+                  "insert_index": -1,
+                  "key": {
+                    "column": 5,
+                    "end_column": 11,
+                    "end_line": 2,
+                    "filename": "<workspace>/complex.k.json",
+                    "line": 2,
+                    "node": {
+                      "StringLit": {
+                        "is_long_string": false,
+                        "raw_value": "\"name\"",
+                        "value": "name"
+                      }
+                    }
+                  },
+                  "operation": "Union",
+                  "value": {
+                    "column": 13,
+                    "end_column": 20,
+                    "end_line": 2,
+                    "filename": "<workspace>/complex.k.json",
+                    "line": 2,
+                    "node": {
+                      "StringLit": {
+                        "is_long_string": false,
+                        "raw_value": "\"Alice\"",
+                        "value": "Alice"
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "kwargs": [],
+      "name": {
+        "column": 0,
+        "end_column": 13,
+        "end_line": 13,
+        "filename": "<workspace>/complex.k.json",
+        "line": 1,
+        "node": {
+          "ctx": "Load",
+          "names": [
+            {
+              "column": 0,
+              "end_column": 13,
+              "end_line": 13,
+              "filename": "<workspace>/complex.k.json",
+              "line": 1,
+              "node": "complex"
+            }
+          ],
+          "pkgpath": ""
+        }
+      }
+    }
+  }
+}
