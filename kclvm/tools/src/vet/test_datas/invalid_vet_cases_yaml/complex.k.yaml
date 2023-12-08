@@ -1,0 +1,10 @@
+name: Alice
+age: 18
+message: This is Alice
+data: 10
+labels:
+    key: value
+hc:
+    - 1
+    - 2
+    - 3

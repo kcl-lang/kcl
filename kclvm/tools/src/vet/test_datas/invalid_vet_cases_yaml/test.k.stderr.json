@@ -1,0 +1,18 @@
+{
+    "__kcl_PanicInfo__": true,
+    "rust_file": "runtime/src/value/api.rs",
+    "rust_line": 2204,
+    "rust_col": 9,
+    "kcl_pkgpath": "__main__",
+    "kcl_file": "validationTempKCLCode.k",
+    "kcl_line": 7,
+    "kcl_col": 0,
+    "kcl_arg_msg": "Check failed on the condition",
+    "kcl_config_meta_file": "",
+    "kcl_config_meta_line": 1,
+    "kcl_config_meta_col": 1,
+    "kcl_config_meta_arg_msg": "Instance check failed",
+    "message": "",
+    "err_type_code": 17,
+    "is_warning": false
+}

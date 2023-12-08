@@ -44,7 +44,7 @@ const LOADER_KIND: [&LoaderKind; 2] = [&LoaderKind::JSON, &LoaderKind::YAML];
 
 const INVALID_FILE_RESULT: &[&str] = &[
 "Failed to Load JSON\n\nCaused by:\n    0: Failed to String 'languages:\n         - Ruby\n       ' to Json\n    1: expected value at line 1 column 1", 
-"Failed to Load YAML\n\nCaused by:\n    0: Failed to String '{\n           \"name\": \"John Doe\",\n               \"city\": \"London\"\n       invalid\n       \n       ' to Yaml\n    1: did not find expected ',' or '}' at line 4 column 1, while parsing a flow mapping"
+"Failed to Load YAML\n\nCaused by:\n    0: Failed to String '{\n           \"name\": \"John Doe\",\n               \"city\": \"London\"\n       invalid\n       \n       ' to Yaml\n    1: while parsing a flow mapping, did not find expected ',' or '}' at line 4 column 1"
 ];
 
 fn construct_full_path(path: &str) -> Result<String> {
@@ -81,6 +81,7 @@ mod test_expr_builder {
     };
     use std::{
         fs::{self, File},
+        io::Write,
         panic,
         path::{Path, PathBuf},
     };
@@ -105,7 +106,9 @@ mod test_expr_builder {
             let got_ast_json_str = serde_json::to_string_pretty(&got_ast_json)
                 .unwrap()
                 .replace(
-                    &deal_windows_filepath(construct_full_path("json").unwrap()),
+                    &deal_windows_filepath(construct_full_path("json").unwrap(), |s| {
+                        s.replace("\\", "\\\\")
+                    }),
                     "<workspace>",
                 );
 
@@ -146,17 +149,30 @@ mod test_expr_builder {
             let expr_ast = expr_builder.build(None).unwrap();
             let got_ast_yaml = serde_yaml::to_value(&expr_ast).unwrap();
 
+            let got_ast_yaml_str = serde_json::to_string(&got_ast_yaml).unwrap().replace(
+                &deal_windows_filepath(construct_full_path("yaml").unwrap(), |s| {
+                    s.replace("\\", "\\\\")
+                }),
+                "<workspace>",
+            );
+
+            let got_ast_yaml: Value = serde_yaml::from_str(&got_ast_yaml_str).unwrap();
+
+            #[cfg(not(target_os = "windows"))]
+            let test_case_ty = "yaml";
+            #[cfg(target_os = "windows")]
+            let test_case_ty = "yaml_win";
+
             let expect_file_path = construct_full_path(&format!(
                 "{}/{}/{}.{}",
-                FILE_EXTENSIONS[1], NO_SCHEMA_NAME_PATH, test_name, FILE_EXTENSIONS[3]
+                test_case_ty, NO_SCHEMA_NAME_PATH, test_name, FILE_EXTENSIONS[3]
             ))
             .unwrap();
+
             let f = File::open(expect_file_path.clone()).unwrap();
-            let expect_ast_yaml: serde_yaml::Value = serde_yaml::from_reader(f).unwrap();
-            if expect_ast_yaml != got_ast_yaml {
-                serde_yaml::to_writer(std::io::stdout(), &got_ast_yaml).unwrap();
-            }
-            assert_eq!(expect_ast_yaml, got_ast_yaml)
+
+            let expect_ast_yaml: Value = serde_yaml::from_reader(f).unwrap();
+            assert_eq!(expect_ast_yaml, got_ast_yaml);
         }
     }
 
@@ -176,7 +192,9 @@ mod test_expr_builder {
             let got_ast_json_str = serde_json::to_string_pretty(&got_ast_json)
                 .unwrap()
                 .replace(
-                    &deal_windows_filepath(construct_full_path("json").unwrap()),
+                    &deal_windows_filepath(construct_full_path("json").unwrap(), |s| {
+                        s.replace("\\", "\\\\")
+                    }),
                     "<workspace>",
                 );
 
@@ -218,7 +236,9 @@ mod test_expr_builder {
             let got_ast_json_str = serde_json::to_string_pretty(&got_ast_json)
                 .unwrap()
                 .replace(
-                    &deal_windows_filepath(construct_full_path("json").unwrap()),
+                    &deal_windows_filepath(construct_full_path("json").unwrap(), |s| {
+                        s.replace("\\", "\\\\")
+                    }),
                     "<workspace>",
                 );
 
@@ -259,13 +279,29 @@ mod test_expr_builder {
                 .unwrap();
             let got_ast_yaml = serde_yaml::to_value(&expr_ast).unwrap();
 
+            let got_ast_yaml_str = serde_json::to_string(&got_ast_yaml).unwrap().replace(
+                &deal_windows_filepath(construct_full_path("yaml").unwrap(), |s| {
+                    s.replace("\\", "\\\\")
+                }),
+                "<workspace>",
+            );
+
+            let got_ast_yaml: serde_yaml::Value = serde_yaml::from_str(&got_ast_yaml_str).unwrap();
+
+            #[cfg(not(target_os = "windows"))]
+            let test_case_ty = "yaml";
+            #[cfg(target_os = "windows")]
+            let test_case_ty = "yaml_win";
+
             let expect_file_path = construct_full_path(&format!(
                 "{}/{}.{}",
-                FILE_EXTENSIONS[1], TEST_CASES[i], FILE_EXTENSIONS[3]
+                test_case_ty, TEST_CASES[i], FILE_EXTENSIONS[3]
             ))
             .unwrap();
+
             let f = File::open(expect_file_path.clone()).unwrap();
             let expect_ast_yaml: serde_yaml::Value = serde_yaml::from_reader(f).unwrap();
+
             assert_eq!(expect_ast_yaml, got_ast_yaml)
         }
     }
@@ -369,22 +405,7 @@ mod test_expr_builder {
                 panic!("unreachable")
             }
             Err(err) => {
-                assert_eq!(format!("{:?}", err), "Failed to Load YAML\n\nCaused by:\n    0: Failed to load the validated file\n    1: Failed to load the validated file, Unsupported Unsigned 64");
-            }
-        };
-    }
-
-    #[test]
-    fn test_unsupported_yaml_with_tag() {
-        // unsupported yaml with tag
-        let file_path = construct_full_path("invalid/unsupported/yaml_with_tag.yaml").unwrap();
-        let expr_builder = ExprBuilder::new_with_file_path(*LOADER_KIND[1], file_path).unwrap();
-        match expr_builder.build(None) {
-            Ok(_) => {
-                panic!("unreachable")
-            }
-            Err(err) => {
-                assert_eq!(format!("{:?}", err), "Failed to Load YAML\n\nCaused by:\n    Failed to load the validated file, Unsupported Yaml tag !mytag");
+                assert_eq!(format!("{:?}", err), "Failed to Load YAML\n\nCaused by:\n    0: Failed to load the validated file\n    1: Failed to load the validated file, Unsupported Number Type");
             }
         };
     }
@@ -428,6 +449,8 @@ mod test_validater {
         println!("test_validate_with_invalid_file_type - PASS");
         test_invalid_validate_with_json_pos();
         println!("test_invalid_validate_with_json_pos - PASS");
+        test_invalid_validate_with_yaml_pos();
+        println!("test_invalid_validate_with_yaml_pos - PASS");
     }
 
     fn test_validate() {
@@ -510,12 +533,71 @@ mod test_validater {
                 println!("{}", result.to_string());
                 assert!(
                     result.to_string().replace("\\", "").contains(
-                        &deal_windows_filepath(root_path.join(case).display().to_string())
-                            .replace("\\", "")
+                        &deal_windows_filepath(root_path.join(case).display().to_string(), |s| {
+                            s.replace("\\", "\\\\")
+                        })
+                        .replace("\\", "")
                     ),
                     "{result}"
                 );
             }
+        }
+    }
+
+    fn test_invalid_validate_with_yaml_pos() {
+        let root_path = PathBuf::from(construct_full_path("invalid_vet_cases_yaml").unwrap())
+            .canonicalize()
+            .unwrap();
+        for case in KCL_TEST_CASES {
+            let validated_file_path = construct_full_path(&format!(
+                "{}.{}",
+                Path::new("invalid_vet_cases_yaml")
+                    .join(case)
+                    .display()
+                    .to_string(),
+                "yaml"
+            ))
+            .unwrap();
+
+            let kcl_code = fs::read_to_string(
+                construct_full_path(
+                    &Path::new("invalid_vet_cases_yaml")
+                        .join(case)
+                        .display()
+                        .to_string(),
+                )
+                .unwrap(),
+            )
+            .expect("Something went wrong reading the file");
+
+            let kcl_path = construct_full_path(
+                &Path::new("invalid_vet_cases_yaml")
+                    .join(case)
+                    .display()
+                    .to_string(),
+            )
+            .unwrap();
+
+            let opt = ValidateOption::new(
+                None,
+                "value".to_string(),
+                validated_file_path.clone(),
+                LoaderKind::YAML,
+                Some(kcl_path),
+                Some(kcl_code),
+            );
+
+            let result = validate(opt).unwrap_err();
+            println!("{}", result.to_string());
+            assert!(
+                result.to_string().replace("\\", "").contains(
+                    &deal_windows_filepath(root_path.join(case).display().to_string(), |s| {
+                        s.replace("\\", "\\\\")
+                    })
+                    .replace("\\", "")
+                ),
+                "{result}"
+            );
         }
     }
 
@@ -637,7 +719,10 @@ mod test_validater {
 }
 
 /// Deal with windows filepath
-fn deal_windows_filepath(filepath: String) -> String {
+fn deal_windows_filepath<F>(filepath: String, transform: F) -> String
+where
+    F: FnOnce(String) -> String,
+{
     #[cfg(not(target_os = "windows"))]
     return filepath;
     #[cfg(target_os = "windows")]
@@ -648,8 +733,6 @@ fn deal_windows_filepath(filepath: String) -> String {
             .unwrap()
             .display()
             .to_string();
-        Path::new(&path)
-            .adjust_canonicalization()
-            .replace("\\", "\\\\")
+        return transform(Path::new(&path).adjust_canonicalization());
     }
 }

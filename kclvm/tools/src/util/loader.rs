@@ -1,9 +1,10 @@
 use std::{fs, path::PathBuf};
 
 use anyhow::{bail, Context, Result};
-use compiler_base_span::{BytePos, FilePathMapping, SourceMap};
+use compiler_base_span::{span::new_byte_pos, BytePos, FilePathMapping, SourceMap};
 use json_spanned_value::{self as jsv, spanned};
 use kclvm_ast::ast::PosTuple;
+use located_yaml::YamlLoader;
 
 pub(crate) trait Loader<T> {
     fn load(&self) -> Result<T>;
@@ -65,7 +66,6 @@ impl DataLoader {
     pub fn byte_pos_to_pos_in_sourcemap(&self, lo: BytePos, hi: BytePos) -> PosTuple {
         let lo = self.sm.lookup_char_pos(lo);
         let hi = self.sm.lookup_char_pos(hi);
-
         let filename: String = format!("{}", lo.file.name.prefer_remapped());
         (
             filename,
@@ -74,6 +74,15 @@ impl DataLoader {
             hi.line as u64,
             hi.col.0 as u64,
         )
+    }
+
+    pub fn file_name(&self) -> String {
+        self.sm
+            .lookup_char_pos(new_byte_pos(0))
+            .file
+            .name
+            .prefer_remapped()
+            .to_string()
     }
 }
 
@@ -104,6 +113,23 @@ impl Loader<spanned::Value> for DataLoader {
         };
 
         Ok(v)
+    }
+}
+
+/// Load data into Json value with span.
+impl Loader<located_yaml::Yaml> for DataLoader {
+    fn load(&self) -> Result<located_yaml::Yaml> {
+        let v = match self.kind {
+            LoaderKind::YAML => YamlLoader::load_from_str(self.get_data())
+                .with_context(|| format!("Failed to String '{}' to Yaml", self.get_data()))?,
+            _ => {
+                bail!("Failed to String to Yaml Value")
+            }
+        };
+
+        v.docs
+            .get(0)
+            .map_or_else(|| bail!("Failed to Load YAML"), |res| Ok(res.clone()))
     }
 }
 

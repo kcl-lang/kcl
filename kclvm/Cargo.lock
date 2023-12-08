@@ -1834,6 +1834,7 @@ dependencies = [
  "kclvm-runtime",
  "kclvm-sema",
  "kclvm-utils",
+ "located_yaml",
  "once_cell",
  "pretty_assertions",
  "regex",
@@ -1910,6 +1911,10 @@ name = "linked-hash-map"
 version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8dd5a6d5999d9907cda8ed67bbd137d3af8085216c2ac62de5be860bd41f304a"
+dependencies = [
+ "serde",
+ "serde_test",
+]
 
 [[package]]
 name = "linux-raw-sys"
@@ -1928,6 +1933,17 @@ dependencies = [
  "libc",
  "regex",
  "semver 0.11.0",
+]
+
+[[package]]
+name = "located_yaml"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9bc68ee6f87a1be7fdba1dcfd854528371aa84a8390279b5d7a99d5da82add76"
+dependencies = [
+ "linked-hash-map",
+ "serde",
+ "yaml-rust",
 ]
 
 [[package]]
@@ -3142,6 +3158,15 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.29",
+]
+
+[[package]]
+name = "serde_test"
+version = "1.0.176"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5a2f49ace1498612d14f7e0b8245519584db8299541dfe31a06374a828d620ab"
+dependencies = [
+ "serde",
 ]
 
 [[package]]
