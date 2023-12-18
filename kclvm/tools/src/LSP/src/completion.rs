@@ -1137,7 +1137,7 @@ mod tests {
                 assert_eq!(
                     arr[0],
                     CompletionItem {
-                        label: "\n\nAttributes\n---------\nname: \nworkloadType: \nreplica: \n\nExamples\n--------\n".to_string(),
+                        label: "\n\nAttributes\n----------\nname: \nworkloadType: \nreplica: \n\nExamples\n--------\n".to_string(),
                         detail: Some("generate docstring".to_string()),
                         kind: Some(CompletionItemKind::SNIPPET),
                         documentation: Some(lsp_types::Documentation::String("docstring for Server".to_string())),
