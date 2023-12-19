@@ -32,7 +32,7 @@ use kclvm_sema::builtin::{STANDARD_SYSTEM_MODULES, STRING_MEMBER_FUNCTIONS};
 use kclvm_sema::core::package::ModuleInfo;
 use kclvm_sema::resolver::doc::{parse_doc_string, Doc};
 use kclvm_sema::ty::{FunctionType, SchemaType, Type};
-use lsp_types::{CompletionItem, CompletionItemKind};
+use lsp_types::{CompletionItem, CompletionItemKind, InsertTextFormat};
 
 use crate::util::{get_real_path_from_external, is_in_schema_expr};
 use crate::util::{inner_most_expr_in_stmt, is_in_docstring};
@@ -71,6 +71,7 @@ pub(crate) struct KCLCompletionItem {
     pub detail: Option<String>,
     pub documentation: Option<String>,
     pub kind: Option<KCLCompletionItemKind>,
+    pub insert_text: Option<String>,
 }
 
 /// Computes completions at the given position.
@@ -102,6 +103,7 @@ pub(crate) fn completion(
                     detail: None,
                     documentation: None,
                     kind: Some(KCLCompletionItemKind::Module),
+                    insert_text: None,
                 }));
             }
 
@@ -126,6 +128,7 @@ pub(crate) fn completion(
                                                 detail: Some(ty.ty_str()),
                                                 documentation: sema_info.doc.clone(),
                                                 kind: Some(KCLCompletionItemKind::Module),
+                                                insert_text: None,
                                             });
                                         }
                                         _ => {
@@ -134,6 +137,7 @@ pub(crate) fn completion(
                                                 detail: Some(ty.ty_str()),
                                                 documentation: sema_info.doc.clone(),
                                                 kind: None,
+                                                insert_text: None,
                                             });
                                         }
                                     },
@@ -185,6 +189,10 @@ fn completion_dot(
                                             detail: Some(ty.ty_str()),
                                             documentation: ty.ty_doc(),
                                             kind: Some(KCLCompletionItemKind::Function),
+                                            insert_text: Some(func_ty_complete_insert_text(
+                                                name,
+                                                &ty.into_function_ty(),
+                                            )),
                                         })
                                         .collect(),
                                 )
@@ -223,6 +231,12 @@ fn completion_dot(
                                     }
                                     _ => name.clone(),
                                 };
+                                let insert_text = match &ty.kind {
+                                    kclvm_sema::ty::TypeKind::Function(func_ty) => {
+                                        Some(func_ty_complete_insert_text(&name, func_ty))
+                                    }
+                                    _ => None,
+                                };
                                 let kind = match &def.get_sema_info().ty {
                                     Some(ty) => match &ty.kind {
                                         kclvm_sema::ty::TypeKind::Schema(_) => {
@@ -247,6 +261,7 @@ fn completion_dot(
                                     detail: Some(format!("{}: {}", name, ty.ty_str())),
                                     documentation,
                                     kind,
+                                    insert_text,
                                 });
                             }
                             None => {
@@ -255,6 +270,7 @@ fn completion_dot(
                                     detail: None,
                                     documentation: None,
                                     kind: None,
+                                    insert_text: None,
                                 });
                             }
                         }
@@ -295,6 +311,7 @@ fn completion_assign(pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::Comple
                                             )),
                                             kind: Some(KCLCompletionItemKind::Variable),
                                             documentation: sema_info.doc.clone(),
+                                            insert_text: None,
                                         }
                                     }),
                                 );
@@ -330,6 +347,7 @@ fn completion_newline(
                 detail: Some("generate docstring".to_string()),
                 documentation: Some(format!("docstring for {}", schema.name.node.clone())),
                 kind: Some(KCLCompletionItemKind::Doc),
+                insert_text: None,
             });
         }
         return Some(into_completion_items(&completions).into());
@@ -364,6 +382,7 @@ fn completion_newline(
                                             None => None,
                                         },
                                         kind: Some(KCLCompletionItemKind::SchemaAttr),
+                                        insert_text: None,
                                     });
                                 }
                                 _ => {}
@@ -397,6 +416,7 @@ fn completion_import_builtin_pkg(program: &Program, pos: &KCLPos) -> IndexSet<KC
                 detail: None,
                 documentation: None,
                 kind: Some(KCLCompletionItemKind::Module),
+                insert_text: None,
             }))
         }
     }
@@ -452,6 +472,7 @@ fn schema_ty_completion_item(schema_ty: &SchemaType) -> KCLCompletionItem {
         detail: Some(detail),
         documentation: Some(schema_ty.doc.clone()),
         kind: Some(KCLCompletionItemKind::Schema),
+        insert_text: None,
     }
 }
 
@@ -483,6 +504,7 @@ fn completion_import(
                         detail: None,
                         documentation: None,
                         kind: Some(KCLCompletionItemKind::Dir),
+                        insert_text: None,
                     });
                 } else if path.is_file() {
                     if let Some(extension) = path.extension() {
@@ -498,6 +520,7 @@ fn completion_import(
                                 detail: None,
                                 documentation: None,
                                 kind: Some(KCLCompletionItemKind::File),
+                                insert_text: None,
                             });
                         }
                     }
@@ -572,6 +595,20 @@ fn func_ty_complete_label(func_name: &String, func_type: &FunctionType) -> Strin
     )
 }
 
+fn func_ty_complete_insert_text(func_name: &String, func_type: &FunctionType) -> String {
+    format!(
+        "{}({})",
+        func_name,
+        func_type
+            .params
+            .iter()
+            .enumerate()
+            .map(|(idx, param)| format!("${{{}:{}}}", idx + 1, param.name.clone()))
+            .collect::<Vec<String>>()
+            .join(", "),
+    )
+}
+
 pub(crate) fn into_completion_items(items: &IndexSet<KCLCompletionItem>) -> Vec<CompletionItem> {
     items
         .iter()
@@ -583,6 +620,12 @@ pub(crate) fn into_completion_items(items: &IndexSet<KCLCompletionItem>) -> Vec<
                 .clone()
                 .map(lsp_types::Documentation::String),
             kind: item.kind.clone().map(|kind| kind.into()),
+            insert_text: item.insert_text.clone(),
+            insert_text_format: if item.insert_text.is_some() {
+                Some(InsertTextFormat::SNIPPET)
+            } else {
+                None
+            },
             ..Default::default()
         })
         .collect()
@@ -598,8 +641,8 @@ mod tests {
 
     use crate::{
         completion::{
-            completion, func_ty_complete_label, into_completion_items, KCLCompletionItem,
-            KCLCompletionItemKind,
+            completion, func_ty_complete_insert_text, func_ty_complete_label,
+            into_completion_items, KCLCompletionItem, KCLCompletionItemKind,
         },
         tests::compile_test_file,
     };
@@ -681,7 +724,7 @@ mod tests {
 
         // test completion for str builtin function
         let got = completion(Some('.'), &program, &pos, &gs).unwrap();
-        let got_labels: Vec<String> = match got {
+        let got_labels: Vec<String> = match &got {
             CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
             CompletionResponse::List(_) => panic!("test failed"),
         };
@@ -690,6 +733,19 @@ mod tests {
             .map(|(name, ty)| func_ty_complete_label(name, &ty.into_function_ty()))
             .collect();
         assert_eq!(got_labels, expected_labels);
+
+        let got_insert_text: Vec<String> = match &got {
+            CompletionResponse::Array(arr) => arr
+                .iter()
+                .map(|item| item.insert_text.clone().unwrap())
+                .collect(),
+            CompletionResponse::List(_) => panic!("test failed"),
+        };
+        let expected_insert_text: Vec<String> = STRING_MEMBER_FUNCTIONS
+            .iter()
+            .map(|(name, ty)| func_ty_complete_insert_text(name, &ty.into_function_ty()))
+            .collect();
+        assert_eq!(got_insert_text, expected_insert_text);
 
         // test completion for import pkg path
         let pos = KCLPos {
@@ -852,7 +908,7 @@ mod tests {
             column: Some(5),
         };
         let got = completion(Some('.'), &program, &pos, &gs).unwrap();
-        let got_labels: Vec<String> = match got {
+        let got_labels: Vec<String> = match &got {
             CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
             CompletionResponse::List(_) => panic!("test failed"),
         };
@@ -862,6 +918,19 @@ mod tests {
             .collect();
         assert_eq!(got_labels, expected_labels);
 
+        let got_insert_text: Vec<String> = match &got {
+            CompletionResponse::Array(arr) => arr
+                .iter()
+                .map(|item| item.insert_text.clone().unwrap())
+                .collect(),
+            CompletionResponse::List(_) => panic!("test failed"),
+        };
+        let expected_insert_text: Vec<String> = MATH_FUNCTION_TYPES
+            .iter()
+            .map(|(name, ty)| func_ty_complete_insert_text(name, &ty.into_function_ty()))
+            .collect();
+        assert_eq!(got_insert_text, expected_insert_text);
+
         // test completion for literal str builtin function
         let pos = KCLPos {
             filename: file.clone(),
@@ -870,7 +939,7 @@ mod tests {
         };
 
         let got = completion(Some('.'), &program, &pos, &gs).unwrap();
-        let got_labels: Vec<String> = match got {
+        let got_labels: Vec<String> = match &got {
             CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
             CompletionResponse::List(_) => panic!("test failed"),
         };
@@ -880,6 +949,19 @@ mod tests {
             .map(|(name, ty)| func_ty_complete_label(name, &ty.into_function_ty()))
             .collect();
         assert_eq!(got_labels, expected_labels);
+
+        let got_insert_text: Vec<String> = match &got {
+            CompletionResponse::Array(arr) => arr
+                .iter()
+                .map(|item| item.insert_text.clone().unwrap())
+                .collect(),
+            CompletionResponse::List(_) => panic!("test failed"),
+        };
+        let expected_insert_text: Vec<String> = STRING_MEMBER_FUNCTIONS
+            .iter()
+            .map(|(name, ty)| func_ty_complete_insert_text(name, &ty.into_function_ty()))
+            .collect();
+        assert_eq!(got_insert_text, expected_insert_text);
 
         let pos = KCLPos {
             filename: file,
@@ -936,6 +1018,7 @@ mod tests {
                 kind: Some(KCLCompletionItemKind::Module),
                 detail: None,
                 documentation: None,
+                insert_text: None,
             })
             .collect::<IndexSet<KCLCompletionItem>>(),
         );
@@ -1162,7 +1245,7 @@ mod tests {
         };
 
         let got = completion(Some('.'), &program, &pos, &gs).unwrap();
-        let got_labels: Vec<String> = match got {
+        let got_labels: Vec<String> = match &got {
             CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
             CompletionResponse::List(_) => panic!("test failed"),
         };
@@ -1172,6 +1255,19 @@ mod tests {
             .map(|(name, ty)| func_ty_complete_label(name, &ty.into_function_ty()))
             .collect();
         assert_eq!(got_labels, expected_labels);
+
+        let got_insert_text: Vec<String> = match &got {
+            CompletionResponse::Array(arr) => arr
+                .iter()
+                .map(|item| item.insert_text.clone().unwrap())
+                .collect(),
+            CompletionResponse::List(_) => panic!("test failed"),
+        };
+        let expected_insert_text: Vec<String> = STRING_MEMBER_FUNCTIONS
+            .iter()
+            .map(|(name, ty)| func_ty_complete_insert_text(name, &ty.into_function_ty()))
+            .collect();
+        assert_eq!(got_insert_text, expected_insert_text);
 
         let pos = KCLPos {
             filename: file.to_owned(),
