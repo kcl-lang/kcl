@@ -331,11 +331,8 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
     }
 
     fn walk_quant_expr(&mut self, quant_expr: &'ctx ast::QuantExpr) -> Self::Result {
+        let (start, end) = (self.ctx.start_pos.clone(), self.ctx.end_pos.clone());
         self.expr(&quant_expr.target);
-        let (start, mut end) = quant_expr.test.get_span_pos();
-        if let Some(if_cond) = &quant_expr.if_cond {
-            end = if_cond.get_end_pos();
-        }
         self.enter_local_scope(
             &self.ctx.current_filename.as_ref().unwrap().clone(),
             start,
@@ -704,6 +701,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
                 | ast::Expr::Config(_)
                 | ast::Expr::Schema(_)
                 | ast::Expr::ConfigIfEntry(_)
+                | ast::Expr::Quant(_)
         ) {
             let (start, end) = expr.get_span_pos();
             self.ctx.start_pos = start;
@@ -741,7 +739,25 @@ impl<'ctx> AdvancedResolver<'ctx> {
                 first_symbol = self
                     .gs
                     .get_symbols()
-                    .get_symbol_by_fully_qualified_name(&import_info.unwrap().fully_qualified_name)
+                    .get_symbol_by_fully_qualified_name(&import_info.unwrap().fully_qualified_name);
+            }
+
+            if let Some(first_symbol) = first_symbol {
+                if self
+                    .gs
+                    .get_symbols()
+                    .get_symbol(first_symbol)
+                    .unwrap()
+                    .get_sema_info()
+                    .ty
+                    .is_none()
+                {
+                    if let Some(ty) = self.ctx.node_ty_map.get(&first_name.id) {
+                        self.gs
+                            .get_symbols_mut()
+                            .set_symbol_type(first_symbol, ty.clone());
+                    }
+                }
             }
         }
         match first_symbol {

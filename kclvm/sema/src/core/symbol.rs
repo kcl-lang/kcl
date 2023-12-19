@@ -6,7 +6,7 @@ use indexmap::IndexMap;
 use kclvm_error::{diagnostic::Range, Position};
 
 use super::package::ModuleInfo;
-use crate::ty::{Type, TypeKind};
+use crate::ty::{Type, TypeKind, TypeRef};
 use kclvm_ast::ast::AstIndex;
 
 pub trait Symbol {
@@ -153,6 +153,53 @@ impl KCLSymbolData {
                 .rules
                 .get(id.get_id())
                 .map(|symbol| symbol as &KCLSymbol),
+        }
+    }
+
+    pub fn set_symbol_type(&mut self, id: SymbolRef, ty: TypeRef) {
+        match id.get_kind() {
+            SymbolKind::Schema => {
+                self.schemas.get_mut(id.get_id()).map(|symbol| {
+                    symbol.sema_info.ty = Some(ty);
+                    symbol
+                });
+            }
+            SymbolKind::Attribute => {
+                self.attributes.get_mut(id.get_id()).map(|symbol| {
+                    symbol.sema_info.ty = Some(ty);
+                    symbol
+                });
+            }
+            SymbolKind::Value => {
+                self.values.get_mut(id.get_id()).map(|symbol| {
+                    symbol.sema_info.ty = Some(ty);
+                    symbol
+                });
+            }
+            SymbolKind::Package => {
+                self.packages.get_mut(id.get_id()).map(|symbol| {
+                    symbol.sema_info.ty = Some(ty);
+                    symbol
+                });
+            }
+            SymbolKind::TypeAlias => {
+                self.type_aliases.get_mut(id.get_id()).map(|symbol| {
+                    symbol.sema_info.ty = Some(ty);
+                    symbol
+                });
+            }
+            SymbolKind::Unresolved => {
+                self.unresolved.get_mut(id.get_id()).map(|symbol| {
+                    symbol.sema_info.ty = Some(ty);
+                    symbol
+                });
+            }
+            SymbolKind::Rule => {
+                self.rules.get_mut(id.get_id()).map(|symbol| {
+                    symbol.sema_info.ty = Some(ty);
+                    symbol
+                });
+            }
         }
     }
 
@@ -1151,7 +1198,7 @@ impl Symbol for TypeAliasSymbol {
     }
 
     fn get_owner(&self) -> Option<SymbolRef> {
-        None
+        Some(self.owner)
     }
 
     fn get_definition(&self) -> Option<SymbolRef> {
@@ -1275,7 +1322,7 @@ impl Symbol for RuleSymbol {
     }
 
     fn get_owner(&self) -> Option<SymbolRef> {
-        None
+        Some(self.owner)
     }
 
     fn get_definition(&self) -> Option<SymbolRef> {
