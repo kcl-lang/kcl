@@ -686,7 +686,7 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
         self.stmts(&lambda_expr.body);
 
         self.write_indentation(Indentation::Dedent);
-        self.write_newline();
+        self.fill("");
         self.write_token(TokenKind::CloseDelim(DelimToken::Brace));
     }
 
