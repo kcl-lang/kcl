@@ -6,7 +6,7 @@ use kclvm_compiler::codegen::{
     llvm::{emit_code, OBJECT_FILE_SUFFIX},
     EmitOptions,
 };
-use kclvm_config::cache::{load_pkg_cache, save_pkg_cache, CacheOption};
+use kclvm_config::cache::{load_pkg_cache, save_pkg_cache, CacheOption, KCL_CACHE_PATH_ENV_VAR};
 use kclvm_sema::resolver::scope::ProgramScope;
 use std::{
     collections::HashMap,
@@ -243,8 +243,8 @@ impl KclvmAssembler {
     /// Generate cache dir from the program root path.
     /// Create cache dir if it doesn't exist.
     #[inline]
-    pub(crate) fn load_cache_dir(&self, prog_root_name: &str) -> Result<PathBuf> {
-        let cache_dir = self.construct_cache_dir(prog_root_name);
+    pub(crate) fn load_cache_dir(&self, root: &str) -> Result<PathBuf> {
+        let cache_dir = self.construct_cache_dir(root);
         if !cache_dir.exists() {
             std::fs::create_dir_all(&cache_dir)?;
         }
@@ -252,8 +252,9 @@ impl KclvmAssembler {
     }
 
     #[inline]
-    pub(crate) fn construct_cache_dir(&self, prog_root_name: &str) -> PathBuf {
-        Path::new(prog_root_name)
+    pub(crate) fn construct_cache_dir(&self, root: &str) -> PathBuf {
+        let root = std::env::var(KCL_CACHE_PATH_ENV_VAR).unwrap_or(root.to_string());
+        Path::new(&root)
             .join(".kclvm")
             .join("cache")
             .join(kclvm_version::get_version_string())

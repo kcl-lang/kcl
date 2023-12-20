@@ -18,6 +18,7 @@ const LOCK_SUFFIX: &str = ".lock";
 const DEFAULT_CACHE_DIR: &str = ".kclvm/cache";
 const CACHE_INFO_FILENAME: &str = "info";
 const KCL_SUFFIX_PATTERN: &str = "*.k";
+pub const KCL_CACHE_PATH_ENV_VAR: &str = "KCL_CACHE_PATH";
 
 pub type CacheInfo = String;
 pub type Cache = HashMap<String, CacheInfo>;
@@ -133,7 +134,8 @@ where
 #[inline]
 fn get_cache_dir(root: &str, cache_dir: Option<&str>) -> String {
     let cache_dir = cache_dir.unwrap_or(DEFAULT_CACHE_DIR);
-    Path::new(root)
+    let root = std::env::var(KCL_CACHE_PATH_ENV_VAR).unwrap_or(root.to_string());
+    Path::new(&root)
         .join(cache_dir)
         .join(format!("{}-{}", version::VERSION, version::CHECK_SUM))
         .display()
@@ -144,7 +146,8 @@ fn get_cache_dir(root: &str, cache_dir: Option<&str>) -> String {
 #[allow(dead_code)]
 fn get_cache_filename(root: &str, target: &str, pkgpath: &str, cache_dir: Option<&str>) -> String {
     let cache_dir = cache_dir.unwrap_or(DEFAULT_CACHE_DIR);
-    Path::new(root)
+    let root = std::env::var(KCL_CACHE_PATH_ENV_VAR).unwrap_or(root.to_string());
+    Path::new(&root)
         .join(cache_dir)
         .join(format!("{}-{}", version::VERSION, version::CHECK_SUM))
         .join(target)
@@ -156,7 +159,8 @@ fn get_cache_filename(root: &str, target: &str, pkgpath: &str, cache_dir: Option
 #[inline]
 fn get_cache_info_filename(root: &str, target: &str, cache_dir: Option<&str>) -> String {
     let cache_dir = cache_dir.unwrap_or(DEFAULT_CACHE_DIR);
-    Path::new(root)
+    let root = std::env::var(KCL_CACHE_PATH_ENV_VAR).unwrap_or(root.to_string());
+    Path::new(&root)
         .join(cache_dir)
         .join(format!("{}-{}", version::VERSION, version::CHECK_SUM))
         .join(target)
