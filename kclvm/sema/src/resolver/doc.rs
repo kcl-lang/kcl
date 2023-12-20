@@ -341,7 +341,7 @@ impl Doc {
             })
             .collect::<Vec<String>>()
             .join("\n");
-        format!("{summary}\n\nAttributes\n---------\n{attrs_string}\n\nExamples\n--------{examples_string}\n")
+        format!("{summary}\n\nAttributes\n----------\n{attrs_string}\n\nExamples\n--------{examples_string}\n")
     }
 }
 
