@@ -3,19 +3,15 @@ sumFunc1 = lambda x, y {
     z = x + y
     # Inline comments 2
     z + x
-
 }
 sumFunc2 = lambda x, y = 1 {
     x + y
-
 }
 sumFunc3 = lambda x = 1, y = 1 {
     x + y
-
 }
 sumFunc4 = lambda x: int = 1, y: int = 1 -> int {
     x + y
-
 }
 x0 = sumFunc1(1, 2)
 x1 = sumFunc1(2, 3)
@@ -24,5 +20,4 @@ x3 = sumFunc1(4, 5)
 x = lambda {
     # Inline comments
     1
-
 }()
