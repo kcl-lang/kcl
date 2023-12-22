@@ -119,8 +119,14 @@ pub(crate) fn completion(
                                     Some(ty) => match symbol_ref.get_kind() {
                                         kclvm_sema::core::symbol::SymbolKind::Schema => {
                                             let schema_ty = ty.into_schema_type();
-                                            completions
-                                                .insert(schema_ty_completion_item(&schema_ty));
+                                            // complete schema type
+                                            completions.insert(schema_ty_to_type_complete_item(
+                                                &schema_ty,
+                                            ));
+                                            // complete schema value
+                                            completions.insert(schema_ty_to_value_complete_item(
+                                                &schema_ty,
+                                            ));
                                         }
                                         kclvm_sema::core::symbol::SymbolKind::Package => {
                                             completions.insert(KCLCompletionItem {
@@ -423,7 +429,7 @@ fn completion_import_builtin_pkg(program: &Program, pos: &KCLPos) -> IndexSet<KC
     completions
 }
 
-/// Complete schema name
+/// Complete schema value
 ///
 /// ```no_check
 /// #[cfg(not(test))]
@@ -434,7 +440,7 @@ fn completion_import_builtin_pkg(program: &Program, pos: &KCLPos) -> IndexSet<KC
 /// #[cfg(not(test))]
 /// p = Person(param1, param2){}<cursor>
 /// ```
-fn schema_ty_completion_item(schema_ty: &SchemaType) -> KCLCompletionItem {
+fn schema_ty_to_value_complete_item(schema_ty: &SchemaType) -> KCLCompletionItem {
     let param = schema_ty.func.params.clone();
     let label = format!(
         "{}{}{}",
@@ -467,8 +473,61 @@ fn schema_ty_completion_item(schema_ty: &SchemaType) -> KCLCompletionItem {
         }
         details.join("\n")
     };
+    let insert_text = format!(
+        "{}{}{}",
+        schema_ty.name.clone(),
+        if param.is_empty() {
+            "".to_string()
+        } else {
+            format!(
+                "({})",
+                param
+                    .iter()
+                    .enumerate()
+                    .map(|(idx, p)| format!("${{{}:{}}}", idx + 1, p.name.clone()))
+                    .collect::<Vec<String>>()
+                    .join(", ")
+            )
+        },
+        "{}"
+    );
     KCLCompletionItem {
         label,
+        detail: Some(detail),
+        documentation: Some(schema_ty.doc.clone()),
+        kind: Some(KCLCompletionItemKind::Schema),
+        insert_text: Some(insert_text),
+    }
+}
+
+/// Complete schema type
+///
+/// ```no_check
+/// #[cfg(not(test))]
+/// p: P<cursor>
+/// ```
+/// complete to
+/// ```no_check
+/// #[cfg(not(test))]
+/// p: Person
+/// ```
+fn schema_ty_to_type_complete_item(schema_ty: &SchemaType) -> KCLCompletionItem {
+    let detail = {
+        let mut details = vec![];
+        details.push(schema_ty.schema_ty_signature_str());
+        details.push("Attributes:".to_string());
+        for (name, attr) in &schema_ty.attrs {
+            details.push(format!(
+                "{}{}:{}",
+                name,
+                if attr.is_optional { "?" } else { "" },
+                format!(" {}", attr.ty.ty_str()),
+            ));
+        }
+        details.join("\n")
+    };
+    KCLCompletionItem {
+        label: schema_ty.name.clone(),
         detail: Some(detail),
         documentation: Some(schema_ty.doc.clone()),
         kind: Some(KCLCompletionItemKind::Schema),
@@ -636,7 +695,7 @@ mod tests {
     use indexmap::IndexSet;
     use kclvm_error::Position as KCLPos;
     use kclvm_sema::builtin::{MATH_FUNCTION_TYPES, STRING_MEMBER_FUNCTIONS};
-    use lsp_types::{CompletionItem, CompletionItemKind, CompletionResponse};
+    use lsp_types::{CompletionItem, CompletionItemKind, CompletionResponse, InsertTextFormat};
     use proc_macro_crate::bench_test;
 
     use crate::{
@@ -668,7 +727,8 @@ mod tests {
 
         let mut expected_labels: Vec<&str> = vec![
             "", // generate from error recovery of "pkg."
-            "subpkg", "math", "Person{}", "P{}", "p", "p1", "p2", "p3", "p4", "aaaa",
+            "subpkg", "math", "Person", "Person{}", "P", "P{}", "p", "p1", "p2", "p3", "p4",
+            "aaaa",
         ];
         got_labels.sort();
         expected_labels.sort();
@@ -1150,6 +1210,8 @@ mod tests {
                                 .to_string()
                         ),
                         documentation: Some(lsp_types::Documentation::String("".to_string())),
+                        insert_text: Some("Person(${1:b}){}".to_string()),
+                        insert_text_format: Some(InsertTextFormat::SNIPPET),
                         ..Default::default()
                     }
                 )
@@ -1351,7 +1413,7 @@ mod tests {
         let got = completion(None, &program, &pos, &gs).unwrap();
         match got {
             CompletionResponse::Array(arr) => {
-                assert_eq!(arr.len(), 3);
+                assert_eq!(arr.len(), 4);
                 let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
                 assert!(labels.contains(&"min".to_string()));
                 assert!(labels.contains(&"max".to_string()));
