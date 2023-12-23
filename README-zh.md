@@ -21,6 +21,10 @@
 
 KCL 是一个开源的基于约束的记录及函数语言并通过成熟的编程语言技术和实践来改进对大量繁杂配置比如云原生 Kubernetes 配置场景的编写，致力于构建围绕配置的更好的模块化、扩展性和稳定性，更简单的逻辑编写，以及更简单的自动化和生态工具集成。
 
+<p align="center">
+  <img src="https://kcl-lang.io/img/registry-and-ide.png">
+</p>
+
 ## 场景
 
 您可以将 KCL 用于
