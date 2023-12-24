@@ -45,6 +45,10 @@ test-grammar:
 fmt:
 	make -C ./kclvm fmt
 
+.PHONY: tag
+tag:
+	scripts/tag.sh v$(VERSION)
+
 # ----------------
 # Docker
 # ----------------
