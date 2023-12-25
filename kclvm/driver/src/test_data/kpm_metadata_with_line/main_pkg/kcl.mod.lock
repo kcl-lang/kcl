@@ -1,0 +1,6 @@
+[dependencies]
+  [dependencies.dep-with-line]
+    name = "dep-with-line"
+    full_name = "dep-with-line_"
+    sum = "O2Z1djaB1lC38kNfhwUUYAlqGKE7seUqqys3DPcJfEw="
+    path = "../dep-with-line"
