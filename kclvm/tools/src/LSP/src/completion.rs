@@ -142,7 +142,7 @@ pub(crate) fn completion(
                                                 label: name,
                                                 detail: Some(ty.ty_str()),
                                                 documentation: sema_info.doc.clone(),
-                                                kind: None,
+                                                kind: type_to_item_kind(&ty),
                                                 insert_text: None,
                                             });
                                         }
@@ -230,27 +230,27 @@ fn completion_dot(
                         let sema_info = attr_def.get_sema_info();
                         let name = attr_def.get_name();
                         match &sema_info.ty {
-                            Some(ty) => {
-                                let label: String = match &ty.kind {
+                            Some(attr_ty) => {
+                                let label: String = match &attr_ty.kind {
                                     kclvm_sema::ty::TypeKind::Function(func_ty) => {
                                         func_ty_complete_label(&name, func_ty)
                                     }
                                     _ => name.clone(),
                                 };
-                                let insert_text = match &ty.kind {
+                                let insert_text = match &attr_ty.kind {
                                     kclvm_sema::ty::TypeKind::Function(func_ty) => {
                                         Some(func_ty_complete_insert_text(&name, func_ty))
                                     }
                                     _ => None,
                                 };
                                 let kind = match &def.get_sema_info().ty {
-                                    Some(ty) => match &ty.kind {
+                                    Some(symbol_ty) => match &symbol_ty.kind {
                                         kclvm_sema::ty::TypeKind::Schema(_) => {
                                             Some(KCLCompletionItemKind::SchemaAttr)
                                         }
-                                        _ => None,
+                                        _ => type_to_item_kind(&attr_ty),
                                     },
-                                    None => None,
+                                    None => type_to_item_kind(&attr_ty),
                                 };
                                 let documentation = match &sema_info.doc {
                                     Some(doc) => {
@@ -264,7 +264,7 @@ fn completion_dot(
                                 };
                                 items.insert(KCLCompletionItem {
                                     label,
-                                    detail: Some(format!("{}: {}", name, ty.ty_str())),
+                                    detail: Some(format!("{}: {}", name, attr_ty.ty_str())),
                                     documentation,
                                     kind,
                                     insert_text,
@@ -666,6 +666,29 @@ fn func_ty_complete_insert_text(func_name: &String, func_type: &FunctionType) ->
             .collect::<Vec<String>>()
             .join(", "),
     )
+}
+fn type_to_item_kind(ty: &Type) -> Option<KCLCompletionItemKind> {
+    match ty.kind {
+        kclvm_sema::ty::TypeKind::Bool
+        | kclvm_sema::ty::TypeKind::BoolLit(_)
+        | kclvm_sema::ty::TypeKind::Int
+        | kclvm_sema::ty::TypeKind::IntLit(_)
+        | kclvm_sema::ty::TypeKind::Float
+        | kclvm_sema::ty::TypeKind::FloatLit(_)
+        | kclvm_sema::ty::TypeKind::Str
+        | kclvm_sema::ty::TypeKind::StrLit(_)
+        | kclvm_sema::ty::TypeKind::List(_)
+        | kclvm_sema::ty::TypeKind::Dict(_)
+        | kclvm_sema::ty::TypeKind::Union(_)
+        | kclvm_sema::ty::TypeKind::NumberMultiplier(_)
+        | kclvm_sema::ty::TypeKind::Named(_) => Some(KCLCompletionItemKind::Variable),
+        kclvm_sema::ty::TypeKind::Schema(_) => Some(KCLCompletionItemKind::Schema),
+        kclvm_sema::ty::TypeKind::Function(_) => Some(KCLCompletionItemKind::Function),
+        kclvm_sema::ty::TypeKind::Module(_) => Some(KCLCompletionItemKind::Module),
+        kclvm_sema::ty::TypeKind::Void
+        | kclvm_sema::ty::TypeKind::None
+        | kclvm_sema::ty::TypeKind::Any => None,
+    }
 }
 
 pub(crate) fn into_completion_items(items: &IndexSet<KCLCompletionItem>) -> Vec<CompletionItem> {
@@ -1307,6 +1330,16 @@ mod tests {
         };
 
         let got = completion(Some('.'), &program, &pos, &gs).unwrap();
+
+        match &got {
+            CompletionResponse::Array(arr) => {
+                assert!(arr
+                    .iter()
+                    .all(|item| item.kind == Some(CompletionItemKind::FUNCTION)))
+            }
+            CompletionResponse::List(_) => panic!("test failed"),
+        };
+
         let got_labels: Vec<String> = match &got {
             CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
             CompletionResponse::List(_) => panic!("test failed"),
@@ -1367,6 +1400,21 @@ mod tests {
         let got = completion(Some('.'), &program, &pos, &gs).unwrap();
         match got {
             CompletionResponse::Array(arr) => assert!(arr.is_empty()),
+            CompletionResponse::List(_) => panic!("test failed"),
+        };
+
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 3,
+            column: Some(2),
+        };
+        let got = completion(Some('.'), &program, &pos, &gs).unwrap();
+        match got {
+            CompletionResponse::Array(arr) => {
+                assert!(arr
+                    .iter()
+                    .all(|item| item.kind == Some(CompletionItemKind::FUNCTION)))
+            }
             CompletionResponse::List(_) => panic!("test failed"),
         };
     }
