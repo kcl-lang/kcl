@@ -196,6 +196,39 @@ fn test_parse_key_value_pair_fail() {
         assert!(parse_key_value_pair(case).is_err());
     }
 }
+#[test]
+fn test_fill_pkg_maps_for_k_file_with_line() {
+    let root_path = PathBuf::from(".")
+        .join("src")
+        .join("test_data")
+        .join("kpm_metadata_with_line");
+
+    let main_pkg_path = root_path.join("main_pkg").join("main.k");
+    let dep_with_line_path = root_path.join("dep-with-line");
+
+    let mut opts = LoadProgramOptions::default();
+    assert_eq!(format!("{:?}", opts.package_maps), "{}");
+
+    let res = fill_pkg_maps_for_k_file(main_pkg_path.clone(), &mut opts);
+    assert!(res.is_ok());
+
+    let pkg_maps = opts.package_maps.clone();
+    assert_eq!(pkg_maps.len(), 1);
+    assert!(pkg_maps.get("dep_with_line").is_some());
+
+    assert_eq!(
+        PathBuf::from(pkg_maps.get("dep_with_line").unwrap().clone())
+            .canonicalize()
+            .unwrap()
+            .display()
+            .to_string(),
+        dep_with_line_path
+            .canonicalize()
+            .unwrap()
+            .display()
+            .to_string()
+    );
+}
 
 fn test_fill_pkg_maps_for_k_file() {
     let path = PathBuf::from(".")
