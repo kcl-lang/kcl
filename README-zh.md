@@ -35,7 +35,7 @@ KCL 是一个开源的基于约束的记录及函数语言并通过成熟的编�
 + [通过梯度自动化方案和 GitOps](https://kcl-lang.io/docs/user_docs/guides/automation)无副作用地组织、简化、统一和管理庞大的配置
 + 通过[分块编写配置数据](https://kcl-lang.io/docs/reference/lang/tour#config-operations)可扩展地管理庞大的配置
 + 通过与[云原生配置工具](https://kcl-lang.io/docs/user_docs/guides/working-with-k8s/)集成直接编辑或校验存量 Kubernetes 资源
-+ 与 [Kusion Stack](https://kusionstack.io) 一起，用作平台工程语言来交付现代应用程序
++ 与 [KusionStack](https://kusionstack.io) 一起，用作平台工程语言来交付现代应用程序
 
 ## 特性
 

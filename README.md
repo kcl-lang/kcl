@@ -35,7 +35,7 @@ You can use KCL to
 + Organize, simplify, unify and manage large configurations without side effects through [gradient automation schemes and GitOps](https://kcl-lang.io/docs/user_docs/guides/automation).
 + Manage large configurations in a scalable way with [isolated configuration blocks](https://kcl-lang.io/docs/reference/lang/tour#config-operations).
 + Mutating or validating Kubernetes resources with [cloud-native configuration tool plugins](https://kcl-lang.io/docs/user_docs/guides/working-with-k8s/).
-+ Used as a platform engineering programming language to deliver modern applications with [Kusion Stack](https://kusionstack.io).
++ Used as a platform engineering programming language to deliver modern applications with [KusionStack](https://kusionstack.io).
 
 ## Features
 
