@@ -2,6 +2,7 @@ use crate::gpyrpc::*;
 use crate::service::capi::*;
 use once_cell::sync::Lazy;
 use prost::Message;
+use ra_ap_vfs::Vfs;
 use serde::de::DeserializeOwned;
 use std::default::Default;
 use std::ffi::{CStr, CString};

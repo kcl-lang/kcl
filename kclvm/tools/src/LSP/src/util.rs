@@ -67,35 +67,6 @@ pub(crate) struct Param {
     pub module_cache: Option<KCLModuleCache>,
 }
 
-fn load_files_code_from_vfs_new(
-    files: &[&str],
-    vfs: Arc<RwLock<Vfs>>,
-) -> anyhow::Result<Vec<String>> {
-    let mut res = vec![];
-    let vfs = &mut vfs.read();
-    for file in files {
-        let vfs_path = VfsPath::new_virtual_path(file.to_string());
-        match vfs.file_id(&vfs_path) {
-            Some(id) => {
-                // Load code from vfs if exist
-                res.push(String::from_utf8(vfs.file_contents(id).to_vec()).unwrap());
-            }
-            None => {
-                let k_files = get_dir_files(&file, false)
-                    .map_err(|_| anyhow::anyhow!("can't get dir files: {} ", file))?;
-                for k_file in k_files {
-                    let k_file_path = Path::new(k_file.as_str());
-                    res.push(
-                        fs::read_to_string(k_file_path)
-                            .map_err(|_| anyhow::anyhow!("can't convert file to url: {}", file))?,
-                    );
-                }
-            }
-        }
-    }
-    Ok(res)
-}
-
 pub(crate) fn parse_param_and_compile(
     param: Param,
     vfs: Option<Arc<RwLock<Vfs>>>,

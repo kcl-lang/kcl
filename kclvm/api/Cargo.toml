@@ -17,6 +17,8 @@ anyhow = "1.0.70"
 serde = { version = "1", features = ["derive"] }
 indexmap = "1.0"
 once_cell = "1.5.2"
+ra_ap_vfs = "0.0.149"
+ra_ap_vfs-notify = "0.0.149"
 
 prost-wkt = {path = "../third-party/prost-wkt", version = "0.4.1"}
 prost-wkt-types = {path = "../third-party/prost-wkt/wkt-types", version = "0.4.1"}

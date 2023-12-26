@@ -1510,6 +1510,8 @@ dependencies = [
  "prost-wkt-build",
  "prost-wkt-types",
  "protoc-bin-vendored",
+ "ra_ap_vfs",
+ "ra_ap_vfs-notify",
  "serde",
  "serde_json",
  "serde_yaml 0.9.25",

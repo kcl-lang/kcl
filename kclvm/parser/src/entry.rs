@@ -284,6 +284,7 @@ pub fn get_compile_entries_from_paths(
     }
     let mut result = Entries::default();
     let mut k_code_queue = VecDeque::from(opts.k_code_list.clone());
+    // 如果你是路径，并且你对应的code已经有了
     for (i, s) in file_paths.iter().enumerate() {
         let path = ModRelativePath::from(s.to_string());
 
