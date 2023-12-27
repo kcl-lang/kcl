@@ -165,7 +165,9 @@ pub(crate) fn handle_reference(
 ) -> anyhow::Result<Option<Vec<Location>>> {
     let include_declaration = params.context.include_declaration;
     let file = file_path_from_url(&params.text_document_position.text_document.uri)?;
+
     let path = from_lsp::abs_path(&params.text_document_position.text_document.uri)?;
+
     if !snapshot.verify_request_path(&path.clone().into(), &sender) {
         return Ok(None);
     }

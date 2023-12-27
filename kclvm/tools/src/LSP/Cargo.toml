@@ -19,6 +19,7 @@ log = "0.4.14"
 im-rc = "15.0.0"
 rustc_lexer = "0.1.0"
 clap = "4.3.0"
+maplit = "1.0.2"
 
 kclvm-tools = { path = "../../../tools" }
 kclvm-error = { path = "../../../error" }

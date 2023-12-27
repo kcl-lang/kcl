@@ -15,9 +15,11 @@ pub use crate::session::ParseSession;
 use compiler_base_macros::bug;
 use compiler_base_session::Session;
 use compiler_base_span::span::new_byte_pos;
+use entry::Entries;
 use indexmap::IndexMap;
 use kclvm_ast::ast;
 use kclvm_config::modfile::{get_vendor_home, KCL_FILE_EXTENSION, KCL_FILE_SUFFIX, KCL_MOD_FILE};
+use kclvm_config::path::ModRelativePath;
 use kclvm_error::diagnostic::Range;
 use kclvm_error::{ErrorKind, Message, Style};
 use kclvm_sema::plugin::PLUGIN_MODULE_PREFIX;
@@ -27,7 +29,7 @@ use kclvm_utils::pkgpath::rm_external_pkg_name;
 
 use lexer::parse_token_streams;
 use parser::Parser;
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
 
@@ -340,12 +342,10 @@ impl Loader {
     }
 
     fn _load_main(&mut self) -> Result<ast::Program, String> {
+        // todo: need to vfs to support only compile kcl code
         let compile_entries = get_compile_entries_from_paths(&self.paths, &self.opts)?;
         let mut pkgs = HashMap::new();
         let workdir = compile_entries.get_root_path().to_string();
-
-        debug_assert_eq!(compile_entries.len(), self.paths.len());
-
         let mut pkg_files = Vec::new();
         for entry in compile_entries.iter() {
             // Get files from options with root.

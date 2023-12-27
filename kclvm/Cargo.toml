@@ -26,6 +26,7 @@ indexmap = "1.0"
 fslock = "0.2.1"
 libloading = "0.7.3"
 chrono = "0.4.19"
+maplit = "1.0.2"
 anyhow = { version = "1.0.70", features = ["backtrace"] }
 compiler_base_session = {path = "../compiler_base/session"}
 

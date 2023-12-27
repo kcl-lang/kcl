@@ -72,6 +72,7 @@ pub(crate) fn find_refs_from_def<F: Fn(String) -> Result<(), anyhow::Error>>(
                 ));
                 locs = locs[0..20].to_vec();
             }
+
             let matched_locs: Vec<Location> = locs
                 .into_iter()
                 .filter(|ref_loc| {
