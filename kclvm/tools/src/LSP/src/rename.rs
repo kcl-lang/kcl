@@ -23,6 +23,8 @@ use std::{
     sync::Arc,
 };
 
+/// [`rename_symbol_on_file`] will rename the symbol in the given files
+/// It will load the file content from file system and save to vfs, and then call [`rename_symbol`] to rename the symbol
 pub fn rename_symbol_on_file(
     pkg_root: &str,
     symbol_path: &str,
@@ -50,6 +52,8 @@ pub fn rename_symbol_on_file(
     Ok(changed_paths)
 }
 
+/// [`rename_symbol_on_code`] will rename the symbol in the given code
+/// It will create a vfs from the file paths and codes, and then call [`rename_symbol`] to rename the symbol
 pub fn rename_symbol_on_code(
     pkg_root: &str,
     symbol_path: &str,
