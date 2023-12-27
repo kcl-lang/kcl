@@ -632,28 +632,3 @@ fn test_keyword_argument_error_message() {
         }
     }
 }
-
-#[test]
-fn test_xxx() {
-    use kclvm_runner::{exec_program, ExecProgramArgs};
-    let matches = app().arg_required_else_help(true).get_matches_from(&[
-        ROOT_CMD,
-        "run",
-        "/mock/path/main.k",
-    ]);
-    let settings = must_build_settings(matches.subcommand_matches("run").unwrap());
-    let sess = Arc::new(ParseSession::default());
-    let mut args: ExecProgramArgs = settings.try_into().unwrap();
-    args.k_code_list = vec!["a = 3".to_string()];
-    match exec_program(sess.clone(), &args)
-        .map_err_to_result()
-        .map_err(|e| e.to_string())
-    {
-        Ok(res) => {
-            println!("{:?}", res)
-        }
-        Err(msg) => {
-            println!("{:?}", msg)
-        }
-    }
-}
