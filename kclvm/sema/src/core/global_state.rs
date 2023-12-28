@@ -45,6 +45,10 @@ impl GlobalState {
     pub fn get_packages_mut(&mut self) -> &mut PackageDB {
         &mut self.packages
     }
+
+    pub fn get_sema_db(&self) -> &SemanticDB {
+        &self.sema_db
+    }
 }
 
 impl GlobalState {

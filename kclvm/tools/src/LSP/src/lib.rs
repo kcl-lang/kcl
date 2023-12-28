@@ -15,6 +15,7 @@ mod notification;
 mod quick_fix;
 pub mod rename;
 mod request;
+mod semantic_token;
 mod state;
 #[cfg(test)]
 mod tests;
