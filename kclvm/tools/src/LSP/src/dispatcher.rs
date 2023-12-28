@@ -36,16 +36,17 @@ impl<'a> NotificationDispatcher<'a> {
             Some(it) => it,
             None => return Ok(self),
         };
-        let params = match notification.extract::<N::Params>(N::METHOD) {
-            Ok(it) => it,
-            Err(ExtractError::JsonError { method, error }) => {
-                panic!("Invalid request\nMethod: {method}\n error: {error}",)
-            }
-            Err(ExtractError::MethodMismatch(notification)) => {
-                self.notification = Some(notification);
-                return Ok(self);
-            }
-        };
+        let params =
+            match notification.extract::<N::Params>(N::METHOD) {
+                Ok(it) => it,
+                Err(ExtractError::JsonError { method, error }) => {
+                    panic!("Invalid request\nMethod: {method}\n error: {error}",)
+                }
+                Err(ExtractError::MethodMismatch(notification)) => {
+                    self.notification = Some(notification);
+                    return Ok(self);
+                }
+            };
         handle_notification_fn(self.state, params)?;
         Ok(self)
     }

@@ -19,46 +19,50 @@ pub(crate) fn hover(
     let def = find_def_with_gs(kcl_pos, gs, true);
     match def {
         Some(def_ref) => match gs.get_symbols().get_symbol(def_ref) {
-            Some(obj) => match def_ref.get_kind() {
-                kclvm_sema::core::symbol::SymbolKind::Schema => match &obj.get_sema_info().ty {
-                    Some(schema_ty) => {
-                        docs.extend(build_schema_hover_content(&schema_ty.into_schema_type()));
-                    }
-                    _ => {}
-                },
-                kclvm_sema::core::symbol::SymbolKind::Attribute => {
-                    let sema_info = obj.get_sema_info();
-                    match &sema_info.ty {
-                        Some(ty) => {
-                            docs.push(format!("{}: {}", &obj.get_name(), ty.ty_str()));
-                            if let Some(doc) = &sema_info.doc {
-                                if !doc.is_empty() {
-                                    docs.push(doc.clone());
-                                }
-                            }
+            Some(obj) => {
+                match def_ref.get_kind() {
+                    kclvm_sema::core::symbol::SymbolKind::Schema => match &obj.get_sema_info().ty {
+                        Some(schema_ty) => {
+                            docs.extend(build_schema_hover_content(&schema_ty.into_schema_type()));
                         }
                         _ => {}
+                    },
+                    kclvm_sema::core::symbol::SymbolKind::Attribute => {
+                        let sema_info = obj.get_sema_info();
+                        match &sema_info.ty {
+                            Some(ty) => {
+                                docs.push(format!("{}: {}", &obj.get_name(), ty.ty_str()));
+                                if let Some(doc) = &sema_info.doc {
+                                    if !doc.is_empty() {
+                                        docs.push(doc.clone());
+                                    }
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                    kclvm_sema::core::symbol::SymbolKind::Value => match &obj.get_sema_info().ty {
+                        Some(ty) => match &ty.kind {
+                            kclvm_sema::ty::TypeKind::Function(func_ty) => {
+                                docs.extend(
+                                    build_func_hover_content(func_ty, obj.get_name().clone())
+                                );
+                            }
+                            _ => {
+                                docs.push(format!("{}: {}", &obj.get_name(), ty.ty_str()));
+                            }
+                        },
+                        _ => {}
+                    },
+                    _ => {
+                        let ty_str = match &obj.get_sema_info().ty {
+                            Some(ty) => ty.ty_str(),
+                            None => "".to_string(),
+                        };
+                        docs.push(format!("{}: {}", &obj.get_name(), ty_str));
                     }
                 }
-                kclvm_sema::core::symbol::SymbolKind::Value => match &obj.get_sema_info().ty {
-                    Some(ty) => match &ty.kind {
-                        kclvm_sema::ty::TypeKind::Function(func_ty) => {
-                            docs.extend(build_func_hover_content(func_ty, obj.get_name().clone()));
-                        }
-                        _ => {
-                            docs.push(format!("{}: {}", &obj.get_name(), ty.ty_str()));
-                        }
-                    },
-                    _ => {}
-                },
-                _ => {
-                    let ty_str = match &obj.get_sema_info().ty {
-                        Some(ty) => ty.ty_str(),
-                        None => "".to_string(),
-                    };
-                    docs.push(format!("{}: {}", &obj.get_name(), ty_str));
-                }
-            },
+            }
             None => {}
         },
         None => {}
@@ -75,14 +79,16 @@ fn docs_to_hover(docs: Vec<String>) -> Option<lsp_types::Hover> {
             contents: HoverContents::Scalar(MarkedString::String(docs[0].clone())),
             range: None,
         }),
-        _ => Some(Hover {
-            contents: HoverContents::Array(
-                docs.iter()
-                    .map(|doc| MarkedString::String(doc.clone()))
-                    .collect(),
-            ),
-            range: None,
-        }),
+        _ => {
+            Some(Hover {
+                contents: HoverContents::Array(
+                    docs.iter()
+                        .map(|doc| MarkedString::String(doc.clone()))
+                        .collect(),
+                ),
+                range: None,
+            })
+        }
     }
 }
 

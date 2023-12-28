@@ -384,17 +384,18 @@ fn file_path_from_url_test() {
 
 #[test]
 fn complete_import_external_file_test() {
-    let path = PathBuf::from(".")
-        .join("src")
-        .join("test_data")
-        .join("completion_test")
-        .join("import")
-        .join("external")
-        .join("main.k")
-        .canonicalize()
-        .unwrap()
-        .display()
-        .to_string();
+    let path =
+        PathBuf::from(".")
+            .join("src")
+            .join("test_data")
+            .join("completion_test")
+            .join("import")
+            .join("external")
+            .join("main.k")
+            .canonicalize()
+            .unwrap()
+            .display()
+            .to_string();
 
     let _ = Command::new("kpm")
         .arg("metadata")
@@ -1519,10 +1520,12 @@ fn lsp_version_test() {
         .arg_required_else_help(false)
         .try_get_matches_from(args);
     match matches {
-        Ok(arg_match) => match arg_match.subcommand() {
-            Some(("version", _)) => {}
-            _ => panic!("test failed"),
-        },
+        Ok(arg_match) => {
+            match arg_match.subcommand() {
+                Some(("version", _)) => {}
+                _ => panic!("test failed"),
+            }
+        }
         Err(_) => panic!("test failed"),
     }
 }
@@ -1550,10 +1553,12 @@ fn lsp_invalid_subcommand_test() {
         .try_get_matches_from(args);
     match matches {
         Ok(_) => panic!("test failed"),
-        Err(e) => match e.kind() {
-            clap::error::ErrorKind::InvalidSubcommand => {}
-            _ => panic!("test failed"),
-        },
+        Err(e) => {
+            match e.kind() {
+                clap::error::ErrorKind::InvalidSubcommand => {}
+                _ => panic!("test failed"),
+            }
+        }
     }
 }
 
@@ -1569,10 +1574,11 @@ fn find_refs_test() {
     let path = path.to_str().unwrap();
     let src = std::fs::read_to_string(path).unwrap();
     let mut initialize_params = InitializeParams::default();
-    initialize_params.workspace_folders = Some(vec![WorkspaceFolder {
-        uri: Url::from_file_path(root.clone()).unwrap(),
-        name: "test".to_string(),
-    }]);
+    initialize_params.workspace_folders =
+        Some(vec![WorkspaceFolder {
+            uri: Url::from_file_path(root.clone()).unwrap(),
+            name: "test".to_string(),
+        }]);
     let server = Project {}.server(initialize_params);
 
     // Wait for async build word_index_map
@@ -1664,10 +1670,11 @@ fn find_refs_with_file_change_test() {
     let path = path.to_str().unwrap();
     let src = std::fs::read_to_string(path).unwrap();
     let mut initialize_params = InitializeParams::default();
-    initialize_params.workspace_folders = Some(vec![WorkspaceFolder {
-        uri: Url::from_file_path(root.clone()).unwrap(),
-        name: "test".to_string(),
-    }]);
+    initialize_params.workspace_folders =
+        Some(vec![WorkspaceFolder {
+            uri: Url::from_file_path(root.clone()).unwrap(),
+            name: "test".to_string(),
+        }]);
     let server = Project {}.server(initialize_params);
 
     // Wait for async build word_index_map
@@ -1772,10 +1779,11 @@ fn rename_test() {
     let path = path.to_str().unwrap();
     let src = std::fs::read_to_string(path).unwrap();
     let mut initialize_params = InitializeParams::default();
-    initialize_params.workspace_folders = Some(vec![WorkspaceFolder {
-        uri: Url::from_file_path(root.clone()).unwrap(),
-        name: "test".to_string(),
-    }]);
+    initialize_params.workspace_folders =
+        Some(vec![WorkspaceFolder {
+            uri: Url::from_file_path(root.clone()).unwrap(),
+            name: "test".to_string(),
+        }]);
     let server = Project {}.server(initialize_params);
 
     // Wait for async build word_index_map

@@ -68,13 +68,14 @@ pub fn rename_symbol_on_code(
             Some(code.as_bytes().to_vec()),
         );
     }
-    let changes: HashMap<String, Vec<TextEdit>> = rename_symbol(
-        pkg_root,
-        vfs,
-        symbol_path,
-        new_name,
-        VfsPath::new_virtual_path,
-    )?;
+    let changes: HashMap<String, Vec<TextEdit>> =
+        rename_symbol(
+            pkg_root,
+            vfs,
+            symbol_path,
+            new_name,
+            VfsPath::new_virtual_path,
+        )?;
     return apply_rename_changes(&changes, source_codes);
 }
 
@@ -131,12 +132,14 @@ where
 
     let file_paths = package_path_to_file_path(pkg_path, vfs.clone());
 
-    if let Ok((prog, gs)) = parse_files_with_vfs(
-        pkg_path.to_string(),
-        file_paths,
-        vfs.clone(),
-        trans_vfs_path,
-    ) {
+    if let Ok((prog, gs)) =
+        parse_files_with_vfs(
+            pkg_path.to_string(),
+            file_paths,
+            vfs.clone(),
+            trans_vfs_path,
+        )
+    {
         if let Some(symbol_ref) = gs
             .get_symbols()
             .get_symbol_by_fully_qualified_name(&prog.main)
@@ -389,10 +392,7 @@ where
                 return Ok(HashMap::new());
             }
         }
-        None => Err(anyhow!(
-            "get symbol from symbol path failed, {}",
-            symbol_path
-        )),
+        None => Err(anyhow!("get symbol from symbol path failed, {}", symbol_path)),
     }
 }
 
@@ -807,10 +807,11 @@ Bob = vars.Person {
             &vec![base_path_string.clone(), main_path_string.clone()],
             "NewPerson".to_string(),
         );
-        let expect_changed_paths: HashSet<_> = [base_path_string.clone(), main_path_string.clone()]
-            .iter()
-            .cloned()
-            .collect();
+        let expect_changed_paths: HashSet<_> =
+            [base_path_string.clone(), main_path_string.clone()]
+                .iter()
+                .cloned()
+                .collect();
         let got_changed_paths: HashSet<_> = result.unwrap().iter().cloned().collect();
         assert_eq!(expect_changed_paths, got_changed_paths);
         let base_new_content = fs::read_to_string(base_path.clone()).unwrap();
@@ -880,16 +881,17 @@ a = base.Person {
     }
 }"#;
 
-        let result: HashMap<String, String> = rename_symbol_on_code(
-            root.to_str().unwrap(),
-            "base:Person",
-            hashmap! {
-                base_path_string.clone() => base_source_code.clone().to_string(),
-                main_path_string.clone() => main_source_code.clone().to_string(),
-            },
-            "NewPerson".to_string(),
-        )
-        .unwrap();
+        let result: HashMap<String, String> =
+            rename_symbol_on_code(
+                root.to_str().unwrap(),
+                "base:Person",
+                hashmap! {
+                    base_path_string.clone() => base_source_code.clone().to_string(),
+                    main_path_string.clone() => main_source_code.clone().to_string(),
+                },
+                "NewPerson".to_string(),
+            )
+            .unwrap();
 
         let base_new_content = result.get(base_path_string.clone().as_str()).unwrap();
         assert_eq!(

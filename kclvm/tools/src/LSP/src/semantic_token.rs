@@ -28,31 +28,14 @@ pub(crate) fn semantic_tokens_full(file: &str, gs: &GlobalState) -> Option<Seman
             if let Some(symbol) = gs.get_symbols().get_symbol(*symbol_ref) {
                 let (start, end) = symbol.get_range();
                 let kind = match symbol_ref.get_kind() {
-                    SymbolKind::Schema => LEGEND_TYPE
-                        .iter()
-                        .position(|item| item == &SemanticTokenType::STRUCT)
-                        .unwrap() as u32,
-                    SymbolKind::Attribute => LEGEND_TYPE
-                        .iter()
-                        .position(|item| item == &SemanticTokenType::PROPERTY)
-                        .unwrap() as u32,
-                    SymbolKind::Package => LEGEND_TYPE
-                        .iter()
-                        .position(|item| item == &SemanticTokenType::NAMESPACE)
-                        .unwrap() as u32,
-                    SymbolKind::TypeAlias => LEGEND_TYPE
-                        .iter()
-                        .position(|item| item == &SemanticTokenType::TYPE)
-                        .unwrap() as u32,
-                    SymbolKind::Value | SymbolKind::Unresolved => LEGEND_TYPE
-                        .iter()
-                        .position(|item| item == &SemanticTokenType::VARIABLE)
-                        .unwrap()
-                        as u32,
-                    SymbolKind::Rule => LEGEND_TYPE
-                        .iter()
-                        .position(|item| item == &SemanticTokenType::MACRO)
-                        .unwrap() as u32,
+                    SymbolKind::Schema => type_index(SemanticTokenType::STRUCT),
+                    SymbolKind::Attribute => type_index(SemanticTokenType::PROPERTY),
+                    SymbolKind::Package => type_index(SemanticTokenType::NAMESPACE),
+                    SymbolKind::TypeAlias => type_index(SemanticTokenType::TYPE),
+                    SymbolKind::Value | SymbolKind::Unresolved => {
+                        type_index(SemanticTokenType::VARIABLE)
+                    }
+                    SymbolKind::Rule => type_index(SemanticTokenType::MACRO),
                 };
                 kcl_tokens.push(KCLSemanticToken {
                     start: start.clone(),
@@ -73,7 +56,11 @@ pub(crate) fn semantic_tokens_full(file: &str, gs: &GlobalState) -> Option<Seman
     }))
 }
 
-pub fn kcl_semantic_tokens_to_semantic_tokens(
+pub(crate) fn type_index(ty: SemanticTokenType) -> u32 {
+    LEGEND_TYPE.iter().position(|it| *it == ty).unwrap() as u32
+}
+
+pub(crate) fn kcl_semantic_tokens_to_semantic_tokens(
     tokens: &mut Vec<KCLSemanticToken>,
 ) -> Vec<SemanticToken> {
     tokens.sort_by(|a, b| {
@@ -93,8 +80,8 @@ pub fn kcl_semantic_tokens_to_semantic_tokens(
         .iter()
         .map(|obj| {
             // ref: https://github.com/microsoft/vscode-extension-samples/blob/5ae1f7787122812dcc84e37427ca90af5ee09f14/semantic-tokens-sample/vscode.proposed.d.ts#L71
-            //A file can contain many tokens, perhaps even hundreds of thousands of tokens. Therefore, to improve
-            //the memory consumption around describing semantic tokens, we have decided to avoid allocating an object
+            // A file can contain many tokens, perhaps even hundreds of thousands of tokens. Therefore, to improve
+            // the memory consumption around describing semantic tokens, we have decided to avoid allocating an object
             // for each token and we represent tokens from a file as an array of integers. Furthermore, the position
             // of each token is expressed relative to the token before it because most tokens remain stable relative to
             // each other when edits are made in a file.
@@ -102,11 +89,12 @@ pub fn kcl_semantic_tokens_to_semantic_tokens(
             let start = obj.start.column.unwrap_or(0);
 
             let delta_line: u32 = (line - pre_line) as u32;
-            let delta_start: u32 = (if delta_line == 0 {
-                start - pre_start
-            } else {
-                start
-            }) as u32;
+            let delta_start: u32 =
+                (if delta_line == 0 {
+                    start - pre_start
+                } else {
+                    start
+                }) as u32;
             let length = obj.length;
             let ret = SemanticToken {
                 delta_line,
