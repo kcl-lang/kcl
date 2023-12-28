@@ -13,7 +13,7 @@ use kclvm_sema::{
     advanced_resolver::AdvancedResolver, core::global_state::GlobalState, namer::Namer,
     resolver::resolve_program_with_opts,
 };
-use lsp_types::{Location, Position, Range, TextEdit, Url};
+use lsp_types::{Position, Range, TextEdit};
 use parking_lot::RwLock;
 use ra_ap_vfs::{Vfs, VfsPath};
 use std::fs;

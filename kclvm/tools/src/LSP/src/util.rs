@@ -22,7 +22,7 @@ use kclvm_span::symbol::reserved;
 use kclvm_utils::pkgpath::rm_external_pkg_name;
 use lsp_types::{Location, Position, Range, Url};
 use parking_lot::{RwLock, RwLockReadGuard};
-use ra_ap_vfs::{FileId, Vfs, VfsPath};
+use ra_ap_vfs::{FileId, Vfs};
 use serde::{de::DeserializeOwned, Serialize};
 
 use std::collections::HashMap;
