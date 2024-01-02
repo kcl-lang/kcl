@@ -44,9 +44,13 @@ pub(crate) fn find_refs<F: Fn(String) -> Result<(), anyhow::Error>>(
                     Err(format!("Invalid file path: {0}", start.filename))
                 }
             }
-            None => Err(String::from("Found more than one definitions, reference not supported")),
+            None => Err(String::from(
+                "Found more than one definitions, reference not supported",
+            )),
         },
-        None => Err(String::from("Definition item not found, result in no reference")),
+        None => Err(String::from(
+            "Definition item not found, result in no reference",
+        )),
     }
 }
 

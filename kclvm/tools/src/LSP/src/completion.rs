@@ -168,12 +168,11 @@ fn completion_dot(
 ) -> Option<lsp_types::CompletionResponse> {
     let mut items: IndexSet<KCLCompletionItem> = IndexSet::new();
     // get pre position of trigger character '.'
-    let pre_pos =
-        KCLPos {
-            filename: pos.filename.clone(),
-            line: pos.line,
-            column: pos.column.map(|c| c - 1),
-        };
+    let pre_pos = KCLPos {
+        filename: pos.filename.clone(),
+        line: pos.line,
+        column: pos.column.map(|c| c - 1),
+    };
 
     if let Some(stmt) = program.pos_to_stmt(&pre_pos) {
         match stmt.node {
@@ -311,9 +310,11 @@ fn completion_assign(pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::Comple
                                     .map(|label| {
                                         KCLCompletionItem {
                                             label: format!(" {}", label),
-                                            detail: Some(
-                                                format!("{}: {}", symbol.get_name(), ty.ty_str())
-                                            ),
+                                            detail: Some(format!(
+                                                "{}: {}",
+                                                symbol.get_name(),
+                                                ty.ty_str()
+                                            )),
                                             kind: Some(KCLCompletionItemKind::Variable),
                                             documentation: sema_info.doc.clone(),
                                             insert_text: None,
@@ -747,12 +748,11 @@ mod tests {
             CompletionResponse::List(_) => panic!("test failed"),
         };
 
-        let mut expected_labels: Vec<&str> =
-            vec![
-                "", // generate from error recovery of "pkg."
-                "subpkg", "math", "Person", "Person{}", "P", "P{}", "p", "p1", "p2", "p3", "p4",
-                "aaaa",
-            ];
+        let mut expected_labels: Vec<&str> = vec![
+            "", // generate from error recovery of "pkg."
+            "subpkg", "math", "Person", "Person{}", "P", "P{}", "p", "p1", "p2", "p3", "p4",
+            "aaaa",
+        ];
         got_labels.sort();
         expected_labels.sort();
 

@@ -84,7 +84,9 @@ impl LanguageServerSnapshot {
         match self.vfs.read().file_id(path) {
             Some(id) => match self.db.read().get(&id) {
                 Some(db) => Ok(db.clone()),
-                None => Err(anyhow::anyhow!(format!("Path {path} AnalysisDatabase not found"))),
+                None => Err(anyhow::anyhow!(format!(
+                    "Path {path} AnalysisDatabase not found"
+                ))),
             },
             None => Err(anyhow::anyhow!(format!("Path {path} fileId not found"))),
         }
@@ -145,8 +147,10 @@ pub(crate) fn handle_code_action(
     _sender: Sender<Task>,
 ) -> anyhow::Result<Option<lsp_types::CodeActionResponse>> {
     let mut code_actions: Vec<lsp_types::CodeActionOrCommand> = vec![];
-    code_actions
-        .extend(quick_fix::quick_fix(&params.text_document.uri, &params.context.diagnostics));
+    code_actions.extend(quick_fix::quick_fix(
+        &params.text_document.uri,
+        &params.context.diagnostics,
+    ));
     Ok(Some(code_actions))
 }
 

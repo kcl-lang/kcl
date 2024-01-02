@@ -89,12 +89,11 @@ pub(crate) fn kcl_semantic_tokens_to_semantic_tokens(
             let start = obj.start.column.unwrap_or(0);
 
             let delta_line: u32 = (line - pre_line) as u32;
-            let delta_start: u32 =
-                (if delta_line == 0 {
-                    start - pre_start
-                } else {
-                    start
-                }) as u32;
+            let delta_start: u32 = (if delta_line == 0 {
+                start - pre_start
+            } else {
+                start
+            }) as u32;
             let length = obj.length;
             let ret = SemanticToken {
                 delta_line,

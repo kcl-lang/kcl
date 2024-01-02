@@ -55,7 +55,10 @@ pub fn get_file_name(vfs: RwLockReadGuard<Vfs>, file_id: FileId) -> anyhow::Resu
             .ok_or(anyhow::anyhow!("Failed to get file file"))?
             .to_string())
     } else {
-        Err(anyhow::anyhow!("{} isn't on the file system.", vfs.file_path(file_id)))
+        Err(anyhow::anyhow!(
+            "{} isn't on the file system.",
+            vfs.file_path(file_id)
+        ))
     }
 }
 
@@ -146,9 +149,9 @@ fn load_files_code_from_vfs(files: &[&str], vfs: Arc<RwLock<Vfs>>) -> anyhow::Re
                     for k_file in k_files {
                         let k_file_path = Path::new(k_file.as_str());
                         res.push(
-                            fs::read_to_string(k_file_path).map_err(
-                                |_| anyhow::anyhow!("can't convert file to url: {}", file)
-                            )?,
+                            fs::read_to_string(k_file_path).map_err(|_| {
+                                anyhow::anyhow!("can't convert file to url: {}", file)
+                            })?,
                         );
                     }
                 }

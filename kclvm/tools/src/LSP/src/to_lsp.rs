@@ -148,9 +148,9 @@ pub(crate) fn url_from_path_with_drive_lowercasing(path: impl AsRef<Path>) -> an
 
     // VSCode expects drive letters to be lowercased, whereas rust will uppercase the drive letters.
     if component_has_windows_drive {
-        let url_original = Url::from_file_path(&path).map_err(
-            |_| anyhow::anyhow!("can't convert path to url: {}", path.as_ref().display())
-        )?;
+        let url_original = Url::from_file_path(&path).map_err(|_| {
+            anyhow::anyhow!("can't convert path to url: {}", path.as_ref().display())
+        })?;
 
         let drive_partition: Vec<&str> = url_original.as_str().rsplitn(2, ':').collect();
 
@@ -161,12 +161,12 @@ pub(crate) fn url_from_path_with_drive_lowercasing(path: impl AsRef<Path>) -> an
         }
 
         let joined = drive_partition[1].to_ascii_lowercase() + ":" + drive_partition[0];
-        let url =
-            Url::from_str(&joined).map_err(|e| anyhow::anyhow!("Url from str ParseError: {}", e))?;
+        let url = Url::from_str(&joined)
+            .map_err(|e| anyhow::anyhow!("Url from str ParseError: {}", e))?;
         Ok(url)
     } else {
-        Ok(Url::from_file_path(&path).map_err(
-            |_| anyhow::anyhow!("can't convert path to url: {}", path.as_ref().display())
-        )?)
+        Ok(Url::from_file_path(&path).map_err(|_| {
+            anyhow::anyhow!("can't convert path to url: {}", path.as_ref().display())
+        })?)
     }
 }

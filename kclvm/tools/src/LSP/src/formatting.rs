@@ -17,8 +17,10 @@ pub(crate) fn format(
     .map_err(|err| anyhow::anyhow!("Formatting failed: {}", err))?;
     if is_formatted {
         Ok(Some(vec![TextEdit {
-            range: range
-                .unwrap_or(Range::new(Position::new(0, 0), Position::new(u32::MAX, u32::MAX))),
+            range: range.unwrap_or(Range::new(
+                Position::new(0, 0),
+                Position::new(u32::MAX, u32::MAX),
+            )),
             new_text: source,
         }]))
     } else {
@@ -40,27 +42,26 @@ mod tests {
     fn format_signle_file_test() {
         const FILE_INPUT_SUFFIX: &str = ".input";
         const FILE_OUTPUT_SUFFIX: &str = ".golden";
-        const TEST_CASES: &[&str; 17] =
-            &[
-                "assert",
-                "check",
-                "blankline",
-                "breakline",
-                "codelayout",
-                "collection_if",
-                "comment",
-                "comp_for",
-                // "empty",
-                "import",
-                "indent",
-                "inline_comment",
-                "lambda",
-                "quant",
-                "schema",
-                "string",
-                "type_alias",
-                "unary",
-            ];
+        const TEST_CASES: &[&str; 17] = &[
+            "assert",
+            "check",
+            "blankline",
+            "breakline",
+            "codelayout",
+            "collection_if",
+            "comment",
+            "comp_for",
+            // "empty",
+            "import",
+            "indent",
+            "inline_comment",
+            "lambda",
+            "quant",
+            "schema",
+            "string",
+            "type_alias",
+            "unary",
+        ];
 
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let test_file = path;
