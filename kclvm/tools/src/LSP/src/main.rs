@@ -17,6 +17,7 @@ mod main_loop;
 mod notification;
 mod quick_fix;
 mod request;
+mod semantic_token;
 mod state;
 mod to_lsp;
 mod util;

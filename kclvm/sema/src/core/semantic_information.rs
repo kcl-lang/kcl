@@ -11,6 +11,12 @@ pub struct SemanticDB {
     pub(crate) file_sema_map: IndexMap<String, FileSemanticInfo>,
 }
 
+impl SemanticDB {
+    pub fn get_file_sema(&self, file: &String) -> Option<&FileSemanticInfo> {
+        self.file_sema_map.get(file)
+    }
+}
+
 #[allow(unused)]
 #[derive(Debug, Clone)]
 pub struct FileSemanticInfo {
@@ -46,6 +52,10 @@ impl FileSemanticInfo {
                 }
             }
         }
+    }
+
+    pub fn get_symbols(&self) -> &Vec<SymbolRef> {
+        &self.symbols
     }
 }
 

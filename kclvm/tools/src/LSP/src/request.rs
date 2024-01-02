@@ -3,7 +3,7 @@ use crossbeam_channel::Sender;
 
 use kclvm_config::modfile::KCL_FILE_SUFFIX;
 use kclvm_sema::info::is_valid_kcl_name;
-use lsp_types::{Location, TextEdit};
+use lsp_types::{Location, SemanticTokensResult, TextEdit};
 use ra_ap_vfs::VfsPath;
 use std::collections::HashMap;
 use std::time::Instant;
@@ -18,6 +18,7 @@ use crate::{
     from_lsp::{self, file_path_from_url, kcl_pos},
     goto_def::goto_definition_with_gs,
     hover, quick_fix,
+    semantic_token::semantic_tokens_full,
     state::{log_message, LanguageServerSnapshot, LanguageServerState, Task},
     util::{parse_param_and_compile, Param},
 };
@@ -57,6 +58,7 @@ impl LanguageServerState {
             .on::<lsp_types::request::Formatting>(handle_formatting)?
             .on::<lsp_types::request::RangeFormatting>(handle_range_formatting)?
             .on::<lsp_types::request::Rename>(handle_rename)?
+            .on::<lsp_types::request::SemanticTokensFullRequest>(handle_semantic_tokens_full)?
             .finish();
 
         Ok(())
@@ -89,6 +91,21 @@ impl LanguageServerSnapshot {
             None => Err(anyhow::anyhow!(format!("Path {path} fileId not found"))),
         }
     }
+}
+
+pub(crate) fn handle_semantic_tokens_full(
+    snapshot: LanguageServerSnapshot,
+    params: lsp_types::SemanticTokensParams,
+    sender: Sender<Task>,
+) -> anyhow::Result<Option<SemanticTokensResult>> {
+    let file = file_path_from_url(&params.text_document.uri)?;
+    let path = from_lsp::abs_path(&params.text_document.uri)?;
+    if !snapshot.verify_request_path(&path.clone().into(), &sender) {
+        return Ok(None);
+    }
+    let db = snapshot.get_db(&path.clone().into())?;
+    let res = semantic_tokens_full(&file, &db.gs);
+    Ok(res)
 }
 
 pub(crate) fn handle_formatting(
