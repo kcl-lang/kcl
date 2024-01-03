@@ -14,6 +14,7 @@ pub trait Scope {
     fn get_children(&self) -> Vec<ScopeRef>;
 
     fn contains_pos(&self, pos: &Position) -> bool;
+    fn get_range(&self) -> Option<(Position, Position)>;
 
     fn get_owner(&self) -> Option<SymbolRef>;
     fn look_up_def(
@@ -29,6 +30,7 @@ pub trait Scope {
         scope_data: &ScopeData,
         symbol_data: &Self::SymbolData,
         module_info: Option<&ModuleInfo>,
+        recursive: bool,
     ) -> HashMap<String, SymbolRef>;
 
     fn dump(&self, scope_data: &ScopeData, symbol_data: &Self::SymbolData) -> Option<String>;
@@ -202,6 +204,7 @@ impl Scope for RootSymbolScope {
         _scope_data: &ScopeData,
         symbol_data: &Self::SymbolData,
         module_info: Option<&ModuleInfo>,
+        _recursive: bool,
     ) -> HashMap<String, SymbolRef> {
         let mut all_defs_map = HashMap::new();
         if let Some(owner) = symbol_data.get_symbol(self.owner) {
@@ -254,6 +257,10 @@ impl Scope for RootSymbolScope {
         let val: serde_json::Value = serde_json::from_str(&output).unwrap();
         Some(serde_json::to_string_pretty(&val).ok()?)
     }
+
+    fn get_range(&self) -> Option<(Position, Position)> {
+        None
+    }
 }
 
 impl RootSymbolScope {
@@ -293,6 +300,19 @@ pub struct LocalSymbolScope {
 
     pub(crate) start: Position,
     pub(crate) end: Position,
+    pub(crate) kind: LocalSymbolScopeKind,
+}
+
+#[allow(unused)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum LocalSymbolScopeKind {
+    List,
+    Dict,
+    Quant,
+    Lambda,
+    SchemaDef,
+    SchemaConfig,
+    Common,
 }
 
 impl Scope for LocalSymbolScope {
@@ -349,13 +369,9 @@ impl Scope for LocalSymbolScope {
         scope_data: &ScopeData,
         symbol_data: &Self::SymbolData,
         module_info: Option<&ModuleInfo>,
+        recursive: bool,
     ) -> HashMap<String, SymbolRef> {
         let mut all_defs_map = HashMap::new();
-        for def_ref in self.defs.values() {
-            if let Some(def) = symbol_data.get_symbol(*def_ref) {
-                all_defs_map.insert(def.get_name(), *def_ref);
-            }
-        }
         if let Some(owner) = self.owner {
             if let Some(owner) = symbol_data.get_symbol(owner) {
                 for def_ref in owner.get_all_attributes(symbol_data, module_info) {
@@ -368,10 +384,23 @@ impl Scope for LocalSymbolScope {
                 }
             }
         }
-        if let Some(parent) = scope_data.get_scope(self.parent) {
-            for (name, def_ref) in parent.get_all_defs(scope_data, symbol_data, module_info) {
-                if !all_defs_map.contains_key(&name) {
-                    all_defs_map.insert(name, def_ref);
+
+        if self.kind == LocalSymbolScopeKind::SchemaConfig && !recursive {
+            return all_defs_map;
+        } else {
+            for def_ref in self.defs.values() {
+                if let Some(def) = symbol_data.get_symbol(*def_ref) {
+                    all_defs_map.insert(def.get_name(), *def_ref);
+                }
+            }
+
+            if let Some(parent) = scope_data.get_scope(self.parent) {
+                for (name, def_ref) in
+                    parent.get_all_defs(scope_data, symbol_data, module_info, true)
+                {
+                    if !all_defs_map.contains_key(&name) {
+                        all_defs_map.insert(name, def_ref);
+                    }
                 }
             }
         }
@@ -430,10 +459,19 @@ impl Scope for LocalSymbolScope {
         output.push_str("\n]\n}");
         Some(output)
     }
+
+    fn get_range(&self) -> Option<(Position, Position)> {
+        Some((self.start.clone(), self.end.clone()))
+    }
 }
 
 impl LocalSymbolScope {
-    pub fn new(parent: ScopeRef, start: Position, end: Position) -> Self {
+    pub fn new(
+        parent: ScopeRef,
+        start: Position,
+        end: Position,
+        kind: LocalSymbolScopeKind,
+    ) -> Self {
         Self {
             parent,
             owner: None,
@@ -442,6 +480,7 @@ impl LocalSymbolScope {
             refs: vec![],
             start,
             end,
+            kind,
         }
     }
 

@@ -175,6 +175,7 @@ impl GlobalState {
                 scopes,
                 &self.symbols,
                 self.packages.get_module_info(scope.get_filename()),
+                false,
             )
             .values()
             .into_iter()

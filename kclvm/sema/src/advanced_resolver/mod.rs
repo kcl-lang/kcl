@@ -41,7 +41,7 @@ use crate::{
     core::{
         global_state::GlobalState,
         package::ModuleInfo,
-        scope::{LocalSymbolScope, RootSymbolScope, ScopeKind, ScopeRef},
+        scope::{LocalSymbolScope, LocalSymbolScopeKind, RootSymbolScope, ScopeKind, ScopeRef},
         symbol::SymbolRef,
     },
     ty::TypeRef,
@@ -146,9 +146,15 @@ impl<'ctx> AdvancedResolver<'ctx> {
         self.ctx.scopes.push(scope_ref);
     }
 
-    fn enter_local_scope(&mut self, filepath: &str, start: Position, end: Position) {
+    fn enter_local_scope(
+        &mut self,
+        filepath: &str,
+        start: Position,
+        end: Position,
+        kind: LocalSymbolScopeKind,
+    ) {
         let parent = *self.ctx.scopes.last().unwrap();
-        let local_scope = LocalSymbolScope::new(parent, start, end);
+        let local_scope = LocalSymbolScope::new(parent, start, end, kind);
         let scope_ref = self.gs.get_scopes_mut().alloc_local_scope(local_scope);
 
         match parent.get_kind() {
@@ -1306,7 +1312,16 @@ mod tests {
                     .to_string()
                     .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
                 30,
-                41,
+                6,
+                6,
+            ),
+            // __main__.Main schema config entry value scope
+            (
+                "src/advanced_resolver/test_data/schema_symbols.k"
+                    .to_string()
+                    .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
+                30,
+                20,
                 10,
             ),
             // pkg.Person schema expr scope
@@ -1316,6 +1331,15 @@ mod tests {
                     .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
                 33,
                 21,
+                1,
+            ),
+            // pkg.Person schema config entry value scope
+            (
+                "src/advanced_resolver/test_data/schema_symbols.k"
+                    .to_string()
+                    .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
+                34,
+                17,
                 6,
             ),
             // __main__ package scope
@@ -1343,6 +1367,15 @@ mod tests {
                     .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
                 12,
                 5,
+                2,
+            ),
+            // import_test.a.Name config entry value scope
+            (
+                "src/advanced_resolver/test_data/import_test/a.k"
+                    .to_string()
+                    .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
+                12,
+                21,
                 8,
             ),
         ];

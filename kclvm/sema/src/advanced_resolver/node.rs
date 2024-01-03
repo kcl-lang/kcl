@@ -7,7 +7,10 @@ use kclvm_ast::walker::MutSelfTypedResultWalker;
 use kclvm_error::{diagnostic::Range, Position};
 
 use crate::{
-    core::symbol::{KCLSymbolSemanticInfo, SymbolRef, UnresolvedSymbol, ValueSymbol},
+    core::{
+        scope::LocalSymbolScopeKind,
+        symbol::{KCLSymbolSemanticInfo, SymbolRef, UnresolvedSymbol, ValueSymbol},
+    },
     ty::{Type, SCHEMA_MEMBER_FUNCTIONS},
 };
 
@@ -198,7 +201,12 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
             };
         }
 
-        self.enter_local_scope(&self.ctx.current_filename.clone().unwrap(), start, end);
+        self.enter_local_scope(
+            &self.ctx.current_filename.clone().unwrap(),
+            start,
+            end,
+            LocalSymbolScopeKind::SchemaDef,
+        );
         let cur_scope = *self.ctx.scopes.last().unwrap();
         self.gs
             .get_scopes_mut()
@@ -337,6 +345,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
             &self.ctx.current_filename.as_ref().unwrap().clone(),
             start,
             end,
+            LocalSymbolScopeKind::Quant,
         );
         let cur_scope = *self.ctx.scopes.last().unwrap();
         for target in quant_expr.variables.iter() {
@@ -503,7 +512,12 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
             Some(last) => last.get_end_pos(),
             None => list_comp.elt.get_end_pos(),
         };
-        self.enter_local_scope(&self.ctx.current_filename.clone().unwrap(), start, end);
+        self.enter_local_scope(
+            &self.ctx.current_filename.clone().unwrap(),
+            start,
+            end,
+            LocalSymbolScopeKind::List,
+        );
         for comp_clause in &list_comp.generators {
             self.walk_comp_clause(&comp_clause.node);
         }
@@ -519,7 +533,12 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
             Some(last) => last.get_end_pos(),
             None => dict_comp.entry.value.get_end_pos(),
         };
-        self.enter_local_scope(&self.ctx.current_filename.clone().unwrap(), start, end);
+        self.enter_local_scope(
+            &self.ctx.current_filename.clone().unwrap(),
+            start,
+            end,
+            LocalSymbolScopeKind::Dict,
+        );
         for comp_clause in &dict_comp.generators {
             self.walk_comp_clause(&comp_clause.node);
         }
@@ -603,7 +622,12 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
 
     fn walk_lambda_expr(&mut self, lambda_expr: &'ctx ast::LambdaExpr) -> Self::Result {
         let (start, end) = (self.ctx.start_pos.clone(), self.ctx.end_pos.clone());
-        self.enter_local_scope(&self.ctx.current_filename.clone().unwrap(), start, end);
+        self.enter_local_scope(
+            &self.ctx.current_filename.clone().unwrap(),
+            start,
+            end,
+            LocalSymbolScopeKind::Lambda,
+        );
         if let Some(args) = &lambda_expr.args {
             self.walk_arguments(&args.node);
         }
@@ -984,12 +1008,19 @@ impl<'ctx> AdvancedResolver<'ctx> {
     pub(crate) fn walk_config_entries(&mut self, entries: &'ctx [ast::NodeRef<ast::ConfigEntry>]) {
         let (start, end) = (self.ctx.start_pos.clone(), self.ctx.end_pos.clone());
 
+        let schema_symbol = self.ctx.current_schema_symbol.take();
+        let kind = match &schema_symbol {
+            Some(_) => LocalSymbolScopeKind::SchemaConfig,
+            None => LocalSymbolScopeKind::Common,
+        };
+
         self.enter_local_scope(
             &self.ctx.current_filename.as_ref().unwrap().clone(),
             start,
             end,
+            kind,
         );
-        let schema_symbol = self.ctx.current_schema_symbol.take();
+
         if let Some(owner) = schema_symbol {
             let cur_scope = self.ctx.scopes.last().unwrap();
             self.gs
@@ -1005,7 +1036,17 @@ impl<'ctx> AdvancedResolver<'ctx> {
                 }
                 self.ctx.maybe_def = false;
             }
+
+            let (start, end) = entry.node.value.get_span_pos();
+            self.enter_local_scope(
+                &self.ctx.current_filename.as_ref().unwrap().clone(),
+                start,
+                end,
+                LocalSymbolScopeKind::Common,
+            );
+
             self.expr(&entry.node.value);
+            self.leave_scope();
         }
         self.leave_scope()
     }
