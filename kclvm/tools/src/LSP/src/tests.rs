@@ -383,6 +383,42 @@ fn file_path_from_url_test() {
 }
 
 #[test]
+fn test_lsp_with_kpm_in_order() {
+    goto_import_pkg_with_line_test();
+    println!("goto_import_pkg_with_line_test PASS");
+    complete_import_external_file_test();
+    println!("complete_import_external_file_test PASS");
+}
+
+fn goto_import_pkg_with_line_test() {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let (file, program, _, _, gs) =
+        compile_test_file("src/test_data/goto_def_with_line_test/main_pkg/main.k");
+    let pos = KCLPos {
+        filename: file,
+        line: 1,
+        column: Some(15),
+    };
+
+    let res = goto_definition_with_gs(&program, &pos, &gs);
+
+    match res.unwrap() {
+        lsp_types::GotoDefinitionResponse::Scalar(loc) => {
+            let got_path = file_path_from_url(&loc.uri).unwrap();
+            let expected_path = path
+                .join("src/test_data/goto_def_with_line_test/dep-with-line/main.k")
+                .canonicalize()
+                .unwrap()
+                .display()
+                .to_string();
+            assert_eq!(got_path, expected_path)
+        }
+        _ => {
+            unreachable!("test error")
+        }
+    }
+}
+
 fn complete_import_external_file_test() {
     let path = PathBuf::from(".")
         .join("src")
