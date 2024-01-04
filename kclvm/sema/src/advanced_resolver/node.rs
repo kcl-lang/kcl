@@ -1011,7 +1011,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
         let schema_symbol = self.ctx.current_schema_symbol.take();
         let kind = match &schema_symbol {
             Some(_) => LocalSymbolScopeKind::SchemaConfig,
-            None => LocalSymbolScopeKind::Common,
+            None => LocalSymbolScopeKind::Value,
         };
 
         self.enter_local_scope(
@@ -1042,7 +1042,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
                 &self.ctx.current_filename.as_ref().unwrap().clone(),
                 start,
                 end,
-                LocalSymbolScopeKind::Common,
+                LocalSymbolScopeKind::Value,
             );
 
             self.expr(&entry.node.value);

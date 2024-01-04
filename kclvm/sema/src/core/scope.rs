@@ -312,7 +312,7 @@ pub enum LocalSymbolScopeKind {
     Lambda,
     SchemaDef,
     SchemaConfig,
-    Common,
+    Value,
 }
 
 impl Scope for LocalSymbolScope {
@@ -384,7 +384,25 @@ impl Scope for LocalSymbolScope {
                 }
             }
         }
-
+        // In SchemaConfig, available definitions only contain keys of schema attr，i.e., `left` values in schema expr.
+        // but in child scope, i.e., right value in schema expr, available definitions contain all parent definitions.
+        // ```
+        // b = "bar"
+        // foo = Foo{
+        //   bar: b
+        // }
+        // ````
+        // and scope range is(use `#kind[]` to represent the range of the scope`)
+        // ```
+        // #Root[
+        // b = "bar"
+        // foo = Foo #SchemaConfig[{
+        //   bar: #Value[b]
+        // }]
+        // ]
+        // ````
+        // At position of `bar`, the scope kind is SchemaConfig, only get the definition of bar.
+        // At position of seconde `b`, the scope is the child scope of SchemaConfig, need to recursively find the definition of `b`` at a higher level
         if self.kind == LocalSymbolScopeKind::SchemaConfig && !recursive {
             return all_defs_map;
         } else {
