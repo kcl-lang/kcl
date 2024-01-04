@@ -13,7 +13,6 @@ fn build_assign_node(attr_name: &str, assign_value: NodeRef<Expr>) -> NodeRef<St
     node_ref!(Stmt::Assign(AssignStmt {
         value: assign_value,
         targets: vec![iden],
-        type_annotation: None,
         ty: None
     }))
 }
@@ -50,7 +49,6 @@ fn get_dummy_assign_ast() -> ast::Node<ast::AssignStmt> {
                 end_line,
                 end_column,
             )),
-            type_annotation: None,
             ty: None,
         },
         String::from(filename),
@@ -115,7 +113,6 @@ fn get_dummy_assign_binary_ast() -> ast::Node<ast::AssignStmt> {
                 end_line,
                 end_column,
             )),
-            type_annotation: None,
             ty: None,
         },
         String::from(filename),

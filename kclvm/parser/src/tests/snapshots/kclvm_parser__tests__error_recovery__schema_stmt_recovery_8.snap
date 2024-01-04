@@ -1,5 +1,6 @@
 ---
 source: parser/src/tests/error_recovery.rs
+assertion_line: 216
 expression: "crate::tests::parsing_module_string(r#\"schema A:\na: int =\"#)"
 ---
 Module {
@@ -74,16 +75,6 @@ Module {
                         end_line: 2,
                         end_column: 8,
                     },
-                    type_annotation: Some(
-                        Node {
-                            node: "int",
-                            filename: "",
-                            line: 2,
-                            column: 3,
-                            end_line: 2,
-                            end_column: 6,
-                        },
-                    ),
                     ty: Some(
                         Node {
                             node: Basic(

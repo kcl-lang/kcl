@@ -55,7 +55,7 @@ fn test_resolve_program_with_cache() {
         &mut program,
         Options {
             merge_program: false,
-            type_alise: false,
+            type_erasure: false,
             ..Default::default()
         },
         None,
@@ -65,7 +65,7 @@ fn test_resolve_program_with_cache() {
         &mut program,
         Options {
             merge_program: false,
-            type_alise: false,
+            type_erasure: false,
             ..Default::default()
         },
         Some(cached_scope),

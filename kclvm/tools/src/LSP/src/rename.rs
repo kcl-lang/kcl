@@ -193,7 +193,7 @@ where
         &mut program,
         kclvm_sema::resolver::Options {
             merge_program: false,
-            type_alise: false,
+            type_erasure: false,
             ..Default::default()
         },
         None,

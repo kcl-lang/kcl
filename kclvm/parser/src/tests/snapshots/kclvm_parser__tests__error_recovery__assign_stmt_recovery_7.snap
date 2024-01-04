@@ -1,5 +1,6 @@
 ---
 source: parser/src/tests/error_recovery.rs
+assertion_line: 177
 expression: "crate::tests::parsing_module_string(r#\"a: () = 0\"#)"
 ---
 Module {
@@ -49,16 +50,6 @@ Module {
                         end_line: 1,
                         end_column: 9,
                     },
-                    type_annotation: Some(
-                        Node {
-                            node: "()",
-                            filename: "",
-                            line: 1,
-                            column: 3,
-                            end_line: 1,
-                            end_column: 5,
-                        },
-                    ),
                     ty: Some(
                         Node {
                             node: Function(

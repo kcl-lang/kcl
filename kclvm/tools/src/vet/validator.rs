@@ -206,7 +206,6 @@ fn build_assign(attr_name: &str, node: NodeRef<Expr>) -> NodeRef<Stmt> {
             ctx: ExprContext::Store,
         })],
         value: node,
-        type_annotation: None,
         ty: None,
     }))
 }

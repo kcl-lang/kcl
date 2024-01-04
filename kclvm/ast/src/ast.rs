@@ -31,9 +31,7 @@
 //! :note: When the definition of any AST node is modified or the AST node
 //! is added/deleted, it is necessary to modify the corresponding processing
 //! in the compiler and regenerate the walker code.
-//! :copyright: Copyright 2020 The KCL Authors. All rights reserved.
-//!
-//! todo: remove type_str fields after python frontend removed.
+//! :copyright: Copyright The KCL Authors. All rights reserved.
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -435,8 +433,6 @@ pub struct UnificationStmt {
 pub struct AssignStmt {
     pub targets: Vec<NodeRef<Identifier>>,
     pub value: NodeRef<Expr>,
-    pub type_annotation: Option<NodeRef<String>>,
-
     pub ty: Option<NodeRef<Type>>,
 }
 
@@ -608,11 +604,9 @@ impl SchemaStmt {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct SchemaIndexSignature {
     pub key_name: Option<String>,
-    pub key_type: NodeRef<String>,
-    pub value_type: NodeRef<String>,
     pub value: Option<NodeRef<Expr>>,
     pub any_other: bool,
-
+    pub key_ty: NodeRef<Type>,
     pub value_ty: NodeRef<Type>,
 }
 
@@ -626,7 +620,6 @@ pub struct SchemaIndexSignature {
 pub struct SchemaAttr {
     pub doc: String,
     pub name: NodeRef<String>,
-    pub type_str: NodeRef<String>,
     pub op: Option<BinOrAugOp>,
     pub value: Option<NodeRef<Expr>>,
     pub is_optional: bool,
@@ -996,9 +989,7 @@ pub struct CheckExpr {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct LambdaExpr {
     pub args: Option<NodeRef<Arguments>>,
-    pub return_type_str: Option<String>,
     pub body: Vec<NodeRef<Stmt>>,
-
     pub return_ty: Option<NodeRef<Type>>,
 }
 
@@ -1039,9 +1030,6 @@ pub struct Keyword {
 pub struct Arguments {
     pub args: Vec<NodeRef<Identifier>>,
     pub defaults: Vec<Option<NodeRef<Expr>>>,
-    pub type_annotation_list: Vec<Option<NodeRef<String>>>,
-
-    #[serde(default)]
     pub ty_list: Vec<Option<NodeRef<Type>>>,
 }
 
@@ -1681,6 +1669,17 @@ impl ToString for Type {
         let mut result = "".to_string();
         to_str(self, &mut result);
         result
+    }
+}
+
+impl From<String> for Type {
+    /// Build a named type from the string.
+    fn from(value: String) -> Self {
+        Type::Named(Identifier {
+            names: vec![Node::dummy_node(value)],
+            pkgpath: "".to_string(),
+            ctx: ExprContext::Load,
+        })
     }
 }
 

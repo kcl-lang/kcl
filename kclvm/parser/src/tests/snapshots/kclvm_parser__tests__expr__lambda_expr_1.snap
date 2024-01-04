@@ -1,5 +1,6 @@
 ---
 source: parser/src/tests/expr.rs
+assertion_line: 80
 expression: "crate::tests::parsing_expr_string(r####\"lambda x {}\"####)"
 ---
 Node {
@@ -34,9 +35,6 @@ Node {
                         defaults: [
                             None,
                         ],
-                        type_annotation_list: [
-                            None,
-                        ],
                         ty_list: [
                             None,
                         ],
@@ -48,7 +46,6 @@ Node {
                     end_column: 8,
                 },
             ),
-            return_type_str: None,
             body: [],
             return_ty: None,
         },

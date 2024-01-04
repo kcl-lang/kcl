@@ -1,12 +1,12 @@
 ---
 source: parser/src/tests/expr.rs
+assertion_line: 82
 expression: "crate::tests::parsing_expr_string(r####\"lambda {\n    if True:\n        _a = 1\n    else:\n        _a = 2\n    _a\n}\"####)"
 ---
 Node {
     node: Lambda(
         LambdaExpr {
             args: None,
-            return_type_str: None,
             body: [
                 Node {
                     node: If(
@@ -53,7 +53,6 @@ Node {
                                                 end_line: 3,
                                                 end_column: 14,
                                             },
-                                            type_annotation: None,
                                             ty: None,
                                         },
                                     ),
@@ -118,7 +117,6 @@ Node {
                                                 end_line: 5,
                                                 end_column: 14,
                                             },
-                                            type_annotation: None,
                                             ty: None,
                                         },
                                     ),

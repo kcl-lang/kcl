@@ -1,5 +1,6 @@
 ---
 source: parser/src/tests/error_recovery.rs
+assertion_line: 273
 expression: "crate::tests::parsing_module_string(r#\"\nschema A:\n    [str]: str\n    [str]: int\"#)"
 ---
 Module {
@@ -33,24 +34,31 @@ Module {
                         Node {
                             node: SchemaIndexSignature {
                                 key_name: None,
-                                key_type: Node {
-                                    node: "str",
+                                value: None,
+                                any_other: false,
+                                key_ty: Node {
+                                    node: Named(
+                                        Identifier {
+                                            names: [
+                                                Node {
+                                                    node: "str",
+                                                    filename: "",
+                                                    line: 4,
+                                                    column: 5,
+                                                    end_line: 4,
+                                                    end_column: 8,
+                                                },
+                                            ],
+                                            pkgpath: "",
+                                            ctx: Load,
+                                        },
+                                    ),
                                     filename: "",
                                     line: 4,
                                     column: 5,
                                     end_line: 4,
                                     end_column: 8,
                                 },
-                                value_type: Node {
-                                    node: "int",
-                                    filename: "",
-                                    line: 4,
-                                    column: 11,
-                                    end_line: 4,
-                                    end_column: 14,
-                                },
-                                value: None,
-                                any_other: false,
                                 value_ty: Node {
                                     node: Basic(
                                         Int,

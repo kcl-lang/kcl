@@ -1,5 +1,6 @@
 ---
 source: parser/src/tests/error_recovery.rs
+assertion_line: 220
 expression: "crate::tests::parsing_module_string(r#\"schema A:\n[str:]: []\"#)"
 ---
 Module {
@@ -65,16 +66,6 @@ Module {
                         end_line: 2,
                         end_column: 10,
                     },
-                    type_annotation: Some(
-                        Node {
-                            node: "[]",
-                            filename: "",
-                            line: 2,
-                            column: 8,
-                            end_line: 2,
-                            end_column: 10,
-                        },
-                    ),
                     ty: Some(
                         Node {
                             node: List(

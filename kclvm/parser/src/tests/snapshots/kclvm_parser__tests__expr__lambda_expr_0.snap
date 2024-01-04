@@ -1,12 +1,12 @@
 ---
 source: parser/src/tests/expr.rs
+assertion_line: 79
 expression: "crate::tests::parsing_expr_string(r####\"lambda {}\"####)"
 ---
 Node {
     node: Lambda(
         LambdaExpr {
             args: None,
-            return_type_str: None,
             body: [],
             return_ty: None,
         },
