@@ -105,6 +105,7 @@ fn symbol_to_document_symbol(symbol: &KCLSymbol) -> Option<DocumentSymbol> {
             let kind = symbol_kind_to_document_symbol_kind(kind);
             let detail = sema_info.ty.clone().map(|ty| ty.ty_str());
 
+            #[allow(deprecated)]
             Some(DocumentSymbol {
                 name,
                 kind,

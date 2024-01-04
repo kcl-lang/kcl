@@ -142,7 +142,7 @@ pub(crate) fn completion(
                                                 label: name,
                                                 detail: Some(ty.ty_str()),
                                                 documentation: sema_info.doc.clone(),
-                                                kind: type_to_item_kind(&ty),
+                                                kind: type_to_item_kind(ty),
                                                 insert_text: None,
                                             });
                                         }
@@ -248,9 +248,9 @@ fn completion_dot(
                                         kclvm_sema::ty::TypeKind::Schema(_) => {
                                             Some(KCLCompletionItemKind::SchemaAttr)
                                         }
-                                        _ => type_to_item_kind(&attr_ty),
+                                        _ => type_to_item_kind(attr_ty),
                                     },
-                                    None => type_to_item_kind(&attr_ty),
+                                    None => type_to_item_kind(attr_ty),
                                 };
                                 let documentation = match &sema_info.doc {
                                     Some(doc) => {
@@ -615,12 +615,10 @@ fn ty_complete_label(ty: &Type, module: Option<&ModuleInfo>) -> Vec<String> {
                 "{}{}{}",
                 if schema.pkgpath.is_empty() || schema.pkgpath == MAIN_PKG {
                     "".to_string()
+                } else if let Some(m) = module {
+                    format!("{}.", pkg_real_name(&schema.pkgpath, m))
                 } else {
-                    if let Some(m) = module {
-                        format!("{}.", pkg_real_name(&schema.pkgpath, m))
-                    } else {
-                        format!("{}.", schema.pkgpath.split('.').last().unwrap())
-                    }
+                    format!("{}.", schema.pkgpath.split('.').last().unwrap())
                 },
                 schema.name,
                 "{}"

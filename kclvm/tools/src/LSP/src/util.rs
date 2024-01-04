@@ -748,6 +748,7 @@ pub(crate) fn get_real_path_from_external(
     real_path
 }
 
+#[allow(unused)]
 pub(crate) fn build_word_index_for_source_codes(
     source_codes: HashMap<String, String>,
     prune: bool,
@@ -792,9 +793,10 @@ pub(crate) fn build_word_index(
     build_word_index_for_file_paths(&files, prune)
 }
 
-pub struct VirtualLocation {
-    pub filepath: String,
-    pub range: Range,
+#[allow(unused)]
+pub(crate) struct VirtualLocation {
+    pub(crate) filepath: String,
+    pub(crate) range: Range,
 }
 
 pub(crate) fn build_word_index_for_file_content_with_vfs(
