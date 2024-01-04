@@ -3,6 +3,7 @@ use kclvm_ast::ast::{
     ConfigEntry, Expr, Identifier, Node, NodeRef, PosTuple, Program, SchemaExpr, SchemaStmt, Stmt,
     Type,
 };
+use kclvm_ast::node_ref;
 use kclvm_ast::pos::ContainsPos;
 
 use kclvm_driver::kpm_metadata::fetch_metadata;
@@ -89,7 +90,7 @@ pub(crate) fn parse_param_and_compile(
         &mut program,
         kclvm_sema::resolver::Options {
             merge_program: false,
-            type_alise: false,
+            type_erasure: false,
             ..Default::default()
         },
         None,
@@ -552,9 +553,15 @@ pub(crate) fn inner_most_expr(
             for default in &argument.defaults {
                 walk_option_if_contains!(default, pos, schema_def);
             }
-            for ty in argument.type_annotation_list.iter().flatten() {
+            for ty in argument.ty_list.iter().flatten() {
                 if ty.contains_pos(pos) {
-                    return (Some(build_identifier_from_string(ty)), schema_def);
+                    return (
+                        Some(build_identifier_from_string(&node_ref!(
+                            ty.node.to_string(),
+                            ty.pos()
+                        ))),
+                        schema_def,
+                    );
                 }
             }
             (Some(expr.clone()), schema_def)

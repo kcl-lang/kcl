@@ -137,7 +137,7 @@ impl<'ctx> Resolver<'ctx> {
         assign_stmt: &kclvm_ast::ast::AssignStmt,
         value_ty: TypeRef,
     ) {
-        if assign_stmt.type_annotation.is_none() {
+        if assign_stmt.ty.is_none() {
             return;
         }
         for target in &assign_stmt.targets {

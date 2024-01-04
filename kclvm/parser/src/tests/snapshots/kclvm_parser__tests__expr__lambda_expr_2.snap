@@ -1,5 +1,6 @@
 ---
 source: parser/src/tests/expr.rs
+assertion_line: 81
 expression: "crate::tests::parsing_expr_string(r####\"lambda x: int -> int {x}\"####)"
 ---
 Node {
@@ -34,18 +35,6 @@ Node {
                         defaults: [
                             None,
                         ],
-                        type_annotation_list: [
-                            Some(
-                                Node {
-                                    node: "int",
-                                    filename: "",
-                                    line: 1,
-                                    column: 10,
-                                    end_line: 1,
-                                    end_column: 13,
-                                },
-                            ),
-                        ],
                         ty_list: [
                             Some(
                                 Node {
@@ -67,9 +56,6 @@ Node {
                     end_line: 1,
                     end_column: 13,
                 },
-            ),
-            return_type_str: Some(
-                "int",
             ),
             body: [
                 Node {

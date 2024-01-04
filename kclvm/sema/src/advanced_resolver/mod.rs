@@ -275,7 +275,17 @@ mod tests {
         let mut program = load_program(sess.clone(), &[&path], None, None).unwrap();
         let gs = GlobalState::default();
         let gs = Namer::find_symbols(&program, gs);
-        let node_ty_map = resolver::resolve_program(&mut program).node_ty_map;
+
+        let node_ty_map = resolver::resolve_program_with_opts(
+            &mut program,
+            resolver::Options {
+                merge_program: false,
+                type_erasure: false,
+                ..Default::default()
+            },
+            None,
+        )
+        .node_ty_map;
         let gs = AdvancedResolver::resolve_program(&program, gs, node_ty_map);
         let base_path = Path::new(".").canonicalize().unwrap();
         // print_symbols_info(&gs);

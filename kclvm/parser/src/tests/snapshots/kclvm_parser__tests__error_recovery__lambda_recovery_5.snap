@@ -1,6 +1,6 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 163
+assertion_line: 166
 expression: "crate::tests::parsing_expr_string(r#\"{lambda a{}\"#)"
 ---
 Node {
@@ -42,9 +42,6 @@ Node {
                                                     defaults: [
                                                         None,
                                                     ],
-                                                    type_annotation_list: [
-                                                        None,
-                                                    ],
                                                     ty_list: [
                                                         None,
                                                     ],
@@ -56,7 +53,6 @@ Node {
                                                 end_column: 9,
                                             },
                                         ),
-                                        return_type_str: None,
                                         body: [],
                                         return_ty: None,
                                     },

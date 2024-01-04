@@ -1,5 +1,6 @@
 ---
 source: parser/src/tests/error_recovery.rs
+assertion_line: 226
 expression: "crate::tests::parsing_module_string(r#\"schema A:\n[str]: ''= \"#)"
 ---
 Module {
@@ -65,16 +66,6 @@ Module {
                         end_line: 2,
                         end_column: 11,
                     },
-                    type_annotation: Some(
-                        Node {
-                            node: "\"\"",
-                            filename: "",
-                            line: 2,
-                            column: 7,
-                            end_line: 2,
-                            end_column: 9,
-                        },
-                    ),
                     ty: Some(
                         Node {
                             node: Literal(

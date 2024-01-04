@@ -1912,7 +1912,6 @@ impl<'a> Parser<'a> {
         self.bump_keyword(kw::Lambda);
 
         let mut args = None;
-        let mut return_type_str = None;
         let mut return_ty = None;
 
         // schema_arguments
@@ -1928,7 +1927,6 @@ impl<'a> Parser<'a> {
         if let TokenKind::RArrow = self.token.kind {
             self.bump_token(TokenKind::RArrow);
             let typ = self.parse_type_annotation();
-            return_type_str = Some(typ.node.to_string());
             return_ty = Some(typ);
         }
 
@@ -1974,7 +1972,6 @@ impl<'a> Parser<'a> {
         Box::new(Node::node(
             Expr::Lambda(LambdaExpr {
                 args,
-                return_type_str,
                 return_ty,
                 body: stmt_list,
             }),

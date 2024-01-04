@@ -10,10 +10,7 @@ use kclvm_ast::{
 use super::{Indentation, Printer};
 
 type ParameterType<'a> = (
-    (
-        &'a ast::NodeRef<ast::Identifier>,
-        &'a Option<ast::NodeRef<String>>,
-    ),
+    (&'a ast::NodeRef<ast::Identifier>, Option<String>),
     &'a Option<ast::NodeRef<ast::Expr>>,
 );
 
@@ -224,11 +221,11 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
             if let Some(key_name) = &index_signature.node.key_name {
                 self.write(&format!("{}: ", key_name));
             }
-            self.write(&index_signature.node.key_type.node);
+            self.write(&index_signature.node.key_ty.node.to_string());
             self.write_token(TokenKind::CloseDelim(DelimToken::Bracket));
             self.write_token(TokenKind::Colon);
             self.write_space();
-            self.write(&index_signature.node.value_type.node);
+            self.write(&index_signature.node.value_ty.node.to_string());
             if let Some(value) = &index_signature.node.value {
                 self.write(" = ");
                 self.expr(value);
@@ -350,7 +347,7 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
             self.write("?");
         }
         self.write(": ");
-        self.write(&schema_attr.type_str.node);
+        self.write(&schema_attr.ty.node.to_string());
         if let Some(op) = &schema_attr.op {
             let symbol = match op {
                 ast::BinOrAugOp::Bin(bin_op) => bin_op.symbol(),
@@ -671,11 +668,11 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
             self.write_space();
             self.walk_arguments(&args.node);
         }
-        if let Some(ty_str) = &lambda_expr.return_type_str {
+        if let Some(ty_str) = &lambda_expr.return_ty {
             self.write_space();
             self.write_token(TokenKind::RArrow);
             self.write_space();
-            self.write(ty_str);
+            self.write(&ty_str.node.to_string());
         }
         self.write_space();
         self.write_token(TokenKind::OpenDelim(DelimToken::Brace));
@@ -702,7 +699,12 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
         let parameter_zip_list: Vec<ParameterType<'_>> = arguments
             .args
             .iter()
-            .zip(arguments.type_annotation_list.iter())
+            .zip(
+                arguments
+                    .ty_list
+                    .iter()
+                    .map(|ty| ty.clone().map(|n| n.node.to_string())),
+            )
             .zip(arguments.defaults.iter())
             .collect();
         interleave!(
@@ -711,7 +713,7 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
                 let ((arg, ty_str), default) = para;
                 self.walk_identifier(&arg.node);
                 if let Some(ty_str) = ty_str {
-                    self.write(&format!(": {}", ty_str.node));
+                    self.write(&format!(": {}", ty_str));
                 }
                 if let Some(default) = default {
                     self.write(" = ");

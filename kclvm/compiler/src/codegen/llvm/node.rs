@@ -161,8 +161,8 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         let mut value = self
             .walk_expr(&assign_stmt.value)
             .expect(kcl_error::COMPILE_ERROR_MSG);
-        if let Some(type_annotation) = &assign_stmt.type_annotation {
-            let type_annotation = self.native_global_string_value(&type_annotation.node);
+        if let Some(ty) = &assign_stmt.ty {
+            let type_annotation = self.native_global_string_value(&ty.node.to_string());
             let is_in_schema =
                 self.schema_stack.borrow().len() > 0 || self.schema_expr_stack.borrow().len() > 0;
             value = self.build_call(
@@ -780,10 +780,13 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
                         schema_name_native_str,
                         index_sign_value,
                         key_name_str_ptr.into(),
-                        self.native_global_string(index_signature.node.key_type.node.as_str(), "")
-                            .into(),
                         self.native_global_string(
-                            index_signature.node.value_type.node.as_str(),
+                            index_signature.node.key_ty.node.to_string().as_str(),
+                            "",
+                        )
+                        .into(),
+                        self.native_global_string(
+                            index_signature.node.value_ty.node.to_string().as_str(),
                             "",
                         )
                         .into(),
@@ -1461,7 +1464,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
             .expect(kcl_error::INTERNAL_ERROR_MSG);
         let string_ptr_value = self.native_global_string(name, "").into();
         let type_str_ptr_value = self
-            .native_global_string(&schema_attr.type_str.node, "")
+            .native_global_string(&schema_attr.ty.node.to_string(), "")
             .into();
         self.build_void_call(
             &ApiFunc::kclvm_config_attr_map.name(),

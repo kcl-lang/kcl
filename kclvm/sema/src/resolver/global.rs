@@ -533,12 +533,12 @@ impl<'ctx> Resolver<'ctx> {
                 }
             }
             let key_ty = self.parse_ty_str_with_scope(
-                &index_signature.node.key_type.node,
-                index_signature.node.key_type.get_span_pos(),
+                &index_signature.node.key_ty.node.to_string(),
+                index_signature.node.key_ty.get_span_pos(),
             );
             let val_ty = self.parse_ty_with_scope(
                 Some(&index_signature.node.value_ty),
-                index_signature.node.value_type.get_span_pos(),
+                index_signature.node.value_ty.get_span_pos(),
             );
             if !self
                 .ctx

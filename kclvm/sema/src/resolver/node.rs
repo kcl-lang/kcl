@@ -170,10 +170,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                     target.get_span_pos(),
                     None,
                 );
-                if !value_ty.is_any()
-                    && expected_ty.is_any()
-                    && assign_stmt.type_annotation.is_none()
-                {
+                if !value_ty.is_any() && expected_ty.is_any() && assign_stmt.ty.is_none() {
                     self.set_type_to_scope(name, value_ty.clone(), &target.node.names[0]);
                     if let Some(schema_ty) = &self.ctx.schema {
                         let mut schema_ty = schema_ty.borrow_mut();
@@ -363,6 +360,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             .borrow()
             .get_type_of_attr(name)
             .map_or(self.any_ty(), |ty| ty);
+
         self.node_ty_map
             .insert(schema_attr.name.id.clone(), expected_ty.clone());
 
@@ -997,7 +995,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
         self.leave_scope();
         self.ctx.in_lambda_expr.pop();
         self.must_assignable_to(real_ret_ty.clone(), ret_ty.clone(), (start, end), None);
-        if !real_ret_ty.is_any() && ret_ty.is_any() && lambda_expr.return_type_str.is_none() {
+        if !real_ret_ty.is_any() && ret_ty.is_any() && lambda_expr.return_ty.is_none() {
             ret_ty = real_ret_ty;
         }
         Arc::new(Type::function(None, ret_ty, &params, "", false, None))
