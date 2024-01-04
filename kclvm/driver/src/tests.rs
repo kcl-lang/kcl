@@ -196,7 +196,7 @@ fn test_parse_key_value_pair_fail() {
         assert!(parse_key_value_pair(case).is_err());
     }
 }
-#[test]
+
 fn test_fill_pkg_maps_for_k_file_with_line() {
     let root_path = PathBuf::from(".")
         .join("src")
@@ -296,12 +296,15 @@ fn test_lookup_the_nearest_file_dir() {
         path.canonicalize().unwrap().display().to_string()
     );
 }
+
 #[test]
 fn test_fetch_metadata_in_order() {
     test_fetch_metadata();
     println!("test_fetch_metadata() passed");
     test_fill_pkg_maps_for_k_file();
     println!("test_fill_pkg_maps_for_k_file() passed");
+    test_fill_pkg_maps_for_k_file_with_line();
+    println!("test_fill_pkg_maps_for_k_file_with_line() passed");
 }
 
 fn test_fetch_metadata() {
@@ -322,6 +325,8 @@ fn test_fetch_metadata() {
     let vendor_home = get_vendor_home();
 
     let metadata = fetch_metadata(path.clone());
+    // Show more information when the test fails.
+    println!("{:?}", metadata);
     assert_eq!(metadata.is_err(), false);
     let pkgs = metadata.unwrap().packages.clone();
     assert_eq!(pkgs.len(), 1);

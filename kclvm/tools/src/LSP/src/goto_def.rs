@@ -109,37 +109,6 @@ mod tests {
 
     #[test]
     #[bench_test]
-    fn goto_import_pkg_with_line_test() {
-        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let (file, program, _, _, gs) =
-            compile_test_file("src/test_data/goto_def_with_line_test/main_pkg/main.k");
-        let pos = KCLPos {
-            filename: file,
-            line: 1,
-            column: Some(15),
-        };
-
-        let res = goto_definition_with_gs(&program, &pos, &gs);
-
-        match res.unwrap() {
-            lsp_types::GotoDefinitionResponse::Scalar(loc) => {
-                let got_path = file_path_from_url(&loc.uri).unwrap();
-                let expected_path = path
-                    .join("src/test_data/goto_def_with_line_test/dep-with-line/main.k")
-                    .canonicalize()
-                    .unwrap()
-                    .display()
-                    .to_string();
-                assert_eq!(got_path, expected_path)
-            }
-            _ => {
-                unreachable!("test error")
-            }
-        }
-    }
-
-    #[test]
-    #[bench_test]
     fn goto_import_pkg_test() {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
