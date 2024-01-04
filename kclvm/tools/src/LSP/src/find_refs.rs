@@ -67,9 +67,10 @@ pub(crate) fn find_refs_from_def<F: Fn(String) -> Result<(), anyhow::Error>>(
     for (_, word_index) in &mut *word_index_map.write() {
         if let Some(mut locs) = word_index.get(name.as_str()).cloned() {
             if locs.len() >= 20 {
-                let _ = logger(format!(
+                let _ = logger(
                     "Found more than 20 matched symbols, only the first 20 will be processed"
-                ));
+                        .to_string(),
+                );
                 locs = locs[0..20].to_vec();
             }
 
@@ -107,16 +108,14 @@ pub(crate) fn find_refs_from_def<F: Fn(String) -> Result<(), anyhow::Error>>(
                                     }
                                 }
                                 Err(err) => {
-                                    let _ = logger(format!(
-                                        "{file_path} compilation failed: {}",
-                                        err.to_string()
-                                    ));
+                                    let _ =
+                                        logger(format!("{file_path} compilation failed: {}", err));
                                     false
                                 }
                             }
                         }
                         Err(err) => {
-                            let _ = logger(format!("compilation failed: {}", err.to_string()));
+                            let _ = logger(format!("compilation failed: {}", err));
                             false
                         }
                     }

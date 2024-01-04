@@ -141,10 +141,10 @@ mod tests {
                         .iter()
                         .map(|token| {
                             (
-                                token.delta_line as u32,
-                                token.delta_start as u32,
-                                token.length as u32,
-                                token.token_type as u32,
+                                token.delta_line,
+                                token.delta_start,
+                                token.length,
+                                token.token_type,
                             )
                         })
                         .collect();

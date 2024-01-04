@@ -367,7 +367,7 @@ where
                             if let Some(symbol_ref) = find_def_with_gs(&kcl_pos, &gs, true) {
                                 if let Some(symbol_def) = gs.get_symbols().get_symbol(symbol_ref) {
                                     if symbol_def.get_range() == range {
-                                        refs.push(loc.clone())
+                                        refs.push(loc)
                                     }
                                 }
                             }
@@ -400,7 +400,7 @@ where
 mod tests {
     use kclvm_ast::ast;
     use kclvm_error::diagnostic;
-    use lsp_types::{Location, Position, Range, TextEdit, Url};
+    use lsp_types::{Position, Range, TextEdit};
     use maplit::hashmap;
     use parking_lot::RwLock;
     use std::fs;
@@ -509,7 +509,7 @@ e = a["abc"]
 
     #[test]
     fn test_select_symbol() {
-        let (root, _, person_path, server_path, config_path, vfs) = prepare_vfs();
+        let (root, _, person_path, server_path, _config_path, vfs) = prepare_vfs();
         let pkg_root = root.as_path().to_str().unwrap().to_string();
 
         if let Some((name, range)) = select_symbol(
@@ -689,7 +689,7 @@ e = a["abc"]
 
         let vfs: Arc<RwLock<Vfs>> = Arc::new(RwLock::new(Default::default()));
         for path in vec![base_path, main_path] {
-            let content = fs::read_to_string(path.clone()).unwrap();
+            let content = fs::read_to_string(path).unwrap();
             vfs.write().set_file_contents(
                 VfsPath::new_virtual_path(path.to_string()),
                 Some(content.into_bytes()),
@@ -884,8 +884,8 @@ a = base.Person {
             root.to_str().unwrap(),
             "base:Person",
             hashmap! {
-                base_path_string.clone() => base_source_code.clone().to_string(),
-                main_path_string.clone() => main_source_code.clone().to_string(),
+                base_path_string.clone() => base_source_code.to_string(),
+                main_path_string.clone() => main_source_code.to_string(),
             },
             "NewPerson".to_string(),
         )

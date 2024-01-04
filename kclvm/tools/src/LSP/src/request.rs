@@ -310,7 +310,7 @@ pub(crate) fn handle_document_symbol(
             }
             Ok(res)
         }
-        Err(_) => return Ok(None),
+        Err(_) => Ok(None),
     }
 }
 
