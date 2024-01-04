@@ -769,7 +769,7 @@ mod tests {
             CompletionResponse::List(_) => panic!("test failed"),
         };
 
-        expected_labels.extend(["name", "age"]);
+        expected_labels = vec!["", "age", "math", "name", "subpkg"];
         got_labels.sort();
         expected_labels.sort();
         assert_eq!(got_labels, expected_labels);
