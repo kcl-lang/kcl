@@ -200,11 +200,11 @@ impl<'ctx> MutSelfMutWalker<'ctx> for RawIdentifierTransformer {
         walk_if_mut!(self, walk_identifier, rule_stmt.for_host_name);
     }
     fn walk_import_stmt(&mut self, import_stmt: &'ctx mut ast::ImportStmt) {
-        if let Some(name) = import_stmt.asname.as_mut() {
-            *name = remove_raw_ident_prefix(name);
+        if let Some(name) = &mut import_stmt.asname {
+            name.node = remove_raw_ident_prefix(&name.node);
         }
         import_stmt.name = remove_raw_ident_prefix(&import_stmt.name);
-        import_stmt.path = remove_raw_ident_prefix(&import_stmt.path);
+        import_stmt.path.node = remove_raw_ident_prefix(&import_stmt.path.node);
     }
 }
 
@@ -218,7 +218,7 @@ pub fn fix_qualified_identifier<'ctx>(
     // 0. init import names.
     for stmt in &module.body {
         if let ast::Stmt::Import(import_stmt) = &stmt.node {
-            import_names.insert(import_stmt.name.clone(), import_stmt.path.clone());
+            import_names.insert(import_stmt.name.clone(), import_stmt.path.node.clone());
         }
     }
     // 1. fix_global_ident

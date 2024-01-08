@@ -160,7 +160,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Namer<'ctx> {
             .unwrap()
             .add_import_info(ImportInfo::new(
                 import_stmt.name.clone(),
-                import_stmt.path.clone(),
+                import_stmt.path.node.clone(),
             ));
 
         None

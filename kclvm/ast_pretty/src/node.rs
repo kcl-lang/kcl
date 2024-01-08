@@ -143,10 +143,10 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
 
     fn walk_import_stmt(&mut self, import_stmt: &'ctx ast::ImportStmt) -> Self::Result {
         self.write("import ");
-        self.write(&import_stmt.path);
+        self.write(&import_stmt.path.node);
         if let Some(as_name) = &import_stmt.asname {
             self.write(" as ");
-            self.write(as_name);
+            self.write(&as_name.node);
         }
         self.write_newline_without_fill();
     }

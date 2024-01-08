@@ -541,7 +541,7 @@ fn completion_import(
     program: &Program,
 ) -> Option<lsp_types::CompletionResponse> {
     let mut items: IndexSet<KCLCompletionItem> = IndexSet::new();
-    let pkgpath = &stmt.path;
+    let pkgpath = &stmt.path.node;
     let mut real_path =
         Path::new(&program.root).join(pkgpath.replace('.', std::path::MAIN_SEPARATOR_STR));
     if !real_path.exists() {

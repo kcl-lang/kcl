@@ -119,11 +119,11 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
         let ast_id = self.ctx.cur_node.clone();
         let (start_pos, end_pos) = (self.ctx.start_pos.clone(), self.ctx.end_pos.clone());
         let mut unresolved =
-            UnresolvedSymbol::new(import_stmt.path.clone(), start_pos, end_pos, None);
+            UnresolvedSymbol::new(import_stmt.path.node.clone(), start_pos, end_pos, None);
         let package_symbol = self
             .gs
             .get_symbols()
-            .get_symbol_by_fully_qualified_name(&import_stmt.path)?;
+            .get_symbol_by_fully_qualified_name(&import_stmt.path.node)?;
         unresolved.def = Some(package_symbol);
         let unresolved_ref = self
             .gs

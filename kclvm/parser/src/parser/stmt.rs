@@ -421,6 +421,7 @@ impl<'a> Parser<'a> {
     fn parse_import_stmt(&mut self) -> NodeRef<Stmt> {
         let token = self.token;
         self.bump_keyword(kw::Import);
+        let dot_name_token = self.token;
 
         let mut leading_dot = Vec::new();
         while let TokenKind::DotDotDot = self.token.kind {
@@ -432,10 +433,17 @@ impl<'a> Parser<'a> {
             self.bump_token(TokenKind::Dot);
         }
         let dot_name = self.parse_identifier().node;
+        let dot_name_end_token = self.prev_token;
+
         let asname = if self.token.is_keyword(kw::As) {
             self.bump_keyword(kw::As);
             let ident = self.parse_identifier().node;
-            Some(ident.get_names().join("."))
+            match ident.names.len() {
+                1 => Some(ident.names[0].clone()),
+                _ => {
+                    unreachable!()
+                }
+            }
         } else {
             None
         };
@@ -444,16 +452,20 @@ impl<'a> Parser<'a> {
         path.push_str(dot_name.get_names().join(".").as_str());
 
         let rawpath = path.clone();
+        let path_node = Node::node_with_pos(
+            path,
+            self.token_span_pos(dot_name_token, dot_name_end_token),
+        );
 
         let name = if let Some(as_name_value) = asname.clone() {
-            as_name_value
+            as_name_value.node
         } else {
             dot_name.get_names().last().unwrap().clone()
         };
 
         let t = node_ref!(
             Stmt::Import(ImportStmt {
-                path,
+                path: path_node,
                 rawpath,
                 name,
                 asname,

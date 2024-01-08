@@ -478,22 +478,22 @@ impl Loader {
             for stmt in &mut m.body {
                 let pos = stmt.pos().clone();
                 if let ast::Stmt::Import(ref mut import_spec) = &mut stmt.node {
-                    import_spec.path = kclvm_config::vfs::fix_import_path(
+                    import_spec.path.node = kclvm_config::vfs::fix_import_path(
                         pkgroot,
                         &m.filename,
-                        import_spec.path.as_str(),
+                        import_spec.path.node.as_str(),
                     );
                     import_spec.pkg_name = pkg_name.to_string();
                     // Load the import package source code and compile.
                     if let Some(pkg_info) = self.load_package(
                         &pkgroot,
                         pkg_name.to_string(),
-                        import_spec.path.to_string(),
+                        import_spec.path.node.to_string(),
                         pos.into(),
                         pkgs,
                     )? {
                         // Add the external package name as prefix of the [`kclvm_ast::ImportStmt`]'s member [`path`].
-                        import_spec.path = pkg_info.pkg_path.to_string();
+                        import_spec.path.node = pkg_info.pkg_path.to_string();
                         import_spec.pkg_name = pkg_info.pkg_name
                     }
                 }
@@ -505,10 +505,10 @@ impl Loader {
     fn fix_rel_import_path(&mut self, pkgroot: &str, m: &mut ast::Module) {
         for stmt in &mut m.body {
             if let ast::Stmt::Import(ref mut import_spec) = &mut stmt.node {
-                import_spec.path = kclvm_config::vfs::fix_import_path(
+                import_spec.path.node = kclvm_config::vfs::fix_import_path(
                     pkgroot,
                     &m.filename,
-                    import_spec.path.as_str(),
+                    import_spec.path.node.as_str(),
                 );
             }
         }

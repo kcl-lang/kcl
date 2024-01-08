@@ -11,7 +11,14 @@ Module {
         Node {
             node: Import(
                 ImportStmt {
-                    path: "",
+                    path: Node {
+                        node: "",
+                        filename: "",
+                        line: 1,
+                        column: 6,
+                        end_line: 1,
+                        end_column: 6,
+                    },
                     rawpath: "",
                     name: "",
                     asname: None,
