@@ -25,6 +25,9 @@ pub(crate) fn semantic_tokens_full(file: &str, gs: &GlobalState) -> Option<Seman
     if let Some(file_sema) = sema_db.get_file_sema(&file.to_string()) {
         let symbols = file_sema.get_symbols();
         for symbol_ref in symbols {
+            if symbol_ref.get_kind() == SymbolKind::Expression {
+                continue;
+            }
             if let Some(symbol) = gs.get_symbols().get_symbol(*symbol_ref) {
                 let (start, end) = symbol.get_range();
                 let kind = match symbol_ref.get_kind() {
@@ -36,6 +39,7 @@ pub(crate) fn semantic_tokens_full(file: &str, gs: &GlobalState) -> Option<Seman
                         type_index(SemanticTokenType::VARIABLE)
                     }
                     SymbolKind::Rule => type_index(SemanticTokenType::MACRO),
+                    SymbolKind::Expression => unreachable!(),
                 };
                 kcl_tokens.push(KCLSemanticToken {
                     start: start.clone(),

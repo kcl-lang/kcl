@@ -9,7 +9,9 @@ use kclvm_error::{diagnostic::Range, Position};
 use crate::{
     core::{
         scope::LocalSymbolScopeKind,
-        symbol::{KCLSymbolSemanticInfo, SymbolRef, UnresolvedSymbol, ValueSymbol},
+        symbol::{
+            ExpressionSymbol, KCLSymbolSemanticInfo, SymbolRef, UnresolvedSymbol, ValueSymbol,
+        },
     },
     ty::{Type, SCHEMA_MEMBER_FUNCTIONS},
 };
@@ -752,9 +754,25 @@ impl<'ctx> AdvancedResolver<'ctx> {
             self.ctx.end_pos = end;
         }
         self.ctx.cur_node = expr.id.clone();
-        let result = self.walk_expr(&expr.node);
-
-        result
+        match self.walk_expr(&expr.node) {
+            None => match self.ctx.node_ty_map.get(&self.ctx.get_node_key(&expr.id)) {
+                Some(ty) => {
+                    let (_, end) = expr.get_span_pos();
+                    let mut expr_symbol = ExpressionSymbol::new(
+                        format!("@{}", expr.node.get_expr_name()),
+                        end.clone(),
+                        end,
+                        None,
+                    );
+                    expr_symbol.sema_info.ty = Some(ty.clone());
+                    self.gs
+                        .get_symbols_mut()
+                        .alloc_expression_symbol(expr_symbol, self.ctx.get_node_key(&expr.id))
+                }
+                None => None,
+            },
+            some => some,
+        }
     }
 
     #[inline]

@@ -869,6 +869,10 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 );
                 let init_stack_depth = self.switch_config_expr_context(Some(obj));
                 self.expr(&schema_expr.config);
+                self.node_ty_map.insert(
+                    self.get_node_key(schema_expr.config.id.clone()),
+                    def_ty.clone(),
+                );
                 self.clear_config_expr_context(init_stack_depth as usize, false);
                 if schema_ty.is_instance {
                     if !schema_expr.args.is_empty() || !schema_expr.kwargs.is_empty() {

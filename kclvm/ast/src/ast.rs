@@ -680,6 +680,43 @@ pub enum Expr {
     Missing(MissingExpr),
 }
 
+impl Expr {
+    pub fn get_expr_name(&self) -> String {
+        match self {
+            Expr::Identifier(_) => "IdentifierExpression",
+            Expr::Unary(_) => "UnaryExpression",
+            Expr::Binary(_) => "BinaryExpression",
+            Expr::If(_) => "IfExpression",
+            Expr::Selector(_) => "SelectorExpression",
+            Expr::Call(_) => "CallExpression",
+            Expr::Paren(_) => "ParenExpression",
+            Expr::Quant(_) => "QuantExpression",
+            Expr::List(_) => "ListExpression",
+            Expr::ListIfItem(_) => "ListIfItemExpression",
+            Expr::ListComp(_) => "ListCompExpression",
+            Expr::Starred(_) => "StarredExpression",
+            Expr::DictComp(_) => "DictCompExpression",
+            Expr::ConfigIfEntry(_) => "ConfigIfEntryExpression",
+            Expr::CompClause(_) => "CompClauseExpression",
+            Expr::Schema(_) => "SchemaExpression",
+            Expr::Config(_) => "ConfigExpression",
+            Expr::Check(_) => "CheckExpression",
+            Expr::Lambda(_) => "LambdaExpression",
+            Expr::Subscript(_) => "SubscriptExpression",
+            Expr::Keyword(_) => "KeywordExpression",
+            Expr::Arguments(_) => "ArgumentsExpression",
+            Expr::Compare(_) => "CompareExpression",
+            Expr::NumberLit(_) => "NumberLitExpression",
+            Expr::StringLit(_) => "StringLitExpression",
+            Expr::NameConstantLit(_) => "NameConstantLitExpression",
+            Expr::JoinedString(_) => "JoinedStringExpression",
+            Expr::FormattedValue(_) => "FormattedValueExpression",
+            Expr::Missing(_) => "MissingExpression",
+        }
+        .to_string()
+    }
+}
+
 /// Identifier, e.g.
 /// ```kcl
 /// a
