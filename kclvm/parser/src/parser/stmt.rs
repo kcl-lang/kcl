@@ -441,7 +441,9 @@ impl<'a> Parser<'a> {
             match ident.names.len() {
                 1 => Some(ident.names[0].clone()),
                 _ => {
-                    unreachable!()
+                    self.sess
+                        .struct_span_error("Invalid import asname", self.token.span);
+                    None
                 }
             }
         } else {

@@ -1,0 +1,37 @@
+---
+source: parser/src/tests/error_recovery.rs
+expression: "crate::tests::parsing_module_string(r#\"import json as j.a\"#)"
+---
+Module {
+    filename: "",
+    pkg: "",
+    doc: None,
+    name: "",
+    body: [
+        Node {
+            node: Import(
+                ImportStmt {
+                    path: Node {
+                        node: "json",
+                        filename: "",
+                        line: 1,
+                        column: 7,
+                        end_line: 1,
+                        end_column: 11,
+                    },
+                    rawpath: "json",
+                    name: "json",
+                    asname: None,
+                    pkg_name: "",
+                },
+            ),
+            filename: "",
+            line: 1,
+            column: 0,
+            end_line: 1,
+            end_column: 18,
+        },
+    ],
+    comments: [],
+}
+
