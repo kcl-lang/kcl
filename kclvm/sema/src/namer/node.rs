@@ -67,7 +67,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Namer<'ctx> {
             {
                 let value_ref = self.gs.get_symbols_mut().alloc_value_symbol(
                     ValueSymbol::new(value_name, start_pos, end_pos, Some(owner), true),
-                    &unification_stmt.target.id,
+                    self.ctx.get_node_key(&unification_stmt.target.id),
                 );
                 self.ctx
                     .value_fully_qualified_name_set
@@ -91,7 +91,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Namer<'ctx> {
                 end_pos,
                 owner,
             ),
-            &type_alias_stmt.type_name.id,
+            self.ctx.get_node_key(&type_alias_stmt.type_name.id),
         );
         Some(vec![type_alias_ref])
     }
@@ -116,7 +116,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Namer<'ctx> {
                 {
                     let value_ref = self.gs.get_symbols_mut().alloc_value_symbol(
                         ValueSymbol::new(value_name, start_pos, end_pos, Some(owner), true),
-                        &target.id,
+                        self.ctx.get_node_key(&target.id),
                     );
                     self.ctx
                         .value_fully_qualified_name_set
@@ -171,7 +171,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Namer<'ctx> {
         let owner = self.ctx.owner_symbols.last().unwrap();
         let shcema_ref = self.gs.get_symbols_mut().alloc_schema_symbol(
             SchemaSymbol::new(schema_stmt.name.node.clone(), start_pos, end_pos, *owner),
-            &schema_stmt.name.id,
+            self.ctx.get_node_key(&schema_stmt.name.id),
         );
         self.ctx.owner_symbols.push(shcema_ref);
 
@@ -213,7 +213,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Namer<'ctx> {
         let owner = self.ctx.owner_symbols.last().unwrap().clone();
         let rule_ref = self.gs.get_symbols_mut().alloc_rule_symbol(
             RuleSymbol::new(rule_stmt.name.node.clone(), start_pos, end_pos, owner),
-            &rule_stmt.name.id,
+            self.ctx.get_node_key(&rule_stmt.name.id),
         );
         Some(vec![rule_ref])
     }
@@ -227,7 +227,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Namer<'ctx> {
         let owner = self.ctx.owner_symbols.last().unwrap().clone();
         let attribute_ref = self.gs.get_symbols_mut().alloc_attribute_symbol(
             AttributeSymbol::new(schema_attr.name.node.clone(), start_pos, end_pos, owner),
-            &schema_attr.name.id,
+            self.ctx.get_node_key(&schema_attr.name.id),
         );
         Some(vec![attribute_ref])
     }

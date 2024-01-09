@@ -282,7 +282,7 @@ impl Scope {
 pub struct ProgramScope {
     pub scope_map: IndexMap<String, Rc<RefCell<Scope>>>,
     pub import_names: IndexMap<String, IndexMap<String, String>>,
-    pub node_ty_map: IndexMap<AstIndex, TypeRef>,
+    pub node_ty_map: NodeTyMap,
     pub handler: Handler,
 }
 
@@ -451,7 +451,8 @@ impl<'ctx> Resolver<'ctx> {
             Some(obj) => {
                 let mut obj = obj.borrow_mut();
                 let infer_ty = self.ctx.ty_ctx.infer_to_variable_type(ty);
-                self.node_ty_map.insert(node.id.clone(), infer_ty.clone());
+                self.node_ty_map
+                    .insert(self.get_node_key(node.id.clone()), infer_ty.clone());
                 obj.ty = infer_ty;
             }
             None => {
@@ -477,7 +478,22 @@ impl<'ctx> Resolver<'ctx> {
     pub fn contains_object(&mut self, name: &str) -> bool {
         self.scope.borrow().elems.contains_key(name)
     }
+
+    pub fn get_node_key(&self, id: AstIndex) -> NodeKey {
+        NodeKey {
+            pkgpath: self.ctx.pkgpath.clone(),
+            id,
+        }
+    }
 }
+
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
+pub struct NodeKey {
+    pub pkgpath: String,
+    pub id: AstIndex,
+}
+
+pub type NodeTyMap = IndexMap<NodeKey, TypeRef>;
 
 /// For CachedScope, we assume that all changed files must be located in kclvm_ast::MAIN_PKG ,
 /// if this is not the case, please clear the cache directly
@@ -485,7 +501,7 @@ impl<'ctx> Resolver<'ctx> {
 pub struct CachedScope {
     pub program_root: String,
     pub scope_map: IndexMap<String, Rc<RefCell<Scope>>>,
-    pub node_ty_map: IndexMap<ast::AstIndex, TypeRef>,
+    pub node_ty_map: NodeTyMap,
     dependency_graph: DependencyGraph,
 }
 #[derive(Debug, Clone, Default)]

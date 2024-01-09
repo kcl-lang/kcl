@@ -46,6 +46,7 @@ use crate::builtin::{
 use crate::core::global_state::GlobalState;
 use crate::core::package::{ModuleInfo, PackageInfo};
 use crate::core::symbol::{PackageSymbol, SymbolRef, ValueSymbol, BUILTIN_STR_PACKAGE};
+use crate::resolver::scope::NodeKey;
 use indexmap::IndexSet;
 use kclvm_ast::ast::AstIndex;
 use kclvm_ast::ast::Program;
@@ -66,6 +67,19 @@ struct NamerContext<'ctx> {
     pub value_fully_qualified_name_set: IndexSet<String>,
 }
 
+impl<'ctx> NamerContext<'ctx> {
+    pub fn get_node_key(&self, id: &AstIndex) -> NodeKey {
+        NodeKey {
+            pkgpath: self
+                .current_package_info
+                .clone()
+                .unwrap()
+                .fully_qualified_name,
+            id: id.clone(),
+        }
+    }
+}
+
 impl<'ctx> Namer<'ctx> {
     fn new(program: &'ctx Program, gs: GlobalState) -> Self {
         Self {
@@ -83,6 +97,8 @@ impl<'ctx> Namer<'ctx> {
     // serial namer pass
     pub fn find_symbols(program: &'ctx Program, gs: GlobalState) -> GlobalState {
         let mut namer = Self::new(program, gs);
+        namer.ctx.current_package_info =
+            Some(PackageInfo::new("@builtin".to_string(), "".to_string()));
         namer.init_builtin_symbols();
 
         for (name, modules) in namer.ctx.program.pkgs.iter() {
@@ -157,7 +173,7 @@ impl<'ctx> Namer<'ctx> {
             let symbol_ref = self
                 .gs
                 .get_symbols_mut()
-                .alloc_value_symbol(value_symbol, &AstIndex::default());
+                .alloc_value_symbol(value_symbol, self.ctx.get_node_key(&AstIndex::default()));
             self.gs
                 .get_symbols_mut()
                 .symbols_info
@@ -189,7 +205,7 @@ impl<'ctx> Namer<'ctx> {
                 let func_symbol_ref = self
                     .gs
                     .get_symbols_mut()
-                    .alloc_value_symbol(value_symbol, &AstIndex::default());
+                    .alloc_value_symbol(value_symbol, self.ctx.get_node_key(&AstIndex::default()));
                 self.gs
                     .get_symbols_mut()
                     .packages
@@ -222,7 +238,7 @@ impl<'ctx> Namer<'ctx> {
             let symbol_ref = self
                 .gs
                 .get_symbols_mut()
-                .alloc_value_symbol(value_symbol, &AstIndex::default());
+                .alloc_value_symbol(value_symbol, self.ctx.get_node_key(&AstIndex::default()));
             self.gs
                 .get_symbols_mut()
                 .packages

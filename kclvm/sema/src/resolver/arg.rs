@@ -49,7 +49,7 @@ impl<'ctx> Resolver<'ctx> {
                 check_table.insert(arg_name.to_string());
                 let arg_value_type = self.expr_or_any_type(&kw.node.value);
                 self.node_ty_map
-                    .insert(kw.id.clone(), arg_value_type.clone());
+                    .insert(self.get_node_key(kw.id.clone()), arg_value_type.clone());
                 kwarg_types.push((arg_name.to_string(), arg_value_type.clone()));
             } else {
                 self.handler

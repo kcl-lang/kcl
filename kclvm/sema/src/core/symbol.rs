@@ -6,8 +6,10 @@ use indexmap::IndexMap;
 use kclvm_error::{diagnostic::Range, Position};
 
 use super::package::ModuleInfo;
-use crate::ty::{Type, TypeKind, TypeRef};
-use kclvm_ast::ast::AstIndex;
+use crate::{
+    resolver::scope::NodeKey,
+    ty::{Type, TypeKind, TypeRef},
+};
 
 pub trait Symbol {
     type SymbolData;
@@ -70,8 +72,8 @@ pub struct SymbolDB {
     pub(crate) global_builtin_symbols: IndexMap<String, SymbolRef>,
     pub(crate) fully_qualified_name_map: IndexMap<String, SymbolRef>,
     pub(crate) schema_builtin_symbols: IndexMap<SymbolRef, IndexMap<String, SymbolRef>>,
-    pub(crate) ast_id_map: IndexMap<AstIndex, SymbolRef>,
-    pub(crate) symbol_ref_map: IndexMap<SymbolRef, AstIndex>,
+    pub(crate) node_symbol_map: IndexMap<NodeKey, SymbolRef>,
+    pub(crate) symbol_ref_map: IndexMap<SymbolRef, NodeKey>,
 }
 
 impl KCLSymbolData {
@@ -366,10 +368,6 @@ impl KCLSymbolData {
         }
     }
 
-    pub fn get_symbol_by_ast_index(&self, id: &AstIndex) -> Option<SymbolRef> {
-        self.symbols_info.ast_id_map.get(id).cloned()
-    }
-
     pub fn get_symbol_by_fully_qualified_name(&self, fqn: &str) -> Option<SymbolRef> {
         self.symbols_info.fully_qualified_name_map.get(fqn).cloned()
     }
@@ -467,18 +465,18 @@ impl KCLSymbolData {
         symbol_ref
     }
 
-    pub fn alloc_schema_symbol(&mut self, schema: SchemaSymbol, ast_id: &AstIndex) -> SymbolRef {
+    pub fn alloc_schema_symbol(&mut self, schema: SchemaSymbol, node_key: NodeKey) -> SymbolRef {
         let symbol_id = self.schemas.insert(schema);
         let symbol_ref = SymbolRef {
             id: symbol_id,
             kind: SymbolKind::Schema,
         };
         self.symbols_info
-            .ast_id_map
-            .insert(ast_id.clone(), symbol_ref);
+            .node_symbol_map
+            .insert(node_key.clone(), symbol_ref);
         self.symbols_info
             .symbol_ref_map
-            .insert(symbol_ref, ast_id.clone());
+            .insert(symbol_ref, node_key);
         self.schemas.get_mut(symbol_id).unwrap().id = Some(symbol_ref);
         symbol_ref
     }
@@ -486,7 +484,7 @@ impl KCLSymbolData {
     pub fn alloc_unresolved_symbol(
         &mut self,
         unresolved: UnresolvedSymbol,
-        ast_id: &AstIndex,
+        node_key: NodeKey,
     ) -> SymbolRef {
         let symbol_id = self.unresolved.insert(unresolved);
         let symbol_ref = SymbolRef {
@@ -494,11 +492,11 @@ impl KCLSymbolData {
             kind: SymbolKind::Unresolved,
         };
         self.symbols_info
-            .ast_id_map
-            .insert(ast_id.clone(), symbol_ref);
+            .node_symbol_map
+            .insert(node_key.clone(), symbol_ref);
         self.symbols_info
             .symbol_ref_map
-            .insert(symbol_ref, ast_id.clone());
+            .insert(symbol_ref, node_key);
         self.unresolved.get_mut(symbol_id).unwrap().id = Some(symbol_ref);
         symbol_ref
     }
@@ -506,7 +504,7 @@ impl KCLSymbolData {
     pub fn alloc_type_alias_symbol(
         &mut self,
         alias: TypeAliasSymbol,
-        ast_id: &AstIndex,
+        node_key: NodeKey,
     ) -> SymbolRef {
         let symbol_id = self.type_aliases.insert(alias);
         let symbol_ref = SymbolRef {
@@ -514,27 +512,27 @@ impl KCLSymbolData {
             kind: SymbolKind::TypeAlias,
         };
         self.symbols_info
-            .ast_id_map
-            .insert(ast_id.clone(), symbol_ref);
+            .node_symbol_map
+            .insert(node_key.clone(), symbol_ref);
         self.symbols_info
             .symbol_ref_map
-            .insert(symbol_ref, ast_id.clone());
+            .insert(symbol_ref, node_key);
         self.type_aliases.get_mut(symbol_id).unwrap().id = Some(symbol_ref);
         symbol_ref
     }
 
-    pub fn alloc_rule_symbol(&mut self, rule: RuleSymbol, ast_id: &AstIndex) -> SymbolRef {
+    pub fn alloc_rule_symbol(&mut self, rule: RuleSymbol, node_key: NodeKey) -> SymbolRef {
         let symbol_id = self.rules.insert(rule);
         let symbol_ref = SymbolRef {
             id: symbol_id,
             kind: SymbolKind::Rule,
         };
         self.symbols_info
-            .ast_id_map
-            .insert(ast_id.clone(), symbol_ref);
+            .node_symbol_map
+            .insert(node_key.clone(), symbol_ref);
         self.symbols_info
             .symbol_ref_map
-            .insert(symbol_ref, ast_id.clone());
+            .insert(symbol_ref, node_key);
         self.rules.get_mut(symbol_id).unwrap().id = Some(symbol_ref);
         symbol_ref
     }
@@ -542,7 +540,7 @@ impl KCLSymbolData {
     pub fn alloc_attribute_symbol(
         &mut self,
         attribute: AttributeSymbol,
-        ast_id: &AstIndex,
+        node_key: NodeKey,
     ) -> SymbolRef {
         let symbol_id = self.attributes.insert(attribute);
         let symbol_ref = SymbolRef {
@@ -550,27 +548,27 @@ impl KCLSymbolData {
             kind: SymbolKind::Attribute,
         };
         self.symbols_info
-            .ast_id_map
-            .insert(ast_id.clone(), symbol_ref);
+            .node_symbol_map
+            .insert(node_key.clone(), symbol_ref);
         self.symbols_info
             .symbol_ref_map
-            .insert(symbol_ref, ast_id.clone());
+            .insert(symbol_ref, node_key);
         self.attributes.get_mut(symbol_id).unwrap().id = Some(symbol_ref);
         symbol_ref
     }
 
-    pub fn alloc_value_symbol(&mut self, value: ValueSymbol, ast_id: &AstIndex) -> SymbolRef {
+    pub fn alloc_value_symbol(&mut self, value: ValueSymbol, node_key: NodeKey) -> SymbolRef {
         let symbol_id = self.values.insert(value);
         let symbol_ref = SymbolRef {
             id: symbol_id,
             kind: SymbolKind::Value,
         };
         self.symbols_info
-            .ast_id_map
-            .insert(ast_id.clone(), symbol_ref);
+            .node_symbol_map
+            .insert(node_key.clone(), symbol_ref);
         self.symbols_info
             .symbol_ref_map
-            .insert(symbol_ref, ast_id.clone());
+            .insert(symbol_ref, node_key);
         self.values.get_mut(symbol_id).unwrap().id = Some(symbol_ref);
         symbol_ref
     }

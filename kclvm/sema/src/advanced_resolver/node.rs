@@ -62,7 +62,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
                 ty: self
                     .ctx
                     .node_ty_map
-                    .get(&type_alias_stmt.type_name.id)
+                    .get(&self.ctx.get_node_key(&type_alias_stmt.type_name.id))
                     .map(|ty| ty.clone()),
                 doc: None,
             };
@@ -128,12 +128,12 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
         let unresolved_ref = self
             .gs
             .get_symbols_mut()
-            .alloc_unresolved_symbol(unresolved, &ast_id);
+            .alloc_unresolved_symbol(unresolved, self.ctx.get_node_key(&ast_id));
         self.gs
             .get_symbols_mut()
             .symbols_info
-            .ast_id_map
-            .insert(ast_id, unresolved_ref);
+            .node_symbol_map
+            .insert(self.ctx.get_node_key(&ast_id), unresolved_ref);
         let cur_scope = *self.ctx.scopes.last().unwrap();
         self.gs
             .get_scopes_mut()
@@ -146,7 +146,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
         let schema_ty = self
             .ctx
             .node_ty_map
-            .get(&schema_stmt.name.id)
+            .get(&self.ctx.get_node_key(&schema_stmt.name.id))
             .unwrap()
             .clone();
         let schema_symbol = self
@@ -179,10 +179,10 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
                     false,
                 );
                 func_value.sema_info.ty = Some(func_ty);
-                let func_symbol_ref = self
-                    .gs
-                    .get_symbols_mut()
-                    .alloc_value_symbol(func_value, &ast::AstIndex::default());
+                let func_symbol_ref = self.gs.get_symbols_mut().alloc_value_symbol(
+                    func_value,
+                    self.ctx.get_node_key(&ast::AstIndex::default()),
+                );
                 schema_builtin_member.insert(name.to_string(), func_symbol_ref);
             }
             self.gs
@@ -248,14 +248,14 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
                 let (start, end) = index_signature.get_span_pos();
                 let value = self.gs.get_symbols_mut().alloc_value_symbol(
                     ValueSymbol::new(key_name.clone(), start, end, Some(schema_symbol), false),
-                    &index_signature.id,
+                    self.ctx.get_node_key(&index_signature.id),
                 );
                 if let Some(symbol) = self.gs.get_symbols_mut().values.get_mut(value.get_id()) {
                     symbol.sema_info = KCLSymbolSemanticInfo {
                         ty: self
                             .ctx
                             .node_ty_map
-                            .get(&index_signature.id)
+                            .get(&self.ctx.get_node_key(&index_signature.id))
                             .map(|ty| ty.clone()),
                         doc: None,
                     };
@@ -298,7 +298,11 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
     }
 
     fn walk_rule_stmt(&mut self, rule_stmt: &'ctx ast::RuleStmt) -> Self::Result {
-        let rule_ty = self.ctx.node_ty_map.get(&rule_stmt.name.id)?.clone();
+        let rule_ty = self
+            .ctx
+            .node_ty_map
+            .get(&self.ctx.get_node_key(&rule_stmt.name.id))?
+            .clone();
         let rule_symbol = self
             .gs
             .get_symbols()
@@ -313,7 +317,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
                 ty: self
                     .ctx
                     .node_ty_map
-                    .get(&rule_stmt.name.id)
+                    .get(&self.ctx.get_node_key(&rule_stmt.name.id))
                     .map(|ty| ty.clone()),
                 doc: rule_stmt.doc.as_ref().map(|doc| doc.node.clone()),
             };
@@ -361,14 +365,18 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
             };
             let value = self.gs.get_symbols_mut().alloc_value_symbol(
                 ValueSymbol::new(name.clone(), start_pos, end_pos, None, false),
-                &ast_id,
+                self.ctx.get_node_key(&ast_id),
             );
             self.gs
                 .get_scopes_mut()
                 .add_def_to_scope(cur_scope, name, value);
             if let Some(symbol) = self.gs.get_symbols_mut().values.get_mut(value.get_id()) {
                 symbol.sema_info = KCLSymbolSemanticInfo {
-                    ty: self.ctx.node_ty_map.get(ast_id).map(|ty| ty.clone()),
+                    ty: self
+                        .ctx
+                        .node_ty_map
+                        .get(&self.ctx.get_node_key(ast_id))
+                        .map(|ty| ty.clone()),
                     doc: None,
                 };
             }
@@ -387,8 +395,8 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
             .gs
             .get_symbols()
             .symbols_info
-            .ast_id_map
-            .get(&schema_attr.name.id)?;
+            .node_symbol_map
+            .get(&self.ctx.get_node_key(&schema_attr.name.id))?;
         let parent_scope = *self.ctx.scopes.last().unwrap();
         let parent_scope = self.gs.get_scopes().get_scope(parent_scope).unwrap();
         let mut doc = None;
@@ -412,7 +420,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
                 ty: self
                     .ctx
                     .node_ty_map
-                    .get(&schema_attr.name.id)
+                    .get(&self.ctx.get_node_key(&schema_attr.name.id))
                     .map(|ty| ty.clone()),
                 doc,
             };
@@ -446,7 +454,11 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
 
     fn walk_selector_expr(&mut self, selector_expr: &'ctx ast::SelectorExpr) -> Self::Result {
         self.expr(&selector_expr.value);
-        let mut parent_ty = self.ctx.node_ty_map.get(&selector_expr.value.id)?.clone();
+        let mut parent_ty = self
+            .ctx
+            .node_ty_map
+            .get(&self.ctx.get_node_key(&selector_expr.value.id))?
+            .clone();
         for name in &selector_expr.attr.node.names {
             let def_symbol_ref = self.gs.get_symbols().get_type_attribute(
                 &parent_ty,
@@ -461,13 +473,17 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
             let unresolved_ref = self
                 .gs
                 .get_symbols_mut()
-                .alloc_unresolved_symbol(unresolved, &ast_id);
+                .alloc_unresolved_symbol(unresolved, self.ctx.get_node_key(&ast_id));
             let cur_scope = *self.ctx.scopes.last().unwrap();
             self.gs
                 .get_scopes_mut()
                 .add_ref_to_scope(cur_scope, unresolved_ref);
 
-            parent_ty = self.ctx.node_ty_map.get(&name.id)?.clone();
+            parent_ty = self
+                .ctx
+                .node_ty_map
+                .get(&self.ctx.get_node_key(&name.id))?
+                .clone();
         }
         None
     }
@@ -593,7 +609,11 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
 
     fn walk_schema_expr(&mut self, schema_expr: &'ctx ast::SchemaExpr) -> Self::Result {
         self.walk_identifier_expr(&schema_expr.name)?;
-        let schema_ty = self.ctx.node_ty_map.get(&schema_expr.name.id)?.clone();
+        let schema_ty = self
+            .ctx
+            .node_ty_map
+            .get(&self.ctx.get_node_key(&schema_expr.name.id))?
+            .clone();
         let schema_symbol = self
             .gs
             .get_symbols()
@@ -776,7 +796,11 @@ impl<'ctx> AdvancedResolver<'ctx> {
                     .ty
                     .is_none()
                 {
-                    if let Some(ty) = self.ctx.node_ty_map.get(&first_name.id) {
+                    if let Some(ty) = self
+                        .ctx
+                        .node_ty_map
+                        .get(&self.ctx.get_node_key(&first_name.id))
+                    {
                         self.gs
                             .get_symbols_mut()
                             .set_symbol_type(first_symbol, ty.clone());
@@ -799,14 +823,17 @@ impl<'ctx> AdvancedResolver<'ctx> {
                     let first_unresolved_ref = self
                         .gs
                         .get_symbols_mut()
-                        .alloc_unresolved_symbol(first_unresolved, &ast_id);
+                        .alloc_unresolved_symbol(first_unresolved, self.ctx.get_node_key(&ast_id));
                     let cur_scope = *self.ctx.scopes.last().unwrap();
                     self.gs
                         .get_scopes_mut()
                         .add_ref_to_scope(cur_scope, first_unresolved_ref);
                 }
                 if names.len() > 1 {
-                    let mut parent_ty = self.ctx.node_ty_map.get(&first_name.id)?;
+                    let mut parent_ty = self
+                        .ctx
+                        .node_ty_map
+                        .get(&self.ctx.get_node_key(&first_name.id))?;
 
                     for index in 1..names.len() {
                         let name = names.get(index).unwrap();
@@ -824,14 +851,14 @@ impl<'ctx> AdvancedResolver<'ctx> {
                         let unresolved_ref = self
                             .gs
                             .get_symbols_mut()
-                            .alloc_unresolved_symbol(unresolved, &ast_id);
+                            .alloc_unresolved_symbol(unresolved, self.ctx.get_node_key(&ast_id));
 
                         let cur_scope = *self.ctx.scopes.last().unwrap();
                         self.gs
                             .get_scopes_mut()
                             .add_ref_to_scope(cur_scope, unresolved_ref);
 
-                        parent_ty = self.ctx.node_ty_map.get(&name.id)?;
+                        parent_ty = self.ctx.node_ty_map.get(&self.ctx.get_node_key(&name.id))?;
                         if index == names.len() - 1 {
                             return Some(unresolved_ref);
                         }
@@ -845,7 +872,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
                     let ast_id = first_name.id.clone();
                     let first_value = self.gs.get_symbols_mut().alloc_value_symbol(
                         ValueSymbol::new(first_name.node.clone(), start_pos, end_pos, None, false),
-                        &ast_id,
+                        self.ctx.get_node_key(&ast_id),
                     );
                     self.gs.get_scopes_mut().add_def_to_scope(
                         cur_scope,
@@ -863,7 +890,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
                             ty: self
                                 .ctx
                                 .node_ty_map
-                                .get(&first_name.id)
+                                .get(&self.ctx.get_node_key(&first_name.id))
                                 .map(|ty| ty.clone()),
                             doc: None,
                         };
@@ -875,7 +902,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
                         let ast_id = name.id.clone();
                         let value = self.gs.get_symbols_mut().alloc_value_symbol(
                             ValueSymbol::new(name.node.clone(), start_pos, end_pos, None, false),
-                            &ast_id,
+                            self.ctx.get_node_key(&ast_id),
                         );
 
                         self.gs.get_scopes_mut().add_def_to_scope(
@@ -888,7 +915,11 @@ impl<'ctx> AdvancedResolver<'ctx> {
                             self.gs.get_symbols_mut().values.get_mut(value.get_id())
                         {
                             symbol.sema_info = KCLSymbolSemanticInfo {
-                                ty: self.ctx.node_ty_map.get(&name.id).map(|ty| ty.clone()),
+                                ty: self
+                                    .ctx
+                                    .node_ty_map
+                                    .get(&self.ctx.get_node_key(&name.id))
+                                    .map(|ty| ty.clone()),
                                 doc: None,
                             };
                         }
@@ -911,8 +942,8 @@ impl<'ctx> AdvancedResolver<'ctx> {
             .gs
             .get_symbols()
             .symbols_info
-            .ast_id_map
-            .get(&identifier.id)
+            .node_symbol_map
+            .get(&self.ctx.get_node_key(&&identifier.id))
             .map(|symbol_ref| *symbol_ref)
         {
             if let Some(symbol) = self
@@ -927,7 +958,11 @@ impl<'ctx> AdvancedResolver<'ctx> {
                     &identifier.node.names.last().unwrap().id
                 };
                 symbol.sema_info = KCLSymbolSemanticInfo {
-                    ty: self.ctx.node_ty_map.get(id).map(|ty| ty.clone()),
+                    ty: self
+                        .ctx
+                        .node_ty_map
+                        .get(&self.ctx.get_node_key(id))
+                        .map(|ty| ty.clone()),
                     doc: None,
                 };
             }
@@ -993,12 +1028,16 @@ impl<'ctx> AdvancedResolver<'ctx> {
             let (start_pos, end_pos): Range = kw.get_span_pos();
             let value = self.gs.get_symbols_mut().alloc_value_symbol(
                 ValueSymbol::new(kw.node.arg.node.get_name(), start_pos, end_pos, None, false),
-                &kw.id,
+                self.ctx.get_node_key(&kw.id),
             );
 
             if let Some(value) = self.gs.get_symbols_mut().values.get_mut(value.get_id()) {
                 value.sema_info = KCLSymbolSemanticInfo {
-                    ty: self.ctx.node_ty_map.get(&kw.id).map(|ty| ty.clone()),
+                    ty: self
+                        .ctx
+                        .node_ty_map
+                        .get(&self.ctx.get_node_key(&kw.id))
+                        .map(|ty| ty.clone()),
                     doc: None,
                 };
             }
@@ -1055,8 +1094,8 @@ impl<'ctx> AdvancedResolver<'ctx> {
         let symbols = self.gs.get_symbols();
 
         if let Some(def_symbol_ref) = symbols.get_symbol(key_symbol_ref).unwrap().get_definition() {
-            if let Some(def_ast_id) = symbols.symbols_info.symbol_ref_map.get(&def_symbol_ref) {
-                if let Some(def_ty) = self.ctx.node_ty_map.get(def_ast_id) {
+            if let Some(node_key) = symbols.symbols_info.symbol_ref_map.get(&def_symbol_ref) {
+                if let Some(def_ty) = self.ctx.node_ty_map.get(node_key) {
                     if def_ty.is_schema() {
                         self.ctx.current_schema_symbol =
                             self.gs.get_symbols().get_type_symbol(&def_ty, None);

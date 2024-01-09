@@ -29,13 +29,12 @@ use crate::pre_process::pre_process_program;
 use crate::resolver::scope::ScopeObject;
 use crate::resolver::ty_alias::type_alias_pass;
 use crate::resolver::ty_erasure::type_func_erasure_pass;
-use crate::ty::{TypeContext, TypeRef};
+use crate::ty::TypeContext;
 use crate::{resolver::scope::Scope, ty::SchemaType};
-use kclvm_ast::ast::AstIndex;
 use kclvm_ast::ast::Program;
 use kclvm_error::*;
 
-use self::scope::{builtin_scope, CachedScope, ProgramScope};
+use self::scope::{builtin_scope, CachedScope, NodeTyMap, ProgramScope};
 
 /// Resolver is responsible for program semantic checking, mainly
 /// including type checking and contract model checking.
@@ -44,7 +43,7 @@ pub struct Resolver<'ctx> {
     pub scope_map: IndexMap<String, Rc<RefCell<Scope>>>,
     pub scope: Rc<RefCell<Scope>>,
     pub scope_level: usize,
-    pub node_ty_map: IndexMap<AstIndex, TypeRef>,
+    pub node_ty_map: NodeTyMap,
     pub builtin_scope: Rc<RefCell<Scope>>,
     pub ctx: Context,
     pub options: Options,
