@@ -22,7 +22,8 @@ pub fn pre_process_program(program: &mut ast::Program, opts: &Options) {
             for module in modules.iter_mut() {
                 for stmt in &module.body {
                     if let ast::Stmt::Import(import_stmt) = &stmt.node {
-                        import_names.insert(import_stmt.name.clone(), import_stmt.path.clone());
+                        import_names
+                            .insert(import_stmt.name.clone(), import_stmt.path.node.clone());
                     }
                 }
             }

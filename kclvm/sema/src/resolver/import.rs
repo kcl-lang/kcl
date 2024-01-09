@@ -25,7 +25,7 @@ impl<'ctx> Resolver<'ctx> {
             for m in modules {
                 for stmt in &m.body {
                     if let ast::Stmt::Import(import_stmt) = &stmt.node {
-                        let pkgpath = &import_stmt.path;
+                        let pkgpath = &import_stmt.path.node;
                         // System module.
                         if STANDARD_SYSTEM_MODULES.contains(&pkgpath.as_str()) {
                             continue;
@@ -114,7 +114,7 @@ impl<'ctx> Resolver<'ctx> {
                                         // 'import sub' and 'import sub' will not raise this error.
                                         // 'import sub as s' and 'import sub as s' will not raise this error.
                                         if let Some(path) = mapping.get(&import_stmt.name) {
-                                            if path != &import_stmt.path {
+                                            if path != &import_stmt.path.node {
                                                 self.handler.add_compile_error(
                                                     &format!(
                                                         "the name '{}' is defined multiple times, '{}' must be defined only once",
@@ -126,14 +126,14 @@ impl<'ctx> Resolver<'ctx> {
                                         }
                                         mapping.insert(
                                             import_stmt.name.to_string(),
-                                            import_stmt.path.to_string(),
+                                            import_stmt.path.node.to_string(),
                                         );
                                     }
                                     None => {
                                         let mut mapping = IndexMap::default();
                                         mapping.insert(
                                             import_stmt.name.to_string(),
-                                            import_stmt.path.to_string(),
+                                            import_stmt.path.node.to_string(),
                                         );
                                         self.ctx
                                             .import_names
@@ -141,7 +141,7 @@ impl<'ctx> Resolver<'ctx> {
                                     }
                                 }
                                 let mut scope = self.scope.borrow_mut();
-                                let is_user_module = match scope.elems.get(&import_stmt.path) {
+                                let is_user_module = match scope.elems.get(&import_stmt.path.node) {
                                     Some(scope_obj) => {
                                         let mut obj = scope_obj.borrow_mut();
                                         match &mut obj.kind {
@@ -173,27 +173,30 @@ impl<'ctx> Resolver<'ctx> {
                                         }
                                     }
                                     None => {
-                                        let kind =
-                                            if import_stmt.path.starts_with(PLUGIN_MODULE_PREFIX) {
-                                                ModuleKind::Plugin
-                                            } else if STANDARD_SYSTEM_MODULES
-                                                .contains(&import_stmt.path.as_str())
-                                            {
-                                                ModuleKind::System
-                                            } else {
-                                                ModuleKind::User
-                                            };
+                                        let kind = if import_stmt
+                                            .path
+                                            .node
+                                            .starts_with(PLUGIN_MODULE_PREFIX)
+                                        {
+                                            ModuleKind::Plugin
+                                        } else if STANDARD_SYSTEM_MODULES
+                                            .contains(&import_stmt.path.node.as_str())
+                                        {
+                                            ModuleKind::System
+                                        } else {
+                                            ModuleKind::User
+                                        };
                                         let ty = Type::module(
-                                            &import_stmt.path,
+                                            &import_stmt.path.node,
                                             &[self.ctx.filename.clone()],
                                             kind.clone(),
                                         );
                                         let (start, end) = stmt.get_span_pos();
 
                                         scope.elems.insert(
-                                            import_stmt.path.to_string(),
+                                            import_stmt.path.node.to_string(),
                                             Rc::new(RefCell::new(ScopeObject {
-                                                name: import_stmt.path.to_string(),
+                                                name: import_stmt.path.node.to_string(),
                                                 start,
                                                 end,
                                                 ty: Arc::new(ty),
@@ -215,19 +218,19 @@ impl<'ctx> Resolver<'ctx> {
                             let current_filename = self.ctx.filename.clone();
                             self.ctx
                                 .ty_ctx
-                                .add_dependencies(&self.ctx.pkgpath, &import_stmt.path);
+                                .add_dependencies(&self.ctx.pkgpath, &import_stmt.path.node);
                             if self.ctx.ty_ctx.is_cyclic() {
                                 self.handler.add_compile_error(
                                     &format!(
                                         "There is a circular import reference between module {} and {}",
-                                        self.ctx.pkgpath, import_stmt.path,
+                                        self.ctx.pkgpath, import_stmt.path.node,
                                     ),
                                     stmt.get_span_pos(),
                                 );
                             }
                             // Switch pkgpath context
-                            if !self.scope_map.contains_key(&import_stmt.path) {
-                                self.check(&import_stmt.path);
+                            if !self.scope_map.contains_key(&import_stmt.path.node) {
+                                self.check(&import_stmt.path.node);
                             }
                             // Restore the current context
                             self.change_package_context(&current_pkgpath, &current_filename);

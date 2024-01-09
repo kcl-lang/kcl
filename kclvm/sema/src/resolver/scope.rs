@@ -552,7 +552,7 @@ impl DependencyGraph {
         if let Some(pkgpaths) = self.module_map.get(&module_file) {
             for stmt in &new_module.body {
                 if let ast::Stmt::Import(import_stmt) = &stmt.node {
-                    let parent_pkg = &import_stmt.path;
+                    let parent_pkg = &import_stmt.path.node;
                     if let Some(parent_node) = self.node_map.get_mut(parent_pkg) {
                         parent_node.children.insert(new_module.filename.clone());
                     }

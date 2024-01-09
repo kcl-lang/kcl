@@ -154,7 +154,7 @@ impl LintPass for ReImport {
         let mut import_names = IndexSet::<String>::new();
         for stmt in &module.body {
             if let ast::Stmt::Import(import_stmt) = &stmt.node {
-                if import_names.contains(&import_stmt.path) {
+                if import_names.contains(&import_stmt.path.node) {
                     handler.add_warning(
                         WarningKind::ReimportWarning,
                         &[Message {
@@ -169,7 +169,7 @@ impl LintPass for ReImport {
                         }],
                     );
                 } else {
-                    import_names.insert(import_stmt.path.clone());
+                    import_names.insert(import_stmt.path.node.clone());
                 }
             }
         }

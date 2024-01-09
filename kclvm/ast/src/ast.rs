@@ -482,10 +482,10 @@ pub struct IfStmt {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct ImportStmt {
     /// `path` is the import path, if 'import a.b.c' in kcl, `path` is a.b.c
-    pub path: String,
+    pub path: Node<String>,
     pub rawpath: String,
     pub name: String,
-    pub asname: Option<String>,
+    pub asname: Option<Node<String>>,
     /// `pkg_name` means the name of the package that the current import statement indexs to.
     ///
     /// 1. If the current import statement indexs to the kcl plugins, kcl builtin methods or the internal kcl packages,

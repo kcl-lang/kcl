@@ -190,9 +190,9 @@ fn apply_import_paths_on_module(m: &mut ast::Module, import_paths: &[String]) ->
     for stmt in &m.body {
         if let ast::Stmt::Import(import_stmt) = &stmt.node {
             if let Some(asname) = &import_stmt.asname {
-                exist_import_set.insert(format!("{} as {}", import_stmt.path, asname));
+                exist_import_set.insert(format!("{} as {}", import_stmt.path.node, asname.node));
             } else {
-                exist_import_set.insert(import_stmt.path.to_string());
+                exist_import_set.insert(import_stmt.path.node.to_string());
             }
         }
     }
@@ -206,7 +206,7 @@ fn apply_import_paths_on_module(m: &mut ast::Module, import_paths: &[String]) ->
             .last()
             .ok_or_else(|| anyhow!("Invalid import path {}", path))?;
         let import_node = ast::ImportStmt {
-            path: path.to_string(),
+            path: ast::Node::dummy_node(path.to_string()),
             rawpath: "".to_string(),
             name: name.to_string(),
             asname: None,

@@ -324,3 +324,4 @@ parse_module_snapshot! { fn_ty_annotation_recovery_20, r#"a:(str|int) -> i"#}
 parse_module_snapshot! { fn_ty_annotation_recovery_21, r#"a:(str|int, int) -> i"#}
 parse_module_snapshot! { fn_ty_annotation_recovery_22, r#"a:(str|int, int|"#}
 parse_module_snapshot! { fn_ty_annotation_recovery_23, r#"a:(str|int, int|) ->"#}
+parse_module_snapshot! { import_recovery_0, r#"import json as j.a"#}

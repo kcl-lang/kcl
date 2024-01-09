@@ -288,7 +288,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
     }
     fn walk_import_stmt(&self, import_stmt: &'ctx ast::ImportStmt) -> Self::Result {
         check_backtrack_stop!(self);
-        let pkgpath = import_stmt.path.as_str();
+        let pkgpath = import_stmt.path.node.as_str();
         {
             let imported = self.imported.borrow_mut();
             if imported.contains(pkgpath) {
@@ -302,10 +302,10 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
             // Nothing to do on the builtin system module import because the check has been done.
             return self.ok_result();
         } else {
-            let pkgpath = format!("{}{}", PKG_PATH_PREFIX, import_stmt.path);
+            let pkgpath = format!("{}{}", PKG_PATH_PREFIX, import_stmt.path.node);
             self.pkgpath_stack.borrow_mut().push(pkgpath);
-            let pkgpath = format!("{}{}", PKG_PATH_PREFIX, import_stmt.path);
-            let has_pkgpath = self.program.pkgs.contains_key(&import_stmt.path);
+            let pkgpath = format!("{}{}", PKG_PATH_PREFIX, import_stmt.path.node);
+            let has_pkgpath = self.program.pkgs.contains_key(&import_stmt.path.node);
             let func_before_block = if self.no_link {
                 if has_pkgpath {
                     let func_before_block = self.append_block("");
@@ -346,7 +346,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
                 for ast_module in self
                     .program
                     .pkgs
-                    .get(&import_stmt.path)
+                    .get(&import_stmt.path.node)
                     .expect(kcl_error::INTERNAL_ERROR_MSG)
                 {
                     {
@@ -362,7 +362,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
                 for ast_module in self
                     .program
                     .pkgs
-                    .get(&import_stmt.path)
+                    .get(&import_stmt.path.node)
                     .expect(kcl_error::INTERNAL_ERROR_MSG)
                 {
                     {
