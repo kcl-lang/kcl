@@ -118,8 +118,10 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 doc: None,
             },
         );
-        self.node_ty_map
-            .insert(type_alias_stmt.type_name.id.clone(), ty.clone());
+        self.node_ty_map.insert(
+            self.get_node_key(type_alias_stmt.type_name.id.clone()),
+            ty.clone(),
+        );
         ty
     }
 
@@ -361,8 +363,10 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             .get_type_of_attr(name)
             .map_or(self.any_ty(), |ty| ty);
 
-        self.node_ty_map
-            .insert(schema_attr.name.id.clone(), expected_ty.clone());
+        self.node_ty_map.insert(
+            self.get_node_key(schema_attr.name.id.clone()),
+            expected_ty.clone(),
+        );
 
         let doc_str = schema
             .borrow()
@@ -500,7 +504,8 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 &name.node,
                 selector_expr.attr.get_span_pos(),
             );
-            self.node_ty_map.insert(name.id.clone(), value_ty.clone());
+            self.node_ty_map
+                .insert(self.get_node_key(name.id.clone()), value_ty.clone());
         }
 
         if let TypeKind::Function(func) = &value_ty.kind {
@@ -944,7 +949,8 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                     ty.clone()
                 };
                 if let Some(name) = arg.node.names.last() {
-                    self.node_ty_map.insert(name.id.clone(), ty.clone());
+                    self.node_ty_map
+                        .insert(self.get_node_key(name.id.clone()), ty.clone());
                 }
 
                 let value = &args.node.defaults[i];
@@ -1011,7 +1017,8 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             let ty = arguments.get_arg_type_node(i);
             let ty = self.parse_ty_with_scope(ty, arg.get_span_pos());
             if let Some(name) = arg.node.names.last() {
-                self.node_ty_map.insert(name.id.clone(), ty.clone());
+                self.node_ty_map
+                    .insert(self.get_node_key(name.id.clone()), ty.clone());
             }
             let value = &arguments.defaults[i];
             self.expr_or_any_type(value);
@@ -1048,7 +1055,8 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             (self.ctx.start_pos.clone(), self.ctx.end_pos.clone()),
         );
         for (index, name) in identifier.names.iter().enumerate() {
-            self.node_ty_map.insert(name.id.clone(), tys[index].clone());
+            self.node_ty_map
+                .insert(self.get_node_key(name.id.clone()), tys[index].clone());
         }
         tys.last().unwrap().clone()
     }
@@ -1149,7 +1157,8 @@ impl<'ctx> Resolver<'ctx> {
             self.ctx.end_pos = end;
         }
         let ty = self.walk_expr(&expr.node);
-        self.node_ty_map.insert(expr.id.clone(), ty.clone());
+        self.node_ty_map
+            .insert(self.get_node_key(expr.id.clone()), ty.clone());
         ty
     }
 
@@ -1159,7 +1168,8 @@ impl<'ctx> Resolver<'ctx> {
         self.ctx.start_pos = start;
         self.ctx.end_pos = end;
         let ty = self.walk_stmt(&stmt.node);
-        self.node_ty_map.insert(stmt.id.clone(), ty.clone());
+        self.node_ty_map
+            .insert(self.get_node_key(stmt.id.clone()), ty.clone());
         ty
     }
 
@@ -1171,7 +1181,8 @@ impl<'ctx> Resolver<'ctx> {
         match expr {
             Some(expr) => {
                 let ty = self.walk_expr(&expr.node);
-                self.node_ty_map.insert(expr.id.clone(), ty.clone());
+                self.node_ty_map
+                    .insert(self.get_node_key(expr.id.clone()), ty.clone());
                 ty
             }
             None => self.any_ty(),
@@ -1189,11 +1200,12 @@ impl<'ctx> Resolver<'ctx> {
             identifier.get_span_pos(),
         );
         for (index, name) in identifier.node.names.iter().enumerate() {
-            self.node_ty_map.insert(name.id.clone(), tys[index].clone());
+            self.node_ty_map
+                .insert(self.get_node_key(name.id.clone()), tys[index].clone());
         }
         let ident_ty = tys.last().unwrap().clone();
         self.node_ty_map
-            .insert(identifier.id.clone(), ident_ty.clone());
+            .insert(self.get_node_key(identifier.id.clone()), ident_ty.clone());
 
         ident_ty
     }

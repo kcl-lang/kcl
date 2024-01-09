@@ -24,7 +24,7 @@ impl<'ctx> Resolver<'ctx> {
         let ty =
             self.lookup_type_from_scope(&schema_stmt.name.node, schema_stmt.name.get_span_pos());
         self.node_ty_map
-            .insert(schema_stmt.name.id.clone(), ty.clone());
+            .insert(self.get_node_key(schema_stmt.name.id.clone()), ty.clone());
         let scope_ty = if ty.is_schema() {
             ty.into_schema_type()
         } else {
@@ -46,7 +46,8 @@ impl<'ctx> Resolver<'ctx> {
                 let ty = args.node.get_arg_type_node(i);
                 let ty = self.parse_ty_with_scope(ty, arg.get_span_pos());
                 if let Some(name) = arg.node.names.last() {
-                    self.node_ty_map.insert(name.id.clone(), ty.clone());
+                    self.node_ty_map
+                        .insert(self.get_node_key(name.id.clone()), ty.clone());
                 }
             }
         }
@@ -123,7 +124,7 @@ impl<'ctx> Resolver<'ctx> {
         self.resolve_unique_key(&rule_stmt.name.node, &rule_stmt.name.get_span_pos());
         let ty = self.lookup_type_from_scope(&rule_stmt.name.node, rule_stmt.name.get_span_pos());
         self.node_ty_map
-            .insert(rule_stmt.name.id.clone(), ty.clone());
+            .insert(self.get_node_key(rule_stmt.name.id.clone()), ty.clone());
         let scope_ty = if ty.is_schema() {
             ty.into_schema_type()
         } else {
