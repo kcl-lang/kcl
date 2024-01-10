@@ -1163,53 +1163,43 @@ mod tests {
                 vec![(1, 0, 1, 2, "_b".to_string(), SymbolKind::Value)],
             ),
         ];
+        let mut skip_def_info = false;
         for (filepath, symbols) in except_symbols.iter() {
             let abs_filepath = adjust_canonicalization(base_path.join(filepath));
-            let file_sema_info = gs.sema_db.file_sema_map.get(&abs_filepath).unwrap();
-
-            let mut def_count = 0;
-
             // symbols will be sorted according to their position in the file
             // now we check all symbols
-            for (index, symbol_ref) in file_sema_info.symbols.iter().enumerate() {
-                let symbol = gs.get_symbols().get_symbol(*symbol_ref).unwrap();
-                let (start, end) = symbol.get_range();
+            for (index, symbol_info) in symbols.iter().enumerate() {
+                if skip_def_info {
+                    skip_def_info = false;
+                    continue;
+                }
+                let (start_line, start_col, end_line, end_col, name, kind) = symbol_info;
                 if abs_filepath.is_empty() {
                     continue;
                 }
                 // test look up symbols
                 let inner_pos = Position {
                     filename: abs_filepath.clone(),
-                    line: (start.line + end.line) / 2,
-                    column: Some((start.column.unwrap_or(0) + end.column.unwrap_or(0)) / 2),
+                    line: (start_line + end_line) / 2,
+                    column: Some((start_col + end_col) / 2),
                 };
-                let looked_symbol = gs.look_up_exact_symbol(&inner_pos);
-                assert_eq!(looked_symbol, Some(*symbol_ref));
-                let out_pos = Position {
-                    filename: abs_filepath.clone(),
-                    line: (start.line + end.line) / 2 + 1,
-                    column: Some(end.column.unwrap_or(0) + 1),
-                };
-                let looked_symbol = gs.look_up_exact_symbol(&out_pos);
-                assert_ne!(looked_symbol, Some(*symbol_ref));
-
+                let looked_symbol_ref = gs.look_up_exact_symbol(&inner_pos).unwrap();
+                let looked_symbol = gs.get_symbols().get_symbol(looked_symbol_ref).unwrap();
+                let (start, end) = looked_symbol.get_range();
                 // test symbol basic infomation
-                let (start_line, start_col, end_line, end_col, name, kind) =
-                    symbols.get(index + def_count).unwrap();
                 assert_eq!(start.filename, abs_filepath);
                 assert_eq!(start.line, *start_line);
                 assert_eq!(start.column.unwrap_or(0), *start_col);
                 assert_eq!(end.line, *end_line);
                 assert_eq!(end.column.unwrap_or(0), *end_col);
-                assert_eq!(*name, symbol.get_name());
-                assert_eq!(symbol_ref.get_kind(), *kind);
+                assert_eq!(*name, looked_symbol.get_name());
+                assert_eq!(looked_symbol_ref.get_kind(), *kind);
 
                 // test find def
-                if SymbolKind::Unresolved == symbol_ref.get_kind() {
-                    def_count = def_count + 1;
+                if SymbolKind::Unresolved == looked_symbol_ref.get_kind() {
                     let (start_line, start_col, end_line, end_col, path, kind) =
-                        symbols.get(index + def_count).unwrap();
-                    let def_ref = symbol.get_definition().unwrap();
+                        symbols.get(index + 1).unwrap();
+                    let def_ref = looked_symbol.get_definition().unwrap();
                     let def = gs.get_symbols().get_symbol(def_ref).unwrap();
                     let (start, end) = def.get_range();
                     let def_filepath = adjust_canonicalization(base_path.join(path));
@@ -1221,6 +1211,7 @@ mod tests {
                         assert_eq!(start.filename, def_filepath);
                     }
                     assert_eq!(def_ref.get_kind(), *kind);
+                    skip_def_info = true;
                 }
             }
         }

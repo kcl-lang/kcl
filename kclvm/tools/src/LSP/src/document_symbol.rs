@@ -102,7 +102,7 @@ fn symbol_to_document_symbol(symbol: &KCLSymbol) -> Option<DocumentSymbol> {
                 end: lsp_pos(&symbol_range.1),
             };
             let kind = def.get_kind();
-            let kind = symbol_kind_to_document_symbol_kind(kind);
+            let kind = symbol_kind_to_document_symbol_kind(kind)?;
             let detail = sema_info.ty.clone().map(|ty| ty.ty_str());
 
             #[allow(deprecated)]
@@ -121,15 +121,16 @@ fn symbol_to_document_symbol(symbol: &KCLSymbol) -> Option<DocumentSymbol> {
     }
 }
 
-fn symbol_kind_to_document_symbol_kind(kind: KCLSymbolKind) -> SymbolKind {
+fn symbol_kind_to_document_symbol_kind(kind: KCLSymbolKind) -> Option<SymbolKind> {
     match kind {
-        KCLSymbolKind::Schema => SymbolKind::STRUCT,
-        KCLSymbolKind::Attribute => SymbolKind::PROPERTY,
-        KCLSymbolKind::Value => SymbolKind::VARIABLE,
-        KCLSymbolKind::Package => SymbolKind::PACKAGE,
-        KCLSymbolKind::TypeAlias => SymbolKind::TYPE_PARAMETER,
-        KCLSymbolKind::Unresolved => SymbolKind::NULL,
-        KCLSymbolKind::Rule => SymbolKind::FUNCTION,
+        KCLSymbolKind::Schema => Some(SymbolKind::STRUCT),
+        KCLSymbolKind::Attribute => Some(SymbolKind::PROPERTY),
+        KCLSymbolKind::Value => Some(SymbolKind::VARIABLE),
+        KCLSymbolKind::Package => Some(SymbolKind::PACKAGE),
+        KCLSymbolKind::TypeAlias => Some(SymbolKind::TYPE_PARAMETER),
+        KCLSymbolKind::Unresolved => Some(SymbolKind::NULL),
+        KCLSymbolKind::Rule => Some(SymbolKind::FUNCTION),
+        KCLSymbolKind::Expression => None,
     }
 }
 

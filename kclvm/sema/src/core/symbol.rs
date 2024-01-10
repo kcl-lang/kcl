@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use generational_arena::Arena;
-use indexmap::IndexMap;
+use indexmap::{IndexMap, IndexSet};
 
 use kclvm_error::{diagnostic::Range, Position};
 
@@ -63,12 +63,14 @@ pub struct KCLSymbolData {
     pub(crate) type_aliases: Arena<TypeAliasSymbol>,
     pub(crate) unresolved: Arena<UnresolvedSymbol>,
     pub(crate) rules: Arena<RuleSymbol>,
+    pub(crate) exprs: Arena<ExpressionSymbol>,
 
     pub(crate) symbols_info: SymbolDB,
 }
 
 #[derive(Default, Debug, Clone)]
 pub struct SymbolDB {
+    pub(crate) symbol_pos_set: IndexSet<Position>,
     pub(crate) global_builtin_symbols: IndexMap<String, SymbolRef>,
     pub(crate) fully_qualified_name_map: IndexMap<String, SymbolRef>,
     pub(crate) schema_builtin_symbols: IndexMap<SymbolRef, IndexMap<String, SymbolRef>>,
@@ -155,6 +157,10 @@ impl KCLSymbolData {
                 .rules
                 .get(id.get_id())
                 .map(|symbol| symbol as &KCLSymbol),
+            SymbolKind::Expression => self
+                .exprs
+                .get(id.get_id())
+                .map(|symbol| symbol as &KCLSymbol),
         }
     }
 
@@ -198,6 +204,12 @@ impl KCLSymbolData {
             }
             SymbolKind::Rule => {
                 self.rules.get_mut(id.get_id()).map(|symbol| {
+                    symbol.sema_info.ty = Some(ty);
+                    symbol
+                });
+            }
+            SymbolKind::Expression => {
+                self.exprs.get_mut(id.get_id()).map(|symbol| {
                     symbol.sema_info.ty = Some(ty);
                     symbol
                 });
@@ -466,6 +478,7 @@ impl KCLSymbolData {
     }
 
     pub fn alloc_schema_symbol(&mut self, schema: SchemaSymbol, node_key: NodeKey) -> SymbolRef {
+        self.symbols_info.symbol_pos_set.insert(schema.end.clone());
         let symbol_id = self.schemas.insert(schema);
         let symbol_ref = SymbolRef {
             id: symbol_id,
@@ -486,6 +499,9 @@ impl KCLSymbolData {
         unresolved: UnresolvedSymbol,
         node_key: NodeKey,
     ) -> SymbolRef {
+        self.symbols_info
+            .symbol_pos_set
+            .insert(unresolved.end.clone());
         let symbol_id = self.unresolved.insert(unresolved);
         let symbol_ref = SymbolRef {
             id: symbol_id,
@@ -506,6 +522,7 @@ impl KCLSymbolData {
         alias: TypeAliasSymbol,
         node_key: NodeKey,
     ) -> SymbolRef {
+        self.symbols_info.symbol_pos_set.insert(alias.end.clone());
         let symbol_id = self.type_aliases.insert(alias);
         let symbol_ref = SymbolRef {
             id: symbol_id,
@@ -522,6 +539,7 @@ impl KCLSymbolData {
     }
 
     pub fn alloc_rule_symbol(&mut self, rule: RuleSymbol, node_key: NodeKey) -> SymbolRef {
+        self.symbols_info.symbol_pos_set.insert(rule.end.clone());
         let symbol_id = self.rules.insert(rule);
         let symbol_ref = SymbolRef {
             id: symbol_id,
@@ -542,6 +560,9 @@ impl KCLSymbolData {
         attribute: AttributeSymbol,
         node_key: NodeKey,
     ) -> SymbolRef {
+        self.symbols_info
+            .symbol_pos_set
+            .insert(attribute.end.clone());
         let symbol_id = self.attributes.insert(attribute);
         let symbol_ref = SymbolRef {
             id: symbol_id,
@@ -558,6 +579,7 @@ impl KCLSymbolData {
     }
 
     pub fn alloc_value_symbol(&mut self, value: ValueSymbol, node_key: NodeKey) -> SymbolRef {
+        self.symbols_info.symbol_pos_set.insert(value.end.clone());
         let symbol_id = self.values.insert(value);
         let symbol_ref = SymbolRef {
             id: symbol_id,
@@ -572,6 +594,30 @@ impl KCLSymbolData {
         self.values.get_mut(symbol_id).unwrap().id = Some(symbol_ref);
         symbol_ref
     }
+
+    pub fn alloc_expression_symbol(
+        &mut self,
+        expr: ExpressionSymbol,
+        node_key: NodeKey,
+    ) -> Option<SymbolRef> {
+        if self.symbols_info.symbol_pos_set.contains(&expr.end) {
+            return None;
+        }
+        self.symbols_info.symbol_pos_set.insert(expr.end.clone());
+        let symbol_id = self.exprs.insert(expr);
+        let symbol_ref = SymbolRef {
+            id: symbol_id,
+            kind: SymbolKind::Expression,
+        };
+        self.symbols_info
+            .node_symbol_map
+            .insert(node_key.clone(), symbol_ref);
+        self.symbols_info
+            .symbol_ref_map
+            .insert(symbol_ref, node_key);
+        self.exprs.get_mut(symbol_id).unwrap().id = Some(symbol_ref);
+        Some(symbol_ref)
+    }
 }
 #[allow(unused)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -583,6 +629,7 @@ pub enum SymbolKind {
     TypeAlias,
     Unresolved,
     Rule,
+    Expression,
 }
 #[allow(unused)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -1556,5 +1603,125 @@ impl UnresolvedSymbol {
         };
 
         pkg_path + "." + names.last().unwrap()
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ExpressionSymbol {
+    pub(crate) id: Option<SymbolRef>,
+    pub(crate) start: Position,
+    pub(crate) end: Position,
+    pub(crate) owner: Option<SymbolRef>,
+    pub(crate) name: String,
+
+    pub(crate) sema_info: KCLSymbolSemanticInfo,
+}
+
+impl Symbol for ExpressionSymbol {
+    type SymbolData = KCLSymbolData;
+    type SemanticInfo = KCLSymbolSemanticInfo;
+
+    fn is_global(&self) -> bool {
+        false
+    }
+    fn get_range(&self) -> Range {
+        (self.start.clone(), self.end.clone())
+    }
+
+    fn get_owner(&self) -> Option<SymbolRef> {
+        self.owner.clone()
+    }
+
+    fn get_definition(&self) -> Option<SymbolRef> {
+        self.id
+    }
+
+    fn get_name(&self) -> String {
+        self.name.clone()
+    }
+
+    fn get_id(&self) -> Option<SymbolRef> {
+        self.id.clone()
+    }
+
+    fn get_attribute(
+        &self,
+        name: &str,
+        data: &Self::SymbolData,
+        module_info: Option<&ModuleInfo>,
+    ) -> Option<SymbolRef> {
+        data.get_type_attribute(self.sema_info.ty.as_ref()?, name, module_info)
+    }
+
+    fn get_all_attributes(
+        &self,
+        data: &Self::SymbolData,
+        module_info: Option<&ModuleInfo>,
+    ) -> Vec<SymbolRef> {
+        let mut result = vec![];
+        if let Some(ty) = self.sema_info.ty.as_ref() {
+            if let Some(symbol_ref) = data.get_type_symbol(ty, module_info) {
+                if let Some(symbol) = data.get_symbol(symbol_ref) {
+                    result.append(&mut symbol.get_all_attributes(data, module_info))
+                }
+            }
+        }
+
+        result
+    }
+
+    fn has_attribute(
+        &self,
+        name: &str,
+        data: &Self::SymbolData,
+        module_info: Option<&ModuleInfo>,
+    ) -> bool {
+        self.get_attribute(name, data, module_info).is_some()
+    }
+    fn simple_dump(&self) -> String {
+        let mut output = "{\n".to_string();
+        output.push_str("\"kind\": \"ExpressionSymbol\",\n");
+        output.push_str(&format!(
+            "\"range\": \"{}:{}",
+            self.start.filename, self.start.line
+        ));
+        if let Some(start_col) = self.start.column {
+            output.push_str(&format!(":{}", start_col));
+        }
+
+        output.push_str(&format!(" to {}", self.end.line));
+        if let Some(end_col) = self.end.column {
+            output.push_str(&format!(":{}", end_col));
+        }
+        output.push_str("\"\n}");
+        output
+    }
+
+    fn full_dump(&self, data: &Self::SymbolData) -> Option<String> {
+        let mut output = format!("{{\n\"simple_info\": {},\n", self.simple_dump());
+        output.push_str("\"additional_info\": {\n");
+        if let Some(owner) = self.owner.as_ref() {
+            let owner_symbol = data.get_symbol(*owner)?;
+            output.push_str(&format!("\"owner\": {}\n", owner_symbol.simple_dump()));
+        }
+        output.push_str("\n}\n}");
+        Some(output)
+    }
+
+    fn get_sema_info(&self) -> &Self::SemanticInfo {
+        &self.sema_info
+    }
+}
+
+impl ExpressionSymbol {
+    pub fn new(name: String, start: Position, end: Position, owner: Option<SymbolRef>) -> Self {
+        Self {
+            id: None,
+            name,
+            start,
+            end,
+            sema_info: KCLSymbolSemanticInfo::default(),
+            owner,
+        }
     }
 }
