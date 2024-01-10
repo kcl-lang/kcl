@@ -15,7 +15,7 @@ pub struct GlobalState {
     symbols: KCLSymbolData,
     // store all allocated scopes
     scopes: ScopeData,
-    // store package infomation for name mapping
+    // store package information for name mapping
     packages: PackageDB,
     // store semantic information after analysis
     pub(crate) sema_db: SemanticDB,
