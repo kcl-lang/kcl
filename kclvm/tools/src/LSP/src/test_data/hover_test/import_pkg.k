@@ -1,0 +1,3 @@
+import .fib
+
+fib.Fib{}
