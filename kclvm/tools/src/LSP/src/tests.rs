@@ -48,6 +48,7 @@ use std::time::Duration;
 use kclvm_ast::ast::Program;
 use kclvm_error::Diagnostic as KCLDiagnostic;
 use kclvm_error::Position as KCLPos;
+use kclvm_parser::KCLModuleCache;
 use kclvm_sema::resolver::scope::ProgramScope;
 
 use lsp_types::Diagnostic;
@@ -125,7 +126,7 @@ pub(crate) fn compile_test_file(
     let (program, prog_scope, diags, gs) = parse_param_and_compile(
         Param {
             file: file.clone(),
-            module_cache: None,
+            module_cache: Some(KCLModuleCache::default()),
         },
         Some(Arc::new(RwLock::new(Default::default()))),
     )

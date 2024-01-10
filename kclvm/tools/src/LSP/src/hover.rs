@@ -424,4 +424,28 @@ mod tests {
             _ => unreachable!("test error"),
         }
     }
+
+    #[test]
+    #[bench_test]
+    fn import_pkg_hover() {
+        let (file, program, _, _, gs) = compile_test_file("src/test_data/hover_test/import_pkg.k");
+        let pos = KCLPos {
+            filename: file.clone(),
+            line: 3,
+            column: Some(7),
+        };
+        let got = hover(&program, &pos, &gs).unwrap();
+        match got.contents {
+            lsp_types::HoverContents::Array(vec) => {
+                assert_eq!(vec.len(), 2);
+                if let MarkedString::String(s) = vec[0].clone() {
+                    assert_eq!(s, "fib\n\nschema Fib");
+                }
+                if let MarkedString::String(s) = vec[1].clone() {
+                    assert_eq!(s, "Attributes:\n\nn: int\n\nvalue: int");
+                }
+            }
+            _ => unreachable!("test error"),
+        }
+    }
 }
