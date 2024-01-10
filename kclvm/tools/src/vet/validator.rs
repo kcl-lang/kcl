@@ -66,7 +66,7 @@
 //! ```
 use super::expr_builder::ExprBuilder;
 pub use crate::util::loader::LoaderKind;
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use kclvm_ast::{
     ast::{AssignStmt, Expr, ExprContext, Identifier, Module, Node, NodeRef, SchemaStmt, Stmt},
     node_ref,
@@ -177,8 +177,7 @@ pub fn validate(val_opt: ValidateOption) -> Result<bool> {
         None => TMP_FILE.to_string(),
     };
 
-    let mut module =
-        kclvm_parser::parse_file(&k_path, val_opt.kcl_code).map_err(|err| anyhow!(err))?;
+    let mut module = kclvm_parser::parse_file_force_errors(&k_path, val_opt.kcl_code)?;
 
     let schemas = filter_schema_stmt(&module);
     let schema_name = match val_opt.schema_name {

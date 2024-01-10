@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use super::{r#override::apply_override_on_module, *};
 use kclvm_ast::ast;
-use kclvm_parser::parse_file;
+use kclvm_parser::parse_file_force_errors;
 use pretty_assertions::assert_eq;
 
 const CARGO_FILE_PATH: &str = env!("CARGO_MANIFEST_DIR");
@@ -75,7 +75,7 @@ fn test_override_file_config() {
     cargo_file_path.push("src/test_data/config.k");
     let abs_path = cargo_file_path.to_str().unwrap();
 
-    let mut module = parse_file(abs_path, None).unwrap();
+    let mut module = parse_file_force_errors(abs_path, None).unwrap();
     for o in &overrides {
         apply_override_on_module(&mut module, o, &import_paths).unwrap();
     }

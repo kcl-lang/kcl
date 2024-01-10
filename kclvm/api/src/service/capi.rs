@@ -106,6 +106,8 @@ pub extern "C" fn kclvm_service_call(
 pub(crate) fn kclvm_get_service_fn_ptr_by_name(name: &str) -> u64 {
     match name {
         "KclvmService.Ping" => ping as *const () as u64,
+        "KclvmService.ParseFile" => parse_file as *const () as u64,
+        "KclvmService.ParseProgram" => parse_program as *const () as u64,
         "KclvmService.ExecProgram" => exec_program as *const () as u64,
         "KclvmService.OverrideFile" => override_file as *const () as u64,
         "KclvmService.GetSchemaType" => get_schema_type as *const () as u64,
@@ -127,6 +129,46 @@ pub(crate) fn kclvm_get_service_fn_ptr_by_name(name: &str) -> u64 {
 /// arguments and return results should be consistent
 pub(crate) fn ping(serv: *mut kclvm_service, args: *const c_char) -> *const c_char {
     call!(serv, args, PingArgs, ping)
+}
+
+/// parse_file provides users with the ability to parse kcl single file
+///
+/// # Parameters
+///
+/// `serv`: [*mut kclvm_service]
+///     The pointer of &\[[KclvmServiceImpl]]
+///
+///
+/// `args`: [*const c_char]
+///     the items and compile parameters selected by the user in the KCL CLI
+///     serialized as protobuf byte sequence
+///
+/// # Returns
+///
+/// result: [*const c_char]
+///     Result of the call serialized as protobuf byte sequence
+pub(crate) fn parse_file(serv: *mut kclvm_service, args: *const c_char) -> *const c_char {
+    call!(serv, args, ParseFileArgs, parse_file)
+}
+
+/// parse_program provides users with the ability to parse kcl program
+///
+/// # Parameters
+///
+/// `serv`: [*mut kclvm_service]
+///     The pointer of &\[[KclvmServiceImpl]]
+///
+///
+/// `args`: [*const c_char]
+///     the items and compile parameters selected by the user in the KCL CLI
+///     serialized as protobuf byte sequence
+///
+/// # Returns
+///
+/// result: [*const c_char]
+///     Result of the call serialized as protobuf byte sequence
+pub(crate) fn parse_program(serv: *mut kclvm_service, args: *const c_char) -> *const c_char {
+    call!(serv, args, ParseProgramArgs, parse_program)
 }
 
 /// exec_program provides users with the ability to execute KCL code

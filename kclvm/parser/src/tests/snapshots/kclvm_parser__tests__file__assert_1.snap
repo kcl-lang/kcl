@@ -1,5 +1,117 @@
 ---
 source: parser/src/tests/file.rs
+assertion_line: 3
 expression: "crate::tests::parsing_file_string(\"testdata/assert-01.k\")"
 ---
-{"filename":"assert-01.k","pkg":"__main__","doc":null,"name":"__main__","body":[{"node":{"Assert":{"test":{"node":{"NumberLit":{"binary_suffix":null,"value":{"Int":1}}},"filename":"assert-01.k","line":1,"column":7,"end_line":1,"end_column":8},"if_cond":null,"msg":null}},"filename":"assert-01.k","line":1,"column":0,"end_line":1,"end_column":8},{"node":{"Assert":{"test":{"node":{"NumberLit":{"binary_suffix":null,"value":{"Int":2}}},"filename":"assert-01.k","line":2,"column":7,"end_line":2,"end_column":8},"if_cond":null,"msg":{"node":{"StringLit":{"is_long_string":false,"raw_value":"\"msg\"","value":"msg"}},"filename":"assert-01.k","line":2,"column":10,"end_line":2,"end_column":15}}},"filename":"assert-01.k","line":2,"column":0,"end_line":2,"end_column":15},{"node":{"Assert":{"test":{"node":{"NameConstantLit":{"value":"True"}},"filename":"assert-01.k","line":3,"column":7,"end_line":3,"end_column":11},"if_cond":null,"msg":null}},"filename":"assert-01.k","line":3,"column":0,"end_line":3,"end_column":11}],"comments":[]}
+{
+  "filename": "assert-01.k",
+  "pkg": "__main__",
+  "doc": null,
+  "name": "__main__",
+  "body": [
+    {
+      "node": {
+        "type": "Assert",
+        "data": {
+          "test": {
+            "node": {
+              "type": "NumberLit",
+              "data": {
+                "binary_suffix": null,
+                "value": {
+                  "type": "Int",
+                  "data": 1
+                }
+              }
+            },
+            "filename": "assert-01.k",
+            "line": 1,
+            "column": 7,
+            "end_line": 1,
+            "end_column": 8
+          },
+          "if_cond": null,
+          "msg": null
+        }
+      },
+      "filename": "assert-01.k",
+      "line": 1,
+      "column": 0,
+      "end_line": 1,
+      "end_column": 8
+    },
+    {
+      "node": {
+        "type": "Assert",
+        "data": {
+          "test": {
+            "node": {
+              "type": "NumberLit",
+              "data": {
+                "binary_suffix": null,
+                "value": {
+                  "type": "Int",
+                  "data": 2
+                }
+              }
+            },
+            "filename": "assert-01.k",
+            "line": 2,
+            "column": 7,
+            "end_line": 2,
+            "end_column": 8
+          },
+          "if_cond": null,
+          "msg": {
+            "node": {
+              "type": "StringLit",
+              "data": {
+                "is_long_string": false,
+                "raw_value": "\"msg\"",
+                "value": "msg"
+              }
+            },
+            "filename": "assert-01.k",
+            "line": 2,
+            "column": 10,
+            "end_line": 2,
+            "end_column": 15
+          }
+        }
+      },
+      "filename": "assert-01.k",
+      "line": 2,
+      "column": 0,
+      "end_line": 2,
+      "end_column": 15
+    },
+    {
+      "node": {
+        "type": "Assert",
+        "data": {
+          "test": {
+            "node": {
+              "type": "NameConstantLit",
+              "data": {
+                "value": "True"
+              }
+            },
+            "filename": "assert-01.k",
+            "line": 3,
+            "column": 7,
+            "end_line": 3,
+            "end_column": 11
+          },
+          "if_cond": null,
+          "msg": null
+        }
+      },
+      "filename": "assert-01.k",
+      "line": 3,
+      "column": 0,
+      "end_line": 3,
+      "end_column": 11
+    }
+  ],
+  "comments": []
+}

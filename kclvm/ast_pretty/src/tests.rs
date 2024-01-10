@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use super::print_ast_module;
-use kclvm_parser::parse_file;
+use kclvm_parser::parse_file_force_errors;
 use pretty_assertions::assert_eq;
 
 const FILE_INPUT_SUFFIX: &str = ".input";
@@ -35,7 +35,7 @@ fn read_data(data_name: &str) -> (String, String) {
             .to_string(),
     );
 
-    let module = parse_file(filename.to_str().unwrap(), None);
+    let module = parse_file_force_errors(filename.to_str().unwrap(), None);
 
     let mut filename_expect = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     filename_expect.push(

@@ -2,7 +2,6 @@ use crate::gpyrpc::*;
 use crate::service::capi::*;
 use once_cell::sync::Lazy;
 use prost::Message;
-use ra_ap_vfs::Vfs;
 use serde::de::DeserializeOwned;
 use std::default::Default;
 use std::ffi::{CStr, CString};
@@ -141,16 +140,6 @@ fn test_c_api_call_exec_program_with_compile_only() {
         "KclvmService.ExecProgram",
         "exec-program-with-compile-only.json",
         "exec-program-with-compile-only.response.panic",
-    );
-}
-
-#[test]
-fn test_c_api_call_exec_program_with_recursive() {
-    test_c_api::<ExecProgramArgs, ExecProgramResult, _>(
-        "KclvmService.ExecProgram",
-        "exec-program-with-recursive.json",
-        "exec-program-with-recursive.response.json",
-        |_| {},
     );
 }
 

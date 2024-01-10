@@ -83,8 +83,7 @@ pub(crate) fn parse_param_and_compile(
         opt.k_code_list.append(&mut k_code_list);
     }
     let sess = Arc::new(ParseSession::default());
-    let mut program = load_program(sess.clone(), &files, Some(opt), param.module_cache)
-        .map_err(|err| anyhow::anyhow!("Compile failed: {}", err))?;
+    let mut program = load_program(sess.clone(), &files, Some(opt), param.module_cache)?.program;
 
     let prog_scope = resolve_program_with_opts(
         &mut program,

@@ -32,29 +32,18 @@ message CmdOverrideSpec {
 }
 
 // ----------------------------------------------------------------------------
-// gpyrpc request/response/error types
+// Error types
 // ----------------------------------------------------------------------------
 
-message RestResponse {
-	google.protobuf.Any result = 1;
-	string error = 2;
-	KclError kcl_err = 3;
+message Error {
+    string level = 1;
+    string code = 2;
+	repeated Message messages = 3;
 }
 
-message KclError {
-	string ewcode = 1; // See kclvm/kcl/error/kcl_err_msg.py
-	string name = 2;
-	string msg = 3;
-	repeated KclErrorInfo error_infos = 4;
-}
-
-message KclErrorInfo {
-	string err_level = 1;
-	string arg_msg = 2;
-	string filename = 3;
-	string src_code = 4;
-	string line_no = 5;
-	string col_no = 6;
+message Message {
+	string msg = 1;
+	Position pos = 2;
 }
 
 // ----------------------------------------------------------------------------
@@ -72,6 +61,9 @@ service KclvmService {
 	rpc Ping(Ping_Args) returns(Ping_Result);
 
 	rpc ExecProgram(ExecProgram_Args) returns(ExecProgram_Result);
+
+	rpc ParseFile(ParseFile_Args) returns(ParseFile_Result);
+	rpc ParseProgram(ParseProgram_Args) returns(ParseProgram_Result);
 
 	rpc FormatCode(FormatCode_Args) returns(FormatCode_Result);
 	rpc FormatPath(FormatPath_Args) returns(FormatPath_Result);
@@ -106,21 +98,28 @@ message ListMethod_Result {
 	repeated string method_name_list = 1;
 }
 
-message ParseFile_AST_Args {
-	string filename = 1;
-	string source_code = 2;
-}
-message ParseFile_AST_Result {
-	string ast_json = 1; // json value
-	KclError kcl_err = 2;
+message ParseFile_Args {
+	string path = 1;
+	string source = 2;
+	repeated CmdExternalPkgSpec external_pkgs = 3;  // External packages path
 }
 
-message ParseProgram_AST_Args {
-	repeated string k_filename_list = 1;
+message ParseFile_Result {
+	string ast_json = 1;         // JSON string value
+	repeated string deps = 2;    // file dependency paths
+	repeated Error errors = 3;    // Parse errors
 }
-message ParseProgram_AST_Result {
-	string ast_json = 1; // json value
-	KclError kcl_err = 2;
+
+message ParseProgram_Args {
+	repeated string paths = 1;
+	repeated string sources = 2;
+	repeated CmdExternalPkgSpec external_pkgs = 3;  // External packages path
+}
+
+message ParseProgram_Result {
+	string ast_json = 1;          // JSON string value
+	repeated string paths = 2;   // Return the files in the order they should be compiled
+	repeated Error errors = 3;     // Parse errors
 }
 
 message ExecProgram_Args {
@@ -158,9 +157,6 @@ message ExecProgram_Args {
 
 	// Whether only compiling the program
 	bool compile_only = 15;
-
-	// Compile the dir recursively 
-	bool recursive = 16;
 
 	// -S --path_selector
 	repeated string path_selector = 17;

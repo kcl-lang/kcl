@@ -290,7 +290,6 @@ impl KclvmAssembler {
             pkgs.insert(pkgpath.clone(), modules);
             let compile_prog = ast::Program {
                 root: self.program.root.clone(),
-                main: self.program.main.clone(),
                 pkgs,
             };
             compile_progs.insert(

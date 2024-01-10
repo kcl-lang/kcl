@@ -1687,6 +1687,7 @@ dependencies = [
  "kclvm-span",
  "kclvm-utils",
  "num-bigint",
+ "petgraph",
  "regex",
  "rustc_lexer",
  "serde",
@@ -1852,6 +1853,9 @@ dependencies = [
 [[package]]
 name = "kclvm-utils"
 version = "0.7.2"
+dependencies = [
+ "anyhow",
+]
 
 [[package]]
 name = "kclvm-version"

@@ -314,7 +314,6 @@ pub struct SymbolSelectorSpec {
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
 pub struct Program {
     pub root: String,
-    pub main: String,
     pub pkgs: HashMap<String, Vec<Module>>,
 }
 
@@ -324,6 +323,13 @@ impl Program {
         match self.pkgs.get(crate::MAIN_PKG) {
             Some(modules) => modules.iter().map(|m| m.filename.clone()).collect(),
             None => vec![],
+        }
+    }
+    /// Get the first module in the main package.
+    pub fn get_main_package_first_module(&self) -> Option<&Module> {
+        match self.pkgs.get(crate::MAIN_PKG) {
+            Some(modules) => modules.first(),
+            None => None,
         }
     }
     /// Get stmt on position
@@ -340,7 +346,7 @@ impl Program {
 }
 
 /// Module is an abstract syntax tree for a single KCL file.
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
 pub struct Module {
     pub filename: String,
     pub pkg: String,
@@ -379,6 +385,7 @@ impl Module {
 
 /// A statement
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(tag = "type", content = "data")]
 pub enum Stmt {
     TypeAlias(TypeAliasStmt),
     Expr(ExprStmt),
@@ -647,6 +654,7 @@ pub struct RuleStmt {
 
 /// A expression
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(tag = "type", content = "data")]
 pub enum Expr {
     Identifier(Identifier),
     Unary(UnaryExpr),
@@ -839,6 +847,7 @@ pub struct ListIfItemExpr {
     pub orelse: Option<NodeRef<Expr>>,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum CompType {
     List,
     Dict,
@@ -1074,6 +1083,7 @@ pub struct Compare {
 /// """long string literal"""
 /// ```
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(tag = "type", content = "data")]
 pub enum Literal {
     Number(NumberLit),
     String(StringLit),
@@ -1137,6 +1147,7 @@ impl NumberBinarySuffix {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(tag = "type", content = "data")]
 pub enum NumberLitValue {
     Int(i64),
     Float(f64),
@@ -1502,6 +1513,7 @@ impl CmpOp {
 
 /// BinOrCmpOp is the set of all binary and comparison operators in KCL.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(tag = "type", content = "data")]
 pub enum BinOrCmpOp {
     Bin(BinOp),
     Cmp(CmpOp),
@@ -1509,6 +1521,7 @@ pub enum BinOrCmpOp {
 
 /// BinOrAugOp is the set of all binary and argument operators in KCL.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(tag = "type", content = "data")]
 pub enum BinOrAugOp {
     Bin(BinOp),
     Aug(AugOp),
@@ -1525,6 +1538,7 @@ pub enum ExprContext {
 
 /// A expression
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(tag = "type", content = "data")]
 pub enum Type {
     Any,
     Named(Identifier),
@@ -1567,6 +1581,7 @@ pub struct UnionType {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(tag = "type", content = "data")]
 pub enum LiteralType {
     Bool(bool),
     Int(i64, Option<NumberBinarySuffix>), // value + suffix

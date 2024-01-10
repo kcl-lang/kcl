@@ -74,10 +74,10 @@ pub fn lint_files(
     let mut opts = opts.unwrap_or_default();
     opts.load_plugins = true;
     let mut program = match load_program(sess.clone(), files, Some(opts), None) {
-        Ok(p) => p,
+        Ok(p) => p.program,
         Err(err_str) => {
             return Handler::default()
-                .add_panic_info(&PanicInfo::from(err_str))
+                .add_panic_info(&PanicInfo::from(err_str.to_string()))
                 .classification();
         }
     };

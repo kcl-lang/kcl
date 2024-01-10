@@ -5,7 +5,7 @@ use anyhow::{anyhow, Result};
 use indexmap::IndexMap;
 use kclvm_ast::ast;
 use kclvm_driver::{get_kcl_files, get_pkg_list};
-use kclvm_parser::{parse_file, ParseSession};
+use kclvm_parser::{parse_file_force_errors, ParseSession};
 use kclvm_runner::runner::ProgramRunner;
 use kclvm_runner::{build_program, ExecProgramArgs};
 use std::sync::Arc;
@@ -135,7 +135,7 @@ pub fn load_test_suites<P: AsRef<str>>(path: P, opts: &TestOptions) -> Result<Ve
         let (normal_files, test_files) = get_test_files(pkg)?;
         let mut cases = IndexMap::new();
         for file in &test_files {
-            let module = parse_file(file, None).map_err(|e| anyhow!(e))?;
+            let module = parse_file_force_errors(file, None)?;
             for stmt in &module.body {
                 if let ast::Stmt::Assign(assign_stmt) = &stmt.node {
                     if let ast::Expr::Lambda(_lambda_expr) = &assign_stmt.value.node {

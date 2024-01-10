@@ -140,7 +140,7 @@ fn gen_full_path(rel_path: String) -> Result<String> {
 
 /// Load test kcl file to ast.Program
 fn load_test_program(filename: String) -> Program {
-    let module = kclvm_parser::parse_file(&filename, None).unwrap();
+    let module = kclvm_parser::parse_file_force_errors(&filename, None).unwrap();
     construct_program(module)
 }
 
@@ -154,20 +154,19 @@ fn parse_program(test_kcl_case_path: &str) -> Program {
         None,
     )
     .unwrap()
+    .program
 }
 
 /// Construct ast.Program by ast.Module and default configuration.
 /// Default configuration:
 ///     module.pkg = "__main__"
 ///     Program.root = "__main__"
-///     Program.main = "__main__"
 fn construct_program(mut module: Module) -> Program {
     module.pkg = MAIN_PKG_NAME.to_string();
     let mut pkgs_ast = HashMap::new();
     pkgs_ast.insert(MAIN_PKG_NAME.to_string(), vec![module]);
     Program {
         root: MAIN_PKG_NAME.to_string(),
-        main: MAIN_PKG_NAME.to_string(),
         pkgs: pkgs_ast,
     }
 }
@@ -264,7 +263,9 @@ fn assemble_lib_for_test(
     let opts = args.get_load_program_options();
     let sess = Arc::new(ParseSession::default());
     // parse and resolve kcl
-    let mut program = load_program(sess, &files, Some(opts), None).unwrap();
+    let mut program = load_program(sess, &files, Some(opts), None)
+        .unwrap()
+        .program;
 
     let scope = resolve_program(&mut program);
 
@@ -506,29 +507,6 @@ fn clean_dir(path: String) {
     }
 }
 
-fn test_compile_dir_recursive() {
-    let path = PathBuf::from("./src/test_datas/compile_recursive")
-        .canonicalize()
-        .unwrap();
-    let mut args = ExecProgramArgs::default();
-    args.k_filename_list.push(path.display().to_string());
-    let mut opts: kclvm_parser::LoadProgramOptions = args.get_load_program_options();
-    opts.recursive = true;
-    let sess = Arc::new(ParseSession::default());
-    // Load AST program
-    let program = load_program(
-        sess.clone(),
-        &[&path.display().to_string()],
-        Some(opts),
-        None,
-    )
-    .unwrap();
-    // Resolve ATS, generate libs, link libs and execute.
-    let res = execute(sess, program, &args);
-    assert!(res.is_ok());
-    assert_eq!(res.unwrap().json_result, "{\"k1\": \"Hello k1!\", \"k2\": \"Hello k2!\", \"The_first_kcl_program\": \"Hello World!\"}");
-}
-
 #[test]
 fn test_exec() {
     clean_dir(
@@ -561,9 +539,6 @@ fn test_exec() {
     test_exec_with_err_result();
     println!("test_exec_with_err_result - PASS");
 
-    test_compile_dir_recursive();
-    println!("test_compile_dir_recursive - PASS");
-
     test_indent_error();
     println!("test_indent_error - PASS");
 
@@ -594,7 +569,9 @@ fn exec(file: &str) -> Result<String, String> {
     let opts = args.get_load_program_options();
     let sess = Arc::new(ParseSession::default());
     // Load AST program
-    let program = load_program(sess.clone(), &[file], Some(opts), None).unwrap();
+    let program = load_program(sess.clone(), &[file], Some(opts), None)
+        .unwrap()
+        .program;
     // Resolve ATS, generate libs, link libs and execute.
     match execute(sess, program, &args) {
         Ok(result) => {

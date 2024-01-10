@@ -159,7 +159,11 @@ impl ModRelativePath {
     /// assert_eq!(path.is_dir(), false);
     /// ```
     pub fn is_dir(&self) -> bool {
-        Path::new(&self.path).is_dir() || !self.path.ends_with(KCL_FILE_SUFFIX)
+        if self.path.is_empty() {
+            false
+        } else {
+            Path::new(&self.path).is_dir() || !self.path.ends_with(KCL_FILE_SUFFIX)
+        }
     }
 }
 

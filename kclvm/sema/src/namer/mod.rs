@@ -272,7 +272,8 @@ mod tests {
             None,
             None,
         )
-        .unwrap();
+        .unwrap()
+        .program;
         let gs = GlobalState::default();
         let gs = Namer::find_symbols(&program, gs);
 

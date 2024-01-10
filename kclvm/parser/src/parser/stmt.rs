@@ -1049,7 +1049,7 @@ impl<'a> Parser<'a> {
                 if let Stmt::Assign(assign) = x.node.clone() {
                     if assign.targets.len() == 1 {
                         let ident = assign.targets[0].clone().node;
-                        if let Some(_) = assign.ty {
+                        if assign.ty.is_some() {
                             body_body.push(node_ref!(
                                 Stmt::SchemaAttr(SchemaAttr {
                                     doc: "".to_string(),

@@ -1,5 +1,5 @@
 use super::*;
-use kclvm_parser::parse_file;
+use kclvm_parser::parse_file_force_errors;
 use pretty_assertions::assert_eq;
 use walkdir::WalkDir;
 
@@ -191,13 +191,13 @@ fn test_format_integration_konfig() -> Result<()> {
             continue;
         }
         assert!(
-            parse_file(file, None).is_ok(),
+            parse_file_force_errors(file, None).is_ok(),
             "file {} test format failed",
             file
         );
         let src = std::fs::read_to_string(file)?;
         let (formatted_src, _) = format_source("", &src, &Default::default())?;
-        let parse_result = parse_file("test.k", Some(formatted_src.clone() + "\n"));
+        let parse_result = parse_file_force_errors("test.k", Some(formatted_src.clone() + "\n"));
         assert!(
             parse_result.is_ok(),
             "file {} test format failed, the formatted source is\n{}\n the parse error is\n{}",

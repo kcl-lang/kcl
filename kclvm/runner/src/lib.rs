@@ -75,9 +75,8 @@ pub fn exec_program(sess: Arc<ParseSession>, args: &ExecProgramArgs) -> Result<E
     let opts = args.get_load_program_options();
     let kcl_paths = expand_files(args)?;
     let kcl_paths_str = kcl_paths.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
-    let mut program = load_program(sess.clone(), kcl_paths_str.as_slice(), Some(opts), None)
-        .map_err(|err| anyhow!(err))?;
-
+    let mut program =
+        load_program(sess.clone(), kcl_paths_str.as_slice(), Some(opts), None)?.program;
     apply_overrides(
         &mut program,
         &args.overrides,
@@ -176,8 +175,8 @@ pub fn execute(
     }
     // Resolve ast
     let scope = resolve_program(&mut program);
+    // Emit parse and resolve errors if exists.
     emit_compile_diag_to_string(sess, &scope, false)?;
-
     // Create a temp entry file and the temp dir will be delete automatically
     let temp_dir = tempdir()?;
     let temp_dir_path = temp_dir.path().to_str().ok_or(anyhow!(
@@ -226,7 +225,6 @@ pub fn execute_module(mut m: Module) -> Result<ExecProgramResult> {
 
     let prog = Program {
         root: MAIN_PKG.to_string(),
-        main: MAIN_PKG.to_string(),
         pkgs,
     };
 
@@ -247,10 +245,11 @@ pub fn build_program<P: AsRef<Path>>(
     let opts = args.get_load_program_options();
     let kcl_paths = expand_files(args)?;
     let kcl_paths_str = kcl_paths.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
-    let mut program = load_program(sess.clone(), kcl_paths_str.as_slice(), Some(opts), None)
-        .map_err(|err| anyhow!(err))?;
+    let mut program =
+        load_program(sess.clone(), kcl_paths_str.as_slice(), Some(opts), None)?.program;
     // Resolve program.
     let scope = resolve_program(&mut program);
+    // Emit parse and resolve errors if exists.
     emit_compile_diag_to_string(sess, &scope, false)?;
     // Create a temp entry file and the temp dir will be delete automatically.
     let temp_dir = tempdir()?;

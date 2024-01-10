@@ -84,7 +84,7 @@ pub fn override_file(file: &str, specs: &[String], import_paths: &[String]) -> R
         .collect::<Vec<ast::OverrideSpec>>();
     // Parse file to AST module.
     let mut module = match parse_file(file, None) {
-        Ok(module) => module,
+        Ok(module) => module.module,
         Err(msg) => return Err(anyhow!("{}", msg)),
     };
     let mut result = false;

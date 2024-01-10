@@ -54,8 +54,6 @@ pub struct ExecProgramArgs {
     pub include_schema_type_path: bool,
     // Whether to compile only.
     pub compile_only: bool,
-    // Whether to compile diractroy recursively.
-    pub recursive: bool,
     // plugin_agent is the address of plugin.
     #[serde(skip)]
     pub plugin_agent: u64,
@@ -152,10 +150,7 @@ impl ExecProgramArgs {
             vendor_dirs: vec![get_vendor_home()],
             package_maps: self.get_package_maps_from_external_pkg(),
             k_code_list: self.k_code_list.clone(),
-            cmd_args: self.args.clone(),
-            cmd_overrides: self.overrides.clone(),
             load_plugins: self.plugin_agent > 0,
-            recursive: self.recursive,
             ..Default::default()
         }
     }
@@ -175,7 +170,6 @@ impl TryFrom<SettingsFile> for ExecProgramArgs {
             args.verbose = cli_configs.verbose.unwrap_or_default() as i32;
             args.debug = cli_configs.debug.unwrap_or_default() as i32;
             args.sort_keys = cli_configs.sort_keys.unwrap_or_default();
-            args.recursive = cli_configs.recursive.unwrap_or_default();
             args.include_schema_type_path =
                 cli_configs.include_schema_type_path.unwrap_or_default();
             for override_str in &cli_configs.overrides.unwrap_or_default() {
