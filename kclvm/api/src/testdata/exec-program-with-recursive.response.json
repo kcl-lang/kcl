@@ -1,5 +1,0 @@
-{
-    "json_result": "[{\"k1\": \"Hello k1!\", \"k2\": \"Hello k2!\", \"The_first_kcl_program\": \"Hello World!\"}]",
-    "yaml_result": "k1: Hello k1!\nk2: Hello k2!\nThe_first_kcl_program: Hello World!",
-    "escaped_time": "0.002061128616333008"
-}

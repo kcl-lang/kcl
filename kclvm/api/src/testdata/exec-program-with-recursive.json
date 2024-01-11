@@ -1,7 +1,0 @@
-{
-	"work_dir" : "./src/testdata",
-	"k_filename_list":[
-		"compile_recursive"
-	],
-	"recursive": true
-}
