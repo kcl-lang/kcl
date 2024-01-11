@@ -77,20 +77,14 @@ mod test_expr_builder {
             },
         },
     };
-    use std::{
-        fs,
-        panic,
-        path::Path,
-    };
+    use std::{fs, panic, path::Path};
 
     #[test]
     fn test_build_with_json_no_schema_name() {
         for test_name in TEST_CASES {
             let file_path = construct_full_path(&format!(
                 "{}.{}",
-                Path::new(FILE_EXTENSIONS[0])
-                    .join(test_name)
-                    .display(),
+                Path::new(FILE_EXTENSIONS[0]).join(test_name).display(),
                 FILE_EXTENSIONS[0]
             ))
             .unwrap();
@@ -402,9 +396,7 @@ mod test_validater {
             for case in KCL_TEST_CASES {
                 let validated_file_path = construct_full_path(&format!(
                     "{}.{}",
-                    Path::new("invalid_vet_cases_json")
-                        .join(case)
-                        .display(),
+                    Path::new("invalid_vet_cases_json").join(case).display(),
                     "json"
                 ))
                 .unwrap();
@@ -459,9 +451,7 @@ mod test_validater {
         for case in KCL_TEST_CASES {
             let validated_file_path = construct_full_path(&format!(
                 "{}.{}",
-                Path::new("invalid_vet_cases_yaml")
-                    .join(case)
-                    .display(),
+                Path::new("invalid_vet_cases_yaml").join(case).display(),
                 "yaml"
             ))
             .unwrap();
@@ -513,9 +503,7 @@ mod test_validater {
             for case in KCL_TEST_CASES {
                 let validated_file_path = construct_full_path(&format!(
                     "{}.{}",
-                    Path::new("invalid_validate_cases")
-                        .join(case)
-                        .display(),
+                    Path::new("invalid_validate_cases").join(case).display(),
                     file_suffix
                 ))
                 .unwrap();
