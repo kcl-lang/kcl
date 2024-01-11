@@ -234,7 +234,7 @@ impl<'a> Parser<'a> {
                 }
             }
             // If there is no params type, set it to None
-            let params_ty = if params_type.len() == 0 {
+            let params_ty = if params_type.is_empty() {
                 None
             } else {
                 Some(params_type)

@@ -55,7 +55,7 @@ fn lex(src: &str) -> (String, String) {
         .map(|err| err.as_ref().unwrap().to_string())
         .collect();
 
-    return (res, err_msgs);
+    (res, err_msgs)
 }
 
 /// check the invalid panic message.

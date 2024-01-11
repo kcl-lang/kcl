@@ -3,4 +3,1010 @@ source: parser/src/tests/ast.rs
 assertion_line: 3
 expression: "crate::tests::parsing_file_ast_json(\"hello.k\",\n    r####\"\nschema TestBool:\n    []\n    [str    ]: int\n    [a: str]: int\n    [a: ...str]: int\n    [...str]: int\n    a: int\n    b?: str\n    c: int = 0\n    d?: str = \"\"\n\n    [a]\n    [a, b, c]\n    [\n        1\n    ]\n    [\n        a\n    ]\n    [a for a in [1, 2, 3]]\n    [\n        a for a in [1, 2, 3]\n    ]\n\n    check:\n        a > 1, \"msg\"\n        name not None, \"we fail here\"\n        \"####)"
 ---
-{"filename":"hello.k","pkg":"__main__","doc":null,"name":"__main__","body":[{"node":{"Schema":{"doc":null,"name":{"node":"TestBool","filename":"hello.k","line":2,"column":7,"end_line":2,"end_column":15},"parent_name":null,"for_host_name":null,"is_mixin":false,"is_protocol":false,"args":null,"mixins":[],"body":[{"node":{"Expr":{"exprs":[{"node":{"List":{"elts":[],"ctx":"Load"}},"filename":"hello.k","line":3,"column":4,"end_line":3,"end_column":6}]}},"filename":"hello.k","line":3,"column":4,"end_line":3,"end_column":6},{"node":{"SchemaAttr":{"doc":"","name":{"node":"a","filename":"hello.k","line":8,"column":4,"end_line":8,"end_column":5},"op":null,"value":null,"is_optional":false,"decorators":[],"ty":{"node":{"Basic":"Int"},"filename":"hello.k","line":8,"column":7,"end_line":8,"end_column":10}}},"filename":"hello.k","line":8,"column":4,"end_line":8,"end_column":10},{"node":{"SchemaAttr":{"doc":"","name":{"node":"b","filename":"hello.k","line":9,"column":4,"end_line":9,"end_column":5},"op":null,"value":null,"is_optional":true,"decorators":[],"ty":{"node":{"Basic":"Str"},"filename":"hello.k","line":9,"column":8,"end_line":9,"end_column":11}}},"filename":"hello.k","line":9,"column":4,"end_line":10,"end_column":0},{"node":{"SchemaAttr":{"doc":"","name":{"node":"c","filename":"hello.k","line":10,"column":4,"end_line":10,"end_column":5},"op":{"Aug":"Assign"},"value":{"node":{"NumberLit":{"binary_suffix":null,"value":{"Int":0}}},"filename":"hello.k","line":10,"column":13,"end_line":10,"end_column":14},"is_optional":false,"decorators":[],"ty":{"node":{"Basic":"Int"},"filename":"hello.k","line":10,"column":7,"end_line":10,"end_column":10}}},"filename":"hello.k","line":10,"column":4,"end_line":10,"end_column":14},{"node":{"SchemaAttr":{"doc":"","name":{"node":"d","filename":"hello.k","line":11,"column":4,"end_line":11,"end_column":5},"op":{"Aug":"Assign"},"value":{"node":{"StringLit":{"is_long_string":false,"raw_value":"\"\"","value":""}},"filename":"hello.k","line":11,"column":14,"end_line":11,"end_column":16},"is_optional":true,"decorators":[],"ty":{"node":{"Basic":"Str"},"filename":"hello.k","line":11,"column":8,"end_line":11,"end_column":11}}},"filename":"hello.k","line":11,"column":4,"end_line":13,"end_column":0},{"node":{"Expr":{"exprs":[{"node":{"List":{"elts":[{"node":{"Identifier":{"names":[{"node":"a","filename":"hello.k","line":13,"column":5,"end_line":13,"end_column":6}],"pkgpath":"","ctx":"Load"}},"filename":"hello.k","line":13,"column":5,"end_line":13,"end_column":6}],"ctx":"Load"}},"filename":"hello.k","line":13,"column":4,"end_line":13,"end_column":7}]}},"filename":"hello.k","line":13,"column":4,"end_line":13,"end_column":7},{"node":{"Expr":{"exprs":[{"node":{"List":{"elts":[{"node":{"Identifier":{"names":[{"node":"a","filename":"hello.k","line":14,"column":5,"end_line":14,"end_column":6}],"pkgpath":"","ctx":"Load"}},"filename":"hello.k","line":14,"column":5,"end_line":14,"end_column":6},{"node":{"Identifier":{"names":[{"node":"b","filename":"hello.k","line":14,"column":8,"end_line":14,"end_column":9}],"pkgpath":"","ctx":"Load"}},"filename":"hello.k","line":14,"column":8,"end_line":14,"end_column":9},{"node":{"Identifier":{"names":[{"node":"c","filename":"hello.k","line":14,"column":11,"end_line":14,"end_column":12}],"pkgpath":"","ctx":"Load"}},"filename":"hello.k","line":14,"column":11,"end_line":14,"end_column":12}],"ctx":"Load"}},"filename":"hello.k","line":14,"column":4,"end_line":14,"end_column":13}]}},"filename":"hello.k","line":14,"column":4,"end_line":14,"end_column":13},{"node":{"Expr":{"exprs":[{"node":{"List":{"elts":[{"node":{"NumberLit":{"binary_suffix":null,"value":{"Int":1}}},"filename":"hello.k","line":16,"column":8,"end_line":16,"end_column":9}],"ctx":"Load"}},"filename":"hello.k","line":15,"column":4,"end_line":17,"end_column":5}]}},"filename":"hello.k","line":15,"column":4,"end_line":17,"end_column":5},{"node":{"Expr":{"exprs":[{"node":{"List":{"elts":[{"node":{"Identifier":{"names":[{"node":"a","filename":"hello.k","line":19,"column":8,"end_line":19,"end_column":9}],"pkgpath":"","ctx":"Load"}},"filename":"hello.k","line":19,"column":8,"end_line":19,"end_column":9}],"ctx":"Load"}},"filename":"hello.k","line":18,"column":4,"end_line":20,"end_column":5}]}},"filename":"hello.k","line":18,"column":4,"end_line":20,"end_column":5},{"node":{"Expr":{"exprs":[{"node":{"ListComp":{"elt":{"node":{"Identifier":{"names":[{"node":"a","filename":"hello.k","line":21,"column":5,"end_line":21,"end_column":6}],"pkgpath":"","ctx":"Load"}},"filename":"hello.k","line":21,"column":5,"end_line":21,"end_column":6},"generators":[{"node":{"targets":[{"node":{"names":[{"node":"a","filename":"hello.k","line":21,"column":11,"end_line":21,"end_column":12}],"pkgpath":"","ctx":"Load"},"filename":"hello.k","line":21,"column":11,"end_line":21,"end_column":12}],"iter":{"node":{"List":{"elts":[{"node":{"NumberLit":{"binary_suffix":null,"value":{"Int":1}}},"filename":"hello.k","line":21,"column":17,"end_line":21,"end_column":18},{"node":{"NumberLit":{"binary_suffix":null,"value":{"Int":2}}},"filename":"hello.k","line":21,"column":20,"end_line":21,"end_column":21},{"node":{"NumberLit":{"binary_suffix":null,"value":{"Int":3}}},"filename":"hello.k","line":21,"column":23,"end_line":21,"end_column":24}],"ctx":"Load"}},"filename":"hello.k","line":21,"column":16,"end_line":21,"end_column":25},"ifs":[]},"filename":"hello.k","line":21,"column":7,"end_line":21,"end_column":25}]}},"filename":"hello.k","line":21,"column":4,"end_line":21,"end_column":26}]}},"filename":"hello.k","line":21,"column":4,"end_line":21,"end_column":26},{"node":{"Expr":{"exprs":[{"node":{"ListComp":{"elt":{"node":{"Identifier":{"names":[{"node":"a","filename":"hello.k","line":23,"column":8,"end_line":23,"end_column":9}],"pkgpath":"","ctx":"Load"}},"filename":"hello.k","line":23,"column":8,"end_line":23,"end_column":9},"generators":[{"node":{"targets":[{"node":{"names":[{"node":"a","filename":"hello.k","line":23,"column":14,"end_line":23,"end_column":15}],"pkgpath":"","ctx":"Load"},"filename":"hello.k","line":23,"column":14,"end_line":23,"end_column":15}],"iter":{"node":{"List":{"elts":[{"node":{"NumberLit":{"binary_suffix":null,"value":{"Int":1}}},"filename":"hello.k","line":23,"column":20,"end_line":23,"end_column":21},{"node":{"NumberLit":{"binary_suffix":null,"value":{"Int":2}}},"filename":"hello.k","line":23,"column":23,"end_line":23,"end_column":24},{"node":{"NumberLit":{"binary_suffix":null,"value":{"Int":3}}},"filename":"hello.k","line":23,"column":26,"end_line":23,"end_column":27}],"ctx":"Load"}},"filename":"hello.k","line":23,"column":19,"end_line":23,"end_column":28},"ifs":[]},"filename":"hello.k","line":23,"column":10,"end_line":24,"end_column":0}]}},"filename":"hello.k","line":22,"column":4,"end_line":24,"end_column":5}]}},"filename":"hello.k","line":22,"column":4,"end_line":24,"end_column":5}],"decorators":[],"checks":[{"node":{"test":{"node":{"Compare":{"left":{"node":{"Identifier":{"names":[{"node":"a","filename":"hello.k","line":27,"column":8,"end_line":27,"end_column":9}],"pkgpath":"","ctx":"Load"}},"filename":"hello.k","line":27,"column":8,"end_line":27,"end_column":9},"ops":["Gt"],"comparators":[{"node":{"NumberLit":{"binary_suffix":null,"value":{"Int":1}}},"filename":"hello.k","line":27,"column":12,"end_line":27,"end_column":13}]}},"filename":"hello.k","line":27,"column":8,"end_line":27,"end_column":13},"if_cond":null,"msg":{"node":{"StringLit":{"is_long_string":false,"raw_value":"\"msg\"","value":"msg"}},"filename":"hello.k","line":27,"column":15,"end_line":27,"end_column":20}},"filename":"hello.k","line":27,"column":8,"end_line":27,"end_column":20},{"node":{"test":{"node":{"Identifier":{"names":[{"node":"name","filename":"hello.k","line":28,"column":8,"end_line":28,"end_column":12}],"pkgpath":"","ctx":"Load"}},"filename":"hello.k","line":28,"column":8,"end_line":28,"end_column":12},"if_cond":null,"msg":null},"filename":"hello.k","line":28,"column":8,"end_line":28,"end_column":12},{"node":{"test":{"node":{"Unary":{"op":"Not","operand":{"node":{"NameConstantLit":{"value":"None"}},"filename":"hello.k","line":28,"column":17,"end_line":28,"end_column":21}}},"filename":"hello.k","line":28,"column":13,"end_line":28,"end_column":21},"if_cond":null,"msg":{"node":{"StringLit":{"is_long_string":false,"raw_value":"\"we fail here\"","value":"we fail here"}},"filename":"hello.k","line":28,"column":23,"end_line":28,"end_column":37}},"filename":"hello.k","line":28,"column":13,"end_line":28,"end_column":37}],"index_signature":{"node":{"key_name":null,"value":null,"any_other":true,"key_ty":{"node":{"Basic":"Str"},"filename":"hello.k","line":7,"column":8,"end_line":7,"end_column":11},"value_ty":{"node":{"Basic":"Int"},"filename":"hello.k","line":7,"column":14,"end_line":7,"end_column":17}},"filename":"hello.k","line":7,"column":4,"end_line":8,"end_column":0}}},"filename":"hello.k","line":2,"column":0,"end_line":29,"end_column":8}],"comments":[]}
+{
+  "filename": "hello.k",
+  "pkg": "__main__",
+  "doc": null,
+  "name": "__main__",
+  "body": [
+    {
+      "node": {
+        "type": "Schema",
+        "data": {
+          "doc": null,
+          "name": {
+            "node": "TestBool",
+            "filename": "hello.k",
+            "line": 2,
+            "column": 7,
+            "end_line": 2,
+            "end_column": 15
+          },
+          "parent_name": null,
+          "for_host_name": null,
+          "is_mixin": false,
+          "is_protocol": false,
+          "args": null,
+          "mixins": [],
+          "body": [
+            {
+              "node": {
+                "type": "Expr",
+                "data": {
+                  "exprs": [
+                    {
+                      "node": {
+                        "type": "List",
+                        "data": {
+                          "elts": [],
+                          "ctx": "Load"
+                        }
+                      },
+                      "filename": "hello.k",
+                      "line": 3,
+                      "column": 4,
+                      "end_line": 3,
+                      "end_column": 6
+                    }
+                  ]
+                }
+              },
+              "filename": "hello.k",
+              "line": 3,
+              "column": 4,
+              "end_line": 3,
+              "end_column": 6
+            },
+            {
+              "node": {
+                "type": "SchemaAttr",
+                "data": {
+                  "doc": "",
+                  "name": {
+                    "node": "a",
+                    "filename": "hello.k",
+                    "line": 8,
+                    "column": 4,
+                    "end_line": 8,
+                    "end_column": 5
+                  },
+                  "op": null,
+                  "value": null,
+                  "is_optional": false,
+                  "decorators": [],
+                  "ty": {
+                    "node": {
+                      "type": "Basic",
+                      "data": "Int"
+                    },
+                    "filename": "hello.k",
+                    "line": 8,
+                    "column": 7,
+                    "end_line": 8,
+                    "end_column": 10
+                  }
+                }
+              },
+              "filename": "hello.k",
+              "line": 8,
+              "column": 4,
+              "end_line": 8,
+              "end_column": 10
+            },
+            {
+              "node": {
+                "type": "SchemaAttr",
+                "data": {
+                  "doc": "",
+                  "name": {
+                    "node": "b",
+                    "filename": "hello.k",
+                    "line": 9,
+                    "column": 4,
+                    "end_line": 9,
+                    "end_column": 5
+                  },
+                  "op": null,
+                  "value": null,
+                  "is_optional": true,
+                  "decorators": [],
+                  "ty": {
+                    "node": {
+                      "type": "Basic",
+                      "data": "Str"
+                    },
+                    "filename": "hello.k",
+                    "line": 9,
+                    "column": 8,
+                    "end_line": 9,
+                    "end_column": 11
+                  }
+                }
+              },
+              "filename": "hello.k",
+              "line": 9,
+              "column": 4,
+              "end_line": 10,
+              "end_column": 0
+            },
+            {
+              "node": {
+                "type": "SchemaAttr",
+                "data": {
+                  "doc": "",
+                  "name": {
+                    "node": "c",
+                    "filename": "hello.k",
+                    "line": 10,
+                    "column": 4,
+                    "end_line": 10,
+                    "end_column": 5
+                  },
+                  "op": {
+                    "type": "Aug",
+                    "data": "Assign"
+                  },
+                  "value": {
+                    "node": {
+                      "type": "NumberLit",
+                      "data": {
+                        "binary_suffix": null,
+                        "value": {
+                          "type": "Int",
+                          "data": 0
+                        }
+                      }
+                    },
+                    "filename": "hello.k",
+                    "line": 10,
+                    "column": 13,
+                    "end_line": 10,
+                    "end_column": 14
+                  },
+                  "is_optional": false,
+                  "decorators": [],
+                  "ty": {
+                    "node": {
+                      "type": "Basic",
+                      "data": "Int"
+                    },
+                    "filename": "hello.k",
+                    "line": 10,
+                    "column": 7,
+                    "end_line": 10,
+                    "end_column": 10
+                  }
+                }
+              },
+              "filename": "hello.k",
+              "line": 10,
+              "column": 4,
+              "end_line": 10,
+              "end_column": 14
+            },
+            {
+              "node": {
+                "type": "SchemaAttr",
+                "data": {
+                  "doc": "",
+                  "name": {
+                    "node": "d",
+                    "filename": "hello.k",
+                    "line": 11,
+                    "column": 4,
+                    "end_line": 11,
+                    "end_column": 5
+                  },
+                  "op": {
+                    "type": "Aug",
+                    "data": "Assign"
+                  },
+                  "value": {
+                    "node": {
+                      "type": "StringLit",
+                      "data": {
+                        "is_long_string": false,
+                        "raw_value": "\"\"",
+                        "value": ""
+                      }
+                    },
+                    "filename": "hello.k",
+                    "line": 11,
+                    "column": 14,
+                    "end_line": 11,
+                    "end_column": 16
+                  },
+                  "is_optional": true,
+                  "decorators": [],
+                  "ty": {
+                    "node": {
+                      "type": "Basic",
+                      "data": "Str"
+                    },
+                    "filename": "hello.k",
+                    "line": 11,
+                    "column": 8,
+                    "end_line": 11,
+                    "end_column": 11
+                  }
+                }
+              },
+              "filename": "hello.k",
+              "line": 11,
+              "column": 4,
+              "end_line": 13,
+              "end_column": 0
+            },
+            {
+              "node": {
+                "type": "Expr",
+                "data": {
+                  "exprs": [
+                    {
+                      "node": {
+                        "type": "List",
+                        "data": {
+                          "elts": [
+                            {
+                              "node": {
+                                "type": "Identifier",
+                                "data": {
+                                  "names": [
+                                    {
+                                      "node": "a",
+                                      "filename": "hello.k",
+                                      "line": 13,
+                                      "column": 5,
+                                      "end_line": 13,
+                                      "end_column": 6
+                                    }
+                                  ],
+                                  "pkgpath": "",
+                                  "ctx": "Load"
+                                }
+                              },
+                              "filename": "hello.k",
+                              "line": 13,
+                              "column": 5,
+                              "end_line": 13,
+                              "end_column": 6
+                            }
+                          ],
+                          "ctx": "Load"
+                        }
+                      },
+                      "filename": "hello.k",
+                      "line": 13,
+                      "column": 4,
+                      "end_line": 13,
+                      "end_column": 7
+                    }
+                  ]
+                }
+              },
+              "filename": "hello.k",
+              "line": 13,
+              "column": 4,
+              "end_line": 13,
+              "end_column": 7
+            },
+            {
+              "node": {
+                "type": "Expr",
+                "data": {
+                  "exprs": [
+                    {
+                      "node": {
+                        "type": "List",
+                        "data": {
+                          "elts": [
+                            {
+                              "node": {
+                                "type": "Identifier",
+                                "data": {
+                                  "names": [
+                                    {
+                                      "node": "a",
+                                      "filename": "hello.k",
+                                      "line": 14,
+                                      "column": 5,
+                                      "end_line": 14,
+                                      "end_column": 6
+                                    }
+                                  ],
+                                  "pkgpath": "",
+                                  "ctx": "Load"
+                                }
+                              },
+                              "filename": "hello.k",
+                              "line": 14,
+                              "column": 5,
+                              "end_line": 14,
+                              "end_column": 6
+                            },
+                            {
+                              "node": {
+                                "type": "Identifier",
+                                "data": {
+                                  "names": [
+                                    {
+                                      "node": "b",
+                                      "filename": "hello.k",
+                                      "line": 14,
+                                      "column": 8,
+                                      "end_line": 14,
+                                      "end_column": 9
+                                    }
+                                  ],
+                                  "pkgpath": "",
+                                  "ctx": "Load"
+                                }
+                              },
+                              "filename": "hello.k",
+                              "line": 14,
+                              "column": 8,
+                              "end_line": 14,
+                              "end_column": 9
+                            },
+                            {
+                              "node": {
+                                "type": "Identifier",
+                                "data": {
+                                  "names": [
+                                    {
+                                      "node": "c",
+                                      "filename": "hello.k",
+                                      "line": 14,
+                                      "column": 11,
+                                      "end_line": 14,
+                                      "end_column": 12
+                                    }
+                                  ],
+                                  "pkgpath": "",
+                                  "ctx": "Load"
+                                }
+                              },
+                              "filename": "hello.k",
+                              "line": 14,
+                              "column": 11,
+                              "end_line": 14,
+                              "end_column": 12
+                            }
+                          ],
+                          "ctx": "Load"
+                        }
+                      },
+                      "filename": "hello.k",
+                      "line": 14,
+                      "column": 4,
+                      "end_line": 14,
+                      "end_column": 13
+                    }
+                  ]
+                }
+              },
+              "filename": "hello.k",
+              "line": 14,
+              "column": 4,
+              "end_line": 14,
+              "end_column": 13
+            },
+            {
+              "node": {
+                "type": "Expr",
+                "data": {
+                  "exprs": [
+                    {
+                      "node": {
+                        "type": "List",
+                        "data": {
+                          "elts": [
+                            {
+                              "node": {
+                                "type": "NumberLit",
+                                "data": {
+                                  "binary_suffix": null,
+                                  "value": {
+                                    "type": "Int",
+                                    "data": 1
+                                  }
+                                }
+                              },
+                              "filename": "hello.k",
+                              "line": 16,
+                              "column": 8,
+                              "end_line": 16,
+                              "end_column": 9
+                            }
+                          ],
+                          "ctx": "Load"
+                        }
+                      },
+                      "filename": "hello.k",
+                      "line": 15,
+                      "column": 4,
+                      "end_line": 17,
+                      "end_column": 5
+                    }
+                  ]
+                }
+              },
+              "filename": "hello.k",
+              "line": 15,
+              "column": 4,
+              "end_line": 17,
+              "end_column": 5
+            },
+            {
+              "node": {
+                "type": "Expr",
+                "data": {
+                  "exprs": [
+                    {
+                      "node": {
+                        "type": "List",
+                        "data": {
+                          "elts": [
+                            {
+                              "node": {
+                                "type": "Identifier",
+                                "data": {
+                                  "names": [
+                                    {
+                                      "node": "a",
+                                      "filename": "hello.k",
+                                      "line": 19,
+                                      "column": 8,
+                                      "end_line": 19,
+                                      "end_column": 9
+                                    }
+                                  ],
+                                  "pkgpath": "",
+                                  "ctx": "Load"
+                                }
+                              },
+                              "filename": "hello.k",
+                              "line": 19,
+                              "column": 8,
+                              "end_line": 19,
+                              "end_column": 9
+                            }
+                          ],
+                          "ctx": "Load"
+                        }
+                      },
+                      "filename": "hello.k",
+                      "line": 18,
+                      "column": 4,
+                      "end_line": 20,
+                      "end_column": 5
+                    }
+                  ]
+                }
+              },
+              "filename": "hello.k",
+              "line": 18,
+              "column": 4,
+              "end_line": 20,
+              "end_column": 5
+            },
+            {
+              "node": {
+                "type": "Expr",
+                "data": {
+                  "exprs": [
+                    {
+                      "node": {
+                        "type": "ListComp",
+                        "data": {
+                          "elt": {
+                            "node": {
+                              "type": "Identifier",
+                              "data": {
+                                "names": [
+                                  {
+                                    "node": "a",
+                                    "filename": "hello.k",
+                                    "line": 21,
+                                    "column": 5,
+                                    "end_line": 21,
+                                    "end_column": 6
+                                  }
+                                ],
+                                "pkgpath": "",
+                                "ctx": "Load"
+                              }
+                            },
+                            "filename": "hello.k",
+                            "line": 21,
+                            "column": 5,
+                            "end_line": 21,
+                            "end_column": 6
+                          },
+                          "generators": [
+                            {
+                              "node": {
+                                "targets": [
+                                  {
+                                    "node": {
+                                      "names": [
+                                        {
+                                          "node": "a",
+                                          "filename": "hello.k",
+                                          "line": 21,
+                                          "column": 11,
+                                          "end_line": 21,
+                                          "end_column": 12
+                                        }
+                                      ],
+                                      "pkgpath": "",
+                                      "ctx": "Load"
+                                    },
+                                    "filename": "hello.k",
+                                    "line": 21,
+                                    "column": 11,
+                                    "end_line": 21,
+                                    "end_column": 12
+                                  }
+                                ],
+                                "iter": {
+                                  "node": {
+                                    "type": "List",
+                                    "data": {
+                                      "elts": [
+                                        {
+                                          "node": {
+                                            "type": "NumberLit",
+                                            "data": {
+                                              "binary_suffix": null,
+                                              "value": {
+                                                "type": "Int",
+                                                "data": 1
+                                              }
+                                            }
+                                          },
+                                          "filename": "hello.k",
+                                          "line": 21,
+                                          "column": 17,
+                                          "end_line": 21,
+                                          "end_column": 18
+                                        },
+                                        {
+                                          "node": {
+                                            "type": "NumberLit",
+                                            "data": {
+                                              "binary_suffix": null,
+                                              "value": {
+                                                "type": "Int",
+                                                "data": 2
+                                              }
+                                            }
+                                          },
+                                          "filename": "hello.k",
+                                          "line": 21,
+                                          "column": 20,
+                                          "end_line": 21,
+                                          "end_column": 21
+                                        },
+                                        {
+                                          "node": {
+                                            "type": "NumberLit",
+                                            "data": {
+                                              "binary_suffix": null,
+                                              "value": {
+                                                "type": "Int",
+                                                "data": 3
+                                              }
+                                            }
+                                          },
+                                          "filename": "hello.k",
+                                          "line": 21,
+                                          "column": 23,
+                                          "end_line": 21,
+                                          "end_column": 24
+                                        }
+                                      ],
+                                      "ctx": "Load"
+                                    }
+                                  },
+                                  "filename": "hello.k",
+                                  "line": 21,
+                                  "column": 16,
+                                  "end_line": 21,
+                                  "end_column": 25
+                                },
+                                "ifs": []
+                              },
+                              "filename": "hello.k",
+                              "line": 21,
+                              "column": 7,
+                              "end_line": 21,
+                              "end_column": 25
+                            }
+                          ]
+                        }
+                      },
+                      "filename": "hello.k",
+                      "line": 21,
+                      "column": 4,
+                      "end_line": 21,
+                      "end_column": 26
+                    }
+                  ]
+                }
+              },
+              "filename": "hello.k",
+              "line": 21,
+              "column": 4,
+              "end_line": 21,
+              "end_column": 26
+            },
+            {
+              "node": {
+                "type": "Expr",
+                "data": {
+                  "exprs": [
+                    {
+                      "node": {
+                        "type": "ListComp",
+                        "data": {
+                          "elt": {
+                            "node": {
+                              "type": "Identifier",
+                              "data": {
+                                "names": [
+                                  {
+                                    "node": "a",
+                                    "filename": "hello.k",
+                                    "line": 23,
+                                    "column": 8,
+                                    "end_line": 23,
+                                    "end_column": 9
+                                  }
+                                ],
+                                "pkgpath": "",
+                                "ctx": "Load"
+                              }
+                            },
+                            "filename": "hello.k",
+                            "line": 23,
+                            "column": 8,
+                            "end_line": 23,
+                            "end_column": 9
+                          },
+                          "generators": [
+                            {
+                              "node": {
+                                "targets": [
+                                  {
+                                    "node": {
+                                      "names": [
+                                        {
+                                          "node": "a",
+                                          "filename": "hello.k",
+                                          "line": 23,
+                                          "column": 14,
+                                          "end_line": 23,
+                                          "end_column": 15
+                                        }
+                                      ],
+                                      "pkgpath": "",
+                                      "ctx": "Load"
+                                    },
+                                    "filename": "hello.k",
+                                    "line": 23,
+                                    "column": 14,
+                                    "end_line": 23,
+                                    "end_column": 15
+                                  }
+                                ],
+                                "iter": {
+                                  "node": {
+                                    "type": "List",
+                                    "data": {
+                                      "elts": [
+                                        {
+                                          "node": {
+                                            "type": "NumberLit",
+                                            "data": {
+                                              "binary_suffix": null,
+                                              "value": {
+                                                "type": "Int",
+                                                "data": 1
+                                              }
+                                            }
+                                          },
+                                          "filename": "hello.k",
+                                          "line": 23,
+                                          "column": 20,
+                                          "end_line": 23,
+                                          "end_column": 21
+                                        },
+                                        {
+                                          "node": {
+                                            "type": "NumberLit",
+                                            "data": {
+                                              "binary_suffix": null,
+                                              "value": {
+                                                "type": "Int",
+                                                "data": 2
+                                              }
+                                            }
+                                          },
+                                          "filename": "hello.k",
+                                          "line": 23,
+                                          "column": 23,
+                                          "end_line": 23,
+                                          "end_column": 24
+                                        },
+                                        {
+                                          "node": {
+                                            "type": "NumberLit",
+                                            "data": {
+                                              "binary_suffix": null,
+                                              "value": {
+                                                "type": "Int",
+                                                "data": 3
+                                              }
+                                            }
+                                          },
+                                          "filename": "hello.k",
+                                          "line": 23,
+                                          "column": 26,
+                                          "end_line": 23,
+                                          "end_column": 27
+                                        }
+                                      ],
+                                      "ctx": "Load"
+                                    }
+                                  },
+                                  "filename": "hello.k",
+                                  "line": 23,
+                                  "column": 19,
+                                  "end_line": 23,
+                                  "end_column": 28
+                                },
+                                "ifs": []
+                              },
+                              "filename": "hello.k",
+                              "line": 23,
+                              "column": 10,
+                              "end_line": 24,
+                              "end_column": 0
+                            }
+                          ]
+                        }
+                      },
+                      "filename": "hello.k",
+                      "line": 22,
+                      "column": 4,
+                      "end_line": 24,
+                      "end_column": 5
+                    }
+                  ]
+                }
+              },
+              "filename": "hello.k",
+              "line": 22,
+              "column": 4,
+              "end_line": 24,
+              "end_column": 5
+            }
+          ],
+          "decorators": [],
+          "checks": [
+            {
+              "node": {
+                "test": {
+                  "node": {
+                    "type": "Compare",
+                    "data": {
+                      "left": {
+                        "node": {
+                          "type": "Identifier",
+                          "data": {
+                            "names": [
+                              {
+                                "node": "a",
+                                "filename": "hello.k",
+                                "line": 27,
+                                "column": 8,
+                                "end_line": 27,
+                                "end_column": 9
+                              }
+                            ],
+                            "pkgpath": "",
+                            "ctx": "Load"
+                          }
+                        },
+                        "filename": "hello.k",
+                        "line": 27,
+                        "column": 8,
+                        "end_line": 27,
+                        "end_column": 9
+                      },
+                      "ops": [
+                        "Gt"
+                      ],
+                      "comparators": [
+                        {
+                          "node": {
+                            "type": "NumberLit",
+                            "data": {
+                              "binary_suffix": null,
+                              "value": {
+                                "type": "Int",
+                                "data": 1
+                              }
+                            }
+                          },
+                          "filename": "hello.k",
+                          "line": 27,
+                          "column": 12,
+                          "end_line": 27,
+                          "end_column": 13
+                        }
+                      ]
+                    }
+                  },
+                  "filename": "hello.k",
+                  "line": 27,
+                  "column": 8,
+                  "end_line": 27,
+                  "end_column": 13
+                },
+                "if_cond": null,
+                "msg": {
+                  "node": {
+                    "type": "StringLit",
+                    "data": {
+                      "is_long_string": false,
+                      "raw_value": "\"msg\"",
+                      "value": "msg"
+                    }
+                  },
+                  "filename": "hello.k",
+                  "line": 27,
+                  "column": 15,
+                  "end_line": 27,
+                  "end_column": 20
+                }
+              },
+              "filename": "hello.k",
+              "line": 27,
+              "column": 8,
+              "end_line": 27,
+              "end_column": 20
+            },
+            {
+              "node": {
+                "test": {
+                  "node": {
+                    "type": "Identifier",
+                    "data": {
+                      "names": [
+                        {
+                          "node": "name",
+                          "filename": "hello.k",
+                          "line": 28,
+                          "column": 8,
+                          "end_line": 28,
+                          "end_column": 12
+                        }
+                      ],
+                      "pkgpath": "",
+                      "ctx": "Load"
+                    }
+                  },
+                  "filename": "hello.k",
+                  "line": 28,
+                  "column": 8,
+                  "end_line": 28,
+                  "end_column": 12
+                },
+                "if_cond": null,
+                "msg": null
+              },
+              "filename": "hello.k",
+              "line": 28,
+              "column": 8,
+              "end_line": 28,
+              "end_column": 12
+            },
+            {
+              "node": {
+                "test": {
+                  "node": {
+                    "type": "Unary",
+                    "data": {
+                      "op": "Not",
+                      "operand": {
+                        "node": {
+                          "type": "NameConstantLit",
+                          "data": {
+                            "value": "None"
+                          }
+                        },
+                        "filename": "hello.k",
+                        "line": 28,
+                        "column": 17,
+                        "end_line": 28,
+                        "end_column": 21
+                      }
+                    }
+                  },
+                  "filename": "hello.k",
+                  "line": 28,
+                  "column": 13,
+                  "end_line": 28,
+                  "end_column": 21
+                },
+                "if_cond": null,
+                "msg": {
+                  "node": {
+                    "type": "StringLit",
+                    "data": {
+                      "is_long_string": false,
+                      "raw_value": "\"we fail here\"",
+                      "value": "we fail here"
+                    }
+                  },
+                  "filename": "hello.k",
+                  "line": 28,
+                  "column": 23,
+                  "end_line": 28,
+                  "end_column": 37
+                }
+              },
+              "filename": "hello.k",
+              "line": 28,
+              "column": 13,
+              "end_line": 28,
+              "end_column": 37
+            }
+          ],
+          "index_signature": {
+            "node": {
+              "key_name": null,
+              "value": null,
+              "any_other": true,
+              "key_ty": {
+                "node": {
+                  "type": "Basic",
+                  "data": "Str"
+                },
+                "filename": "hello.k",
+                "line": 7,
+                "column": 8,
+                "end_line": 7,
+                "end_column": 11
+              },
+              "value_ty": {
+                "node": {
+                  "type": "Basic",
+                  "data": "Int"
+                },
+                "filename": "hello.k",
+                "line": 7,
+                "column": 14,
+                "end_line": 7,
+                "end_column": 17
+              }
+            },
+            "filename": "hello.k",
+            "line": 7,
+            "column": 4,
+            "end_line": 8,
+            "end_column": 0
+          }
+        }
+      },
+      "filename": "hello.k",
+      "line": 2,
+      "column": 0,
+      "end_line": 29,
+      "end_column": 8
+    }
+  ],
+  "comments": []
+}

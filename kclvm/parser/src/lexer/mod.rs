@@ -457,8 +457,9 @@ impl<'a> Lexer<'a> {
             // and the multi-character tokens that need to be lexed in ['kclvm-parser/lexer'] are only token '->'.
             // If a new multi-character token is added later, the corresponding operation can be added here.
             kclvm_lexer::TokenKind::Gt => {
-                if let Some(_) =
-                    tok_stream_builder.pop_if_tok_kind(&TokenKind::BinOp(BinOpToken::Minus))
+                if tok_stream_builder
+                    .pop_if_tok_kind(&TokenKind::BinOp(BinOpToken::Minus))
+                    .is_some()
                 {
                     // After the previous token pops up, 'self.tok_start_pos' needs to be updated.
                     if self.tok_start_pos >= new_byte_pos(1) {

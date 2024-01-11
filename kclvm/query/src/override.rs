@@ -6,6 +6,7 @@ use compiler_base_macros::bug;
 use kclvm_ast::config::try_get_config_expr_mut;
 use kclvm_ast::path::get_key_path;
 use kclvm_ast::walker::MutSelfMutWalker;
+use kclvm_ast::MAIN_PKG;
 use kclvm_ast::{ast, walk_if_mut};
 use kclvm_ast_pretty::print_ast_module;
 use kclvm_parser::parse_expr;
@@ -42,7 +43,7 @@ pub fn apply_overrides(
 ) -> Result<()> {
     for o in overrides {
         let pkgpath = if o.pkgpath.is_empty() {
-            &prog.main
+            MAIN_PKG
         } else {
             &o.pkgpath
         };
@@ -89,10 +90,10 @@ fn build_expr_from_string(value: &str) -> Option<ast::NodeRef<ast::Expr>> {
 /// # Examples
 ///
 /// ```no_check
-/// use kclvm_parser::parse_file;
+/// use kclvm_parser::parse_file_force_errors;
 /// use kclvm_tools::query::apply_override_on_module;
 ///
-/// let mut module = parse_file("", None).unwrap();
+/// let mut module = parse_file_force_errors("", None).unwrap();
 /// let override_spec = parse_override_spec("config.id=1").unwrap();
 /// let import_paths = vec!["path.to.pkg".to_string()];
 /// let result = apply_override_on_module(&mut module, override_spec, &import_paths).unwrap();

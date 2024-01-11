@@ -236,8 +236,8 @@ impl ExprGenerator<located_yaml::Yaml> for ExprBuilder {
                 }
             }
             located_yaml::YamlElt::Real(j_float) => {
-                if let Some(number_lit) = j_float.parse::<f64>().ok() {
-                    if format!("{}", number_lit) != j_float.to_string() {
+                if let Ok(number_lit) = j_float.parse::<f64>() {
+                    if format!("{}", number_lit) != *j_float {
                         bail!("{FAIL_LOAD_VALIDATED_ERR_MSG}, Unsupported Number Type",)
                     }
                     Ok(node_ref!(
@@ -314,10 +314,10 @@ impl ExprGenerator<located_yaml::Yaml> for ExprBuilder {
                                 names: vec![Node::new(
                                     s_name.to_string(),
                                     loc.0.clone(),
-                                    loc.1.clone() as u64,
-                                    loc.2.clone() as u64,
-                                    loc.3.clone() as u64,
-                                    loc.4.clone() as u64
+                                    loc.1,
+                                    loc.2,
+                                    loc.3,
+                                    loc.4
                                 )],
                                 pkgpath: String::new(),
                                 ctx: ExprContext::Load
@@ -363,7 +363,7 @@ impl ExprGenerator<json_spanned_value::Spanned<json_spanned_value::Value>> for E
                 loc
             )),
             json_spanned_value::Value::Bool(j_bool) => {
-                let name_const = match NameConstant::try_from(j_bool.clone()) {
+                let name_const = match NameConstant::try_from(*j_bool) {
                     Ok(nc) => nc,
                     Err(err) => {
                         bail!("{FAIL_LOAD_VALIDATED_ERR_MSG}, {err}")
@@ -483,10 +483,10 @@ impl ExprGenerator<json_spanned_value::Spanned<json_spanned_value::Value>> for E
                                 names: vec![Node::new(
                                     s_name.to_string(),
                                     loc.0.clone(),
-                                    loc.1.clone(),
-                                    loc.2.clone(),
-                                    loc.3.clone(),
-                                    loc.4.clone()
+                                    loc.1,
+                                    loc.2,
+                                    loc.3,
+                                    loc.4
                                 )],
                                 pkgpath: String::new(),
                                 ctx: ExprContext::Load

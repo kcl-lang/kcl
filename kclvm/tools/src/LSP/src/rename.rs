@@ -131,7 +131,7 @@ where
 
     let file_paths = package_path_to_file_path(pkg_path, vfs.clone());
 
-    if let Ok((prog, gs)) = parse_files_with_vfs(
+    if let Ok((_, gs)) = parse_files_with_vfs(
         pkg_path.to_string(),
         file_paths,
         vfs.clone(),
@@ -139,7 +139,7 @@ where
     ) {
         if let Some(symbol_ref) = gs
             .get_symbols()
-            .get_symbol_by_fully_qualified_name(&prog.main)
+            .get_symbol_by_fully_qualified_name(&kclvm_ast::MAIN_PKG)
         {
             let mut owner_ref = symbol_ref;
             let mut target = None;
@@ -186,8 +186,7 @@ where
 
     let files: Vec<&str> = file_paths.iter().map(|s| s.as_str()).collect();
     let sess: Arc<ParseSession> = Arc::new(ParseSession::default());
-    let mut program = load_program(sess.clone(), &files, Some(opt), None)
-        .map_err(|err| anyhow::anyhow!("Compile failed: {}", err))?;
+    let mut program = load_program(sess.clone(), &files, Some(opt), None)?.program;
 
     let prog_scope = resolve_program_with_opts(
         &mut program,

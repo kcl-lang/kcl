@@ -10,6 +10,9 @@ use anyhow::anyhow;
 use kcl_language_server::rename;
 use kclvm_config::settings::build_settings_pathbuf;
 use kclvm_driver::canonicalize_input_files;
+use kclvm_parser::load_program;
+use kclvm_parser::parse_file;
+use kclvm_parser::LoadProgramOptions;
 use kclvm_parser::ParseSession;
 use kclvm_query::get_schema_type;
 use kclvm_query::override_file;
@@ -27,6 +30,7 @@ use kclvm_tools::vet::validator::LoaderKind;
 use kclvm_tools::vet::validator::ValidateOption;
 use tempfile::NamedTempFile;
 
+use super::into::IntoError;
 use super::into::IntoLoadSettingsFiles;
 use super::ty::kcl_schema_ty_to_pb_ty;
 use super::util::transform_str_para;
@@ -57,6 +61,88 @@ impl KclvmServiceImpl {
     pub fn ping(&self, args: &PingArgs) -> anyhow::Result<PingResult> {
         Ok(PingResult {
             value: (args.value.clone()),
+        })
+    }
+
+    /// Parse KCL program with entry files.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
+    /// use kclvm_api::gpyrpc::*;
+    /// use std::path::Path;
+    /// // File case
+    /// let serv = KclvmServiceImpl::default();
+    /// let args = &ParseProgramArgs {
+    ///     paths: vec![Path::new(".").join("src").join("testdata").join("test.k").canonicalize().unwrap().display().to_string(),],
+    ///     ..Default::default()
+    /// };
+    /// let result = serv.parse_program(args).unwrap();
+    /// assert_eq!(result.errors.len(), 0);
+    /// assert_eq!(result.paths.len(), 1);
+    /// ```
+    pub fn parse_program(&self, args: &ParseProgramArgs) -> anyhow::Result<ParseProgramResult> {
+        let sess = Arc::new(ParseSession::default());
+        let mut package_maps = HashMap::new();
+        for p in &args.external_pkgs {
+            package_maps.insert(p.pkg_name.to_string(), p.pkg_path.to_string());
+        }
+        let paths: Vec<&str> = args.paths.iter().map(|p| p.as_str()).collect();
+        let result = load_program(
+            sess,
+            &paths,
+            Some(LoadProgramOptions {
+                k_code_list: args.sources.clone(),
+                package_maps,
+                ..Default::default()
+            }),
+            None,
+        )?;
+        let ast_json = serde_json::to_string(&result.program)?;
+
+        Ok(ParseProgramResult {
+            ast_json,
+            paths: result
+                .paths
+                .iter()
+                .map(|p| p.to_str().unwrap().to_string())
+                .collect(),
+            errors: result.errors.into_iter().map(|e| e.into_error()).collect(),
+        })
+    }
+
+    /// Parse KCL single file to Module AST JSON string with import
+    /// dependencies and parse errors.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
+    /// use kclvm_api::gpyrpc::*;
+    /// use std::path::Path;
+    /// // File case
+    /// let serv = KclvmServiceImpl::default();
+    /// let args = &ParseFileArgs {
+    ///     path: Path::new(".").join("src").join("testdata").join("parse").join("main.k").canonicalize().unwrap().display().to_string(),
+    ///     ..Default::default()
+    /// };
+    /// let result = serv.parse_file(args).unwrap();
+    /// assert_eq!(result.errors.len(), 0);
+    /// assert_eq!(result.deps.len(), 2);
+    /// ```
+    pub fn parse_file(&self, args: &ParseFileArgs) -> anyhow::Result<ParseFileResult> {
+        let result = parse_file(&args.path, transform_str_para(&args.source))?;
+        let ast_json = serde_json::to_string(&result.module)?;
+
+        Ok(ParseFileResult {
+            ast_json,
+            deps: result
+                .deps
+                .iter()
+                .map(|p| p.to_str().unwrap().to_string())
+                .collect(),
+            errors: result.errors.into_iter().map(|e| e.into_error()).collect(),
         })
     }
 

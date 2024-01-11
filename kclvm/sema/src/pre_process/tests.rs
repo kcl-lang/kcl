@@ -3,12 +3,13 @@ use std::sync::Arc;
 use super::*;
 use indexmap::IndexMap;
 use kclvm_ast::path::get_attr_paths_from_config_expr;
-use kclvm_parser::{load_program, parse_file, ParseSession};
+use kclvm_parser::{load_program, parse_file_force_errors, ParseSession};
 
 #[test]
 fn test_fix_qualified_identifier() {
     let mut module =
-        parse_file("./src/pre_process/test_data/qualified_identifier.k", None).unwrap();
+        parse_file_force_errors("./src/pre_process/test_data/qualified_identifier.k", None)
+            .unwrap();
     fix_qualified_identifier(&mut module, &mut IndexMap::default());
     if let ast::Stmt::Assign(assign_stmt) = &module.body[1].node {
         if let ast::Expr::Identifier(identifier) = &assign_stmt.value.node {
@@ -23,7 +24,8 @@ fn test_fix_qualified_identifier() {
 
 #[test]
 fn test_fix_raw_identifier_prefix() {
-    let mut module = parse_file("./src/pre_process/test_data/raw_identifier.k", None).unwrap();
+    let mut module =
+        parse_file_force_errors("./src/pre_process/test_data/raw_identifier.k", None).unwrap();
     if let ast::Stmt::Assign(assign_stmt) = &module.body[0].node {
         assert_eq!(assign_stmt.targets[0].node.names[0].node, "$schema")
     } else {
@@ -40,7 +42,8 @@ fn test_fix_raw_identifier_prefix() {
 #[test]
 fn test_transform_multi_assign() {
     let targets = ["a", "b", "c", "d"];
-    let mut module = parse_file("./src/pre_process/test_data/multi_assign.k", None).unwrap();
+    let mut module =
+        parse_file_force_errors("./src/pre_process/test_data/multi_assign.k", None).unwrap();
     if let ast::Stmt::Assign(assign_stmt) = &module.body[1].node {
         assert_eq!(assign_stmt.targets.len(), targets.len());
         for (i, target) in targets.iter().enumerate() {
@@ -74,7 +77,8 @@ fn test_config_merge() {
         None,
         None,
     )
-    .unwrap();
+    .unwrap()
+    .program;
     merge_program(&mut program);
     let modules = program.pkgs.get_mut(kclvm_ast::MAIN_PKG).unwrap();
     assert_eq!(modules.len(), 4);
@@ -116,7 +120,8 @@ fn test_config_override() {
         None,
         None,
     )
-    .unwrap();
+    .unwrap()
+    .program;
     merge_program(&mut program);
     let modules = program.pkgs.get_mut(kclvm_ast::MAIN_PKG).unwrap();
     assert_eq!(modules.len(), 1);
@@ -160,7 +165,8 @@ fn test_skip_merge_program() {
         None,
         None,
     )
-    .unwrap();
+    .unwrap()
+    .program;
     // skip merge program and save raw config ast node
     // merge_program(&mut program);
     let modules = program.pkgs.get_mut(kclvm_ast::MAIN_PKG).unwrap();

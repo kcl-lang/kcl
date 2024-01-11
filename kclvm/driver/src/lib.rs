@@ -7,7 +7,6 @@ pub const DEFAULT_PROJECT_FILE: &str = "project.yaml";
 mod tests;
 
 use glob::glob;
-use kclvm_ast::ast;
 use kclvm_config::{
     modfile::{get_pkg_root, KCL_FILE_EXTENSION, KCL_FILE_SUFFIX, KCL_MOD_PATH_ENV},
     path::ModRelativePath,
@@ -162,17 +161,6 @@ pub fn lookup_compile_unit(
 
                     let mut load_opt = kclvm_parser::LoadProgramOptions {
                         work_dir: work_dir.clone(),
-                        cmd_args: if let Some(options) = setting.clone().kcl_options {
-                            options
-                                .iter()
-                                .map(|o| ast::CmdArgSpec {
-                                    name: o.key.to_string(),
-                                    value: o.value.to_string(),
-                                })
-                                .collect()
-                        } else {
-                            vec![]
-                        },
                         ..Default::default()
                     };
                     match canonicalize_input_files(&files, work_dir, true) {

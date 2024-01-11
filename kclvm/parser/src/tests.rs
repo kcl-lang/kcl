@@ -141,14 +141,15 @@ pub(crate) fn parsing_file_ast_json(filename: &str, src: &str) -> String {
         Some(src.into()),
     )
     .unwrap();
-    serde_json::ser::to_string(&m).unwrap()
+    serde_json::ser::to_string_pretty(&m).unwrap()
 }
 
 pub(crate) fn parsing_file_string(filename: &str) -> String {
     let code = std::fs::read_to_string(filename).unwrap();
-    let m =
-        crate::parse_file(filename.trim_start_matches("testdata/"), Some(code)).expect(filename);
-    serde_json::ser::to_string(&m).unwrap()
+    let m = crate::parse_file(filename.trim_start_matches("testdata/"), Some(code))
+        .expect(filename)
+        .module;
+    serde_json::ser::to_string_pretty(&m).unwrap()
 }
 
 pub fn check_result_panic_info(result: Result<(), Box<dyn Any + Send>>) {
@@ -188,7 +189,7 @@ const PARSE_FILE_INVALID_TEST_CASES: &[&str] = &[
 #[test]
 pub fn test_parse_file_invalid() {
     for case in PARSE_FILE_INVALID_TEST_CASES {
-        let result = parse_file("test.k", Some((&case).to_string()));
+        let result = parse_file_force_errors("test.k", Some((&case).to_string()));
         assert!(result.is_err(), "case: {case}, result {result:?}");
     }
 }
@@ -291,7 +292,9 @@ pub fn test_import_vendor() {
     let test_fn =
         |test_case_name: &&str, pkgs: &Vec<&str>, module_cache: Option<KCLModuleCache>| {
             let test_case_path = dir.join(test_case_name).display().to_string();
-            let m = load_program(sess.clone(), &[&test_case_path], None, module_cache).unwrap();
+            let m = load_program(sess.clone(), &[&test_case_path], None, module_cache)
+                .unwrap()
+                .program;
             assert_eq!(m.pkgs.len(), pkgs.len());
             m.pkgs.into_iter().for_each(|(name, modules)| {
                 println!("{:?} - {:?}", test_case_name, name);
@@ -335,7 +338,9 @@ pub fn test_import_vendor_without_kclmod() {
 
     test_cases.into_iter().for_each(|(test_case_name, pkgs)| {
         let test_case_path = dir.join(test_case_name).display().to_string();
-        let m = load_program(sess.clone(), &[&test_case_path], None, None).unwrap();
+        let m = load_program(sess.clone(), &[&test_case_path], None, None)
+            .unwrap()
+            .program;
         assert_eq!(m.pkgs.len(), pkgs.len());
         m.pkgs.into_iter().for_each(|(name, modules)| {
             assert!(pkgs.contains(&name.as_str()));
@@ -569,8 +574,9 @@ fn test_import_vendor_by_external_arguments() {
             external_dir.join(dep_name).display().to_string(),
         );
         let test_case_path = dir.join(test_case_name).display().to_string();
-        let m = load_program(sess.clone(), &[&test_case_path], None, module_cache).unwrap();
-
+        let m = load_program(sess.clone(), &[&test_case_path], None, module_cache)
+            .unwrap()
+            .program;
         assert_eq!(m.pkgs.len(), pkgs.len());
         m.pkgs.into_iter().for_each(|(name, modules)| {
             assert!(pkgs.contains(&name.as_str()));
@@ -692,7 +698,7 @@ fn test_dir_with_k_code_list() {
         None,
     ) {
         Ok(_) => panic!("unreachable code"),
-        Err(err) => assert_eq!(err, "Invalid code list"),
+        Err(err) => assert!(err.to_string().contains("Invalid code list")),
     }
 
     match load_program(
@@ -702,7 +708,7 @@ fn test_dir_with_k_code_list() {
         Some(KCLModuleCache::default()),
     ) {
         Ok(_) => panic!("unreachable code"),
-        Err(err) => assert_eq!(err, "Invalid code list"),
+        Err(err) => assert!(err.to_string().contains("Invalid code list")),
     }
 }
 

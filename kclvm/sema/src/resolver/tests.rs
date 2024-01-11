@@ -6,16 +6,38 @@ use crate::resolver::resolve_program;
 use crate::resolver::resolve_program_with_opts;
 use crate::resolver::scope::*;
 use crate::ty::{Type, TypeKind};
+use anyhow::Result;
 use kclvm_ast::ast;
-use kclvm_ast::ast::CmdArgSpec;
 use kclvm_ast::pos::ContainsPos;
 use kclvm_error::*;
+use kclvm_parser::load_program;
+use kclvm_parser::parse_file_force_errors;
 use kclvm_parser::LoadProgramOptions;
 use kclvm_parser::ParseSession;
-use kclvm_parser::{load_program, parse_program};
+use kclvm_utils::path::PathPrefix;
+use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
 use std::sync::Mutex;
+
+pub fn parse_program(filename: &str) -> Result<ast::Program> {
+    let abspath = std::fs::canonicalize(std::path::PathBuf::from(filename)).unwrap();
+
+    let mut prog = ast::Program {
+        root: abspath.parent().unwrap().adjust_canonicalization(),
+        pkgs: HashMap::new(),
+    };
+
+    let mut module = parse_file_force_errors(abspath.to_str().unwrap(), None)?;
+    module.filename = filename.to_string();
+    module.pkg = kclvm_ast::MAIN_PKG.to_string();
+    module.name = kclvm_ast::MAIN_PKG.to_string();
+
+    prog.pkgs
+        .insert(kclvm_ast::MAIN_PKG.to_string(), vec![module]);
+
+    Ok(prog)
+}
 
 #[test]
 fn test_scope() {
@@ -87,7 +109,8 @@ fn test_pkg_init_in_schema_resolve() {
         None,
         None,
     )
-    .unwrap();
+    .unwrap()
+    .program;
     let scope = resolve_program(&mut program);
     assert_eq!(
         scope.pkgpaths(),
@@ -151,7 +174,8 @@ fn test_resolve_program_redefine() {
         None,
         None,
     )
-    .unwrap();
+    .unwrap()
+    .program;
 
     let scope = resolve_program(&mut program);
     assert_eq!(scope.handler.diagnostics.len(), 2);
@@ -190,7 +214,8 @@ fn test_resolve_program_cycle_reference_fail() {
         None,
         None,
     )
-    .unwrap();
+    .unwrap()
+    .program;
     let scope = resolve_program(&mut program);
     let err_messages = [
         "There is a circular import reference between module file1 and file2",
@@ -216,7 +241,8 @@ fn test_record_used_module() {
         None,
         None,
     )
-    .unwrap();
+    .unwrap()
+    .program;
     let scope = resolve_program(&mut program);
     let main_scope = scope
         .scope_map
@@ -335,7 +361,8 @@ fn test_lint() {
         None,
         None,
     )
-    .unwrap();
+    .unwrap()
+    .program;
     let opts = Options::default();
     pre_process_program(&mut program, &opts);
     let mut resolver = Resolver::new(&program, opts);
@@ -480,7 +507,8 @@ fn test_pkg_scope() {
         None,
         None,
     )
-    .unwrap();
+    .unwrap()
+    .program;
     let scope = resolve_program(&mut program);
 
     assert_eq!(scope.scope_map.len(), 2);
@@ -530,7 +558,8 @@ fn test_system_package() {
         None,
         None,
     )
-    .unwrap();
+    .unwrap()
+    .program;
     let scope = resolve_program(&mut program);
     let main_scope = scope
         .scope_map
@@ -563,7 +592,8 @@ fn test_resolve_program_import_suggest() {
         None,
         None,
     )
-    .unwrap();
+    .unwrap()
+    .program;
     let scope = resolve_program(&mut program);
     assert_eq!(scope.handler.diagnostics.len(), 2);
     let diag = &scope.handler.diagnostics[0];
@@ -587,7 +617,8 @@ fn test_resolve_assignment_in_lambda() {
         None,
         None,
     )
-    .unwrap();
+    .unwrap()
+    .program;
     let scope = resolve_program(&mut program);
     let main_scope = scope.scope_map.get("__main__").unwrap().clone();
     assert_eq!(main_scope.borrow().children.len(), 1);
@@ -606,7 +637,8 @@ fn test_resolve_function_with_default_values() {
         None,
         None,
     )
-    .unwrap();
+    .unwrap()
+    .program;
     let scope = resolve_program(&mut program);
     assert!(!scope.handler.has_errors());
     let main_scope = scope.main_scope().unwrap();
@@ -622,24 +654,15 @@ fn test_resolve_function_with_default_values() {
 #[test]
 fn test_assignment_type_annotation_check_in_lambda() {
     let sess = Arc::new(ParseSession::default());
-    let mut opts = LoadProgramOptions::default();
-    opts.cmd_args = vec![
-        CmdArgSpec {
-            name: "params".to_string(),
-            value: "annotations: {a: b}".to_string(),
-        },
-        CmdArgSpec {
-            name: "items".to_string(),
-            value: "metadata: {annotations:{c: d}}".to_string(),
-        },
-    ];
+    let opts = LoadProgramOptions::default();
     let mut program = load_program(
         sess.clone(),
         &["./src/resolver/test_data/annotation_check_assignment.k"],
         Some(opts),
         None,
     )
-    .unwrap();
+    .unwrap()
+    .program;
     let scope = resolve_program(&mut program);
     assert_eq!(scope.handler.diagnostics.len(), 0);
 }
@@ -653,7 +676,8 @@ fn test_resolve_lambda_assignment_diagnostic() {
         None,
         None,
     )
-    .unwrap();
+    .unwrap()
+    .program;
     let scope = resolve_program(&mut program);
     assert_eq!(scope.handler.diagnostics.len(), 1);
     let diag = &scope.handler.diagnostics[0];
@@ -674,7 +698,8 @@ fn test_ty_check_in_dict_assign_to_schema() {
         None,
         None,
     )
-    .unwrap();
+    .unwrap()
+    .program;
     let scope = resolve_program(&mut program);
     assert_eq!(scope.handler.diagnostics.len(), 1);
     let diag = &scope.handler.diagnostics[0];
@@ -696,7 +721,8 @@ fn test_pkg_not_found_suggestion() {
         None,
         None,
     )
-    .unwrap();
+    .unwrap()
+    .program;
     let scope = resolve_program(&mut program);
     assert_eq!(scope.handler.diagnostics.len(), 4);
     let diag = &scope.handler.diagnostics[1];
@@ -724,7 +750,8 @@ fn undef_lambda_param() {
         None,
         None,
     )
-    .unwrap();
+    .unwrap()
+    .program;
     let scope = resolve_program(&mut program);
     assert_eq!(scope.handler.diagnostics.len(), 1);
 
@@ -762,7 +789,8 @@ fn test_schema_params_count() {
         None,
         None,
     )
-    .unwrap();
+    .unwrap()
+    .program;
     let scope = resolve_program(&mut program);
     assert_eq!(scope.handler.diagnostics.len(), 1);
     let diag = &scope.handler.diagnostics[0];
@@ -786,7 +814,8 @@ fn test_set_ty_in_lambda() {
         None,
         None,
     )
-    .unwrap();
+    .unwrap()
+    .program;
     assert_eq!(
         resolve_program(&mut program)
             .main_scope()
@@ -811,7 +840,8 @@ fn test_pkg_asname() {
         None,
         None,
     )
-    .unwrap();
+    .unwrap()
+    .program;
     let scope = resolve_program(&mut program);
     let diags = scope.handler.diagnostics;
     assert_eq!(diags.len(), 6);

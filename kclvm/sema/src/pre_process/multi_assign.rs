@@ -7,10 +7,10 @@ use kclvm_ast::{ast, walker::MutSelfMutWalker};
 /// # Examples
 ///
 /// ```
-/// use kclvm_parser::parse_file;
+/// use kclvm_parser::parse_file_force_errors;
 /// use kclvm_sema::pre_process::transform_multi_assign;
 ///
-/// let mut module = parse_file("", Some("a = b = Config {}".to_string())).unwrap();
+/// let mut module = parse_file_force_errors("", Some("a = b = Config {}".to_string())).unwrap();
 /// assert_eq!(module.body.len(), 1);
 /// transform_multi_assign(&mut module);
 /// assert_eq!(module.body.len(), 2);

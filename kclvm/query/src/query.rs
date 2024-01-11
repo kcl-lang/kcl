@@ -194,7 +194,7 @@ fn resolve_file(opts: &CompilationOptions) -> Result<Rc<RefCell<Scope>>> {
         opts.loader_opts.clone(),
         None,
     ) {
-        Ok(p) => p,
+        Ok(p) => p.program,
         Err(err) => {
             return Err(anyhow::anyhow!("{err}"));
         }

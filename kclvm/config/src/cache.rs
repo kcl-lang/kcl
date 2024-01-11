@@ -1,6 +1,7 @@
 // Copyright 2021 The KCL Authors. All rights reserved.
 extern crate chrono;
 use super::modfile::KCL_FILE_SUFFIX;
+use anyhow::Result;
 use crypto::digest::Digest;
 use crypto::md5::Md5;
 use fslock::LockFile;
@@ -102,12 +103,16 @@ pub fn save_pkg_cache<T>(
     data: T,
     option: CacheOption,
     external_pkgs: &HashMap<String, String>,
-) -> Result<(), String>
+) -> Result<()>
 where
     T: Serialize,
 {
     if root.is_empty() || pkgpath.is_empty() {
-        return Err("failed to save cache".to_string());
+        return Err(anyhow::anyhow!(
+            "failed to save package cache {} to root {}",
+            pkgpath,
+            root
+        ));
     }
     let dst_filename = get_cache_filename(root, target, pkgpath, Some(&option.cache_dir));
     let real_path = get_pkg_realpath_from_pkgpath(root, pkgpath);
@@ -117,7 +122,9 @@ where
         // If the file does not exist, it is an external package.
         let pkg_name = parse_external_pkg_name(pkgpath)?;
         let real_path = get_pkg_realpath_from_pkgpath(
-            external_pkgs.get(&pkg_name).ok_or("failed to save cache")?,
+            external_pkgs
+                .get(&pkg_name)
+                .ok_or(anyhow::anyhow!("failed to save cache"))?,
             &rm_external_pkg_name(pkgpath)?,
         );
         if Path::new(&real_path).exists() {

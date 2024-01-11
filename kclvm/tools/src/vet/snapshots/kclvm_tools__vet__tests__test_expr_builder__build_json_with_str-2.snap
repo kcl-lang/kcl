@@ -1,0 +1,178 @@
+---
+source: tools/src/vet/tests.rs
+expression: got_ast_json_str
+---
+{
+  "column": 0,
+  "end_column": 1,
+  "end_line": 5,
+  "filename": "",
+  "line": 1,
+  "node": {
+    "data": {
+      "args": [],
+      "config": {
+        "column": 0,
+        "end_column": 1,
+        "end_line": 5,
+        "filename": "",
+        "line": 1,
+        "node": {
+          "data": {
+            "items": [
+              {
+                "column": 0,
+                "end_column": 1,
+                "end_line": 5,
+                "filename": "",
+                "line": 1,
+                "node": {
+                  "insert_index": -1,
+                  "key": {
+                    "column": 4,
+                    "end_column": 9,
+                    "end_line": 3,
+                    "filename": "",
+                    "line": 3,
+                    "node": {
+                      "data": {
+                        "is_long_string": false,
+                        "raw_value": "\"age\"",
+                        "value": "age"
+                      },
+                      "type": "StringLit"
+                    }
+                  },
+                  "operation": "Union",
+                  "value": {
+                    "column": 11,
+                    "end_column": 13,
+                    "end_line": 3,
+                    "filename": "",
+                    "line": 3,
+                    "node": {
+                      "data": {
+                        "binary_suffix": null,
+                        "value": {
+                          "data": 18,
+                          "type": "Int"
+                        }
+                      },
+                      "type": "NumberLit"
+                    }
+                  }
+                }
+              },
+              {
+                "column": 0,
+                "end_column": 1,
+                "end_line": 5,
+                "filename": "",
+                "line": 1,
+                "node": {
+                  "insert_index": -1,
+                  "key": {
+                    "column": 4,
+                    "end_column": 13,
+                    "end_line": 4,
+                    "filename": "",
+                    "line": 4,
+                    "node": {
+                      "data": {
+                        "is_long_string": false,
+                        "raw_value": "\"message\"",
+                        "value": "message"
+                      },
+                      "type": "StringLit"
+                    }
+                  },
+                  "operation": "Union",
+                  "value": {
+                    "column": 15,
+                    "end_column": 30,
+                    "end_line": 4,
+                    "filename": "",
+                    "line": 4,
+                    "node": {
+                      "data": {
+                        "is_long_string": false,
+                        "raw_value": "\"This is Alice\"",
+                        "value": "This is Alice"
+                      },
+                      "type": "StringLit"
+                    }
+                  }
+                }
+              },
+              {
+                "column": 0,
+                "end_column": 1,
+                "end_line": 5,
+                "filename": "",
+                "line": 1,
+                "node": {
+                  "insert_index": -1,
+                  "key": {
+                    "column": 4,
+                    "end_column": 10,
+                    "end_line": 2,
+                    "filename": "",
+                    "line": 2,
+                    "node": {
+                      "data": {
+                        "is_long_string": false,
+                        "raw_value": "\"name\"",
+                        "value": "name"
+                      },
+                      "type": "StringLit"
+                    }
+                  },
+                  "operation": "Union",
+                  "value": {
+                    "column": 12,
+                    "end_column": 19,
+                    "end_line": 2,
+                    "filename": "",
+                    "line": 2,
+                    "node": {
+                      "data": {
+                        "is_long_string": false,
+                        "raw_value": "\"Alice\"",
+                        "value": "Alice"
+                      },
+                      "type": "StringLit"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "type": "Config"
+        }
+      },
+      "kwargs": [],
+      "name": {
+        "column": 0,
+        "end_column": 1,
+        "end_line": 5,
+        "filename": "",
+        "line": 1,
+        "node": {
+          "ctx": "Load",
+          "names": [
+            {
+              "column": 0,
+              "end_column": 1,
+              "end_line": 5,
+              "filename": "",
+              "line": 1,
+              "node": "simple"
+            }
+          ],
+          "pkgpath": ""
+        }
+      }
+    },
+    "type": "Schema"
+  }
+}

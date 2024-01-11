@@ -266,18 +266,12 @@ pub struct DecoratorValue {
 
 #[derive(PartialEq, Eq, Clone, Default, Debug)]
 pub struct FuncValue {
-    // TODO (refactor): SchemaFuncValue
     pub fn_ptr: u64,
     pub check_fn_ptr: u64,
     pub closure: ValueRef,
     pub name: String,
     pub runtime_type: String,
     pub is_external: bool,
-}
-
-#[derive(PartialEq, Clone, Default, Debug)]
-pub struct ErrorValue {
-    pub errors: Vec<KclError>,
 }
 
 #[derive(PartialEq, Eq, Clone, Default, Debug)]
