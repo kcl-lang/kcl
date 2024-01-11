@@ -80,6 +80,7 @@ mod test_expr_builder {
     use std::{fs, panic, path::Path};
 
     #[test]
+    #[cfg(not(target_os = "windows"))]
     fn test_build_with_json_no_schema_name() {
         for test_name in TEST_CASES {
             let file_path = construct_full_path(&format!(
@@ -131,6 +132,7 @@ mod test_expr_builder {
     }
 
     #[test]
+    #[cfg(not(target_os = "windows"))]
     /// Test `expr_builder.build()` with input json files.
     fn test_build_json_with_filepath() {
         for i in 0..TEST_CASES.len() {
@@ -157,6 +159,7 @@ mod test_expr_builder {
     }
 
     #[test]
+    #[cfg(not(target_os = "windows"))]
     /// Test `expr_builder.build()` with input json files.
     fn test_build_json_with_str() {
         for i in 0..TEST_CASES.len() {

@@ -153,7 +153,7 @@ pub fn exec_program(sess: Arc<ParseSession>, args: &ExecProgramArgs) -> Result<E
 ///
 /// // Parse kcl file
 /// let kcl_path = "./src/test_datas/init_check_order_0/main.k";
-/// let prog = load_program(sess.clone(), &[kcl_path], Some(opts), None).unwrap();
+/// let prog = load_program(sess.clone(), &[kcl_path], Some(opts), None).unwrap().program;
 ///     
 /// // Resolve ast, generate libs, link libs and execute.
 /// // Result is the kcl in json format.
