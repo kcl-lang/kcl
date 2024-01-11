@@ -1,0 +1,5 @@
+---
+source: tools/src/vet/tests.rs
+expression: got_ast_yaml_str
+---
+{"node":{"type":"NumberLit","data":{"binary_suffix":null,"value":{"type":"Int","data":1}}},"filename":"<workspace>/plain_value.k.yaml","line":1,"column":0,"end_line":0,"end_column":0}

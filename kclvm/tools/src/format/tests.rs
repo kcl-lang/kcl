@@ -32,7 +32,7 @@ const TEST_CASES: &[&str; 22] = &[
 ];
 
 fn read_data(data_name: &str) -> (String, String) {
-    let src = std::fs::read_to_string(&format!(
+    let src = std::fs::read_to_string(format!(
         "./src/format/test_data/format_data/{}{}",
         data_name, FILE_INPUT_SUFFIX
     ))
@@ -40,7 +40,7 @@ fn read_data(data_name: &str) -> (String, String) {
 
     (
         format_source("", &src, &Default::default()).unwrap().0,
-        std::fs::read_to_string(&format!(
+        std::fs::read_to_string(format!(
             "./src/format/test_data/format_data/{}{}",
             data_name, FILE_OUTPUT_SUFFIX
         ))
@@ -187,7 +187,7 @@ fn test_format_integration_konfig() -> Result<()> {
     let files = get_files(konfig_path, true, true, ".k");
     for file in &files {
         // Skip test and hidden files.
-        if file.ends_with("_test.k") || file.starts_with("_") {
+        if file.ends_with("_test.k") || file.starts_with('_') {
             continue;
         }
         assert!(

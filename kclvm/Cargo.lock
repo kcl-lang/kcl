@@ -1828,6 +1828,7 @@ dependencies = [
  "criterion 0.3.6",
  "fancy-regex",
  "indexmap 1.9.3",
+ "insta",
  "json-spanned-value",
  "kclvm-ast",
  "kclvm-ast-pretty",

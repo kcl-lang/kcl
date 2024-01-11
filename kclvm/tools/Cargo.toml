@@ -36,6 +36,7 @@ located_yaml = "0.2.1"
 [dev-dependencies]
 pretty_assertions = "1.2.1"
 criterion = "0.3"
+insta = "1.8.0"
 
 [[bench]]
 name = "benchmark"

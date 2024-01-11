@@ -14,7 +14,6 @@ pub(crate) fn rel_path() -> String {
         .display()
         .to_string()
 }
-const NO_SCHEMA_NAME_PATH: &str = "no_schema_name";
 
 const TEST_CASES: &[&str] = &[
     "test.k",
@@ -67,7 +66,6 @@ pub(crate) fn path_to_windows(panic_info: &mut PanicInfo) {
 
 mod test_expr_builder {
     use regex::Regex;
-    use serde_json::Value;
 
     use crate::{
         util::loader::LoaderKind,
@@ -75,15 +73,14 @@ mod test_expr_builder {
             expr_builder::ExprBuilder,
             tests::{
                 construct_full_path, deal_windows_filepath, FILE_EXTENSIONS, INVALID_FILE_RESULT,
-                LOADER_KIND, NO_SCHEMA_NAME_PATH, SCHEMA_NAMES, TEST_CASES,
+                LOADER_KIND, SCHEMA_NAMES, TEST_CASES,
             },
         },
     };
     use std::{
-        fs::{self, File},
-        io::Write,
+        fs,
         panic,
-        path::{Path, PathBuf},
+        path::Path,
     };
 
     #[test]
@@ -93,8 +90,7 @@ mod test_expr_builder {
                 "{}.{}",
                 Path::new(FILE_EXTENSIONS[0])
                     .join(test_name)
-                    .display()
-                    .to_string(),
+                    .display(),
                 FILE_EXTENSIONS[0]
             ))
             .unwrap();
@@ -107,32 +103,12 @@ mod test_expr_builder {
                 .unwrap()
                 .replace(
                     &deal_windows_filepath(construct_full_path("json").unwrap(), |s| {
-                        s.replace("\\", "\\\\")
+                        s.replace('\\', "\\\\")
                     }),
                     "<workspace>",
                 );
 
-            let got_ast_json: Value = serde_json::from_str(&got_ast_json_str).unwrap();
-
-            #[cfg(not(target_os = "windows"))]
-            let test_case_ty = "json";
-            #[cfg(target_os = "windows")]
-            let test_case_ty = "json_win";
-
-            let expect_file_path = construct_full_path(&format!(
-                "{}.{}",
-                Path::new(test_case_ty)
-                    .join(NO_SCHEMA_NAME_PATH)
-                    .join(test_name)
-                    .display()
-                    .to_string(),
-                FILE_EXTENSIONS[2]
-            ))
-            .unwrap();
-
-            let f = File::open(expect_file_path.clone()).unwrap();
-            let expect_ast_json: serde_json::Value = serde_json::from_reader(f).unwrap();
-            assert_eq!(expect_ast_json, got_ast_json)
+            insta::assert_snapshot!(got_ast_json_str);
         }
     }
 
@@ -151,28 +127,12 @@ mod test_expr_builder {
 
             let got_ast_yaml_str = serde_json::to_string(&got_ast_yaml).unwrap().replace(
                 &deal_windows_filepath(construct_full_path("yaml").unwrap(), |s| {
-                    s.replace("\\", "\\\\")
+                    s.replace('\\', "\\\\")
                 }),
                 "<workspace>",
             );
 
-            let got_ast_yaml: Value = serde_yaml::from_str(&got_ast_yaml_str).unwrap();
-
-            #[cfg(not(target_os = "windows"))]
-            let test_case_ty = "yaml";
-            #[cfg(target_os = "windows")]
-            let test_case_ty = "yaml_win";
-
-            let expect_file_path = construct_full_path(&format!(
-                "{}/{}/{}.{}",
-                test_case_ty, NO_SCHEMA_NAME_PATH, test_name, FILE_EXTENSIONS[3]
-            ))
-            .unwrap();
-
-            let f = File::open(expect_file_path.clone()).unwrap();
-
-            let expect_ast_yaml: Value = serde_yaml::from_reader(f).unwrap();
-            assert_eq!(expect_ast_yaml, got_ast_yaml);
+            insta::assert_snapshot!(got_ast_yaml_str)
         }
     }
 
@@ -193,27 +153,12 @@ mod test_expr_builder {
                 .unwrap()
                 .replace(
                     &deal_windows_filepath(construct_full_path("json").unwrap(), |s| {
-                        s.replace("\\", "\\\\")
+                        s.replace('\\', "\\\\")
                     }),
                     "<workspace>",
                 );
 
-            let got_ast_json: Value = serde_json::from_str(&got_ast_json_str).unwrap();
-
-            #[cfg(not(target_os = "windows"))]
-            let test_case_ty = "json";
-            #[cfg(target_os = "windows")]
-            let test_case_ty = "json_win";
-            let expect_file_path = construct_full_path(&format!(
-                "{}/{}.{}",
-                test_case_ty, TEST_CASES[i], FILE_EXTENSIONS[2]
-            ))
-            .unwrap();
-
-            let f = File::open(expect_file_path.clone()).unwrap();
-            let expect_ast_json: serde_json::Value = serde_json::from_reader(f).unwrap();
-
-            assert_eq!(expect_ast_json, got_ast_json)
+            insta::assert_snapshot!(got_ast_json_str);
         }
     }
 
@@ -237,32 +182,12 @@ mod test_expr_builder {
                 .unwrap()
                 .replace(
                     &deal_windows_filepath(construct_full_path("json").unwrap(), |s| {
-                        s.replace("\\", "\\\\")
+                        s.replace('\\', "\\\\")
                     }),
                     "<workspace>",
                 );
 
-            let got_ast_json: Value = serde_json::from_str(&got_ast_json_str).unwrap();
-
-            #[cfg(not(target_os = "windows"))]
-            let test_case_ty = "json_str";
-            #[cfg(target_os = "windows")]
-            let test_case_ty = "json_str_win";
-
-            let expect_file_path = construct_full_path(&format!(
-                "{}/{}.{}",
-                test_case_ty, TEST_CASES[i], FILE_EXTENSIONS[2]
-            ))
-            .unwrap();
-            let f = File::open(expect_file_path.clone()).unwrap();
-            let expect_ast_json: serde_json::Value = serde_json::from_reader(f).unwrap();
-            let mut expect_path = PathBuf::from(construct_full_path("json").unwrap());
-            expect_path.push("");
-            let expect_ast_json_str = serde_json::to_string(&expect_ast_json)
-                .unwrap()
-                .replace("<workspace>", &expect_path.display().to_string());
-            let expect_ast_json: Value = serde_json::from_str(&expect_ast_json_str).unwrap();
-            assert_eq!(expect_ast_json, got_ast_json)
+            insta::assert_snapshot!(got_ast_json_str);
         }
     }
 
@@ -281,28 +206,12 @@ mod test_expr_builder {
 
             let got_ast_yaml_str = serde_json::to_string(&got_ast_yaml).unwrap().replace(
                 &deal_windows_filepath(construct_full_path("yaml").unwrap(), |s| {
-                    s.replace("\\", "\\\\")
+                    s.replace('\\', "\\\\")
                 }),
                 "<workspace>",
             );
 
-            let got_ast_yaml: serde_yaml::Value = serde_yaml::from_str(&got_ast_yaml_str).unwrap();
-
-            #[cfg(not(target_os = "windows"))]
-            let test_case_ty = "yaml";
-            #[cfg(target_os = "windows")]
-            let test_case_ty = "yaml_win";
-
-            let expect_file_path = construct_full_path(&format!(
-                "{}/{}.{}",
-                test_case_ty, TEST_CASES[i], FILE_EXTENSIONS[3]
-            ))
-            .unwrap();
-
-            let f = File::open(expect_file_path.clone()).unwrap();
-            let expect_ast_yaml: serde_yaml::Value = serde_yaml::from_reader(f).unwrap();
-
-            assert_eq!(expect_ast_yaml, got_ast_yaml)
+            insta::assert_snapshot!(got_ast_yaml_str);
         }
     }
 
@@ -458,7 +367,7 @@ mod test_validater {
             for case in KCL_TEST_CASES {
                 let validated_file_path = construct_full_path(&format!(
                     "{}.{}",
-                    Path::new("validate_cases").join(case).display().to_string(),
+                    Path::new("validate_cases").join(case).display(),
                     file_suffix
                 ))
                 .unwrap();
@@ -495,8 +404,7 @@ mod test_validater {
                     "{}.{}",
                     Path::new("invalid_vet_cases_json")
                         .join(case)
-                        .display()
-                        .to_string(),
+                        .display(),
                     "json"
                 ))
                 .unwrap();
@@ -530,13 +438,13 @@ mod test_validater {
                 );
 
                 let result = validate(opt).unwrap_err();
-                println!("{}", result.to_string());
+                println!("{}", result);
                 assert!(
-                    result.to_string().replace("\\", "").contains(
+                    result.to_string().replace('\\', "").contains(
                         &deal_windows_filepath(root_path.join(case).display().to_string(), |s| {
-                            s.replace("\\", "\\\\")
+                            s.replace('\\', "\\\\")
                         })
-                        .replace("\\", "")
+                        .replace('\\', "")
                     ),
                     "{result}"
                 );
@@ -553,8 +461,7 @@ mod test_validater {
                 "{}.{}",
                 Path::new("invalid_vet_cases_yaml")
                     .join(case)
-                    .display()
-                    .to_string(),
+                    .display(),
                 "yaml"
             ))
             .unwrap();
@@ -588,13 +495,13 @@ mod test_validater {
             );
 
             let result = validate(opt).unwrap_err();
-            println!("{}", result.to_string());
+            println!("{}", result);
             assert!(
-                result.to_string().replace("\\", "").contains(
+                result.to_string().replace('\\', "").contains(
                     &deal_windows_filepath(root_path.join(case).display().to_string(), |s| {
-                        s.replace("\\", "\\\\")
+                        s.replace('\\', "\\\\")
                     })
-                    .replace("\\", "")
+                    .replace('\\', "")
                 ),
                 "{result}"
             );
@@ -608,8 +515,7 @@ mod test_validater {
                     "{}.{}",
                     Path::new("invalid_validate_cases")
                         .join(case)
-                        .display()
-                        .to_string(),
+                        .display(),
                     file_suffix
                 ))
                 .unwrap();

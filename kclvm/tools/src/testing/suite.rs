@@ -129,7 +129,7 @@ pub struct TestCase;
 
 /// Load test suite from path
 pub fn load_test_suites<P: AsRef<str>>(path: P, opts: &TestOptions) -> Result<Vec<TestSuite>> {
-    let pkg_list = get_pkg_list(&path.as_ref())?;
+    let pkg_list = get_pkg_list(path.as_ref())?;
     let mut suites = vec![];
     for pkg in &pkg_list {
         let (normal_files, test_files) = get_test_files(pkg)?;
@@ -166,12 +166,12 @@ fn get_test_files<P: AsRef<Path>>(pkg: P) -> Result<(Vec<String>, Vec<String>)> 
     let files = get_kcl_files(pkg, false)?;
     let normal_files = files
         .iter()
-        .filter(|x| !x.starts_with("_") && !x.ends_with(TEST_FILE_SUFFIX))
+        .filter(|x| !x.starts_with('_') && !x.ends_with(TEST_FILE_SUFFIX))
         .cloned()
         .collect::<Vec<String>>();
     let test_files = files
         .iter()
-        .filter(|x| !x.starts_with("_") && x.ends_with(TEST_FILE_SUFFIX))
+        .filter(|x| !x.starts_with('_') && x.ends_with(TEST_FILE_SUFFIX))
         .cloned()
         .collect::<Vec<String>>();
     Ok((normal_files, test_files))
