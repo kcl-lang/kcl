@@ -284,12 +284,8 @@ pub fn get_compile_entries_from_paths(
     }
     let mut result = Entries::default();
     let mut k_code_queue = VecDeque::from(opts.k_code_list.clone());
-    for (i, s) in file_paths.iter().enumerate() {
+    for s in file_paths {
         let path = ModRelativePath::from(s.to_string());
-
-        if path.is_dir() && opts.k_code_list.len() > i {
-            return Err(anyhow::anyhow!("Invalid code list with path {}", s));
-        }
 
         // If the path is a [`ModRelativePath`] with prefix '${<package_name>:KCL_MOD}',
         // calculate the real path and the package name.
