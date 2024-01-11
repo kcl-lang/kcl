@@ -6,11 +6,6 @@ syntax = "proto3";
 
 package gpyrpc;
 
-import "google/protobuf/any.proto";
-import "google/protobuf/descriptor.proto";
-
-// ----------------------------------------------------------------------------
-
 // kcl main.k -E pkg_name=pkg_path
 message CmdExternalPkgSpec {
 	string pkg_name = 1;
