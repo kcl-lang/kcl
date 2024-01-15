@@ -28,9 +28,11 @@ pub fn emit_code(
 ) -> Result<(), Box<dyn error::Error>> {
     // Init LLVM targets
     LLVM_INIT.get_or_init(|| {
-        // TODO: linux arm and WASM target.
+        // TODO: WASM target.
         #[cfg(target_os = "linux")]
         inkwell::targets::Target::initialize_x86(&Default::default());
+        #[cfg(all(target_os = "linux", target_arch = "aarch64"))]
+        inkwell::targets::Target::initialize_aarch64(&Default::default());
         #[cfg(not(target_os = "linux"))]
         inkwell::targets::Target::initialize_all(&Default::default());
     });

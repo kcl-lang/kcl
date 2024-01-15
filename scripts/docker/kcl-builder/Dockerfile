@@ -43,7 +43,7 @@ RUN apt-get install -y clang-12 lld-12
 RUN ln -sf /usr/bin/clang-12   /usr/bin/clang
 RUN ln -sf /usr/bin/wasm-ld-12 /usr/bin/wasm-ld
 
-# golang 1.19+
+# golang 1.20+
 RUN mkdir -p /root/download && cd /root/download \
   && wget https://dl.google.com/go/go1.20.5.linux-amd64.tar.gz \
   && tar -zxvf go1.20.5.linux-amd64.tar.gz \
