@@ -1,7 +1,7 @@
 // Copyright 2021 The KCL Authors. All rights reserved.
 #![allow(clippy::missing_safety_doc)]
 
-use std::mem::transmute_copy;
+use std::{mem::transmute_copy, os::raw::c_char};
 
 use crate::*;
 
@@ -24,7 +24,7 @@ pub type kclvm_value_ref_t = ValueRef;
 pub type kclvm_iterator_t = ValueIterator;
 
 #[allow(non_camel_case_types)]
-pub type kclvm_char_t = i8;
+pub type kclvm_char_t = c_char;
 
 #[allow(non_camel_case_types)]
 pub type kclvm_size_t = i32;

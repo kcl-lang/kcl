@@ -20,7 +20,7 @@ type kclvm_type_t = Type;
 type kclvm_value_t = Value;
 
 #[allow(dead_code, non_camel_case_types)]
-type kclvm_char_t = i8;
+type kclvm_char_t = c_char;
 
 #[allow(dead_code, non_camel_case_types)]
 type kclvm_size_t = i32;

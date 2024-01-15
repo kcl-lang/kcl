@@ -1,6 +1,8 @@
 // Copyright 2021 The KCL Authors. All rights reserved.
 #![allow(clippy::missing_safety_doc)]
 
+use std::os::raw::c_char;
+
 use crate::{Context, ValueRef};
 
 /// New a mutable raw pointer.
@@ -35,7 +37,7 @@ pub(crate) fn mut_ptr_as_ref<'a, T>(p: *mut T) -> &'a mut T {
 }
 
 /// Convert a C str pointer to a Rust &str.
-pub(crate) fn c2str<'a>(s: *const i8) -> &'a str {
+pub(crate) fn c2str<'a>(s: *const c_char) -> &'a str {
     let s = unsafe { std::ffi::CStr::from_ptr(s) }.to_str().unwrap();
     s
 }
