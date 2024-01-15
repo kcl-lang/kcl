@@ -23,9 +23,9 @@ pub extern "C" fn kclvm_plugin_init(
 }
 
 // import kcl_plugin.hello
-// hello.SayHello()
+// hello.say_hello()
 //
-// => return kclvm_plugin_invoke("kcl_plugin.hello.SayHello", args, kwarge)
+// => return kclvm_plugin_invoke("kcl_plugin.hello.say_hello", args, kwargs)
 
 #[no_mangle]
 #[runtime_fn]
@@ -64,7 +64,7 @@ pub unsafe extern "C" fn kclvm_plugin_invoke(
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_plugin_invoke_json(
-    method: *const i8,
+    method: *const c_char,
     args: *const c_char,
     kwargs: *const c_char,
 ) -> *const c_char {
@@ -75,7 +75,7 @@ pub extern "C" fn kclvm_plugin_invoke_json(
 
         let ptr = (&_plugin_handler_fn_ptr as *const u64) as *const ()
             as *const extern "C" fn(
-                method: *const i8,
+                method: *const c_char,
                 args: *const c_char,
                 kwargs: *const c_char,
             ) -> *const c_char;
