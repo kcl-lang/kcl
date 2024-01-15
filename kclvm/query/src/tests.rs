@@ -108,7 +108,7 @@ appConfiguration = AppConfiguration {
     labels: {
         key: {
             key: "override_value"
-            Node { node: "str-key", filename: "", line: 1, column: 1, end_line: 1, end_column: 1 } = "override_value"
+            "str-key" = "override_value"
         }
     }
     mainContainer: Main {name: "override_name"}
