@@ -193,7 +193,7 @@ pub unsafe extern "C" fn kclvm_value_Str(
 ) -> *mut kclvm_value_ref_t {
     let ctx = mut_ptr_as_ref(ctx);
     unsafe {
-        if v.is_null() || *v == '\0' as i8 {
+        if v.is_null() || *v == '\0' as c_char {
             return new_mut_ptr(ctx, ValueRef::str(""));
         }
     }
@@ -543,7 +543,7 @@ pub unsafe extern "C" fn kclvm_value_to_str_value(
 pub unsafe extern "C" fn kclvm_value_Str_ptr(p: *const kclvm_value_ref_t) -> *const kclvm_char_t {
     let p = ptr_as_ref(p);
     match &*p.rc.borrow() {
-        Value::str_value(ref v) => v.as_ptr() as *const i8,
+        Value::str_value(ref v) => v.as_ptr() as *const c_char,
         _ => std::ptr::null(),
     }
 }
@@ -629,7 +629,7 @@ pub unsafe extern "C" fn kclvm_value_function_invoke(
             // Normal kcl function, call directly
             } else if func.is_external {
                 let name = format!("{}\0", func.name);
-                kclvm_plugin_invoke(ctx, name.as_ptr() as *const i8, args, kwargs)
+                kclvm_plugin_invoke(ctx, name.as_ptr() as *const c_char, args, kwargs)
             } else {
                 args_ref.list_append_unpack_first(closure);
                 let args = args_ref.clone().into_raw(ctx_ref);

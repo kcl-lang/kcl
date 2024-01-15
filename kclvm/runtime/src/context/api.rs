@@ -84,7 +84,7 @@ pub unsafe extern "C" fn kclvm_context_main_end_hook(
 #[runtime_fn]
 pub unsafe extern "C" fn kclvm_context_set_kcl_location(
     p: *mut kclvm_context_t,
-    filename: *const i8,
+    filename: *const c_char,
     line: i32,
     col: i32,
 ) {
@@ -100,7 +100,7 @@ pub unsafe extern "C" fn kclvm_context_set_kcl_location(
 #[runtime_fn]
 pub unsafe extern "C" fn kclvm_context_set_kcl_pkgpath(
     p: *mut kclvm_context_t,
-    pkgpath: *const i8,
+    pkgpath: *const c_char,
 ) {
     let p = mut_ptr_as_ref(p);
     if !pkgpath.is_null() {
@@ -112,7 +112,7 @@ pub unsafe extern "C" fn kclvm_context_set_kcl_pkgpath(
 #[runtime_fn]
 pub unsafe extern "C" fn kclvm_context_set_kcl_filename(
     ctx: *mut kclvm_context_t,
-    filename: *const i8,
+    filename: *const c_char,
 ) {
     let ctx = mut_ptr_as_ref(ctx);
     if !filename.is_null() {
@@ -199,7 +199,7 @@ pub unsafe extern "C" fn kclvm_context_invoke(
     let result = _kclvm_context_invoke(p, method, args, kwargs);
 
     p.buffer.kclvm_context_invoke_result = ptr_as_ref(result).to_json_string_with_null();
-    let result_json = p.buffer.kclvm_context_invoke_result.as_ptr() as *const i8;
+    let result_json = p.buffer.kclvm_context_invoke_result.as_ptr() as *const c_char;
 
     kclvm_value_delete(args);
     kclvm_value_delete(kwargs);

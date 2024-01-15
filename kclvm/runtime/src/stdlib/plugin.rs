@@ -31,7 +31,7 @@ pub extern "C" fn kclvm_plugin_init(
 #[runtime_fn]
 pub unsafe extern "C" fn kclvm_plugin_invoke(
     ctx: *mut kclvm_context_t,
-    method: *const i8,
+    method: *const c_char,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {

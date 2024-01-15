@@ -1,6 +1,8 @@
 // Copyright 2021 The KCL Authors. All rights reserved.
 #![allow(clippy::missing_safety_doc)]
 
+use std::os::raw::c_char;
+
 use crate::*;
 
 #[allow(dead_code, non_camel_case_types)]
@@ -19,7 +21,7 @@ type kclvm_value_ref_t = ValueRef;
 type kclvm_iterator_t = ValueIterator;
 
 #[allow(dead_code, non_camel_case_types)]
-type kclvm_char_t = i8;
+type kclvm_char_t = c_char;
 
 #[allow(dead_code, non_camel_case_types)]
 type kclvm_size_t = i32;
@@ -115,7 +117,7 @@ pub unsafe extern "C" fn _kcl_run(
     // Get the runtime context.
     let ctx_ref = ptr_as_ref(ctx);
     // Copy log message pointer
-    let c_str_ptr = ctx_ref.log_message.as_ptr() as *const i8;
+    let c_str_ptr = ctx_ref.log_message.as_ptr() as *const c_char;
     let c_str_len = ctx_ref.log_message.len() as i32;
     if c_str_len <= *log_buffer_len {
         std::ptr::copy(c_str_ptr, log_buffer, c_str_len as usize);
@@ -123,7 +125,7 @@ pub unsafe extern "C" fn _kcl_run(
     }
     // Copy panic info message pointer
     let json_panic_info = ctx_ref.get_panic_info_json_string();
-    let c_str_ptr = json_panic_info.as_ptr() as *const i8;
+    let c_str_ptr = json_panic_info.as_ptr() as *const c_char;
     let c_str_len = json_panic_info.len() as i32;
     match result {
         Ok(n) => {

@@ -11,11 +11,12 @@ use kclvm_query::r#override::parse_override_spec;
 use kclvm_runtime::{Context, PanicInfo, ValueRef};
 use serde::{Deserialize, Serialize};
 use std::ffi::OsStr;
+use std::os::raw::c_char;
 
 const RESULT_SIZE: usize = 2048 * 2048;
 
 #[allow(non_camel_case_types)]
-pub type kclvm_char_t = i8;
+pub type kclvm_char_t = c_char;
 #[allow(non_camel_case_types)]
 pub type kclvm_size_t = i32;
 #[allow(non_camel_case_types)]
@@ -357,17 +358,17 @@ impl KclLibRunner {
         // Exec json result
         let mut json_result = vec![0u8; RESULT_SIZE];
         let mut result_buffer_len = json_result.len() as i32 - 1;
-        let json_result_buffer = json_result.as_mut_ptr() as *mut i8;
+        let json_result_buffer = json_result.as_mut_ptr() as *mut c_char;
 
         // Exec warning data
         let mut warn_data = vec![0u8; RESULT_SIZE];
         let mut warn_buffer_len = warn_data.len() as i32 - 1;
-        let warn_buffer = warn_data.as_mut_ptr() as *mut i8;
+        let warn_buffer = warn_data.as_mut_ptr() as *mut c_char;
 
         // Exec log data
         let mut log_data = vec![0u8; RESULT_SIZE];
         let mut log_buffer_len = log_data.len() as i32 - 1;
-        let log_buffer = log_data.as_mut_ptr() as *mut i8;
+        let log_buffer = log_data.as_mut_ptr() as *mut c_char;
 
         let n = kcl_run(
             kclvm_main_ptr,

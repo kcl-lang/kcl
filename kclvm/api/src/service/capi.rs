@@ -90,7 +90,6 @@ pub extern "C" fn kclvm_service_call(
         unsafe { (*call)(serv, args) }
     });
     match result {
-        //todo uniform error handling
         Ok(result) => result,
         Err(panic_err) => {
             let err_message = kclvm_error::err_to_str(panic_err);
@@ -98,7 +97,7 @@ pub extern "C" fn kclvm_service_call(
             let c_string = std::ffi::CString::new(format!("ERROR:{}", err_message.as_str()))
                 .expect("CString::new failed");
             let ptr = c_string.into_raw();
-            ptr as *const i8
+            ptr as *const c_char
         }
     }
 }
