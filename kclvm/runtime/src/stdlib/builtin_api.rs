@@ -1,6 +1,8 @@
 // Copyright 2021 The KCL Authors. All rights reserved.
 #![allow(clippy::missing_safety_doc)]
 
+use std::os::raw::c_char;
+
 use crate::*;
 
 #[allow(non_camel_case_types)]
@@ -10,8 +12,8 @@ type kclvm_value_ref_t = ValueRef;
 #[runtime_fn]
 pub unsafe extern "C" fn kclvm_builtin_option_init(
     ctx: *mut kclvm_context_t,
-    key: *const i8,
-    value: *const i8,
+    key: *const c_char,
+    value: *const c_char,
 ) {
     let ctx = mut_ptr_as_ref(ctx);
     ctx.builtin_option_init(c2str(key), c2str(value));
