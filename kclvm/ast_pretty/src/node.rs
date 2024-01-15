@@ -862,7 +862,7 @@ impl<'p> Printer<'p> {
                     self.write(
                         &names
                             .iter()
-                            .map(|n| format!("{n:?}"))
+                            .map(|n| format!("{:?}", n.node))
                             .collect::<Vec<String>>()
                             .join(": {"),
                     );
