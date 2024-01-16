@@ -12,7 +12,7 @@ mod tests;
 extern crate kclvm_error;
 
 use crate::entry::get_compile_entries_from_paths;
-pub use crate::session::ParseSession;
+pub use crate::session::{ParseSession, ParseSessionRef};
 use compiler_base_macros::bug;
 use compiler_base_session::Session;
 use compiler_base_span::span::new_byte_pos;
@@ -155,7 +155,7 @@ pub fn parse_file_force_errors(filename: &str, code: Option<String>) -> Result<a
 
 /// Parse a KCL file to the AST module with the parse session .
 pub fn parse_file_with_session(
-    sess: Arc<ParseSession>,
+    sess: ParseSessionRef,
     filename: &str,
     code: Option<String>,
 ) -> Result<ast::Module> {
@@ -203,7 +203,7 @@ pub fn parse_file_with_session(
 /// Parse a KCL file to the AST module with the parse session and the global session
 #[inline]
 pub fn parse_file_with_global_session(
-    sess: Arc<ParseSession>,
+    sess: ParseSessionRef,
     filename: &str,
     code: Option<String>,
 ) -> Result<ast::Module> {
@@ -299,7 +299,7 @@ impl Default for LoadProgramOptions {
 ///     
 /// ```
 pub fn load_program(
-    sess: Arc<ParseSession>,
+    sess: ParseSessionRef,
     paths: &[&str],
     opts: Option<LoadProgramOptions>,
     module_cache: Option<KCLModuleCache>,
@@ -309,7 +309,7 @@ pub fn load_program(
 
 pub type KCLModuleCache = Arc<RwLock<IndexMap<String, ast::Module>>>;
 struct Loader {
-    sess: Arc<ParseSession>,
+    sess: ParseSessionRef,
     paths: Vec<String>,
     opts: LoadProgramOptions,
     missing_pkgs: Vec<String>,
@@ -319,7 +319,7 @@ struct Loader {
 
 impl Loader {
     fn new(
-        sess: Arc<ParseSession>,
+        sess: ParseSessionRef,
         paths: &[&str],
         opts: Option<LoadProgramOptions>,
         module_cache: Option<Arc<RwLock<IndexMap<String, ast::Module>>>>,

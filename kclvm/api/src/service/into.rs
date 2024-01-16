@@ -1,6 +1,10 @@
-use crate::gpyrpc::{CliConfig, Error, KeyValuePair, LoadSettingsFilesResult, Message, Position};
+use crate::gpyrpc::{
+    CliConfig, Error, KeyValuePair, LoadSettingsFilesResult, Message, Position, Symbol, SymbolIndex,
+};
 use kclvm_config::settings::SettingsFile;
 use kclvm_error::Diagnostic;
+use kclvm_loader::SymbolInfo;
+use kclvm_sema::core::symbol::SymbolRef;
 
 pub(crate) trait IntoLoadSettingsFiles {
     /// Convert self into the LoadSettingsFiles structure.
@@ -9,6 +13,14 @@ pub(crate) trait IntoLoadSettingsFiles {
 
 pub(crate) trait IntoError {
     fn into_error(self) -> Error;
+}
+
+pub(crate) trait IntoSymbolIndex {
+    fn into_symbol_index(self) -> SymbolIndex;
+}
+
+pub(crate) trait IntoSymbol {
+    fn into_symbol(self) -> Symbol;
 }
 
 impl IntoLoadSettingsFiles for SettingsFile {
@@ -62,6 +74,30 @@ impl IntoError for Diagnostic {
                     }),
                 })
                 .collect(),
+        }
+    }
+}
+
+impl IntoSymbolIndex for SymbolRef {
+    fn into_symbol_index(self) -> SymbolIndex {
+        let (index, generation) = self.get_id().into_raw_parts();
+        SymbolIndex {
+            i: index as u64,
+            g: generation as u64,
+            kind: format!("{:?}", self.get_kind()),
+        }
+    }
+}
+
+impl IntoSymbol for SymbolInfo {
+    fn into_symbol(self) -> Symbol {
+        Symbol {
+            ty: self.ty.ty_str(),
+            name: self.name,
+            owner: self.owner.map(|o| o.into_symbol_index()),
+            def: self.def.map(|d| d.into_symbol_index()),
+            attrs: self.attrs.iter().map(|a| a.into_symbol_index()).collect(),
+            is_global: self.is_global,
         }
     }
 }

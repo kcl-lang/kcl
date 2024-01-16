@@ -7,7 +7,7 @@ use anyhow::{anyhow, Result};
 use chumsky::chain::Chain;
 use kclvm_ast::ast::{self, Program};
 use kclvm_error::diagnostic;
-use kclvm_parser::{load_program, LoadProgramOptions, ParseSession};
+use kclvm_parser::{load_program, LoadProgramOptions, ParseSessionRef};
 use kclvm_query::selector::parse_symbol_selector_spec;
 use kclvm_sema::{
     advanced_resolver::AdvancedResolver, core::global_state::GlobalState, namer::Namer,
@@ -185,7 +185,7 @@ where
     };
 
     let files: Vec<&str> = file_paths.iter().map(|s| s.as_str()).collect();
-    let sess: Arc<ParseSession> = Arc::new(ParseSession::default());
+    let sess: ParseSessionRef = ParseSessionRef::default();
     let mut program = load_program(sess.clone(), &files, Some(opt), None)?.program;
 
     let prog_scope = resolve_program_with_opts(

@@ -83,6 +83,14 @@ fn register_kclvm_service(io: &mut IoHandler) {
         };
         futures::future::ready(catch!(kclvm_service_impl, args, parse_program))
     });
+    io.add_method("KclvmService.LoadPackage", |params: Params| {
+        let kclvm_service_impl = KclvmServiceImpl::default();
+        let args: LoadPackageArgs = match params.parse() {
+            Ok(val) => val,
+            Err(err) => return futures::future::ready(Err(err)),
+        };
+        futures::future::ready(catch!(kclvm_service_impl, args, load_package))
+    });
     io.add_method("KclvmService.ExecProgram", |params: Params| {
         let kclvm_service_impl = KclvmServiceImpl::default();
         let args: ExecProgramArgs = match params.parse() {

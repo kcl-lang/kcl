@@ -12,7 +12,7 @@ pub struct SemanticDB {
 }
 
 impl SemanticDB {
-    pub fn get_file_sema(&self, file: &String) -> Option<&FileSemanticInfo> {
+    pub fn get_file_sema(&self, file: &str) -> Option<&FileSemanticInfo> {
         self.file_sema_map.get(file)
     }
 }

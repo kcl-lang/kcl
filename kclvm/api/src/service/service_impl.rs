@@ -10,8 +10,10 @@ use anyhow::anyhow;
 use kcl_language_server::rename;
 use kclvm_config::settings::build_settings_pathbuf;
 use kclvm_driver::canonicalize_input_files;
+use kclvm_loader::{load_packages, LoadPackageOptions};
 use kclvm_parser::load_program;
 use kclvm_parser::parse_file;
+use kclvm_parser::KCLModuleCache;
 use kclvm_parser::LoadProgramOptions;
 use kclvm_parser::ParseSession;
 use kclvm_query::get_schema_type;
@@ -30,8 +32,7 @@ use kclvm_tools::vet::validator::LoaderKind;
 use kclvm_tools::vet::validator::ValidateOption;
 use tempfile::NamedTempFile;
 
-use super::into::IntoError;
-use super::into::IntoLoadSettingsFiles;
+use super::into::*;
 use super::ty::kcl_schema_ty_to_pb_ty;
 use super::util::transform_str_para;
 
@@ -75,7 +76,7 @@ impl KclvmServiceImpl {
     /// // File case
     /// let serv = KclvmServiceImpl::default();
     /// let args = &ParseProgramArgs {
-    ///     paths: vec![Path::new(".").join("src").join("testdata").join("test.k").canonicalize().unwrap().display().to_string(),],
+    ///     paths: vec![Path::new(".").join("src").join("testdata").join("test.k").canonicalize().unwrap().display().to_string()],
     ///     ..Default::default()
     /// };
     /// let result = serv.parse_program(args).unwrap();
@@ -95,9 +96,10 @@ impl KclvmServiceImpl {
             Some(LoadProgramOptions {
                 k_code_list: args.sources.clone(),
                 package_maps,
+                load_plugins: true,
                 ..Default::default()
             }),
-            None,
+            Some(KCLModuleCache::default()),
         )?;
         let ast_json = serde_json::to_string(&result.program)?;
 
@@ -143,6 +145,81 @@ impl KclvmServiceImpl {
                 .map(|p| p.to_str().unwrap().to_string())
                 .collect(),
             errors: result.errors.into_iter().map(|e| e.into_error()).collect(),
+        })
+    }
+
+    /// load_package provides users with the ability to parse kcl program and sematic model
+    /// information including symbols, types, definitions, etc.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
+    /// use kclvm_api::gpyrpc::*;
+    /// use std::path::Path;
+    ///
+    /// let serv = KclvmServiceImpl::default();
+    /// let args = &LoadPackageArgs {
+    ///     parse_args: Some(ParseProgramArgs {
+    ///         paths: vec![Path::new(".").join("src").join("testdata").join("parse").join("main.k").canonicalize().unwrap().display().to_string()],
+    ///         ..Default::default()
+    ///     }),
+    ///     resolve_ast: true,
+    ///     ..Default::default()
+    /// };
+    /// let result = serv.load_package(args).unwrap();
+    /// assert_eq!(result.paths.len(), 3);
+    /// assert_eq!(result.parse_errors.len(), 0);
+    /// assert_eq!(result.type_errors.len(), 0);
+    /// assert_eq!(result.node_symbol_map.len(), 159);
+    /// assert_eq!(result.symbols.len(), 12);
+    /// ```
+    pub fn load_package(&self, args: &LoadPackageArgs) -> anyhow::Result<LoadPackageResult> {
+        let mut package_maps = HashMap::new();
+        let parse_args = args.parse_args.clone().unwrap_or_default();
+        for p in &parse_args.external_pkgs {
+            package_maps.insert(p.pkg_name.to_string(), p.pkg_path.to_string());
+        }
+        let packages = load_packages(&LoadPackageOptions {
+            paths: parse_args.paths,
+            load_opts: Some(LoadProgramOptions {
+                k_code_list: parse_args.sources.clone(),
+                package_maps,
+                load_plugins: true,
+                ..Default::default()
+            }),
+            resolve_ast: args.resolve_ast,
+            load_builtin: args.load_builtin,
+        })?;
+        let program_json = serde_json::to_string(&packages.program)?;
+        let mut node_symbol_map = HashMap::new();
+        let mut symbols = HashMap::new();
+        for (k, s) in packages.node_symbol_map {
+            node_symbol_map.insert(k.id.to_string(), s.into_symbol_index());
+        }
+        for (k, s) in packages.symbols {
+            let symbol_index_string = serde_json::to_string(&k)?;
+            symbols.insert(symbol_index_string, s.into_symbol());
+        }
+        Ok(LoadPackageResult {
+            program: program_json,
+            paths: packages
+                .paths
+                .iter()
+                .map(|p| p.to_str().unwrap().to_string())
+                .collect(),
+            node_symbol_map,
+            symbols,
+            parse_errors: packages
+                .parse_errors
+                .into_iter()
+                .map(|e| e.into_error())
+                .collect(),
+            type_errors: packages
+                .type_errors
+                .into_iter()
+                .map(|e| e.into_error())
+                .collect(),
         })
     }
 

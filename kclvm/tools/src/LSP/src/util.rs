@@ -938,7 +938,7 @@ fn line_to_words(text: String, prune: bool) -> HashMap<String, Vec<Word>> {
         }
         let is_id_start = rustc_lexer::is_id_start(*ch);
         let is_id_continue = rustc_lexer::is_id_continue(*ch);
-        // If the character is valid identfier start and the previous character is not valid identifier continue, mark the start position.
+        // If the character is valid identifier start and the previous character is not valid identifier continue, mark the start position.
         if is_id_start && !prev_word {
             start_pos = i;
         }

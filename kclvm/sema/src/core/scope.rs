@@ -5,7 +5,7 @@ use kclvm_error::Position;
 
 use crate::core::symbol::SymbolRef;
 
-use super::{package::ModuleInfo, symbol::KCLSymbolData};
+use super::{package::ModuleInfo, symbol::SymbolData};
 
 pub trait Scope {
     type SymbolData;
@@ -67,13 +67,13 @@ pub struct ScopeData {
 }
 
 impl ScopeData {
-    pub fn get_scope(&self, scope: ScopeRef) -> Option<&dyn Scope<SymbolData = KCLSymbolData>> {
+    pub fn get_scope(&self, scope: ScopeRef) -> Option<&dyn Scope<SymbolData = SymbolData>> {
         match scope.get_kind() {
             ScopeKind::Local => {
-                Some(self.locals.get(scope.get_id())? as &dyn Scope<SymbolData = KCLSymbolData>)
+                Some(self.locals.get(scope.get_id())? as &dyn Scope<SymbolData = SymbolData>)
             }
             ScopeKind::Root => {
-                Some(self.roots.get(scope.get_id())? as &dyn Scope<SymbolData = KCLSymbolData>)
+                Some(self.roots.get(scope.get_id())? as &dyn Scope<SymbolData = SymbolData>)
             }
         }
     }
@@ -163,7 +163,7 @@ pub struct RootSymbolScope {
 }
 
 impl Scope for RootSymbolScope {
-    type SymbolData = KCLSymbolData;
+    type SymbolData = SymbolData;
     fn get_filename(&self) -> &str {
         &self.filename
     }
@@ -316,7 +316,7 @@ pub enum LocalSymbolScopeKind {
 }
 
 impl Scope for LocalSymbolScope {
-    type SymbolData = KCLSymbolData;
+    type SymbolData = SymbolData;
 
     fn get_filename(&self) -> &str {
         &self.start.filename

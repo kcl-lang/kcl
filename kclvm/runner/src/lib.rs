@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::Path, sync::Arc};
+use std::{collections::HashMap, path::Path};
 
 use anyhow::{anyhow, bail, Result};
 use assembler::KclvmLibAssembler;
@@ -7,7 +7,7 @@ use kclvm_ast::{
     MAIN_PKG,
 };
 use kclvm_driver::{canonicalize_input_files, expand_input_files};
-use kclvm_parser::{load_program, ParseSession};
+use kclvm_parser::{load_program, KCLModuleCache, ParseSessionRef};
 use kclvm_query::apply_overrides;
 use kclvm_runtime::{Context, PlanOptions, ValueRef};
 use kclvm_sema::resolver::{
@@ -70,13 +70,19 @@ pub mod tests;
 /// // Result is the kcl in json format.
 /// let result = exec_program(sess, &args).unwrap();
 /// ```
-pub fn exec_program(sess: Arc<ParseSession>, args: &ExecProgramArgs) -> Result<ExecProgramResult> {
+pub fn exec_program(sess: ParseSessionRef, args: &ExecProgramArgs) -> Result<ExecProgramResult> {
     // parse args from json string
     let opts = args.get_load_program_options();
     let kcl_paths = expand_files(args)?;
     let kcl_paths_str = kcl_paths.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
-    let mut program =
-        load_program(sess.clone(), kcl_paths_str.as_slice(), Some(opts), None)?.program;
+    let module_cache = KCLModuleCache::default();
+    let mut program = load_program(
+        sess.clone(),
+        kcl_paths_str.as_slice(),
+        Some(opts),
+        Some(module_cache),
+    )?
+    .program;
     apply_overrides(
         &mut program,
         &args.overrides,
@@ -160,7 +166,7 @@ pub fn exec_program(sess: Arc<ParseSession>, args: &ExecProgramArgs) -> Result<E
 /// let result = execute(sess, prog, &args).unwrap();
 /// ```
 pub fn execute(
-    sess: Arc<ParseSession>,
+    sess: ParseSessionRef,
     mut program: Program,
     args: &ExecProgramArgs,
 ) -> Result<ExecProgramResult> {
@@ -229,7 +235,7 @@ pub fn execute_module(mut m: Module) -> Result<ExecProgramResult> {
     };
 
     execute(
-        Arc::new(ParseSession::default()),
+        ParseSessionRef::default(),
         prog,
         &ExecProgramArgs::default(),
     )
@@ -237,7 +243,7 @@ pub fn execute_module(mut m: Module) -> Result<ExecProgramResult> {
 
 /// Build a KCL program and generate a library artifact.
 pub fn build_program<P: AsRef<Path>>(
-    sess: Arc<ParseSession>,
+    sess: ParseSessionRef,
     args: &ExecProgramArgs,
     output: Option<P>,
 ) -> Result<Artifact> {
@@ -326,7 +332,7 @@ fn temp_file(dir: &str) -> Result<String> {
 
 // [`emit_compile_diag_to_string`] will emit compile diagnostics to string, including parsing and resolving diagnostics.
 fn emit_compile_diag_to_string(
-    sess: Arc<ParseSession>,
+    sess: ParseSessionRef,
     scope: &ProgramScope,
     include_warnings: bool,
 ) -> Result<()> {

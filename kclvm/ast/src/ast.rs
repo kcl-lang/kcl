@@ -82,11 +82,27 @@ impl Into<Range> for Pos {
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct AstIndex(uuid::Uuid);
 
+impl Serialize for AstIndex {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_bytes(self.0.as_bytes())
+    }
+}
+
 impl Default for AstIndex {
     fn default() -> Self {
         Self(uuid::Uuid::new_v4())
     }
 }
+
+impl ToString for AstIndex {
+    fn to_string(&self) -> String {
+        self.0.to_string()
+    }
+}
+
 /// Node is the file, line and column number information
 /// that all AST nodes need to contain.
 /// In fact, column and end_column are the counts of character,

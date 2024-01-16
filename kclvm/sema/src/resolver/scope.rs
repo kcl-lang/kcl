@@ -23,6 +23,7 @@ use kclvm_ast::ast::AstIndex;
 use kclvm_ast::pos::ContainsPos;
 use kclvm_ast::pos::GetPos;
 use kclvm_error::Position;
+use serde::Serialize;
 
 /// The object stored in the scope.
 #[derive(PartialEq, Clone, Debug)]
@@ -487,7 +488,7 @@ impl<'ctx> Resolver<'ctx> {
     }
 }
 
-#[derive(Clone, Debug, Hash, PartialEq, Eq)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq, Serialize)]
 pub struct NodeKey {
     pub pkgpath: String,
     pub id: AstIndex,
