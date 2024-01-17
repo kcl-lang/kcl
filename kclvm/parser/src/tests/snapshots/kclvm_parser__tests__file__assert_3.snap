@@ -1,6 +1,5 @@
 ---
 source: parser/src/tests/file.rs
-assertion_line: 5
 expression: "crate::tests::parsing_file_string(\"testdata/assert-03.k\")"
 ---
 {
@@ -12,293 +11,257 @@ expression: "crate::tests::parsing_file_string(\"testdata/assert-03.k\")"
     {
       "node": {
         "type": "If",
-        "data": {
-          "body": [
-            {
-              "node": {
-                "type": "Assert",
-                "data": {
-                  "test": {
-                    "node": {
-                      "type": "NameConstantLit",
-                      "data": {
-                        "value": "True"
-                      }
-                    },
-                    "filename": "assert-03.k",
-                    "line": 2,
-                    "column": 11,
-                    "end_line": 2,
-                    "end_column": 15
-                  },
-                  "if_cond": null,
-                  "msg": {
-                    "node": {
-                      "type": "StringLit",
-                      "data": {
-                        "is_long_string": false,
-                        "raw_value": "\"Error messgae\"",
-                        "value": "Error messgae"
-                      }
-                    },
-                    "filename": "assert-03.k",
-                    "line": 2,
-                    "column": 17,
-                    "end_line": 2,
-                    "end_column": 32
-                  }
-                }
+        "body": [
+          {
+            "node": {
+              "type": "Assert",
+              "test": {
+                "node": {
+                  "type": "NameConstantLit",
+                  "value": "True"
+                },
+                "filename": "assert-03.k",
+                "line": 2,
+                "column": 11,
+                "end_line": 2,
+                "end_column": 15
               },
-              "filename": "assert-03.k",
-              "line": 2,
-              "column": 4,
-              "end_line": 2,
-              "end_column": 32
+              "if_cond": null,
+              "msg": {
+                "node": {
+                  "type": "StringLit",
+                  "is_long_string": false,
+                  "raw_value": "\"Error messgae\"",
+                  "value": "Error messgae"
+                },
+                "filename": "assert-03.k",
+                "line": 2,
+                "column": 17,
+                "end_line": 2,
+                "end_column": 32
+              }
             },
-            {
-              "node": {
-                "type": "Assert",
-                "data": {
-                  "test": {
+            "filename": "assert-03.k",
+            "line": 2,
+            "column": 4,
+            "end_line": 2,
+            "end_column": 32
+          },
+          {
+            "node": {
+              "type": "Assert",
+              "test": {
+                "node": {
+                  "type": "Compare",
+                  "left": {
                     "node": {
-                      "type": "Compare",
-                      "data": {
-                        "left": {
-                          "node": {
-                            "type": "NumberLit",
-                            "data": {
-                              "binary_suffix": null,
-                              "value": {
-                                "type": "Int",
-                                "data": 1
-                              }
-                            }
-                          },
-                          "filename": "assert-03.k",
-                          "line": 3,
-                          "column": 11,
-                          "end_line": 3,
-                          "end_column": 12
-                        },
-                        "ops": [
-                          "Eq"
-                        ],
-                        "comparators": [
-                          {
-                            "node": {
-                              "type": "NumberLit",
-                              "data": {
-                                "binary_suffix": null,
-                                "value": {
-                                  "type": "Int",
-                                  "data": 1
-                                }
-                              }
-                            },
-                            "filename": "assert-03.k",
-                            "line": 3,
-                            "column": 16,
-                            "end_line": 3,
-                            "end_column": 17
-                          }
-                        ]
+                      "type": "NumberLit",
+                      "binary_suffix": null,
+                      "value": {
+                        "type": "Int",
+                        "value": 1
                       }
                     },
                     "filename": "assert-03.k",
                     "line": 3,
                     "column": 11,
                     "end_line": 3,
-                    "end_column": 17
+                    "end_column": 12
                   },
-                  "if_cond": null,
-                  "msg": {
-                    "node": {
-                      "type": "StringLit",
-                      "data": {
-                        "is_long_string": false,
-                        "raw_value": "\"\"",
-                        "value": ""
-                      }
-                    },
-                    "filename": "assert-03.k",
-                    "line": 3,
-                    "column": 19,
-                    "end_line": 3,
-                    "end_column": 21
-                  }
-                }
-              },
-              "filename": "assert-03.k",
-              "line": 3,
-              "column": 4,
-              "end_line": 3,
-              "end_column": 21
-            },
-            {
-              "node": {
-                "type": "Assign",
-                "data": {
-                  "targets": [
+                  "ops": [
+                    "Eq"
+                  ],
+                  "comparators": [
                     {
                       "node": {
-                        "names": [
-                          {
-                            "node": "_x",
-                            "filename": "assert-03.k",
-                            "line": 4,
-                            "column": 4,
-                            "end_line": 4,
-                            "end_column": 6
-                          }
-                        ],
-                        "pkgpath": "",
-                        "ctx": "Store"
+                        "type": "NumberLit",
+                        "binary_suffix": null,
+                        "value": {
+                          "type": "Int",
+                          "value": 1
+                        }
                       },
                       "filename": "assert-03.k",
-                      "line": 4,
-                      "column": 4,
-                      "end_line": 4,
-                      "end_column": 6
+                      "line": 3,
+                      "column": 16,
+                      "end_line": 3,
+                      "end_column": 17
                     }
-                  ],
-                  "value": {
-                    "node": {
-                      "type": "StringLit",
-                      "data": {
-                        "is_long_string": false,
-                        "raw_value": "\"good case\"",
-                        "value": "good case"
-                      }
-                    },
-                    "filename": "assert-03.k",
-                    "line": 4,
-                    "column": 9,
-                    "end_line": 4,
-                    "end_column": 20
-                  },
-                  "ty": null
-                }
+                  ]
+                },
+                "filename": "assert-03.k",
+                "line": 3,
+                "column": 11,
+                "end_line": 3,
+                "end_column": 17
               },
-              "filename": "assert-03.k",
-              "line": 4,
-              "column": 4,
-              "end_line": 4,
-              "end_column": 20
+              "if_cond": null,
+              "msg": {
+                "node": {
+                  "type": "StringLit",
+                  "is_long_string": false,
+                  "raw_value": "\"\"",
+                  "value": ""
+                },
+                "filename": "assert-03.k",
+                "line": 3,
+                "column": 19,
+                "end_line": 3,
+                "end_column": 21
+              }
             },
-            {
-              "node": {
-                "type": "Assert",
-                "data": {
-                  "test": {
+            "filename": "assert-03.k",
+            "line": 3,
+            "column": 4,
+            "end_line": 3,
+            "end_column": 21
+          },
+          {
+            "node": {
+              "type": "Assign",
+              "targets": [
+                {
+                  "node": {
+                    "names": [
+                      {
+                        "node": "_x",
+                        "filename": "assert-03.k",
+                        "line": 4,
+                        "column": 4,
+                        "end_line": 4,
+                        "end_column": 6
+                      }
+                    ],
+                    "pkgpath": "",
+                    "ctx": "Store"
+                  },
+                  "filename": "assert-03.k",
+                  "line": 4,
+                  "column": 4,
+                  "end_line": 4,
+                  "end_column": 6
+                }
+              ],
+              "value": {
+                "node": {
+                  "type": "StringLit",
+                  "is_long_string": false,
+                  "raw_value": "\"good case\"",
+                  "value": "good case"
+                },
+                "filename": "assert-03.k",
+                "line": 4,
+                "column": 9,
+                "end_line": 4,
+                "end_column": 20
+              },
+              "ty": null
+            },
+            "filename": "assert-03.k",
+            "line": 4,
+            "column": 4,
+            "end_line": 4,
+            "end_column": 20
+          },
+          {
+            "node": {
+              "type": "Assert",
+              "test": {
+                "node": {
+                  "type": "Compare",
+                  "left": {
                     "node": {
-                      "type": "Compare",
-                      "data": {
-                        "left": {
-                          "node": {
-                            "type": "Identifier",
-                            "data": {
-                              "names": [
-                                {
-                                  "node": "_x",
-                                  "filename": "assert-03.k",
-                                  "line": 5,
-                                  "column": 11,
-                                  "end_line": 5,
-                                  "end_column": 13
-                                }
-                              ],
-                              "pkgpath": "",
-                              "ctx": "Load"
-                            }
-                          },
+                      "type": "Identifier",
+                      "names": [
+                        {
+                          "node": "_x",
                           "filename": "assert-03.k",
                           "line": 5,
                           "column": 11,
                           "end_line": 5,
                           "end_column": 13
-                        },
-                        "ops": [
-                          "Eq"
-                        ],
-                        "comparators": [
-                          {
-                            "node": {
-                              "type": "StringLit",
-                              "data": {
-                                "is_long_string": false,
-                                "raw_value": "\"good case\"",
-                                "value": "good case"
-                              }
-                            },
-                            "filename": "assert-03.k",
-                            "line": 5,
-                            "column": 17,
-                            "end_line": 5,
-                            "end_column": 28
-                          }
-                        ]
-                      }
+                        }
+                      ],
+                      "pkgpath": "",
+                      "ctx": "Load"
                     },
                     "filename": "assert-03.k",
                     "line": 5,
                     "column": 11,
                     "end_line": 5,
-                    "end_column": 28
+                    "end_column": 13
                   },
-                  "if_cond": null,
-                  "msg": null
-                }
+                  "ops": [
+                    "Eq"
+                  ],
+                  "comparators": [
+                    {
+                      "node": {
+                        "type": "StringLit",
+                        "is_long_string": false,
+                        "raw_value": "\"good case\"",
+                        "value": "good case"
+                      },
+                      "filename": "assert-03.k",
+                      "line": 5,
+                      "column": 17,
+                      "end_line": 5,
+                      "end_column": 28
+                    }
+                  ]
+                },
+                "filename": "assert-03.k",
+                "line": 5,
+                "column": 11,
+                "end_line": 5,
+                "end_column": 28
               },
-              "filename": "assert-03.k",
-              "line": 5,
-              "column": 4,
-              "end_line": 5,
-              "end_column": 28
-            }
-          ],
-          "cond": {
-            "node": {
-              "type": "NameConstantLit",
-              "data": {
-                "value": "True"
-              }
+              "if_cond": null,
+              "msg": null
             },
             "filename": "assert-03.k",
-            "line": 1,
-            "column": 3,
-            "end_line": 1,
-            "end_column": 7
+            "line": 5,
+            "column": 4,
+            "end_line": 5,
+            "end_column": 28
+          }
+        ],
+        "cond": {
+          "node": {
+            "type": "NameConstantLit",
+            "value": "True"
           },
-          "orelse": [
-            {
-              "node": {
-                "type": "Assert",
-                "data": {
-                  "test": {
-                    "node": {
-                      "type": "NameConstantLit",
-                      "data": {
-                        "value": "False"
-                      }
-                    },
-                    "filename": "assert-03.k",
-                    "line": 7,
-                    "column": 11,
-                    "end_line": 7,
-                    "end_column": 16
-                  },
-                  "if_cond": null,
-                  "msg": null
-                }
+          "filename": "assert-03.k",
+          "line": 1,
+          "column": 3,
+          "end_line": 1,
+          "end_column": 7
+        },
+        "orelse": [
+          {
+            "node": {
+              "type": "Assert",
+              "test": {
+                "node": {
+                  "type": "NameConstantLit",
+                  "value": "False"
+                },
+                "filename": "assert-03.k",
+                "line": 7,
+                "column": 11,
+                "end_line": 7,
+                "end_column": 16
               },
-              "filename": "assert-03.k",
-              "line": 7,
-              "column": 4,
-              "end_line": 7,
-              "end_column": 16
-            }
-          ]
-        }
+              "if_cond": null,
+              "msg": null
+            },
+            "filename": "assert-03.k",
+            "line": 7,
+            "column": 4,
+            "end_line": 7,
+            "end_column": 16
+          }
+        ]
       },
       "filename": "assert-03.k",
       "line": 1,

@@ -1522,7 +1522,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         if let Some(op) = &schema_attr.op {
             match op {
                 // Union
-                ast::BinOrAugOp::Aug(ast::AugOp::BitOr) => {
+                ast::AugOp::BitOr => {
                     let org_value = self.build_call(
                         &ApiFunc::kclvm_dict_get_value.name(),
                         &[
@@ -1588,7 +1588,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         if let Some(op) = &schema_attr.op {
             match op {
                 // Union
-                ast::BinOrAugOp::Aug(ast::AugOp::BitOr) => {
+                ast::AugOp::BitOr => {
                     let org_value = self.build_call(
                         &ApiFunc::kclvm_dict_get_value.name(),
                         &[
@@ -1668,11 +1668,8 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
 
     fn walk_binary_expr(&self, binary_expr: &'ctx ast::BinaryExpr) -> Self::Result {
         check_backtrack_stop!(self);
-        let is_logic_op = matches!(
-            binary_expr.op,
-            ast::BinOrCmpOp::Bin(ast::BinOp::And) | ast::BinOrCmpOp::Bin(ast::BinOp::Or)
-        );
-        let is_membership_as_op = matches!(binary_expr.op, ast::BinOrCmpOp::Bin(ast::BinOp::As));
+        let is_logic_op = matches!(binary_expr.op, ast::BinOp::And | ast::BinOp::Or);
+        let is_membership_as_op = matches!(binary_expr.op, ast::BinOp::As);
         if !is_logic_op {
             let left_value = self
                 .walk_expr(&binary_expr.left)
@@ -1690,50 +1687,25 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
                     .expect(kcl_error::COMPILE_ERROR_MSG)
             };
             let value = match binary_expr.op {
-                ast::BinOrCmpOp::Bin(ast::BinOp::Add) => self.add(left_value, right_value),
-                ast::BinOrCmpOp::Bin(ast::BinOp::Sub) => self.sub(left_value, right_value),
-                ast::BinOrCmpOp::Bin(ast::BinOp::Mul) => self.mul(left_value, right_value),
-                ast::BinOrCmpOp::Bin(ast::BinOp::Div) => self.div(left_value, right_value),
-                ast::BinOrCmpOp::Bin(ast::BinOp::FloorDiv) => {
-                    self.floor_div(left_value, right_value)
-                }
-                ast::BinOrCmpOp::Bin(ast::BinOp::Mod) => self.r#mod(left_value, right_value),
-                ast::BinOrCmpOp::Bin(ast::BinOp::Pow) => self.pow(left_value, right_value),
-                ast::BinOrCmpOp::Bin(ast::BinOp::LShift) => {
-                    self.bit_lshift(left_value, right_value)
-                }
-                ast::BinOrCmpOp::Bin(ast::BinOp::RShift) => {
-                    self.bit_rshift(left_value, right_value)
-                }
-                ast::BinOrCmpOp::Bin(ast::BinOp::BitAnd) => self.bit_and(left_value, right_value),
-                ast::BinOrCmpOp::Bin(ast::BinOp::BitOr) => self.bit_or(left_value, right_value),
-                ast::BinOrCmpOp::Bin(ast::BinOp::BitXor) => self.bit_xor(left_value, right_value),
-                ast::BinOrCmpOp::Bin(ast::BinOp::And) => self.logic_and(left_value, right_value),
-                ast::BinOrCmpOp::Bin(ast::BinOp::Or) => self.logic_or(left_value, right_value),
-                ast::BinOrCmpOp::Bin(ast::BinOp::As) => self.r#as(left_value, right_value),
-                ast::BinOrCmpOp::Cmp(ast::CmpOp::Eq) => self.cmp_equal_to(left_value, right_value),
-                ast::BinOrCmpOp::Cmp(ast::CmpOp::NotEq) => {
-                    self.cmp_not_equal_to(left_value, right_value)
-                }
-                ast::BinOrCmpOp::Cmp(ast::CmpOp::Gt) => {
-                    self.cmp_greater_than(left_value, right_value)
-                }
-                ast::BinOrCmpOp::Cmp(ast::CmpOp::GtE) => {
-                    self.cmp_greater_than_or_equal(left_value, right_value)
-                }
-                ast::BinOrCmpOp::Cmp(ast::CmpOp::Lt) => self.cmp_less_than(left_value, right_value),
-                ast::BinOrCmpOp::Cmp(ast::CmpOp::LtE) => {
-                    self.cmp_less_than_or_equal(left_value, right_value)
-                }
-                ast::BinOrCmpOp::Cmp(ast::CmpOp::Is) => self.is(left_value, right_value),
-                ast::BinOrCmpOp::Cmp(ast::CmpOp::IsNot) => self.is_not(left_value, right_value),
-                ast::BinOrCmpOp::Cmp(ast::CmpOp::Not) => self.is_not(left_value, right_value),
-                ast::BinOrCmpOp::Cmp(ast::CmpOp::NotIn) => self.not_in(left_value, right_value),
-                ast::BinOrCmpOp::Cmp(ast::CmpOp::In) => self.r#in(left_value, right_value),
+                ast::BinOp::Add => self.add(left_value, right_value),
+                ast::BinOp::Sub => self.sub(left_value, right_value),
+                ast::BinOp::Mul => self.mul(left_value, right_value),
+                ast::BinOp::Div => self.div(left_value, right_value),
+                ast::BinOp::FloorDiv => self.floor_div(left_value, right_value),
+                ast::BinOp::Mod => self.r#mod(left_value, right_value),
+                ast::BinOp::Pow => self.pow(left_value, right_value),
+                ast::BinOp::LShift => self.bit_lshift(left_value, right_value),
+                ast::BinOp::RShift => self.bit_rshift(left_value, right_value),
+                ast::BinOp::BitAnd => self.bit_and(left_value, right_value),
+                ast::BinOp::BitOr => self.bit_or(left_value, right_value),
+                ast::BinOp::BitXor => self.bit_xor(left_value, right_value),
+                ast::BinOp::And => self.logic_and(left_value, right_value),
+                ast::BinOp::Or => self.logic_or(left_value, right_value),
+                ast::BinOp::As => self.r#as(left_value, right_value),
             };
             Ok(value)
         } else {
-            let jump_if_false = matches!(binary_expr.op, ast::BinOrCmpOp::Bin(ast::BinOp::And));
+            let jump_if_false = matches!(binary_expr.op, ast::BinOp::And);
             let start_block = self.append_block("");
             let value_block = self.append_block("");
             let end_block = self.append_block("");

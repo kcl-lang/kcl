@@ -2,5 +2,53 @@
 source: parser/src/tests/types.rs
 expression: "crate::tests::parsing_type_string(r####\"{str:{:float}, int:[]}\"####)"
 ---
-Node { node: Dict(DictType { key_type: Some(Node { node: Basic(Str), filename: "", line: 1, column: 1, end_line: 1, end_column: 4 }), value_type: Some(Node { node: Dict(DictType { key_type: None, value_type: Some(Node { node: Basic(Float), filename: "", line: 1, column: 7, end_line: 1, end_column: 12 }) }), filename: "", line: 1, column: 5, end_line: 1, end_column: 13 }) }), filename: "", line: 1, column: 0, end_line: 1, end_column: 14 }
+Node {
+    node: Dict(
+        DictType {
+            key_type: Some(
+                Node {
+                    node: Basic(
+                        Str,
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 1,
+                    end_line: 1,
+                    end_column: 4,
+                },
+            ),
+            value_type: Some(
+                Node {
+                    node: Dict(
+                        DictType {
+                            key_type: None,
+                            value_type: Some(
+                                Node {
+                                    node: Basic(
+                                        Float,
+                                    ),
+                                    filename: "",
+                                    line: 1,
+                                    column: 7,
+                                    end_line: 1,
+                                    end_column: 12,
+                                },
+                            ),
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 5,
+                    end_line: 1,
+                    end_column: 13,
+                },
+            ),
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 14,
+}
 

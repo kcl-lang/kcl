@@ -156,7 +156,10 @@ impl From<ast::Type> for Type {
             ),
             ast::Type::Literal(literal_ty) => match literal_ty {
                 ast::LiteralType::Bool(v) => Type::bool_lit(v),
-                ast::LiteralType::Int(v, suffix_option) => match suffix_option {
+                ast::LiteralType::Int(ast::IntLiteralType {
+                    value: v,
+                    suffix: suffix_option,
+                }) => match suffix_option {
                     Some(suffix) => Type::number_multiplier(
                         kclvm_runtime::cal_num(v, &suffix.value()),
                         v,

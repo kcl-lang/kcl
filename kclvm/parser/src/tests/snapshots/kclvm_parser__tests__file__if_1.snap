@@ -1,6 +1,5 @@
 ---
 source: parser/src/tests/file.rs
-assertion_line: 15
 expression: "crate::tests::parsing_file_string(\"testdata/if-01.k\")"
 ---
 {
@@ -12,49 +11,45 @@ expression: "crate::tests::parsing_file_string(\"testdata/if-01.k\")"
     {
       "node": {
         "type": "Assign",
-        "data": {
-          "targets": [
-            {
-              "node": {
-                "names": [
-                  {
-                    "node": "a",
-                    "filename": "if-01.k",
-                    "line": 1,
-                    "column": 0,
-                    "end_line": 1,
-                    "end_column": 1
-                  }
-                ],
-                "pkgpath": "",
-                "ctx": "Store"
-              },
-              "filename": "if-01.k",
-              "line": 1,
-              "column": 0,
-              "end_line": 1,
-              "end_column": 1
-            }
-          ],
-          "value": {
+        "targets": [
+          {
             "node": {
-              "type": "NumberLit",
-              "data": {
-                "binary_suffix": null,
-                "value": {
-                  "type": "Int",
-                  "data": 1
+              "names": [
+                {
+                  "node": "a",
+                  "filename": "if-01.k",
+                  "line": 1,
+                  "column": 0,
+                  "end_line": 1,
+                  "end_column": 1
                 }
-              }
+              ],
+              "pkgpath": "",
+              "ctx": "Store"
             },
             "filename": "if-01.k",
             "line": 1,
-            "column": 4,
+            "column": 0,
             "end_line": 1,
-            "end_column": 5
+            "end_column": 1
+          }
+        ],
+        "value": {
+          "node": {
+            "type": "NumberLit",
+            "binary_suffix": null,
+            "value": {
+              "type": "Int",
+              "value": 1
+            }
           },
-          "ty": null
-        }
+          "filename": "if-01.k",
+          "line": 1,
+          "column": 4,
+          "end_line": 1,
+          "end_column": 5
+        },
+        "ty": null
       },
       "filename": "if-01.k",
       "line": 1,
@@ -65,88 +60,80 @@ expression: "crate::tests::parsing_file_string(\"testdata/if-01.k\")"
     {
       "node": {
         "type": "If",
-        "data": {
-          "body": [
-            {
-              "node": {
-                "type": "Assign",
-                "data": {
-                  "targets": [
-                    {
-                      "node": {
-                        "names": [
-                          {
-                            "node": "bbb",
-                            "filename": "if-01.k",
-                            "line": 4,
-                            "column": 4,
-                            "end_line": 4,
-                            "end_column": 7
-                          }
-                        ],
-                        "pkgpath": "",
-                        "ctx": "Store"
-                      },
-                      "filename": "if-01.k",
-                      "line": 4,
-                      "column": 4,
-                      "end_line": 4,
-                      "end_column": 7
-                    }
-                  ],
-                  "value": {
-                    "node": {
-                      "type": "NumberLit",
-                      "data": {
-                        "binary_suffix": null,
-                        "value": {
-                          "type": "Int",
-                          "data": 2
-                        }
-                      }
-                    },
-                    "filename": "if-01.k",
-                    "line": 4,
-                    "column": 10,
-                    "end_line": 4,
-                    "end_column": 11
-                  },
-                  "ty": null
-                }
-              },
-              "filename": "if-01.k",
-              "line": 4,
-              "column": 4,
-              "end_line": 4,
-              "end_column": 11
-            }
-          ],
-          "cond": {
+        "body": [
+          {
             "node": {
-              "type": "Identifier",
-              "data": {
-                "names": [
-                  {
-                    "node": "a",
-                    "filename": "if-01.k",
-                    "line": 3,
-                    "column": 3,
-                    "end_line": 3,
-                    "end_column": 4
+              "type": "Assign",
+              "targets": [
+                {
+                  "node": {
+                    "names": [
+                      {
+                        "node": "bbb",
+                        "filename": "if-01.k",
+                        "line": 4,
+                        "column": 4,
+                        "end_line": 4,
+                        "end_column": 7
+                      }
+                    ],
+                    "pkgpath": "",
+                    "ctx": "Store"
+                  },
+                  "filename": "if-01.k",
+                  "line": 4,
+                  "column": 4,
+                  "end_line": 4,
+                  "end_column": 7
+                }
+              ],
+              "value": {
+                "node": {
+                  "type": "NumberLit",
+                  "binary_suffix": null,
+                  "value": {
+                    "type": "Int",
+                    "value": 2
                   }
-                ],
-                "pkgpath": "",
-                "ctx": "Load"
-              }
+                },
+                "filename": "if-01.k",
+                "line": 4,
+                "column": 10,
+                "end_line": 4,
+                "end_column": 11
+              },
+              "ty": null
             },
             "filename": "if-01.k",
-            "line": 3,
-            "column": 3,
-            "end_line": 3,
-            "end_column": 4
+            "line": 4,
+            "column": 4,
+            "end_line": 4,
+            "end_column": 11
+          }
+        ],
+        "cond": {
+          "node": {
+            "type": "Identifier",
+            "names": [
+              {
+                "node": "a",
+                "filename": "if-01.k",
+                "line": 3,
+                "column": 3,
+                "end_line": 3,
+                "end_column": 4
+              }
+            ],
+            "pkgpath": "",
+            "ctx": "Load"
           },
-          "orelse": []
-        }
+          "filename": "if-01.k",
+          "line": 3,
+          "column": 3,
+          "end_line": 3,
+          "end_column": 4
+        },
+        "orelse": []
       },
       "filename": "if-01.k",
       "line": 3,

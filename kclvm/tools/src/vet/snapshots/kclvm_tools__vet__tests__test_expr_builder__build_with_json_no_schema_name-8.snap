@@ -9,53 +9,47 @@ expression: got_ast_json_str
   "filename": "<workspace>/only_with_float.json",
   "line": 1,
   "node": {
-    "data": {
-      "items": [
-        {
-          "column": 0,
-          "end_column": 1,
-          "end_line": 3,
-          "filename": "<workspace>/only_with_float.json",
-          "line": 1,
-          "node": {
-            "insert_index": -1,
-            "key": {
-              "column": 4,
-              "end_column": 17,
-              "end_line": 2,
-              "filename": "<workspace>/only_with_float.json",
-              "line": 2,
-              "node": {
-                "data": {
-                  "is_long_string": false,
-                  "raw_value": "\"float_value\"",
-                  "value": "float_value"
-                },
-                "type": "StringLit"
-              }
-            },
-            "operation": "Union",
-            "value": {
-              "column": 19,
-              "end_column": 23,
-              "end_line": 2,
-              "filename": "<workspace>/only_with_float.json",
-              "line": 2,
-              "node": {
-                "data": {
-                  "binary_suffix": null,
-                  "value": {
-                    "data": 0.33,
-                    "type": "Float"
-                  }
-                },
-                "type": "NumberLit"
+    "items": [
+      {
+        "column": 0,
+        "end_column": 1,
+        "end_line": 3,
+        "filename": "<workspace>/only_with_float.json",
+        "line": 1,
+        "node": {
+          "insert_index": -1,
+          "key": {
+            "column": 4,
+            "end_column": 17,
+            "end_line": 2,
+            "filename": "<workspace>/only_with_float.json",
+            "line": 2,
+            "node": {
+              "is_long_string": false,
+              "raw_value": "\"float_value\"",
+              "type": "StringLit",
+              "value": "float_value"
+            }
+          },
+          "operation": "Union",
+          "value": {
+            "column": 19,
+            "end_column": 23,
+            "end_line": 2,
+            "filename": "<workspace>/only_with_float.json",
+            "line": 2,
+            "node": {
+              "binary_suffix": null,
+              "type": "NumberLit",
+              "value": {
+                "type": "Float",
+                "value": 0.33
               }
             }
           }
         }
-      ]
-    },
+      }
+    ],
     "type": "Config"
   }
 }

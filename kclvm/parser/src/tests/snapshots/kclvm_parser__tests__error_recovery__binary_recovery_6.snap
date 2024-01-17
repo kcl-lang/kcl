@@ -31,9 +31,7 @@ Node {
                             end_line: 1,
                             end_column: 1,
                         },
-                        op: Bin(
-                            Sub,
-                        ),
+                        op: Sub,
                         right: Node {
                             node: Unary(
                                 UnaryExpr {
@@ -64,9 +62,7 @@ Node {
                 end_line: 1,
                 end_column: 6,
             },
-            op: Bin(
-                Sub,
-            ),
+            op: Sub,
             right: Node {
                 node: Identifier(
                     Identifier {

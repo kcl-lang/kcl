@@ -2,5 +2,14 @@
 source: parser/src/tests/types.rs
 expression: "crate::tests::parsing_type_string(r####\"float\"####)"
 ---
-Node { node: Basic(Float), filename: "", line: 1, column: 0, end_line: 1, end_column: 5 }
+Node {
+    node: Basic(
+        Float,
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 5,
+}
 

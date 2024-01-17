@@ -2,5 +2,29 @@
 source: parser/src/tests/types.rs
 expression: "crate::tests::parsing_type_string(r####\"[[]]\"####)"
 ---
-Node { node: List(ListType { inner_type: Some(Node { node: List(ListType { inner_type: None }), filename: "", line: 1, column: 1, end_line: 1, end_column: 3 }) }), filename: "", line: 1, column: 0, end_line: 1, end_column: 4 }
+Node {
+    node: List(
+        ListType {
+            inner_type: Some(
+                Node {
+                    node: List(
+                        ListType {
+                            inner_type: None,
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 1,
+                    end_line: 1,
+                    end_column: 3,
+                },
+            ),
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 4,
+}
 

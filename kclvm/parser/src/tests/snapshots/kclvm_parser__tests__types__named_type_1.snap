@@ -2,5 +2,43 @@
 source: parser/src/tests/types.rs
 expression: "crate::tests::parsing_type_string(r####\"some.pkg.Person\"####)"
 ---
-Node { node: Named(Identifier { names: [Node { node: "some", filename: "", line: 1, column: 0, end_line: 1, end_column: 4 }, Node { node: "pkg", filename: "", line: 1, column: 5, end_line: 1, end_column: 8 }, Node { node: "Person", filename: "", line: 1, column: 9, end_line: 1, end_column: 15 }], pkgpath: "", ctx: Load }), filename: "", line: 1, column: 0, end_line: 1, end_column: 15 }
+Node {
+    node: Named(
+        Identifier {
+            names: [
+                Node {
+                    node: "some",
+                    filename: "",
+                    line: 1,
+                    column: 0,
+                    end_line: 1,
+                    end_column: 4,
+                },
+                Node {
+                    node: "pkg",
+                    filename: "",
+                    line: 1,
+                    column: 5,
+                    end_line: 1,
+                    end_column: 8,
+                },
+                Node {
+                    node: "Person",
+                    filename: "",
+                    line: 1,
+                    column: 9,
+                    end_line: 1,
+                    end_column: 15,
+                },
+            ],
+            pkgpath: "",
+            ctx: Load,
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 15,
+}
 

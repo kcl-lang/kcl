@@ -31,9 +31,7 @@ Node {
                             end_line: 1,
                             end_column: 1,
                         },
-                        op: Bin(
-                            LShift,
-                        ),
+                        op: LShift,
                         right: Node {
                             node: Missing(
                                 MissingExpr,

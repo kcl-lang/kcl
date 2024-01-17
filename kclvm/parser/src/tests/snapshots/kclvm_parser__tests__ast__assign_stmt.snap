@@ -1,6 +1,5 @@
 ---
 source: parser/src/tests/ast.rs
-assertion_line: 36
 expression: "crate::tests::parsing_file_ast_json(\"hello.k\", r####\"a=123\"####)"
 ---
 {
@@ -12,49 +11,45 @@ expression: "crate::tests::parsing_file_ast_json(\"hello.k\", r####\"a=123\"####
     {
       "node": {
         "type": "Assign",
-        "data": {
-          "targets": [
-            {
-              "node": {
-                "names": [
-                  {
-                    "node": "a",
-                    "filename": "hello.k",
-                    "line": 1,
-                    "column": 0,
-                    "end_line": 1,
-                    "end_column": 1
-                  }
-                ],
-                "pkgpath": "",
-                "ctx": "Store"
-              },
-              "filename": "hello.k",
-              "line": 1,
-              "column": 0,
-              "end_line": 1,
-              "end_column": 1
-            }
-          ],
-          "value": {
+        "targets": [
+          {
             "node": {
-              "type": "NumberLit",
-              "data": {
-                "binary_suffix": null,
-                "value": {
-                  "type": "Int",
-                  "data": 123
+              "names": [
+                {
+                  "node": "a",
+                  "filename": "hello.k",
+                  "line": 1,
+                  "column": 0,
+                  "end_line": 1,
+                  "end_column": 1
                 }
-              }
+              ],
+              "pkgpath": "",
+              "ctx": "Store"
             },
             "filename": "hello.k",
             "line": 1,
-            "column": 2,
+            "column": 0,
             "end_line": 1,
-            "end_column": 5
+            "end_column": 1
+          }
+        ],
+        "value": {
+          "node": {
+            "type": "NumberLit",
+            "binary_suffix": null,
+            "value": {
+              "type": "Int",
+              "value": 123
+            }
           },
-          "ty": null
-        }
+          "filename": "hello.k",
+          "line": 1,
+          "column": 2,
+          "end_line": 1,
+          "end_column": 5
+        },
+        "ty": null
       },
       "filename": "hello.k",
       "line": 1,

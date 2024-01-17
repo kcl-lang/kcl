@@ -1,6 +1,5 @@
 ---
 source: parser/src/tests/ast.rs
-assertion_line: 59
 expression: "crate::tests::parsing_file_ast_json(\"hello.k\",\n    r####\"\n# comment1\na = 1\n# comment22\nb = 2\n# comment333\nc = 3 # comment4444\n    \"####)"
 ---
 {
@@ -12,49 +11,45 @@ expression: "crate::tests::parsing_file_ast_json(\"hello.k\",\n    r####\"\n# co
     {
       "node": {
         "type": "Assign",
-        "data": {
-          "targets": [
-            {
-              "node": {
-                "names": [
-                  {
-                    "node": "a",
-                    "filename": "hello.k",
-                    "line": 3,
-                    "column": 0,
-                    "end_line": 3,
-                    "end_column": 1
-                  }
-                ],
-                "pkgpath": "",
-                "ctx": "Store"
-              },
-              "filename": "hello.k",
-              "line": 3,
-              "column": 0,
-              "end_line": 3,
-              "end_column": 1
-            }
-          ],
-          "value": {
+        "targets": [
+          {
             "node": {
-              "type": "NumberLit",
-              "data": {
-                "binary_suffix": null,
-                "value": {
-                  "type": "Int",
-                  "data": 1
+              "names": [
+                {
+                  "node": "a",
+                  "filename": "hello.k",
+                  "line": 3,
+                  "column": 0,
+                  "end_line": 3,
+                  "end_column": 1
                 }
-              }
+              ],
+              "pkgpath": "",
+              "ctx": "Store"
             },
             "filename": "hello.k",
             "line": 3,
-            "column": 4,
+            "column": 0,
             "end_line": 3,
-            "end_column": 5
+            "end_column": 1
+          }
+        ],
+        "value": {
+          "node": {
+            "type": "NumberLit",
+            "binary_suffix": null,
+            "value": {
+              "type": "Int",
+              "value": 1
+            }
           },
-          "ty": null
-        }
+          "filename": "hello.k",
+          "line": 3,
+          "column": 4,
+          "end_line": 3,
+          "end_column": 5
+        },
+        "ty": null
       },
       "filename": "hello.k",
       "line": 3,
@@ -65,49 +60,45 @@ expression: "crate::tests::parsing_file_ast_json(\"hello.k\",\n    r####\"\n# co
     {
       "node": {
         "type": "Assign",
-        "data": {
-          "targets": [
-            {
-              "node": {
-                "names": [
-                  {
-                    "node": "b",
-                    "filename": "hello.k",
-                    "line": 5,
-                    "column": 0,
-                    "end_line": 5,
-                    "end_column": 1
-                  }
-                ],
-                "pkgpath": "",
-                "ctx": "Store"
-              },
-              "filename": "hello.k",
-              "line": 5,
-              "column": 0,
-              "end_line": 5,
-              "end_column": 1
-            }
-          ],
-          "value": {
+        "targets": [
+          {
             "node": {
-              "type": "NumberLit",
-              "data": {
-                "binary_suffix": null,
-                "value": {
-                  "type": "Int",
-                  "data": 2
+              "names": [
+                {
+                  "node": "b",
+                  "filename": "hello.k",
+                  "line": 5,
+                  "column": 0,
+                  "end_line": 5,
+                  "end_column": 1
                 }
-              }
+              ],
+              "pkgpath": "",
+              "ctx": "Store"
             },
             "filename": "hello.k",
             "line": 5,
-            "column": 4,
+            "column": 0,
             "end_line": 5,
-            "end_column": 5
+            "end_column": 1
+          }
+        ],
+        "value": {
+          "node": {
+            "type": "NumberLit",
+            "binary_suffix": null,
+            "value": {
+              "type": "Int",
+              "value": 2
+            }
           },
-          "ty": null
-        }
+          "filename": "hello.k",
+          "line": 5,
+          "column": 4,
+          "end_line": 5,
+          "end_column": 5
+        },
+        "ty": null
       },
       "filename": "hello.k",
       "line": 5,
@@ -118,49 +109,45 @@ expression: "crate::tests::parsing_file_ast_json(\"hello.k\",\n    r####\"\n# co
     {
       "node": {
         "type": "Assign",
-        "data": {
-          "targets": [
-            {
-              "node": {
-                "names": [
-                  {
-                    "node": "c",
-                    "filename": "hello.k",
-                    "line": 7,
-                    "column": 0,
-                    "end_line": 7,
-                    "end_column": 1
-                  }
-                ],
-                "pkgpath": "",
-                "ctx": "Store"
-              },
-              "filename": "hello.k",
-              "line": 7,
-              "column": 0,
-              "end_line": 7,
-              "end_column": 1
-            }
-          ],
-          "value": {
+        "targets": [
+          {
             "node": {
-              "type": "NumberLit",
-              "data": {
-                "binary_suffix": null,
-                "value": {
-                  "type": "Int",
-                  "data": 3
+              "names": [
+                {
+                  "node": "c",
+                  "filename": "hello.k",
+                  "line": 7,
+                  "column": 0,
+                  "end_line": 7,
+                  "end_column": 1
                 }
-              }
+              ],
+              "pkgpath": "",
+              "ctx": "Store"
             },
             "filename": "hello.k",
             "line": 7,
-            "column": 4,
+            "column": 0,
             "end_line": 7,
-            "end_column": 5
+            "end_column": 1
+          }
+        ],
+        "value": {
+          "node": {
+            "type": "NumberLit",
+            "binary_suffix": null,
+            "value": {
+              "type": "Int",
+              "value": 3
+            }
           },
-          "ty": null
-        }
+          "filename": "hello.k",
+          "line": 7,
+          "column": 4,
+          "end_line": 7,
+          "end_column": 5
+        },
+        "ty": null
       },
       "filename": "hello.k",
       "line": 7,

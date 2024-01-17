@@ -23,9 +23,7 @@ Node {
                             end_line: 1,
                             end_column: 1,
                         },
-                        op: Bin(
-                            Mul,
-                        ),
+                        op: Mul,
                         right: Node {
                             node: Paren(
                                 ParenExpr {
@@ -47,9 +45,7 @@ Node {
                                                     end_line: 1,
                                                     end_column: 4,
                                                 },
-                                                op: Bin(
-                                                    Add,
-                                                ),
+                                                op: Add,
                                                 right: Node {
                                                     node: NumberLit(
                                                         NumberLit {
@@ -89,9 +85,7 @@ Node {
                 end_line: 1,
                 end_column: 7,
             },
-            op: Bin(
-                Sub,
-            ),
+            op: Sub,
             right: Node {
                 node: NumberLit(
                     NumberLit {

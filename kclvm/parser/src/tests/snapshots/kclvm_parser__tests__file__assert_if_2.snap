@@ -1,6 +1,5 @@
 ---
 source: parser/src/tests/file.rs
-assertion_line: 8
 expression: "crate::tests::parsing_file_string(\"testdata/assert-if-2.k\")"
 ---
 {
@@ -12,315 +11,279 @@ expression: "crate::tests::parsing_file_string(\"testdata/assert-if-2.k\")"
     {
       "node": {
         "type": "Schema",
-        "data": {
-          "doc": null,
-          "name": {
-            "node": "Data",
+        "doc": null,
+        "name": {
+          "node": "Data",
+          "filename": "assert-if-2.k",
+          "line": 1,
+          "column": 7,
+          "end_line": 1,
+          "end_column": 11
+        },
+        "parent_name": null,
+        "for_host_name": null,
+        "is_mixin": false,
+        "is_protocol": false,
+        "args": null,
+        "mixins": [],
+        "body": [
+          {
+            "node": {
+              "type": "Assert",
+              "test": {
+                "node": {
+                  "type": "NameConstantLit",
+                  "value": "True"
+                },
+                "filename": "assert-if-2.k",
+                "line": 2,
+                "column": 11,
+                "end_line": 2,
+                "end_column": 15
+              },
+              "if_cond": {
+                "node": {
+                  "type": "NameConstantLit",
+                  "value": "False"
+                },
+                "filename": "assert-if-2.k",
+                "line": 2,
+                "column": 19,
+                "end_line": 2,
+                "end_column": 24
+              },
+              "msg": null
+            },
             "filename": "assert-if-2.k",
-            "line": 1,
-            "column": 7,
-            "end_line": 1,
-            "end_column": 11
+            "line": 2,
+            "column": 4,
+            "end_line": 2,
+            "end_column": 24
           },
-          "parent_name": null,
-          "for_host_name": null,
-          "is_mixin": false,
-          "is_protocol": false,
-          "args": null,
-          "mixins": [],
-          "body": [
-            {
-              "node": {
-                "type": "Assert",
-                "data": {
-                  "test": {
+          {
+            "node": {
+              "type": "Assert",
+              "test": {
+                "node": {
+                  "type": "Compare",
+                  "left": {
                     "node": {
-                      "type": "NameConstantLit",
-                      "data": {
-                        "value": "True"
-                      }
-                    },
-                    "filename": "assert-if-2.k",
-                    "line": 2,
-                    "column": 11,
-                    "end_line": 2,
-                    "end_column": 15
-                  },
-                  "if_cond": {
-                    "node": {
-                      "type": "NameConstantLit",
-                      "data": {
-                        "value": "False"
-                      }
-                    },
-                    "filename": "assert-if-2.k",
-                    "line": 2,
-                    "column": 19,
-                    "end_line": 2,
-                    "end_column": 24
-                  },
-                  "msg": null
-                }
-              },
-              "filename": "assert-if-2.k",
-              "line": 2,
-              "column": 4,
-              "end_line": 2,
-              "end_column": 24
-            },
-            {
-              "node": {
-                "type": "Assert",
-                "data": {
-                  "test": {
-                    "node": {
-                      "type": "Compare",
-                      "data": {
-                        "left": {
-                          "node": {
-                            "type": "NumberLit",
-                            "data": {
-                              "binary_suffix": null,
-                              "value": {
-                                "type": "Int",
-                                "data": 1
-                              }
-                            }
-                          },
-                          "filename": "assert-if-2.k",
-                          "line": 3,
-                          "column": 11,
-                          "end_line": 3,
-                          "end_column": 12
-                        },
-                        "ops": [
-                          "Eq"
-                        ],
-                        "comparators": [
-                          {
-                            "node": {
-                              "type": "NumberLit",
-                              "data": {
-                                "binary_suffix": null,
-                                "value": {
-                                  "type": "Int",
-                                  "data": 1
-                                }
-                              }
-                            },
-                            "filename": "assert-if-2.k",
-                            "line": 3,
-                            "column": 16,
-                            "end_line": 3,
-                            "end_column": 17
-                          }
-                        ]
+                      "type": "NumberLit",
+                      "binary_suffix": null,
+                      "value": {
+                        "type": "Int",
+                        "value": 1
                       }
                     },
                     "filename": "assert-if-2.k",
                     "line": 3,
                     "column": 11,
                     "end_line": 3,
-                    "end_column": 17
+                    "end_column": 12
                   },
-                  "if_cond": {
-                    "node": {
-                      "type": "NameConstantLit",
-                      "data": {
-                        "value": "False"
-                      }
-                    },
-                    "filename": "assert-if-2.k",
-                    "line": 3,
-                    "column": 21,
-                    "end_line": 3,
-                    "end_column": 26
-                  },
-                  "msg": null
-                }
-              },
-              "filename": "assert-if-2.k",
-              "line": 3,
-              "column": 4,
-              "end_line": 3,
-              "end_column": 26
-            },
-            {
-              "node": {
-                "type": "Assign",
-                "data": {
-                  "targets": [
+                  "ops": [
+                    "Eq"
+                  ],
+                  "comparators": [
                     {
                       "node": {
-                        "names": [
-                          {
-                            "node": "_x",
-                            "filename": "assert-if-2.k",
-                            "line": 4,
-                            "column": 4,
-                            "end_line": 4,
-                            "end_column": 6
-                          }
-                        ],
-                        "pkgpath": "",
-                        "ctx": "Store"
+                        "type": "NumberLit",
+                        "binary_suffix": null,
+                        "value": {
+                          "type": "Int",
+                          "value": 1
+                        }
                       },
                       "filename": "assert-if-2.k",
-                      "line": 4,
-                      "column": 4,
-                      "end_line": 4,
-                      "end_column": 6
+                      "line": 3,
+                      "column": 16,
+                      "end_line": 3,
+                      "end_column": 17
                     }
-                  ],
-                  "value": {
-                    "node": {
-                      "type": "StringLit",
-                      "data": {
-                        "is_long_string": false,
-                        "raw_value": "\"good case\"",
-                        "value": "good case"
-                      }
-                    },
-                    "filename": "assert-if-2.k",
-                    "line": 4,
-                    "column": 9,
-                    "end_line": 4,
-                    "end_column": 20
-                  },
-                  "ty": null
-                }
+                  ]
+                },
+                "filename": "assert-if-2.k",
+                "line": 3,
+                "column": 11,
+                "end_line": 3,
+                "end_column": 17
               },
-              "filename": "assert-if-2.k",
-              "line": 4,
-              "column": 4,
-              "end_line": 4,
-              "end_column": 20
+              "if_cond": {
+                "node": {
+                  "type": "NameConstantLit",
+                  "value": "False"
+                },
+                "filename": "assert-if-2.k",
+                "line": 3,
+                "column": 21,
+                "end_line": 3,
+                "end_column": 26
+              },
+              "msg": null
             },
-            {
-              "node": {
-                "type": "Assert",
-                "data": {
-                  "test": {
+            "filename": "assert-if-2.k",
+            "line": 3,
+            "column": 4,
+            "end_line": 3,
+            "end_column": 26
+          },
+          {
+            "node": {
+              "type": "Assign",
+              "targets": [
+                {
+                  "node": {
+                    "names": [
+                      {
+                        "node": "_x",
+                        "filename": "assert-if-2.k",
+                        "line": 4,
+                        "column": 4,
+                        "end_line": 4,
+                        "end_column": 6
+                      }
+                    ],
+                    "pkgpath": "",
+                    "ctx": "Store"
+                  },
+                  "filename": "assert-if-2.k",
+                  "line": 4,
+                  "column": 4,
+                  "end_line": 4,
+                  "end_column": 6
+                }
+              ],
+              "value": {
+                "node": {
+                  "type": "StringLit",
+                  "is_long_string": false,
+                  "raw_value": "\"good case\"",
+                  "value": "good case"
+                },
+                "filename": "assert-if-2.k",
+                "line": 4,
+                "column": 9,
+                "end_line": 4,
+                "end_column": 20
+              },
+              "ty": null
+            },
+            "filename": "assert-if-2.k",
+            "line": 4,
+            "column": 4,
+            "end_line": 4,
+            "end_column": 20
+          },
+          {
+            "node": {
+              "type": "Assert",
+              "test": {
+                "node": {
+                  "type": "Compare",
+                  "left": {
                     "node": {
-                      "type": "Compare",
-                      "data": {
-                        "left": {
-                          "node": {
-                            "type": "Identifier",
-                            "data": {
-                              "names": [
-                                {
-                                  "node": "_x",
-                                  "filename": "assert-if-2.k",
-                                  "line": 5,
-                                  "column": 11,
-                                  "end_line": 5,
-                                  "end_column": 13
-                                }
-                              ],
-                              "pkgpath": "",
-                              "ctx": "Load"
-                            }
-                          },
+                      "type": "Identifier",
+                      "names": [
+                        {
+                          "node": "_x",
                           "filename": "assert-if-2.k",
                           "line": 5,
                           "column": 11,
                           "end_line": 5,
                           "end_column": 13
-                        },
-                        "ops": [
-                          "Eq"
-                        ],
-                        "comparators": [
-                          {
-                            "node": {
-                              "type": "StringLit",
-                              "data": {
-                                "is_long_string": false,
-                                "raw_value": "\"good case\"",
-                                "value": "good case"
-                              }
-                            },
-                            "filename": "assert-if-2.k",
-                            "line": 5,
-                            "column": 17,
-                            "end_line": 5,
-                            "end_column": 28
-                          }
-                        ]
-                      }
+                        }
+                      ],
+                      "pkgpath": "",
+                      "ctx": "Load"
                     },
                     "filename": "assert-if-2.k",
                     "line": 5,
                     "column": 11,
                     "end_line": 5,
-                    "end_column": 28
+                    "end_column": 13
                   },
-                  "if_cond": {
+                  "ops": [
+                    "Eq"
+                  ],
+                  "comparators": [
+                    {
+                      "node": {
+                        "type": "StringLit",
+                        "is_long_string": false,
+                        "raw_value": "\"good case\"",
+                        "value": "good case"
+                      },
+                      "filename": "assert-if-2.k",
+                      "line": 5,
+                      "column": 17,
+                      "end_line": 5,
+                      "end_column": 28
+                    }
+                  ]
+                },
+                "filename": "assert-if-2.k",
+                "line": 5,
+                "column": 11,
+                "end_line": 5,
+                "end_column": 28
+              },
+              "if_cond": {
+                "node": {
+                  "type": "Unary",
+                  "op": "Not",
+                  "operand": {
                     "node": {
-                      "type": "Unary",
-                      "data": {
-                        "op": "Not",
-                        "operand": {
-                          "node": {
-                            "type": "Identifier",
-                            "data": {
-                              "names": [
-                                {
-                                  "node": "_x",
-                                  "filename": "assert-if-2.k",
-                                  "line": 5,
-                                  "column": 36,
-                                  "end_line": 5,
-                                  "end_column": 38
-                                }
-                              ],
-                              "pkgpath": "",
-                              "ctx": "Load"
-                            }
-                          },
+                      "type": "Identifier",
+                      "names": [
+                        {
+                          "node": "_x",
                           "filename": "assert-if-2.k",
                           "line": 5,
                           "column": 36,
                           "end_line": 5,
                           "end_column": 38
                         }
-                      }
+                      ],
+                      "pkgpath": "",
+                      "ctx": "Load"
                     },
                     "filename": "assert-if-2.k",
                     "line": 5,
-                    "column": 32,
+                    "column": 36,
                     "end_line": 5,
                     "end_column": 38
-                  },
-                  "msg": {
-                    "node": {
-                      "type": "StringLit",
-                      "data": {
-                        "is_long_string": false,
-                        "raw_value": "\"_x need to be 'good case'\"",
-                        "value": "_x need to be 'good case'"
-                      }
-                    },
-                    "filename": "assert-if-2.k",
-                    "line": 5,
-                    "column": 40,
-                    "end_line": 5,
-                    "end_column": 67
                   }
-                }
+                },
+                "filename": "assert-if-2.k",
+                "line": 5,
+                "column": 32,
+                "end_line": 5,
+                "end_column": 38
               },
-              "filename": "assert-if-2.k",
-              "line": 5,
-              "column": 4,
-              "end_line": 5,
-              "end_column": 67
-            }
-          ],
-          "decorators": [],
-          "checks": [],
-          "index_signature": null
-        }
+              "msg": {
+                "node": {
+                  "type": "StringLit",
+                  "is_long_string": false,
+                  "raw_value": "\"_x need to be 'good case'\"",
+                  "value": "_x need to be 'good case'"
+                },
+                "filename": "assert-if-2.k",
+                "line": 5,
+                "column": 40,
+                "end_line": 5,
+                "end_column": 67
+              }
+            },
+            "filename": "assert-if-2.k",
+            "line": 5,
+            "column": 4,
+            "end_line": 5,
+            "end_column": 67
+          }
+        ],
+        "decorators": [],
+        "checks": [],
+        "index_signature": null
       },
       "filename": "assert-if-2.k",
       "line": 1,
@@ -331,80 +294,74 @@ expression: "crate::tests::parsing_file_string(\"testdata/assert-if-2.k\")"
     {
       "node": {
         "type": "Assign",
-        "data": {
-          "targets": [
-            {
-              "node": {
-                "names": [
-                  {
-                    "node": "data",
-                    "filename": "assert-if-2.k",
-                    "line": 7,
-                    "column": 0,
-                    "end_line": 7,
-                    "end_column": 4
-                  }
-                ],
-                "pkgpath": "",
-                "ctx": "Store"
-              },
-              "filename": "assert-if-2.k",
-              "line": 7,
-              "column": 0,
-              "end_line": 7,
-              "end_column": 4
-            }
-          ],
-          "value": {
+        "targets": [
+          {
             "node": {
-              "type": "Schema",
-              "data": {
-                "name": {
-                  "node": {
-                    "names": [
-                      {
-                        "node": "Data",
-                        "filename": "assert-if-2.k",
-                        "line": 7,
-                        "column": 7,
-                        "end_line": 7,
-                        "end_column": 11
-                      }
-                    ],
-                    "pkgpath": "",
-                    "ctx": "Load"
-                  },
+              "names": [
+                {
+                  "node": "data",
                   "filename": "assert-if-2.k",
                   "line": 7,
-                  "column": 7,
+                  "column": 0,
                   "end_line": 7,
-                  "end_column": 11
-                },
-                "args": [],
-                "kwargs": [],
-                "config": {
-                  "node": {
-                    "type": "Config",
-                    "data": {
-                      "items": []
-                    }
-                  },
-                  "filename": "assert-if-2.k",
-                  "line": 7,
-                  "column": 12,
-                  "end_line": 7,
-                  "end_column": 14
+                  "end_column": 4
                 }
-              }
+              ],
+              "pkgpath": "",
+              "ctx": "Store"
             },
             "filename": "assert-if-2.k",
             "line": 7,
-            "column": 7,
+            "column": 0,
             "end_line": 7,
-            "end_column": 14
+            "end_column": 4
+          }
+        ],
+        "value": {
+          "node": {
+            "type": "Schema",
+            "name": {
+              "node": {
+                "names": [
+                  {
+                    "node": "Data",
+                    "filename": "assert-if-2.k",
+                    "line": 7,
+                    "column": 7,
+                    "end_line": 7,
+                    "end_column": 11
+                  }
+                ],
+                "pkgpath": "",
+                "ctx": "Load"
+              },
+              "filename": "assert-if-2.k",
+              "line": 7,
+              "column": 7,
+              "end_line": 7,
+              "end_column": 11
+            },
+            "args": [],
+            "kwargs": [],
+            "config": {
+              "node": {
+                "type": "Config",
+                "items": []
+              },
+              "filename": "assert-if-2.k",
+              "line": 7,
+              "column": 12,
+              "end_line": 7,
+              "end_column": 14
+            }
           },
-          "ty": null
-        }
+          "filename": "assert-if-2.k",
+          "line": 7,
+          "column": 7,
+          "end_line": 7,
+          "end_column": 14
+        },
+        "ty": null
       },
       "filename": "assert-if-2.k",
       "line": 7,

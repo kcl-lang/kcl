@@ -35,9 +35,7 @@ Node {
                                                 end_line: 1,
                                                 end_column: 12,
                                             },
-                                            op: Bin(
-                                                Pow,
-                                            ),
+                                            op: Pow,
                                             right: Node {
                                                 node: Identifier(
                                                     Identifier {

@@ -2,5 +2,17 @@
 source: parser/src/tests/types.rs
 expression: "crate::tests::parsing_type_string(r####\"{:}\"####)"
 ---
-Node { node: Dict(DictType { key_type: None, value_type: None }), filename: "", line: 1, column: 0, end_line: 1, end_column: 3 }
+Node {
+    node: Dict(
+        DictType {
+            key_type: None,
+            value_type: None,
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 3,
+}
 

@@ -22,9 +22,7 @@ Node {
                                             end_line: 1,
                                             end_column: 2,
                                         },
-                                        op: Bin(
-                                            Mul,
-                                        ),
+                                        op: Mul,
                                         right: Node {
                                             node: Identifier(
                                                 Identifier {
@@ -70,9 +68,7 @@ Node {
                                         end_line: 1,
                                         end_column: 7,
                                     },
-                                    op: Bin(
-                                        Pow,
-                                    ),
+                                    op: Pow,
                                     right: Node {
                                         node: Identifier(
                                             Identifier {
