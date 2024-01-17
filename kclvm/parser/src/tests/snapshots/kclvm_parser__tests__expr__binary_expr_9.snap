@@ -51,9 +51,7 @@ Node {
                 end_line: 1,
                 end_column: 23,
             },
-            op: Bin(
-                And,
-            ),
+            op: And,
             right: Node {
                 node: Compare(
                     Compare {

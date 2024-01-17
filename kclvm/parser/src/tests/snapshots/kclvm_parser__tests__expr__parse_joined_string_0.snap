@@ -29,9 +29,7 @@ Node {
                                             end_line: 1,
                                             end_column: 6,
                                         },
-                                        op: Bin(
-                                            Add,
-                                        ),
+                                        op: Add,
                                         right: Node {
                                             node: NumberLit(
                                                 NumberLit {

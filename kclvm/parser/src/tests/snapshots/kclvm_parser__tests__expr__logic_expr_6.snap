@@ -29,9 +29,7 @@ Node {
                 end_line: 1,
                 end_column: 9,
             },
-            op: Bin(
-                Or,
-            ),
+            op: Or,
             right: Node {
                 node: Binary(
                     BinaryExpr {
@@ -89,9 +87,7 @@ Node {
                             end_line: 1,
                             end_column: 32,
                         },
-                        op: Bin(
-                            And,
-                        ),
+                        op: And,
                         right: Node {
                             node: Compare(
                                 Compare {

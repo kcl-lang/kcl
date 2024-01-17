@@ -401,7 +401,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             match &schema_attr.op {
                 Some(bin_or_aug) => match bin_or_aug {
                     // Union
-                    ast::BinOrAugOp::Aug(ast::AugOp::BitOr) => {
+                    ast::AugOp::BitOr => {
                         let op = ast::BinOp::BitOr;
                         let value_ty = self.binary(
                             value_ty,
@@ -451,37 +451,42 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
         let left_ty = self.expr(&binary_expr.left);
         let mut right_ty = self.expr(&binary_expr.right);
         match &binary_expr.op {
-            ast::BinOrCmpOp::Bin(bin_op) => match bin_op {
-                ast::BinOp::As => {
-                    if let ast::Expr::Identifier(identifier) = &binary_expr.right.node {
-                        right_ty = self.parse_ty_str_with_scope(
-                            &identifier.get_name(),
-                            binary_expr.right.get_span_pos(),
-                        );
-                        if right_ty.is_schema() {
-                            let mut schema_ty = right_ty.into_schema_type();
-                            schema_ty.is_instance = true;
-                            right_ty = Arc::new(Type::schema(schema_ty));
-                        }
-                        let ty_annotation_str = right_ty.into_type_annotation_str();
-                        self.add_type_alias(
-                            &identifier.get_name(),
-                            &ty_str_replace_pkgpath(&ty_annotation_str, &self.ctx.pkgpath),
-                        );
-                    } else {
-                        self.handler.add_compile_error(
-                            "keyword 'as' right operand must be a type",
-                            binary_expr.left.get_span_pos(),
-                        );
-                        return left_ty;
+            ast::BinOp::As => {
+                if let ast::Expr::Identifier(identifier) = &binary_expr.right.node {
+                    right_ty = self.parse_ty_str_with_scope(
+                        &identifier.get_name(),
+                        binary_expr.right.get_span_pos(),
+                    );
+                    if right_ty.is_schema() {
+                        let mut schema_ty = right_ty.into_schema_type();
+                        schema_ty.is_instance = true;
+                        right_ty = Arc::new(Type::schema(schema_ty));
                     }
-                    self.binary(left_ty, right_ty, bin_op, binary_expr.left.get_span_pos())
+                    let ty_annotation_str = right_ty.into_type_annotation_str();
+                    self.add_type_alias(
+                        &identifier.get_name(),
+                        &ty_str_replace_pkgpath(&ty_annotation_str, &self.ctx.pkgpath),
+                    );
+                } else {
+                    self.handler.add_compile_error(
+                        "keyword 'as' right operand must be a type",
+                        binary_expr.left.get_span_pos(),
+                    );
+                    return left_ty;
                 }
-                _ => self.binary(left_ty, right_ty, bin_op, binary_expr.left.get_span_pos()),
-            },
-            ast::BinOrCmpOp::Cmp(cmp_op) => {
-                self.compare(left_ty, right_ty, cmp_op, binary_expr.left.get_span_pos())
+                self.binary(
+                    left_ty,
+                    right_ty,
+                    &binary_expr.op,
+                    binary_expr.left.get_span_pos(),
+                )
             }
+            _ => self.binary(
+                left_ty,
+                right_ty,
+                &binary_expr.op,
+                binary_expr.left.get_span_pos(),
+            ),
         }
     }
 

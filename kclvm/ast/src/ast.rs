@@ -401,7 +401,7 @@ impl Module {
 
 /// A statement
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[serde(tag = "type", content = "data")]
+#[serde(tag = "type")]
 pub enum Stmt {
     TypeAlias(TypeAliasStmt),
     Expr(ExprStmt),
@@ -643,7 +643,7 @@ pub struct SchemaIndexSignature {
 pub struct SchemaAttr {
     pub doc: String,
     pub name: NodeRef<String>,
-    pub op: Option<BinOrAugOp>,
+    pub op: Option<AugOp>,
     pub value: Option<NodeRef<Expr>>,
     pub is_optional: bool,
     pub decorators: Vec<NodeRef<CallExpr>>,
@@ -670,7 +670,7 @@ pub struct RuleStmt {
 
 /// A expression
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[serde(tag = "type", content = "data")]
+#[serde(tag = "type")]
 pub enum Expr {
     Identifier(Identifier),
     Unary(UnaryExpr),
@@ -791,7 +791,7 @@ pub struct UnaryExpr {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct BinaryExpr {
     pub left: NodeRef<Expr>,
-    pub op: BinOrCmpOp,
+    pub op: BinOp,
     pub right: NodeRef<Expr>,
 }
 
@@ -1136,7 +1136,7 @@ pub struct Compare {
 /// """long string literal"""
 /// ```
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[serde(tag = "type", content = "data")]
+#[serde(tag = "type")]
 pub enum Literal {
     Number(NumberLit),
     String(StringLit),
@@ -1200,7 +1200,7 @@ impl NumberBinarySuffix {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[serde(tag = "type", content = "data")]
+#[serde(tag = "type", content = "value")]
 pub enum NumberLitValue {
     Int(i64),
     Float(f64),
@@ -1566,18 +1566,10 @@ impl CmpOp {
 
 /// BinOrCmpOp is the set of all binary and comparison operators in KCL.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[serde(tag = "type", content = "data")]
+#[serde(tag = "type")]
 pub enum BinOrCmpOp {
     Bin(BinOp),
     Cmp(CmpOp),
-}
-
-/// BinOrAugOp is the set of all binary and argument operators in KCL.
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[serde(tag = "type", content = "data")]
-pub enum BinOrAugOp {
-    Bin(BinOp),
-    Aug(AugOp),
 }
 
 /// ExprContext represents the location information of the AST node.
@@ -1634,12 +1626,18 @@ pub struct UnionType {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[serde(tag = "type", content = "data")]
+#[serde(tag = "type", content = "value")]
 pub enum LiteralType {
     Bool(bool),
-    Int(i64, Option<NumberBinarySuffix>), // value + suffix
+    Int(IntLiteralType), // value + suffix
     Float(f64),
     Str(String),
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct IntLiteralType {
+    pub value: i64,
+    pub suffix: Option<NumberBinarySuffix>,
 }
 
 impl ToString for Type {
@@ -1697,7 +1695,7 @@ impl ToString for Type {
                             w.push_str("False");
                         }
                     }
-                    LiteralType::Int(v, suffix) => {
+                    LiteralType::Int(IntLiteralType { value: v, suffix }) => {
                         if let Some(suffix) = suffix {
                             w.push_str(&format!("{}{}", v, suffix.value()));
                         } else {

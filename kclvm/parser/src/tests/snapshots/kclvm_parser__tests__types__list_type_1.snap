@@ -2,5 +2,27 @@
 source: parser/src/tests/types.rs
 expression: "crate::tests::parsing_type_string(r####\"[int]\"####)"
 ---
-Node { node: List(ListType { inner_type: Some(Node { node: Basic(Int), filename: "", line: 1, column: 1, end_line: 1, end_column: 4 }) }), filename: "", line: 1, column: 0, end_line: 1, end_column: 5 }
+Node {
+    node: List(
+        ListType {
+            inner_type: Some(
+                Node {
+                    node: Basic(
+                        Int,
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 1,
+                    end_line: 1,
+                    end_column: 4,
+                },
+            ),
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 5,
+}
 

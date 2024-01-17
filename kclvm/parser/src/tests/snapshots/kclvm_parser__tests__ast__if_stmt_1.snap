@@ -1,6 +1,5 @@
 ---
 source: parser/src/tests/ast.rs
-assertion_line: 49
 expression: "crate::tests::parsing_file_ast_json(\"hello.k\",\n    r####\"\ndata2 = {\n    **{key = \"value1\"}\n    if a == 123: if b == 456: key = \"value2\"\n}\n    \"####)"
 ---
 {
@@ -12,342 +11,312 @@ expression: "crate::tests::parsing_file_ast_json(\"hello.k\",\n    r####\"\ndata
     {
       "node": {
         "type": "Assign",
-        "data": {
-          "targets": [
-            {
-              "node": {
-                "names": [
-                  {
-                    "node": "data2",
-                    "filename": "hello.k",
-                    "line": 2,
-                    "column": 0,
-                    "end_line": 2,
-                    "end_column": 5
-                  }
-                ],
-                "pkgpath": "",
-                "ctx": "Store"
-              },
-              "filename": "hello.k",
-              "line": 2,
-              "column": 0,
-              "end_line": 2,
-              "end_column": 5
-            }
-          ],
-          "value": {
+        "targets": [
+          {
             "node": {
-              "type": "Config",
-              "data": {
-                "items": [
-                  {
+              "names": [
+                {
+                  "node": "data2",
+                  "filename": "hello.k",
+                  "line": 2,
+                  "column": 0,
+                  "end_line": 2,
+                  "end_column": 5
+                }
+              ],
+              "pkgpath": "",
+              "ctx": "Store"
+            },
+            "filename": "hello.k",
+            "line": 2,
+            "column": 0,
+            "end_line": 2,
+            "end_column": 5
+          }
+        ],
+        "value": {
+          "node": {
+            "type": "Config",
+            "items": [
+              {
+                "node": {
+                  "key": null,
+                  "value": {
                     "node": {
-                      "key": null,
-                      "value": {
-                        "node": {
-                          "type": "Config",
-                          "data": {
-                            "items": [
-                              {
-                                "node": {
-                                  "key": {
-                                    "node": {
-                                      "type": "Identifier",
-                                      "data": {
-                                        "names": [
-                                          {
-                                            "node": "key",
-                                            "filename": "hello.k",
-                                            "line": 3,
-                                            "column": 7,
-                                            "end_line": 3,
-                                            "end_column": 10
-                                          }
-                                        ],
-                                        "pkgpath": "",
-                                        "ctx": "Load"
-                                      }
-                                    },
+                      "type": "Config",
+                      "items": [
+                        {
+                          "node": {
+                            "key": {
+                              "node": {
+                                "type": "Identifier",
+                                "names": [
+                                  {
+                                    "node": "key",
                                     "filename": "hello.k",
                                     "line": 3,
                                     "column": 7,
                                     "end_line": 3,
                                     "end_column": 10
-                                  },
-                                  "value": {
-                                    "node": {
-                                      "type": "StringLit",
-                                      "data": {
-                                        "is_long_string": false,
-                                        "raw_value": "\"value1\"",
-                                        "value": "value1"
-                                      }
-                                    },
-                                    "filename": "hello.k",
-                                    "line": 3,
-                                    "column": 13,
-                                    "end_line": 3,
-                                    "end_column": 21
-                                  },
-                                  "operation": "Override",
-                                  "insert_index": -1
-                                },
-                                "filename": "hello.k",
-                                "line": 3,
-                                "column": 7,
-                                "end_line": 3,
-                                "end_column": 21
-                              }
-                            ]
-                          }
-                        },
-                        "filename": "hello.k",
-                        "line": 3,
-                        "column": 6,
-                        "end_line": 3,
-                        "end_column": 22
-                      },
-                      "operation": "Union",
-                      "insert_index": -1
+                                  }
+                                ],
+                                "pkgpath": "",
+                                "ctx": "Load"
+                              },
+                              "filename": "hello.k",
+                              "line": 3,
+                              "column": 7,
+                              "end_line": 3,
+                              "end_column": 10
+                            },
+                            "value": {
+                              "node": {
+                                "type": "StringLit",
+                                "is_long_string": false,
+                                "raw_value": "\"value1\"",
+                                "value": "value1"
+                              },
+                              "filename": "hello.k",
+                              "line": 3,
+                              "column": 13,
+                              "end_line": 3,
+                              "end_column": 21
+                            },
+                            "operation": "Override",
+                            "insert_index": -1
+                          },
+                          "filename": "hello.k",
+                          "line": 3,
+                          "column": 7,
+                          "end_line": 3,
+                          "end_column": 21
+                        }
+                      ]
                     },
                     "filename": "hello.k",
                     "line": 3,
-                    "column": 4,
+                    "column": 6,
                     "end_line": 3,
                     "end_column": 22
                   },
-                  {
+                  "operation": "Union",
+                  "insert_index": -1
+                },
+                "filename": "hello.k",
+                "line": 3,
+                "column": 4,
+                "end_line": 3,
+                "end_column": 22
+              },
+              {
+                "node": {
+                  "key": null,
+                  "value": {
                     "node": {
-                      "key": null,
-                      "value": {
+                      "type": "ConfigIfEntry",
+                      "if_cond": {
                         "node": {
-                          "type": "ConfigIfEntry",
-                          "data": {
-                            "if_cond": {
+                          "type": "Compare",
+                          "left": {
+                            "node": {
+                              "type": "Identifier",
+                              "names": [
+                                {
+                                  "node": "a",
+                                  "filename": "hello.k",
+                                  "line": 4,
+                                  "column": 7,
+                                  "end_line": 4,
+                                  "end_column": 8
+                                }
+                              ],
+                              "pkgpath": "",
+                              "ctx": "Load"
+                            },
+                            "filename": "hello.k",
+                            "line": 4,
+                            "column": 7,
+                            "end_line": 4,
+                            "end_column": 8
+                          },
+                          "ops": [
+                            "Eq"
+                          ],
+                          "comparators": [
+                            {
                               "node": {
-                                "type": "Compare",
-                                "data": {
-                                  "left": {
-                                    "node": {
-                                      "type": "Identifier",
-                                      "data": {
-                                        "names": [
-                                          {
-                                            "node": "a",
-                                            "filename": "hello.k",
-                                            "line": 4,
-                                            "column": 7,
-                                            "end_line": 4,
-                                            "end_column": 8
-                                          }
-                                        ],
-                                        "pkgpath": "",
-                                        "ctx": "Load"
-                                      }
-                                    },
-                                    "filename": "hello.k",
-                                    "line": 4,
-                                    "column": 7,
-                                    "end_line": 4,
-                                    "end_column": 8
-                                  },
-                                  "ops": [
-                                    "Eq"
-                                  ],
-                                  "comparators": [
-                                    {
-                                      "node": {
-                                        "type": "NumberLit",
-                                        "data": {
-                                          "binary_suffix": null,
-                                          "value": {
-                                            "type": "Int",
-                                            "data": 123
-                                          }
-                                        }
-                                      },
-                                      "filename": "hello.k",
-                                      "line": 4,
-                                      "column": 12,
-                                      "end_line": 4,
-                                      "end_column": 15
-                                    }
-                                  ]
+                                "type": "NumberLit",
+                                "binary_suffix": null,
+                                "value": {
+                                  "type": "Int",
+                                  "value": 123
                                 }
                               },
                               "filename": "hello.k",
                               "line": 4,
-                              "column": 7,
+                              "column": 12,
                               "end_line": 4,
                               "end_column": 15
-                            },
-                            "items": [
-                              {
-                                "node": {
-                                  "key": null,
-                                  "value": {
-                                    "node": {
-                                      "type": "ConfigIfEntry",
-                                      "data": {
-                                        "if_cond": {
-                                          "node": {
-                                            "type": "Compare",
-                                            "data": {
-                                              "left": {
-                                                "node": {
-                                                  "type": "Identifier",
-                                                  "data": {
-                                                    "names": [
-                                                      {
-                                                        "node": "b",
-                                                        "filename": "hello.k",
-                                                        "line": 4,
-                                                        "column": 20,
-                                                        "end_line": 4,
-                                                        "end_column": 21
-                                                      }
-                                                    ],
-                                                    "pkgpath": "",
-                                                    "ctx": "Load"
-                                                  }
-                                                },
-                                                "filename": "hello.k",
-                                                "line": 4,
-                                                "column": 20,
-                                                "end_line": 4,
-                                                "end_column": 21
-                                              },
-                                              "ops": [
-                                                "Eq"
-                                              ],
-                                              "comparators": [
-                                                {
-                                                  "node": {
-                                                    "type": "NumberLit",
-                                                    "data": {
-                                                      "binary_suffix": null,
-                                                      "value": {
-                                                        "type": "Int",
-                                                        "data": 456
-                                                      }
-                                                    }
-                                                  },
-                                                  "filename": "hello.k",
-                                                  "line": 4,
-                                                  "column": 25,
-                                                  "end_line": 4,
-                                                  "end_column": 28
-                                                }
-                                              ]
-                                            }
-                                          },
-                                          "filename": "hello.k",
-                                          "line": 4,
-                                          "column": 20,
-                                          "end_line": 4,
-                                          "end_column": 28
-                                        },
-                                        "items": [
-                                          {
-                                            "node": {
-                                              "key": {
-                                                "node": {
-                                                  "type": "Identifier",
-                                                  "data": {
-                                                    "names": [
-                                                      {
-                                                        "node": "key",
-                                                        "filename": "hello.k",
-                                                        "line": 4,
-                                                        "column": 30,
-                                                        "end_line": 4,
-                                                        "end_column": 33
-                                                      }
-                                                    ],
-                                                    "pkgpath": "",
-                                                    "ctx": "Load"
-                                                  }
-                                                },
-                                                "filename": "hello.k",
-                                                "line": 4,
-                                                "column": 30,
-                                                "end_line": 4,
-                                                "end_column": 33
-                                              },
-                                              "value": {
-                                                "node": {
-                                                  "type": "StringLit",
-                                                  "data": {
-                                                    "is_long_string": false,
-                                                    "raw_value": "\"value2\"",
-                                                    "value": "value2"
-                                                  }
-                                                },
-                                                "filename": "hello.k",
-                                                "line": 4,
-                                                "column": 36,
-                                                "end_line": 4,
-                                                "end_column": 44
-                                              },
-                                              "operation": "Override",
-                                              "insert_index": -1
-                                            },
-                                            "filename": "hello.k",
-                                            "line": 4,
-                                            "column": 30,
-                                            "end_line": 4,
-                                            "end_column": 44
-                                          }
-                                        ],
-                                        "orelse": null
-                                      }
-                                    },
-                                    "filename": "hello.k",
-                                    "line": 4,
-                                    "column": 17,
-                                    "end_line": 5,
-                                    "end_column": 0
-                                  },
-                                  "operation": "Override",
-                                  "insert_index": -1
-                                },
-                                "filename": "hello.k",
-                                "line": 4,
-                                "column": 17,
-                                "end_line": 5,
-                                "end_column": 0
-                              }
-                            ],
-                            "orelse": null
-                          }
+                            }
+                          ]
                         },
                         "filename": "hello.k",
                         "line": 4,
-                        "column": 4,
-                        "end_line": 5,
-                        "end_column": 0
+                        "column": 7,
+                        "end_line": 4,
+                        "end_column": 15
                       },
-                      "operation": "Union",
-                      "insert_index": -1
+                      "items": [
+                        {
+                          "node": {
+                            "key": null,
+                            "value": {
+                              "node": {
+                                "type": "ConfigIfEntry",
+                                "if_cond": {
+                                  "node": {
+                                    "type": "Compare",
+                                    "left": {
+                                      "node": {
+                                        "type": "Identifier",
+                                        "names": [
+                                          {
+                                            "node": "b",
+                                            "filename": "hello.k",
+                                            "line": 4,
+                                            "column": 20,
+                                            "end_line": 4,
+                                            "end_column": 21
+                                          }
+                                        ],
+                                        "pkgpath": "",
+                                        "ctx": "Load"
+                                      },
+                                      "filename": "hello.k",
+                                      "line": 4,
+                                      "column": 20,
+                                      "end_line": 4,
+                                      "end_column": 21
+                                    },
+                                    "ops": [
+                                      "Eq"
+                                    ],
+                                    "comparators": [
+                                      {
+                                        "node": {
+                                          "type": "NumberLit",
+                                          "binary_suffix": null,
+                                          "value": {
+                                            "type": "Int",
+                                            "value": 456
+                                          }
+                                        },
+                                        "filename": "hello.k",
+                                        "line": 4,
+                                        "column": 25,
+                                        "end_line": 4,
+                                        "end_column": 28
+                                      }
+                                    ]
+                                  },
+                                  "filename": "hello.k",
+                                  "line": 4,
+                                  "column": 20,
+                                  "end_line": 4,
+                                  "end_column": 28
+                                },
+                                "items": [
+                                  {
+                                    "node": {
+                                      "key": {
+                                        "node": {
+                                          "type": "Identifier",
+                                          "names": [
+                                            {
+                                              "node": "key",
+                                              "filename": "hello.k",
+                                              "line": 4,
+                                              "column": 30,
+                                              "end_line": 4,
+                                              "end_column": 33
+                                            }
+                                          ],
+                                          "pkgpath": "",
+                                          "ctx": "Load"
+                                        },
+                                        "filename": "hello.k",
+                                        "line": 4,
+                                        "column": 30,
+                                        "end_line": 4,
+                                        "end_column": 33
+                                      },
+                                      "value": {
+                                        "node": {
+                                          "type": "StringLit",
+                                          "is_long_string": false,
+                                          "raw_value": "\"value2\"",
+                                          "value": "value2"
+                                        },
+                                        "filename": "hello.k",
+                                        "line": 4,
+                                        "column": 36,
+                                        "end_line": 4,
+                                        "end_column": 44
+                                      },
+                                      "operation": "Override",
+                                      "insert_index": -1
+                                    },
+                                    "filename": "hello.k",
+                                    "line": 4,
+                                    "column": 30,
+                                    "end_line": 4,
+                                    "end_column": 44
+                                  }
+                                ],
+                                "orelse": null
+                              },
+                              "filename": "hello.k",
+                              "line": 4,
+                              "column": 17,
+                              "end_line": 5,
+                              "end_column": 0
+                            },
+                            "operation": "Override",
+                            "insert_index": -1
+                          },
+                          "filename": "hello.k",
+                          "line": 4,
+                          "column": 17,
+                          "end_line": 5,
+                          "end_column": 0
+                        }
+                      ],
+                      "orelse": null
                     },
                     "filename": "hello.k",
                     "line": 4,
                     "column": 4,
                     "end_line": 5,
                     "end_column": 0
-                  }
-                ]
+                  },
+                  "operation": "Union",
+                  "insert_index": -1
+                },
+                "filename": "hello.k",
+                "line": 4,
+                "column": 4,
+                "end_line": 5,
+                "end_column": 0
               }
-            },
-            "filename": "hello.k",
-            "line": 2,
-            "column": 8,
-            "end_line": 5,
-            "end_column": 1
+            ]
           },
-          "ty": null
-        }
+          "filename": "hello.k",
+          "line": 2,
+          "column": 8,
+          "end_line": 5,
+          "end_column": 1
+        },
+        "ty": null
       },
       "filename": "hello.k",
       "line": 2,

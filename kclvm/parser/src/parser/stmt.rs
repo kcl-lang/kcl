@@ -268,7 +268,7 @@ impl<'a> Parser<'a> {
                             doc: "".to_string(),
                             name: node_ref!(target.get_name(), targets[0].pos()),
                             ty: ty.unwrap(),
-                            op: Some(BinOrAugOp::Aug(aug_op)),
+                            op: Some(aug_op),
                             value: Some(value),
                             is_optional: false,
                             decorators: Vec::new(),
@@ -1058,7 +1058,7 @@ impl<'a> Parser<'a> {
                                         assign.targets[0].pos()
                                     ),
                                     ty: assign.ty.unwrap(),
-                                    op: Some(BinOrAugOp::Aug(AugOp::Assign)),
+                                    op: Some(AugOp::Assign),
                                     value: Some(assign.value),
                                     is_optional: false,
                                     decorators: Vec::new(),
@@ -1215,10 +1215,10 @@ impl<'a> Parser<'a> {
 
         let op = if self.token.kind == TokenKind::Assign {
             self.bump_token(TokenKind::Assign);
-            Some(BinOrAugOp::Aug(AugOp::Assign))
+            Some(AugOp::Assign)
         } else if let TokenKind::BinOpEq(x) = self.token.kind {
             self.bump_token(self.token.kind);
-            Some(BinOrAugOp::Aug(x.into()))
+            Some(x.into())
         } else {
             None
         };

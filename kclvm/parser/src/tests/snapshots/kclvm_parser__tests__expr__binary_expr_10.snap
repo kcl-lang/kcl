@@ -23,9 +23,7 @@ Node {
                             end_line: 1,
                             end_column: 1,
                         },
-                        op: Bin(
-                            Add,
-                        ),
+                        op: Add,
                         right: Node {
                             node: Identifier(
                                 Identifier {
@@ -57,9 +55,7 @@ Node {
                 end_line: 1,
                 end_column: 5,
             },
-            op: Bin(
-                And,
-            ),
+            op: And,
             right: Node {
                 node: Identifier(
                     Identifier {

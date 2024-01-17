@@ -67,9 +67,7 @@ Node {
                 end_line: 1,
                 end_column: 11,
             },
-            op: Bin(
-                Or,
-            ),
+            op: Or,
             right: Node {
                 node: Identifier(
                     Identifier {

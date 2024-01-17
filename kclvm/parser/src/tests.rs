@@ -117,7 +117,7 @@ pub(crate) fn parsing_type_string(src: &str) -> String {
         let stream = parse_token_streams(sess, src, new_byte_pos(0));
         let mut parser = Parser::new(sess, stream);
         let typ = parser.parse_type_annotation();
-        format!("{typ:?}\n")
+        format!("{typ:#?}\n")
     })
 }
 

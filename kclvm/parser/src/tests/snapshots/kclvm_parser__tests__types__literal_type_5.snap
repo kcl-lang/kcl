@@ -2,5 +2,16 @@
 source: parser/src/tests/types.rs
 expression: "crate::tests::parsing_type_string(r####\"''\"####)"
 ---
-Node { node: Literal(Str("")), filename: "", line: 1, column: 0, end_line: 1, end_column: 2 }
+Node {
+    node: Literal(
+        Str(
+            "",
+        ),
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 2,
+}
 

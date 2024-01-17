@@ -57,9 +57,7 @@ Node {
                                             end_line: 1,
                                             end_column: 7,
                                         },
-                                        op: Bin(
-                                            Mul,
-                                        ),
+                                        op: Mul,
                                         right: Node {
                                             node: Identifier(
                                                 Identifier {

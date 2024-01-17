@@ -2,5 +2,16 @@
 source: parser/src/tests/types.rs
 expression: "crate::tests::parsing_type_string(r####\"True\"####)"
 ---
-Node { node: Literal(Bool(true)), filename: "", line: 1, column: 0, end_line: 1, end_column: 4 }
+Node {
+    node: Literal(
+        Bool(
+            true,
+        ),
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 4,
+}
 

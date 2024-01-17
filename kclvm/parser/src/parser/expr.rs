@@ -210,33 +210,37 @@ impl<'a> Parser<'a> {
 
             let y = self.do_parse_simple_expr(oprec);
 
-            // compare: a == b == c
-            if let BinOrCmpOp::Cmp(cmp_op) = op.clone() {
-                if cmp_expr.ops.is_empty() {
-                    cmp_expr.left = x.clone();
+            match op {
+                // compare: a == b == c
+                BinOrCmpOp::Cmp(cmp_op) => {
+                    if cmp_expr.ops.is_empty() {
+                        cmp_expr.left = x.clone();
+                    }
+                    cmp_expr.ops.push(cmp_op);
+                    cmp_expr.comparators.push(y);
+                    continue;
                 }
-                cmp_expr.ops.push(cmp_op);
-                cmp_expr.comparators.push(y);
-                continue;
-            }
+                // binary a + b
+                BinOrCmpOp::Bin(bin_op) => {
+                    if !cmp_expr.ops.is_empty() {
+                        x = Box::new(Node::node(
+                            Expr::Compare(cmp_expr.clone()),
+                            self.sess.struct_token_loc(token, self.prev_token),
+                        ));
+                        cmp_expr.ops = Vec::new();
+                        cmp_expr.comparators = Vec::new();
+                    }
 
-            if !cmp_expr.ops.is_empty() {
-                x = Box::new(Node::node(
-                    Expr::Compare(cmp_expr.clone()),
-                    self.sess.struct_token_loc(token, self.prev_token),
-                ));
-                cmp_expr.ops = Vec::new();
-                cmp_expr.comparators = Vec::new();
+                    x = Box::new(Node::node(
+                        Expr::Binary(BinaryExpr {
+                            left: x,
+                            op: bin_op,
+                            right: y,
+                        }),
+                        self.sess.struct_token_loc(token, self.prev_token),
+                    ));
+                }
             }
-
-            x = Box::new(Node::node(
-                Expr::Binary(BinaryExpr {
-                    left: x,
-                    op,
-                    right: y,
-                }),
-                self.sess.struct_token_loc(token, self.prev_token),
-            ));
         }
     }
 

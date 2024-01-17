@@ -349,10 +349,7 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
         self.write(": ");
         self.write(&schema_attr.ty.node.to_string());
         if let Some(op) = &schema_attr.op {
-            let symbol = match op {
-                ast::BinOrAugOp::Bin(bin_op) => bin_op.symbol(),
-                ast::BinOrAugOp::Aug(aug_op) => aug_op.symbol(),
-            };
+            let symbol = op.symbol();
             self.write_space();
             self.write(symbol);
             self.write_space();
@@ -382,10 +379,7 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
     }
 
     fn walk_binary_expr(&mut self, binary_expr: &'ctx ast::BinaryExpr) -> Self::Result {
-        let symbol = match &binary_expr.op {
-            ast::BinOrCmpOp::Bin(bin_op) => bin_op.symbol(),
-            ast::BinOrCmpOp::Cmp(cmp_op) => cmp_op.symbol(),
-        };
+        let symbol = binary_expr.op.symbol();
         self.expr(&binary_expr.left);
         self.write_space();
         self.write(symbol);

@@ -31,9 +31,7 @@ Node {
                             end_line: 1,
                             end_column: 2,
                         },
-                        op: Bin(
-                            Pow,
-                        ),
+                        op: Pow,
                         right: Node {
                             node: NumberLit(
                                 NumberLit {

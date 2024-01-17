@@ -2,5 +2,62 @@
 source: parser/src/tests/types.rs
 expression: "crate::tests::parsing_type_string(r####\"int | str | [] | {:}\"####)"
 ---
-Node { node: Union(UnionType { type_elements: [Node { node: Basic(Int), filename: "", line: 1, column: 0, end_line: 1, end_column: 3 }, Node { node: Basic(Str), filename: "", line: 1, column: 6, end_line: 1, end_column: 9 }, Node { node: List(ListType { inner_type: None }), filename: "", line: 1, column: 12, end_line: 1, end_column: 14 }, Node { node: Dict(DictType { key_type: None, value_type: None }), filename: "", line: 1, column: 17, end_line: 1, end_column: 20 }] }), filename: "", line: 1, column: 0, end_line: 1, end_column: 20 }
+Node {
+    node: Union(
+        UnionType {
+            type_elements: [
+                Node {
+                    node: Basic(
+                        Int,
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 0,
+                    end_line: 1,
+                    end_column: 3,
+                },
+                Node {
+                    node: Basic(
+                        Str,
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 6,
+                    end_line: 1,
+                    end_column: 9,
+                },
+                Node {
+                    node: List(
+                        ListType {
+                            inner_type: None,
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 12,
+                    end_line: 1,
+                    end_column: 14,
+                },
+                Node {
+                    node: Dict(
+                        DictType {
+                            key_type: None,
+                            value_type: None,
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 17,
+                    end_line: 1,
+                    end_column: 20,
+                },
+            ],
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 20,
+}
 
