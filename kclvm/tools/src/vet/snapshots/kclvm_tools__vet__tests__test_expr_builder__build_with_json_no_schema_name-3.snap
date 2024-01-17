@@ -9,13 +9,11 @@ expression: got_ast_json_str
   "filename": "<workspace>/plain_value.k.json",
   "line": 1,
   "node": {
-    "data": {
-      "binary_suffix": null,
-      "value": {
-        "data": 1,
-        "type": "Int"
-      }
-    },
-    "type": "NumberLit"
+    "binary_suffix": null,
+    "type": "NumberLit",
+    "value": {
+      "type": "Int",
+      "value": 1
+    }
   }
 }

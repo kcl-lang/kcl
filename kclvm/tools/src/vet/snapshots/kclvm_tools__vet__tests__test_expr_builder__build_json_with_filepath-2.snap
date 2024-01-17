@@ -9,168 +9,152 @@ expression: got_ast_json_str
   "filename": "<workspace>/simple.k.json",
   "line": 1,
   "node": {
-    "data": {
-      "args": [],
-      "config": {
-        "column": 0,
-        "end_column": 1,
-        "end_line": 5,
-        "filename": "<workspace>/simple.k.json",
-        "line": 1,
-        "node": {
-          "data": {
-            "items": [
-              {
-                "column": 0,
-                "end_column": 1,
-                "end_line": 5,
+    "args": [],
+    "config": {
+      "column": 0,
+      "end_column": 1,
+      "end_line": 5,
+      "filename": "<workspace>/simple.k.json",
+      "line": 1,
+      "node": {
+        "items": [
+          {
+            "column": 0,
+            "end_column": 1,
+            "end_line": 5,
+            "filename": "<workspace>/simple.k.json",
+            "line": 1,
+            "node": {
+              "insert_index": -1,
+              "key": {
+                "column": 4,
+                "end_column": 9,
+                "end_line": 3,
                 "filename": "<workspace>/simple.k.json",
-                "line": 1,
+                "line": 3,
                 "node": {
-                  "insert_index": -1,
-                  "key": {
-                    "column": 4,
-                    "end_column": 9,
-                    "end_line": 3,
-                    "filename": "<workspace>/simple.k.json",
-                    "line": 3,
-                    "node": {
-                      "data": {
-                        "is_long_string": false,
-                        "raw_value": "\"age\"",
-                        "value": "age"
-                      },
-                      "type": "StringLit"
-                    }
-                  },
-                  "operation": "Union",
-                  "value": {
-                    "column": 11,
-                    "end_column": 13,
-                    "end_line": 3,
-                    "filename": "<workspace>/simple.k.json",
-                    "line": 3,
-                    "node": {
-                      "data": {
-                        "binary_suffix": null,
-                        "value": {
-                          "data": 18,
-                          "type": "Int"
-                        }
-                      },
-                      "type": "NumberLit"
-                    }
-                  }
+                  "is_long_string": false,
+                  "raw_value": "\"age\"",
+                  "type": "StringLit",
+                  "value": "age"
                 }
               },
-              {
-                "column": 0,
-                "end_column": 1,
-                "end_line": 5,
+              "operation": "Union",
+              "value": {
+                "column": 11,
+                "end_column": 13,
+                "end_line": 3,
                 "filename": "<workspace>/simple.k.json",
-                "line": 1,
+                "line": 3,
                 "node": {
-                  "insert_index": -1,
-                  "key": {
-                    "column": 4,
-                    "end_column": 13,
-                    "end_line": 4,
-                    "filename": "<workspace>/simple.k.json",
-                    "line": 4,
-                    "node": {
-                      "data": {
-                        "is_long_string": false,
-                        "raw_value": "\"message\"",
-                        "value": "message"
-                      },
-                      "type": "StringLit"
-                    }
-                  },
-                  "operation": "Union",
+                  "binary_suffix": null,
+                  "type": "NumberLit",
                   "value": {
-                    "column": 15,
-                    "end_column": 30,
-                    "end_line": 4,
-                    "filename": "<workspace>/simple.k.json",
-                    "line": 4,
-                    "node": {
-                      "data": {
-                        "is_long_string": false,
-                        "raw_value": "\"This is Alice\"",
-                        "value": "This is Alice"
-                      },
-                      "type": "StringLit"
-                    }
-                  }
-                }
-              },
-              {
-                "column": 0,
-                "end_column": 1,
-                "end_line": 5,
-                "filename": "<workspace>/simple.k.json",
-                "line": 1,
-                "node": {
-                  "insert_index": -1,
-                  "key": {
-                    "column": 4,
-                    "end_column": 10,
-                    "end_line": 2,
-                    "filename": "<workspace>/simple.k.json",
-                    "line": 2,
-                    "node": {
-                      "data": {
-                        "is_long_string": false,
-                        "raw_value": "\"name\"",
-                        "value": "name"
-                      },
-                      "type": "StringLit"
-                    }
-                  },
-                  "operation": "Union",
-                  "value": {
-                    "column": 12,
-                    "end_column": 19,
-                    "end_line": 2,
-                    "filename": "<workspace>/simple.k.json",
-                    "line": 2,
-                    "node": {
-                      "data": {
-                        "is_long_string": false,
-                        "raw_value": "\"Alice\"",
-                        "value": "Alice"
-                      },
-                      "type": "StringLit"
-                    }
+                    "type": "Int",
+                    "value": 18
                   }
                 }
               }
-            ]
-          },
-          "type": "Config"
-        }
-      },
-      "kwargs": [],
-      "name": {
-        "column": 0,
-        "end_column": 1,
-        "end_line": 5,
-        "filename": "<workspace>/simple.k.json",
-        "line": 1,
-        "node": {
-          "ctx": "Load",
-          "names": [
-            {
-              "column": 0,
-              "end_column": 1,
-              "end_line": 5,
-              "filename": "<workspace>/simple.k.json",
-              "line": 1,
-              "node": "simple"
             }
-          ],
-          "pkgpath": ""
-        }
+          },
+          {
+            "column": 0,
+            "end_column": 1,
+            "end_line": 5,
+            "filename": "<workspace>/simple.k.json",
+            "line": 1,
+            "node": {
+              "insert_index": -1,
+              "key": {
+                "column": 4,
+                "end_column": 13,
+                "end_line": 4,
+                "filename": "<workspace>/simple.k.json",
+                "line": 4,
+                "node": {
+                  "is_long_string": false,
+                  "raw_value": "\"message\"",
+                  "type": "StringLit",
+                  "value": "message"
+                }
+              },
+              "operation": "Union",
+              "value": {
+                "column": 15,
+                "end_column": 30,
+                "end_line": 4,
+                "filename": "<workspace>/simple.k.json",
+                "line": 4,
+                "node": {
+                  "is_long_string": false,
+                  "raw_value": "\"This is Alice\"",
+                  "type": "StringLit",
+                  "value": "This is Alice"
+                }
+              }
+            }
+          },
+          {
+            "column": 0,
+            "end_column": 1,
+            "end_line": 5,
+            "filename": "<workspace>/simple.k.json",
+            "line": 1,
+            "node": {
+              "insert_index": -1,
+              "key": {
+                "column": 4,
+                "end_column": 10,
+                "end_line": 2,
+                "filename": "<workspace>/simple.k.json",
+                "line": 2,
+                "node": {
+                  "is_long_string": false,
+                  "raw_value": "\"name\"",
+                  "type": "StringLit",
+                  "value": "name"
+                }
+              },
+              "operation": "Union",
+              "value": {
+                "column": 12,
+                "end_column": 19,
+                "end_line": 2,
+                "filename": "<workspace>/simple.k.json",
+                "line": 2,
+                "node": {
+                  "is_long_string": false,
+                  "raw_value": "\"Alice\"",
+                  "type": "StringLit",
+                  "value": "Alice"
+                }
+              }
+            }
+          }
+        ],
+        "type": "Config"
+      }
+    },
+    "kwargs": [],
+    "name": {
+      "column": 0,
+      "end_column": 1,
+      "end_line": 5,
+      "filename": "<workspace>/simple.k.json",
+      "line": 1,
+      "node": {
+        "ctx": "Load",
+        "names": [
+          {
+            "column": 0,
+            "end_column": 1,
+            "end_line": 5,
+            "filename": "<workspace>/simple.k.json",
+            "line": 1,
+            "node": "simple"
+          }
+        ],
+        "pkgpath": ""
       }
     },
     "type": "Schema"
