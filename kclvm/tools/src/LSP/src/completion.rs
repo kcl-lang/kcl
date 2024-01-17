@@ -1467,4 +1467,25 @@ mod tests {
             CompletionResponse::List(_) => panic!("test failed"),
         }
     }
+
+    #[test]
+    fn comment_completion() {
+        let (file, program, _, _, gs) =
+            compile_test_file("src/test_data/completion_test/dot/lit_str/lit_str.k");
+
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 4,
+            column: Some(4),
+        };
+
+        let got = completion(Some('.'), &program, &pos, &gs).unwrap();
+
+        match &got {
+            CompletionResponse::Array(arr) => {
+                assert_eq!(arr.len(), 0)
+            }
+            CompletionResponse::List(_) => panic!("test failed"),
+        };
+    }
 }

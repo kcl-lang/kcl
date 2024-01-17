@@ -10,7 +10,8 @@ use crate::{
     core::{
         scope::LocalSymbolScopeKind,
         symbol::{
-            ExpressionSymbol, KCLSymbolSemanticInfo, SymbolRef, UnresolvedSymbol, ValueSymbol,
+            CommentSymbol, ExpressionSymbol, KCLSymbolSemanticInfo, SymbolRef, UnresolvedSymbol,
+            ValueSymbol,
         },
     },
     ty::{Type, SCHEMA_MEMBER_FUNCTIONS},
@@ -26,6 +27,13 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
     fn walk_module(&mut self, module: &'ctx ast::Module) -> Self::Result {
         for stmt in module.body.iter() {
             self.stmt(&stmt);
+        }
+        for comment in module.comments.iter() {
+            let (start, end) = comment.get_span_pos();
+            self.ctx.start_pos = start;
+            self.ctx.end_pos = end;
+            self.ctx.cur_node = comment.id.clone();
+            self.walk_comment(&comment.node);
         }
         None
     }
@@ -729,8 +737,12 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
         None
     }
 
-    fn walk_comment(&mut self, _comment: &'ctx ast::Comment) -> Self::Result {
-        None
+    fn walk_comment(&mut self, comment: &'ctx ast::Comment) -> Self::Result {
+        let (start, end) = (self.ctx.start_pos.clone(), self.ctx.end_pos.clone());
+        let comment_symbol = CommentSymbol::new(start, end, comment.text.clone());
+        self.gs
+            .get_symbols_mut()
+            .alloc_comment_symbol(comment_symbol, self.ctx.get_node_key(&self.ctx.cur_node))
     }
 
     fn walk_missing_expr(&mut self, _missing_expr: &'ctx ast::MissingExpr) -> Self::Result {

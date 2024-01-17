@@ -65,6 +65,7 @@ pub struct SymbolData {
     pub(crate) unresolved: Arena<UnresolvedSymbol>,
     pub(crate) rules: Arena<RuleSymbol>,
     pub(crate) exprs: Arena<ExpressionSymbol>,
+    pub(crate) comments: Arena<CommentSymbol>,
 
     pub(crate) symbols_info: SymbolDB,
 }
@@ -162,6 +163,10 @@ impl SymbolData {
                 .exprs
                 .get(id.get_id())
                 .map(|symbol| symbol as &KCLSymbol),
+            SymbolKind::Comment => self
+                .comments
+                .get(id.get_id())
+                .map(|symbol| symbol as &KCLSymbol),
         }
     }
 
@@ -211,6 +216,12 @@ impl SymbolData {
             }
             SymbolKind::Expression => {
                 self.exprs.get_mut(id.get_id()).map(|symbol| {
+                    symbol.sema_info.ty = Some(ty);
+                    symbol
+                });
+            }
+            SymbolKind::Comment => {
+                self.comments.get_mut(id.get_id()).map(|symbol| {
                     symbol.sema_info.ty = Some(ty);
                     symbol
                 });
@@ -624,6 +635,26 @@ impl SymbolData {
     pub fn get_node_symbol_map(&self) -> IndexMap<NodeKey, SymbolRef> {
         self.symbols_info.node_symbol_map.clone()
     }
+
+    pub fn alloc_comment_symbol(
+        &mut self,
+        comment: CommentSymbol,
+        node_key: NodeKey,
+    ) -> Option<SymbolRef> {
+        let symbol_id = self.comments.insert(comment);
+        let symbol_ref = SymbolRef {
+            id: symbol_id,
+            kind: SymbolKind::Comment,
+        };
+        self.symbols_info
+            .node_symbol_map
+            .insert(node_key.clone(), symbol_ref);
+        self.symbols_info
+            .symbol_ref_map
+            .insert(symbol_ref, node_key);
+        self.exprs.get_mut(symbol_id).unwrap().id = Some(symbol_ref);
+        Some(symbol_ref)
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
@@ -636,6 +667,7 @@ pub enum SymbolKind {
     Unresolved,
     Rule,
     Expression,
+    Comment,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -1753,5 +1785,113 @@ impl ExpressionSymbol {
             sema_info: KCLSymbolSemanticInfo::default(),
             owner,
         }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct CommentSymbol {
+    pub(crate) id: Option<SymbolRef>,
+    pub(crate) start: Position,
+    pub(crate) end: Position,
+    pub(crate) content: String,
+    pub(crate) sema_info: KCLSymbolSemanticInfo,
+}
+
+impl Symbol for CommentSymbol {
+    type SymbolData = SymbolData;
+    type SemanticInfo = KCLSymbolSemanticInfo;
+
+    fn get_sema_info(&self) -> &Self::SemanticInfo {
+        &self.sema_info
+    }
+
+    fn is_global(&self) -> bool {
+        true
+    }
+
+    fn get_range(&self) -> Range {
+        (self.start.clone(), self.end.clone())
+    }
+
+    fn get_owner(&self) -> Option<SymbolRef> {
+        None
+    }
+
+    fn get_definition(&self) -> Option<SymbolRef> {
+        self.id
+    }
+
+    fn get_name(&self) -> String {
+        self.name()
+    }
+
+    fn get_id(&self) -> Option<SymbolRef> {
+        self.id.clone()
+    }
+
+    fn get_attribute(
+        &self,
+        _name: &str,
+        _data: &Self::SymbolData,
+        _module_info: Option<&ModuleInfo>,
+    ) -> Option<SymbolRef> {
+        None
+    }
+
+    fn has_attribute(
+        &self,
+        _name: &str,
+        _data: &Self::SymbolData,
+        _module_info: Option<&ModuleInfo>,
+    ) -> bool {
+        false
+    }
+
+    fn get_all_attributes(
+        &self,
+        _data: &Self::SymbolData,
+        _module_info: Option<&ModuleInfo>,
+    ) -> Vec<SymbolRef> {
+        vec![]
+    }
+
+    fn simple_dump(&self) -> String {
+        let mut output = "{\n".to_string();
+        output.push_str("\"kind\": \"CommentSymbol\",\n");
+        output.push_str(&format!(
+            "\"range\": \"{}:{}",
+            self.start.filename, self.start.line
+        ));
+        if let Some(start_col) = self.start.column {
+            output.push_str(&format!(":{}", start_col));
+        }
+
+        output.push_str(&format!(" to {}", self.end.line));
+        if let Some(end_col) = self.end.column {
+            output.push_str(&format!(":{}", end_col));
+        }
+        output.push_str(&format!("content :{}", self.name()));
+        output.push_str("\"\n}");
+        output
+    }
+
+    fn full_dump(&self, _data: &Self::SymbolData) -> Option<String> {
+        Some(self.simple_dump())
+    }
+}
+
+impl CommentSymbol {
+    pub fn new(start: Position, end: Position, content: String) -> Self {
+        Self {
+            id: None,
+            start,
+            end,
+            content,
+            sema_info: KCLSymbolSemanticInfo::default(),
+        }
+    }
+
+    pub fn name(&self) -> String {
+        format!("# {}", self.content)
     }
 }
