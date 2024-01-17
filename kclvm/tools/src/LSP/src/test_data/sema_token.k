@@ -1,3 +1,4 @@
+import math as m
 type num = int | float
 schema Persons:
     name: str
