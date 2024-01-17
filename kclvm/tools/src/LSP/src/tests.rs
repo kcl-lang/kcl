@@ -384,7 +384,9 @@ fn file_path_from_url_test() {
 }
 
 #[test]
-fn test_lsp_with_kpm_in_order() {
+fn test_lsp_with_kcl_mod_in_order() {
+    goto_import_external_file_test();
+    println!("goto_import_external_file_test PASS");
     goto_import_pkg_with_line_test();
     println!("goto_import_pkg_with_line_test PASS");
     complete_import_external_file_test();
@@ -398,7 +400,7 @@ fn goto_import_pkg_with_line_test() {
     let pos = KCLPos {
         filename: file,
         line: 1,
-        column: Some(15),
+        column: Some(27),
     };
 
     let res = goto_definition_with_gs(&program, &pos, &gs);
@@ -481,7 +483,6 @@ fn complete_import_external_file_test() {
     assert_eq!(got_labels, expected_labels);
 }
 
-#[test]
 fn goto_import_external_file_test() {
     let path = PathBuf::from(".")
         .join("src")
@@ -524,7 +525,7 @@ fn goto_import_external_file_test() {
     let pos = KCLPos {
         filename: path.to_string(),
         line: 1,
-        column: Some(15),
+        column: Some(57),
     };
     let res = goto_definition_with_gs(&program, &pos, &gs);
     assert!(res.is_some());
