@@ -131,6 +131,7 @@ fn symbol_kind_to_document_symbol_kind(kind: KCLSymbolKind) -> Option<SymbolKind
         KCLSymbolKind::Unresolved => Some(SymbolKind::NULL),
         KCLSymbolKind::Rule => Some(SymbolKind::FUNCTION),
         KCLSymbolKind::Expression => None,
+        KCLSymbolKind::Comment => None,
     }
 }
 

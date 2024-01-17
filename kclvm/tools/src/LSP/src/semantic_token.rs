@@ -11,6 +11,7 @@ pub const LEGEND_TYPE: &[SemanticTokenType] = &[
     SemanticTokenType::NAMESPACE,
     SemanticTokenType::TYPE,
     SemanticTokenType::MACRO,
+    SemanticTokenType::COMMENT,
 ];
 
 pub(crate) struct KCLSemanticToken {
@@ -39,6 +40,7 @@ pub(crate) fn semantic_tokens_full(file: &str, gs: &GlobalState) -> Option<Seman
                         type_index(SemanticTokenType::VARIABLE)
                     }
                     SymbolKind::Rule => type_index(SemanticTokenType::MACRO),
+                    SymbolKind::Comment => type_index(SemanticTokenType::COMMENT),
                     SymbolKind::Expression => unreachable!(),
                 };
                 kcl_tokens.push(KCLSemanticToken {
