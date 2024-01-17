@@ -28,6 +28,7 @@ kclvm-config = {path = "../config"}
 kclvm-driver = {path = "../driver"}
 kclvm-error = {path = "../error"}
 kclvm-parser = {path = "../parser"}
+kclvm-loader = {path = "../loader"}
 kclvm-sema = {path = "../sema"}
 kclvm-ast = {path = "../ast"}
 kclvm-ast-pretty = {path = "../ast_pretty"}

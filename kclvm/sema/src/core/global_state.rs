@@ -5,14 +5,14 @@ use super::{
     package::{ModuleInfo, PackageDB},
     scope::{ScopeData, ScopeKind, ScopeRef},
     semantic_information::{CachedLocation, CachedRange, FileSemanticInfo, SemanticDB},
-    symbol::{KCLSymbolData, SymbolKind, SymbolRef},
+    symbol::{SymbolData, SymbolKind, SymbolRef},
 };
 
 /// GlobalState is used to store semantic information of KCL source code
 #[derive(Default, Debug, Clone)]
 pub struct GlobalState {
     // store all allocated symbols
-    symbols: KCLSymbolData,
+    symbols: SymbolData,
     // store all allocated scopes
     scopes: ScopeData,
     // store package information for name mapping
@@ -22,11 +22,11 @@ pub struct GlobalState {
 }
 
 impl GlobalState {
-    pub fn get_symbols(&self) -> &KCLSymbolData {
+    pub fn get_symbols(&self) -> &SymbolData {
         &self.symbols
     }
 
-    pub fn get_symbols_mut(&mut self) -> &mut KCLSymbolData {
+    pub fn get_symbols_mut(&mut self) -> &mut SymbolData {
         &mut self.symbols
     }
 
@@ -64,7 +64,7 @@ impl GlobalState {
     ///     the reference of scope which was allocated by [ScopeData]
     ///
     /// `module_info`: [Option<&ModuleInfo>]
-    ///     the module import infomation
+    ///     the module import information
     ///
     /// # Returns
     ///

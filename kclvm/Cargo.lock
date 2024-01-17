@@ -1465,6 +1465,7 @@ dependencies = [
  "kclvm-config",
  "kclvm-driver",
  "kclvm-error",
+ "kclvm-loader",
  "kclvm-parser",
  "kclvm-query",
  "kclvm-runner",
@@ -1495,6 +1496,7 @@ dependencies = [
  "kclvm-config",
  "kclvm-driver",
  "kclvm-error",
+ "kclvm-loader",
  "kclvm-parser",
  "kclvm-query",
  "kclvm-runner",
@@ -1653,6 +1655,39 @@ dependencies = [
 ]
 
 [[package]]
+name = "kclvm-loader"
+version = "0.7.4"
+dependencies = [
+ "anyhow",
+ "cc",
+ "chrono",
+ "compiler_base_macros",
+ "compiler_base_session",
+ "fslock",
+ "glob",
+ "indexmap 1.9.3",
+ "kclvm-ast",
+ "kclvm-compiler",
+ "kclvm-config",
+ "kclvm-driver",
+ "kclvm-error",
+ "kclvm-parser",
+ "kclvm-query",
+ "kclvm-runtime",
+ "kclvm-sema",
+ "kclvm-utils",
+ "kclvm-version",
+ "libc",
+ "libloading",
+ "once_cell",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "threadpool",
+ "walkdir",
+]
+
+[[package]]
 name = "kclvm-macros"
 version = "0.7.4"
 dependencies = [
@@ -1803,6 +1838,7 @@ dependencies = [
  "petgraph",
  "phf",
  "regex",
+ "serde",
  "serde_json",
  "suggestions",
  "unicode_names2",

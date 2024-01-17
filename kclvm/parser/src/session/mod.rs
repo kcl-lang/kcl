@@ -6,6 +6,9 @@ use kclvm_ast::token::Token;
 use kclvm_error::{Diagnostic, Handler, ParseError};
 use kclvm_span::{BytePos, Loc, Span};
 use std::{cell::RefCell, sync::Arc};
+
+pub type ParseSessionRef = Arc<ParseSession>;
+
 /// ParseSession represents the data associated with a parse session such as the
 /// source map and the error handler.
 #[derive(Default, Clone)]

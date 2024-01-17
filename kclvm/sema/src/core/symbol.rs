@@ -4,6 +4,7 @@ use generational_arena::Arena;
 use indexmap::{IndexMap, IndexSet};
 
 use kclvm_error::{diagnostic::Range, Position};
+use serde::Serialize;
 
 use super::package::ModuleInfo;
 use crate::{
@@ -45,7 +46,7 @@ pub trait Symbol {
     fn full_dump(&self, data: &Self::SymbolData) -> Option<String>;
 }
 
-pub type KCLSymbol = dyn Symbol<SymbolData = KCLSymbolData, SemanticInfo = KCLSymbolSemanticInfo>;
+pub type KCLSymbol = dyn Symbol<SymbolData = SymbolData, SemanticInfo = KCLSymbolSemanticInfo>;
 #[derive(Debug, Clone, Default)]
 pub struct KCLSymbolSemanticInfo {
     pub ty: Option<Arc<Type>>,
@@ -55,7 +56,7 @@ pub struct KCLSymbolSemanticInfo {
 pub(crate) const BUILTIN_STR_PACKAGE: &'static str = "@str";
 
 #[derive(Default, Debug, Clone)]
-pub struct KCLSymbolData {
+pub struct SymbolData {
     pub(crate) values: Arena<ValueSymbol>,
     pub(crate) packages: Arena<PackageSymbol>,
     pub(crate) attributes: Arena<AttributeSymbol>,
@@ -78,7 +79,7 @@ pub struct SymbolDB {
     pub(crate) symbol_ref_map: IndexMap<SymbolRef, NodeKey>,
 }
 
-impl KCLSymbolData {
+impl SymbolData {
     pub fn get_package_symbol(&self, id: SymbolRef) -> Option<&PackageSymbol> {
         if matches!(id.get_kind(), SymbolKind::Package) {
             self.packages.get(id.get_id())
@@ -95,7 +96,7 @@ impl KCLSymbolData {
         }
     }
 
-    pub fn get_attribue_symbol(&self, id: SymbolRef) -> Option<&AttributeSymbol> {
+    pub fn get_attribute_symbol(&self, id: SymbolRef) -> Option<&AttributeSymbol> {
         if matches!(id.get_kind(), SymbolKind::Attribute) {
             self.attributes.get(id.get_id())
         } else {
@@ -618,9 +619,14 @@ impl KCLSymbolData {
         self.exprs.get_mut(symbol_id).unwrap().id = Some(symbol_ref);
         Some(symbol_ref)
     }
+
+    #[inline]
+    pub fn get_node_symbol_map(&self) -> IndexMap<NodeKey, SymbolRef> {
+        self.symbols_info.node_symbol_map.clone()
+    }
 }
-#[allow(unused)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
 pub enum SymbolKind {
     Schema,
     Attribute,
@@ -631,18 +637,42 @@ pub enum SymbolKind {
     Rule,
     Expression,
 }
-#[allow(unused)]
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SymbolRef {
     pub(crate) id: generational_arena::Index,
     pub(crate) kind: SymbolKind,
 }
 
+impl Serialize for SymbolRef {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let (index, generation) = self.id.into_raw_parts();
+        let data = SerializableSymbolRef {
+            i: index as u64,
+            g: generation,
+            kind: self.kind.clone(),
+        };
+        data.serialize(serializer)
+    }
+}
+
+#[derive(Debug, Clone, Serialize)]
+
+struct SerializableSymbolRef {
+    i: u64,
+    g: u64,
+    kind: SymbolKind,
+}
+
 impl SymbolRef {
+    #[inline]
     pub fn get_kind(&self) -> SymbolKind {
         self.kind
     }
-
+    #[inline]
     pub fn get_id(&self) -> generational_arena::Index {
         self.id
     }
@@ -664,7 +694,7 @@ pub struct SchemaSymbol {
 }
 
 impl Symbol for SchemaSymbol {
-    type SymbolData = KCLSymbolData;
+    type SymbolData = SymbolData;
     type SemanticInfo = KCLSymbolSemanticInfo;
 
     fn is_global(&self) -> bool {
@@ -861,7 +891,7 @@ pub struct ValueSymbol {
 }
 
 impl Symbol for ValueSymbol {
-    type SymbolData = KCLSymbolData;
+    type SymbolData = SymbolData;
     type SemanticInfo = KCLSymbolSemanticInfo;
 
     fn is_global(&self) -> bool {
@@ -989,7 +1019,7 @@ pub struct AttributeSymbol {
 }
 
 impl Symbol for AttributeSymbol {
-    type SymbolData = KCLSymbolData;
+    type SymbolData = SymbolData;
     type SemanticInfo = KCLSymbolSemanticInfo;
 
     fn is_global(&self) -> bool {
@@ -1112,7 +1142,7 @@ pub struct PackageSymbol {
 }
 
 impl Symbol for PackageSymbol {
-    type SymbolData = KCLSymbolData;
+    type SymbolData = SymbolData;
     type SemanticInfo = KCLSymbolSemanticInfo;
 
     fn is_global(&self) -> bool {
@@ -1232,7 +1262,7 @@ pub struct TypeAliasSymbol {
 }
 
 impl Symbol for TypeAliasSymbol {
-    type SymbolData = KCLSymbolData;
+    type SymbolData = SymbolData;
     type SemanticInfo = KCLSymbolSemanticInfo;
 
     fn is_global(&self) -> bool {
@@ -1356,7 +1386,7 @@ pub struct RuleSymbol {
 }
 
 impl Symbol for RuleSymbol {
-    type SymbolData = KCLSymbolData;
+    type SymbolData = SymbolData;
     type SemanticInfo = KCLSymbolSemanticInfo;
 
     fn is_global(&self) -> bool {
@@ -1483,7 +1513,7 @@ pub struct UnresolvedSymbol {
 }
 
 impl Symbol for UnresolvedSymbol {
-    type SymbolData = KCLSymbolData;
+    type SymbolData = SymbolData;
     type SemanticInfo = KCLSymbolSemanticInfo;
 
     fn is_global(&self) -> bool {
@@ -1618,7 +1648,7 @@ pub struct ExpressionSymbol {
 }
 
 impl Symbol for ExpressionSymbol {
-    type SymbolData = KCLSymbolData;
+    type SymbolData = SymbolData;
     type SemanticInfo = KCLSymbolSemanticInfo;
 
     fn is_global(&self) -> bool {

@@ -54,6 +54,8 @@ use kclvm_ast::walker::MutSelfTypedResultWalker;
 use kclvm_error::Position;
 mod node;
 
+pub const BUILTIN_SYMBOL_PKG_PATH: &str = "@builtin";
+
 pub struct Namer<'ctx> {
     gs: GlobalState,
     ctx: NamerContext<'ctx>,
@@ -97,8 +99,10 @@ impl<'ctx> Namer<'ctx> {
     // serial namer pass
     pub fn find_symbols(program: &'ctx Program, gs: GlobalState) -> GlobalState {
         let mut namer = Self::new(program, gs);
-        namer.ctx.current_package_info =
-            Some(PackageInfo::new("@builtin".to_string(), "".to_string()));
+        namer.ctx.current_package_info = Some(PackageInfo::new(
+            BUILTIN_SYMBOL_PKG_PATH.to_string(),
+            "".to_string(),
+        ));
         namer.init_builtin_symbols();
 
         for (name, modules) in namer.ctx.program.pkgs.iter() {
