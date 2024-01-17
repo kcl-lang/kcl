@@ -127,7 +127,12 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
 
     fn walk_import_stmt(&mut self, import_stmt: &'ctx ast::ImportStmt) -> Self::Result {
         let ast_id = self.ctx.cur_node.clone();
-        let (start_pos, end_pos) = (self.ctx.start_pos.clone(), self.ctx.end_pos.clone());
+        let (start_pos, end_pos) = import_stmt
+            .asname
+            .clone()
+            .unwrap_or(import_stmt.path.clone())
+            .get_span_pos();
+
         let mut unresolved =
             UnresolvedSymbol::new(import_stmt.path.node.clone(), start_pos, end_pos, None);
         let package_symbol = self

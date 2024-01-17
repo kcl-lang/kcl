@@ -438,7 +438,7 @@ mod tests {
                 vec![
                     (
                         1,
-                        0,
+                        7,
                         1,
                         20,
                         "import_test.a".to_string(),
@@ -456,7 +456,7 @@ mod tests {
                     ),
                     (
                         2,
-                        0,
+                        7,
                         2,
                         20,
                         "import_test.b".to_string(),
@@ -474,7 +474,7 @@ mod tests {
                     ),
                     (
                         3,
-                        0,
+                        7,
                         3,
                         20,
                         "import_test.c".to_string(),
@@ -492,7 +492,7 @@ mod tests {
                     ),
                     (
                         4,
-                        0,
+                        7,
                         4,
                         20,
                         "import_test.d".to_string(),
@@ -510,7 +510,7 @@ mod tests {
                     ),
                     (
                         5,
-                        0,
+                        7,
                         5,
                         20,
                         "import_test.e".to_string(),
@@ -528,7 +528,7 @@ mod tests {
                     ),
                     (
                         6,
-                        0,
+                        24,
                         6,
                         25,
                         "import_test.f".to_string(),
@@ -544,7 +544,7 @@ mod tests {
                             .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
                         SymbolKind::Package,
                     ),
-                    (7, 0, 7, 10, "pkg".to_string(), SymbolKind::Unresolved),
+                    (7, 7, 7, 10, "pkg".to_string(), SymbolKind::Unresolved),
                     (
                         0,
                         0,
@@ -555,7 +555,7 @@ mod tests {
                             .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
                         SymbolKind::Package,
                     ),
-                    (8, 0, 8, 12, "regex".to_string(), SymbolKind::Unresolved),
+                    (8, 7, 8, 12, "regex".to_string(), SymbolKind::Unresolved),
                     (
                         1,
                         0,

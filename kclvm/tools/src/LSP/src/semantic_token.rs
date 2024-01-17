@@ -1,7 +1,10 @@
 use std::vec;
 
 use kclvm_error::Position;
-use kclvm_sema::core::{global_state::GlobalState, symbol::SymbolKind};
+use kclvm_sema::core::{
+    global_state::GlobalState,
+    symbol::{KCLSymbol, SymbolKind},
+};
 use lsp_types::{SemanticToken, SemanticTokenType, SemanticTokens, SemanticTokensResult};
 
 pub const LEGEND_TYPE: &[SemanticTokenType] = &[
@@ -26,32 +29,22 @@ pub(crate) fn semantic_tokens_full(file: &str, gs: &GlobalState) -> Option<Seman
     if let Some(file_sema) = sema_db.get_file_sema(&file.to_string()) {
         let symbols = file_sema.get_symbols();
         for symbol_ref in symbols {
-            if symbol_ref.get_kind() == SymbolKind::Expression {
-                continue;
-            }
             if let Some(symbol) = gs.get_symbols().get_symbol(*symbol_ref) {
                 let (start, end) = symbol.get_range();
-                let kind = match symbol_ref.get_kind() {
-                    SymbolKind::Schema => type_index(SemanticTokenType::STRUCT),
-                    SymbolKind::Attribute => type_index(SemanticTokenType::PROPERTY),
-                    SymbolKind::Package => type_index(SemanticTokenType::NAMESPACE),
-                    SymbolKind::TypeAlias => type_index(SemanticTokenType::TYPE),
-                    SymbolKind::Value | SymbolKind::Unresolved => {
-                        type_index(SemanticTokenType::VARIABLE)
+                match get_kind(symbol_ref.get_kind(), symbol, gs) {
+                    Some(kind) => {
+                        kcl_tokens.push(KCLSemanticToken {
+                            start: start.clone(),
+                            kind,
+                            length: if start.line == end.line {
+                                (end.column.unwrap_or(0) - start.column.unwrap_or(0)) as u32
+                            } else {
+                                symbol.get_name().len() as u32
+                            },
+                        });
                     }
-                    SymbolKind::Rule => type_index(SemanticTokenType::MACRO),
-                    SymbolKind::Comment => type_index(SemanticTokenType::COMMENT),
-                    SymbolKind::Expression => unreachable!(),
-                };
-                kcl_tokens.push(KCLSemanticToken {
-                    start: start.clone(),
-                    kind,
-                    length: if start.line == end.line {
-                        (end.column.unwrap_or(0) - start.column.unwrap_or(0)) as u32
-                    } else {
-                        symbol.get_name().len() as u32
-                    },
-                });
+                    None => continue,
+                }
             }
         }
     }
@@ -60,6 +53,26 @@ pub(crate) fn semantic_tokens_full(file: &str, gs: &GlobalState) -> Option<Seman
         result_id: None,
         data: kcl_semantic_tokens_to_semantic_tokens(&mut kcl_tokens),
     }))
+}
+
+pub(crate) fn get_kind(ty: SymbolKind, symbol: &KCLSymbol, gs: &GlobalState) -> Option<u32> {
+    match ty {
+        SymbolKind::Schema => Some(type_index(SemanticTokenType::STRUCT)),
+        SymbolKind::Attribute => Some(type_index(SemanticTokenType::PROPERTY)),
+        SymbolKind::Package => Some(type_index(SemanticTokenType::NAMESPACE)),
+        SymbolKind::TypeAlias => Some(type_index(SemanticTokenType::TYPE)),
+        SymbolKind::Value => Some(type_index(SemanticTokenType::VARIABLE)),
+        SymbolKind::Rule => Some(type_index(SemanticTokenType::MACRO)),
+        SymbolKind::Unresolved => match &symbol.get_definition() {
+            Some(def_ref) => match gs.get_symbols().get_symbol(*def_ref) {
+                Some(symbol) => get_kind(def_ref.get_kind(), symbol, gs),
+                None => Some(type_index(SemanticTokenType::VARIABLE)),
+            },
+            None => Some(type_index(SemanticTokenType::VARIABLE)),
+        },
+        SymbolKind::Expression => None,
+        SymbolKind::Comment => None,
+    }
 }
 
 pub(crate) fn type_index(ty: SemanticTokenType) -> u32 {
@@ -128,15 +141,16 @@ mod tests {
     fn semantic_tokens_full_test() {
         let (file, _, _, _, gs) = compile_test_file("src/test_data/sema_token.k");
         let expected = [
-            (0, 5, 3, 4),
-            (1, 7, 7, 1),
-            (1, 4, 4, 2),
-            (2, 0, 2, 0),
-            (0, 4, 7, 0),
-            (0, 10, 7, 0),
-            (1, 4, 4, 0),
-            (2, 0, 1, 0),
-            (0, 3, 3, 0),
+            (0, 15, 1, 3), // m
+            (1, 5, 3, 4),  // num
+            (1, 7, 7, 1),  // Persons
+            (1, 4, 4, 2),  // name
+            (2, 0, 2, 0),  // p5
+            (0, 4, 7, 1),  // Persons
+            (0, 10, 7, 1), // Persons
+            (1, 4, 4, 2),  // name
+            (2, 0, 1, 0),  // n
+            (0, 3, 3, 4),  // num
         ];
         let res = semantic_tokens_full(&file, &gs);
         if let Some(tokens) = res {
