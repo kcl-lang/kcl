@@ -46,7 +46,7 @@ expression: "crate::tests::parsing_file_string(\"testdata/config_expr-04.k\")"
               "ty": {
                 "node": {
                   "type": "Basic",
-                  "data": "Str"
+                  "value": "Str"
                 },
                 "filename": "config_expr-04.k",
                 "line": 4,
@@ -80,7 +80,7 @@ expression: "crate::tests::parsing_file_string(\"testdata/config_expr-04.k\")"
               "ty": {
                 "node": {
                   "type": "Basic",
-                  "data": "Str"
+                  "value": "Str"
                 },
                 "filename": "config_expr-04.k",
                 "line": 5,
@@ -144,11 +144,11 @@ expression: "crate::tests::parsing_file_string(\"testdata/config_expr-04.k\")"
               "ty": {
                 "node": {
                   "type": "List",
-                  "data": {
+                  "value": {
                     "inner_type": {
                       "node": {
                         "type": "Named",
-                        "data": {
+                        "value": {
                           "names": [
                             {
                               "node": "Env",
@@ -233,7 +233,7 @@ expression: "crate::tests::parsing_file_string(\"testdata/config_expr-04.k\")"
               "ty": {
                 "node": {
                   "type": "Named",
-                  "data": {
+                  "value": {
                     "names": [
                       {
                         "node": "Main",

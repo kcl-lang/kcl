@@ -1583,7 +1583,7 @@ pub enum ExprContext {
 
 /// A expression
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[serde(tag = "type", content = "data")]
+#[serde(tag = "type", content = "value")]
 pub enum Type {
     Any,
     Named(Identifier),

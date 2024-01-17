@@ -58,7 +58,7 @@ expression: "crate::tests::parsing_file_string(\"testdata/hello_win.k\")"
               "ty": {
                 "node": {
                   "type": "Basic",
-                  "data": "Str"
+                  "value": "Str"
                 },
                 "filename": "hello_win.k",
                 "line": 3,

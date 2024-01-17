@@ -81,7 +81,7 @@ fn get_dummy_assign_binary_ast() -> ast::Node<ast::AssignStmt> {
             ))],
             value: Box::new(ast::Node::new(
                 ast::Expr::Binary(ast::BinaryExpr {
-                    op: ast::BinOrCmpOp::Bin(ast::BinOp::Add),
+                    op: ast::BinOp::Add,
                     left: Box::new(ast::Node::new(
                         ast::Expr::Identifier(ast::Identifier {
                             names: vec![Node::dummy_node(String::from("a"))],

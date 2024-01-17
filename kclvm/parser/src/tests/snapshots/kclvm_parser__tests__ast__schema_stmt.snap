@@ -70,7 +70,7 @@ expression: "crate::tests::parsing_file_ast_json(\"hello.k\",\n    r####\"\nsche
               "ty": {
                 "node": {
                   "type": "Basic",
-                  "data": "Int"
+                  "value": "Int"
                 },
                 "filename": "hello.k",
                 "line": 8,
@@ -104,7 +104,7 @@ expression: "crate::tests::parsing_file_ast_json(\"hello.k\",\n    r####\"\nsche
               "ty": {
                 "node": {
                   "type": "Basic",
-                  "data": "Str"
+                  "value": "Str"
                 },
                 "filename": "hello.k",
                 "line": 9,
@@ -152,7 +152,7 @@ expression: "crate::tests::parsing_file_ast_json(\"hello.k\",\n    r####\"\nsche
               "ty": {
                 "node": {
                   "type": "Basic",
-                  "data": "Int"
+                  "value": "Int"
                 },
                 "filename": "hello.k",
                 "line": 10,
@@ -198,7 +198,7 @@ expression: "crate::tests::parsing_file_ast_json(\"hello.k\",\n    r####\"\nsche
               "ty": {
                 "node": {
                   "type": "Basic",
-                  "data": "Str"
+                  "value": "Str"
                 },
                 "filename": "hello.k",
                 "line": 11,
@@ -877,7 +877,7 @@ expression: "crate::tests::parsing_file_ast_json(\"hello.k\",\n    r####\"\nsche
             "key_ty": {
               "node": {
                 "type": "Basic",
-                "data": "Str"
+                "value": "Str"
               },
               "filename": "hello.k",
               "line": 7,
@@ -888,7 +888,7 @@ expression: "crate::tests::parsing_file_ast_json(\"hello.k\",\n    r####\"\nsche
             "value_ty": {
               "node": {
                 "type": "Basic",
-                "data": "Int"
+                "value": "Int"
               },
               "filename": "hello.k",
               "line": 7,

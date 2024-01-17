@@ -92,7 +92,7 @@ expression: "crate::tests::parsing_file_string(\"testdata/type-01.k\")"
         "ty": {
           "node": {
             "type": "Basic",
-            "data": "Bool"
+            "value": "Bool"
           },
           "filename": "type-01.k",
           "line": 3,
@@ -142,7 +142,7 @@ expression: "crate::tests::parsing_file_string(\"testdata/type-01.k\")"
         "ty": {
           "node": {
             "type": "Basic",
-            "data": "Int"
+            "value": "Int"
           },
           "filename": "type-01.k",
           "line": 4,
@@ -192,7 +192,7 @@ expression: "crate::tests::parsing_file_string(\"testdata/type-01.k\")"
         "ty": {
           "node": {
             "type": "Basic",
-            "data": "Float"
+            "value": "Float"
           },
           "filename": "type-01.k",
           "line": 5,
@@ -242,7 +242,7 @@ expression: "crate::tests::parsing_file_string(\"testdata/type-01.k\")"
         "ty": {
           "node": {
             "type": "Basic",
-            "data": "Str"
+            "value": "Str"
           },
           "filename": "type-01.k",
           "line": 6,
@@ -292,7 +292,7 @@ expression: "crate::tests::parsing_file_string(\"testdata/type-01.k\")"
         "ty": {
           "node": {
             "type": "List",
-            "data": {
+            "value": {
               "inner_type": null
             }
           },
@@ -344,11 +344,11 @@ expression: "crate::tests::parsing_file_string(\"testdata/type-01.k\")"
         "ty": {
           "node": {
             "type": "List",
-            "data": {
+            "value": {
               "inner_type": {
                 "node": {
                   "type": "List",
-                  "data": {
+                  "value": {
                     "inner_type": null
                   }
                 },
@@ -408,11 +408,11 @@ expression: "crate::tests::parsing_file_string(\"testdata/type-01.k\")"
         "ty": {
           "node": {
             "type": "List",
-            "data": {
+            "value": {
               "inner_type": {
                 "node": {
                   "type": "Basic",
-                  "data": "Int"
+                  "value": "Int"
                 },
                 "filename": "type-01.k",
                 "line": 10,
@@ -470,12 +470,12 @@ expression: "crate::tests::parsing_file_string(\"testdata/type-01.k\")"
         "ty": {
           "node": {
             "type": "Union",
-            "data": {
+            "value": {
               "type_elements": [
                 {
                   "node": {
                     "type": "Basic",
-                    "data": "Int"
+                    "value": "Int"
                   },
                   "filename": "type-01.k",
                   "line": 12,
@@ -486,7 +486,7 @@ expression: "crate::tests::parsing_file_string(\"testdata/type-01.k\")"
                 {
                   "node": {
                     "type": "Basic",
-                    "data": "Str"
+                    "value": "Str"
                   },
                   "filename": "type-01.k",
                   "line": 12,
@@ -497,7 +497,7 @@ expression: "crate::tests::parsing_file_string(\"testdata/type-01.k\")"
                 {
                   "node": {
                     "type": "List",
-                    "data": {
+                    "value": {
                       "inner_type": null
                     }
                   },
@@ -510,7 +510,7 @@ expression: "crate::tests::parsing_file_string(\"testdata/type-01.k\")"
                 {
                   "node": {
                     "type": "Dict",
-                    "data": {
+                    "value": {
                       "key_type": null,
                       "value_type": null
                     }
