@@ -33,7 +33,7 @@
 //! in the compiler and regenerate the walker code.
 //! :copyright: Copyright The KCL Authors. All rights reserved.
 
-use serde::{Deserialize, Serialize, Serializer};
+use serde::{ser::SerializeStruct, Deserialize, Serialize, Serializer};
 use std::collections::HashMap;
 
 use compiler_base_span::{Loc, Span};
@@ -112,7 +112,7 @@ impl ToString for AstIndex {
 /// that all AST nodes need to contain.
 /// In fact, column and end_column are the counts of character,
 /// For example, `\t` is counted as 1 character, so it is recorded as 1 here, but generally col is 4.
-#[derive(Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Deserialize, Clone, PartialEq)]
 pub struct Node<T> {
     #[serde(serialize_with = "serialize_id", skip_deserializing, default)]
     pub id: AstIndex,
@@ -124,22 +124,31 @@ pub struct Node<T> {
     pub end_column: u64,
 }
 
+impl<T: Serialize> Serialize for Node<T> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let should_serialize_id = SHOULD_SERIALIZE_ID.with(|f| *f.borrow());
+        let mut state =
+            serializer.serialize_struct("Node", if should_serialize_id { 7 } else { 6 })?;
+        if should_serialize_id {
+            state.serialize_field("id", &self.id)?;
+        }
+        state.serialize_field("node", &self.node)?;
+        state.serialize_field("filename", &self.filename)?;
+        state.serialize_field("line", &self.line)?;
+        state.serialize_field("column", &self.column)?;
+        state.serialize_field("end_line", &self.end_line)?;
+        state.serialize_field("end_column", &self.end_column)?;
+        state.end()
+    }
+}
+
 pub fn set_should_serialize_id(value: bool) {
     SHOULD_SERIALIZE_ID.with(|f| {
         *f.borrow_mut() = value;
     });
-}
-
-fn serialize_id<S>(id: &AstIndex, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    let should_serialize_id = SHOULD_SERIALIZE_ID.with(|f| *f.borrow());
-    if should_serialize_id {
-        id.serialize(serializer)
-    } else {
-        serializer.serialize_none()
-    }
 }
 
 impl<T: Debug> Debug for Node<T> {
