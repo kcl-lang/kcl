@@ -7,7 +7,11 @@ use kclvm_error::{diagnostic::Range, Diagnostic};
 use kclvm_parser::{load_program, KCLModuleCache, LoadProgramOptions, ParseSessionRef};
 use kclvm_sema::{
     advanced_resolver::AdvancedResolver,
-    core::{global_state::GlobalState, symbol::SymbolRef},
+    core::{
+        global_state::GlobalState,
+        scope::{LocalSymbolScopeKind, ScopeData, ScopeRef},
+        symbol::{SymbolData, SymbolRef},
+    },
     namer::Namer,
     resolver::{resolve_program_with_opts, scope::NodeKey},
     ty::{Type, TypeRef},
@@ -42,12 +46,16 @@ pub struct Packages {
     pub paths: Vec<PathBuf>,
     /// All Parse errors
     pub parse_errors: Errors,
-    // Type errors
+    /// Type errors
     pub type_errors: Errors,
-    // Symbol-Type mapping
+    /// Symbol information
     pub symbols: IndexMap<SymbolRef, SymbolInfo>,
+    /// Scope information
+    pub scopes: IndexMap<ScopeRef, ScopeInfo>,
     // AST Node-Symbol mapping
     pub node_symbol_map: IndexMap<NodeKey, SymbolRef>,
+    // <Package path>-<Root scope> mapping
+    pub pkg_scope_map: IndexMap<String, ScopeRef>,
 }
 
 #[derive(Debug, Clone)]
@@ -59,6 +67,33 @@ pub struct SymbolInfo {
     pub def: Option<SymbolRef>,
     pub attrs: Vec<SymbolRef>,
     pub is_global: bool,
+}
+
+#[derive(Debug, Clone)]
+pub struct ScopeInfo {
+    /// Scope kind
+    pub kind: ScopeKind,
+    /// Scope parent
+    pub parent: Option<ScopeRef>,
+    /// Scope owner
+    pub owner: Option<SymbolRef>,
+    /// Children scopes
+    pub children: Vec<ScopeRef>,
+    /// Definitions
+    pub defs: Vec<SymbolRef>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ScopeKind {
+    Package,
+    Module,
+    List,
+    Dict,
+    Quant,
+    Lambda,
+    SchemaDef,
+    SchemaConfig,
+    Value,
 }
 
 /// load_package provides users with the ability to parse kcl program and sematic model
@@ -101,8 +136,7 @@ pub fn load_packages(opts: &LoadPackageOptions) -> Result<Packages> {
         paths: parse_result.paths,
         parse_errors,
         type_errors,
-        symbols: IndexMap::new(),
-        node_symbol_map: IndexMap::new(),
+        ..Default::default()
     };
     if !opts.resolve_ast {
         return Ok(packages);
@@ -143,5 +177,66 @@ pub fn load_packages(opts: &LoadPackageOptions) -> Result<Packages> {
             }
         }
     }
+    let scopes = gs.get_scopes();
+    for (path, scope_ref) in scopes.get_root_scope_map() {
+        packages.pkg_scope_map.insert(path.clone(), *scope_ref);
+        // Root scopes
+        if let Some(scope_ref) = scopes.get_root_scope(path.clone()) {
+            collect_scope_info(
+                &mut packages.scopes,
+                &scope_ref,
+                scopes,
+                symbols,
+                ScopeKind::Package,
+            );
+        }
+    }
     Ok(packages)
+}
+
+impl From<LocalSymbolScopeKind> for ScopeKind {
+    fn from(value: LocalSymbolScopeKind) -> Self {
+        match value {
+            LocalSymbolScopeKind::List => ScopeKind::List,
+            LocalSymbolScopeKind::Dict => ScopeKind::Dict,
+            LocalSymbolScopeKind::Quant => ScopeKind::Quant,
+            LocalSymbolScopeKind::Lambda => ScopeKind::Lambda,
+            LocalSymbolScopeKind::SchemaDef => ScopeKind::SchemaDef,
+            LocalSymbolScopeKind::SchemaConfig => ScopeKind::SchemaConfig,
+            LocalSymbolScopeKind::Value => ScopeKind::Value,
+        }
+    }
+}
+
+fn collect_scope_info(
+    scopes: &mut IndexMap<ScopeRef, ScopeInfo>,
+    scope_ref: &ScopeRef,
+    scope_data: &ScopeData,
+    symbol_data: &SymbolData,
+    kind: ScopeKind,
+) {
+    if let Some(scope) = scope_data.get_scope(scope_ref) {
+        let kind = if let Some(scope) = scope_data.try_get_local_scope(scope_ref) {
+            scope.get_kind().clone().into()
+        } else {
+            kind
+        };
+        scopes.insert(
+            scope_ref.clone(),
+            ScopeInfo {
+                kind,
+                parent: scope.get_parent(),
+                owner: scope.get_owner(),
+                children: scope.get_children(),
+                defs: scope
+                    .get_all_defs(scope_data, symbol_data, None, false)
+                    .values()
+                    .copied()
+                    .collect::<Vec<_>>(),
+            },
+        );
+        for s in scope.get_children() {
+            collect_scope_info(scopes, &s, scope_data, symbol_data, ScopeKind::Module);
+        }
+    }
 }
