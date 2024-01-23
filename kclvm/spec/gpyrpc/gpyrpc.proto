@@ -1,4 +1,4 @@
-// Copyright 2023 The KCL Authors. All rights reserved.
+// Copyright The KCL Authors. All rights reserved.
 //
 // This file defines the request parameters and return structure of the KCL RPC server.
 
@@ -122,6 +122,7 @@ message LoadPackage_Args {
 	ParseProgram_Args parse_args = 1;
 	bool resolve_ast = 2;
 	bool load_builtin = 3;
+	bool with_ast_index = 4;
 }
 
 message LoadPackage_Result {

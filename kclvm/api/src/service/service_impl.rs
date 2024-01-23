@@ -193,6 +193,10 @@ impl KclvmServiceImpl {
             resolve_ast: args.resolve_ast,
             load_builtin: args.load_builtin,
         })?;
+        if args.with_ast_index {
+            // Thread local options
+            kclvm_ast::ast::set_should_serialize_id(true);
+        }
         let program_json = serde_json::to_string(&packages.program)?;
         let mut node_symbol_map = HashMap::new();
         let mut pkg_scope_map = HashMap::new();
