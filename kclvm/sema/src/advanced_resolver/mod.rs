@@ -75,9 +75,9 @@ pub struct Context<'ctx> {
     cur_node: AstIndex,
 
     // whether the identifier currently being visited may be a definition
-    // it will only be true when visiting a lvalue or parameter,
+    // it will only be true when visiting a l-value or parameter,
     // which means advanced resolver will will create the corresponding
-    // ValueSymbol instead of an UnresolveSymbol
+    // ValueSymbol instead of an UnresolvedSymbol
     maybe_def: bool,
 }
 

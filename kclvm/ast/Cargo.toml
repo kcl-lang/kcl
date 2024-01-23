@@ -13,6 +13,7 @@ serde_json = "1.0"
 
 kclvm-span = { path = "../span" }
 kclvm-error = { path = "../error" }
+thread_local = "1.1.7"
 
 [dev-dependencies]
 kclvm-parser = { path = "../parser" }

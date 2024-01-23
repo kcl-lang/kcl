@@ -1,4 +1,4 @@
-// Copyright 2023 The KCL Authors. All rights reserved.
+// Copyright The KCL Authors. All rights reserved.
 //
 // This file defines the request parameters and return structure of the KCL RPC server.
 
@@ -122,6 +122,7 @@ message LoadPackage_Args {
 	ParseProgram_Args parse_args = 1;
 	bool resolve_ast = 2;
 	bool load_builtin = 3;
+	bool with_ast_index = 4;
 }
 
 message LoadPackage_Result {
@@ -129,8 +130,10 @@ message LoadPackage_Result {
 	repeated string paths = 2;   // Returns the files in the order they should be compiled
 	map<string, SymbolIndex> node_symbol_map = 3;  // Map key is the AST index UUID string.
 	map<string, Symbol> symbols = 4;  // Map key is the SymbolIndex json string.
-	repeated Error parse_errors = 5;     // Parse errors
-	repeated Error type_errors = 6;     // Parse errors
+	map<string, ScopeIndex> pkg_scope_map = 5;      // Map key is the package path.
+	map<string, Scope> scopes = 6;    // Map key is the ScopeIndex json string.
+	repeated Error parse_errors = 7;     // Parse errors
+	repeated Error type_errors = 8;      // Type errors
 }
 
 message Symbol {
@@ -142,7 +145,21 @@ message Symbol {
 	bool is_global = 6;
 }
 
+message Scope {
+	string kind = 1;
+	ScopeIndex parent = 2;
+	SymbolIndex owner = 3;
+	repeated ScopeIndex children = 4;
+	repeated SymbolIndex defs = 5;
+}
+
 message SymbolIndex {
+	uint64 i = 1;
+	uint64 g = 2;
+	string kind = 3;
+}
+
+message ScopeIndex {
 	uint64 i = 1;
 	uint64 g = 2;
 	string kind = 3;

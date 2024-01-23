@@ -413,7 +413,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
             .node_symbol_map
             .get(&self.ctx.get_node_key(&schema_attr.name.id))?;
         let parent_scope = *self.ctx.scopes.last().unwrap();
-        let parent_scope = self.gs.get_scopes().get_scope(parent_scope).unwrap();
+        let parent_scope = self.gs.get_scopes().get_scope(&parent_scope).unwrap();
         let mut doc = None;
         if let Some(schema_symbol) = parent_scope.get_owner() {
             let schema_symbol = self.gs.get_symbols().get_symbol(schema_symbol).unwrap();

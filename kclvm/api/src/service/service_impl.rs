@@ -173,6 +173,8 @@ impl KclvmServiceImpl {
     /// assert_eq!(result.type_errors.len(), 0);
     /// assert_eq!(result.node_symbol_map.len(), 159);
     /// assert_eq!(result.symbols.len(), 12);
+    /// assert_eq!(result.scopes.len(), 3);
+    /// assert_eq!(result.pkg_scope_map.len(), 3);
     /// ```
     pub fn load_package(&self, args: &LoadPackageArgs) -> anyhow::Result<LoadPackageResult> {
         let mut package_maps = HashMap::new();
@@ -191,15 +193,28 @@ impl KclvmServiceImpl {
             resolve_ast: args.resolve_ast,
             load_builtin: args.load_builtin,
         })?;
+        if args.with_ast_index {
+            // Thread local options
+            kclvm_ast::ast::set_should_serialize_id(true);
+        }
         let program_json = serde_json::to_string(&packages.program)?;
         let mut node_symbol_map = HashMap::new();
+        let mut pkg_scope_map = HashMap::new();
         let mut symbols = HashMap::new();
+        let mut scopes = HashMap::new();
         for (k, s) in packages.node_symbol_map {
             node_symbol_map.insert(k.id.to_string(), s.into_symbol_index());
+        }
+        for (k, s) in packages.pkg_scope_map {
+            pkg_scope_map.insert(k, s.into_scope_index());
         }
         for (k, s) in packages.symbols {
             let symbol_index_string = serde_json::to_string(&k)?;
             symbols.insert(symbol_index_string, s.into_symbol());
+        }
+        for (k, s) in packages.scopes {
+            let scope_index_string = serde_json::to_string(&k)?;
+            scopes.insert(scope_index_string, s.into_scope());
         }
         Ok(LoadPackageResult {
             program: program_json,
@@ -209,7 +224,9 @@ impl KclvmServiceImpl {
                 .map(|p| p.to_str().unwrap().to_string())
                 .collect(),
             node_symbol_map,
+            pkg_scope_map,
             symbols,
+            scopes,
             parse_errors: packages
                 .parse_errors
                 .into_iter()

@@ -1,10 +1,11 @@
 use crate::gpyrpc::{
-    CliConfig, Error, KeyValuePair, LoadSettingsFilesResult, Message, Position, Symbol, SymbolIndex,
+    CliConfig, Error, KeyValuePair, LoadSettingsFilesResult, Message, Position, Scope, ScopeIndex,
+    Symbol, SymbolIndex,
 };
 use kclvm_config::settings::SettingsFile;
 use kclvm_error::Diagnostic;
-use kclvm_loader::SymbolInfo;
-use kclvm_sema::core::symbol::SymbolRef;
+use kclvm_loader::{ScopeInfo, SymbolInfo};
+use kclvm_sema::core::{scope::ScopeRef, symbol::SymbolRef};
 
 pub(crate) trait IntoLoadSettingsFiles {
     /// Convert self into the LoadSettingsFiles structure.
@@ -21,6 +22,14 @@ pub(crate) trait IntoSymbolIndex {
 
 pub(crate) trait IntoSymbol {
     fn into_symbol(self) -> Symbol;
+}
+
+pub(crate) trait IntoScope {
+    fn into_scope(self) -> Scope;
+}
+
+pub(crate) trait IntoScopeIndex {
+    fn into_scope_index(self) -> ScopeIndex;
 }
 
 impl IntoLoadSettingsFiles for SettingsFile {
@@ -89,6 +98,17 @@ impl IntoSymbolIndex for SymbolRef {
     }
 }
 
+impl IntoScopeIndex for ScopeRef {
+    fn into_scope_index(self) -> ScopeIndex {
+        let (index, generation) = self.get_id().into_raw_parts();
+        ScopeIndex {
+            i: index as u64,
+            g: generation as u64,
+            kind: format!("{:?}", self.get_kind()),
+        }
+    }
+}
+
 impl IntoSymbol for SymbolInfo {
     fn into_symbol(self) -> Symbol {
         Symbol {
@@ -98,6 +118,18 @@ impl IntoSymbol for SymbolInfo {
             def: self.def.map(|d| d.into_symbol_index()),
             attrs: self.attrs.iter().map(|a| a.into_symbol_index()).collect(),
             is_global: self.is_global,
+        }
+    }
+}
+
+impl IntoScope for ScopeInfo {
+    fn into_scope(self) -> Scope {
+        Scope {
+            kind: format!("{:?}", self.kind),
+            parent: self.parent.map(|o| o.into_scope_index()),
+            owner: self.owner.map(|o| o.into_symbol_index()),
+            children: self.children.iter().map(|a| a.into_scope_index()).collect(),
+            defs: self.defs.iter().map(|a| a.into_symbol_index()).collect(),
         }
     }
 }

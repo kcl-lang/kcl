@@ -76,7 +76,7 @@ impl GlobalState {
         scope_ref: ScopeRef,
         module_info: Option<&ModuleInfo>,
     ) -> Option<SymbolRef> {
-        match self.scopes.get_scope(scope_ref)?.look_up_def(
+        match self.scopes.get_scope(&scope_ref)?.look_up_def(
             name,
             &self.scopes,
             &self.symbols,
@@ -107,7 +107,7 @@ impl GlobalState {
     pub fn look_up_scope(&self, pos: &Position) -> Option<ScopeRef> {
         let scopes = &self.scopes;
         for root_ref in scopes.root_map.values() {
-            if let Some(root) = scopes.get_scope(*root_ref) {
+            if let Some(root) = scopes.get_scope(root_ref) {
                 if root.contains_pos(pos) {
                     if let Some(inner_ref) = self.look_up_into_scope(*root_ref, pos) {
                         return Some(inner_ref);
@@ -169,7 +169,7 @@ impl GlobalState {
     ///      all definition symbols in the scope
     pub fn get_all_defs_in_scope(&self, scope: ScopeRef) -> Option<Vec<SymbolRef>> {
         let scopes = &self.scopes;
-        let scope = scopes.get_scope(scope)?;
+        let scope = scopes.get_scope(&scope)?;
         let all_defs: Vec<SymbolRef> = scope
             .get_all_defs(
                 scopes,
@@ -208,7 +208,7 @@ impl GlobalState {
             Some(parent_scope_ref) => {
                 let candidate_symbol = self.symbols.get_symbol(candidate?)?;
                 let (start, _) = candidate_symbol.get_range();
-                let parent_scope = self.scopes.get_scope(parent_scope_ref)?;
+                let parent_scope = self.scopes.get_scope(&parent_scope_ref)?;
                 if parent_scope.contains_pos(&start) {
                     let barrier_scope = self.look_up_closest_sub_scope(parent_scope_ref, pos);
                     match barrier_scope {
@@ -271,7 +271,7 @@ impl GlobalState {
     fn look_up_into_scope(&self, parent: ScopeRef, pos: &Position) -> Option<ScopeRef> {
         let candidate_ref = self.look_up_closest_sub_scope(parent, pos)?;
 
-        let candidate = self.scopes.get_scope(candidate_ref)?;
+        let candidate = self.scopes.get_scope(&candidate_ref)?;
         if candidate.contains_pos(pos) {
             if let Some(inner_ref) = self.look_up_into_scope(candidate_ref, pos) {
                 return Some(inner_ref);

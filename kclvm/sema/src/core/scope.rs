@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use indexmap::{IndexMap, IndexSet};
 use kclvm_error::Position;
+use serde::Serialize;
 
 use crate::core::symbol::SymbolRef;
 
@@ -36,7 +37,7 @@ pub trait Scope {
     fn dump(&self, scope_data: &ScopeData, symbol_data: &Self::SymbolData) -> Option<String>;
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash, Serialize)]
 pub enum ScopeKind {
     Local,
     Root,
@@ -46,6 +47,29 @@ pub enum ScopeKind {
 pub struct ScopeRef {
     pub(crate) id: generational_arena::Index,
     pub(crate) kind: ScopeKind,
+}
+
+impl Serialize for ScopeRef {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let (index, generation) = self.id.into_raw_parts();
+        let data = SerializableScopeRef {
+            i: index as u64,
+            g: generation,
+            kind: self.kind.clone(),
+        };
+        data.serialize(serializer)
+    }
+}
+
+#[derive(Debug, Clone, Serialize)]
+
+struct SerializableScopeRef {
+    i: u64,
+    g: u64,
+    kind: ScopeKind,
 }
 
 impl ScopeRef {
@@ -67,7 +91,12 @@ pub struct ScopeData {
 }
 
 impl ScopeData {
-    pub fn get_scope(&self, scope: ScopeRef) -> Option<&dyn Scope<SymbolData = SymbolData>> {
+    #[inline]
+    pub fn get_root_scope_map(&self) -> &IndexMap<String, ScopeRef> {
+        &self.root_map
+    }
+
+    pub fn get_scope(&self, scope: &ScopeRef) -> Option<&dyn Scope<SymbolData = SymbolData>> {
         match scope.get_kind() {
             ScopeKind::Local => {
                 Some(self.locals.get(scope.get_id())? as &dyn Scope<SymbolData = SymbolData>)
@@ -75,6 +104,13 @@ impl ScopeData {
             ScopeKind::Root => {
                 Some(self.roots.get(scope.get_id())? as &dyn Scope<SymbolData = SymbolData>)
             }
+        }
+    }
+
+    pub fn try_get_local_scope(&self, scope: &ScopeRef) -> Option<&LocalSymbolScope> {
+        match scope.get_kind() {
+            ScopeKind::Local => Some(self.locals.get(scope.get_id())?),
+            ScopeKind::Root => None,
         }
     }
 
@@ -241,7 +277,7 @@ impl Scope for RootSymbolScope {
         for (index, (key, scopes)) in self.children.iter().enumerate() {
             output.push_str(&format!("\"{}\": [\n", key));
             for (index, scope) in scopes.iter().enumerate() {
-                let scope = scope_data.get_scope(*scope)?;
+                let scope = scope_data.get_scope(scope)?;
                 output.push_str(&format!("{}", scope.dump(scope_data, symbol_data)?));
                 if index + 1 < scopes.len() {
                     output.push_str(",\n");
@@ -289,7 +325,6 @@ impl RootSymbolScope {
     }
 }
 
-#[allow(unused)]
 #[derive(Debug, Clone)]
 pub struct LocalSymbolScope {
     pub(crate) parent: ScopeRef,
@@ -303,7 +338,6 @@ pub struct LocalSymbolScope {
     pub(crate) kind: LocalSymbolScopeKind,
 }
 
-#[allow(unused)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum LocalSymbolScopeKind {
     List,
@@ -358,7 +392,7 @@ impl Scope for LocalSymbolScope {
                         return Some(symbol_ref);
                     }
                 };
-                let parent = scope_data.get_scope(self.parent)?;
+                let parent = scope_data.get_scope(&self.parent)?;
                 parent.look_up_def(name, scope_data, symbol_data, module_info)
             }
         }
@@ -412,7 +446,7 @@ impl Scope for LocalSymbolScope {
                 }
             }
 
-            if let Some(parent) = scope_data.get_scope(self.parent) {
+            if let Some(parent) = scope_data.get_scope(&self.parent) {
                 for (name, def_ref) in
                     parent.get_all_defs(scope_data, symbol_data, module_info, true)
                 {
@@ -468,7 +502,7 @@ impl Scope for LocalSymbolScope {
         output.push_str("\n],");
         output.push_str("\n\"children\": [\n");
         for (index, scope) in self.children.iter().enumerate() {
-            let scope = scope_data.get_scope(*scope)?;
+            let scope = scope_data.get_scope(scope)?;
             output.push_str(&format!("{}", scope.dump(scope_data, symbol_data)?));
             if index + 1 < self.children.len() {
                 output.push_str(",\n")
@@ -502,10 +536,17 @@ impl LocalSymbolScope {
         }
     }
 
+    #[inline]
+    pub fn get_kind(&self) -> &LocalSymbolScopeKind {
+        &self.kind
+    }
+
+    #[inline]
     pub fn add_child(&mut self, child: ScopeRef) {
         self.children.push(child)
     }
 
+    #[inline]
     pub fn set_owner(&mut self, owner: SymbolRef) {
         self.owner = Some(owner)
     }
