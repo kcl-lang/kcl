@@ -262,7 +262,7 @@ impl From<PanicInfo> for Diagnostic {
             };
             Diagnostic::new_with_code(
                 Level::Error,
-                &panic_msg,
+                panic_msg,
                 None,
                 (pos.clone(), pos),
                 None,
@@ -280,7 +280,7 @@ impl From<PanicInfo> for Diagnostic {
                 if frame.col != 0 {
                     backtrace_msg.push_str(&format!(":{}", frame.col))
                 }
-                backtrace_msg.push_str("\n")
+                backtrace_msg.push('\n')
             }
             let pos = Position {
                 filename: panic_info.kcl_file.clone(),
@@ -289,7 +289,7 @@ impl From<PanicInfo> for Diagnostic {
             };
             Diagnostic::new_with_code(
                 Level::Error,
-                &panic_msg,
+                panic_msg,
                 Some(&backtrace_msg),
                 (pos.clone(), pos),
                 None,
@@ -429,7 +429,7 @@ impl SessionDiagnostic for Diagnostic {
                     diag.append_component(Box::new(format!(": {}\n", warning.name())));
                 }
                 DiagnosticId::Suggestions => {
-                    diag.append_component(Box::new(SuggestionsLabel::default()));
+                    diag.append_component(Box::new(SuggestionsLabel));
                 }
             },
             None => match self.level {
@@ -443,7 +443,7 @@ impl SessionDiagnostic for Diagnostic {
                     diag.append_component(Box::new(Label::Note));
                 }
                 Level::Suggestions => {
-                    diag.append_component(Box::new(SuggestionsLabel::default()));
+                    diag.append_component(Box::new(SuggestionsLabel));
                 }
             },
         }
