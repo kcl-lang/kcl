@@ -1,10 +1,12 @@
 use super::*;
 use expect_test::{expect, Expect};
+use std::fmt::Write;
 
 fn check_lexing(src: &str, expect: Expect) {
-    let actual: String = tokenize(src)
-        .map(|token| format!("{:?}\n", token))
-        .collect();
+    let actual: String = tokenize(src).fold(String::new(), |mut acc, token| {
+        writeln!(acc, "{:?}", token).expect("Failed to write to string");
+        acc
+    });
     expect.assert_eq(&actual)
 }
 
