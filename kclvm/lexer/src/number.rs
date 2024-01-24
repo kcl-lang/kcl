@@ -66,7 +66,7 @@ impl<'a> Cursor<'a> {
                 // with a number
                 self.bump();
                 let mut empty_exponent = false;
-                if self.peek().is_digit(10) {
+                if self.peek().is_ascii_digit() {
                     self.eat_decimal_digits();
                     match self.peek() {
                         'e' | 'E' => {
