@@ -135,7 +135,7 @@ where
     create_dir_all(&cache_dir).unwrap();
     let tmp_filename = temp_file(&cache_dir, pkgpath);
     save_data_to_file(&dst_filename, &tmp_filename, data);
-    return Ok(());
+    Ok(())
 }
 
 #[inline]

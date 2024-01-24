@@ -72,7 +72,7 @@ impl ModRelativePath {
     /// ```
     pub fn is_relative_path(&self) -> Result<bool> {
         Ok(Regex::new(RELATIVE_PATH_PREFFIX)?
-            .find(&self.path.as_bytes())?
+            .find(self.path.as_bytes())?
             .map_or(false, |mat| mat.start() == 0))
     }
 
@@ -97,7 +97,7 @@ impl ModRelativePath {
         }
 
         Ok(Regex::new(RELATIVE_PATH_PREFFIX)?
-            .captures(&self.path.as_bytes())?
+            .captures(self.path.as_bytes())?
             .and_then(|caps| caps.name(ROOT_PKG_NAME_FLAG))
             .map(|mat| std::str::from_utf8(mat.as_bytes()).map(|s| s.to_string()))
             .transpose()?)
@@ -124,7 +124,7 @@ impl ModRelativePath {
         }
 
         Ok(Regex::new(RELATIVE_PATH_PREFFIX)?
-            .captures(&self.path.as_bytes())?
+            .captures(self.path.as_bytes())?
             .map_or_else(
                 || self.get_path(),
                 |caps| {
@@ -136,11 +136,11 @@ impl ModRelativePath {
                         "",
                     );
                     let res = PathBuf::from(root_path)
-                        .join(sub_path.to_string())
+                        .join(sub_path)
                         .display()
                         .to_string();
 
-                    return res;
+                    res
                 },
             ))
     }
@@ -153,19 +153,19 @@ mod test_relative_path {
     #[test]
     fn test_is_relative_path() {
         let path = ModRelativePath::new("${name:KCL_MOD}/src/path.rs".to_string());
-        assert_eq!(path.is_relative_path().unwrap(), true);
+        assert!(path.is_relative_path().unwrap());
         let path = ModRelativePath::new("${KCL_MOD}/src/path.rs".to_string());
-        assert_eq!(path.is_relative_path().unwrap(), true);
+        assert!(path.is_relative_path().unwrap());
         let path = ModRelativePath::new("/usr/${name:KCL_MOD}/src/path.rs".to_string());
-        assert_eq!(path.is_relative_path().unwrap(), false);
+        assert!(!path.is_relative_path().unwrap());
         let path = ModRelativePath::new("/src/path.rs".to_string());
-        assert_eq!(path.is_relative_path().unwrap(), false);
+        assert!(!path.is_relative_path().unwrap());
         let path = ModRelativePath::new("./src/path.rs".to_string());
-        assert_eq!(path.is_relative_path().unwrap(), false);
+        assert!(!path.is_relative_path().unwrap());
         let path = ModRelativePath::new("${K_MOD}/src/path.rs".to_string());
-        assert_eq!(path.is_relative_path().unwrap(), false);
+        assert!(!path.is_relative_path().unwrap());
         let path = ModRelativePath::new("${:KCL_MOD}/src/path.rs".to_string());
-        assert_eq!(path.is_relative_path().unwrap(), false);
+        assert!(!path.is_relative_path().unwrap());
     }
 
     #[test]

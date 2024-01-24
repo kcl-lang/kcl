@@ -23,7 +23,7 @@ pub const DEFAULT_KPM_SUBDIR: &str = "kpm";
 pub fn get_vendor_home() -> String {
     match env::var(KCL_PKG_PATH) {
         Ok(path) => path,
-        Err(_) => create_default_vendor_home().unwrap_or(String::default()),
+        Err(_) => create_default_vendor_home().unwrap_or_default(),
     }
 }
 
@@ -106,7 +106,7 @@ pub fn get_pkg_root_from_paths(file_paths: &[String], workdir: String) -> Result
         return Ok("".to_string());
     }
     if m.len() == 1 {
-        return Ok(last_root);
+        Ok(last_root)
     } else if !workdir.is_empty() {
         return Ok(workdir);
     } else {
