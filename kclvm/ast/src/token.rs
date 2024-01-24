@@ -4,7 +4,6 @@
 //! Including indent and dedent tokens.
 //! Not Include some tokens of low level tokens, such as ';', '..', '..=', '<-'.
 pub use BinCmpToken::*;
-pub use BinCmpToken::*;
 pub use BinOpToken::*;
 pub use DelimToken::*;
 pub use LitKind::*;

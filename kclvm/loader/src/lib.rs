@@ -222,7 +222,7 @@ fn collect_scope_info(
             kind
         };
         scopes.insert(
-            scope_ref.clone(),
+            *scope_ref,
             ScopeInfo {
                 kind,
                 parent: scope.get_parent(),
