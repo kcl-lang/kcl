@@ -128,16 +128,18 @@ message LoadPackage_Args {
 message LoadPackage_Result {
 	string program = 1;          // JSON string value
 	repeated string paths = 2;   // Returns the files in the order they should be compiled
-	map<string, SymbolIndex> node_symbol_map = 3;  // Map key is the AST index UUID string.
-	map<string, Symbol> symbols = 4;  // Map key is the SymbolIndex json string.
-	map<string, ScopeIndex> pkg_scope_map = 5;      // Map key is the package path.
-	map<string, Scope> scopes = 6;    // Map key is the ScopeIndex json string.
-	repeated Error parse_errors = 7;     // Parse errors
-	repeated Error type_errors = 8;      // Type errors
+	repeated Error parse_errors = 3;     // Parse errors
+	repeated Error type_errors = 4;      // Type errors
+	map<string, Scope> scopes = 5;    // Map key is the ScopeIndex json string.
+	map<string, Symbol> symbols = 6;  // Map key is the SymbolIndex json string.
+	map<string, SymbolIndex> node_symbol_map = 7;  // Map key is the AST index UUID string.
+	map<string, string> symbol_node_map = 8;       // Map key is the SymbolIndex json string.
+	map<string, SymbolIndex> fully_qualified_name_map = 9;  // Map key is the fully_qualified_name e.g. `pkg.Name`
+	map<string, ScopeIndex> pkg_scope_map = 10;      // Map key is the package path.
 }
 
 message Symbol {
-	string ty = 1;
+	KclType ty = 1;
 	string name = 2;
 	SymbolIndex owner = 3;
 	SymbolIndex def = 4;

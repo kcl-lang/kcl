@@ -2,6 +2,7 @@ use crate::gpyrpc::{
     CliConfig, Error, KeyValuePair, LoadSettingsFilesResult, Message, Position, Scope, ScopeIndex,
     Symbol, SymbolIndex,
 };
+use crate::service::ty::kcl_ty_to_pb_ty;
 use kclvm_config::settings::SettingsFile;
 use kclvm_error::Diagnostic;
 use kclvm_loader::{ScopeInfo, SymbolInfo};
@@ -112,7 +113,7 @@ impl IntoScopeIndex for ScopeRef {
 impl IntoSymbol for SymbolInfo {
     fn into_symbol(self) -> Symbol {
         Symbol {
-            ty: self.ty.ty_str(),
+            ty: Some(kcl_ty_to_pb_ty(&self.ty)),
             name: self.name,
             owner: self.owner.map(|o| o.into_symbol_index()),
             def: self.def.map(|d| d.into_symbol_index()),

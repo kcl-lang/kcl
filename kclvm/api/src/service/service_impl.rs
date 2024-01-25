@@ -171,9 +171,11 @@ impl KclvmServiceImpl {
     /// assert_eq!(result.paths.len(), 3);
     /// assert_eq!(result.parse_errors.len(), 0);
     /// assert_eq!(result.type_errors.len(), 0);
-    /// assert_eq!(result.node_symbol_map.len(), 159);
     /// assert_eq!(result.symbols.len(), 12);
     /// assert_eq!(result.scopes.len(), 3);
+    /// assert_eq!(result.node_symbol_map.len(), 159);
+    /// assert_eq!(result.symbol_node_map.len(), 159);
+    /// assert_eq!(result.fully_qualified_name_map.len(), 166);
     /// assert_eq!(result.pkg_scope_map.len(), 3);
     /// ```
     pub fn load_package(&self, args: &LoadPackageArgs) -> anyhow::Result<LoadPackageResult> {
@@ -199,11 +201,21 @@ impl KclvmServiceImpl {
         }
         let program_json = serde_json::to_string(&packages.program)?;
         let mut node_symbol_map = HashMap::new();
+        let mut symbol_node_map = HashMap::new();
+        let mut fully_qualified_name_map = HashMap::new();
         let mut pkg_scope_map = HashMap::new();
         let mut symbols = HashMap::new();
         let mut scopes = HashMap::new();
+        // Build sematic mappings
         for (k, s) in packages.node_symbol_map {
             node_symbol_map.insert(k.id.to_string(), s.into_symbol_index());
+        }
+        for (s, k) in packages.symbol_node_map {
+            let symbol_index_string = serde_json::to_string(&s)?;
+            symbol_node_map.insert(symbol_index_string, k.id.to_string());
+        }
+        for (s, k) in packages.fully_qualified_name_map {
+            fully_qualified_name_map.insert(s, k.into_symbol_index());
         }
         for (k, s) in packages.pkg_scope_map {
             pkg_scope_map.insert(k, s.into_scope_index());
@@ -224,6 +236,8 @@ impl KclvmServiceImpl {
                 .map(|p| p.to_str().unwrap().to_string())
                 .collect(),
             node_symbol_map,
+            symbol_node_map,
+            fully_qualified_name_map,
             pkg_scope_map,
             symbols,
             scopes,

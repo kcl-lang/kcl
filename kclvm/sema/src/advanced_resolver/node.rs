@@ -1129,7 +1129,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
         let symbols = self.gs.get_symbols();
 
         if let Some(def_symbol_ref) = symbols.get_symbol(key_symbol_ref).unwrap().get_definition() {
-            if let Some(node_key) = symbols.symbols_info.symbol_ref_map.get(&def_symbol_ref) {
+            if let Some(node_key) = symbols.symbols_info.symbol_node_map.get(&def_symbol_ref) {
                 if let Some(def_ty) = self.ctx.node_ty_map.get(node_key) {
                     if def_ty.is_schema() {
                         self.ctx.current_schema_symbol =
