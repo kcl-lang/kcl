@@ -77,7 +77,7 @@ pub struct SymbolDB {
     pub(crate) fully_qualified_name_map: IndexMap<String, SymbolRef>,
     pub(crate) schema_builtin_symbols: IndexMap<SymbolRef, IndexMap<String, SymbolRef>>,
     pub(crate) node_symbol_map: IndexMap<NodeKey, SymbolRef>,
-    pub(crate) symbol_ref_map: IndexMap<SymbolRef, NodeKey>,
+    pub(crate) symbol_node_map: IndexMap<SymbolRef, NodeKey>,
 }
 
 impl SymbolData {
@@ -500,7 +500,7 @@ impl SymbolData {
             .node_symbol_map
             .insert(node_key.clone(), symbol_ref);
         self.symbols_info
-            .symbol_ref_map
+            .symbol_node_map
             .insert(symbol_ref, node_key);
         self.schemas.get_mut(symbol_id).unwrap().id = Some(symbol_ref);
         symbol_ref
@@ -523,7 +523,7 @@ impl SymbolData {
             .node_symbol_map
             .insert(node_key.clone(), symbol_ref);
         self.symbols_info
-            .symbol_ref_map
+            .symbol_node_map
             .insert(symbol_ref, node_key);
         self.unresolved.get_mut(symbol_id).unwrap().id = Some(symbol_ref);
         symbol_ref
@@ -544,7 +544,7 @@ impl SymbolData {
             .node_symbol_map
             .insert(node_key.clone(), symbol_ref);
         self.symbols_info
-            .symbol_ref_map
+            .symbol_node_map
             .insert(symbol_ref, node_key);
         self.type_aliases.get_mut(symbol_id).unwrap().id = Some(symbol_ref);
         symbol_ref
@@ -561,7 +561,7 @@ impl SymbolData {
             .node_symbol_map
             .insert(node_key.clone(), symbol_ref);
         self.symbols_info
-            .symbol_ref_map
+            .symbol_node_map
             .insert(symbol_ref, node_key);
         self.rules.get_mut(symbol_id).unwrap().id = Some(symbol_ref);
         symbol_ref
@@ -584,7 +584,7 @@ impl SymbolData {
             .node_symbol_map
             .insert(node_key.clone(), symbol_ref);
         self.symbols_info
-            .symbol_ref_map
+            .symbol_node_map
             .insert(symbol_ref, node_key);
         self.attributes.get_mut(symbol_id).unwrap().id = Some(symbol_ref);
         symbol_ref
@@ -601,7 +601,7 @@ impl SymbolData {
             .node_symbol_map
             .insert(node_key.clone(), symbol_ref);
         self.symbols_info
-            .symbol_ref_map
+            .symbol_node_map
             .insert(symbol_ref, node_key);
         self.values.get_mut(symbol_id).unwrap().id = Some(symbol_ref);
         symbol_ref
@@ -625,15 +625,10 @@ impl SymbolData {
             .node_symbol_map
             .insert(node_key.clone(), symbol_ref);
         self.symbols_info
-            .symbol_ref_map
+            .symbol_node_map
             .insert(symbol_ref, node_key);
         self.exprs.get_mut(symbol_id).unwrap().id = Some(symbol_ref);
         Some(symbol_ref)
-    }
-
-    #[inline]
-    pub fn get_node_symbol_map(&self) -> IndexMap<NodeKey, SymbolRef> {
-        self.symbols_info.node_symbol_map.clone()
     }
 
     pub fn alloc_comment_symbol(
@@ -650,10 +645,24 @@ impl SymbolData {
             .node_symbol_map
             .insert(node_key.clone(), symbol_ref);
         self.symbols_info
-            .symbol_ref_map
+            .symbol_node_map
             .insert(symbol_ref, node_key);
         self.exprs.get_mut(symbol_id).unwrap().id = Some(symbol_ref);
         Some(symbol_ref)
+    }
+
+    #[inline]
+    pub fn get_node_symbol_map(&self) -> &IndexMap<NodeKey, SymbolRef> {
+        &self.symbols_info.node_symbol_map
+    }
+
+    #[inline]
+    pub fn get_symbol_node_map(&self) -> &IndexMap<SymbolRef, NodeKey> {
+        &self.symbols_info.symbol_node_map
+    }
+
+    pub fn get_fully_qualified_name_map(&self) -> &IndexMap<String, SymbolRef> {
+        &self.symbols_info.fully_qualified_name_map
     }
 }
 

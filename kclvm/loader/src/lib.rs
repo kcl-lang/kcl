@@ -52,10 +52,14 @@ pub struct Packages {
     pub symbols: IndexMap<SymbolRef, SymbolInfo>,
     /// Scope information
     pub scopes: IndexMap<ScopeRef, ScopeInfo>,
-    // AST Node-Symbol mapping
+    /// AST Node-Symbol mapping
     pub node_symbol_map: IndexMap<NodeKey, SymbolRef>,
-    // <Package path>-<Root scope> mapping
+    /// <Package path>-<Root scope> mapping
     pub pkg_scope_map: IndexMap<String, ScopeRef>,
+    /// Symbol-AST Node mapping
+    pub symbol_node_map: IndexMap<SymbolRef, NodeKey>,
+    /// Fully qualified name mapping
+    pub fully_qualified_name_map: IndexMap<String, SymbolRef>,
 }
 
 #[derive(Debug, Clone)]
@@ -169,10 +173,6 @@ pub fn load_packages(opts: &LoadPackageOptions) -> Result<Packages> {
                         is_global: symbol.is_global(),
                     };
                     packages.symbols.insert(*symbol_ref, info);
-                    let node_symbol_map = symbols.get_node_symbol_map();
-                    for (k, s) in &node_symbol_map {
-                        packages.node_symbol_map.insert(k.clone(), *s);
-                    }
                 }
             }
         }
@@ -191,6 +191,10 @@ pub fn load_packages(opts: &LoadPackageOptions) -> Result<Packages> {
             );
         }
     }
+    // Update package semantic mappings
+    packages.node_symbol_map = symbols.get_node_symbol_map().clone();
+    packages.symbol_node_map = symbols.get_symbol_node_map().clone();
+    packages.fully_qualified_name_map = symbols.get_fully_qualified_name_map().clone();
     Ok(packages)
 }
 
