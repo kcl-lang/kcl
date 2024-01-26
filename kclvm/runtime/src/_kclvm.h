@@ -120,7 +120,7 @@ kclvm_value_ref_t* kclvm_builtin_oct(kclvm_context_t* ctx, kclvm_value_ref_t* ar
 
 kclvm_value_ref_t* kclvm_builtin_option(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
-void kclvm_builtin_option_init(kclvm_context_t* ctx, int8_t* key, int8_t* value);
+void kclvm_builtin_option_init(kclvm_context_t* ctx, char* key, char* value);
 
 kclvm_value_ref_t* kclvm_builtin_option_reset(kclvm_context_t* ctx, kclvm_value_ref_t* _args, kclvm_value_ref_t* _kwargs);
 
@@ -224,13 +224,13 @@ void kclvm_context_set_disable_schema_check(kclvm_context_t* p, kclvm_bool_t v);
 
 void kclvm_context_set_import_names(kclvm_context_t* p, kclvm_value_ref_t* import_names);
 
-void kclvm_context_set_kcl_filename(kclvm_context_t* ctx, int8_t* filename);
+void kclvm_context_set_kcl_filename(kclvm_context_t* ctx, char* filename);
 
 void kclvm_context_set_kcl_line_col(kclvm_context_t* ctx, int32_t line, int32_t col);
 
-void kclvm_context_set_kcl_location(kclvm_context_t* p, int8_t* filename, int32_t line, int32_t col);
+void kclvm_context_set_kcl_location(kclvm_context_t* p, char* filename, int32_t line, int32_t col);
 
-void kclvm_context_set_kcl_pkgpath(kclvm_context_t* p, int8_t* pkgpath);
+void kclvm_context_set_kcl_pkgpath(kclvm_context_t* p, char* pkgpath);
 
 void kclvm_context_set_list_option_mode(kclvm_context_t* p, kclvm_bool_t v);
 
@@ -422,9 +422,9 @@ kclvm_value_ref_t* kclvm_net_to_IP4(kclvm_context_t* ctx, kclvm_value_ref_t* arg
 
 void kclvm_plugin_init(void* fn_ptr);
 
-kclvm_value_ref_t* kclvm_plugin_invoke(kclvm_context_t* ctx, int8_t* method, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+kclvm_value_ref_t* kclvm_plugin_invoke(kclvm_context_t* ctx, char* method, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
-char* kclvm_plugin_invoke_json(int8_t* method, char* args, char* kwargs);
+char* kclvm_plugin_invoke_json(char* method, char* args, char* kwargs);
 
 kclvm_value_ref_t* kclvm_regex_compile(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
 

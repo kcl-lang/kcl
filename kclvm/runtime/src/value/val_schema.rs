@@ -134,7 +134,7 @@ impl ValueRef {
         let attr_map = match &*binding {
             Value::schema_value(schema) => &schema.config.values,
             Value::dict_value(schema) => &schema.values,
-            _ => panic!("Invalid schema/dict value, got {}", self.type_str()),
+            _ => panic!("invalid schema or dict value, got {}", self.type_str()),
         };
         let optional_mapping = self.schema_optional_mapping();
         let optional_mapping_ref = optional_mapping.rc.borrow();

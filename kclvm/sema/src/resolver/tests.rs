@@ -155,6 +155,7 @@ fn test_resolve_program_fail() {
         "mutable_error_1.k",
         "unique_key_error_0.k",
         "unique_key_error_1.k",
+        "unmatched_index_sign_default_value.k",
         "unmatched_args.k",
     ];
     for case in cases {

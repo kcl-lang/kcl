@@ -237,7 +237,7 @@ impl<'ctx> Resolver<'ctx> {
         range: &Range,
     ) -> bool {
         if let Some(index_signature) = &schema_ty.index_signature {
-            if !assignable_to(val_ty.clone(), index_signature.val_ty.clone()) {
+            if !self.check_type(val_ty.clone(), index_signature.val_ty.clone(), range) {
                 self.handler.add_type_error(
                     &format!(
                         "expected schema index signature value type {}, got {}",
@@ -248,8 +248,8 @@ impl<'ctx> Resolver<'ctx> {
                 );
             }
             if index_signature.any_other {
-                return assignable_to(key_ty, index_signature.key_ty.clone())
-                    && assignable_to(val_ty, index_signature.val_ty.clone());
+                return self.check_type(key_ty, index_signature.key_ty.clone(), range)
+                    && self.check_type(val_ty, index_signature.val_ty.clone(), range);
             }
             true
         } else {

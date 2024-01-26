@@ -248,7 +248,11 @@ impl ValueRef {
             Value::schema_value(schema) => {
                 schema.config.values.insert(key.to_string(), val);
             }
-            _ => panic!("invalid dict update value: {}", self.type_str()),
+            _ => panic!(
+                "failed to update the dict. An iterable of key-value pairs was expected, but got {}. Check if the syntax for updating the dictionary with the attribute '{}' is correct",
+                self.type_str(),
+                key
+            ),
         }
     }
 

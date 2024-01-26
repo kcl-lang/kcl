@@ -74,6 +74,7 @@ impl<'ctx> Resolver<'ctx> {
         if let (Some(index_signature), Some(index_signature_node)) =
             (scope_ty.index_signature, &schema_stmt.index_signature)
         {
+            // Insert the schema index signature key name into the scope.
             if let Some(key_name) = index_signature.key_name {
                 let (start, end) = index_signature_node.get_span_pos();
                 self.insert_object(
@@ -87,6 +88,17 @@ impl<'ctx> Resolver<'ctx> {
                         doc: None,
                     },
                 )
+            }
+            // Check index signature default value type.
+            if let Some(value) = &index_signature_node.node.value {
+                let expected_ty = index_signature.val_ty;
+                let value_ty = self.expr(value);
+                self.must_assignable_to(
+                    value_ty,
+                    expected_ty,
+                    index_signature_node.get_span_pos(),
+                    None,
+                );
             }
         }
         let schema_attr_names = schema_stmt.get_left_identifier_list();
