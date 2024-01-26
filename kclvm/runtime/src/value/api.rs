@@ -1086,18 +1086,23 @@ pub unsafe extern "C" fn kclvm_dict_set_value(
     let val = ptr_as_ref(val);
     if p.is_config() {
         p.dict_update_key_value(key, val.clone());
-    }
-    if p.is_schema() {
-        let schema: ValueRef;
-        {
-            let schema_value = p.as_schema();
-            let mut config_keys = schema_value.config_keys.clone();
-            config_keys.push(key.to_string());
-            schema = resolve_schema(mut_ptr_as_ref(ctx), p, &config_keys);
+        if p.is_schema() {
+            let schema: ValueRef;
+            {
+                let schema_value = p.as_schema();
+                let mut config_keys = schema_value.config_keys.clone();
+                config_keys.push(key.to_string());
+                schema = resolve_schema(mut_ptr_as_ref(ctx), p, &config_keys);
+            }
+            p.schema_update_with_schema(&schema);
         }
-        p.schema_update_with_schema(&schema);
+    } else {
+        panic!(
+            "failed to update the dict. An iterable of key-value pairs was expected, but got {}. Check if the syntax for updating the dictionary with the attribute '{}' is correct",
+            p.type_str(),
+            key
+        );
     }
-    /*panic*/
 }
 
 #[no_mangle]

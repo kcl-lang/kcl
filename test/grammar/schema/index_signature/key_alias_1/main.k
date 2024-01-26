@@ -1,6 +1,6 @@
 schema TeamSpec:
     fullName: str
-    name = id
+    name: str = id
     shortName: str = name
 
 schema TeamMap:

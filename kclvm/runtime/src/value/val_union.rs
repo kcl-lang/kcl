@@ -227,7 +227,11 @@ impl ValueRef {
         }
         if union_schema {
             let result = self.clone();
-            let optional_mapping = self.schema_optional_mapping();
+            let optional_mapping = if self.is_schema() {
+                self.schema_optional_mapping()
+            } else {
+                x.schema_optional_mapping()
+            };
             let schema = result.dict_to_schema(
                 name.as_str(),
                 pkgpath.as_str(),
