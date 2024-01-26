@@ -3,4 +3,4 @@ schema Person:
     sd?: int
 
 p = Person {}
-a = p.a # Error, attribute 'a' not found in schema `Person`
+a = p.a # Error, attribute 'a' not found in `Person`

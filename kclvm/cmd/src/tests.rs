@@ -587,8 +587,7 @@ fn test_error_message_fuzz_matched() {
     {
         Ok(_) => panic!("unreachable code."),
         Err(msg) => {
-            assert!(msg
-                .contains("attribute 'a' not found in schema 'Person', did you mean '[\"aa\"]'?"))
+            assert!(msg.contains("attribute 'a' not found in 'Person', did you mean '[\"aa\"]'?"))
         }
     }
 }
@@ -608,7 +607,7 @@ fn test_error_message_fuzz_unmatched() {
     {
         Ok(_) => panic!("unreachable code."),
         Err(msg) => {
-            assert!(msg.contains("attribute 'a' not found in schema 'Person'"))
+            assert!(msg.contains("attribute 'a' not found in 'Person'"))
         }
     }
 }
