@@ -5,6 +5,8 @@ use std::{mem::transmute_copy, os::raw::c_char};
 
 use crate::*;
 
+use self::walker::walk_value_mut;
+
 #[allow(non_camel_case_types)]
 pub type kclvm_context_t = Context;
 
@@ -2476,8 +2478,13 @@ pub unsafe extern "C" fn kclvm_convert_collection_value(
     let tpe = c2str(tpe);
     let value = type_pack_and_check(ctx, value, vec![tpe]);
     let is_in_schema = ptr_as_ref(is_in_schema);
-    if value.is_schema() && !is_in_schema.is_truthy() {
-        value.schema_check_attr_optional(ctx, true);
+    // Schema required attribute validating.
+    if !is_in_schema.is_truthy() {
+        walk_value_mut(&value, &mut |value: &ValueRef| {
+            if value.is_schema() {
+                value.schema_check_attr_optional(ctx, true);
+            }
+        })
     }
     value.into_raw(ctx)
 }
