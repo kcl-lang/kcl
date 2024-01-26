@@ -4,6 +4,8 @@ use indexmap::IndexSet;
 
 use crate::*;
 
+use self::walker::walk_value_mut;
+
 pub const SETTINGS_OUTPUT_KEY: &str = "output_type";
 pub const SETTINGS_SCHEMA_TYPE_KEY: &str = "__schema_type__";
 pub const SETTINGS_OUTPUT_STANDALONE: &str = "STANDALONE";
@@ -165,21 +167,11 @@ impl ValueRef {
                 if recursive {
                     for value in attr_map.values() {
                         // For composite type structures, we recursively check the schema within them.
-                        if value.is_schema() {
-                            value.schema_check_attr_optional(ctx, recursive);
-                        } else if value.is_list() {
-                            for v in &value.as_list_ref().values {
-                                if v.is_schema() {
-                                    v.schema_check_attr_optional(ctx, recursive)
-                                }
+                        walk_value_mut(&value, &mut |value: &ValueRef| {
+                            if value.is_schema() {
+                                value.schema_check_attr_optional(ctx, true);
                             }
-                        } else if value.is_dict() {
-                            for v in value.as_dict_ref().values.values() {
-                                if v.is_schema() {
-                                    v.schema_check_attr_optional(ctx, recursive)
-                                }
-                            }
-                        }
+                        })
                     }
                 }
             }
