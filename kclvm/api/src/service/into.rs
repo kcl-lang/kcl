@@ -93,7 +93,7 @@ impl IntoSymbolIndex for SymbolRef {
         let (index, generation) = self.get_id().into_raw_parts();
         SymbolIndex {
             i: index as u64,
-            g: generation as u64,
+            g: generation,
             kind: format!("{:?}", self.get_kind()),
         }
     }
@@ -104,7 +104,7 @@ impl IntoScopeIndex for ScopeRef {
         let (index, generation) = self.get_id().into_raw_parts();
         ScopeIndex {
             i: index as u64,
-            g: generation as u64,
+            g: generation,
             kind: format!("{:?}", self.get_kind()),
         }
     }

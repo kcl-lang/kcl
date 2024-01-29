@@ -6,7 +6,7 @@ use pretty_assertions::assert_eq;
 
 const FILE_INPUT_SUFFIX: &str = ".input";
 const FILE_OUTPUT_SUFFIX: &str = ".output";
-const TEST_CASES: &[&'static str; 16] = &[
+const TEST_CASES: &[&str; 16] = &[
     "arguments",
     "empty",
     "if_stmt",
@@ -30,7 +30,7 @@ fn read_data(data_name: &str) -> (String, String) {
     filename.push(
         Path::new("src")
             .join("test_data")
-            .join(&format!("{}{}", data_name, FILE_INPUT_SUFFIX))
+            .join(format!("{}{}", data_name, FILE_INPUT_SUFFIX))
             .display()
             .to_string(),
     );
@@ -41,7 +41,7 @@ fn read_data(data_name: &str) -> (String, String) {
     filename_expect.push(
         Path::new("src")
             .join("test_data")
-            .join(&format!("{}{}", data_name, FILE_OUTPUT_SUFFIX))
+            .join(format!("{}{}", data_name, FILE_OUTPUT_SUFFIX))
             .display()
             .to_string(),
     );

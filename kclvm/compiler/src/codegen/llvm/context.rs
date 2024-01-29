@@ -1562,7 +1562,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         let mut pkg_scopes = self.pkg_scopes.borrow_mut();
         let scopes = pkg_scopes
             .get_mut(&current_pkgpath)
-            .expect(&format!("pkgpath {} is not found", current_pkgpath));
+            .unwrap_or_else(|| panic!("pkgpath {} is not found", current_pkgpath));
         if let Some(last) = scopes.last_mut() {
             let mut scalars = last.scalars.borrow_mut();
             // TODO: To avoid conflicts, only the last schema scalar expressions are allowed.
@@ -2090,7 +2090,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         let mut pkg_scopes = self.pkg_scopes.borrow_mut();
         let scopes = pkg_scopes
             .get_mut(&current_pkgpath)
-            .expect(&format!("pkgpath {} is not found", current_pkgpath));
+            .unwrap_or_else(|| panic!("pkgpath {} is not found", current_pkgpath));
         // The global scope.
         let scope = scopes.last().expect(kcl_error::INTERNAL_ERROR_MSG);
         let scalars = scope.scalars.borrow();
@@ -2099,7 +2099,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         let global_dict = self.dict_value();
         // Deal scalars
         for scalar in scalars.iter() {
-            self.dict_safe_insert(global_dict, SCALAR_KEY, scalar.clone(), 0, -1);
+            self.dict_safe_insert(global_dict, SCALAR_KEY, *scalar, 0, -1);
         }
         // Deal global variables
         for (name, ptr) in globals.iter() {

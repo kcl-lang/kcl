@@ -42,11 +42,11 @@ fn test_expand_input_files_with_kcl_mod() {
     ];
     let got_paths: Vec<String> = expand_input_files(&input_files)
         .iter()
-        .map(|s| s.replace("/", "").replace("\\", ""))
+        .map(|s| s.replace('/', "").replace('\\', ""))
         .collect();
     let expect_paths: Vec<String> = expected_files
         .iter()
-        .map(|s| s.replace("/", "").replace("\\", ""))
+        .map(|s| s.replace('/', "").replace('\\', ""))
         .collect();
     assert_eq!(got_paths, expect_paths);
 }
@@ -172,7 +172,7 @@ fn test_parse_key_value_pair() {
         ),
     ];
     for (value, pair) in cases {
-        let result = parse_key_value_pair(&value).unwrap();
+        let result = parse_key_value_pair(value).unwrap();
         assert_eq!(result.key, pair.key);
         assert_eq!(result.value, pair.value);
     }
@@ -282,7 +282,7 @@ fn test_lookup_the_nearest_file_dir() {
         .join("test_data")
         .join("kpm_metadata");
     let result = lookup_the_nearest_file_dir(path.clone(), "kcl.mod");
-    assert_eq!(result.is_some(), true);
+    assert!(result.is_some());
     assert_eq!(
         result.unwrap().display().to_string(),
         path.canonicalize().unwrap().display().to_string()
@@ -290,7 +290,7 @@ fn test_lookup_the_nearest_file_dir() {
 
     let main_path = path.join("subdir").join("main.k");
     let result = lookup_the_nearest_file_dir(main_path, "kcl.mod");
-    assert_eq!(result.is_some(), true);
+    assert!(result.is_some());
     assert_eq!(
         result.unwrap().display().to_string(),
         path.canonicalize().unwrap().display().to_string()
@@ -327,13 +327,16 @@ fn test_fetch_metadata() {
     let metadata = fetch_metadata(path.clone());
     // Show more information when the test fails.
     println!("{:?}", metadata);
-    assert_eq!(metadata.is_err(), false);
+    assert!(!metadata.is_err());
     let pkgs = metadata.unwrap().packages.clone();
     assert_eq!(pkgs.len(), 1);
     assert!(pkgs.get("kcl4").is_some());
-    assert_eq!(pkgs.get("kcl4").clone().unwrap().name, "kcl4");
+    assert_eq!(pkgs.get("kcl4").unwrap().name, "kcl4");
     assert_eq!(
-        PathBuf::from(pkgs.get("kcl4").unwrap().manifest_path.clone())
+        pkgs.get("kcl4")
+            .unwrap()
+            .manifest_path
+            .clone()
             .canonicalize()
             .unwrap()
             .display()

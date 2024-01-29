@@ -78,7 +78,7 @@ fn test_c_api_get_full_schema_type() {
         "get-full-schema-type.response.json",
         |r| {
             for s_ty in &mut r.schema_type_list {
-                s_ty.filename = s_ty.filename.replace("/", "").replace("\\", "")
+                s_ty.filename = s_ty.filename.replace('/', "").replace('\\', "")
             }
         },
     );
@@ -92,7 +92,7 @@ fn test_c_api_get_all_full_schema_types() {
         "get-all-full-schema-types.response.json",
         |r| {
             for s_ty in &mut r.schema_type_list {
-                s_ty.filename = s_ty.filename.replace("/", "").replace("\\", "")
+                s_ty.filename = s_ty.filename.replace('/', "").replace('\\', "")
             }
         },
     );

@@ -966,7 +966,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
                     } else {
                         if_level = 0;
                     }
-                    self.walk_stmt(*stmt).expect(kcl_error::COMPILE_ERROR_MSG);
+                    self.walk_stmt(stmt).expect(kcl_error::COMPILE_ERROR_MSG);
                     // Backtrack meta end
                     if matches!(&stmt.node, ast::Stmt::If(..)) {
                         *self.backtrack_meta.borrow_mut() = None

@@ -61,24 +61,24 @@ impl From<PosTuple> for Pos {
     }
 }
 
-impl Into<PosTuple> for Pos {
-    fn into(self) -> PosTuple {
-        (self.0, self.1, self.2, self.3, self.4)
+impl From<Pos> for PosTuple {
+    fn from(val: Pos) -> Self {
+        (val.0, val.1, val.2, val.3, val.4)
     }
 }
 
-impl Into<Range> for Pos {
-    fn into(self) -> Range {
+impl From<Pos> for Range {
+    fn from(val: Pos) -> Self {
         (
             Position {
-                filename: self.0.clone(),
-                line: self.1,
-                column: Some(self.2),
+                filename: val.0.clone(),
+                line: val.1,
+                column: Some(val.2),
             },
             Position {
-                filename: self.0,
-                line: self.3,
-                column: Some(self.4),
+                filename: val.0,
+                line: val.3,
+                column: Some(val.4),
             },
         )
     }
@@ -413,7 +413,7 @@ impl Module {
                 stmts.push(node_ref!(schema_stmt.clone(), stmt.pos()));
             }
         }
-        return stmts;
+        stmts
     }
 
     /// Get stmt on position
@@ -1746,7 +1746,7 @@ impl ToString for Type {
                     }
                 },
                 Type::Function(v) => {
-                    w.push_str("(");
+                    w.push('(');
                     if let Some(params) = &v.params_ty {
                         for (i, param) in params.iter().enumerate() {
                             if i > 0 {
@@ -1755,7 +1755,7 @@ impl ToString for Type {
                             to_str(&param.node, w);
                         }
                     }
-                    w.push_str(")");
+                    w.push(')');
                     if let Some(ret) = &v.ret_ty {
                         w.push_str(" -> ");
                         to_str(&ret.node, w);
