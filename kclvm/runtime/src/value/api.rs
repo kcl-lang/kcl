@@ -1,4 +1,4 @@
-// Copyright 2021 The KCL Authors. All rights reserved.
+//! Copyright The KCL Authors. All rights reserved.
 #![allow(clippy::missing_safety_doc)]
 
 use std::{mem::transmute_copy, os::raw::c_char};
@@ -286,13 +286,7 @@ pub unsafe extern "C" fn kclvm_value_schema_with_config(
     // Config dict
     let config = ptr_as_ref(config);
     let config_meta = ptr_as_ref(config_meta);
-    let config_keys: Vec<String> = config
-        .as_dict_ref()
-        .values
-        .keys()
-        .into_iter()
-        .cloned()
-        .collect();
+    let config_keys: Vec<String> = config.as_dict_ref().values.keys().cloned().collect();
     // Schema meta
     let name = c2str(name);
     let pkgpath = c2str(pkgpath);
@@ -1948,19 +1942,13 @@ pub unsafe extern "C" fn kclvm_value_load_attr(
     // load_attr including str/dict/schema.
     if p.is_dict() {
         match p.dict_get_value(key) {
-            Some(x) => {
-                return x.into_raw(ctx_ref);
-            }
-            None => {
-                return kclvm_value_Undefined(ctx);
-            }
+            Some(x) => x.into_raw(ctx_ref),
+            None => kclvm_value_Undefined(ctx),
         }
     } else if p.is_schema() {
         let dict = p.schema_to_dict();
         match dict.dict_get_value(key) {
-            Some(x) => {
-                return x.into_raw(ctx_ref);
-            }
+            Some(x) => x.into_raw(ctx_ref),
             None => panic!("schema '{}' attribute '{}' not found", p.type_str(), key),
         }
     } else if p.is_str() {
@@ -1997,10 +1985,10 @@ pub unsafe extern "C" fn kclvm_value_load_attr(
             _ => panic!("str object attr '{key}' not found"),
         };
         let closure = ValueRef::list(Some(&[p]));
-        return new_mut_ptr(
+        new_mut_ptr(
             ctx_ref,
             ValueRef::func(function as usize as u64, 0, closure, "", "", false),
-        );
+        )
     }
     // schema instance
     else if p.is_func() {
@@ -2009,16 +1997,17 @@ pub unsafe extern "C" fn kclvm_value_load_attr(
             _ => panic!("schema object attr '{key}' not found"),
         };
         let closure = ValueRef::list(Some(&[p]));
-        return new_mut_ptr(
+        new_mut_ptr(
             ctx_ref,
             ValueRef::func(function as usize as u64, 0, closure, "", "", false),
+        )
+    } else {
+        panic!(
+            "invalid value '{}' to load attribute '{}'",
+            p.type_str(),
+            key
         );
     }
-    panic!(
-        "invalid value '{}' to load attribute '{}'",
-        p.type_str(),
-        key
-    );
 }
 
 #[no_mangle]
@@ -2338,7 +2327,7 @@ pub unsafe extern "C" fn kclvm_schema_assert(
     let config_meta = ptr_as_ref(config_meta);
     if !value.is_truthy() {
         let ctx = mut_ptr_as_ref(ctx);
-        ctx.set_err_type(&ErrType::SchemaCheckFailure_TYPE);
+        ctx.set_err_type(&RuntimeErrorType::SchemaCheckFailure);
         if let Some(config_meta_file) = config_meta.get_by_key(CONFIG_META_FILENAME) {
             let config_meta_line = config_meta.get_by_key(CONFIG_META_LINE).unwrap();
             let config_meta_column = config_meta.get_by_key(CONFIG_META_COLUMN).unwrap();

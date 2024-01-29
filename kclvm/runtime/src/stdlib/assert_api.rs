@@ -1,4 +1,4 @@
-// Copyright 2021 The KCL Authors. All rights reserved.
+//! Copyright The KCL Authors. All rights reserved.
 
 use crate::*;
 
@@ -17,7 +17,7 @@ pub extern "C" fn kclvm_assert(
 
     if !value.is_truthy() {
         let ctx = mut_ptr_as_ref(ctx);
-        ctx.set_err_type(&ErrType::AssertionError_TYPE);
+        ctx.set_err_type(&RuntimeErrorType::AssertionError);
 
         let msg = msg.as_str();
         panic!("{}", msg);

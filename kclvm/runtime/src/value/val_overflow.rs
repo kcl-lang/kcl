@@ -1,4 +1,4 @@
-// Copyright 2021 The KCL Authors. All rights reserved.
+//! Copyright The KCL Authors. All rights reserved.
 
 pub fn is_i32_overflow(v: i64) -> bool {
     v > i32::MAX as i64 || v < i32::MIN as i64

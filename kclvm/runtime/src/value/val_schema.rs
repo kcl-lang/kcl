@@ -1,4 +1,4 @@
-// Copyright The KCL Authors. All rights reserved.
+//! Copyright The KCL Authors. All rights reserved.
 
 use indexmap::IndexSet;
 
@@ -167,7 +167,7 @@ impl ValueRef {
                 if recursive {
                     for value in attr_map.values() {
                         // For composite type structures, we recursively check the schema within them.
-                        walk_value_mut(&value, &mut |value: &ValueRef| {
+                        walk_value_mut(value, &mut |value: &ValueRef| {
                             if value.is_schema() {
                                 value.schema_check_attr_optional(ctx, true);
                             }

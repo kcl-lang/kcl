@@ -1,4 +1,4 @@
-// Copyright 2021 The KCL Authors. All rights reserved.
+//! Copyright The KCL Authors. All rights reserved.
 
 use crate::*;
 use std::boxed::Box;
@@ -278,11 +278,9 @@ impl ValueRef {
                 let path = &path_selector[0];
                 match self.get_by_path(path) {
                     Some(value) => Ok(value),
-                    None => {
-                        return Err(format!(
-                            "invalid path select operand {path}, value not found"
-                        ))
-                    }
+                    None => Err(format!(
+                        "invalid path select operand {path}, value not found"
+                    )),
                 }
             } else {
                 let mut values = ValueRef::list(None);

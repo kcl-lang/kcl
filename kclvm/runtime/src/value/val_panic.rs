@@ -1,10 +1,10 @@
-// Copyright 2021 The KCL Authors. All rights reserved.
+//! Copyright The KCL Authors. All rights reserved.
 
 #[macro_export]
 macro_rules! panic_i32_overflow {
     ($ctx: expr,$v: expr) => {
         let v = $v as i128;
-        $ctx.set_err_type(&ErrType::IntOverflow_TYPE);
+        $ctx.set_err_type(&RuntimeErrorType::IntOverflow);
         panic!("{}: A 32 bit integer overflow", v)
     };
 }
@@ -13,7 +13,7 @@ macro_rules! panic_i32_overflow {
 macro_rules! panic_i64_overflow {
     ($ctx: expr,$v: expr) => {
         let v = $v as i128;
-        $ctx.set_err_type(&ErrType::IntOverflow_TYPE);
+        $ctx.set_err_type(&RuntimeErrorType::IntOverflow);
         panic!("{}: A 64 bit integer overflow", v)
     };
 }
@@ -22,7 +22,7 @@ macro_rules! panic_f32_overflow {
     ($ctx: expr,$v: expr) => {
         let v = $v as f64;
 
-        $ctx.set_err_type(&ErrType::FloatOverflow_TYPE);
+        $ctx.set_err_type(&RuntimeErrorType::FloatOverflow);
 
         let mut s = format!("{:e}: A 32-bit floating point number overflow", v);
         if !s.contains("e-") {

@@ -1,4 +1,4 @@
-// Copyright 2021 The KCL Authors. All rights reserved.
+//! Copyright The KCL Authors. All rights reserved.
 use crate::*;
 
 pub const YAML_STREAM_SEP: &str = "\n---\n";
