@@ -28,7 +28,7 @@ pub(crate) fn fill_pkg_maps_for_k_file(
         None => return Ok(()),
     };
 
-    return Ok(());
+    Ok(())
 }
 
 #[derive(Deserialize, Serialize, Default, Debug, Clone)]
@@ -126,7 +126,7 @@ pub(crate) fn lookup_the_nearest_file_dir(
     loop {
         let found_path = current_dir.join(the_nearest_file);
         if found_path.is_file() {
-            return Some(current_dir.canonicalize().ok()?);
+            return current_dir.canonicalize().ok();
         }
 
         match current_dir.parent() {

@@ -72,7 +72,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         if let Some(index_signature) = index_signature {
             self.default_collection_insert_value(
                 cal_map,
-                &kclvm_runtime::CAL_MAP_INDEX_SIGNATURE,
+                kclvm_runtime::CAL_MAP_INDEX_SIGNATURE,
                 self.int_value(index_signature.line as i64),
             );
             place_holder_map.insert(kclvm_runtime::CAL_MAP_INDEX_SIGNATURE.to_string(), vec![]);

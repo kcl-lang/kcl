@@ -1,4 +1,4 @@
-// Copyright 2021 The KCL Authors. All rights reserved.
+//! Copyright The KCL Authors. All rights reserved.
 
 pub const VERSION: &str = include_str!("./../../../VERSION");
 pub const CHECK_SUM: &str = "20ab3eb4b9179219d6837a57f5d35286";

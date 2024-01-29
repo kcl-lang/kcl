@@ -70,7 +70,7 @@ pub fn canonicalize_input_files(
         // join with the work directory path and convert it to a absolute path.
         let path = ModRelativePath::from(file.to_string());
         let abs_path = if !is_absolute && !path.is_relative_path().map_err(|err| err.to_string())? {
-            let filepath = Path::new(&work_dir).join(file.to_string());
+            let filepath = Path::new(&work_dir).join(file);
             match filepath.canonicalize() {
                 Ok(path) => Some(path.adjust_canonicalization()),
                 Err(_) => {
@@ -191,7 +191,7 @@ pub fn lookup_compile_unit(
                     }
                 }
             }
-            return (vec![file.to_string()], Some(load_opt));
+            (vec![file.to_string()], Some(load_opt))
         }
     }
 }
@@ -300,7 +300,7 @@ pub fn get_pkg_list(pkgpath: &str) -> Result<Vec<String>> {
         pkgpath
     };
 
-    if pkgpath != "." && pkgpath.ends_with(".") {
+    if pkgpath != "." && pkgpath.ends_with('.') {
         return Ok(Vec::new());
     }
 
@@ -316,21 +316,19 @@ pub fn get_pkg_list(pkgpath: &str) -> Result<Vec<String>> {
         _ => {
             if Path::new(&pkgpath).is_absolute() {
                 pkgpath.clone()
+            } else if !pkgpath.contains('/') && !pkgpath.contains('\\') {
+                pkgpath.replace('.', "/")
             } else {
-                if !pkgpath.contains('/') && !pkgpath.contains('\\') {
-                    pkgpath.replace(".", "/")
+                let pkgroot =
+                    get_pkg_root(cwd.to_str().ok_or(anyhow::anyhow!("cwd path not found"))?)
+                        .unwrap_or_default();
+                if !pkgroot.is_empty() {
+                    PathBuf::from(pkgroot)
+                        .join(&pkgpath)
+                        .to_string_lossy()
+                        .to_string()
                 } else {
-                    let pkgroot =
-                        get_pkg_root(&cwd.to_str().ok_or(anyhow::anyhow!("cwd path not found"))?)
-                            .unwrap_or_default();
-                    if !pkgroot.is_empty() {
-                        PathBuf::from(pkgroot)
-                            .join(&pkgpath)
-                            .to_string_lossy()
-                            .to_string()
-                    } else {
-                        Path::new(&cwd).join(&pkgpath).to_string_lossy().to_string()
-                    }
+                    Path::new(&cwd).join(&pkgpath).to_string_lossy().to_string()
                 }
             }
         }
@@ -342,18 +340,17 @@ pub fn get_pkg_list(pkgpath: &str) -> Result<Vec<String>> {
 
     for entry in WalkDir::new(&pkgpath).into_iter().filter_map(|e| e.ok()) {
         let path = entry.path();
-        if !path.is_dir() {
-            if path.extension().and_then(|ext| ext.to_str()) == Some(KCL_FILE_EXTENSION)
-                && !path
-                    .file_name()
-                    .map(|name| name.to_string_lossy().starts_with("_"))
-                    .unwrap_or(false)
-            {
-                if let Some(dir) = path.parent().map(|p| p.to_string_lossy().to_string()) {
-                    if !dir_map.contains(&dir) {
-                        dir_list.push(dir.clone());
-                        dir_map.insert(dir);
-                    }
+        if !path.is_dir()
+            && path.extension().and_then(|ext| ext.to_str()) == Some(KCL_FILE_EXTENSION)
+            && !path
+                .file_name()
+                .map(|name| name.to_string_lossy().starts_with('_'))
+                .unwrap_or(false)
+        {
+            if let Some(dir) = path.parent().map(|p| p.to_string_lossy().to_string()) {
+                if !dir_map.contains(&dir) {
+                    dir_list.push(dir.clone());
+                    dir_map.insert(dir);
                 }
             }
         }

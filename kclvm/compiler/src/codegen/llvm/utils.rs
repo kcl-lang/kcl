@@ -13,7 +13,7 @@ use super::context::LLVMCodeGenContext;
  */
 
 /// Update runtime context pkgpath
-pub fn update_ctx_pkgpath<'ctx>(gen: &'ctx LLVMCodeGenContext, pkgpath: &str) {
+pub fn update_ctx_pkgpath(gen: &LLVMCodeGenContext, pkgpath: &str) {
     gen.build_void_call(
         &ApiFunc::kclvm_context_set_kcl_pkgpath.name(),
         &[

@@ -1,4 +1,4 @@
-// Copyright 2021 The KCL Authors. All rights reserved.
+//! Copyright The KCL Authors. All rights reserved.
 extern crate chrono;
 use super::modfile::KCL_FILE_SUFFIX;
 use anyhow::Result;
