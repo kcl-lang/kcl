@@ -51,6 +51,7 @@ pub(crate) fn hover(
                     },
                     _ => {}
                 },
+                kclvm_sema::core::symbol::SymbolKind::Expression => return None,
                 _ => {
                     let ty_str = match &obj.get_sema_info().ty {
                         Some(ty) => ty.ty_str(),
@@ -443,6 +444,26 @@ mod tests {
                 }
                 if let MarkedString::String(s) = vec[1].clone() {
                     assert_eq!(s, "Attributes:\n\nn: int\n\nvalue: int");
+                }
+            }
+            _ => unreachable!("test error"),
+        }
+    }
+
+    #[test]
+    #[bench_test]
+    fn schema_scope_variable_hover() {
+        let (file, program, _, _, gs) = compile_test_file("src/test_data/hover_test/fib.k");
+        let pos = KCLPos {
+            filename: file.clone(),
+            line: 3,
+            column: Some(11),
+        };
+        let got = hover(&program, &pos, &gs).unwrap();
+        match got.contents {
+            lsp_types::HoverContents::Scalar(marked_string) => {
+                if let MarkedString::String(s) = marked_string {
+                    assert_eq!(s, "n1: int");
                 }
             }
             _ => unreachable!("test error"),

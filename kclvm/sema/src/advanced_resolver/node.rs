@@ -1001,6 +1001,20 @@ impl<'ctx> AdvancedResolver<'ctx> {
                     doc: None,
                 };
             }
+
+            if self.ctx.maybe_def && identifier.node.names.len() > 0 {
+                let cur_scope = *self.ctx.scopes.last().unwrap();
+                match cur_scope.kind {
+                    crate::core::scope::ScopeKind::Local => {
+                        self.gs.get_scopes_mut().add_def_to_scope(
+                            cur_scope,
+                            identifier.node.names.last().unwrap().node.clone(),
+                            identifier_symbol,
+                        );
+                    }
+                    crate::core::scope::ScopeKind::Root => {}
+                }
+            }
             identifier_symbol
         } else {
             self.resolve_names(&identifier.node.names, self.ctx.maybe_def)?

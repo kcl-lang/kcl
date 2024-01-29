@@ -647,7 +647,7 @@ impl SymbolData {
         self.symbols_info
             .symbol_node_map
             .insert(symbol_ref, node_key);
-        self.exprs.get_mut(symbol_id).unwrap().id = Some(symbol_ref);
+        self.comments.get_mut(symbol_id).unwrap().id = Some(symbol_ref);
         Some(symbol_ref)
     }
 
