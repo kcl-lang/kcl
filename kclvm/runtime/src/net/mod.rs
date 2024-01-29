@@ -1,4 +1,4 @@
-// Copyright 2021 The KCL Authors. All rights reserved.
+//! Copyright The KCL Authors. All rights reserved.
 
 use std::net::Ipv4Addr;
 use std::net::Ipv6Addr;
@@ -171,17 +171,14 @@ pub extern "C" fn kclvm_net_is_IP(
     let args = ptr_as_ref(args);
 
     if let Some(ip) = args.arg_i_str(0, None) {
-        if let Ok(..) = Ipv4Addr::from_str(ip.as_ref()) {
-            return kclvm_value_True(ctx);
+        if Ipv4Addr::from_str(ip.as_ref()).is_ok() || Ipv6Addr::from_str(ip.as_ref()).is_ok() {
+            kclvm_value_True(ctx)
+        } else {
+            kclvm_value_False(ctx)
         }
-        if let Ok(..) = Ipv6Addr::from_str(ip.as_ref()) {
-            return kclvm_value_True(ctx);
-        }
-
-        return kclvm_value_False(ctx);
+    } else {
+        panic!("is_IP() missing 1 required positional argument: 'ip'");
     }
-
-    panic!("is_IP() missing 1 required positional argument: 'ip'");
 }
 
 // is_loopback_IP(ip: str) -> bool

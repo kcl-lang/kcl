@@ -1,4 +1,4 @@
-// Copyright 2021 The KCL Authors. All rights reserved.
+//! Copyright The KCL Authors. All rights reserved.
 
 use crate::*;
 
@@ -63,7 +63,7 @@ impl DecoratorValue {
                             ctx.set_kcl_filename(&filename.as_str());
                             ctx.panic_info.kcl_line = line.as_int() as i32;
                         }
-                        ctx.set_err_type(&ErrType::Deprecated_TYPE);
+                        ctx.set_err_type(&RuntimeErrorType::Deprecated);
 
                         panic!("{}", err_msg)
                     }
@@ -72,11 +72,11 @@ impl DecoratorValue {
                     if !msg.is_empty() {
                         err_msg.push_str(&msg);
                     }
-                    ctx.set_err_type(&ErrType::Deprecated_Warning_TYPE);
+                    ctx.set_err_type(&RuntimeErrorType::DeprecatedWarning);
                     ctx.set_warnning_message(err_msg.as_str());
                 } else {
                     let err_msg = format!("{attr_name} was deprecated ");
-                    ctx.set_err_type(&ErrType::Deprecated_Warning_TYPE);
+                    ctx.set_err_type(&RuntimeErrorType::DeprecatedWarning);
                     ctx.set_warnning_message(err_msg.as_str());
                 }
             }
@@ -97,7 +97,7 @@ impl DecoratorValue {
 mod test_value_decorator {
     use crate::*;
 
-    fn assert_panic<F: FnOnce() -> () + std::panic::UnwindSafe>(func: F) {
+    fn assert_panic<F: FnOnce() + std::panic::UnwindSafe>(func: F) {
         let result = std::panic::catch_unwind(func);
         assert!(result.is_err())
     }

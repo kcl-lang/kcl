@@ -1,4 +1,5 @@
-// Copyright 2021 The KCL Authors. All rights reserved.
+//! Copyright The KCL Authors. All rights reserved.
+
 #![allow(clippy::missing_safety_doc)]
 
 use crate::*;
@@ -51,7 +52,7 @@ pub unsafe extern "C" fn kclvm_plugin_invoke(
     {
         if let Some(msg) = ptr_as_ref(ptr).dict_get_value("__kcl_PanicInfo__") {
             let ctx = mut_ptr_as_ref(ctx);
-            ctx.set_err_type(&ErrType::EvaluationError_TYPE);
+            ctx.set_err_type(&RuntimeErrorType::EvaluationError);
 
             panic!("{}", msg.as_str());
         }

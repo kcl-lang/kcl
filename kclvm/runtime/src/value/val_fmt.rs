@@ -1,6 +1,6 @@
 //! Ref: https://github.com/RustPython/RustPython/blob/main/vm/src/format.rs
 //!
-//! Copyright 2021 The KCL Authors. All rights reserved.
+//! Copyright The KCL Authors. All rights reserved.
 
 use itertools::{Itertools, PeekingNext};
 use std::cmp;

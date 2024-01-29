@@ -1,4 +1,4 @@
-// Copyright 2021 The KCL Authors. All rights reserved.
+//! Copyright The KCL Authors. All rights reserved.
 
 #[allow(non_camel_case_types)]
 type kclvm_value_ref_t = crate::ValueRef;
@@ -37,8 +37,9 @@ pub struct KclError {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Default)]
 pub enum Type {
+    #[default]
     any_type,
     bool_type,
     bool_lit_type(bool),
@@ -53,12 +54,6 @@ pub enum Type {
     union_type(UnionType),
     schema_type(SchemaType),
     func_type(FuncType),
-}
-
-impl Default for Type {
-    fn default() -> Self {
-        Type::any_type
-    }
 }
 
 #[derive(PartialEq, Clone, Default, Debug)]
@@ -461,17 +456,12 @@ pub enum Kind {
     Func = 18,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Hash)]
+#[derive(Clone, PartialEq, Eq, Debug, Hash, Default)]
 pub enum ConfigEntryOperationKind {
+    #[default]
     Union = 0,
     Override = 1,
     Insert = 2,
-}
-
-impl Default for ConfigEntryOperationKind {
-    fn default() -> Self {
-        ConfigEntryOperationKind::Union
-    }
 }
 
 impl ConfigEntryOperationKind {

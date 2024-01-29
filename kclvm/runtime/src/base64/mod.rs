@@ -1,4 +1,4 @@
-// Copyright 2021 The KCL Authors. All rights reserved.
+//! Copyright The KCL Authors. All rights reserved.
 
 extern crate base64;
 use base64::{decode, encode};
@@ -21,7 +21,7 @@ pub extern "C" fn kclvm_base64_encode(
             return ValueRef::str(s.as_str()).into_raw(ctx);
         }
         _ => {
-            ctx.set_err_type(&ErrType::TypeError_Runtime_TYPE);
+            ctx.set_err_type(&RuntimeErrorType::TypeError);
 
             panic!("a bytes-like object is required, not '{}'", p.as_str());
         }
@@ -44,7 +44,7 @@ pub extern "C" fn kclvm_base64_decode(
             return ValueRef::str(std::str::from_utf8(&de_str).unwrap()).into_raw(ctx);
         }
         _ => {
-            ctx.set_err_type(&ErrType::TypeError_Runtime_TYPE);
+            ctx.set_err_type(&RuntimeErrorType::TypeError);
 
             panic!(
                 "argument should be a bytes-like object or ASCII string, not '{}'",

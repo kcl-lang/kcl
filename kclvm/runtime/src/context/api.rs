@@ -1,4 +1,4 @@
-// Copyright 2021 The KCL Authors. All rights reserved.
+//! Copyright The KCL Authors. All rights reserved.
 #![allow(clippy::missing_safety_doc)]
 
 use crate::*;

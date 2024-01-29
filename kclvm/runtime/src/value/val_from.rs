@@ -217,7 +217,7 @@ mod tests_from {
     fn test_list() {
         let list = vec![true, false];
 
-        let list_value: ValueRef = ValueRef::from_iter(list.clone().into_iter());
+        let list_value: ValueRef = ValueRef::from_iter(list.clone());
         assert_eq!(list.len(), list_value.len());
 
         for (i, v) in list.iter().enumerate() {
@@ -230,7 +230,7 @@ mod tests_from {
     fn test_list2() {
         let list = vec![1, 2, 4, 3];
 
-        let list_value: ValueRef = ValueRef::from_iter(list.clone().into_iter());
+        let list_value: ValueRef = ValueRef::from_iter(list.clone());
         let list_value: Box<ListValue> = list_value.try_into().unwrap();
 
         assert_eq!(
@@ -257,8 +257,8 @@ mod tests_from {
         };
     }
 
-    test_try_into!(test_try_into_bool, bool, vec![true, false, true, true]);
-    test_try_into!(test_try_into_i64, i64, vec![1, 2, 3, -1]);
-    test_try_into!(test_try_into_f64, f64, vec![1.5, 2.0]);
-    test_try_into!(test_try_into_str, String, vec!["", "abc"]);
+    test_try_into!(test_try_into_bool, bool, [true, false, true, true]);
+    test_try_into!(test_try_into_i64, i64, [1, 2, 3, -1]);
+    test_try_into!(test_try_into_f64, f64, [1.5, 2.0]);
+    test_try_into!(test_try_into_str, String, ["", "abc"]);
 }

@@ -1,4 +1,4 @@
-// Copyright 2021 The KCL Authors. All rights reserved.
+//! Copyright The KCL Authors. All rights reserved.
 
 use crate::*;
 
@@ -22,7 +22,7 @@ impl ValueRef {
 mod test_value_len {
     use crate::*;
 
-    fn assert_panic<F: FnOnce() -> () + std::panic::UnwindSafe>(func: F) {
+    fn assert_panic<F: FnOnce() + std::panic::UnwindSafe>(func: F) {
         let result = std::panic::catch_unwind(func);
         assert!(result.is_err())
     }

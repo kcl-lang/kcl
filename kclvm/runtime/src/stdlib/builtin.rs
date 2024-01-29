@@ -1,4 +1,4 @@
-// Copyright 2021 The KCL Authors. All rights reserved.
+//! Copyright The KCL Authors. All rights reserved.
 
 use std::{collections::HashSet, ops::Index};
 
@@ -168,12 +168,12 @@ impl ValueRef {
 
                 if ctx.cfg.debug_mode {
                     if int_32_overflow {
-                        ctx.set_err_type(&ErrType::IntOverflow_TYPE);
+                        ctx.set_err_type(&RuntimeErrorType::IntOverflow);
 
                         panic!("{v_i128}: A 32 bit integer overflow");
                     }
                     if int_64_overflow {
-                        ctx.set_err_type(&ErrType::IntOverflow_TYPE);
+                        ctx.set_err_type(&RuntimeErrorType::IntOverflow);
 
                         panic!("{v_i128}: A 64 bit integer overflow");
                     }
@@ -209,12 +209,12 @@ impl ValueRef {
                 let float64_overflow = strict_range_check_i64 && (*v).is_infinite();
 
                 if float32_overflow {
-                    ctx.set_err_type(&ErrType::FloatOverflow_TYPE);
+                    ctx.set_err_type(&RuntimeErrorType::FloatOverflow);
 
                     panic!("inf: A 32-bit floating point number overflow");
                 }
                 if float64_overflow {
-                    ctx.set_err_type(&ErrType::FloatOverflow_TYPE);
+                    ctx.set_err_type(&RuntimeErrorType::FloatOverflow);
 
                     panic!("inf: A 64-bit floating point number overflow");
                 }
@@ -229,12 +229,12 @@ impl ValueRef {
                 let float32_overflow = strict_range_check_i32 && (v as f32).is_infinite();
                 let float64_overflow = strict_range_check_i64 && (v).is_infinite();
                 if float32_overflow {
-                    ctx.set_err_type(&ErrType::FloatOverflow_TYPE);
+                    ctx.set_err_type(&RuntimeErrorType::FloatOverflow);
 
                     panic!("inf: A 32-bit floating point number overflow");
                 }
                 if float64_overflow {
-                    ctx.set_err_type(&ErrType::FloatOverflow_TYPE);
+                    ctx.set_err_type(&RuntimeErrorType::FloatOverflow);
 
                     panic!("inf: A 64-bit floating point number overflow");
                 }

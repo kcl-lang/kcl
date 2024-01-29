@@ -1,4 +1,4 @@
-// Copyright 2021 The KCL Authors. All rights reserved.
+//! Copyright The KCL Authors. All rights reserved.
 
 pub mod api;
 pub use api::*;
@@ -45,7 +45,7 @@ impl PanicInfo {
             Err(_) => PanicInfo {
                 __kcl_PanicInfo__: true,
                 message: s.to_string(),
-                err_type_code: crate::ErrType::CompileError_TYPE as i32,
+                err_type_code: crate::RuntimeErrorType::EvaluationError as i32,
                 ..Default::default()
             },
         }
@@ -162,7 +162,7 @@ impl crate::Context {
         }
     }
 
-    pub fn set_err_type(&mut self, err_type: &crate::ErrType) {
+    pub fn set_err_type(&mut self, err_type: &crate::RuntimeErrorType) {
         self.panic_info.__kcl_PanicInfo__ = true;
         self.panic_info.err_type_code = *err_type as i32;
     }

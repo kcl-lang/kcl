@@ -1,7 +1,7 @@
 use crate::{Value, ValueRef};
 
 /// Walk the value recursively and deal the type using the `walk_fn`
-pub fn walk_value(val: &ValueRef, walk_fn: &impl Fn(&ValueRef) -> ()) {
+pub fn walk_value(val: &ValueRef, walk_fn: &impl Fn(&ValueRef)) {
     walk_fn(val);
     match &*val.rc.borrow() {
         Value::list_value(list_value) => {
@@ -24,7 +24,7 @@ pub fn walk_value(val: &ValueRef, walk_fn: &impl Fn(&ValueRef) -> ()) {
 }
 
 /// Walk the value recursively and mutably and deal the type using the `walk_fn`
-pub fn walk_value_mut(val: &ValueRef, walk_fn: &mut impl FnMut(&ValueRef) -> ()) {
+pub fn walk_value_mut(val: &ValueRef, walk_fn: &mut impl FnMut(&ValueRef)) {
     walk_fn(val);
     match &*val.rc.borrow() {
         Value::list_value(list_value) => {
