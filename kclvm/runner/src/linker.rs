@@ -107,7 +107,7 @@ impl Command {
             .arg(&format!("-Wl,-rpath,{}", &path))
             .arg(&format!("-L{}", &path))
             .arg(&format!("-I{}/include", self.executable_root))
-            .arg("-lkclvm_cli_cdylib");
+            .arg(&format!("-l{KCLVM_LIB_SHORT_NAME}"));
         Ok(())
     }
 
@@ -143,7 +143,7 @@ impl Command {
         cmd: &mut std::process::Command,
     ) -> Result<()> {
         cmd.args(libs)
-            .arg("kclvm_cli_cdylib.lib")
+            .arg(&format!("{KCLVM_LIB_SHORT_NAME}.lib"))
             .arg("/link")
             .arg("/NOENTRY")
             .arg("/NOLOGO")
