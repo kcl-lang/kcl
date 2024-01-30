@@ -109,6 +109,8 @@ pub(crate) fn kclvm_get_service_fn_ptr_by_name(name: &str) -> u64 {
         "KclvmService.ParseProgram" => parse_program as *const () as u64,
         "KclvmService.LoadPackage" => load_package as *const () as u64,
         "KclvmService.ExecProgram" => exec_program as *const () as u64,
+        "KclvmService.BuildProgram" => build_program as *const () as u64,
+        "KclvmService.ExecArtifact" => exec_artifact as *const () as u64,
         "KclvmService.OverrideFile" => override_file as *const () as u64,
         "KclvmService.GetSchemaType" => get_schema_type as *const () as u64,
         "KclvmService.GetFullSchemaType" => get_full_schema_type as *const () as u64,
@@ -210,6 +212,46 @@ pub(crate) fn load_package(serv: *mut kclvm_service, args: *const c_char) -> *co
 ///     Result of the call serialized as protobuf byte sequence
 pub(crate) fn exec_program(serv: *mut kclvm_service, args: *const c_char) -> *const c_char {
     call!(serv, args, ExecProgramArgs, exec_program)
+}
+
+/// build_program provides users with the ability to build the KCL program to an artifact.
+///
+/// # Parameters
+///
+/// `serv`: [*mut kclvm_service]
+///     The pointer of &\[[KclvmServiceImpl]]
+///
+///
+/// `args`: [*const c_char]
+///     the items and compile parameters selected by the user in the KCL CLI
+///     serialized as protobuf byte sequence
+///
+/// # Returns
+///
+/// result: [*const c_char]
+///     Result of the call serialized as protobuf byte sequence
+pub(crate) fn build_program(serv: *mut kclvm_service, args: *const c_char) -> *const c_char {
+    call!(serv, args, BuildProgramArgs, build_program)
+}
+
+/// build_program provides users with the ability to execute the KCL artifact.
+///
+/// # Parameters
+///
+/// `serv`: [*mut kclvm_service]
+///     The pointer of &\[[KclvmServiceImpl]]
+///
+///
+/// `args`: [*const c_char]
+///     the items and compile parameters selected by the user in the KCL CLI
+///     serialized as protobuf byte sequence
+///
+/// # Returns
+///
+/// result: [*const c_char]
+///     Result of the call serialized as protobuf byte sequence
+pub(crate) fn exec_artifact(serv: *mut kclvm_service, args: *const c_char) -> *const c_char {
+    call!(serv, args, ExecArtifactArgs, exec_artifact)
 }
 
 /// override_file enable users override existing KCL file with specific KCl code

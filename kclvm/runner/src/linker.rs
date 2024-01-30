@@ -99,39 +99,16 @@ impl Command {
     pub(crate) fn unix_args(
         &self,
         libs: &[String],
-        lib_path: String,
+        _lib_path: String,
         cmd: &mut std::process::Command,
     ) -> Result<()> {
-        let path = self.runtime_lib_path(&lib_path)?;
+        let path = self.get_lib_link_path()?;
         cmd.args(libs)
             .arg(&format!("-Wl,-rpath,{}", &path))
             .arg(&format!("-L{}", &path))
             .arg(&format!("-I{}/include", self.executable_root))
             .arg("-lkclvm_cli_cdylib");
         Ok(())
-    }
-
-    /// Get the runtime library path.
-    pub(crate) fn runtime_lib_path(&self, lib_path: &str) -> Result<String> {
-        let path = self.get_lib_link_path()?;
-        let lib_name = Self::get_lib_name();
-        let lib_file_path = std::path::Path::new(&path).join(&lib_name);
-        // Copy runtime library to target path for parallel execute.
-        Ok(
-            if let Some(target_path) = std::path::Path::new(&lib_path).parent() {
-                let target_lib_file_path = std::path::Path::new(target_path).join(&lib_name);
-
-                // Locking file for parallel file copy.
-                let mut file_lock =
-                    fslock::LockFile::open(&format!("{}.lock", target_lib_file_path.display()))?;
-                file_lock.lock()?;
-
-                std::fs::copy(lib_file_path, target_lib_file_path)?;
-                target_path.to_string_lossy().to_string()
-            } else {
-                path
-            },
-        )
     }
 
     // Add args for cc on windows os.

@@ -56,6 +56,8 @@ service KclvmService {
 	rpc Ping(Ping_Args) returns(Ping_Result);
 
 	rpc ExecProgram(ExecProgram_Args) returns(ExecProgram_Result);
+	rpc BuildProgram(BuildProgram_Args) returns(BuildProgram_Result);
+	rpc ExecArtifact(ExecArtifact_Args) returns(ExecProgram_Result);
 
 	rpc ParseFile(ParseFile_Args) returns(ParseFile_Result);
 	rpc ParseProgram(ParseProgram_Args) returns(ParseProgram_Result);
@@ -212,6 +214,20 @@ message ExecProgram_Result {
 	string yaml_result = 2;
 	string log_message = 3;
 	string err_message = 4;
+}
+
+message BuildProgram_Args {
+	ExecProgram_Args exec_args = 1;
+	string output = 2;
+}
+
+message BuildProgram_Result {
+	string path = 1;
+}
+
+message ExecArtifact_Args {
+	string path = 1;
+	ExecProgram_Args exec_args = 2;
 }
 
 message ResetPlugin_Args {
