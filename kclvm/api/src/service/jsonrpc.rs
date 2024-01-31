@@ -99,6 +99,22 @@ fn register_kclvm_service(io: &mut IoHandler) {
         };
         futures::future::ready(catch!(kclvm_service_impl, args, exec_program))
     });
+    io.add_method("KclvmService.BuildProgram", |params: Params| {
+        let kclvm_service_impl = KclvmServiceImpl::default();
+        let args: BuildProgramArgs = match params.parse() {
+            Ok(val) => val,
+            Err(err) => return futures::future::ready(Err(err)),
+        };
+        futures::future::ready(catch!(kclvm_service_impl, args, build_program))
+    });
+    io.add_method("KclvmService.ExecArtifact", |params: Params| {
+        let kclvm_service_impl = KclvmServiceImpl::default();
+        let args: ExecArtifactArgs = match params.parse() {
+            Ok(val) => val,
+            Err(err) => return futures::future::ready(Err(err)),
+        };
+        futures::future::ready(catch!(kclvm_service_impl, args, exec_artifact))
+    });
     io.add_method("KclvmService.OverrideFile", |params: Params| {
         let kclvm_service_impl = KclvmServiceImpl::default();
         let args: OverrideFileArgs = match params.parse() {
@@ -210,6 +226,8 @@ fn register_builtin_service(io: &mut IoHandler) {
                 "KclvmService.ParseFile".to_owned(),
                 "KclvmService.ParseProgram".to_owned(),
                 "KclvmService.ExecProgram".to_owned(),
+                "KclvmService.BuildProgram".to_owned(),
+                "KclvmService.ExecArtifact".to_owned(),
                 "KclvmService.OverrideFile".to_owned(),
                 "KclvmService.GetSchemaType".to_owned(),
                 "KclvmService.GetFullSchemaType".to_owned(),

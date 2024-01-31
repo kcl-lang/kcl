@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::io::Write;
 use std::path::PathBuf;
 use std::string::String;
-use std::sync::Arc;
 
 use crate::gpyrpc::*;
 
@@ -15,13 +14,13 @@ use kclvm_parser::load_program;
 use kclvm_parser::parse_file;
 use kclvm_parser::KCLModuleCache;
 use kclvm_parser::LoadProgramOptions;
-use kclvm_parser::ParseSession;
+use kclvm_parser::ParseSessionRef;
 use kclvm_query::get_schema_type;
 use kclvm_query::override_file;
 use kclvm_query::query::get_full_schema_type;
 use kclvm_query::query::CompilationOptions;
 use kclvm_query::GetSchemaOption;
-use kclvm_runner::exec_program;
+use kclvm_runner::{build_program, exec_artifact, exec_program};
 use kclvm_sema::resolver::Options;
 use kclvm_tools::format::{format, format_source, FormatOptions};
 use kclvm_tools::lint::lint_files;
@@ -34,7 +33,7 @@ use tempfile::NamedTempFile;
 
 use super::into::*;
 use super::ty::kcl_schema_ty_to_pb_ty;
-use super::util::transform_str_para;
+use super::util::{transform_exec_para, transform_str_para};
 
 /// Specific implementation of calling service
 #[derive(Debug, Clone, Default)]
@@ -84,7 +83,7 @@ impl KclvmServiceImpl {
     /// assert_eq!(result.paths.len(), 1);
     /// ```
     pub fn parse_program(&self, args: &ParseProgramArgs) -> anyhow::Result<ParseProgramResult> {
-        let sess = Arc::new(ParseSession::default());
+        let sess = ParseSessionRef::default();
         let mut package_maps = HashMap::new();
         for p in &args.external_pkgs {
             package_maps.insert(p.pkg_name.to_string(), p.pkg_path.to_string());
@@ -300,13 +299,84 @@ impl KclvmServiceImpl {
         // transform args to json
         let args_json = serde_json::to_string(args).unwrap();
 
-        let sess = Arc::new(ParseSession::default());
+        let sess = ParseSessionRef::default();
         let result = exec_program(
             sess,
             &kclvm_runner::ExecProgramArgs::from_str(args_json.as_str()),
         )
         .map_err(|err| err.to_string())?;
 
+        Ok(ExecProgramResult {
+            json_result: result.json_result,
+            yaml_result: result.yaml_result,
+            log_message: result.log_message,
+            err_message: result.err_message,
+        })
+    }
+
+    /// Build the KCL program to an artifact.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
+    /// use kclvm_api::gpyrpc::*;
+    /// use std::path::Path;
+    /// // File case
+    /// let serv = KclvmServiceImpl::default();
+    /// let exec_args = ExecProgramArgs {
+    ///     work_dir: Path::new(".").join("src").join("testdata").canonicalize().unwrap().display().to_string(),
+    ///     k_filename_list: vec!["test.k".to_string()],
+    ///     ..Default::default()
+    /// };
+    /// let artifact = serv.build_program(&BuildProgramArgs {
+    ///     exec_args: Some(exec_args),
+    ///     output: "".to_string(),
+    /// }).unwrap();
+    /// assert!(!artifact.path.is_empty());
+    /// ```
+    pub fn build_program(&self, args: &BuildProgramArgs) -> anyhow::Result<BuildProgramResult> {
+        let exec_args = transform_exec_para(&args.exec_args)?;
+        let artifact = build_program(
+            ParseSessionRef::default(),
+            &exec_args,
+            transform_str_para(&args.output),
+        )?;
+        Ok(BuildProgramResult {
+            path: artifact.get_path().to_string(),
+        })
+    }
+
+    /// Execute the KCL artifact with args. **Note that it is not thread safe.**
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
+    /// use kclvm_api::gpyrpc::*;
+    /// use std::path::Path;
+    /// // File case
+    /// let serv = KclvmServiceImpl::default();
+    /// let exec_args = ExecProgramArgs {
+    ///     work_dir: Path::new(".").join("src").join("testdata").canonicalize().unwrap().display().to_string(),
+    ///     k_filename_list: vec!["test.k".to_string()],
+    ///     ..Default::default()
+    /// };
+    /// let artifact = serv.build_program(&BuildProgramArgs {
+    ///     exec_args: Some(exec_args.clone()),
+    ///     output: "./lib".to_string(),
+    /// }).unwrap();
+    /// assert!(!artifact.path.is_empty());
+    /// let exec_result = serv.exec_artifact(&ExecArtifactArgs {
+    ///     exec_args: Some(exec_args),
+    ///     path: artifact.path,
+    /// }).unwrap();
+    /// assert_eq!(exec_result.err_message, "");
+    /// assert_eq!(exec_result.yaml_result, "alice:\n  age: 18");
+    /// ```
+    pub fn exec_artifact(&self, args: &ExecArtifactArgs) -> anyhow::Result<ExecProgramResult> {
+        let exec_args = transform_exec_para(&args.exec_args)?;
+        let result = exec_artifact(&args.path, &exec_args)?;
         Ok(ExecProgramResult {
             json_result: result.json_result,
             yaml_result: result.yaml_result,
@@ -436,11 +506,8 @@ impl KclvmServiceImpl {
         &self,
         args: &GetFullSchemaTypeArgs,
     ) -> anyhow::Result<GetSchemaTypeResult> {
-        let args_json = serde_json::to_string(&args.exec_args.clone().unwrap()).unwrap();
-
         let mut type_list = Vec::new();
-
-        let exec_args = kclvm_runner::ExecProgramArgs::from_str(args_json.as_str());
+        let exec_args = transform_exec_para(&args.exec_args)?;
         for (_k, schema_ty) in get_full_schema_type(
             Some(&args.schema_name),
             CompilationOptions {
@@ -826,13 +893,7 @@ impl KclvmServiceImpl {
     /// ```
     pub fn test(&self, args: &TestArgs) -> anyhow::Result<TestResult> {
         let mut result = TestResult::default();
-        let exec_args = match &args.exec_args {
-            Some(exec_args) => {
-                let args_json = serde_json::to_string(exec_args)?;
-                kclvm_runner::ExecProgramArgs::from_str(args_json.as_str())
-            }
-            None => kclvm_runner::ExecProgramArgs::default(),
-        };
+        let exec_args = transform_exec_para(&args.exec_args)?;
         let opts = testing::TestOptions {
             exec_args,
             run_regexp: args.run_regexp.clone(),

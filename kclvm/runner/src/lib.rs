@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::Path};
+use std::{collections::HashMap, ffi::OsStr, path::Path};
 
 use anyhow::{anyhow, bail, Result};
 use assembler::KclvmLibAssembler;
@@ -15,7 +15,7 @@ use kclvm_sema::resolver::{
 };
 use linker::Command;
 pub use runner::{Artifact, ExecProgramArgs, ExecProgramResult, MapErrorResult};
-use runner::{KclLibRunner, KclLibRunnerOptions};
+use runner::{KclLibRunner, KclLibRunnerOptions, ProgramRunner};
 use tempfile::tempdir;
 
 pub mod assembler;
@@ -90,9 +90,25 @@ pub fn exec_program(sess: ParseSessionRef, args: &ExecProgramArgs) -> Result<Exe
         args.print_override_ast || args.debug > 0,
     )?;
     let mut result = execute(sess, program, args)?;
+    mutate_exec_result(&mut result, args)?;
+    Ok(result)
+}
+
+/// Execute the KCL artifact with args.
+pub fn exec_artifact<P: AsRef<OsStr>>(
+    path: P,
+    args: &ExecProgramArgs,
+) -> Result<ExecProgramResult> {
+    let artifact = Artifact::from_path(path)?;
+    let mut result = artifact.run(args)?;
+    mutate_exec_result(&mut result, args)?;
+    Ok(result)
+}
+
+fn mutate_exec_result(result: &mut ExecProgramResult, args: &ExecProgramArgs) -> Result<()> {
     // If it is a empty result, return it directly
     if result.json_result.is_empty() {
-        return Ok(result);
+        return Ok(());
     }
     // Filter values with the path selector.
     let mut ctx = Context::new();
@@ -112,7 +128,7 @@ pub fn exec_program(sess: ParseSessionRef, args: &ExecProgramArgs) -> Result<Exe
     if !args.disable_yaml_result {
         result.yaml_result = yaml_result;
     }
-    Ok(result)
+    Ok(())
 }
 
 /// After the kcl program passed through kclvm-parser in the compiler frontend,

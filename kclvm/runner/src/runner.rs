@@ -204,7 +204,7 @@ impl TryFrom<SettingsPathBuf> for ExecProgramArgs {
 }
 
 /// A public struct named [Artifact] which wraps around the native library [libloading::Library].
-pub struct Artifact(libloading::Library);
+pub struct Artifact(libloading::Library, String);
 
 pub trait ProgramRunner {
     /// Run with the arguments [ExecProgramArgs] and return the program execute result that
@@ -222,9 +222,16 @@ impl ProgramRunner for Artifact {
 }
 
 impl Artifact {
+    #[inline]
     pub fn from_path<P: AsRef<OsStr>>(path: P) -> Result<Self> {
-        let lib = unsafe { libloading::Library::new(path)? };
-        Ok(Self(lib))
+        let path = path.as_ref().to_str().unwrap().to_string();
+        let lib = unsafe { libloading::Library::new(&path)? };
+        Ok(Self(lib, path))
+    }
+
+    #[inline]
+    pub fn get_path(&self) -> &String {
+        &self.1
     }
 }
 
