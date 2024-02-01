@@ -664,4 +664,19 @@ mod tests {
         let res = goto_definition_with_gs(&program, &pos, &gs);
         compare_goto_res(res, (&file, 84, 22, 84, 23));
     }
+
+    #[test]
+    #[bench_test]
+    fn list_if_expr_test() {
+        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
+
+        let pos = KCLPos {
+            filename: file.clone(),
+            line: 91,
+            column: Some(8),
+        };
+
+        let res = goto_definition_with_gs(&program, &pos, &gs);
+        compare_goto_res(res, (&file, 88, 0, 88, 1));
+    }
 }

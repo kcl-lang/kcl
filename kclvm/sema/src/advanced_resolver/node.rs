@@ -583,6 +583,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
         &mut self,
         list_if_item_expr: &'ctx ast::ListIfItemExpr,
     ) -> Self::Result {
+        self.expr(&list_if_item_expr.if_cond)?;
         if let Some(orelse) = &list_if_item_expr.orelse {
             self.expr(orelse);
         }
