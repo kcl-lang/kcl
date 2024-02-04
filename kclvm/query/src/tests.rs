@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use super::{r#override::apply_override_on_module, *};
+use crate::path::parse_attribute_path;
 use kclvm_ast::ast;
 use kclvm_parser::parse_file_force_errors;
 use pretty_assertions::assert_eq;
@@ -55,6 +56,7 @@ fn test_override_file_config() {
         "appConfiguration.mainContainer.name=override_name".to_string(),
         "appConfiguration.labels.key.key=\"override_value\"".to_string(),
         "appConfiguration.labels.key.str-key=\"override_value\"".to_string(),
+        "appConfiguration.labels.key['dot.key']=\"override_value\"".to_string(),
         "appConfiguration.overQuota=False".to_string(),
         "appConfiguration.probe={periodSeconds=20}".to_string(),
         "appConfiguration.resource-".to_string(),
@@ -109,6 +111,7 @@ appConfiguration = AppConfiguration {
         key: {
             key: "override_value"
             "str-key" = "override_value"
+            "dot.key" = "override_value"
         }
     }
     mainContainer: Main {name: "override_name"}
@@ -141,4 +144,43 @@ fn test_parse_override_spec_invalid() {
     for spec in specs {
         assert!(parse_override_spec(spec).is_err(), "{spec} test failed");
     }
+}
+
+#[test]
+fn test_parse_property_path() {
+    assert_eq!(parse_attribute_path("a.b.c").unwrap(), vec!["a", "b", "c"]);
+    assert_eq!(
+        parse_attribute_path(r#"a["b"].c"#).unwrap(),
+        vec!["a", "b", "c"]
+    );
+    assert_eq!(
+        parse_attribute_path(r#"a.["b"].c"#).unwrap(),
+        vec!["a", "b", "c"]
+    );
+    assert_eq!(
+        parse_attribute_path(r#"a['b'].c"#).unwrap(),
+        vec!["a", "b", "c"]
+    );
+    assert_eq!(
+        parse_attribute_path(r#"a.b['c.d']"#).unwrap(),
+        vec!["a", "b", "c.d"]
+    );
+    assert_eq!(
+        parse_attribute_path(r#"a.b.['c.d']"#).unwrap(),
+        vec!["a", "b", "c.d"]
+    );
+    assert_eq!(
+        parse_attribute_path(r#"a.b['c.d'].e"#).unwrap(),
+        vec!["a", "b", "c.d", "e"]
+    );
+    assert_eq!(
+        parse_attribute_path(r#"a.b.['c.d'].e"#).unwrap(),
+        vec!["a", "b", "c.d", "e"]
+    );
+    assert_eq!(
+        parse_attribute_path(r#"a.b.c-d.e"#).unwrap(),
+        vec!["a", "b", "c-d", "e"]
+    );
+    assert!(parse_attribute_path(r#"a.[b.c-d.e"#).is_err(),);
+    assert!(parse_attribute_path(r#"a.[b.c]-d.e"#).is_err(),);
 }

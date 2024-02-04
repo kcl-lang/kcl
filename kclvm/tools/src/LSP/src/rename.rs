@@ -8,7 +8,7 @@ use chumsky::chain::Chain;
 use kclvm_ast::ast::{self, Program};
 use kclvm_error::diagnostic;
 use kclvm_parser::{load_program, LoadProgramOptions, ParseSessionRef};
-use kclvm_query::selector::parse_symbol_selector_spec;
+use kclvm_query::{path::parse_attribute_path, selector::parse_symbol_selector_spec};
 use kclvm_sema::{
     advanced_resolver::AdvancedResolver, core::global_state::GlobalState, namer::Namer,
     resolver::resolve_program_with_opts,
@@ -120,7 +120,7 @@ where
     F: Fn(String) -> VfsPath,
 {
     let mut pkg = PathBuf::from(&symbol_spec.pkg_root);
-    let fields: Vec<&str> = symbol_spec.field_path.split(".").collect();
+    let fields = parse_attribute_path(&symbol_spec.field_path).unwrap_or_default();
     if !symbol_spec.pkgpath.is_empty() {
         let pkg_names = symbol_spec.pkgpath.split(".");
         for n in pkg_names {
@@ -143,7 +143,7 @@ where
         {
             let mut owner_ref = symbol_ref;
             let mut target = None;
-            for field in fields {
+            for field in &fields {
                 let owner = gs.get_symbols().get_symbol(owner_ref).unwrap();
                 target = owner.get_attribute(field, gs.get_symbols(), None);
                 if let Some(target) = target {
