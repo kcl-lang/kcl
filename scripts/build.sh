@@ -23,10 +23,10 @@ prepare_dirs
 # 1. Build kcl native library
 
 cd $topdir/kclvm
+export PATH=$PATH:/root/.cargo/bin:/usr/lib/llvm-12/bin
 cargo build --release
 
 ## Switch dll file extension according to os.
-
 dll_extension="so"
 case $os in
     "Default" | "default" | "centos" | "ubuntu" | "debian" | "Ubuntu" |"Debian" | "Static-Debian" | "Cood1-Debian" | "Cood1Shared-Debian")
