@@ -23,6 +23,7 @@ prepare_dirs
 # 1. Build kcl native library
 
 cd $topdir/kclvm
+export PATH=$PATH:/root/.cargo/bin/
 cargo build --release
 
 ## Switch dll file extension according to os.
