@@ -452,6 +452,26 @@ mod tests {
 
     #[test]
     #[bench_test]
+    fn expr_after_config_if_hover() {
+        let (file, program, _, _, gs) = compile_test_file("src/test_data/hover_test/hover.k");
+        let pos = KCLPos {
+            filename: file.clone(),
+            line: 41,
+            column: Some(13),
+        };
+        let got = hover(&program, &pos, &gs).unwrap();
+        match got.contents {
+            lsp_types::HoverContents::Scalar(marked_string) => {
+                if let MarkedString::String(s) = marked_string {
+                    assert_eq!(s, "stratege: str");
+                }
+            }
+            _ => unreachable!("test error"),
+        }
+    }
+
+    #[test]
+    #[bench_test]
     fn schema_scope_variable_hover() {
         let (file, program, _, _, gs) = compile_test_file("src/test_data/hover_test/fib.k");
         let pos = KCLPos {
