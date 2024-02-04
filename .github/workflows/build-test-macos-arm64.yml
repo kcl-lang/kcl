@@ -1,4 +1,5 @@
-name: build-and-test-macos
+name: Build and Test on MacOS ARCH64
+
 on: ["push", "pull_request"]
 jobs:
   build-and-test:
@@ -36,7 +37,7 @@ jobs:
           components: clippy, rustfmt
       - name: Grammar test
         working-directory: ./kclvm
-        run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin:/usr/local/opt/llvm@12/bin && make install-rustc-wasm && make && make test-grammar
+        run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin:/opt/homebrew/opt/llvm@12/bin/ && make && make test-grammar
         shell: bash
 
       - uses: actions/upload-artifact@v3
