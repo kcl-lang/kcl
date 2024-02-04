@@ -4,6 +4,7 @@
 //! input file name, and according to the ast::OverrideSpec transforms the nodes in the
 //! AST, recursively modifying or deleting the values of the nodes in the AST.
 pub mod r#override;
+pub mod path;
 pub mod query;
 pub mod selector;
 

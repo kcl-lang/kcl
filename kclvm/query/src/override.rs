@@ -12,6 +12,8 @@ use kclvm_ast_pretty::print_ast_module;
 use kclvm_parser::parse_expr;
 use kclvm_sema::pre_process::{fix_config_expr_nest_attr, transform_multi_assign};
 
+use crate::path::parse_attribute_path;
+
 use super::util::{invalid_spec_error, split_field_path};
 
 /// Import statement column offset always start with 1.
@@ -105,16 +107,15 @@ pub fn apply_override_on_module(
 ) -> Result<bool> {
     // Apply import paths on AST module.
     apply_import_paths_on_module(m, import_paths)?;
-    let ss = o.field_path.split('.').collect::<Vec<&str>>();
+    let ss = parse_attribute_path(&o.field_path)?;
     if ss.len() <= 1 {
         return Ok(false);
     }
-    let target_id = ss[0];
-    let field = ss[1..].join(".");
+    let target_id = &ss[0];
     let value = &o.field_value;
     let key = ast::Identifier {
-        names: field
-            .split('.')
+        names: ss[1..]
+            .iter()
             .map(|s| ast::Node::dummy_node(s.to_string()))
             .collect(),
         ctx: ast::ExprContext::Store,
@@ -132,7 +133,7 @@ pub fn apply_override_on_module(
     transform_multi_assign(m);
     let mut transformer = OverrideTransformer {
         target_id: target_id.to_string(),
-        field_path: field,
+        field_paths: ss[1..].to_vec(),
         override_key: key,
         override_value: build_expr_from_string(value),
         override_target_count: 0,
@@ -230,7 +231,7 @@ fn apply_import_paths_on_module(m: &mut ast::Module, import_paths: &[String]) ->
 /// OverrideTransformer is used to walk AST and transform it with the override values.
 struct OverrideTransformer {
     pub target_id: String,
-    pub field_path: String,
+    pub field_paths: Vec<String>,
     pub override_key: ast::Identifier,
     pub override_value: Option<ast::NodeRef<ast::Expr>>,
     pub override_target_count: usize,
@@ -324,7 +325,11 @@ impl OverrideTransformer {
     /// return whether is found a replaced one.
     fn lookup_config_and_replace(&self, config_expr: &mut ast::ConfigExpr) -> bool {
         // Split a path into multiple parts. `a.b.c` -> ["a", "b", "c"]
-        let parts = self.field_path.split('.').collect::<Vec<&str>>();
+        let parts = self
+            .field_paths
+            .iter()
+            .map(|s| s.as_str())
+            .collect::<Vec<&str>>();
         self.replace_config_with_path_parts(config_expr, &parts)
     }
 

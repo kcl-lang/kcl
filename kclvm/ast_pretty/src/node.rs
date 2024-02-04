@@ -847,7 +847,7 @@ impl<'p> Printer<'p> {
             ast::Expr::Identifier(identifier) => {
                 self.hook.pre(self, super::ASTNode::Expr(key));
                 self.write_ast_comments(key);
-                // Judge contains string identifier, e.g., "x-y-z"
+                // Judge contains string or dot identifier, e.g., "x-y-z" and "a.b.c"
                 let names = &identifier.names;
 
                 let re = fancy_regex::Regex::new(IDENTIFIER_REGEX).unwrap();
