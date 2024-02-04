@@ -5,7 +5,7 @@ jobs:
     # Ref: https://github.com/actions/runner-images/tree/main/images/macos
     strategy:
       matrix:
-        os: [macos-11, macos-12]
+        os: [macos-13-xlarge]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Git checkout
@@ -13,19 +13,11 @@ jobs:
         with:
           submodules: "true"
 
-      - name: Set up python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.9'
-
-      - name: Set up Go 1.19
+      - name: Set up Go 1.21
         uses: actions/setup-go@v2
         with:
-          go-version: 1.19
+          go-version: 1.21
 
-      - name: Install kpm
-        run: go install kcl-lang.io/kpm@latest
-        
       - run: clang --version
       - run: cargo --version
       - run: rustc --print sysroot
@@ -42,24 +34,12 @@ jobs:
           toolchain: 1.73
           override: true
           components: clippy, rustfmt
-      - name: Code format check
-        working-directory: ./kclvm
-        run: cargo fmt --check
-        shell: bash
-      - name: Unit test
-        working-directory: ./kclvm
-        run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin:/usr/local/opt/llvm@12/bin && make install-rustc-wasm && make && make codecov-lcov
-        shell: bash
       - name: Grammar test
         working-directory: ./kclvm
         run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin:/usr/local/opt/llvm@12/bin && make install-rustc-wasm && make && make test-grammar
         shell: bash
-      - name: Runtime test
-        working-directory: ./kclvm
-        run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin:/usr/local/opt/llvm@12/bin && make install-rustc-wasm && make && make test-runtime
-        shell: bash
 
       - uses: actions/upload-artifact@v3
         with:
-          name: kcl-darwin-amd64
+          name: kcl-darwin-arm64
           path: _build/dist/Darwin/kclvm
