@@ -775,6 +775,9 @@ impl<'ctx> AdvancedResolver<'ctx> {
         match self.walk_expr(&expr.node) {
             None => match self.ctx.node_ty_map.get(&self.ctx.get_node_key(&expr.id)) {
                 Some(ty) => {
+                    if let ast::Expr::Missing(_) = expr.node {
+                        return None;
+                    }
                     let (_, end) = expr.get_span_pos();
                     let mut expr_symbol = ExpressionSymbol::new(
                         format!("@{}", expr.node.get_expr_name()),
