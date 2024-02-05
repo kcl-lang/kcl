@@ -1488,4 +1488,28 @@ mod tests {
             CompletionResponse::List(_) => panic!("test failed"),
         };
     }
+
+    #[test]
+    #[bench_test]
+    fn missing_expr_completion() {
+        let (file, program, _, _, gs) =
+            compile_test_file("src/test_data/completion_test/dot/missing_expr/missing_expr.k");
+
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 10,
+            column: Some(16),
+        };
+
+        let got = completion(Some('.'), &program, &pos, &gs).unwrap();
+        match got {
+            CompletionResponse::Array(arr) => {
+                assert_eq!(arr.len(), 2);
+                let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
+                assert!(labels.contains(&"cpu".to_string()));
+                assert!(labels.contains(&"memory".to_string()));
+            }
+            CompletionResponse::List(_) => panic!("test failed"),
+        }
+    }
 }
