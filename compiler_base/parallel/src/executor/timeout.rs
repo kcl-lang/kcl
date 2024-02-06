@@ -25,6 +25,7 @@ pub(crate) struct TimeoutSituation {
 pub struct TimeoutExecutor {
     timeout_queue: VecDeque<TimeoutSituation>,
     capacity: usize,
+    timeout: Option<Instant>,
 }
 
 impl TimeoutExecutor {
@@ -37,6 +38,20 @@ impl TimeoutExecutor {
         TimeoutExecutor {
             timeout_queue: VecDeque::default(),
             capacity: thread_count,
+            timeout: Some(default_deadline_60_seconds()),
+        }
+    }
+
+    /// New a [`TimeoutExecutor`] with [`thread_count`] and [`timeout`].
+    pub fn new_with_thread_count_and_timeout(thread_count: usize, timeout: Instant) -> Self {
+        debug_assert!(
+            thread_count > 0,
+            "At least one thread is required to execute the task."
+        );
+        TimeoutExecutor {
+            timeout_queue: VecDeque::default(),
+            capacity: thread_count,
+            timeout: Some(timeout),
         }
     }
 
@@ -98,7 +113,11 @@ impl Executor for TimeoutExecutor {
                 let tinfo = task.info();
 
                 // Calculate the deadline.
-                let deadline = default_deadline_60_seconds();
+                let deadline = if let Some(timeout) = self.timeout {
+                    timeout
+                } else {
+                    default_deadline_60_seconds()
+                };
 
                 // Notify the log that the [`Task`] is waiting to be executed.
                 let event = TaskEvent::wait(task.info());
