@@ -1549,8 +1549,40 @@ register_collection_member! {
     )
 }
 
+// ------------------------------
+// file system package
+// ------------------------------
+
+pub const FILE: &str = "file";
+pub const FILE_FUNCTION_NAMES: &[&str] = &["read"];
+macro_rules! register_file_member {
+    ($($name:ident => $ty:expr)*) => (
+        pub const FILE_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
+            let mut builtin_mapping = IndexMap::default();
+            $( builtin_mapping.insert(stringify!($name).to_string(), $ty); )*
+            builtin_mapping
+        });
+    )
+}
+register_file_member! {
+    union_all => Type::function(
+        None,
+        Type::any_ref(),
+        &[
+            Parameter {
+                name: "filepath".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+        ],
+        r#"Read the file content from path"#,
+        false,
+        None,
+    )
+}
+
 pub const STANDARD_SYSTEM_MODULES: &[&str] = &[
-    COLLECTION, NET, MANIFESTS, MATH, DATETIME, REGEX, YAML, JSON, CRYPTO, BASE64, UNITS,
+    COLLECTION, NET, MANIFESTS, MATH, DATETIME, REGEX, YAML, JSON, CRYPTO, BASE64, UNITS, FILE,
 ];
 
 pub const STANDARD_SYSTEM_MODULE_NAMES_WITH_AT: &[&str] = &[
@@ -1565,6 +1597,7 @@ pub const STANDARD_SYSTEM_MODULE_NAMES_WITH_AT: &[&str] = &[
     "@crypto",
     "@base64",
     "@units",
+    "@file",
 ];
 
 /// Get the system module members
@@ -1585,6 +1618,7 @@ pub fn get_system_module_members(name: &str) -> Vec<&str> {
             members
         }
         COLLECTION => COLLECTION_FUNCTION_NAMES.to_vec(),
+        FILE => FILE_FUNCTION_NAMES.to_vec(),
         _ => bug!("invalid system module name '{}'", name),
     }
 }
