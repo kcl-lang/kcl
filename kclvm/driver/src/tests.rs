@@ -7,7 +7,9 @@ use kclvm_parser::LoadProgramOptions;
 use walkdir::WalkDir;
 
 use crate::arguments::parse_key_value_pair;
-use crate::kpm_metadata::{fetch_metadata, fill_pkg_maps_for_k_file, lookup_the_nearest_file_dir};
+use crate::kpm_metadata::fetch_metadata;
+use crate::kpm_update::update_kcl_module;
+use crate::{fill_pkg_maps_for_k_file, lookup_the_nearest_file_dir};
 use crate::{canonicalize_input_files, expand_input_files, get_pkg_list};
 
 #[test]
@@ -378,4 +380,47 @@ fn test_get_pkg_list() {
         get_pkg_list("./src/test_data/pkg_list/...").unwrap().len(),
         3
     );
+}
+
+#[test]
+fn test_lookup_the_nearest_file_dir_for_update() {
+    let path = PathBuf::from(".")
+        .join("src")
+        .join("test_data")
+        .join("kpm_update");
+    let result = lookup_the_nearest_file_dir(path.clone(), "kcl.mod");
+    assert!(result.is_some());
+    assert_eq!(
+        result.unwrap().display().to_string(),
+        path.canonicalize().unwrap().display().to_string()
+    );
+
+    let main_path = path.join("subdir").join("main.k");
+    let result = lookup_the_nearest_file_dir(main_path, "kcl.mod");
+    assert!(result.is_some());
+    assert_eq!(
+        result.unwrap().display().to_string(),
+        path.canonicalize().unwrap().display().to_string()
+    );
+}
+
+fn test_fetch_mod_metadata() {
+    let path = PathBuf::from(".")
+        .join("src")
+        .join("test_data")
+        .join("kpm_update");
+
+    let update_mod = update_kcl_module(path.clone());
+    let metadata = fetch_metadata(path.clone());
+    // Show more information when the test fails.
+    println!("{:?}", update_mod);
+    assert!(!update_mod.is_err());
+    let pkgs = metadata.unwrap().packages.clone();
+    assert_eq!(pkgs.len(), 1);
+}
+
+#[test]
+fn test_update_module() {
+    test_fetch_mod_metadata();
+    println!("test_fetch_mod_metadata() passed");
 }

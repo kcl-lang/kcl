@@ -1,6 +1,6 @@
+use crate::{lookup_the_nearest_file_dir, kcl};
 use anyhow::{bail, Result};
 use std::{path::PathBuf, process::Command};
-use crate::{probe, lookup_the_nearest_file_dir, kcl};
 
 const MANIFEST_FILE: &str = "kcl.mod";
 
