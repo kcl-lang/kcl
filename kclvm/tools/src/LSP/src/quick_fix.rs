@@ -1,9 +1,10 @@
 use std::collections::HashMap;
 
-use kclvm_error::{DiagnosticId, WarningKind};
+use kclvm_error::{DiagnosticId, WarningKind, ErrorKind};
 use lsp_types::{
-    CodeAction, CodeActionKind, CodeActionOrCommand, Diagnostic, NumberOrString, TextEdit, Url,
+     CodeAction, CodeActionKind, CodeActionOrCommand, Diagnostic, NumberOrString, TextEdit, Url
 };
+use serde_json::Value;
 
 pub(crate) fn quick_fix(uri: &Url, diags: &Vec<Diagnostic>) -> Vec<lsp_types::CodeActionOrCommand> {
     let mut code_actions: Vec<lsp_types::CodeActionOrCommand> = vec![];
@@ -11,7 +12,30 @@ pub(crate) fn quick_fix(uri: &Url, diags: &Vec<Diagnostic>) -> Vec<lsp_types::Co
         if let Some(code) = &diag.code {
             if let Some(id) = conver_code_to_kcl_diag_id(code) {
                 match id {
-                    DiagnosticId::Error(_) => continue,
+                    DiagnosticId::Error(error) => match error {
+                        ErrorKind::CompileError => {
+                            let replacement_text = extract_suggested_replacements(&diag.data).unwrap_or_else(|| "".to_string());
+                            let mut changes = HashMap::new();
+                            changes.insert(
+                                uri.clone(),
+                                vec![TextEdit {
+                                    range: diag.range,
+                                    new_text: replacement_text,
+                                }],
+                            );
+                            code_actions.push(CodeActionOrCommand::CodeAction(CodeAction {
+                                title: ErrorKind::CompileError.name(),
+                                kind: Some(CodeActionKind::QUICKFIX),
+                                diagnostics: Some(vec![diag.clone()]),
+                                edit: Some(lsp_types::WorkspaceEdit {
+                                    changes: Some(changes),
+                                    ..Default::default()
+                                }),
+                                ..Default::default()
+                            }))
+                        }
+                        _ => continue,
+                    },
                     DiagnosticId::Warning(warn) => match warn {
                         WarningKind::UnusedImportWarning => {
                             let mut changes = HashMap::new();
@@ -63,6 +87,23 @@ pub(crate) fn quick_fix(uri: &Url, diags: &Vec<Diagnostic>) -> Vec<lsp_types::Co
     code_actions
 }
 
+fn extract_suggested_replacements(data: &Option<Value>) -> Option<String> {
+    data.as_ref().and_then(|data| {
+        match data {
+            Value::Object(obj) => {
+                obj.get("suggested_replacements").and_then(|val| {
+                    match val {
+                        Value::String(s) => Some(s.clone()),
+                        Value::Array(arr) if !arr.is_empty() => arr.iter().filter_map(|v| v.as_str()).next().map(String::from),
+                        _ => None,
+                    }
+                })
+            },
+            _ => None,
+        }
+    })
+}
+
 pub(crate) fn conver_code_to_kcl_diag_id(code: &NumberOrString) -> Option<DiagnosticId> {
     match code {
         NumberOrString::Number(_) => None,
@@ -70,6 +111,7 @@ pub(crate) fn conver_code_to_kcl_diag_id(code: &NumberOrString) -> Option<Diagno
             "CompilerWarning" => Some(DiagnosticId::Warning(WarningKind::CompilerWarning)),
             "UnusedImportWarning" => Some(DiagnosticId::Warning(WarningKind::UnusedImportWarning)),
             "ReimportWarning" => Some(DiagnosticId::Warning(WarningKind::ReimportWarning)),
+            "CompileError" => Some(DiagnosticId::Error(ErrorKind::CompileError)),
             "ImportPositionWarning" => {
                 Some(DiagnosticId::Warning(WarningKind::ImportPositionWarning))
             }

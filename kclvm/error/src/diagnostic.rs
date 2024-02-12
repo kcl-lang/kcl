@@ -5,11 +5,23 @@ use std::hash::Hash;
 use crate::{ErrorKind, WarningKind};
 
 /// Diagnostic structure.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Diagnostic {
     pub level: Level,
     pub messages: Vec<Message>,
     pub code: Option<DiagnosticId>,
+    pub data: Option<serde_json::Value>,
+}
+
+impl Hash for Diagnostic {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.level.hash(state);
+        for message in &self.messages {
+            message.hash(state);
+        }
+        self.code.hash(state);
+        // The `data` field is not included in the hash calculation due to complexity.
+    }
 }
 
 /// Position describes an arbitrary source position including the filename,
@@ -106,18 +118,23 @@ impl Diagnostic {
         note: Option<&str>,
         range: Range,
         code: Option<DiagnosticId>,
-        suggested_replacement: Option<String>,
+        suggestions: Option<Vec<String>>,
     ) -> Self {
+        let data = suggestions.clone().map(|suggs| {
+            serde_json::json!({ "suggested_replacements": suggs })
+        });
+        // println!("Data received: {:?}", data);
         Diagnostic {
             level,
             messages: vec![Message {
                 range,
                 style: Style::LineAndColumn,
                 message: message.to_string(),
-                note: note.map(|s| s.to_string()),
-                suggested_replacement,
+                note: note.map(String::from),
+                suggested_replacement: None, // Assuming your Message struct has such a field
             }],
             code,
+            data, // Now includes suggestions if provided
         }
     }
 

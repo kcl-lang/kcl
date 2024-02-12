@@ -125,17 +125,31 @@ impl Handler {
     }
 
     /// Construct a type error and put it into the handler diagnostic buffer
-    pub fn add_compile_error(&mut self, msg: &str, range: Range) -> &mut Self {
+    pub fn add_compile_error(
+        &mut self, 
+        msg: &str, 
+        range: Range
+    ) -> &mut Self {
+        self.add_compile_error_with_suggestions(msg, range, None)
+    }
+
+    pub fn add_compile_error_with_suggestions(
+        &mut self, 
+        msg: &str, 
+        range: Range, 
+        suggestions: Option<Vec<String>>,
+    ) -> &mut Self {
         let diag = Diagnostic::new_with_code(
             Level::Error,
             msg,
             None,
             range,
             Some(DiagnosticId::Error(E2L23.kind)),
-            None,
+            suggestions,
         );
+        // println!("{:?}",suggestions.clone());
         self.add_diagnostic(diag);
-
+    
         self
     }
 
@@ -165,6 +179,7 @@ impl Handler {
             level: Level::Error,
             messages: msgs.to_owned(),
             code: Some(DiagnosticId::Error(err)),
+            data: None,
         };
         self.add_diagnostic(diag);
 
@@ -183,6 +198,7 @@ impl Handler {
                     suggested_replacement: None,
                 }],
                 code: Some(DiagnosticId::Suggestions),
+                data: None,
             });
         });
 
@@ -208,6 +224,7 @@ impl Handler {
             level: Level::Warning,
             messages: msgs.to_owned(),
             code: Some(DiagnosticId::Warning(warning)),
+            data: None,
         };
         self.add_diagnostic(diag);
 

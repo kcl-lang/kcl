@@ -97,12 +97,22 @@ pub fn kcl_diag_to_lsp_diags(diag: &KCLDiagnostic, file_name: &str) -> Vec<Diagn
             } else {
                 None
             };
-            diags.push(kcl_msg_to_lsp_diags(
+            
+            let data = diag.data.clone();
+
+            let lsp_diag = kcl_msg_to_lsp_diags(
                 msg,
                 kcl_err_level_to_severity(diag.level),
                 related_msg,
                 code,
-            ))
+            );
+
+            let lsp_diag_with_data = Diagnostic {
+                data,
+                ..lsp_diag
+            };
+
+            diags.push(lsp_diag_with_data);
         }
     }
     diags
