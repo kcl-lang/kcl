@@ -179,7 +179,6 @@ impl Handler {
             level: Level::Error,
             messages: msgs.to_owned(),
             code: Some(DiagnosticId::Error(err)),
-            data: None,
         };
         self.add_diagnostic(diag);
 
@@ -198,7 +197,6 @@ impl Handler {
                     suggested_replacement: None,
                 }],
                 code: Some(DiagnosticId::Suggestions),
-                data: None,
             });
         });
 
@@ -224,7 +222,6 @@ impl Handler {
             level: Level::Warning,
             messages: msgs.to_owned(),
             code: Some(DiagnosticId::Warning(warning)),
-            data: None,
         };
         self.add_diagnostic(diag);
 

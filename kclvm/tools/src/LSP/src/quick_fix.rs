@@ -14,7 +14,7 @@ pub(crate) fn quick_fix(uri: &Url, diags: &Vec<Diagnostic>) -> Vec<lsp_types::Co
                 match id {
                     DiagnosticId::Error(error) => match error {
                         ErrorKind::CompileError => {
-                            let replacement_text = extract_suggested_replacements(&diag.data).unwrap_or_else(|| "".to_string());
+                            let replacement_text = extract_suggested_replacement(&diag.data).unwrap_or_else(|| "".to_string());
                             let mut changes = HashMap::new();
                             changes.insert(
                                 uri.clone(),
@@ -87,11 +87,11 @@ pub(crate) fn quick_fix(uri: &Url, diags: &Vec<Diagnostic>) -> Vec<lsp_types::Co
     code_actions
 }
 
-fn extract_suggested_replacements(data: &Option<Value>) -> Option<String> {
+fn extract_suggested_replacement(data: &Option<Value>) -> Option<String> {
     data.as_ref().and_then(|data| {
         match data {
             Value::Object(obj) => {
-                obj.get("suggested_replacements").and_then(|val| {
+                obj.get("suggested_replacement").and_then(|val| {
                     match val {
                         Value::String(s) => Some(s.clone()),
                         Value::Array(arr) if !arr.is_empty() => arr.iter().filter_map(|v| v.as_str()).next().map(String::from),

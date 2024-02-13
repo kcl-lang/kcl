@@ -5,6 +5,7 @@ use kclvm_error::Message;
 use kclvm_error::Position as KCLPos;
 use lsp_types::*;
 use ra_ap_vfs::FileId;
+use serde_json::json;
 
 use crate::state::LanguageServerSnapshot;
 use std::{
@@ -43,6 +44,10 @@ fn kcl_msg_to_lsp_diags(
     let start_position = lsp_pos(&range.0);
     let end_position = lsp_pos(&range.1);
 
+    let data = msg.suggested_replacement.as_ref().map(|s| {
+        json!({ "suggested_replacement": [s] })
+    });
+
     let related_information = if related_msg.is_empty() {
         None
     } else {
@@ -72,7 +77,7 @@ fn kcl_msg_to_lsp_diags(
         message: msg.message.clone(),
         related_information,
         tags: None,
-        data: None,
+        data: data,
     }
 }
 
@@ -97,8 +102,6 @@ pub fn kcl_diag_to_lsp_diags(diag: &KCLDiagnostic, file_name: &str) -> Vec<Diagn
             } else {
                 None
             };
-            
-            let data = diag.data.clone();
 
             let lsp_diag = kcl_msg_to_lsp_diags(
                 msg,
@@ -107,12 +110,7 @@ pub fn kcl_diag_to_lsp_diags(diag: &KCLDiagnostic, file_name: &str) -> Vec<Diagn
                 code,
             );
 
-            let lsp_diag_with_data = Diagnostic {
-                data,
-                ..lsp_diag
-            };
-
-            diags.push(lsp_diag_with_data);
+            diags.push(lsp_diag);
         }
     }
     diags
