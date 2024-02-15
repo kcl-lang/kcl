@@ -1,6 +1,6 @@
+use super::*;
 use std::path::{Path, PathBuf};
 use std::{env, fs, panic};
-use super::*;
 
 use kclvm_config::modfile::get_vendor_home;
 use kclvm_config::settings::KeyValuePair;
@@ -383,32 +383,32 @@ fn test_get_pkg_list() {
 }
 
 #[cfg(test)]
-    // Define a mock structure to simulate the behavior of Command::output
-    struct MockCommand {
-        output: Result<MockCommandOutput, std::io::Error>,
-    }
-    // Define a mock structure to represent the output of Command::output
-    struct MockCommandOutput {
-        status: std::process::ExitStatus,
-        stderr: Vec<u8>,
-    }
+// Define a mock structure to simulate the behavior of Command::output
+ struct MockCommand {
+     output: Result<MockCommandOutput, std::io::Error>,
+}
+// Define a mock structure to represent the output of Command::output
+struct MockCommandOutput {
+     status: std::process::ExitStatus,
+     stderr: Vec<u8>,
+ }
 
-    #[test]
-    fn test_update_kcl_module_success() {
-        let manifest_path = PathBuf::from("path/to/manifest");
-        let result = update_kcl_module( manifest_path);
-        assert!(result.is_ok());
-    }
+#[test]
+fn test_update_kcl_module_success() {
+    let manifest_path = PathBuf::from("path/to/manifest");
+    let result = update_kcl_module( manifest_path);
+    assert!(result.is_ok()
+    );
+}
 
-    #[test]
-    fn test_update_kcl_module_failure() {
-        
-        let manifest_path = PathBuf::from("path/to/manifest");
-        fn mock_command_new_failing(_command: &str) -> MockCommand {
+#[test]
+fn test_update_kcl_module_failure() {
+    let manifest_path = PathBuf::from("path/to/manifest");
+    fn mock_command_new_failing(_command: &str) -> MockCommand {
             MockCommand {
                 output: Err(std::io::Error::new(std::io::ErrorKind::Other, "Command failed")),
             }
         }
-        let result = update_kcl_module( manifest_path);
-        assert!(result.is_err());
-    }
+    let result = update_kcl_module( manifest_path);
+    assert!(result.is_err());
+}
