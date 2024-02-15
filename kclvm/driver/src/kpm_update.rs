@@ -1,6 +1,6 @@
+use crate::kpm_metadata::get_path_for_executable;
 use anyhow::{bail, Result};
 use std::{path::PathBuf, process::Command};
-use crate::kpm_metadata::get_path_for_executable;
 
 const MANIFEST_FILE: &str = "kcl.mod";
 
@@ -26,7 +26,7 @@ pub(crate) fn update_kcl_module(manifest_path: PathBuf) -> Result<()> {
             }
         }
         None => bail!(
-            "Manifest file '{}' not found in directory hierarchy", 
+            "Manifest file '{}' not found in directory hierarchy",
             MANIFEST_FILE
         ),
     }
