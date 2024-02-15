@@ -616,7 +616,7 @@ mod test_validater {
 }
 
 /// Deal with windows filepath
-fn deal_windows_filepath<F>(filepath: String, transform: F) -> String
+fn deal_windows_filepath<F>(filepath: String, _transform: F) -> String
 where
     F: FnOnce(String) -> String,
 {

@@ -1,6 +1,7 @@
 use anyhow::Result;
 pub mod arguments;
 pub mod kpm_metadata;
+pub mod kpm_update;
 pub const DEFAULT_PROJECT_FILE: &str = "project.yaml";
 
 #[cfg(test)]
