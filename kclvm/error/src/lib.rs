@@ -125,18 +125,14 @@ impl Handler {
     }
 
     /// Construct a type error and put it into the handler diagnostic buffer
-    pub fn add_compile_error(
-        &mut self, 
-        msg: &str, 
-        range: Range
-    ) -> &mut Self {
+    pub fn add_compile_error(&mut self, msg: &str, range: Range) -> &mut Self {
         self.add_compile_error_with_suggestions(msg, range, None)
     }
 
     pub fn add_compile_error_with_suggestions(
-        &mut self, 
-        msg: &str, 
-        range: Range, 
+        &mut self,
+        msg: &str,
+        range: Range,
         suggestions: Option<Vec<String>>,
     ) -> &mut Self {
         let diag = Diagnostic::new_with_code(
@@ -149,7 +145,7 @@ impl Handler {
         );
         // println!("{:?}",suggestions.clone());
         self.add_diagnostic(diag);
-    
+
         self
     }
 

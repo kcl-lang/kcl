@@ -44,9 +44,10 @@ fn kcl_msg_to_lsp_diags(
     let start_position = lsp_pos(&range.0);
     let end_position = lsp_pos(&range.1);
 
-    let data = msg.suggested_replacement.as_ref().map(|s| {
-        json!({ "suggested_replacement": [s] })
-    });
+    let data = msg
+        .suggested_replacement
+        .as_ref()
+        .map(|s| json!({ "suggested_replacement": [s] }));
 
     let related_information = if related_msg.is_empty() {
         None
@@ -77,7 +78,7 @@ fn kcl_msg_to_lsp_diags(
         message: msg.message.clone(),
         related_information,
         tags: None,
-        data: data,
+        data,
     }
 }
 
