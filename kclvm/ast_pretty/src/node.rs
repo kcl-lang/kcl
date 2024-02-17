@@ -121,15 +121,24 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
         self.write_indentation(Indentation::Indent);
         self.stmts(&if_stmt.body);
         self.write_indentation(Indentation::Dedent);
+
         if !if_stmt.orelse.is_empty() {
-            if let ast::Stmt::If(elif_stmt) = &if_stmt.orelse[0].node {
-                // Nested if statements need to be considered,
-                // so `el` needs to be preceded by the current indentation.
-                self.fill("el");
-                self.walk_if_stmt(elif_stmt);
+            // Check if orelse contains exactly one if statement
+            if if_stmt.orelse.len() == 1 {
+                if let ast::Stmt::If(elif_stmt) = &if_stmt.orelse[0].node {
+                    // Nested if statements need to be considered,
+                    // so `el` needs to be preceded by the current indentation.
+                    self.fill("el");
+                    self.walk_if_stmt(elif_stmt);
+                } else {
+                    self.fill("else:");
+                    self.write_newline_without_fill();
+                    self.write_indentation(Indentation::Indent);
+                    self.stmts(&if_stmt.orelse);
+                    self.write_indentation(Indentation::Dedent);
+                }
             } else {
-                // Nested if statements need to be considered,
-                // so `el` needs to be preceded by the current indentation.
+                // Handle multiple else statements
                 self.fill("else:");
                 self.write_newline_without_fill();
                 self.write_indentation(Indentation::Indent);
