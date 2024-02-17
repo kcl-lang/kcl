@@ -47,6 +47,7 @@ fn kcl_msg_to_lsp_diags(
     let data = msg
         .suggested_replacement
         .as_ref()
+        .filter(|s| !s.is_empty())
         .map(|s| json!({ "suggested_replacement": [s] }));
 
     let related_information = if related_msg.is_empty() {

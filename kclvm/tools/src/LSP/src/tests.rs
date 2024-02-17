@@ -1,6 +1,7 @@
 use crossbeam_channel::after;
 use crossbeam_channel::select;
 use indexmap::IndexSet;
+use kclvm_error::diagnostic;
 use kclvm_sema::core::global_state::GlobalState;
 use lsp_server::RequestId;
 use lsp_server::Response;
@@ -140,6 +141,7 @@ fn build_lsp_diag(
     severity: Option<DiagnosticSeverity>,
     related_info: Vec<(String, (u32, u32, u32, u32), String)>,
     code: Option<NumberOrString>,
+    data: Option<serde_json::Value>
 ) -> Diagnostic {
     let related_information = if related_info.is_empty() {
         None
@@ -184,7 +186,7 @@ fn build_lsp_diag(
         message,
         related_information,
         tags: None,
-        data: None,
+        data,
     }
 }
 
@@ -201,6 +203,7 @@ fn build_expect_diags() -> Vec<Diagnostic> {
             Some(DiagnosticSeverity::ERROR),
             vec![],
             Some(NumberOrString::String("InvalidSyntax".to_string())),
+            None,
         ),
         build_lsp_diag(
             (0, 0, 0, 10),
@@ -208,6 +211,7 @@ fn build_expect_diags() -> Vec<Diagnostic> {
             Some(DiagnosticSeverity::ERROR),
             vec![],
             Some(NumberOrString::String("CannotFindModule".to_string())),
+            None,
         ),
         build_lsp_diag(
             (0, 0, 0, 10),
@@ -218,6 +222,7 @@ fn build_expect_diags() -> Vec<Diagnostic> {
             Some(DiagnosticSeverity::ERROR),
             vec![],
             Some(NumberOrString::String("CannotFindModule".to_string())),
+            None,
         ),
         build_lsp_diag(
             (8, 0, 8, 1),
@@ -229,6 +234,7 @@ fn build_expect_diags() -> Vec<Diagnostic> {
                 "The variable 'd' is declared here".to_string(),
             )],
             Some(NumberOrString::String("ImmutableError".to_string())),
+            None,
         ),
         build_lsp_diag(
             (7, 0, 7, 1),
@@ -240,6 +246,7 @@ fn build_expect_diags() -> Vec<Diagnostic> {
                 "Can not change the value of 'd', because it was declared immutable".to_string(),
             )],
             Some(NumberOrString::String("ImmutableError".to_string())),
+            None,
         ),
         build_lsp_diag(
             (2, 0, 2, 1),
@@ -247,6 +254,15 @@ fn build_expect_diags() -> Vec<Diagnostic> {
             Some(DiagnosticSeverity::ERROR),
             vec![],
             Some(NumberOrString::String("TypeError".to_string())),
+            None,
+        ),
+        build_lsp_diag(
+            (10, 8, 10, 10),
+            "name 'nu' is not defined, did you mean '[\"number\", \"n\", \"num\"]'?".to_string(),
+            Some(DiagnosticSeverity::ERROR),
+            vec![],
+            Some(NumberOrString::String("CompileError".to_string())),
+            Some(serde_json::json!({ "suggested_replacement": ["number"] })),
         ),
         build_lsp_diag(
             (0, 0, 0, 10),
@@ -254,7 +270,9 @@ fn build_expect_diags() -> Vec<Diagnostic> {
             Some(DiagnosticSeverity::WARNING),
             vec![],
             Some(NumberOrString::String("UnusedImportWarning".to_string())),
+            None,
         ),
+        
     ];
     expected_diags
 }
