@@ -141,7 +141,7 @@ fn build_lsp_diag(
     severity: Option<DiagnosticSeverity>,
     related_info: Vec<(String, (u32, u32, u32, u32), String)>,
     code: Option<NumberOrString>,
-    data: Option<serde_json::Value>
+    data: Option<serde_json::Value>,
 ) -> Diagnostic {
     let related_information = if related_info.is_empty() {
         None
@@ -272,7 +272,6 @@ fn build_expect_diags() -> Vec<Diagnostic> {
             Some(NumberOrString::String("UnusedImportWarning".to_string())),
             None,
         ),
-        
     ];
     expected_diags
 }
