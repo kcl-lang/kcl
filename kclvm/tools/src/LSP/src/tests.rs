@@ -1,7 +1,6 @@
 use crossbeam_channel::after;
 use crossbeam_channel::select;
 use indexmap::IndexSet;
-use kclvm_error::diagnostic;
 use kclvm_sema::core::global_state::GlobalState;
 use lsp_server::RequestId;
 use lsp_server::Response;
