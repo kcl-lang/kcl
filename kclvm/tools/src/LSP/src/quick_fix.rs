@@ -28,7 +28,8 @@ pub(crate) fn quick_fix(uri: &Url, diags: &Vec<Diagnostic>) -> Vec<lsp_types::Co
                                 code_actions.push(CodeActionOrCommand::CodeAction(CodeAction {
                                     title: format!(
                                         "a local variable with a similar name exists: `{}`",
-                                        replacement_text),
+                                        replacement_text
+                                    ),
                                     kind: Some(CodeActionKind::QUICKFIX),
                                     diagnostics: Some(vec![diag.clone()]),
                                     edit: Some(lsp_types::WorkspaceEdit {
