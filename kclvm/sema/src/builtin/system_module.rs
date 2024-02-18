@@ -1565,9 +1565,9 @@ macro_rules! register_file_member {
     )
 }
 register_file_member! {
-    union_all => Type::function(
+    read => Type::function(
         None,
-        Type::any_ref(),
+        Type::str_ref(),
         &[
             Parameter {
                 name: "filepath".to_string(),

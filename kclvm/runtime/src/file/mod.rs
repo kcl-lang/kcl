@@ -2,10 +2,6 @@ use std::fs;
 
 use crate::*;
 
-// https://docs.python.org/3/library/math.html
-// https://doc.rust-lang.org/std/primitive.f64.html
-// https://github.com/RustPython/RustPython/blob/main/stdlib/src/math.rs
-
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_file_read(
