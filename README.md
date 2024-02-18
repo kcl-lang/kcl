@@ -4,7 +4,7 @@
 <a href="./README.md">English</a> | <a href="./README-zh.md">简体中文</a>
 </p>
 <p align="center">
-<a href="#introduction">Introduction</a> | <a href="#features">Features</a> | <a href="#what-is-it-for">What is it for</a> | <a href="#installation">Installation</a> | <a href="#showcase">Showcase</a> | <a href="#documentation">Documentation</a> | <a href="#contributing">Contributing</a> | <a href="#roadmap">Roadmap</a>
+<a href="#introduction">Introduction</a> | <a href="#features">Features</a> | <a href="#what-is-it-for">What is it for</a> | <a href="#installation">Installation</a> | <a href="#documentation">Documentation</a> | <a href="#contributing">Contributing</a> | <a href="#roadmap">Roadmap</a>
 </p>
 
 <p align="center">
@@ -50,83 +50,17 @@ You can use KCL to
 + **API affinity**: Native support for ecological API specifications such as [OpenAPI](https://github.com/kcl-lang/kcl-openapi), Kubernetes CRD, Kubernetes Resource Model (KRM) spec.
 + **Developer-friendly**: Friendly development experiences with rich [language tools](https://kcl-lang.io/docs/tools/cli/kcl/) (Format, Lint, Test, Vet, Doc, etc.), [package manage tool](https://github.com/kcl-lang/kpm) and [IDE plugins](https://github.com/kcl-lang/vscode-kcl).
 + **Safety & maintainable**: Domain-oriented, no system-level functions such as native threads and IO, low noise and security risk, easy maintenance and governance.
-+ **Rich multi-language SDK**: [Go](https://github.com/kcl-lang/kcl-go), [Python](https://github.com/kcl-lang/kcl-py), and[Java](https://github.com/kcl-lang/kcl-java) meet different scenarios and application use prelude.
++ **Rich multi-language SDK**: [Go](https://github.com/kcl-lang/kcl-go), [Python](https://github.com/kcl-lang/kcl-py), and [Java](https://github.com/kcl-lang/kcl-java) meet different scenarios and application use prelude.
 + **Integrations**: Abstract, mutate and validate manifests through [Kubectl KCL Plugin](https://github.com/kcl-lang/kubectl-kcl), [Kustomize KCL Plugin](https://github.com/kcl-lang/kustomize-kcl), [Helm KCL Plugin](https://github.com/kcl-lang/helm-kcl), [KPT KCL SDK](https://github.com/kcl-lang/kpt-kcl) or [Crossplane KCL Function](https://github.com/kcl-lang/crossplane-kcl).
 + **Production-ready**: Widely used in production practices of platform engineering and automation at Ant Group.
 
 ## How to choose?
-
-The simple answer:
-
-+ YAML is recommended if you need to write structured static K-V or use Kubernetes' native tools.
-+ HCL is recommended if you want to use programming language convenience to remove boilerplate with good human readability or if you are already a Terraform user.
-+ CUE is recommended if you want to use a type system to improve stability and maintain scalable configurations.
-+ KCL is recommended if you want types and modeling like a modern language, scalable configurations, in-house pure functions and rules, and production-ready performance and automation.
 
 A detailed feature and scenario comparison is [here](https://kcl-lang.io/docs/user_docs/getting-started/intro).
 
 ## Installation
 
 For more information about installation, please check the [Installation Guide](https://kcl-lang.io/docs/user_docs/getting-started/install/) on the KCL official website.
-
-## Showcase
-
-`./samples/kubernetes.k` is an example of generating Kubernetes manifests.
-
-```python
-apiVersion = "apps/v1"
-kind = "Deployment"
-metadata = {
-    name = "nginx"
-    labels.app = "nginx"
-}
-spec = {
-    replicas = 3
-    selector.matchLabels = metadata.labels
-    template.metadata.labels = metadata.labels
-    template.spec.containers = [
-        {
-            name = metadata.name
-            image = "${metadata.name}:1.14.2"
-            ports = [{ containerPort = 80 }]
-        }
-    ]
-}
-```
-
-We can execute the following command to get a YAML output.
-
-```bash
-kcl ./samples/kubernetes.k
-```
-
-YAML output
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: nginx
-  labels:
-    app: nginx
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: nginx
-  template:
-    metadata:
-      labels:
-        app: nginx
-    spec:
-      containers:
-      - name: nginx
-        image: nginx:1.14.2
-        ports:
-        - containerPort: 80
-```
-
-> More examples can be found at [here](https://github.com/kcl-lang/kcl-lang.io/tree/main/examples).
 
 ## Documentation
 
@@ -140,7 +74,7 @@ See [Developing Guide](./docs/dev_guide/1.about_this_guide.md). You can also get
 
 ## Roadmap
 
-See [KCL Roadmap](https://github.com/kcl-lang/kcl/issues/29).
+See [KCL Roadmap](https://github.com/kcl-lang/kcl/issues/882).
 
 ## Community
 
