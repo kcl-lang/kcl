@@ -810,9 +810,12 @@ impl<'ctx> AdvancedResolver<'ctx> {
         let first_name = names.get(0)?;
         let cur_scope = *self.ctx.scopes.last().unwrap();
 
-        let mut first_symbol =
-            self.gs
-                .look_up_symbol(&first_name.node, cur_scope, self.get_current_module_info());
+        let mut first_symbol = self.gs.look_up_symbol(
+            &first_name.node,
+            cur_scope,
+            self.get_current_module_info(),
+            self.ctx.maybe_def,
+        );
         if first_symbol.is_none() {
             //maybe import package symbol
             let module_info = self.get_current_module_info().unwrap();
