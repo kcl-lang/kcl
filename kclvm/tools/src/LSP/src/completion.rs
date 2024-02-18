@@ -1092,6 +1092,7 @@ mod tests {
                 "crypto",
                 "base64",
                 "units",
+                "file",
             ]
             .iter()
             .map(|name| KCLCompletionItem {
