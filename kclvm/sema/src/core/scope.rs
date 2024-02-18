@@ -24,6 +24,7 @@ pub trait Scope {
         scope_data: &ScopeData,
         symbol_data: &Self::SymbolData,
         module_info: Option<&ModuleInfo>,
+        local: bool,
     ) -> Option<SymbolRef>;
 
     fn get_all_defs(
@@ -229,6 +230,7 @@ impl Scope for RootSymbolScope {
         _scope_data: &ScopeData,
         symbol_data: &Self::SymbolData,
         module_info: Option<&ModuleInfo>,
+        _local: bool,
     ) -> Option<SymbolRef> {
         let package_symbol = symbol_data.get_symbol(self.owner)?;
 
@@ -380,6 +382,7 @@ impl Scope for LocalSymbolScope {
         scope_data: &ScopeData,
         symbol_data: &Self::SymbolData,
         module_info: Option<&ModuleInfo>,
+        local: bool,
     ) -> Option<SymbolRef> {
         match self.defs.get(name) {
             Some(symbol_ref) => return Some(*symbol_ref),
@@ -392,8 +395,13 @@ impl Scope for LocalSymbolScope {
                         return Some(symbol_ref);
                     }
                 };
-                let parent = scope_data.get_scope(&self.parent)?;
-                parent.look_up_def(name, scope_data, symbol_data, module_info)
+
+                if local {
+                    None
+                } else {
+                    let parent = scope_data.get_scope(&self.parent)?;
+                    parent.look_up_def(name, scope_data, symbol_data, module_info, false)
+                }
             }
         }
     }
