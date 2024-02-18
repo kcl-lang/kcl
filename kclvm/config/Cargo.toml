@@ -14,7 +14,6 @@ ahash = "0.7.2"
 toml = "0.5.8"
 ron = "0.7.0"
 chrono = "0.4.19"
-rust-crypto = "0.2.36"
 glob = "0.3.0"
 fslock = "0.2.1"
 pathdiff = "0.2.1"
@@ -25,3 +24,4 @@ kclvm-utils = {path = "../utils"}
 kclvm-ast = {path = "../ast"}
 dirs = "5.0.0"
 pcre2 = "0.2.4"
+md-5 = "0.8.0"
