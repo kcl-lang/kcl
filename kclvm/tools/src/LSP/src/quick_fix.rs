@@ -14,32 +14,38 @@ pub(crate) fn quick_fix(uri: &Url, diags: &Vec<Diagnostic>) -> Vec<lsp_types::Co
                 match id {
                     DiagnosticId::Error(error) => match error {
                         ErrorKind::CompileError => {
-                            let replacement_text = extract_suggested_replacement(&diag.data)
-                                .unwrap_or_else(|| "".to_string());
-                            let mut changes = HashMap::new();
-                            changes.insert(
-                                uri.clone(),
-                                vec![TextEdit {
-                                    range: diag.range,
-                                    new_text: replacement_text,
-                                }],
-                            );
-                            code_actions.push(CodeActionOrCommand::CodeAction(CodeAction {
-                                title: ErrorKind::CompileError.name(),
-                                kind: Some(CodeActionKind::QUICKFIX),
-                                diagnostics: Some(vec![diag.clone()]),
-                                edit: Some(lsp_types::WorkspaceEdit {
-                                    changes: Some(changes),
+                            if let Some(replacement_text) =
+                                extract_suggested_replacement(&diag.data)
+                            {
+                                let mut changes = HashMap::new();
+                                changes.insert(
+                                    uri.clone(),
+                                    vec![TextEdit {
+                                        range: diag.range,
+                                        new_text: replacement_text.clone(),
+                                    }],
+                                );
+                                code_actions.push(CodeActionOrCommand::CodeAction(CodeAction {
+                                    title: format!(
+                                        "a local variable with a similar name exists: `{}`",
+                                        replacement_text),
+                                    kind: Some(CodeActionKind::QUICKFIX),
+                                    diagnostics: Some(vec![diag.clone()]),
+                                    edit: Some(lsp_types::WorkspaceEdit {
+                                        changes: Some(changes),
+                                        ..Default::default()
+                                    }),
                                     ..Default::default()
-                                }),
-                                ..Default::default()
-                            }))
+                                }))
+                            } else {
+                                continue;
+                            }
                         }
                         _ => continue,
                     },
                     DiagnosticId::Warning(warn) => match warn {
                         WarningKind::UnusedImportWarning => {
-                            let mut changes = HashMap::new();
+                            let mut chanfges = HashMap::new();
                             changes.insert(
                                 uri.clone(),
                                 vec![TextEdit {

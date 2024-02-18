@@ -143,7 +143,6 @@ impl Handler {
             Some(DiagnosticId::Error(E2L23.kind)),
             suggestions,
         );
-        // println!("{:?}",suggestions.clone());
         self.add_diagnostic(diag);
 
         self
