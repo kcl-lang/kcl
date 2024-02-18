@@ -1,4 +1,4 @@
-//! Copyright The KCL Authors. All rights reserved.
+// Copyright The KCL Authors. All rights reserved.
 
 // Auto generated, DONOT EDIT!!!
 
@@ -136,6 +136,7 @@ pub enum ApiFunc {
     kclvm_dict_update,
     kclvm_dict_update_key_value,
     kclvm_dict_values,
+    kclvm_file_read,
     kclvm_iterator_cur_key,
     kclvm_iterator_cur_value,
     kclvm_iterator_delete,

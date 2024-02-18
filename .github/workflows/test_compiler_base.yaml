@@ -1,5 +1,12 @@
 name: build-and-test-compiler-base
-on: ["push", "pull_request"]
+on:
+  push:
+    paths:
+      - 'compiler_base/**'
+  pull_request:
+    paths:
+      - 'compiler_base/**'
+
 jobs:
   check-fmt:
     name: Test

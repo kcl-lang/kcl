@@ -2,10 +2,9 @@
 extern crate chrono;
 use super::modfile::KCL_FILE_SUFFIX;
 use anyhow::Result;
-use crypto::digest::Digest;
-use crypto::md5::Md5;
 use fslock::LockFile;
 use kclvm_utils::pkgpath::{parse_external_pkg_name, rm_external_pkg_name};
+use md5::{Digest, Md5};
 use serde::{de::DeserializeOwned, Serialize};
 use std::collections::HashMap;
 use std::error;
@@ -21,7 +20,7 @@ const CACHE_INFO_FILENAME: &str = "info";
 const KCL_SUFFIX_PATTERN: &str = "*.k";
 pub const KCL_CACHE_PATH_ENV_VAR: &str = "KCL_CACHE_PATH";
 
-pub type CacheInfo = String;
+pub type CacheInfo = Vec<u8>;
 pub type Cache = HashMap<String, CacheInfo>;
 
 #[allow(dead_code)]
@@ -237,7 +236,7 @@ fn get_cache_info(path_str: &str) -> CacheInfo {
             md5.input(buf.as_slice());
         }
     }
-    md5.result_str()
+    md5.result().to_vec()
 }
 
 pub fn get_pkg_realpath_from_pkgpath(root: &str, pkgpath: &str) -> String {
