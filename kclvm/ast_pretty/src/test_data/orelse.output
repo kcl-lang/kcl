@@ -1,0 +1,31 @@
+if True:
+    a = 1
+else:
+    if True:
+        b = 2
+
+    if True:
+        c = 3
+
+d = [
+    if True:
+        1
+    else:
+        if True:
+            2
+        
+        if True:
+            3
+        
+]
+e = {
+    if True:
+        a = 1
+    else:
+        if True:
+            b = 2
+        
+        if True:
+            c = 3
+        
+}
