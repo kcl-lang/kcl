@@ -1554,7 +1554,7 @@ register_collection_member! {
 // ------------------------------
 
 pub const FILE: &str = "file";
-pub const FILE_FUNCTION_NAMES: &[&str] = &["read"];
+pub const FILE_FUNCTION_NAMES: &[&str] = &["read", "glob"];
 macro_rules! register_file_member {
     ($($name:ident => $ty:expr)*) => (
         pub const FILE_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
@@ -1576,6 +1576,20 @@ register_file_member! {
             },
         ],
         r#"Read the file content from path"#,
+        false,
+        None,
+    )
+    glob => Type::function(
+        None,
+        Type::list_ref(Type::str_ref()),
+        &[
+            Parameter {
+                name: "pattern".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+        ],
+        r#"find all paths that match a pattern"#,
         false,
         None,
     )

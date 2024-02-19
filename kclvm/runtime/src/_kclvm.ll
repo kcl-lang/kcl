@@ -248,6 +248,8 @@ declare void @kclvm_dict_update_key_value(%kclvm_value_ref_t* %p, %kclvm_value_r
 
 declare %kclvm_value_ref_t* @kclvm_dict_values(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %p);
 
+declare %kclvm_value_ref_t* @kclvm_file_glob(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+
 declare %kclvm_value_ref_t* @kclvm_file_read(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
 
 declare %kclvm_value_ref_t* @kclvm_iterator_cur_key(%kclvm_iterator_t* %p);

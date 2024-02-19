@@ -1831,6 +1831,7 @@ dependencies = [
  "bstr",
  "chrono",
  "fancy-regex",
+ "glob",
  "indexmap 1.9.3",
  "itertools",
  "kclvm_runtime_internal_macros",
