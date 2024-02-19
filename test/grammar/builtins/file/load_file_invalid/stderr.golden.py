@@ -12,6 +12,6 @@ kcl_error.print_kcl_error_message(kcl_error.get_exception(err_type=kcl_error.Err
                                                                   line_no=3
                                                                   column_no=1,
                                                               )],
-                                                          arg_msg="failed to access the file in 'not_exist.txt'"
+                                                          arg_msg="failed to access the file 'not_exist.txt':No such file or directory (os error 2)"
                                                           ),
                                   file=sys.stdout)
