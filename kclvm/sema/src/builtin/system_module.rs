@@ -1584,11 +1584,6 @@ register_file_member! {
         Type::list_ref(Type::str_ref()),
         &[
             Parameter {
-                name: "rootpath".to_string(),
-                ty: Type::str_ref(),
-                has_default: false,
-            },
-            Parameter {
                 name: "pattern".to_string(),
                 ty: Type::str_ref(),
                 has_default: false,

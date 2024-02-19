@@ -34,30 +34,17 @@ pub extern "C" fn kclvm_file_glob(
     let args = ptr_as_ref(args);
     let ctx = mut_ptr_as_ref(ctx);
 
-    let root = args
+    let pattern = args
         .arg_i_str(0, None)
         .expect("glob() takes exactly one argument (0 given)");
-    let pattern = args
-        .arg_i_str(1, None)
-        .expect("glob() takes exactly two arguments (1 given)");
-
-    let full_pattern = PathBuf::from(root).join(pattern);
 
     let mut matched_paths = vec![];
-    for entry in glob(
-        full_pattern
-            .to_str()
-            .expect("Failed to convert path to str"),
-    )
-    .expect("Failed to read glob pattern")
-    {
+    for entry in glob(&pattern).expect("Failed to read glob pattern") {
         match entry {
             Ok(path) => matched_paths.push(path.display().to_string()),
             Err(e) => panic!(
                 "failed to access the file in {}:{}",
-                full_pattern
-                    .to_str()
-                    .expect("Failed to convert path to str"),
+                pattern,
                 e
             ),
         }
