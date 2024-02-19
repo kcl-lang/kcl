@@ -182,6 +182,8 @@ declare void @kclvm_context_set_kcl_modpath(%kclvm_context_t* %p, i8* %module_pa
 
 declare void @kclvm_context_set_kcl_pkgpath(%kclvm_context_t* %p, i8* %pkgpath);
 
+declare void @kclvm_context_set_kcl_workdir(%kclvm_context_t* %p, i8* %workdir);
+
 declare void @kclvm_context_set_list_option_mode(%kclvm_context_t* %p, %kclvm_bool_t %v);
 
 declare void @kclvm_context_set_strict_range_check(%kclvm_context_t* %p, %kclvm_bool_t %v);
@@ -255,6 +257,8 @@ declare %kclvm_value_ref_t* @kclvm_file_glob(%kclvm_context_t* %ctx, %kclvm_valu
 declare %kclvm_value_ref_t* @kclvm_file_modpath(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %_args, %kclvm_value_ref_t* %_kwargs);
 
 declare %kclvm_value_ref_t* @kclvm_file_read(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+
+declare %kclvm_value_ref_t* @kclvm_file_workdir(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %_args, %kclvm_value_ref_t* %_kwargs);
 
 declare %kclvm_value_ref_t* @kclvm_iterator_cur_key(%kclvm_iterator_t* %p);
 

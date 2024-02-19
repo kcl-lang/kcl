@@ -103,6 +103,7 @@ pub struct LLVMCodeGenContext<'ctx> {
     // No link mode
     pub no_link: bool,
     pub modules: RefCell<HashMap<String, RefCell<Module<'ctx>>>>,
+    pub workdir: String,
 }
 
 impl<'ctx> CodeGenObject for BasicValueEnum<'ctx> {}
@@ -1222,6 +1223,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         program: &'ctx ast::Program,
         import_names: IndexMap<String, IndexMap<String, String>>,
         no_link: bool,
+        workdir: String
     ) -> LLVMCodeGenContext<'ctx> {
         LLVMCodeGenContext {
             context,
@@ -1247,6 +1249,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             import_names,
             no_link,
             modules: RefCell::new(HashMap::new()),
+            workdir
         }
     }
 
@@ -1326,6 +1329,13 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             &[
                 self.current_runtime_ctx_ptr(),
                 self.native_global_string_value(&self.program.root),
+            ],
+        );
+        self.build_void_call(
+            &ApiFunc::kclvm_context_set_kcl_workdir.name(),
+            &[
+                self.current_runtime_ctx_ptr(),
+                self.native_global_string_value(&self.workdir),
             ],
         );
         if !self.import_names.is_empty() {

@@ -23,6 +23,7 @@ fn load_runtime(context: &'_ Context) -> Module<'_> {
 /// Generate LLVM IR of KCL ast module.
 pub fn emit_code(
     program: &ast::Program,
+    workdir: String,
     import_names: IndexMap<String, IndexMap<String, String>>,
     opt: &EmitOptions,
 ) -> Result<(), Box<dyn error::Error>> {
@@ -45,7 +46,7 @@ pub fn emit_code(
         load_runtime(&context)
     };
     // Create a KCL LLVM code generator using the KCL AST and the LLVM module
-    let ctx = LLVMCodeGenContext::new(&context, module, program, import_names, opt.no_link);
+    let ctx = LLVMCodeGenContext::new(&context, module, program, import_names, opt.no_link, workdir);
     // Generate user KCL code LLVM IR
     crate::codegen::emit_code(ctx, opt)
 }

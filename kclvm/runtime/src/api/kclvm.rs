@@ -361,6 +361,7 @@ pub struct Context {
     pub panic_info: PanicInfo,
 
     pub module_path: String,
+    pub workdir: String,
     pub main_pkg_path: String,
     pub main_pkg_files: Vec<String>,
     pub backtrace: Vec<BacktraceFrame>,

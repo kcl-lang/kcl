@@ -234,6 +234,8 @@ void kclvm_context_set_kcl_modpath(kclvm_context_t* p, char* module_path);
 
 void kclvm_context_set_kcl_pkgpath(kclvm_context_t* p, char* pkgpath);
 
+void kclvm_context_set_kcl_workdir(kclvm_context_t* p, char* workdir);
+
 void kclvm_context_set_list_option_mode(kclvm_context_t* p, kclvm_bool_t v);
 
 void kclvm_context_set_strict_range_check(kclvm_context_t* p, kclvm_bool_t v);
@@ -307,6 +309,8 @@ kclvm_value_ref_t* kclvm_file_glob(kclvm_context_t* ctx, kclvm_value_ref_t* args
 kclvm_value_ref_t* kclvm_file_modpath(kclvm_context_t* ctx, kclvm_value_ref_t* _args, kclvm_value_ref_t* _kwargs);
 
 kclvm_value_ref_t* kclvm_file_read(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
+
+kclvm_value_ref_t* kclvm_file_workdir(kclvm_context_t* ctx, kclvm_value_ref_t* _args, kclvm_value_ref_t* _kwargs);
 
 kclvm_value_ref_t* kclvm_iterator_cur_key(kclvm_iterator_t* p);
 
