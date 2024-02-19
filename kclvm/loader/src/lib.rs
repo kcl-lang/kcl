@@ -1,4 +1,5 @@
-use std::path::PathBuf;
+#[cfg(test)]
+mod tests;
 
 use anyhow::Result;
 use indexmap::{IndexMap, IndexSet};
@@ -16,6 +17,7 @@ use kclvm_sema::{
     resolver::{resolve_program_with_opts, scope::NodeKey},
     ty::{Type, TypeRef},
 };
+use std::path::PathBuf;
 
 type Errors = IndexSet<Diagnostic>;
 
@@ -33,7 +35,7 @@ impl Default for LoadPackageOptions {
             paths: Default::default(),
             load_opts: Default::default(),
             resolve_ast: true,
-            load_builtin: true,
+            load_builtin: false,
         }
     }
 }
@@ -146,6 +148,32 @@ pub fn load_packages(opts: &LoadPackageOptions) -> Result<Packages> {
         return Ok(packages);
     }
     let symbols = gs.get_symbols();
+    if opts.load_builtin {
+        for (_, symbol_ref) in symbols.get_builtin_symbols() {
+            if let Some(symbol) = symbols.get_symbol(*symbol_ref) {
+                let def_ty = match symbol.get_definition() {
+                    Some(def) => symbols
+                        .get_symbol(def)
+                        .unwrap()
+                        .get_sema_info()
+                        .ty
+                        .clone()
+                        .unwrap_or(Type::any_ref()),
+                    None => symbol.get_sema_info().ty.clone().unwrap_or(Type::any_ref()),
+                };
+                let info = SymbolInfo {
+                    ty: def_ty,
+                    range: symbol.get_range(),
+                    name: symbol.get_name(),
+                    owner: symbol.get_owner(),
+                    def: symbol.get_definition(),
+                    attrs: symbol.get_all_attributes(symbols, None),
+                    is_global: symbol.is_global(),
+                };
+                packages.symbols.insert(*symbol_ref, info);
+            }
+        }
+    }
     for path in &packages.paths {
         let path_str = path
             .to_str()

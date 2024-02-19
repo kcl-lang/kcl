@@ -1,0 +1,162 @@
+---
+source: loader/src/tests.rs
+expression: "format!(\"{:#?}\", p.symbols.values())"
+---
+[
+    SymbolInfo {
+        ty: Type {
+            kind: Int,
+            is_type_alias: false,
+            flags: INT,
+        },
+        name: "a",
+        range: (
+            Position {
+                filename: "test.k",
+                line: 1,
+                column: Some(
+                    0,
+                ),
+            },
+            Position {
+                filename: "test.k",
+                line: 1,
+                column: Some(
+                    1,
+                ),
+            },
+        ),
+        owner: Some(
+            SymbolRef {
+                id: Index {
+                    index: 13,
+                    generation: 0,
+                },
+                kind: Package,
+            },
+        ),
+        def: Some(
+            SymbolRef {
+                id: Index {
+                    index: 149,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+        ),
+        attrs: [],
+        is_global: true,
+    },
+    SymbolInfo {
+        ty: Type {
+            kind: IntLit(
+                1,
+            ),
+            is_type_alias: false,
+            flags: INT | LITERAL,
+        },
+        name: "@NumberLitExpression",
+        range: (
+            Position {
+                filename: "test.k",
+                line: 1,
+                column: Some(
+                    6,
+                ),
+            },
+            Position {
+                filename: "test.k",
+                line: 1,
+                column: Some(
+                    6,
+                ),
+            },
+        ),
+        owner: None,
+        def: Some(
+            SymbolRef {
+                id: Index {
+                    index: 0,
+                    generation: 0,
+                },
+                kind: Expression,
+            },
+        ),
+        attrs: [],
+        is_global: false,
+    },
+    SymbolInfo {
+        ty: Type {
+            kind: IntLit(
+                1,
+            ),
+            is_type_alias: false,
+            flags: INT | LITERAL,
+        },
+        name: "@NumberLitExpression",
+        range: (
+            Position {
+                filename: "test.k",
+                line: 1,
+                column: Some(
+                    10,
+                ),
+            },
+            Position {
+                filename: "test.k",
+                line: 1,
+                column: Some(
+                    10,
+                ),
+            },
+        ),
+        owner: None,
+        def: Some(
+            SymbolRef {
+                id: Index {
+                    index: 1,
+                    generation: 0,
+                },
+                kind: Expression,
+            },
+        ),
+        attrs: [],
+        is_global: false,
+    },
+    SymbolInfo {
+        ty: Type {
+            kind: Int,
+            is_type_alias: false,
+            flags: INT,
+        },
+        name: "@ParenExpression",
+        range: (
+            Position {
+                filename: "test.k",
+                line: 1,
+                column: Some(
+                    11,
+                ),
+            },
+            Position {
+                filename: "test.k",
+                line: 1,
+                column: Some(
+                    11,
+                ),
+            },
+        ),
+        owner: None,
+        def: Some(
+            SymbolRef {
+                id: Index {
+                    index: 2,
+                    generation: 0,
+                },
+                kind: Expression,
+            },
+        ),
+        attrs: [],
+        is_global: false,
+    },
+]

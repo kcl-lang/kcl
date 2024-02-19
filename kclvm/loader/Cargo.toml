@@ -37,3 +37,6 @@ kclvm-error = {path = "../error"}
 kclvm-query = {path = "../query"}
 kclvm-utils = {path = "../utils"}
 kclvm-driver = {path = "../driver"}
+
+[dev-dependencies]
+insta = "1.8.0"
