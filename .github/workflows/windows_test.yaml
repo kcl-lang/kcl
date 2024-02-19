@@ -34,6 +34,10 @@ jobs:
 
       - run: echo "C:/LLVM/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
+      # not require VCRUNTIME140.dll for to execute release version
+      - shell: bash
+        run: echo 'RUSTFLAGS=-Ctarget-feature=+crt-static' >>"$GITHUB_ENV"
+
       # Build kclvm CLI
       - run: .\scripts\build-windows\build.ps1
 
