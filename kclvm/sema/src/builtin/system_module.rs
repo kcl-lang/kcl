@@ -1684,6 +1684,10 @@ pub fn get_system_member_function_ty(name: &str, func: &str) -> TypeRef {
             let types = COLLECTION_FUNCTION_TYPES;
             types.get(func).cloned()
         }
+        FILE => {
+            let types = FILE_FUNCTION_TYPES;
+            types.get(func).cloned()
+        }
         _ => None,
     };
     optional_ty
