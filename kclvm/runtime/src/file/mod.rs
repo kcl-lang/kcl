@@ -42,11 +42,7 @@ pub extern "C" fn kclvm_file_glob(
     for entry in glob(&pattern).expect("Failed to read glob pattern") {
         match entry {
             Ok(path) => matched_paths.push(path.display().to_string()),
-            Err(e) => panic!(
-                "failed to access the file in {}:{}",
-                pattern,
-                e
-            ),
+            Err(e) => panic!("failed to access the file in {}:{}", pattern, e),
         }
     }
 
