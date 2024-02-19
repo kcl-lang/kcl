@@ -110,6 +110,18 @@ pub unsafe extern "C" fn kclvm_context_set_kcl_pkgpath(
 
 #[no_mangle]
 #[runtime_fn]
+pub unsafe extern "C" fn kclvm_context_set_kcl_modpath(
+    p: *mut kclvm_context_t,
+    module_path: *const c_char,
+) {
+    let p = mut_ptr_as_ref(p);
+    if !module_path.is_null() {
+        p.set_kcl_module_path(c2str(module_path));
+    }
+}
+
+#[no_mangle]
+#[runtime_fn]
 pub unsafe extern "C" fn kclvm_context_set_kcl_filename(
     ctx: *mut kclvm_context_t,
     filename: *const c_char,

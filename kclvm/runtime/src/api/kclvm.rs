@@ -360,6 +360,7 @@ pub struct Context {
     pub output: ContextOutput,
     pub panic_info: PanicInfo,
 
+    pub module_path: String,
     pub main_pkg_path: String,
     pub main_pkg_files: Vec<String>,
     pub backtrace: Vec<BacktraceFrame>,

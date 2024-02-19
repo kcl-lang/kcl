@@ -26,6 +26,10 @@
 // api-spec(c):    void kclvm_context_set_kcl_pkgpath(kclvm_context_t* p, char* pkgpath);
 // api-spec(llvm): declare void @kclvm_context_set_kcl_pkgpath(%kclvm_context_t* %p, i8* %pkgpath);
 
+// api-spec:       kclvm_context_set_kcl_modpath
+// api-spec(c):    void kclvm_context_set_kcl_modpath(kclvm_context_t* p, char* module_path);
+// api-spec(llvm): declare void @kclvm_context_set_kcl_modpath(%kclvm_context_t* %p, i8* %module_path);
+
 // api-spec:       kclvm_context_set_kcl_filename
 // api-spec(c):    void kclvm_context_set_kcl_filename(kclvm_context_t* ctx, char* filename);
 // api-spec(llvm): declare void @kclvm_context_set_kcl_filename(%kclvm_context_t* %ctx, i8* %filename);
@@ -1181,4 +1185,8 @@
 // api-spec:       kclvm_file_glob
 // api-spec(c):    kclvm_value_ref_t* kclvm_file_glob(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_file_glob(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+
+// api-spec:       kclvm_file_modpath
+// api-spec(c):    kclvm_value_ref_t* kclvm_file_modpath(kclvm_context_t* ctx, kclvm_value_ref_t* _args, kclvm_value_ref_t* _kwargs);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_file_modpath(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %_args, %kclvm_value_ref_t* %_kwargs);
 
