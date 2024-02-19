@@ -851,26 +851,26 @@ fn test_pkg_asname() {
 }
 
 #[test]
-fn test_builtin_file_invalid(){
+fn test_builtin_file_invalid() {
     let test_cases = [
-        ("./src/resolver/test_data/test_builtin/read.k", "expected 1 positional argument, found 0"),
-        ("./src/resolver/test_data/test_builtin/glob.k", "expected 1 positional argument, found 0"),
+        (
+            "./src/resolver/test_data/test_builtin/read.k",
+            "expected 1 positional argument, found 0",
+        ),
+        (
+            "./src/resolver/test_data/test_builtin/glob.k",
+            "expected 1 positional argument, found 0",
+        ),
     ];
 
     for (file, expected_message) in &test_cases {
         let sess = Arc::new(ParseSession::default());
-        let mut program = load_program(
-            sess.clone(),
-            &[file],
-            None,
-            None,
-        )
-        .unwrap()
-        .program;
+        let mut program = load_program(sess.clone(), &[file], None, None)
+            .unwrap()
+            .program;
         let scope = resolve_program(&mut program);
         let diags = scope.handler.diagnostics;
         assert_eq!(diags.len(), 1);
         assert_eq!(diags[0].messages[0].message, *expected_message);
     }
 }
-

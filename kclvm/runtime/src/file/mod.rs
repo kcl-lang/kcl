@@ -14,8 +14,8 @@ pub extern "C" fn kclvm_file_read(
     let ctx = mut_ptr_as_ref(ctx);
 
     if let Some(x) = args.arg_i_str(0, None) {
-        let contents =
-            fs::read_to_string(&x).unwrap_or_else(|_| panic!("failed to access the file in '{}'", x));
+        let contents = fs::read_to_string(&x)
+            .unwrap_or_else(|_| panic!("failed to access the file in '{}'", x));
 
         let s = ValueRef::str(contents.as_ref());
         return s.into_raw(ctx);
