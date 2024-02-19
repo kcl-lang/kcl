@@ -1,4 +1,4 @@
-use std::{fs, path::PathBuf};
+use std::fs;
 
 use crate::*;
 use glob::glob;
@@ -15,7 +15,7 @@ pub extern "C" fn kclvm_file_read(
 
     if let Some(x) = args.arg_i_str(0, None) {
         let contents =
-            fs::read_to_string(&x).expect(&format!("failed to access the file in {}", x));
+            fs::read_to_string(&x).unwrap_or_else(|_| panic!("failed to access the file in '{}'", x));
 
         let s = ValueRef::str(contents.as_ref());
         return s.into_raw(ctx);
@@ -39,10 +39,10 @@ pub extern "C" fn kclvm_file_glob(
         .expect("glob() takes exactly one argument (0 given)");
 
     let mut matched_paths = vec![];
-    for entry in glob(&pattern).expect("Failed to read glob pattern") {
+    for entry in glob(&pattern).unwrap_or_else(|_| panic!("Failed to read glob pattern")) {
         match entry {
             Ok(path) => matched_paths.push(path.display().to_string()),
-            Err(e) => panic!("failed to access the file in {}:{}", pattern, e),
+            Err(_) => panic!("failed to access the file in '{}'", pattern),
         }
     }
 
