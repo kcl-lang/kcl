@@ -679,4 +679,19 @@ mod tests {
         let res = goto_definition_with_gs(&program, &pos, &gs);
         compare_goto_res(res, (&file, 88, 0, 88, 1));
     }
+
+    #[test]
+    #[bench_test]
+    fn lambda_local_var_test() {
+        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
+
+        let pos = KCLPos {
+            filename: file.clone(),
+            line: 96,
+            column: Some(9),
+        };
+
+        let res = goto_definition_with_gs(&program, &pos, &gs);
+        compare_goto_res(res, (&file, 94, 11, 94, 12));
+    }
 }
