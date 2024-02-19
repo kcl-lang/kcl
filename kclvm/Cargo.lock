@@ -1680,6 +1680,7 @@ dependencies = [
  "indexmap 1.9.3",
  "kclvm-runtime",
  "kclvm-span",
+ "serde_json",
  "termize",
  "tracing",
 ]

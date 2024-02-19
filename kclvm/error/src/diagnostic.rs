@@ -106,7 +106,7 @@ impl Diagnostic {
         note: Option<&str>,
         range: Range,
         code: Option<DiagnosticId>,
-        suggested_replacement: Option<String>,
+        suggestions: Option<Vec<String>>,
     ) -> Self {
         Diagnostic {
             level,
@@ -114,8 +114,8 @@ impl Diagnostic {
                 range,
                 style: Style::LineAndColumn,
                 message: message.to_string(),
-                note: note.map(|s| s.to_string()),
-                suggested_replacement,
+                note: note.map(String::from),
+                suggested_replacement: suggestions.and_then(|v| v.into_iter().next()),
             }],
             code,
         }
