@@ -54,3 +54,15 @@ pub extern "C" fn kclvm_file_glob(
 
     return ValueRef::list_str(matched_paths.as_slice()).into_raw(ctx);
 }
+
+#[no_mangle]
+#[runtime_fn]
+pub extern "C" fn kclvm_file_modpath(
+    ctx: *mut kclvm_context_t,
+    _args: *const kclvm_value_ref_t,
+    _kwargs: *const kclvm_value_ref_t,
+) -> *const kclvm_value_ref_t {
+    let ctx = mut_ptr_as_ref(ctx);
+    let s = ValueRef::str(&ctx.module_path.as_ref());
+    return s.into_raw(ctx);
+}

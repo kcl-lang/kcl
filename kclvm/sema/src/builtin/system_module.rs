@@ -1554,7 +1554,7 @@ register_collection_member! {
 // ------------------------------
 
 pub const FILE: &str = "file";
-pub const FILE_FUNCTION_NAMES: &[&str] = &["read", "glob"];
+pub const FILE_FUNCTION_NAMES: &[&str] = &["read", "glob", "modpath"];
 macro_rules! register_file_member {
     ($($name:ident => $ty:expr)*) => (
         pub const FILE_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
@@ -1590,6 +1590,14 @@ register_file_member! {
             },
         ],
         r#"find all paths that match a pattern"#,
+        false,
+        None,
+    )
+    modpath => Type::function(
+        None,
+        Type::str_ref(),
+        &[],
+        r#"return the module root path (kcl.mod file path or a single *.k file path)"#,
         false,
         None,
     )
