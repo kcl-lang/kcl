@@ -394,13 +394,6 @@ struct MockCommandOutput {
 }
 
 #[test]
-fn test_update_kcl_module_success() {
-    let manifest_path = PathBuf::from("path/to/manifest");
-    let result = update_kcl_module(manifest_path);
-    assert!(result.is_ok());
-}
-
-#[test]
 fn test_update_kcl_module_failure() {
     let manifest_path = PathBuf::from("path/to/manifest");
     fn mock_command_new_failing(_command: &str) -> MockCommand {
@@ -414,3 +407,12 @@ fn test_update_kcl_module_failure() {
     let result = update_kcl_module(manifest_path);
     assert!(result.is_err());
 }
+
+#[test]
+fn test_update_kcl_module_success() {
+    let manifest_path = PathBuf::from("path/to/manifest");
+    let result = update_kcl_module(manifest_path);
+    assert!(result.is_ok());
+}
+
+
