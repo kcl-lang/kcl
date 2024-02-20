@@ -349,6 +349,7 @@ pub enum LocalSymbolScopeKind {
     SchemaDef,
     SchemaConfig,
     Value,
+    Check,
 }
 
 impl Scope for LocalSymbolScope {

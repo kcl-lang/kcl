@@ -216,10 +216,12 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
             };
         }
 
+        let mut last_end_pos = start.clone();
+
         self.enter_local_scope(
             &self.ctx.current_filename.clone().unwrap(),
             start,
-            end,
+            end.clone(),
             LocalSymbolScopeKind::SchemaDef,
         );
         let cur_scope = *self.ctx.scopes.last().unwrap();
@@ -247,6 +249,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
             if let Some(mixin) = self.walk_identifier_expr(mixin) {
                 mixins.push(mixin);
             }
+            last_end_pos = mixin.get_end_pos();
         }
         self.gs
             .get_symbols_mut()
@@ -257,6 +260,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
 
         if let Some(args) = &schema_stmt.args {
             self.walk_arguments(&args.node);
+            last_end_pos = args.get_end_pos();
         }
         if let Some(index_signature) = &schema_stmt.index_signature {
             if let Some(key_name) = &index_signature.node.key_name {
@@ -285,6 +289,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
                     self.expr(value);
                 };
             }
+            last_end_pos = index_signature.get_end_pos();
         }
         for stmt in schema_stmt.body.iter() {
             if let Some(attribute_symbol) = self.stmt(&stmt) {
@@ -302,11 +307,27 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
                     .attributes
                     .insert(name, attribute_symbol);
             }
+            last_end_pos = stmt.get_end_pos();
+        }
+
+        let has_check = !schema_stmt.checks.is_empty();
+        if has_check {
+            self.enter_local_scope(
+                &self.ctx.current_filename.clone().unwrap(),
+                last_end_pos,
+                end,
+                LocalSymbolScopeKind::Check,
+            );
         }
 
         for check_expr in schema_stmt.checks.iter() {
             self.walk_check_expr(&check_expr.node);
         }
+
+        if has_check {
+            self.leave_scope();
+        }
+
         self.leave_scope();
 
         Some(schema_symbol)
