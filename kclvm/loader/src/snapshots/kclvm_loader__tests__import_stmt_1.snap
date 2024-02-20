@@ -1,0 +1,86 @@
+---
+source: loader/src/tests.rs
+expression: "format!(\"{:#?}\", p.symbols.values())"
+---
+[
+    SymbolInfo {
+        ty: Type {
+            kind: Any,
+            is_type_alias: false,
+            flags: ANY,
+        },
+        name: "a",
+        range: (
+            Position {
+                filename: "test.k",
+                line: 3,
+                column: Some(
+                    0,
+                ),
+            },
+            Position {
+                filename: "test.k",
+                line: 3,
+                column: Some(
+                    1,
+                ),
+            },
+        ),
+        owner: Some(
+            SymbolRef {
+                id: Index {
+                    index: 13,
+                    generation: 0,
+                },
+                kind: Package,
+            },
+        ),
+        def: Some(
+            SymbolRef {
+                id: Index {
+                    index: 149,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+        ),
+        attrs: [],
+        is_global: true,
+    },
+    SymbolInfo {
+        ty: Type {
+            kind: Any,
+            is_type_alias: false,
+            flags: ANY,
+        },
+        name: "@IdentifierExpression",
+        range: (
+            Position {
+                filename: "test.k",
+                line: 3,
+                column: Some(
+                    9,
+                ),
+            },
+            Position {
+                filename: "test.k",
+                line: 3,
+                column: Some(
+                    9,
+                ),
+            },
+        ),
+        owner: None,
+        def: Some(
+            SymbolRef {
+                id: Index {
+                    index: 0,
+                    generation: 0,
+                },
+                kind: Expression,
+            },
+        ),
+        attrs: [],
+        is_global: false,
+    },
+]
