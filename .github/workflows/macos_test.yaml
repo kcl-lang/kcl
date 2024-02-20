@@ -46,10 +46,6 @@ jobs:
         working-directory: ./kclvm
         run: cargo fmt --check
         shell: bash
-      - name: Unit test
-        working-directory: ./kclvm
-        run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin:/usr/local/opt/llvm@12/bin && make && make codecov-lcov
-        shell: bash
       - name: Grammar test
         working-directory: ./kclvm
         run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin:/usr/local/opt/llvm@12/bin && make && make test-grammar
@@ -58,6 +54,17 @@ jobs:
         working-directory: ./kclvm
         run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin:/usr/local/opt/llvm@12/bin && make && make test-runtime
         shell: bash
+
+      - name: Unit test
+        working-directory: ./kclvm
+        run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin:/usr/local/opt/llvm@12/bin && make && make codecov-lcov
+        shell: bash
+
+      - name: Coveralls upload
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: ./kclvm/.kclvm_cov/lcov.info
 
       - uses: actions/upload-artifact@v3
         with:

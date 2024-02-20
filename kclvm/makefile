@@ -55,7 +55,7 @@ fix:
 
 # Unit tests without code cov
 test:
-	cargo test -p kclvm-* -- --nocapture
+	cargo test -p kclvm-* -r -- --nocapture
 
 # Unit tests with code cov (Requires rust 1.60+)
 codecov:
