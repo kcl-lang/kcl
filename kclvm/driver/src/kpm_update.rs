@@ -34,9 +34,6 @@ pub(crate) fn update_kcl_module(manifest_path: PathBuf) -> Result<()> {
 pub fn kcl() -> PathBuf {
     get_path_for_executable("kcl")
 }
-pub fn kpm() -> PathBuf {
-    get_path_for_executable("kpm")
-}
 
 pub(crate) fn lookup_the_nearest_file_dir(
     from: PathBuf,
