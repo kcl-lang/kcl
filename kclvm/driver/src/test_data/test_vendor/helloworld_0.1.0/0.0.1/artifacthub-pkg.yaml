@@ -1,0 +1,25 @@
+version: 0.0.1
+name: helloworld
+displayName: helloworld
+createdAt: "2023-10-24T12:25:12Z"
+description: "This is a KCL package"
+links:
+- name: KCL homepage
+  url: https://kcl-lang.io/
+- name: KCL repo
+  url: https://github.com/kcl-lang/kcl
+install: |
+  #### Add `helloworld` with tag `0.0.1` as dependency
+  ```
+  kpm add helloworld:0.0.1
+  ```
+
+  #### Pull `helloworld` with tag `0.0.1` to local
+  ```
+  kpm pull helloworld:0.0.1
+  ```
+maintainers:
+- name: kcl-lang.io
+  email: kcl-lang.io@domainsbyproxy.com
+provider:
+  name: kcl-lang.io

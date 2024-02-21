@@ -451,7 +451,8 @@ fn complete_import_external_file_test() {
         .display()
         .to_string();
 
-    let _ = Command::new("kpm")
+    let _ = Command::new("kcl")
+        .arg("mod")
         .arg("metadata")
         .arg("--update")
         .current_dir(
@@ -510,7 +511,8 @@ fn goto_import_external_file_test() {
         .display()
         .to_string();
 
-    let _ = Command::new("kpm")
+    let _ = Command::new("kcl")
+        .arg("mod")
         .arg("metadata")
         .arg("--update")
         .current_dir(

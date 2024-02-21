@@ -13,13 +13,13 @@ jobs:
         with:
           submodules: "true"
       
-      - name: Set up Go 1.19
+      - name: Set up Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.19
+          go-version: 1.21
 
-      - name: Install kpm
-        run: go install kcl-lang.io/kpm@latest
+      - name: Install KCL
+        run: go install kcl-lang.io/cli/cmd/kcl@latest
 
       - uses: ilammy/msvc-dev-cmd@v1
 
