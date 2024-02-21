@@ -60,6 +60,7 @@ pub struct Config {
     pub verbose: Option<u32>,
     pub debug: Option<bool>,
     pub sort_keys: Option<bool>,
+    pub show_hidden: Option<bool>,
     /// Whether including schema type in JSON/YAML result.
     pub include_schema_type_path: Option<bool>,
     /// kcl needs a mapping between the package name and the package path
@@ -81,6 +82,7 @@ impl SettingsFile {
                 verbose: Some(0),
                 debug: Some(false),
                 sort_keys: Some(false),
+                show_hidden: Some(false),
                 include_schema_type_path: Some(false),
                 package_maps: Some(HashMap::default()),
             }),
@@ -381,6 +383,7 @@ pub fn merge_settings(settings: &[SettingsFile]) -> SettingsFile {
                 set_if!(result_kcl_cli_configs, verbose, kcl_cli_configs);
                 set_if!(result_kcl_cli_configs, debug, kcl_cli_configs);
                 set_if!(result_kcl_cli_configs, sort_keys, kcl_cli_configs);
+                set_if!(result_kcl_cli_configs, show_hidden, kcl_cli_configs);
                 set_if!(
                     result_kcl_cli_configs,
                     include_schema_type_path,
@@ -477,6 +480,7 @@ mod settings_test {
             assert!(kcl_cli_configs.path_selector.is_none());
             assert!(kcl_cli_configs.overrides.is_none());
             assert!(kcl_cli_configs.include_schema_type_path.is_none());
+            assert!(kcl_cli_configs.show_hidden.is_none());
             assert_eq!(kcl_cli_configs.sort_keys, Some(true));
             if let Some(config_files) = kcl_cli_configs.files {
                 assert!(config_files == files);
