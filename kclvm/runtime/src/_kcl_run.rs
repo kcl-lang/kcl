@@ -53,6 +53,7 @@ pub struct FFIRunOptions {
     pub list_option_mode: i32,
     pub debug_mode: i32,
     pub show_hidden: i32,
+    pub sort_keys: i32,
     pub include_schema_type_path: i32,
     pub disable_empty_list: i32,
 }
@@ -72,6 +73,7 @@ fn new_ctx_with_opts(opts: FFIRunOptions, path_selector: &[String]) -> Context {
     // Plan options
     ctx.plan_opts.disable_none = opts.disable_none != 0;
     ctx.plan_opts.show_hidden = opts.show_hidden != 0;
+    ctx.plan_opts.sort_keys = opts.sort_keys != 0;
     ctx.plan_opts.include_schema_type_path = opts.include_schema_type_path != 0;
     ctx.plan_opts.disable_empty_list = opts.disable_empty_list != 0;
     ctx.plan_opts.query_paths = path_selector.to_vec();
