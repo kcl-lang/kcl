@@ -1,7 +1,6 @@
 use anyhow::Result;
 pub mod arguments;
-pub mod kpm_metadata;
-pub mod kpm_update;
+pub mod kpm;
 pub const DEFAULT_PROJECT_FILE: &str = "project.yaml";
 
 #[cfg(test)]
@@ -15,7 +14,9 @@ use kclvm_config::{
 };
 use kclvm_parser::LoadProgramOptions;
 use kclvm_utils::path::PathPrefix;
-use kpm_metadata::fill_pkg_maps_for_k_file;
+use kpm::fill_pkg_maps_for_k_file;
+use std::env;
+use std::iter;
 use std::{
     collections::HashSet,
     fs::read_dir,
@@ -29,10 +30,8 @@ pub fn expand_if_file_pattern(file_pattern: String) -> Result<Vec<String>, Strin
     let paths = glob(&file_pattern).map_err(|_| format!("invalid file pattern {file_pattern}"))?;
     let mut matched_files = vec![];
 
-    for path in paths {
-        if let Ok(path) = path {
-            matched_files.push(path.to_string_lossy().to_string());
-        }
+    for path in paths.flatten() {
+        matched_files.push(path.to_string_lossy().to_string());
     }
 
     Ok(matched_files)
@@ -62,7 +61,7 @@ pub fn canonicalize_input_files(
 ) -> Result<Vec<String>, String> {
     let mut kcl_paths = Vec::<String>::new();
     // The first traversal changes the relative path to an absolute path
-    for (_, file) in k_files.iter().enumerate() {
+    for file in k_files.iter() {
         let path = Path::new(file);
 
         let is_absolute = path.is_absolute();
@@ -197,7 +196,7 @@ pub fn lookup_compile_unit(
     }
 }
 
-pub fn lookup_setting_files(dir: &PathBuf) -> Vec<PathBuf> {
+pub fn lookup_setting_files(dir: &Path) -> Vec<PathBuf> {
     let mut settings = vec![];
     if let Ok(p) = lookup_kcl_yaml(dir) {
         settings.push(p);
@@ -205,8 +204,8 @@ pub fn lookup_setting_files(dir: &PathBuf) -> Vec<PathBuf> {
     settings
 }
 
-pub fn lookup_kcl_yaml(dir: &PathBuf) -> io::Result<PathBuf> {
-    let mut path = dir.clone();
+pub fn lookup_kcl_yaml(dir: &Path) -> io::Result<PathBuf> {
+    let mut path = dir.to_path_buf();
     path.push(DEFAULT_SETTING_FILE);
     if path.is_file() {
         Ok(path)
@@ -358,4 +357,68 @@ pub fn get_pkg_list(pkgpath: &str) -> Result<Vec<String>> {
     }
 
     Ok(dir_list)
+}
+
+/// [`lookup_the_nearest_file_dir`] will start from [`from`] and search for file [`the_nearest_file`] in the parent directories.
+/// If found, it will return the [`Some`] of [`the_nearest_file`] file path. If not found, it will return [`None`]
+pub(crate) fn lookup_the_nearest_file_dir(
+    from: PathBuf,
+    the_nearest_file: &str,
+) -> Option<PathBuf> {
+    let mut current_dir = from;
+
+    loop {
+        let found_path = current_dir.join(the_nearest_file);
+        if found_path.is_file() {
+            return current_dir.canonicalize().ok();
+        }
+
+        match current_dir.parent() {
+            Some(parent) => current_dir = parent.to_path_buf(),
+            None => return None,
+        }
+    }
+}
+
+/// [`kcl`] will return the path for executable kcl binary.
+pub fn kcl() -> PathBuf {
+    get_path_for_executable("kcl")
+}
+
+/// [`get_path_for_executable`] will return the path for [`executable_name`].
+pub fn get_path_for_executable(executable_name: &'static str) -> PathBuf {
+    // The current implementation checks $PATH for an executable to use:
+    // `<executable_name>`
+    //  example: for <executable_name>, this tries just <executable_name>, which will succeed if <executable_name> is on the $PATH
+
+    if lookup_in_path(executable_name) {
+        return executable_name.into();
+    }
+
+    executable_name.into()
+}
+
+/// [`lookup_in_path`] will search for an executable file [`exec`] in the environment variable ‘PATH’.
+///  If found, return true, otherwise return false.
+fn lookup_in_path(exec: &str) -> bool {
+    let paths = env::var_os("PATH").unwrap_or_default();
+    env::split_paths(&paths)
+        .map(|path| path.join(exec))
+        .find_map(probe)
+        .is_some()
+}
+
+/// [`probe`] check if the given path points to a file.
+/// If it does, return [`Some`] of the path.
+/// If not, check if adding the current operating system's executable file extension (if any) to the path points to a file.
+/// If it does, return [`Some`] of the path with the extension added.
+/// If neither, return [`None`].
+fn probe(path: PathBuf) -> Option<PathBuf> {
+    let with_extension = match env::consts::EXE_EXTENSION {
+        "" => None,
+        it => Some(path.with_extension(it)),
+    };
+    iter::once(path)
+        .chain(with_extension)
+        .find(|it| it.is_file())
 }

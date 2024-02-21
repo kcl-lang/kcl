@@ -1,4 +1,3 @@
-use super::*;
 use std::path::{Path, PathBuf};
 use std::{env, fs, panic};
 
@@ -8,8 +7,8 @@ use kclvm_parser::LoadProgramOptions;
 use walkdir::WalkDir;
 
 use crate::arguments::parse_key_value_pair;
-use crate::kpm_metadata::{fetch_metadata, fill_pkg_maps_for_k_file, lookup_the_nearest_file_dir};
-use crate::kpm_update::update_kcl_module;
+use crate::kpm::{fetch_metadata, fill_pkg_maps_for_k_file, update_dependencies};
+use crate::lookup_the_nearest_file_dir;
 use crate::{canonicalize_input_files, expand_input_files, get_pkg_list};
 
 #[test]
@@ -44,11 +43,11 @@ fn test_expand_input_files_with_kcl_mod() {
     ];
     let got_paths: Vec<String> = expand_input_files(&input_files)
         .iter()
-        .map(|s| s.replace('/', "").replace('\\', ""))
+        .map(|s| s.replace(['/', '\\'], ""))
         .collect();
     let expect_paths: Vec<String> = expected_files
         .iter()
-        .map(|s| s.replace('/', "").replace('\\', ""))
+        .map(|s| s.replace(['/', '\\'], ""))
         .collect();
     assert_eq!(got_paths, expect_paths);
 }
@@ -57,67 +56,55 @@ fn test_expand_input_files_with_kcl_mod() {
 fn test_expand_input_files() {
     let input_files = vec!["./src/test_data/expand_file_pattern/**/main.k".to_string()];
     let mut expected_files = vec![
-        Path::new("./src/test_data/expand_file_pattern/kcl1/kcl2/main.k")
-            .canonicalize()
-            .unwrap()
+        Path::new("src/test_data/expand_file_pattern/kcl1/kcl2/main.k")
             .to_string_lossy()
             .to_string(),
-        Path::new("./src/test_data/expand_file_pattern/kcl3/main.k")
-            .canonicalize()
-            .unwrap()
+        Path::new("src/test_data/expand_file_pattern/kcl3/main.k")
             .to_string_lossy()
             .to_string(),
-        Path::new("./src/test_data/expand_file_pattern/main.k")
-            .canonicalize()
-            .unwrap()
+        Path::new("src/test_data/expand_file_pattern/main.k")
             .to_string_lossy()
             .to_string(),
-        Path::new("./src/test_data/expand_file_pattern/kcl1/kcl4/main.k")
-            .canonicalize()
-            .unwrap()
+        Path::new("src/test_data/expand_file_pattern/kcl1/main.k")
+            .to_string_lossy()
+            .to_string(),
+        Path::new("src/test_data/expand_file_pattern/kcl1/kcl4/main.k")
             .to_string_lossy()
             .to_string(),
     ];
-    assert_eq!(
-        expand_input_files(&input_files).sort(),
-        expected_files.sort()
-    );
+    expected_files.sort();
+    let mut input = expand_input_files(&input_files);
+    input.sort();
+    assert_eq!(input, expected_files);
 
     let input_files = vec![
         "./src/test_data/expand_file_pattern/kcl1/main.k".to_string(),
         "./src/test_data/expand_file_pattern/**/main.k".to_string(),
     ];
     let mut expected_files = vec![
-        Path::new("./src/test_data/expand_file_pattern/kcl1/main.k")
-            .canonicalize()
-            .unwrap()
+        Path::new("src/test_data/expand_file_pattern/kcl1/main.k")
             .to_string_lossy()
             .to_string(),
-        Path::new("./src/test_data/expand_file_pattern/kcl1/kcl2/main.k")
-            .canonicalize()
-            .unwrap()
+        Path::new("src/test_data/expand_file_pattern/kcl1/main.k")
             .to_string_lossy()
             .to_string(),
-        Path::new("./src/test_data/expand_file_pattern/kcl1/kcl4/main.k")
-            .canonicalize()
-            .unwrap()
+        Path::new("src/test_data/expand_file_pattern/kcl1/kcl2/main.k")
             .to_string_lossy()
             .to_string(),
-        Path::new("./src/test_data/expand_file_pattern/kcl3/main.k")
-            .canonicalize()
-            .unwrap()
+        Path::new("src/test_data/expand_file_pattern/kcl1/kcl4/main.k")
             .to_string_lossy()
             .to_string(),
-        Path::new("./src/test_data/expand_file_pattern/main.k")
-            .canonicalize()
-            .unwrap()
+        Path::new("src/test_data/expand_file_pattern/kcl3/main.k")
+            .to_string_lossy()
+            .to_string(),
+        Path::new("src/test_data/expand_file_pattern/main.k")
             .to_string_lossy()
             .to_string(),
     ];
-    assert_eq!(
-        expand_input_files(&input_files).sort(),
-        expected_files.sort()
-    );
+    expected_files.sort();
+    let mut input = expand_input_files(&input_files);
+    input.sort();
+    assert_eq!(input, expected_files);
 }
 
 #[test]
@@ -307,6 +294,8 @@ fn test_fetch_metadata_in_order() {
     println!("test_fill_pkg_maps_for_k_file() passed");
     test_fill_pkg_maps_for_k_file_with_line();
     println!("test_fill_pkg_maps_for_k_file_with_line() passed");
+    test_update_dependencies();
+    println!("test_update_dependencies() passed");
 }
 
 fn test_fetch_metadata() {
@@ -329,7 +318,7 @@ fn test_fetch_metadata() {
     let metadata = fetch_metadata(path.clone());
     // Show more information when the test fails.
     println!("{:?}", metadata);
-    assert!(!metadata.is_err());
+    assert!(metadata.is_ok());
     let pkgs = metadata.unwrap().packages.clone();
     assert_eq!(pkgs.len(), 1);
     assert!(pkgs.get("kcl4").is_some());
@@ -382,28 +371,14 @@ fn test_get_pkg_list() {
     );
 }
 
-#[cfg(test)]
-// Define a mock structure to simulate the behavior of Command::output
-struct MockCommand {
-    output: Result<MockCommandOutput, std::io::Error>,
-}
-// Define a mock structure to represent the output of Command::output
-struct MockCommandOutput {
-    status: std::process::ExitStatus,
-    stderr: Vec<u8>,
-}
+fn test_update_dependencies() {
+    let path = PathBuf::from(".")
+        .join("src")
+        .join("test_data")
+        .join("kpm_update");
 
-#[test]
-fn test_update_kcl_module_failure() {
-    let manifest_path = PathBuf::from("path/to/manifest");
-    fn mock_command_new_failing(_command: &str) -> MockCommand {
-        MockCommand {
-            output: Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "Command failed",
-            )),
-        }
-    }
-    let result = update_kcl_module(manifest_path);
-    assert!(result.is_err());
+    let update_mod = update_dependencies(path.clone());
+    // Show more information when the test fails.
+    println!("{:?}", update_mod);
+    assert!(update_mod.is_ok());
 }

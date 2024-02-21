@@ -6,7 +6,7 @@ use kclvm_ast::ast::{
 use kclvm_ast::node_ref;
 use kclvm_ast::pos::ContainsPos;
 
-use kclvm_driver::kpm_metadata::fetch_metadata;
+use kclvm_driver::kpm::fetch_metadata;
 use kclvm_driver::{get_kcl_files, lookup_compile_unit};
 use kclvm_error::Diagnostic;
 use kclvm_error::Position as KCLPos;
@@ -722,7 +722,7 @@ fn build_identifier_from_ty_string(ty: &NodeRef<Type>, pos: &KCLPos) -> Option<N
     }
 }
 
-/// [`get_real_path_from_external`] will ask for the local path for [`pkg_name`] with subdir [`pkgpath`] from `kpm`.
+/// [`get_real_path_from_external`] will ask for the local path for [`pkg_name`] with subdir [`pkgpath`].
 /// If the external package, whose [`pkg_name`] is 'my_package', is stored in '\user\my_package_v0.0.1'.
 /// The [`pkgpath`] is 'my_package.examples.apps'.
 ///
