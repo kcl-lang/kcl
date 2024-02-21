@@ -6,7 +6,7 @@ use pretty_assertions::assert_eq;
 
 const FILE_INPUT_SUFFIX: &str = ".input";
 const FILE_OUTPUT_SUFFIX: &str = ".output";
-const TEST_CASES: &[&str; 16] = &[
+const TEST_CASES: &[&str] = &[
     "arguments",
     "empty",
     "if_stmt",
@@ -18,6 +18,7 @@ const TEST_CASES: &[&str; 16] = &[
     "index_sign",
     "joined_str",
     "lambda",
+    "orelse",
     "quant",
     "rule",
     "str",

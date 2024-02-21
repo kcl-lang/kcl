@@ -65,6 +65,8 @@ impl GlobalState {
     ///
     /// `module_info`: [Option<&ModuleInfo>]
     ///     the module import information
+    /// `local`: [bool]
+    ///     look up in current scope
     ///
     /// # Returns
     ///
@@ -75,12 +77,14 @@ impl GlobalState {
         name: &str,
         scope_ref: ScopeRef,
         module_info: Option<&ModuleInfo>,
+        local: bool,
     ) -> Option<SymbolRef> {
         match self.scopes.get_scope(&scope_ref)?.look_up_def(
             name,
             &self.scopes,
             &self.symbols,
             module_info,
+            local,
         ) {
             None => self
                 .symbols

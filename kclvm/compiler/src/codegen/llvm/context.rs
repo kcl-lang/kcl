@@ -103,6 +103,7 @@ pub struct LLVMCodeGenContext<'ctx> {
     // No link mode
     pub no_link: bool,
     pub modules: RefCell<HashMap<String, RefCell<Module<'ctx>>>>,
+    pub workdir: String,
 }
 
 impl<'ctx> CodeGenObject for BasicValueEnum<'ctx> {}
@@ -1222,6 +1223,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         program: &'ctx ast::Program,
         import_names: IndexMap<String, IndexMap<String, String>>,
         no_link: bool,
+        workdir: String,
     ) -> LLVMCodeGenContext<'ctx> {
         LLVMCodeGenContext {
             context,
@@ -1247,6 +1249,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             import_names,
             no_link,
             modules: RefCell::new(HashMap::new()),
+            workdir,
         }
     }
 
@@ -1320,6 +1323,21 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 self.pkgpath_stack.borrow_mut().push(pkgpath.clone());
             }
         }
+        // Set the kcl workdir to the runtime context
+        self.build_void_call(
+            &ApiFunc::kclvm_context_set_kcl_modpath.name(),
+            &[
+                self.current_runtime_ctx_ptr(),
+                self.native_global_string_value(&self.program.root),
+            ],
+        );
+        self.build_void_call(
+            &ApiFunc::kclvm_context_set_kcl_workdir.name(),
+            &[
+                self.current_runtime_ctx_ptr(),
+                self.native_global_string_value(&self.workdir),
+            ],
+        );
         if !self.import_names.is_empty() {
             let import_names = self.dict_value();
             for (k, v) in &self.import_names {

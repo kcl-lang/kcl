@@ -1092,6 +1092,7 @@ mod tests {
                 "crypto",
                 "base64",
                 "units",
+                "file",
             ]
             .iter()
             .map(|name| KCLCompletionItem {
@@ -1508,6 +1509,38 @@ mod tests {
                 let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
                 assert!(labels.contains(&"cpu".to_string()));
                 assert!(labels.contains(&"memory".to_string()));
+            }
+            CompletionResponse::List(_) => panic!("test failed"),
+        }
+    }
+
+    #[test]
+    #[bench_test]
+    fn check_scope_completion() {
+        let (file, program, _, _, gs) =
+            compile_test_file("src/test_data/completion_test/check/check.k");
+
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 4,
+            column: Some(10),
+        };
+
+        let got = completion(Some(':'), &program, &pos, &gs);
+        assert!(got.is_none());
+
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 5,
+            column: Some(9),
+        };
+
+        let got = completion(None, &program, &pos, &gs).unwrap();
+        match got {
+            CompletionResponse::Array(arr) => {
+                assert_eq!(arr.len(), 3);
+                let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
+                assert!(labels.contains(&"name".to_string()));
             }
             CompletionResponse::List(_) => panic!("test failed"),
         }

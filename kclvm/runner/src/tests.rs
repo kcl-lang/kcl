@@ -234,7 +234,7 @@ fn gen_libs_for_test(entry_file: &str, test_kcl_case_path: &str) {
         OBJECT_FILE_SUFFIX.to_string(),
     );
 
-    let lib_paths = assembler.gen_libs().unwrap();
+    let lib_paths = assembler.gen_libs(&ExecProgramArgs::default()).unwrap();
 
     assert_eq!(lib_paths.len(), expected_pkg_paths.len());
 
@@ -279,6 +279,7 @@ fn assemble_lib_for_test(
             scope.import_names,
             entry_file,
             temp_entry_file_path,
+            &ExecProgramArgs::default(),
         )
         .unwrap()
 }

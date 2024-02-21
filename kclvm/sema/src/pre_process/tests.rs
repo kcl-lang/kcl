@@ -37,6 +37,20 @@ fn test_fix_raw_identifier_prefix() {
     } else {
         panic!("invalid assign statement")
     }
+    if let ast::Stmt::Schema(schema_stmt) = &module.body[1].node {
+        if let ast::Stmt::SchemaAttr(attr) = &schema_stmt.body[0].node {
+            assert_eq!(attr.name.node, "name");
+        } else {
+            panic!("invalid schema attr")
+        }
+        if let ast::Stmt::SchemaAttr(attr) = &schema_stmt.body[1].node {
+            assert_eq!(attr.name.node, "$name");
+        } else {
+            panic!("invalid schema attr")
+        }
+    } else {
+        panic!("invalid schema statement")
+    }
 }
 
 #[test]
