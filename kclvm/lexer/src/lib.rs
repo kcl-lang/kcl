@@ -359,7 +359,7 @@ pub trait IStringCursor {
 
 // Cursor trait to read identifier.
 // Simple identifier, raw identifier, and more identifier cases should be considered here.
-pub trait IIdentCurosr {
+pub trait IIdentCursor {
     // If we encounter a identifier.
     // Returns true if exists, otherwise returns false.
     fn try_ident_magic(&self, _c: char) -> bool {
@@ -367,8 +367,8 @@ pub trait IIdentCurosr {
     }
 
     // Eat it if so.
-    // This mehod **MUST** be called after 'try_ident_magic'.
-    // No gurantee to ensure the correctness if no identifier here,
+    // This method **MUST** be called after 'try_ident_magic'.
+    // No guarantee to ensure the correctness if no identifier here,
     // and return 'Unknown' if it happens.
     fn eat_ident(&mut self) -> TokenKind {
         Unknown

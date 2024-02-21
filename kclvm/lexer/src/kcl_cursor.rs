@@ -10,7 +10,7 @@ use crate::cursor::EOF_CHAR;
 use crate::Cursor;
 use crate::DocStyle;
 use crate::ICommentCursor;
-use crate::IIdentCurosr;
+use crate::IIdentCursor;
 use crate::IStringCursor;
 use crate::Literal;
 use crate::LiteralKind::*;
@@ -126,7 +126,7 @@ impl<'a> Cursor<'a> {
     }
 }
 
-impl<'a> IIdentCurosr for Cursor<'a> {
+impl<'a> IIdentCursor for Cursor<'a> {
     fn try_ident_magic(&self, c: char) -> bool {
         match c {
             DOLLAR_CHAR => rustc_lexer::is_id_start(self.peek()),

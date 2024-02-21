@@ -436,6 +436,14 @@ impl<'a> Lexer<'a> {
                 );
                 return None;
             }
+            kclvm_lexer::TokenKind::Semi => {
+                // If we encounter an illegal semi token ';', raise a friendly error.
+                self.sess.struct_span_error(
+                    "the semicolon ';' here is unnecessary, please remove it",
+                    self.span(start, self.pos),
+                );
+                return None;
+            }
             _ => {
                 self.sess
                     .struct_span_error("unknown start of token", self.span(start, self.pos));
