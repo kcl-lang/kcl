@@ -4,7 +4,7 @@ $bin_path = Join-Path $PSScriptRoot 'scripts\build-windows\_output\kclvm-windows
 $env:Path += ";$bin_path"
 # rust unit test
 Set-Location .\kclvm
-cargo test -p kclvm-*
+cargo test --workspace -r -- --nocapture
 Set-Location $PSScriptRoot
 # rust runtime test
 Set-Location .\kclvm\tests\test_units

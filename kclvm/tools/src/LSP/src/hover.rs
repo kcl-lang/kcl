@@ -351,7 +351,7 @@ mod tests {
                     assert_eq!(s, "fn print() -> NoneType");
                 }
                 if let MarkedString::String(s) = vec[1].clone() {
-                    assert_eq!(s, "Prints the values to a stream, or to sys.stdout by default.\n\n        Optional keyword arguments:\n\n        sep:   string inserted between values, default a space.\n\n        end:   string appended after the last value, default a newline.");
+                    assert_eq!(s, "Prints the values to a stream, or to the system stdout by default.\n\nOptional keyword arguments:\n\nsep:   string inserted between values, default a space.\n\nend:   string appended after the last value, default a newline.");
                 }
             }
             _ => unreachable!("test error"),

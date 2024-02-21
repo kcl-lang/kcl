@@ -372,7 +372,8 @@ impl KclLibRunner {
             disable_schema_check: 0, // todo
             list_option_mode: 0,     // todo
             disable_empty_list: 0,
-            show_hidden: args.show_hidden as i32, // todo
+            sort_keys: args.sort_keys as i32,
+            show_hidden: args.show_hidden as i32,
             debug_mode: args.debug,
             include_schema_type_path: args.include_schema_type_path as i32,
         };
