@@ -205,6 +205,9 @@ message ExecProgram_Args {
 	// Whether only compiling the program
 	bool compile_only = 15;
 
+	// Show hidden attributes
+	bool show_hidden = 16;
+
 	// -S --path_selector
 	repeated string path_selector = 17;
 }
@@ -352,7 +355,8 @@ message CliConfig {
 	int64 verbose = 7;
 	bool debug = 8;
 	bool sort_keys = 9;
-	bool include_schema_type_path = 10;
+	bool show_hidden = 10;
+	bool include_schema_type_path = 11;
 }
 
 message KeyValuePair {
