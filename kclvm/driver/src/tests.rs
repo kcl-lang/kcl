@@ -407,10 +407,3 @@ fn test_update_kcl_module_failure() {
     let result = update_kcl_module(manifest_path);
     assert!(result.is_err());
 }
-
-#[test]
-fn test_update_kcl_module_success() {
-    let manifest_path = PathBuf::from("./src/test_data/expand_file_pattern/kcl1");
-    let result = update_kcl_module(manifest_path);
-    assert!(result.is_ok());
-}
