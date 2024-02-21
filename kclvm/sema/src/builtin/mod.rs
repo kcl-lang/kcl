@@ -81,10 +81,10 @@ register_builtin! {
         None,
         Arc::new(Type::NONE),
         &[],
-        r#"Prints the values to a stream, or to sys.stdout by default.
-        Optional keyword arguments:
-        sep:   string inserted between values, default a space.
-        end:   string appended after the last value, default a newline."#,
+        r#"Prints the values to a stream, or to the system stdout by default.
+Optional keyword arguments:
+sep:   string inserted between values, default a space.
+end:   string appended after the last value, default a newline."#,
         true,
         None,
     )
@@ -161,7 +161,7 @@ register_builtin! {
         ],
         r#"Return True if bool(x) is True for all values x in the iterable.
 
-        If the iterable is empty, return True."#,
+If the iterable is empty, return True."#,
         false,
         None,
     )
@@ -177,7 +177,7 @@ register_builtin! {
         ],
         r#"Return True if bool(x) is True for any x in the iterable.
 
-        If the iterable is empty, return False."#,
+If the iterable is empty, return False."#,
         false,
         None,
     )
@@ -254,8 +254,8 @@ register_builtin! {
         ],
         r#"Return a new list containing all items from the iterable in ascending order.
 
-        A custom key function can be supplied to customize the sort order, and the reverse
-        flag can be set to request the result in descending order."#,
+A custom key function can be supplied to customize the sort order, and the reverse
+flag can be set to request the result in descending order."#,
         false,
         Some(1),
     )
@@ -288,9 +288,9 @@ register_builtin! {
         Arc::new(Type::ANY),
         &[],
         r#"With a single iterable argument, return its biggest item.
-        The default keyword-only argument specifies an object to return
-        if the provided iterable is empty. With two or more arguments,
-        return the largest argument."#,
+The default keyword-only argument specifies an object to return
+if the provided iterable is empty. With two or more arguments,
+return the largest argument."#,
         true,
         None,
     )
@@ -299,9 +299,9 @@ register_builtin! {
         Arc::new(Type::ANY),
         &[],
         r#"With a single iterable argument, return its smallest item.
-        The default keyword-only argument specifies an object to return
-        if the provided iterable is empty. With two or more arguments,
-        return the smallest argument."#,
+The default keyword-only argument specifies an object to return
+if the provided iterable is empty. With two or more arguments,
+return the smallest argument."#,
         true,
         None,
     )
@@ -321,8 +321,8 @@ register_builtin! {
             },
         ],
         r#"When the iterable is empty, return the start value. This function is
-        intended specifically for use with numeric values and may reject
-        non-numeric types."#,
+intended specifically for use with numeric values and may reject
+non-numeric types."#,
         false,
         None,
     )
@@ -346,10 +346,10 @@ register_builtin! {
                 has_default: true,
             },
         ],
-        r#"Equivalent to x**y (with two arguments) or x**y % z (with three arguments)
+        r#"Equivalent to `x ** y` (with two arguments) or `x ** y % z` (with three arguments)
 
-        Some types, such as ints, are able to use a more efficient algorithm when
-        invoked using the three argument form."#,
+Some types, such as ints, are able to use a more efficient algorithm when
+invoked using the three argument form."#,
         false,
         None,
     )
@@ -370,9 +370,9 @@ register_builtin! {
         ],
         r#"Round a number to a given precision in decimal digits.
 
-        The return value is an integer if ndigits is omitted or None.
-        Otherwise the return value has the same type as the number.
-        ndigits may be negative."#,
+The return value is an integer if ndigits is omitted or None.
+Otherwise the return value has the same type as the number.
+ndigits may be negative."#,
         false,
         None,
     )
@@ -381,8 +381,8 @@ register_builtin! {
         Type::list_ref(Arc::new(Type::ANY)),
         &[],
         r#"Return a zip object whose next method returns
-        a tuple where the i-th element comes from the i-th iterable
-        argument."#,
+a tuple where the i-th element comes from the i-th iterable
+argument."#,
         true,
         None,
     )
@@ -402,7 +402,7 @@ register_builtin! {
             },
         ],
         r#"Convert a number or string to an integer, or return 0 if no arguments
-        are given. For floating point numbers, this truncates towards zero."#,
+are given. For floating point numbers, this truncates towards zero."#,
         false,
         None,
     )
@@ -431,8 +431,8 @@ register_builtin! {
             },
         ],
         r#"Returns True when the argument x is true, False otherwise.
-        The builtins True and False are the only two instances of the class bool.
-        The class bool is a subclass of the class int, and cannot be subclassed."#,
+The builtin `True` and `False` are the only two instances of the class bool.
+The class bool is a subclass of the class int, and cannot be subclassed."#,
         false,
         None,
     )
@@ -447,9 +447,9 @@ register_builtin! {
             },
         ],
         r#"Create a new string object from the given object.
-        If encoding or errors is specified, then the object must
-        expose a data buffer that will be decoded using the
-        given encoding and error handler."#,
+If encoding or errors is specified, then the object must
+expose a data buffer that will be decoded using the
+given encoding and error handler."#,
         false,
         None,
     )
@@ -463,10 +463,10 @@ register_builtin! {
                 has_default: true,
             },
         ],
-        r#"Built-in mutable sequence.
+        r#"Built-in list function, which can convert other data types or construct a list.
 
-        If no argument is given, the constructor creates a new empty list.
-        The argument must be an iterable if specified."#,
+If no argument is given, the constructor creates a new empty list.
+The argument must be an iterable if specified."#,
         false,
         None,
     )
@@ -480,7 +480,9 @@ register_builtin! {
                 has_default: true,
             },
         ],
-        r#"Built-in mutable dict."#,
+        r#"Built-in dict function.
+
+If no argument is given, the constructor creates a new empty dict."#,
         true,
         None,
     )
