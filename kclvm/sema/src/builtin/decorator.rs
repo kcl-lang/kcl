@@ -42,12 +42,12 @@ register_decorator! {
         ],
         r#"This decorator is used to get the deprecation message according to the wrapped key-value pair.
 
-        Examples
-        --------
-        @deprecated(version="v1.16", reason="The age attribute was deprecated", strict=True)
-        schema Person:
-            name: str
-            age: int
+Examples
+--------
+@deprecated(version="v1.16", reason="The age attribute was deprecated", strict=True)
+schema Person:
+    name: str
+    age: int
         "#,
         false,
         None,
@@ -58,12 +58,12 @@ register_decorator! {
         &[],
         r#"Info decorator is used to mark some compile-time information for external API queries
 
-        Examples
-        --------
-        @info(message="User message")
-        schema Person:
-            name: str
-            age: int
+Examples
+--------
+@info(message="User message")
+schema Person:
+    name: str
+    age: int
         "#,
         true,
         Some(0),

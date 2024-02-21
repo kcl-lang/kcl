@@ -357,14 +357,14 @@ register_manifests_member! {
                 has_default: true,
             },
         ],
-        r#"""This function is used to serialize the KCL object list into YAML output with the --- separator. It has two parameters:
-+ values - A list of KCL objects
-+ opts - The YAML serialization options
+        r#"This function is used to serialize the KCL object list into YAML output with the --- separator. It has two parameters:
+values - A list of KCL objects
+opts - The YAML serialization options
  + sort_keys: Whether to sort the serialized results in the dictionary order of attribute names (the default is False).
  + ignore_private: Whether to ignore the attribute output whose name starts with the character _ (the default value is True).
  + ignore_none: Whether to ignore the attribute with the value of' None '(the default value is False).
  + sep: Set the separator between multiple YAML documents (the default value is "---").
-"""#,
+"#,
         false,
         None,
     )
@@ -1589,7 +1589,7 @@ register_file_member! {
                 has_default: false,
             },
         ],
-        r#"find all paths that match a pattern"#,
+        r#"Find all paths that match a pattern"#,
         false,
         None,
     )
@@ -1597,7 +1597,7 @@ register_file_member! {
         None,
         Type::str_ref(),
         &[],
-        r#"return the module root path (kcl.mod file path or a single *.k file path)"#,
+        r#"Read the module root path (kcl.mod file path or a single *.k file path)"#,
         false,
         None,
     )
@@ -1605,7 +1605,7 @@ register_file_member! {
         None,
         Type::str_ref(),
         &[],
-        r#"return the workdir"#,
+        r#"Read the workdir"#,
         false,
         None,
     )
