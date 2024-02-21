@@ -661,8 +661,14 @@ impl SymbolData {
         &self.symbols_info.symbol_node_map
     }
 
+    #[inline]
     pub fn get_fully_qualified_name_map(&self) -> &IndexMap<String, SymbolRef> {
         &self.symbols_info.fully_qualified_name_map
+    }
+
+    #[inline]
+    pub fn get_builtin_symbols(&self) -> &IndexMap<String, SymbolRef> {
+        &self.symbols_info.global_builtin_symbols
     }
 }
 

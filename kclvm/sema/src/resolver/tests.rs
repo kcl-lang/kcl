@@ -645,7 +645,7 @@ fn test_resolve_function_with_default_values() {
     let main_scope = scope.main_scope().unwrap();
     let func = main_scope.borrow().lookup("is_alpha").unwrap();
     assert!(func.borrow().ty.is_func());
-    let func_ty = func.borrow().ty.into_function_ty();
+    let func_ty = func.borrow().ty.into_func_type();
     assert_eq!(func_ty.params.len(), 3);
     assert_eq!(func_ty.params[0].has_default, false);
     assert_eq!(func_ty.params[1].has_default, true);
@@ -848,4 +848,29 @@ fn test_pkg_asname() {
     assert_eq!(diags.len(), 6);
     assert_eq!(diags[0].messages[0].message, "name 'pkg' is not defined");
     assert_eq!(diags[2].messages[0].message, "name 'subpkg' is not defined");
+}
+
+#[test]
+fn test_builtin_file_invalid() {
+    let test_cases = [
+        (
+            "./src/resolver/test_data/test_builtin/read.k",
+            "expected 1 positional argument, found 0",
+        ),
+        (
+            "./src/resolver/test_data/test_builtin/glob.k",
+            "expected 1 positional argument, found 0",
+        ),
+    ];
+
+    for (file, expected_message) in &test_cases {
+        let sess = Arc::new(ParseSession::default());
+        let mut program = load_program(sess.clone(), &[file], None, None)
+            .unwrap()
+            .program;
+        let scope = resolve_program(&mut program);
+        let diags = scope.handler.diagnostics;
+        assert_eq!(diags.len(), 1);
+        assert_eq!(diags[0].messages[0].message, *expected_message);
+    }
 }

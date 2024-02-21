@@ -7,3 +7,5 @@ c: Person = Person {
 
 d = 1
 d = 2
+number = 2
+count = nu

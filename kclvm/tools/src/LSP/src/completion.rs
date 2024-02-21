@@ -28,7 +28,7 @@ use kclvm_config::modfile::KCL_FILE_EXTENSION;
 use kclvm_sema::core::global_state::GlobalState;
 
 use kclvm_error::Position as KCLPos;
-use kclvm_sema::builtin::{STANDARD_SYSTEM_MODULES, STRING_MEMBER_FUNCTIONS};
+use kclvm_sema::builtin::{BUILTIN_FUNCTIONS, STANDARD_SYSTEM_MODULES, STRING_MEMBER_FUNCTIONS};
 use kclvm_sema::core::package::ModuleInfo;
 use kclvm_sema::resolver::doc::{parse_doc_string, Doc};
 use kclvm_sema::ty::{FunctionType, SchemaType, Type};
@@ -107,8 +107,52 @@ pub(crate) fn completion(
                 }));
             }
 
-            // Complete all usable symbol obj in inner most scope
             if let Some(scope) = gs.look_up_scope(pos) {
+                // Complete builtin functions in root scope and lambda
+                match scope.get_kind() {
+                    kclvm_sema::core::scope::ScopeKind::Local => {
+                        if let Some(locol_scope) = gs.get_scopes().try_get_local_scope(&scope) {
+                            match locol_scope.get_kind() {
+                                kclvm_sema::core::scope::LocalSymbolScopeKind::Lambda => {
+                                    completions.extend(BUILTIN_FUNCTIONS.iter().map(
+                                        |(name, ty)| KCLCompletionItem {
+                                            label: func_ty_complete_label(
+                                                name,
+                                                &ty.into_func_type(),
+                                            ),
+                                            detail: Some(
+                                                ty.into_func_type().func_signature_str(name),
+                                            ),
+                                            documentation: ty.ty_doc(),
+                                            kind: Some(KCLCompletionItemKind::Function),
+                                            insert_text: Some(func_ty_complete_insert_text(
+                                                name,
+                                                &ty.into_func_type(),
+                                            )),
+                                        },
+                                    ));
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
+                    kclvm_sema::core::scope::ScopeKind::Root => {
+                        completions.extend(BUILTIN_FUNCTIONS.iter().map(|(name, ty)| {
+                            KCLCompletionItem {
+                                label: func_ty_complete_label(name, &ty.into_func_type()),
+                                detail: Some(ty.into_func_type().func_signature_str(name)),
+                                documentation: ty.ty_doc(),
+                                kind: Some(KCLCompletionItemKind::Function),
+                                insert_text: Some(func_ty_complete_insert_text(
+                                    name,
+                                    &ty.into_func_type(),
+                                )),
+                            }
+                        }));
+                    }
+                }
+
+                // Complete all usable symbol obj in inner most scope
                 if let Some(defs) = gs.get_all_defs_in_scope(scope) {
                     for symbol_ref in defs {
                         match gs.get_symbols().get_symbol(symbol_ref) {
@@ -138,9 +182,15 @@ pub(crate) fn completion(
                                             });
                                         }
                                         _ => {
+                                            let detail = match &ty.kind {
+                                                kclvm_sema::ty::TypeKind::Function(func_ty) => {
+                                                    func_ty.func_signature_str(&name)
+                                                }
+                                                _ => ty.ty_str(),
+                                            };
                                             completions.insert(KCLCompletionItem {
                                                 label: name,
-                                                detail: Some(ty.ty_str()),
+                                                detail: Some(detail),
                                                 documentation: sema_info.doc.clone(),
                                                 kind: type_to_item_kind(ty),
                                                 insert_text: None,
@@ -190,14 +240,16 @@ fn completion_dot(
                                         .map(|(name, ty)| KCLCompletionItem {
                                             label: func_ty_complete_label(
                                                 name,
-                                                &ty.into_function_ty(),
+                                                &ty.into_func_type(),
                                             ),
-                                            detail: Some(ty.ty_str()),
+                                            detail: Some(
+                                                ty.into_func_type().func_signature_str(name),
+                                            ),
                                             documentation: ty.ty_doc(),
                                             kind: Some(KCLCompletionItemKind::Function),
                                             insert_text: Some(func_ty_complete_insert_text(
                                                 name,
-                                                &ty.into_function_ty(),
+                                                &ty.into_func_type(),
                                             )),
                                         })
                                         .collect(),
@@ -639,17 +691,8 @@ fn pkg_real_name(pkg: &String, module: &ModuleInfo) -> String {
     pkg.split('.').last().unwrap().to_string()
 }
 
-fn func_ty_complete_label(func_name: &String, func_type: &FunctionType) -> String {
-    format!(
-        "{}({})",
-        func_name,
-        func_type
-            .params
-            .iter()
-            .map(|param| param.name.clone())
-            .collect::<Vec<String>>()
-            .join(", "),
-    )
+fn func_ty_complete_label(func_name: &String, _func_type: &FunctionType) -> String {
+    format!("{}(…)", func_name,)
 }
 
 fn func_ty_complete_insert_text(func_name: &String, func_type: &FunctionType) -> String {
@@ -715,7 +758,7 @@ pub(crate) fn into_completion_items(items: &IndexSet<KCLCompletionItem>) -> Vec<
 mod tests {
     use indexmap::IndexSet;
     use kclvm_error::Position as KCLPos;
-    use kclvm_sema::builtin::{MATH_FUNCTION_TYPES, STRING_MEMBER_FUNCTIONS};
+    use kclvm_sema::builtin::{BUILTIN_FUNCTIONS, MATH_FUNCTION_TYPES, STRING_MEMBER_FUNCTIONS};
     use lsp_types::{CompletionItem, CompletionItemKind, CompletionResponse, InsertTextFormat};
     use proc_macro_crate::bench_test;
 
@@ -746,11 +789,20 @@ mod tests {
             CompletionResponse::List(_) => panic!("test failed"),
         };
 
-        let mut expected_labels: Vec<&str> = vec![
+        let mut expected_labels: Vec<String> = vec![
             "", // generate from error recovery of "pkg."
             "subpkg", "math", "Person", "Person{}", "P", "P{}", "p", "p1", "p2", "p3", "p4",
             "aaaa",
-        ];
+        ]
+        .iter()
+        .map(|s| s.to_string())
+        .collect();
+
+        expected_labels.extend(
+            BUILTIN_FUNCTIONS
+                .iter()
+                .map(|(name, func)| func_ty_complete_label(name, &func.into_func_type())),
+        );
         got_labels.sort();
         expected_labels.sort();
 
@@ -769,7 +821,10 @@ mod tests {
             CompletionResponse::List(_) => panic!("test failed"),
         };
 
-        expected_labels = vec!["", "age", "math", "name", "subpkg"];
+        expected_labels = vec!["", "age", "math", "name", "subpkg"]
+            .iter()
+            .map(|s| s.to_string())
+            .collect();
         got_labels.sort();
         expected_labels.sort();
         assert_eq!(got_labels, expected_labels);
@@ -811,7 +866,7 @@ mod tests {
         };
         let expected_labels: Vec<String> = STRING_MEMBER_FUNCTIONS
             .iter()
-            .map(|(name, ty)| func_ty_complete_label(name, &ty.into_function_ty()))
+            .map(|(name, ty)| func_ty_complete_label(name, &ty.into_func_type()))
             .collect();
         assert_eq!(got_labels, expected_labels);
 
@@ -824,7 +879,7 @@ mod tests {
         };
         let expected_insert_text: Vec<String> = STRING_MEMBER_FUNCTIONS
             .iter()
-            .map(|(name, ty)| func_ty_complete_insert_text(name, &ty.into_function_ty()))
+            .map(|(name, ty)| func_ty_complete_insert_text(name, &ty.into_func_type()))
             .collect();
         assert_eq!(got_insert_text, expected_insert_text);
 
@@ -872,7 +927,7 @@ mod tests {
         };
         let expected_labels: Vec<String> = MATH_FUNCTION_TYPES
             .iter()
-            .map(|(name, ty)| func_ty_complete_label(name, &ty.into_function_ty()))
+            .map(|(name, ty)| func_ty_complete_label(name, &ty.into_func_type()))
             .collect();
         assert_eq!(got_labels, expected_labels);
 
@@ -891,7 +946,7 @@ mod tests {
 
         let expected_labels: Vec<String> = STRING_MEMBER_FUNCTIONS
             .iter()
-            .map(|(name, ty)| func_ty_complete_label(name, &ty.into_function_ty()))
+            .map(|(name, ty)| func_ty_complete_label(name, &ty.into_func_type()))
             .collect();
         assert_eq!(got_labels, expected_labels);
 
@@ -947,7 +1002,7 @@ mod tests {
         };
         let expected_labels: Vec<String> = STRING_MEMBER_FUNCTIONS
             .iter()
-            .map(|(name, ty)| func_ty_complete_label(name, &ty.into_function_ty()))
+            .map(|(name, ty)| func_ty_complete_label(name, &ty.into_func_type()))
             .collect();
         assert_eq!(got_labels, expected_labels);
 
@@ -995,7 +1050,7 @@ mod tests {
         };
         let expected_labels: Vec<String> = MATH_FUNCTION_TYPES
             .iter()
-            .map(|(name, ty)| func_ty_complete_label(name, &ty.into_function_ty()))
+            .map(|(name, ty)| func_ty_complete_label(name, &ty.into_func_type()))
             .collect();
         assert_eq!(got_labels, expected_labels);
 
@@ -1008,7 +1063,7 @@ mod tests {
         };
         let expected_insert_text: Vec<String> = MATH_FUNCTION_TYPES
             .iter()
-            .map(|(name, ty)| func_ty_complete_insert_text(name, &ty.into_function_ty()))
+            .map(|(name, ty)| func_ty_complete_insert_text(name, &ty.into_func_type()))
             .collect();
         assert_eq!(got_insert_text, expected_insert_text);
 
@@ -1027,7 +1082,7 @@ mod tests {
 
         let expected_labels: Vec<String> = STRING_MEMBER_FUNCTIONS
             .iter()
-            .map(|(name, ty)| func_ty_complete_label(name, &ty.into_function_ty()))
+            .map(|(name, ty)| func_ty_complete_label(name, &ty.into_func_type()))
             .collect();
         assert_eq!(got_labels, expected_labels);
 
@@ -1040,7 +1095,7 @@ mod tests {
         };
         let expected_insert_text: Vec<String> = STRING_MEMBER_FUNCTIONS
             .iter()
-            .map(|(name, ty)| func_ty_complete_insert_text(name, &ty.into_function_ty()))
+            .map(|(name, ty)| func_ty_complete_insert_text(name, &ty.into_func_type()))
             .collect();
         assert_eq!(got_insert_text, expected_insert_text);
 
@@ -1092,6 +1147,7 @@ mod tests {
                 "crypto",
                 "base64",
                 "units",
+                "file",
             ]
             .iter()
             .map(|name| KCLCompletionItem {
@@ -1345,7 +1401,7 @@ mod tests {
 
         let expected_labels: Vec<String> = STRING_MEMBER_FUNCTIONS
             .iter()
-            .map(|(name, ty)| func_ty_complete_label(name, &ty.into_function_ty()))
+            .map(|(name, ty)| func_ty_complete_label(name, &ty.into_func_type()))
             .collect();
         assert_eq!(got_labels, expected_labels);
 
@@ -1358,7 +1414,7 @@ mod tests {
         };
         let expected_insert_text: Vec<String> = STRING_MEMBER_FUNCTIONS
             .iter()
-            .map(|(name, ty)| func_ty_complete_insert_text(name, &ty.into_function_ty()))
+            .map(|(name, ty)| func_ty_complete_insert_text(name, &ty.into_func_type()))
             .collect();
         assert_eq!(got_insert_text, expected_insert_text);
 
@@ -1487,5 +1543,61 @@ mod tests {
             }
             CompletionResponse::List(_) => panic!("test failed"),
         };
+    }
+
+    #[test]
+    #[bench_test]
+    fn missing_expr_completion() {
+        let (file, program, _, _, gs) =
+            compile_test_file("src/test_data/completion_test/dot/missing_expr/missing_expr.k");
+
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 10,
+            column: Some(16),
+        };
+
+        let got = completion(Some('.'), &program, &pos, &gs).unwrap();
+        match got {
+            CompletionResponse::Array(arr) => {
+                assert_eq!(arr.len(), 2);
+                let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
+                assert!(labels.contains(&"cpu".to_string()));
+                assert!(labels.contains(&"memory".to_string()));
+            }
+            CompletionResponse::List(_) => panic!("test failed"),
+        }
+    }
+
+    #[test]
+    #[bench_test]
+    fn check_scope_completion() {
+        let (file, program, _, _, gs) =
+            compile_test_file("src/test_data/completion_test/check/check.k");
+
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 4,
+            column: Some(10),
+        };
+
+        let got = completion(Some(':'), &program, &pos, &gs);
+        assert!(got.is_none());
+
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 5,
+            column: Some(9),
+        };
+
+        let got = completion(None, &program, &pos, &gs).unwrap();
+        match got {
+            CompletionResponse::Array(arr) => {
+                assert_eq!(arr.len(), 3);
+                let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
+                assert!(labels.contains(&"name".to_string()));
+            }
+            CompletionResponse::List(_) => panic!("test failed"),
+        }
     }
 }

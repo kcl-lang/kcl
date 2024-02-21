@@ -215,7 +215,7 @@ pub fn execute(
         KclvmLibAssembler::LLVM,
         args.get_package_maps_from_external_pkg(),
     )
-    .gen_libs()?;
+    .gen_libs(args)?;
 
     // Link libs into one library
     let lib_suffix = Command::get_lib_suffix();
@@ -288,7 +288,7 @@ pub fn build_program<P: AsRef<Path>>(
         KclvmLibAssembler::LLVM,
         args.get_package_maps_from_external_pkg(),
     )
-    .gen_libs()?;
+    .gen_libs(args)?;
 
     // Link libs into one library.
     let lib_suffix = Command::get_lib_suffix();

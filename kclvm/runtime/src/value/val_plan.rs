@@ -162,7 +162,7 @@ fn handle_schema(ctx: &Context, value: &ValueRef, opts: &PlanOptions) -> (Vec<Va
             if v.is_config() {
                 v.dict_update_key_value(
                     SCHEMA_TYPE_META_ATTR,
-                    ValueRef::str(&value_type_path(value)),
+                    ValueRef::str(&value_type_path(value, true)),
                 );
             }
         }
@@ -190,21 +190,34 @@ fn handle_schema(ctx: &Context, value: &ValueRef, opts: &PlanOptions) -> (Vec<Va
 }
 
 /// Returns the type path of the runtime value `v`.
-fn value_type_path(v: &ValueRef) -> String {
+fn value_type_path(v: &ValueRef, full_name: bool) -> String {
     let path = format!("{SCHEMA_SETTINGS_ATTR_NAME}.{SETTINGS_SCHEMA_TYPE_KEY}");
     match v.get_by_path(&path) {
         Some(type_path) => match &*type_path.rc.borrow() {
             Value::str_value(ty_str) => {
-                let parts: Vec<&str> = ty_str.rsplit('.').collect();
-                match parts.first() {
-                    Some(v) => v.to_string(),
-                    None => v.type_str(),
+                if full_name {
+                    match ty_str.strip_prefix("@") {
+                        Some(ty_str) => ty_str.to_string(),
+                        None => ty_str.to_string(),
+                    }
+                } else {
+                    let parts: Vec<&str> = ty_str.rsplit('.').collect();
+                    match parts.first() {
+                        Some(v) => v.to_string(),
+                        None => type_of(v, full_name),
+                    }
                 }
             }
-            _ => v.type_str(),
+            _ => type_of(v, full_name),
         },
-        None => v.type_str(),
+        None => type_of(v, full_name),
     }
+}
+
+/// Returns the type path of the runtime value `v`.
+#[inline]
+fn type_of(v: &ValueRef, full_name: bool) -> String {
+    builtin::type_of(v, &ValueRef::bool(full_name)).as_str()
 }
 
 impl ValueRef {

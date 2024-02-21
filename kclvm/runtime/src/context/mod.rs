@@ -109,6 +109,14 @@ impl crate::Context {
         self.panic_info.kcl_pkgpath = pkgpath.to_string();
     }
 
+    pub fn set_kcl_module_path(&mut self, module_path: &str) {
+        self.module_path = module_path.to_string();
+    }
+
+    pub fn set_kcl_workdir(&mut self, workdir: &str) {
+        self.workdir = workdir.to_string();
+    }
+
     pub fn set_kcl_filename(&mut self, file: &str) {
         if !file.is_empty() {
             self.panic_info.kcl_file = file.to_string();

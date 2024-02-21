@@ -432,13 +432,14 @@ impl<'ctx> Resolver<'ctx> {
                 if suggs.len() > 0 {
                     suggestion = format!(", did you mean '{:?}'?", suggs);
                 }
-                self.handler.add_compile_error(
+                self.handler.add_compile_error_with_suggestions(
                     &format!(
                         "name '{}' is not defined{}",
                         name.replace('@', ""),
                         suggestion
                     ),
                     range,
+                    Some(suggs.clone()),
                 );
                 self.any_ty()
             }

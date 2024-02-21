@@ -4,7 +4,7 @@
 <a href="./README.md">English</a> | <a href="./README-zh.md">简体中文</a>
 </p>
 <p align="center">
-<a href="#介绍">介绍</a> | <a href="#特性">特性</a> | <a href="#场景">场景</a> | <a href="#安装">安装</a> | <a href="#快速开始">快速开始</a> | <a href="#文档">文档</a> | <a href="#贡献">贡献</a> | <a href="#路线规划">路线规划</a>
+<a href="#介绍">介绍</a> | <a href="#特性">特性</a> | <a href="#场景">场景</a> | <a href="#安装">安装</a> | <a href="#文档">文档</a> | <a href="#贡献">贡献</a> | <a href="#路线规划">路线规划</a>
 </p>
 
 <p align="center">
@@ -57,77 +57,11 @@ KCL 是一个开源的基于约束的记录及函数语言并通过成熟的编�
 
 ## 如何选择
 
-简单的答案：
-
-+ 如果你需要编写结构化的静态的 K-V，或使用 Kubernetes 原生的技术工具，建议选择 YAML
-+ 如果你希望引入编程语言便利性以消除文本(如 YAML、JSON) 模板，有良好的可读性，或者你已是 Terraform 的用户，建议选择 HCL
-+ 如果你希望引入类型功能提升稳定性，维护可扩展的配置文件，建议选择 CUE
-+ 如果你希望以现代语言方式编写复杂类型和建模，维护可扩展的配置文件，原生的纯函数和策略，和生产级的性能和自动化，建议选择 KCL
-
-更详细的功能和场景对比参考[这里](https://kcl-lang.io/docs/user_docs/getting-started/intro)。
+详细的功能和场景对比参考[这里](https://kcl-lang.io/docs/user_docs/getting-started/intro)。
 
 ## 安装
 
 有关安装的更多信息，请查看 KCL 官网的[安装指南](https://kcl-lang.io/docs/user_docs/getting-started/install/)
-
-## 快速开始
-
-`./samples/kubernetes.k` 是一个生成 Kubernetes 资源的例子
-
-```python
-apiVersion = "apps/v1"
-kind = "Deployment"
-metadata = {
-    name = "nginx"
-    labels.app = "nginx"
-}
-spec = {
-    replicas = 3
-    selector.matchLabels = metadata.labels
-    template.metadata.labels = metadata.labels
-    template.spec.containers = [
-        {
-            name = metadata.name
-            image = "${metadata.name}:1.14.2"
-            ports = [{ containerPort = 80 }]
-        }
-    ]
-}
-```
-
-我们可以通过执行如下命令得到 YAML 输出
-
-```bash
-kcl ./samples/kubernetes.k
-```
-
-YAML 输出
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: nginx
-  labels:
-    app: nginx
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: nginx
-  template:
-    metadata:
-      labels:
-        app: nginx
-    spec:
-      containers:
-      - name: nginx
-        image: nginx:1.14.2
-        ports:
-        - containerPort: 80
-```
-
-> 更多例子可以在[这里](https://github.com/kcl-lang/kcl-lang.io/tree/main/examples)找到
 
 ## 文档
 
@@ -141,7 +75,7 @@ spec:
 
 ## 路线规划
 
-参考[KCL 路线规划](https://github.com/kcl-lang/kcl/issues/29)
+参考[KCL 路线规划](https://github.com/kcl-lang/kcl/issues/882)
 
 ## 社区
 
