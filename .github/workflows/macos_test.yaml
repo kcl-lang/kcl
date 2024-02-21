@@ -18,10 +18,10 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Set up Go 1.19
+      - name: Set up Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.19
+          go-version: 1.21
 
       - name: Install KCL CLI
         run: go install kcl-lang.io/cli/cmd/kcl@latest
