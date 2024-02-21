@@ -414,5 +414,3 @@ fn test_update_kcl_module_success() {
     let result = update_kcl_module(manifest_path);
     assert!(result.is_ok());
 }
-
-
