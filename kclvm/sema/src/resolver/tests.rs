@@ -645,7 +645,7 @@ fn test_resolve_function_with_default_values() {
     let main_scope = scope.main_scope().unwrap();
     let func = main_scope.borrow().lookup("is_alpha").unwrap();
     assert!(func.borrow().ty.is_func());
-    let func_ty = func.borrow().ty.into_function_ty();
+    let func_ty = func.borrow().ty.into_func_type();
     assert_eq!(func_ty.params.len(), 3);
     assert_eq!(func_ty.params[0].has_default, false);
     assert_eq!(func_ty.params[1].has_default, true);

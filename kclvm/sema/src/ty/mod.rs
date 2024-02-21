@@ -96,13 +96,6 @@ impl Type {
             _ => None,
         }
     }
-
-    pub fn into_function_ty(&self) -> FunctionType {
-        match &self.kind {
-            TypeKind::Function(func) => func.clone(),
-            _ => panic!("Not a function type"),
-        }
-    }
 }
 
 unsafe impl Send for TypeKind {}
