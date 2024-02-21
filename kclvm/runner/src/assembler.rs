@@ -64,7 +64,7 @@ pub(crate) trait LibAssembler {
         import_names: IndexMap<String, IndexMap<String, String>>,
         code_file: &str,
         code_file_path: &str,
-        arg: &ExecProgramArgs
+        arg: &ExecProgramArgs,
     ) -> Result<String>;
 
     /// Clean cache lock files.
@@ -95,7 +95,7 @@ impl LibAssembler for KclvmLibAssembler {
         import_names: IndexMap<String, IndexMap<String, String>>,
         code_file: &str,
         object_file_path: &str,
-        args: &ExecProgramArgs
+        args: &ExecProgramArgs,
     ) -> Result<String> {
         match &self {
             KclvmLibAssembler::LLVM => LlvmLibAssembler::default().assemble(
@@ -103,7 +103,7 @@ impl LibAssembler for KclvmLibAssembler {
                 import_names,
                 code_file,
                 object_file_path,
-                args
+                args,
             ),
         }
     }
@@ -152,7 +152,7 @@ impl LibAssembler for LlvmLibAssembler {
         import_names: IndexMap<String, IndexMap<String, String>>,
         code_file: &str,
         object_file_path: &str,
-        arg: &ExecProgramArgs
+        arg: &ExecProgramArgs,
     ) -> Result<String> {
         // Clean the existed "*.o" object file.
         clean_path(object_file_path)?;
@@ -345,7 +345,13 @@ impl KclvmAssembler {
                 // written.
                 let file_path = if is_main_pkg {
                     // generate dynamic link library for single file kcl program
-                    assembler.assemble(&compile_prog, import_names, &code_file, &code_file_path, args)?
+                    assembler.assemble(
+                        &compile_prog,
+                        import_names,
+                        &code_file,
+                        &code_file_path,
+                        args,
+                    )?
                 } else {
                     // Read the lib path cache
                     let file_relative_path: Option<String> = load_pkg_cache(
@@ -379,7 +385,7 @@ impl KclvmAssembler {
                                 import_names,
                                 &code_file,
                                 &code_file_path,
-                                args
+                                args,
                             )?;
                             let lib_relative_path = file_path.replacen(root, ".", 1);
                             let _ = save_pkg_cache(

@@ -279,7 +279,7 @@ fn assemble_lib_for_test(
             scope.import_names,
             entry_file,
             temp_entry_file_path,
-            &ExecProgramArgs::default()
+            &ExecProgramArgs::default(),
         )
         .unwrap()
 }

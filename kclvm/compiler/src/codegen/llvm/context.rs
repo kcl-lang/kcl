@@ -1223,7 +1223,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         program: &'ctx ast::Program,
         import_names: IndexMap<String, IndexMap<String, String>>,
         no_link: bool,
-        workdir: String
+        workdir: String,
     ) -> LLVMCodeGenContext<'ctx> {
         LLVMCodeGenContext {
             context,
@@ -1249,7 +1249,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             import_names,
             no_link,
             modules: RefCell::new(HashMap::new()),
-            workdir
+            workdir,
         }
     }
 
