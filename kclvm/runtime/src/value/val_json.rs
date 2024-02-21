@@ -419,7 +419,7 @@ impl ValueRef {
         writer.to_str().unwrap().to_string()
     }
 
-    pub fn to_json_string_with_option(&self, opt: &JsonEncodeOptions) -> String {
+    pub fn to_json_string_with_options(&self, opt: &JsonEncodeOptions) -> String {
         let json = self.build_json(opt);
         let formatter = JsonFormatter::with_indent(opt.indent);
         let mut writer = Vec::with_capacity(128);
@@ -449,7 +449,12 @@ impl ValueRef {
                 Some(n) => JsonValue::Number(n),
                 None => JsonValue::Null,
             },
-            crate::Value::unit_value(..) => JsonValue::String(self.to_string()),
+            // The number_multiplier is still a number, if we want to get the string form, we can
+            // use the `str` function e.g. `str(1Mi)`
+            crate::Value::unit_value(ref v, ..) => match serde_json::Number::from_f64(*v) {
+                Some(n) => JsonValue::Number(n),
+                None => JsonValue::Null,
+            },
             crate::Value::str_value(ref v) => JsonValue::String(v.clone()),
 
             crate::Value::list_value(ref v) => {

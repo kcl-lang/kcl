@@ -17,7 +17,7 @@ pub extern "C" fn kclvm_json_encode(
 
     if let Some(arg0) = args.arg_i(0) {
         let s = ValueRef::str(
-            arg0.to_json_string_with_option(&kwargs_to_opts(kwargs))
+            arg0.to_json_string_with_options(&kwargs_to_opts(kwargs))
                 .as_ref(),
         );
         return s.into_raw(ctx);
@@ -76,8 +76,10 @@ pub extern "C" fn kclvm_json_dump_to_file(
     if let Some(data) = args.arg_i(0) {
         if let Some(filename) = args.arg_i(0) {
             let filename = filename.as_str();
-            let json = data.to_json_string_with_option(&kwargs_to_opts(kwargs));
-            std::fs::write(filename, json).expect("Unable to write file");
+            let json = data.to_json_string_with_options(&kwargs_to_opts(kwargs));
+            std::fs::write(&filename, json).unwrap_or_else(|e| {
+                panic!("Unable to write file '{}': {}", filename, e.to_string())
+            });
         }
     }
     panic!("dump_to_file() missing 2 required positional arguments: 'data' and 'filename'")

@@ -44,8 +44,38 @@ pub(crate) struct RuntimePanicRecord {
     pub rust_col: i32,
 }
 
+#[derive(Debug, Default, Clone, Copy)]
+#[repr(C)]
+pub struct FFIRunOptions {
+    pub strict_range_check: i32,
+    pub disable_none: i32,
+    pub disable_schema_check: i32,
+    pub list_option_mode: i32,
+    pub debug_mode: i32,
+    pub show_hidden: i32,
+    pub include_schema_type_path: i32,
+    pub disable_empty_list: i32,
+}
+
 thread_local! {
     static KCL_RUNTIME_PANIC_RECORD: std::cell::RefCell<RuntimePanicRecord>  = std::cell::RefCell::new(RuntimePanicRecord::default())
+}
+
+fn new_ctx_with_opts(opts: FFIRunOptions, path_selector: &[String]) -> Context {
+    let mut ctx = Context::new();
+    // Config
+    ctx.cfg.strict_range_check = opts.strict_range_check != 0;
+    ctx.cfg.disable_schema_check = opts.disable_schema_check != 0;
+    ctx.cfg.disable_schema_check = opts.disable_schema_check != 0;
+    ctx.cfg.list_option_mode = opts.list_option_mode != 0;
+    ctx.cfg.debug_mode = opts.debug_mode != 0;
+    // Plan options
+    ctx.plan_opts.disable_none = opts.disable_none != 0;
+    ctx.plan_opts.show_hidden = opts.show_hidden != 0;
+    ctx.plan_opts.include_schema_type_path = opts.include_schema_type_path != 0;
+    ctx.plan_opts.disable_empty_list = opts.disable_empty_list != 0;
+    ctx.plan_opts.query_paths = path_selector.to_vec();
+    ctx
 }
 
 #[no_mangle]
@@ -55,20 +85,18 @@ pub unsafe extern "C" fn _kcl_run(
     option_len: kclvm_size_t,
     option_keys: *const *const kclvm_char_t,
     option_values: *const *const kclvm_char_t,
-    strict_range_check: i32,
-    disable_none: i32,
-    disable_schema_check: i32,
-    list_option_mode: i32,
-    debug_mode: i32,
-    result_buffer_len: *mut kclvm_size_t,
-    result_buffer: *mut kclvm_char_t,
-    warn_buffer_len: *mut kclvm_size_t,
-    warn_buffer: *mut kclvm_char_t,
+    opts: FFIRunOptions,
+    path_selector: *const *const kclvm_char_t,
+    json_result_buffer_len: *mut kclvm_size_t,
+    json_result_buffer: *mut kclvm_char_t,
+    yaml_result_buffer_len: *mut kclvm_size_t,
+    yaml_result_buffer: *mut kclvm_char_t,
+    err_buffer_len: *mut kclvm_size_t,
+    err_buffer: *mut kclvm_char_t,
     log_buffer_len: *mut kclvm_size_t,
     log_buffer: *mut kclvm_char_t,
 ) -> kclvm_size_t {
-    let ctx = kclvm_context_new();
-
+    let ctx = Box::new(new_ctx_with_opts(opts, &c2str_vec(path_selector))).into_raw();
     let prev_hook = std::panic::take_hook();
     std::panic::set_hook(Box::new(|info: &std::panic::PanicInfo| {
         KCL_RUNTIME_PANIC_RECORD.with(|record| {
@@ -99,13 +127,8 @@ pub unsafe extern "C" fn _kcl_run(
             option_len,
             option_keys,
             option_values,
-            strict_range_check,
-            disable_none,
-            disable_schema_check,
-            list_option_mode,
-            debug_mode,
-            result_buffer_len,
-            result_buffer,
+            json_result_buffer_len,
+            json_result_buffer,
         )
     });
     std::panic::set_hook(prev_hook);
@@ -116,7 +139,14 @@ pub unsafe extern "C" fn _kcl_run(
     });
     // Get the runtime context.
     let ctx_ref = ptr_as_ref(ctx);
-    // Copy log message pointer
+    // Copy YAML result pointer.
+    let c_str_ptr = ctx_ref.yaml_result.as_ptr() as *const c_char;
+    let c_str_len = ctx_ref.yaml_result.len() as i32;
+    if c_str_len <= *yaml_result_buffer_len {
+        std::ptr::copy(c_str_ptr, yaml_result_buffer, c_str_len as usize);
+        *yaml_result_buffer_len = c_str_len
+    }
+    // Copy log message pointer.
     let c_str_ptr = ctx_ref.log_message.as_ptr() as *const c_char;
     let c_str_len = ctx_ref.log_message.len() as i32;
     if c_str_len <= *log_buffer_len {
@@ -130,9 +160,9 @@ pub unsafe extern "C" fn _kcl_run(
     match result {
         Ok(n) => {
             unsafe {
-                if c_str_len <= *warn_buffer_len {
-                    std::ptr::copy(c_str_ptr, warn_buffer, c_str_len as usize);
-                    *warn_buffer_len = c_str_len
+                if c_str_len <= *err_buffer_len {
+                    std::ptr::copy(c_str_ptr, err_buffer, c_str_len as usize);
+                    *err_buffer_len = c_str_len
                 }
             }
             kclvm_context_delete(ctx);
@@ -141,11 +171,11 @@ pub unsafe extern "C" fn _kcl_run(
         Err(_) => {
             let mut return_len = c_str_len;
             unsafe {
-                if return_len <= *result_buffer_len {
-                    std::ptr::copy(c_str_ptr, result_buffer, return_len as usize);
-                    *result_buffer_len = return_len
+                if return_len <= *json_result_buffer_len {
+                    std::ptr::copy(c_str_ptr, json_result_buffer, return_len as usize);
+                    *json_result_buffer_len = return_len
                 } else {
-                    *result_buffer = '\0' as kclvm_char_t;
+                    *json_result_buffer = '\0' as kclvm_char_t;
                     return_len = 0 - return_len;
                 }
             }
@@ -163,22 +193,11 @@ unsafe fn _kcl_run_in_closure(
     option_len: kclvm_size_t,
     option_keys: *const *const kclvm_char_t,
     option_values: *const *const kclvm_char_t,
-    strict_range_check: i32,
-    disable_none: i32,
-    disable_schema_check: i32,
-    list_option_mode: i32,
-    debug_mode: i32,
     result_buffer_len: *mut kclvm_size_t,
     result_buffer: *mut kclvm_char_t,
 ) -> kclvm_size_t {
     let kclvm_main = (&kclvm_main_ptr as *const u64) as *const ()
         as *const extern "C" fn(ctx: *mut kclvm_context_t) -> *mut kclvm_value_ref_t;
-
-    kclvm_context_set_strict_range_check(ctx, strict_range_check as kclvm_bool_t);
-    kclvm_context_set_disable_none(ctx, disable_none as kclvm_bool_t);
-    kclvm_context_set_disable_schema_check(ctx, disable_schema_check as kclvm_bool_t);
-    kclvm_context_set_list_option_mode(ctx, list_option_mode as kclvm_bool_t);
-    kclvm_context_set_debug_mode(ctx, debug_mode as kclvm_bool_t);
 
     unsafe {
         let option_keys = std::slice::from_raw_parts(option_keys, option_len as usize);
@@ -196,6 +215,7 @@ unsafe fn _kcl_run_in_closure(
             kclvm_context_main_end_hook(ctx, x)
         };
 
+        // The main function returns a JSON string result or panic with error message.
         let c_str_ptr = kclvm_value_Str_ptr(value);
         let c_str_len = kclvm_value_len(value);
 

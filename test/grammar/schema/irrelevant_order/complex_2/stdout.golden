@@ -1,7 +1,14 @@
-apiVersion: v1
-kind: Namespace
-metadata:
+node:
   name: prod-frontend
-spec:
+  metadata:
+    name: prod-frontend
   finalizers:
   - test
+  kubeNamespace:
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: prod-frontend
+    spec:
+      finalizers:
+      - test

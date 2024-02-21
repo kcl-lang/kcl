@@ -154,6 +154,7 @@ impl ValueRef {
                         -1
                     };
                     d.dict_update_entry(key, value, op, &index);
+                    d.set_potential_schema_type(&dict.potential_schema.clone().unwrap_or_default());
                     Some(d)
                 } else {
                     None
@@ -174,6 +175,9 @@ impl ValueRef {
                         -1
                     };
                     d.dict_update_entry(key, value, op, &index);
+                    d.set_potential_schema_type(
+                        &schema.config.potential_schema.clone().unwrap_or_default(),
+                    );
                     Some(d)
                 } else {
                     None
@@ -200,6 +204,7 @@ impl ValueRef {
                         d.dict_update_entry(key, value, op, index);
                     }
                 }
+                d.set_potential_schema_type(&dict.potential_schema.clone().unwrap_or_default());
                 d
             }
             Value::schema_value(ref schema) => {
@@ -216,6 +221,14 @@ impl ValueRef {
                         d.dict_update_entry(key, value, op, index);
                     }
                 }
+                d.set_potential_schema_type(
+                    &schema
+                        .config
+                        .potential_schema
+                        .as_ref()
+                        .map(|v| v.to_string())
+                        .unwrap_or_default(),
+                );
                 d
             }
             // Panic
@@ -233,6 +246,7 @@ impl ValueRef {
         };
         if v.is_config() {
             let v = v.as_dict_ref();
+            dict.potential_schema = v.potential_schema.clone();
             for (k, v) in v.values.iter() {
                 dict.values.insert(k.clone(), v.clone());
             }

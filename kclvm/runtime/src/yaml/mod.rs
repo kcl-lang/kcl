@@ -105,7 +105,9 @@ pub extern "C" fn kclvm_yaml_dump_to_file(
             let filename = filename.as_str();
 
             let yaml = data.to_yaml_string_with_options(&kwargs_to_opts(kwargs));
-            std::fs::write(filename, yaml).expect("Unable to write file");
+            std::fs::write(&filename, yaml).unwrap_or_else(|e| {
+                panic!("Unable to write file '{}': {}", filename, e.to_string())
+            });
         }
     }
     panic!("dump_to_file() missing 2 required positional arguments: 'data' and 'filename'")

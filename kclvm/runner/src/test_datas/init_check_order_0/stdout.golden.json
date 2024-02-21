@@ -1,1 +1,1 @@
-{"alice": {"name": "alice", "age": 10, "gender": "female", "info": "alice, female, 10 years old", "__settings__": {"output_type": "INLINE", "__schema_type__": "__main__.Person"}}}
+{"alice": {"name": "alice", "age": 10, "gender": "female", "info": "alice, female, 10 years old"}}

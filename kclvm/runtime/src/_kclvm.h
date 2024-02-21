@@ -450,7 +450,7 @@ void kclvm_schema_assert(kclvm_context_t* ctx, kclvm_value_ref_t* value, kclvm_v
 
 void kclvm_schema_backtrack_cache(kclvm_context_t* ctx, kclvm_value_ref_t* schema, kclvm_value_ref_t* cache, kclvm_value_ref_t* cal_map, kclvm_char_t* name, kclvm_value_ref_t* runtime_type);
 
-void kclvm_schema_default_settings(kclvm_value_ref_t* schema_value, kclvm_value_ref_t* config_value, kclvm_char_t* runtime_type);
+void kclvm_schema_default_settings(kclvm_value_ref_t* schema_value, kclvm_value_ref_t* _config_value, kclvm_char_t* runtime_type);
 
 void kclvm_schema_do_check_with_index_sign_attr(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs, uint64_t* check_fn_ptr, kclvm_char_t* attr_name);
 

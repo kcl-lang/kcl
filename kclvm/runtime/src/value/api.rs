@@ -452,7 +452,7 @@ pub unsafe extern "C" fn kclvm_value_to_json_value(
     let p = ptr_as_ref(p);
     let s = p.to_json_string();
     let ctx = mut_ptr_as_ref(ctx);
-    return new_mut_ptr(ctx, ValueRef::str(s.as_ref()));
+    new_mut_ptr(ctx, ValueRef::str(s.as_ref()))
 }
 
 #[no_mangle]
@@ -468,7 +468,7 @@ pub unsafe extern "C" fn kclvm_value_to_json_value_with_null(
     let p = ptr_as_ref(p);
     let s = p.to_json_string_with_null();
     let ctx = mut_ptr_as_ref(ctx);
-    return new_mut_ptr(ctx, ValueRef::str(s.as_ref()));
+    new_mut_ptr(ctx, ValueRef::str(s.as_ref()))
 }
 
 #[no_mangle]
@@ -478,10 +478,15 @@ pub unsafe extern "C" fn kclvm_value_plan_to_json(
     p: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
     let p = ptr_as_ref(p);
-    let ctx = mut_ptr_as_ref(ctx);
-    let s = p.plan_to_json_string(ctx);
-
-    return new_mut_ptr(ctx, ValueRef::str(s.as_ref()));
+    let ctx: &mut Context = mut_ptr_as_ref(ctx);
+    let value = match ctx.buffer.custom_manifests_output.clone() {
+        Some(output) => ValueRef::from_yaml_stream(ctx, &output).unwrap(),
+        None => p.clone(),
+    };
+    let (json_string, yaml_string) = value.plan(ctx);
+    ctx.json_result = json_string.clone();
+    ctx.yaml_result = yaml_string.clone();
+    new_mut_ptr(ctx, ValueRef::str(&json_string))
 }
 
 #[no_mangle]
@@ -492,9 +497,14 @@ pub unsafe extern "C" fn kclvm_value_plan_to_yaml(
 ) -> *mut kclvm_value_ref_t {
     let p = ptr_as_ref(p);
     let ctx = mut_ptr_as_ref(ctx);
-    let s = p.plan_to_yaml_string(ctx);
-
-    return new_mut_ptr(ctx, ValueRef::str(s.as_ref()));
+    let value = match ctx.buffer.custom_manifests_output.clone() {
+        Some(output) => ValueRef::from_yaml_stream(ctx, &output).unwrap(),
+        None => p.clone(),
+    };
+    let (json_string, yaml_string) = value.plan(ctx);
+    ctx.json_result = json_string.clone();
+    ctx.yaml_result = yaml_string.clone();
+    new_mut_ptr(ctx, ValueRef::str(&yaml_string))
 }
 
 #[no_mangle]
@@ -510,7 +520,7 @@ pub unsafe extern "C" fn kclvm_value_to_yaml_value(
     let p = ptr_as_ref(p);
     let s = p.to_yaml_string();
 
-    return new_mut_ptr(ctx, ValueRef::str(s.as_ref()));
+    new_mut_ptr(ctx, ValueRef::str(s.as_ref()))
 }
 
 #[no_mangle]
@@ -527,7 +537,7 @@ pub unsafe extern "C" fn kclvm_value_to_str_value(
     let p = ptr_as_ref(p);
     let s = p.to_string();
 
-    return new_mut_ptr(ctx, ValueRef::str(s.as_ref()));
+    new_mut_ptr(ctx, ValueRef::str(s.as_ref()))
 }
 
 // ----------------------------------------------------------------------------
@@ -2152,14 +2162,9 @@ pub unsafe extern "C" fn kclvm_schema_instances(
                         list.list_append(v)
                     }
                 } else if v.is_dict() {
-                    let runtime_type_attr_path =
-                        format!("{SCHEMA_SETTINGS_ATTR_NAME}.{SETTINGS_SCHEMA_TYPE_KEY}");
-                    let runtime_type =
-                        if let Some(runtime_type) = v.get_by_path(&runtime_type_attr_path) {
-                            runtime_type.as_str()
-                        } else {
-                            runtime_type.to_string()
-                        };
+                    let runtime_type = v
+                        .get_potential_schema_type()
+                        .unwrap_or(runtime_type.to_string());
                     let names: Vec<&str> = runtime_type.rsplit('.').collect();
                     let name = names[0];
                     let pkgpath = names[1];
@@ -2305,13 +2310,12 @@ pub unsafe extern "C" fn kclvm_schema_optional_check(
 #[runtime_fn]
 pub unsafe extern "C" fn kclvm_schema_default_settings(
     schema_value: *mut kclvm_value_ref_t,
-    config_value: *const kclvm_value_ref_t,
+    _config_value: *const kclvm_value_ref_t,
     runtime_type: *const kclvm_char_t,
 ) {
     let schema_value = mut_ptr_as_ref(schema_value);
-    let config_value = ptr_as_ref(config_value);
     let runtime_type = c2str(runtime_type);
-    schema_value.schema_default_settings(config_value, runtime_type);
+    schema_value.set_potential_schema_type(runtime_type);
 }
 
 #[no_mangle]

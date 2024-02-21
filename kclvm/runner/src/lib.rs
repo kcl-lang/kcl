@@ -9,7 +9,6 @@ use kclvm_ast::{
 use kclvm_driver::{canonicalize_input_files, expand_input_files};
 use kclvm_parser::{load_program, KCLModuleCache, ParseSessionRef};
 use kclvm_query::apply_overrides;
-use kclvm_runtime::{Context, PlanOptions, ValueRef};
 use kclvm_sema::resolver::{
     resolve_program, resolve_program_with_opts, scope::ProgramScope, Options,
 };
@@ -89,9 +88,7 @@ pub fn exec_program(sess: ParseSessionRef, args: &ExecProgramArgs) -> Result<Exe
         &[],
         args.print_override_ast || args.debug > 0,
     )?;
-    let mut result = execute(sess, program, args)?;
-    mutate_exec_result(&mut result, args)?;
-    Ok(result)
+    execute(sess, program, args)
 }
 
 /// Execute the KCL artifact with args.
@@ -99,36 +96,7 @@ pub fn exec_artifact<P: AsRef<OsStr>>(
     path: P,
     args: &ExecProgramArgs,
 ) -> Result<ExecProgramResult> {
-    let artifact = Artifact::from_path(path)?;
-    let mut result = artifact.run(args)?;
-    mutate_exec_result(&mut result, args)?;
-    Ok(result)
-}
-
-fn mutate_exec_result(result: &mut ExecProgramResult, args: &ExecProgramArgs) -> Result<()> {
-    // If it is a empty result, return it directly
-    if result.json_result.is_empty() {
-        return Ok(());
-    }
-    // Filter values with the path selector.
-    let mut ctx = Context::new();
-    let kcl_val = ValueRef::from_yaml_stream(&mut ctx, &result.json_result)?;
-    let kcl_val = kcl_val
-        .filter_by_path(&args.path_selector)
-        .map_err(|err| anyhow!(err))?;
-    // Plan values.
-    let (json_result, yaml_result) = kcl_val.plan(
-        &mut ctx,
-        &PlanOptions {
-            sort_keys: args.sort_keys,
-            include_schema_type_path: args.include_schema_type_path,
-        },
-    );
-    result.json_result = json_result;
-    if !args.disable_yaml_result {
-        result.yaml_result = yaml_result;
-    }
-    Ok(())
+    Artifact::from_path(path)?.run(args)
 }
 
 /// After the kcl program passed through kclvm-parser in the compiler frontend,

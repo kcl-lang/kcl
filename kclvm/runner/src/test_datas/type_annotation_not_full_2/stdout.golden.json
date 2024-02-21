@@ -1,1 +1,1 @@
-{"a1":{"__settings__":{"__schema_type__":"__main__.A","output_type":"INLINE"},"a":1},"a2":{"__settings__":{"__schema_type__":"__main__.A","output_type":"INLINE"},"a":2},"a3":{"__settings__":{"__schema_type__":"__main__.A","output_type":"INLINE"},"a":3}}
+{"a1":{"a":1},"a2":{"a":2},"a3":{"a":3}}

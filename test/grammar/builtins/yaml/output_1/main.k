@@ -2,7 +2,6 @@
 import yaml
 
 schema Person:
-    __settings__: {str:str} = {"output_type": "STANDALONE"}
     name?: str
     age?: int
     school?: str

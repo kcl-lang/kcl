@@ -1,5 +1,4 @@
 schema Backend:
-    __settings__: {str:str} = {"output_type": "STANDALONE"}
     """ existence of this attribute indicates that the model will be treated standalone by KCLVM.
     """
 

@@ -47,6 +47,8 @@ impl ValueRef {
         }
 
         let mut union_fn = |obj: &mut DictValue, delta: &DictValue| {
+            // Update potential schema type
+            obj.potential_schema = delta.potential_schema.clone();
             // Update attribute map
             for (k, v) in &delta.ops {
                 obj.ops.insert(k.clone(), v.clone());
@@ -55,6 +57,7 @@ impl ValueRef {
             for (k, v) in &delta.insert_indexs {
                 obj.insert_indexs.insert(k.clone(), *v);
             }
+            // Update values
             for (k, v) in &delta.values {
                 let operation = if let Some(op) = delta.ops.get(k) {
                     op
