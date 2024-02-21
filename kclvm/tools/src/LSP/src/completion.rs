@@ -108,10 +108,35 @@ pub(crate) fn completion(
             }
 
             if let Some(scope) = gs.look_up_scope(pos) {
+                // Complete builtin functions in root scope and lambda
                 match scope.get_kind() {
-                    kclvm_sema::core::scope::ScopeKind::Local => {}
+                    kclvm_sema::core::scope::ScopeKind::Local => {
+                        if let Some(locol_scope) = gs.get_scopes().try_get_local_scope(&scope) {
+                            match locol_scope.get_kind() {
+                                kclvm_sema::core::scope::LocalSymbolScopeKind::Lambda => {
+                                    completions.extend(BUILTIN_FUNCTIONS.iter().map(
+                                        |(name, ty)| KCLCompletionItem {
+                                            label: func_ty_complete_label(
+                                                name,
+                                                &ty.into_func_type(),
+                                            ),
+                                            detail: Some(
+                                                ty.into_func_type().func_signature_str(name),
+                                            ),
+                                            documentation: ty.ty_doc(),
+                                            kind: Some(KCLCompletionItemKind::Function),
+                                            insert_text: Some(func_ty_complete_insert_text(
+                                                name,
+                                                &ty.into_func_type(),
+                                            )),
+                                        },
+                                    ));
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
                     kclvm_sema::core::scope::ScopeKind::Root => {
-                        // Complete builtin functions in root scope
                         completions.extend(BUILTIN_FUNCTIONS.iter().map(|(name, ty)| {
                             KCLCompletionItem {
                                 label: func_ty_complete_label(name, &ty.into_func_type()),
