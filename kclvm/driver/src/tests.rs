@@ -9,8 +9,8 @@ use walkdir::WalkDir;
 use crate::arguments::parse_key_value_pair;
 use crate::kpm_metadata::fetch_metadata;
 use crate::kpm_update::update_kcl_module;
-use crate::{fill_pkg_maps_for_k_file, lookup_the_nearest_file_dir};
 use crate::{canonicalize_input_files, expand_input_files, get_pkg_list};
+use crate::{fill_pkg_maps_for_k_file, lookup_the_nearest_file_dir};
 
 #[test]
 fn test_canonicalize_input_files() {

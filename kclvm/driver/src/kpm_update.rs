@@ -1,4 +1,4 @@
-use crate::{lookup_the_nearest_file_dir, kcl};
+use crate::{kcl, lookup_the_nearest_file_dir};
 use anyhow::{bail, Result};
 use std::{path::PathBuf, process::Command};
 
@@ -28,6 +28,9 @@ pub(crate) fn update_kcl_module(manifest_path: PathBuf) -> Result<()> {
                 Err(err) => bail!("update failed with error: {}", err),
             }
         }
-        None => bail!("Manifest file '{}' not found in directory hierarchy", MANIFEST_FILE),
+        None => bail!(
+            "Manifest file '{}' not found in directory hierarchy",
+            MANIFEST_FILE
+        ),
     }
 }
