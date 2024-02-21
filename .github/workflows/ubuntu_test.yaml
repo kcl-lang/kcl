@@ -28,7 +28,7 @@ jobs:
       - name: Install rust nightly toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: 1.73
+          toolchain: 1.75
           override: true
           components: clippy, rustfmt
       - name: Code format check
@@ -41,25 +41,19 @@ jobs:
         shell: bash
       - name: Grammar test
         working-directory: ./kclvm
-        run: export PATH=$PATH:$PWD/../_build/dist/ubuntu/kclvm/bin && make install-rustc-wasm && make && make test-grammar
+        run: export PATH=$PATH:$PWD/../_build/dist/ubuntu/kclvm/bin && make && make test-grammar
         shell: bash
       - name: Runtime test
         working-directory: ./kclvm
-        run: export PATH=$PATH:$PWD/../_build/dist/ubuntu/kclvm/bin && make install-rustc-wasm && make && make test-runtime
+        run: export PATH=$PATH:$PWD/../_build/dist/ubuntu/kclvm/bin && make && make test-runtime
         shell: bash
       - name: Install kpm
         run: go install kcl-lang.io/kpm@latest
 
       - name: Unit test
         working-directory: ./kclvm
-        run: export PATH=$PATH:$PWD/../_build/dist/ubuntu/kclvm/bin && make install-rustc-wasm && make && make codecov-lcov
+        run: export PATH=$PATH:$PWD/../_build/dist/ubuntu/kclvm/bin && make && make test
         shell: bash
-
-      - name: Coveralls upload
-        uses: coverallsapp/github-action@master
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: ./kclvm/.kclvm_cov/lcov.info
 
       - uses: actions/upload-artifact@v3
         with:

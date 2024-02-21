@@ -1,4 +1,4 @@
-//! Copyright The KCL Authors. All rights reserved.
+// Copyright The KCL Authors. All rights reserved.
 
 // Auto generated, DONOT EDIT!!!
 
@@ -98,7 +98,9 @@ pub fn _kclvm_get_fn_ptr_by_name(name: &str) -> u64 {
         "kclvm_context_set_kcl_location" => {
             crate::kclvm_context_set_kcl_location as *const () as u64
         }
+        "kclvm_context_set_kcl_modpath" => crate::kclvm_context_set_kcl_modpath as *const () as u64,
         "kclvm_context_set_kcl_pkgpath" => crate::kclvm_context_set_kcl_pkgpath as *const () as u64,
+        "kclvm_context_set_kcl_workdir" => crate::kclvm_context_set_kcl_workdir as *const () as u64,
         "kclvm_context_set_list_option_mode" => {
             crate::kclvm_context_set_list_option_mode as *const () as u64
         }
@@ -143,6 +145,10 @@ pub fn _kclvm_get_fn_ptr_by_name(name: &str) -> u64 {
         "kclvm_dict_update" => crate::kclvm_dict_update as *const () as u64,
         "kclvm_dict_update_key_value" => crate::kclvm_dict_update_key_value as *const () as u64,
         "kclvm_dict_values" => crate::kclvm_dict_values as *const () as u64,
+        "kclvm_file_glob" => crate::kclvm_file_glob as *const () as u64,
+        "kclvm_file_modpath" => crate::kclvm_file_modpath as *const () as u64,
+        "kclvm_file_read" => crate::kclvm_file_read as *const () as u64,
+        "kclvm_file_workdir" => crate::kclvm_file_workdir as *const () as u64,
         "kclvm_iterator_cur_key" => crate::kclvm_iterator_cur_key as *const () as u64,
         "kclvm_iterator_cur_value" => crate::kclvm_iterator_cur_value as *const () as u64,
         "kclvm_iterator_delete" => crate::kclvm_iterator_delete as *const () as u64,

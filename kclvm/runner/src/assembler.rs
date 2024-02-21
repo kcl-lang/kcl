@@ -14,6 +14,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use crate::ExecProgramArgs;
+
 /// IR code file suffix.
 const DEFAULT_IR_FILE: &str = "_a.out";
 
@@ -54,12 +56,15 @@ pub(crate) trait LibAssembler {
     ///
     /// "object_file_path" is the full filename of the generated intermediate code file with suffix.
     /// e.g. code_file_path : "/test_dir/test_code_file.o"
+    ///
+    /// "arg" is the arguments of the kclvm runtime.   
     fn assemble(
         &self,
         compile_prog: &Program,
         import_names: IndexMap<String, IndexMap<String, String>>,
         code_file: &str,
         code_file_path: &str,
+        arg: &ExecProgramArgs,
     ) -> Result<String>;
 
     /// Clean cache lock files.
@@ -90,6 +95,7 @@ impl LibAssembler for KclvmLibAssembler {
         import_names: IndexMap<String, IndexMap<String, String>>,
         code_file: &str,
         object_file_path: &str,
+        args: &ExecProgramArgs,
     ) -> Result<String> {
         match &self {
             KclvmLibAssembler::LLVM => LlvmLibAssembler::default().assemble(
@@ -97,6 +103,7 @@ impl LibAssembler for KclvmLibAssembler {
                 import_names,
                 code_file,
                 object_file_path,
+                args,
             ),
         }
     }
@@ -145,6 +152,7 @@ impl LibAssembler for LlvmLibAssembler {
         import_names: IndexMap<String, IndexMap<String, String>>,
         code_file: &str,
         object_file_path: &str,
+        arg: &ExecProgramArgs,
     ) -> Result<String> {
         // Clean the existed "*.o" object file.
         clean_path(object_file_path)?;
@@ -152,6 +160,7 @@ impl LibAssembler for LlvmLibAssembler {
         // Compile KCL code into ".o" object file.
         emit_code(
             compile_prog,
+            arg.work_dir.clone().unwrap_or("".to_string()),
             import_names,
             &EmitOptions {
                 from_path: None,
@@ -271,7 +280,7 @@ impl KclvmAssembler {
     ///
     /// `gen_libs` will create multiple threads and call the method provided by [KclvmLibAssembler] in each thread
     /// to generate the dynamic link library in parallel.
-    pub(crate) fn gen_libs(self) -> Result<Vec<String>> {
+    pub(crate) fn gen_libs(self, args: &ExecProgramArgs) -> Result<Vec<String>> {
         self.clean_path_for_genlibs(
             DEFAULT_IR_FILE,
             &self.single_file_assembler.get_code_file_suffix(),
@@ -336,7 +345,13 @@ impl KclvmAssembler {
                 // written.
                 let file_path = if is_main_pkg {
                     // generate dynamic link library for single file kcl program
-                    assembler.assemble(&compile_prog, import_names, &code_file, &code_file_path)?
+                    assembler.assemble(
+                        &compile_prog,
+                        import_names,
+                        &code_file,
+                        &code_file_path,
+                        args,
+                    )?
                 } else {
                     // Read the lib path cache
                     let file_relative_path: Option<String> = load_pkg_cache(
@@ -370,6 +385,7 @@ impl KclvmAssembler {
                                 import_names,
                                 &code_file,
                                 &code_file_path,
+                                args,
                             )?;
                             let lib_relative_path = file_path.replacen(root, ".", 1);
                             let _ = save_pkg_cache(

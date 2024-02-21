@@ -1,0 +1,19 @@
+contents:
+- |-
+  {
+      "key1": "value1",
+      "key2": "value2",
+      "data": [1, 2, 3]
+  }
+- |-
+  {
+      "key1": "value3",
+      "key2": "value4",
+      "data": [4, 5, 6]
+  }
+- |-
+  {
+      "key1": "value5",
+      "key2": "value6",
+      "data": [7, 8, 9]
+  }

@@ -1,4 +1,4 @@
-; Copyright 2021 The KCL Authors. All rights reserved.
+; Copyright The KCL Authors. All rights reserved.
 
 ; Auto generated, DONOT EDIT!!!
 
@@ -178,7 +178,11 @@ declare void @kclvm_context_set_kcl_line_col(%kclvm_context_t* %ctx, i32 %line, 
 
 declare void @kclvm_context_set_kcl_location(%kclvm_context_t* %p, i8* %filename, i32 %line, i32 %col);
 
+declare void @kclvm_context_set_kcl_modpath(%kclvm_context_t* %p, i8* %module_path);
+
 declare void @kclvm_context_set_kcl_pkgpath(%kclvm_context_t* %p, i8* %pkgpath);
+
+declare void @kclvm_context_set_kcl_workdir(%kclvm_context_t* %p, i8* %workdir);
 
 declare void @kclvm_context_set_list_option_mode(%kclvm_context_t* %p, %kclvm_bool_t %v);
 
@@ -247,6 +251,14 @@ declare void @kclvm_dict_update(%kclvm_value_ref_t* %p, %kclvm_value_ref_t* %v);
 declare void @kclvm_dict_update_key_value(%kclvm_value_ref_t* %p, %kclvm_value_ref_t* %key, %kclvm_value_ref_t* %v);
 
 declare %kclvm_value_ref_t* @kclvm_dict_values(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %p);
+
+declare %kclvm_value_ref_t* @kclvm_file_glob(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+
+declare %kclvm_value_ref_t* @kclvm_file_modpath(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %_args, %kclvm_value_ref_t* %_kwargs);
+
+declare %kclvm_value_ref_t* @kclvm_file_read(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+
+declare %kclvm_value_ref_t* @kclvm_file_workdir(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %_args, %kclvm_value_ref_t* %_kwargs);
 
 declare %kclvm_value_ref_t* @kclvm_iterator_cur_key(%kclvm_iterator_t* %p);
 

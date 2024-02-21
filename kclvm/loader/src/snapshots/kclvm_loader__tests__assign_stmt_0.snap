@@ -1,0 +1,88 @@
+---
+source: loader/src/tests.rs
+expression: "format!(\"{:#?}\", p.symbols.values())"
+---
+[
+    SymbolInfo {
+        ty: Type {
+            kind: Int,
+            is_type_alias: false,
+            flags: INT,
+        },
+        name: "a",
+        range: (
+            Position {
+                filename: "test.k",
+                line: 1,
+                column: Some(
+                    0,
+                ),
+            },
+            Position {
+                filename: "test.k",
+                line: 1,
+                column: Some(
+                    1,
+                ),
+            },
+        ),
+        owner: Some(
+            SymbolRef {
+                id: Index {
+                    index: 13,
+                    generation: 0,
+                },
+                kind: Package,
+            },
+        ),
+        def: Some(
+            SymbolRef {
+                id: Index {
+                    index: 151,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+        ),
+        attrs: [],
+        is_global: true,
+    },
+    SymbolInfo {
+        ty: Type {
+            kind: IntLit(
+                1,
+            ),
+            is_type_alias: false,
+            flags: INT | LITERAL,
+        },
+        name: "@NumberLitExpression",
+        range: (
+            Position {
+                filename: "test.k",
+                line: 1,
+                column: Some(
+                    5,
+                ),
+            },
+            Position {
+                filename: "test.k",
+                line: 1,
+                column: Some(
+                    5,
+                ),
+            },
+        ),
+        owner: None,
+        def: Some(
+            SymbolRef {
+                id: Index {
+                    index: 0,
+                    generation: 0,
+                },
+                kind: Expression,
+            },
+        ),
+        attrs: [],
+        is_global: false,
+    },
+]

@@ -3073,8 +3073,10 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 };
                 // Store a local variable for every entry key.
                 let key = match &optional_name {
-                    Some(name) => self.string_value(name),
-                    None => self.walk_expr(key)?,
+                    Some(name) if !self.local_vars.borrow().contains(name) => {
+                        self.string_value(name)
+                    }
+                    _ => self.walk_expr(key)?,
                 };
                 self.dict_insert_with_key_value(
                     config_value,

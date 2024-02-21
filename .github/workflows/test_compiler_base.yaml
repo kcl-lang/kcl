@@ -1,5 +1,12 @@
 name: build-and-test-compiler-base
-on: ["push", "pull_request"]
+on:
+  push:
+    paths:
+      - 'compiler_base/**'
+  pull_request:
+    paths:
+      - 'compiler_base/**'
+
 jobs:
   check-fmt:
     name: Test
@@ -15,7 +22,7 @@ jobs:
       - name: Install rust nightly toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: 1.73
+          toolchain: 1.75
           override: true
           components: clippy, rustfmt
       - name: Rust code format check
@@ -36,7 +43,7 @@ jobs:
       - name: Install rust nightly toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: 1.73
+          toolchain: 1.75
           override: true
           components: clippy, rustfmt
       - name: Compiler_base rust unit test

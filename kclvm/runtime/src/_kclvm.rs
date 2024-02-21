@@ -1,4 +1,4 @@
-//! Copyright The KCL Authors. All rights reserved.
+// Copyright The KCL Authors. All rights reserved.
 
 // Auto generated, DONOT EDIT!!!
 
@@ -101,7 +101,9 @@ pub enum ApiFunc {
     kclvm_context_set_kcl_filename,
     kclvm_context_set_kcl_line_col,
     kclvm_context_set_kcl_location,
+    kclvm_context_set_kcl_modpath,
     kclvm_context_set_kcl_pkgpath,
+    kclvm_context_set_kcl_workdir,
     kclvm_context_set_list_option_mode,
     kclvm_context_set_strict_range_check,
     kclvm_convert_collection_value,
@@ -136,6 +138,10 @@ pub enum ApiFunc {
     kclvm_dict_update,
     kclvm_dict_update_key_value,
     kclvm_dict_values,
+    kclvm_file_glob,
+    kclvm_file_modpath,
+    kclvm_file_read,
+    kclvm_file_workdir,
     kclvm_iterator_cur_key,
     kclvm_iterator_cur_value,
     kclvm_iterator_delete,

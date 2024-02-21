@@ -172,9 +172,9 @@ impl KclvmServiceImpl {
     /// assert_eq!(result.type_errors.len(), 0);
     /// assert_eq!(result.symbols.len(), 12);
     /// assert_eq!(result.scopes.len(), 3);
-    /// assert_eq!(result.node_symbol_map.len(), 159);
-    /// assert_eq!(result.symbol_node_map.len(), 159);
-    /// assert_eq!(result.fully_qualified_name_map.len(), 166);
+    /// assert_eq!(result.node_symbol_map.len(), 163);
+    /// assert_eq!(result.symbol_node_map.len(), 163);
+    /// assert_eq!(result.fully_qualified_name_map.len(), 171);
     /// assert_eq!(result.pkg_scope_map.len(), 3);
     /// ```
     pub fn load_package(&self, args: &LoadPackageArgs) -> anyhow::Result<LoadPackageResult> {
@@ -286,25 +286,20 @@ impl KclvmServiceImpl {
     ///     ..Default::default()
     /// };
     /// let error = serv.exec_program(args).unwrap_err();
-    /// assert!(error.contains("Cannot find the kcl file"), "{error}");
+    /// assert!(error.to_string().contains("Cannot find the kcl file"), "{error}");
     ///
     /// let args = &ExecProgramArgs {
     ///     k_filename_list: vec![],
     ///     ..Default::default()
     /// };
     /// let error = serv.exec_program(args).unwrap_err();
-    /// assert!(error.contains("No input KCL files or paths"), "{error}");
+    /// assert!(error.to_string().contains("No input KCL files or paths"), "{error}");
     /// ```
-    pub fn exec_program(&self, args: &ExecProgramArgs) -> Result<ExecProgramResult, String> {
+    pub fn exec_program(&self, args: &ExecProgramArgs) -> anyhow::Result<ExecProgramResult> {
         // transform args to json
-        let args_json = serde_json::to_string(args).unwrap();
-
+        let exec_args = transform_exec_para(&Some(args.clone()), self.plugin_agent)?;
         let sess = ParseSessionRef::default();
-        let result = exec_program(
-            sess,
-            &kclvm_runner::ExecProgramArgs::from_str(args_json.as_str()),
-        )
-        .map_err(|err| err.to_string())?;
+        let result = exec_program(sess, &exec_args)?;
 
         Ok(ExecProgramResult {
             json_result: result.json_result,
@@ -336,7 +331,7 @@ impl KclvmServiceImpl {
     /// assert!(!artifact.path.is_empty());
     /// ```
     pub fn build_program(&self, args: &BuildProgramArgs) -> anyhow::Result<BuildProgramResult> {
-        let exec_args = transform_exec_para(&args.exec_args)?;
+        let exec_args = transform_exec_para(&args.exec_args, self.plugin_agent)?;
         let artifact = build_program(
             ParseSessionRef::default(),
             &exec_args,
@@ -375,7 +370,7 @@ impl KclvmServiceImpl {
     /// assert_eq!(exec_result.yaml_result, "alice:\n  age: 18");
     /// ```
     pub fn exec_artifact(&self, args: &ExecArtifactArgs) -> anyhow::Result<ExecProgramResult> {
-        let exec_args = transform_exec_para(&args.exec_args)?;
+        let exec_args = transform_exec_para(&args.exec_args, self.plugin_agent)?;
         let result = exec_artifact(&args.path, &exec_args)?;
         Ok(ExecProgramResult {
             json_result: result.json_result,
@@ -507,7 +502,7 @@ impl KclvmServiceImpl {
         args: &GetFullSchemaTypeArgs,
     ) -> anyhow::Result<GetSchemaTypeResult> {
         let mut type_list = Vec::new();
-        let exec_args = transform_exec_para(&args.exec_args)?;
+        let exec_args = transform_exec_para(&args.exec_args, self.plugin_agent)?;
         for (_k, schema_ty) in get_full_schema_type(
             Some(&args.schema_name),
             CompilationOptions {
@@ -893,7 +888,7 @@ impl KclvmServiceImpl {
     /// ```
     pub fn test(&self, args: &TestArgs) -> anyhow::Result<TestResult> {
         let mut result = TestResult::default();
-        let exec_args = transform_exec_para(&args.exec_args)?;
+        let exec_args = transform_exec_para(&args.exec_args, self.plugin_agent)?;
         let opts = testing::TestOptions {
             exec_args,
             run_regexp: args.run_regexp.clone(),
