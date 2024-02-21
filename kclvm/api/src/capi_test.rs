@@ -6,8 +6,10 @@ use serde::de::DeserializeOwned;
 use std::default::Default;
 use std::ffi::{CStr, CString};
 use std::fs;
+use std::os::raw::c_char;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
+
 const TEST_DATA_PATH: &str = "./src/testdata";
 static TEST_MUTEX: Lazy<Mutex<i32>> = Lazy::new(|| Mutex::new(0i32));
 
@@ -239,7 +241,7 @@ where
         CString::from_vec_unchecked(serde_json::from_str::<A>(&input).unwrap().encode_to_vec())
     };
     let call = CString::new(svc_name).unwrap();
-    let result_ptr = kclvm_service_call(serv, call.as_ptr(), args.as_ptr()) as *mut i8;
+    let result_ptr = kclvm_service_call(serv, call.as_ptr(), args.as_ptr());
     let result = unsafe { CStr::from_ptr(result_ptr) };
 
     let mut result = R::decode(result.to_bytes()).unwrap();
@@ -258,7 +260,7 @@ where
     assert_eq!(result, except_result, "\nresult json is {result_json}");
     unsafe {
         kclvm_service_delete(serv);
-        kclvm_service_free_string(result_ptr);
+        kclvm_service_free_string(result_ptr as *mut c_char);
     }
 }
 
@@ -279,9 +281,8 @@ where
     let prev_hook = std::panic::take_hook();
     // disable print panic info
     std::panic::set_hook(Box::new(|_info| {}));
-    let result = std::panic::catch_unwind(|| {
-        kclvm_service_call(serv, call.as_ptr(), args.as_ptr()) as *mut i8
-    });
+    let result =
+        std::panic::catch_unwind(|| kclvm_service_call(serv, call.as_ptr(), args.as_ptr()));
     std::panic::set_hook(prev_hook);
     match result {
         Ok(result_ptr) => {
@@ -297,7 +298,7 @@ where
             assert!(result.to_string_lossy().contains(&except_result_panic_msg));
             unsafe {
                 kclvm_service_delete(serv);
-                kclvm_service_free_string(result_ptr);
+                kclvm_service_free_string(result_ptr as *mut c_char);
             }
         }
         Err(_) => {
