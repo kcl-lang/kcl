@@ -1,4 +1,4 @@
 {
-    "json_result": "[{\"age\": 18}]",
+    "json_result": "{\"age\": 18}",
     "yaml_result": "age: 18"
 }

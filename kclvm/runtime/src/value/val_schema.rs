@@ -6,12 +6,6 @@ use crate::*;
 
 use self::walker::walk_value_mut;
 
-pub const SETTINGS_OUTPUT_KEY: &str = "output_type";
-pub const SETTINGS_SCHEMA_TYPE_KEY: &str = "__schema_type__";
-pub const SETTINGS_OUTPUT_STANDALONE: &str = "STANDALONE";
-pub const SETTINGS_OUTPUT_INLINE: &str = "INLINE";
-pub const SETTINGS_OUTPUT_IGNORE: &str = "IGNORE";
-pub const SCHEMA_SETTINGS_ATTR_NAME: &str = "__settings__";
 pub const CONFIG_META_FILENAME: &str = "$filename";
 pub const CONFIG_META_LINE: &str = "$lineno";
 pub const CONFIG_META_COLUMN: &str = "$columnno";
@@ -182,23 +176,33 @@ impl ValueRef {
         }
     }
 
-    pub fn schema_default_settings(&mut self, config: &ValueRef, runtime_type: &str) {
-        let settings = self.dict_get_value(SCHEMA_SETTINGS_ATTR_NAME);
-        if let Some(mut settings) = settings {
-            if settings.is_config() {
-                settings
-                    .dict_update_key_value(SETTINGS_SCHEMA_TYPE_KEY, ValueRef::str(runtime_type));
-            }
-        } else {
-            let mut default_settings = ValueRef::dict(None);
-            default_settings
-                .dict_update_key_value(SETTINGS_OUTPUT_KEY, ValueRef::str(SETTINGS_OUTPUT_INLINE));
-            default_settings
-                .dict_update_key_value(SETTINGS_SCHEMA_TYPE_KEY, ValueRef::str(runtime_type));
-            self.dict_update_key_value(SCHEMA_SETTINGS_ATTR_NAME, default_settings);
+    pub fn get_potential_schema_type(&self) -> Option<String> {
+        match &*self.rc.borrow() {
+            Value::dict_value(ref dict) => dict.potential_schema.clone(),
+            Value::schema_value(ref schema) => schema.config.potential_schema.clone(),
+            _ => None,
         }
-        if let Some(v) = config.dict_get_value(SCHEMA_SETTINGS_ATTR_NAME) {
-            self.dict_update_key_value(SCHEMA_SETTINGS_ATTR_NAME, v);
+    }
+
+    pub fn set_potential_schema_type(&mut self, runtime_type: &str) {
+        if !runtime_type.is_empty() {
+            match &mut *self.rc.borrow_mut() {
+                Value::dict_value(ref mut dict) => {
+                    dict.potential_schema = Some(runtime_type.to_string())
+                }
+                Value::schema_value(ref mut schema) => {
+                    schema.config.potential_schema = Some(runtime_type.to_string())
+                }
+                _ => {}
+            }
+        }
+    }
+
+    pub fn has_potential_schema_type(&self) -> bool {
+        match &*self.rc.borrow() {
+            Value::dict_value(ref dict) => dict.potential_schema.is_some(),
+            Value::schema_value(ref schema) => schema.config.potential_schema.is_some(),
+            _ => false,
         }
     }
 
@@ -243,6 +247,7 @@ impl ValueRef {
             let insert_indexs = &mut schema.config.insert_indexs;
             // Reserve config keys for the schema update process. Issue: #785
             schema.config_keys = value.config_keys.clone();
+            schema.config.potential_schema = value.config.potential_schema.clone();
             for (k, v) in &value.config.values {
                 let op = value
                     .config
@@ -265,7 +270,6 @@ mod test_value_schema {
     const TEST_SCHEMA_NAME: &str = "Data";
 
     fn get_test_schema_value() -> ValueRef {
-        let config = ValueRef::dict(None);
         let mut schema = ValueRef::dict(None).dict_to_schema(
             TEST_SCHEMA_NAME,
             MAIN_PKG_PATH,
@@ -273,10 +277,7 @@ mod test_value_schema {
             &ValueRef::dict(None),
             &ValueRef::dict(None),
         );
-        schema.schema_default_settings(
-            &config,
-            &schema_runtime_type(TEST_SCHEMA_NAME, MAIN_PKG_PATH),
-        );
+        schema.set_potential_schema_type(&schema_runtime_type(TEST_SCHEMA_NAME, MAIN_PKG_PATH));
         schema
     }
 
@@ -339,17 +340,6 @@ mod test_value_schema {
             schema.schema_check_attr_optional(&mut ctx, true);
         });
         assert!(err.is_err())
-    }
-
-    #[test]
-    fn test_schema_default_settings() {
-        let schema = get_test_schema_value();
-        let schema_settings = schema.get_by_key(SCHEMA_SETTINGS_ATTR_NAME).unwrap();
-        let output_type = schema_settings
-            .get_by_key(SETTINGS_OUTPUT_KEY)
-            .unwrap()
-            .as_str();
-        assert_eq!(output_type, SETTINGS_OUTPUT_INLINE);
     }
 
     #[test]

@@ -220,6 +220,8 @@ pub fn convert_collection_value(ctx: &mut Context, value: &ValueRef, tpe: &str) 
         let (_, value_tpe) = separate_kv(&dereference_type(&tpe));
         let mut expected_dict = ValueRef::dict(None);
         let dict_ref = value.as_dict_ref();
+        expected_dict
+            .set_potential_schema_type(&dict_ref.potential_schema.clone().unwrap_or_default());
         for (k, v) in &dict_ref.values {
             let expected_value = convert_collection_value(ctx, v, &value_tpe);
             let op = dict_ref

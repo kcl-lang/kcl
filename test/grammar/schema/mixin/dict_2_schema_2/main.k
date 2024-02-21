@@ -10,9 +10,6 @@ schema Rule:
     kind: str = "Rule"
     access: [str]
     entity: Person
-    __settings__: {str:} = {
-        output_type = "STANDALONE"
-    }
 
 schema RuleMixin:
     if rule:

@@ -100,7 +100,7 @@ impl ValueRef {
             ignore_private: opt.ignore_private,
             ignore_none: opt.ignore_none,
         };
-        let json = self.to_json_string_with_option(&json_opt);
+        let json = self.to_json_string_with_options(&json_opt);
         let yaml_value: serde_yaml::Value = serde_json::from_str(json.as_ref()).unwrap();
         match serde_yaml::to_string(&yaml_value) {
             Ok(s) => {

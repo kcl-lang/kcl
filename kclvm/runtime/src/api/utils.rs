@@ -42,9 +42,30 @@ pub(crate) fn mut_ptr_as_ref<'a, T>(p: *mut T) -> &'a mut T {
 
 /// Convert a C str pointer to a Rust &str.
 /// Safety: The caller must ensure that `s` is a valid null-terminated C string.
-pub(crate) fn c2str<'a>(s: *const c_char) -> &'a str {
-    let s = unsafe { std::ffi::CStr::from_ptr(s) }.to_str().unwrap();
+pub(crate) fn c2str<'a>(p: *const c_char) -> &'a str {
+    let s = unsafe { std::ffi::CStr::from_ptr(p) }.to_str().unwrap();
     s
+}
+
+/// Convert a C str pointer pointer to a Rust Vec<String>.
+pub(crate) fn c2str_vec(ptr_array: *const *const c_char) -> Vec<String> {
+    let mut result = Vec::new();
+    let mut index = 0;
+
+    unsafe {
+        loop {
+            let current_ptr = *ptr_array.offset(index);
+            if current_ptr.is_null() {
+                break;
+            }
+            let c_str = std::ffi::CStr::from_ptr(current_ptr);
+            let rust_string = c_str.to_string_lossy().to_string();
+            result.push(rust_string);
+            index += 1;
+        }
+    }
+
+    result
 }
 
 pub fn assert_panic<F: FnOnce() + std::panic::UnwindSafe>(msg: &str, func: F) {

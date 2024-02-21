@@ -7,13 +7,13 @@ alice:
     access:
     - read
     - write
----
-kind: Rule
-access:
-- read
-- write
-entity:
-  name: alice
-  relatives:
-  - relation: father
-    name: Reese
+  ruleModel:
+    kind: Rule
+    access:
+    - read
+    - write
+    entity:
+      name: alice
+      relatives:
+      - relation: father
+        name: Reese

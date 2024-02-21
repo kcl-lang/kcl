@@ -609,7 +609,11 @@ fn exec_with_result_at(path: &str) {
         #[cfg(target_os = "windows")]
         let expected = expected.replace("\r\n", "\n");
 
-        assert_eq!(result.yaml_result, expected);
+        assert_eq!(
+            result.yaml_result, expected,
+            "test case {} {} failed",
+            path, kcl_file
+        );
     }
 }
 
@@ -672,6 +676,6 @@ fn test_compile_with_file_pattern() {
     );
     assert_eq!(
         res.as_ref().unwrap().json_result,
-        "[{\"k3\": \"Hello World!\", \"k1\": \"Hello World!\", \"k2\": \"Hello World!\"}]"
+        "{\"k3\": \"Hello World!\", \"k1\": \"Hello World!\", \"k2\": \"Hello World!\"}"
     );
 }

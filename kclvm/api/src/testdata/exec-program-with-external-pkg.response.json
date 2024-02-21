@@ -1,5 +1,5 @@
 {
-        "json_result": "[{\"a\": \"Hello External World!\", \"a1\": \"Hello External_1 World!\"}]",
+        "json_result": "{\"a\": \"Hello External World!\", \"a1\": \"Hello External_1 World!\"}",
         "yaml_result": "a: Hello External World!\na1: Hello External_1 World!",
         "escaped_time": "0.002061128616333008"
 }

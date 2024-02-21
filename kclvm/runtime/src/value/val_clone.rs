@@ -57,10 +57,14 @@ impl ValueRef {
                         &index.clone(),
                     );
                 }
+                dict.set_potential_schema_type(&v.potential_schema.clone().unwrap_or_default());
                 dict
             }
             Value::schema_value(ref v) => {
                 let mut dict = ValueRef::from(Value::dict_value(Box::new(DictValue::new(&[]))));
+                dict.set_potential_schema_type(
+                    &v.config.potential_schema.clone().unwrap_or_default(),
+                );
                 for (key, val) in &v.config.values {
                     let op = v
                         .config

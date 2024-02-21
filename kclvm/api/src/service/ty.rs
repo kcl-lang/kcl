@@ -1,6 +1,5 @@
 use crate::gpyrpc::{Decorator, Example, KclType};
 use indexmap::IndexSet;
-use kclvm_runtime::SCHEMA_SETTINGS_ATTR_NAME;
 use kclvm_sema::ty::{DictType, SchemaType, Type};
 use std::collections::HashMap;
 
@@ -77,23 +76,21 @@ fn get_schema_ty_attributes(schema_ty: &SchemaType, line: &mut i32) -> HashMap<S
     };
     let mut type_mapping = HashMap::new();
     for (key, attr) in &schema_ty.attrs {
-        if key != SCHEMA_SETTINGS_ATTR_NAME {
-            let mut ty = kcl_ty_to_pb_ty(&attr.ty);
-            ty.line = *line;
-            ty.description = attr.doc.clone().unwrap_or_default();
-            ty.decorators = attr
-                .decorators
-                .iter()
-                .map(|d| Decorator {
-                    name: d.name.clone(),
-                    arguments: d.arguments.clone(),
-                    keywords: d.keywords.clone(),
-                })
-                .collect();
-            ty.default = attr.default.clone().unwrap_or_default();
-            type_mapping.insert(key.to_string(), ty);
-            *line += 1
-        }
+        let mut ty = kcl_ty_to_pb_ty(&attr.ty);
+        ty.line = *line;
+        ty.description = attr.doc.clone().unwrap_or_default();
+        ty.decorators = attr
+            .decorators
+            .iter()
+            .map(|d| Decorator {
+                name: d.name.clone(),
+                arguments: d.arguments.clone(),
+                keywords: d.keywords.clone(),
+            })
+            .collect();
+        ty.default = attr.default.clone().unwrap_or_default();
+        type_mapping.insert(key.to_string(), ty);
+        *line += 1
     }
     for (k, ty) in type_mapping {
         base_type_mapping.insert(k, ty);
@@ -109,7 +106,7 @@ fn get_schema_ty_required_attributes(schema_ty: &SchemaType) -> Vec<String> {
     };
     let mut attr_set = IndexSet::new();
     for (key, attr) in &schema_ty.attrs {
-        if key != SCHEMA_SETTINGS_ATTR_NAME && !attr.is_optional {
+        if !attr.is_optional {
             attr_set.insert(key.to_string());
         }
     }

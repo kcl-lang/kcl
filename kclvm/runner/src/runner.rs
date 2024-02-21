@@ -8,7 +8,7 @@ use kclvm_config::{
 };
 use kclvm_error::{Diagnostic, Handler};
 use kclvm_query::r#override::parse_override_spec;
-use kclvm_runtime::{Context, PanicInfo, ValueRef};
+use kclvm_runtime::{Context, FFIRunOptions, PanicInfo, ValueRef};
 use serde::{Deserialize, Serialize};
 use std::ffi::OsStr;
 use std::os::raw::c_char;
@@ -29,33 +29,36 @@ pub type kclvm_value_ref_t = std::ffi::c_void;
 pub struct ExecProgramArgs {
     pub work_dir: Option<String>,
     pub k_filename_list: Vec<String>,
-    // -E key=value
+    /// -E key=value
     pub external_pkgs: Vec<ast::CmdExternalPkgSpec>,
     pub k_code_list: Vec<String>,
-    // -D key=value
+    /// -D key=value
     pub args: Vec<ast::CmdArgSpec>,
-    // -O override_spec
+    /// -O override_spec
     pub overrides: Vec<ast::OverrideSpec>,
-    // -S path_selector
+    /// -S path_selector
     pub path_selector: Vec<String>,
     pub disable_yaml_result: bool,
-    // Whether to apply overrides on the source code.
+    /// Whether to apply overrides on the source code.
     pub print_override_ast: bool,
-    // -r --strict-range-check
+    /// -r --strict-range-check
     pub strict_range_check: bool,
-    // -n --disable-none
+    /// -n --disable-none
     pub disable_none: bool,
-    // -v --verbose
+    /// -v --verbose
     pub verbose: i32,
-    // -d --debug
+    /// -d --debug
     pub debug: i32,
-    // yaml/json: sort keys
+    /// yaml/json: sort keys
     pub sort_keys: bool,
     /// Whether including schema type in JSON/YAML result
     pub include_schema_type_path: bool,
-    // Whether to compile only.
+    /// Whether to compile only.
     pub compile_only: bool,
-    // plugin_agent is the address of plugin.
+    /// Show hidden attributes
+    #[serde(skip)]
+    pub show_hidden: bool,
+    /// plugin_agent is the address of plugin.
     #[serde(skip)]
     pub plugin_agent: u64,
 }
@@ -307,70 +310,87 @@ impl KclLibRunner {
                 option_len: kclvm_size_t,
                 option_keys: *const *const kclvm_char_t,
                 option_values: *const *const kclvm_char_t,
-                strict_range_check: i32,
-                disable_none: i32,
-                disable_schema_check: i32,
-                list_option_mode: i32,
-                debug_mode: i32,
-                result_buffer_len: *mut kclvm_size_t,
-                result_buffer: *mut kclvm_char_t,
-                warn_buffer_len: *mut kclvm_size_t,
-                warn_buffer: *mut kclvm_char_t,
+                opts: FFIRunOptions,
+                path_selector: *const *const kclvm_char_t,
+                json_result_buffer_len: *mut kclvm_size_t,
+                json_result_buffer: *mut kclvm_char_t,
+                yaml_result_buffer_len: *mut kclvm_size_t,
+                yaml_result_buffer: *mut kclvm_char_t,
+                err_buffer_len: *mut kclvm_size_t,
+                err_buffer: *mut kclvm_char_t,
                 log_buffer_len: *mut kclvm_size_t,
                 log_buffer: *mut kclvm_char_t,
             ) -> kclvm_size_t,
         > = lib.get(b"_kcl_run")?;
 
+        // The lib main function
         let kclvm_main: libloading::Symbol<u64> = lib.get(b"kclvm_main")?;
         let kclvm_main_ptr = kclvm_main.into_raw().into_raw() as u64;
 
-        // CLI configs
+        // CLI configs option len
         let option_len = args.args.len() as kclvm_size_t;
-
+        // CLI configs option keys
         let cstr_argv: Vec<_> = args
             .args
             .iter()
             .map(|arg| std::ffi::CString::new(arg.name.as_str()).unwrap())
             .collect();
-
         let mut p_argv: Vec<_> = cstr_argv
             .iter() // do NOT into_iter()
             .map(|arg| arg.as_ptr())
             .collect();
         p_argv.push(std::ptr::null());
-
-        let p: *const *const kclvm_char_t = p_argv.as_ptr();
-        let option_keys = p;
-
+        let option_keys = p_argv.as_ptr();
+        // CLI configs option values
         let cstr_argv: Vec<_> = args
             .args
             .iter()
             .map(|arg| std::ffi::CString::new(arg.value.as_str()).unwrap())
             .collect();
-
         let mut p_argv: Vec<_> = cstr_argv
             .iter() // do NOT into_iter()
             .map(|arg| arg.as_ptr())
             .collect();
         p_argv.push(std::ptr::null());
+        let option_values = p_argv.as_ptr();
+        // path selectors
+        let cstr_argv: Vec<_> = args
+            .path_selector
+            .iter()
+            .map(|arg| std::ffi::CString::new(arg.as_str()).unwrap())
+            .collect();
+        let mut p_argv: Vec<_> = cstr_argv
+            .iter() // do NOT into_iter()
+            .map(|arg| arg.as_ptr())
+            .collect();
+        p_argv.push(std::ptr::null());
+        let path_selector = p_argv.as_ptr();
 
-        let p: *const *const kclvm_char_t = p_argv.as_ptr();
-        let option_values = p;
-        let strict_range_check = args.strict_range_check as i32;
-        let disable_none = args.disable_none as i32;
-        let disable_schema_check = 0; // todo
-        let list_option_mode = 0; // todo
-        let debug_mode = args.debug;
+        let opts = FFIRunOptions {
+            strict_range_check: args.strict_range_check as i32,
+            disable_none: args.disable_none as i32,
+            disable_schema_check: 0, // todo
+            list_option_mode: 0,     // todo
+            disable_empty_list: 0,
+            show_hidden: args.show_hidden as i32, // todo
+            debug_mode: args.debug,
+            include_schema_type_path: args.include_schema_type_path as i32,
+        };
 
         // Exec json result
         let mut json_result = vec![0u8; RESULT_SIZE];
-        let mut result_buffer_len = json_result.len() as i32 - 1;
+        let mut json_result_buffer_len = json_result.len() as i32 - 1;
         let json_result_buffer = json_result.as_mut_ptr() as *mut c_char;
 
+        // Exec yaml result
+        let mut yaml_result = vec![0u8; RESULT_SIZE];
+        let mut yaml_result_buffer_len = yaml_result.len() as i32 - 1;
+        let yaml_result_buffer = yaml_result.as_mut_ptr() as *mut c_char;
+
         // Exec warning data
-        let mut warn_data = vec![0u8; RESULT_SIZE];
-        let mut warn_buffer_len = warn_data.len() as i32 - 1;
-        let warn_buffer = warn_data.as_mut_ptr() as *mut c_char;
+        let mut err_data = vec![0u8; RESULT_SIZE];
+        let mut err_buffer_len = err_data.len() as i32 - 1;
+        let err_buffer = err_data.as_mut_ptr() as *mut c_char;
 
         // Exec log data
         let mut log_data = vec![0u8; RESULT_SIZE];
@@ -382,15 +402,14 @@ impl KclLibRunner {
             option_len,
             option_keys,
             option_values,
-            strict_range_check,
-            disable_none,
-            disable_schema_check,
-            list_option_mode,
-            debug_mode,
-            &mut result_buffer_len,
+            opts,
+            path_selector,
+            &mut json_result_buffer_len,
             json_result_buffer,
-            &mut warn_buffer_len,
-            warn_buffer,
+            &mut yaml_result_buffer_len,
+            yaml_result_buffer,
+            &mut err_buffer_len,
+            err_buffer,
             &mut log_buffer_len,
             log_buffer,
         );
@@ -404,9 +423,11 @@ impl KclLibRunner {
                 Ok(json) => result.json_result = json,
                 Err(err) => result.err_message = err,
             }
+            result.yaml_result =
+                String::from_utf8(yaml_result[0..yaml_result_buffer_len as usize].to_vec())?;
         } else if n < 0 {
             let return_len = 0 - n;
-            result.err_message = String::from_utf8(warn_data[0..return_len as usize].to_vec())?;
+            result.err_message = String::from_utf8(err_data[0..return_len as usize].to_vec())?;
         }
 
         // Wrap runtime error into diagnostic style string.

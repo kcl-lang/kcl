@@ -2121,10 +2121,6 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         }
         // Deal global variables
         for (name, ptr) in globals.iter() {
-            // Omit private variables and function variables
-            if name.starts_with(kclvm_runtime::KCL_PRIVATE_VAR_PREFIX) {
-                continue;
-            }
             let value = self.builder.build_load(*ptr, "");
             let value_dict = self.dict_value();
             self.dict_safe_insert(value_dict, name.as_str(), value, 0, -1);

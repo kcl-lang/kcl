@@ -2,7 +2,7 @@
 
 #[allow(non_camel_case_types)]
 type kclvm_value_ref_t = crate::ValueRef;
-use crate::{new_mut_ptr, IndexMap};
+use crate::{new_mut_ptr, IndexMap, PlanOptions};
 use indexmap::IndexSet;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
@@ -238,6 +238,8 @@ pub struct DictValue {
     pub ops: IndexMap<String, ConfigEntryOperationKind>,
     pub insert_indexs: IndexMap<String, i32>,
     pub attr_map: IndexMap<String, String>,
+    // The runtime dict to schema reflect type string.
+    pub potential_schema: Option<String>,
 }
 
 #[derive(PartialEq, Clone, Default, Debug)]
@@ -312,12 +314,7 @@ pub struct ContextConfig {
 
     pub strict_range_check: bool,
     pub disable_schema_check: bool,
-
     pub list_option_mode: bool,
-    /// Whether to emit none value in the plan process.
-    pub disable_none: bool,
-    /// Whether to emit empty list in the plan process.
-    pub disable_empty_list: bool,
 }
 
 #[derive(PartialEq, Eq, Clone, Debug)]
@@ -358,7 +355,6 @@ impl Default for ContextOutput {
 pub struct Context {
     pub cfg: ContextConfig,
     pub output: ContextOutput,
-    pub panic_info: PanicInfo,
 
     pub module_path: String,
     pub workdir: String,
@@ -381,6 +377,14 @@ pub struct Context {
     pub objects: IndexSet<usize>,
     /// Log message used to store print results.
     pub log_message: String,
+    /// Planned JSON result
+    pub json_result: String,
+    /// Planned YAML result
+    pub yaml_result: String,
+    /// Panic information at runtime
+    pub panic_info: PanicInfo,
+    /// Planning options
+    pub plan_opts: PlanOptions,
 }
 
 impl UnwindSafe for Context {}

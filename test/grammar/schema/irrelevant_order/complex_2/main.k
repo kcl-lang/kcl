@@ -1,5 +1,4 @@
 schema KubeNamespace:
-    __settings__: {str:str} = {"output_type": "STANDALONE"}
     apiVersion: str = "v1"
     kind: str = "Namespace"
     metadata: {str:}
@@ -33,10 +32,6 @@ schema Namespace(Metadata):
 
     name: str = "prod-frontend"
     finalizers: [str]
-
-    __settings__: {str:} = {
-        "output_type": "IGNORE"
-    }
 
 node = Namespace {
     finalizers: ["test"]
