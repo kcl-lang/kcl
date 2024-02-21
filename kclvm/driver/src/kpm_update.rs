@@ -4,7 +4,6 @@ use std::{path::PathBuf, process::Command};
 
 const MANIFEST_FILE: &str = "kcl.mod";
 
-
 /// Update the KCL module.
 ///
 /// This function calls `kcl mod update` to update the KCL module.
