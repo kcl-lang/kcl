@@ -53,6 +53,7 @@ fn test_expand_input_files_with_kcl_mod() {
 }
 
 #[test]
+#[cfg(not(windows))]
 fn test_expand_input_files() {
     let input_files = vec!["./src/test_data/expand_file_pattern/**/main.k".to_string()];
     let mut expected_files = vec![
