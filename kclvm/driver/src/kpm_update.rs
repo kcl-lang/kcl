@@ -1,9 +1,12 @@
-use crate::kpm_metadata::get_path_for_executable;
+use crate::{kcl, lookup_the_nearest_file_dir};
 use anyhow::{bail, Result};
 use std::{path::PathBuf, process::Command};
 
 const MANIFEST_FILE: &str = "kcl.mod";
 
+/// Update the KCL module.
+///
+/// This function calls `kcl mod update` to update the KCL module.
 pub(crate) fn update_kcl_module(manifest_path: PathBuf) -> Result<()> {
     match lookup_the_nearest_file_dir(manifest_path.clone(), MANIFEST_FILE) {
         Some(mod_dir) => {
@@ -29,26 +32,5 @@ pub(crate) fn update_kcl_module(manifest_path: PathBuf) -> Result<()> {
             "Manifest file '{}' not found in directory hierarchy",
             MANIFEST_FILE
         ),
-    }
-}
-pub fn kcl() -> PathBuf {
-    get_path_for_executable("kcl")
-}
-
-pub(crate) fn lookup_the_nearest_file_dir(
-    from: PathBuf,
-    the_nearest_file: &str,
-) -> Option<PathBuf> {
-    let mut current_dir = from;
-
-    loop {
-        let found_path = current_dir.join(the_nearest_file);
-        if found_path.is_file() {
-            return current_dir.canonicalize().ok();
-        }
-        match current_dir.parent() {
-            Some(parent) => current_dir = parent.to_path_buf(),
-            None => return None,
-        }
     }
 }
