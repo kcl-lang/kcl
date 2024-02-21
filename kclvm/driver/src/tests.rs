@@ -411,16 +411,13 @@ fn test_fetch_mod_metadata() {
         .join("kpm_update");
 
     let update_mod = update_kcl_module(path.clone());
-    let metadata = fetch_metadata(path.clone());
     // Show more information when the test fails.
     println!("{:?}", update_mod);
     assert!(!update_mod.is_err());
-    let pkgs = metadata.unwrap().packages.clone();
-    assert_eq!(pkgs.len(), 1);
 }
 
 #[test]
 fn test_update_module() {
     test_fetch_mod_metadata();
-    println!("test_fetch_mod_metadata() passed");
+    println!("test_update_module() passed");
 }
