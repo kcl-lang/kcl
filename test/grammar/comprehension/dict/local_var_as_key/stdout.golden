@@ -1,0 +1,19 @@
+r0:
+- foo: a
+- bar: b
+r1:
+- a: foo
+- b: bar
+r2:
+- a:
+    foo: foo
+- b:
+    foo: bar
+r3:
+- - a
+- - b
+r4:
+- - a
+  - foo
+- - b
+  - bar
