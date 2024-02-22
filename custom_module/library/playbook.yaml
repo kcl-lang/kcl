@@ -1,0 +1,6 @@
+---
+- hosts: localhost
+  tasks:
+    - name: Run KCL command
+      kcl_module:
+        file_path: ./main.k
