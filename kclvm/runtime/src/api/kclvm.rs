@@ -1,7 +1,5 @@
 //! Copyright The KCL Authors. All rights reserved.
 
-#[allow(non_camel_case_types)]
-type kclvm_value_ref_t = crate::ValueRef;
 use crate::{new_mut_ptr, IndexMap, PlanOptions};
 use indexmap::IndexSet;
 use serde::{Deserialize, Serialize};
@@ -283,7 +281,10 @@ pub struct OptionHelp {
 #[allow(non_snake_case)]
 #[derive(PartialEq, Eq, Clone, Default, Debug, Serialize, Deserialize)]
 pub struct PanicInfo {
-    pub __kcl_PanicInfo__: bool, // "__kcl_PanicInfo__"
+    // Used to distinguish whether it is an error
+    // message JSON or a program run result.
+    #[serde(rename = "__kcl_PanicInfo__")]
+    pub __kcl_PanicInfo__: bool,
     pub backtrace: Vec<BacktraceFrame>,
 
     pub rust_file: String,
@@ -297,7 +298,7 @@ pub struct PanicInfo {
     pub kcl_col: i32,
     pub kcl_arg_msg: String,
 
-    // only for schema check
+    // Only for schema check failed error message
     pub kcl_config_meta_file: String,
     pub kcl_config_meta_line: i32,
     pub kcl_config_meta_col: i32,
@@ -311,7 +312,6 @@ pub struct PanicInfo {
 #[derive(PartialEq, Eq, Clone, Default, Debug)]
 pub struct ContextConfig {
     pub debug_mode: bool,
-
     pub strict_range_check: bool,
     pub disable_schema_check: bool,
     pub list_option_mode: bool,
@@ -333,35 +333,15 @@ impl Default for ContextBuffer {
     }
 }
 
-#[derive(PartialEq, Eq, Clone, Debug)]
-pub struct ContextOutput {
-    pub stdout: String,
-    pub stderr: String,
-
-    pub return_value: *mut kclvm_value_ref_t, // *mut kclvm_value_ref_t
-}
-
-impl Default for ContextOutput {
-    fn default() -> Self {
-        Self {
-            stdout: "".to_string(),
-            stderr: "".to_string(),
-            return_value: std::ptr::null_mut(),
-        }
-    }
-}
-
 #[derive(PartialEq, Clone, Default, Debug)]
 pub struct Context {
     pub cfg: ContextConfig,
-    pub output: ContextOutput,
 
     pub module_path: String,
     pub workdir: String,
     pub main_pkg_path: String,
     pub main_pkg_files: Vec<String>,
     pub backtrace: Vec<BacktraceFrame>,
-
     pub imported_pkgpath: HashSet<String>,
     pub app_args: HashMap<String, u64>,
     pub instances: HashMap<String, Vec<ValueRef>>,
@@ -375,6 +355,7 @@ pub struct Context {
     pub buffer: ContextBuffer,
     /// objects is to store all KCL object pointers.
     pub objects: IndexSet<usize>,
+
     /// Log message used to store print results.
     pub log_message: String,
     /// Planned JSON result

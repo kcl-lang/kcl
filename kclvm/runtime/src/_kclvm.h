@@ -208,10 +208,6 @@ void kclvm_context_delete(kclvm_context_t* p);
 
 char* kclvm_context_invoke(kclvm_context_t* p, char* method, char* args, char* kwargs);
 
-void kclvm_context_main_begin_hook(kclvm_context_t* p);
-
-kclvm_value_ref_t* kclvm_context_main_end_hook(kclvm_context_t* p, kclvm_value_ref_t* return_value);
-
 kclvm_context_t* kclvm_context_new();
 
 kclvm_bool_t kclvm_context_pkgpath_is_imported(kclvm_context_t* ctx, kclvm_char_t* pkgpath);

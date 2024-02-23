@@ -10,14 +10,6 @@
 // api-spec(c):    void kclvm_context_delete(kclvm_context_t* p);
 // api-spec(llvm): declare void @kclvm_context_delete(%kclvm_context_t* %p);
 
-// api-spec:       kclvm_context_main_begin_hook
-// api-spec(c):    void kclvm_context_main_begin_hook(kclvm_context_t* p);
-// api-spec(llvm): declare void @kclvm_context_main_begin_hook(%kclvm_context_t* %p);
-
-// api-spec:       kclvm_context_main_end_hook
-// api-spec(c):    kclvm_value_ref_t* kclvm_context_main_end_hook(kclvm_context_t* p, kclvm_value_ref_t* return_value);
-// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_context_main_end_hook(%kclvm_context_t* %p, %kclvm_value_ref_t* %return_value);
-
 // api-spec:       kclvm_context_set_kcl_location
 // api-spec(c):    void kclvm_context_set_kcl_location(kclvm_context_t* p, char* filename, int32_t line, int32_t col);
 // api-spec(llvm): declare void @kclvm_context_set_kcl_location(%kclvm_context_t* %p, i8* %filename, i32 %line, i32 %col);

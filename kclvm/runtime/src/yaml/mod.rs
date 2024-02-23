@@ -2,6 +2,7 @@
 use crate::*;
 
 pub const YAML_STREAM_SEP: &str = "\n---\n";
+pub const JSON_STREAM_SEP: &str = "\n";
 
 /// encode(data, sort_keys=False, ignore_private=False, ignore_none=False)
 #[no_mangle]
