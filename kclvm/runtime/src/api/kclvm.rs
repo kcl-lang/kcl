@@ -12,46 +12,39 @@ use std::{
     hash::{Hash, Hasher},
 };
 
+/*
+ * Single instance name constants Undefined, None, True, False
+ */
 #[allow(non_upper_case_globals)]
 pub const UNDEFINED: Value = Value::undefined;
-
 #[allow(non_upper_case_globals)]
 pub const NONE: Value = Value::none;
-
 #[allow(non_upper_case_globals)]
 pub const TRUE: Value = Value::bool_value(true);
-
 #[allow(non_upper_case_globals)]
 pub const FALSE: Value = Value::bool_value(false);
 
-#[derive(PartialEq, Eq, Clone, Default, Debug)]
-pub struct KclError {
-    pub err_code: i32,
-    pub err_text: String,
-    pub filename: String,
-    pub source_code: String,
-    pub line: i32,
-    pub column: i32,
-}
+/*
+ * Runtime types
+ */
 
-#[allow(non_camel_case_types)]
 #[derive(Clone, PartialEq, Debug, Default)]
 pub enum Type {
     #[default]
-    any_type,
-    bool_type,
-    bool_lit_type(bool),
-    int_type,
-    int_lit_type(i64),
-    float_type,
-    float_lit_type(f64),
-    str_type,
-    str_lit_type(String),
-    list_type(ListType),
-    dict_type(DictType),
-    union_type(UnionType),
-    schema_type(SchemaType),
-    func_type(FuncType),
+    Any,
+    Bool,
+    BoolLit(bool),
+    Int,
+    IntLit(i64),
+    Float,
+    FloatLit(f64),
+    Str,
+    StrLit(String),
+    List(ListType),
+    Dict(DictType),
+    Union(UnionType),
+    Schema(SchemaType),
+    Func(FuncType),
 }
 
 #[derive(PartialEq, Clone, Default, Debug)]
@@ -143,8 +136,8 @@ impl PartialOrd for ValueRef {
 impl Hash for ValueRef {
     fn hash<H: Hasher>(&self, state: &mut H) {
         match &*self.rc.borrow() {
-            Value::undefined => panic!("unsupport hash for undefined"),
-            Value::none => panic!("unsupport hash for none"),
+            Value::undefined => 0.hash(state),
+            Value::none => 0.hash(state),
             Value::int_value(v) => (*v as f64).to_bits().hash(state),
             Value::unit_value(_real, raw, unit) => {
                 raw.hash(state);
@@ -196,7 +189,7 @@ impl ValueRef {
     }
 
     pub fn from_raw(&self) {
-        //if value is a func,clear captured ValueRef to break circular reference
+        // If value is a func, clear the captured ValueRef to break circular reference.
         if let Value::func_value(val) = &mut *self.rc.borrow_mut() {
             val.closure = ValueRef::none();
         }

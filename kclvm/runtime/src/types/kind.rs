@@ -5,20 +5,20 @@ use crate::*;
 impl Type {
     pub fn kind(&self) -> Kind {
         match self {
-            Type::any_type => Kind::Any,
-            Type::bool_type => Kind::Bool,
-            Type::bool_lit_type(..) => Kind::BoolLit,
-            Type::int_type => Kind::Int,
-            Type::int_lit_type(..) => Kind::IntLit,
-            Type::float_type => Kind::Float,
-            Type::float_lit_type(..) => Kind::FloatLit,
-            Type::str_type => Kind::Str,
-            Type::str_lit_type(..) => Kind::StrLit,
-            Type::list_type(..) => Kind::List,
-            Type::dict_type(..) => Kind::Dict,
-            Type::union_type(..) => Kind::Union,
-            Type::schema_type(..) => Kind::Schema,
-            Type::func_type(..) => Kind::Func,
+            Type::Any => Kind::Any,
+            Type::Bool => Kind::Bool,
+            Type::BoolLit(..) => Kind::BoolLit,
+            Type::Int => Kind::Int,
+            Type::IntLit(..) => Kind::IntLit,
+            Type::Float => Kind::Float,
+            Type::FloatLit(..) => Kind::FloatLit,
+            Type::Str => Kind::Str,
+            Type::StrLit(..) => Kind::StrLit,
+            Type::List(..) => Kind::List,
+            Type::Dict(..) => Kind::Dict,
+            Type::Union(..) => Kind::Union,
+            Type::Schema(..) => Kind::Schema,
+            Type::Func(..) => Kind::Func,
         }
     }
 }

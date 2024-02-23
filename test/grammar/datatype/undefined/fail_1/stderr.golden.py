@@ -14,7 +14,7 @@ kcl_error.print_kcl_error_message(
                 line_no=1
             )
         ],
-        arg_msg="int() argument must be a string, a bytes-like object or a number, not 'UndefinedType'"
+        arg_msg="int() argument must be a string or a number, not 'UndefinedType'"
     )
     , file=sys.stdout
 )

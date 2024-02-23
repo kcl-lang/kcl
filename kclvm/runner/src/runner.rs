@@ -377,27 +377,10 @@ impl KclLibRunner {
             debug_mode: args.debug,
             include_schema_type_path: args.include_schema_type_path as i32,
         };
-
-        // Exec json result
-        let mut json_result = vec![0u8; RESULT_SIZE];
-        let mut json_result_buffer_len = json_result.len() as i32 - 1;
-        let json_result_buffer = json_result.as_mut_ptr() as *mut c_char;
-
-        // Exec yaml result
-        let mut yaml_result = vec![0u8; RESULT_SIZE];
-        let mut yaml_result_buffer_len = yaml_result.len() as i32 - 1;
-        let yaml_result_buffer = yaml_result.as_mut_ptr() as *mut c_char;
-
-        // Exec warning data
-        let mut err_data = vec![0u8; RESULT_SIZE];
-        let mut err_buffer_len = err_data.len() as i32 - 1;
-        let err_buffer = err_data.as_mut_ptr() as *mut c_char;
-
-        // Exec log data
-        let mut log_data = vec![0u8; RESULT_SIZE];
-        let mut log_buffer_len = log_data.len() as i32 - 1;
-        let log_buffer = log_data.as_mut_ptr() as *mut c_char;
-
+        let mut json_buffer = Buffer::make();
+        let mut yaml_buffer = Buffer::make();
+        let mut log_buffer = Buffer::make();
+        let mut err_buffer = Buffer::make();
         // Input the main function, options and return the exec result
         // including JSON and YAML result, log message and error message.
         kcl_run(
@@ -407,24 +390,21 @@ impl KclLibRunner {
             option_values,
             opts,
             path_selector,
-            &mut json_result_buffer_len,
-            json_result_buffer,
-            &mut yaml_result_buffer_len,
-            yaml_result_buffer,
-            &mut err_buffer_len,
-            err_buffer,
-            &mut log_buffer_len,
-            log_buffer,
+            json_buffer.mut_len(),
+            json_buffer.mut_ptr(),
+            yaml_buffer.mut_len(),
+            yaml_buffer.mut_ptr(),
+            err_buffer.mut_len(),
+            err_buffer.mut_ptr(),
+            log_buffer.mut_len(),
+            log_buffer.mut_ptr(),
         );
+        // Convert runtime result to ExecProgramResult
         let mut result = ExecProgramResult {
-            yaml_result: String::from_utf8(
-                yaml_result[0..yaml_result_buffer_len as usize].to_vec(),
-            )?,
-            json_result: String::from_utf8(
-                json_result[0..json_result_buffer_len as usize].to_vec(),
-            )?,
-            log_message: String::from_utf8(log_data[0..log_buffer_len as usize].to_vec())?,
-            err_message: String::from_utf8(err_data[0..err_buffer_len as usize].to_vec())?,
+            yaml_result: yaml_buffer.to_string()?,
+            json_result: json_buffer.to_string()?,
+            log_message: log_buffer.to_string()?,
+            err_message: err_buffer.to_string()?,
         };
         // Wrap runtime JSON Panic error string into diagnostic style string.
         if !result.err_message.is_empty() {
@@ -438,7 +418,32 @@ impl KclLibRunner {
                 Err(err) => err.to_string(),
             };
         }
-
         Ok(result)
+    }
+}
+
+#[repr(C)]
+struct Buffer(Vec<u8>, i32);
+
+impl Buffer {
+    #[inline]
+    fn make() -> Self {
+        let buffer = vec![0u8; RESULT_SIZE];
+        Self(buffer, RESULT_SIZE as i32 - 1)
+    }
+
+    #[inline]
+    fn to_string(&self) -> anyhow::Result<String> {
+        Ok(String::from_utf8(self.0[0..self.1 as usize].to_vec())?)
+    }
+
+    #[inline]
+    fn mut_ptr(&mut self) -> *mut c_char {
+        self.0.as_mut_ptr() as *mut c_char
+    }
+
+    #[inline]
+    fn mut_len(&mut self) -> &mut i32 {
+        &mut self.1
     }
 }

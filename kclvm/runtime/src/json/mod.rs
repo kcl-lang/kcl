@@ -77,9 +77,8 @@ pub extern "C" fn kclvm_json_dump_to_file(
         if let Some(filename) = args.arg_i(0) {
             let filename = filename.as_str();
             let json = data.to_json_string_with_options(&kwargs_to_opts(kwargs));
-            std::fs::write(&filename, json).unwrap_or_else(|e| {
-                panic!("Unable to write file '{}': {}", filename, e.to_string())
-            });
+            std::fs::write(&filename, json)
+                .unwrap_or_else(|e| panic!("Unable to write file '{}': {}", filename, e));
         }
     }
     panic!("dump_to_file() missing 2 required positional arguments: 'data' and 'filename'")

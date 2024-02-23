@@ -127,7 +127,6 @@ pub unsafe extern "C" fn _kcl_run(
             }
         })
     }));
-
     let result = std::panic::catch_unwind(|| _kcl_run_in_closure(ctx, kclvm_main_ptr));
     std::panic::set_hook(prev_hook);
     KCL_RUNTIME_PANIC_RECORD.with(|record| {
@@ -137,39 +136,26 @@ pub unsafe extern "C" fn _kcl_run(
     });
     // Get the runtime context.
     let ctx_ref = ptr_as_ref(ctx);
-    // Copy YAML result pointer.
-    let c_str_ptr = ctx_ref.yaml_result.as_ptr() as *const c_char;
-    let c_str_len = ctx_ref.yaml_result.len() as i32;
-    if c_str_len <= *yaml_result_buffer_len {
-        std::ptr::copy(c_str_ptr, yaml_result_buffer, c_str_len as usize);
-        *yaml_result_buffer_len = c_str_len
-    }
-    // Copy JSON result pointer.
-    let c_str_ptr = ctx_ref.json_result.as_ptr() as *const c_char;
-    let c_str_len = ctx_ref.json_result.len() as i32;
-    if c_str_len <= *json_result_buffer_len {
-        std::ptr::copy(c_str_ptr, json_result_buffer, c_str_len as usize);
-        *json_result_buffer_len = c_str_len
-    }
-    // Copy log message pointer.
-    let c_str_ptr = ctx_ref.log_message.as_ptr() as *const c_char;
-    let c_str_len = ctx_ref.log_message.len() as i32;
-    if c_str_len <= *log_buffer_len {
-        std::ptr::copy(c_str_ptr, log_buffer, c_str_len as usize);
-        *log_buffer_len = c_str_len
-    }
+    // Copy planned result and log message
+    copy_str_to(
+        &ctx_ref.json_result,
+        json_result_buffer,
+        json_result_buffer_len,
+    );
+    copy_str_to(
+        &ctx_ref.yaml_result,
+        yaml_result_buffer,
+        yaml_result_buffer_len,
+    );
+    copy_str_to(&ctx_ref.log_message, log_buffer, log_buffer_len);
     // Copy JSON panic info message pointer
     let json_panic_info = if result.is_err() {
         ctx_ref.get_panic_info_json_string().unwrap_or_default()
     } else {
         "".to_string()
     };
-    let c_str_ptr = json_panic_info.as_ptr() as *const c_char;
-    let c_str_len = json_panic_info.len() as i32;
-    if c_str_len <= *err_buffer_len {
-        std::ptr::copy(c_str_ptr, err_buffer, c_str_len as usize);
-        *err_buffer_len = c_str_len
-    }
+    copy_str_to(&json_panic_info, err_buffer, err_buffer_len);
+    // Delete the context
     kclvm_context_delete(ctx);
     result.is_err() as kclvm_size_t
 }

@@ -2,7 +2,7 @@
 
 use std::os::raw::c_char;
 
-use crate::{Context, ValueRef};
+use crate::{kclvm_size_t, Context, ValueRef};
 
 /// New a mutable raw pointer.
 /// Safety: The caller must ensure that `ctx` lives longer than the returned pointer
@@ -40,15 +40,27 @@ pub(crate) fn mut_ptr_as_ref<'a, T>(p: *mut T) -> &'a mut T {
     unsafe { &mut *p }
 }
 
+/// Copy str to mutable pointer with length
+pub(crate) fn copy_str_to(v: &str, p: *mut c_char, size: *mut kclvm_size_t) {
+    unsafe {
+        let c_str_ptr = v.as_ptr() as *const c_char;
+        let c_str_len = v.len() as i32;
+        if c_str_len <= *size {
+            std::ptr::copy(c_str_ptr, p, c_str_len as usize);
+            *size = c_str_len
+        }
+    }
+}
+
 /// Convert a C str pointer to a Rust &str.
 /// Safety: The caller must ensure that `s` is a valid null-terminated C string.
-pub(crate) fn c2str<'a>(p: *const c_char) -> &'a str {
+pub fn c2str<'a>(p: *const c_char) -> &'a str {
     let s = unsafe { std::ffi::CStr::from_ptr(p) }.to_str().unwrap();
     s
 }
 
 /// Convert a C str pointer pointer to a Rust Vec<String>.
-pub(crate) fn c2str_vec(ptr_array: *const *const c_char) -> Vec<String> {
+pub fn c2str_vec(ptr_array: *const *const c_char) -> Vec<String> {
     let mut result = Vec::new();
     let mut index = 0;
 

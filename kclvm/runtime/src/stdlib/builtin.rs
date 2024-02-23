@@ -192,7 +192,7 @@ impl ValueRef {
                 ValueRef::int(v)
             }
             _ => panic!(
-                "int() argument must be a string, a bytes-like object or a number, not '{}'",
+                "int() argument must be a string or a number, not '{}'",
                 self.type_str()
             ),
         }
