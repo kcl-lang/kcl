@@ -90,8 +90,6 @@ pub enum ApiFunc {
     kclvm_config_attr_map,
     kclvm_context_delete,
     kclvm_context_invoke,
-    kclvm_context_main_begin_hook,
-    kclvm_context_main_end_hook,
     kclvm_context_new,
     kclvm_context_pkgpath_is_imported,
     kclvm_context_set_debug_mode,

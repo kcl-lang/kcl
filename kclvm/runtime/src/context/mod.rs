@@ -6,9 +6,6 @@ use std::fmt;
 
 use crate::{BacktraceFrame, PanicInfo, RuntimePanicRecord};
 
-#[allow(non_camel_case_types)]
-type kclvm_value_ref_t = crate::ValueRef;
-
 impl fmt::Display for PanicInfo {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{self:?}")
@@ -80,29 +77,12 @@ impl crate::Context {
         Box::into_raw(Box::new(self))
     }
 
-    pub fn main_begin_hook(&mut self) {
-        // Nothing to do
-    }
-
-    pub fn main_end_hook(
-        &mut self,
-        return_value: *mut kclvm_value_ref_t,
-    ) -> *mut kclvm_value_ref_t {
-        self.output.return_value = return_value;
-
-        if self.cfg.list_option_mode {
-            self.output.return_value =
-                crate::ValueRef::str(self.list_option_help().as_str()).into_raw(self);
-        // If there is a custom manifests, output them.
-        } else if let Some(output) = &self.buffer.custom_manifests_output {
-            self.output.return_value = crate::ValueRef::str(output.as_str()).into_raw(self);
+    pub fn get_panic_info_json_string(&self) -> Option<String> {
+        if self.panic_info.__kcl_PanicInfo__ {
+            Some(self.panic_info.to_json_string())
+        } else {
+            None
         }
-
-        self.output.return_value
-    }
-
-    pub fn get_panic_info_json_string(&self) -> String {
-        self.panic_info.to_json_string()
     }
 
     pub fn set_kcl_pkgpath(&mut self, pkgpath: &str) {
@@ -174,7 +154,8 @@ impl crate::Context {
         self.panic_info.__kcl_PanicInfo__ = true;
         self.panic_info.err_type_code = *err_type as i32;
     }
-    pub fn set_warnning_message(&mut self, msg: &str) {
+
+    pub fn set_warning_message(&mut self, msg: &str) {
         self.panic_info.__kcl_PanicInfo__ = true;
         self.panic_info.message = msg.to_string();
         self.panic_info.is_warning = true;

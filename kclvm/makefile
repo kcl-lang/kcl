@@ -73,7 +73,7 @@ codecov-lcov:
 
 # Test runtime libaries using python functions
 test-runtime: install-kclvm-py install-pytest
-	cd ./tests/test_units && PYTHONPATH=./../../plugin python3 -m pytest -vv || { echo 'kclvm/tests/test_units failed' ; exit 1; }
+	cd ./tests/test_units && PYTHONPATH=./../../tests/test_units/runtime python3 -m pytest -vv || { echo 'kclvm/tests/test_units failed' ; exit 1; }
 
 # E2E grammar tests.
 test-grammar: install-kclvm-py install-pytest

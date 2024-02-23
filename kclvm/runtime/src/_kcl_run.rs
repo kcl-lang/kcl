@@ -98,7 +98,13 @@ pub unsafe extern "C" fn _kcl_run(
     log_buffer_len: *mut kclvm_size_t,
     log_buffer: *mut kclvm_char_t,
 ) -> kclvm_size_t {
+    // Init runtime context with options
     let ctx = Box::new(new_ctx_with_opts(opts, &c2str_vec(path_selector))).into_raw();
+    let option_keys = std::slice::from_raw_parts(option_keys, option_len as usize);
+    let option_values = std::slice::from_raw_parts(option_values, option_len as usize);
+    for i in 0..(option_len as usize) {
+        kclvm_builtin_option_init(ctx, option_keys[i], option_values[i]);
+    }
     let prev_hook = std::panic::take_hook();
     std::panic::set_hook(Box::new(|info: &std::panic::PanicInfo| {
         KCL_RUNTIME_PANIC_RECORD.with(|record| {
@@ -122,17 +128,7 @@ pub unsafe extern "C" fn _kcl_run(
         })
     }));
 
-    let result = std::panic::catch_unwind(|| {
-        _kcl_run_in_closure(
-            ctx,
-            kclvm_main_ptr,
-            option_len,
-            option_keys,
-            option_values,
-            json_result_buffer_len,
-            json_result_buffer,
-        )
-    });
+    let result = std::panic::catch_unwind(|| _kcl_run_in_closure(ctx, kclvm_main_ptr));
     std::panic::set_hook(prev_hook);
     KCL_RUNTIME_PANIC_RECORD.with(|record| {
         let record = record.borrow();
@@ -148,6 +144,13 @@ pub unsafe extern "C" fn _kcl_run(
         std::ptr::copy(c_str_ptr, yaml_result_buffer, c_str_len as usize);
         *yaml_result_buffer_len = c_str_len
     }
+    // Copy JSON result pointer.
+    let c_str_ptr = ctx_ref.json_result.as_ptr() as *const c_char;
+    let c_str_len = ctx_ref.json_result.len() as i32;
+    if c_str_len <= *json_result_buffer_len {
+        std::ptr::copy(c_str_ptr, json_result_buffer, c_str_len as usize);
+        *json_result_buffer_len = c_str_len
+    }
     // Copy log message pointer.
     let c_str_ptr = ctx_ref.log_message.as_ptr() as *const c_char;
     let c_str_len = ctx_ref.log_message.len() as i32;
@@ -155,83 +158,34 @@ pub unsafe extern "C" fn _kcl_run(
         std::ptr::copy(c_str_ptr, log_buffer, c_str_len as usize);
         *log_buffer_len = c_str_len
     }
-    // Copy panic info message pointer
-    let json_panic_info = ctx_ref.get_panic_info_json_string();
+    // Copy JSON panic info message pointer
+    let json_panic_info = if result.is_err() {
+        ctx_ref.get_panic_info_json_string().unwrap_or_default()
+    } else {
+        "".to_string()
+    };
     let c_str_ptr = json_panic_info.as_ptr() as *const c_char;
     let c_str_len = json_panic_info.len() as i32;
-    match result {
-        Ok(n) => {
-            unsafe {
-                if c_str_len <= *err_buffer_len {
-                    std::ptr::copy(c_str_ptr, err_buffer, c_str_len as usize);
-                    *err_buffer_len = c_str_len
-                }
-            }
-            kclvm_context_delete(ctx);
-            n
-        }
-        Err(_) => {
-            let mut return_len = c_str_len;
-            unsafe {
-                if return_len <= *json_result_buffer_len {
-                    std::ptr::copy(c_str_ptr, json_result_buffer, return_len as usize);
-                    *json_result_buffer_len = return_len
-                } else {
-                    *json_result_buffer = '\0' as kclvm_char_t;
-                    return_len = 0 - return_len;
-                }
-            }
-
-            kclvm_context_delete(ctx);
-            return_len
-        }
+    if c_str_len <= *err_buffer_len {
+        std::ptr::copy(c_str_ptr, err_buffer, c_str_len as usize);
+        *err_buffer_len = c_str_len
     }
+    kclvm_context_delete(ctx);
+    result.is_err() as kclvm_size_t
 }
 
 #[allow(clippy::too_many_arguments)]
 unsafe fn _kcl_run_in_closure(
     ctx: *mut Context,
     kclvm_main_ptr: u64, // main.k => kclvm_main
-    option_len: kclvm_size_t,
-    option_keys: *const *const kclvm_char_t,
-    option_values: *const *const kclvm_char_t,
-    result_buffer_len: *mut kclvm_size_t,
-    result_buffer: *mut kclvm_char_t,
-) -> kclvm_size_t {
+) {
     let kclvm_main = (&kclvm_main_ptr as *const u64) as *const ()
         as *const extern "C" fn(ctx: *mut kclvm_context_t) -> *mut kclvm_value_ref_t;
 
     unsafe {
-        let option_keys = std::slice::from_raw_parts(option_keys, option_len as usize);
-        let option_values = std::slice::from_raw_parts(option_values, option_len as usize);
-
-        for i in 0..(option_len as usize) {
-            kclvm_builtin_option_init(ctx, option_keys[i], option_values[i]);
+        if kclvm_main.is_null() {
+            panic!("kcl program main function not found");
         }
-
-        let value = if kclvm_main.is_null() {
-            kclvm_value_Str(ctx, b"{}\0" as *const u8 as *const kclvm_char_t)
-        } else {
-            kclvm_context_main_begin_hook(ctx);
-            let x = (*kclvm_main)(ctx);
-            kclvm_context_main_end_hook(ctx, x)
-        };
-
-        // The main function returns a JSON string result or panic with error message.
-        let c_str_ptr = kclvm_value_Str_ptr(value);
-        let c_str_len = kclvm_value_len(value);
-
-        let mut return_len = c_str_len;
-
-        if return_len <= *result_buffer_len {
-            std::ptr::copy(c_str_ptr, result_buffer, return_len as usize);
-            *result_buffer_len = return_len;
-        } else {
-            *result_buffer = '\0' as kclvm_char_t;
-            return_len = 0 - return_len;
-        }
-
-        // Delete by context to ignore pointer double free.
-        return_len
+        (*kclvm_main)(ctx);
     }
 }

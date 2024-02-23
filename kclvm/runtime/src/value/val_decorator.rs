@@ -73,11 +73,11 @@ impl DecoratorValue {
                         err_msg.push_str(&msg);
                     }
                     ctx.set_err_type(&RuntimeErrorType::DeprecatedWarning);
-                    ctx.set_warnning_message(err_msg.as_str());
+                    ctx.set_warning_message(err_msg.as_str());
                 } else {
                     let err_msg = format!("{attr_name} was deprecated ");
                     ctx.set_err_type(&RuntimeErrorType::DeprecatedWarning);
-                    ctx.set_warnning_message(err_msg.as_str());
+                    ctx.set_warning_message(err_msg.as_str());
                 }
             }
             DEPRECATED_INFO => { /* Nothing to do on Info decorator */ }

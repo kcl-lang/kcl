@@ -8,7 +8,7 @@ use kclvm_config::{
 };
 use kclvm_error::{Diagnostic, Handler};
 use kclvm_query::r#override::parse_override_spec;
-use kclvm_runtime::{Context, FFIRunOptions, PanicInfo, ValueRef};
+use kclvm_runtime::{FFIRunOptions, PanicInfo};
 use serde::{Deserialize, Serialize};
 use std::ffi::OsStr;
 use std::os::raw::c_char;
@@ -398,7 +398,9 @@ impl KclLibRunner {
         let mut log_buffer_len = log_data.len() as i32 - 1;
         let log_buffer = log_data.as_mut_ptr() as *mut c_char;
 
-        let n = kcl_run(
+        // Input the main function, options and return the exec result
+        // including JSON and YAML result, log message and error message.
+        kcl_run(
             kclvm_main_ptr,
             option_len,
             option_keys,
@@ -415,23 +417,16 @@ impl KclLibRunner {
             log_buffer,
         );
         let mut result = ExecProgramResult {
+            yaml_result: String::from_utf8(
+                yaml_result[0..yaml_result_buffer_len as usize].to_vec(),
+            )?,
+            json_result: String::from_utf8(
+                json_result[0..json_result_buffer_len as usize].to_vec(),
+            )?,
             log_message: String::from_utf8(log_data[0..log_buffer_len as usize].to_vec())?,
-            ..Default::default()
+            err_message: String::from_utf8(err_data[0..err_buffer_len as usize].to_vec())?,
         };
-        if n > 0 {
-            let s = std::str::from_utf8(&json_result[0..n as usize])?;
-            match wrap_msg_in_result(s) {
-                Ok(json) => result.json_result = json,
-                Err(err) => result.err_message = err,
-            }
-            result.yaml_result =
-                String::from_utf8(yaml_result[0..yaml_result_buffer_len as usize].to_vec())?;
-        } else if n < 0 {
-            let return_len = 0 - n;
-            result.err_message = String::from_utf8(err_data[0..return_len as usize].to_vec())?;
-        }
-
-        // Wrap runtime error into diagnostic style string.
+        // Wrap runtime JSON Panic error string into diagnostic style string.
         if !result.err_message.is_empty() {
             result.err_message = match Handler::default()
                 .add_diagnostic(<PanicInfo as Into<Diagnostic>>::into(PanicInfo::from(
@@ -446,21 +441,4 @@ impl KclLibRunner {
 
         Ok(result)
     }
-}
-
-fn wrap_msg_in_result(msg: &str) -> Result<String, String> {
-    let mut ctx = Context::new();
-    // YAML is compatible with JSON. We can use YAML library for result parsing.
-    let kcl_val = match ValueRef::from_yaml_stream(&mut ctx, msg) {
-        Ok(msg) => msg,
-        Err(err) => {
-            return Err(err.to_string());
-        }
-    };
-    if let Some(val) = kcl_val.get_by_key("__kcl_PanicInfo__") {
-        if val.is_truthy() {
-            return Err(msg.to_string());
-        }
-    }
-    Ok(msg.to_string())
 }

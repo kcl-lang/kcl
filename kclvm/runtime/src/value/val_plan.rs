@@ -229,19 +229,11 @@ impl ValueRef {
                 .collect::<Vec<String>>()
                 .join(YAML_STREAM_SEP);
             // Plan JSON result
-            let json_result = if results.is_empty() {
-                // Empty result returns a empty dict.
-                ValueRef::dict(None)
-            } else if results.len() == 1 {
-                results[0].clone()
-            } else {
-                let mut list_result = ValueRef::list(None);
-                for r in results {
-                    list_result.list_append(&r);
-                }
-                list_result
-            }
-            .to_json_string_with_options(&json_opts);
+            let json_result = results
+                .iter()
+                .map(|r| r.to_json_string_with_options(&json_opts))
+                .collect::<Vec<String>>()
+                .join(JSON_STREAM_SEP);
             (json_result, yaml_result)
         } else {
             (

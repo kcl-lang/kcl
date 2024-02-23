@@ -56,27 +56,6 @@ pub unsafe extern "C" fn kclvm_context_delete(p: *mut kclvm_context_t) {
 }
 
 // ----------------------------------------------------------------------------
-// main begin/end
-// ----------------------------------------------------------------------------
-
-#[no_mangle]
-#[runtime_fn]
-pub unsafe extern "C" fn kclvm_context_main_begin_hook(p: *mut kclvm_context_t) {
-    let p = mut_ptr_as_ref(p);
-    p.main_begin_hook();
-}
-
-#[no_mangle]
-#[runtime_fn]
-pub unsafe extern "C" fn kclvm_context_main_end_hook(
-    p: *mut kclvm_context_t,
-    return_value: *mut kclvm_value_ref_t,
-) -> *mut kclvm_value_ref_t {
-    let p = mut_ptr_as_ref(p);
-    p.main_end_hook(return_value)
-}
-
-// ----------------------------------------------------------------------------
 // panic_info
 // ----------------------------------------------------------------------------
 

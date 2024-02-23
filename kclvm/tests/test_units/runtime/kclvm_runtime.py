@@ -15,12 +15,12 @@ def _find_default_dylib_path() -> str:
         f"{_executable_root}/bin/libkclvm_cli_cdylib.dylib",
         f"{_executable_root}/bin/libkclvm_cli_cdylib.so",
         f"{_executable_root}\\bin\\kclvm_cli_cdylib.dll",
-        f"{os.path.dirname(__file__)}/../target/release/libkclvm_cli_cdylib.dylib",
-        f"{os.path.dirname(__file__)}/../target/release/libkclvm_cli_cdylib.so",
-        f"{os.path.dirname(__file__)}\\..\\target\\release\\kclvm_cli_cdylib.dll",
-        f"{os.path.dirname(__file__)}/../target/debug/libkclvm_cli_cdylib.dylib",
-        f"{os.path.dirname(__file__)}/../target/debug/libkclvm_cli_cdylib.so",
-        f"{os.path.dirname(__file__)}\\..\\target\\debug\\kclvm_cli_cdylib.dll",
+        f"{os.path.dirname(__file__)}/../../../target/release/libkclvm_cli_cdylib.dylib",
+        f"{os.path.dirname(__file__)}/../../../target/release/libkclvm_cli_cdylib.so",
+        f"{os.path.dirname(__file__)}\\..\\..\\..\\target\\release\\kclvm_cli_cdylib.dll",
+        f"{os.path.dirname(__file__)}/../../../target/debug/libkclvm_cli_cdylib.dylib",
+        f"{os.path.dirname(__file__)}/../../../target/debug/libkclvm_cli_cdylib.so",
+        f"{os.path.dirname(__file__)}\\..\\..\\..\\target\\debug\\kclvm_cli_cdylib.dll",
     ]
 
     for s in pathList:

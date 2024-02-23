@@ -156,10 +156,6 @@ declare void @kclvm_context_delete(%kclvm_context_t* %p);
 
 declare i8* @kclvm_context_invoke(%kclvm_context_t* %p, i8* %method, i8* %args, i8* %kwargs);
 
-declare void @kclvm_context_main_begin_hook(%kclvm_context_t* %p);
-
-declare %kclvm_value_ref_t* @kclvm_context_main_end_hook(%kclvm_context_t* %p, %kclvm_value_ref_t* %return_value);
-
 declare %kclvm_context_t* @kclvm_context_new();
 
 declare %kclvm_bool_t @kclvm_context_pkgpath_is_imported(%kclvm_context_t* %ctx, %kclvm_char_t* %pkgpath);
