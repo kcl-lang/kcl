@@ -8,9 +8,6 @@ use std::os::raw::c_char;
 type kclvm_context_t = Context;
 
 #[allow(dead_code, non_camel_case_types)]
-type kclvm_error_t = KclError;
-
-#[allow(dead_code, non_camel_case_types)]
 type kclvm_kind_t = Kind;
 
 #[allow(dead_code, non_camel_case_types)]

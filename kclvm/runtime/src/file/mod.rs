@@ -15,7 +15,7 @@ pub extern "C" fn kclvm_file_read(
 
     if let Some(x) = args.arg_i_str(0, None) {
         let contents = fs::read_to_string(&x)
-            .unwrap_or_else(|e| panic!("failed to access the file '{}': {}", x, e.to_string()));
+            .unwrap_or_else(|e| panic!("failed to access the file '{}': {}", x, e));
 
         let s = ValueRef::str(contents.as_ref());
         return s.into_raw(ctx);
@@ -39,16 +39,10 @@ pub extern "C" fn kclvm_file_glob(
         .expect("glob() takes exactly one argument (0 given)");
 
     let mut matched_paths = vec![];
-    for entry in
-        glob(&pattern).unwrap_or_else(|e| panic!("Failed to read glob pattern: {}", e.to_string()))
-    {
+    for entry in glob(&pattern).unwrap_or_else(|e| panic!("Failed to read glob pattern: {}", e)) {
         match entry {
             Ok(path) => matched_paths.push(path.display().to_string()),
-            Err(e) => panic!(
-                "failed to access the file matching '{}': {}",
-                pattern,
-                e.to_string()
-            ),
+            Err(e) => panic!("failed to access the file matching '{}': {}", pattern, e),
         }
     }
 
@@ -63,8 +57,8 @@ pub extern "C" fn kclvm_file_modpath(
     _kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let ctx = mut_ptr_as_ref(ctx);
-    let s = ValueRef::str(&ctx.module_path.as_ref());
-    return s.into_raw(ctx);
+    let s = ValueRef::str(ctx.module_path.as_ref());
+    s.into_raw(ctx)
 }
 
 #[no_mangle]
@@ -75,6 +69,6 @@ pub extern "C" fn kclvm_file_workdir(
     _kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let ctx = mut_ptr_as_ref(ctx);
-    let s = ValueRef::str(&ctx.workdir.as_ref());
-    return s.into_raw(ctx);
+    let s = ValueRef::str(ctx.workdir.as_ref());
+    s.into_raw(ctx)
 }

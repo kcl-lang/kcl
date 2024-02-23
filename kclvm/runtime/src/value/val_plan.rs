@@ -170,7 +170,7 @@ fn value_type_path(v: &ValueRef, full_name: bool) -> String {
     match v.get_potential_schema_type() {
         Some(ty_str) => {
             if full_name {
-                match ty_str.strip_prefix("@") {
+                match ty_str.strip_prefix('@') {
                     Some(ty_str) => ty_str.to_string(),
                     None => ty_str.to_string(),
                 }

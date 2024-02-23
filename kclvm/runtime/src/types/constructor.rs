@@ -5,64 +5,64 @@ use crate::*;
 impl Type {
     #[inline]
     pub fn any() -> Self {
-        Type::any_type
+        Type::Any
     }
 
     #[inline]
     pub fn func() -> Self {
-        Type::func_type(Default::default())
+        Type::Func(Default::default())
     }
 
     #[inline]
     pub fn bool() -> Self {
-        Type::bool_type
+        Type::Bool
     }
 
     #[inline]
     pub fn bool_lit(v: bool) -> Self {
-        Type::bool_lit_type(v)
+        Type::BoolLit(v)
     }
 
     #[inline]
     pub fn int() -> Self {
-        Type::int_type
+        Type::Int
     }
 
     #[inline]
     pub fn int_lit(v: i64) -> Self {
-        Type::int_lit_type(v)
+        Type::IntLit(v)
     }
 
     #[inline]
     pub fn float() -> Self {
-        Type::float_type
+        Type::Float
     }
 
     #[inline]
     pub fn float_lit(v: f64) -> Self {
-        Type::float_lit_type(v)
+        Type::FloatLit(v)
     }
 
     #[inline]
     pub fn str() -> Self {
-        Type::str_type
+        Type::Str
     }
 
     #[inline]
     pub fn str_lit(s: &str) -> Self {
-        Type::str_lit_type(s.to_string())
+        Type::StrLit(s.to_string())
     }
 
     #[inline]
     pub fn list(elem_type: &Self) -> Self {
-        Type::list_type(ListType {
+        Type::List(ListType {
             elem_type: Box::new(elem_type.clone()),
         })
     }
 
     #[inline]
     pub fn dict(key_type: &Self, elem_type: &Self) -> Self {
-        Type::dict_type(DictType {
+        Type::Dict(DictType {
             key_type: Box::new(key_type.clone()),
             elem_type: Box::new(elem_type.clone()),
         })
@@ -74,7 +74,7 @@ impl Type {
         for typ in elem_types {
             ut.elem_types.push((*typ).clone());
         }
-        Type::union_type(ut)
+        Type::Union(ut)
     }
 
     #[inline]
@@ -84,7 +84,7 @@ impl Type {
         has_index_signature: bool,
         func: ValueRef,
     ) -> Self {
-        Type::schema_type(SchemaType {
+        Type::Schema(SchemaType {
             name,
             attrs,
             has_index_signature,

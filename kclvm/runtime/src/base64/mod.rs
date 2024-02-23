@@ -23,7 +23,7 @@ pub extern "C" fn kclvm_base64_encode(
         _ => {
             ctx.set_err_type(&RuntimeErrorType::TypeError);
 
-            panic!("a bytes-like object is required, not '{}'", p.as_str());
+            panic!("a string object is required, not '{}'", p.as_str());
         }
     };
 }
@@ -46,10 +46,7 @@ pub extern "C" fn kclvm_base64_decode(
         _ => {
             ctx.set_err_type(&RuntimeErrorType::TypeError);
 
-            panic!(
-                "argument should be a bytes-like object or ASCII string, not '{}'",
-                p.as_str()
-            );
+            panic!("argument should be a string object, not '{}'", p.as_str());
         }
     };
 }
