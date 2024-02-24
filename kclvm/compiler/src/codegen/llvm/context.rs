@@ -2115,6 +2115,13 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         let globals = scope.variables.borrow();
         // Construct a plan object.
         let global_dict = self.dict_value();
+        // Plan empty dict result.
+        if scalars.is_empty() && globals.is_empty() {
+            return self.build_call(
+                &ApiFunc::kclvm_value_plan_to_json.name(),
+                &[self.current_runtime_ctx_ptr(), global_dict],
+            );
+        }
         // Deal scalars
         for scalar in scalars.iter() {
             self.dict_safe_insert(global_dict, SCALAR_KEY, *scalar, 0, -1);
