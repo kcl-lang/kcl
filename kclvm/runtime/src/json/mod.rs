@@ -74,7 +74,7 @@ pub extern "C" fn kclvm_json_dump_to_file(
     let kwargs = ptr_as_ref(kwargs);
 
     if let Some(data) = args.arg_i(0) {
-        if let Some(filename) = args.arg_i(0) {
+        if let Some(filename) = args.arg_i(1) {
             let filename = filename.as_str();
             let json = data.to_json_string_with_options(&kwargs_to_opts(kwargs));
             std::fs::write(&filename, json)

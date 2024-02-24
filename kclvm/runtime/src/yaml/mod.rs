@@ -102,7 +102,7 @@ pub extern "C" fn kclvm_yaml_dump_to_file(
     let kwargs = ptr_as_ref(kwargs);
 
     if let Some(data) = args.arg_i(0) {
-        if let Some(filename) = args.arg_i(0) {
+        if let Some(filename) = args.arg_i(1) {
             let filename = filename.as_str();
 
             let yaml = data.to_yaml_string_with_options(&kwargs_to_opts(kwargs));
@@ -125,7 +125,7 @@ pub extern "C" fn kclvm_yaml_dump_all_to_file(
     let kwargs = ptr_as_ref(kwargs);
 
     if let Some(data) = args.arg_i(0) {
-        if let Some(filename) = args.arg_i(0) {
+        if let Some(filename) = args.arg_i(1) {
             let filename = filename.as_str();
             let opts = kwargs_to_opts(kwargs);
             let results = data
