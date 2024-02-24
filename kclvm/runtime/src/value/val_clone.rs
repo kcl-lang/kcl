@@ -19,7 +19,13 @@ impl ValueRef {
                 rc: Rc::new(RefCell::new(Value::func_value(Box::new(FuncValue {
                     fn_ptr: v.fn_ptr,
                     check_fn_ptr: v.check_fn_ptr,
-                    closure: v.closure.deep_copy(),
+                    // In KCL, functions are all pure, so we only need a shallow
+                    // copy of the closure of the function.
+                    // In addition, this can avoid stack overflow issues caused
+                    // by deep copies of references to schema `self` held by functions
+                    // within the schema. Because schema also holds a reference to
+                    // the function.
+                    closure: v.closure.clone(),
                     name: v.name.clone(),
                     runtime_type: v.runtime_type.clone(),
                     is_external: v.is_external,
