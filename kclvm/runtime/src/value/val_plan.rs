@@ -24,13 +24,18 @@ pub struct PlanOptions {
     pub query_paths: Vec<String>,
 }
 
+/// Filter list or config results with context options.
 fn filter_results(ctx: &Context, key_values: &ValueRef) -> Vec<ValueRef> {
     let mut results: Vec<ValueRef> = vec![];
     // Plan list value with the yaml stream format.
     if key_values.is_list() {
         let key_values_list = &key_values.as_list_ref().values;
         for key_values in key_values_list {
-            results.append(&mut filter_results(ctx, key_values));
+            if key_values.is_list_or_config() {
+                results.append(&mut filter_results(ctx, key_values));
+            } else if key_values.is_scalar() {
+                results.push(key_values.clone());
+            }
         }
         results
     }
@@ -133,13 +138,7 @@ fn filter_results(ctx: &Context, key_values: &ValueRef) -> Vec<ValueRef> {
                 result.dict_update_key_value(key.as_str(), value.clone());
             }
         }
-        results
-            .iter()
-            .enumerate()
-            .filter(|(index, r)| *index == 0 || !r.is_planned_empty())
-            .map(|v| v.1)
-            .cloned()
-            .collect()
+        results.iter().enumerate().map(|v| v.1).cloned().collect()
     } else {
         results
     }
@@ -193,10 +192,6 @@ fn type_of(v: &ValueRef, full_name: bool) -> String {
 }
 
 impl ValueRef {
-    fn is_planned_empty(&self) -> bool {
-        (self.is_dict() && !self.is_truthy()) || self.is_undefined()
-    }
-
     /// Plan the value to JSON and YAML strings.
     pub fn plan(&self, ctx: &Context) -> (String, String) {
         // Encoding options

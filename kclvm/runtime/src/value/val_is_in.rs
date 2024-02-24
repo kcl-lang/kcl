@@ -88,6 +88,19 @@ impl ValueRef {
     pub fn is_unit(&self) -> bool {
         matches!(&*self.rc.borrow(), Value::unit_value(..))
     }
+
+    #[inline]
+    pub fn is_scalar(&self) -> bool {
+        matches!(
+            &*self.rc.borrow(),
+            Value::none
+                | Value::bool_value(_)
+                | Value::int_value(_)
+                | Value::float_value(_)
+                | Value::str_value(_)
+                | Value::unit_value(..)
+        )
+    }
 }
 
 // in
