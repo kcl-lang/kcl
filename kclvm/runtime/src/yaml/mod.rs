@@ -94,38 +94,44 @@ pub extern "C" fn kclvm_yaml_decode_all(
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_yaml_dump_to_file(
-    _ctx: *mut kclvm_context_t,
+    ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
-
-    if let Some(data) = args.arg_i(0) {
-        if let Some(filename) = args.arg_i(1) {
+    let data = args.arg_i(0).or(kwargs.get_by_key("data"));
+    let filename = args.arg_i(1).or(kwargs.get_by_key("filename"));
+    match (data, filename) {
+        (Some(data), Some(filename)) => {
             let filename = filename.as_str();
 
             let yaml = data.to_yaml_string_with_options(&kwargs_to_opts(kwargs));
             std::fs::write(&filename, yaml)
                 .unwrap_or_else(|e| panic!("Unable to write file '{}': {}", filename, e));
+            kclvm_value_Undefined(ctx)
+        }
+        _ => {
+            panic!("dump_to_file() missing 2 required positional arguments: 'data' and 'filename'")
         }
     }
-    panic!("dump_to_file() missing 2 required positional arguments: 'data' and 'filename'")
 }
 
 /// dump_all_to_file(data, sort_keys=False, ignore_private=False, ignore_none=False)
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_yaml_dump_all_to_file(
-    _ctx: *mut kclvm_context_t,
+    ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
 
-    if let Some(data) = args.arg_i(0) {
-        if let Some(filename) = args.arg_i(1) {
+    let data = args.arg_i(0).or(kwargs.get_by_key("data"));
+    let filename = args.arg_i(1).or(kwargs.get_by_key("filename"));
+    match (data, filename) {
+        (Some(data), Some(filename)) => {
             let filename = filename.as_str();
             let opts = kwargs_to_opts(kwargs);
             let results = data
@@ -136,9 +142,14 @@ pub extern "C" fn kclvm_yaml_dump_all_to_file(
                 .collect::<Vec<String>>();
 
             std::fs::write(filename, results.join(YAML_STREAM_SEP)).expect("Unable to write file");
+            kclvm_value_Undefined(ctx)
+        }
+        _ => {
+            panic!(
+                "dump_all_to_file() missing 2 required positional arguments: 'data' and 'filename'"
+            )
         }
     }
-    panic!("dump_all_to_file() missing 2 required positional arguments: 'data' and 'filename'")
 }
 
 /// validate(value: str) -> bool

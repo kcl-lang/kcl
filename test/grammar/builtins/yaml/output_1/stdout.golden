@@ -1,1 +1,8 @@
-YAML output is in out.yaml
+person:
+  name: Alice
+  age: 18
+  data:
+  - 1
+  - 2
+  - null
+filename: out.yaml

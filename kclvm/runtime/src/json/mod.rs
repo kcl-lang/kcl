@@ -66,22 +66,26 @@ pub extern "C" fn kclvm_json_validate(
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_json_dump_to_file(
-    _ctx: *mut kclvm_context_t,
+    ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
-
-    if let Some(data) = args.arg_i(0) {
-        if let Some(filename) = args.arg_i(1) {
+    let data = args.arg_i(0).or(kwargs.get_by_key("data"));
+    let filename = args.arg_i(1).or(kwargs.get_by_key("filename"));
+    match (data, filename) {
+        (Some(data), Some(filename)) => {
             let filename = filename.as_str();
             let json = data.to_json_string_with_options(&kwargs_to_opts(kwargs));
             std::fs::write(&filename, json)
                 .unwrap_or_else(|e| panic!("Unable to write file '{}': {}", filename, e));
+            kclvm_value_Undefined(ctx)
+        }
+        _ => {
+            panic!("dump_to_file() missing 2 required positional arguments: 'data' and 'filename'")
         }
     }
-    panic!("dump_to_file() missing 2 required positional arguments: 'data' and 'filename'")
 }
 
 fn kwargs_to_opts(kwargs: &ValueRef) -> JsonEncodeOptions {
