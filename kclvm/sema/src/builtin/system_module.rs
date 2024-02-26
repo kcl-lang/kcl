@@ -1155,7 +1155,9 @@ register_json_member! {
 // ------------------------------
 
 pub const CRYPTO: &str = "crypto";
-pub const CRYPTO_FUNCTION_NAMES: &[&str] = &["md5", "sha1", "sha224", "sha256", "sha384", "sha512"];
+pub const CRYPTO_FUNCTION_NAMES: &[&str] = &[
+    "md5", "sha1", "sha224", "sha256", "sha384", "sha512", "uuid",
+];
 macro_rules! register_crypto_member {
     ($($name:ident => $ty:expr)*) => (
         pub const CRYPTO_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {

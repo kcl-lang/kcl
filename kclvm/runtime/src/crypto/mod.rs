@@ -7,6 +7,7 @@ extern crate sha2;
 use sha2::{Digest, Sha224, Sha256, Sha384, Sha512};
 
 use crate::*;
+use uuid::Uuid;
 
 #[allow(non_camel_case_types)]
 type kclvm_value_ref_t = ValueRef;
@@ -161,4 +162,15 @@ pub extern "C" fn kclvm_crypto_sha512(
         return ValueRef::str(hex.as_ref()).into_raw(ctx);
     }
     panic!("sha512() missing 1 required positional argument: 'value'");
+}
+
+#[no_mangle]
+#[runtime_fn]
+pub extern "C" fn kclvm_crypto_uuid(
+    ctx: *mut kclvm_context_t,
+    _args: *const kclvm_value_ref_t,
+    _kwargs: *const kclvm_value_ref_t,
+) -> *const kclvm_value_ref_t {
+    let ctx = mut_ptr_as_ref(ctx);
+    return ValueRef::str(Uuid::new_v4().to_string().as_ref()).into_raw(ctx);
 }

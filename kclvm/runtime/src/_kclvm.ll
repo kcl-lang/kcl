@@ -198,6 +198,8 @@ declare %kclvm_value_ref_t* @kclvm_crypto_sha384(%kclvm_context_t* %ctx, %kclvm_
 
 declare %kclvm_value_ref_t* @kclvm_crypto_sha512(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
 
+declare %kclvm_value_ref_t* @kclvm_crypto_uuid(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %_args, %kclvm_value_ref_t* %_kwargs);
+
 declare %kclvm_value_ref_t* @kclvm_datetime_date(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %_args, %kclvm_value_ref_t* %_kwargs);
 
 declare %kclvm_value_ref_t* @kclvm_datetime_now(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %_args, %kclvm_value_ref_t* %_kwargs);

@@ -111,6 +111,7 @@ pub enum ApiFunc {
     kclvm_crypto_sha256,
     kclvm_crypto_sha384,
     kclvm_crypto_sha512,
+    kclvm_crypto_uuid,
     kclvm_datetime_date,
     kclvm_datetime_now,
     kclvm_datetime_ticks,

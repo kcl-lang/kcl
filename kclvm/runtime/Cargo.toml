@@ -27,3 +27,4 @@ phf = { version = "0.9", features = ["macros"] }
 fancy-regex = "0.7.1"
 num-integer = "0.1.44"
 glob = "0.3.0"
+uuid = { version = "1.7.0", features = ["serde", "v4"] }
