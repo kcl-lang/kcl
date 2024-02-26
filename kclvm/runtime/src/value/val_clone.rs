@@ -96,6 +96,10 @@ impl ValueRef {
                         config_keys: v.config_keys.clone(),
                         config_meta: v.config_meta.clone(),
                         optional_mapping: v.optional_mapping.clone(),
+                        // For KCL, args and kwargs are both immutable within the schema scope,
+                        // so here we only need to clone the references.
+                        args: v.args.clone(),
+                        kwargs: v.kwargs.clone(),
                     })))),
                 };
             }

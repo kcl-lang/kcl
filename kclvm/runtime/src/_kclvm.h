@@ -320,7 +320,7 @@ kclvm_value_ref_t* kclvm_iterator_next_value(kclvm_iterator_t* p, kclvm_value_re
 
 kclvm_value_ref_t* kclvm_json_decode(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
 
-kclvm_value_ref_t* kclvm_json_dump_to_file(kclvm_context_t* _ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+kclvm_value_ref_t* kclvm_json_dump_to_file(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
 kclvm_value_ref_t* kclvm_json_encode(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
@@ -450,7 +450,7 @@ void kclvm_schema_assert(kclvm_context_t* ctx, kclvm_value_ref_t* value, kclvm_v
 
 void kclvm_schema_backtrack_cache(kclvm_context_t* ctx, kclvm_value_ref_t* schema, kclvm_value_ref_t* cache, kclvm_value_ref_t* cal_map, kclvm_char_t* name, kclvm_value_ref_t* runtime_type);
 
-void kclvm_schema_default_settings(kclvm_value_ref_t* schema_value, kclvm_value_ref_t* _config_value, kclvm_char_t* runtime_type);
+void kclvm_schema_default_settings(kclvm_value_ref_t* schema_value, kclvm_value_ref_t* _config_value, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs, kclvm_char_t* runtime_type);
 
 void kclvm_schema_do_check_with_index_sign_attr(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs, uint64_t* check_fn_ptr, kclvm_char_t* attr_name);
 
@@ -630,7 +630,7 @@ void kclvm_value_remove_item(kclvm_value_ref_t* a, kclvm_value_ref_t* b);
 
 kclvm_value_ref_t* kclvm_value_schema_function(kclvm_context_t* ctx, uint64_t* fn_ptr, uint64_t* check_fn_ptr, kclvm_value_ref_t* attr_map, kclvm_char_t* tpe);
 
-kclvm_value_ref_t* kclvm_value_schema_with_config(kclvm_context_t* ctx, kclvm_value_ref_t* schema_dict, kclvm_value_ref_t* config, kclvm_value_ref_t* config_meta, kclvm_char_t* name, kclvm_char_t* pkgpath, kclvm_value_ref_t* is_sub_schema, kclvm_value_ref_t* record_instance, kclvm_value_ref_t* instance_pkgpath, kclvm_value_ref_t* optional_mapping);
+kclvm_value_ref_t* kclvm_value_schema_with_config(kclvm_context_t* ctx, kclvm_value_ref_t* schema_dict, kclvm_value_ref_t* config, kclvm_value_ref_t* config_meta, kclvm_char_t* name, kclvm_char_t* pkgpath, kclvm_value_ref_t* is_sub_schema, kclvm_value_ref_t* record_instance, kclvm_value_ref_t* instance_pkgpath, kclvm_value_ref_t* optional_mapping, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
 kclvm_value_ref_t* kclvm_value_slice(kclvm_context_t* ctx, kclvm_value_ref_t* x, kclvm_value_ref_t* a, kclvm_value_ref_t* b, kclvm_value_ref_t* step);
 
@@ -664,9 +664,9 @@ kclvm_value_ref_t* kclvm_yaml_decode(kclvm_context_t* ctx, kclvm_value_ref_t* ar
 
 kclvm_value_ref_t* kclvm_yaml_decode_all(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
 
-kclvm_value_ref_t* kclvm_yaml_dump_all_to_file(kclvm_context_t* _ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+kclvm_value_ref_t* kclvm_yaml_dump_all_to_file(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
-kclvm_value_ref_t* kclvm_yaml_dump_to_file(kclvm_context_t* _ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+kclvm_value_ref_t* kclvm_yaml_dump_to_file(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
 kclvm_value_ref_t* kclvm_yaml_encode(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 

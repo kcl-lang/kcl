@@ -14,6 +14,7 @@ use std::ffi::OsStr;
 use std::os::raw::c_char;
 
 const RESULT_SIZE: usize = 2048 * 2048;
+const KCL_DEBUG_ERROR_ENV_VAR: &str = "KCL_DEBUG_ERROR";
 
 #[allow(non_camel_case_types)]
 pub type kclvm_char_t = c_char;
@@ -407,7 +408,7 @@ impl KclLibRunner {
             err_message: err_buffer.to_string()?,
         };
         // Wrap runtime JSON Panic error string into diagnostic style string.
-        if !result.err_message.is_empty() {
+        if !result.err_message.is_empty() && std::env::var(KCL_DEBUG_ERROR_ENV_VAR).is_err() {
             result.err_message = match Handler::default()
                 .add_diagnostic(<PanicInfo as Into<Diagnostic>>::into(PanicInfo::from(
                     result.err_message.as_str(),

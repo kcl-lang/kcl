@@ -123,8 +123,8 @@
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_value_Schema(%kclvm_context_t* %ctx);
 
 // api-spec:       kclvm_value_schema_with_config
-// api-spec(c):    kclvm_value_ref_t* kclvm_value_schema_with_config(kclvm_context_t* ctx, kclvm_value_ref_t* schema_dict, kclvm_value_ref_t* config, kclvm_value_ref_t* config_meta, kclvm_char_t* name, kclvm_char_t* pkgpath, kclvm_value_ref_t* is_sub_schema, kclvm_value_ref_t* record_instance, kclvm_value_ref_t* instance_pkgpath, kclvm_value_ref_t* optional_mapping);
-// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_value_schema_with_config(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %schema_dict, %kclvm_value_ref_t* %config, %kclvm_value_ref_t* %config_meta, %kclvm_char_t* %name, %kclvm_char_t* %pkgpath, %kclvm_value_ref_t* %is_sub_schema, %kclvm_value_ref_t* %record_instance, %kclvm_value_ref_t* %instance_pkgpath, %kclvm_value_ref_t* %optional_mapping);
+// api-spec(c):    kclvm_value_ref_t* kclvm_value_schema_with_config(kclvm_context_t* ctx, kclvm_value_ref_t* schema_dict, kclvm_value_ref_t* config, kclvm_value_ref_t* config_meta, kclvm_char_t* name, kclvm_char_t* pkgpath, kclvm_value_ref_t* is_sub_schema, kclvm_value_ref_t* record_instance, kclvm_value_ref_t* instance_pkgpath, kclvm_value_ref_t* optional_mapping, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_value_schema_with_config(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %schema_dict, %kclvm_value_ref_t* %config, %kclvm_value_ref_t* %config_meta, %kclvm_char_t* %name, %kclvm_char_t* %pkgpath, %kclvm_value_ref_t* %is_sub_schema, %kclvm_value_ref_t* %record_instance, %kclvm_value_ref_t* %instance_pkgpath, %kclvm_value_ref_t* %optional_mapping, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 // api-spec:       kclvm_value_Function
 // api-spec(c):    kclvm_value_ref_t* kclvm_value_Function(kclvm_context_t* ctx, uint64_t* fn_ptr, kclvm_value_ref_t* closure, kclvm_char_t* name, kclvm_bool_t is_external);
@@ -595,8 +595,8 @@
 // api-spec(llvm): declare void @kclvm_schema_optional_check(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %p);
 
 // api-spec:       kclvm_schema_default_settings
-// api-spec(c):    void kclvm_schema_default_settings(kclvm_value_ref_t* schema_value, kclvm_value_ref_t* _config_value, kclvm_char_t* runtime_type);
-// api-spec(llvm): declare void @kclvm_schema_default_settings(%kclvm_value_ref_t* %schema_value, %kclvm_value_ref_t* %_config_value, %kclvm_char_t* %runtime_type);
+// api-spec(c):    void kclvm_schema_default_settings(kclvm_value_ref_t* schema_value, kclvm_value_ref_t* _config_value, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs, kclvm_char_t* runtime_type);
+// api-spec(llvm): declare void @kclvm_schema_default_settings(%kclvm_value_ref_t* %schema_value, %kclvm_value_ref_t* %_config_value, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs, %kclvm_char_t* %runtime_type);
 
 // api-spec:       kclvm_schema_assert
 // api-spec(c):    void kclvm_schema_assert(kclvm_context_t* ctx, kclvm_value_ref_t* value, kclvm_value_ref_t* msg, kclvm_value_ref_t* config_meta);
@@ -803,8 +803,8 @@
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_json_validate(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
 
 // api-spec:       kclvm_json_dump_to_file
-// api-spec(c):    kclvm_value_ref_t* kclvm_json_dump_to_file(kclvm_context_t* _ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
-// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_json_dump_to_file(%kclvm_context_t* %_ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
+// api-spec(c):    kclvm_value_ref_t* kclvm_json_dump_to_file(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_json_dump_to_file(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 // api-spec:       kclvm_manifests_yaml_stream
 // api-spec(c):    void kclvm_manifests_yaml_stream(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
@@ -1163,12 +1163,12 @@
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_yaml_decode_all(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
 
 // api-spec:       kclvm_yaml_dump_to_file
-// api-spec(c):    kclvm_value_ref_t* kclvm_yaml_dump_to_file(kclvm_context_t* _ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
-// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_yaml_dump_to_file(%kclvm_context_t* %_ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
+// api-spec(c):    kclvm_value_ref_t* kclvm_yaml_dump_to_file(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_yaml_dump_to_file(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 // api-spec:       kclvm_yaml_dump_all_to_file
-// api-spec(c):    kclvm_value_ref_t* kclvm_yaml_dump_all_to_file(kclvm_context_t* _ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
-// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_yaml_dump_all_to_file(%kclvm_context_t* %_ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
+// api-spec(c):    kclvm_value_ref_t* kclvm_yaml_dump_all_to_file(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_yaml_dump_all_to_file(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 // api-spec:       kclvm_yaml_validate
 // api-spec(c):    kclvm_value_ref_t* kclvm_yaml_validate(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);

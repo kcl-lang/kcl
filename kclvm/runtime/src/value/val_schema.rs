@@ -42,6 +42,8 @@ impl ValueRef {
         config_keys: &[String],
         config_meta: &ValueRef,
         optional_mapping: &ValueRef,
+        args: Option<ValueRef>,
+        kwargs: Option<ValueRef>,
     ) -> Self {
         if self.is_dict() {
             Self::from(Value::schema_value(Box::new(SchemaValue {
@@ -51,6 +53,8 @@ impl ValueRef {
                 config_keys: config_keys.to_owned(),
                 config_meta: config_meta.clone(),
                 optional_mapping: optional_mapping.clone(),
+                args: args.unwrap_or(ValueRef::list(None)),
+                kwargs: kwargs.unwrap_or(ValueRef::dict(None)),
             })))
         } else if self.is_schema() {
             self.clone()
@@ -176,6 +180,17 @@ impl ValueRef {
         }
     }
 
+    /// Set the schema instance value with arguments and keyword arguments.
+    pub fn set_schema_args(&mut self, args: &ValueRef, kwargs: &ValueRef) {
+        match &mut *self.rc.borrow_mut() {
+            Value::schema_value(ref mut schema) => {
+                schema.args = args.clone();
+                schema.kwargs = kwargs.clone();
+            }
+            _ => {}
+        }
+    }
+
     pub fn get_potential_schema_type(&self) -> Option<String> {
         match &*self.rc.borrow() {
             Value::dict_value(ref dict) => dict.potential_schema.clone(),
@@ -276,6 +291,8 @@ mod test_value_schema {
             &[],
             &ValueRef::dict(None),
             &ValueRef::dict(None),
+            None,
+            None,
         );
         schema.set_potential_schema_type(&schema_runtime_type(TEST_SCHEMA_NAME, MAIN_PKG_PATH));
         schema
@@ -292,6 +309,8 @@ mod test_value_schema {
             &[],
             &ValueRef::dict(None),
             &ValueRef::dict(None),
+            None,
+            None,
         );
         assert!(schema.is_schema());
         let schema = schema.dict_to_schema(
@@ -300,6 +319,8 @@ mod test_value_schema {
             &[],
             &ValueRef::dict(None),
             &ValueRef::dict(None),
+            None,
+            None,
         );
         assert!(schema.is_schema());
         let dict = schema.schema_to_dict();
@@ -318,6 +339,8 @@ mod test_value_schema {
             &[],
             &config_meta,
             &optional_mapping,
+            None,
+            None,
         );
         schema.schema_check_attr_optional(&mut ctx, true);
         schema.schema_check_attr_optional(&mut ctx, false);
@@ -336,6 +359,8 @@ mod test_value_schema {
                 &[],
                 &config_meta,
                 &optional_mapping,
+                None,
+                None,
             );
             schema.schema_check_attr_optional(&mut ctx, true);
         });

@@ -155,6 +155,8 @@ impl ValueRef {
         let mut pkgpath: String = "".to_string();
         let mut name: String = "".to_string();
         let mut common_keys: Vec<String> = vec![];
+        let mut args = None;
+        let mut kwargs = None;
         let mut valid = true;
         match (&mut *self.rc.borrow_mut(), &*x.rc.borrow()) {
             (Value::list_value(obj), Value::list_value(delta)) => {
@@ -193,6 +195,8 @@ impl ValueRef {
                 common_keys = obj.config_keys.clone();
                 let mut other_keys: Vec<String> = delta.values.keys().cloned().collect();
                 common_keys.append(&mut other_keys);
+                args = Some(obj.args.clone());
+                kwargs = Some(obj.kwargs.clone());
                 union_schema = true;
             }
             (Value::schema_value(obj), Value::schema_value(delta)) => {
@@ -204,6 +208,8 @@ impl ValueRef {
                 common_keys = obj.config_keys.clone();
                 let mut other_keys: Vec<String> = delta.config_keys.clone();
                 common_keys.append(&mut other_keys);
+                args = Some(delta.args.clone());
+                kwargs = Some(delta.kwargs.clone());
                 union_schema = true;
             }
             (Value::dict_value(obj), Value::schema_value(delta)) => {
@@ -214,6 +220,8 @@ impl ValueRef {
                 common_keys = delta.config_keys.clone();
                 let mut other_keys: Vec<String> = obj.values.keys().cloned().collect();
                 common_keys.append(&mut other_keys);
+                args = Some(delta.args.clone());
+                kwargs = Some(delta.kwargs.clone());
                 union_schema = true;
             }
             _ => valid = false,
@@ -229,7 +237,11 @@ impl ValueRef {
             return self.clone();
         }
         if union_schema {
-            let result = self.clone();
+            // Override schema arguments and keyword arguments.
+            let mut result = self.clone();
+            if let (Some(args), Some(kwargs)) = (&args, &kwargs) {
+                result.set_schema_args(args, kwargs);
+            }
             let optional_mapping = if self.is_schema() {
                 self.schema_optional_mapping()
             } else {
@@ -241,6 +253,8 @@ impl ValueRef {
                 &common_keys,
                 &x.schema_config_meta(),
                 &optional_mapping,
+                args,
+                kwargs,
             );
             if opts.config_resolve {
                 *self = resolve_schema(ctx, &schema, &common_keys);
