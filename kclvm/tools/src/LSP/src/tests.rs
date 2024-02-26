@@ -1,6 +1,7 @@
 use crossbeam_channel::after;
 use crossbeam_channel::select;
 use indexmap::IndexSet;
+use kclvm_ast::MAIN_PKG;
 use kclvm_sema::core::global_state::GlobalState;
 use lsp_server::RequestId;
 use lsp_server::Response;
@@ -1912,4 +1913,28 @@ fn rename_test() {
         ),
     ]));
     assert_eq!(res.result.unwrap(), to_json(expect).unwrap());
+}
+
+#[test]
+fn compile_unit_test() {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let mut test_file = path.clone();
+    test_file.push("src/test_data/compile_unit/b.k");
+    let file = test_file.to_str().unwrap();
+
+    let (prog, ..) = parse_param_and_compile(
+        Param {
+            file: file.to_string(),
+            module_cache: None,
+        },
+        Some(Arc::new(RwLock::new(Default::default()))),
+    )
+    .unwrap();
+    // b.k is not contained in kcl.yaml but need to be contained in main pkg
+    assert!(prog
+        .pkgs
+        .get(MAIN_PKG)
+        .unwrap()
+        .iter()
+        .any(|m| m.filename == file))
 }
