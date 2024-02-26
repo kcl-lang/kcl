@@ -103,9 +103,20 @@ pub(crate) fn handle_semantic_tokens_full(
     if !snapshot.verify_request_path(&path.clone().into(), &sender) {
         return Ok(None);
     }
-    let db = snapshot.get_db(&path.clone().into())?;
-    let res = semantic_tokens_full(&file, &db.gs);
-    Ok(res)
+
+    match parse_param_and_compile(
+        Param {
+            file: file.clone(),
+            module_cache: snapshot.module_cache.clone(),
+        },
+        Some(snapshot.vfs.clone()),
+    ) {
+        Ok((_, _, _, gs)) => {
+            let res = semantic_tokens_full(&file, &gs);
+            Ok(res)
+        }
+        Err(_) => Ok(None),
+    }
 }
 
 pub(crate) fn handle_formatting(

@@ -72,7 +72,11 @@ pub(crate) fn parse_param_and_compile(
     param: Param,
     vfs: Option<Arc<RwLock<Vfs>>>,
 ) -> anyhow::Result<(Program, ProgramScope, IndexSet<Diagnostic>, GlobalState)> {
-    let (files, opt) = lookup_compile_unit(&param.file, true);
+    let (mut files, opt) = lookup_compile_unit(&param.file, true);
+    if !files.contains(&param.file) {
+        files.push(param.file.clone());
+    }
+
     let files: Vec<&str> = files.iter().map(|s| s.as_str()).collect();
     let mut opt = opt.unwrap_or_default();
     opt.load_plugins = true;
