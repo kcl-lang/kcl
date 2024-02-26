@@ -88,7 +88,7 @@ pub fn resolve_schema(ctx: &mut Context, schema: &ValueRef, keys: &[String]) -> 
         let value = unsafe {
             let schema_fn: SchemaTypeFunc = transmute_copy(&schema_fn_ptr);
             let cal_map = kclvm_value_Dict(ctx as *mut Context);
-            let list = kclvm_value_List(ctx as *mut Context);
+            let list = schema_value.args.clone().into_raw(ctx);
             // Schema function closures
             // is sub schema
             kclvm_list_append(list, ValueRef::bool(false).into_raw(ctx));
@@ -113,9 +113,9 @@ pub fn resolve_schema(ctx: &mut Context, schema: &ValueRef, keys: &[String]) -> 
                 list,
                 ValueRef::str(&now_meta_info.kcl_pkgpath).into_raw(ctx),
             );
-            let dict = kclvm_value_Dict(ctx as *mut Context);
+            let dict = schema_value.kwargs.clone().into_raw(ctx);
             schema_fn(ctx, list, dict);
-            let list = kclvm_value_List(ctx as *mut Context);
+            let list = schema_value.args.clone().into_raw(ctx);
             // Schema function closures
             // is sub schema
             kclvm_list_append(list, ValueRef::bool(true).into_raw(ctx));

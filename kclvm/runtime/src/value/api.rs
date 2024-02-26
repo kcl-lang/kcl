@@ -280,6 +280,8 @@ pub unsafe extern "C" fn kclvm_value_schema_with_config(
     record_instance: *const kclvm_value_ref_t,
     instance_pkgpath: *const kclvm_value_ref_t,
     optional_mapping: *const kclvm_value_ref_t,
+    args: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
     let ctx = mut_ptr_as_ref(ctx);
     let schema_dict = ptr_as_ref(schema_dict);
@@ -296,8 +298,17 @@ pub unsafe extern "C" fn kclvm_value_schema_with_config(
     let instance_pkgpath = ptr_as_ref(instance_pkgpath);
     let instance_pkgpath = instance_pkgpath.as_str();
     let optional_mapping = ptr_as_ref(optional_mapping);
-    let schema =
-        schema_dict.dict_to_schema(name, pkgpath, &config_keys, config_meta, optional_mapping);
+    let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
+    let schema = schema_dict.dict_to_schema(
+        name,
+        pkgpath,
+        &config_keys,
+        config_meta,
+        optional_mapping,
+        Some(args.clone()),
+        Some(kwargs.clone()),
+    );
     if record_instance.is_truthy()
         && (instance_pkgpath.is_empty() || instance_pkgpath == MAIN_PKG_PATH)
     {
@@ -2174,6 +2185,8 @@ pub unsafe extern "C" fn kclvm_schema_instances(
                         &[],
                         &ValueRef::dict(None),
                         &ValueRef::dict(None),
+                        None,
+                        None,
                     );
                     list.list_append(&v);
                 }
@@ -2311,11 +2324,16 @@ pub unsafe extern "C" fn kclvm_schema_optional_check(
 pub unsafe extern "C" fn kclvm_schema_default_settings(
     schema_value: *mut kclvm_value_ref_t,
     _config_value: *const kclvm_value_ref_t,
+    args: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
     runtime_type: *const kclvm_char_t,
 ) {
     let schema_value = mut_ptr_as_ref(schema_value);
+    let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
     let runtime_type = c2str(runtime_type);
     schema_value.set_potential_schema_type(runtime_type);
+    schema_value.set_schema_args(args, kwargs);
 }
 
 #[no_mangle]

@@ -285,6 +285,8 @@ mod test_value_plan {
             &[],
             &ValueRef::dict(None),
             &ValueRef::dict(None),
+            None,
+            None,
         );
         schema.set_potential_schema_type(&schema_runtime_type(TEST_SCHEMA_NAME, MAIN_PKG_PATH));
         schema

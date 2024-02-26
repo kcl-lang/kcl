@@ -583,12 +583,14 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
             self.walk_decorator_with_name(&decorator.node, Some(schema_name), true)
                 .expect(kcl_error::COMPILE_ERROR_MSG);
         }
-        // Append schema default settings
+        // Append schema default settings, args, kwargs and runtime type.
         self.build_void_call(
             &ApiFunc::kclvm_schema_default_settings.name(),
             &[
                 schema_value,
                 schema_config,
+                args,
+                kwargs,
                 self.native_global_string_value(&runtime_type),
             ],
         );
@@ -721,6 +723,8 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
                 record_instance,
                 instance_pkgpath,
                 attr_optional_mapping,
+                args,
+                kwargs,
             ],
         );
         // Schema constructor function returns a schema

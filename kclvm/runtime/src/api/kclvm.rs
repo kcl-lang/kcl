@@ -243,6 +243,10 @@ pub struct SchemaValue {
     pub config_meta: ValueRef,
     /// This map stores which attributes of the schema are optional and which are required.
     pub optional_mapping: ValueRef,
+    /// Schema instance argument values
+    pub args: ValueRef,
+    /// Schema instance keyword argument values
+    pub kwargs: ValueRef,
 }
 
 #[derive(PartialEq, Eq, Clone, Default, Debug)]

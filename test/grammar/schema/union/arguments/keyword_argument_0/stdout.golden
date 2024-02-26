@@ -1,0 +1,12 @@
+x:
+  firstName: John
+  lastName: Doe
+  fullName: John Doe
+y:
+  firstName: John
+  lastName: Doe1
+  fullName: John-Doe1
+z:
+  firstName: John
+  lastName: Doe1
+  fullName: John-Doe1
