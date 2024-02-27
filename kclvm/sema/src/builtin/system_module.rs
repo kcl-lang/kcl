@@ -1156,7 +1156,14 @@ register_json_member! {
 
 pub const CRYPTO: &str = "crypto";
 pub const CRYPTO_FUNCTION_NAMES: &[&str] = &[
-    "md5", "sha1", "sha224", "sha256", "sha384", "sha512", "uuid", "filesha256",
+    "md5",
+    "sha1",
+    "sha224",
+    "sha256",
+    "sha384",
+    "sha512",
+    "uuid",
+    "filesha256",
 ];
 macro_rules! register_crypto_member {
     ($($name:ident => $ty:expr)*) => (

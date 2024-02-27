@@ -5,10 +5,7 @@ extern crate sha1;
 extern crate sha2;
 
 use core::panic;
-use std::{
-    fs::File,
-    io::Read,
-};
+use std::{fs::File, io::Read};
 
 use sha2::{Digest, Sha224, Sha256, Sha384, Sha512};
 
