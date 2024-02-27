@@ -144,6 +144,8 @@ fn test_resolve_program_fail() {
     let work_dir = "./src/resolver/test_fail_data/";
     let cases = &[
         "attr.k",
+        "cannot_find_member_0.k",
+        "cannot_find_member_1.k",
         "cannot_find_module.k",
         "comp_clause_error_0.k",
         "comp_clause_error_1.k",
@@ -702,7 +704,7 @@ fn test_ty_check_in_dict_assign_to_schema() {
     .unwrap()
     .program;
     let scope = resolve_program(&mut program);
-    assert_eq!(scope.handler.diagnostics.len(), 1);
+    assert_eq!(scope.handler.diagnostics.len(), 2);
     let diag = &scope.handler.diagnostics[0];
     assert_eq!(diag.code, Some(DiagnosticId::Error(ErrorKind::TypeError)));
     assert_eq!(diag.messages.len(), 2);

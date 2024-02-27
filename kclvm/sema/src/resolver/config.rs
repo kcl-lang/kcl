@@ -72,6 +72,12 @@ impl<'ctx> Resolver<'ctx> {
                     let obj = obj.clone();
                     match obj {
                         Some(obj) => match &obj.ty.kind {
+                            TypeKind::List(elem_type) => Some(self.new_config_expr_context_item(
+                                key_name,
+                                elem_type.clone(),
+                                obj.start.clone(),
+                                obj.end.clone(),
+                            )),
                             TypeKind::Dict(DictType {
                                 key_ty: _, val_ty, ..
                             }) => Some(self.new_config_expr_context_item(
@@ -151,6 +157,15 @@ impl<'ctx> Resolver<'ctx> {
             }
             None => SwitchConfigContextState::KeepConfigUnchanged as usize,
         }
+    }
+
+    /// Switch the context in 'config_expr_context' stack by the list index `[]`
+    ///
+    /// Returns:
+    ///     push stack times
+    #[inline]
+    pub(crate) fn switch_list_expr_context(&mut self) -> usize {
+        self.switch_config_expr_context_by_names(&["[]".to_string()])
     }
 
     /// Switch the context in 'config_expr_context' stack by name
@@ -314,22 +329,38 @@ impl<'ctx> Resolver<'ctx> {
         }
     }
 
+    pub(crate) fn get_config_attr_err_suggestion(
+        &self,
+        attr: &str,
+        schema_ty: &SchemaType,
+    ) -> (Vec<String>, String) {
+        let mut suggestion = String::new();
+        // Calculate the closest miss attributes.
+        let suggs = suggestions::provide_suggestions(attr, schema_ty.attrs.keys());
+        if suggs.len() > 0 {
+            suggestion = format!(", did you mean '{:?}'?", suggs);
+        }
+        (suggs, suggestion)
+    }
+
     /// Check config attr has been defined.
     pub(crate) fn check_config_attr(&mut self, attr: &str, range: &Range, schema_ty: &SchemaType) {
         let runtime_type = kclvm_runtime::schema_runtime_type(&schema_ty.name, &schema_ty.pkgpath);
         match self.ctx.schema_mapping.get(&runtime_type) {
             Some(schema_mapping_ty) => {
-                let schema_ty = schema_mapping_ty.borrow();
-                if schema_ty.get_obj_of_attr(attr).is_none()
-                    && !schema_ty.is_mixin
-                    && schema_ty.index_signature.is_none()
+                let schema_ty_ref = schema_mapping_ty.borrow();
+                if schema_ty_ref.get_obj_of_attr(attr).is_none()
+                    && !schema_ty_ref.is_mixin
+                    && schema_ty_ref.index_signature.is_none()
                 {
-                    self.handler.add_compile_error(
+                    let (suggs, msg) = self.get_config_attr_err_suggestion(attr, schema_ty);
+                    self.handler.add_compile_error_with_suggestions(
                         &format!(
-                            "Cannot add member '{}' to schema '{}'",
-                            attr, schema_ty.name
+                            "Cannot add member '{}' to schema '{}'{}",
+                            attr, schema_ty_ref.name, msg,
                         ),
                         range.clone(),
+                        Some(suggs),
                     );
                 }
             }
@@ -338,12 +369,14 @@ impl<'ctx> Resolver<'ctx> {
                     && !schema_ty.is_mixin
                     && schema_ty.index_signature.is_none()
                 {
-                    self.handler.add_compile_error(
+                    let (suggs, msg) = self.get_config_attr_err_suggestion(attr, schema_ty);
+                    self.handler.add_compile_error_with_suggestions(
                         &format!(
-                            "Cannot add member '{}' to schema '{}'",
-                            attr, schema_ty.name
+                            "Cannot add member '{}' to schema '{}'{}",
+                            attr, schema_ty.name, msg,
                         ),
                         range.clone(),
+                        Some(suggs),
                     );
                 }
             }

@@ -674,7 +674,9 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
     }
 
     fn walk_list_expr(&mut self, list_expr: &'ctx ast::ListExpr) -> Self::Result {
+        let stack_depth = self.switch_list_expr_context();
         let item_type = sup(&self.exprs(&list_expr.elts).to_vec());
+        self.clear_config_expr_context(stack_depth, false);
         Type::list_ref(item_type)
     }
 
