@@ -27,7 +27,7 @@ Set-Location $PSScriptRoot
 Set-Location "..\..\kclvm\tools\src\LSP"
 cargo build --release
 Set-Location $PSScriptRoot
-Copy-Item -Path "..\..\kclvm\target\release\kcl-language-server.exe" -Destination ".\_output\kclvm-windows\bin\“
+Copy-Item -Path "..\..\kclvm\target\release\kcl-language-server.exe" -Destination ".\_output\kclvm-windows\bin\"
 
 Set-Location $PSScriptRoot
 # 4. Copy KCLVM C API header
