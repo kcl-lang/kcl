@@ -1156,7 +1156,7 @@ register_json_member! {
 
 pub const CRYPTO: &str = "crypto";
 pub const CRYPTO_FUNCTION_NAMES: &[&str] = &[
-    "md5", "sha1", "sha224", "sha256", "sha384", "sha512", "uuid",
+    "md5", "sha1", "sha224", "sha256", "sha384", "sha512", "uuid", "filesha256",
 ];
 macro_rules! register_crypto_member {
     ($($name:ident => $ty:expr)*) => (
@@ -1279,6 +1279,28 @@ register_crypto_member! {
             },
         ],
         r#"Encrypt the string `value` using `SHA512` and the codec registered for encoding."#,
+        false,
+        None,
+    )
+    uuid => Type::function(
+        None,
+        Type::str_ref(),
+        &[],
+        r#"Generate a random UUID."#,
+        false,
+        None,
+    )
+    filesha256 => Type::function(
+        None,
+        Type::str_ref(),
+        &[
+            Parameter {
+                name: "filepath".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+        ],
+        r#"Calculate the SHA256 hash of the file `filepath`."#,
         false,
         None,
     )

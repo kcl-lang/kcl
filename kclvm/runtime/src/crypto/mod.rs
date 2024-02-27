@@ -4,6 +4,12 @@ extern crate md5;
 extern crate sha1;
 extern crate sha2;
 
+use core::panic;
+use std::{
+    fs::File,
+    io::Read,
+};
+
 use sha2::{Digest, Sha224, Sha256, Sha384, Sha512};
 
 use crate::*;
@@ -173,4 +179,42 @@ pub extern "C" fn kclvm_crypto_uuid(
 ) -> *const kclvm_value_ref_t {
     let ctx = mut_ptr_as_ref(ctx);
     return ValueRef::str(Uuid::new_v4().to_string().as_ref()).into_raw(ctx);
+}
+
+#[no_mangle]
+#[runtime_fn]
+pub extern "C" fn kclvm_crypto_filesha256(
+    ctx: *mut kclvm_context_t,
+    args: *const kclvm_value_ref_t,
+    _kwargs: *const kclvm_value_ref_t,
+) -> *const kclvm_value_ref_t {
+    let args = ptr_as_ref(args);
+    let ctx = mut_ptr_as_ref(ctx);
+    if let Some(filepath) = args.arg_i_str(0, None) {
+        // Open the file
+        let mut file = File::open(&filepath)
+            .unwrap_or_else(|e| panic!("failed to access file '{}': {}", filepath, e));
+
+        // Create a SHA256 hasher instance
+        let mut hasher = Sha256::new();
+
+        // Read the file content and update the hasher
+        let mut buffer = Vec::new();
+        file.read_to_end(&mut buffer)
+            .unwrap_or_else(|e| panic!("failed to read file '{}': {}", filepath, e));
+        hasher.update(&buffer);
+
+        // Compute the SHA256 hash
+        let hash_result = hasher.finalize();
+
+        let mut hex = String::with_capacity(2 * Sha256::output_size());
+        use std::fmt::Write;
+
+        for byte in hash_result {
+            let _ = write!(&mut hex, "{byte:02x}");
+        }
+
+        return ValueRef::str(hex.as_str()).into_raw(ctx);
+    }
+    panic!("filesha256() missing 1 required positional argument: 'filepath'");
 }
