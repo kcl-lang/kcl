@@ -20,22 +20,21 @@ use std::{fs, path::Path};
 
 use crate::goto_def::find_def_with_gs;
 use indexmap::IndexSet;
-use kclvm_ast::ast::{Expr, ImportStmt, Program, Stmt};
+use kclvm_ast::ast::{ImportStmt, Program, Stmt};
 
-use kclvm_ast::pos::GetPos;
 use kclvm_ast::MAIN_PKG;
 use kclvm_config::modfile::KCL_FILE_EXTENSION;
 use kclvm_sema::core::global_state::GlobalState;
 
 use kclvm_error::Position as KCLPos;
-use kclvm_sema::builtin::{BUILTIN_FUNCTIONS, STANDARD_SYSTEM_MODULES, STRING_MEMBER_FUNCTIONS};
+use kclvm_sema::builtin::{BUILTIN_FUNCTIONS, STANDARD_SYSTEM_MODULES};
 use kclvm_sema::core::package::ModuleInfo;
 use kclvm_sema::resolver::doc::{parse_doc_string, Doc};
 use kclvm_sema::ty::{FunctionType, SchemaType, Type};
 use lsp_types::{CompletionItem, CompletionItemKind, InsertTextFormat};
 
 use crate::util::{get_real_path_from_external, is_in_schema_expr};
-use crate::util::{inner_most_expr_in_stmt, is_in_docstring};
+use crate::util::is_in_docstring;
 
 #[derive(Debug, Clone, PartialEq, Hash, Eq)]
 pub enum KCLCompletionItemKind {
@@ -217,6 +216,7 @@ fn completion_dot(
     gs: &GlobalState,
 ) -> Option<lsp_types::CompletionResponse> {
     let mut items: IndexSet<KCLCompletionItem> = IndexSet::new();
+
     // get pre position of trigger character '.'
     let pre_pos = KCLPos {
         filename: pos.filename.clone(),
@@ -225,51 +225,21 @@ fn completion_dot(
     };
 
     if let Some(stmt) = program.pos_to_stmt(&pre_pos) {
-        match stmt.node {
-            Stmt::Import(stmt) => return completion_import(&stmt, &pre_pos, program),
-            _ => {
-                // Todo: string lit has not been processed using the new semantic model and need to handle here.
-                let (expr, _) = inner_most_expr_in_stmt(&stmt.node, &pre_pos, None);
-                if let Some(node) = expr {
-                    if let Expr::StringLit(_) = node.node {
-                        if pre_pos == node.get_end_pos() {
-                            return Some(
-                                into_completion_items(
-                                    &STRING_MEMBER_FUNCTIONS
-                                        .iter()
-                                        .map(|(name, ty)| KCLCompletionItem {
-                                            label: func_ty_complete_label(
-                                                name,
-                                                &ty.into_func_type(),
-                                            ),
-                                            detail: Some(
-                                                ty.into_func_type().func_signature_str(name),
-                                            ),
-                                            documentation: ty.ty_doc(),
-                                            kind: Some(KCLCompletionItemKind::Function),
-                                            insert_text: Some(func_ty_complete_insert_text(
-                                                name,
-                                                &ty.into_func_type(),
-                                            )),
-                                        })
-                                        .collect(),
-                                )
-                                .into(),
-                            );
-                        } else {
-                            return Some(into_completion_items(&items).into());
-                        }
-                    }
-                }
-            }
+        if let Stmt::Import(stmt) = stmt.node {
+            return completion_import(&stmt, &pre_pos, program);
         }
     }
 
     // look_up_exact_symbol
     let mut def = find_def_with_gs(&pre_pos, gs, true);
     if def.is_none() {
-        // look_up_closest_symbol
-        def = find_def_with_gs(pos, gs, false);
+        // handel `symbol?.`
+        let pre_pos = KCLPos {
+            filename: pos.filename.clone(),
+            line: pos.line,
+            column: pos.column.map(|c| c - 2),
+        };
+        def = find_def_with_gs(&pre_pos, gs, true);
     }
     match def {
         Some(def_ref) => {
@@ -1596,6 +1566,41 @@ mod tests {
                 assert_eq!(arr.len(), 3);
                 let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
                 assert!(labels.contains(&"name".to_string()));
+            }
+            CompletionResponse::List(_) => panic!("test failed"),
+        }
+    }
+
+    #[test]
+    #[bench_test]
+    fn join_str_inner_completion() {
+        let (file, program, _, _, gs) =
+            compile_test_file("src/test_data/completion_test/dot/lit_str/lit_str.k");
+
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 6,
+            column: Some(28),
+        };
+
+        let got = completion(Some('.'), &program, &pos, &gs).unwrap();
+        match &got {
+            CompletionResponse::Array(arr) => {
+                assert!(arr.is_empty())
+            }
+            CompletionResponse::List(_) => panic!("test failed"),
+        }
+
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 7,
+            column: Some(27),
+        };
+
+        let got = completion(Some('.'), &program, &pos, &gs).unwrap();
+        match &got {
+            CompletionResponse::Array(arr) => {
+                assert!(arr.is_empty())
             }
             CompletionResponse::List(_) => panic!("test failed"),
         }
