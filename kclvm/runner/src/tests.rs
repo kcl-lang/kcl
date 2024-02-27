@@ -13,6 +13,7 @@ use kclvm_config::settings::load_file;
 use kclvm_parser::load_program;
 use kclvm_parser::ParseSession;
 use kclvm_sema::resolver::resolve_program;
+use serde_json::Value;
 use std::fs::create_dir_all;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -22,6 +23,7 @@ use std::{
     fs::{self, File},
 };
 use tempfile::tempdir;
+use uuid::Uuid;
 use walkdir::WalkDir;
 
 const MULTI_FILE_TEST_CASES: &[&str; 5] = &[
@@ -545,6 +547,9 @@ fn test_exec() {
 
     test_compile_with_file_pattern();
     println!("test_compile_with_file_pattern - PASS");
+
+    test_uuid();
+    println!("test_uuid - PASS");
 }
 
 fn test_indent_error() {
@@ -678,4 +683,23 @@ fn test_compile_with_file_pattern() {
         res.as_ref().unwrap().json_result,
         "{\"k3\": \"Hello World!\", \"k1\": \"Hello World!\", \"k2\": \"Hello World!\"}"
     );
+}
+
+fn test_uuid() {
+    let res = exec(
+        &PathBuf::from(".")
+            .join("src")
+            .join("test_uuid")
+            .join("main.k")
+            .canonicalize()
+            .unwrap()
+            .display()
+            .to_string(),
+    );
+
+    let v: Value = serde_json::from_str(res.clone().unwrap().as_str()).unwrap();
+    assert!(v["a"].as_str().is_some());
+    if let Some(uuid_str) = v["a"].as_str() {
+        assert!(Uuid::parse_str(uuid_str).is_ok());
+    }
 }

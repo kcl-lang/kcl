@@ -108,12 +108,14 @@ pub fn _kclvm_get_fn_ptr_by_name(name: &str) -> u64 {
         "kclvm_convert_collection_value" => {
             crate::kclvm_convert_collection_value as *const () as u64
         }
+        "kclvm_crypto_filesha256" => crate::kclvm_crypto_filesha256 as *const () as u64,
         "kclvm_crypto_md5" => crate::kclvm_crypto_md5 as *const () as u64,
         "kclvm_crypto_sha1" => crate::kclvm_crypto_sha1 as *const () as u64,
         "kclvm_crypto_sha224" => crate::kclvm_crypto_sha224 as *const () as u64,
         "kclvm_crypto_sha256" => crate::kclvm_crypto_sha256 as *const () as u64,
         "kclvm_crypto_sha384" => crate::kclvm_crypto_sha384 as *const () as u64,
         "kclvm_crypto_sha512" => crate::kclvm_crypto_sha512 as *const () as u64,
+        "kclvm_crypto_uuid" => crate::kclvm_crypto_uuid as *const () as u64,
         "kclvm_datetime_date" => crate::kclvm_datetime_date as *const () as u64,
         "kclvm_datetime_now" => crate::kclvm_datetime_now as *const () as u64,
         "kclvm_datetime_ticks" => crate::kclvm_datetime_ticks as *const () as u64,

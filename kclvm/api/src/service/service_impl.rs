@@ -172,9 +172,9 @@ impl KclvmServiceImpl {
     /// assert_eq!(result.type_errors.len(), 0);
     /// assert_eq!(result.symbols.len(), 12);
     /// assert_eq!(result.scopes.len(), 3);
-    /// assert_eq!(result.node_symbol_map.len(), 163);
-    /// assert_eq!(result.symbol_node_map.len(), 163);
-    /// assert_eq!(result.fully_qualified_name_map.len(), 171);
+    /// assert_eq!(result.node_symbol_map.len(), 165);
+    /// assert_eq!(result.symbol_node_map.len(), 165);
+    /// assert_eq!(result.fully_qualified_name_map.len(), 173);
     /// assert_eq!(result.pkg_scope_map.len(), 3);
     /// ```
     pub fn load_package(&self, args: &LoadPackageArgs) -> anyhow::Result<LoadPackageResult> {

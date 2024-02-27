@@ -37,6 +37,7 @@ kclvm-error = {path = "../error"}
 kclvm-query = {path = "../query"}
 kclvm-utils = {path = "../utils"}
 kclvm-driver = {path = "../driver"}
+uuid = "1.7.0"
 
 [dev-dependencies]
 kclvm-parser = {path = "../parser"}
