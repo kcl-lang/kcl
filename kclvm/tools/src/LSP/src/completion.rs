@@ -33,8 +33,8 @@ use kclvm_sema::resolver::doc::{parse_doc_string, Doc};
 use kclvm_sema::ty::{FunctionType, SchemaType, Type};
 use lsp_types::{CompletionItem, CompletionItemKind, InsertTextFormat};
 
-use crate::util::is_in_docstring;
 use crate::util::{get_real_path_from_external, is_in_schema_expr};
+use crate::util::{inner_most_expr_in_stmt, is_in_docstring};
 
 #[derive(Debug, Clone, PartialEq, Hash, Eq)]
 pub enum KCLCompletionItemKind {
@@ -225,27 +225,34 @@ fn completion_dot(
     };
 
     if let Some(stmt) = program.pos_to_stmt(&pre_pos) {
-        if let Stmt::Import(stmt) = stmt.node {
-            return completion_import(&stmt, &pre_pos, program);
+        match stmt.node {
+            Stmt::Import(stmt) => return completion_import(&stmt, &pos, program),
+            _ => {
+                let (expr, _) = inner_most_expr_in_stmt(&stmt.node, &pos, None);
+                if let Some(node) = expr {
+                    match node.node {
+                        // if the complete trigger character in string, skip it
+                        kclvm_ast::ast::Expr::StringLit(_)
+                        | kclvm_ast::ast::Expr::JoinedString(_) => {
+                            return Some(into_completion_items(&items).into())
+                        }
+                        _ => {}
+                    }
+                }
+            }
         }
     }
 
     // look_up_exact_symbol
     let mut def = find_def_with_gs(&pre_pos, gs, true);
     if def.is_none() {
-        // handle `symbol?.`, find exact symbol from position of `l`
-        let pre_pos = KCLPos {
-            filename: pos.filename.clone(),
-            line: pos.line,
-            column: pos.column.map(|c| c - 2),
-        };
-        def = find_def_with_gs(&pre_pos, gs, true);
+        def = find_def_with_gs(pos, gs, false);
     }
 
     match def {
         Some(def_ref) => {
             if let Some(def) = gs.get_symbols().get_symbol(def_ref) {
-                let module_info = gs.get_packages().get_module_info(&pre_pos.filename);
+                let module_info = gs.get_packages().get_module_info(&pos.filename);
                 let attrs = def.get_all_attributes(gs.get_symbols(), module_info);
                 for attr in attrs {
                     let attr_def = gs.get_symbols().get_symbol(attr);
