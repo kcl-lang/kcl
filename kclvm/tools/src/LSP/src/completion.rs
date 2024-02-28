@@ -33,8 +33,8 @@ use kclvm_sema::resolver::doc::{parse_doc_string, Doc};
 use kclvm_sema::ty::{FunctionType, SchemaType, Type};
 use lsp_types::{CompletionItem, CompletionItemKind, InsertTextFormat};
 
-use crate::util::{get_real_path_from_external, is_in_schema_expr};
 use crate::util::is_in_docstring;
+use crate::util::{get_real_path_from_external, is_in_schema_expr};
 
 #[derive(Debug, Clone, PartialEq, Hash, Eq)]
 pub enum KCLCompletionItemKind {
@@ -233,7 +233,7 @@ fn completion_dot(
     // look_up_exact_symbol
     let mut def = find_def_with_gs(&pre_pos, gs, true);
     if def.is_none() {
-        // handel `symbol?.`
+        // handle `symbol?.`, find exact symbol from position of `l`
         let pre_pos = KCLPos {
             filename: pos.filename.clone(),
             line: pos.line,
@@ -241,6 +241,7 @@ fn completion_dot(
         };
         def = find_def_with_gs(&pre_pos, gs, true);
     }
+
     match def {
         Some(def_ref) => {
             if let Some(def) = gs.get_symbols().get_symbol(def_ref) {
