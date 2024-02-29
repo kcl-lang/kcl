@@ -15,6 +15,7 @@ pub const LEGEND_TYPE: &[SemanticTokenType] = &[
     SemanticTokenType::TYPE,
     SemanticTokenType::MACRO,
     SemanticTokenType::COMMENT,
+    SemanticTokenType::PARAMETER,
 ];
 
 pub(crate) struct KCLSemanticToken {
@@ -72,6 +73,7 @@ pub(crate) fn get_kind(ty: SymbolKind, symbol: &KCLSymbol, gs: &GlobalState) -> 
         },
         SymbolKind::Expression => None,
         SymbolKind::Comment => None,
+        SymbolKind::Decorator => Some(type_index(SemanticTokenType::PARAMETER)),
     }
 }
 

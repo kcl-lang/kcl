@@ -1,6 +1,7 @@
 use kclvm_ast::ast::Program;
 use kclvm_error::Position as KCLPos;
 use kclvm_sema::{
+    builtin::BUILTIN_DECORATORS,
     core::global_state::GlobalState,
     ty::{FunctionType, SchemaType},
 };
@@ -52,6 +53,17 @@ pub(crate) fn hover(
                     _ => {}
                 },
                 kclvm_sema::core::symbol::SymbolKind::Expression => return None,
+                kclvm_sema::core::symbol::SymbolKind::Decorator => {
+                    match BUILTIN_DECORATORS.get(&obj.get_name()) {
+                        Some(ty) => {
+                            docs.extend(build_func_hover_content(
+                                &ty.into_func_type(),
+                                obj.get_name().clone(),
+                            ));
+                        }
+                        None => todo!(),
+                    }
+                }
                 _ => {
                     let ty_str = match &obj.get_sema_info().ty {
                         Some(ty) => ty.ty_str(),
@@ -485,6 +497,42 @@ mod tests {
                 if let MarkedString::String(s) = marked_string {
                     assert_eq!(s, "n1: int");
                 }
+            }
+            _ => unreachable!("test error"),
+        }
+    }
+
+    #[test]
+    #[bench_test]
+    fn decorator_hover() {
+        let (file, program, _, _, gs) = compile_test_file("src/test_data/hover_test/decorator.k");
+        let pos = KCLPos {
+            filename: file.clone(),
+            line: 1,
+            column: Some(1),
+        };
+        let got = hover(&program, &pos, &gs).unwrap();
+        let expect_content = vec![MarkedString::String(
+            "fn deprecated(version: str, reason: str, strict: bool) -> any".to_string(),
+        ), MarkedString::String(
+            "This decorator is used to get the deprecation message according to the wrapped key-value pair.\n\n\n\nExamples\n\n--------\n\n@deprecated(version=\"v1.16\", reason=\"The age attribute was deprecated\", strict=True)\n\nschema Person:\n\n    name: str\n\n    age: int\n\n        ".to_string(),
+        )];
+        match got.contents {
+            lsp_types::HoverContents::Array(vec) => {
+                assert_eq!(vec, expect_content)
+            }
+            _ => unreachable!("test error"),
+        }
+
+        let pos = KCLPos {
+            filename: file.clone(),
+            line: 3,
+            column: Some(8),
+        };
+        let got = hover(&program, &pos, &gs).unwrap();
+        match got.contents {
+            lsp_types::HoverContents::Array(vec) => {
+                assert_eq!(vec, expect_content);
             }
             _ => unreachable!("test error"),
         }

@@ -10,8 +10,8 @@ use crate::{
     core::{
         scope::LocalSymbolScopeKind,
         symbol::{
-            CommentSymbol, ExpressionSymbol, KCLSymbolSemanticInfo, SymbolRef, UnresolvedSymbol,
-            ValueSymbol,
+            CommentSymbol, DecoratorSymbol, ExpressionSymbol, KCLSymbolSemanticInfo, SymbolRef,
+            UnresolvedSymbol, ValueSymbol,
         },
     },
     ty::{Type, SCHEMA_MEMBER_FUNCTIONS},
@@ -216,6 +216,8 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
             };
         }
 
+        self.resolve_decorator(&schema_stmt.decorators);
+
         let mut last_end_pos = start.clone();
 
         self.enter_local_scope(
@@ -375,6 +377,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
             .rules
             .get_mut(rule_symbol.get_id())?
             .parent_rules = parent_rules;
+        self.resolve_decorator(&rule_stmt.decorators);
         Some(rule_symbol)
     }
 
@@ -466,6 +469,8 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
         if let Some(value) = &schema_attr.value {
             self.expr(value);
         }
+
+        self.resolve_decorator(&schema_attr.decorators);
         Some(attr_symbol)
     }
 
@@ -1178,6 +1183,20 @@ impl<'ctx> AdvancedResolver<'ctx> {
                             self.gs.get_symbols().get_type_symbol(&def_ty, None);
                     }
                 }
+            }
+        }
+    }
+
+    pub(crate) fn resolve_decorator(&mut self, decorators: &'ctx [ast::NodeRef<ast::CallExpr>]) {
+        for decorator in decorators {
+            let func_ident = &decorator.node.func;
+            let (start, end) = func_ident.get_span_pos();
+            if let kclvm_ast::ast::Expr::Identifier(id) = &func_ident.node {
+                let decorator_symbol = DecoratorSymbol::new(start, end, id.get_name());
+                self.gs.get_symbols_mut().alloc_decorator_symbol(
+                    decorator_symbol,
+                    self.ctx.get_node_key(&self.ctx.cur_node),
+                );
             }
         }
     }
