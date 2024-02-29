@@ -445,6 +445,26 @@ impl GlobalState {
             );
         }
 
+        for (index, symbol) in self.symbols.decorators.iter() {
+            let symbol_ref = SymbolRef {
+                kind: SymbolKind::Decorator,
+                id: index,
+            };
+            let filename = symbol.start.filename.clone();
+            if !file_sema_map.contains_key(&filename) {
+                file_sema_map.insert(filename.clone(), FileSemanticInfo::new(filename.clone()));
+            }
+            let file_sema_info = file_sema_map.get_mut(&filename).unwrap();
+            file_sema_info.symbols.push(symbol_ref);
+            file_sema_info.symbol_locs.insert(
+                symbol_ref,
+                CachedLocation {
+                    line: symbol.start.line,
+                    column: symbol.start.column.unwrap_or(0),
+                },
+            );
+        }
+
         // remove dummy file
         file_sema_map.remove("");
 

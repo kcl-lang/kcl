@@ -40,5 +40,4 @@ d = Deployment{
             replicas = 1
         stratege: "a"
     }
-}    
-    
+}
