@@ -40,15 +40,7 @@ register_decorator! {
                 has_default: true,
             },
         ],
-        r#"This decorator is used to get the deprecation message according to the wrapped key-value pair.
-
-Examples
---------
-@deprecated(version="v1.16", reason="The age attribute was deprecated", strict=True)
-schema Person:
-    name: str
-    age: int
-        "#,
+        r#"This decorator is used to get the deprecation message according to the wrapped key-value pair."#,
         false,
         None,
     )
@@ -56,15 +48,7 @@ schema Person:
         None,
         Arc::new(Type::ANY),
         &[],
-        r#"Info decorator is used to mark some compile-time information for external API queries
-
-Examples
---------
-@info(message="User message")
-schema Person:
-    name: str
-    age: int
-        "#,
+        r#"Info decorator is used to mark some compile-time information for external API queries"#,
         true,
         Some(0),
     )

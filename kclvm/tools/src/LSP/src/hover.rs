@@ -515,7 +515,7 @@ mod tests {
         let expect_content = vec![MarkedString::String(
             "fn deprecated(version: str, reason: str, strict: bool) -> any".to_string(),
         ), MarkedString::String(
-            "This decorator is used to get the deprecation message according to the wrapped key-value pair.\n\n\n\nExamples\n\n--------\n\n@deprecated(version=\"v1.16\", reason=\"The age attribute was deprecated\", strict=True)\n\nschema Person:\n\n    name: str\n\n    age: int\n\n        ".to_string(),
+            "This decorator is used to get the deprecation message according to the wrapped key-value pair.".to_string(),
         )];
         match got.contents {
             lsp_types::HoverContents::Array(vec) => {
