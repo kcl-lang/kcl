@@ -159,6 +159,14 @@ fn test_resolve_program_fail() {
         "unique_key_error_1.k",
         "unmatched_index_sign_default_value.k",
         "unmatched_args.k",
+        "unmatched_nest_schema_attr_0.k",
+        "unmatched_nest_schema_attr_1.k",
+        "unmatched_nest_schema_attr_2.k",
+        "unmatched_nest_schema_attr_3.k",
+        "unmatched_schema_attr_0.k",
+        "unmatched_schema_attr_1.k",
+        "unmatched_schema_attr_2.k",
+        "unmatched_schema_attr_3.k",
     ];
     for case in cases {
         let path = Path::new(work_dir).join(case);

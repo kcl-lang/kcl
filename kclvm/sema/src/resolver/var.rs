@@ -1,5 +1,4 @@
 use crate::resolver::Resolver;
-use crate::ty::TypeKind;
 use indexmap::IndexMap;
 use kclvm_ast::pos::GetPos;
 use kclvm_error::diagnostic::Range;
@@ -115,9 +114,7 @@ impl<'ctx> Resolver<'ctx> {
             for name in &names[1..] {
                 // Store and config attr check
                 if self.ctx.l_value {
-                    if let TypeKind::Schema(schema_ty) = &ty.kind {
-                        self.check_config_attr(name, &range, schema_ty);
-                    }
+                    self.must_check_config_attr(name, &range, &ty);
                 }
                 ty = self.load_attr(ty, name, range.clone());
                 tys.push(ty.clone());

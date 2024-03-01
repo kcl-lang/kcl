@@ -160,6 +160,18 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                         value_ty = self.expr(&assign_stmt.value);
                         self.clear_config_expr_context(init_stack_depth as usize, false)
                     }
+                    TypeKind::List(_) | TypeKind::Dict(_) | TypeKind::Union(_) => {
+                        let obj = self.new_config_expr_context_item(
+                            "[]",
+                            expected_ty.clone(),
+                            start.clone(),
+                            end.clone(),
+                        );
+                        let init_stack_depth = self.switch_config_expr_context(Some(obj));
+                        value_ty = self.expr(&assign_stmt.value);
+                        self.check_assignment_type_annotation(assign_stmt, value_ty.clone());
+                        self.clear_config_expr_context(init_stack_depth as usize, false)
+                    }
                     _ => {
                         value_ty = self.expr(&assign_stmt.value);
                         // Check type annotation if exists.

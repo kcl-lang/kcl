@@ -1,5 +1,5 @@
 //! Complete for KCL
-//! Now supports code completion in treigger mode (triggered when user enters `.`, `:` and `=`), schema attr and global variables
+//! Now supports code completion in trigger mode (triggered when user enters `.`, `:` and `=`), schema attr and global variables
 //! and the content of the completion includes:
 //! + variable
 //! + schema attr name
@@ -7,7 +7,7 @@
 //!     + import path
 //!     + schema attr
 //!     + builtin function(str function)
-//!     + defitions in pkg
+//!     + definitions in pkg
 //!     + system module functions
 //! + assign(=, :)
 //!     + schema attr value
@@ -110,8 +110,8 @@ pub(crate) fn completion(
                 // Complete builtin functions in root scope and lambda
                 match scope.get_kind() {
                     kclvm_sema::core::scope::ScopeKind::Local => {
-                        if let Some(locol_scope) = gs.get_scopes().try_get_local_scope(&scope) {
-                            match locol_scope.get_kind() {
+                        if let Some(local_scope) = gs.get_scopes().try_get_local_scope(&scope) {
+                            match local_scope.get_kind() {
                                 kclvm_sema::core::scope::LocalSymbolScopeKind::Lambda => {
                                     completions.extend(BUILTIN_FUNCTIONS.iter().map(
                                         |(name, ty)| KCLCompletionItem {
