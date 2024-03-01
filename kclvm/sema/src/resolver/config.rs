@@ -201,7 +201,7 @@ impl<'ctx> Resolver<'ctx> {
     /// Pop method for the 'config_expr_context' stack
     ///
     /// Returns:
-    ///     the item poped from stack.
+    ///     the item popped from stack.
     #[inline]
     pub(crate) fn restore_config_expr_context(&mut self) -> Option<ScopeObject> {
         match self.ctx.config_expr_context.pop() {
@@ -258,9 +258,7 @@ impl<'ctx> Resolver<'ctx> {
         if !name.is_empty() {
             if let Some(Some(obj)) = self.ctx.config_expr_context.last() {
                 let obj = obj.clone();
-                if let TypeKind::Schema(schema_ty) = &obj.ty.kind {
-                    self.check_config_attr(name, &key.get_span_pos(), schema_ty);
-                }
+                self.must_check_config_attr(name, &key.get_span_pos(), &obj.ty);
             }
         }
     }
@@ -341,6 +339,52 @@ impl<'ctx> Resolver<'ctx> {
             suggestion = format!(", did you mean '{:?}'?", suggs);
         }
         (suggs, suggestion)
+    }
+
+    /// Check config attr has been defined.
+    pub(crate) fn must_check_config_attr(&mut self, attr: &str, range: &Range, ty: &TypeRef) {
+        if let TypeKind::Schema(schema_ty) = &ty.kind {
+            self.check_config_attr(attr, range, schema_ty)
+        } else if let TypeKind::Union(types) = &ty.kind {
+            let mut schema_names = vec![];
+            let mut total_suggs = vec![];
+            for ty in types {
+                if let TypeKind::Schema(schema_ty) = &ty.kind {
+                    if schema_ty.get_obj_of_attr(attr).is_none()
+                        && !schema_ty.is_mixin
+                        && schema_ty.index_signature.is_none()
+                    {
+                        let mut suggs =
+                            suggestions::provide_suggestions(attr, schema_ty.attrs.keys());
+                        total_suggs.append(&mut suggs);
+                        schema_names.push(schema_ty.name.clone());
+                    } else {
+                        // If there is a schema attribute that meets the condition, the type check passes
+                        return;
+                    }
+                }
+            }
+            if !schema_names.is_empty() {
+                self.handler.add_compile_error_with_suggestions(
+                    &format!(
+                        "Cannot add member '{}' to '{}'{}",
+                        attr,
+                        if schema_names.len() > 1 {
+                            format!("schemas {:?}", schema_names)
+                        } else {
+                            format!("schema {}", schema_names[0])
+                        },
+                        if total_suggs.is_empty() {
+                            "".to_string()
+                        } else {
+                            format!(", did you mean '{:?}'?", total_suggs)
+                        },
+                    ),
+                    range.clone(),
+                    Some(total_suggs),
+                );
+            }
+        }
     }
 
     /// Check config attr has been defined.
