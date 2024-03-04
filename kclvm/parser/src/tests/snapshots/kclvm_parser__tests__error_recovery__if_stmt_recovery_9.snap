@@ -1,0 +1,157 @@
+---
+source: parser/src/tests/error_recovery.rs
+assertion_line: 209
+expression: "crate::tests::parsing_module_string(r#\"if True: a = 1\nelse False: b = 1\"#)"
+---
+Module {
+    filename: "",
+    pkg: "",
+    doc: None,
+    name: "",
+    body: [
+        Node {
+            node: If(
+                IfStmt {
+                    body: [
+                        Node {
+                            node: Assign(
+                                AssignStmt {
+                                    targets: [
+                                        Node {
+                                            node: Identifier {
+                                                names: [
+                                                    Node {
+                                                        node: "a",
+                                                        filename: "",
+                                                        line: 1,
+                                                        column: 9,
+                                                        end_line: 1,
+                                                        end_column: 10,
+                                                    },
+                                                ],
+                                                pkgpath: "",
+                                                ctx: Store,
+                                            },
+                                            filename: "",
+                                            line: 1,
+                                            column: 9,
+                                            end_line: 1,
+                                            end_column: 10,
+                                        },
+                                    ],
+                                    value: Node {
+                                        node: NumberLit(
+                                            NumberLit {
+                                                binary_suffix: None,
+                                                value: Int(
+                                                    1,
+                                                ),
+                                            },
+                                        ),
+                                        filename: "",
+                                        line: 1,
+                                        column: 13,
+                                        end_line: 1,
+                                        end_column: 14,
+                                    },
+                                    ty: None,
+                                },
+                            ),
+                            filename: "",
+                            line: 1,
+                            column: 9,
+                            end_line: 1,
+                            end_column: 14,
+                        },
+                    ],
+                    cond: Node {
+                        node: NameConstantLit(
+                            NameConstantLit {
+                                value: True,
+                            },
+                        ),
+                        filename: "",
+                        line: 1,
+                        column: 3,
+                        end_line: 1,
+                        end_column: 7,
+                    },
+                    orelse: [
+                        Node {
+                            node: Assign(
+                                AssignStmt {
+                                    targets: [
+                                        Node {
+                                            node: Identifier {
+                                                names: [],
+                                                pkgpath: "",
+                                                ctx: Load,
+                                            },
+                                            filename: "",
+                                            line: 2,
+                                            column: 10,
+                                            end_line: 2,
+                                            end_column: 11,
+                                        },
+                                    ],
+                                    value: Node {
+                                        node: NumberLit(
+                                            NumberLit {
+                                                binary_suffix: None,
+                                                value: Int(
+                                                    1,
+                                                ),
+                                            },
+                                        ),
+                                        filename: "",
+                                        line: 2,
+                                        column: 16,
+                                        end_line: 2,
+                                        end_column: 17,
+                                    },
+                                    ty: Some(
+                                        Node {
+                                            node: Named(
+                                                Identifier {
+                                                    names: [
+                                                        Node {
+                                                            node: "b",
+                                                            filename: "",
+                                                            line: 2,
+                                                            column: 12,
+                                                            end_line: 2,
+                                                            end_column: 13,
+                                                        },
+                                                    ],
+                                                    pkgpath: "",
+                                                    ctx: Load,
+                                                },
+                                            ),
+                                            filename: "",
+                                            line: 2,
+                                            column: 12,
+                                            end_line: 2,
+                                            end_column: 13,
+                                        },
+                                    ),
+                                },
+                            ),
+                            filename: "",
+                            line: 2,
+                            column: 10,
+                            end_line: 2,
+                            end_column: 17,
+                        },
+                    ],
+                },
+            ),
+            filename: "",
+            line: 1,
+            column: 0,
+            end_line: 2,
+            end_column: 17,
+        },
+    ],
+    comments: [],
+}
+
