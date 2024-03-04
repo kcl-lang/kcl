@@ -597,7 +597,19 @@ impl<'a> Parser<'a> {
         // else
         if self.token.is_keyword(kw::Else) {
             self.bump_keyword(kw::Else);
-            self.bump_token(TokenKind::Colon);
+
+            // `else if -> elif` error recovery.
+            if self.token.is_keyword(kw::If) {
+                self.sess.struct_span_error(
+                    "'else if' here is invalid in KCL, consider using the 'elif' keyword",
+                    self.token.span,
+                );
+            } else if self.token.kind != TokenKind::Colon {
+                self.sess
+                    .struct_token_error(&[TokenKind::Colon.into()], self.token);
+            }
+            // Bump colon token.
+            self.bump();
 
             let else_body = if self.token.kind != TokenKind::Newline {
                 if let Some(stmt) = self.parse_expr_or_assign_stmt(false) {

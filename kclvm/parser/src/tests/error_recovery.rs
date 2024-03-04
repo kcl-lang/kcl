@@ -204,6 +204,10 @@ parse_module_snapshot! { if_stmt_recovery_4, r#"if True: else: b = 2"#}
 parse_module_snapshot! { if_stmt_recovery_5, r#"if"#}
 parse_module_snapshot! { if_stmt_recovery_6, r#"if else"#}
 parse_module_snapshot! { if_stmt_recovery_7, r#"if True:"#}
+parse_module_snapshot! { if_stmt_recovery_8, r#"if True: a = 1
+else if False: b = 1"#}
+parse_module_snapshot! { if_stmt_recovery_9, r#"if True: a = 1
+else False: b = 1"#}
 parse_module_snapshot! { schema_stmt_recovery_0, r#"schema"#}
 parse_module_snapshot! { schema_stmt_recovery_1, r#"schema A"#}
 parse_module_snapshot! { schema_stmt_recovery_2, r#"schema A["#}
