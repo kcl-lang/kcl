@@ -1,4 +1,6 @@
 schema BasePerson:
+    firstName: str
+    lastName: str
     fullName = firstName + ' ' + lastName
 
 schema Person(BasePerson):

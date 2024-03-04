@@ -26,18 +26,42 @@ impl<'ctx> Resolver<'ctx> {
             let scope_schema_ty = self.ctx.schema.clone();
             if let Some(schema_ty) = &scope_schema_ty {
                 let mut schema_ty = schema_ty.borrow_mut();
+                // Find attribute type in the schema.
                 let ty = schema_ty.get_type_of_attr(name);
-                // Load from schema if in schema
+                // Load from schema if the variable in schema
                 if !self.ctx.l_value {
+                    // Find the type from from local and global scope.
                     let scope_ty = self.find_type_in_scope(name);
                     if self.ctx.local_vars.contains(name) {
                         return vec![scope_ty.map_or(self.any_ty(), |ty| ty)];
-                    } else if let Some(ref ty) = ty {
+                    }
+                    // If it is a schema attribute, return the attribute type.
+                    if let Some(ref ty) = ty {
                         if !ty.is_any() {
                             return vec![ty.clone()];
                         }
                     }
-                    vec![scope_ty.map_or(self.any_ty(), |ty| ty)]
+                    // Find from mixin schemas of a non-mixin schema
+                    if ty.is_none() && !schema_ty.is_mixin {
+                        for mixin in &schema_ty.mixins {
+                            if let Some(ty) = mixin.get_type_of_attr(name) {
+                                return vec![ty.clone()];
+                            }
+                        }
+                    }
+                    // If the variable is not found in a schema but not a schema mixin or rule,
+                    // raise an error and return an any type.
+                    // At present, retaining certain dynamic characteristics for mixins and rules
+                    // requires further consideration of their semantics.
+                    if ty.is_none()
+                        && scope_ty.is_none()
+                        && !schema_ty.is_mixin
+                        && !schema_ty.is_rule
+                    {
+                        vec![self.lookup_type_from_scope(name, range)]
+                    } else {
+                        vec![scope_ty.map_or(self.any_ty(), |ty| ty)]
+                    }
                 }
                 // Store
                 else {
@@ -58,7 +82,6 @@ impl<'ctx> Resolver<'ctx> {
                         }
                         return vec![self.any_ty()];
                     }
-                    // FIXME: self.check_config_attr(name, &pos, &schema_ty);
                     vec![ty.map_or(self.lookup_type_from_scope(name, range.clone()), |ty| ty)]
                 }
             } else {

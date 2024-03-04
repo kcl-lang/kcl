@@ -3,11 +3,11 @@ schema Parent:
     key: str = "key" + " " + name
     name2: str = "Alice"
     key2: str = "key2" + " " + name2
-    _tempA = "tempA"
+    _tempA: str = "tempA"
         
 schema Son1(Parent):
     name: str = "Son1"
-    _tempB = "tempB"
+    _tempB: str = "tempB"
 
 schema Son2(Son1):
     name: str = "Son2" + _tempA
