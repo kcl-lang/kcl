@@ -1,0 +1,4 @@
+{
+    "code": "import regex\n\nschema Sample:\n    foo: str\n    bar: int\n    fooList: [str]\n    color: \"Red\" | \"Yellow\" | \"Blue\"\n    id?: int\n    \n    check:\n        bar >= 0\n        bar < 100\n        len(fooList) > 0\n        len(fooList) < 100\n        regex.match(foo, \"^The.*Foo$\")\n        bar in range(100)\n        bar in [2, 4, 6, 8]\n        bar % 2 == 0\n        abs(id) > 10 if id is not None\n",
+    "datafile": "./src/testdata/test-validate.json"
+}

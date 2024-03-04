@@ -298,12 +298,13 @@ message GetSchemaTypeMapping_Result {
 }
 
 message ValidateCode_Args {
-	string data = 1;
-	string file = 2;
-	string code = 3;
-	string schema = 4;
-	string attribute_name = 5;
-	string format = 6;
+	string datafile = 1;
+	string data = 2;
+	string file = 3;
+	string code = 4;
+	string schema = 5;
+	string attribute_name = 6;
+	string format = 7;
 }
 
 message ValidateCode_Result {

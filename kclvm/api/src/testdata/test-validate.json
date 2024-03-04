@@ -1,0 +1,10 @@
+{
+	"foo": "ThehFoo",
+	"bar": 2,
+	"fooList": [
+		"a",
+		"b"
+	],
+	"color": "Red",
+	"id": 100
+}

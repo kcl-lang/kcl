@@ -725,9 +725,14 @@ impl KclvmServiceImpl {
     /// ```
     pub fn validate_code(&self, args: &ValidateCodeArgs) -> anyhow::Result<ValidateCodeResult> {
         let mut file = NamedTempFile::new()?;
-        // Write some test data to the first handle.
-        file.write_all(args.data.as_bytes())?;
-        let file_path = file.path().to_string_lossy().to_string();
+        let file_path = if args.datafile.is_empty() {
+            // Write some test data to the first handle.
+            file.write_all(args.data.as_bytes())?;
+            file.path().to_string_lossy().to_string()
+        } else {
+            args.datafile.clone()
+        };
+
         let (success, err_message) = match validate(ValidateOption::new(
             transform_str_para(&args.schema),
             args.attribute_name.clone(),
