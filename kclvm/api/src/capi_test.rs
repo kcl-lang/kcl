@@ -155,6 +155,15 @@ fn test_c_api_validate_code() {
 }
 
 #[test]
+fn test_c_api_validate_code_file() {
+    test_c_api_without_wrapper::<ValidateCodeArgs, ValidateCodeResult>(
+        "KclvmService.ValidateCode",
+        "validate-code-file.json",
+        "validate-code-file.response.json",
+    );
+}
+
+#[test]
 fn test_c_api_load_settings_files() {
     test_c_api_without_wrapper::<LoadSettingsFilesArgs, LoadSettingsFilesResult>(
         "KclvmService.LoadSettingsFiles",
