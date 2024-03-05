@@ -506,8 +506,8 @@ pub struct CachedScope {
     pub node_ty_map: NodeTyMap,
     dependency_graph: DependencyGraph,
 }
-#[derive(Debug, Clone, Default)]
 
+#[derive(Debug, Clone, Default)]
 struct DependencyGraph {
     /// map filename to pkgpath
     pub module_map: HashMap<String, HashSet<String>>,
