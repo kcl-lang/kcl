@@ -738,7 +738,7 @@ impl<'a> Parser<'a> {
             let body = self.parse_schema_body();
 
             let mut pos = self.token_span_pos(token, self.prev_token);
-            // Insert a fake newline character to expand the scope of the schema， 
+            // Insert a fake newline character to expand the scope of the schema，
             // used to complete the schema attributes at the end of the file
             // FIXME: fix in lsp
             if let TokenKind::Eof = self.prev_token.kind {
