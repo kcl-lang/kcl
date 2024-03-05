@@ -737,7 +737,14 @@ impl<'a> Parser<'a> {
         if let TokenKind::Indent(VALID_SPACES_LENGTH) = self.token.kind {
             let body = self.parse_schema_body();
 
-            let pos = self.token_span_pos(token, self.prev_token);
+            let mut pos = self.token_span_pos(token, self.prev_token);
+            // Insert a fake newline character to expand the scope of the schema， 
+            // used to complete the schema attributes at the end of the file
+            // FIXME: fix in lsp
+            if let TokenKind::Eof = self.prev_token.kind {
+                pos.3 += 1;
+                pos.4 = 0;
+            }
 
             node_ref!(
                 Stmt::Schema(SchemaStmt {
