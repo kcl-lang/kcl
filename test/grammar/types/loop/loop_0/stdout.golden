@@ -1,0 +1,6 @@
+name: volume
+configMapVolumes1:
+  volume:
+    name: volume
+configMapVolumes2:
+- name: volume

@@ -694,6 +694,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
 
     fn walk_list_comp(&mut self, list_comp: &'ctx ast::ListComp) -> Self::Result {
         let start = list_comp.elt.get_pos();
+        let stack_depth = self.switch_list_expr_context();
         let end = match list_comp.generators.last() {
             Some(last) => last.get_end_pos(),
             None => list_comp.elt.get_end_pos(),
@@ -710,6 +711,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
         }
         let item_ty = self.expr(&list_comp.elt);
         self.leave_scope();
+        self.clear_config_expr_context(stack_depth, false);
         Type::list_ref(item_ty)
     }
 
@@ -727,7 +729,9 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
         let key_ty = self.expr(key);
         // TODO: Naming both dict keys and schema attributes as `attribute`
         self.check_attr_ty(&key_ty, key.get_span_pos());
+        let stack_depth = self.switch_config_expr_context_by_key(&dict_comp.entry.key);
         let val_ty = self.expr(&dict_comp.entry.value);
+        self.clear_config_expr_context(stack_depth, false);
         self.leave_scope();
         Type::dict_ref(key_ty, val_ty)
     }
