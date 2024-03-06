@@ -1153,12 +1153,13 @@ impl<'ctx> AdvancedResolver<'ctx> {
             if let Some(key) = &entry.node.key {
                 self.ctx.maybe_def = true;
                 if let Some(key_symbol_ref) = self.expr(key) {
-                    self.set_config_scope_owner(key_symbol_ref);
+                    self.set_current_schema_symbol(key_symbol_ref);
                 }
                 self.ctx.maybe_def = false;
             }
 
             let (start, end) = entry.node.value.get_span_pos();
+
             self.enter_local_scope(
                 &self.ctx.current_filename.as_ref().unwrap().clone(),
                 start,
@@ -1172,17 +1173,31 @@ impl<'ctx> AdvancedResolver<'ctx> {
         self.leave_scope()
     }
 
-    pub(crate) fn set_config_scope_owner(&mut self, key_symbol_ref: SymbolRef) {
+    pub(crate) fn set_current_schema_symbol(&mut self, key_symbol_ref: SymbolRef) {
         let symbols = self.gs.get_symbols();
 
         if let Some(def_symbol_ref) = symbols.get_symbol(key_symbol_ref).unwrap().get_definition() {
             if let Some(node_key) = symbols.symbols_info.symbol_node_map.get(&def_symbol_ref) {
                 if let Some(def_ty) = self.ctx.node_ty_map.get(node_key) {
-                    if def_ty.is_schema() {
+                    if let Some(ty) = get_possible_schema_ty(def_ty.clone()) {
                         self.ctx.current_schema_symbol =
-                            self.gs.get_symbols().get_type_symbol(&def_ty, None);
+                            self.gs.get_symbols().get_type_symbol(&ty, None);
                     }
                 }
+            }
+        }
+        fn get_possible_schema_ty(ty: Arc<Type>) -> Option<Arc<Type>> {
+            match &ty.kind {
+                crate::ty::TypeKind::List(ty) => get_possible_schema_ty(ty.clone()),
+                crate::ty::TypeKind::Dict(dict_ty) => {
+                    get_possible_schema_ty(dict_ty.val_ty.clone())
+                }
+                crate::ty::TypeKind::Union(_) => {
+                    // Todo: fix union schema type
+                    None
+                }
+                crate::ty::TypeKind::Schema(_) => Some(ty.clone()),
+                _ => None,
             }
         }
     }
