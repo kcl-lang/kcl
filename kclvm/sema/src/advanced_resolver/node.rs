@@ -1192,12 +1192,8 @@ impl<'ctx> AdvancedResolver<'ctx> {
                 crate::ty::TypeKind::Dict(dict_ty) => {
                     get_possible_schema_ty(dict_ty.val_ty.clone())
                 }
-                crate::ty::TypeKind::Union(tys) => {
-                    for ty in tys {
-                        if get_possible_schema_ty(ty.clone()).is_some() {
-                            return Some(ty.clone());
-                        }
-                    }
+                crate::ty::TypeKind::Union(_) => {
+                    // Todo: fix union schema type
                     None
                 }
                 crate::ty::TypeKind::Schema(_) => Some(ty.clone()),

@@ -1613,4 +1613,56 @@ mod tests {
             CompletionResponse::List(_) => panic!("test failed"),
         }
     }
+
+    #[test]
+    #[bench_test]
+    fn schema_type_attr_completion() {
+        let (file, program, _, _, gs) =
+            compile_test_file("src/test_data/completion_test/schema/schema.k");
+
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 18,
+            column: Some(15),
+        };
+
+        let mut got = completion(None, &program, &pos, &gs).unwrap();
+        match &mut got {
+            CompletionResponse::Array(arr) => {
+                let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
+                assert!(labels.contains(&"name".to_string()));
+            }
+            CompletionResponse::List(_) => panic!("test failed"),
+        }
+
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 19,
+            column: Some(21),
+        };
+
+        let mut got = completion(None, &program, &pos, &gs).unwrap();
+        match &mut got {
+            CompletionResponse::Array(arr) => {
+                let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
+                assert!(labels.contains(&"name".to_string()));
+            }
+            CompletionResponse::List(_) => panic!("test failed"),
+        }
+
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 20,
+            column: Some(14),
+        };
+
+        let mut got = completion(None, &program, &pos, &gs).unwrap();
+        match &mut got {
+            CompletionResponse::Array(arr) => {
+                let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
+                assert!(labels.contains(&"name".to_string()));
+            }
+            CompletionResponse::List(_) => panic!("test failed"),
+        }
+    }
 }

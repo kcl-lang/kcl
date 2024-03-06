@@ -636,10 +636,6 @@ impl<'ctx> Resolver<'ctx> {
                 );
             }
             self.clear_config_expr_context(stack_depth, false);
-            self.node_ty_map.insert(
-                self.get_node_key(item.node.value.id.clone()),
-                val_ty.clone(),
-            );
         }
         self.leave_scope();
         let key_ty = sup(&key_types);

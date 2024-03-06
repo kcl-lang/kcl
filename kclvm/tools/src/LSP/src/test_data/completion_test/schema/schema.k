@@ -17,5 +17,4 @@ schema Config:
 Config{
     names: [{  }]
     names1: {"a": {  }}
-    names2: { }
 } 
