@@ -185,7 +185,7 @@ impl crate::Context {
     pub fn define_option(
         &mut self,
         name: &str,
-        typ: &str,
+        ty: &str,
         required: bool,
         default_value: Option<String>,
         help: &str,
@@ -193,12 +193,12 @@ impl crate::Context {
         // check dup
         for i in 0..self.option_helps.len() {
             if self.option_helps[i].name == name {
-                if typ.is_empty() && !required && default_value.is_none() && help.is_empty() {
+                if ty.is_empty() && !required && default_value.is_none() && help.is_empty() {
                     return;
                 }
 
-                if self.option_helps[i].typ.is_empty() {
-                    self.option_helps[i].typ = typ.to_string();
+                if self.option_helps[i].ty.is_empty() {
+                    self.option_helps[i].ty = ty.to_string();
                 }
 
                 if !self.option_helps[i].required {
@@ -217,7 +217,7 @@ impl crate::Context {
 
         self.option_helps.push(crate::OptionHelp {
             name: name.to_string(),
-            typ: typ.to_string(),
+            ty: ty.to_string(),
             required,
             default_value,
             help: help.to_string(),
@@ -248,12 +248,12 @@ impl crate::Context {
 
             // (required)
             // (str,required)
-            if !opt.typ.is_empty() || opt.required {
-                if opt.required && !opt.typ.is_empty() {
-                    let s = format!(" ({},{})", opt.typ, "required");
+            if !opt.ty.is_empty() || opt.required {
+                if opt.required && !opt.ty.is_empty() {
+                    let s = format!(" ({},{})", opt.ty, "required");
                     msg.push_str(s.as_str());
-                } else if !opt.typ.is_empty() {
-                    let s = format!(" ({})", opt.typ);
+                } else if !opt.ty.is_empty() {
+                    let s = format!(" ({})", opt.ty);
                     msg.push_str(s.as_str());
                 } else {
                     msg.push_str(" (required)");

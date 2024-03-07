@@ -269,7 +269,7 @@ pub struct FuncValue {
 #[derive(PartialEq, Eq, Clone, Default, Debug)]
 pub struct OptionHelp {
     pub name: String,
-    pub typ: String,
+    pub ty: String,
     pub required: bool,
     pub default_value: Option<String>,
     pub help: String,
@@ -332,27 +332,31 @@ impl Default for ContextBuffer {
 
 #[derive(PartialEq, Clone, Default, Debug)]
 pub struct Context {
+    /// Runtime evaluation config.
     pub cfg: ContextConfig,
 
+    /// kcl.mod path or the pwd path
     pub module_path: String,
+    /// Program work directory
     pub workdir: String,
-    pub main_pkg_path: String,
-    pub main_pkg_files: Vec<String>,
     pub backtrace: Vec<BacktraceFrame>,
+    /// Imported package path to check the cyclic import process.
     pub imported_pkgpath: HashSet<String>,
+    /// Runtime arguments for the option function.
     pub app_args: HashMap<String, u64>,
+    /// All schema instances
     pub instances: HashMap<String, Vec<ValueRef>>,
+    /// All schema types
     pub all_schemas: HashMap<String, SchemaType>,
+    /// Import graph
     pub import_names: IndexMap<String, IndexMap<String, String>>,
-    pub symbol_names: Vec<String>,
-    pub symbol_values: Vec<Value>,
-    pub func_handlers: Vec<FuncHandler>,
 
+    /// All option function calling help messages.
     pub option_helps: Vec<OptionHelp>,
+    /// A buffer to store plugin or hooks function calling results.
     pub buffer: ContextBuffer,
-    /// objects is to store all KCL object pointers.
+    /// Objects is to store all KCL object pointers at runtime.
     pub objects: IndexSet<usize>,
-
     /// Log message used to store print results.
     pub log_message: String,
     /// Planned JSON result

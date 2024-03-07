@@ -25,7 +25,7 @@ pub fn emit_code(
     program: &ast::Program,
     workdir: String,
     import_names: IndexMap<String, IndexMap<String, String>>,
-    opt: &EmitOptions,
+    opts: &EmitOptions,
 ) -> Result<(), Box<dyn error::Error>> {
     // Init LLVM targets
     LLVM_INIT.get_or_init(|| {
@@ -40,7 +40,7 @@ pub fn emit_code(
     // Create a LLVM context
     let context = Context::create();
     // Create a LLVM module using an exist LLVM bitcode file
-    let module = if let Some(path) = &opt.from_path {
+    let module = if let Some(path) = &opts.from_path {
         Module::parse_bitcode_from_path(std::path::Path::new(path), &context).unwrap()
     } else {
         load_runtime(&context)
@@ -51,9 +51,9 @@ pub fn emit_code(
         module,
         program,
         import_names,
-        opt.no_link,
+        opts.no_link,
         workdir,
     );
     // Generate user KCL code LLVM IR
-    crate::codegen::emit_code(ctx, opt)
+    crate::codegen::emit_code(ctx, opts)
 }

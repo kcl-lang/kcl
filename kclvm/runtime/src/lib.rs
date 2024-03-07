@@ -6,6 +6,10 @@ use kclvm_runtime_internal_macros::runtime_fn;
 // api-spec(c):    typedef struct kclvm_context_t kclvm_context_t;
 // api-spec(llvm): %"kclvm_context_t" = type { i8* }
 
+// api-spec:       kclvm_eval_scope_t
+// api-spec(c):    typedef struct kclvm_eval_scope_t kclvm_eval_scope_t;
+// api-spec(llvm): %"kclvm_eval_scope_t" = type { i8* }
+
 // api-spec:       kclvm_type_t
 // api-spec(c):    typedef struct kclvm_type_t kclvm_type_t;
 // api-spec(llvm): %"kclvm_type_t" = type { i8* }
@@ -76,6 +80,8 @@ pub use self::collection::*;
 
 pub mod crypto;
 pub use self::crypto::*;
+
+mod eval;
 
 pub mod datetime;
 pub use self::datetime::*;

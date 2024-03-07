@@ -64,6 +64,8 @@ typedef struct kclvm_context_t kclvm_context_t;
 
 typedef struct kclvm_decorator_value_t kclvm_decorator_value_t;
 
+typedef struct kclvm_eval_scope_t kclvm_eval_scope_t;
+
 typedef double kclvm_float_t;
 
 typedef int64_t kclvm_int_t;
@@ -467,6 +469,16 @@ void kclvm_schema_optional_check(kclvm_context_t* ctx, kclvm_value_ref_t* p);
 void kclvm_schema_value_check(kclvm_context_t* ctx, kclvm_value_ref_t* schema_value, kclvm_value_ref_t* schema_config, kclvm_value_ref_t* _config_meta, kclvm_char_t* schema_name, kclvm_value_ref_t* index_sign_value, kclvm_char_t* key_name, kclvm_char_t* key_type, kclvm_char_t* value_type, kclvm_bool_t _any_other);
 
 kclvm_value_ref_t* kclvm_schema_value_new(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs, kclvm_value_ref_t* schema_value_or_func, kclvm_value_ref_t* config, kclvm_value_ref_t* config_meta, kclvm_char_t* pkgpath);
+
+void kclvm_scope_add_setter(kclvm_context_t* _ctx, kclvm_eval_scope_t* scope, char* pkg, char* name, uint64_t* setter);
+
+void kclvm_scope_free(kclvm_eval_scope_t* scope);
+
+kclvm_value_ref_t* kclvm_scope_get(kclvm_context_t* ctx, kclvm_eval_scope_t* scope, char* pkg, char* name, char* target, kclvm_value_ref_t* default);
+
+kclvm_eval_scope_t* kclvm_scope_new();
+
+void kclvm_scope_set(kclvm_context_t* _ctx, kclvm_eval_scope_t* scope, char* pkg, char* name, kclvm_value_ref_t* value);
 
 kclvm_value_ref_t* kclvm_units_to_G(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
 

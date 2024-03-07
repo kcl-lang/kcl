@@ -5,10 +5,13 @@ use std::{mem::transmute_copy, os::raw::c_char};
 
 use crate::*;
 
-use self::walker::walk_value_mut;
+use self::{eval::LazyEvalScope, walker::walk_value_mut};
 
 #[allow(non_camel_case_types)]
 pub type kclvm_context_t = Context;
+
+#[allow(non_camel_case_types)]
+pub type kclvm_eval_scope_t = LazyEvalScope;
 
 #[allow(non_camel_case_types)]
 pub type kclvm_decorator_value_t = DecoratorValue;
