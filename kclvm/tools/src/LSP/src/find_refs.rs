@@ -8,11 +8,12 @@ use kclvm_ast::ast::Program;
 use kclvm_error::Position as KCLPos;
 use kclvm_parser::KCLModuleCache;
 use kclvm_sema::core::global_state::GlobalState;
+use kclvm_sema::resolver::scope::CachedScope;
 use lsp_types::{Location, Url};
 use parking_lot::RwLock;
 use ra_ap_vfs::Vfs;
 use std::collections::HashMap;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 pub(crate) fn find_refs<F: Fn(String) -> Result<(), anyhow::Error>>(
     _program: &Program,
@@ -23,6 +24,7 @@ pub(crate) fn find_refs<F: Fn(String) -> Result<(), anyhow::Error>>(
     logger: F,
     gs: &GlobalState,
     module_cache: Option<KCLModuleCache>,
+    scope_cache: Option<Arc<Mutex<CachedScope>>>,
 ) -> Result<Vec<Location>, String> {
     let def = find_def_with_gs(kcl_pos, gs, true);
     match def {
@@ -39,6 +41,7 @@ pub(crate) fn find_refs<F: Fn(String) -> Result<(), anyhow::Error>>(
                         include_declaration,
                         logger,
                         module_cache,
+                        scope_cache,
                     ))
                 } else {
                     Err(format!("Invalid file path: {0}", start.filename))
@@ -62,6 +65,7 @@ pub(crate) fn find_refs_from_def<F: Fn(String) -> Result<(), anyhow::Error>>(
     include_declaration: bool,
     logger: F,
     module_cache: Option<KCLModuleCache>,
+    scope_cache: Option<Arc<Mutex<CachedScope>>>,
 ) -> Vec<Location> {
     let mut ref_locations = vec![];
     for (_, word_index) in &mut *word_index_map.write() {
@@ -85,6 +89,7 @@ pub(crate) fn find_refs_from_def<F: Fn(String) -> Result<(), anyhow::Error>>(
                                 Param {
                                     file: file_path.clone(),
                                     module_cache: module_cache.clone(),
+                                    scope_cache: scope_cache.clone(),
                                 },
                                 vfs.clone(),
                             ) {
@@ -209,6 +214,7 @@ mod tests {
                         true,
                         logger,
                         None,
+                        None,
                     ),
                 );
             }
@@ -263,6 +269,7 @@ mod tests {
                         "a".to_string(),
                         false,
                         logger,
+                        None,
                         None,
                     ),
                 );
@@ -319,6 +326,7 @@ mod tests {
                         true,
                         logger,
                         None,
+                        None,
                     ),
                 );
             }
@@ -366,6 +374,7 @@ mod tests {
                         "name".to_string(),
                         true,
                         logger,
+                        None,
                         None,
                     ),
                 );

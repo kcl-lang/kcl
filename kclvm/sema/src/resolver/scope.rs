@@ -289,6 +289,9 @@ pub struct ProgramScope {
 
 unsafe impl Send for ProgramScope {}
 
+unsafe impl Send for Scope {}
+unsafe impl Sync for Scope {}
+
 impl ProgramScope {
     /// Get all package paths.
     #[inline]
@@ -506,6 +509,9 @@ pub struct CachedScope {
     pub node_ty_map: NodeTyMap,
     dependency_graph: DependencyGraph,
 }
+
+unsafe impl Send for CachedScope {}
+unsafe impl Sync for CachedScope {}
 
 #[derive(Debug, Clone, Default)]
 struct DependencyGraph {

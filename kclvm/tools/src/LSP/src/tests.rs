@@ -3,6 +3,7 @@ use crossbeam_channel::select;
 use indexmap::IndexSet;
 use kclvm_ast::MAIN_PKG;
 use kclvm_sema::core::global_state::GlobalState;
+use kclvm_sema::resolver::scope::CachedScope;
 use lsp_server::RequestId;
 use lsp_server::Response;
 use lsp_types::notification::Exit;
@@ -43,6 +44,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 use std::sync::Arc;
+use std::sync::Mutex;
 use std::thread;
 use std::time::Duration;
 
@@ -128,6 +130,7 @@ pub(crate) fn compile_test_file(
         Param {
             file: file.clone(),
             module_cache: Some(KCLModuleCache::default()),
+            scope_cache: Some(Arc::new(Mutex::new(CachedScope::default()))),
         },
         Some(Arc::new(RwLock::new(Default::default()))),
     )
@@ -288,6 +291,7 @@ fn diagnostics_test() {
         Param {
             file: file.to_string(),
             module_cache: None,
+            scope_cache: None,
         },
         Some(Arc::new(RwLock::new(Default::default()))),
     )
@@ -475,6 +479,7 @@ fn complete_import_external_file_test() {
         Param {
             file: path.to_string(),
             module_cache: None,
+            scope_cache: None,
         },
         Some(Arc::new(RwLock::new(Default::default()))),
     )
@@ -533,6 +538,7 @@ fn goto_import_external_file_test() {
         Param {
             file: path.to_string(),
             module_cache: None,
+            scope_cache: None,
         },
         Some(Arc::new(RwLock::new(Default::default()))),
     )
@@ -1202,6 +1208,7 @@ fn konfig_goto_def_test_base() {
         Param {
             file: base_path_str.clone(),
             module_cache: None,
+            scope_cache: None,
         },
         Some(Arc::new(RwLock::new(Default::default()))),
     )
@@ -1294,6 +1301,7 @@ fn konfig_goto_def_test_main() {
         Param {
             file: main_path_str.clone(),
             module_cache: None,
+            scope_cache: None,
         },
         Some(Arc::new(RwLock::new(Default::default()))),
     )
@@ -1358,6 +1366,7 @@ fn konfig_completion_test_main() {
         Param {
             file: main_path_str.clone(),
             module_cache: None,
+            scope_cache: None,
         },
         Some(Arc::new(RwLock::new(Default::default()))),
     )
@@ -1505,6 +1514,7 @@ fn konfig_hover_test_main() {
         Param {
             file: main_path_str.clone(),
             module_cache: None,
+            scope_cache: None,
         },
         Some(Arc::new(RwLock::new(Default::default()))),
     )
@@ -1926,6 +1936,7 @@ fn compile_unit_test() {
         Param {
             file: file.to_string(),
             module_cache: None,
+            scope_cache: None,
         },
         Some(Arc::new(RwLock::new(Default::default()))),
     )

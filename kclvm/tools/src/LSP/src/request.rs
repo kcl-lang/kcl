@@ -108,6 +108,7 @@ pub(crate) fn handle_semantic_tokens_full(
         Param {
             file: file.clone(),
             module_cache: snapshot.module_cache.clone(),
+            scope_cache: snapshot.scope_cache.clone(),
         },
         Some(snapshot.vfs.clone()),
     ) {
@@ -203,6 +204,7 @@ pub(crate) fn handle_reference(
     let pos = kcl_pos(&file, params.text_document_position.position);
     let log = |msg: String| log_message(msg, &sender);
     let module_cache = snapshot.module_cache.clone();
+    let scope_cache = snapshot.scope_cache.clone();
     match find_refs(
         &db.prog,
         &pos,
@@ -212,6 +214,7 @@ pub(crate) fn handle_reference(
         log,
         &db.gs,
         module_cache,
+        scope_cache,
     ) {
         core::result::Result::Ok(locations) => Ok(Some(locations)),
         Err(msg) => {
@@ -246,6 +249,7 @@ pub(crate) fn handle_completion(
                     Param {
                         file: file.clone(),
                         module_cache: snapshot.module_cache.clone(),
+                        scope_cache: snapshot.scope_cache.clone(),
                     },
                     Some(snapshot.vfs.clone()),
                 ) {
@@ -311,6 +315,7 @@ pub(crate) fn handle_document_symbol(
         Param {
             file: file.clone(),
             module_cache: snapshot.module_cache.clone(),
+            scope_cache: snapshot.scope_cache.clone(),
         },
         Some(snapshot.vfs.clone()),
     ) {
@@ -355,6 +360,7 @@ pub(crate) fn handle_rename(
         log,
         &db.gs,
         snapshot.module_cache.clone(),
+        snapshot.scope_cache.clone(),
     );
     match references {
         Result::Ok(locations) => {

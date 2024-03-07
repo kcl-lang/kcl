@@ -156,6 +156,7 @@ mod tests {
             Param {
                 file: file.to_string(),
                 module_cache: None,
+                scope_cache: None,
             },
             Some(Arc::new(RwLock::new(Default::default()))),
         )
