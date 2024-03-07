@@ -115,7 +115,7 @@ impl Diagnostic {
                 style: Style::LineAndColumn,
                 message: message.to_string(),
                 note: note.map(String::from),
-                suggested_replacement: suggestions.and_then(|v| v.into_iter().next()),
+                suggested_replacement: suggestions,
             }],
             code,
         }
@@ -135,7 +135,7 @@ pub struct Message {
     pub style: Style,
     pub message: String,
     pub note: Option<String>,
-    pub suggested_replacement: Option<String>,
+    pub suggested_replacement: Option<Vec<String>>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]

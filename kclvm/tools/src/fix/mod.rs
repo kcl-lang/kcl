@@ -77,7 +77,7 @@ pub fn diag_to_suggestion(
                         file_name: msg.range.0.filename.clone(),
                         range: text_range(src.as_str(), &msg.range)?,
                     },
-                    replacement: replace.clone(),
+                    replacement: replace.first().cloned().unwrap_or_default(),
                 },
             });
         }

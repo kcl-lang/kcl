@@ -110,7 +110,7 @@ impl LintPass for UnusedImport {
                                 style: Style::Line,
                                 message: format!("Module '{}' imported but unused", scope_obj.name),
                                 note: Some("Consider removing this statement".to_string()),
-                                suggested_replacement: Some("".to_string()),
+                                suggested_replacement: None,
                             }],
                         );
                     }
@@ -165,7 +165,7 @@ impl LintPass for ReImport {
                                 &import_stmt.name
                             ),
                             note: Some("Consider removing this statement".to_string()),
-                            suggested_replacement: Some("".to_string()),
+                            suggested_replacement: None,
                         }],
                     );
                 } else {

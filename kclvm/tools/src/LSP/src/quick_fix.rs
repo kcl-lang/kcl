@@ -14,9 +14,8 @@ pub(crate) fn quick_fix(uri: &Url, diags: &Vec<Diagnostic>) -> Vec<lsp_types::Co
                 match id {
                     DiagnosticId::Error(error) => match error {
                         ErrorKind::CompileError => {
-                            if let Some(replacement_text) =
-                                extract_suggested_replacement(&diag.data)
-                            {
+                            let replacement_texts = extract_suggested_replacements(&diag.data);
+                            for replacement_text in replacement_texts {
                                 let mut changes = HashMap::new();
                                 changes.insert(
                                     uri.clone(),
@@ -25,11 +24,12 @@ pub(crate) fn quick_fix(uri: &Url, diags: &Vec<Diagnostic>) -> Vec<lsp_types::Co
                                         new_text: replacement_text.clone(),
                                     }],
                                 );
+                                let action_title = format!(
+                                    "a local variable with a similar name exists: `{}`",
+                                    replacement_text
+                                );
                                 code_actions.push(CodeActionOrCommand::CodeAction(CodeAction {
-                                    title: format!(
-                                        "a variable with a similar name exists: `{}`",
-                                        replacement_text
-                                    ),
+                                    title: action_title,
                                     kind: Some(CodeActionKind::QUICKFIX),
                                     diagnostics: Some(vec![diag.clone()]),
                                     edit: Some(lsp_types::WorkspaceEdit {
@@ -37,9 +37,7 @@ pub(crate) fn quick_fix(uri: &Url, diags: &Vec<Diagnostic>) -> Vec<lsp_types::Co
                                         ..Default::default()
                                     }),
                                     ..Default::default()
-                                }))
-                            } else {
-                                continue;
+                                }));
                             }
                         }
                         _ => continue,
@@ -95,19 +93,20 @@ pub(crate) fn quick_fix(uri: &Url, diags: &Vec<Diagnostic>) -> Vec<lsp_types::Co
     code_actions
 }
 
-fn extract_suggested_replacement(data: &Option<Value>) -> Option<String> {
-    data.as_ref().and_then(|data| match data {
-        Value::Object(obj) => obj.get("suggested_replacement").and_then(|val| match val {
-            Value::String(s) => Some(s.clone()),
-            Value::Array(arr) if !arr.is_empty() => arr
-                .iter()
-                .filter_map(|v| v.as_str())
-                .next()
-                .map(String::from),
+fn extract_suggested_replacements(data: &Option<Value>) -> Vec<String> {
+    data.as_ref()
+        .and_then(|data| match data {
+            Value::Object(obj) => obj.get("suggested_replacement").map(|val| match val {
+                Value::String(s) => vec![s.clone()],
+                Value::Array(arr) => arr
+                    .iter()
+                    .filter_map(|v| v.as_str().map(String::from))
+                    .collect(),
+                _ => vec![],
+            }),
             _ => None,
-        }),
-        _ => None,
-    })
+        })
+        .unwrap_or_else(Vec::new)
 }
 
 pub(crate) fn conver_code_to_kcl_diag_id(code: &NumberOrString) -> Option<DiagnosticId> {
