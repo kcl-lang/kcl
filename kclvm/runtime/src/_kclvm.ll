@@ -12,6 +12,8 @@
 
 %"kclvm_decorator_value_t" = type opaque
 
+%"kclvm_eval_scope_t" = type { i8* }
+
 %"kclvm_float_t" = type double
 
 %"kclvm_int_t" = type i64
@@ -415,6 +417,16 @@ declare void @kclvm_schema_optional_check(%kclvm_context_t* %ctx, %kclvm_value_r
 declare void @kclvm_schema_value_check(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %schema_value, %kclvm_value_ref_t* %schema_config, %kclvm_value_ref_t* %_config_meta, %kclvm_char_t* %schema_name, %kclvm_value_ref_t* %index_sign_value, %kclvm_char_t* %key_name, %kclvm_char_t* %key_type, %kclvm_char_t* %value_type, %kclvm_bool_t %_any_other);
 
 declare %kclvm_value_ref_t* @kclvm_schema_value_new(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs, %kclvm_value_ref_t* %schema_value_or_func, %kclvm_value_ref_t* %config, %kclvm_value_ref_t* %config_meta, %kclvm_char_t* %pkgpath);
+
+declare void @kclvm_scope_add_setter(%kclvm_context_t* %_ctx, %kclvm_eval_scope_t* %scope, i8* %pkg, i8* %name, i64* %setter);
+
+declare void @kclvm_scope_free(%kclvm_eval_scope_t* %scope);
+
+declare %kclvm_value_ref_t* @kclvm_scope_get(%kclvm_context_t* %ctx, %kclvm_eval_scope_t* %scope, i8* %pkg, i8* %name, i8* %target, %kclvm_value_ref_t* %default);
+
+declare %kclvm_eval_scope_t* @kclvm_scope_new();
+
+declare void @kclvm_scope_set(%kclvm_context_t* %_ctx, %kclvm_eval_scope_t* %scope, i8* %pkg, i8* %name, %kclvm_value_ref_t* %value);
 
 declare %kclvm_value_ref_t* @kclvm_units_to_G(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
 

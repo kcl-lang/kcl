@@ -34,6 +34,26 @@
 // api-spec(c):    void kclvm_context_set_kcl_line_col(kclvm_context_t* ctx, int32_t line, int32_t col);
 // api-spec(llvm): declare void @kclvm_context_set_kcl_line_col(%kclvm_context_t* %ctx, i32 %line, i32 %col);
 
+// api-spec:       kclvm_scope_new
+// api-spec(c):    kclvm_eval_scope_t* kclvm_scope_new();
+// api-spec(llvm): declare %kclvm_eval_scope_t* @kclvm_scope_new();
+
+// api-spec:       kclvm_scope_free
+// api-spec(c):    void kclvm_scope_free(kclvm_eval_scope_t* scope);
+// api-spec(llvm): declare void @kclvm_scope_free(%kclvm_eval_scope_t* %scope);
+
+// api-spec:       kclvm_scope_add_setter
+// api-spec(c):    void kclvm_scope_add_setter(kclvm_context_t* _ctx, kclvm_eval_scope_t* scope, char* pkg, char* name, uint64_t* setter);
+// api-spec(llvm): declare void @kclvm_scope_add_setter(%kclvm_context_t* %_ctx, %kclvm_eval_scope_t* %scope, i8* %pkg, i8* %name, i64* %setter);
+
+// api-spec:       kclvm_scope_set
+// api-spec(c):    void kclvm_scope_set(kclvm_context_t* _ctx, kclvm_eval_scope_t* scope, char* pkg, char* name, kclvm_value_ref_t* value);
+// api-spec(llvm): declare void @kclvm_scope_set(%kclvm_context_t* %_ctx, %kclvm_eval_scope_t* %scope, i8* %pkg, i8* %name, %kclvm_value_ref_t* %value);
+
+// api-spec:       kclvm_scope_get
+// api-spec(c):    kclvm_value_ref_t* kclvm_scope_get(kclvm_context_t* ctx, kclvm_eval_scope_t* scope, char* pkg, char* name, char* target, kclvm_value_ref_t* default);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_scope_get(%kclvm_context_t* %ctx, %kclvm_eval_scope_t* %scope, i8* %pkg, i8* %name, i8* %target, %kclvm_value_ref_t* %default);
+
 // api-spec:       kclvm_context_set_debug_mode
 // api-spec(c):    void kclvm_context_set_debug_mode(kclvm_context_t* p, kclvm_bool_t v);
 // api-spec(llvm): declare void @kclvm_context_set_debug_mode(%kclvm_context_t* %p, %kclvm_bool_t %v);

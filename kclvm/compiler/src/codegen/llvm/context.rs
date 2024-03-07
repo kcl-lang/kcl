@@ -32,8 +32,7 @@ use kclvm_sema::plugin;
 use crate::codegen::abi::Align;
 use crate::codegen::{error as kcl_error, EmitOptions, INNER_LEVEL};
 use crate::codegen::{
-    traits::*, ENTRY_NAME, GLOBAL_VAL_ALIGNMENT, KCL_CONTEXT_VAR_NAME, MODULE_NAME,
-    PKG_INIT_FUNCTION_SUFFIX,
+    traits::*, ENTRY_NAME, GLOBAL_VAL_ALIGNMENT, MODULE_NAME, PKG_INIT_FUNCTION_SUFFIX,
 };
 use crate::codegen::{CodeGenContext, GLOBAL_LEVEL};
 use crate::value;
@@ -60,7 +59,7 @@ pub type CompileResult<'a> = Result<BasicValueEnum<'a>, kcl_error::KCLError>;
 pub struct Scope<'ctx> {
     /// Scalars denotes the expression statement values without attribute.
     pub scalars: RefCell<Vec<BasicValueEnum<'ctx>>>,
-    /// schema_scalar_idxdenotes whether a schema exists in the scalar list.
+    /// schema_scalar_idx denotes whether a schema exists in the scalar list.
     pub schema_scalar_idx: RefCell<usize>,
     pub variables: RefCell<IndexMap<String, PointerValue<'ctx>>>,
     pub closures: RefCell<IndexMap<String, PointerValue<'ctx>>>,
@@ -1323,7 +1322,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 self.pkgpath_stack.borrow_mut().push(pkgpath.clone());
             }
         }
-        // Set the kcl workdir to the runtime context
+        // Set the kcl module path to the runtime context
         self.build_void_call(
             &ApiFunc::kclvm_context_set_kcl_modpath.name(),
             &[
@@ -1331,6 +1330,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 self.native_global_string_value(&self.program.root),
             ],
         );
+        // Set the kcl workdir to the runtime context
         self.build_void_call(
             &ApiFunc::kclvm_context_set_kcl_workdir.name(),
             &[
@@ -1356,18 +1356,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 &[ctx_value, import_names],
             );
         }
-        // Store the runtime context to global
-        if !self.no_link {
-            let global_ctx = self.module.add_global(
-                context_ptr_type,
-                Some(AddressSpace::default()),
-                KCL_CONTEXT_VAR_NAME,
-            );
-            global_ctx.set_alignment(GLOBAL_VAL_ALIGNMENT);
-            global_ctx.set_initializer(&context_ptr_type.const_zero());
-            self.builder
-                .build_store(global_ctx.as_pointer_value(), ctx_value);
-        }
+        // Main package
         if self.no_link && !has_main_pkg {
             // When compiling a pkgpath separately, only one pkgpath is required in the AST Program
             assert!(self.program.pkgs.len() == 1);
@@ -1377,24 +1366,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 self.pkgpath_stack.borrow_mut().push(pkgpath.clone());
                 // Init all builtin functions.
                 self.init_scope(pkgpath.as_str());
-                // Compile the ast module in the pkgpath.
-                for ast_module in modules {
-                    {
-                        self.filename_stack
-                            .borrow_mut()
-                            .push(ast_module.filename.clone());
-                    }
-                    self.compile_module_import_and_types(ast_module)
-                }
-                for ast_module in modules {
-                    {
-                        self.filename_stack
-                            .borrow_mut()
-                            .push(ast_module.filename.clone());
-                    }
-                    self.walk_stmts_except_import(&ast_module.body)
-                        .expect(kcl_error::COMPILE_ERROR_MSG);
-                }
+                self.compile_ast_modules(modules);
             }
             self.ret_void();
         } else {
@@ -1405,19 +1377,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 .pkgs
                 .get(MAIN_PKG_PATH)
                 .expect(kcl_error::INTERNAL_ERROR_MSG);
-            // Compile the AST Program to LLVM IR
-            for ast_module in main_pkg_modules {
-                {
-                    self.filename_stack
-                        .borrow_mut()
-                        .push(ast_module.filename.clone());
-                }
-                self.compile_module_import_and_types(ast_module);
-            }
-            for ast_module in main_pkg_modules {
-                self.walk_module(ast_module)
-                    .expect(kcl_error::COMPILE_ERROR_MSG);
-            }
+            self.compile_ast_modules(main_pkg_modules);
             // Get the JSON string including all global variables
             let json_str_value = self.globals_to_json_str();
             // Build a return in the current block
@@ -1445,6 +1405,51 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             }
         }
         Ok(())
+    }
+
+    /// Compile AST Modules, which requires traversing three times.
+    /// 1. scan all possible global variables and allocate undefined values to global pointers.
+    /// 2. build all user-defined schema/rule types.
+    /// 3. generate all LLVM IR codes for the third time.
+    fn compile_ast_modules(&self, modules: &'ctx [ast::Module]) {
+        // Scan global variables
+        for ast_module in modules {
+            {
+                self.filename_stack
+                    .borrow_mut()
+                    .push(ast_module.filename.clone());
+            }
+            // Pre define global variables with undefined values
+            self.predefine_global_vars(ast_module);
+            {
+                self.filename_stack.borrow_mut().pop();
+            }
+        }
+        // Scan global types
+        for ast_module in modules {
+            {
+                self.filename_stack
+                    .borrow_mut()
+                    .push(ast_module.filename.clone());
+            }
+            self.compile_module_import_and_types(ast_module);
+            {
+                self.filename_stack.borrow_mut().pop();
+            }
+        }
+        // Compile the ast module in the pkgpath.
+        for ast_module in modules {
+            {
+                self.filename_stack
+                    .borrow_mut()
+                    .push(ast_module.filename.clone());
+            }
+            self.walk_module(ast_module)
+                .expect(kcl_error::COMPILE_ERROR_MSG);
+            {
+                self.filename_stack.borrow_mut().pop();
+            }
+        }
     }
 
     /// Build LLVM module to a `.o` object file.
@@ -1857,6 +1862,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             message: format!("name '{}' is not defined", name),
             ty: kcl_error::KCLErrorType::Compile,
         });
+        let is_in_schema = self.schema_stack.borrow().len() > 0;
         // System module
         if builtin::STANDARD_SYSTEM_MODULE_NAMES_WITH_AT.contains(&pkgpath.as_str()) {
             let pkgpath = &pkgpath[1..];
@@ -1923,6 +1929,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             ));
         // User pkgpath
         } else {
+            // Global or local variables.
             let scopes = pkg_scopes
                 .get(&pkgpath)
                 .unwrap_or_else(|| panic!("package {} is not found", pkgpath));
@@ -1965,7 +1972,6 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             match result {
                 Ok(_) => result,
                 Err(ref err) => {
-                    let is_in_schema = self.schema_stack.borrow().len() > 0;
                     if !is_in_schema {
                         let mut handler = self.handler.borrow_mut();
                         let pos = Position {

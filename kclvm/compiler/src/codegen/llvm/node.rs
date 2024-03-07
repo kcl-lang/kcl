@@ -559,7 +559,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         }
         self.schema_stack.borrow_mut().push(schema);
         add_variable(value::SCHEMA_SELF_NAME, schema_value);
-        self.emit_schema_left_identifiers(
+        self.emit_left_identifiers(
             &schema_stmt.body,
             &schema_stmt.index_signature,
             cal_map,
@@ -1366,7 +1366,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         if variables.len() == 1 {
             // Store the target
             self.walk_identifier_with_ctx(
-                &variables.get(0).expect(kcl_error::INTERNAL_ERROR_MSG).node,
+                &variables.first().expect(kcl_error::INTERNAL_ERROR_MSG).node,
                 &ast::ExprContext::Store,
                 Some(next_value),
             )
@@ -1375,7 +1375,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
             let value = self.build_call(&ApiFunc::kclvm_iterator_cur_value.name(), &[iter_value]);
             // Store the target
             self.walk_identifier_with_ctx(
-                &variables.get(0).expect(kcl_error::INTERNAL_ERROR_MSG).node,
+                &variables.first().expect(kcl_error::INTERNAL_ERROR_MSG).node,
                 &ast::ExprContext::Store,
                 Some(key),
             )
@@ -2391,9 +2391,6 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
 
     fn walk_module(&self, module: &'ctx ast::Module) -> Self::Result {
         check_backtrack_stop!(self);
-        if !module.body.is_empty() {
-            utils::update_ctx_filename(self, &module.body[0]);
-        }
         // Compile all statements of the module
         self.walk_stmts_except_import(&module.body)
     }
@@ -2613,12 +2610,16 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                                     let local_vars = self.local_vars.borrow_mut();
                                     local_vars.contains(name)
                                 };
-                                let is_not_in_lambda = self.lambda_stack.borrow().is_empty();
+                                let is_in_lambda = *self
+                                    .lambda_stack
+                                    .borrow()
+                                    .last()
+                                    .expect(kcl_error::INTERNAL_ERROR_MSG);
                                 // Set config value for the schema attribute if the attribute is in the schema and
                                 // it is not a local variable in the lambda function.
                                 if self.scope_level() >= INNER_LEVEL
                                     && is_in_schema
-                                    && !is_not_in_lambda
+                                    && !is_in_lambda
                                     && !is_local_var
                                 {
                                     let schema_value = self
@@ -2971,7 +2972,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         if targets.len() == 1 {
             // Store the target
             self.walk_identifier_with_ctx(
-                &targets.get(0).expect(kcl_error::INTERNAL_ERROR_MSG).node,
+                &targets.first().expect(kcl_error::INTERNAL_ERROR_MSG).node,
                 &ast::ExprContext::Store,
                 Some(next_value),
             )
@@ -2981,7 +2982,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             let value = self.build_call(&ApiFunc::kclvm_iterator_cur_value.name(), &[iter_value]);
             // Store the target
             self.walk_identifier_with_ctx(
-                &targets.get(0).expect(kcl_error::INTERNAL_ERROR_MSG).node,
+                &targets.first().expect(kcl_error::INTERNAL_ERROR_MSG).node,
                 &ast::ExprContext::Store,
                 Some(key),
             )

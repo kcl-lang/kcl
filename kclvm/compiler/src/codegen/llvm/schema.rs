@@ -13,8 +13,8 @@ use crate::codegen::traits::{BuilderMethods, DerivedValueCalculationMethods, Val
 use crate::value;
 
 impl<'ctx> LLVMCodeGenContext<'ctx> {
-    /// Emit all schema left identifiers because all the schema attribute can be forward referenced
-    pub fn emit_schema_left_identifiers(
+    /// Emit all left identifiers because all the attribute can be forward referenced.
+    pub fn emit_left_identifiers(
         &self,
         body: &'ctx [Box<ast::Node<ast::Stmt>>],
         index_signature: &'ctx Option<ast::NodeRef<ast::SchemaIndexSignature>>,
@@ -111,7 +111,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 }
                 ast::Stmt::If(if_stmt) => {
                     let mut names: Vec<String> = vec![];
-                    self.emit_schema_left_identifiers(
+                    self.emit_left_identifiers(
                         &if_stmt.body,
                         &None,
                         cal_map,
@@ -131,7 +131,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                         }
                         names.clear();
                     }
-                    self.emit_schema_left_identifiers(
+                    self.emit_left_identifiers(
                         &if_stmt.orelse,
                         &None,
                         cal_map,
