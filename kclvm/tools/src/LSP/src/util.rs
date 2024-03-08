@@ -17,7 +17,7 @@ use kclvm_sema::core::global_state::GlobalState;
 use kclvm_sema::namer::Namer;
 
 use kclvm_sema::resolver::resolve_program_with_opts;
-use kclvm_sema::resolver::scope::ProgramScope;
+use kclvm_sema::resolver::scope::{CachedScope, ProgramScope};
 
 use kclvm_span::symbol::reserved;
 use kclvm_utils::pkgpath::rm_external_pkg_name;
@@ -29,7 +29,10 @@ use serde::{de::DeserializeOwned, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
-use std::{fs, sync::Arc};
+use std::{
+    fs,
+    sync::{Arc, Mutex},
+};
 
 use crate::from_lsp;
 
@@ -66,6 +69,7 @@ pub fn get_file_name(vfs: RwLockReadGuard<Vfs>, file_id: FileId) -> anyhow::Resu
 pub(crate) struct Param {
     pub file: String,
     pub module_cache: Option<KCLModuleCache>,
+    pub scope_cache: Option<Arc<Mutex<CachedScope>>>,
 }
 
 pub(crate) fn parse_param_and_compile(
@@ -96,7 +100,7 @@ pub(crate) fn parse_param_and_compile(
             type_erasure: false,
             ..Default::default()
         },
-        None,
+        param.scope_cache,
     );
 
     let gs = GlobalState::default();

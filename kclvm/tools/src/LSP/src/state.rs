@@ -8,6 +8,7 @@ use anyhow::Result;
 use crossbeam_channel::{select, unbounded, Receiver, Sender};
 use indexmap::IndexSet;
 use kclvm_parser::KCLModuleCache;
+use kclvm_sema::resolver::scope::CachedScope;
 use lsp_server::{ReqQueue, Response};
 use lsp_types::Url;
 use lsp_types::{
@@ -17,6 +18,7 @@ use lsp_types::{
 use parking_lot::RwLock;
 use ra_ap_vfs::{FileId, Vfs};
 use std::collections::HashMap;
+use std::sync::Mutex;
 use std::{sync::Arc, time::Instant};
 
 pub(crate) type RequestHandler = fn(&mut LanguageServerState, lsp_server::Response);
@@ -81,6 +83,8 @@ pub(crate) struct LanguageServerState {
 
     /// KCL parse cache
     pub module_cache: Option<KCLModuleCache>,
+    /// KCL resolver cache
+    pub scope_cache: Option<Arc<Mutex<CachedScope>>>,
 }
 
 /// A snapshot of the state of the language server
@@ -96,6 +100,8 @@ pub(crate) struct LanguageServerSnapshot {
     pub word_index_map: Arc<RwLock<HashMap<Url, HashMap<String, Vec<Location>>>>>,
     /// KCL parse cache
     pub module_cache: Option<KCLModuleCache>,
+    /// KCL resolver cache
+    pub scope_cache: Option<Arc<Mutex<CachedScope>>>,
 }
 
 #[allow(unused)]
@@ -129,6 +135,7 @@ impl LanguageServerState {
             word_index_map: Arc::new(RwLock::new(HashMap::new())),
             loader,
             module_cache: Some(KCLModuleCache::default()),
+            scope_cache: Some(Arc::new(Mutex::new(CachedScope::default()))),
         };
 
         let word_index_map = state.word_index_map.clone();
@@ -208,12 +215,14 @@ impl LanguageServerState {
                         let mut snapshot = self.snapshot();
                         let sender = self.task_sender.clone();
                         let module_cache = self.module_cache.clone();
+                        let scope_cache = self.scope_cache.clone();
                         move || match url(&snapshot, file.file_id) {
                             Ok(uri) => {
                                 match parse_param_and_compile(
                                     Param {
                                         file: filename.clone(),
                                         module_cache,
+                                        scope_cache,
                                     },
                                     Some(snapshot.vfs),
                                 ) {
@@ -319,6 +328,7 @@ impl LanguageServerState {
             opened_files: self.opened_files.clone(),
             word_index_map: self.word_index_map.clone(),
             module_cache: self.module_cache.clone(),
+            scope_cache: self.scope_cache.clone(),
         }
     }
 

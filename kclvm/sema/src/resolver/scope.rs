@@ -289,6 +289,9 @@ pub struct ProgramScope {
 
 unsafe impl Send for ProgramScope {}
 
+unsafe impl Send for Scope {}
+unsafe impl Sync for Scope {}
+
 impl ProgramScope {
     /// Get all package paths.
     #[inline]
@@ -507,6 +510,9 @@ pub struct CachedScope {
     dependency_graph: DependencyGraph,
 }
 
+unsafe impl Send for CachedScope {}
+unsafe impl Sync for CachedScope {}
+
 #[derive(Debug, Clone, Default)]
 struct DependencyGraph {
     /// map filename to pkgpath
@@ -557,7 +563,9 @@ impl DependencyGraph {
         if let Some(main_modules) = program.pkgs.get(kclvm_ast::MAIN_PKG) {
             for module in main_modules {
                 let result = self.invalidate_module(module)?;
-                let _ = result.into_iter().map(|pkg| invalidated_set.insert(pkg));
+                let _ = result.into_iter().for_each(|pkg| {
+                    invalidated_set.insert(pkg);
+                });
                 self.remove_dependency_from_pkg(&module.filename);
                 self.add_new_module(module);
             }
