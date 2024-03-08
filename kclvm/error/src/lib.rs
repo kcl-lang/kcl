@@ -165,7 +165,7 @@ impl Handler {
     ///         style: Style::LineAndColumn,
     ///         message: "Invalid syntax: expected '+', got '-'".to_string(),
     ///         note: None,
-    ///         suggested_replacement: Some("".to_string()),
+    ///         suggested_replacement: None,
     ///     }
     /// ]);
     /// ```
@@ -208,7 +208,7 @@ impl Handler {
     ///         style: Style::LineAndColumn,
     ///         message: "Module 'a' imported but unused.".to_string(),
     ///         note: None,
-    ///         suggested_replacement: Some("".to_string()),
+    ///         suggested_replacement: None,
     ///     }],
     /// );
     /// ```

@@ -157,7 +157,7 @@ pub enum WarningKind {
 ///         style: Style::LineAndColumn,
 ///         message: "Module 'a' imported but unused.".to_string(),
 ///         note: None,
-///         suggested_replacement: Some("".to_string()),
+///         suggested_replacement: None,
 ///     }],
 /// );
 /// for diag in &handler.diagnostics {
@@ -184,7 +184,7 @@ impl std::fmt::Display for WarningKind {
 ///         style: Style::LineAndColumn,
 ///         message: "Module 'a' imported but unused.".to_string(),
 ///         note: None,
-///         suggested_replacement: Some("".to_string()),
+///         suggested_replacement: None,
 ///     }],
 /// );
 /// for diag in &handler.diagnostics {
