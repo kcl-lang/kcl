@@ -56,31 +56,36 @@ pub struct Snippet {
 pub fn diag_to_suggestion(
     diag: Diagnostic,
     files: &mut HashMap<String, String>,
-) -> anyhow::Result<Vec<Suggestion>, Error> {
+) -> anyhow::Result<Vec<Suggestion>> {
     let mut suggestions = vec![];
 
     for msg in &diag.messages {
-        if let Some(replace) = &msg.suggested_replacement {
-            let file_name = msg.range.0.filename.clone();
-            let src = match files.get(&file_name) {
-                Some(src) => src.clone(),
-                None => {
-                    let src = fs::read_to_string(&file_name).unwrap();
-                    files.insert(file_name, src.clone());
-                    src
-                }
-            };
-            suggestions.push(Suggestion {
-                message: msg.message.clone(),
-                replacement: Replacement {
-                    snippet: Snippet {
-                        file_name: msg.range.0.filename.clone(),
-                        range: text_range(src.as_str(), &msg.range)?,
-                    },
-                    replacement: replace.clone(),
+        let replacements = msg
+            .suggested_replacement
+            .clone()
+            .unwrap_or_else(|| vec!["".to_string()]);
+        let replacement_str = replacements.first().cloned().unwrap_or_default();
+
+        let file_name = msg.range.0.filename.clone();
+        let src = match files.get(&file_name) {
+            Some(src) => src.clone(),
+            None => {
+                let src = fs::read_to_string(&file_name).expect("Unable to read file");
+                files.insert(file_name.clone(), src.clone());
+                src
+            }
+        };
+
+        suggestions.push(Suggestion {
+            message: msg.message.clone(),
+            replacement: Replacement {
+                snippet: Snippet {
+                    file_name,
+                    range: text_range(src.as_str(), &msg.range)?,
                 },
-            });
-        }
+                replacement: replacement_str,
+            },
+        });
     }
     Ok(suggestions)
 }

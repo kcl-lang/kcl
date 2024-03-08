@@ -262,7 +262,7 @@ fn build_expect_diags() -> Vec<Diagnostic> {
             Some(DiagnosticSeverity::ERROR),
             vec![],
             Some(NumberOrString::String("CompileError".to_string())),
-            Some(serde_json::json!({ "suggested_replacement": ["number"] })),
+            Some(serde_json::json!({ "suggested_replacement": ["number", "n", "num"] })),
         ),
         build_lsp_diag(
             (0, 0, 0, 10),
