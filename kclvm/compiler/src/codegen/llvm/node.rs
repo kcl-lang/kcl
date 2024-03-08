@@ -80,13 +80,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         let value = self
             .walk_schema_expr(&unification_stmt.value.node)
             .expect(kcl_error::COMPILE_ERROR_MSG);
-        if self.scope_level() == GLOBAL_LEVEL
-            || *self
-                .lambda_stack
-                .borrow_mut()
-                .last()
-                .expect(kcl_error::INTERNAL_ERROR_MSG)
-        {
+        if self.scope_level() == GLOBAL_LEVEL || self.is_in_lambda() {
             if self.resolve_variable(name) {
                 let org_value = self
                     .walk_identifier_with_ctx(
@@ -2136,6 +2130,9 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         check_backtrack_stop!(self);
         let pkgpath = &self.current_pkgpath();
         let is_in_schema = self.schema_stack.borrow().len() > 0;
+        // Higher-order lambda requires capturing the current lambda closure variable
+        // as well as the closure of a more external scope.
+        let last_closure_map = self.get_current_inner_scope_variable_map();
         let func_before_block = self.append_block("");
         self.br(func_before_block);
         // Use "pkgpath"+"kclvm_lambda" to name 'function' to prevent conflicts between lambdas with the same name in different packages
@@ -2146,7 +2143,8 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         ));
         // Enter the function
         self.push_function(function);
-        self.lambda_stack.borrow_mut().push(true);
+        // Push the current lambda scope level in the lambda stack.
+        self.push_lambda(self.scope_level() + 1);
         // Lambda function body
         let block = self.context.append_basic_block(function, ENTRY_NAME);
         self.builder.position_at_end(block);
@@ -2191,11 +2189,11 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         let closure = self.list_value();
         // Use closure map in the laste scope to construct curret closure map.
         // The default value of the closure map is `{}`.
-        self.list_append(closure, self.get_closure_map());
+        self.list_append(closure, last_closure_map);
         let function = self.closure_value(function, closure);
         self.leave_scope();
         self.pop_function();
-        self.lambda_stack.borrow_mut().pop();
+        self.pop_lambda();
         Ok(function)
     }
 
@@ -2441,12 +2439,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                             right_value.expect(kcl_error::INTERNAL_ERROR_MSG),
                         );
                     // Local variables including schema/rule/lambda
-                    } else if *self
-                        .lambda_stack
-                        .borrow_mut()
-                        .last()
-                        .expect(kcl_error::INTERNAL_ERROR_MSG)
-                    {
+                    } else if self.is_in_lambda() {
                         let value = right_value.expect(kcl_error::INTERNAL_ERROR_MSG);
                         // If variable exists in the scope and update it, if not, add it to the scope.
                         if !self.store_variable_in_current_scope(name, value) {
@@ -2610,11 +2603,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                                     let local_vars = self.local_vars.borrow_mut();
                                     local_vars.contains(name)
                                 };
-                                let is_in_lambda = *self
-                                    .lambda_stack
-                                    .borrow()
-                                    .last()
-                                    .expect(kcl_error::INTERNAL_ERROR_MSG);
+                                let is_in_lambda = self.is_in_lambda();
                                 // Set config value for the schema attribute if the attribute is in the schema and
                                 // it is not a local variable in the lambda function.
                                 if self.scope_level() >= INNER_LEVEL
