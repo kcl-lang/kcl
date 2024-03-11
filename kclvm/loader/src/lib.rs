@@ -14,7 +14,10 @@ use kclvm_sema::{
         symbol::{SymbolData, SymbolRef},
     },
     namer::Namer,
-    resolver::{resolve_program_with_opts, scope::NodeKey},
+    resolver::{
+        resolve_program_with_opts,
+        scope::{KCLScopeCache, NodeKey},
+    },
     ty::{Type, TypeRef},
 };
 use std::path::PathBuf;
@@ -106,7 +109,22 @@ pub enum ScopeKind {
 /// load_package provides users with the ability to parse kcl program and sematic model
 /// information including symbols, types, definitions, etc.
 pub fn load_packages(opts: &LoadPackageOptions) -> Result<Packages> {
-    let module_cache = KCLModuleCache::default();
+    load_packages_with_cache(
+        opts,
+        KCLModuleCache::default(),
+        KCLScopeCache::default(),
+        GlobalState::default(),
+    )
+}
+
+/// load_package_with_cache provides users with the ability to parse kcl program and sematic model
+/// information including symbols, types, definitions, etc.
+pub fn load_packages_with_cache(
+    opts: &LoadPackageOptions,
+    module_cache: KCLModuleCache,
+    scope_cache: KCLScopeCache,
+    gs: GlobalState,
+) -> Result<Packages> {
     let sess = ParseSessionRef::default();
     let paths: Vec<&str> = opts.paths.iter().map(|s| s.as_str()).collect();
     let parse_result = load_program(
@@ -125,18 +143,14 @@ pub fn load_packages(opts: &LoadPackageOptions) -> Result<Packages> {
                 type_erasure: false,
                 ..Default::default()
             },
-            None,
+            Some(scope_cache),
         );
         let node_ty_map = prog_scope.node_ty_map;
-        let gs = Namer::find_symbols(&program, GlobalState::default());
+        let gs = Namer::find_symbols(&program, gs);
         let gs = AdvancedResolver::resolve_program(&program, gs, node_ty_map.clone());
         (program, prog_scope.handler.diagnostics.clone(), gs)
     } else {
-        (
-            parse_result.program,
-            IndexSet::default(),
-            GlobalState::default(),
-        )
+        (parse_result.program, IndexSet::default(), gs)
     };
     let mut packages = Packages {
         program,

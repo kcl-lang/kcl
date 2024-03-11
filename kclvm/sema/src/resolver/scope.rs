@@ -11,6 +11,7 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::collections::VecDeque;
 use std::sync::Arc;
+use std::sync::Mutex;
 use std::{
     cell::RefCell,
     rc::{Rc, Weak},
@@ -499,6 +500,7 @@ pub struct NodeKey {
 }
 
 pub type NodeTyMap = IndexMap<NodeKey, TypeRef>;
+pub type KCLScopeCache = Arc<Mutex<CachedScope>>;
 
 /// For CachedScope, we assume that all changed files must be located in kclvm_ast::MAIN_PKG ,
 /// if this is not the case, please clear the cache directly
