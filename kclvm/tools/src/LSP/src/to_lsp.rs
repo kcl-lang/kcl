@@ -13,7 +13,7 @@ use std::{
     str::FromStr,
 };
 
-/// Convert pos format
+/// Convert pos format to lsp position.
 /// The position in lsp protocol is different with position in ast node whose line number is 1 based.
 pub fn lsp_pos(pos: &KCLPos) -> Position {
     Position {
@@ -22,6 +22,8 @@ pub fn lsp_pos(pos: &KCLPos) -> Position {
     }
 }
 
+/// Convert start and pos format to lsp location.
+/// The position of the location in lsp protocol is different with position in ast node whose line number is 1 based.
 pub fn lsp_location(file_path: String, start: &KCLPos, end: &KCLPos) -> Option<Location> {
     let uri = Url::from_file_path(file_path).ok()?;
     Some(Location {
@@ -33,7 +35,7 @@ pub fn lsp_location(file_path: String, start: &KCLPos, end: &KCLPos) -> Option<L
     })
 }
 
-/// Convert KCL Message to LSP Diagnostic
+/// Convert KCL message to the LSP diagnostic.
 fn kcl_msg_to_lsp_diags(
     msg: &Message,
     severity: DiagnosticSeverity,
@@ -89,6 +91,7 @@ fn kcl_msg_to_lsp_diags(
     }
 }
 
+/// Convert KCL error level to the LSP diagnostic severity.
 fn kcl_err_level_to_severity(level: Level) -> DiagnosticSeverity {
     match level {
         Level::Error => DiagnosticSeverity::ERROR,

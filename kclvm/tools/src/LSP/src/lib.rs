@@ -21,3 +21,4 @@ mod state;
 mod tests;
 mod to_lsp;
 mod util;
+mod word_index;

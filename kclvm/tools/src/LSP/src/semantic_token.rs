@@ -27,7 +27,7 @@ pub(crate) struct KCLSemanticToken {
 pub(crate) fn semantic_tokens_full(file: &str, gs: &GlobalState) -> Option<SemanticTokensResult> {
     let mut kcl_tokens: Vec<KCLSemanticToken> = vec![];
     let sema_db = gs.get_sema_db();
-    if let Some(file_sema) = sema_db.get_file_sema(&file.to_string()) {
+    if let Some(file_sema) = sema_db.get_file_sema(file) {
         let symbols = file_sema.get_symbols();
         for symbol_ref in symbols {
             if let Some(symbol) = gs.get_symbols().get_symbol(*symbol_ref) {
@@ -82,7 +82,7 @@ pub(crate) fn type_index(ty: SemanticTokenType) -> u32 {
 }
 
 pub(crate) fn kcl_semantic_tokens_to_semantic_tokens(
-    tokens: &mut Vec<KCLSemanticToken>,
+    tokens: &mut [KCLSemanticToken],
 ) -> Vec<SemanticToken> {
     tokens.sort_by(|a, b| {
         if a.start.line == b.start.line {

@@ -21,11 +21,11 @@ use std::{fs, path::Path};
 use crate::goto_def::find_def_with_gs;
 use indexmap::IndexSet;
 use kclvm_ast::ast::{ImportStmt, Program, Stmt};
-
 use kclvm_ast::MAIN_PKG;
 use kclvm_config::modfile::KCL_FILE_EXTENSION;
 use kclvm_sema::core::global_state::GlobalState;
 
+use kclvm_driver::get_real_path_from_external;
 use kclvm_error::Position as KCLPos;
 use kclvm_sema::builtin::{BUILTIN_FUNCTIONS, STANDARD_SYSTEM_MODULES};
 use kclvm_sema::core::package::ModuleInfo;
@@ -33,8 +33,7 @@ use kclvm_sema::resolver::doc::{parse_doc_string, Doc};
 use kclvm_sema::ty::{FunctionType, SchemaType, Type};
 use lsp_types::{CompletionItem, CompletionItemKind, InsertTextFormat};
 
-use crate::util::{get_real_path_from_external, is_in_schema_expr};
-use crate::util::{inner_most_expr_in_stmt, is_in_docstring};
+use crate::util::{inner_most_expr_in_stmt, is_in_docstring, is_in_schema_expr};
 
 #[derive(Debug, Clone, PartialEq, Hash, Eq)]
 pub enum KCLCompletionItemKind {
@@ -226,9 +225,9 @@ fn completion_dot(
 
     if let Some(stmt) = program.pos_to_stmt(&pre_pos) {
         match stmt.node {
-            Stmt::Import(stmt) => return completion_import(&stmt, &pos, program),
+            Stmt::Import(stmt) => return completion_import(&stmt, pos, program),
             _ => {
-                let (expr, _) = inner_most_expr_in_stmt(&stmt.node, &pos, None);
+                let (expr, _) = inner_most_expr_in_stmt(&stmt.node, pos, None);
                 if let Some(node) = expr {
                     match node.node {
                         // if the complete trigger character in string, skip it
@@ -495,10 +494,10 @@ fn schema_ty_to_value_complete_item(schema_ty: &SchemaType) -> KCLCompletionItem
         details.push("Attributes:".to_string());
         for (name, attr) in &schema_ty.attrs {
             details.push(format!(
-                "{}{}:{}",
+                "{}{}: {}",
                 name,
                 if attr.is_optional { "?" } else { "" },
-                format!(" {}", attr.ty.ty_str()),
+                attr.ty.ty_str(),
             ));
         }
         details.join("\n")
@@ -548,10 +547,10 @@ fn schema_ty_to_type_complete_item(schema_ty: &SchemaType) -> KCLCompletionItem 
         details.push("Attributes:".to_string());
         for (name, attr) in &schema_ty.attrs {
             details.push(format!(
-                "{}{}:{}",
+                "{}{}: {}",
                 name,
                 if attr.is_optional { "?" } else { "" },
-                format!(" {}", attr.ty.ty_str()),
+                attr.ty.ty_str(),
             ));
         }
         details.join("\n")
@@ -799,7 +798,7 @@ mod tests {
             CompletionResponse::List(_) => panic!("test failed"),
         };
 
-        expected_labels = vec!["", "age", "math", "name", "subpkg"]
+        expected_labels = ["", "age", "math", "name", "subpkg"]
             .iter()
             .map(|s| s.to_string())
             .collect();

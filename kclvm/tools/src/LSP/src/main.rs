@@ -21,6 +21,7 @@ mod semantic_token;
 mod state;
 mod to_lsp;
 mod util;
+mod word_index;
 
 mod formatting;
 #[cfg(test)]

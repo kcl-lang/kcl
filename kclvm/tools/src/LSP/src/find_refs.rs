@@ -3,28 +3,27 @@ use crate::goto_def::{find_def_with_gs, goto_definition_with_gs};
 use crate::to_lsp::lsp_location;
 use crate::util::{parse_param_and_compile, Param};
 
+use crate::state::{KCLVfs, KCLWordIndexMap};
 use anyhow::Result;
 use kclvm_ast::ast::Program;
 use kclvm_error::Position as KCLPos;
 use kclvm_parser::KCLModuleCache;
 use kclvm_sema::core::global_state::GlobalState;
-use kclvm_sema::resolver::scope::CachedScope;
-use lsp_types::{Location, Url};
-use parking_lot::RwLock;
-use ra_ap_vfs::Vfs;
-use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use kclvm_sema::resolver::scope::KCLScopeCache;
+use lsp_types::Location;
+
+const FIND_REFS_LIMIT: usize = 20;
 
 pub(crate) fn find_refs<F: Fn(String) -> Result<(), anyhow::Error>>(
     _program: &Program,
     kcl_pos: &KCLPos,
     include_declaration: bool,
-    word_index_map: Arc<RwLock<HashMap<Url, HashMap<String, Vec<Location>>>>>,
-    vfs: Option<Arc<RwLock<Vfs>>>,
+    word_index_map: KCLWordIndexMap,
+    vfs: Option<KCLVfs>,
     logger: F,
     gs: &GlobalState,
     module_cache: Option<KCLModuleCache>,
-    scope_cache: Option<Arc<Mutex<CachedScope>>>,
+    scope_cache: Option<KCLScopeCache>,
 ) -> Result<Vec<Location>, String> {
     let def = find_def_with_gs(kcl_pos, gs, true);
     match def {
@@ -39,6 +38,7 @@ pub(crate) fn find_refs<F: Fn(String) -> Result<(), anyhow::Error>>(
                         def_loc,
                         obj.get_name(),
                         include_declaration,
+                        Some(FIND_REFS_LIMIT),
                         logger,
                         module_cache,
                         scope_cache,
@@ -58,26 +58,28 @@ pub(crate) fn find_refs<F: Fn(String) -> Result<(), anyhow::Error>>(
 }
 
 pub(crate) fn find_refs_from_def<F: Fn(String) -> Result<(), anyhow::Error>>(
-    vfs: Option<Arc<RwLock<Vfs>>>,
-    word_index_map: Arc<RwLock<HashMap<Url, HashMap<String, Vec<Location>>>>>,
+    vfs: Option<KCLVfs>,
+    word_index_map: KCLWordIndexMap,
     def_loc: Location,
     name: String,
     include_declaration: bool,
+    limit: Option<usize>,
     logger: F,
     module_cache: Option<KCLModuleCache>,
-    scope_cache: Option<Arc<Mutex<CachedScope>>>,
+    scope_cache: Option<KCLScopeCache>,
 ) -> Vec<Location> {
     let mut ref_locations = vec![];
-    for (_, word_index) in &mut *word_index_map.write() {
+    for word_index in (*word_index_map.write()).values_mut() {
         if let Some(mut locs) = word_index.get(name.as_str()).cloned() {
-            if locs.len() >= 20 {
-                let _ = logger(
-                    "Found more than 20 matched symbols, only the first 20 will be processed"
-                        .to_string(),
-                );
-                locs = locs[0..20].to_vec();
+            if let Some(limit) = limit {
+                if locs.len() >= limit {
+                    let _ = logger(format!(
+                        "Found more than {0} matched symbols, only the first {0} will be processed",
+                        limit
+                    ));
+                    locs = locs[0..limit].to_vec();
+                }
             }
-
             let matched_locs: Vec<Location> = locs
                 .into_iter()
                 .filter(|ref_loc| {
@@ -135,7 +137,7 @@ pub(crate) fn find_refs_from_def<F: Fn(String) -> Result<(), anyhow::Error>>(
 #[cfg(test)]
 mod tests {
     use super::find_refs_from_def;
-    use crate::util::build_word_index;
+    use crate::word_index::build_word_index;
     use lsp_types::{Location, Position, Range, Url};
     use parking_lot::RwLock;
     use std::collections::HashMap;
@@ -154,7 +156,7 @@ mod tests {
     fn setup_word_index_map(root: &str) -> HashMap<Url, HashMap<String, Vec<Location>>> {
         HashMap::from([(
             Url::from_file_path(root).unwrap(),
-            build_word_index(root.to_string(), true).unwrap(),
+            build_word_index(root, true).unwrap(),
         )])
     }
 
@@ -212,13 +214,14 @@ mod tests {
                         def_loc,
                         "a".to_string(),
                         true,
+                        Some(20),
                         logger,
                         None,
                         None,
                     ),
                 );
             }
-            Err(_) => assert!(false, "file not found"),
+            Err(_) => unreachable!("file not found"),
         }
     }
 
@@ -268,13 +271,14 @@ mod tests {
                         def_loc,
                         "a".to_string(),
                         false,
+                        Some(20),
                         logger,
                         None,
                         None,
                     ),
                 );
             }
-            Err(_) => assert!(false, "file not found"),
+            Err(_) => unreachable!("file not found"),
         }
     }
 
@@ -324,13 +328,14 @@ mod tests {
                         def_loc,
                         "Name".to_string(),
                         true,
+                        Some(20),
                         logger,
                         None,
                         None,
                     ),
                 );
             }
-            Err(_) => assert!(false, "file not found"),
+            Err(_) => unreachable!("file not found"),
         }
     }
 
@@ -373,13 +378,14 @@ mod tests {
                         def_loc,
                         "name".to_string(),
                         true,
+                        Some(20),
                         logger,
                         None,
                         None,
                     ),
                 );
             }
-            Err(_) => assert!(false, "file not found"),
+            Err(_) => unreachable!("file not found"),
         }
     }
 }

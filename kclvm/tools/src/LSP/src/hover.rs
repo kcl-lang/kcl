@@ -120,10 +120,10 @@ fn build_schema_hover_content(schema_ty: &SchemaType) -> Vec<String> {
     let mut attrs = vec!["Attributes:".to_string()];
     for (name, attr) in &schema_ty.attrs {
         attrs.push(format!(
-            "{}{}:{}",
+            "{}{}: {}",
             name,
             if attr.is_optional { "?" } else { "" },
-            format!(" {}", attr.ty.ty_str()),
+            attr.ty.ty_str(),
         ));
     }
     docs.push(attrs.join("\n\n"));
