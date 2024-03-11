@@ -31,7 +31,6 @@ kclvm-span = {path = "../span"}
 kclvm-error = {path = "../error"}
 kclvm-config = {path = "../config"}
 kclvm-sema = {path = "../sema"}
-kclvm-runtime = {path = "../runtime"}
 kclvm-utils = {path = "../utils"}
 
 [dev-dependencies]
