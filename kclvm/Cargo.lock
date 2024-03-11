@@ -1478,7 +1478,7 @@ dependencies = [
 
 [[package]]
 name = "kcl-language-server"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1522,7 +1522,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow",
  "cc",
@@ -1556,7 +1556,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-api"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow",
  "criterion 0.4.0",
@@ -1594,7 +1594,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-ast"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "compiler_base_span 0.0.2",
  "kclvm-error",
@@ -1608,7 +1608,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-ast-pretty"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "compiler_base_macros",
  "compiler_base_session",
@@ -1622,7 +1622,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-cmd"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow",
  "clap 4.3.19",
@@ -1640,7 +1640,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-compiler"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "ahash",
  "bit-set",
@@ -1660,7 +1660,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-config"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "ahash",
  "anyhow",
@@ -1684,7 +1684,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-driver"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow",
  "glob",
@@ -1700,7 +1700,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-error"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "annotate-snippets",
  "anyhow",
@@ -1719,7 +1719,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-lexer"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "expect-test",
  "kclvm-error",
@@ -1729,7 +1729,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-loader"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow",
  "cc",
@@ -1763,7 +1763,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-macros"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1773,7 +1773,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-parser"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow",
  "bstr",
@@ -1807,7 +1807,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-query"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow",
  "compiler_base_macros",
@@ -1824,7 +1824,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-runner"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow",
  "cc",
@@ -1859,7 +1859,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-runtime"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "ahash",
  "base64",
@@ -1888,7 +1888,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-sema"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "ahash",
  "anyhow",
@@ -1923,7 +1923,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-span"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "compiler_base_span 0.0.2",
  "kclvm-macros",
@@ -1933,7 +1933,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-tools"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow",
  "compiler_base_session",
@@ -1966,14 +1966,14 @@ dependencies = [
 
 [[package]]
 name = "kclvm-utils"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow",
 ]
 
 [[package]]
 name = "kclvm-version"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "vergen",
 ]
