@@ -51,29 +51,3 @@ rpath = true
 panic = "unwind"
 opt-level = "z"  # Optimize for size.
 lto = true
-
-[workspace]
-members = [
-    "third-party/prost-wkt",
-    "third-party/prost-wkt/wkt-build", 
-    "third-party/prost-wkt/wkt-types",
-    "api",
-    "cmd",
-    "ast",
-    "ast_pretty",
-    "compiler",
-    "config",
-    "error",
-    "lexer",
-    "macros",
-    "parser",
-    "runner",
-    "runtime",
-    "sema",
-    "span",
-    "tools",
-    "version",
-    "query",
-    "utils",
-    "tools/src/LSP"
-]
