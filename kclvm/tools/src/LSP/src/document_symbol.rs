@@ -14,7 +14,7 @@ pub(crate) fn document_symbol(
     file: &str,
     gs: &GlobalState,
 ) -> Option<lsp_types::DocumentSymbolResponse> {
-    let mut documentsymbols: Vec<DocumentSymbol> = vec![];
+    let mut document_symbols: Vec<DocumentSymbol> = vec![];
 
     let dummy_pos = Position {
         filename: file.to_string(),
@@ -66,15 +66,19 @@ pub(crate) fn document_symbol(
                                                         }
 
                                                         schema_symbol.children = Some(children);
-                                                        documentsymbols.push(schema_symbol.clone());
+                                                        document_symbols
+                                                            .push(schema_symbol.clone());
                                                     }
                                                     None => {}
                                                 }
                                             }
-                                            _ => match symbol_to_document_symbol(symbol) {
-                                                Some(symbol) => documentsymbols.push(symbol),
-                                                None => {}
-                                            },
+                                            _ => {
+                                                if let Some(symbol) =
+                                                    symbol_to_document_symbol(symbol)
+                                                {
+                                                    document_symbols.push(symbol)
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -87,7 +91,7 @@ pub(crate) fn document_symbol(
             }
         }
     }
-    Some(DocumentSymbolResponse::Nested(documentsymbols))
+    Some(DocumentSymbolResponse::Nested(document_symbols))
 }
 
 fn symbol_to_document_symbol(symbol: &KCLSymbol) -> Option<DocumentSymbol> {

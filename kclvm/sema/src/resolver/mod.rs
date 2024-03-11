@@ -21,7 +21,7 @@ mod tests;
 
 use indexmap::IndexMap;
 use kclvm_error::diagnostic::Range;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::{cell::RefCell, rc::Rc};
 
 use crate::lint::{CombinedLintPass, Linter};
@@ -34,7 +34,7 @@ use crate::{resolver::scope::Scope, ty::SchemaType};
 use kclvm_ast::ast::Program;
 use kclvm_error::*;
 
-use self::scope::{builtin_scope, CachedScope, NodeTyMap, ProgramScope};
+use self::scope::{builtin_scope, KCLScopeCache, NodeTyMap, ProgramScope};
 
 /// Resolver is responsible for program semantic checking, mainly
 /// including type checking and contract model checking.
@@ -173,7 +173,7 @@ pub fn resolve_program(program: &mut Program) -> ProgramScope {
 pub fn resolve_program_with_opts(
     program: &mut Program,
     opts: Options,
-    cached_scope: Option<Arc<Mutex<CachedScope>>>,
+    cached_scope: Option<KCLScopeCache>,
 ) -> ProgramScope {
     pre_process_program(program, &opts);
     let mut resolver = Resolver::new(program, opts.clone());

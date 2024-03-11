@@ -655,12 +655,14 @@ impl DependencyGraph {
         }
     }
 }
+
 #[derive(Debug, Clone, Default)]
 struct DependencyNode {
+    // The package path of the current node.
     pkgpath: String,
-    //the pkgpath which is imported by this pkg
+    // The pkgpath which is imported by this package.
     parents: HashSet<String>,
-    //the files which import this pkg
+    // Files which import this package.
     children: HashSet<String>,
 }
 
@@ -673,7 +675,7 @@ impl CachedScope {
             dependency_graph: DependencyGraph::default(),
         };
         let invalidated_pkgs = cached_scope.dependency_graph.update(program);
-        cached_scope.invalidte_cache(invalidated_pkgs.as_ref());
+        cached_scope.invalidate_cache(invalidated_pkgs.as_ref());
         cached_scope
     }
 
@@ -683,7 +685,7 @@ impl CachedScope {
         self.dependency_graph.clear();
     }
 
-    pub fn invalidte_cache(&mut self, invalidated_pkgs: Result<&HashSet<String>, &String>) {
+    pub fn invalidate_cache(&mut self, invalidated_pkgs: Result<&HashSet<String>, &String>) {
         match invalidated_pkgs {
             Ok(invalidated_pkgs) => {
                 for invalidated_pkg in invalidated_pkgs.iter() {
@@ -700,6 +702,6 @@ impl CachedScope {
             self.program_root = program.root.clone();
         }
         let invalidated_pkgs = self.dependency_graph.update(program);
-        self.invalidte_cache(invalidated_pkgs.as_ref());
+        self.invalidate_cache(invalidated_pkgs.as_ref());
     }
 }

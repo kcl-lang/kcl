@@ -1,8 +1,6 @@
-use crate::{
-    from_lsp::kcl_pos,
-    goto_def::find_def_with_gs,
-    util::{build_word_index_for_source_codes, VirtualLocation},
-};
+use crate::state::KCLVfs;
+use crate::word_index::{build_virtual_word_index, VirtualLocation};
+use crate::{from_lsp::kcl_pos, goto_def::find_def_with_gs};
 use anyhow::{anyhow, Result};
 use chumsky::chain::Chain;
 use kclvm_ast::ast::{self, Program};
@@ -14,14 +12,10 @@ use kclvm_sema::{
     resolver::resolve_program_with_opts,
 };
 use lsp_types::{Position, Range, TextEdit};
-use parking_lot::RwLock;
-use ra_ap_vfs::{Vfs, VfsPath};
+use ra_ap_vfs::VfsPath;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::PathBuf;
-use std::{
-    collections::{HashMap, HashSet},
-    sync::Arc,
-};
 
 /// [`rename_symbol_on_file`] will rename the symbol in the given files
 /// It will load the file content from file system and save to vfs, and then call [`rename_symbol`] to rename the symbol
@@ -32,7 +26,7 @@ pub fn rename_symbol_on_file(
     new_name: String,
 ) -> Result<Vec<String>> {
     // load file content from file system and save to vfs
-    let vfs: Arc<RwLock<Vfs>> = Arc::new(RwLock::new(Default::default()));
+    let vfs = KCLVfs::default();
     let mut source_codes = HashMap::<String, String>::new();
     for path in file_paths {
         let content = fs::read_to_string(path.clone())?;
@@ -61,7 +55,7 @@ pub fn rename_symbol_on_code(
     new_name: String,
 ) -> Result<HashMap<String, String>> {
     // prepare a vfs from given file_paths
-    let vfs: Arc<RwLock<Vfs>> = Arc::new(RwLock::new(Default::default()));
+    let vfs = KCLVfs::default();
     for (filepath, code) in &source_codes {
         vfs.write().set_file_contents(
             VfsPath::new_virtual_path(filepath.clone()),
@@ -75,10 +69,10 @@ pub fn rename_symbol_on_code(
         new_name,
         VfsPath::new_virtual_path,
     )?;
-    return apply_rename_changes(&changes, source_codes);
+    apply_rename_changes(&changes, source_codes)
 }
 
-fn package_path_to_file_path(pkg_path: &str, vfs: Arc<RwLock<Vfs>>) -> Vec<String> {
+fn package_path_to_file_path(pkg_path: &str, vfs: KCLVfs) -> Vec<String> {
     let pkg = PathBuf::from(pkg_path);
     let vfs_read = vfs.read();
     let mut result: Vec<String> = vec![];
@@ -113,7 +107,7 @@ fn package_path_to_file_path(pkg_path: &str, vfs: Arc<RwLock<Vfs>>) -> Vec<Strin
 /// returns the symbol name and definition range
 fn select_symbol<F>(
     symbol_spec: &ast::SymbolSelectorSpec,
-    vfs: Arc<RwLock<Vfs>>,
+    vfs: KCLVfs,
     trans_vfs_path: F,
 ) -> Option<(String, diagnostic::Range)>
 where
@@ -122,7 +116,7 @@ where
     let mut pkg = PathBuf::from(&symbol_spec.pkg_root);
     let fields = parse_attribute_path(&symbol_spec.field_path).unwrap_or_default();
     if !symbol_spec.pkgpath.is_empty() {
-        let pkg_names = symbol_spec.pkgpath.split(".");
+        let pkg_names = symbol_spec.pkgpath.split('.');
         for n in pkg_names {
             pkg = pkg.join(n)
         }
@@ -139,7 +133,7 @@ where
     ) {
         if let Some(symbol_ref) = gs
             .get_symbols()
-            .get_symbol_by_fully_qualified_name(&kclvm_ast::MAIN_PKG)
+            .get_symbol_by_fully_qualified_name(kclvm_ast::MAIN_PKG)
         {
             let mut owner_ref = symbol_ref;
             let mut target = None;
@@ -160,33 +154,31 @@ where
 fn parse_files_with_vfs<F>(
     work_dir: String,
     file_paths: Vec<String>,
-    vfs: Arc<RwLock<Vfs>>,
+    vfs: KCLVfs,
     trans_vfs_path: F,
 ) -> anyhow::Result<(Program, GlobalState)>
 where
     F: Fn(String) -> VfsPath,
 {
-    let mut opt = LoadProgramOptions::default();
-    opt.work_dir = work_dir;
-    opt.load_plugins = true;
-    opt.k_code_list = {
-        let mut list = vec![];
-        let vfs = &vfs.read();
-        for file in &file_paths {
-            match vfs.file_id(&trans_vfs_path(file.clone())) {
-                Some(id) => {
+    let opts = LoadProgramOptions {
+        work_dir,
+        load_plugins: true,
+        k_code_list: {
+            let mut list = vec![];
+            let vfs = &vfs.read();
+            for file in &file_paths {
+                if let Some(id) = vfs.file_id(&trans_vfs_path(file.clone())) {
                     // Load code from vfs
                     list.push(String::from_utf8(vfs.file_contents(id).to_vec()).unwrap());
                 }
-                None => {}
             }
-        }
-        list
+            list
+        },
+        ..Default::default()
     };
-
     let files: Vec<&str> = file_paths.iter().map(|s| s.as_str()).collect();
     let sess: ParseSessionRef = ParseSessionRef::default();
-    let mut program = load_program(sess.clone(), &files, Some(opt), None)?.program;
+    let mut program = load_program(sess.clone(), &files, Some(opts), None)?.program;
 
     let prog_scope = resolve_program_with_opts(
         &mut program,
@@ -298,7 +290,7 @@ pub fn match_pkgpath_and_code(
     selector: &ast::SymbolSelectorSpec,
 ) -> (Option<String>, Option<String>) {
     let mut pkg = PathBuf::from(&selector.pkg_root);
-    let pkg_names = selector.pkgpath.split(".");
+    let pkg_names = selector.pkgpath.split('.');
     if !selector.pkgpath.is_empty() {
         for n in pkg_names {
             pkg = pkg.join(n)
@@ -319,7 +311,7 @@ pub fn match_pkgpath_and_code(
 /// new_name: the new name of the symbol
 pub fn rename_symbol<F>(
     pkg_root: &str,
-    vfs: Arc<RwLock<Vfs>>,
+    vfs: KCLVfs,
     symbol_path: &str,
     new_name: String,
     trans_vfs_path: F,
@@ -340,16 +332,14 @@ where
                 let content = std::str::from_utf8(vfs_content.file_contents(file_id)).unwrap();
                 source_codes.insert(vfspath.to_string(), content.to_string());
             }
-            let word_index = build_word_index_for_source_codes(source_codes, true)?;
+            let word_index = build_virtual_word_index(source_codes, true)?;
             if let Some(locations) = word_index.get(&name) {
                 // 4. filter out the matched refs
                 // 4.1 collect matched words(names) and remove Duplicates of the file paths
                 let file_map = locations.iter().fold(
                     HashMap::<String, Vec<&VirtualLocation>>::new(),
                     |mut acc, loc| {
-                        acc.entry(loc.filepath.clone())
-                            .or_insert(Vec::new())
-                            .push(loc);
+                        acc.entry(loc.filepath.clone()).or_default().push(loc);
                         acc
                     },
                 );
@@ -383,9 +373,9 @@ where
                         });
                     map
                 });
-                return Ok(changes);
+                Ok(changes)
             } else {
-                return Ok(HashMap::new());
+                Ok(HashMap::new())
             }
         }
         None => Err(anyhow!(
@@ -401,13 +391,9 @@ mod tests {
     use kclvm_error::diagnostic;
     use lsp_types::{Position, Range, TextEdit};
     use maplit::hashmap;
-    use parking_lot::RwLock;
+    use std::collections::{HashMap, HashSet};
     use std::fs;
     use std::path::PathBuf;
-    use std::{
-        collections::{HashMap, HashSet},
-        sync::Arc,
-    };
 
     use crate::rename::rename_symbol_on_code;
 
@@ -416,7 +402,8 @@ mod tests {
         select_symbol,
     };
 
-    use ra_ap_vfs::{Vfs, VfsPath};
+    use crate::state::KCLVfs;
+    use ra_ap_vfs::VfsPath;
 
     /// prepare_vfs constructs a vfs for test:
     /// /mock_root
@@ -424,14 +411,7 @@ mod tests {
     /// └── base
     ///     ├── server.k
     ///     └── person.k
-    fn prepare_vfs() -> (
-        PathBuf,
-        PathBuf,
-        PathBuf,
-        PathBuf,
-        PathBuf,
-        Arc<RwLock<Vfs>>,
-    ) {
+    fn prepare_vfs() -> (PathBuf, PathBuf, PathBuf, PathBuf, PathBuf, KCLVfs) {
         // mock paths
         let root = PathBuf::from("/mock_root");
         let base_path = root.join("base");
@@ -459,7 +439,7 @@ e = a["abc"]
         let config_content = r#""#;
 
         // set vfs
-        let vfs: Arc<RwLock<Vfs>> = Arc::new(RwLock::new(Default::default()));
+        let vfs = KCLVfs::default();
         vfs.write().set_file_contents(
             VfsPath::new_virtual_path(person_path.as_path().to_str().unwrap().to_string()),
             Some(person_content.as_bytes().to_owned()),
@@ -537,7 +517,7 @@ e = a["abc"]
                 )
             );
         } else {
-            assert!(false, "select symbol failed")
+            unreachable!("select symbol failed")
         }
 
         if let Some((name, range)) = select_symbol(
@@ -566,7 +546,7 @@ e = a["abc"]
                 )
             );
         } else {
-            assert!(false, "select symbol failed")
+            unreachable!("select symbol failed")
         }
 
         if let Some((name, range)) = select_symbol(
@@ -595,7 +575,7 @@ e = a["abc"]
                 )
             );
         } else {
-            assert!(false, "select symbol failed")
+            unreachable!("select symbol failed")
         }
 
         if let Some((name, range)) = select_symbol(
@@ -624,7 +604,7 @@ e = a["abc"]
                 )
             );
         } else {
-            assert!(false, "select symbol failed")
+            unreachable!("select symbol failed")
         }
 
         if let Some((name, range)) = select_symbol(
@@ -653,7 +633,7 @@ e = a["abc"]
                 )
             );
         } else {
-            assert!(false, "select symbol failed")
+            unreachable!("select symbol failed")
         }
     }
 
@@ -686,8 +666,8 @@ e = a["abc"]
         let base_path = base_path.to_str().unwrap();
         let main_path = main_path.to_str().unwrap();
 
-        let vfs: Arc<RwLock<Vfs>> = Arc::new(RwLock::new(Default::default()));
-        for path in vec![base_path, main_path] {
+        let vfs = KCLVfs::default();
+        for path in [base_path, main_path] {
             let content = fs::read_to_string(path).unwrap();
             vfs.write().set_file_contents(
                 VfsPath::new_virtual_path(path.to_string()),
@@ -709,9 +689,9 @@ e = a["abc"]
             assert!(changes.get(base_path).unwrap()[0].range.start == Position::new(0, 7));
             assert!(changes.get(main_path).unwrap().len() == 1);
             assert!(changes.get(main_path).unwrap()[0].range.start == Position::new(2, 9));
-            assert!(changes.get(main_path).unwrap()[0].new_text == "NewPerson".to_string());
+            assert!(changes.get(main_path).unwrap()[0].new_text == "NewPerson");
         } else {
-            assert!(false, "rename failed")
+            unreachable!("rename failed")
         }
 
         if let Ok(changes) = rename_symbol(
@@ -728,9 +708,9 @@ e = a["abc"]
             assert!(changes.get(base_path).unwrap()[0].range.start == Position::new(1, 4));
             assert!(changes.get(main_path).unwrap().len() == 1);
             assert!(changes.get(main_path).unwrap()[0].range.start == Position::new(4, 4));
-            assert!(changes.get(main_path).unwrap()[0].new_text == "new_name".to_string());
+            assert!(changes.get(main_path).unwrap()[0].new_text == "new_name");
         } else {
-            assert!(false, "rename failed")
+            unreachable!("rename failed")
         }
     }
 
@@ -794,7 +774,7 @@ Bob = vars.Person {
         let main_path_string = main_path.to_str().unwrap().to_string();
 
         // before test, back up the old file content
-        for path in vec![base_path.clone(), main_path.clone()] {
+        for path in [base_path.clone(), main_path.clone()] {
             let content = fs::read_to_string(path.clone()).unwrap();
             let backup_path = path.with_extension("bak");
             fs::write(backup_path.clone(), content).unwrap();
@@ -803,7 +783,7 @@ Bob = vars.Person {
         let result = rename_symbol_on_file(
             root.to_str().unwrap(),
             "base:Person",
-            &vec![base_path_string.clone(), main_path_string.clone()],
+            &[base_path_string.clone(), main_path_string.clone()],
             "NewPerson".to_string(),
         );
         let expect_changed_paths: HashSet<_> = [base_path_string.clone(), main_path_string.clone()]
@@ -833,7 +813,7 @@ e = a["abc"]"#
         assert_eq!(main_new_content, "import .base\n\na = base.NewPerson {\n    age: 1,\n    name: {\n        first: \"aa\"\n    }\n}");
 
         // after test, restore the old file content
-        for path in vec![base_path.clone(), main_path.clone()] {
+        for path in [base_path.clone(), main_path.clone()] {
             let backup_path = path.with_extension("bak");
             let content = fs::read_to_string(backup_path.clone()).unwrap();
             fs::write(path.clone(), content).unwrap();

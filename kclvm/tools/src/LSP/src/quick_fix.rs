@@ -10,7 +10,7 @@ pub(crate) fn quick_fix(uri: &Url, diags: &Vec<Diagnostic>) -> Vec<lsp_types::Co
     let mut code_actions: Vec<lsp_types::CodeActionOrCommand> = vec![];
     for diag in diags {
         if let Some(code) = &diag.code {
-            if let Some(id) = conver_code_to_kcl_diag_id(code) {
+            if let Some(id) = convert_code_to_kcl_diag_id(code) {
                 match id {
                     DiagnosticId::Error(error) => match error {
                         ErrorKind::CompileError => {
@@ -106,10 +106,10 @@ fn extract_suggested_replacements(data: &Option<Value>) -> Vec<String> {
             }),
             _ => None,
         })
-        .unwrap_or_else(Vec::new)
+        .unwrap_or_default()
 }
 
-pub(crate) fn conver_code_to_kcl_diag_id(code: &NumberOrString) -> Option<DiagnosticId> {
+pub(crate) fn convert_code_to_kcl_diag_id(code: &NumberOrString) -> Option<DiagnosticId> {
     match code {
         NumberOrString::Number(_) => None,
         NumberOrString::String(code) => match code.as_str() {

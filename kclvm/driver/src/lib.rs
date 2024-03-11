@@ -13,8 +13,8 @@ use kclvm_config::{
     settings::{build_settings_pathbuf, DEFAULT_SETTING_FILE},
 };
 use kclvm_parser::LoadProgramOptions;
-use kclvm_utils::path::PathPrefix;
-use kpm::fill_pkg_maps_for_k_file;
+use kclvm_utils::{path::PathPrefix, pkgpath::rm_external_pkg_name};
+use kpm::{fetch_metadata, fill_pkg_maps_for_k_file};
 use std::env;
 use std::iter;
 use std::{
@@ -421,4 +421,36 @@ fn probe(path: PathBuf) -> Option<PathBuf> {
     iter::once(path)
         .chain(with_extension)
         .find(|it| it.is_file())
+}
+
+/// [`get_real_path_from_external`] will ask for the local path for [`pkg_name`] with subdir [`pkgpath`].
+/// If the external package, whose [`pkg_name`] is 'my_package', is stored in '\user\my_package_v0.0.1'.
+/// The [`pkgpath`] is 'my_package.examples.apps'.
+///
+/// [`get_real_path_from_external`] will return '\user\my_package_v0.0.1\examples\apps'
+///
+/// # Note
+/// [`get_real_path_from_external`] is just a method for calculating a path, it doesn't check whether a path exists.
+pub fn get_real_path_from_external(
+    pkg_name: &str,
+    pkgpath: &str,
+    current_pkg_path: PathBuf,
+) -> PathBuf {
+    let mut real_path = PathBuf::new();
+    let pkg_root = fetch_metadata(current_pkg_path)
+        .map(|metadata| {
+            metadata
+                .packages
+                .get(pkg_name)
+                .map_or(PathBuf::new(), |pkg| pkg.manifest_path.clone())
+        })
+        .unwrap_or_else(|_| PathBuf::new());
+    real_path = real_path.join(pkg_root);
+
+    let pkgpath = match rm_external_pkg_name(pkgpath) {
+        Ok(path) => path,
+        Err(_) => String::new(),
+    };
+    pkgpath.split('.').for_each(|s| real_path.push(s));
+    real_path
 }

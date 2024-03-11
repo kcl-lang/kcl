@@ -138,11 +138,13 @@ pub(crate) fn compile_test_file(
     (file, program, prog_scope, diags, gs)
 }
 
+type Info = (String, (u32, u32, u32, u32), String);
+
 fn build_lsp_diag(
     pos: (u32, u32, u32, u32),
     message: String,
     severity: Option<DiagnosticSeverity>,
-    related_info: Vec<(String, (u32, u32, u32, u32), String)>,
+    related_info: Vec<Info>,
     code: Option<NumberOrString>,
     data: Option<serde_json::Value>,
 ) -> Diagnostic {
@@ -1402,76 +1404,37 @@ fn konfig_completion_test_main() {
         CompletionResponse::List(_) => panic!("test failed"),
     };
     let mut attr = [
+        "annotations",
+        "configMaps",
+        "database",
+        "enableMonitoring",
         "frontend",
-        "service",
-        "container",
-        "res_tpl",
-        "rbac",
-        "backend",
-        "resource",
-        "metadata",
-        "apis",
-        "corev1",
-        "monitoringv1",
-        "monitoringv1alpha1",
-        "kubevelav1beta1",
-        "commons",
-        "vaultv1",
-        "manifests",
-        "__META_APP_NAME",
-        "__META_ENV_TYPE_NAME",
-        "__META_CLUSTER_NAME",
-        "appConfiguration",
-        "checkIdentical",
-        "manifestsResourceMap",
-        "remove_duplicated_iter",
-        "__renderServerFrontendInstances__",
-        "__renderServerBackendInstances__",
-        "__renderJobFrontendInstances__",
-        "__renderJobBackendInstances__",
-        "__renderFrontendInstances__",
-        "__renderBackendInstances__",
-        "__rbac_map__",
-        "__prometheus_map__",
-        "__vault_map__",
-        "__k8s__",
-        "__array_of_resource_map___",
-        "__resource_map_original___",
-        "_providerResource",
-        "_providerResourceMapping",
-        "__resource_map___",
-        "__is_kubevela_application__",
-        "getId",
-        "kubevela_app",
-        "kubevela_output",
-        "server_output",
-        "schedulingStrategy",
+        "image",
+        "ingresses",
+        "initContainers",
+        "labels",
+        "mainContainer",
         "name",
-        "workloadType",
+        "needNamespace",
+        "podMetadata",
         "renderType",
         "replicas",
-        "image",
-        "mainContainer",
-        "sidecarContainers",
-        "initContainers",
-        "useBuiltInLabels",
-        "labels",
-        "annotations",
-        "useBuiltInSelector",
-        "selector",
-        "podMetadata",
-        "volumes",
-        "needNamespace",
-        "enableMonitoring",
-        "configMaps",
+        "res_tpl",
+        "schedulingStrategy",
         "secrets",
-        "services",
-        "ingresses",
+        "selector",
         "serviceAccount",
+        "services",
+        "sidecarContainers",
         "storage",
-        "database",
+        "useBuiltInLabels",
+        "useBuiltInSelector",
+        "volumes",
+        "workloadType",
     ];
-    assert_eq!(got_labels.sort(), attr.sort());
+    got_labels.sort();
+    attr.sort();
+    assert_eq!(got_labels, attr);
 
     // import path completion
     let pos = KCLPos {
@@ -1501,7 +1464,9 @@ fn konfig_completion_test_main() {
         "strategy",
         "volume",
     ];
-    assert_eq!(got_labels.sort(), pkgs.sort());
+    got_labels.sort();
+    pkgs.sort();
+    assert_eq!(got_labels, pkgs);
 }
 
 #[test]
@@ -1635,11 +1600,13 @@ fn find_refs_test() {
 
     let path = path.to_str().unwrap();
     let src = std::fs::read_to_string(path).unwrap();
-    let mut initialize_params = InitializeParams::default();
-    initialize_params.workspace_folders = Some(vec![WorkspaceFolder {
-        uri: Url::from_file_path(root.clone()).unwrap(),
-        name: "test".to_string(),
-    }]);
+    let initialize_params = InitializeParams {
+        workspace_folders: Some(vec![WorkspaceFolder {
+            uri: Url::from_file_path(root.clone()).unwrap(),
+            name: "test".to_string(),
+        }]),
+        ..Default::default()
+    };
     let server = Project {}.server(initialize_params);
 
     // Wait for async build word_index_map
@@ -1730,11 +1697,13 @@ fn find_refs_with_file_change_test() {
 
     let path = path.to_str().unwrap();
     let src = std::fs::read_to_string(path).unwrap();
-    let mut initialize_params = InitializeParams::default();
-    initialize_params.workspace_folders = Some(vec![WorkspaceFolder {
-        uri: Url::from_file_path(root.clone()).unwrap(),
-        name: "test".to_string(),
-    }]);
+    let initialize_params = InitializeParams {
+        workspace_folders: Some(vec![WorkspaceFolder {
+            uri: Url::from_file_path(root.clone()).unwrap(),
+            name: "test".to_string(),
+        }]),
+        ..Default::default()
+    };
     let server = Project {}.server(initialize_params);
 
     // Wait for async build word_index_map
@@ -1838,11 +1807,13 @@ fn rename_test() {
 
     let path = path.to_str().unwrap();
     let src = std::fs::read_to_string(path).unwrap();
-    let mut initialize_params = InitializeParams::default();
-    initialize_params.workspace_folders = Some(vec![WorkspaceFolder {
-        uri: Url::from_file_path(root.clone()).unwrap(),
-        name: "test".to_string(),
-    }]);
+    let initialize_params = InitializeParams {
+        workspace_folders: Some(vec![WorkspaceFolder {
+            uri: Url::from_file_path(root.clone()).unwrap(),
+            name: "test".to_string(),
+        }]),
+        ..Default::default()
+    };
     let server = Project {}.server(initialize_params);
 
     // Wait for async build word_index_map
@@ -1883,45 +1854,47 @@ fn rename_test() {
 
     // Send request and wait for it's response
     let res = server.send_and_receive(r);
-    let mut expect = WorkspaceEdit::default();
-    expect.changes = Some(HashMap::from_iter(vec![
-        (
-            url.clone(),
-            vec![
-                TextEdit {
+    let expect = WorkspaceEdit {
+        changes: Some(HashMap::from_iter(vec![
+            (
+                url.clone(),
+                vec![
+                    TextEdit {
+                        range: Range {
+                            start: Position::new(0, 7),
+                            end: Position::new(0, 13),
+                        },
+                        new_text: new_name.clone(),
+                    },
+                    TextEdit {
+                        range: Range {
+                            start: Position::new(4, 7),
+                            end: Position::new(4, 13),
+                        },
+                        new_text: new_name.clone(),
+                    },
+                    TextEdit {
+                        range: Range {
+                            start: Position::new(9, 8),
+                            end: Position::new(9, 14),
+                        },
+                        new_text: new_name.clone(),
+                    },
+                ],
+            ),
+            (
+                main_url.clone(),
+                vec![TextEdit {
                     range: Range {
-                        start: Position::new(0, 7),
-                        end: Position::new(0, 13),
+                        start: Position::new(2, 11),
+                        end: Position::new(2, 17),
                     },
                     new_text: new_name.clone(),
-                },
-                TextEdit {
-                    range: Range {
-                        start: Position::new(4, 7),
-                        end: Position::new(4, 13),
-                    },
-                    new_text: new_name.clone(),
-                },
-                TextEdit {
-                    range: Range {
-                        start: Position::new(9, 8),
-                        end: Position::new(9, 14),
-                    },
-                    new_text: new_name.clone(),
-                },
-            ],
-        ),
-        (
-            main_url.clone(),
-            vec![TextEdit {
-                range: Range {
-                    start: Position::new(2, 11),
-                    end: Position::new(2, 17),
-                },
-                new_text: new_name.clone(),
-            }],
-        ),
-    ]));
+                }],
+            ),
+        ])),
+        ..Default::default()
+    };
     assert_eq!(res.result.unwrap(), to_json(expect).unwrap());
 }
 

@@ -3,12 +3,13 @@ use crate::config::Config;
 use crate::db::AnalysisDatabase;
 use crate::from_lsp::file_path_from_url;
 use crate::to_lsp::{kcl_diag_to_lsp_diags, url};
-use crate::util::{build_word_index, get_file_name, parse_param_and_compile, to_json, Param};
+use crate::util::{get_file_name, parse_param_and_compile, to_json, Param};
+use crate::word_index::build_word_index;
 use anyhow::Result;
 use crossbeam_channel::{select, unbounded, Receiver, Sender};
 use indexmap::IndexSet;
 use kclvm_parser::KCLModuleCache;
-use kclvm_sema::resolver::scope::CachedScope;
+use kclvm_sema::resolver::scope::{CachedScope, KCLScopeCache};
 use lsp_server::{ReqQueue, Response};
 use lsp_types::Url;
 use lsp_types::{
@@ -43,6 +44,9 @@ pub(crate) struct Handle<H, C> {
     pub(crate) _receiver: C,
 }
 
+pub(crate) type KCLVfs = Arc<RwLock<Vfs>>;
+pub(crate) type KCLWordIndexMap = Arc<RwLock<HashMap<Url, HashMap<String, Vec<Location>>>>>;
+
 /// State for the language server
 pub(crate) struct LanguageServerState {
     /// Channel to send language server messages to the client
@@ -64,7 +68,7 @@ pub(crate) struct LanguageServerState {
     pub task_receiver: Receiver<Task>,
 
     /// The virtual filesystem that holds all the file contents
-    pub vfs: Arc<RwLock<Vfs>>,
+    pub vfs: KCLVfs,
 
     /// True if the client requested that we shut down
     pub shutdown_requested: bool,
@@ -79,12 +83,13 @@ pub(crate) struct LanguageServerState {
     pub loader: Handle<Box<dyn ra_ap_vfs::loader::Handle>, Receiver<ra_ap_vfs::loader::Message>>,
 
     /// The word index map
-    pub word_index_map: Arc<RwLock<HashMap<Url, HashMap<String, Vec<Location>>>>>,
+    pub word_index_map: KCLWordIndexMap,
 
     /// KCL parse cache
     pub module_cache: Option<KCLModuleCache>,
+
     /// KCL resolver cache
-    pub scope_cache: Option<Arc<Mutex<CachedScope>>>,
+    pub scope_cache: Option<KCLScopeCache>,
 }
 
 /// A snapshot of the state of the language server
@@ -97,11 +102,11 @@ pub(crate) struct LanguageServerSnapshot {
     /// Documents that are currently kept in memory from the client
     pub opened_files: IndexSet<FileId>,
     /// The word index map
-    pub word_index_map: Arc<RwLock<HashMap<Url, HashMap<String, Vec<Location>>>>>,
+    pub word_index_map: KCLWordIndexMap,
     /// KCL parse cache
     pub module_cache: Option<KCLModuleCache>,
     /// KCL resolver cache
-    pub scope_cache: Option<Arc<Mutex<CachedScope>>>,
+    pub scope_cache: Option<KCLScopeCache>,
 }
 
 #[allow(unused)]
@@ -140,7 +145,7 @@ impl LanguageServerState {
 
         let word_index_map = state.word_index_map.clone();
         state.thread_pool.execute(move || {
-            if let Err(err) = build_word_index_map(word_index_map, initialize_params, true) {
+            if let Err(err) = update_word_index_state(word_index_map, initialize_params, true) {
                 log_message(err.to_string(), &task_sender);
             }
         });
@@ -263,7 +268,7 @@ impl LanguageServerState {
                             }
                             Err(_) => {
                                 log_message(
-                                    format!("Interal bug: not a valid file:{:?}", filename),
+                                    format!("Internal bug: not a valid file:{:?}", filename),
                                     &sender,
                                 );
                             }
@@ -351,21 +356,21 @@ pub(crate) fn log_message(message: String, sender: &Sender<Task>) -> anyhow::Res
     Ok(())
 }
 
-fn build_word_index_map(
-    word_index_map: Arc<RwLock<HashMap<Url, HashMap<String, Vec<Location>>>>>,
+fn update_word_index_state(
+    word_index_map: KCLWordIndexMap,
     initialize_params: InitializeParams,
     prune: bool,
 ) -> Result<()> {
     if let Some(workspace_folders) = initialize_params.workspace_folders {
         for folder in workspace_folders {
             let path = file_path_from_url(&folder.uri)?;
-            if let Ok(word_index) = build_word_index(path.to_string(), prune) {
+            if let Ok(word_index) = build_word_index(&path, prune) {
                 word_index_map.write().insert(folder.uri, word_index);
             }
         }
     } else if let Some(root_uri) = initialize_params.root_uri {
         let path = file_path_from_url(&root_uri)?;
-        if let Ok(word_index) = build_word_index(path.to_string(), prune) {
+        if let Ok(word_index) = build_word_index(path, prune) {
             word_index_map.write().insert(root_uri, word_index);
         }
     }
