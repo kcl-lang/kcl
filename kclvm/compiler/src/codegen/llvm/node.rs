@@ -2150,7 +2150,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         // Exist the function
         self.builder.position_at_end(func_before_block);
         let closure = self.list_value();
-        // Use closure map in the laste scope to construct curret closure map.
+        // Use closure map in the last scope to construct current closure map.
         // The default value of the closure map is `{}`.
         self.list_append(closure, last_closure_map);
         let function = self.closure_value(function, closure);

@@ -1256,8 +1256,9 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             imported: RefCell::new(HashSet::new()),
             local_vars: RefCell::new(HashSet::new()),
             schema_stack: RefCell::new(vec![]),
-            // 0 denotes the top global main function lambda.
-            lambda_stack: RefCell::new(vec![0]),
+            // 1 denotes the top global main function lambda and 0 denotes the builtin scope.
+            // Any user-defined lambda scope greater than 1.
+            lambda_stack: RefCell::new(vec![GLOBAL_LEVEL]),
             schema_expr_stack: RefCell::new(vec![]),
             pkgpath_stack: RefCell::new(vec![String::from(MAIN_PKG_PATH)]),
             filename_stack: RefCell::new(vec![String::from("")]),
@@ -1289,7 +1290,6 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         let has_main_pkg = self.program.pkgs.contains_key(MAIN_PKG_PATH);
         let function = if self.no_link {
             let mut modules = self.modules.borrow_mut();
-            // Pkgpath
             let (pkgpath, function_name) = if has_main_pkg {
                 (MAIN_PKG_PATH.to_string(), MODULE_NAME.to_string())
             } else {
@@ -2175,7 +2175,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             .borrow()
             .last()
             .expect(kcl_error::INTERNAL_ERROR_MSG)
-            > 0
+            > GLOBAL_LEVEL
     }
 
     #[inline]
