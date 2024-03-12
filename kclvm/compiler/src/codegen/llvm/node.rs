@@ -1,4 +1,4 @@
-// Copyright 2021 The KCL Authors. All rights reserved.
+// Copyright The KCL Authors. All rights reserved.
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -38,8 +38,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         check_backtrack_stop!(self);
         utils::update_ctx_filename(self, stmt);
         utils::update_ctx_line_col(self, stmt);
-        self.target_vars.borrow_mut().clear();
-        self.target_vars.borrow_mut().push("".to_string());
+        utils::reset_target_vars(self);
         match &stmt.node {
             ast::Stmt::TypeAlias(type_alias) => self.walk_type_alias_stmt(type_alias),
             ast::Stmt::Expr(expr_stmt) => self.walk_expr_stmt(expr_stmt),
@@ -112,7 +111,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
                 return Ok(value);
             }
         // Local variables including schema/rule/lambda
-        } else if self.schema_stack.borrow().len() > 0 {
+        } else if self.is_in_schema() {
             // Load the identifier value
             let org_value = self
                 .walk_identifier_with_ctx(
@@ -146,6 +145,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
     fn walk_assign_stmt(&self, assign_stmt: &'ctx ast::AssignStmt) -> Self::Result {
         check_backtrack_stop!(self);
         self.local_vars.borrow_mut().clear();
+        // Set target vars.
         for name in &assign_stmt.targets {
             self.target_vars
                 .borrow_mut()
@@ -157,8 +157,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
             .expect(kcl_error::COMPILE_ERROR_MSG);
         if let Some(ty) = &assign_stmt.ty {
             let type_annotation = self.native_global_string_value(&ty.node.to_string());
-            let is_in_schema =
-                self.schema_stack.borrow().len() > 0 || self.schema_expr_stack.borrow().len() > 0;
+            let is_in_schema = self.is_in_schema() || self.is_in_schema_expr();
             value = self.build_call(
                 &ApiFunc::kclvm_convert_collection_value.name(),
                 &[
@@ -170,11 +169,12 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
             );
         }
         if assign_stmt.targets.len() == 1 {
+            // Store the single target
             let name = &assign_stmt.targets[0];
             self.walk_identifier_with_ctx(&name.node, &name.node.ctx, Some(value))
                 .expect(kcl_error::COMPILE_ERROR_MSG);
         } else {
-            // Store targets
+            // Store multiple targets
             for name in &assign_stmt.targets {
                 let value = self.value_deep_copy(value);
                 self.walk_identifier_with_ctx(&name.node, &name.node.ctx, Some(value))
@@ -243,6 +243,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         let assert_result = self
             .walk_expr(&assert_stmt.test)
             .expect(kcl_error::COMPILE_ERROR_MSG);
+        // Assert statement error message.
         let msg = {
             if let Some(msg) = &assert_stmt.msg {
                 self.walk_expr(msg).expect(kcl_error::COMPILE_ERROR_MSG)
@@ -283,6 +284,8 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
     fn walk_import_stmt(&self, import_stmt: &'ctx ast::ImportStmt) -> Self::Result {
         check_backtrack_stop!(self);
         let pkgpath = import_stmt.path.node.as_str();
+        // Check if it has already been generated, there is no need to generate code
+        // for duplicate import statements.
         {
             let imported = self.imported.borrow_mut();
             if imported.contains(pkgpath) {
@@ -290,6 +293,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
             }
             // Deref the borrow mut
         }
+        // Stardard or plugin modules.
         if builtin::STANDARD_SYSTEM_MODULES.contains(&pkgpath)
             || pkgpath.starts_with(plugin::PLUGIN_MODULE_PREFIX)
         {
@@ -297,8 +301,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
             return self.ok_result();
         } else {
             let pkgpath = format!("{}{}", PKG_PATH_PREFIX, import_stmt.path.node);
-            self.pkgpath_stack.borrow_mut().push(pkgpath);
-            let pkgpath = format!("{}{}", PKG_PATH_PREFIX, import_stmt.path.node);
+            self.pkgpath_stack.borrow_mut().push(pkgpath.clone());
             let has_pkgpath = self.program.pkgs.contains_key(&import_stmt.path.node);
             let func_before_block = if self.no_link {
                 if has_pkgpath {
@@ -325,7 +328,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
                     let basic_block = self.context.append_basic_block(function, ENTRY_NAME);
                     self.builder.position_at_end(basic_block);
                     self.push_function(function);
-                    modules.insert(name, RefCell::new(module));
+                    modules.insert(name, RefCell::new(self.create_debug_module(module)));
                     Some(func_before_block)
                 } else {
                     None
@@ -336,40 +339,12 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
             if has_pkgpath {
                 // Init all builtin functions.
                 self.init_scope(pkgpath.as_str());
-                // Compile the ast module in the pkgpath.
-                for ast_module in self
-                    .program
-                    .pkgs
-                    .get(&import_stmt.path.node)
-                    .expect(kcl_error::INTERNAL_ERROR_MSG)
-                {
-                    {
-                        self.filename_stack
-                            .borrow_mut()
-                            .push(ast_module.filename.clone());
-                    }
-                    self.compile_module_import_and_types(ast_module);
-                    {
-                        self.filename_stack.borrow_mut().pop();
-                    }
-                }
-                for ast_module in self
-                    .program
-                    .pkgs
-                    .get(&import_stmt.path.node)
-                    .expect(kcl_error::INTERNAL_ERROR_MSG)
-                {
-                    {
-                        self.filename_stack
-                            .borrow_mut()
-                            .push(ast_module.filename.clone());
-                    }
-                    self.walk_stmts_except_import(&ast_module.body)
-                        .expect(kcl_error::COMPILE_ERROR_MSG);
-                    {
-                        self.filename_stack.borrow_mut().pop();
-                    }
-                }
+                self.compile_ast_modules(
+                    self.program
+                        .pkgs
+                        .get(&import_stmt.path.node)
+                        .expect(kcl_error::INTERNAL_ERROR_MSG),
+                );
             }
             self.pkgpath_stack.borrow_mut().pop();
             if self.no_link {
@@ -382,7 +357,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
                     let pkgpath = self.current_pkgpath();
                     let modules = self.modules.borrow_mut();
                     let msg = format!("pkgpath {} is not found", pkgpath);
-                    let module = modules.get(&pkgpath).expect(&msg).borrow_mut();
+                    let module = &modules.get(&pkgpath).expect(&msg).borrow_mut().inner;
                     if has_pkgpath {
                         self.ret_void();
                         self.pop_function();
@@ -1564,17 +1539,8 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
             ],
         );
         // Update backtrack meta
-        {
-            if let Some(backtrack_meta) = self.backtrack_meta.borrow_mut().as_mut() {
-                if name == backtrack_meta.target {
-                    backtrack_meta.count += 1;
-                    if backtrack_meta.count >= backtrack_meta.level {
-                        backtrack_meta.stop = true;
-                        self.ret(schema_value);
-                        return Ok(schema_value);
-                    }
-                }
-            }
+        if self.update_backtrack_meta(name, schema_value) {
+            return Ok(schema_value);
         }
         self.br(end_block);
         self.builder.position_at_end(else_block);
@@ -1789,8 +1755,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
             self.dict_insert(dict_value, name.node.as_str(), value, 0, -1);
         }
         let pkgpath = self.native_global_string_value(&self.current_pkgpath());
-        let is_in_schema =
-            self.schema_stack.borrow().len() > 0 || self.schema_expr_stack.borrow().len() > 0;
+        let is_in_schema = self.is_in_schema() || self.is_in_schema_expr();
         Ok(self.build_call(
             &ApiFunc::kclvm_value_function_invoke.name(),
             &[
@@ -2024,8 +1989,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         check_backtrack_stop!(self);
         // Check the required attributes only when the values of all attributes
         // in the final schema are solved.
-        let is_in_schema =
-            self.schema_stack.borrow().len() > 0 || self.schema_expr_stack.borrow().len() > 0;
+        let is_in_schema = self.is_in_schema() || self.is_in_schema_expr();
         {
             self.schema_expr_stack.borrow_mut().push(());
         }
@@ -2129,7 +2093,6 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
     fn walk_lambda_expr(&self, lambda_expr: &'ctx ast::LambdaExpr) -> Self::Result {
         check_backtrack_stop!(self);
         let pkgpath = &self.current_pkgpath();
-        let is_in_schema = self.schema_stack.borrow().len() > 0;
         // Higher-order lambda requires capturing the current lambda closure variable
         // as well as the closure of a more external scope.
         let last_closure_map = self.get_current_inner_scope_variable_map();
@@ -2160,9 +2123,9 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         let var = self.builder.build_alloca(tpe, value::LAMBDA_CLOSURE);
         self.builder.build_store(var, closure_map);
         self.add_variable(value::LAMBDA_CLOSURE, var);
-        if is_in_schema {
-            for shcmea_closure_name in value::SCHEMA_VARIABLE_LIST {
-                let string_ptr_value = self.native_global_string(shcmea_closure_name, "").into();
+        if self.is_in_schema() {
+            for schema_closure_name in value::SCHEMA_VARIABLE_LIST {
+                let string_ptr_value = self.native_global_string(schema_closure_name, "").into();
                 let schema_value = self.build_call(
                     &ApiFunc::kclvm_dict_get_value.name(),
                     &[
@@ -2174,9 +2137,9 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
                 let value_ptr_type = self.value_ptr_type();
                 let var = self
                     .builder
-                    .build_alloca(value_ptr_type, shcmea_closure_name);
+                    .build_alloca(value_ptr_type, schema_closure_name);
                 self.builder.build_store(var, schema_value);
-                self.add_variable(shcmea_closure_name, var);
+                self.add_variable(schema_closure_name, var);
             }
         }
         self.walk_arguments(&lambda_expr.args, args, kwargs);
@@ -2389,7 +2352,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
 
     fn walk_module(&self, module: &'ctx ast::Module) -> Self::Result {
         check_backtrack_stop!(self);
-        // Compile all statements of the module
+        // Compile all statements of the module except all import statements
         self.walk_stmts_except_import(&module.body)
     }
 }
@@ -2426,8 +2389,9 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         right_value: Option<BasicValueEnum<'ctx>>,
     ) -> CompileResult<'ctx> {
         check_backtrack_stop!(self);
-        let is_in_schema = self.schema_stack.borrow().len() > 0;
+        let is_in_schema = self.is_in_schema();
         match identifier_ctx {
+            // Store a.b.c = 1
             ast::ExprContext::Store => {
                 if identifier.names.len() == 1 {
                     let name = identifier.names[0].node.as_str();
@@ -2438,7 +2402,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                             name,
                             right_value.expect(kcl_error::INTERNAL_ERROR_MSG),
                         );
-                    // Local variables including schema/rule/lambda
+                    // Lambda local variables.
                     } else if self.is_in_lambda() {
                         let value = right_value.expect(kcl_error::INTERNAL_ERROR_MSG);
                         // If variable exists in the scope and update it, if not, add it to the scope.
@@ -2458,101 +2422,28 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                             self.store_variable(name, value);
                         }
                     } else {
-                        let is_local_var = {
-                            let local_vars = self.local_vars.borrow_mut();
-                            local_vars.contains(name)
-                        };
-                        let value = if is_in_schema {
-                            let value = right_value.expect(kcl_error::INTERNAL_ERROR_MSG);
+                        let is_local_var = self.is_local_var(name);
+                        let value = right_value.expect(kcl_error::INTERNAL_ERROR_MSG);
+                        // Store schema attribute
+                        if is_in_schema {
                             let schema_value = self
                                 .get_variable(value::SCHEMA_SELF_NAME)
                                 .expect(kcl_error::INTERNAL_ERROR_MSG);
+                            // Schema config
                             let config_value = self
                                 .get_variable(value::SCHEMA_CONFIG_NAME)
                                 .expect(kcl_error::INTERNAL_ERROR_MSG);
-                            let string_ptr_value = self.native_global_string(name, "").into();
-                            let has_key = self
-                                .build_call(
-                                    &ApiFunc::kclvm_dict_has_value.name(),
-                                    &[config_value, string_ptr_value],
-                                )
-                                .into_int_value();
-                            let has_key = self.builder.build_int_compare(
-                                IntPredicate::NE,
-                                has_key,
-                                self.native_i8_zero(),
-                                "",
-                            );
-                            let last_block = self.append_block("");
-                            let then_block = self.append_block("");
-                            let else_block = self.append_block("");
-                            self.br(last_block);
-                            self.builder.position_at_end(last_block);
-                            let none_value = self.none_value();
-                            self.builder
-                                .build_conditional_branch(has_key, then_block, else_block);
-                            self.builder.position_at_end(then_block);
-                            let config_entry = self.build_call(
-                                &ApiFunc::kclvm_dict_get_entry.name(),
-                                &[
-                                    self.current_runtime_ctx_ptr(),
-                                    config_value,
-                                    string_ptr_value,
-                                ],
-                            );
-                            self.br(else_block);
-                            self.builder.position_at_end(else_block);
-                            let tpe = self.value_ptr_type();
-                            let phi = self.builder.build_phi(tpe, "");
-                            phi.add_incoming(&[
-                                (&none_value, last_block),
-                                (&config_entry, then_block),
-                            ]);
-                            let config_value = phi.as_basic_value();
-                            if self.scope_level() >= INNER_LEVEL && !is_local_var {
-                                self.dict_merge(schema_value, name, value, 1, -1);
-                                self.value_union(schema_value, config_value);
-                                let cal_map = self
-                                    .get_variable(value::SCHEMA_CAL_MAP)
-                                    .expect(kcl_error::INTERNAL_ERROR_MSG);
-                                let backtrack_cache = self
-                                    .get_variable(value::BACKTRACK_CACHE)
-                                    .expect(kcl_error::INTERNAL_ERROR_MSG);
-                                let runtime_type = self
-                                    .get_variable(value::SCHEMA_RUNTIME_TYPE)
-                                    .expect(kcl_error::INTERNAL_ERROR_MSG);
-                                let name_native_str = self.native_global_string_value(name);
-                                self.build_void_call(
-                                    &ApiFunc::kclvm_schema_backtrack_cache.name(),
-                                    &[
-                                        self.current_runtime_ctx_ptr(),
-                                        schema_value,
-                                        backtrack_cache,
-                                        cal_map,
-                                        name_native_str,
-                                        runtime_type,
-                                    ],
-                                );
-                                // Update backtrack meta
-                                {
-                                    if let Some(backtrack_meta) =
-                                        self.backtrack_meta.borrow_mut().as_mut()
-                                    {
-                                        if name == backtrack_meta.target {
-                                            backtrack_meta.count += 1;
-                                            if backtrack_meta.count == backtrack_meta.level {
-                                                backtrack_meta.stop = true;
-                                                self.ret(schema_value);
-                                                return Ok(schema_value);
-                                            }
-                                        }
-                                    }
-                                }
+                            // If is in the backtrack, return the schema value.
+                            if self.update_schema_scope_value(
+                                schema_value,
+                                config_value,
+                                name,
+                                Some(value),
+                            ) {
+                                return Ok(schema_value);
                             }
-                            value
-                        } else {
-                            right_value.expect(kcl_error::INTERNAL_ERROR_MSG)
-                        };
+                        }
+                        // Store loop variable
                         if is_local_var || !is_in_schema {
                             let var = self.builder.build_alloca(tpe, name);
                             self.builder.build_store(var, value);
@@ -2562,13 +2453,12 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 } else {
                     let names = &identifier.names;
                     let name = names[0].node.as_str();
-                    let mut value = if is_in_schema {
-                        self.get_variable_in_schema(name)
-                            .expect(kcl_error::INTERNAL_ERROR_MSG)
-                    } else {
-                        self.get_variable(name)
-                            .expect(kcl_error::INTERNAL_ERROR_MSG)
-                    };
+                    // In KCL, we cannot modify global variables in other packages,
+                    // so pkgpath is empty here.
+                    let mut value = self
+                        .load_value("", &[name])
+                        .expect(kcl_error::INTERNAL_ERROR_MSG);
+                    // Convert `store a.b.c = 1` -> `%t = load &a; %t = load_attr %t %b; store_attr %t %c with 1`
                     for i in 0..names.len() - 1 {
                         let attr = names[i + 1].node.as_str();
                         let ctx = if matches!(identifier_ctx, ast::ExprContext::Store)
@@ -2599,10 +2489,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                                     ],
                                 );
 
-                                let is_local_var = {
-                                    let local_vars = self.local_vars.borrow_mut();
-                                    local_vars.contains(name)
-                                };
+                                let is_local_var = self.is_local_var(name);
                                 let is_in_lambda = self.is_in_lambda();
                                 // Set config value for the schema attribute if the attribute is in the schema and
                                 // it is not a local variable in the lambda function.
@@ -2617,83 +2504,13 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                                     let config_value = self
                                         .get_variable(value::SCHEMA_CONFIG_NAME)
                                         .expect(kcl_error::INTERNAL_ERROR_MSG);
-                                    let string_ptr_value =
-                                        self.native_global_string(name, "").into();
-                                    let has_key = self
-                                        .build_call(
-                                            &ApiFunc::kclvm_dict_has_value.name(),
-                                            &[config_value, string_ptr_value],
-                                        )
-                                        .into_int_value();
-                                    // The config has the attribute key?
-                                    let has_key = self.builder.build_int_compare(
-                                        IntPredicate::NE,
-                                        has_key,
-                                        self.native_i8_zero(),
-                                        "",
-                                    );
-                                    let last_block = self.append_block("");
-                                    let then_block = self.append_block("");
-                                    let else_block = self.append_block("");
-                                    self.br(last_block);
-                                    self.builder.position_at_end(last_block);
-                                    let none_value = self.none_value();
-                                    self.builder
-                                        .build_conditional_branch(has_key, then_block, else_block);
-                                    self.builder.position_at_end(then_block);
-                                    let config_entry = self.build_call(
-                                        &ApiFunc::kclvm_dict_get_entry.name(),
-                                        &[
-                                            self.current_runtime_ctx_ptr(),
-                                            config_value,
-                                            string_ptr_value,
-                                        ],
-                                    );
-                                    self.br(else_block);
-                                    self.builder.position_at_end(else_block);
-                                    let tpe = self.value_ptr_type();
-                                    let phi = self.builder.build_phi(tpe, "");
-                                    phi.add_incoming(&[
-                                        (&none_value, last_block),
-                                        (&config_entry, then_block),
-                                    ]);
-                                    let config_value = phi.as_basic_value();
-                                    self.value_union(schema_value, config_value);
-                                    let cal_map = self
-                                        .get_variable(value::SCHEMA_CAL_MAP)
-                                        .expect(kcl_error::INTERNAL_ERROR_MSG);
-                                    let backtrack_cache = self
-                                        .get_variable(value::BACKTRACK_CACHE)
-                                        .expect(kcl_error::INTERNAL_ERROR_MSG);
-                                    let runtime_type = self
-                                        .get_variable(value::SCHEMA_RUNTIME_TYPE)
-                                        .expect(kcl_error::INTERNAL_ERROR_MSG);
-                                    let name_native_str = self.native_global_string_value(name);
-                                    self.build_void_call(
-                                        &ApiFunc::kclvm_schema_backtrack_cache.name(),
-                                        &[
-                                            self.current_runtime_ctx_ptr(),
-                                            schema_value,
-                                            backtrack_cache,
-                                            cal_map,
-                                            name_native_str,
-                                            runtime_type,
-                                        ],
-                                    );
-                                    // Update backtrack meta
-                                    {
-                                        if let Some(backtrack_meta) =
-                                            self.backtrack_meta.borrow_mut().as_mut()
-                                        {
-                                            if name == backtrack_meta.target {
-                                                backtrack_meta.count += 1;
-                                                if backtrack_meta.count == backtrack_meta.level {
-                                                    backtrack_meta.stop = true;
-                                                    self.ret(schema_value);
-                                                    return Ok(schema_value);
-                                                }
-                                            }
-                                        }
+                                    if self.update_schema_scope_value(
+                                        schema_value,
+                                        config_value,
+                                        name,
+                                        None,
+                                    ) {
+                                        return Ok(schema_value);
                                     }
                                 }
                             }
@@ -2702,80 +2519,15 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 }
                 Ok(right_value.expect(kcl_error::INTERNAL_ERROR_MSG))
             }
-            ast::ExprContext::Load => {
-                let name = identifier.names[0].node.as_str();
-                let is_local_var = {
-                    let local_vars = self.local_vars.borrow_mut();
-                    local_vars.contains(name)
-                };
-                if identifier.names.len() == 1 {
-                    if is_in_schema && !is_local_var {
-                        self.get_variable_in_schema(name)
-                    } else {
-                        self.get_variable(name)
-                    }
-                } else {
-                    let names = &identifier.names;
-                    let name = names[0].node.as_str();
-                    let mut value = if identifier.pkgpath.is_empty() {
-                        if is_in_schema && !is_local_var {
-                            self.get_variable_in_schema(name)
-                                .expect(kcl_error::INTERNAL_ERROR_MSG)
-                        } else {
-                            self.get_variable(name)
-                                .expect(kcl_error::INTERNAL_ERROR_MSG)
-                        }
-                    } else {
-                        self.ok_result().expect(kcl_error::INTERNAL_ERROR_MSG)
-                    };
-                    for i in 0..names.len() - 1 {
-                        let attr = names[i + 1].node.as_str();
-                        let ctx = if matches!(identifier_ctx, ast::ExprContext::Store)
-                            && i != names.len() - 2
-                            && names.len() > 2
-                        {
-                            &ast::ExprContext::Load
-                        } else {
-                            identifier_ctx
-                        };
-                        match ctx {
-                            ast::ExprContext::Load => {
-                                if i == 0 && !identifier.pkgpath.is_empty() {
-                                    value = if self.no_link {
-                                        self.get_external_variable_in_pkgpath(
-                                            attr,
-                                            &identifier.pkgpath,
-                                        )
-                                        .expect(kcl_error::INTERNAL_ERROR_MSG)
-                                    } else {
-                                        self.get_variable_in_pkgpath(attr, &identifier.pkgpath)
-                                            .expect(kcl_error::INTERNAL_ERROR_MSG)
-                                    }
-                                } else {
-                                    let attr = self.native_global_string(attr, "").into();
-                                    value = self.build_call(
-                                        &ApiFunc::kclvm_value_load_attr.name(),
-                                        &[self.current_runtime_ctx_ptr(), value, attr],
-                                    );
-                                }
-                            }
-                            ast::ExprContext::Store => {
-                                let attr = self.native_global_string(attr, "").into();
-                                self.build_void_call(
-                                    &ApiFunc::kclvm_dict_set_value.name(),
-                                    &[
-                                        self.current_runtime_ctx_ptr(),
-                                        value,
-                                        attr,
-                                        right_value.expect(kcl_error::INTERNAL_ERROR_MSG),
-                                    ],
-                                );
-                            }
-                        }
-                    }
-                    Ok(value)
-                }
-            }
+            // Load <pkg>.a.b.c
+            ast::ExprContext::Load => self.load_value(
+                &identifier.pkgpath,
+                &identifier
+                    .names
+                    .iter()
+                    .map(|n| n.node.as_str())
+                    .collect::<Vec<&str>>(),
+            ),
         }
     }
 
@@ -2852,6 +2604,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             } else {
                 self.none_value()
             };
+            // Arguments are immutable, so we place them in different scopes.
             self.store_argument_in_current_scope(&arg_name.get_name());
             self.walk_identifier_with_ctx(arg_name, &ast::ExprContext::Store, Some(arg_value))
                 .expect(kcl_error::COMPILE_ERROR_MSG);

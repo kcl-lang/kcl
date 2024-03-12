@@ -1,4 +1,5 @@
 // Copyright The KCL Authors. All rights reserved.
+
 use kclvm_ast::ast;
 use kclvm_ast::walker::TypedResultWalker;
 
@@ -73,6 +74,51 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                     self.emit_global_vars(&if_stmt.orelse);
                 }
                 _ => {}
+            }
+        }
+    }
+
+    /// Compile AST Modules, which requires traversing three times.
+    /// 1. scan all possible global variables and allocate undefined values to global pointers.
+    /// 2. build all user-defined schema/rule types.
+    /// 3. generate all LLVM IR codes for the third time.
+    pub(crate) fn compile_ast_modules(&self, modules: &'ctx [ast::Module]) {
+        // Scan global variables
+        for ast_module in modules {
+            {
+                self.filename_stack
+                    .borrow_mut()
+                    .push(ast_module.filename.clone());
+            }
+            // Pre define global variables with undefined values
+            self.predefine_global_vars(ast_module);
+            {
+                self.filename_stack.borrow_mut().pop();
+            }
+        }
+        // Scan global types
+        for ast_module in modules {
+            {
+                self.filename_stack
+                    .borrow_mut()
+                    .push(ast_module.filename.clone());
+            }
+            self.compile_module_import_and_types(ast_module);
+            {
+                self.filename_stack.borrow_mut().pop();
+            }
+        }
+        // Compile the ast module in the pkgpath.
+        for ast_module in modules {
+            {
+                self.filename_stack
+                    .borrow_mut()
+                    .push(ast_module.filename.clone());
+            }
+            self.walk_module(ast_module)
+                .expect(kcl_error::COMPILE_ERROR_MSG);
+            {
+                self.filename_stack.borrow_mut().pop();
             }
         }
     }

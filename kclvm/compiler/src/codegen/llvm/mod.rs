@@ -5,8 +5,10 @@
 //!
 //! Copyright 2021 The KCL Authors. All rights reserved.
 
+mod backtrack;
 mod context;
 mod emit;
+mod metadata;
 mod module;
 mod node;
 mod schema;

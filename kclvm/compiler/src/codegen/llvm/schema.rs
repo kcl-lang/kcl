@@ -1,20 +1,24 @@
-// Copyright 2021 The KCL Authors. All rights reserved.
+// Copyright The KCL Authors. All rights reserved.
 
 use inkwell::values::{BasicValueEnum, FunctionValue};
-use inkwell::AddressSpace;
+use inkwell::{AddressSpace, IntPredicate};
 use kclvm_ast::ast;
+use kclvm_runtime::ApiFunc;
 use kclvm_sema::pkgpath_without_prefix;
 use std::collections::HashMap;
 use std::str;
 
 use super::context::LLVMCodeGenContext;
-use crate::codegen::error as kcl_error;
-use crate::codegen::traits::{BuilderMethods, DerivedValueCalculationMethods, ValueMethods};
+use crate::codegen::traits::{
+    BuilderMethods, DerivedTypeMethods, DerivedValueCalculationMethods, ProgramCodeGen,
+    ValueMethods,
+};
+use crate::codegen::{error as kcl_error, INNER_LEVEL};
 use crate::value;
 
 impl<'ctx> LLVMCodeGenContext<'ctx> {
     /// Emit all left identifiers because all the attribute can be forward referenced.
-    pub fn emit_left_identifiers(
+    pub(crate) fn emit_left_identifiers(
         &self,
         body: &'ctx [Box<ast::Node<ast::Stmt>>],
         index_signature: &'ctx Option<ast::NodeRef<ast::SchemaIndexSignature>>,
@@ -166,7 +170,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         }
     }
 
-    pub fn get_schema_config_meta(
+    pub(crate) fn get_schema_config_meta(
         &self,
         n: Option<&'ctx ast::Node<ast::Identifier>>,
         t: &'ctx ast::ConfigExpr,
@@ -239,5 +243,82 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             }
         }
         config_meta
+    }
+
+    pub(crate) fn update_schema_scope_value(
+        &self,
+        schema_value: BasicValueEnum<'ctx>,  // Schema self value
+        config_value: BasicValueEnum<'ctx>,  // Schema config value
+        name: &str,                          // Schema arribute name
+        value: Option<BasicValueEnum<'ctx>>, // Optional right override value
+    ) -> bool {
+        // Attribute name
+        let string_ptr_value = self.native_global_string(name, "").into();
+        // i8 has_key
+        let has_key = self
+            .build_call(
+                &ApiFunc::kclvm_dict_has_value.name(),
+                &[config_value, string_ptr_value],
+            )
+            .into_int_value();
+        // i1 has_key
+        let has_key =
+            self.builder
+                .build_int_compare(IntPredicate::NE, has_key, self.native_i8_zero(), "");
+        let last_block = self.append_block("");
+        let then_block = self.append_block("");
+        let else_block = self.append_block("");
+        self.br(last_block);
+        self.builder.position_at_end(last_block);
+        let none_value = self.none_value();
+        self.builder
+            .build_conditional_branch(has_key, then_block, else_block);
+        self.builder.position_at_end(then_block);
+        let config_entry = self.build_call(
+            &ApiFunc::kclvm_dict_get_entry.name(),
+            &[
+                self.current_runtime_ctx_ptr(),
+                config_value,
+                string_ptr_value,
+            ],
+        );
+        self.br(else_block);
+        self.builder.position_at_end(else_block);
+        let tpe = self.value_ptr_type();
+        let phi = self.builder.build_phi(tpe, "");
+        phi.add_incoming(&[(&none_value, last_block), (&config_entry, then_block)]);
+        let config_value = phi.as_basic_value();
+        if self.scope_level() >= INNER_LEVEL && !self.local_vars.borrow().contains(name) {
+            if let Some(value) = value {
+                self.dict_merge(schema_value, name, value, 1, -1);
+            }
+            self.value_union(schema_value, config_value);
+            let cal_map = self
+                .get_variable(value::SCHEMA_CAL_MAP)
+                .expect(kcl_error::INTERNAL_ERROR_MSG);
+            let backtrack_cache = self
+                .get_variable(value::BACKTRACK_CACHE)
+                .expect(kcl_error::INTERNAL_ERROR_MSG);
+            let runtime_type = self
+                .get_variable(value::SCHEMA_RUNTIME_TYPE)
+                .expect(kcl_error::INTERNAL_ERROR_MSG);
+            let name_native_str = self.native_global_string_value(name);
+            self.build_void_call(
+                &ApiFunc::kclvm_schema_backtrack_cache.name(),
+                &[
+                    self.current_runtime_ctx_ptr(),
+                    schema_value,
+                    backtrack_cache,
+                    cal_map,
+                    name_native_str,
+                    runtime_type,
+                ],
+            );
+            // Update backtrack meta
+            if self.update_backtrack_meta(name, schema_value) {
+                return true;
+            }
+        }
+        false
     }
 }
