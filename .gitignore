@@ -90,9 +90,5 @@ _a.out_*.*
 # Compiler_base
 .compiler_base
 
-# LLVM
-llvm*
-llvm-*
-
 # KCL mod lock file
 !.mod.lock
