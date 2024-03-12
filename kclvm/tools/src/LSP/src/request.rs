@@ -1,7 +1,6 @@
 use anyhow::anyhow;
 use crossbeam_channel::Sender;
 
-use kclvm_config::modfile::KCL_FILE_SUFFIX;
 use kclvm_sema::info::is_valid_kcl_name;
 use lsp_types::{Location, SemanticTokensResult, TextEdit};
 use ra_ap_vfs::VfsPath;
@@ -68,16 +67,36 @@ impl LanguageServerState {
 impl LanguageServerSnapshot {
     // defend against non-kcl files
     pub(crate) fn verify_request_path(&self, path: &VfsPath, sender: &Sender<Task>) -> bool {
-        let res = self.vfs.read().file_id(path).is_some()
-            && self
-                .db
-                .read()
-                .get(&self.vfs.read().file_id(path).unwrap())
-                .is_some();
-        if !res {
-            let _ = log_message("Not a valid kcl path, request failed".to_string(), sender);
+        self.verify_vfs(path, sender) && self.verify_db(path, sender)
+    }
+
+    pub(crate) fn verify_vfs(&self, path: &VfsPath, sender: &Sender<Task>) -> bool {
+        let valid = self.vfs.read().file_id(path).is_some();
+        if !valid {
+            let _ = log_message(
+                format!("Vfs not contains: {}, request failed", path),
+                sender,
+            );
         }
-        res
+        valid
+    }
+
+    pub(crate) fn verify_db(&self, path: &VfsPath, sender: &Sender<Task>) -> bool {
+        let valid = self
+            .db
+            .read()
+            .get(&self.vfs.read().file_id(path).unwrap())
+            .is_some();
+        if !valid {
+            let _ = log_message(
+                format!(
+                    "LSP AnalysisDatabase not contains: {}, request failed",
+                    path
+                ),
+                sender,
+            );
+        }
+        valid
     }
 
     pub(crate) fn get_db(&self, path: &VfsPath) -> anyhow::Result<AnalysisDatabase> {
@@ -96,19 +115,15 @@ impl LanguageServerSnapshot {
 pub(crate) fn handle_semantic_tokens_full(
     snapshot: LanguageServerSnapshot,
     params: lsp_types::SemanticTokensParams,
-    sender: Sender<Task>,
+    _sender: Sender<Task>,
 ) -> anyhow::Result<Option<SemanticTokensResult>> {
     let file = file_path_from_url(&params.text_document.uri)?;
-    let path = from_lsp::abs_path(&params.text_document.uri)?;
-    if !snapshot.verify_request_path(&path.clone().into(), &sender) {
-        return Ok(None);
-    }
 
     match parse_param_and_compile(
         Param {
             file: file.clone(),
-            module_cache: snapshot.module_cache.clone(),
-            scope_cache: snapshot.scope_cache.clone(),
+            module_cache: None,
+            scope_cache: None,
         },
         Some(snapshot.vfs.clone()),
     ) {
@@ -248,8 +263,8 @@ pub(crate) fn handle_completion(
                 match parse_param_and_compile(
                     Param {
                         file: file.clone(),
-                        module_cache: snapshot.module_cache.clone(),
-                        scope_cache: snapshot.scope_cache.clone(),
+                        module_cache: None,
+                        scope_cache: None,
                     },
                     Some(snapshot.vfs.clone()),
                 ) {
@@ -304,29 +319,29 @@ pub(crate) fn handle_document_symbol(
     sender: Sender<Task>,
 ) -> anyhow::Result<Option<lsp_types::DocumentSymbolResponse>> {
     let file = file_path_from_url(&params.text_document.uri)?;
-    let path = from_lsp::abs_path(&params.text_document.uri)?;
-    if !snapshot.verify_request_path(&path.clone().into(), &sender)
-        && !file.ends_with(KCL_FILE_SUFFIX)
-    {
-        return Ok(None);
-    }
 
     match parse_param_and_compile(
         Param {
             file: file.clone(),
-            module_cache: snapshot.module_cache.clone(),
-            scope_cache: snapshot.scope_cache.clone(),
+            module_cache: None,
+            scope_cache: None,
         },
         Some(snapshot.vfs.clone()),
     ) {
         Ok((_, _, _, gs)) => {
             let res = document_symbol(&file, &gs);
             if res.is_none() {
-                log_message(format!("File {file} Document symbol not found"), &sender)?;
+                log_message(format!("File {file} document symbol not found"), &sender)?;
             }
             Ok(res)
         }
-        Err(_) => Ok(None),
+        Err(e) => {
+            log_message(
+                format!("File {file} document symbol not found: {e}"),
+                &sender,
+            )?;
+            Ok(None)
+        }
     }
 }
 
