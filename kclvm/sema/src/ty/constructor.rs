@@ -222,10 +222,10 @@ impl Type {
             Arc::new(Type::list(Arc::new(Type::ANY))),
         ]))
     }
-    /// Construct a number type
+    /// Construct a number type.
     #[inline]
     pub fn number() -> TypeRef {
-        Type::union_ref(&[Type::int_ref(), Type::float_ref(), Type::bool_ref()])
+        Type::union_ref(&[Type::int_ref(), Type::float_ref()])
     }
     /// Whether is a any type.
     #[inline]
@@ -287,9 +287,7 @@ impl Type {
     /// Whether is a number type.
     #[inline]
     pub fn is_number(&self) -> bool {
-        self.flags.contains(TypeFlags::INT)
-            || self.flags.contains(TypeFlags::FLOAT)
-            || self.flags.contains(TypeFlags::BOOL)
+        self.flags.contains(TypeFlags::INT) || self.flags.contains(TypeFlags::FLOAT)
     }
     /// Whether is a void type.
     #[inline]
