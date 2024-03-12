@@ -2763,7 +2763,7 @@ checksum = "a680f2dbd796844ebeaa2a4d01ae209f412ddc2981f6512ab8bc9b471156e6cd"
 dependencies = [
  "crossbeam-channel",
  "jod-thread",
- "notify 5.1.0",
+ "notify 5.2.0",
  "ra_ap_paths",
  "ra_ap_vfs",
  "tracing",
