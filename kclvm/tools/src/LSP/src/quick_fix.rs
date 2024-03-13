@@ -40,6 +40,42 @@ pub(crate) fn quick_fix(uri: &Url, diags: &Vec<Diagnostic>) -> Vec<lsp_types::Co
                                 }));
                             }
                         }
+                        ErrorKind::InvalidSyntax => {
+                            let line_content = extract_line_content(&diag.data).unwrap_or_default();
+
+                            if let Some((vars, values)) = parse_multiple_assignment(&line_content) {
+                                let mut changes = HashMap::new();
+                                let new_text = vars
+                                    .iter()
+                                    .zip(values.iter())
+                                    .map(|(var, value)| format!("{} = {}", var, value))
+                                    .collect::<Vec<_>>()
+                                    .join("\n");
+
+                                let mut fixed_range = diag.range;
+                                fixed_range.start.character = 0;
+                                fixed_range.end.character = line_content.len() as u32;
+
+                                changes.insert(
+                                    uri.clone(),
+                                    vec![TextEdit {
+                                        range: fixed_range,
+                                        new_text,
+                                    }],
+                                );
+                                code_actions.push(CodeActionOrCommand::CodeAction(CodeAction {
+                                    title: "Split multiple assignment into separate assignments"
+                                        .to_string(),
+                                    kind: Some(CodeActionKind::QUICKFIX),
+                                    diagnostics: Some(vec![diag.clone()]),
+                                    edit: Some(lsp_types::WorkspaceEdit {
+                                        changes: Some(changes),
+                                        ..Default::default()
+                                    }),
+                                    ..Default::default()
+                                }));
+                            }
+                        }
                         _ => continue,
                     },
                     DiagnosticId::Warning(warn) => match warn {
@@ -109,6 +145,13 @@ fn extract_suggested_replacements(data: &Option<Value>) -> Vec<String> {
         .unwrap_or_default()
 }
 
+fn extract_line_content(data: &Option<serde_json::Value>) -> Option<String> {
+    data.as_ref()
+        .and_then(|data| data.get("line_content"))
+        .and_then(|value| value.as_str())
+        .map(|s| s.to_string())
+}
+
 pub(crate) fn convert_code_to_kcl_diag_id(code: &NumberOrString) -> Option<DiagnosticId> {
     match code {
         NumberOrString::Number(_) => None,
@@ -117,12 +160,37 @@ pub(crate) fn convert_code_to_kcl_diag_id(code: &NumberOrString) -> Option<Diagn
             "UnusedImportWarning" => Some(DiagnosticId::Warning(WarningKind::UnusedImportWarning)),
             "ReimportWarning" => Some(DiagnosticId::Warning(WarningKind::ReimportWarning)),
             "CompileError" => Some(DiagnosticId::Error(ErrorKind::CompileError)),
+            "InvalidSyntax" => Some(DiagnosticId::Error(ErrorKind::InvalidSyntax)),
             "ImportPositionWarning" => {
                 Some(DiagnosticId::Warning(WarningKind::ImportPositionWarning))
             }
             _ => None,
         },
     }
+}
+
+fn parse_multiple_assignment(error_message: &str) -> Option<(Vec<String>, Vec<String>)> {
+    let parts: Vec<&str> = error_message.split('=').collect();
+    if parts.len() != 2 {
+        return None;
+    }
+
+    // Extract the variables and values, trimming whitespace and removing comments.
+    let vars = parts[0]
+        .trim()
+        .split(',')
+        .map(|s| s.trim().to_string())
+        .collect();
+    let values = parts[1]
+        .split('#')
+        .next()
+        .unwrap_or("")
+        .trim()
+        .split(',')
+        .map(|s| s.trim().to_string())
+        .collect();
+
+    Some((vars, values))
 }
 
 #[cfg(test)]
