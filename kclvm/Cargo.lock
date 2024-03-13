@@ -1693,6 +1693,7 @@ dependencies = [
  "kclvm-parser",
  "kclvm-runtime",
  "kclvm-utils",
+ "notify 6.1.1",
  "serde",
  "serde_json",
  "walkdir",
@@ -2202,6 +2203,25 @@ dependencies = [
  "mio",
  "walkdir",
  "windows-sys 0.45.0",
+]
+
+[[package]]
+name = "notify"
+version = "6.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6205bd8bb1e454ad2e27422015fb5e4f2bcc7e08fa8f27058670d208324a4d2d"
+dependencies = [
+ "bitflags 2.3.3",
+ "crossbeam-channel",
+ "filetime",
+ "fsevent-sys",
+ "inotify",
+ "kqueue",
+ "libc",
+ "log",
+ "mio",
+ "walkdir",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
@@ -2743,7 +2763,7 @@ checksum = "a680f2dbd796844ebeaa2a4d01ae209f412ddc2981f6512ab8bc9b471156e6cd"
 dependencies = [
  "crossbeam-channel",
  "jod-thread",
- "notify",
+ "notify 5.2.0",
  "ra_ap_paths",
  "ra_ap_vfs",
  "tracing",

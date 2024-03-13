@@ -382,11 +382,6 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
                                             is_type_alias: false,
                                             flags: FLOAT,
                                         },
-                                        Type {
-                                            kind: Bool,
-                                            is_type_alias: false,
-                                            flags: BOOL,
-                                        },
                                     ],
                                 ),
                                 is_type_alias: false,

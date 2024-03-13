@@ -245,12 +245,10 @@ impl<'ctx> Resolver<'ctx> {
 
     /// Compare operator calculation table
     ///
-    /// bool            # False < True            False < True
-    /// int             # mathematical            1 < 2
-    /// float           # as defined by IEEE 754  1.0 < 2.0
-    /// string          # lexicographical         "1" < 2
-    /// list            # lexicographical         [1] == [2]
-    /// iterable        # 1 in [1, 2, 3], "s" in "ss", "key" in Schema
+    /// int                 # mathematical            1 < 2
+    /// float               # as defined by IEEE 754  1.0 < 2.0
+    /// list/config/schema  # lexicographical         [1] == [2]
+    /// iterable            # 1 in [1, 2, 3], "s" in "ss", "key" in Schema
     pub fn compare(
         &mut self,
         left: TypeRef,
@@ -287,10 +285,10 @@ impl<'ctx> Resolver<'ctx> {
         {
             return self.bool_ty();
         }
-        if t1.is_list() && t2.is_list() {
+        if matches!(op, ast::CmpOp::Eq) && t1.is_list() && t2.is_list() {
             return self.bool_ty();
         }
-        if t1.is_dict_or_schema() && t2.is_dict_or_schema() {
+        if matches!(op, ast::CmpOp::Eq) && t1.is_dict_or_schema() && t2.is_dict_or_schema() {
             return self.bool_ty();
         }
         if matches!(op, ast::CmpOp::In | ast::CmpOp::NotIn) && t2.is_iterable() {
