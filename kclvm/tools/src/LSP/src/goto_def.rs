@@ -111,7 +111,7 @@ mod tests {
     #[bench_test]
     fn goto_import_pkg_test() {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
         let pos = KCLPos {
             filename: file,
             line: 1,
@@ -148,7 +148,7 @@ mod tests {
     fn goto_import_file_test() {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         let mut expected_path = path;
         expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
@@ -176,7 +176,7 @@ mod tests {
     fn goto_pkg_prefix_def_test() {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         // test goto pkg prefix def: p = pkg.Person {  <- pkg
         let pos = KCLPos {
@@ -213,7 +213,7 @@ mod tests {
     fn goto_schema_def_test() {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         let mut expected_path = path;
         expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
@@ -237,7 +237,7 @@ mod tests {
     fn goto_var_def_in_config_and_config_if_test() {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         let mut expected_path = path;
         expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
@@ -281,7 +281,7 @@ mod tests {
     fn goto_var_def_in_dict_comp_test() {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         let mut expected_path = path;
         expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
@@ -310,7 +310,7 @@ mod tests {
     fn goto_schema_attr_def_test() {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         let mut expected_path = path;
         expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
@@ -334,7 +334,7 @@ mod tests {
     fn goto_schema_attr_def_test1() {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         let mut expected_path = path;
         expected_path.push("src/test_data/goto_def_test/goto_def.k");
@@ -358,7 +358,7 @@ mod tests {
     fn test_goto_identifier_names() {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         let mut expected_path = path;
         expected_path.push("src/test_data/goto_def_test/goto_def.k");
@@ -406,7 +406,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn goto_identifier_def_test() {
-        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         // test goto identifier definition: p1 = p
         let pos = KCLPos {
@@ -424,7 +424,7 @@ mod tests {
     fn goto_assign_type_test() {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         let mut expected_path = path;
         expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
@@ -446,7 +446,7 @@ mod tests {
         // test goto schema attr type definition: p1: pkg.Person
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         let mut expected_path = path;
         expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
@@ -470,7 +470,7 @@ mod tests {
         // test goto schema attr type definition: p2: [pkg.Person]
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         let mut expected_path = path;
         expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
@@ -493,7 +493,7 @@ mod tests {
         // test goto schema attr type definition: p3: {str: pkg.Person}
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         let mut expected_path = path;
         expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
@@ -516,7 +516,7 @@ mod tests {
         // test goto schema attr type definition(Person): p4: pkg.Person | pkg.Person1
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         let mut expected_path = path;
         expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
@@ -540,7 +540,7 @@ mod tests {
         // test goto schema attr type definition(Person1): p4: pkg.Person | pkg.Person1
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         let mut expected_path = path;
         expected_path.push("src/test_data/goto_def_test/pkg/schema_def1.k");
@@ -562,7 +562,7 @@ mod tests {
     fn goto_local_var_def_test() {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         let mut expected_path = path;
         expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
@@ -599,7 +599,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn complex_select_goto_def() {
-        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         let pos = KCLPos {
             filename: file.clone(),
@@ -614,7 +614,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn schema_attribute_def_goto_def() {
-        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         let pos = KCLPos {
             filename: file.clone(),
@@ -629,7 +629,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn config_desuger_def_goto_def() {
-        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         let pos = KCLPos {
             filename: file.clone(),
@@ -644,7 +644,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn lambda_param_goto_def() {
-        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         let pos = KCLPos {
             filename: file.clone(),
@@ -668,7 +668,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn list_if_expr_test() {
-        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         let pos = KCLPos {
             filename: file.clone(),
@@ -683,7 +683,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn lambda_local_var_test() {
-        let (file, program, _, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         let pos = KCLPos {
             filename: file.clone(),

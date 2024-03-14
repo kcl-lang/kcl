@@ -20,7 +20,7 @@ use std::{fs, path::Path};
 
 use crate::goto_def::find_def_with_gs;
 use indexmap::IndexSet;
-use kclvm_ast::ast::{ImportStmt, Program, Stmt};
+use kclvm_ast::ast::{self, ImportStmt, Program, Stmt};
 use kclvm_ast::MAIN_PKG;
 use kclvm_config::modfile::KCL_FILE_EXTENSION;
 use kclvm_sema::core::global_state::GlobalState;
@@ -29,8 +29,9 @@ use kclvm_driver::get_real_path_from_external;
 use kclvm_error::Position as KCLPos;
 use kclvm_sema::builtin::{BUILTIN_FUNCTIONS, STANDARD_SYSTEM_MODULES};
 use kclvm_sema::core::package::ModuleInfo;
+use kclvm_sema::core::symbol::SymbolKind;
 use kclvm_sema::resolver::doc::{parse_doc_string, Doc};
-use kclvm_sema::ty::{FunctionType, SchemaType, Type};
+use kclvm_sema::ty::{FunctionType, SchemaType, Type, TypeKind};
 use lsp_types::{CompletionItem, CompletionItemKind, InsertTextFormat};
 
 use crate::util::{inner_most_expr_in_stmt, is_in_docstring, is_in_schema_expr};
@@ -159,7 +160,7 @@ pub(crate) fn completion(
                                 let name = def.get_name();
                                 match &sema_info.ty {
                                     Some(ty) => match symbol_ref.get_kind() {
-                                        kclvm_sema::core::symbol::SymbolKind::Schema => {
+                                        SymbolKind::Schema => {
                                             let schema_ty = ty.into_schema_type();
                                             // complete schema type
                                             completions.insert(schema_ty_to_type_complete_item(
@@ -170,7 +171,7 @@ pub(crate) fn completion(
                                                 &schema_ty,
                                             ));
                                         }
-                                        kclvm_sema::core::symbol::SymbolKind::Package => {
+                                        SymbolKind::Package => {
                                             completions.insert(KCLCompletionItem {
                                                 label: name,
                                                 detail: Some(ty.ty_str()),
@@ -181,7 +182,7 @@ pub(crate) fn completion(
                                         }
                                         _ => {
                                             let detail = match &ty.kind {
-                                                kclvm_sema::ty::TypeKind::Function(func_ty) => {
+                                                TypeKind::Function(func_ty) => {
                                                     func_ty.func_signature_str(&name)
                                                 }
                                                 _ => ty.ty_str(),
@@ -220,7 +221,7 @@ fn completion_dot(
     let pre_pos = KCLPos {
         filename: pos.filename.clone(),
         line: pos.line,
-        column: pos.column.map(|c| c - 1),
+        column: pos.column.map(|c| if c >= 1 { c - 1 } else { 0 }),
     };
 
     if let Some(stmt) = program.pos_to_stmt(&pre_pos) {
@@ -231,8 +232,7 @@ fn completion_dot(
                 if let Some(node) = expr {
                     match node.node {
                         // if the complete trigger character in string, skip it
-                        kclvm_ast::ast::Expr::StringLit(_)
-                        | kclvm_ast::ast::Expr::JoinedString(_) => {
+                        ast::Expr::StringLit(_) | ast::Expr::JoinedString(_) => {
                             return Some(into_completion_items(&items).into())
                         }
                         _ => {}
@@ -261,20 +261,20 @@ fn completion_dot(
                         match &sema_info.ty {
                             Some(attr_ty) => {
                                 let label: String = match &attr_ty.kind {
-                                    kclvm_sema::ty::TypeKind::Function(func_ty) => {
+                                    TypeKind::Function(func_ty) => {
                                         func_ty_complete_label(&name, func_ty)
                                     }
                                     _ => name.clone(),
                                 };
                                 let insert_text = match &attr_ty.kind {
-                                    kclvm_sema::ty::TypeKind::Function(func_ty) => {
+                                    TypeKind::Function(func_ty) => {
                                         Some(func_ty_complete_insert_text(&name, func_ty))
                                     }
                                     _ => None,
                                 };
                                 let kind = match &def.get_sema_info().ty {
                                     Some(symbol_ty) => match &symbol_ty.kind {
-                                        kclvm_sema::ty::TypeKind::Schema(_) => {
+                                        TypeKind::Schema(_) => {
                                             Some(KCLCompletionItemKind::SchemaAttr)
                                         }
                                         _ => type_to_item_kind(attr_ty),
@@ -326,7 +326,7 @@ fn completion_assign(pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::Comple
         if let Some(symbol) = gs.get_symbols().get_symbol(symbol_ref) {
             if let Some(def) = symbol.get_definition() {
                 match def.get_kind() {
-                    kclvm_sema::core::symbol::SymbolKind::Attribute => {
+                    SymbolKind::Attribute => {
                         let sema_info = symbol.get_sema_info();
                         match &sema_info.ty {
                             Some(ty) => {
@@ -399,7 +399,7 @@ fn completion_newline(
                             let sema_info = def.get_sema_info();
                             let name = def.get_name();
                             match symbol_ref.get_kind() {
-                                kclvm_sema::core::symbol::SymbolKind::Attribute => {
+                                SymbolKind::Attribute => {
                                     completions.insert(KCLCompletionItem {
                                         label: name.clone(),
                                         detail: sema_info
@@ -621,25 +621,25 @@ fn completion_import(
 
 fn ty_complete_label(ty: &Type, module: Option<&ModuleInfo>) -> Vec<String> {
     match &ty.kind {
-        kclvm_sema::ty::TypeKind::Bool => vec!["True".to_string(), "False".to_string()],
-        kclvm_sema::ty::TypeKind::BoolLit(b) => {
+        TypeKind::Bool => vec!["True".to_string(), "False".to_string()],
+        TypeKind::BoolLit(b) => {
             vec![if *b {
                 "True".to_string()
             } else {
                 "False".to_string()
             }]
         }
-        kclvm_sema::ty::TypeKind::IntLit(i) => vec![i.to_string()],
-        kclvm_sema::ty::TypeKind::FloatLit(f) => vec![f.to_string()],
-        kclvm_sema::ty::TypeKind::Str => vec![r#""""#.to_string()],
-        kclvm_sema::ty::TypeKind::StrLit(s) => vec![format!("{:?}", s)],
-        kclvm_sema::ty::TypeKind::List(_) => vec!["[]".to_string()],
-        kclvm_sema::ty::TypeKind::Dict(_) => vec!["{}".to_string()],
-        kclvm_sema::ty::TypeKind::Union(types) => types
+        TypeKind::IntLit(i) => vec![i.to_string()],
+        TypeKind::FloatLit(f) => vec![f.to_string()],
+        TypeKind::Str => vec![r#""""#.to_string()],
+        TypeKind::StrLit(s) => vec![format!("{:?}", s)],
+        TypeKind::List(_) => vec!["[]".to_string()],
+        TypeKind::Dict(_) => vec!["{}".to_string()],
+        TypeKind::Union(types) => types
             .iter()
             .flat_map(|ty| ty_complete_label(ty, module))
             .collect(),
-        kclvm_sema::ty::TypeKind::Schema(schema) => {
+        TypeKind::Schema(schema) => {
             vec![format!(
                 "{}{}{}",
                 if schema.pkgpath.is_empty() || schema.pkgpath == MAIN_PKG {
@@ -687,25 +687,23 @@ fn func_ty_complete_insert_text(func_name: &String, func_type: &FunctionType) ->
 }
 fn type_to_item_kind(ty: &Type) -> Option<KCLCompletionItemKind> {
     match ty.kind {
-        kclvm_sema::ty::TypeKind::Bool
-        | kclvm_sema::ty::TypeKind::BoolLit(_)
-        | kclvm_sema::ty::TypeKind::Int
-        | kclvm_sema::ty::TypeKind::IntLit(_)
-        | kclvm_sema::ty::TypeKind::Float
-        | kclvm_sema::ty::TypeKind::FloatLit(_)
-        | kclvm_sema::ty::TypeKind::Str
-        | kclvm_sema::ty::TypeKind::StrLit(_)
-        | kclvm_sema::ty::TypeKind::List(_)
-        | kclvm_sema::ty::TypeKind::Dict(_)
-        | kclvm_sema::ty::TypeKind::Union(_)
-        | kclvm_sema::ty::TypeKind::NumberMultiplier(_)
-        | kclvm_sema::ty::TypeKind::Named(_) => Some(KCLCompletionItemKind::Variable),
-        kclvm_sema::ty::TypeKind::Schema(_) => Some(KCLCompletionItemKind::Schema),
-        kclvm_sema::ty::TypeKind::Function(_) => Some(KCLCompletionItemKind::Function),
-        kclvm_sema::ty::TypeKind::Module(_) => Some(KCLCompletionItemKind::Module),
-        kclvm_sema::ty::TypeKind::Void
-        | kclvm_sema::ty::TypeKind::None
-        | kclvm_sema::ty::TypeKind::Any => None,
+        TypeKind::Bool
+        | TypeKind::BoolLit(_)
+        | TypeKind::Int
+        | TypeKind::IntLit(_)
+        | TypeKind::Float
+        | TypeKind::FloatLit(_)
+        | TypeKind::Str
+        | TypeKind::StrLit(_)
+        | TypeKind::List(_)
+        | TypeKind::Dict(_)
+        | TypeKind::Union(_)
+        | TypeKind::NumberMultiplier(_)
+        | TypeKind::Named(_) => Some(KCLCompletionItemKind::Variable),
+        TypeKind::Schema(_) => Some(KCLCompletionItemKind::Schema),
+        TypeKind::Function(_) => Some(KCLCompletionItemKind::Function),
+        TypeKind::Module(_) => Some(KCLCompletionItemKind::Module),
+        TypeKind::Void | TypeKind::None | TypeKind::Any => None,
     }
 }
 
@@ -750,7 +748,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn var_completion_test() {
-        let (file, program, _, _, gs) =
+        let (file, program, _, gs) =
             compile_test_file("src/test_data/completion_test/dot/completion.k");
 
         // test completion for var
@@ -810,7 +808,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn dot_completion_test() {
-        let (file, program, _, _, gs) =
+        let (file, program, _, gs) =
             compile_test_file("src/test_data/completion_test/dot/completion.k");
 
         // test completion for schema attr
@@ -946,7 +944,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn dot_completion_test_without_dot() {
-        let (file, program, _, _, gs) =
+        let (file, program, _, gs) =
             compile_test_file("src/test_data/completion_test/without_dot/completion.k");
 
         // test completion for schema attr
@@ -1095,7 +1093,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn import_builtin_package() {
-        let (file, program, _, _, gs) =
+        let (file, program, _, gs) =
             compile_test_file("src/test_data/completion_test/import/builtin_pkg.k");
         let mut items: IndexSet<KCLCompletionItem> = IndexSet::new();
 
@@ -1143,7 +1141,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn attr_value_completion() {
-        let (file, program, _, _, gs) =
+        let (file, program, _, gs) =
             compile_test_file("src/test_data/completion_test/assign/completion.k");
 
         let pos = KCLPos {
@@ -1242,7 +1240,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn schema_sig_completion() {
-        let (file, program, _, _, gs) =
+        let (file, program, _, gs) =
             compile_test_file("src/test_data/completion_test/schema/schema.k");
 
         let pos = KCLPos {
@@ -1276,7 +1274,7 @@ mod tests {
 
     #[test]
     fn schema_attr_newline_completion() {
-        let (file, program, _, _, gs) =
+        let (file, program, _, gs) =
             compile_test_file("src/test_data/completion_test/newline/newline.k");
 
         let pos = KCLPos {
@@ -1320,7 +1318,7 @@ mod tests {
 
     #[test]
     fn schema_docstring_newline_completion() {
-        let (file, program, _, _, gs) =
+        let (file, program, _, gs) =
             compile_test_file("src/test_data/completion_test/newline/docstring_newline.k");
 
         let pos = KCLPos {
@@ -1350,7 +1348,7 @@ mod tests {
 
     #[test]
     fn str_dot_completion() {
-        let (file, program, _, _, gs) =
+        let (file, program, _, gs) =
             compile_test_file("src/test_data/completion_test/dot/lit_str/lit_str.k");
 
         // test complete str functions when at the end of literal str
@@ -1452,7 +1450,7 @@ mod tests {
 
     #[test]
     fn schema_ty_attr_complete() {
-        let (file, program, _, _, gs) =
+        let (file, program, _, gs) =
             compile_test_file("src/test_data/completion_test/dot/schema_ty_attr/schema_ty_attr.k");
 
         let pos = KCLPos {
@@ -1480,7 +1478,7 @@ mod tests {
 
     #[test]
     fn schema_end_pos() {
-        let (file, program, _, _, gs) =
+        let (file, program, _, gs) =
             compile_test_file("src/test_data/completion_test/schema/schema_pos/schema_pos.k");
 
         let pos = KCLPos {
@@ -1503,7 +1501,7 @@ mod tests {
 
     #[test]
     fn comment_completion() {
-        let (file, program, _, _, gs) =
+        let (file, program, _, gs) =
             compile_test_file("src/test_data/completion_test/dot/lit_str/lit_str.k");
 
         let pos = KCLPos {
@@ -1525,7 +1523,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn missing_expr_completion() {
-        let (file, program, _, _, gs) =
+        let (file, program, _, gs) =
             compile_test_file("src/test_data/completion_test/dot/missing_expr/missing_expr.k");
 
         let pos = KCLPos {
@@ -1549,7 +1547,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn check_scope_completion() {
-        let (file, program, _, _, gs) =
+        let (file, program, _, gs) =
             compile_test_file("src/test_data/completion_test/check/check.k");
 
         let pos = KCLPos {
@@ -1581,7 +1579,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn join_str_inner_completion() {
-        let (file, program, _, _, gs) =
+        let (file, program, _, gs) =
             compile_test_file("src/test_data/completion_test/dot/lit_str/lit_str.k");
 
         let pos = KCLPos {
@@ -1616,7 +1614,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn schema_type_attr_completion() {
-        let (file, program, _, _, gs) =
+        let (file, program, _, gs) =
             compile_test_file("src/test_data/completion_test/schema/schema.k");
 
         let pos = KCLPos {

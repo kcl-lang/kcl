@@ -137,11 +137,10 @@ mod tests {
 
     use super::quick_fix;
     use crate::{
+        state::KCLVfs,
         to_lsp::kcl_diag_to_lsp_diags,
-        util::{parse_param_and_compile, Param},
+        util::{compile_with_params, Params},
     };
-    use parking_lot::RwLock;
-    use std::sync::Arc;
 
     #[test]
     #[bench_test]
@@ -151,14 +150,12 @@ mod tests {
         test_file.push("src/test_data/quick_fix.k");
         let file = test_file.to_str().unwrap();
 
-        let (_, _, diags, _) = parse_param_and_compile(
-            Param {
-                file: file.to_string(),
-                module_cache: None,
-                scope_cache: None,
-            },
-            Some(Arc::new(RwLock::new(Default::default()))),
-        )
+        let (_, diags, _) = compile_with_params(Params {
+            file: file.to_string(),
+            module_cache: None,
+            scope_cache: None,
+            vfs: Some(KCLVfs::default()),
+        })
         .unwrap();
 
         let diagnostics = diags

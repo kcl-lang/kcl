@@ -141,7 +141,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn semantic_tokens_full_test() {
-        let (file, _, _, _, gs) = compile_test_file("src/test_data/sema_token.k");
+        let (file, _, _, gs) = compile_test_file("src/test_data/sema_token.k");
         let expected = [
             (0, 15, 1, 3), // m
             (1, 5, 3, 4),  // num

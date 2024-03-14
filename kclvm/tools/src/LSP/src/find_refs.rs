@@ -1,7 +1,7 @@
 use crate::from_lsp::{file_path_from_url, kcl_pos};
 use crate::goto_def::{find_def_with_gs, goto_definition_with_gs};
 use crate::to_lsp::lsp_location;
-use crate::util::{parse_param_and_compile, Param};
+use crate::util::{compile_with_params, Params};
 
 use crate::state::{KCLVfs, KCLWordIndexMap};
 use anyhow::Result;
@@ -87,15 +87,13 @@ pub(crate) fn find_refs_from_def<F: Fn(String) -> Result<(), anyhow::Error>>(
                     // return if the real def location matches the def_loc
                     match file_path_from_url(&ref_loc.uri) {
                         Ok(file_path) => {
-                            match parse_param_and_compile(
-                                Param {
-                                    file: file_path.clone(),
-                                    module_cache: module_cache.clone(),
-                                    scope_cache: scope_cache.clone(),
-                                },
-                                vfs.clone(),
-                            ) {
-                                Ok((prog, _, _, gs)) => {
+                            match compile_with_params(Params {
+                                file: file_path.clone(),
+                                module_cache: module_cache.clone(),
+                                scope_cache: scope_cache.clone(),
+                                vfs: vfs.clone(),
+                            }) {
+                                Ok((prog, _, gs)) => {
                                     let ref_pos = kcl_pos(&file_path, ref_loc.range.start);
                                     if *ref_loc == def_loc && !include_declaration {
                                         return false;
