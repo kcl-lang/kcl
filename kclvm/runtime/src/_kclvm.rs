@@ -102,7 +102,6 @@ pub enum ApiFunc {
     kclvm_context_set_kcl_modpath,
     kclvm_context_set_kcl_pkgpath,
     kclvm_context_set_kcl_workdir,
-    kclvm_context_set_list_option_mode,
     kclvm_context_set_strict_range_check,
     kclvm_convert_collection_value,
     kclvm_crypto_filesha256,

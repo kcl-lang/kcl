@@ -99,9 +99,6 @@ pub fn _kclvm_get_fn_ptr_by_name(name: &str) -> u64 {
         "kclvm_context_set_kcl_modpath" => crate::kclvm_context_set_kcl_modpath as *const () as u64,
         "kclvm_context_set_kcl_pkgpath" => crate::kclvm_context_set_kcl_pkgpath as *const () as u64,
         "kclvm_context_set_kcl_workdir" => crate::kclvm_context_set_kcl_workdir as *const () as u64,
-        "kclvm_context_set_list_option_mode" => {
-            crate::kclvm_context_set_list_option_mode as *const () as u64
-        }
         "kclvm_context_set_strict_range_check" => {
             crate::kclvm_context_set_strict_range_check as *const () as u64
         }

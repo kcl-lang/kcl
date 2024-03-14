@@ -370,8 +370,7 @@ impl KclLibRunner {
         let opts = FFIRunOptions {
             strict_range_check: args.strict_range_check as i32,
             disable_none: args.disable_none as i32,
-            disable_schema_check: 0, // todo
-            list_option_mode: 0,     // todo
+            disable_schema_check: 0,
             disable_empty_list: 0,
             sort_keys: args.sort_keys as i32,
             show_hidden: args.show_hidden as i32,

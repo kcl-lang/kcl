@@ -234,8 +234,6 @@ void kclvm_context_set_kcl_pkgpath(kclvm_context_t* p, char* pkgpath);
 
 void kclvm_context_set_kcl_workdir(kclvm_context_t* p, char* workdir);
 
-void kclvm_context_set_list_option_mode(kclvm_context_t* p, kclvm_bool_t v);
-
 void kclvm_context_set_strict_range_check(kclvm_context_t* p, kclvm_bool_t v);
 
 kclvm_value_ref_t* kclvm_convert_collection_value(kclvm_context_t* ctx, kclvm_value_ref_t* value, kclvm_char_t* tpe, kclvm_value_ref_t* is_in_schema);

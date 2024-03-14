@@ -266,15 +266,6 @@ pub struct FuncValue {
     pub is_external: bool,
 }
 
-#[derive(PartialEq, Eq, Clone, Default, Debug)]
-pub struct OptionHelp {
-    pub name: String,
-    pub ty: String,
-    pub required: bool,
-    pub default_value: Option<String>,
-    pub help: String,
-}
-
 #[allow(non_snake_case)]
 #[derive(PartialEq, Eq, Clone, Default, Debug, Serialize, Deserialize)]
 pub struct PanicInfo {
@@ -311,7 +302,6 @@ pub struct ContextConfig {
     pub debug_mode: bool,
     pub strict_range_check: bool,
     pub disable_schema_check: bool,
-    pub list_option_mode: bool,
 }
 
 #[derive(PartialEq, Eq, Clone, Debug)]
@@ -351,8 +341,6 @@ pub struct Context {
     /// Import graph
     pub import_names: IndexMap<String, IndexMap<String, String>>,
 
-    /// All option function calling help messages.
-    pub option_helps: Vec<OptionHelp>,
     /// A buffer to store plugin or hooks function calling results.
     pub buffer: ContextBuffer,
     /// Objects is to store all KCL object pointers at runtime.

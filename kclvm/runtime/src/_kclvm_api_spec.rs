@@ -70,10 +70,6 @@
 // api-spec(c):    void kclvm_context_set_disable_schema_check(kclvm_context_t* p, kclvm_bool_t v);
 // api-spec(llvm): declare void @kclvm_context_set_disable_schema_check(%kclvm_context_t* %p, %kclvm_bool_t %v);
 
-// api-spec:       kclvm_context_set_list_option_mode
-// api-spec(c):    void kclvm_context_set_list_option_mode(kclvm_context_t* p, kclvm_bool_t v);
-// api-spec(llvm): declare void @kclvm_context_set_list_option_mode(%kclvm_context_t* %p, %kclvm_bool_t %v);
-
 // api-spec:       kclvm_context_invoke
 // api-spec(c):    char* kclvm_context_invoke(kclvm_context_t* p, char* method, char* args, char* kwargs);
 // api-spec(llvm): declare i8* @kclvm_context_invoke(%kclvm_context_t* %p, i8* %method, i8* %args, i8* %kwargs);

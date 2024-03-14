@@ -1,6 +1,9 @@
 #[cfg(test)]
 mod tests;
 
+pub mod option;
+pub mod util;
+
 use anyhow::Result;
 use indexmap::{IndexMap, IndexSet};
 use kclvm_ast::ast::Program;
