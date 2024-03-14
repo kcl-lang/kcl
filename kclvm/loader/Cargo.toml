@@ -10,6 +10,7 @@ indexmap = "1.0"
 anyhow = "1.0"
 
 kclvm-ast = {path = "../ast"}
+kclvm-ast-pretty = { path = "../ast_pretty" }
 kclvm-parser = {path = "../parser"}
 kclvm-sema = {path = "../sema"}
 kclvm-error = {path = "../error"}

@@ -45,31 +45,7 @@ pub unsafe extern "C" fn kclvm_builtin_option(
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
 
-    let mut list_option_mode = false;
-
-    if ctx_ref.cfg.list_option_mode {
-        list_option_mode = true;
-
-        let name = args.arg_i_str(0, Some("?".to_string())).unwrap();
-        let typ = kwargs.kwarg_str("type", Some("".to_string())).unwrap();
-        let required = kwargs.kwarg_bool("required", Some(false)).unwrap();
-        let help = kwargs.kwarg_str("help", Some("".to_string())).unwrap();
-
-        let mut default_value: Option<String> = None;
-        if let Some(x) = kwargs.kwarg("default") {
-            default_value = Some(x.to_string());
-        }
-
-        ctx_ref.define_option(
-            name.as_str(),
-            typ.as_str(),
-            required,
-            default_value,
-            help.as_str(),
-        );
-    }
-
-    fn _value_to_type(this: &ValueRef, typ: String, list_option_mode: bool) -> ValueRef {
+    fn _value_to_type(this: &ValueRef, typ: String) -> ValueRef {
         if typ.is_empty() {
             return this.clone();
         }
@@ -114,9 +90,6 @@ pub unsafe extern "C" fn kclvm_builtin_option(
                     };
                 }
                 _ => {
-                    if list_option_mode {
-                        return ValueRef::none();
-                    }
                     let err_msg = format!("cannot use '{this}' as type '{typ}'");
                     panic!("{}", err_msg);
                 }
@@ -144,9 +117,6 @@ pub unsafe extern "C" fn kclvm_builtin_option(
                     };
                 }
                 _ => {
-                    if list_option_mode {
-                        return ValueRef::none();
-                    }
                     let err_msg = format!("cannot use '{this}' as type '{typ}'");
                     panic!("{}", err_msg);
                 }
@@ -170,9 +140,6 @@ pub unsafe extern "C" fn kclvm_builtin_option(
                     return ValueRef::str(v.as_ref());
                 }
                 _ => {
-                    if list_option_mode {
-                        return ValueRef::none();
-                    }
                     let err_msg = format!("cannot use '{this}' as type '{typ}'");
                     panic!("{}", err_msg);
                 }
@@ -184,9 +151,6 @@ pub unsafe extern "C" fn kclvm_builtin_option(
                     return this.clone();
                 }
                 _ => {
-                    if list_option_mode {
-                        return ValueRef::none();
-                    }
                     let err_msg = format!("cannot use '{this}' as type '{typ}'");
                     panic!("{}", err_msg);
                 }
@@ -198,17 +162,10 @@ pub unsafe extern "C" fn kclvm_builtin_option(
                     return this.clone();
                 }
                 _ => {
-                    if list_option_mode {
-                        return ValueRef::none();
-                    }
                     let err_msg = format!("cannot use '{this}' as type '{typ}'");
                     panic!("{}", err_msg);
                 }
             }
-        }
-
-        if list_option_mode {
-            return ValueRef::none();
         }
 
         panic!("unknown type '{typ}'");
@@ -223,23 +180,17 @@ pub unsafe extern "C" fn kclvm_builtin_option(
             let opt_value = mut_ptr_as_ref((*x) as *mut kclvm_value_ref_t);
 
             if let Some(kwarg_type) = kwargs.kwarg_str("type", None) {
-                return _value_to_type(opt_value, kwarg_type, ctx_ref.cfg.list_option_mode)
-                    .into_raw(ctx_ref);
+                return _value_to_type(opt_value, kwarg_type).into_raw(ctx_ref);
             }
 
             return (*x) as *mut kclvm_value_ref_t;
         } else if let Some(kwarg_default) = kwargs.kwarg("default") {
             if let Some(kwarg_type) = kwargs.kwarg_str("type", None) {
-                return _value_to_type(&kwarg_default, kwarg_type, ctx_ref.cfg.list_option_mode)
-                    .into_raw(ctx_ref);
+                return _value_to_type(&kwarg_default, kwarg_type).into_raw(ctx_ref);
             }
 
             return kwarg_default.into_raw(ctx_ref);
         }
-    }
-
-    if list_option_mode {
-        return kclvm_value_None(ctx);
     }
 
     let required = kwargs.kwarg_bool("required", Some(false)).unwrap();

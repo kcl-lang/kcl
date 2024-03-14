@@ -252,16 +252,6 @@ pub unsafe extern "C" fn kclvm_context_set_disable_schema_check(
     p.cfg.disable_schema_check = v != 0;
 }
 
-#[no_mangle]
-#[runtime_fn]
-pub unsafe extern "C" fn kclvm_context_set_list_option_mode(
-    p: *mut kclvm_context_t,
-    v: kclvm_bool_t,
-) {
-    let p = mut_ptr_as_ref(p);
-    p.cfg.list_option_mode = v != 0;
-}
-
 // ----------------------------------------------------------------------------
 // invoke
 // ----------------------------------------------------------------------------

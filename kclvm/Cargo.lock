@@ -1736,6 +1736,7 @@ dependencies = [
  "indexmap 1.9.3",
  "insta",
  "kclvm-ast",
+ "kclvm-ast-pretty",
  "kclvm-error",
  "kclvm-parser",
  "kclvm-sema",
