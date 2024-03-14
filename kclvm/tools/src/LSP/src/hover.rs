@@ -53,6 +53,7 @@ pub(crate) fn hover(
                     _ => {}
                 },
                 kclvm_sema::core::symbol::SymbolKind::Expression => return None,
+                kclvm_sema::core::symbol::SymbolKind::Comment => return None,
                 kclvm_sema::core::symbol::SymbolKind::Decorator => {
                     match BUILTIN_DECORATORS.get(&obj.get_name()) {
                         Some(ty) => {
