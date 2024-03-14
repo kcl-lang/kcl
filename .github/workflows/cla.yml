@@ -19,7 +19,7 @@ jobs:
           path-to-document: 'https://github.com/kcl-lang/.github/blob/main/CLA.md' # e.g. a CLA or a DCO document
 
           # branch should not be protected
-          lock-pullrequest-aftermerge: True
+          lock-pullrequest-aftermerge: false
           path-to-signatures: 'signatures/version1/cla.json'
           remote-organization-name: kcl-lang
           remote-repository-name: cla.db
