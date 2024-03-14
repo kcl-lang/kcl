@@ -54,22 +54,10 @@ impl ParseSession {
     /// Struct and report an error based on a span and not abort the compiler process.
     #[inline]
     pub fn struct_span_error(&self, msg: &str, span: Span) {
-        let line_content = self.get_line_content_from_span(span);
         self.add_parse_err(ParseError::Message {
             message: msg.to_string(),
             span,
-            line_content,
         });
-    }
-
-    /// Extracts the content of the line corresponding to the given span.
-    fn get_line_content_from_span(&self, span: Span) -> String {
-        let source_file = self.0.sm.lookup_source_file(span.lo());
-        let line_index = source_file.lookup_line(span.lo()).unwrap();
-        source_file
-            .get_line(line_index)
-            .unwrap_or_else(|| "unknown line".into())
-            .to_string()
     }
 
     /// Add a error into the session.

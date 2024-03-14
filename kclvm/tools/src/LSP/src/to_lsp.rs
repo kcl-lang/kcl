@@ -56,9 +56,6 @@ fn kcl_msg_to_lsp_diags(
             data_map.insert("suggested_replacement".to_string(), json!(suggestions));
         }
     }
-    if let Some(note) = &msg.note {
-        data_map.insert("line_content".to_string(), json!(note));
-    }
     let data = if data_map.is_empty() {
         None
     } else {

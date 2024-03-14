@@ -337,7 +337,6 @@ pub enum ParseError {
     Message {
         message: String,
         span: Span,
-        line_content: String,
     },
 }
 
@@ -358,11 +357,10 @@ impl ParseError {
     }
 
     /// New a message parse error with span.
-    pub fn message(message: String, span: Span, line_content: String) -> Self {
+    pub fn message(message: String, span: Span) -> Self {
         ParseError::Message {
             message,
             span,
-            line_content,
         }
     }
 }
@@ -386,18 +384,23 @@ impl ParseError {
             ParseError::Message {
                 message,
                 span,
-                line_content,
             } => {
                 let loc = sess.sm.lookup_char_pos(span.lo());
                 let pos: Position = loc.into();
-                // Pass line_content as a note or suggestion
+
+                let mut sb = StyledBuffer::<DiagnosticStyle>::new();
+                let mut errs = vec![];
+                let code_snippet = CodeSnippet::new(span, Arc::clone(&sess.sm));
+                code_snippet.format(&mut sb, &mut errs);
+                let code_line = extract_code_line(&sb);
+
                 Ok(Diagnostic::new_with_code(
                     Level::Error,
-                    &message,
-                    Some(&line_content),
+                    format!("{:?}",code_line).as_ref(),
+                    None,
                     (pos.clone(), pos),
                     Some(DiagnosticId::Error(ErrorKind::InvalidSyntax)),
-                    None,
+                    None
                 ))
             }
         }
@@ -430,12 +433,10 @@ impl SessionDiagnostic for ParseError {
             ParseError::Message {
                 message,
                 span,
-                line_content,
             } => {
                 let code_snippet = CodeSnippet::new(span, Arc::clone(&sess.sm));
                 diag.append_component(Box::new(code_snippet));
                 diag.append_component(Box::new(format!(" {message}\n")));
-                diag.append_component(Box::new(format!("Line content: {line_content}\n")));
                 Ok(diag)
             }
         }
@@ -570,4 +571,41 @@ pub fn err_to_str(err: Box<dyn Any + Send>) -> String {
     } else {
         "".to_string()
     }
+}
+
+fn extract_code_line(sb: &StyledBuffer<DiagnosticStyle>) -> String {
+    let rendered_lines = sb.render();
+    if let Some(line) = rendered_lines.get(0) {
+        if let Some(code_snippet) = line.get(1) {
+            code_snippet.text.clone()
+        } else {
+            String::new()
+        }
+    } else {
+        String::new()
+    }
+}
+
+fn parse_multiple_assignment(error_message: &str) -> Option<(Vec<String>, Vec<String>)> {
+    let parts: Vec<&str> = error_message.split('=').collect();
+    if parts.len() != 2 {
+        return None;
+    }
+
+    // Extract the variables and values, trimming whitespace and removing comments.
+    let vars = parts[0]
+        .trim()
+        .split(',')
+        .map(|s| s.trim().to_string())
+        .collect();
+    let values = parts[1]
+        .split('#')
+        .next()
+        .unwrap_or("")
+        .trim()
+        .split(',')
+        .map(|s| s.trim().to_string())
+        .collect();
+
+    Some((vars, values))
 }
