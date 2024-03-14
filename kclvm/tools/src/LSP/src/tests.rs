@@ -3,7 +3,8 @@ use crossbeam_channel::select;
 use indexmap::IndexSet;
 use kclvm_ast::MAIN_PKG;
 use kclvm_sema::core::global_state::GlobalState;
-use kclvm_sema::resolver::scope::CachedScope;
+
+use kclvm_sema::resolver::scope::KCLScopeCache;
 use lsp_server::RequestId;
 use lsp_server::Response;
 use lsp_types::notification::Exit;
@@ -43,8 +44,7 @@ use std::env;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
-use std::sync::Arc;
-use std::sync::Mutex;
+
 use std::thread;
 use std::time::Duration;
 
@@ -52,7 +52,6 @@ use kclvm_ast::ast::Program;
 use kclvm_error::Diagnostic as KCLDiagnostic;
 use kclvm_error::Position as KCLPos;
 use kclvm_parser::KCLModuleCache;
-use kclvm_sema::resolver::scope::ProgramScope;
 
 use lsp_types::Diagnostic;
 use lsp_types::DiagnosticRelatedInformation;
@@ -60,7 +59,7 @@ use lsp_types::DiagnosticSeverity;
 use lsp_types::Location;
 use lsp_types::NumberOrString;
 use lsp_types::{Position, Range, TextDocumentContentChangeEvent};
-use parking_lot::RwLock;
+
 use proc_macro_crate::bench_test;
 
 use lsp_server::{Connection, Message, Notification, Request};
@@ -72,9 +71,10 @@ use crate::from_lsp::file_path_from_url;
 use crate::goto_def::goto_definition_with_gs;
 use crate::hover::hover;
 use crate::main_loop::main_loop;
+use crate::state::KCLVfs;
 use crate::to_lsp::kcl_diag_to_lsp_diags;
 use crate::util::to_json;
-use crate::util::{apply_document_changes, parse_param_and_compile, Param};
+use crate::util::{apply_document_changes, compile_with_params, Params};
 
 macro_rules! wait_async_compile {
     () => {
@@ -113,29 +113,21 @@ pub(crate) fn compare_goto_res(
 
 pub(crate) fn compile_test_file(
     testfile: &str,
-) -> (
-    String,
-    Program,
-    ProgramScope,
-    IndexSet<KCLDiagnostic>,
-    GlobalState,
-) {
+) -> (String, Program, IndexSet<KCLDiagnostic>, GlobalState) {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let mut test_file = path;
     test_file.push(testfile);
 
     let file = test_file.to_str().unwrap().to_string();
 
-    let (program, prog_scope, diags, gs) = parse_param_and_compile(
-        Param {
-            file: file.clone(),
-            module_cache: Some(KCLModuleCache::default()),
-            scope_cache: Some(Arc::new(Mutex::new(CachedScope::default()))),
-        },
-        Some(Arc::new(RwLock::new(Default::default()))),
-    )
+    let (program, diags, gs) = compile_with_params(Params {
+        file: file.clone(),
+        module_cache: Some(KCLModuleCache::default()),
+        scope_cache: Some(KCLScopeCache::default()),
+        vfs: Some(KCLVfs::default()),
+    })
     .unwrap();
-    (file, program, prog_scope, diags, gs)
+    (file, program, diags, gs)
 }
 
 type Info = (String, (u32, u32, u32, u32), String);
@@ -289,14 +281,12 @@ fn diagnostics_test() {
     test_file.push("src/test_data/diagnostics.k");
     let file = test_file.to_str().unwrap();
 
-    let (_, _, diags, _) = parse_param_and_compile(
-        Param {
-            file: file.to_string(),
-            module_cache: None,
-            scope_cache: None,
-        },
-        Some(Arc::new(RwLock::new(Default::default()))),
-    )
+    let (_, diags, _) = compile_with_params(Params {
+        file: file.to_string(),
+        module_cache: None,
+        scope_cache: None,
+        vfs: Some(KCLVfs::default()),
+    })
     .unwrap();
 
     let diagnostics = diags
@@ -418,7 +408,7 @@ fn test_lsp_with_kcl_mod_in_order() {
 
 fn goto_import_pkg_with_line_test() {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let (file, program, _, _, gs) =
+    let (file, program, _, gs) =
         compile_test_file("src/test_data/goto_def_with_line_test/main_pkg/main.k");
     let pos = KCLPos {
         filename: file,
@@ -477,14 +467,12 @@ fn complete_import_external_file_test() {
         .output()
         .unwrap();
 
-    let (program, _, _, gs) = parse_param_and_compile(
-        Param {
-            file: path.to_string(),
-            module_cache: None,
-            scope_cache: None,
-        },
-        Some(Arc::new(RwLock::new(Default::default()))),
-    )
+    let (program, _, gs) = compile_with_params(Params {
+        file: path.to_string(),
+        module_cache: None,
+        scope_cache: None,
+        vfs: Some(KCLVfs::default()),
+    })
     .unwrap();
 
     let pos = KCLPos {
@@ -536,14 +524,12 @@ fn goto_import_external_file_test() {
         .output()
         .unwrap();
 
-    let (program, _, diags, gs) = parse_param_and_compile(
-        Param {
-            file: path.to_string(),
-            module_cache: None,
-            scope_cache: None,
-        },
-        Some(Arc::new(RwLock::new(Default::default()))),
-    )
+    let (program, diags, gs) = compile_with_params(Params {
+        file: path.to_string(),
+        module_cache: None,
+        scope_cache: None,
+        vfs: Some(KCLVfs::default()),
+    })
     .unwrap();
 
     assert_eq!(diags.len(), 0);
@@ -1206,14 +1192,12 @@ fn konfig_goto_def_test_base() {
     let mut base_path = konfig_path.clone();
     base_path.push("appops/nginx-example/base/base.k");
     let base_path_str = base_path.to_str().unwrap().to_string();
-    let (program, _, _, gs) = parse_param_and_compile(
-        Param {
-            file: base_path_str.clone(),
-            module_cache: None,
-            scope_cache: None,
-        },
-        Some(Arc::new(RwLock::new(Default::default()))),
-    )
+    let (program, _, gs) = compile_with_params(Params {
+        file: base_path_str.clone(),
+        module_cache: None,
+        scope_cache: None,
+        vfs: Some(KCLVfs::default()),
+    })
     .unwrap();
 
     // schema def
@@ -1299,14 +1283,12 @@ fn konfig_goto_def_test_main() {
     let mut main_path = konfig_path.clone();
     main_path.push("appops/nginx-example/dev/main.k");
     let main_path_str = main_path.to_str().unwrap().to_string();
-    let (program, _, _, gs) = parse_param_and_compile(
-        Param {
-            file: main_path_str.clone(),
-            module_cache: None,
-            scope_cache: None,
-        },
-        Some(Arc::new(RwLock::new(Default::default()))),
-    )
+    let (program, _, gs) = compile_with_params(Params {
+        file: main_path_str.clone(),
+        module_cache: None,
+        scope_cache: None,
+        vfs: Some(KCLVfs::default()),
+    })
     .unwrap();
 
     // schema def
@@ -1364,14 +1346,12 @@ fn konfig_completion_test_main() {
     let mut main_path = konfig_path.clone();
     main_path.push("appops/nginx-example/dev/main.k");
     let main_path_str = main_path.to_str().unwrap().to_string();
-    let (program, _, _, gs) = parse_param_and_compile(
-        Param {
-            file: main_path_str.clone(),
-            module_cache: None,
-            scope_cache: None,
-        },
-        Some(Arc::new(RwLock::new(Default::default()))),
-    )
+    let (program, _, gs) = compile_with_params(Params {
+        file: main_path_str.clone(),
+        module_cache: None,
+        scope_cache: None,
+        vfs: Some(KCLVfs::default()),
+    })
     .unwrap();
 
     // pkg's definition(schema) completion
@@ -1475,14 +1455,12 @@ fn konfig_hover_test_main() {
     let mut main_path = konfig_path.clone();
     main_path.push("appops/nginx-example/dev/main.k");
     let main_path_str = main_path.to_str().unwrap().to_string();
-    let (program, _, _, gs) = parse_param_and_compile(
-        Param {
-            file: main_path_str.clone(),
-            module_cache: None,
-            scope_cache: None,
-        },
-        Some(Arc::new(RwLock::new(Default::default()))),
-    )
+    let (program, _, gs) = compile_with_params(Params {
+        file: main_path_str.clone(),
+        module_cache: None,
+        scope_cache: None,
+        vfs: Some(KCLVfs::default()),
+    })
     .unwrap();
 
     // schema def hover
@@ -1905,14 +1883,12 @@ fn compile_unit_test() {
     test_file.push("src/test_data/compile_unit/b.k");
     let file = test_file.to_str().unwrap();
 
-    let (prog, ..) = parse_param_and_compile(
-        Param {
-            file: file.to_string(),
-            module_cache: None,
-            scope_cache: None,
-        },
-        Some(Arc::new(RwLock::new(Default::default()))),
-    )
+    let (prog, ..) = compile_with_params(Params {
+        file: file.to_string(),
+        module_cache: None,
+        scope_cache: None,
+        vfs: Some(KCLVfs::default()),
+    })
     .unwrap();
     // b.k is not contained in kcl.yaml but need to be contained in main pkg
     assert!(prog

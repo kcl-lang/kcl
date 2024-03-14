@@ -19,7 +19,7 @@ use crate::{
     hover, quick_fix,
     semantic_token::semantic_tokens_full,
     state::{log_message, LanguageServerSnapshot, LanguageServerState, Task},
-    util::{parse_param_and_compile, Param},
+    util::{compile_with_params, Params},
 };
 
 impl LanguageServerState {
@@ -119,15 +119,13 @@ pub(crate) fn handle_semantic_tokens_full(
 ) -> anyhow::Result<Option<SemanticTokensResult>> {
     let file = file_path_from_url(&params.text_document.uri)?;
 
-    match parse_param_and_compile(
-        Param {
-            file: file.clone(),
-            module_cache: None,
-            scope_cache: None,
-        },
-        Some(snapshot.vfs.clone()),
-    ) {
-        Ok((_, _, _, gs)) => {
+    match compile_with_params(Params {
+        file: file.clone(),
+        module_cache: snapshot.module_cache,
+        scope_cache: None,
+        vfs: Some(snapshot.vfs.clone()),
+    }) {
+        Ok((_, _, gs)) => {
             let res = semantic_tokens_full(&file, &gs);
             Ok(res)
         }
@@ -260,15 +258,13 @@ pub(crate) fn handle_completion(
         // Some trigger characters need to re-compile
         Some(ch) => match ch {
             '=' | ':' => {
-                match parse_param_and_compile(
-                    Param {
-                        file: file.clone(),
-                        module_cache: None,
-                        scope_cache: None,
-                    },
-                    Some(snapshot.vfs.clone()),
-                ) {
-                    Ok((prog, _, _, gs)) => (prog, gs),
+                match compile_with_params(Params {
+                    file: file.clone(),
+                    module_cache: snapshot.module_cache,
+                    scope_cache: None,
+                    vfs: Some(snapshot.vfs.clone()),
+                }) {
+                    Ok((prog, _, gs)) => (prog, gs),
                     Err(_) => return Ok(None),
                 }
             }
@@ -320,15 +316,13 @@ pub(crate) fn handle_document_symbol(
 ) -> anyhow::Result<Option<lsp_types::DocumentSymbolResponse>> {
     let file = file_path_from_url(&params.text_document.uri)?;
 
-    match parse_param_and_compile(
-        Param {
-            file: file.clone(),
-            module_cache: None,
-            scope_cache: None,
-        },
-        Some(snapshot.vfs.clone()),
-    ) {
-        Ok((_, _, _, gs)) => {
+    match compile_with_params(Params {
+        file: file.clone(),
+        module_cache: snapshot.module_cache,
+        scope_cache: None,
+        vfs: Some(snapshot.vfs.clone()),
+    }) {
+        Ok((_, _, gs)) => {
             let res = document_symbol(&file, &gs);
             if res.is_none() {
                 log_message(format!("File {file} document symbol not found"), &sender)?;

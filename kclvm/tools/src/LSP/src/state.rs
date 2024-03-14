@@ -3,7 +3,7 @@ use crate::config::Config;
 use crate::db::AnalysisDatabase;
 use crate::from_lsp::file_path_from_url;
 use crate::to_lsp::{kcl_diag_to_lsp_diags, url};
-use crate::util::{get_file_name, parse_param_and_compile, to_json, Param};
+use crate::util::{compile_with_params, get_file_name, to_json, Params};
 use crate::word_index::build_word_index;
 use anyhow::Result;
 use crossbeam_channel::{select, unbounded, Receiver, Sender};
@@ -223,15 +223,13 @@ impl LanguageServerState {
                         let scope_cache = self.scope_cache.clone();
                         move || match url(&snapshot, file.file_id) {
                             Ok(uri) => {
-                                match parse_param_and_compile(
-                                    Param {
-                                        file: filename.clone(),
-                                        module_cache,
-                                        scope_cache,
-                                    },
-                                    Some(snapshot.vfs),
-                                ) {
-                                    Ok((prog, _, diags, gs)) => {
+                                match compile_with_params(Params {
+                                    file: filename.clone(),
+                                    module_cache,
+                                    scope_cache: None,
+                                    vfs: Some(snapshot.vfs),
+                                }) {
+                                    Ok((prog, diags, gs)) => {
                                         let mut db = snapshot.db.write();
                                         db.insert(
                                             file.file_id,
