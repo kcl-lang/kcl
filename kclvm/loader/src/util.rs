@@ -9,7 +9,7 @@ pub(crate) fn get_call_args_bool(
     index: usize,
     key: Option<&str>,
 ) -> bool {
-    let val = get_call_args_strip_string(call_expr, index, key);
+    let val = get_call_args_string(call_expr, index, key);
     val == "True" || val == "true"
 }
 

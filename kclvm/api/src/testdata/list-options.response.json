@@ -1,0 +1,25 @@
+{
+	"options": [
+		{
+			"name": "key1",
+			"type": "",
+			"required": false,
+			"default_value": "",
+			"help": ""
+		},
+		{
+			"name": "key2",
+			"type": "",
+			"required": true,
+			"default_value": "",
+			"help": ""
+		},
+		{
+			"name": "metadata-key",
+			"type": "",
+			"required": false,
+			"default_value": "",
+			"help": ""
+		}
+	]
+}

@@ -6,7 +6,7 @@ expression: "format!(\"{:#?}\", options)"
     OptionHelp {
         name: "key1",
         ty: "str",
-        required: false,
+        required: true,
         default_value: "",
         help: "",
     },

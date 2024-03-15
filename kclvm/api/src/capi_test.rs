@@ -213,6 +213,15 @@ fn test_c_api_rename_code() {
 }
 
 #[test]
+fn test_c_api_list_options() {
+    test_c_api_without_wrapper::<ParseProgramArgs, ListOptionsResult>(
+        "KclvmService.ListOptions",
+        "list-options.json",
+        "list-options.response.json",
+    );
+}
+
+#[test]
 fn test_c_api_testing() {
     test_c_api::<TestArgs, TestResult, _>(
         "KclvmService.Test",

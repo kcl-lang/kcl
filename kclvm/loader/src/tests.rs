@@ -71,3 +71,6 @@ a = option("key1", type="str", required=True, default="value", help="help me")
 if True:
     b = option("key2")
 "#}
+list_options_snapshot! {list_options_3, r#"
+a = option("key1", type="int", required=False, default=123, help="help me")
+"#}
