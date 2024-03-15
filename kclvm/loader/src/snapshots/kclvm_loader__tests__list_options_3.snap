@@ -1,0 +1,13 @@
+---
+source: loader/src/tests.rs
+expression: "format!(\"{:#?}\", options)"
+---
+[
+    OptionHelp {
+        name: "key1",
+        ty: "int",
+        required: false,
+        default_value: "123",
+        help: "help me",
+    },
+]

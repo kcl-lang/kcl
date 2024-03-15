@@ -3,7 +3,7 @@ use kclvm_ast::{ast, walker::MutSelfWalker};
 use kclvm_sema::builtin::BUILTIN_FUNCTIONS;
 use kclvm_sema::{builtin::option::OptionHelp, resolver::scope::NodeKey};
 
-use crate::util::get_call_args_strip_string;
+use crate::util::{get_call_args_string, get_call_args_strip_string};
 use crate::{load_packages, util::get_call_args_bool, LoadPackageOptions, Packages};
 
 #[derive(Debug)]
@@ -33,7 +33,7 @@ impl<'ctx> MutSelfWalker for OptionHelpExtractor<'ctx> {
                         name: get_call_args_strip_string(call_expr, 0, Some("key")),
                         ty: get_call_args_strip_string(call_expr, 1, Some("type")),
                         required: get_call_args_bool(call_expr, 2, Some("required")),
-                        default_value: get_call_args_strip_string(call_expr, 3, Some("default")),
+                        default_value: get_call_args_string(call_expr, 3, Some("default")),
                         help: get_call_args_strip_string(call_expr, 3, Some("help")),
                     })
                 }
