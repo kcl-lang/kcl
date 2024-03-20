@@ -15,10 +15,8 @@
   <img src="https://img.shields.io/github/license/kcl-lang/kcl.svg">
   <a href="https://www.bestpractices.dev/projects/7867"><img src="https://www.bestpractices.dev/projects/7867/badge"></a>
   <img src="https://img.shields.io/github/downloads/kcl-lang/kcl/total?label=Github%20downloads&logo=github">
+  <img src="https://app.fossa.com/api/projects/git%2Bgithub.com%2Fkcl-lang%2Fkcl.svg?type=shield">
 </p>
-
-
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fkcl-lang%2Fkcl.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fkcl-lang%2Fkcl?ref=badge_large)
 
 ## Introduction
 
@@ -74,7 +72,6 @@ Detailed documentation is available at [KCL Website](https://kcl-lang.io/)
 See [Developing Guide](./docs/dev_guide/1.about_this_guide.md). You can also get started by opening the project in GitHub Codespaces.
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/kcl-lang/kcl)
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fkcl-lang%2Fkcl.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fkcl-lang%2Fkcl?ref=badge_shield)
 
 ## Roadmap
 
@@ -83,3 +80,7 @@ See [KCL Roadmap](https://github.com/kcl-lang/kcl/issues/882).
 ## Community
 
 See the [community](https://github.com/kcl-lang/community) for ways to join us.
+
+## License
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fkcl-lang%2Fkcl.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fkcl-lang%2Fkcl?ref=badge_large)
