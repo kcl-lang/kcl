@@ -1,0 +1,48 @@
+{
+    "ast_json": "{\"filename\":\"source.k\",\"pkg\":\"__main__\",\"doc\":null,\"name\":\"__main__\",\"body\":[{\"node\":{\"type\":\"Import\",\"path\":{\"node\":\"units\",\"filename\":\"source.k\",\"line\":1,\"column\":7,\"end_line\":1,\"end_column\":12},\"rawpath\":\"units\",\"name\":\"units\",\"asname\":null,\"pkg_name\":\"__main__\"},\"filename\":\"source.k\",\"line\":1,\"column\":0,\"end_line\":1,\"end_column\":12},{\"node\":{\"type\":\"Import\",\"path\":{\"node\":\"data.cloud\",\"filename\":\"source.k\",\"line\":2,\"column\":7,\"end_line\":2,\"end_column\":17},\"rawpath\":\"data.cloud\",\"name\":\"cloud_pkg\",\"asname\":{\"node\":\"cloud_pkg\",\"filename\":\"source.k\",\"line\":2,\"column\":21,\"end_line\":2,\"end_column\":30},\"pkg_name\":\"__main__\"},\"filename\":\"source.k\",\"line\":2,\"column\":0,\"end_line\":2,\"end_column\":30},{\"node\":{\"type\":\"Assign\",\"targets\":[{\"node\":{\"names\":[{\"node\":\"data1\",\"filename\":\"source.k\",\"line\":4,\"column\":0,\"end_line\":4,\"end_column\":5}],\"pkgpath\":\"\",\"ctx\":\"Store\"},\"filename\":\"source.k\",\"line\":4,\"column\":0,\"end_line\":4,\"end_column\":5}],\"value\":{\"node\":{\"type\":\"Binary\",\"left\":{\"node\":{\"type\":\"NumberLit\",\"binary_suffix\":null,\"value\":{\"type\":\"Int\",\"value\":32}},\"filename\":\"source.k\",\"line\":4,\"column\":8,\"end_line\":4,\"end_column\":10},\"op\":\"Mul\",\"right\":{\"node\":{\"type\":\"Identifier\",\"names\":[{\"node\":\"units\",\"filename\":\"source.k\",\"line\":4,\"column\":13,\"end_line\":4,\"end_column\":18},{\"node\":\"Ki\",\"filename\":\"source.k\",\"line\":4,\"column\":19,\"end_line\":4,\"end_column\":21}],\"pkgpath\":\"\",\"ctx\":\"Load\"},\"filename\":\"source.k\",\"line\":4,\"column\":13,\"end_line\":4,\"end_column\":21}},\"filename\":\"source.k\",\"line\":4,\"column\":8,\"end_line\":4,\"end_column\":21},\"ty\":null},\"filename\":\"source.k\",\"line\":4,\"column\":0,\"end_line\":4,\"end_column\":21},{\"node\":{\"type\":\"Assign\",\"targets\":[{\"node\":{\"names\":[{\"node\":\"Data2\",\"filename\":\"source.k\",\"line\":5,\"column\":0,\"end_line\":5,\"end_column\":5}],\"pkgpath\":\"\",\"ctx\":\"Store\"},\"filename\":\"source.k\",\"line\":5,\"column\":0,\"end_line\":5,\"end_column\":5}],\"value\":{\"node\":{\"type\":\"Binary\",\"left\":{\"node\":{\"type\":\"Binary\",\"left\":{\"node\":{\"type\":\"NumberLit\",\"binary_suffix\":null,\"value\":{\"type\":\"Int\",\"value\":42}},\"filename\":\"source.k\",\"line\":5,\"column\":8,\"end_line\":5,\"end_column\":10},\"op\":\"Mul\",\"right\":{\"node\":{\"type\":\"Identifier\",\"names\":[{\"node\":\"units\",\"filename\":\"source.k\",\"line\":5,\"column\":13,\"end_line\":5,\"end_column\":18},{\"node\":\"Ki\",\"filename\":\"source.k\",\"line\":5,\"column\":19,\"end_line\":5,\"end_column\":21}],\"pkgpath\":\"\",\"ctx\":\"Load\"},\"filename\":\"source.k\",\"line\":5,\"column\":13,\"end_line\":5,\"end_column\":21}},\"filename\":\"source.k\",\"line\":5,\"column\":8,\"end_line\":5,\"end_column\":21},\"op\":\"Mul\",\"right\":{\"node\":{\"type\":\"Identifier\",\"names\":[{\"node\":\"cloud_pkg\",\"filename\":\"source.k\",\"line\":5,\"column\":24,\"end_line\":5,\"end_column\":33},{\"node\":\"Foo\",\"filename\":\"source.k\",\"line\":5,\"column\":34,\"end_line\":5,\"end_column\":37}],\"pkgpath\":\"\",\"ctx\":\"Load\"},\"filename\":\"source.k\",\"line\":5,\"column\":24,\"end_line\":5,\"end_column\":37}},\"filename\":\"source.k\",\"line\":5,\"column\":8,\"end_line\":5,\"end_column\":37},\"ty\":null},\"filename\":\"source.k\",\"line\":5,\"column\":0,\"end_line\":5,\"end_column\":37},{\"node\":{\"type\":\"Assign\",\"targets\":[{\"node\":{\"names\":[{\"node\":\"lambda1\",\"filename\":\"source.k\",\"line\":7,\"column\":0,\"end_line\":7,\"end_column\":7}],\"pkgpath\":\"\",\"ctx\":\"Store\"},\"filename\":\"source.k\",\"line\":7,\"column\":0,\"end_line\":7,\"end_column\":7}],\"value\":{\"node\":{\"type\":\"Lambda\",\"args\":{\"node\":{\"args\":[{\"node\":{\"names\":[{\"node\":\"x\",\"filename\":\"source.k\",\"line\":7,\"column\":17,\"end_line\":7,\"end_column\":18}],\"pkgpath\":\"\",\"ctx\":\"Load\"},\"filename\":\"source.k\",\"line\":7,\"column\":17,\"end_line\":7,\"end_column\":18},{\"node\":{\"names\":[{\"node\":\"y\",\"filename\":\"source.k\",\"line\":7,\"column\":25,\"end_line\":7,\"end_column\":26}],\"pkgpath\":\"\",\"ctx\":\"Load\"},\"filename\":\"source.k\",\"line\":7,\"column\":25,\"end_line\":7,\"end_column\":26}],\"defaults\":[null,null],\"ty_list\":[{\"node\":{\"type\":\"Basic\",\"value\":\"Int\"},\"filename\":\"source.k\",\"line\":7,\"column\":20,\"end_line\":7,\"end_column\":23},{\"node\":{\"type\":\"Basic\",\"value\":\"Int\"},\"filename\":\"source.k\",\"line\":7,\"column\":28,\"end_line\":7,\"end_column\":31}]},\"filename\":\"source.k\",\"line\":7,\"column\":17,\"end_line\":7,\"end_column\":31},\"body\":[{\"node\":{\"type\":\"Expr\",\"exprs\":[{\"node\":{\"type\":\"Binary\",\"left\":{\"node\":{\"type\":\"Identifier\",\"names\":[{\"node\":\"x\",\"filename\":\"source.k\",\"line\":8,\"column\":4,\"end_line\":8,\"end_column\":5}],\"pkgpath\":\"\",\"ctx\":\"Load\"},\"filename\":\"source.k\",\"line\":8,\"column\":4,\"end_line\":8,\"end_column\":5},\"op\":\"Sub\",\"right\":{\"node\":{\"type\":\"Identifier\",\"names\":[{\"node\":\"y\",\"filename\":\"source.k\",\"line\":8,\"column\":8,\"end_line\":8,\"end_column\":9}],\"pkgpath\":\"\",\"ctx\":\"Load\"},\"filename\":\"source.k\",\"line\":8,\"column\":8,\"end_line\":8,\"end_column\":9}},\"filename\":\"source.k\",\"line\":8,\"column\":4,\"end_line\":8,\"end_column\":9}]},\"filename\":\"source.k\",\"line\":8,\"column\":4,\"end_line\":8,\"end_column\":9}],\"return_ty\":{\"node\":{\"type\":\"Basic\",\"value\":\"Int\"},\"filename\":\"source.k\",\"line\":7,\"column\":35,\"end_line\":7,\"end_column\":38}},\"filename\":\"source.k\",\"line\":7,\"column\":10,\"end_line\":9,\"end_column\":1},\"ty\":null},\"filename\":\"source.k\",\"line\":7,\"column\":0,\"end_line\":9,\"end_column\":1},{\"node\":{\"type\":\"Assign\",\"targets\":[{\"node\":{\"names\":[{\"node\":\"Lambda2\",\"filename\":\"source.k\",\"line\":10,\"column\":0,\"end_line\":10,\"end_column\":7}],\"pkgpath\":\"\",\"ctx\":\"Store\"},\"filename\":\"source.k\",\"line\":10,\"column\":0,\"end_line\":10,\"end_column\":7}],\"value\":{\"node\":{\"type\":\"Lambda\",\"args\":{\"node\":{\"args\":[{\"node\":{\"names\":[{\"node\":\"x\",\"filename\":\"source.k\",\"line\":10,\"column\":17,\"end_line\":10,\"end_column\":18}],\"pkgpath\":\"\",\"ctx\":\"Load\"},\"filename\":\"source.k\",\"line\":10,\"column\":17,\"end_line\":10,\"end_column\":18},{\"node\":{\"names\":[{\"node\":\"y\",\"filename\":\"source.k\",\"line\":10,\"column\":25,\"end_line\":10,\"end_column\":26}],\"pkgpath\":\"\",\"ctx\":\"Load\"},\"filename\":\"source.k\",\"line\":10,\"column\":25,\"end_line\":10,\"end_column\":26}],\"defaults\":[null,null],\"ty_list\":[{\"node\":{\"type\":\"Basic\",\"value\":\"Int\"},\"filename\":\"source.k\",\"line\":10,\"column\":20,\"end_line\":10,\"end_column\":23},{\"node\":{\"type\":\"Basic\",\"value\":\"Int\"},\"filename\":\"source.k\",\"line\":10,\"column\":28,\"end_line\":10,\"end_column\":31}]},\"filename\":\"source.k\",\"line\":10,\"column\":17,\"end_line\":10,\"end_column\":31},\"body\":[{\"node\":{\"type\":\"Expr\",\"exprs\":[{\"node\":{\"type\":\"Binary\",\"left\":{\"node\":{\"type\":\"Identifier\",\"names\":[{\"node\":\"x\",\"filename\":\"source.k\",\"line\":11,\"column\":4,\"end_line\":11,\"end_column\":5}],\"pkgpath\":\"\",\"ctx\":\"Load\"},\"filename\":\"source.k\",\"line\":11,\"column\":4,\"end_line\":11,\"end_column\":5},\"op\":\"Add\",\"right\":{\"node\":{\"type\":\"Identifier\",\"names\":[{\"node\":\"y\",\"filename\":\"source.k\",\"line\":11,\"column\":8,\"end_line\":11,\"end_column\":9}],\"pkgpath\":\"\",\"ctx\":\"Load\"},\"filename\":\"source.k\",\"line\":11,\"column\":8,\"end_line\":11,\"end_column\":9}},\"filename\":\"source.k\",\"line\":11,\"column\":4,\"end_line\":11,\"end_column\":9}]},\"filename\":\"source.k\",\"line\":11,\"column\":4,\"end_line\":11,\"end_column\":9}],\"return_ty\":{\"node\":{\"type\":\"Basic\",\"value\":\"Int\"},\"filename\":\"source.k\",\"line\":10,\"column\":35,\"end_line\":10,\"end_column\":38}},\"filename\":\"source.k\",\"line\":10,\"column\":10,\"end_line\":12,\"end_column\":1},\"ty\":null},\"filename\":\"source.k\",\"line\":10,\"column\":0,\"end_line\":12,\"end_column\":1}],\"comments\":[]}",
+    "deps": [],
+    "errors": [
+        {
+            "level": "error",
+            "code": "Error(CannotFindModule)",
+            "messages": [
+                {
+                    "msg": "pkgpath data.cloud not found in the program",
+                    "pos": {
+                        "line": 2,
+                        "column": 0,
+                        "filename": "source.k"
+                    }
+                }
+            ]
+        },
+        {
+            "level": "suggestions",
+            "code": "Suggestions",
+            "messages": [
+                {
+                    "msg": "try 'kcl mod add data' to download the package not found",
+                    "pos": {
+                        "line": 0,
+                        "column": 0,
+                        "filename": ""
+                    }
+                }
+            ]
+        },
+        {
+            "level": "suggestions",
+            "code": "Suggestions",
+            "messages": [
+                {
+                    "msg": "find more package on 'https://artifacthub.io'",
+                    "pos": {
+                        "line": 0,
+                        "column": 0,
+                        "filename": ""
+                    }
+                }
+            ]
+        }
+    ]
+}

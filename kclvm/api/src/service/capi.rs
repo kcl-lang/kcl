@@ -41,16 +41,19 @@ pub unsafe extern "C" fn kclvm_service_free_string(res: *mut c_char) {
 }
 
 macro_rules! call {
-    ($serv:expr, $args:expr, $arg_name:ident, $serv_name:ident) => {{
-        let serv_ref = unsafe { &mut *$serv };
-        let args = unsafe { std::ffi::CStr::from_ptr($args) }.to_bytes();
-        let args = $arg_name::decode(args).unwrap();
-        let res = serv_ref.$serv_name(&args);
-        let result_byte = match res {
-            Ok(res) => res.encode_to_vec(),
-            Err(err) => panic!("{}", err),
-        };
-        CString::new(result_byte).unwrap().into_raw()
+    ($serv:expr, $args:expr, $result_len:expr, $arg_name:ident, $serv_name:ident) => {{
+        unsafe {
+            let serv_ref = &mut *$serv;
+            let args = std::ffi::CStr::from_ptr($args).to_bytes();
+            let args = $arg_name::decode(args).unwrap();
+            let res = serv_ref.$serv_name(&args);
+            let result_byte = match res {
+                Ok(res) => res.encode_to_vec(),
+                Err(err) => panic!("{}", err),
+            };
+            *$result_len = result_byte.len();
+            CString::from_vec_unchecked(result_byte).into_raw()
+        }
     }};
 }
 
@@ -86,8 +89,66 @@ pub extern "C" fn kclvm_service_call(
             panic!("null fn ptr");
         }
         let call = (&call as *const u64) as *const ()
-            as *const fn(serv: *mut kclvm_service, args: *const c_char) -> *const c_char;
-        unsafe { (*call)(serv, args) }
+            as *const fn(
+                serv: *mut kclvm_service,
+                args: *const c_char,
+                result_len: *mut usize,
+            ) -> *const c_char;
+        let mut _result_len = 0;
+        unsafe { (*call)(serv, args, &mut _result_len) }
+    });
+    match result {
+        Ok(result) => result,
+        Err(panic_err) => {
+            let err_message = kclvm_error::err_to_str(panic_err);
+
+            let c_string = std::ffi::CString::new(format!("ERROR:{}", err_message.as_str()))
+                .expect("CString::new failed");
+            let ptr = c_string.into_raw();
+            ptr as *const c_char
+        }
+    }
+}
+
+/// Call kclvm service by C API. **Note that it is not thread safe.**
+///
+/// # Parameters
+///
+/// `serv`: [*mut kclvm_service]
+///     The pointer of &\[[KclvmServiceImpl]]
+///
+/// `call`: [*const c_char]
+///     The C str of the name of the called service,
+///     with the format "KclvmService.{MethodName}"
+///
+/// `args`: [*const c_char]
+///     Arguments of the call serialized as protobuf byte sequence,
+///     refer to kclvm/spec/gpyrpc/gpyrpc.proto for the specific definitions of arguments
+///
+/// # Returns
+///
+/// result: [*const c_char]
+///     Result of the call serialized as protobuf byte sequence
+#[no_mangle]
+pub extern "C" fn kclvm_service_call_with_length(
+    serv: *mut kclvm_service,
+    call: *const c_char,
+    args: *const c_char,
+    result_len: *mut usize,
+) -> *const c_char {
+    let result = std::panic::catch_unwind(|| {
+        let call = unsafe { std::ffi::CStr::from_ptr(call) }.to_str().unwrap();
+        let call = kclvm_get_service_fn_ptr_by_name(call);
+        if call == 0 {
+            panic!("null fn ptr");
+        }
+        let call = (&call as *const u64) as *const ()
+            as *const fn(
+                serv: *mut kclvm_service,
+                args: *const c_char,
+                result_len: *mut usize,
+            ) -> *const c_char;
+        unsafe { (*call)(serv, args, result_len) }
     });
     match result {
         Ok(result) => result,
@@ -130,8 +191,12 @@ pub(crate) fn kclvm_get_service_fn_ptr_by_name(name: &str) -> u64 {
 
 /// ping is used to test whether kclvm service is successfully imported
 /// arguments and return results should be consistent
-pub(crate) fn ping(serv: *mut kclvm_service, args: *const c_char) -> *const c_char {
-    call!(serv, args, PingArgs, ping)
+pub(crate) fn ping(
+    serv: *mut kclvm_service,
+    args: *const c_char,
+    result_len: *mut usize,
+) -> *const c_char {
+    call!(serv, args, result_len, PingArgs, ping)
 }
 
 /// parse_file provides users with the ability to parse kcl single file
@@ -150,8 +215,12 @@ pub(crate) fn ping(serv: *mut kclvm_service, args: *const c_char) -> *const c_ch
 ///
 /// result: [*const c_char]
 ///     Result of the call serialized as protobuf byte sequence
-pub(crate) fn parse_file(serv: *mut kclvm_service, args: *const c_char) -> *const c_char {
-    call!(serv, args, ParseFileArgs, parse_file)
+pub(crate) fn parse_file(
+    serv: *mut kclvm_service,
+    args: *const c_char,
+    result_len: *mut usize,
+) -> *const c_char {
+    call!(serv, args, result_len, ParseFileArgs, parse_file)
 }
 
 /// parse_program provides users with the ability to parse kcl program
@@ -170,8 +239,12 @@ pub(crate) fn parse_file(serv: *mut kclvm_service, args: *const c_char) -> *cons
 ///
 /// result: [*const c_char]
 ///     Result of the call serialized as protobuf byte sequence
-pub(crate) fn parse_program(serv: *mut kclvm_service, args: *const c_char) -> *const c_char {
-    call!(serv, args, ParseProgramArgs, parse_program)
+pub(crate) fn parse_program(
+    serv: *mut kclvm_service,
+    args: *const c_char,
+    result_len: *mut usize,
+) -> *const c_char {
+    call!(serv, args, result_len, ParseProgramArgs, parse_program)
 }
 
 /// load_package provides users with the ability to parse kcl program and sematic model
@@ -191,8 +264,12 @@ pub(crate) fn parse_program(serv: *mut kclvm_service, args: *const c_char) -> *c
 ///
 /// result: [*const c_char]
 ///     Result of the call serialized as protobuf byte sequence
-pub(crate) fn load_package(serv: *mut kclvm_service, args: *const c_char) -> *const c_char {
-    call!(serv, args, LoadPackageArgs, load_package)
+pub(crate) fn load_package(
+    serv: *mut kclvm_service,
+    args: *const c_char,
+    result_len: *mut usize,
+) -> *const c_char {
+    call!(serv, args, result_len, LoadPackageArgs, load_package)
 }
 
 /// list_options provides users with the ability to parse kcl program and get all option
@@ -212,8 +289,12 @@ pub(crate) fn load_package(serv: *mut kclvm_service, args: *const c_char) -> *co
 ///
 /// result: [*const c_char]
 ///     Result of the call serialized as protobuf byte sequence
-pub(crate) fn list_options(serv: *mut kclvm_service, args: *const c_char) -> *const c_char {
-    call!(serv, args, ParseProgramArgs, list_options)
+pub(crate) fn list_options(
+    serv: *mut kclvm_service,
+    args: *const c_char,
+    result_len: *mut usize,
+) -> *const c_char {
+    call!(serv, args, result_len, ParseProgramArgs, list_options)
 }
 
 /// exec_program provides users with the ability to execute KCL code
@@ -232,8 +313,12 @@ pub(crate) fn list_options(serv: *mut kclvm_service, args: *const c_char) -> *co
 ///
 /// result: [*const c_char]
 ///     Result of the call serialized as protobuf byte sequence
-pub(crate) fn exec_program(serv: *mut kclvm_service, args: *const c_char) -> *const c_char {
-    call!(serv, args, ExecProgramArgs, exec_program)
+pub(crate) fn exec_program(
+    serv: *mut kclvm_service,
+    args: *const c_char,
+    result_len: *mut usize,
+) -> *const c_char {
+    call!(serv, args, result_len, ExecProgramArgs, exec_program)
 }
 
 /// build_program provides users with the ability to build the KCL program to an artifact.
@@ -252,8 +337,12 @@ pub(crate) fn exec_program(serv: *mut kclvm_service, args: *const c_char) -> *co
 ///
 /// result: [*const c_char]
 ///     Result of the call serialized as protobuf byte sequence
-pub(crate) fn build_program(serv: *mut kclvm_service, args: *const c_char) -> *const c_char {
-    call!(serv, args, BuildProgramArgs, build_program)
+pub(crate) fn build_program(
+    serv: *mut kclvm_service,
+    args: *const c_char,
+    result_len: *mut usize,
+) -> *const c_char {
+    call!(serv, args, result_len, BuildProgramArgs, build_program)
 }
 
 /// build_program provides users with the ability to execute the KCL artifact.
@@ -272,8 +361,12 @@ pub(crate) fn build_program(serv: *mut kclvm_service, args: *const c_char) -> *c
 ///
 /// result: [*const c_char]
 ///     Result of the call serialized as protobuf byte sequence
-pub(crate) fn exec_artifact(serv: *mut kclvm_service, args: *const c_char) -> *const c_char {
-    call!(serv, args, ExecArtifactArgs, exec_artifact)
+pub(crate) fn exec_artifact(
+    serv: *mut kclvm_service,
+    args: *const c_char,
+    result_len: *mut usize,
+) -> *const c_char {
+    call!(serv, args, result_len, ExecArtifactArgs, exec_artifact)
 }
 
 /// override_file enable users override existing KCL file with specific KCl code
@@ -292,8 +385,12 @@ pub(crate) fn exec_artifact(serv: *mut kclvm_service, args: *const c_char) -> *c
 ///
 /// result: [*const c_char]
 ///     Result of the call serialized as protobuf byte sequence
-pub(crate) fn override_file(serv: *mut kclvm_service, args: *const c_char) -> *const c_char {
-    call!(serv, args, OverrideFileArgs, override_file)
+pub(crate) fn override_file(
+    serv: *mut kclvm_service,
+    args: *const c_char,
+    result_len: *mut usize,
+) -> *const c_char {
+    call!(serv, args, result_len, OverrideFileArgs, override_file)
 }
 
 /// Get schema types from a kcl file or code.
@@ -304,8 +401,12 @@ pub(crate) fn override_file(serv: *mut kclvm_service, args: *const c_char) -> *c
 /// code: [Option<&str>]. The kcl code string
 ///
 /// schema_name: [Option<&str>]. The schema name, when the schema name is empty, all schemas are returned.
-pub(crate) fn get_schema_type(serv: *mut kclvm_service, args: *const c_char) -> *const c_char {
-    call!(serv, args, GetSchemaTypeArgs, get_schema_type)
+pub(crate) fn get_schema_type(
+    serv: *mut kclvm_service,
+    args: *const c_char,
+    result_len: *mut usize,
+) -> *const c_char {
+    call!(serv, args, result_len, GetSchemaTypeArgs, get_schema_type)
 }
 
 /// Get full schema types from a kcl file or code.
@@ -316,8 +417,18 @@ pub(crate) fn get_schema_type(serv: *mut kclvm_service, args: *const c_char) -> 
 ///     serialized as protobuf byte sequence
 ///
 /// `schema_name`: [Option<&str>]. The schema name, when the schema name is empty, all schemas are returned.
-pub(crate) fn get_full_schema_type(serv: *mut kclvm_service, args: *const c_char) -> *const c_char {
-    call!(serv, args, GetFullSchemaTypeArgs, get_full_schema_type)
+pub(crate) fn get_full_schema_type(
+    serv: *mut kclvm_service,
+    args: *const c_char,
+    result_len: *mut usize,
+) -> *const c_char {
+    call!(
+        serv,
+        args,
+        result_len,
+        GetFullSchemaTypeArgs,
+        get_full_schema_type
+    )
 }
 
 /// Get schema types from a kcl file or code.
@@ -331,10 +442,12 @@ pub(crate) fn get_full_schema_type(serv: *mut kclvm_service, args: *const c_char
 pub(crate) fn get_schema_type_mapping(
     serv: *mut kclvm_service,
     args: *const c_char,
+    result_len: *mut usize,
 ) -> *const c_char {
     call!(
         serv,
         args,
+        result_len,
         GetSchemaTypeMappingArgs,
         get_schema_type_mapping
     )
@@ -342,46 +455,84 @@ pub(crate) fn get_schema_type_mapping(
 
 /// Service for formatting a code source and returns the formatted source and
 /// whether the source is changed.
-pub(crate) fn format_code(serv: *mut kclvm_service, args: *const c_char) -> *const c_char {
-    call!(serv, args, FormatCodeArgs, format_code)
+pub(crate) fn format_code(
+    serv: *mut kclvm_service,
+    args: *const c_char,
+    result_len: *mut usize,
+) -> *const c_char {
+    call!(serv, args, result_len, FormatCodeArgs, format_code)
 }
 
 /// Service for formatting kcl file or directory path contains kcl files and
 /// returns the changed file paths.
-pub(crate) fn format_path(serv: *mut kclvm_service, args: *const c_char) -> *const c_char {
-    call!(serv, args, FormatPathArgs, format_path)
+pub(crate) fn format_path(
+    serv: *mut kclvm_service,
+    args: *const c_char,
+    result_len: *mut usize,
+) -> *const c_char {
+    call!(serv, args, result_len, FormatPathArgs, format_path)
 }
 
 /// Service for KCL Lint API, check a set of files, skips execute,
 /// returns error message including errors and warnings.
-pub(crate) fn lint_path(serv: *mut kclvm_service, args: *const c_char) -> *const c_char {
-    call!(serv, args, LintPathArgs, lint_path)
+pub(crate) fn lint_path(
+    serv: *mut kclvm_service,
+    args: *const c_char,
+    result_len: *mut usize,
+) -> *const c_char {
+    call!(serv, args, result_len, LintPathArgs, lint_path)
 }
 
 /// Service for validating the data string using the schema code string, when the parameter
 /// `schema` is omitted, use the first schema appeared in the kcl code.
-pub(crate) fn validate_code(serv: *mut kclvm_service, args: *const c_char) -> *const c_char {
-    call!(serv, args, ValidateCodeArgs, validate_code)
+pub(crate) fn validate_code(
+    serv: *mut kclvm_service,
+    args: *const c_char,
+    result_len: *mut usize,
+) -> *const c_char {
+    call!(serv, args, result_len, ValidateCodeArgs, validate_code)
 }
 
 /// Service for building setting file config from args.
-pub(crate) fn load_settings_files(serv: *mut kclvm_service, args: *const c_char) -> *const c_char {
-    call!(serv, args, LoadSettingsFilesArgs, load_settings_files)
+pub(crate) fn load_settings_files(
+    serv: *mut kclvm_service,
+    args: *const c_char,
+    result_len: *mut usize,
+) -> *const c_char {
+    call!(
+        serv,
+        args,
+        result_len,
+        LoadSettingsFilesArgs,
+        load_settings_files
+    )
 }
 
 /// Service for renaming all the occurrences of the target symbol in the files. This API will rewrite files if they contain symbols to be renamed.
 /// return the file paths got changed.
-pub(crate) fn rename(serv: *mut kclvm_service, args: *const c_char) -> *const c_char {
-    call!(serv, args, RenameArgs, rename)
+pub(crate) fn rename(
+    serv: *mut kclvm_service,
+    args: *const c_char,
+    result_len: *mut usize,
+) -> *const c_char {
+    call!(serv, args, result_len, RenameArgs, rename)
 }
 
 /// Service for renaming all the occurrences of the target symbol in the code. This API won't rewrite files but return the modified code if any code has been changed.
 /// return the changed code.
-pub(crate) fn rename_code(serv: *mut kclvm_service, args: *const c_char) -> *const c_char {
-    call!(serv, args, RenameCodeArgs, rename_code)
+pub(crate) fn rename_code(
+    serv: *mut kclvm_service,
+    args: *const c_char,
+    result_len: *mut usize,
+) -> *const c_char {
+    call!(serv, args, result_len, RenameCodeArgs, rename_code)
 }
 
 /// Service for the testing tool.
-pub(crate) fn test(serv: *mut kclvm_service, args: *const c_char) -> *const c_char {
-    call!(serv, args, TestArgs, test)
+pub(crate) fn test(
+    serv: *mut kclvm_service,
+    args: *const c_char,
+    result_len: *mut usize,
+) -> *const c_char {
+    call!(serv, args, result_len, TestArgs, test)
 }
