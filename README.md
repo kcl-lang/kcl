@@ -17,6 +17,9 @@
   <img src="https://img.shields.io/github/downloads/kcl-lang/kcl/total?label=Github%20downloads&logo=github">
 </p>
 
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fkcl-lang%2Fkcl.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fkcl-lang%2Fkcl?ref=badge_large)
+
 ## Introduction
 
 KCL is an open-source, constraint-based record and functional language that enhances the writing of complex configurations, including those for cloud-native scenarios. With its advanced programming language technology and practices, KCL is dedicated to promoting better modularity, scalability, and stability for configurations. It enables simpler logic writing and offers ease of automation APIs and integration with homegrown systems.
@@ -71,6 +74,7 @@ Detailed documentation is available at [KCL Website](https://kcl-lang.io/)
 See [Developing Guide](./docs/dev_guide/1.about_this_guide.md). You can also get started by opening the project in GitHub Codespaces.
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/kcl-lang/kcl)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fkcl-lang%2Fkcl.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fkcl-lang%2Fkcl?ref=badge_shield)
 
 ## Roadmap
 
