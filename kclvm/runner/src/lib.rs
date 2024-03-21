@@ -7,7 +7,7 @@ use kclvm_ast::{
     MAIN_PKG,
 };
 use kclvm_driver::{canonicalize_input_files, expand_input_files};
-use kclvm_parser::{load_program, KCLModuleCache, ParseSessionRef};
+use kclvm_parser::{load_program, load_program_vfs, KCLModuleCache, ParseSessionRef};
 use kclvm_query::apply_overrides;
 use kclvm_sema::resolver::{
     resolve_program, resolve_program_with_opts, scope::ProgramScope, Options,
@@ -16,6 +16,7 @@ use linker::Command;
 pub use runner::{Artifact, ExecProgramArgs, ExecProgramResult, MapErrorResult};
 use runner::{KclLibRunner, KclLibRunnerOptions, ProgramRunner};
 use tempfile::tempdir;
+use vfs::vfs::KCLVfs;
 
 pub mod assembler;
 pub mod linker;
@@ -73,21 +74,31 @@ pub fn exec_program(sess: ParseSessionRef, args: &ExecProgramArgs) -> Result<Exe
     // parse args from json string
     let opts = args.get_load_program_options();
     let kcl_paths = expand_files(args)?;
-    let kcl_paths_str = kcl_paths.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
+
+    vfs::load_local_paths(kcl_paths.clone())?;
+    let compile_entries = vfs::entry::get_compile_entries_from_paths(
+        &kcl_paths, 
+        &opts.clone().k_code_list,
+        opts.clone().package_maps,
+        opts.clone().work_dir.clone(),
+    )?;
+
     let module_cache = KCLModuleCache::default();
-    let mut program = load_program(
+    let mut program = load_program_vfs(
         sess.clone(),
-        kcl_paths_str.as_slice(),
+        compile_entries,
         Some(opts),
         Some(module_cache),
     )?
     .program;
+
     apply_overrides(
         &mut program,
         &args.overrides,
         &[],
         args.print_override_ast || args.debug > 0,
     )?;
+
     execute(sess, program, args)
 }
 

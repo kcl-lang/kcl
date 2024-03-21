@@ -1,0 +1,20 @@
+[package]
+name = "kclvm-vfs"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+compiler_base_span ={ path = "../../compiler_base/span" }
+anyhow = "1.0.81"
+parking_lot = "0.12.1"
+path-slash = "0.2.1"
+regex = "1.10.3"
+pathdiff = "0.2.1"
+pcre2 = "0.2.6"
+lazy_static = "1.4.0"
+
+kclvm-config = { path = "../config" }
+kclvm-utils ={ path = "../utils" }
+kclvm-span = {path = "../span"}

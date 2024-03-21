@@ -1,58 +1,31 @@
-use anyhow::Result;
-use kclvm_config::modfile::get_pkg_root;
+use anyhow::{Ok, Result};
+use std::result::Result as StdResult;
+
 use kclvm_config::modfile::KCL_FILE_SUFFIX;
 use kclvm_config::path::ModRelativePath;
-use kclvm_utils::path::PathPrefix;
 use kclvm_utils::path::{is_absolute, is_dir, path_exist};
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 use std::fs;
 use std::path::Path;
 
-use crate::LoadProgramOptions;
+use crate::vfs::{VFSPath, VFS};
+
+// use crate::{file_id, vfs, PathPrefix};
+// use crate::vfs::FileId;
+// use crate::read_vfs;
 
 /// [`Entries`] is a map of package name to package root path for one compilation
 /// # note
 ///
 /// The [`entries`] in [`Entries`] is ordered, and the order of Entrys may affect the result of the compilation.
 /// The reason why the [`Entries`] is not an [`IndexMap`] is that the [`entries`] is duplicable and ordered.
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct Entries {
     root_path: String,
     entries: VecDeque<Entry>,
 }
 
 impl Entries {
-    /// [`get_unique_normal_paths_by_name`] will return all the unique normal paths of [`Entry`] with the given name in [`Entries`].
-    pub fn get_unique_normal_paths_by_name(&self, name: &str) -> Vec<String> {
-        let paths = self
-            .get_unique_paths_by_name(name)
-            .iter()
-            .filter(|path| {
-                // All the paths contains the normal paths and the mod relative paths start with ${KCL_MOD}.
-                // If the number of 'kcl.mod' paths is 0, except for the mod relative paths start with ${KCL_MOD},
-                // then use empty path "" as the default.
-                !ModRelativePath::new(path.to_string())
-                    .is_relative_path()
-                    .unwrap_or(false)
-            })
-            .map(|entry| entry.to_string())
-            .collect::<Vec<String>>();
-        paths
-    }
-
-    /// [`get_unique_paths_by_name`] will return all the unique paths of [`Entry`] with the given name in [`Entries`].
-    pub fn get_unique_paths_by_name(&self, name: &str) -> Vec<String> {
-        let mut paths = self
-            .entries
-            .iter()
-            .filter(|entry| entry.name() == name)
-            .map(|entry| entry.path().to_string())
-            .collect::<Vec<String>>();
-        paths.sort();
-        paths.dedup();
-        paths
-    }
-
     /// [`push_entry`] will push a new [`Entry`] into [`Entries`].
     pub fn push_entry(&mut self, entry: Entry) {
         self.entries.push_back(entry);
@@ -120,22 +93,20 @@ impl Entries {
 }
 
 /// [`Entry`] is a package name and package root path pair.
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct Entry {
     name: String,
-    path: String,
-    k_files: Vec<String>,
-    k_code_lists: Vec<Option<String>>,
+    pub modpath: String,
+    pub files: Vec<String>,
 }
 
 impl Entry {
     /// [`new`] will create a new [`Entry`] with the given name and path.
-    pub fn new(name: String, path: String) -> Self {
+    pub fn new(name: String, modpath: String) -> Self {
         Self {
             name,
-            path,
-            k_files: vec![],
-            k_code_lists: vec![],
+            modpath,
+            files: Vec::new(),
         }
     }
 
@@ -145,46 +116,50 @@ impl Entry {
     }
 
     /// [`path`] will return the path of [`Entry`].
-    pub fn path(&self) -> &String {
-        &self.path
+    pub fn modpath(&self) -> &String {
+        &self.modpath
     }
 
     /// [`set_path`] will set the path of [`Entry`] to the given path.
-    pub fn set_path(&mut self, path: String) {
-        self.path = path;
+    pub fn set_modpath(&mut self, modpath: String) {
+        self.modpath = modpath;
     }
 
     /// [`extend_k_files`] will extend the k files of [`Entry`] to the given k file.
     pub fn extend_k_files(&mut self, k_files: Vec<String>) {
-        self.k_files.extend(k_files);
+        self.files.extend(k_files);
     }
 
-    /// [`extend_k_files_and_codes`] will extend the k files and k codes of [`Entry`] to the given k file and k code.
-    pub fn extend_k_files_and_codes(
-        &mut self,
-        k_files: Vec<String>,
-        k_codes: &mut VecDeque<String>,
-    ) {
-        for k_file in k_files.iter() {
-            self.k_code_lists.push(k_codes.pop_front());
-            self.k_files.push(k_file.to_string());
-        }
-    }
+    // pub fn push_k_file(&mut self, k_file: String) {
+    //     self.
+    // }
 
-    /// [`push_k_code`] will push the k code of [`Entry`] to the given k code.
-    pub fn push_k_code(&mut self, k_code: Option<String>) {
-        self.k_code_lists.push(k_code);
-    }
+    // [`extend_k_files_and_codes`] will extend the k files and k codes of [`Entry`] to the given k file and k code.
+    // pub fn extend_k_files_and_codes(
+    //     &mut self,
+    //     k_files: Vec<String>,
+    //     k_codes: &mut VecDeque<String>,
+    // ) {
+    //     for k_file in k_files.iter() {
+    //         let path = Path::new(k_file);
+    //         // 如果这个文件路径已经带有code了，就不再写入
+    //         if let Some(code) = k_codes.pop_front().map(|code| code.as_bytes().to_vec()) {
+    //             path.write(Some(code)).unwrap();
+    //         } else {
+    //             // 如果没有code，就从本地读取并更新 vfs
+    //             if path.exists_and_update_vfs() {
+    //                 // 将文件路径写入 vfs
+    //                 self.vfiles.push(file_id(k_file.to_string()).unwrap());
+    //             }
+    //         }
+    //     }
+    // }
 
-    /// [`get_k_files`] will return the k files of [`Entry`].
-    pub fn get_k_files(&self) -> &Vec<String> {
-        &self.k_files
-    }
-
-    /// [`get_k_codes`] will return the k codes of [`Entry`].
-    pub fn get_k_codes(&self) -> &Vec<Option<String>> {
-        &self.k_code_lists
-    }
+    // pub fn push_k_file_and_code(&mut self, k_file: String, k_code: String) {
+    //     let path = Path::new(&k_file);
+    //     path.write(Some(k_code.as_bytes().to_vec()));
+    //     self.vfiles.push(file_id(k_file.to_string()).unwrap());
+    // }
 }
 
 /// [`get_compile_entries_from_paths`] returns all the [`Entries`] for compilation from the given [`file_paths`].
@@ -277,20 +252,48 @@ impl Entry {
 /// ```
 pub fn get_compile_entries_from_paths(
     file_paths: &[String],
-    opts: &LoadProgramOptions,
+    k_code_list: &[String],
+    external_pkg_maps: HashMap<String, String>,
+    work_dir: String,
+    vfs: &dyn VFS,
 ) -> Result<Entries> {
     if file_paths.is_empty() {
         return Err(anyhow::anyhow!("No input KCL files or paths"));
     }
     let mut result = Entries::default();
-    let mut k_code_queue = VecDeque::from(opts.k_code_list.clone());
+    let mut k_code_queue = VecDeque::from(k_code_list.to_vec());
+
+    // 1. find the package root path by `kcl.mod` file, work_dir, or the path of the *.k file.
+    let mut tmpmodpaths = vec![];
+    let mut modpath = work_dir.clone();
+    for filepath in file_paths {
+        let path = ModRelativePath::from(filepath.to_string());
+        if !path.is_relative_path()? {
+            if let Some(root) = get_pkg_root(filepath) {
+                tmpmodpaths.push(root)
+            }
+        }
+    }
+
+    if tmpmodpaths.len() == 0 {
+        modpath = "".to_string();
+    }
+
+    if tmpmodpaths.len() == 1 && work_dir.is_empty() {
+        modpath = tmpmodpaths[0].clone();
+    } else if !work_dir.is_empty() {
+        modpath = work_dir.clone();
+    }
+
+    result.root_path = modpath.clone();
+
     for s in file_paths {
         let path = ModRelativePath::from(s.to_string());
 
         // If the path is a [`ModRelativePath`] with prefix '${<package_name>:KCL_MOD}',
         // calculate the real path and the package name.
         if let Some((pkg_name, pkg_path)) = path.get_root_pkg_name()?.and_then(|name| {
-            opts.package_maps
+            external_pkg_maps
                 .get(&name)
                 .map(|pkg_path: &String| (name, pkg_path))
         }) {
@@ -298,83 +301,62 @@ pub fn get_compile_entries_from_paths(
             let s = path.canonicalize_by_root_path(pkg_path)?;
             if let Some(root) = get_pkg_root(&s) {
                 let mut entry: Entry = Entry::new(pkg_name.clone(), root.clone());
-                entry.extend_k_files_and_codes(
-                    get_main_files_from_pkg_path(&s, &root, &pkg_name, opts)?,
-                    &mut k_code_queue,
-                );
+                for k_file in
+                    get_main_files_from_pkg_path(&s, &root, &pkg_name, k_code_list)?.iter()
+                {
+                    let path = Path::new(k_file);
+                    let res = path.write(
+                        vfs,
+                        k_code_queue
+                            .pop_front()
+                            .map(|code| code.as_bytes().to_vec()),
+                    );
+
+                    if res.is_ok() {
+                        entry.files.push(k_file.to_string());
+                    }
+                }
+
                 result.push_entry(entry);
                 continue;
             }
             // If the [`ModRelativePath`] with prefix '${KCL_MOD}'
         } else if path.is_relative_path()? && path.get_root_pkg_name()?.is_none() {
             // Push it into `result`, and deal it later.
-            let mut entry = Entry::new(kclvm_ast::MAIN_PKG.to_string(), path.get_path());
-            entry.push_k_code(k_code_queue.pop_front());
+            let s = path.canonicalize_by_root_path(&modpath)?;
+            let mut entry: Entry = Entry::new("__main__".to_string(), path.get_path());
+            let path = Path::new(&s);
+            let res = path.write(
+                vfs,
+                k_code_queue
+                    .pop_front()
+                    .map(|code| code.as_bytes().to_vec()),
+            );
+
+            if res.is_ok() {
+                entry.files.push(s.to_string());
+            }
             result.push_entry(entry);
             continue;
         } else if let Some(root) = get_pkg_root(s) {
             // If the path is a normal path.
-            let mut entry: Entry = Entry::new(kclvm_ast::MAIN_PKG.to_string(), root.clone());
-            entry.extend_k_files_and_codes(
-                get_main_files_from_pkg_path(s, &root, kclvm_ast::MAIN_PKG, opts)?,
-                &mut k_code_queue,
-            );
+            let mut entry: Entry = Entry::new("__main__".to_string(), root.clone());
+            for k_file in get_main_files_from_pkg_path(&s, &root, "__main__", k_code_list)?.iter() {
+                let path = Path::new(k_file);
+                let res = path.write(
+                    vfs,
+                    k_code_queue
+                        .pop_front()
+                        .map(|code| code.as_bytes().to_vec()),
+                );
+
+                if res.is_ok() {
+                    entry.files.push(k_file.to_string());
+                }
+            }
             result.push_entry(entry);
         }
     }
-
-    // The main 'kcl.mod' can not be found, the empty path "" will be took by default.
-    if result
-        .get_unique_normal_paths_by_name(kclvm_ast::MAIN_PKG)
-        .is_empty()
-    {
-        let mut entry = Entry::new(kclvm_ast::MAIN_PKG.to_string(), "".to_string());
-        for s in file_paths {
-            entry.extend_k_files_and_codes(
-                get_main_files_from_pkg_path(s, "", kclvm_ast::MAIN_PKG, opts)?,
-                &mut k_code_queue,
-            );
-        }
-        result.push_entry(entry);
-    }
-
-    let pkg_root = if result
-        .get_unique_normal_paths_by_name(kclvm_ast::MAIN_PKG)
-        .len()
-        == 1
-        && opts.work_dir.is_empty()
-    {
-        // If the 'kcl.mod' can be found only once, the package root path will be the path of the 'kcl.mod'.
-        result
-            .get_unique_normal_paths_by_name(kclvm_ast::MAIN_PKG)
-            .get(0)
-            .unwrap()
-            .to_string()
-    } else if !opts.work_dir.is_empty() {
-        // If the 'kcl.mod' can be found more than once, the package root path will be the 'work_dir'.
-        if let Some(root_work_dir) = get_pkg_root(&opts.work_dir) {
-            root_work_dir
-        } else {
-            "".to_string()
-        }
-    } else {
-        "".to_string()
-    };
-    result.root_path = pkg_root.clone();
-    // Replace the '${KCL_MOD}' of all the paths with package name '__main__'.
-    result.apply_to_all_entries(|entry| {
-        let path = ModRelativePath::from(entry.path().to_string());
-        if entry.name() == kclvm_ast::MAIN_PKG && path.is_relative_path()? {
-            entry.set_path(pkg_root.to_string());
-            entry.extend_k_files(get_main_files_from_pkg_path(
-                &path.canonicalize_by_root_path(&pkg_root)?,
-                &pkg_root,
-                kclvm_ast::MAIN_PKG,
-                opts,
-            )?);
-        }
-        Ok(())
-    })?;
 
     Ok(result)
 }
@@ -384,7 +366,7 @@ fn get_main_files_from_pkg_path(
     pkg_path: &str,
     root: &str,
     pkg_name: &str,
-    opts: &LoadProgramOptions,
+    k_code_list: &[String],
 ) -> Result<Vec<String>> {
     // fix path
     let mut path_list = Vec::new();
@@ -401,12 +383,6 @@ fn get_main_files_from_pkg_path(
             return Err(anyhow::anyhow!("Can not find {} in the path: {}", s, root));
         }
     }
-    if !root.is_empty() && !is_absolute(s.as_str()) {
-        let p = std::path::Path::new(s.as_str());
-        if let Ok(x) = std::fs::canonicalize(p) {
-            s = x.adjust_canonicalization();
-        }
-    }
 
     path_list.push(s);
 
@@ -416,7 +392,7 @@ fn get_main_files_from_pkg_path(
     for (i, path) in path_list.iter().enumerate() {
         // read dir/*.k
         if is_dir(path) {
-            if opts.k_code_list.len() > i {
+            if k_code_list.len() > i {
                 return Err(anyhow::anyhow!("Invalid code list"));
             }
             // k_code_list
@@ -435,7 +411,7 @@ fn get_main_files_from_pkg_path(
 
     // check all file exists
     for (i, filename) in k_files.iter().enumerate() {
-        if i < opts.k_code_list.len() {
+        if i < k_code_list.len() {
             continue;
         }
 
@@ -463,9 +439,9 @@ pub fn get_dir_files(dir: &str, is_recursive: bool) -> Result<Vec<String>> {
         let path = Path::new(&path);
         if path.is_dir() {
             match fs::read_dir(path) {
-                Ok(entries) => {
+                StdResult::Ok(entries) => {
                     for entry in entries {
-                        if let Ok(entry) = entry {
+                        if let StdResult::Ok(entry) = entry {
                             let path = entry.path();
                             if path.is_dir() && is_recursive {
                                 queue.push_back(path.to_string_lossy().to_string());
@@ -501,4 +477,33 @@ fn is_ignored_file(filename: &str) -> bool {
     (!filename.ends_with(KCL_FILE_SUFFIX))
         || (filename.ends_with("_test.k"))
         || (filename.starts_with('_'))
+}
+
+pub fn get_pkg_root(k_file_path: &str) -> Option<String> {
+    if k_file_path.is_empty() {
+        return None;
+    }
+    // # search by kcl.mod file
+    if let StdResult::Ok(module_path) = std::path::Path::new(k_file_path).canonicalize() {
+        let mut module_path = module_path;
+        while module_path.exists() {
+            let kcl_mod_path = module_path.join("kcl.mod");
+            if kcl_mod_path.exists() && kcl_mod_path.is_file() {
+                return Some(module_path.display().to_string());
+            }
+            if let Some(path) = module_path.parent() {
+                module_path = path.to_path_buf();
+            } else {
+                break;
+            }
+        }
+    }
+    if k_file_path.ends_with(".k") {
+        if let StdResult::Ok(path) = std::path::Path::new(k_file_path).canonicalize() {
+            if let Some(path) = path.parent() {
+                return Some(path.display().to_string());
+            }
+        }
+    }
+    None
 }

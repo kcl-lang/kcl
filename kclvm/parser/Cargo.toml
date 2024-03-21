@@ -25,6 +25,7 @@ regex = "1.7.0"
 anyhow = "1.0"
 indexmap = "1.0"
 
+kclvm-vfs ={ path = "../vfs"}
 kclvm-lexer = {path = "../lexer"}
 kclvm-ast = {path = "../ast"}
 kclvm-span = {path = "../span"}

@@ -26,6 +26,7 @@ cc = "1.0"
 compiler_base_session = {path = "../../compiler_base/session"}
 compiler_base_macros = "0.0.1"
 
+kclvm-vfs = {path = "../vfs"}
 kclvm-ast = {path = "../ast"}
 kclvm-parser = {path = "../parser"}
 kclvm-compiler = {path = "../compiler"}

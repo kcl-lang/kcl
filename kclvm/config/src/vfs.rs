@@ -27,6 +27,7 @@ pub fn is_rel_pkgpath(pkgpath: &str) -> bool {
     pkgpath.starts_with('.')
 }
 
+#[deprecated]
 pub fn fix_import_path(root: &str, filepath: &str, import_path: &str) -> String {
     // relpath: import .sub
     // FixImportPath(root, "path/to/app/file.k", ".sub")        => path.to.app.sub
@@ -95,6 +96,7 @@ pub fn fix_import_path(root: &str, filepath: &str, import_path: &str) -> String 
 }
 
 #[test]
+#[deprecated]
 fn test_fix_import_path() {
     #[cfg(not(target_os = "windows"))]
     let root = "/home/konfig";

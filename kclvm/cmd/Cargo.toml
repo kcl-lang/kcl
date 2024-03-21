@@ -17,3 +17,5 @@ kclvm-runtime = {path = "../runtime"}
 kclvm-tools = {path = "../tools"}
 kclvm-error = {path = "../error"}
 kclvm-version = {path = "../version"}
+
+kclvm-vfs ={ path = "../vfs" }
