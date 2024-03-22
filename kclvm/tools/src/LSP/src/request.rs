@@ -118,19 +118,10 @@ pub(crate) fn handle_semantic_tokens_full(
     _sender: Sender<Task>,
 ) -> anyhow::Result<Option<SemanticTokensResult>> {
     let file = file_path_from_url(&params.text_document.uri)?;
-
-    match compile_with_params(Params {
-        file: file.clone(),
-        module_cache: snapshot.module_cache,
-        scope_cache: None,
-        vfs: Some(snapshot.vfs.clone()),
-    }) {
-        Ok((_, _, gs)) => {
-            let res = semantic_tokens_full(&file, &gs);
-            Ok(res)
-        }
-        Err(_) => Ok(None),
-    }
+    let path = from_lsp::abs_path(&params.text_document.uri)?;
+    let db = snapshot.get_db(&path.clone().into())?;
+    let res = semantic_tokens_full(&file, &db.gs);
+    Ok(res)
 }
 
 pub(crate) fn handle_formatting(
@@ -312,31 +303,13 @@ pub(crate) fn handle_hover(
 pub(crate) fn handle_document_symbol(
     snapshot: LanguageServerSnapshot,
     params: lsp_types::DocumentSymbolParams,
-    sender: Sender<Task>,
+    _sender: Sender<Task>,
 ) -> anyhow::Result<Option<lsp_types::DocumentSymbolResponse>> {
     let file = file_path_from_url(&params.text_document.uri)?;
-
-    match compile_with_params(Params {
-        file: file.clone(),
-        module_cache: snapshot.module_cache,
-        scope_cache: None,
-        vfs: Some(snapshot.vfs.clone()),
-    }) {
-        Ok((_, _, gs)) => {
-            let res = document_symbol(&file, &gs);
-            if res.is_none() {
-                log_message(format!("File {file} document symbol not found"), &sender)?;
-            }
-            Ok(res)
-        }
-        Err(e) => {
-            log_message(
-                format!("File {file} document symbol not found: {e}"),
-                &sender,
-            )?;
-            Ok(None)
-        }
-    }
+    let path = from_lsp::abs_path(&params.text_document.uri)?;
+    let db = snapshot.get_db(&path.clone().into())?;
+    let res = document_symbol(&file, &db.gs);
+    Ok(res)
 }
 
 /// Called when a `textDocument/rename` request was received.

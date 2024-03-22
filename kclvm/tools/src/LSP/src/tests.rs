@@ -900,7 +900,6 @@ fn goto_def_test() {
         },
     );
 
-    wait_async_compile!();
     let id = server.next_request_id.get();
     server.next_request_id.set(id.wrapping_add(1));
 
@@ -957,7 +956,6 @@ fn complete_test() {
             },
         },
     );
-    wait_async_compile!();
 
     let id = server.next_request_id.get();
     server.next_request_id.set(id.wrapping_add(1));
@@ -1026,7 +1024,6 @@ fn hover_test() {
             },
         },
     );
-    wait_async_compile!();
 
     let id = server.next_request_id.get();
     server.next_request_id.set(id.wrapping_add(1));
@@ -1084,7 +1081,6 @@ fn hover_assign_in_lambda_test() {
             },
         },
     );
-    wait_async_compile!();
 
     let id = server.next_request_id.get();
     server.next_request_id.set(id.wrapping_add(1));
@@ -1604,8 +1600,6 @@ fn find_refs_test() {
         },
     );
 
-    wait_async_compile!();
-
     let id = server.next_request_id.get();
     server.next_request_id.set(id.wrapping_add(1));
 
@@ -1728,7 +1722,7 @@ p2 = Person {
             }],
         },
     );
-    wait_async_compile!();
+
     let id = server.next_request_id.get();
     server.next_request_id.set(id.wrapping_add(1));
     // Mock trigger find references
@@ -1811,7 +1805,6 @@ fn rename_test() {
             },
         },
     );
-    wait_async_compile!();
 
     let id = server.next_request_id.get();
     server.next_request_id.set(id.wrapping_add(1));

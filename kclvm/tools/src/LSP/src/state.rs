@@ -223,6 +223,7 @@ impl LanguageServerState {
                         let scope_cache = self.scope_cache.clone();
                         move || match url(&snapshot, file.file_id) {
                             Ok(uri) => {
+                                let mut db = snapshot.db.write();
                                 match compile_with_params(Params {
                                     file: filename.clone(),
                                     module_cache,
@@ -230,7 +231,6 @@ impl LanguageServerState {
                                     vfs: Some(snapshot.vfs),
                                 }) {
                                     Ok((prog, diags, gs)) => {
-                                        let mut db = snapshot.db.write();
                                         db.insert(
                                             file.file_id,
                                             AnalysisDatabase {
