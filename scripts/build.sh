@@ -70,16 +70,6 @@ touch $install_dir/bin/kclvm_cli
 rm $install_dir/bin/kclvm_cli
 cp ./target/release/kclvm_cli $install_dir/bin/kclvm_cli
 
-## 4. Disable Mac Binary Security
-
-case $os in
-    "Darwin" | "darwin" | "ios" | "macos")
-        xattr -rd com.apple.quarantine $install_dir > /dev/null 2>&1
-        ;;
-    *) 
-        ;;
-esac
-
 cd $topdir
 
 # Print the summary.
