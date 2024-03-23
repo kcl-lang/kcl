@@ -5,7 +5,7 @@ FROM ubuntu:22.04
 # Install python3 and pip
 
 RUN apt-get update
-RUN apt-get install python3 python3-pip -y
+RUN apt-get install python3 python3-pip git -y
 RUN python3 -m pip install -U kclvm
 
 # Copy the kclvm artifact.
