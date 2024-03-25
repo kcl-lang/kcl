@@ -100,7 +100,8 @@ impl LanguageServerSnapshot {
     }
 
     pub(crate) fn get_db(&self, path: &VfsPath) -> anyhow::Result<AnalysisDatabase> {
-        match self.vfs.read().file_id(path) {
+        let file_id = self.vfs.read().file_id(path);
+        match file_id {
             Some(id) => match self.db.read().get(&id) {
                 Some(db) => Ok(db.clone()),
                 None => Err(anyhow::anyhow!(format!(
