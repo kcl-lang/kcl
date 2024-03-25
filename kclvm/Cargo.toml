@@ -43,6 +43,7 @@ kclvm-sema = {path = "./sema"}
 kclvm-tools = {path = "./tools"}
 kclvm-version = {path = "./version"}
 kclvm-error = {path = "./error"}
+kclvm-evaluator = {path = "./evaluator"}
 kclvm-query = {path = "./query"}
 kclvm-driver = {path = "./driver"}
 
