@@ -142,6 +142,8 @@ pub fn _kclvm_get_fn_ptr_by_name(name: &str) -> u64 {
         "kclvm_dict_update" => crate::kclvm_dict_update as *const () as u64,
         "kclvm_dict_update_key_value" => crate::kclvm_dict_update_key_value as *const () as u64,
         "kclvm_dict_values" => crate::kclvm_dict_values as *const () as u64,
+        "kclvm_file_abs" => crate::kclvm_file_abs as *const () as u64,
+        "kclvm_file_exists" => crate::kclvm_file_exists as *const () as u64,
         "kclvm_file_glob" => crate::kclvm_file_glob as *const () as u64,
         "kclvm_file_modpath" => crate::kclvm_file_modpath as *const () as u64,
         "kclvm_file_read" => crate::kclvm_file_read as *const () as u64,

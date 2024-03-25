@@ -11,7 +11,6 @@ use once_cell::sync::Lazy;
 // ------------------------------
 
 pub const BASE64: &str = "base64";
-pub const BASE64_FUNCTION_NAMES: &[&str] = &["encode", "decode"];
 macro_rules! register_base64_member {
     ($($name:ident => $ty:expr)*) => (
         pub const BASE64_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
@@ -19,6 +18,9 @@ macro_rules! register_base64_member {
             $( builtin_mapping.insert(stringify!($name).to_string(), $ty); )*
             builtin_mapping
         });
+        pub const BASE64_FUNCTION_NAMES: &[&str] = &[
+            $( stringify!($name), )*
+        ];
     )
 }
 register_base64_member! {
@@ -67,24 +69,6 @@ register_base64_member! {
 // ------------------------------
 
 pub const NET: &str = "net";
-pub const NET_FUNCTION_NAMES: &[&str] = &[
-    "split_host_port",
-    "join_host_port",
-    "fqdn",
-    "parse_IP",
-    "to_IP4",
-    "to_IP16",
-    "IP_string",
-    "is_IPv4",
-    "is_IP",
-    "is_loopback_IP",
-    "is_multicast_IP",
-    "is_interface_local_multicast_IP",
-    "is_link_local_multicast_IP",
-    "is_link_local_unicast_IP",
-    "is_global_unicast_IP",
-    "is_unspecified_IP",
-];
 macro_rules! register_net_member {
     ($($name:ident => $ty:expr)*) => (
         pub const NET_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
@@ -92,6 +76,9 @@ macro_rules! register_net_member {
             $( builtin_mapping.insert(stringify!($name).to_string(), $ty); )*
             builtin_mapping
         });
+        pub const NET_FUNCTION_NAMES: &[&str] = &[
+            $( stringify!($name), )*
+        ];
     )
 }
 register_net_member! {
@@ -331,7 +318,6 @@ register_net_member! {
 // ------------------------------
 
 pub const MANIFESTS: &str = "manifests";
-pub const MANIFESTS_FUNCTION_NAMES: &[&str] = &["yaml_stream"];
 macro_rules! register_manifests_member {
     ($($name:ident => $ty:expr)*) => (
         pub const MANIFESTS_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
@@ -339,6 +325,9 @@ macro_rules! register_manifests_member {
             $( builtin_mapping.insert(stringify!($name).to_string(), $ty); )*
             builtin_mapping
         });
+        pub const MANIFESTS_FUNCTION_NAMES: &[&str] = &[
+            $( stringify!($name), )*
+        ];
     )
 }
 register_manifests_member! {
@@ -375,24 +364,6 @@ opts - The YAML serialization options
 // ------------------------------
 
 pub const MATH: &str = "math";
-pub const MATH_FUNCTION_NAMES: &[&str] = &[
-    "ceil",
-    "factorial",
-    "floor",
-    "gcd",
-    "isfinite",
-    "isinf",
-    "isnan",
-    "modf",
-    "exp",
-    "expm1",
-    "log",
-    "log1p",
-    "log2",
-    "log10",
-    "pow",
-    "sqrt",
-];
 macro_rules! register_math_member {
     ($($name:ident => $ty:expr)*) => (
         pub const MATH_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
@@ -400,6 +371,9 @@ macro_rules! register_math_member {
             $( builtin_mapping.insert(stringify!($name).to_string(), $ty); )*
             builtin_mapping
         });
+        pub const MATH_FUNCTION_NAMES: &[&str] = &[
+            $( stringify!($name), )*
+        ];
     )
 }
 register_math_member! {
@@ -649,7 +623,6 @@ register_math_member! {
 // ------------------------------
 
 pub const DATETIME: &str = "datetime";
-pub const DATETIME_FUNCTION_NAMES: [&str; 4] = ["today", "now", "ticks", "date"];
 macro_rules! register_datetime_member {
     ($($name:ident => $ty:expr)*) => (
         pub const DATETIME_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
@@ -657,6 +630,9 @@ macro_rules! register_datetime_member {
             $( builtin_mapping.insert(stringify!($name).to_string(), $ty); )*
             builtin_mapping
         });
+        pub const DATETIME_FUNCTION_NAMES: &[&str] = &[
+            $( stringify!($name), )*
+        ];
     )
 }
 register_datetime_member! {
@@ -699,8 +675,6 @@ register_datetime_member! {
 // ------------------------------
 
 pub const REGEX: &str = "regex";
-pub const REGEX_FUNCTION_NAMES: &[&str] =
-    &["replace", "match", "compile", "findall", "search", "split"];
 macro_rules! register_regex_member {
     ($($name:ident => $ty:expr)*) => (
         pub const REGEX_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
@@ -708,6 +682,9 @@ macro_rules! register_regex_member {
             $( builtin_mapping.insert(stringify!($name).to_string(), $ty); )*
             builtin_mapping
         });
+        pub const REGEX_FUNCTION_NAMES: &[&str] = &[
+            $( stringify!($name), )*
+        ];
     )
 }
 register_regex_member! {
@@ -842,15 +819,6 @@ register_regex_member! {
 // ------------------------------
 
 pub const YAML: &str = "yaml";
-pub const YAML_FUNCTION_NAMES: &[&str] = &[
-    "encode",
-    "encode_all",
-    "decode",
-    "decode_all",
-    "dump_to_file",
-    "dump_all_to_file",
-    "validate",
-];
 macro_rules! register_yaml_member {
     ($($name:ident => $ty:expr)*) => (
         pub const YAML_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
@@ -858,6 +826,9 @@ macro_rules! register_yaml_member {
             $( builtin_mapping.insert(stringify!($name).to_string(), $ty); )*
             builtin_mapping
         });
+        pub const YAML_FUNCTION_NAMES: &[&str] = &[
+            $( stringify!($name), )*
+        ];
     )
 }
 register_yaml_member! {
@@ -1036,7 +1007,6 @@ register_yaml_member! {
 // ------------------------------
 
 pub const JSON: &str = "json";
-pub const JSON_FUNCTION_NAMES: &[&str] = &["encode", "decode", "dump_to_file", "validate"];
 macro_rules! register_json_member {
     ($($name:ident => $ty:expr)*) => (
         pub const JSON_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
@@ -1044,6 +1014,9 @@ macro_rules! register_json_member {
             $( builtin_mapping.insert(stringify!($name).to_string(), $ty); )*
             builtin_mapping
         });
+        pub const JSON_FUNCTION_NAMES: &[&str] = &[
+            $( stringify!($name), )*
+        ];
     )
 }
 register_json_member! {
@@ -1155,16 +1128,6 @@ register_json_member! {
 // ------------------------------
 
 pub const CRYPTO: &str = "crypto";
-pub const CRYPTO_FUNCTION_NAMES: &[&str] = &[
-    "md5",
-    "sha1",
-    "sha224",
-    "sha256",
-    "sha384",
-    "sha512",
-    "uuid",
-    "filesha256",
-];
 macro_rules! register_crypto_member {
     ($($name:ident => $ty:expr)*) => (
         pub const CRYPTO_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
@@ -1172,6 +1135,9 @@ macro_rules! register_crypto_member {
             $( builtin_mapping.insert(stringify!($name).to_string(), $ty); )*
             builtin_mapping
         });
+        pub const CRYPTO_FUNCTION_NAMES: &[&str] = &[
+            $( stringify!($name), )*
+        ];
     )
 }
 register_crypto_member! {
@@ -1553,7 +1519,6 @@ register_units_member! {
 // ------------------------------
 
 pub const COLLECTION: &str = "collection";
-pub const COLLECTION_FUNCTION_NAMES: &[&str] = &["union_all"];
 macro_rules! register_collection_member {
     ($($name:ident => $ty:expr)*) => (
         pub const COLLECTION_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
@@ -1561,6 +1526,9 @@ macro_rules! register_collection_member {
             $( builtin_mapping.insert(stringify!($name).to_string(), $ty); )*
             builtin_mapping
         });
+        pub const COLLECTION_FUNCTION_NAMES: &[&str] = &[
+            $( stringify!($name), )*
+        ];
     )
 }
 register_collection_member! {
@@ -1585,7 +1553,6 @@ register_collection_member! {
 // ------------------------------
 
 pub const FILE: &str = "file";
-pub const FILE_FUNCTION_NAMES: &[&str] = &["read", "glob", "modpath", "workdir"];
 macro_rules! register_file_member {
     ($($name:ident => $ty:expr)*) => (
         pub const FILE_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
@@ -1593,6 +1560,9 @@ macro_rules! register_file_member {
             $( builtin_mapping.insert(stringify!($name).to_string(), $ty); )*
             builtin_mapping
         });
+        pub const FILE_FUNCTION_NAMES: &[&str] = &[
+            $( stringify!($name), )*
+        ];
     )
 }
 register_file_member! {
@@ -1637,6 +1607,34 @@ register_file_member! {
         Type::str_ref(),
         &[],
         r#"Read the workdir"#,
+        false,
+        None,
+    )
+    exists => Type::function(
+        None,
+        Type::bool_ref(),
+        &[
+            Parameter {
+                name: "filepath".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+        ],
+        r#"Whether this file path exists. Returns true if the path points at an existing entity. This function will traverse symbolic links to query information about the destination file."#,
+        false,
+        None,
+    )
+    abs => Type::function(
+        None,
+        Type::str_ref(),
+        &[
+            Parameter {
+                name: "filepath".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+        ],
+        r#"Returns the canonical, absolute form of the path with all intermediate components normalized and symbolic links resolved."#,
         false,
         None,
     )

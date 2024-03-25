@@ -137,6 +137,8 @@ pub enum ApiFunc {
     kclvm_dict_update,
     kclvm_dict_update_key_value,
     kclvm_dict_values,
+    kclvm_file_abs,
+    kclvm_file_exists,
     kclvm_file_glob,
     kclvm_file_modpath,
     kclvm_file_read,
