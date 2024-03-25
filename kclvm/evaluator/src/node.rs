@@ -3,7 +3,10 @@
 use anyhow::Ok;
 use kclvm_ast::ast::{self, CallExpr, ConfigEntry, NodeRef};
 use kclvm_ast::walker::TypedResultWalker;
-use kclvm_runtime::{ApiFunc, ValueRef};
+use kclvm_runtime::val_func::invoke_function;
+use kclvm_runtime::walker::walk_value_mut;
+use kclvm_runtime::{type_pack_and_check, ApiFunc, RuntimeErrorType, ValueRef, PKG_PATH_PREFIX};
+use kclvm_sema::{builtin, plugin};
 
 use crate::{error as kcl_error, GLOBAL_LEVEL, INNER_LEVEL};
 use crate::{EvalResult, Evaluator};
@@ -51,24 +54,21 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
     fn walk_unification_stmt(&self, unification_stmt: &'ctx ast::UnificationStmt) -> Self::Result {
         self.clear_local_vars();
         let name = &unification_stmt.target.node.names[0].node;
-        {
-            self.ctx.borrow_mut().target_vars.push(name.clone());
-        }
+        self.add_target_var(name);
         // The right value of the unification_stmt is a schema_expr.
         let value = self
             .walk_schema_expr(&unification_stmt.value.node)
             .expect(kcl_error::COMPILE_ERROR_MSG);
         if self.scope_level() == GLOBAL_LEVEL || self.is_in_lambda() {
             if self.resolve_variable(name) {
-                let org_value = self
+                let mut org_value = self
                     .walk_identifier_with_ctx(
                         &unification_stmt.target.node,
                         &ast::ExprContext::Load,
                         None,
                     )
                     .expect(kcl_error::COMPILE_ERROR_MSG);
-                let fn_name = ApiFunc::kclvm_value_op_aug_bit_or;
-                let value = self.build_call(&fn_name.name(), &[org_value, value]);
+                let value = org_value.bin_aug_bit_or(&mut self.runtime_ctx.borrow_mut(), &value);
                 // Store the identifier value
                 self.walk_identifier_with_ctx(
                     &unification_stmt.target.node,
@@ -76,7 +76,7 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
                     Some(value.clone()),
                 )
                 .expect(kcl_error::COMPILE_ERROR_MSG);
-                return Ok(value);
+                return Ok(value.clone());
             } else {
                 self.walk_identifier_with_ctx(
                     &unification_stmt.target.node,
@@ -96,8 +96,7 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
                     None,
                 )
                 .expect(kcl_error::COMPILE_ERROR_MSG);
-            let fn_name = ApiFunc::kclvm_value_op_bit_or;
-            let value = self.build_call(&fn_name.name(), &[org_value, value]);
+            let value = org_value.bin_bit_or(&mut self.runtime_ctx.borrow_mut(), &value);
             // Store the identifier value
             self.walk_identifier_with_ctx(
                 &unification_stmt.target.node,
@@ -119,17 +118,28 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
         self.clear_local_vars();
         // Set target vars.
         for name in &assign_stmt.targets {
-            self.ctx
-                .borrow_mut()
-                .target_vars
-                .push(name.node.names[0].node.clone());
+            self.add_target_var(&name.node.names[0].node)
         }
         // Load the right value
-        let value = self
+        let mut value = self
             .walk_expr(&assign_stmt.value)
             .expect(kcl_error::COMPILE_ERROR_MSG);
-        if let Some(_ty) = &assign_stmt.ty {
-            // todo
+        // Runtime type cast if exists the type annotation.
+        if let Some(ty) = &assign_stmt.ty {
+            let is_in_schema = self.is_in_schema() || self.is_in_schema_expr();
+            value = type_pack_and_check(
+                &mut self.runtime_ctx.borrow_mut(),
+                &value,
+                vec![&ty.node.to_string()],
+            );
+            // Schema required attribute validating.
+            if !is_in_schema {
+                walk_value_mut(&value, &mut |value: &ValueRef| {
+                    if value.is_schema() {
+                        value.schema_check_attr_optional(&mut self.runtime_ctx.borrow_mut(), true);
+                    }
+                })
+            }
         }
         if assign_stmt.targets.len() == 1 {
             // Store the single target
@@ -148,12 +158,7 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
     }
 
     fn walk_aug_assign_stmt(&self, aug_assign_stmt: &'ctx ast::AugAssignStmt) -> Self::Result {
-        {
-            self.ctx
-                .borrow_mut()
-                .target_vars
-                .push(aug_assign_stmt.target.node.names[0].node.clone());
-        }
+        self.add_target_var(&aug_assign_stmt.target.node.names[0].node);
         // Load the right value
         let right_value = self
             .walk_expr(&aug_assign_stmt.value)
@@ -162,24 +167,23 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
         let org_value = self
             .walk_identifier_with_ctx(&aug_assign_stmt.target.node, &ast::ExprContext::Load, None)
             .expect(kcl_error::COMPILE_ERROR_MSG);
-        let fn_name = match aug_assign_stmt.op {
-            ast::AugOp::Add => ApiFunc::kclvm_value_op_aug_add,
-            ast::AugOp::Sub => ApiFunc::kclvm_value_op_aug_sub,
-            ast::AugOp::Mul => ApiFunc::kclvm_value_op_aug_mul,
-            ast::AugOp::Div => ApiFunc::kclvm_value_op_aug_div,
-            ast::AugOp::Mod => ApiFunc::kclvm_value_op_aug_mod,
-            ast::AugOp::Pow => ApiFunc::kclvm_value_op_aug_pow,
-            ast::AugOp::LShift => ApiFunc::kclvm_value_op_aug_bit_lshift,
-            ast::AugOp::RShift => ApiFunc::kclvm_value_op_aug_bit_rshift,
-            ast::AugOp::BitOr => ApiFunc::kclvm_value_op_bit_or,
-            ast::AugOp::BitXor => ApiFunc::kclvm_value_op_aug_bit_xor,
-            ast::AugOp::BitAnd => ApiFunc::kclvm_value_op_aug_bit_and,
-            ast::AugOp::FloorDiv => ApiFunc::kclvm_value_op_aug_floor_div,
+        let value = match aug_assign_stmt.op {
+            ast::AugOp::Add => self.add(org_value, right_value),
+            ast::AugOp::Sub => self.sub(org_value, right_value),
+            ast::AugOp::Mul => self.mul(org_value, right_value),
+            ast::AugOp::Div => self.div(org_value, right_value),
+            ast::AugOp::Mod => self.r#mod(org_value, right_value),
+            ast::AugOp::Pow => self.pow(org_value, right_value),
+            ast::AugOp::LShift => self.bit_lshift(org_value, right_value),
+            ast::AugOp::RShift => self.bit_rshift(org_value, right_value),
+            ast::AugOp::BitOr => self.bit_or(org_value, right_value),
+            ast::AugOp::BitXor => self.bit_xor(org_value, right_value),
+            ast::AugOp::BitAnd => self.bit_and(org_value, right_value),
+            ast::AugOp::FloorDiv => self.floor_div(org_value, right_value),
             ast::AugOp::Assign => {
                 return Err(anyhow::anyhow!(kcl_error::INVALID_OPERATOR_MSG));
             }
         };
-        let value = self.build_call(&fn_name.name(), &[org_value, right_value]);
         // Store the identifier value
         self.walk_identifier_with_ctx(
             &aug_assign_stmt.target.node,
@@ -190,29 +194,76 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
         Ok(value)
     }
 
-    fn walk_assert_stmt(&self, _assert_stmt: &'ctx ast::AssertStmt) -> Self::Result {
-        todo!()
+    fn walk_assert_stmt(&self, assert_stmt: &'ctx ast::AssertStmt) -> Self::Result {
+        let do_assert = || {
+            let assert_result = self
+                .walk_expr(&assert_stmt.test)
+                .expect(kcl_error::COMPILE_ERROR_MSG);
+            // Assert statement error message.
+            let msg = {
+                if let Some(msg) = &assert_stmt.msg {
+                    self.walk_expr(msg).expect(kcl_error::COMPILE_ERROR_MSG)
+                } else {
+                    self.string_value("")
+                }
+            };
+            if !assert_result.is_truthy() {
+                let mut ctx = self.runtime_ctx.borrow_mut();
+                ctx.set_err_type(&RuntimeErrorType::AssertionError);
+                let msg = msg.as_str();
+                panic!("{}", msg);
+            }
+        };
+        if let Some(if_cond) = &assert_stmt.if_cond {
+            let if_value = self.walk_expr(if_cond).expect(kcl_error::COMPILE_ERROR_MSG);
+            let is_truth = self.value_is_truthy(&if_value);
+            if is_truth {
+                do_assert()
+            }
+        } else {
+            do_assert()
+        }
+        self.ok_result()
     }
 
-    fn walk_if_stmt(&self, _if_stmt: &'ctx ast::IfStmt) -> Self::Result {
-        todo!()
+    fn walk_if_stmt(&self, if_stmt: &'ctx ast::IfStmt) -> Self::Result {
+        let cond = self
+            .walk_expr(&if_stmt.cond)
+            .expect(kcl_error::COMPILE_ERROR_MSG);
+        let is_truth = self.value_is_truthy(&cond);
+        if is_truth {
+            self.walk_stmts(&if_stmt.body)
+                .expect(kcl_error::COMPILE_ERROR_MSG);
+        } else {
+            self.walk_stmts(&if_stmt.orelse)
+                .expect(kcl_error::COMPILE_ERROR_MSG);
+        }
+        self.ok_result()
     }
+
     fn walk_import_stmt(&self, import_stmt: &'ctx ast::ImportStmt) -> Self::Result {
         let pkgpath = import_stmt.path.node.as_str();
         // Check if it has already been generated, there is no need to generate code
         // for duplicate import statements.
+        if self.check_imported(pkgpath) {
+            return self.ok_result();
+        }
+        // Standard or plugin modules.
+        if builtin::STANDARD_SYSTEM_MODULES.contains(&pkgpath)
+            || pkgpath.starts_with(plugin::PLUGIN_MODULE_PREFIX)
         {
-            let imported = &mut self.ctx.borrow_mut().imported;
-            if imported.contains(pkgpath) {
-                return self.ok_result();
+            // Nothing to do on the builtin system module import because the check has been done.
+            return self.ok_result();
+        } else {
+            let pkgpath = format!("{}{}", PKG_PATH_PREFIX, import_stmt.path.node);
+            if let Some(modules) = self.program.pkgs.get(&import_stmt.path.node) {
+                self.push_pkgpath(&pkgpath);
+                self.init_scope(&pkgpath);
+                self.compile_ast_modules(&modules);
+                self.pop_pkgpath();
             }
-            // Deref the borrow mut
         }
-        {
-            let imported = &mut self.ctx.borrow_mut().imported;
-            (*imported).insert(pkgpath.to_string());
-            // Deref the borrow mut
-        }
+        self.mark_imported(pkgpath);
         self.ok_result()
     }
 
@@ -270,8 +321,109 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
         }
     }
 
-    fn walk_quant_expr(&self, _quant_expr: &'ctx ast::QuantExpr) -> Self::Result {
-        todo!()
+    fn walk_quant_expr(&self, quant_expr: &'ctx ast::QuantExpr) -> Self::Result {
+        let mut result = match quant_expr.op {
+            ast::QuantOperation::All => self.bool_value(true),
+            ast::QuantOperation::Any => self.bool_value(false),
+            ast::QuantOperation::Map => self.list_value(),
+            ast::QuantOperation::Filter => self.value_deep_copy(
+                &self
+                    .walk_expr(&quant_expr.target)
+                    .expect(kcl_error::COMPILE_ERROR_MSG),
+            ),
+        };
+        // Iterator
+        let iter_host_value = if let ast::QuantOperation::Filter = quant_expr.op {
+            self.value_deep_copy(&result)
+        } else {
+            self.walk_expr(&quant_expr.target)
+                .expect(kcl_error::COMPILE_ERROR_MSG)
+        };
+        let mut iter_value = iter_host_value.iter();
+        // Start iteration and enter the loop scope for the loop variable.
+        self.enter_scope();
+        // Start block
+        while let Some((next_value, key, value)) = iter_value.next_with_key_value(&iter_host_value)
+        {
+            // Next value block
+            let variables = &quant_expr.variables;
+            for v in variables {
+                self.add_local_var(&v.node.names[0].node);
+            }
+            if variables.len() == 1 {
+                // Store the target
+                self.walk_identifier_with_ctx(
+                    &variables.first().expect(kcl_error::INTERNAL_ERROR_MSG).node,
+                    &ast::ExprContext::Store,
+                    Some(next_value.clone()),
+                )
+                .expect(kcl_error::COMPILE_ERROR_MSG);
+            } else if variables.len() == 2 {
+                // Store the target
+                self.walk_identifier_with_ctx(
+                    &variables.first().expect(kcl_error::INTERNAL_ERROR_MSG).node,
+                    &ast::ExprContext::Store,
+                    Some(key.clone()),
+                )
+                .expect(kcl_error::COMPILE_ERROR_MSG);
+                self.walk_identifier_with_ctx(
+                    &variables.get(1).expect(kcl_error::INTERNAL_ERROR_MSG).node,
+                    &ast::ExprContext::Store,
+                    Some(value.clone()),
+                )
+                .expect(kcl_error::COMPILE_ERROR_MSG);
+            } else {
+                panic!(
+                    "the number of loop variables is {}, which can only be 1 or 2",
+                    variables.len()
+                )
+            }
+            // Check the if filter condition
+            if let Some(if_expr) = &quant_expr.if_cond {
+                let if_truth = self.walk_expr(if_expr).expect(kcl_error::COMPILE_ERROR_MSG);
+                let is_truth = self.value_is_truthy(&if_truth);
+                if is_truth {
+                    // Skip this iteration and goto the start block
+                    continue;
+                }
+            }
+            // Loop var generation body block
+            let test = &quant_expr.test;
+            let value = self.walk_expr(test).expect(kcl_error::COMPILE_ERROR_MSG);
+            let is_truth = self.value_is_truthy(&value);
+            match quant_expr.op {
+                ast::QuantOperation::All => {
+                    if !is_truth {
+                        self.leave_scope();
+                        return Ok(self.bool_value(false));
+                    }
+                }
+                ast::QuantOperation::Any => {
+                    if is_truth {
+                        self.leave_scope();
+                        return Ok(self.bool_value(true));
+                    }
+                }
+                ast::QuantOperation::Filter => {
+                    if !is_truth {
+                        continue;
+                    }
+                    if result.is_dict() {
+                        result.dict_remove(&next_value.as_str());
+                    } else if result.is_list() {
+                        result.list_remove(&next_value);
+                    } else {
+                        panic!("only list, dict and schema can be removed item");
+                    }
+                }
+                ast::QuantOperation::Map => {
+                    self.list_append(&mut result, &value);
+                }
+            }
+        }
+        self.leave_scope();
+        // End for block.
+        Ok(result)
     }
 
     fn walk_schema_attr(&self, _schema_attr: &'ctx ast::SchemaAttr) -> Self::Result {
@@ -294,13 +446,12 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
         let value = self
             .walk_expr(&unary_expr.operand)
             .expect(kcl_error::COMPILE_ERROR_MSG);
-        let fn_name = match unary_expr.op {
-            ast::UnaryOp::UAdd => ApiFunc::kclvm_value_unary_plus,
-            ast::UnaryOp::USub => ApiFunc::kclvm_value_unary_minus,
-            ast::UnaryOp::Invert => ApiFunc::kclvm_value_unary_not,
-            ast::UnaryOp::Not => ApiFunc::kclvm_value_unary_l_not,
-        };
-        Ok(self.build_call(&fn_name.name(), &[value]))
+        Ok(match unary_expr.op {
+            ast::UnaryOp::UAdd => value.unary_plus(),
+            ast::UnaryOp::USub => value.unary_minus(),
+            ast::UnaryOp::Invert => value.unary_not(),
+            ast::UnaryOp::Not => value.unary_l_not(),
+        })
     }
 
     fn walk_binary_expr(&self, binary_expr: &'ctx ast::BinaryExpr) -> Self::Result {
@@ -341,21 +492,47 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
             };
             Ok(value)
         } else {
-            todo!()
+            // Short circuit operation of logical operators
+            let jump_if_false = matches!(binary_expr.op, ast::BinOp::And);
+            let left_value = self
+                .walk_expr(&binary_expr.left)
+                .expect(kcl_error::COMPILE_ERROR_MSG);
+            let is_truth = self.value_is_truthy(&left_value);
+            if jump_if_false {
+                // Jump if false on logic and
+                if is_truth {
+                    let right_value = self
+                        .walk_expr(&binary_expr.right)
+                        .expect(kcl_error::COMPILE_ERROR_MSG);
+                    return Ok(right_value);
+                }
+            } else {
+                // Jump if true on logic or
+                if !is_truth {
+                    let right_value = self
+                        .walk_expr(&binary_expr.right)
+                        .expect(kcl_error::COMPILE_ERROR_MSG);
+                    return Ok(right_value);
+                }
+            };
+            Ok(left_value)
         }
     }
 
     fn walk_selector_expr(&self, selector_expr: &'ctx ast::SelectorExpr) -> Self::Result {
-        let mut value = self
+        let value = self
             .walk_expr(&selector_expr.value)
             .expect(kcl_error::COMPILE_ERROR_MSG);
-        let string_ptr_value = self.string_value(selector_expr.attr.node.names[0].node.as_str());
-        let fn_name = if selector_expr.has_question {
-            &ApiFunc::kclvm_value_load_attr_option
+        let key = selector_expr.attr.node.names[0].node.as_str();
+        let mut value = if selector_expr.has_question {
+            if value.is_truthy() {
+                value.load_attr(key)
+            } else {
+                self.none_value()
+            }
         } else {
-            &ApiFunc::kclvm_value_load_attr
+            value.load_attr(key)
         };
-        value = self.build_call(&fn_name.name(), &[value, string_ptr_value]);
         for name in &selector_expr.attr.node.names[1..] {
             value = value.load_attr(&name.node)
         }
@@ -363,7 +540,7 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
     }
 
     fn walk_call_expr(&self, call_expr: &'ctx ast::CallExpr) -> Self::Result {
-        let _func = self
+        let func = self
             .walk_expr(&call_expr.func)
             .expect(kcl_error::COMPILE_ERROR_MSG);
         // args
@@ -389,16 +566,63 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
                 -1,
             );
         }
-        let _pkgpath = self.current_pkgpath();
-        let _is_in_schema = self.is_in_schema() || self.is_in_schema_expr();
-        todo!();
+        let pkgpath = self.current_pkgpath();
+        let is_in_schema = self.is_in_schema() || self.is_in_schema_expr();
+        Ok(invoke_function(
+            &func,
+            &mut list_value,
+            &dict_value,
+            &mut self.runtime_ctx.borrow_mut(),
+            &pkgpath,
+            is_in_schema,
+        ))
     }
 
     fn walk_subscript(&self, subscript: &'ctx ast::Subscript) -> Self::Result {
-        let _value = self
+        let mut value = self
             .walk_expr(&subscript.value)
             .expect(kcl_error::COMPILE_ERROR_MSG);
-        todo!();
+        if let Some(index) = &subscript.index {
+            // index
+            let index = self.walk_expr(index).expect(kcl_error::COMPILE_ERROR_MSG);
+            value = if subscript.has_question {
+                value.bin_subscr_option(&index)
+            } else {
+                value.bin_subscr(&index)
+            };
+        } else {
+            let lower = {
+                if let Some(lower) = &subscript.lower {
+                    self.walk_expr(lower).expect(kcl_error::COMPILE_ERROR_MSG)
+                } else {
+                    self.none_value()
+                }
+            };
+            let upper = {
+                if let Some(upper) = &subscript.upper {
+                    self.walk_expr(upper).expect(kcl_error::COMPILE_ERROR_MSG)
+                } else {
+                    self.none_value()
+                }
+            };
+            let step = {
+                if let Some(step) = &subscript.step {
+                    self.walk_expr(step).expect(kcl_error::COMPILE_ERROR_MSG)
+                } else {
+                    self.none_value()
+                }
+            };
+            value = if subscript.has_question {
+                if value.is_truthy() {
+                    value.list_slice(&lower, &upper, &step)
+                } else {
+                    self.none_value()
+                }
+            } else {
+                value.list_slice(&lower, &upper, &step)
+            };
+        }
+        Ok(value)
     }
 
     fn walk_paren_expr(&self, paren_expr: &'ctx ast::ParenExpr) -> Self::Result {
@@ -419,11 +643,30 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
         Ok(list_value)
     }
 
-    fn walk_list_if_item_expr(
-        &self,
-        _list_if_item_expr: &'ctx ast::ListIfItemExpr,
-    ) -> Self::Result {
-        todo!()
+    fn walk_list_if_item_expr(&self, list_if_item_expr: &'ctx ast::ListIfItemExpr) -> Self::Result {
+        let cond = self
+            .walk_expr(&list_if_item_expr.if_cond)
+            .expect(kcl_error::COMPILE_ERROR_MSG);
+        let is_truth = self.value_is_truthy(&cond);
+        Ok(if is_truth {
+            let mut then_value = self.list_value();
+            for expr in &list_if_item_expr.exprs {
+                let value = self.walk_expr(expr).expect(kcl_error::COMPILE_ERROR_MSG);
+                match &expr.node {
+                    ast::Expr::Starred(_) | ast::Expr::ListIfItem(_) => {
+                        self.list_append_unpack(&mut then_value, &value)
+                    }
+                    _ => self.list_append(&mut then_value, &value),
+                };
+            }
+            then_value
+        } else {
+            if let Some(orelse) = &list_if_item_expr.orelse {
+                self.walk_expr(orelse).expect(kcl_error::COMPILE_ERROR_MSG)
+            } else {
+                self.none_value()
+            }
+        })
     }
 
     fn walk_starred_expr(&self, starred_expr: &'ctx ast::StarredExpr) -> Self::Result {
@@ -431,7 +674,7 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
     }
 
     fn walk_list_comp(&self, list_comp: &'ctx ast::ListComp) -> Self::Result {
-        let collection_value = self.list_value();
+        let mut collection_value = self.list_value();
         self.enter_scope();
         self.walk_generator(
             &list_comp.generators,
@@ -439,15 +682,15 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
             None,
             None,
             0,
-            collection_value.clone(),
-            ast::CompType::List,
+            &mut collection_value,
+            &ast::CompType::List,
         );
         self.leave_scope();
         Ok(collection_value)
     }
 
     fn walk_dict_comp(&self, dict_comp: &'ctx ast::DictComp) -> Self::Result {
-        let collection_value = self.dict_value();
+        let mut collection_value = self.dict_value();
         self.enter_scope();
         let key = dict_comp
             .entry
@@ -460,8 +703,8 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
             Some(&dict_comp.entry.value),
             Some(&dict_comp.entry.operation),
             0,
-            collection_value.clone(),
-            ast::CompType::Dict,
+            &mut collection_value,
+            &ast::CompType::Dict,
         );
         self.leave_scope();
         Ok(collection_value)
@@ -469,9 +712,21 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
 
     fn walk_config_if_entry_expr(
         &self,
-        _config_if_entry_expr: &'ctx ast::ConfigIfEntryExpr,
+        config_if_entry_expr: &'ctx ast::ConfigIfEntryExpr,
     ) -> Self::Result {
-        todo!()
+        let cond = self
+            .walk_expr(&config_if_entry_expr.if_cond)
+            .expect(kcl_error::COMPILE_ERROR_MSG);
+        let is_truth = self.value_is_truthy(&cond);
+        Ok(if is_truth {
+            self.walk_config_entries(&config_if_entry_expr.items)?
+        } else {
+            if let Some(orelse) = &config_if_entry_expr.orelse {
+                self.walk_expr(orelse).expect(kcl_error::COMPILE_ERROR_MSG)
+            } else {
+                self.none_value()
+            }
+        })
     }
 
     fn walk_comp_clause(&self, _comp_clause: &'ctx ast::CompClause) -> Self::Result {
@@ -550,37 +805,47 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
     }
 
     fn walk_compare(&self, compare: &'ctx ast::Compare) -> Self::Result {
-        let left_value = self
+        let mut left_value = self
             .walk_expr(&compare.left)
             .expect(kcl_error::COMPILE_ERROR_MSG);
         if compare.comparators.len() > 1 {
+            let mut result_value = self.undefined_value();
             for (i, op) in compare.ops.iter().enumerate() {
-                let _has_next = i < (compare.ops.len() - 1);
+                let has_next = i < (compare.ops.len() - 1);
                 let right_value = self
                     .walk_expr(&compare.comparators[i])
                     .expect(kcl_error::COMPILE_ERROR_MSG);
-                let _result_value = match op {
-                    ast::CmpOp::Eq => self.cmp_equal_to(left_value, right_value),
-                    ast::CmpOp::NotEq => self.cmp_not_equal_to(left_value, right_value),
-                    ast::CmpOp::Gt => self.cmp_greater_than(left_value, right_value),
-                    ast::CmpOp::GtE => self.cmp_greater_than_or_equal(left_value, right_value),
-                    ast::CmpOp::Lt => self.cmp_less_than(left_value, right_value),
-                    ast::CmpOp::LtE => self.cmp_less_than_or_equal(left_value, right_value),
-                    ast::CmpOp::Is => self.is(left_value, right_value),
-                    ast::CmpOp::IsNot => self.is_not(left_value, right_value),
-                    ast::CmpOp::Not => self.is_not(left_value, right_value),
-                    ast::CmpOp::NotIn => self.not_in(left_value, right_value),
-                    ast::CmpOp::In => self.r#in(left_value, right_value),
+                result_value = match op {
+                    ast::CmpOp::Eq => self.cmp_equal_to(left_value, right_value.clone()),
+                    ast::CmpOp::NotEq => self.cmp_not_equal_to(left_value, right_value.clone()),
+                    ast::CmpOp::Gt => self.cmp_greater_than(left_value, right_value.clone()),
+                    ast::CmpOp::GtE => {
+                        self.cmp_greater_than_or_equal(left_value, right_value.clone())
+                    }
+                    ast::CmpOp::Lt => self.cmp_less_than(left_value, right_value.clone()),
+                    ast::CmpOp::LtE => self.cmp_less_than_or_equal(left_value, right_value.clone()),
+                    ast::CmpOp::Is => self.is(left_value, right_value.clone()),
+                    ast::CmpOp::IsNot => self.is_not(left_value, right_value.clone()),
+                    ast::CmpOp::Not => self.is_not(left_value, right_value.clone()),
+                    ast::CmpOp::NotIn => self.not_in(left_value, right_value.clone()),
+                    ast::CmpOp::In => self.r#in(left_value, right_value.clone()),
                 };
-                // Get next value using a store/load temp block
-                todo!()
+                left_value = right_value;
+                let is_truth = self.value_is_truthy(&result_value);
+                if has_next {
+                    if !is_truth {
+                        break;
+                    }
+                } else {
+                    break;
+                }
             }
-            Ok(left_value)
+            Ok(result_value)
         } else {
             let right_value = self
                 .walk_expr(&compare.comparators[0])
                 .expect(kcl_error::COMPILE_ERROR_MSG);
-            let value = match &compare.ops[0] {
+            Ok(match &compare.ops[0] {
                 ast::CmpOp::Eq => self.cmp_equal_to(left_value, right_value),
                 ast::CmpOp::NotEq => self.cmp_not_equal_to(left_value, right_value),
                 ast::CmpOp::Gt => self.cmp_greater_than(left_value, right_value),
@@ -592,8 +857,7 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
                 ast::CmpOp::Not => self.is_not(left_value, right_value),
                 ast::CmpOp::NotIn => self.not_in(left_value, right_value),
                 ast::CmpOp::In => self.r#in(left_value, right_value),
-            };
-            Ok(value)
+            })
         }
     }
 
@@ -819,15 +1083,94 @@ impl<'ctx> Evaluator<'ctx> {
 
     pub fn walk_generator(
         &self,
-        _generators: &'ctx [Box<ast::Node<ast::CompClause>>],
-        _elt: &'ctx ast::Node<ast::Expr>,
-        _val: Option<&'ctx ast::Node<ast::Expr>>,
-        _op: Option<&'ctx ast::ConfigEntryOperation>,
-        _gen_index: usize,
-        _collection_value: ValueRef,
-        _comp_type: ast::CompType,
+        generators: &'ctx [Box<ast::Node<ast::CompClause>>],
+        elt: &'ctx ast::Node<ast::Expr>,
+        val: Option<&'ctx ast::Node<ast::Expr>>,
+        op: Option<&'ctx ast::ConfigEntryOperation>,
+        gen_index: usize,
+        collection_value: &mut ValueRef,
+        comp_type: &ast::CompType,
     ) {
-        todo!()
+        // Start block
+        let generator = &generators[gen_index];
+        let iter_host_value = self
+            .walk_expr(&generator.node.iter)
+            .expect(kcl_error::COMPILE_ERROR_MSG);
+        let mut iter_value = iter_host_value.iter();
+        let targets = &generator.node.targets;
+        for v in targets {
+            self.add_local_var(&v.node.names[0].node)
+        }
+        while let Some((next_value, key, value)) = iter_value.next_with_key_value(&iter_host_value)
+        {
+            if targets.len() == 1 {
+                // Store the target
+                self.walk_identifier_with_ctx(
+                    &targets.first().expect(kcl_error::INTERNAL_ERROR_MSG).node,
+                    &ast::ExprContext::Store,
+                    Some(next_value),
+                )
+                .expect(kcl_error::COMPILE_ERROR_MSG);
+            } else if targets.len() == 2 {
+                // Store the target
+                self.walk_identifier_with_ctx(
+                    &targets.first().expect(kcl_error::INTERNAL_ERROR_MSG).node,
+                    &ast::ExprContext::Store,
+                    Some(key),
+                )
+                .expect(kcl_error::COMPILE_ERROR_MSG);
+                self.walk_identifier_with_ctx(
+                    &targets.get(1).expect(kcl_error::INTERNAL_ERROR_MSG).node,
+                    &ast::ExprContext::Store,
+                    Some(value),
+                )
+                .expect(kcl_error::COMPILE_ERROR_MSG);
+            } else {
+                panic!(
+                    "the number of loop variables is {}, which can only be 1 or 2",
+                    generator.node.targets.len()
+                )
+            }
+            // Check the if filter
+            for if_expr in &generator.node.ifs {
+                let is_truth = self.walk_expr(if_expr).expect(kcl_error::COMPILE_ERROR_MSG);
+                let is_truth = self.value_is_truthy(&is_truth);
+                // Skip the iteration
+                if !is_truth {
+                    continue;
+                }
+            }
+            let next_gen_index = gen_index + 1;
+            if next_gen_index >= generators.len() {
+                match comp_type {
+                    ast::CompType::List => {
+                        let item = self.walk_expr(elt).expect(kcl_error::COMPILE_ERROR_MSG);
+                        self.list_append(collection_value, &item);
+                    }
+                    ast::CompType::Dict => {
+                        let value = self
+                            .walk_expr(val.expect(kcl_error::INTERNAL_ERROR_MSG))
+                            .expect(kcl_error::COMPILE_ERROR_MSG);
+                        let key = self.walk_expr(elt).expect(kcl_error::COMPILE_ERROR_MSG);
+                        let op = op.expect(kcl_error::INTERNAL_ERROR_MSG);
+                        self.dict_insert(collection_value, &key.as_str(), &value, &op, -1);
+                    }
+                }
+            } else {
+                self.walk_generator(
+                    generators,
+                    elt,
+                    val,
+                    op,
+                    next_gen_index,
+                    collection_value,
+                    comp_type,
+                );
+            }
+        }
+        for v in targets {
+            self.remove_local_var(&v.node.names[0].node)
+        }
     }
 
     pub(crate) fn walk_config_entries(&self, items: &'ctx [NodeRef<ConfigEntry>]) -> EvalResult {

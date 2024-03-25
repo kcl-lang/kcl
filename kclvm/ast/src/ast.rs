@@ -1790,7 +1790,7 @@ impl From<token::BinOpToken> for AugOp {
             token::BinOpToken::Slash => AugOp::Div,
             token::BinOpToken::Percent => AugOp::Mod,
             token::BinOpToken::StarStar => AugOp::Pow,
-            token::BinOpToken::SlashSlash => AugOp::Add,
+            token::BinOpToken::SlashSlash => AugOp::FloorDiv,
             token::BinOpToken::Caret => AugOp::BitXor,
             token::BinOpToken::And => AugOp::BitAnd,
             token::BinOpToken::Or => AugOp::BitOr,
