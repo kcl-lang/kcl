@@ -215,6 +215,23 @@ impl ValueRef {
     }
 }
 
+pub(crate) fn get_call_args_str(
+    args: &ValueRef,
+    kwargs: &ValueRef,
+    index: usize,
+    key: Option<&str>,
+) -> Option<String> {
+    if let Some(key) = key {
+        if let Some(val) = kwargs.get_by_key(key) {
+            return Some(val.as_str());
+        }
+    }
+    if index < args.len() {
+        return Some(args.list_get(index as isize).unwrap().as_str());
+    }
+    None
+}
+
 #[cfg(test)]
 mod test_value_args {
     use crate::*;

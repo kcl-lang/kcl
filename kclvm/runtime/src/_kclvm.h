@@ -304,11 +304,15 @@ void kclvm_dict_update_key_value(kclvm_value_ref_t* p, kclvm_value_ref_t* key, k
 
 kclvm_value_ref_t* kclvm_dict_values(kclvm_context_t* ctx, kclvm_value_ref_t* p);
 
-kclvm_value_ref_t* kclvm_file_glob(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
+kclvm_value_ref_t* kclvm_file_abs(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+
+kclvm_value_ref_t* kclvm_file_exists(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+
+kclvm_value_ref_t* kclvm_file_glob(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
 kclvm_value_ref_t* kclvm_file_modpath(kclvm_context_t* ctx, kclvm_value_ref_t* _args, kclvm_value_ref_t* _kwargs);
 
-kclvm_value_ref_t* kclvm_file_read(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
+kclvm_value_ref_t* kclvm_file_read(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
 kclvm_value_ref_t* kclvm_file_workdir(kclvm_context_t* ctx, kclvm_value_ref_t* _args, kclvm_value_ref_t* _kwargs);
 
