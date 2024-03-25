@@ -198,6 +198,7 @@ pub fn execute(
 
     remove_file(&lib_path)?;
     clean_tmp_files(&temp_entry_file, &lib_suffix)?;
+
     Ok(result)
 }
 

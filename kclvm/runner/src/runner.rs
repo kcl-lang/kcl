@@ -61,6 +61,10 @@ pub struct ExecProgramArgs {
     /// plugin_agent is the address of plugin.
     #[serde(skip)]
     pub plugin_agent: u64,
+    /// fast_eval denotes directly executing at the AST level to obtain
+    /// the result without any form of compilation.
+    #[serde(skip)]
+    pub fast_eval: bool,
 }
 
 impl ExecProgramArgs {

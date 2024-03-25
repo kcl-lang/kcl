@@ -61,6 +61,8 @@ pub use val_plan::*;
 
 pub mod val_str;
 
+pub mod val_attr;
+
 pub mod val_type;
 pub use val_type::*;
 

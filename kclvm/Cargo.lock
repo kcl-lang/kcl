@@ -1538,6 +1538,7 @@ dependencies = [
  "kclvm-config",
  "kclvm-driver",
  "kclvm-error",
+ "kclvm-evaluator",
  "kclvm-loader",
  "kclvm-parser",
  "kclvm-query",
@@ -1719,6 +1720,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "kclvm-evaluator"
+version = "0.8.3"
+dependencies = [
+ "anyhow",
+ "indexmap 1.9.3",
+ "insta",
+ "kclvm-ast",
+ "kclvm-error",
+ "kclvm-loader",
+ "kclvm-parser",
+ "kclvm-runtime",
+ "kclvm-sema",
+]
+
+[[package]]
 name = "kclvm-lexer"
 version = "0.8.3"
 dependencies = [
@@ -1820,6 +1836,7 @@ dependencies = [
  "kclvm-config",
  "kclvm-driver",
  "kclvm-error",
+ "kclvm-evaluator",
  "kclvm-parser",
  "kclvm-query",
  "kclvm-runtime",

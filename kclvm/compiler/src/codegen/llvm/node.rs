@@ -293,7 +293,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
             }
             // Deref the borrow mut
         }
-        // Stardard or plugin modules.
+        // Standard or plugin modules.
         if builtin::STANDARD_SYSTEM_MODULES.contains(&pkgpath)
             || pkgpath.starts_with(plugin::PLUGIN_MODULE_PREFIX)
         {
