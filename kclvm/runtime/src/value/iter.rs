@@ -109,6 +109,19 @@ impl ValueIterator {
         }
     }
 
+    /// Get the next value, iterate key and value of the iterator.
+    pub fn next_with_key_value<'a>(
+        &'a mut self,
+        host: &'a ValueRef,
+    ) -> Option<(ValueRef, ValueRef, ValueRef)> {
+        let next_value = self.next(host);
+        match next_value {
+            Some(v) => Some((v.clone(), self.cur_key.clone(), self.cur_val.clone())),
+            None => None,
+        }
+    }
+
+    /// Get the next value reference of the iterator.
     pub fn next<'a>(&'a mut self, host: &'a ValueRef) -> Option<&'a ValueRef> {
         if host.is_empty() {
             return None;
