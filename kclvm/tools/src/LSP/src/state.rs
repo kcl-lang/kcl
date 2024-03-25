@@ -27,13 +27,13 @@ pub(crate) type RequestHandler = fn(&mut LanguageServerState, lsp_server::Respon
 /// A `Task` is something that is send from async tasks to the entry point for processing. This
 /// enables synchronizing resources like the connection with the client.
 #[allow(unused)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) enum Task {
     Response(Response),
     Notify(lsp_server::Notification),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) enum Event {
     Task(Task),
     Lsp(lsp_server::Message),
@@ -211,9 +211,7 @@ impl LanguageServerState {
 
         // Construct an AnalysisChange to apply to the analysis
         for file in changed_files {
-            let vfs = self.vfs.read();
-            let start = Instant::now();
-            let filename = get_file_name(vfs, file.file_id);
+            let filename = get_file_name(self.vfs.read(), file.file_id);
             match filename {
                 Ok(filename) => {
                     self.thread_pool.execute({
