@@ -10,7 +10,7 @@ use crossbeam_channel::{select, unbounded, Receiver, Sender};
 use indexmap::IndexSet;
 use kclvm_parser::KCLModuleCache;
 use kclvm_sema::resolver::scope::{CachedScope, KCLScopeCache};
-use lsp_server::{ReqQueue, Response};
+use lsp_server::{ReqQueue, Request, Response};
 use lsp_types::Url;
 use lsp_types::{
     notification::{Notification, PublishDiagnostics},
@@ -31,6 +31,7 @@ pub(crate) type RequestHandler = fn(&mut LanguageServerState, lsp_server::Respon
 pub(crate) enum Task {
     Response(Response),
     Notify(lsp_server::Notification),
+    Retry(Request),
 }
 
 #[derive(Debug, Clone)]
@@ -180,7 +181,7 @@ impl LanguageServerState {
         let start_time = Instant::now();
         // 1. Process the incoming event
         match event {
-            Event::Task(task) => self.handle_task(task)?,
+            Event::Task(task) => self.handle_task(task, start_time)?,
             Event::Lsp(msg) => {
                 match msg {
                     lsp_server::Message::Request(req) => self.on_request(req, start_time)?,
@@ -282,12 +283,13 @@ impl LanguageServerState {
 
     /// Handles a task sent by another async task
     #[allow(clippy::unnecessary_wraps)]
-    fn handle_task(&mut self, task: Task) -> anyhow::Result<()> {
+    fn handle_task(&mut self, task: Task, request_received: Instant) -> anyhow::Result<()> {
         match task {
             Task::Notify(notification) => {
                 self.send(notification.into());
             }
             Task::Response(response) => self.respond(response)?,
+            Task::Retry(request) => self.on_request(request, request_received)?,
         }
         Ok(())
     }
