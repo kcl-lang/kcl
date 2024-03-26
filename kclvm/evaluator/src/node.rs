@@ -406,14 +406,13 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
                 }
                 ast::QuantOperation::Filter => {
                     if !is_truth {
-                        continue;
-                    }
-                    if result.is_dict() {
-                        result.dict_remove(&next_value.as_str());
-                    } else if result.is_list() {
-                        result.list_remove(&next_value);
-                    } else {
-                        panic!("only list, dict and schema can be removed item");
+                        if result.is_dict() {
+                            result.dict_remove(&next_value.as_str());
+                        } else if result.is_list() {
+                            result.list_remove(&next_value);
+                        } else {
+                            panic!("only list, dict and schema can be removed item");
+                        }
                     }
                 }
                 ast::QuantOperation::Map => {
