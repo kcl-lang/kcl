@@ -2,4 +2,6 @@
 source: evaluator/src/tests.rs
 expression: "format!(\"{}\", evaluator.run().unwrap().1)"
 ---
-b: false
+a: v
+b: v
+c: null

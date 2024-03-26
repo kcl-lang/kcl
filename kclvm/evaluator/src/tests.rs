@@ -146,11 +146,98 @@ evaluator_snapshot! {quant_expr_1, r#"b = any a in [1, 2, 3] {
     a > 2
 }
 "#}
-evaluator_snapshot! {quant_expr_2, r#"b = map a in [1, 2, 3] {
+evaluator_snapshot! {quant_expr_2, r#"b = all a in [1, 2, 3] {
+    a > 5
+}
+"#}
+evaluator_snapshot! {quant_expr_3, r#"b = any a in [1, 2, 3] {
+    a > 5
+}
+"#}
+evaluator_snapshot! {quant_expr_4, r#"b = map a in [1, 2, 3] {
     a + 1
 }
 "#}
-evaluator_snapshot! {quant_expr_4, r#"b = filter a in [1, 2, 3] {
+evaluator_snapshot! {quant_expr_5, r#"b = filter a in [1, 2, 3] {
     a > 1
 }
+"#}
+evaluator_snapshot! {quant_expr_6, r#"b = map a in [1, 2, 3] {
+    a ** 2
+}
+"#}
+evaluator_snapshot! {quant_expr_7, r#"b = filter a in [1, 2, 3] {
+    a == 0
+}
+"#}
+
+evaluator_snapshot! {if_expr_0, r#"a = 1 if True else 0"#}
+evaluator_snapshot! {if_expr_1, r#"a = 1 if False else 0"#}
+evaluator_snapshot! {if_expr_2, r#"a = 1 if False else 0 if False else 2"#}
+
+evaluator_snapshot! {unary_expr_0, r#"a = +1"#}
+evaluator_snapshot! {unary_expr_1, r#"a = -1"#}
+evaluator_snapshot! {unary_expr_2, r#"a = ~1"#}
+evaluator_snapshot! {unary_expr_3, r#"a = not None"#}
+
+evaluator_snapshot! {binary_expr_0, r#"a = 1 + 1 * 2 - 4"#}
+evaluator_snapshot! {binary_expr_1, r#"a = None or {}
+b = [] and {}
+"#}
+
+evaluator_snapshot! {selector_expr_0, r#"a = {k = "v"}.k
+b = {k = "v"}?.k
+c = None?.k
+"#}
+evaluator_snapshot! {selector_expr_1, r#"a = [1, 2, 3]?[::-1]
+b = a?[-1]
+c = a?[0]
+d = None?[1]
+"#}
+
+evaluator_snapshot! {subscript_expr_0, r#"a = [1, 2, 3][::-1]
+b = a[-1]
+c = a[0]
+"#}
+evaluator_snapshot! {subscript_expr_1, r#"a = [1, 2, 3]?[::-1]
+b = a?[-1]
+c = a?[0]
+d = None?[1]
+"#}
+
+evaluator_snapshot! {compare_expr_0, r#"a = 1 < 10
+b = 1 < 10 < 100
+c = 1 > 10 > 100
+d = 1 < 10 > 100
+"#}
+
+evaluator_snapshot! {paren_expr_0, r#"a = 2 * (1 + 1)
+b = (((1 + 1))) * 2
+"#}
+
+evaluator_snapshot! {list_expr_0, r#"a = [1, 2, 3]
+b = [1, if True: 2, 3]
+c = [1, if False: 2, 3]
+d = [1, *[2, 3]]
+"#}
+
+evaluator_snapshot! {dict_expr_0, r#"a = {k1 = "v1", k2 = "v2"}
+b = {k1 = "v1", if True: k2 = "v2"}
+c = {k1 = "v1", if False: k2 = "v2"}
+d = {k1 = "v1", **{k2 = "v2"}}
+"#}
+
+evaluator_snapshot! {loop_0, r#"a = [i ** 2 for i in [1, 2, 3]]"#}
+evaluator_snapshot! {loop_1, r#"a = [i + j for i in [1, 2, 3] for j in [1, 2, 3] if i < j]"#}
+
+evaluator_snapshot! {literal_0, r#"longStringStartWithNewline = """\
+This is the second line
+This is the third line
+"""
+"#}
+evaluator_snapshot! {literal_1, r#"a = {k = "v"}
+b = "${a: #json}"
+"#}
+evaluator_snapshot! {literal_2, r#"a = 1Mi
+b = 2K
 "#}

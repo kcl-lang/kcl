@@ -149,9 +149,7 @@ impl<'ctx> Evaluator<'ctx> {
         let scopes = pkg_scopes.get_mut(&current_pkgpath).expect(&msg);
         if let Some(last) = scopes.last_mut() {
             let variables = &mut last.variables;
-            if !variables.contains_key(name) {
-                variables.insert(name.to_string(), pointer);
-            }
+            variables.insert(name.to_string(), pointer);
         }
     }
 
@@ -165,7 +163,7 @@ impl<'ctx> Evaluator<'ctx> {
         let scopes = pkg_scopes.get_mut(&current_pkgpath).expect(&msg);
         let index = scopes.len() - 1;
         let variables = &mut scopes[index].variables;
-        if let Some(_var) = variables.get(&name.to_string()) {
+        if let Some(_) = variables.get(&name.to_string()) {
             variables.insert(name.to_string(), value);
             return true;
         }
