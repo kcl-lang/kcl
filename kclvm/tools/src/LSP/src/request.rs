@@ -7,6 +7,7 @@ use ra_ap_vfs::VfsPath;
 use std::collections::HashMap;
 use std::time::Instant;
 
+use crate::error::LSPError;
 use crate::{
     completion::completion,
     db::AnalysisDatabase,
@@ -104,11 +105,27 @@ impl LanguageServerSnapshot {
         match file_id {
             Some(id) => match self.db.read().get(&id) {
                 Some(db) => Ok(db.clone()),
-                None => Err(anyhow::anyhow!(format!(
-                    "Path {path} AnalysisDatabase not found"
+                None => Err(anyhow::anyhow!(LSPError::FileIdNotFound(path.clone()))),
+            },
+            None => Err(anyhow::anyhow!(LSPError::AnalysisDatabaseNotFound(
+                path.clone()
+            ))),
+        }
+    }
+
+    ///  Attempts to get db in cache, this function does not block.
+    pub(crate) fn try_get_db(&self, path: &VfsPath) -> anyhow::Result<Option<AnalysisDatabase>> {
+        match self.vfs.try_read() {
+            Some(vfs) => match vfs.file_id(path) {
+                Some(file_id) => match self.db.try_read() {
+                    Some(db) => Ok(db.get(&file_id).cloned()),
+                    None => Ok(None),
+                },
+                None => Err(anyhow::anyhow!(LSPError::AnalysisDatabaseNotFound(
+                    path.clone()
                 ))),
             },
-            None => Err(anyhow::anyhow!(format!("Path {path} fileId not found"))),
+            None => Ok(None),
         }
     }
 }
@@ -120,7 +137,10 @@ pub(crate) fn handle_semantic_tokens_full(
 ) -> anyhow::Result<Option<SemanticTokensResult>> {
     let file = file_path_from_url(&params.text_document.uri)?;
     let path = from_lsp::abs_path(&params.text_document.uri)?;
-    let db = snapshot.get_db(&path.clone().into())?;
+    let db = match snapshot.try_get_db(&path.clone().into())? {
+        Some(db) => db,
+        None => return Err(anyhow!(LSPError::Retry)),
+    };
     let res = semantic_tokens_full(&file, &db.gs);
     Ok(res)
 }
@@ -308,7 +328,10 @@ pub(crate) fn handle_document_symbol(
 ) -> anyhow::Result<Option<lsp_types::DocumentSymbolResponse>> {
     let file = file_path_from_url(&params.text_document.uri)?;
     let path = from_lsp::abs_path(&params.text_document.uri)?;
-    let db = snapshot.get_db(&path.clone().into())?;
+    let db = match snapshot.try_get_db(&path.clone().into())? {
+        Some(db) => db,
+        None => return Err(anyhow!(LSPError::Retry)),
+    };
     let res = document_symbol(&file, &db.gs);
     Ok(res)
 }

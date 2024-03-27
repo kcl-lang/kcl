@@ -1,10 +1,11 @@
 use crossbeam_channel::Sender;
-use lsp_server::ExtractError;
+use lsp_server::{ExtractError, Request};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::error::Error;
 
 use crate::{
+    error::LSPError,
     state::{LanguageServerSnapshot, LanguageServerState, Task},
     util::from_json,
 };
@@ -85,13 +86,13 @@ impl<'a> RequestDispatcher<'a> {
         R::Params: DeserializeOwned + 'static,
         R::Result: Serialize + 'static,
     {
-        let (id, params) = match self.parse::<R>() {
+        let (req, params) = match self.parse::<R>() {
             Some(it) => it,
             None => return Ok(self),
         };
 
         let result = compute_response_fn(self.state, params);
-        let response = result_to_response::<R>(id, result);
+        let response = result_to_response::<R>(req.id, result);
         let _result = self.state.respond(response);
         Ok(self)
     }
@@ -110,7 +111,7 @@ impl<'a> RequestDispatcher<'a> {
         R::Params: DeserializeOwned + 'static + Send,
         R::Result: Serialize + 'static,
     {
-        let (id, params) = match self.parse::<R>() {
+        let (req, params) = match self.parse::<R>() {
             Some(it) => it,
             None => return Ok(self),
         };
@@ -121,9 +122,19 @@ impl<'a> RequestDispatcher<'a> {
 
             move || {
                 let result = compute_response_fn(snapshot, params, sender.clone());
-                sender
-                    .send(Task::Response(result_to_response::<R>(id, result)))
-                    .unwrap();
+                match &result {
+                    Err(e)
+                        if e.downcast_ref::<LSPError>()
+                            .map_or(false, |lsp_err| matches!(lsp_err, LSPError::Retry)) =>
+                    {
+                        sender.send(Task::Retry(req)).unwrap();
+                    }
+                    _ => {
+                        sender
+                            .send(Task::Response(result_to_response::<R>(req.id, result)))
+                            .unwrap();
+                    }
+                }
             }
         });
 
@@ -134,7 +145,7 @@ impl<'a> RequestDispatcher<'a> {
     /// the request is transferred and any subsequent call to this method will return None. If an
     /// error is encountered during parsing of the request parameters an error is send to the
     /// client.
-    fn parse<R>(&mut self) -> Option<(lsp_server::RequestId, R::Params)>
+    fn parse<R>(&mut self) -> Option<(Request, R::Params)>
     where
         R: lsp_types::request::Request + 'static,
         R::Params: DeserializeOwned + 'static,
@@ -144,8 +155,8 @@ impl<'a> RequestDispatcher<'a> {
             _ => return None,
         };
 
-        match from_json(R::METHOD, req.params) {
-            Ok(params) => Some((req.id, params)),
+        match from_json(R::METHOD, req.params.clone()) {
+            Ok(params) => Some((req, params)),
             Err(err) => {
                 let response = lsp_server::Response::new_err(
                     req.id,

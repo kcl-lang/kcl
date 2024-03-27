@@ -5,6 +5,7 @@ mod config;
 mod db;
 mod dispatcher;
 mod document_symbol;
+mod error;
 mod find_refs;
 mod formatting;
 mod from_lsp;
