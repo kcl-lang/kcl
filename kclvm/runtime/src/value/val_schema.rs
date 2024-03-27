@@ -182,12 +182,9 @@ impl ValueRef {
 
     /// Set the schema instance value with arguments and keyword arguments.
     pub fn set_schema_args(&mut self, args: &ValueRef, kwargs: &ValueRef) {
-        match &mut *self.rc.borrow_mut() {
-            Value::schema_value(ref mut schema) => {
-                schema.args = args.clone();
-                schema.kwargs = kwargs.clone();
-            }
-            _ => {}
+        if let Value::schema_value(ref mut schema) = &mut *self.rc.borrow_mut() {
+            schema.args = args.clone();
+            schema.kwargs = kwargs.clone();
         }
     }
 

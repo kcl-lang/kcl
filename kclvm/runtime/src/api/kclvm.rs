@@ -1,6 +1,7 @@
 //! Copyright The KCL Authors. All rights reserved.
 
 use crate::{new_mut_ptr, IndexMap, PlanOptions};
+use generational_arena::Index;
 use indexmap::IndexSet;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
@@ -264,6 +265,9 @@ pub struct FuncValue {
     pub name: String,
     pub runtime_type: String,
     pub is_external: bool,
+    /// Proxy functions represent the saved functions of the runtime itself,
+    /// rather than executing KCL defined functions or plugin functions.
+    pub proxy: Option<Index>,
 }
 
 #[allow(non_snake_case)]
@@ -400,12 +404,6 @@ impl Context {
             ..Default::default()
         }
     }
-}
-
-#[derive(PartialEq, Eq, Clone, Default, Debug)]
-pub struct FuncHandler {
-    pub namespace: String,
-    pub fn_pointer: u64,
 }
 
 #[repr(C)]

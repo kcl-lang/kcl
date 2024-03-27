@@ -29,6 +29,7 @@ impl ValueRef {
                     name: v.name.clone(),
                     runtime_type: v.runtime_type.clone(),
                     is_external: v.is_external,
+                    proxy: v.proxy.clone(),
                 })))),
             },
             Value::bool_value(ref v) => ValueRef {

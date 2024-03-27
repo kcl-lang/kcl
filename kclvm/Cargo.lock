@@ -1724,6 +1724,7 @@ name = "kclvm-evaluator"
 version = "0.8.3"
 dependencies = [
  "anyhow",
+ "generational-arena",
  "indexmap 1.9.3",
  "insta",
  "kclvm-ast",
@@ -1863,6 +1864,7 @@ dependencies = [
  "bstr",
  "chrono",
  "fancy-regex",
+ "generational-arena",
  "glob",
  "indexmap 1.9.3",
  "itertools",

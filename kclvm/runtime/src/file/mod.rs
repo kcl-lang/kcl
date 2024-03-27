@@ -15,7 +15,7 @@ pub extern "C" fn kclvm_file_read(
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
 
-    if let Some(x) = get_call_args_str(&args, &kwargs, 0, Some("filepath")) {
+    if let Some(x) = get_call_args_str(args, kwargs, 0, Some("filepath")) {
         let contents = fs::read_to_string(&x)
             .unwrap_or_else(|e| panic!("failed to access the file '{}': {}", x, e));
 
@@ -37,7 +37,7 @@ pub extern "C" fn kclvm_file_glob(
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
 
-    let pattern = get_call_args_str(&args, &kwargs, 0, Some("pattern"))
+    let pattern = get_call_args_str(args, kwargs, 0, Some("pattern"))
         .expect("glob() takes exactly one argument (0 given)");
 
     let mut matched_paths = vec![];
@@ -89,7 +89,7 @@ pub extern "C" fn kclvm_file_exists(
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
 
-    if let Some(path) = get_call_args_str(&args, &kwargs, 0, Some("filepath")) {
+    if let Some(path) = get_call_args_str(args, kwargs, 0, Some("filepath")) {
         let exist = Path::new(&path).exists();
         return ValueRef::bool(exist).into_raw(ctx);
     }
@@ -110,7 +110,7 @@ pub extern "C" fn kclvm_file_abs(
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
 
-    if let Some(path) = get_call_args_str(&args, &kwargs, 0, Some("filepath")) {
+    if let Some(path) = get_call_args_str(args, kwargs, 0, Some("filepath")) {
         if let Ok(abs_path) = Path::new(&path).canonicalize() {
             return ValueRef::str(abs_path.to_str().unwrap()).into_raw(ctx);
         } else {

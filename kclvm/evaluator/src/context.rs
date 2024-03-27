@@ -1,14 +1,16 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
+use generational_arena::Index;
 use indexmap::IndexMap;
 use kclvm_error::Handler;
 use kclvm_runtime::ValueRef;
 
-use crate::{error as kcl_error, function::FunctionValue, scope::Scope, Evaluator, GLOBAL_LEVEL};
+use crate::{error as kcl_error, func::FunctionProxy, scope::Scope, Evaluator, GLOBAL_LEVEL};
 
-#[derive(Debug)]
 pub struct EvaluatorContext {
-    pub functions: Vec<FunctionValue>,
     pub imported: HashSet<String>,
     pub lambda_stack: Vec<usize>,
     pub schema_stack: Vec<()>,
@@ -42,7 +44,6 @@ pub struct EvaluatorContext {
 impl Default for EvaluatorContext {
     fn default() -> Self {
         Self {
-            functions: Default::default(),
             imported: Default::default(),
             lambda_stack: vec![GLOBAL_LEVEL],
             schema_stack: Default::default(),
@@ -205,5 +206,11 @@ impl<'ctx> Evaluator<'ctx> {
     #[inline]
     pub(crate) fn pop_pkgpath(&self) {
         self.ctx.borrow_mut().pkgpath_stack.pop();
+    }
+
+    /// Append a function into the scope
+    #[inline]
+    pub fn add_function(&self, function: FunctionProxy) -> Index {
+        self.functions.borrow_mut().insert(Arc::new(function))
     }
 }

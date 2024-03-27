@@ -1,8 +1,9 @@
 /* Value methods */
 
-use kclvm_runtime::{ValueRef, _kclvm_get_fn_ptr_by_name};
+use generational_arena::Index;
+use kclvm_runtime::ValueRef;
 
-use crate::{function::FunctionValue, Evaluator};
+use crate::Evaluator;
 
 impl<'ctx> Evaluator<'ctx> {
     /// Construct a 64-bit int value using i64
@@ -63,28 +64,16 @@ impl<'ctx> Evaluator<'ctx> {
     pub(crate) fn unit_value(&self, v: f64, raw: i64, unit: &str) -> ValueRef {
         ValueRef::unit(v, raw, unit)
     }
+
     /// Construct a function value using a native function.
-    pub(crate) fn _function_value(&self, function: FunctionValue) -> ValueRef {
-        ValueRef::func(
-            function.get_fn_ptr() as u64,
-            0,
-            self.list_value(),
-            "",
-            "",
-            false,
-        )
+    #[inline]
+    pub(crate) fn proxy_function_value(&self, proxy: Index) -> ValueRef {
+        ValueRef::proxy_func(proxy)
     }
+
     /// Construct a function value using a native function.
-    pub(crate) fn _function_value_with_ptr(&self, function_ptr: u64) -> ValueRef {
+    #[inline]
+    pub(crate) fn function_value_with_ptr(&self, function_ptr: u64) -> ValueRef {
         ValueRef::func(function_ptr, 0, self.list_value(), "", "", false)
-    }
-    /// Construct a closure function value with the closure variable.
-    pub(crate) fn _closure_value(&self, function: FunctionValue, closure: ValueRef) -> ValueRef {
-        ValueRef::func(function.get_fn_ptr() as u64, 0, closure, "", "", false)
-    }
-    /// Construct a builtin function value using the function name.
-    pub(crate) fn _builtin_function_value(&self, name: &str) -> ValueRef {
-        let func = _kclvm_get_fn_ptr_by_name(name);
-        ValueRef::func(func, 0, self.list_value(), "", "", false)
     }
 }
