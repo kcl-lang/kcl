@@ -1,5 +1,7 @@
 // Copyright The KCL Authors. All rights reserved.
 
+use std::sync::Arc;
+
 use anyhow::Ok;
 use kclvm_ast::ast::{self, CallExpr, ConfigEntry, NodeRef};
 use kclvm_ast::walker::TypedResultWalker;
@@ -8,10 +10,11 @@ use kclvm_runtime::walker::walk_value_mut;
 use kclvm_runtime::{type_pack_and_check, ApiFunc, RuntimeErrorType, ValueRef, PKG_PATH_PREFIX};
 use kclvm_sema::{builtin, plugin};
 
+use crate::func::FunctionProxy;
 use crate::{error as kcl_error, GLOBAL_LEVEL, INNER_LEVEL};
 use crate::{EvalResult, Evaluator};
 
-/// Impl TypedResultWalker for Evaluator to visit AST nodes to emit LLVM IR.
+/// Impl TypedResultWalker for Evaluator to visit AST nodes to evaluate the result.
 impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
     type Result = EvalResult;
 
@@ -259,7 +262,7 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
             if let Some(modules) = self.program.pkgs.get(&import_stmt.path.node) {
                 self.push_pkgpath(&pkgpath);
                 self.init_scope(&pkgpath);
-                self.compile_ast_modules(&modules);
+                self.compile_ast_modules(modules);
                 self.pop_pkgpath();
             }
         }
@@ -549,7 +552,7 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
             self.list_append(&mut list_value, &value);
         }
         let mut dict_value = self.dict_value();
-        // kwargs
+        // keyword arguments
         for keyword in &call_expr.keywords {
             let name = &keyword.node.arg.node.names[0];
             let value = if let Some(value) = &keyword.node.value {
@@ -565,16 +568,20 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
                 -1,
             );
         }
-        let pkgpath = self.current_pkgpath();
-        let is_in_schema = self.is_in_schema() || self.is_in_schema_expr();
-        Ok(invoke_function(
-            &func,
-            &mut list_value,
-            &dict_value,
-            &mut self.runtime_ctx.borrow_mut(),
-            &pkgpath,
-            is_in_schema,
-        ))
+        if let Some(proxy) = func.try_get_proxy() {
+            Ok(self.invoke_proxy_function(proxy, &list_value, &dict_value))
+        } else {
+            let pkgpath = self.current_pkgpath();
+            let is_in_schema = self.is_in_schema() || self.is_in_schema_expr();
+            Ok(invoke_function(
+                &func,
+                &mut list_value,
+                &dict_value,
+                &mut self.runtime_ctx.borrow_mut(),
+                &pkgpath,
+                is_in_schema,
+            ))
+        }
     }
 
     fn walk_subscript(&self, subscript: &'ctx ast::Subscript) -> Self::Result {
@@ -659,12 +666,10 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
                 };
             }
             then_value
+        } else if let Some(orelse) = &list_if_item_expr.orelse {
+            self.walk_expr(orelse).expect(kcl_error::COMPILE_ERROR_MSG)
         } else {
-            if let Some(orelse) = &list_if_item_expr.orelse {
-                self.walk_expr(orelse).expect(kcl_error::COMPILE_ERROR_MSG)
-            } else {
-                self.none_value()
-            }
+            self.none_value()
         })
     }
 
@@ -719,12 +724,10 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
         let is_truth = self.value_is_truthy(&cond);
         Ok(if is_truth {
             self.walk_config_entries(&config_if_entry_expr.items)?
+        } else if let Some(orelse) = &config_if_entry_expr.orelse {
+            self.walk_expr(orelse).expect(kcl_error::COMPILE_ERROR_MSG)
         } else {
-            if let Some(orelse) = &config_if_entry_expr.orelse {
-                self.walk_expr(orelse).expect(kcl_error::COMPILE_ERROR_MSG)
-            } else {
-                self.none_value()
-            }
+            self.none_value()
         })
     }
 
@@ -785,12 +788,27 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
         todo!()
     }
 
-    fn walk_lambda_expr(&self, _lambda_expr: &'ctx ast::LambdaExpr) -> Self::Result {
-        let _pkgpath = &self.current_pkgpath();
-        // Higher-order lambda requires capturing the current lambda closure variable
-        // as well as the closure of a more external scope.
-        let _last_closure_map = self.get_current_inner_scope_variable_map();
-        todo!()
+    fn walk_lambda_expr(&self, lambda_expr: &'ctx ast::LambdaExpr) -> Self::Result {
+        // Push the current lambda scope level in the lambda stack.
+        self.push_lambda(self.scope_level() + 1);
+        let func =
+            |s: &Evaluator, lambda_expr: &ast::LambdaExpr, args: &ValueRef, kwargs: &ValueRef| {
+                s.enter_scope();
+                // Evaluate arguments and keyword arguments and store values to local variables.
+                s.walk_arguments(&lambda_expr.args, args, kwargs);
+                let result = s
+                    .walk_stmts(&lambda_expr.body)
+                    .expect(kcl_error::COMPILE_ERROR_MSG);
+                s.leave_scope();
+                result
+            };
+        // Pop lambda
+        self.pop_lambda();
+        let func = Arc::new(func);
+        let func_proxy = FunctionProxy::new(lambda_expr.clone(), func.clone());
+        // Add function to the global state
+        let index = self.add_function(func_proxy);
+        Ok(self.proxy_function_value(index))
     }
 
     fn walk_keyword(&self, _keyword: &'ctx ast::Keyword) -> Self::Result {
@@ -988,8 +1006,9 @@ impl<'ctx> Evaluator<'ctx> {
                     } else if self.is_in_lambda() {
                         let value = right_value.clone().expect(kcl_error::INTERNAL_ERROR_MSG);
                         // If variable exists in the scope and update it, if not, add it to the scope.
-                        if !self.store_variable_in_current_scope(name, value) {
-                            todo!()
+                        if !self.store_variable_in_current_scope(name, value.clone()) {
+                            self.add_variable(name, self.undefined_value());
+                            self.store_variable(name, value);
                         }
                     } else {
                         let is_local_var = self.is_local_var(name);
@@ -1073,11 +1092,55 @@ impl<'ctx> Evaluator<'ctx> {
 
     pub fn walk_arguments(
         &self,
-        _arguments: &'ctx Option<ast::NodeRef<ast::Arguments>>,
-        _args: ValueRef,
-        _kwargs: ValueRef,
+        arguments: &'ctx Option<ast::NodeRef<ast::Arguments>>,
+        args: &ValueRef,
+        kwargs: &ValueRef,
     ) {
-        todo!()
+        // Arguments names and defaults
+        let (arg_names, arg_defaults) = if let Some(args) = &arguments {
+            let names = &args.node.args;
+            let defaults = &args.node.defaults;
+            (
+                names.iter().map(|identifier| &identifier.node).collect(),
+                defaults.iter().collect(),
+            )
+        } else {
+            (vec![], vec![])
+        };
+        // Default parameter values
+        for (arg_name, value) in arg_names.iter().zip(arg_defaults.iter()) {
+            let arg_value = if let Some(value) = value {
+                self.walk_expr(value).expect(kcl_error::COMPILE_ERROR_MSG)
+            } else {
+                self.none_value()
+            };
+            // Arguments are immutable, so we place them in different scopes.
+            self.store_argument_in_current_scope(&arg_name.get_name());
+            self.walk_identifier_with_ctx(arg_name, &ast::ExprContext::Store, Some(arg_value))
+                .expect(kcl_error::COMPILE_ERROR_MSG);
+        }
+        let argument_len = args.len();
+        for (i, arg_name) in arg_names.iter().enumerate() {
+            // Positional arguments
+            let is_in_range = i < argument_len;
+            if is_in_range {
+                let arg_value = match args.list_get_option(i as isize) {
+                    Some(v) => v,
+                    None => self.undefined_value(),
+                };
+                self.store_variable(&arg_name.names[0].node, arg_value);
+            } else {
+                break;
+            }
+        }
+        // Keyword arguments
+        for arg_name in arg_names.iter() {
+            let name = &arg_name.names[0].node;
+            if let Some(arg) = kwargs.dict_get_value(name) {
+                // Find argument name in the scope
+                self.store_variable(&arg_name.names[0].node, arg);
+            }
+        }
     }
 
     pub fn walk_generator(
@@ -1152,7 +1215,7 @@ impl<'ctx> Evaluator<'ctx> {
                             .expect(kcl_error::COMPILE_ERROR_MSG);
                         let key = self.walk_expr(elt).expect(kcl_error::COMPILE_ERROR_MSG);
                         let op = op.expect(kcl_error::INTERNAL_ERROR_MSG);
-                        self.dict_insert(collection_value, &key.as_str(), &value, &op, -1);
+                        self.dict_insert(collection_value, &key.as_str(), &value, op, -1);
                     }
                 }
             } else {

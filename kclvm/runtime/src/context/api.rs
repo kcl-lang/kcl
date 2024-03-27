@@ -143,7 +143,7 @@ pub unsafe extern "C" fn kclvm_context_set_kcl_line_col(
 #[no_mangle]
 #[runtime_fn]
 pub unsafe extern "C" fn kclvm_scope_new() -> *mut kclvm_eval_scope_t {
-    Box::into_raw(Box::new(LazyEvalScope::default()))
+    Box::into_raw(Box::default())
 }
 
 #[no_mangle]

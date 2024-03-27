@@ -241,3 +241,49 @@ b = "${a: #json}"
 evaluator_snapshot! {literal_2, r#"a = 1Mi
 b = 2K
 "#}
+
+evaluator_snapshot! {lambda_0, r#"f = lambda x {x * 2}
+a = f(1)
+b = f(2)
+"#}
+evaluator_snapshot! {lambda_1, r#"a = lambda x {x * 2}(1)
+b = lambda x {x * 2}(2)
+"#}
+evaluator_snapshot! {lambda_2, r#"import math
+a = math.log(10)
+b = len("abc")
+c = len([1, 2])
+"#}
+evaluator_snapshot! {lambda_3, r#"
+x = lambda {
+    a = 1
+    lambda {
+        a + 1
+    }()
+}()
+"#}
+evaluator_snapshot! {lambda_4, r#"
+x = lambda {
+    a = 1
+    b = 2
+    lambda x {
+        a + b + x
+    }(3)
+}()
+"#}
+evaluator_snapshot! {lambda_5, r#"
+func = lambda config: {str:} {
+    x = 1
+    lambda {
+        y = 1
+        lambda {
+            z = 1
+            lambda {
+                {value = x + y + z + config.key}
+            }()
+        }()
+    }()
+}
+
+x = func({key = 1})
+"#}

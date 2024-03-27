@@ -6,7 +6,7 @@ mod tests;
 pub(crate) mod calculation;
 pub(crate) mod context;
 pub(crate) mod error;
-pub(crate) mod function;
+pub(crate) mod func;
 pub(crate) mod module;
 pub(crate) mod node;
 pub(crate) mod scope;
@@ -15,9 +15,10 @@ pub(crate) mod value;
 extern crate kclvm_error;
 
 use context::EvaluatorContext;
-use kclvm_ast::walker::TypedResultWalker;
-use std::cell::RefCell;
+use func::FunctionProxy;
+use generational_arena::Arena;
 use std::str;
+use std::{cell::RefCell, sync::Arc};
 
 use crate::error as kcl_error;
 use anyhow::Result;
@@ -39,28 +40,35 @@ pub struct Evaluator<'ctx> {
     pub program: &'ctx ast::Program,
     pub ctx: RefCell<EvaluatorContext>,
     pub runtime_ctx: RefCell<Context>,
+    pub functions: RefCell<Arena<Arc<FunctionProxy>>>,
 }
 
 impl<'ctx> Evaluator<'ctx> {
-    /// New aa Evaluator using the LLVM Context and AST Program
+    /// New aa Evaluator using the AST program
+    #[inline]
     pub fn new(program: &'ctx ast::Program) -> Evaluator<'ctx> {
+        Self::new_with_runtime_ctx(program, Context::new())
+    }
+
+    /// New aa Evaluator using the AST program and runtime context
+    #[inline]
+    pub fn new_with_runtime_ctx(
+        program: &'ctx ast::Program,
+        runtime_ctx: Context,
+    ) -> Evaluator<'ctx> {
         Evaluator {
             ctx: RefCell::new(EvaluatorContext::default()),
-            runtime_ctx: RefCell::new(Context::new()),
+            runtime_ctx: RefCell::new(runtime_ctx),
             program,
+            functions: RefCell::new(Arena::new()),
         }
     }
 
-    /// Generate LLVM IR of ast module.
+    /// Evaluate the program
     pub fn run(self: &Evaluator<'ctx>) -> Result<(String, String)> {
-        self.init_scope(kclvm_ast::MAIN_PKG);
-        for module in self
-            .program
-            .pkgs
-            .get(kclvm_ast::MAIN_PKG)
-            .unwrap_or(&vec![])
-        {
-            self.walk_module(module)?;
+        if let Some(modules) = self.program.pkgs.get(kclvm_ast::MAIN_PKG) {
+            self.init_scope(kclvm_ast::MAIN_PKG);
+            self.compile_ast_modules(modules)
         }
         Ok(self.plan_globals_to_string())
     }

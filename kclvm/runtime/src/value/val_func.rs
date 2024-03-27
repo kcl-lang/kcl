@@ -1,9 +1,21 @@
 use std::{mem::transmute_copy, os::raw::c_char};
 
+use generational_arena::Index;
+
 use crate::{
     kclvm_plugin_invoke, ptr_as_ref, schema_config_meta, BacktraceFrame, Context, SchemaTypeFunc,
     ValueRef,
 };
+
+impl ValueRef {
+    /// Try get the proxy function index
+    pub fn try_get_proxy(&self) -> Option<Index> {
+        match &*self.rc.borrow() {
+            crate::Value::func_value(func) => func.proxy.clone(),
+            _ => None,
+        }
+    }
+}
 
 /// Invoke functions with arguments and keyword arguments.
 pub fn invoke_function(

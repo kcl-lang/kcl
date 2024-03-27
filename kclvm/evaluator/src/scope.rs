@@ -2,7 +2,7 @@ use crate::error as kcl_error;
 use indexmap::{IndexMap, IndexSet};
 use kclvm_ast::ast;
 use kclvm_error::Position;
-use kclvm_runtime::{ValueRef, _kclvm_get_fn_ptr_by_name, MAIN_PKG_PATH, PKG_PATH_PREFIX};
+use kclvm_runtime::{ValueRef, _kclvm_get_fn_ptr_by_name, MAIN_PKG_PATH};
 use kclvm_sema::{builtin, pkgpath_without_prefix, plugin};
 
 use crate::{EvalResult, Evaluator, GLOBAL_LEVEL};
@@ -23,8 +23,6 @@ pub struct Scope {
     pub schema_scalar_idx: usize,
     /// Scope normal variables
     pub variables: IndexMap<String, ValueRef>,
-    /// Scope closures referenced by internal scope.
-    pub closures: IndexMap<String, ValueRef>,
     /// Potential arguments in the current scope, such as schema/lambda arguments.
     pub arguments: IndexSet<String>,
     /// Schema self denotes the scope that is belonged to a schema.
@@ -77,7 +75,7 @@ impl<'ctx> Evaluator<'ctx> {
             let function_name =
                 format!("{}_{}", builtin::KCL_BUILTIN_FUNCTION_MANGLE_PREFIX, symbol);
             let function_ptr = _kclvm_get_fn_ptr_by_name(&function_name);
-            self.add_variable(symbol, self._function_value_with_ptr(function_ptr));
+            self.add_variable(symbol, self.function_value_with_ptr(function_ptr));
         }
         self.enter_scope();
     }
@@ -153,6 +151,19 @@ impl<'ctx> Evaluator<'ctx> {
         }
     }
 
+    /// Store the argument named `name` in the current scope.
+    pub(crate) fn store_argument_in_current_scope(&self, name: &str) {
+        // Find argument name in the scope
+        let current_pkgpath = self.current_pkgpath();
+        let mut ctx = self.ctx.borrow_mut();
+        let pkg_scopes = &mut ctx.pkg_scopes;
+        let msg = format!("pkgpath {} is not found", current_pkgpath);
+        let scopes = pkg_scopes.get_mut(&current_pkgpath).expect(&msg);
+        let index = scopes.len() - 1;
+        let arguments_mut = &mut scopes[index].arguments;
+        arguments_mut.insert(name.to_string());
+    }
+
     /// Store the variable named `name` with `value` from the current scope, return false when not found
     pub fn store_variable_in_current_scope(&self, name: &str, value: ValueRef) -> bool {
         // Find argument name in the scope
@@ -163,7 +174,8 @@ impl<'ctx> Evaluator<'ctx> {
         let scopes = pkg_scopes.get_mut(&current_pkgpath).expect(&msg);
         let index = scopes.len() - 1;
         let variables = &mut scopes[index].variables;
-        if let Some(_) = variables.get(&name.to_string()) {
+        // If exists and update it
+        if variables.get(&name.to_string()).is_some() {
             variables.insert(name.to_string(), value);
             return true;
         }
@@ -181,6 +193,7 @@ impl<'ctx> Evaluator<'ctx> {
         for i in 0..scopes.len() {
             let index = scopes.len() - i - 1;
             let variables = &mut scopes[index].variables;
+            // If exists and update it
             if variables.get(&name.to_string()).is_some() {
                 variables.insert(name.to_string(), value);
                 return true;
@@ -315,12 +328,6 @@ impl<'ctx> Evaluator<'ctx> {
         // System module
         if builtin::STANDARD_SYSTEM_MODULE_NAMES_WITH_AT.contains(&pkgpath.as_str()) {
             let pkgpath = &pkgpath[1..];
-            let _mangle_func_name = format!(
-                "{}{}_{}",
-                builtin::KCL_SYSTEM_MODULE_MANGLE_PREFIX,
-                pkgpath_without_prefix!(pkgpath),
-                name
-            );
             let value = if pkgpath == builtin::system_module::UNITS
                 && builtin::system_module::UNITS_FIELD_NAMES.contains(&name)
             {
@@ -332,15 +339,21 @@ impl<'ctx> Evaluator<'ctx> {
                     self.float_value(value_float)
                 }
             } else {
-                todo!()
+                let func_name = format!(
+                    "{}{}_{}",
+                    builtin::KCL_SYSTEM_MODULE_MANGLE_PREFIX,
+                    pkgpath,
+                    name
+                );
+                let function_ptr = _kclvm_get_fn_ptr_by_name(&func_name);
+                self.function_value_with_ptr(function_ptr)
             };
             Ok(value)
         }
         // Plugin pkgpath
         else if pkgpath.starts_with(plugin::PLUGIN_PREFIX_WITH_AT) {
-            let _null_fn_ptr = 0;
+            // Strip the @kcl_plugin to kcl_plugin.
             let name = format!("{}.{}", &pkgpath[1..], name);
-            let _none_value = self.none_value();
             return Ok(ValueRef::func(
                 0,
                 0,
@@ -402,55 +415,6 @@ impl<'ctx> Evaluator<'ctx> {
                 }
             }
         }
-    }
-
-    /// Get closure map in the current inner scope.
-    pub(crate) fn get_current_inner_scope_variable_map(&self) -> ValueRef {
-        let var_map = {
-            let last_lambda_scope = self.last_lambda_scope();
-            // Get variable map in the current scope.
-            let pkgpath = self.current_pkgpath();
-            let pkgpath = if !pkgpath.starts_with(PKG_PATH_PREFIX) && pkgpath != MAIN_PKG_PATH {
-                format!("{}{}", PKG_PATH_PREFIX, pkgpath)
-            } else {
-                pkgpath
-            };
-            let ctx = self.ctx.borrow();
-            let pkg_scopes = &ctx.pkg_scopes;
-            let scopes = pkg_scopes
-                .get(&pkgpath)
-                .unwrap_or_else(|| panic!("package {} is not found", pkgpath));
-            let current_scope = scopes.len() - 1;
-            // Get last closure map.
-
-            if current_scope >= last_lambda_scope && last_lambda_scope > 0 {
-                let _variables = &scopes[last_lambda_scope].variables;
-                // todo: lambda closure in the lambda.
-                let ptr: Option<ValueRef> = None;
-                let var_map = match ptr {
-                    Some(ptr) => ptr.clone(),
-                    None => self.dict_value(),
-                };
-                // Get variable map including schema  in the current scope.
-                for i in last_lambda_scope..current_scope + 1 {
-                    let variables = &scopes
-                        .get(i)
-                        .expect(kcl_error::INTERNAL_ERROR_MSG)
-                        .variables;
-                    for (_key, _ptr) in variables {
-                        todo!()
-                    }
-                }
-                var_map
-            } else {
-                self.dict_value()
-            }
-        };
-        // Capture schema `self` closure.
-        if self.is_in_schema() {
-            todo!()
-        }
-        var_map
     }
 
     /// Load value from name.
