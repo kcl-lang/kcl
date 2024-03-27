@@ -7,10 +7,11 @@ use ra_ap_vfs::VfsPath;
 use std::collections::HashMap;
 use std::time::Instant;
 
+use crate::error::LSPError;
 use crate::{
     completion::completion,
     db::AnalysisDatabase,
-    dispatcher::{RequestDispatcher, RETRY_REQUEST},
+    dispatcher::RequestDispatcher,
     document_symbol::document_symbol,
     find_refs::find_refs,
     formatting::format,
@@ -104,15 +105,15 @@ impl LanguageServerSnapshot {
         match file_id {
             Some(id) => match self.db.read().get(&id) {
                 Some(db) => Ok(db.clone()),
-                None => Err(anyhow::anyhow!(format!(
-                    "Path {path} AnalysisDatabase not found"
-                ))),
+                None => Err(anyhow::anyhow!(LSPError::FileIdNotFound(path.clone()))),
             },
-            None => Err(anyhow::anyhow!(format!("Path {path} fileId not found"))),
+            None => Err(anyhow::anyhow!(LSPError::AnalysisDatabaseNotFound(
+                path.clone()
+            ))),
         }
     }
-    //  Attempts to get db in cache
-    //  This function does not block.
+
+    ///  Attempts to get db in cache, this function does not block.
     pub(crate) fn try_get_db(&self, path: &VfsPath) -> anyhow::Result<Option<AnalysisDatabase>> {
         match self.vfs.try_read() {
             Some(vfs) => match vfs.file_id(path) {
@@ -120,8 +121,8 @@ impl LanguageServerSnapshot {
                     Some(db) => Ok(db.get(&file_id).cloned()),
                     None => Ok(None),
                 },
-                None => Err(anyhow::anyhow!(format!(
-                    "Path {path} AnalysisDatabase not found"
+                None => Err(anyhow::anyhow!(LSPError::AnalysisDatabaseNotFound(
+                    path.clone()
                 ))),
             },
             None => Ok(None),
@@ -138,7 +139,7 @@ pub(crate) fn handle_semantic_tokens_full(
     let path = from_lsp::abs_path(&params.text_document.uri)?;
     let db = match snapshot.try_get_db(&path.clone().into())? {
         Some(db) => db,
-        None => return Err(anyhow!(RETRY_REQUEST)),
+        None => return Err(anyhow!(LSPError::Retry)),
     };
     let res = semantic_tokens_full(&file, &db.gs);
     Ok(res)
@@ -329,7 +330,7 @@ pub(crate) fn handle_document_symbol(
     let path = from_lsp::abs_path(&params.text_document.uri)?;
     let db = match snapshot.try_get_db(&path.clone().into())? {
         Some(db) => db,
-        None => return Err(anyhow!(RETRY_REQUEST)),
+        None => return Err(anyhow!(LSPError::Retry)),
     };
     let res = document_symbol(&file, &db.gs);
     Ok(res)

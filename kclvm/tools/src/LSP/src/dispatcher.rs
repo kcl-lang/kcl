@@ -5,11 +5,10 @@ use serde::Serialize;
 use std::error::Error;
 
 use crate::{
+    error::LSPError,
     state::{LanguageServerSnapshot, LanguageServerState, Task},
     util::from_json,
 };
-
-pub(crate) const RETRY_REQUEST: &str = "Retry Request";
 
 pub(crate) struct NotificationDispatcher<'a> {
     state: &'a mut LanguageServerState,
@@ -124,7 +123,10 @@ impl<'a> RequestDispatcher<'a> {
             move || {
                 let result = compute_response_fn(snapshot, params, sender.clone());
                 match &result {
-                    Err(e) if e.to_string() == RETRY_REQUEST => {
+                    Err(e)
+                        if e.downcast_ref::<LSPError>()
+                            .map_or(false, |lsp_err| matches!(lsp_err, LSPError::Retry)) =>
+                    {
                         sender.send(Task::Retry(req)).unwrap();
                     }
                     _ => {
