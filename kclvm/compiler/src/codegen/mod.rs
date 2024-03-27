@@ -13,6 +13,8 @@ pub(crate) const ENTRY_NAME: &str = "entry";
 pub(crate) const VALUE_TYPE_NAME: &str = "kclvm_value_ref_t";
 /// The kclvm runtime context type name.
 pub(crate) const CONTEXT_TYPE_NAME: &str = "kclvm_context_t";
+/// The kclvm runtime evaluation type name.
+pub(crate) const SCOPE_TYPE_NAME: &str = "kclvm_eval_scope_t";
 /// Package init function name suffix
 pub(crate) const PKG_INIT_FUNCTION_SUFFIX: &str = "init";
 /// Global level

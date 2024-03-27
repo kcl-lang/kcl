@@ -5,8 +5,13 @@ use std::os::raw::c_char;
 
 use crate::*;
 
+use self::eval::LazyEvalScope;
+
 #[allow(dead_code, non_camel_case_types)]
 type kclvm_context_t = Context;
+
+#[allow(dead_code, non_camel_case_types)]
+type kclvm_eval_scope_t = LazyEvalScope;
 
 #[allow(dead_code, non_camel_case_types)]
 type kclvm_kind_t = Kind;
@@ -97,6 +102,7 @@ pub unsafe extern "C" fn _kcl_run(
 ) -> kclvm_size_t {
     // Init runtime context with options
     let ctx = Box::new(new_ctx_with_opts(opts, &c2str_vec(path_selector))).into_raw();
+    let scope = Box::into_raw(Box::new(LazyEvalScope::default()));
     let option_keys = std::slice::from_raw_parts(option_keys, option_len as usize);
     let option_values = std::slice::from_raw_parts(option_values, option_len as usize);
     for i in 0..(option_len as usize) {
@@ -124,7 +130,7 @@ pub unsafe extern "C" fn _kcl_run(
             }
         })
     }));
-    let result = std::panic::catch_unwind(|| _kcl_run_in_closure(ctx, kclvm_main_ptr));
+    let result = std::panic::catch_unwind(|| _kcl_run_in_closure(ctx, scope, kclvm_main_ptr));
     std::panic::set_hook(prev_hook);
     KCL_RUNTIME_PANIC_RECORD.with(|record| {
         let record = record.borrow();
@@ -160,15 +166,19 @@ pub unsafe extern "C" fn _kcl_run(
 #[allow(clippy::too_many_arguments)]
 unsafe fn _kcl_run_in_closure(
     ctx: *mut Context,
+    scope: *mut LazyEvalScope,
     kclvm_main_ptr: u64, // main.k => kclvm_main
 ) {
     let kclvm_main = (&kclvm_main_ptr as *const u64) as *const ()
-        as *const extern "C" fn(ctx: *mut kclvm_context_t) -> *mut kclvm_value_ref_t;
+        as *const extern "C" fn(
+            ctx: *mut kclvm_context_t,
+            scope: *mut kclvm_eval_scope_t,
+        ) -> *mut kclvm_value_ref_t;
 
     unsafe {
         if kclvm_main.is_null() {
             panic!("kcl program main function not found");
         }
-        (*kclvm_main)(ctx);
+        (*kclvm_main)(ctx, scope);
     }
 }

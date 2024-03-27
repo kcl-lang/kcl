@@ -43,6 +43,8 @@ pub trait ValueMethods: BackendTypes {
     fn global_value_ptr(&self, name: &str) -> Self::Value;
     /// Get current runtime context pointer.
     fn current_runtime_ctx_ptr(&self) -> Self::Value;
+    /// Get the global evaluation scope pointer.
+    fn current_scope_ptr(&self) -> Self::Value;
 }
 
 /// DerivedValueCalculationMethods defines all value base calculation APIs.
