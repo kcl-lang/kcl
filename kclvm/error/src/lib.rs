@@ -94,7 +94,7 @@ impl Handler {
     }
 
     /// Construct a parse error and put it into the handler diagnostic buffer
-    pub fn add_syntex_error(&mut self, msg: &str, range: Range) -> &mut Self {
+    pub fn add_syntax_error(&mut self, msg: &str, range: Range) -> &mut Self {
         let message = format!("Invalid syntax: {msg}");
         let diag = Diagnostic::new_with_code(
             Level::Error,
@@ -337,6 +337,7 @@ pub enum ParseError {
     Message {
         message: String,
         span: Span,
+        line_content: String,
     },
 }
 
@@ -357,28 +358,49 @@ impl ParseError {
     }
 
     /// New a message parse error with span.
-    pub fn message(message: String, span: Span) -> Self {
-        ParseError::Message { message, span }
+    pub fn message(message: String, span: Span, line_content: String) -> Self {
+        ParseError::Message {
+            message,
+            span,
+            line_content,
+        }
     }
 }
 
 impl ParseError {
-    /// Convert a parse error into a error diagnostic.
+    /// Convert a parse error into an error diagnostic.
     pub fn into_diag(self, sess: &Session) -> Result<Diagnostic> {
-        let span = match self {
-            ParseError::UnexpectedToken { span, .. } => span,
-            ParseError::Message { span, .. } => span,
-        };
-        let loc = sess.sm.lookup_char_pos(span.lo());
-        let pos: Position = loc.into();
-        Ok(Diagnostic::new_with_code(
-            Level::Error,
-            &self.to_string(),
-            None,
-            (pos.clone(), pos),
-            Some(DiagnosticId::Error(ErrorKind::InvalidSyntax)),
-            None,
-        ))
+        match self {
+            ParseError::UnexpectedToken { span, .. } => {
+                let loc = sess.sm.lookup_char_pos(span.lo());
+                let pos: Position = loc.into();
+                Ok(Diagnostic::new_with_code(
+                    Level::Error,
+                    &self.to_string(),
+                    None,
+                    (pos.clone(), pos),
+                    Some(DiagnosticId::Error(ErrorKind::InvalidSyntax)),
+                    None,
+                ))
+            }
+            ParseError::Message {
+                message,
+                span,
+                line_content,
+            } => {
+                let loc = sess.sm.lookup_char_pos(span.lo());
+                let pos: Position = loc.into();
+                // Pass line_content as a note or suggestion
+                Ok(Diagnostic::new_with_code(
+                    Level::Error,
+                    &message,
+                    Some(&line_content),
+                    (pos.clone(), pos),
+                    Some(DiagnosticId::Error(ErrorKind::InvalidSyntax)),
+                    None,
+                ))
+            }
+        }
     }
 }
 
@@ -405,10 +427,15 @@ impl SessionDiagnostic for ParseError {
                 diag.append_component(Box::new(format!(" {}\n", self.to_string())));
                 Ok(diag)
             }
-            ParseError::Message { message, span } => {
+            ParseError::Message {
+                message,
+                span,
+                line_content,
+            } => {
                 let code_snippet = CodeSnippet::new(span, Arc::clone(&sess.sm));
                 diag.append_component(Box::new(code_snippet));
                 diag.append_component(Box::new(format!(" {message}\n")));
+                diag.append_component(Box::new(format!("Line content: {line_content}\n")));
                 Ok(diag)
             }
         }
