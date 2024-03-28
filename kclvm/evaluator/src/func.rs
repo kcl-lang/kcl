@@ -6,53 +6,86 @@ use kclvm_ast::ast;
 use kclvm_runtime::ValueRef;
 
 use crate::error as kcl_error;
+use crate::proxy::Proxy;
 use crate::Evaluator;
 
 pub type FunctionHandler =
-    Arc<dyn Fn(&Evaluator, &ast::LambdaExpr, &ValueRef, &ValueRef) -> ValueRef>;
+    Arc<dyn Fn(&Evaluator, &FunctionEvalContext, &ValueRef, &ValueRef) -> ValueRef>;
+
+#[derive(Clone)]
+pub struct FunctionEvalContext {
+    pub node: ast::LambdaExpr,
+}
 
 /// Proxy functions represent the saved functions of the runtime itself,
 /// rather than executing KCL defined functions or plugin functions.
 #[derive(Clone)]
-pub struct FunctionProxy {
-    lambda_expr: ast::LambdaExpr,
-    inner: FunctionHandler,
+pub struct FunctionCaller {
+    pub ctx: FunctionEvalContext,
+    pub body: FunctionHandler,
 }
 
-impl Debug for FunctionProxy {
+impl Debug for FunctionCaller {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let ptr_value = Arc::as_ptr(&self.inner);
+        let ptr_value = Arc::as_ptr(&self.body);
         f.debug_struct("FunctionProxy")
             .field("inner", &format!("{ptr_value:p}"))
             .finish()
     }
 }
 
-impl FunctionProxy {
+impl FunctionCaller {
     #[inline]
-    pub fn new(lambda_expr: ast::LambdaExpr, proxy: FunctionHandler) -> Self {
-        Self {
-            lambda_expr,
-            inner: proxy,
-        }
+    pub fn new(ctx: FunctionEvalContext, proxy: FunctionHandler) -> Self {
+        Self { ctx, body: proxy }
     }
 }
 
 impl<'ctx> Evaluator<'ctx> {
     #[inline]
     pub(crate) fn invoke_proxy_function(
-        &self,
+        &'ctx self,
         proxy_index: Index,
         args: &ValueRef,
         kwargs: &ValueRef,
     ) -> ValueRef {
         let proxy = {
-            let functions = self.functions.borrow();
-            functions
+            let proxies = self.proxies.borrow();
+            proxies
                 .get(proxy_index)
                 .expect(kcl_error::INTERNAL_ERROR_MSG)
                 .clone()
         };
-        (proxy.inner)(self, &proxy.lambda_expr, args, kwargs)
+        match proxy.as_ref() {
+            Proxy::Lambda(lambda) => (lambda.body)(self, &lambda.ctx, args, kwargs),
+            Proxy::Schema(schema) => {
+                {
+                    let ctx = &mut schema.ctx.borrow_mut();
+                    ctx.reset_with_config(self.dict_value(), self.dict_value());
+                }
+                (schema.body)(self, &schema.ctx, args, kwargs)
+            }
+            Proxy::Rule(rule) => (rule.body)(self, &rule.ctx, args, kwargs),
+        }
     }
+}
+
+/// Lambda function body
+pub fn func_body(
+    s: &Evaluator,
+    ctx: &FunctionEvalContext,
+    args: &ValueRef,
+    kwargs: &ValueRef,
+) -> ValueRef {
+    // Push the current lambda scope level in the lambda stack.
+    s.push_lambda(s.scope_level() + 1);
+    s.enter_scope();
+    // Evaluate arguments and keyword arguments and store values to local variables.
+    s.walk_arguments(&ctx.node.args, args, kwargs);
+    let result = s
+        .walk_stmts(&ctx.node.body)
+        .expect(kcl_error::COMPILE_ERROR_MSG);
+    s.leave_scope();
+    s.pop_lambda();
+    result
 }

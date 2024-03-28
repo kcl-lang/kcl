@@ -36,7 +36,7 @@ type kclvm_int_t = i64;
 type kclvm_float_t = f64;
 
 #[derive(Debug, Default)]
-pub(crate) struct RuntimePanicRecord {
+pub struct RuntimePanicRecord {
     pub kcl_panic_info: bool,
     pub message: String,
     pub rust_file: String,

@@ -287,3 +287,15 @@ func = lambda config: {str:} {
 
 x = func({key = 1})
 "#}
+
+evaluator_snapshot! {schema_0, r#"
+schema Person:
+    name: str = "Alice"
+    age: int = 10
+
+alice = Person {}
+bob = Person {
+    name = "Bob"
+    age = 18
+}
+"#}
