@@ -36,11 +36,6 @@ pub(crate) fn hashmaps_from_matches(
 }
 
 #[inline]
-pub(crate) fn string_from_matches(matches: &ArgMatches, key: &str) -> Option<String> {
-    matches.get_one::<String>(key).map(|v| v.to_string())
-}
-
-#[inline]
 pub(crate) fn bool_from_matches(matches: &ArgMatches, key: &str) -> Option<bool> {
     if matches.get_flag(key) == true {
         Some(true)

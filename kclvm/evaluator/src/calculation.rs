@@ -154,7 +154,7 @@ impl<'ctx> Evaluator<'ctx> {
         value.deep_copy()
     }
     /// value_union unions two collection elements.
-    pub(crate) fn _value_union(&self, lhs: &mut ValueRef, rhs: &ValueRef) -> ValueRef {
+    pub(crate) fn value_union(&self, lhs: &mut ValueRef, rhs: &ValueRef) -> ValueRef {
         let attr_map = match &*lhs.rc.borrow() {
             Value::dict_value(dict) => dict.attr_map.clone(),
             Value::schema_value(schema) => schema.config.attr_map.clone(),

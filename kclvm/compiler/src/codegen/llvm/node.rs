@@ -281,6 +281,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         self.builder.position_at_end(end_block);
         Ok(self.none_value())
     }
+
     fn walk_import_stmt(&self, import_stmt: &'ctx ast::ImportStmt) -> Self::Result {
         check_backtrack_stop!(self);
         let pkgpath = import_stmt.path.node.as_str();

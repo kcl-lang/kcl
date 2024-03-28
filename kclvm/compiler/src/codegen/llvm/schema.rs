@@ -249,7 +249,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         &self,
         schema_value: BasicValueEnum<'ctx>,  // Schema self value
         config_value: BasicValueEnum<'ctx>,  // Schema config value
-        name: &str,                          // Schema arribute name
+        name: &str,                          // Schema attribute name
         value: Option<BasicValueEnum<'ctx>>, // Optional right override value
     ) -> bool {
         // Attribute name

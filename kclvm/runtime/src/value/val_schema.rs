@@ -19,7 +19,8 @@ pub const CAL_MAP_RUNTIME_TYPE: &str = "cal_map_runtime_type";
 pub const CAL_MAP_META_LINE: &str = "cal_map_meta_line";
 pub const CAL_MAP_INDEX_SIGNATURE: &str = "$cal_map_index_signature";
 
-/// Get the schema runtime type use the schema name and pkgpath
+/// Get the schema runtime type use the schema name and pkgpath.
+#[inline]
 pub fn schema_runtime_type(name: &str, pkgpath: &str) -> String {
     format!("{pkgpath}.{name}")
 }
@@ -32,6 +33,34 @@ pub fn schema_config_meta(filename: &str, line: u64, column: u64) -> ValueRef {
         (CONFIG_META_LINE, &ValueRef::int(line as i64)),
         (CONFIG_META_COLUMN, &ValueRef::int(column as i64)),
     ]))
+}
+
+pub fn schema_assert(ctx: &mut Context, value: &ValueRef, msg: &str, config_meta: &ValueRef) {
+    if !value.is_truthy() {
+        ctx.set_err_type(&RuntimeErrorType::SchemaCheckFailure);
+        if let Some(config_meta_file) = config_meta.get_by_key(CONFIG_META_FILENAME) {
+            let config_meta_line = config_meta.get_by_key(CONFIG_META_LINE).unwrap();
+            let config_meta_column = config_meta.get_by_key(CONFIG_META_COLUMN).unwrap();
+            ctx.set_kcl_config_meta_location_info(
+                Some("Instance check failed"),
+                Some(config_meta_file.as_str().as_str()),
+                Some(config_meta_line.as_int() as i32),
+                Some(config_meta_column.as_int() as i32),
+            );
+        }
+
+        let arg_msg = format!(
+            "Check failed on the condition{}",
+            if msg.is_empty() {
+                "".to_string()
+            } else {
+                format!(": {msg}")
+            }
+        );
+        ctx.set_kcl_location_info(Some(arg_msg.as_str()), None, None, None);
+
+        panic!("{}", msg);
+    }
 }
 
 impl ValueRef {
@@ -270,6 +299,55 @@ impl ValueRef {
                 values.insert(k.clone(), v.clone());
                 ops.insert(k.clone(), op.clone());
                 insert_indexs.insert(k.clone(), *index);
+            }
+        }
+    }
+
+    /// Schema additional value check
+    pub fn schema_value_check(
+        &mut self,
+        ctx: &mut Context,
+        schema_config: &ValueRef,
+        schema_name: &str,
+        index_sign_value: &ValueRef,
+        index_key_name: &str,
+        key_type: &str,
+        value_type: &str,
+    ) {
+        let schema_value = self;
+        let has_index_signature = !key_type.is_empty();
+        let config = schema_config.as_dict_ref();
+        for (key, value) in &config.values {
+            let no_such_attr = schema_value.dict_get_value(key).is_none();
+            if has_index_signature && no_such_attr {
+                // Allow index signature value has different values
+                // related to the index signature key name.
+                let should_update =
+                    if let Some(index_key_value) = schema_value.dict_get_value(index_key_name) {
+                        index_key_value.is_str() && key == &index_key_value.as_str()
+                    } else {
+                        true
+                    };
+                if should_update {
+                    let op = config
+                        .ops
+                        .get(key)
+                        .unwrap_or(&ConfigEntryOperationKind::Union);
+                    schema_value.dict_update_entry(
+                        key.as_str(),
+                        &index_sign_value.deep_copy(),
+                        &ConfigEntryOperationKind::Override,
+                        &-1,
+                    );
+                    schema_value.dict_insert(ctx, key.as_str(), value, op.clone(), -1);
+                    let value = schema_value.dict_get_value(key).unwrap();
+                    schema_value.dict_update_key_value(
+                        key.as_str(),
+                        type_pack_and_check(ctx, &value, vec![value_type]),
+                    );
+                }
+            } else if !has_index_signature && no_such_attr {
+                panic!("No attribute named '{key}' in the schema '{schema_name}'");
             }
         }
     }

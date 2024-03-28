@@ -161,7 +161,7 @@ impl crate::Context {
         self.panic_info.is_warning = true;
     }
 
-    pub(crate) fn set_panic_info(&mut self, record: &RuntimePanicRecord) {
+    pub fn set_panic_info(&mut self, record: &RuntimePanicRecord) {
         self.panic_info.__kcl_PanicInfo__ = true;
 
         self.panic_info.message = record.message.clone();

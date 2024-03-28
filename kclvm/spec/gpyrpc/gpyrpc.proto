@@ -223,6 +223,9 @@ message ExecProgram_Args {
 
 	// -S --path_selector
 	repeated string path_selector = 17;
+
+	// -K --fast_eval
+	bool fast_eval = 18;
 }
 
 message ExecProgram_Result {
@@ -371,6 +374,7 @@ message CliConfig {
 	bool sort_keys = 9;
 	bool show_hidden = 10;
 	bool include_schema_type_path = 11;
+	bool fast_eval = 12;
 }
 
 message KeyValuePair {

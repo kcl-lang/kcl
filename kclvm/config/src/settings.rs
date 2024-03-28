@@ -66,6 +66,8 @@ pub struct Config {
     /// kcl needs a mapping between the package name and the package path
     /// to determine the source code path corresponding to different version package.
     pub package_maps: Option<HashMap<String, String>>,
+    /// Use the evaluator to execute the AST program instead of AOT.
+    pub fast_eval: Option<bool>,
 }
 
 impl SettingsFile {
@@ -83,6 +85,7 @@ impl SettingsFile {
                 debug: Some(false),
                 sort_keys: Some(false),
                 show_hidden: Some(false),
+                fast_eval: Some(false),
                 include_schema_type_path: Some(false),
                 package_maps: Some(HashMap::default()),
             }),
@@ -384,6 +387,7 @@ pub fn merge_settings(settings: &[SettingsFile]) -> SettingsFile {
                 set_if!(result_kcl_cli_configs, debug, kcl_cli_configs);
                 set_if!(result_kcl_cli_configs, sort_keys, kcl_cli_configs);
                 set_if!(result_kcl_cli_configs, show_hidden, kcl_cli_configs);
+                set_if!(result_kcl_cli_configs, fast_eval, kcl_cli_configs);
                 set_if!(
                     result_kcl_cli_configs,
                     include_schema_type_path,
@@ -481,6 +485,7 @@ mod settings_test {
             assert!(kcl_cli_configs.overrides.is_none());
             assert!(kcl_cli_configs.include_schema_type_path.is_none());
             assert!(kcl_cli_configs.show_hidden.is_none());
+            assert!(kcl_cli_configs.fast_eval.is_none());
             assert_eq!(kcl_cli_configs.sort_keys, Some(true));
             if let Some(config_files) = kcl_cli_configs.files {
                 assert!(config_files == files);

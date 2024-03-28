@@ -1,5 +1,7 @@
 use anyhow::{anyhow, Result};
+use kclvm_evaluator::Evaluator;
 use std::collections::HashMap;
+use std::{cell::RefCell, rc::Rc};
 
 use kclvm_ast::ast;
 use kclvm_config::{
@@ -8,7 +10,7 @@ use kclvm_config::{
 };
 use kclvm_error::{Diagnostic, Handler};
 use kclvm_query::r#override::parse_override_spec;
-use kclvm_runtime::{FFIRunOptions, PanicInfo};
+use kclvm_runtime::{kclvm_plugin_init, Context, FFIRunOptions, PanicInfo, RuntimePanicRecord};
 use serde::{Deserialize, Serialize};
 use std::ffi::OsStr;
 use std::os::raw::c_char;
@@ -179,6 +181,7 @@ impl TryFrom<SettingsFile> for ExecProgramArgs {
             args.debug = cli_configs.debug.unwrap_or_default() as i32;
             args.sort_keys = cli_configs.sort_keys.unwrap_or_default();
             args.show_hidden = cli_configs.show_hidden.unwrap_or_default();
+            args.fast_eval = cli_configs.fast_eval.unwrap_or_default();
             args.include_schema_type_path =
                 cli_configs.include_schema_type_path.unwrap_or_default();
             for override_str in &cli_configs.overrides.unwrap_or_default() {
@@ -223,8 +226,8 @@ pub trait ProgramRunner {
 impl ProgramRunner for Artifact {
     fn run(&self, args: &ExecProgramArgs) -> Result<ExecProgramResult> {
         unsafe {
-            KclLibRunner::lib_kclvm_plugin_init(&self.0, args.plugin_agent)?;
-            KclLibRunner::lib_kcl_run(&self.0, args)
+            LibRunner::lib_kclvm_plugin_init(&self.0, args.plugin_agent)?;
+            LibRunner::lib_kcl_run(&self.0, args)
         }
     }
 }
@@ -244,17 +247,17 @@ impl Artifact {
 }
 
 #[derive(Debug, Default)]
-pub struct KclLibRunnerOptions {
+pub struct RunnerOptions {
     pub plugin_agent_ptr: u64,
 }
 
-pub struct KclLibRunner {
-    opts: KclLibRunnerOptions,
+pub struct LibRunner {
+    opts: RunnerOptions,
 }
 
-impl KclLibRunner {
+impl LibRunner {
     /// New a runner using the lib path and options.
-    pub fn new(opts: Option<KclLibRunnerOptions>) -> Self {
+    pub fn new(opts: Option<RunnerOptions>) -> Self {
         Self {
             opts: opts.unwrap_or_default(),
         }
@@ -270,7 +273,7 @@ impl KclLibRunner {
     }
 }
 
-impl KclLibRunner {
+impl LibRunner {
     unsafe fn lib_kclvm_plugin_init(
         lib: &libloading::Library,
         plugin_method_ptr: u64,
@@ -424,6 +427,121 @@ impl KclLibRunner {
         }
         Ok(result)
     }
+}
+
+thread_local! {
+    static KCL_RUNTIME_PANIC_RECORD: RefCell<RuntimePanicRecord>  = RefCell::new(RuntimePanicRecord::default())
+}
+
+pub struct FastRunner {
+    opts: RunnerOptions,
+}
+
+impl FastRunner {
+    /// New a runner using the lib path and options.
+    pub fn new(opts: Option<RunnerOptions>) -> Self {
+        Self {
+            opts: opts.unwrap_or_default(),
+        }
+    }
+
+    /// Run kcl library with exec arguments.
+    pub fn run(&self, program: &ast::Program, args: &ExecProgramArgs) -> Result<ExecProgramResult> {
+        let ctx = Rc::new(RefCell::new(args_to_ctx(args)));
+        let evaluator = Evaluator::new_with_runtime_ctx(&program, ctx.clone());
+        let prev_hook = std::panic::take_hook();
+        std::panic::set_hook(Box::new(|info: &std::panic::PanicInfo| {
+            KCL_RUNTIME_PANIC_RECORD.with(|record| {
+                let mut record = record.borrow_mut();
+                record.kcl_panic_info = true;
+                record.message = if let Some(s) = info.payload().downcast_ref::<&str>() {
+                    s.to_string()
+                } else if let Some(s) = info.payload().downcast_ref::<&String>() {
+                    (*s).clone()
+                } else if let Some(s) = info.payload().downcast_ref::<String>() {
+                    (*s).clone()
+                } else {
+                    "".to_string()
+                };
+                if let Some(location) = info.location() {
+                    record.rust_file = location.file().to_string();
+                    record.rust_line = location.line() as i32;
+                    record.rust_col = location.column() as i32;
+                }
+            })
+        }));
+        let evaluator_result = std::panic::catch_unwind(|| {
+            if self.opts.plugin_agent_ptr > 0 {
+                unsafe {
+                    let plugin_method: extern "C" fn(
+                        method: *const i8,
+                        args: *const i8,
+                        kwargs: *const i8,
+                    ) -> *const i8 = std::mem::transmute(self.opts.plugin_agent_ptr);
+                    kclvm_plugin_init(plugin_method);
+                }
+            }
+            evaluator.run()
+        });
+        std::panic::set_hook(prev_hook);
+        KCL_RUNTIME_PANIC_RECORD.with(|record| {
+            let record = record.borrow();
+            ctx.borrow_mut().set_panic_info(&record);
+        });
+        let mut result = ExecProgramResult {
+            log_message: ctx.borrow().log_message.clone(),
+            ..Default::default()
+        };
+        let is_err = evaluator_result.is_err();
+        match evaluator_result {
+            Ok(r) => match r {
+                Ok((json, yaml)) => {
+                    result.json_result = json;
+                    result.yaml_result = yaml;
+                }
+                Err(err) => {
+                    result.err_message = err.to_string();
+                }
+            },
+            Err(err) => {
+                result.err_message = if is_err {
+                    ctx.borrow()
+                        .get_panic_info_json_string()
+                        .unwrap_or_default()
+                } else {
+                    kclvm_error::err_to_str(err)
+                };
+            }
+        }
+        // Wrap runtime JSON Panic error string into diagnostic style string.
+        if !result.err_message.is_empty() && std::env::var(KCL_DEBUG_ERROR_ENV_VAR).is_err() {
+            result.err_message = match Handler::default()
+                .add_diagnostic(<PanicInfo as Into<Diagnostic>>::into(PanicInfo::from(
+                    result.err_message.as_str(),
+                )))
+                .emit_to_string()
+            {
+                Ok(msg) => msg,
+                Err(err) => err.to_string(),
+            };
+        }
+        Ok(result)
+    }
+}
+
+pub fn args_to_ctx(args: &ExecProgramArgs) -> Context {
+    let mut ctx = Context::new();
+    ctx.cfg.strict_range_check = args.strict_range_check;
+    ctx.cfg.debug_mode = args.debug != 0;
+    ctx.plan_opts.disable_none = args.disable_none;
+    ctx.plan_opts.show_hidden = args.show_hidden;
+    ctx.plan_opts.sort_keys = args.sort_keys;
+    ctx.plan_opts.include_schema_type_path = args.include_schema_type_path;
+    ctx.plan_opts.query_paths = args.path_selector.clone();
+    for arg in &args.args {
+        ctx.builtin_option_init(&arg.name, &arg.value);
+    }
+    ctx
 }
 
 #[repr(C)]

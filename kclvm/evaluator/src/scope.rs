@@ -1,4 +1,4 @@
-use crate::error as kcl_error;
+use crate::{error as kcl_error, schema::SchemaEvalContextRef};
 use indexmap::{IndexMap, IndexSet};
 use kclvm_ast::ast;
 use kclvm_error::Position;
@@ -26,7 +26,7 @@ pub struct Scope {
     /// Potential arguments in the current scope, such as schema/lambda arguments.
     pub arguments: IndexSet<String>,
     /// Schema self denotes the scope that is belonged to a schema.
-    pub schema_self: Option<SchemaSelf>,
+    pub schema_ctx: Option<SchemaEvalContextRef>,
 }
 
 impl<'ctx> Evaluator<'ctx> {
@@ -110,6 +110,51 @@ impl<'ctx> Evaluator<'ctx> {
         let msg = format!("pkgpath {} is not found", current_pkgpath);
         let scopes = pkg_scopes.get_mut(&current_pkgpath).expect(&msg);
         scopes.pop();
+    }
+
+    /// Enter scope with the schema eval context.
+    pub(crate) fn enter_scope_with_schema_eval_context(&self, schema_ctx: &SchemaEvalContextRef) {
+        let current_pkgpath = self.current_pkgpath();
+        let mut ctx = self.ctx.borrow_mut();
+        let pkg_scopes = &mut ctx.pkg_scopes;
+        let msg = format!("pkgpath {} is not found", current_pkgpath);
+        let scopes = pkg_scopes.get_mut(&current_pkgpath).expect(&msg);
+        let scope = Scope {
+            schema_ctx: Some(schema_ctx.clone()),
+            ..Default::default()
+        };
+        scopes.push(scope);
+    }
+
+    pub(crate) fn get_schema_eval_context(&self) -> Option<SchemaEvalContextRef> {
+        let pkgpath = self.current_pkgpath();
+        let ctx = self.ctx.borrow();
+        let pkg_scopes = &ctx.pkg_scopes;
+        // Global or local variables.
+        let scopes = pkg_scopes
+            .get(&pkgpath)
+            .unwrap_or_else(|| panic!("package {} is not found", pkgpath));
+        // Scopes 0 is builtin scope, Scopes 1 is the global scope, Scopes 2~ are the local scopes
+        let scopes_len = scopes.len();
+        for i in 0..scopes_len {
+            let index = scopes_len - i - 1;
+            if let Some(ctx) = &scopes[index].schema_ctx {
+                return Some(ctx.clone());
+            }
+        }
+        None
+    }
+
+    #[inline]
+    pub(crate) fn get_schema_and_config(&self) -> Option<(ValueRef, ValueRef)> {
+        self.get_schema_eval_context()
+            .map(|v| (v.borrow().value.clone(), v.borrow().config.clone()))
+    }
+
+    #[inline]
+    pub(crate) fn get_schema_config_meta(&self) -> Option<ValueRef> {
+        self.get_schema_eval_context()
+            .map(|v| v.borrow().config_meta.clone())
     }
 
     /// Append a scalar value into the scope.
@@ -303,8 +348,8 @@ impl<'ctx> Evaluator<'ctx> {
         let pkgpath = self.current_pkgpath();
         let ctx = self.ctx.borrow();
         let scope = ctx.pkg_scopes.get(&pkgpath).unwrap().last().unwrap();
-        let schema_self = scope.schema_self.as_ref().unwrap();
-        let schema_value = &schema_self.value;
+        let schema_self = scope.schema_ctx.as_ref().unwrap();
+        let schema_value: ValueRef = schema_self.borrow().value.clone();
         if let Some(value) = schema_value.dict_get_value(name) {
             Ok(value)
         } else {

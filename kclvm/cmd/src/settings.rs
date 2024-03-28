@@ -53,6 +53,7 @@ pub(crate) fn build_settings(matches: &ArgMatches) -> Result<SettingsPathBuf> {
                 debug: bool_from_matches(matches, "debug"),
                 sort_keys: bool_from_matches(matches, "sort_keys"),
                 show_hidden: bool_from_matches(matches, "show_hidden"),
+                fast_eval: bool_from_matches(matches, "fast_eval"),
                 package_maps,
                 ..Default::default()
             }),

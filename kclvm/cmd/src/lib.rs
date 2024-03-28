@@ -3,12 +3,9 @@
 #[macro_use]
 extern crate clap;
 
-pub mod fmt;
-pub mod lint;
 pub mod run;
 pub mod settings;
 pub(crate) mod util;
-pub mod vet;
 
 #[cfg(test)]
 mod tests;
@@ -18,10 +15,7 @@ use clap::{ArgAction, Command};
 use std::io;
 
 use anyhow::Result;
-use fmt::fmt_command;
-use lint::lint_command;
 use run::run_command;
-use vet::vet_command;
 
 /// Run the KCL main command.
 pub fn main(args: &[&str]) -> Result<()> {
@@ -29,9 +23,6 @@ pub fn main(args: &[&str]) -> Result<()> {
     // Sub commands
     match matches.subcommand() {
         Some(("run", sub_matches)) => run_command(sub_matches, &mut io::stdout()),
-        Some(("lint", sub_matches)) => lint_command(sub_matches),
-        Some(("fmt", sub_matches)) => fmt_command(sub_matches),
-        Some(("vet", sub_matches)) => vet_command(sub_matches),
         Some(("server", _)) => kclvm_api::service::jsonrpc::start_stdio_server(),
         Some(("version", _)) => {
             println!("{}", kclvm_version::get_version_info());
@@ -41,7 +32,8 @@ pub fn main(args: &[&str]) -> Result<()> {
     }
 }
 
-/// Get the KCLVM CLI application.
+/// Get the CLI application including a run command and
+/// a gPRC server command to interacting with external systems.
 pub fn app() -> Command {
     Command::new("kclvm_cli")
         .version(kclvm_version::VERSION)
@@ -58,6 +50,7 @@ pub fn app() -> Command {
             .arg(arg!(debug: -d --debug "Run in debug mode (for developers only)"))
             .arg(arg!(sort_keys: -k --sort_keys "Sort result keys"))
             .arg(arg!(show_hidden: -H --show_hidden "Display hidden attributes"))
+            .arg(arg!(fast_eval: -K --fast_eval "Use the fast evaluation mode"))
             .arg(arg!(arguments: -D --argument <arguments> ... "Specify the top-level argument").num_args(1..))
             .arg(arg!(path_selector: -S --path_selector <path_selector> ... "Specify the path selector").num_args(1..))
             .arg(arg!(overrides: -O --overrides <overrides> ... "Specify the configuration override path and value").num_args(1..))
@@ -78,6 +71,7 @@ pub fn app() -> Command {
             .arg(arg!(debug: -d --debug "Run in debug mode (for developers only)"))
             .arg(arg!(sort_keys: -k --sort_keys "Sort result keys"))
             .arg(arg!(show_hidden: -H --show_hidden "Display hidden attributes"))
+            .arg(arg!(fast_eval: --fast_eval "Use the fast evaluation mode"))
             .arg(arg!(arguments: -D --argument <arguments> ... "Specify the top-level argument").num_args(1..))
             .arg(arg!(path_selector: -S --path_selector <path_selector> ... "Specify the path selector").num_args(1..))
             .arg(arg!(overrides: -O --overrides <overrides> ... "Specify the configuration override path and value").num_args(1..))

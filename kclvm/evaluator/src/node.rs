@@ -1,5 +1,7 @@
 // Copyright The KCL Authors. All rights reserved.
 
+use std::cell::RefCell;
+use std::rc::Rc;
 use std::sync::Arc;
 
 use anyhow::Ok;
@@ -7,10 +9,17 @@ use kclvm_ast::ast::{self, CallExpr, ConfigEntry, NodeRef};
 use kclvm_ast::walker::TypedResultWalker;
 use kclvm_runtime::val_func::invoke_function;
 use kclvm_runtime::walker::walk_value_mut;
-use kclvm_runtime::{type_pack_and_check, ApiFunc, RuntimeErrorType, ValueRef, PKG_PATH_PREFIX};
+use kclvm_runtime::{
+    schema_assert, type_pack_and_check, ApiFunc, ConfigEntryOperationKind, DecoratorValue,
+    RuntimeErrorType, UnionOptions, ValueRef, PKG_PATH_PREFIX,
+};
 use kclvm_sema::{builtin, plugin};
 
-use crate::func::FunctionProxy;
+use crate::func::{func_body, FunctionCaller, FunctionEvalContext};
+use crate::lazy::EvalBodyRange;
+use crate::proxy::Proxy;
+use crate::rule::{rule_body, rule_check, RuleCaller, RuleEvalContext};
+use crate::schema::{schema_body, schema_check, SchemaCaller, SchemaEvalContext};
 use crate::{error as kcl_error, GLOBAL_LEVEL, INNER_LEVEL};
 use crate::{EvalResult, Evaluator};
 
@@ -270,12 +279,46 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
         self.ok_result()
     }
 
-    fn walk_schema_stmt(&self, _schema_stmt: &'ctx ast::SchemaStmt) -> Self::Result {
-        todo!()
+    fn walk_schema_stmt(&self, schema_stmt: &'ctx ast::SchemaStmt) -> Self::Result {
+        let body = Arc::new(schema_body);
+        let check = Arc::new(schema_check);
+        let proxy = SchemaCaller {
+            ctx: Rc::new(RefCell::new(SchemaEvalContext::new_with_node(
+                schema_stmt.clone(),
+            ))),
+            body,
+            check,
+        };
+        // Add function to the global state
+        let index = self.add_schema(proxy);
+        let function = self.proxy_function_value(index);
+        // Store or add the variable in the scope
+        let name = &schema_stmt.name.node;
+        if !self.store_variable(name, function.clone()) {
+            self.add_variable(name, function.clone());
+        }
+        Ok(function)
     }
 
-    fn walk_rule_stmt(&self, _rule_stmt: &'ctx ast::RuleStmt) -> Self::Result {
-        todo!()
+    fn walk_rule_stmt(&self, rule_stmt: &'ctx ast::RuleStmt) -> Self::Result {
+        let body = Arc::new(rule_body);
+        let check = Arc::new(rule_check);
+        let proxy = RuleCaller {
+            ctx: Rc::new(RefCell::new(RuleEvalContext::new_with_node(
+                rule_stmt.clone(),
+            ))),
+            body,
+            check,
+        };
+        // Add function to the global state
+        let index = self.add_rule(proxy);
+        let function = self.proxy_function_value(index);
+        // Store or add the variable in the scope
+        let name = &rule_stmt.name.node;
+        if !self.store_variable(name, function.clone()) {
+            self.add_variable(name, function.clone());
+        }
+        Ok(function)
     }
 
     /*
@@ -428,8 +471,94 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
         Ok(result)
     }
 
-    fn walk_schema_attr(&self, _schema_attr: &'ctx ast::SchemaAttr) -> Self::Result {
-        todo!()
+    fn walk_schema_attr(&self, schema_attr: &'ctx ast::SchemaAttr) -> Self::Result {
+        let name = schema_attr.name.node.as_str();
+        self.add_target_var(name);
+        for decorator in &schema_attr.decorators {
+            self.walk_decorator_with_name(&decorator.node, Some(name), false)
+                .expect(kcl_error::COMPILE_ERROR_MSG);
+        }
+        let (mut schema_value, config_value) = self
+            .get_schema_and_config()
+            .expect(kcl_error::COMPILE_ERROR_MSG);
+        if let Some(entry) = config_value.dict_get_entry(name) {
+            let is_override_attr = {
+                let is_override_op = matches!(
+                    config_value.dict_get_attr_operator(name),
+                    Some(ConfigEntryOperationKind::Override)
+                );
+                let without_index =
+                    matches!(config_value.dict_get_insert_index(name), Some(-1) | None);
+                is_override_op && without_index
+            };
+            if is_override_attr {
+                self.value_union(&mut schema_value, &entry);
+            } else {
+                let value = match &schema_attr.value {
+                    Some(value) => self.walk_expr(value).expect(kcl_error::COMPILE_ERROR_MSG),
+                    None => self.undefined_value(),
+                };
+                if let Some(op) = &schema_attr.op {
+                    match op {
+                        // Union
+                        ast::AugOp::BitOr => {
+                            let org_value = schema_value
+                                .dict_get_value(name)
+                                .unwrap_or(self.undefined_value());
+                            let value = self.bit_or(org_value, value);
+                            self.dict_insert(
+                                &mut schema_value,
+                                name,
+                                &value,
+                                &ast::ConfigEntryOperation::Union,
+                                -1,
+                            );
+                        }
+                        // Assign
+                        _ => self.dict_insert(
+                            &mut schema_value,
+                            name,
+                            &value,
+                            &ast::ConfigEntryOperation::Union,
+                            -1,
+                        ),
+                    }
+                }
+            }
+        } else {
+            // Lazy eval for the schema attribute.
+            let value = match &schema_attr.value {
+                Some(value) => self.walk_expr(value).expect(kcl_error::COMPILE_ERROR_MSG),
+                None => self.undefined_value(),
+            };
+            if let Some(op) = &schema_attr.op {
+                match op {
+                    // Union
+                    ast::AugOp::BitOr => {
+                        let org_value = schema_value
+                            .dict_get_value(name)
+                            .unwrap_or(self.undefined_value());
+                        let value = self.bit_or(org_value, value);
+                        self.dict_insert(
+                            &mut schema_value,
+                            name,
+                            &value,
+                            &ast::ConfigEntryOperation::Union,
+                            -1,
+                        );
+                    }
+                    // Assign
+                    _ => self.dict_insert(
+                        &mut schema_value,
+                        name,
+                        &value,
+                        &ast::ConfigEntryOperation::Union,
+                        -1,
+                    ),
+                }
+            }
+        }
+        Ok(schema_value)
     }
 
     fn walk_if_expr(&self, if_expr: &'ctx ast::IfExpr) -> Self::Result {
@@ -739,20 +868,19 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
     fn walk_schema_expr(&self, schema_expr: &'ctx ast::SchemaExpr) -> Self::Result {
         // Check the required attributes only when the values of all attributes
         // in the final schema are solved.
-        let _is_in_schema = self.is_in_schema() || self.is_in_schema_expr();
-        {
-            self.ctx.borrow_mut().schema_expr_stack.push(());
-        }
-        let _config_value = self
+        let is_in_schema = self.is_in_schema() || self.is_in_schema_expr();
+        self.push_schema_expr();
+        let config_value = self
             .walk_expr(&schema_expr.config)
             .expect(kcl_error::COMPILE_ERROR_MSG);
-        let _schema_type = self
+        let schema_type = self
             .walk_identifier_with_ctx(&schema_expr.name.node, &schema_expr.name.node.ctx, None)
             .expect(kcl_error::COMPILE_ERROR_MSG);
-        let _config_expr = match &schema_expr.config.node {
+        let config_expr = match &schema_expr.config.node {
             ast::Expr::Config(config_expr) => config_expr,
             _ => panic!("invalid schema config expr"),
         };
+        let config_meta = self.construct_schema_config_meta(Some(&schema_expr.name), config_expr);
         let mut list_value = self.list_value();
         for arg in &schema_expr.args {
             let value = self.walk_expr(arg).expect(kcl_error::COMPILE_ERROR_MSG);
@@ -774,40 +902,85 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
                 -1,
             );
         }
-        {
-            self.ctx.borrow_mut().schema_expr_stack.pop();
+        let schema = if let Some(index) = schema_type.try_get_proxy() {
+            let proxy = {
+                let proxies = self.proxies.borrow();
+                proxies
+                    .get(index)
+                    .expect(kcl_error::INTERNAL_ERROR_MSG)
+                    .clone()
+            };
+            if let Proxy::Schema(schema) = proxy.as_ref() {
+                // Set new schema and config
+                {
+                    let mut ctx = schema.ctx.borrow_mut();
+                    ctx.reset_with_config(config_value, config_meta);
+                }
+                (schema.body)(self, &schema.ctx, &list_value, &dict_value)
+            } else {
+                self.undefined_value()
+            }
+        } else {
+            schema_type.deep_copy().union_entry(
+                &mut self.runtime_ctx.borrow_mut(),
+                &config_value,
+                true,
+                &UnionOptions::default(),
+            )
+        };
+        if !is_in_schema {
+            schema.schema_check_attr_optional(&mut self.runtime_ctx.borrow_mut(), true)
         }
-        self.ok_result()
+        self.pop_schema_expr();
+        Ok(schema)
     }
 
+    #[inline]
     fn walk_config_expr(&self, config_expr: &'ctx ast::ConfigExpr) -> Self::Result {
         self.walk_config_entries(&config_expr.items)
     }
 
-    fn walk_check_expr(&self, _check_expr: &'ctx ast::CheckExpr) -> Self::Result {
-        todo!()
+    fn walk_check_expr(&self, check_expr: &'ctx ast::CheckExpr) -> Self::Result {
+        if let Some(if_cond) = &check_expr.if_cond {
+            let if_value = self.walk_expr(if_cond).expect(kcl_error::COMPILE_ERROR_MSG);
+            let is_truth = self.value_is_truthy(&if_value);
+            if !is_truth {
+                return self.ok_result();
+            }
+        }
+        let check_result = self
+            .walk_expr(&check_expr.test)
+            .expect(kcl_error::COMPILE_ERROR_MSG);
+        let msg = {
+            if let Some(msg) = &check_expr.msg {
+                self.walk_expr(msg).expect(kcl_error::COMPILE_ERROR_MSG)
+            } else {
+                self.string_value("")
+            }
+        }
+        .as_str();
+        let config_meta = self
+            .get_schema_config_meta()
+            .expect(kcl_error::COMPILE_ERROR_MSG);
+        schema_assert(
+            &mut self.runtime_ctx.borrow_mut(),
+            &check_result,
+            &msg,
+            &config_meta,
+        );
+        self.ok_result()
     }
 
     fn walk_lambda_expr(&self, lambda_expr: &'ctx ast::LambdaExpr) -> Self::Result {
-        // Push the current lambda scope level in the lambda stack.
-        self.push_lambda(self.scope_level() + 1);
-        let func =
-            |s: &Evaluator, lambda_expr: &ast::LambdaExpr, args: &ValueRef, kwargs: &ValueRef| {
-                s.enter_scope();
-                // Evaluate arguments and keyword arguments and store values to local variables.
-                s.walk_arguments(&lambda_expr.args, args, kwargs);
-                let result = s
-                    .walk_stmts(&lambda_expr.body)
-                    .expect(kcl_error::COMPILE_ERROR_MSG);
-                s.leave_scope();
-                result
-            };
-        // Pop lambda
-        self.pop_lambda();
-        let func = Arc::new(func);
-        let func_proxy = FunctionProxy::new(lambda_expr.clone(), func.clone());
+        let func = Arc::new(func_body);
+        let proxy = FunctionCaller::new(
+            FunctionEvalContext {
+                node: lambda_expr.clone(),
+            },
+            func,
+        );
         // Add function to the global state
-        let index = self.add_function(func_proxy);
+        let index = self.add_function(proxy);
         Ok(self.proxy_function_value(index))
     }
 
@@ -977,9 +1150,21 @@ impl<'ctx> Evaluator<'ctx> {
 
     pub fn walk_stmts(&self, stmts: &'ctx [Box<ast::Node<ast::Stmt>>]) -> EvalResult {
         // Empty statements return None value
-        let mut result = Ok(self.none_value());
+        let mut result = self.ok_result();
         for stmt in stmts {
             result = self.walk_stmt(stmt);
+        }
+        result
+    }
+
+    pub fn walk_stmts_with_range(
+        &self,
+        stmts: &'ctx [Box<ast::Node<ast::Stmt>>],
+        range: &EvalBodyRange,
+    ) -> EvalResult {
+        let mut result = self.ok_result();
+        if let Some(stmts) = stmts.get(range.clone()) {
+            result = self.walk_stmts(stmts);
         }
         result
     }
@@ -1015,8 +1200,7 @@ impl<'ctx> Evaluator<'ctx> {
                         let value = right_value.clone().expect(kcl_error::INTERNAL_ERROR_MSG);
                         // Store schema attribute
                         if is_in_schema {
-                            // If is in the backtrack, return the schema value.
-                            todo!()
+                            self.update_schema_scope_value(name, Some(&value));
                         }
                         // Store loop variable
                         if is_local_var || !is_in_schema {
@@ -1061,7 +1245,7 @@ impl<'ctx> Evaluator<'ctx> {
                                     && !is_in_lambda
                                     && !is_local_var
                                 {
-                                    todo!()
+                                    self.update_schema_scope_value(name, None);
                                 }
                             }
                         }
@@ -1083,11 +1267,44 @@ impl<'ctx> Evaluator<'ctx> {
 
     pub fn walk_decorator_with_name(
         &self,
-        _decorator: &'ctx CallExpr,
-        _attr_name: Option<&str>,
-        _is_schema_target: bool,
+        decorator: &'ctx CallExpr,
+        attr_name: Option<&str>,
+        is_schema_target: bool,
     ) -> EvalResult {
-        todo!()
+        let mut list_value = self.list_value();
+        let mut dict_value = self.dict_value();
+        let (_, config_value) = self
+            .get_schema_and_config()
+            .expect(kcl_error::INTERNAL_ERROR_MSG);
+        let config_meta = self
+            .get_schema_config_meta()
+            .expect(kcl_error::INTERNAL_ERROR_MSG);
+        for arg in &decorator.args {
+            let value = self.walk_expr(arg).expect(kcl_error::COMPILE_ERROR_MSG);
+            self.list_append(&mut list_value, &value);
+        }
+        for keyword in &decorator.keywords {
+            let name = &keyword.node.arg.node.names[0];
+            let value = if let Some(value) = &keyword.node.value {
+                self.walk_expr(value).expect(kcl_error::COMPILE_ERROR_MSG)
+            } else {
+                self.none_value()
+            };
+            self.dict_insert_value(&mut dict_value, name.node.as_str(), &value);
+        }
+        let name = match &decorator.func.node {
+            ast::Expr::Identifier(ident) if ident.names.len() == 1 => ident.names[0].clone(),
+            _ => panic!("invalid decorator name, expect single identifier"),
+        };
+        let attr_name = if let Some(v) = attr_name { v } else { "" };
+        DecoratorValue::new(&name.node, &list_value, &dict_value).run(
+            &mut self.runtime_ctx.borrow_mut(),
+            attr_name,
+            is_schema_target,
+            &config_value,
+            &config_meta,
+        );
+        self.ok_result()
     }
 
     pub fn walk_arguments(

@@ -1,6 +1,6 @@
 use std::{
     collections::{HashMap, HashSet},
-    sync::Arc,
+    rc::Rc,
 };
 
 use generational_arena::Index;
@@ -8,15 +8,22 @@ use indexmap::IndexMap;
 use kclvm_error::Handler;
 use kclvm_runtime::ValueRef;
 
-use crate::{error as kcl_error, func::FunctionProxy, scope::Scope, Evaluator, GLOBAL_LEVEL};
+use crate::{
+    error as kcl_error, func::FunctionCaller, proxy::Proxy, rule::RuleCaller, schema::SchemaCaller,
+    scope::Scope, Evaluator, GLOBAL_LEVEL,
+};
 
 pub struct EvaluatorContext {
-    pub imported: HashSet<String>,
-    pub lambda_stack: Vec<usize>,
-    pub schema_stack: Vec<()>,
-    pub schema_expr_stack: Vec<()>,
     pub pkgpath_stack: Vec<String>,
     pub filename_stack: Vec<String>,
+    /// Imported package path set to judge is there a duplicate import.
+    pub imported: HashSet<String>,
+    /// The lambda stack index denotes the scope level of the lambda function.
+    pub lambda_stack: Vec<usize>,
+    /// To judge is in the schema statement.
+    pub schema_stack: Vec<()>,
+    /// To judge is in the schema expression.
+    pub schema_expr_stack: Vec<()>,
     /// Import names mapping
     pub import_names: IndexMap<String, IndexMap<String, String>>,
     /// Package scope to store variable pointers.
@@ -141,8 +148,28 @@ impl<'ctx> Evaluator<'ctx> {
     }
 
     #[inline]
+    pub fn push_schema(&self) {
+        self.ctx.borrow_mut().schema_stack.push(());
+    }
+
+    #[inline]
+    pub fn pop_schema(&self) {
+        self.ctx.borrow_mut().schema_stack.pop();
+    }
+
+    #[inline]
     pub fn is_in_schema(&self) -> bool {
         !self.ctx.borrow().schema_stack.is_empty()
+    }
+
+    #[inline]
+    pub fn push_schema_expr(&self) {
+        self.ctx.borrow_mut().schema_expr_stack.push(());
+    }
+
+    #[inline]
+    pub fn pop_schema_expr(&self) {
+        self.ctx.borrow_mut().schema_expr_stack.pop();
     }
 
     #[inline]
@@ -210,7 +237,23 @@ impl<'ctx> Evaluator<'ctx> {
 
     /// Append a function into the scope
     #[inline]
-    pub fn add_function(&self, function: FunctionProxy) -> Index {
-        self.functions.borrow_mut().insert(Arc::new(function))
+    pub(crate) fn add_function(&self, function: FunctionCaller) -> Index {
+        self.proxies
+            .borrow_mut()
+            .insert(Rc::new(Proxy::Lambda(function)))
+    }
+
+    /// Append a schema into the scope
+    #[inline]
+    pub(crate) fn add_schema(&self, schema: SchemaCaller) -> Index {
+        self.proxies
+            .borrow_mut()
+            .insert(Rc::new(Proxy::Schema(schema)))
+    }
+
+    /// Append a rule into the scope
+    #[inline]
+    pub(crate) fn add_rule(&self, rule: RuleCaller) -> Index {
+        self.proxies.borrow_mut().insert(Rc::new(Proxy::Rule(rule)))
     }
 }
