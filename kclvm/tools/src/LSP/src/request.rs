@@ -5,6 +5,7 @@ use kclvm_sema::info::is_valid_kcl_name;
 use lsp_types::{Location, SemanticTokensResult, TextEdit};
 use ra_ap_vfs::VfsPath;
 use std::collections::HashMap;
+use std::sync::Arc;
 use std::time::Instant;
 
 use crate::error::LSPError;
@@ -100,11 +101,11 @@ impl LanguageServerSnapshot {
         valid
     }
 
-    pub(crate) fn get_db(&self, path: &VfsPath) -> anyhow::Result<AnalysisDatabase> {
+    pub(crate) fn get_db(&self, path: &VfsPath) -> anyhow::Result<Arc<AnalysisDatabase>> {
         let file_id = self.vfs.read().file_id(path);
         match file_id {
             Some(id) => match self.db.read().get(&id) {
-                Some(db) => Ok(db.clone()),
+                Some(db) => Ok(Arc::clone(db)),
                 None => Err(anyhow::anyhow!(LSPError::FileIdNotFound(path.clone()))),
             },
             None => Err(anyhow::anyhow!(LSPError::AnalysisDatabaseNotFound(
@@ -114,11 +115,14 @@ impl LanguageServerSnapshot {
     }
 
     ///  Attempts to get db in cache, this function does not block.
-    pub(crate) fn try_get_db(&self, path: &VfsPath) -> anyhow::Result<Option<AnalysisDatabase>> {
+    pub(crate) fn try_get_db(
+        &self,
+        path: &VfsPath,
+    ) -> anyhow::Result<Option<Arc<AnalysisDatabase>>> {
         match self.vfs.try_read() {
             Some(vfs) => match vfs.file_id(path) {
                 Some(file_id) => match self.db.try_read() {
-                    Some(db) => Ok(db.get(&file_id).cloned()),
+                    Some(db) => Ok(db.get(&file_id).map(|db| Arc::clone(db))),
                     None => Ok(None),
                 },
                 None => Err(anyhow::anyhow!(LSPError::AnalysisDatabaseNotFound(
@@ -266,7 +270,8 @@ pub(crate) fn handle_completion(
         .context
         .and_then(|ctx| ctx.trigger_character)
         .and_then(|s| s.chars().next());
-    let (prog, gs) = match completion_trigger_character {
+
+    let db = match completion_trigger_character {
         // Some trigger characters need to re-compile
         Some(ch) => match ch {
             '=' | ':' => {
@@ -276,23 +281,17 @@ pub(crate) fn handle_completion(
                     scope_cache: None,
                     vfs: Some(snapshot.vfs.clone()),
                 }) {
-                    Ok((prog, _, gs)) => (prog, gs),
+                    Ok((prog, diags, gs)) => Arc::new(AnalysisDatabase { prog, diags, gs }),
                     Err(_) => return Ok(None),
                 }
             }
-            _ => {
-                let db = snapshot.get_db(&path.clone().into())?;
-                (db.prog, db.gs)
-            }
+            _ => snapshot.get_db(&path.clone().into())?,
         },
 
-        None => {
-            let db = snapshot.get_db(&path.clone().into())?;
-            (db.prog, db.gs)
-        }
+        None => snapshot.get_db(&path.clone().into())?,
     };
 
-    let res = completion(completion_trigger_character, &prog, &kcl_pos, &gs);
+    let res = completion(completion_trigger_character, &db.prog, &kcl_pos, &db.gs);
 
     if res.is_none() {
         log_message("Completion item not found".to_string(), &sender)?;

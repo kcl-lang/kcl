@@ -99,7 +99,7 @@ pub(crate) struct LanguageServerSnapshot {
     /// The virtual filesystem that holds all the file contents
     pub vfs: Arc<RwLock<Vfs>>,
     /// Holds the state of the analysis process
-    pub db: Arc<RwLock<HashMap<FileId, AnalysisDatabase>>>,
+    pub db: Arc<RwLock<HashMap<FileId, Arc<AnalysisDatabase>>>>,
     /// Documents that are currently kept in memory from the client
     pub opened_files: IndexSet<FileId>,
     /// The word index map
@@ -232,11 +232,11 @@ impl LanguageServerState {
                                     Ok((prog, diags, gs)) => {
                                         db.insert(
                                             file.file_id,
-                                            AnalysisDatabase {
+                                            Arc::new(AnalysisDatabase {
                                                 prog,
                                                 diags: diags.clone(),
                                                 gs,
-                                            },
+                                            }),
                                         );
 
                                         let diagnostics = diags
