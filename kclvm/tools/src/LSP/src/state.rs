@@ -20,6 +20,8 @@ use parking_lot::RwLock;
 use ra_ap_vfs::{FileId, Vfs};
 use std::collections::HashMap;
 use std::sync::Mutex;
+use std::thread;
+use std::time::Duration;
 use std::{sync::Arc, time::Instant};
 
 pub(crate) type RequestHandler = fn(&mut LanguageServerState, lsp_server::Response);
@@ -256,8 +258,9 @@ impl LanguageServerState {
                                         }));
                                     }
                                     Err(err) => {
+                                        db.remove(&file.file_id);
                                         log_message(
-                                            format!("compile failed: {:?}", err.to_string()),
+                                            format!("Compile failed: {:?}", err.to_string()),
                                             &sender,
                                         );
                                     }
@@ -289,7 +292,11 @@ impl LanguageServerState {
                 self.send(notification.into());
             }
             Task::Response(response) => self.respond(response)?,
-            Task::Retry(request) => self.on_request(request, request_received)?,
+            Task::Retry(req) if !self.is_completed(&req) => {
+                thread::sleep(Duration::from_millis(20));
+                self.on_request(req, request_received)?
+            }
+            Task::Retry(_) => (),
         }
         Ok(())
     }
@@ -342,6 +349,10 @@ impl LanguageServerState {
             lsp_types::LogMessageParams { typ, message },
         );
         self.send(not.into());
+    }
+
+    pub(crate) fn is_completed(&self, request: &lsp_server::Request) -> bool {
+        self.request_queue.incoming.is_completed(&request.id)
     }
 }
 
