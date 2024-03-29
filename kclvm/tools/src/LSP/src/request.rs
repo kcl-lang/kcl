@@ -31,7 +31,6 @@ impl LanguageServerState {
         request: lsp_server::Request,
         request_received: Instant,
     ) -> anyhow::Result<()> {
-        log_message(format!("on request {:?}", request), &self.task_sender)?;
         self.register_request(&request, request_received);
 
         // If a shutdown was requested earlier, immediately respond with an error
@@ -106,11 +105,11 @@ impl LanguageServerSnapshot {
         match file_id {
             Some(id) => match self.db.read().get(&id) {
                 Some(db) => Ok(Arc::clone(db)),
-                None => Err(anyhow::anyhow!(LSPError::FileIdNotFound(path.clone()))),
+                None => Err(anyhow::anyhow!(LSPError::AnalysisDatabaseNotFound(
+                    path.clone()
+                ))),
             },
-            None => Err(anyhow::anyhow!(LSPError::AnalysisDatabaseNotFound(
-                path.clone()
-            ))),
+            None => Err(anyhow::anyhow!(LSPError::FileIdNotFound(path.clone()))),
         }
     }
 
@@ -122,12 +121,15 @@ impl LanguageServerSnapshot {
         match self.vfs.try_read() {
             Some(vfs) => match vfs.file_id(path) {
                 Some(file_id) => match self.db.try_read() {
-                    Some(db) => Ok(db.get(&file_id).map(|db| Arc::clone(db))),
+                    Some(db) => match db.get(&file_id) {
+                        Some(db) => Ok(Some(Arc::clone(db))),
+                        None => Err(anyhow::anyhow!(LSPError::AnalysisDatabaseNotFound(
+                            path.clone()
+                        ))),
+                    },
                     None => Ok(None),
                 },
-                None => Err(anyhow::anyhow!(LSPError::AnalysisDatabaseNotFound(
-                    path.clone()
-                ))),
+                None => Err(anyhow::anyhow!(LSPError::FileIdNotFound(path.clone()))),
             },
             None => Ok(None),
         }

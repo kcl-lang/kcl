@@ -17,7 +17,6 @@ impl LanguageServerState {
         &mut self,
         notification: lsp_server::Notification,
     ) -> anyhow::Result<()> {
-        self.log_message(format!("on notification {:?}", notification));
         NotificationDispatcher::new(self, notification)
             .on::<DidOpenTextDocument>(LanguageServerState::on_did_open_text_document)?
             .on::<DidChangeTextDocument>(LanguageServerState::on_did_change_text_document)?

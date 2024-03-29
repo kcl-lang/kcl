@@ -25,8 +25,8 @@ use parking_lot::RwLockReadGuard;
 use ra_ap_vfs::{FileId, Vfs};
 use serde::{de::DeserializeOwned, Serialize};
 
-use std::fs;
 use std::path::Path;
+use std::{fs, panic};
 
 #[allow(unused)]
 /// Deserializes a `T` from a json value.
@@ -82,27 +82,34 @@ pub(crate) fn compile_with_params(
         let mut k_code_list = load_files_code_from_vfs(&files, vfs)?;
         opt.k_code_list.append(&mut k_code_list);
     }
-    // Parser
-    let sess = ParseSessionRef::default();
-    let mut program = load_program(sess.clone(), &files, Some(opt), params.module_cache)?.program;
-    // Resolver
-    let prog_scope = resolve_program_with_opts(
-        &mut program,
-        kclvm_sema::resolver::Options {
-            merge_program: false,
-            type_erasure: false,
-            ..Default::default()
-        },
-        params.scope_cache,
-    );
-    // Please note that there is no global state cache at this stage.
-    let gs = GlobalState::default();
-    let gs = Namer::find_symbols(&program, gs);
-    let gs = AdvancedResolver::resolve_program(&program, gs, prog_scope.node_ty_map.clone());
-    // Merge parse diagnostic and resolve diagnostic
-    sess.append_diagnostic(prog_scope.handler.diagnostics.clone());
-    let diags = sess.1.borrow().diagnostics.clone();
-    Ok((program, diags, gs))
+    match panic::catch_unwind(move || {
+        // Parser
+        let sess = ParseSessionRef::default();
+        let mut program = load_program(sess.clone(), &files, Some(opt), params.module_cache)
+            .unwrap()
+            .program;
+        // Resolver
+        let prog_scope = resolve_program_with_opts(
+            &mut program,
+            kclvm_sema::resolver::Options {
+                merge_program: false,
+                type_erasure: false,
+                ..Default::default()
+            },
+            params.scope_cache,
+        );
+        // Please note that there is no global state cache at this stage.
+        let gs = GlobalState::default();
+        let gs = Namer::find_symbols(&program, gs);
+        let gs = AdvancedResolver::resolve_program(&program, gs, prog_scope.node_ty_map.clone());
+        // Merge parse diagnostic and resolve diagnostic
+        sess.append_diagnostic(prog_scope.handler.diagnostics.clone());
+        let diags = sess.1.borrow().diagnostics.clone();
+        Ok((program, diags, gs))
+    }) {
+        Ok(res) => return res,
+        Err(e) => Err(anyhow::anyhow!("Compile failed: {:?}", e)),
+    }
 }
 
 /// Update text with TextDocumentContentChangeEvent param
