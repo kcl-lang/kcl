@@ -1432,7 +1432,13 @@ impl<'ctx> Evaluator<'ctx> {
                             .expect(kcl_error::COMPILE_ERROR_MSG);
                         let key = self.walk_expr(elt).expect(kcl_error::COMPILE_ERROR_MSG);
                         let op = op.expect(kcl_error::INTERNAL_ERROR_MSG);
-                        self.dict_insert(collection_value, &key.as_str(), &value, op, -1);
+                        self.dict_insert(
+                            collection_value,
+                            &key.as_str(),
+                            &value.deep_copy(),
+                            op,
+                            -1,
+                        );
                     }
                 }
             } else {

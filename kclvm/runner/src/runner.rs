@@ -475,9 +475,9 @@ impl FastRunner {
                 unsafe {
                     let plugin_method: extern "C" fn(
                         method: *const i8,
-                        args: *const i8,
-                        kwargs: *const i8,
-                    ) -> *const i8 = std::mem::transmute(self.opts.plugin_agent_ptr);
+                        args: *const c_char,
+                        kwargs: *const c_char,
+                    ) -> *const c_char = std::mem::transmute(self.opts.plugin_agent_ptr);
                     kclvm_plugin_init(plugin_method);
                 }
             }

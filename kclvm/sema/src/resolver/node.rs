@@ -705,24 +705,70 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
     }
 
     fn walk_dict_comp(&mut self, dict_comp: &'ctx ast::DictComp) -> Self::Result {
-        let key = dict_comp.entry.key.as_ref().unwrap();
-        let start = key.get_pos();
-        let end = match dict_comp.generators.last() {
-            Some(last) => last.get_end_pos(),
-            None => dict_comp.entry.value.get_end_pos(),
-        };
-        self.enter_scope(start.clone(), end, ScopeKind::Loop);
-        for comp_clause in &dict_comp.generators {
-            self.walk_comp_clause(&comp_clause.node);
+        if dict_comp.entry.key.is_none() {
+            self.handler.add_compile_error(
+                "dict unpacking cannot be used in dict comprehension",
+                dict_comp.entry.value.get_span_pos(),
+            );
+            let start = dict_comp.entry.value.get_pos();
+            let end = match dict_comp.generators.last() {
+                Some(last) => last.get_end_pos(),
+                None => dict_comp.entry.value.get_end_pos(),
+            };
+            self.enter_scope(start.clone(), end, ScopeKind::Loop);
+            for comp_clause in &dict_comp.generators {
+                self.walk_comp_clause(&comp_clause.node);
+            }
+            let stack_depth = self.switch_config_expr_context_by_key(&dict_comp.entry.key);
+            let val_ty = self.expr(&dict_comp.entry.value);
+            let key_ty = match &val_ty.kind {
+                TypeKind::None | TypeKind::Any => val_ty.clone(),
+                TypeKind::Dict(DictType { key_ty, .. }) => key_ty.clone(),
+                TypeKind::Schema(schema_ty) => schema_ty.key_ty().clone(),
+                TypeKind::Union(types)
+                    if self
+                        .ctx
+                        .ty_ctx
+                        .is_config_type_or_config_union_type(val_ty.clone()) =>
+                {
+                    sup(&types
+                        .iter()
+                        .map(|ty| ty.config_key_ty())
+                        .collect::<Vec<TypeRef>>())
+                }
+                _ => {
+                    self.handler.add_compile_error(
+                        &format!(
+                            "only dict and schema can be used ** unpack, got '{}'",
+                            val_ty.ty_str()
+                        ),
+                        dict_comp.entry.value.get_span_pos(),
+                    );
+                    self.any_ty()
+                }
+            };
+            self.clear_config_expr_context(stack_depth, false);
+            self.leave_scope();
+            Type::dict_ref(key_ty, val_ty)
+        } else {
+            let key = dict_comp.entry.key.as_ref().unwrap();
+            let end = match dict_comp.generators.last() {
+                Some(last) => last.get_end_pos(),
+                None => dict_comp.entry.value.get_end_pos(),
+            };
+            let start = key.get_pos();
+            self.enter_scope(start.clone(), end, ScopeKind::Loop);
+            for comp_clause in &dict_comp.generators {
+                self.walk_comp_clause(&comp_clause.node);
+            }
+            let key_ty = self.expr(key);
+            self.check_attr_ty(&key_ty, key.get_span_pos());
+            let stack_depth = self.switch_config_expr_context_by_key(&dict_comp.entry.key);
+            let val_ty = self.expr(&dict_comp.entry.value);
+            self.clear_config_expr_context(stack_depth, false);
+            self.leave_scope();
+            Type::dict_ref(key_ty, val_ty)
         }
-        let key_ty = self.expr(key);
-        // TODO: Naming both dict keys and schema attributes as `attribute`
-        self.check_attr_ty(&key_ty, key.get_span_pos());
-        let stack_depth = self.switch_config_expr_context_by_key(&dict_comp.entry.key);
-        let val_ty = self.expr(&dict_comp.entry.value);
-        self.clear_config_expr_context(stack_depth, false);
-        self.leave_scope();
-        Type::dict_ref(key_ty, val_ty)
     }
 
     fn walk_list_if_item_expr(

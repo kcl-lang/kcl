@@ -150,6 +150,8 @@ fn test_resolve_program_fail() {
         "comp_clause_error_0.k",
         "comp_clause_error_1.k",
         "comp_clause_error_2.k",
+        "comp_clause_error_3.k",
+        "comp_clause_error_4.k",
         "config_expr.k",
         "invalid_mixin_0.k",
         "module_optional_select.k",
