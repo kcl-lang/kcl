@@ -171,21 +171,21 @@ pub unsafe extern "C" fn kclvm_builtin_option(
         panic!("unknown type '{typ}'");
     }
 
-    if let Some(arg0) = args.arg_0() {
-        if let Some(x) = ctx_ref.app_args.get(&arg0.as_str()) {
+    if let Some(arg0) = get_call_arg_str(args, kwargs, 0, Some("key")) {
+        if let Some(x) = ctx_ref.app_args.get(&arg0) {
             if *x == 0 {
                 return kclvm_value_Undefined(ctx);
             }
 
             let opt_value = mut_ptr_as_ref((*x) as *mut kclvm_value_ref_t);
 
-            if let Some(kwarg_type) = kwargs.kwarg_str("type", None) {
+            if let Some(kwarg_type) = get_call_arg_str(args, kwargs, 1, Some("type")) {
                 return _value_to_type(opt_value, kwarg_type).into_raw(ctx_ref);
             }
 
             return (*x) as *mut kclvm_value_ref_t;
-        } else if let Some(kwarg_default) = kwargs.kwarg("default") {
-            if let Some(kwarg_type) = kwargs.kwarg_str("type", None) {
+        } else if let Some(kwarg_default) = get_call_arg(args, kwargs, 3, Some("default")) {
+            if let Some(kwarg_type) = get_call_arg_str(args, kwargs, 1, Some("type")) {
                 return _value_to_type(&kwarg_default, kwarg_type).into_raw(ctx_ref);
             }
 
@@ -193,7 +193,7 @@ pub unsafe extern "C" fn kclvm_builtin_option(
         }
     }
 
-    let required = kwargs.kwarg_bool("required", Some(false)).unwrap();
+    let required = get_call_arg_bool(args, kwargs, 2, Some("required")).unwrap_or_default();
     if required {
         let name = args.arg_i_str(0, Some("?".to_string())).unwrap();
         panic!("option('{name}') must be initialized, try '-D {name}=?' argument");
@@ -231,11 +231,12 @@ pub unsafe extern "C" fn kclvm_builtin_print(
 pub unsafe extern "C" fn kclvm_builtin_len(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
-    _kwargs: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
     let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
 
-    if let Some(arg) = args.arg_0() {
+    if let Some(arg) = get_call_arg(args, kwargs, 0, Some("inval")) {
         return kclvm_value_Int(ctx, arg.len() as i64);
     }
     panic!("len() takes exactly one argument (0 given)");
@@ -249,9 +250,9 @@ pub unsafe extern "C" fn kclvm_builtin_any_true(
     kwargs: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
     let args = ptr_as_ref(args);
-    let _kwargs = ptr_as_ref(kwargs);
+    let kwargs = ptr_as_ref(kwargs);
 
-    if let Some(arg0) = args.arg_0() {
+    if let Some(arg0) = get_call_arg(args, kwargs, 0, Some("inval")) {
         return kclvm_value_Bool(ctx, arg0.any_true() as i8);
     }
     kclvm_value_Bool(ctx, 0)
@@ -262,11 +263,12 @@ pub unsafe extern "C" fn kclvm_builtin_any_true(
 pub unsafe extern "C" fn kclvm_builtin_isunique(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
-    _kwargs: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
     let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
 
-    if let Some(arg0) = args.arg_0() {
+    if let Some(arg0) = get_call_arg(args, kwargs, 0, Some("inval")) {
         return kclvm_value_Bool(ctx, arg0.isunique() as i8);
     }
     kclvm_value_Bool(ctx, 0)
@@ -283,8 +285,8 @@ pub unsafe extern "C" fn kclvm_builtin_sorted(
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
 
-    if let Some(arg0) = args.arg_0() {
-        let reverse = kwargs.kwarg("reverse");
+    if let Some(arg0) = get_call_arg(args, kwargs, 0, Some("inval")) {
+        let reverse = get_call_arg(args, kwargs, 1, Some("reverse"));
         return arg0.sorted(reverse.as_ref()).into_raw(ctx);
     }
     panic!("sorted() takes exactly one argument (0 given)");
@@ -301,8 +303,8 @@ pub unsafe extern "C" fn kclvm_builtin_int(
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
 
-    if let Some(arg0) = args.arg_0() {
-        let base = args.arg_i(1).or_else(|| kwargs.kwarg("base"));
+    if let Some(arg0) = get_call_arg(args, kwargs, 0, Some("number")) {
+        let base = get_call_arg(args, kwargs, 1, Some("base"));
         return arg0.convert_to_int(ctx, base.as_ref()).into_raw(ctx);
     }
     panic!("int() takes exactly one argument (0 given)");
@@ -317,9 +319,9 @@ pub unsafe extern "C" fn kclvm_builtin_float(
 ) -> *mut kclvm_value_ref_t {
     let ctx = mut_ptr_as_ref(ctx);
     let args = ptr_as_ref(args);
-    let _kwargs = ptr_as_ref(kwargs);
+    let kwargs = ptr_as_ref(kwargs);
 
-    if let Some(arg0) = args.arg_0() {
+    if let Some(arg0) = get_call_arg(args, kwargs, 0, Some("number")) {
         return arg0.convert_to_float(ctx).into_raw(ctx);
     }
     panic!("float() takes exactly one argument (0 given)");
@@ -330,12 +332,13 @@ pub unsafe extern "C" fn kclvm_builtin_float(
 pub unsafe extern "C" fn kclvm_builtin_bool(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
-    _kwargs: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let ctx = mut_ptr_as_ref(ctx);
     let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
 
-    if let Some(arg0) = args.arg_0() {
+    if let Some(arg0) = get_call_arg(args, kwargs, 0, Some("x")) {
         return ValueRef::bool(arg0.is_truthy()).into_raw(ctx);
     }
     panic!("bool() takes exactly one argument (0 given)");
@@ -346,12 +349,13 @@ pub unsafe extern "C" fn kclvm_builtin_bool(
 pub unsafe extern "C" fn kclvm_builtin_str(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
-    _kwargs: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
-    let args = ptr_as_ref(args);
     let ctx = mut_ptr_as_ref(ctx);
+    let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
 
-    if let Some(arg0) = args.arg_0() {
+    if let Some(arg0) = get_call_arg(args, kwargs, 0, Some("x")) {
         return ValueRef::str(&arg0.to_string()).into_raw(ctx);
     }
     ValueRef::str("").into_raw(ctx)
@@ -398,11 +402,16 @@ pub unsafe extern "C" fn kclvm_builtin_min(
 pub unsafe extern "C" fn kclvm_builtin_multiplyof(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
-    _kwargs: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let ctx = mut_ptr_as_ref(ctx);
     let args = ptr_as_ref(args);
-    if let (Some(arg0), Some(arg1)) = (args.arg_i(0), args.arg_i(1)) {
+    let kwargs = ptr_as_ref(kwargs);
+
+    if let (Some(arg0), Some(arg1)) = (
+        get_call_arg(args, kwargs, 0, Some("a")),
+        get_call_arg(args, kwargs, 1, Some("b")),
+    ) {
         return builtin::multiplyof(&arg0, &arg1).into_raw(ctx);
     }
     panic!(
@@ -416,11 +425,13 @@ pub unsafe extern "C" fn kclvm_builtin_multiplyof(
 pub unsafe extern "C" fn kclvm_builtin_abs(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
-    _kwargs: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let ctx = mut_ptr_as_ref(ctx);
     let args = ptr_as_ref(args);
-    if let Some(arg0) = args.arg_0() {
+    let kwargs = ptr_as_ref(kwargs);
+
+    if let Some(arg0) = get_call_arg(args, kwargs, 0, Some("inval")) {
         return arg0.abs().into_raw(ctx);
     }
     panic!("abs() takes exactly one argument (0 given)");
@@ -431,10 +442,12 @@ pub unsafe extern "C" fn kclvm_builtin_abs(
 pub unsafe extern "C" fn kclvm_builtin_all_true(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
-    _kwargs: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
-    if let Some(arg0) = args.arg_0() {
+    let kwargs = ptr_as_ref(kwargs);
+
+    if let Some(arg0) = get_call_arg(args, kwargs, 0, Some("inval")) {
         return kclvm_value_Bool(ctx, arg0.all_true() as i8);
     }
     kclvm_value_Bool(ctx, 0)
@@ -445,11 +458,13 @@ pub unsafe extern "C" fn kclvm_builtin_all_true(
 pub unsafe extern "C" fn kclvm_builtin_hex(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
-    _kwargs: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let ctx = mut_ptr_as_ref(ctx);
     let args = ptr_as_ref(args);
-    if let Some(arg0) = args.arg_0() {
+    let kwargs = ptr_as_ref(kwargs);
+
+    if let Some(arg0) = get_call_arg(args, kwargs, 0, Some("number")) {
         return arg0.hex().into_raw(ctx);
     }
     panic!("hex() takes exactly one argument (0 given)");
@@ -460,12 +475,14 @@ pub unsafe extern "C" fn kclvm_builtin_hex(
 pub unsafe extern "C" fn kclvm_builtin_sum(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
-    _kwargs: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let ctx_ref = mut_ptr_as_ref(ctx);
     let args = ptr_as_ref(args);
-    match args.arg_i(0) {
-        Some(arg0) => match args.arg_i(1) {
+    let kwargs = ptr_as_ref(kwargs);
+
+    match get_call_arg(args, kwargs, 0, Some("iterable")) {
+        Some(arg0) => match get_call_arg(args, kwargs, 1, Some("start")) {
             Some(arg1) => arg0.sum(ctx_ref, &arg1).into_raw(ctx_ref),
             _ => arg0.sum(ctx_ref, &ValueRef::int(0)).into_raw(ctx_ref),
         },
@@ -478,12 +495,17 @@ pub unsafe extern "C" fn kclvm_builtin_sum(
 pub unsafe extern "C" fn kclvm_builtin_pow(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
-    _kwargs: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let ctx_ref = mut_ptr_as_ref(ctx);
     let args = ptr_as_ref(args);
-    match (args.arg_i(0), args.arg_i(1)) {
-        (Some(arg0), Some(arg1)) => match args.arg_i(2) {
+    let kwargs = ptr_as_ref(kwargs);
+
+    match (
+        get_call_arg(args, kwargs, 0, Some("x")),
+        get_call_arg(args, kwargs, 1, Some("y")),
+    ) {
+        (Some(arg0), Some(arg1)) => match get_call_arg(args, kwargs, 2, Some("z")) {
             Some(arg2) => builtin::pow(&arg0, &arg1, &arg2).into_raw(ctx_ref),
             _ => builtin::pow(&arg0, &arg1, &ValueRef::none()).into_raw(ctx_ref),
         },
@@ -496,12 +518,14 @@ pub unsafe extern "C" fn kclvm_builtin_pow(
 pub unsafe extern "C" fn kclvm_builtin_round(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
-    _kwargs: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let ctx_ref = mut_ptr_as_ref(ctx);
     let args = ptr_as_ref(args);
-    match args.arg_i(0) {
-        Some(arg0) => match args.arg_i(1) {
+    let kwargs = ptr_as_ref(kwargs);
+
+    match get_call_arg(args, kwargs, 0, Some("number")) {
+        Some(arg0) => match get_call_arg(args, kwargs, 1, Some("ndigits")) {
             Some(arg1) => builtin::round(&arg0, &arg1).into_raw(ctx_ref),
             _ => builtin::round(&arg0, &ValueRef::none()).into_raw(ctx_ref),
         },
@@ -526,12 +550,14 @@ pub unsafe extern "C" fn kclvm_builtin_zip(
 pub unsafe extern "C" fn kclvm_builtin_list(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
-    _kwargs: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let ctx = mut_ptr_as_ref(ctx);
     let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
+
     if args.args_len() > 0 {
-        if let Some(arg0) = args.arg_0() {
+        if let Some(arg0) = get_call_arg(args, kwargs, 0, Some("x")) {
             return builtin::list(Some(&arg0)).into_raw(ctx);
         }
         panic!("invalid arguments in list() function");
@@ -551,7 +577,7 @@ pub unsafe extern "C" fn kclvm_builtin_dict(
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
     let mut dict = ValueRef::dict(None);
-    if let Some(arg0) = args.arg_0() {
+    if let Some(arg0) = get_call_arg(args, kwargs, 0, Some("x")) {
         let v = builtin::dict(ctx, Some(&arg0));
         dict.dict_insert_unpack(ctx, &v);
     }
@@ -570,8 +596,9 @@ pub unsafe extern "C" fn kclvm_builtin_typeof(
     let ctx = mut_ptr_as_ref(ctx);
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
-    if let Some(arg0) = args.arg_0() {
-        if let Some(full_name) = kwargs.kwarg("full_name") {
+
+    if let Some(arg0) = get_call_arg(args, kwargs, 0, Some("x")) {
+        if let Some(full_name) = get_call_arg(args, kwargs, 1, Some("full_name")) {
             return builtin::type_of(&arg0, &full_name).into_raw(ctx);
         }
         return builtin::type_of(&arg0, &ValueRef::bool(false)).into_raw(ctx);
@@ -585,11 +612,13 @@ pub unsafe extern "C" fn kclvm_builtin_typeof(
 pub unsafe extern "C" fn kclvm_builtin_bin(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
-    _kwargs: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let ctx = mut_ptr_as_ref(ctx);
     let args = ptr_as_ref(args);
-    if let Some(arg0) = args.arg_0() {
+    let kwargs = ptr_as_ref(kwargs);
+
+    if let Some(arg0) = get_call_arg(args, kwargs, 0, Some("number")) {
         return arg0.bin().into_raw(ctx);
     }
     panic!("bin() takes exactly one argument (0 given)");
@@ -600,11 +629,13 @@ pub unsafe extern "C" fn kclvm_builtin_bin(
 pub unsafe extern "C" fn kclvm_builtin_oct(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
-    _kwargs: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let ctx = mut_ptr_as_ref(ctx);
     let args = ptr_as_ref(args);
-    if let Some(arg0) = args.arg_0() {
+    let kwargs = ptr_as_ref(kwargs);
+
+    if let Some(arg0) = get_call_arg(args, kwargs, 0, Some("number")) {
         return arg0.oct().into_raw(ctx);
     }
     panic!("oct() takes exactly one argument (0 given)");
@@ -615,11 +646,13 @@ pub unsafe extern "C" fn kclvm_builtin_oct(
 pub unsafe extern "C" fn kclvm_builtin_ord(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
-    _kwargs: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let ctx = mut_ptr_as_ref(ctx);
     let args = ptr_as_ref(args);
-    if let Some(arg0) = args.arg_0() {
+    let kwargs = ptr_as_ref(kwargs);
+
+    if let Some(arg0) = get_call_arg(args, kwargs, 0, Some("c")) {
         return arg0.ord().into_raw(ctx);
     }
     panic!("ord() takes exactly one argument (0 given)");
@@ -630,13 +663,15 @@ pub unsafe extern "C" fn kclvm_builtin_ord(
 pub unsafe extern "C" fn kclvm_builtin_range(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
-    _kwargs: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
     let ctx_ref = mut_ptr_as_ref(ctx);
     let args = ptr_as_ref(args);
-    match args.arg_i(0) {
-        Some(arg0) => match args.arg_i(1) {
-            Some(arg1) => match args.arg_i(2) {
+    let kwargs = ptr_as_ref(kwargs);
+
+    match get_call_arg(args, kwargs, 0, Some("start")) {
+        Some(arg0) => match get_call_arg(args, kwargs, 1, Some("stop")) {
+            Some(arg1) => match get_call_arg(args, kwargs, 2, Some("step")) {
                 Some(arg2) => builtin::range(&arg0, &arg1, &arg2).into_raw(ctx_ref),
                 _ => builtin::range(&arg0, &arg1, &ValueRef::int(1)).into_raw(ctx_ref),
             },
