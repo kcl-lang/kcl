@@ -1163,6 +1163,77 @@ fn formatting_test() {
     )
 }
 
+#[test]
+fn formatting_unsaved_test() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let mut path = root.clone();
+
+    path.push("src/test_data/format/format_range.k");
+
+    let path = path.to_str().unwrap();
+    let src = std::fs::read_to_string(path).unwrap();
+    let server = Project {}.server(InitializeParams::default());
+
+    let uri = Url::from_file_path(path).unwrap();
+
+    // Mock open file
+    server.notification::<lsp_types::notification::DidOpenTextDocument>(
+        lsp_types::DidOpenTextDocumentParams {
+            text_document: TextDocumentItem {
+                uri: uri.clone(),
+                language_id: "KCL".to_string(),
+                version: 0,
+                text: src,
+            },
+        },
+    );
+
+    // Mock edit file
+    server.notification::<lsp_types::notification::DidChangeTextDocument>(
+        lsp_types::DidChangeTextDocumentParams {
+            text_document: lsp_types::VersionedTextDocumentIdentifier {
+                uri: uri.clone(),
+                version: 1,
+            },
+            content_changes: vec![lsp_types::TextDocumentContentChangeEvent {
+                range: Some(lsp_types::Range::new(
+                    lsp_types::Position::new(0, 0),
+                    lsp_types::Position::new(0, 0),
+                )),
+                range_length: Some(0),
+                text: String::from("unsaved = 0\n"),
+            }],
+        },
+    );
+
+    let id = server.next_request_id.get();
+    server.next_request_id.set(id.wrapping_add(1));
+
+    let r: Request = Request::new(
+        id.into(),
+        "textDocument/formatting".to_string(),
+        DocumentFormattingParams {
+            text_document: TextDocumentIdentifier {
+                uri: Url::from_file_path(path).unwrap(),
+            },
+            options: Default::default(),
+            work_done_progress_params: Default::default(),
+        },
+    );
+
+    // Send request and wait for it's response
+    let res = server.send_and_receive(r);
+
+    assert_eq!(
+        res.result.unwrap(),
+        to_json(Some(vec![TextEdit {
+            range: Range::new(Position::new(0, 0), Position::new(u32::MAX, u32::MAX),),
+            new_text: "unsaved = 0\na = 1\nb = 2\nc = 3\nd = 4\n".to_string()
+        }]))
+        .unwrap()
+    )
+}
+
 // Integration testing of lsp and konfig
 fn konfig_path() -> PathBuf {
     let konfig_path = Path::new(".")

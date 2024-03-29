@@ -146,12 +146,21 @@ pub(crate) fn handle_semantic_tokens_full(
 }
 
 pub(crate) fn handle_formatting(
-    _snapshot: LanguageServerSnapshot,
+    snapshot: LanguageServerSnapshot,
     params: lsp_types::DocumentFormattingParams,
     _sender: Sender<Task>,
 ) -> anyhow::Result<Option<Vec<TextEdit>>> {
     let file = file_path_from_url(&params.text_document.uri)?;
-    let src = std::fs::read_to_string(file.clone())?;
+    let path = from_lsp::abs_path(&params.text_document.uri)?;
+    let src = {
+        let vfs = snapshot.vfs.read();
+        let file_id = vfs
+            .file_id(&path.into())
+            .ok_or(anyhow::anyhow!("Already checked that the file_id exists!"))?;
+
+        String::from_utf8(vfs.file_contents(file_id).to_vec())?
+    };
+
     format(file, src, None)
 }
 
