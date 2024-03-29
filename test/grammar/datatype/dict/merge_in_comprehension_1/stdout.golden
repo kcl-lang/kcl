@@ -1,0 +1,17 @@
+x:
+  a: 1
+  b: true
+y:
+  c: 3
+  d: '4'
+z1:
+  a: 1
+  b: true
+  c: 3
+  d: '4'
+z2:
+  a: 2
+  b: true
+  e: five
+  c: 3
+  d: '4'

@@ -2764,7 +2764,13 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                         .expect(kcl_error::COMPILE_ERROR_MSG);
                     let key = self.walk_expr(elt).expect(kcl_error::COMPILE_ERROR_MSG);
                     let op = op.expect(kcl_error::INTERNAL_ERROR_MSG);
-                    self.dict_insert_with_key_value(collection_value, key, value, op.value(), -1);
+                    self.dict_insert_with_key_value(
+                        collection_value,
+                        key,
+                        self.value_deep_copy(value),
+                        op.value(),
+                        -1,
+                    );
                 }
             }
         } else {
