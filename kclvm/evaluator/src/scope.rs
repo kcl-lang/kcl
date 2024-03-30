@@ -3,7 +3,7 @@ use indexmap::{IndexMap, IndexSet};
 use kclvm_ast::ast;
 use kclvm_error::Position;
 use kclvm_runtime::{ValueRef, _kclvm_get_fn_ptr_by_name, MAIN_PKG_PATH};
-use kclvm_sema::{builtin, pkgpath_without_prefix, plugin};
+use kclvm_sema::{builtin, plugin};
 
 use crate::{EvalResult, Evaluator, GLOBAL_LEVEL};
 
@@ -63,10 +63,7 @@ impl<'ctx> Evaluator<'ctx> {
                     _ => "".to_string(),
                 };
                 if !name.is_empty() {
-                    let name = name.as_str();
-                    let _var_name = format!("${}.${}", pkgpath_without_prefix!(pkgpath), name);
-                    let global_var_ptr = self.undefined_value();
-                    self.add_variable(name, global_var_ptr);
+                    self.add_variable(&name, self.undefined_value());
                 }
             }
         }
@@ -347,15 +344,23 @@ impl<'ctx> Evaluator<'ctx> {
     pub fn get_variable_in_schema(&self, name: &str) -> EvalResult {
         let pkgpath = self.current_pkgpath();
         let ctx = self.ctx.borrow();
-        let scope = ctx.pkg_scopes.get(&pkgpath).unwrap().last().unwrap();
-        let schema_self = scope.schema_ctx.as_ref().unwrap();
-        let schema_value: ValueRef = schema_self.borrow().value.clone();
-        if let Some(value) = schema_value.dict_get_value(name) {
-            Ok(value)
-        } else {
-            let current_pkgpath = self.current_pkgpath();
-            self.get_variable_in_pkgpath(name, &current_pkgpath)
+        let scopes = ctx
+            .pkg_scopes
+            .get(&pkgpath)
+            .expect(kcl_error::INTERNAL_ERROR_MSG);
+        // Query the schema self value in all scopes.
+        for i in 0..scopes.len() {
+            let index = scopes.len() - i - 1;
+            if let Some(schema_ctx) = &scopes[index].schema_ctx {
+                let schema_value: ValueRef = schema_ctx.borrow().value.clone();
+                return if let Some(value) = schema_value.dict_get_value(name) {
+                    Ok(value)
+                } else {
+                    self.get_variable_in_pkgpath(name, &pkgpath)
+                };
+            }
         }
+        self.get_variable_in_pkgpath(name, &pkgpath)
     }
 
     /// Get the variable value named `name` from the scope named `pkgpath`, return Err when not found
@@ -420,25 +425,7 @@ impl<'ctx> Evaluator<'ctx> {
                 let variables = &scopes[index].variables;
                 if let Some(var) = variables.get(&name.to_string()) {
                     // Closure vars, 2 denotes the builtin scope and the global scope, here is a closure scope.
-                    let value = if i >= 1 && i < scopes_len - 2 {
-                        let last_lambda_scope = self.last_lambda_scope();
-                        // Local scope variable
-                        if index >= last_lambda_scope {
-                            var.clone()
-                        } else {
-                            // Outer lambda closure
-                            let _variables = &scopes[last_lambda_scope].variables;
-                            let ptr: Option<&ValueRef> = None;
-                            // Lambda closure
-                            match ptr {
-                                Some(closure_map) => closure_map.dict_get_value(name).unwrap(),
-                                None => var.clone(),
-                            }
-                        }
-                    } else {
-                        var.clone()
-                    };
-                    result = Ok(value);
+                    result = Ok(var.clone());
                     break;
                 }
             }

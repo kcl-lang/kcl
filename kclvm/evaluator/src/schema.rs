@@ -5,7 +5,7 @@ use std::sync::Arc;
 use indexmap::IndexMap;
 use kclvm_ast::ast;
 use kclvm_ast::walker::TypedResultWalker;
-use kclvm_runtime::ValueRef;
+use kclvm_runtime::{schema_runtime_type, ValueRef, MAIN_PKG_PATH};
 
 use crate::lazy::LazyEvalScope;
 use crate::proxy::{call_schema_body, call_schema_check};
@@ -55,6 +55,17 @@ impl SchemaEvalContext {
         self.is_sub_schema = true;
         self.record_instance = true;
     }
+
+    /// Pass value references from other schema eval context.
+    /// Note that do not change the schema node.
+    pub fn get_value_from(&mut self, other: &SchemaEvalContext) {
+        self.config = other.config.clone();
+        self.config_meta = other.config_meta.clone();
+        self.value = other.value.clone();
+        self.optional_mapping = other.optional_mapping.clone();
+        self.record_instance = other.record_instance;
+        self.is_sub_schema = false;
+    }
 }
 
 #[derive(Clone, Default, Debug)]
@@ -89,21 +100,21 @@ pub(crate) fn schema_body(
     if let Some(parent_name) = &ctx.borrow().node.parent_name {
         let base_constructor_func = s
             .walk_identifier_with_ctx(&parent_name.node, &ast::ExprContext::Load, None)
-            .expect(kcl_error::COMPILE_ERROR_MSG);
+            .expect(kcl_error::RUNTIME_ERROR_MSG);
         // Call base schema function
-        call_schema_body(s, &base_constructor_func, args, kwargs);
+        call_schema_body(s, &base_constructor_func, args, kwargs, Some(ctx));
     }
     // Eval schema body and record schema instances.
     if ctx.borrow().record_instance {
         let schema_pkgpath = &s.current_pkgpath();
         // Run schema compiled function
         for stmt in &ctx.borrow().node.body {
-            s.walk_stmt(stmt).expect(kcl_error::COMPILE_ERROR_MSG);
+            s.walk_stmt(stmt).expect(kcl_error::RUNTIME_ERROR_MSG);
         }
         // Schema decorators check
         for decorator in &ctx.borrow().node.decorators {
             s.walk_decorator_with_name(&decorator.node, Some(schema_name), true)
-                .expect(kcl_error::COMPILE_ERROR_MSG);
+                .expect(kcl_error::RUNTIME_ERROR_MSG);
         }
         let runtime_type = kclvm_runtime::schema_runtime_type(schema_name, schema_pkgpath);
         schema_value.set_potential_schema_type(&runtime_type);
@@ -114,8 +125,8 @@ pub(crate) fn schema_body(
     for mixin in &ctx.borrow().node.mixins {
         let mixin_func = s
             .walk_identifier_with_ctx(&mixin.node, &ast::ExprContext::Load, None)
-            .expect(kcl_error::COMPILE_ERROR_MSG);
-        schema_value = call_schema_body(s, &mixin_func, args, kwargs);
+            .expect(kcl_error::RUNTIME_ERROR_MSG);
+        schema_value = call_schema_body(s, &mixin_func, args, kwargs, Some(ctx));
     }
     // Schema Attribute optional check
     let mut optional_mapping = ctx.borrow().optional_mapping.clone();
@@ -159,10 +170,59 @@ pub(crate) fn schema_body(
             schema_value.dict_remove(&index_sign_key_name);
         }
     }
-
     s.leave_scope();
     s.pop_schema();
-    schema_value
+    schema_with_config(s, ctx, &schema_value, args, kwargs)
+}
+
+pub(crate) fn schema_with_config(
+    s: &Evaluator,
+    ctx: &SchemaEvalContextRef,
+    schema_dict: &ValueRef,
+    args: &ValueRef,
+    kwargs: &ValueRef,
+) -> ValueRef {
+    let name = ctx.borrow().node.name.node.to_string();
+    let pkgpath = s.current_pkgpath();
+    let config_keys: Vec<String> = ctx
+        .borrow()
+        .config
+        .as_dict_ref()
+        .values
+        .keys()
+        .cloned()
+        .collect();
+    let schema = schema_dict.dict_to_schema(
+        &name,
+        &pkgpath,
+        &config_keys,
+        &ctx.borrow().config_meta,
+        &ctx.borrow().optional_mapping,
+        Some(args.clone()),
+        Some(kwargs.clone()),
+    );
+    let runtime_type = schema_runtime_type(&name, &pkgpath);
+    // Instance package path is the last frame calling package path.
+    let instance_pkgpath = s.last_pkgpath();
+    if ctx.borrow().record_instance
+        && (instance_pkgpath.is_empty() || instance_pkgpath == MAIN_PKG_PATH)
+    {
+        let mut ctx = s.runtime_ctx.borrow_mut();
+        // Record schema instance in the context
+        if !ctx.instances.contains_key(&runtime_type) {
+            ctx.instances.insert(runtime_type.clone(), vec![]);
+        }
+        ctx.instances
+            .get_mut(&runtime_type)
+            .unwrap()
+            .push(schema_dict.clone());
+    }
+    // Dict to schema
+    if ctx.borrow().is_sub_schema {
+        schema
+    } else {
+        schema_dict.clone()
+    }
 }
 
 // Schema check function
@@ -178,7 +238,7 @@ pub(crate) fn schema_check(
     // Schema runtime index signature and relaxed check
     if let Some(index_signature) = &ctx.borrow().node.index_signature {
         let index_sign_value = if let Some(value) = &index_signature.node.value {
-            s.walk_expr(value).expect(kcl_error::COMPILE_ERROR_MSG)
+            s.walk_expr(value).expect(kcl_error::RUNTIME_ERROR_MSG)
         } else {
             s.undefined_value()
         };
@@ -211,29 +271,31 @@ pub(crate) fn schema_check(
     if let Some(parent_name) = &ctx.borrow().node.parent_name {
         let base_constructor_func = s
             .walk_identifier_with_ctx(&parent_name.node, &ast::ExprContext::Load, None)
-            .expect(kcl_error::COMPILE_ERROR_MSG);
-        call_schema_check(s, &base_constructor_func, args, kwargs)
+            .expect(kcl_error::RUNTIME_ERROR_MSG);
+        call_schema_check(s, &base_constructor_func, args, kwargs, Some(ctx))
     }
     // Call self check function
     for check_expr in &ctx.borrow().node.checks {
         s.walk_check_expr(&check_expr.node)
-            .expect(kcl_error::COMPILE_ERROR_MSG);
+            .expect(kcl_error::RUNTIME_ERROR_MSG);
     }
     // Call mixin check functions
     for mixin in &ctx.borrow().node.mixins {
         let mixin_func = s
             .walk_identifier_with_ctx(&mixin.node, &ast::ExprContext::Load, None)
-            .expect(kcl_error::COMPILE_ERROR_MSG);
+            .expect(kcl_error::RUNTIME_ERROR_MSG);
         if let Some(index) = mixin_func.try_get_proxy() {
-            let proxy = {
-                let proxies = s.proxies.borrow();
-                proxies
+            let frame = {
+                let frames = s.frames.borrow();
+                frames
                     .get(index)
                     .expect(kcl_error::INTERNAL_ERROR_MSG)
                     .clone()
             };
-            if let Proxy::Schema(schema) = proxy.as_ref() {
+            if let Proxy::Schema(schema) = &frame.proxy {
+                s.push_pkgpath(&frame.pkgpath);
                 (schema.check)(s, &schema.ctx, args, kwargs);
+                s.pop_pkgpath();
             }
         }
     }
@@ -333,11 +395,11 @@ impl<'ctx> Evaluator<'ctx> {
             .unwrap_or(self.none_value());
         if self.scope_level() >= INNER_LEVEL && !self.is_local_var(name) {
             if let Some(value) = value {
-                self.dict_insert(
+                self.schema_dict_merge(
                     &mut schema_value,
                     name,
                     value,
-                    &ast::ConfigEntryOperation::Union,
+                    &ast::ConfigEntryOperation::Override,
                     -1,
                 );
             }

@@ -12,19 +12,19 @@ impl<'ctx> Evaluator<'ctx> {
             match &stmt.node {
                 ast::Stmt::Import(import_stmt) => {
                     self.walk_import_stmt(import_stmt)
-                        .expect(kcl_error::COMPILE_ERROR_MSG);
+                        .expect(kcl_error::RUNTIME_ERROR_MSG);
                 }
                 ast::Stmt::Schema(schema_stmt) => {
                     // Pre define global types with undefined values
                     self.predefine_global_types(&schema_stmt.name.node);
                     self.walk_schema_stmt(schema_stmt)
-                        .expect(kcl_error::COMPILE_ERROR_MSG);
+                        .expect(kcl_error::RUNTIME_ERROR_MSG);
                 }
                 ast::Stmt::Rule(rule_stmt) => {
                     // Pre define global types with undefined values
                     self.predefine_global_types(&rule_stmt.name.node);
                     self.walk_rule_stmt(rule_stmt)
-                        .expect(kcl_error::COMPILE_ERROR_MSG);
+                        .expect(kcl_error::RUNTIME_ERROR_MSG);
                 }
                 _ => {}
             };
@@ -96,7 +96,7 @@ impl<'ctx> Evaluator<'ctx> {
         for ast_module in modules {
             self.push_filename(&ast_module.filename);
             self.walk_module(ast_module)
-                .expect(kcl_error::COMPILE_ERROR_MSG);
+                .expect(kcl_error::RUNTIME_ERROR_MSG);
             self.pop_filename();
         }
     }

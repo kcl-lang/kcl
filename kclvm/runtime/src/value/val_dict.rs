@@ -289,7 +289,8 @@ impl ValueRef {
         dict.insert_indexs.insert(key.to_string(), *index);
     }
 
-    /// Insert key value pair with the idempotent check
+    /// Insert key value pair with the idempotent check.
+    #[inline]
     pub fn dict_insert(
         &mut self,
         ctx: &mut Context,

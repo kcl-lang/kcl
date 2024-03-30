@@ -49,14 +49,15 @@ impl<'ctx> Evaluator<'ctx> {
         args: &ValueRef,
         kwargs: &ValueRef,
     ) -> ValueRef {
-        let proxy = {
-            let proxies = self.proxies.borrow();
-            proxies
+        let frame = {
+            let frames = self.frames.borrow();
+            frames
                 .get(proxy_index)
                 .expect(kcl_error::INTERNAL_ERROR_MSG)
                 .clone()
         };
-        match proxy.as_ref() {
+        self.push_pkgpath(&frame.pkgpath);
+        let value = match &frame.proxy {
             Proxy::Lambda(lambda) => (lambda.body)(self, &lambda.ctx, args, kwargs),
             Proxy::Schema(schema) => {
                 {
@@ -66,7 +67,9 @@ impl<'ctx> Evaluator<'ctx> {
                 (schema.body)(self, &schema.ctx, args, kwargs)
             }
             Proxy::Rule(rule) => (rule.body)(self, &rule.ctx, args, kwargs),
-        }
+        };
+        self.pop_pkgpath();
+        value
     }
 }
 
@@ -84,7 +87,7 @@ pub fn func_body(
     s.walk_arguments(&ctx.node.args, args, kwargs);
     let result = s
         .walk_stmts(&ctx.node.body)
-        .expect(kcl_error::COMPILE_ERROR_MSG);
+        .expect(kcl_error::RUNTIME_ERROR_MSG);
     s.leave_scope();
     s.pop_lambda();
     result
