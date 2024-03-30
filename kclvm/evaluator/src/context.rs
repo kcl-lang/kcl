@@ -6,11 +6,16 @@ use std::{
 use generational_arena::Index;
 use indexmap::IndexMap;
 use kclvm_error::Handler;
-use kclvm_runtime::ValueRef;
+use kclvm_runtime::{ValueRef, MAIN_PKG_PATH};
 
 use crate::{
-    error as kcl_error, func::FunctionCaller, proxy::Proxy, rule::RuleCaller, schema::SchemaCaller,
-    scope::Scope, Evaluator, GLOBAL_LEVEL,
+    error as kcl_error,
+    func::FunctionCaller,
+    proxy::{Frame, Proxy},
+    rule::RuleCaller,
+    schema::SchemaCaller,
+    scope::Scope,
+    Evaluator, GLOBAL_LEVEL,
 };
 
 pub struct EvaluatorContext {
@@ -84,6 +89,18 @@ impl<'ctx> Evaluator<'ctx> {
             .to_string()
     }
 
+    /// Last package path
+    #[inline]
+    pub(crate) fn last_pkgpath(&self) -> String {
+        let len = self.ctx.borrow().pkgpath_stack.len();
+        self.ctx
+            .borrow()
+            .pkgpath_stack
+            .get(if len > 2 { len - 2 } else { 2 - len })
+            .unwrap_or(&MAIN_PKG_PATH.to_string())
+            .to_string()
+    }
+
     /// Current filename
     #[inline]
     pub(crate) fn current_filename(&self) -> String {
@@ -135,16 +152,6 @@ impl<'ctx> Evaluator<'ctx> {
             .last()
             .expect(kcl_error::INTERNAL_ERROR_MSG)
             > GLOBAL_LEVEL
-    }
-
-    #[inline]
-    pub(crate) fn last_lambda_scope(&self) -> usize {
-        *self
-            .ctx
-            .borrow()
-            .lambda_stack
-            .last()
-            .expect(kcl_error::INTERNAL_ERROR_MSG)
     }
 
     #[inline]
@@ -238,22 +245,30 @@ impl<'ctx> Evaluator<'ctx> {
     /// Append a function into the scope
     #[inline]
     pub(crate) fn add_function(&self, function: FunctionCaller) -> Index {
-        self.proxies
-            .borrow_mut()
-            .insert(Rc::new(Proxy::Lambda(function)))
+        let pkgpath = self.current_pkgpath();
+        self.frames.borrow_mut().insert(Rc::new(Frame {
+            pkgpath,
+            proxy: Proxy::Lambda(function),
+        }))
     }
 
     /// Append a schema into the scope
     #[inline]
     pub(crate) fn add_schema(&self, schema: SchemaCaller) -> Index {
-        self.proxies
-            .borrow_mut()
-            .insert(Rc::new(Proxy::Schema(schema)))
+        let pkgpath = self.current_pkgpath();
+        self.frames.borrow_mut().insert(Rc::new(Frame {
+            pkgpath,
+            proxy: Proxy::Schema(schema),
+        }))
     }
 
     /// Append a rule into the scope
     #[inline]
     pub(crate) fn add_rule(&self, rule: RuleCaller) -> Index {
-        self.proxies.borrow_mut().insert(Rc::new(Proxy::Rule(rule)))
+        let pkgpath = self.current_pkgpath();
+        self.frames.borrow_mut().insert(Rc::new(Frame {
+            pkgpath,
+            proxy: Proxy::Rule(rule),
+        }))
     }
 }

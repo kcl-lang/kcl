@@ -9,8 +9,7 @@ use kclvm_runtime::ValueRef;
 use crate::error as kcl_error;
 use crate::lazy::LazyEvalScope;
 
-use crate::proxy::call_rule_check;
-use crate::proxy::call_schema_body;
+use crate::proxy::{call_rule_check, call_schema_body};
 use crate::Evaluator;
 
 pub type RuleBodyHandler =
@@ -81,9 +80,9 @@ pub fn rule_body(
     let rule_value = if let Some(for_host_name) = &ctx.borrow().node.for_host_name {
         let base_constructor_func = s
             .walk_identifier_with_ctx(&for_host_name.node, &ast::ExprContext::Load, None)
-            .expect(kcl_error::COMPILE_ERROR_MSG);
+            .expect(kcl_error::RUNTIME_ERROR_MSG);
         // Call base schema function
-        call_schema_body(s, &base_constructor_func, args, kwargs)
+        call_schema_body(s, &base_constructor_func, args, kwargs, None)
     } else {
         ctx.borrow().value.clone()
     };
@@ -92,7 +91,7 @@ pub fn rule_body(
         // Rule decorators check
         for decorator in &ctx.borrow().node.decorators {
             s.walk_decorator_with_name(&decorator.node, Some(rule_name), true)
-                .expect(kcl_error::COMPILE_ERROR_MSG);
+                .expect(kcl_error::RUNTIME_ERROR_MSG);
         }
     }
     // Do rule check for the sub rule.
@@ -116,13 +115,13 @@ pub fn rule_check(
     for parent_name in &ctx.borrow().node.parent_rules {
         let base_constructor_func = s
             .walk_identifier_with_ctx(&parent_name.node, &ast::ExprContext::Load, None)
-            .expect(kcl_error::COMPILE_ERROR_MSG);
+            .expect(kcl_error::RUNTIME_ERROR_MSG);
         call_rule_check(s, &base_constructor_func, args, kwargs)
     }
     // Call self check function
     for check_expr in &ctx.borrow().node.checks {
         s.walk_check_expr(&check_expr.node)
-            .expect(kcl_error::COMPILE_ERROR_MSG);
+            .expect(kcl_error::RUNTIME_ERROR_MSG);
     }
     ctx.borrow().value.clone()
 }

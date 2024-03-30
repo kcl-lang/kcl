@@ -73,6 +73,16 @@ impl<'ctx> Evaluator<'ctx> {
 
     /// Construct a function value using a native function.
     #[inline]
+    pub(crate) fn proxy_function_value_with_type(
+        &self,
+        proxy: Index,
+        runtime_type: &str,
+    ) -> ValueRef {
+        ValueRef::proxy_func_with_type(proxy, runtime_type)
+    }
+
+    /// Construct a function value using a native function.
+    #[inline]
     pub(crate) fn function_value_with_ptr(&self, function_ptr: u64) -> ValueRef {
         ValueRef::func(function_ptr, 0, self.list_value(), "", "", false)
     }

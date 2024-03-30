@@ -20,7 +20,7 @@ extern crate kclvm_error;
 
 use context::EvaluatorContext;
 use generational_arena::Arena;
-use proxy::Proxy;
+use proxy::{Frame, Proxy};
 use std::panic::RefUnwindSafe;
 use std::rc::Rc;
 use std::str;
@@ -45,7 +45,7 @@ pub type EvalResult = Result<ValueRef>;
 pub struct Evaluator<'ctx> {
     pub program: &'ctx ast::Program,
     pub ctx: RefCell<EvaluatorContext>,
-    pub proxies: RefCell<Arena<Rc<Proxy>>>,
+    pub frames: RefCell<Arena<Rc<Frame>>>,
     pub runtime_ctx: Rc<RefCell<Context>>,
 }
 
@@ -66,7 +66,7 @@ impl<'ctx> Evaluator<'ctx> {
             ctx: RefCell::new(EvaluatorContext::default()),
             runtime_ctx,
             program,
-            proxies: RefCell::new(Arena::new()),
+            frames: RefCell::new(Arena::new()),
         }
     }
 
@@ -99,13 +99,13 @@ impl<'ctx> Evaluator<'ctx> {
         }
         // Deal scalars
         for scalar in scalars.iter() {
-            self.dict_insert_value(&mut global_dict, SCALAR_KEY, scalar);
+            self.dict_insert_merge_value(&mut global_dict, SCALAR_KEY, scalar);
         }
         // Deal global variables
         for (name, value) in globals.iter() {
             let mut value_dict = self.dict_value();
-            self.dict_insert_value(&mut value_dict, name.as_str(), value);
-            self.dict_insert_value(&mut global_dict, SCALAR_KEY, &value_dict);
+            self.dict_insert_merge_value(&mut value_dict, name.as_str(), value);
+            self.dict_insert_merge_value(&mut global_dict, SCALAR_KEY, &value_dict);
         }
         // Plan result to JSON and YAML string.
         match global_dict.dict_get_value(SCALAR_KEY) {

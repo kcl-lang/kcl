@@ -104,7 +104,7 @@ impl<'ctx> Evaluator<'ctx> {
     /// lhs <= rhs
     #[inline]
     pub(crate) fn cmp_less_than_or_equal(&self, lhs: ValueRef, rhs: ValueRef) -> ValueRef {
-        lhs.cmp_greater_than_or_equal(&rhs).into()
+        lhs.cmp_less_than_or_equal(&rhs).into()
     }
     /// lhs as rhs
     #[inline]
@@ -267,6 +267,7 @@ impl<'ctx> Evaluator<'ctx> {
     pub(crate) fn _dict_len(&self, dict: &ValueRef) -> usize {
         dict.len()
     }
+
     /// Insert a dict entry including key, value, op and insert_index into the dict,
     /// and the type of key is `&str`
     #[inline]
@@ -291,10 +292,63 @@ impl<'ctx> Evaluator<'ctx> {
             insert_index,
         );
     }
+
     /// Insert a dict entry including key, value, op and insert_index into the dict,
     /// and the type of key is `&str`
     #[inline]
+    pub(crate) fn schema_dict_merge(
+        &self,
+        dict: &mut ValueRef,
+        key: &str,
+        value: &ValueRef,
+        op: &ast::ConfigEntryOperation,
+        insert_index: i32,
+    ) {
+        let op = match op {
+            ast::ConfigEntryOperation::Union => ConfigEntryOperationKind::Union,
+            ast::ConfigEntryOperation::Override => ConfigEntryOperationKind::Override,
+            ast::ConfigEntryOperation::Insert => ConfigEntryOperationKind::Insert,
+        };
+        let attr_map = {
+            match &*dict.rc.borrow() {
+                Value::dict_value(dict) => dict.attr_map.clone(),
+                Value::schema_value(schema) => schema.config.attr_map.clone(),
+                _ => panic!("invalid object '{}' in attr_map", dict.type_str()),
+            }
+        };
+        if attr_map.contains_key(key) {
+            let v = type_pack_and_check(
+                &mut self.runtime_ctx.borrow_mut(),
+                value,
+                vec![attr_map.get(key).unwrap()],
+            );
+            dict.dict_merge(
+                &mut self.runtime_ctx.borrow_mut(),
+                key,
+                &v,
+                op,
+                insert_index,
+            );
+        } else {
+            dict.dict_merge(
+                &mut self.runtime_ctx.borrow_mut(),
+                key,
+                value,
+                op,
+                insert_index,
+            );
+        }
+    }
+
+    /// Insert an entry including key and value into the dict.
+    #[inline]
     pub(crate) fn dict_insert_value(&self, dict: &mut ValueRef, key: &str, value: &ValueRef) {
+        dict.dict_update_key_value(key, value.clone())
+    }
+
+    /// Insert an entry including key and value into the dict, and merge the original entry.
+    #[inline]
+    pub(crate) fn dict_insert_merge_value(&self, dict: &mut ValueRef, key: &str, value: &ValueRef) {
         dict.dict_insert(
             &mut self.runtime_ctx.borrow_mut(),
             key,

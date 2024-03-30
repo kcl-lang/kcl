@@ -447,7 +447,7 @@ impl FastRunner {
 
     /// Run kcl library with exec arguments.
     pub fn run(&self, program: &ast::Program, args: &ExecProgramArgs) -> Result<ExecProgramResult> {
-        let ctx = Rc::new(RefCell::new(args_to_ctx(args)));
+        let ctx = Rc::new(RefCell::new(args_to_ctx(&program, args)));
         let evaluator = Evaluator::new_with_runtime_ctx(&program, ctx.clone());
         let prev_hook = std::panic::take_hook();
         std::panic::set_hook(Box::new(|info: &std::panic::PanicInfo| {
@@ -529,7 +529,7 @@ impl FastRunner {
     }
 }
 
-pub fn args_to_ctx(args: &ExecProgramArgs) -> Context {
+pub(crate) fn args_to_ctx(program: &ast::Program, args: &ExecProgramArgs) -> Context {
     let mut ctx = Context::new();
     ctx.cfg.strict_range_check = args.strict_range_check;
     ctx.cfg.debug_mode = args.debug != 0;
@@ -541,6 +541,8 @@ pub fn args_to_ctx(args: &ExecProgramArgs) -> Context {
     for arg in &args.args {
         ctx.builtin_option_init(&arg.name, &arg.value);
     }
+    ctx.set_kcl_workdir(&args.work_dir.clone().unwrap_or_default());
+    ctx.set_kcl_module_path(&program.root);
     ctx
 }
 
