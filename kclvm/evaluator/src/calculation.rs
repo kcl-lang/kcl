@@ -1,8 +1,10 @@
 /* Calculation methods */
 
 use kclvm_ast::ast;
-use kclvm_runtime::{type_pack_and_check, ConfigEntryOperationKind, UnionOptions, Value, ValueRef};
+use kclvm_runtime::{ConfigEntryOperationKind, DictValue, UnionOptions, Value, ValueRef};
 
+use crate::ty::{resolve_schema, type_pack_and_check};
+use crate::union::union_entry;
 use crate::Evaluator;
 
 impl<'ctx> Evaluator<'ctx> {
@@ -59,7 +61,16 @@ impl<'ctx> Evaluator<'ctx> {
     /// lhs | rhs
     #[inline]
     pub(crate) fn bit_or(&self, lhs: ValueRef, rhs: ValueRef) -> ValueRef {
-        lhs.bin_bit_or(&mut self.runtime_ctx.borrow_mut(), &rhs)
+        if let (Value::int_value(a), Value::int_value(b)) = (&*lhs.rc.borrow(), &*rhs.rc.borrow()) {
+            return ValueRef::int(*a | *b);
+        };
+        union_entry(
+            self,
+            &mut lhs.deep_copy(),
+            &rhs,
+            true,
+            &UnionOptions::default(),
+        )
     }
     /// lhs ^ rhs
     #[inline]
@@ -109,11 +120,7 @@ impl<'ctx> Evaluator<'ctx> {
     /// lhs as rhs
     #[inline]
     pub(crate) fn r#as(&self, lhs: ValueRef, rhs: ValueRef) -> ValueRef {
-        type_pack_and_check(
-            &mut self.runtime_ctx.borrow_mut(),
-            &lhs,
-            vec![&rhs.as_str()],
-        )
+        type_pack_and_check(self, &lhs, vec![&rhs.as_str()])
     }
     /// lhs is rhs
     #[inline]
@@ -138,11 +145,6 @@ impl<'ctx> Evaluator<'ctx> {
 }
 
 impl<'ctx> Evaluator<'ctx> {
-    /// Value subscript a[b]
-    #[inline]
-    pub(crate) fn _value_subscript(&self, value: &ValueRef, item: &ValueRef) -> ValueRef {
-        value.bin_subscr(item)
-    }
     /// Value is truth function, return i1 value.
     #[inline]
     pub(crate) fn value_is_truthy(&self, value: &ValueRef) -> bool {
@@ -165,43 +167,21 @@ impl<'ctx> Evaluator<'ctx> {
             idempotent_check: false,
             config_resolve: true,
         };
-        let ctx = &mut self.runtime_ctx.borrow_mut();
         if rhs.is_config() {
             let dict = rhs.as_dict_ref();
             for k in dict.values.keys() {
                 let entry = rhs.dict_get_entry(k).unwrap();
-                lhs.union_entry(ctx, &entry, true, &opts);
+                union_entry(self, lhs, &entry, true, &opts);
                 // Has type annotation
                 if let Some(ty) = attr_map.get(k) {
                     let value = lhs.dict_get_value(k).unwrap();
-                    lhs.dict_update_key_value(k, type_pack_and_check(ctx, &value, vec![ty]));
+                    lhs.dict_update_key_value(k, type_pack_and_check(self, &value, vec![ty]));
                 }
             }
             lhs.clone()
         } else {
-            lhs.union_entry(ctx, rhs, true, &opts)
+            union_entry(self, lhs, rhs, true, &opts)
         }
-    }
-    // List get the item using the index.
-    #[inline]
-    pub(crate) fn _list_get(&self, list: &ValueRef, index: ValueRef) -> ValueRef {
-        list.list_get(index.as_int() as isize).unwrap()
-    }
-    // List set the item using the index.
-    #[inline]
-    pub(crate) fn _list_set(&self, list: &mut ValueRef, index: ValueRef, value: &ValueRef) {
-        list.list_set(index.as_int() as usize, value)
-    }
-    // List slice.
-    #[inline]
-    pub(crate) fn _list_slice(
-        &self,
-        list: &ValueRef,
-        start: &ValueRef,
-        stop: &ValueRef,
-        step: &ValueRef,
-    ) -> ValueRef {
-        list.list_slice(start, stop, step)
     }
     /// Append a item into the list.
     #[inline]
@@ -213,61 +193,10 @@ impl<'ctx> Evaluator<'ctx> {
     pub(crate) fn list_append_unpack(&self, list: &mut ValueRef, item: &ValueRef) {
         list.list_append_unpack(item)
     }
-    /// Runtime list value pop
-    #[inline]
-    pub(crate) fn _list_pop(&self, list: &mut ValueRef) -> Option<ValueRef> {
-        list.list_pop()
-    }
-    /// Runtime list pop the first value
-    #[inline]
-    pub(crate) fn _list_pop_first(&self, list: &mut ValueRef) -> Option<ValueRef> {
-        list.list_pop_first()
-    }
-    /// List clear value.
-    #[inline]
-    pub(crate) fn _list_clear(&self, list: &mut ValueRef) {
-        list.list_clear()
-    }
-    /// Return number of occurrences of the list value.
-    #[inline]
-    pub(crate) fn _list_count(&self, list: &ValueRef, item: &ValueRef) -> ValueRef {
-        ValueRef::int(list.list_count(item) as i64)
-    }
-    /// Return first index of the list value. Panic if the value is not present.
-    #[inline]
-    pub(crate) fn _list_find(&self, list: &ValueRef, item: &ValueRef) -> isize {
-        list.list_find(item)
-    }
-    /// Insert object before index of the list value.
-    #[inline]
-    pub(crate) fn _list_insert(&self, list: &mut ValueRef, index: &ValueRef, value: &ValueRef) {
-        list.list_insert_at(index.as_int() as usize, value)
-    }
-    /// List length.
-    #[inline]
-    pub(crate) fn _list_len(&self, list: &ValueRef) -> usize {
-        list.len()
-    }
-    /// Dict get the value of the key.
-    #[inline]
-    pub(crate) fn _dict_get(&self, dict: &ValueRef, key: &ValueRef) -> ValueRef {
-        dict.dict_get(key).unwrap()
-    }
     #[inline]
     pub(crate) fn dict_get_value(&self, dict: &ValueRef, key: &str) -> ValueRef {
-        dict.dict_get_value(key).unwrap()
+        dict.dict_get_value(key).unwrap_or(self.undefined_value())
     }
-    /// Dict clear value.
-    #[inline]
-    pub(crate) fn _dict_clear(&self, dict: &mut ValueRef) {
-        dict.dict_clear()
-    }
-    /// Dict length.
-    #[inline]
-    pub(crate) fn _dict_len(&self, dict: &ValueRef) -> usize {
-        dict.len()
-    }
-
     /// Insert a dict entry including key, value, op and insert_index into the dict,
     /// and the type of key is `&str`
     #[inline]
@@ -284,13 +213,7 @@ impl<'ctx> Evaluator<'ctx> {
             ast::ConfigEntryOperation::Override => ConfigEntryOperationKind::Override,
             ast::ConfigEntryOperation::Insert => ConfigEntryOperationKind::Insert,
         };
-        dict.dict_insert(
-            &mut self.runtime_ctx.borrow_mut(),
-            key,
-            value,
-            op,
-            insert_index,
-        );
+        self.dict_merge_key_value_pair(dict, key, value, op, insert_index, false);
     }
 
     /// Insert a dict entry including key, value, op and insert_index into the dict,
@@ -317,26 +240,10 @@ impl<'ctx> Evaluator<'ctx> {
             }
         };
         if attr_map.contains_key(key) {
-            let v = type_pack_and_check(
-                &mut self.runtime_ctx.borrow_mut(),
-                value,
-                vec![attr_map.get(key).unwrap()],
-            );
-            dict.dict_merge(
-                &mut self.runtime_ctx.borrow_mut(),
-                key,
-                &v,
-                op,
-                insert_index,
-            );
+            let v = type_pack_and_check(self, value, vec![attr_map.get(key).unwrap()]);
+            self.dict_merge_key_value_pair(dict, key, &v, op, insert_index, false);
         } else {
-            dict.dict_merge(
-                &mut self.runtime_ctx.borrow_mut(),
-                key,
-                value,
-                op,
-                insert_index,
-            );
+            self.dict_merge_key_value_pair(dict, key, value, op, insert_index, false);
         }
     }
 
@@ -349,12 +256,67 @@ impl<'ctx> Evaluator<'ctx> {
     /// Insert an entry including key and value into the dict, and merge the original entry.
     #[inline]
     pub(crate) fn dict_insert_merge_value(&self, dict: &mut ValueRef, key: &str, value: &ValueRef) {
-        dict.dict_insert(
-            &mut self.runtime_ctx.borrow_mut(),
+        self.dict_merge_key_value_pair(
+            dict,
             key,
             value,
             ConfigEntryOperationKind::Union,
             -1,
+            false,
         );
+    }
+
+    /// Set dict key with the value. When the dict is a schema and resolve schema validations.
+    pub(crate) fn dict_set_value(&self, p: &mut ValueRef, key: &str, val: &ValueRef) {
+        if p.is_config() {
+            p.dict_update_key_value(key, val.clone());
+            if p.is_schema() {
+                let schema: ValueRef;
+                {
+                    let schema_value = p.as_schema();
+                    let mut config_keys = schema_value.config_keys.clone();
+                    config_keys.push(key.to_string());
+                    schema = resolve_schema(self, p, &config_keys);
+                }
+                p.schema_update_with_schema(&schema);
+            }
+        } else {
+            panic!(
+                "failed to update the dict. An iterable of key-value pairs was expected, but got {}. Check if the syntax for updating the dictionary with the attribute '{}' is correct",
+                p.type_str(),
+                key
+            );
+        }
+    }
+
+    /// Private dict merge key value pair with the idempotent check option
+    pub(crate) fn dict_merge_key_value_pair(
+        &self,
+        p: &mut ValueRef,
+        key: &str,
+        v: &ValueRef,
+        op: ConfigEntryOperationKind,
+        insert_index: i32,
+        idempotent_check: bool,
+    ) {
+        if p.is_config() {
+            let mut dict: DictValue = Default::default();
+            dict.values.insert(key.to_string(), v.clone());
+            dict.ops.insert(key.to_string(), op);
+            dict.insert_indexs.insert(key.to_string(), insert_index);
+            union_entry(
+                self,
+                p,
+                &ValueRef::from(Value::dict_value(Box::new(dict))),
+                true,
+                &UnionOptions {
+                    config_resolve: false,
+                    idempotent_check,
+                    ..Default::default()
+                },
+            );
+        } else {
+            panic!("invalid dict insert value: {}", p.type_str())
+        }
     }
 }

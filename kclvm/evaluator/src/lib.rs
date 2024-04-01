@@ -14,12 +14,15 @@ mod proxy;
 mod rule;
 mod schema;
 mod scope;
+mod ty;
+mod union;
 mod value;
 
 extern crate kclvm_error;
 
 use context::EvaluatorContext;
-use generational_arena::Arena;
+use generational_arena::{Arena, Index};
+use indexmap::IndexMap;
 use proxy::{Frame, Proxy};
 use std::panic::RefUnwindSafe;
 use std::rc::Rc;
@@ -46,6 +49,7 @@ pub struct Evaluator<'ctx> {
     pub program: &'ctx ast::Program,
     pub ctx: RefCell<EvaluatorContext>,
     pub frames: RefCell<Arena<Rc<Frame>>>,
+    pub schemas: RefCell<IndexMap<String, Index>>,
     pub runtime_ctx: Rc<RefCell<Context>>,
 }
 
@@ -67,6 +71,7 @@ impl<'ctx> Evaluator<'ctx> {
             runtime_ctx,
             program,
             frames: RefCell::new(Arena::new()),
+            schemas: RefCell::new(IndexMap::new()),
         }
     }
 

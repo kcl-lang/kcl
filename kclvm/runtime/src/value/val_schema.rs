@@ -302,55 +302,6 @@ impl ValueRef {
             }
         }
     }
-
-    /// Schema additional value check
-    pub fn schema_value_check(
-        &mut self,
-        ctx: &mut Context,
-        schema_config: &ValueRef,
-        schema_name: &str,
-        index_sign_value: &ValueRef,
-        index_key_name: &str,
-        key_type: &str,
-        value_type: &str,
-    ) {
-        let schema_value = self;
-        let has_index_signature = !key_type.is_empty();
-        let config = schema_config.as_dict_ref();
-        for (key, value) in &config.values {
-            let no_such_attr = schema_value.dict_get_value(key).is_none();
-            if has_index_signature && no_such_attr {
-                // Allow index signature value has different values
-                // related to the index signature key name.
-                let should_update =
-                    if let Some(index_key_value) = schema_value.dict_get_value(index_key_name) {
-                        index_key_value.is_str() && key == &index_key_value.as_str()
-                    } else {
-                        true
-                    };
-                if should_update {
-                    let op = config
-                        .ops
-                        .get(key)
-                        .unwrap_or(&ConfigEntryOperationKind::Union);
-                    schema_value.dict_update_entry(
-                        key.as_str(),
-                        &index_sign_value.deep_copy(),
-                        &ConfigEntryOperationKind::Override,
-                        &-1,
-                    );
-                    schema_value.dict_insert(ctx, key.as_str(), value, op.clone(), -1);
-                    let value = schema_value.dict_get_value(key).unwrap();
-                    schema_value.dict_update_key_value(
-                        key.as_str(),
-                        type_pack_and_check(ctx, &value, vec![value_type]),
-                    );
-                }
-            } else if !has_index_signature && no_such_attr {
-                panic!("No attribute named '{key}' in the schema '{schema_name}'");
-            }
-        }
-    }
 }
 
 #[cfg(test)]

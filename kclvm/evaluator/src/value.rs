@@ -48,11 +48,6 @@ impl<'ctx> Evaluator<'ctx> {
         ValueRef::list(None)
     }
 
-    /// Construct a list value with `n` elements
-    pub(crate) fn _list_values(&self, values: &[&ValueRef]) -> ValueRef {
-        ValueRef::list(Some(values))
-    }
-
     /// Construct a empty kcl dict value.
     #[inline]
     pub(crate) fn dict_value(&self) -> ValueRef {

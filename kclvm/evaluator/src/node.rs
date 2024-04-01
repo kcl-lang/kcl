@@ -10,8 +10,8 @@ use kclvm_ast::walker::TypedResultWalker;
 use kclvm_runtime::val_func::invoke_function;
 use kclvm_runtime::walker::walk_value_mut;
 use kclvm_runtime::{
-    schema_assert, schema_runtime_type, type_pack_and_check, ApiFunc, ConfigEntryOperationKind,
-    DecoratorValue, RuntimeErrorType, UnionOptions, ValueRef, PKG_PATH_PREFIX,
+    schema_assert, schema_runtime_type, ApiFunc, ConfigEntryOperationKind, DecoratorValue,
+    RuntimeErrorType, UnionOptions, ValueRef, PKG_PATH_PREFIX,
 };
 use kclvm_sema::{builtin, plugin};
 
@@ -20,6 +20,8 @@ use crate::lazy::EvalBodyRange;
 use crate::proxy::Proxy;
 use crate::rule::{rule_body, rule_check, RuleCaller, RuleEvalContext};
 use crate::schema::{schema_body, schema_check, SchemaCaller, SchemaEvalContext};
+use crate::ty::type_pack_and_check;
+use crate::union::union_entry;
 use crate::{error as kcl_error, GLOBAL_LEVEL, INNER_LEVEL};
 use crate::{EvalResult, Evaluator};
 
@@ -108,7 +110,7 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
                     None,
                 )
                 .unwrap_or(self.undefined_value());
-            let value = org_value.bin_bit_or(&mut self.runtime_ctx.borrow_mut(), &value);
+            let value = self.bit_or(org_value, value);
             // Store the identifier value
             self.walk_identifier_with_ctx(
                 &unification_stmt.target.node,
@@ -139,11 +141,7 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
         // Runtime type cast if exists the type annotation.
         if let Some(ty) = &assign_stmt.ty {
             let is_in_schema = self.is_in_schema() || self.is_in_schema_expr();
-            value = type_pack_and_check(
-                &mut self.runtime_ctx.borrow_mut(),
-                &value,
-                vec![&ty.node.to_string()],
-            );
+            value = type_pack_and_check(self, &value, vec![&ty.node.to_string()]);
             // Schema required attribute validating.
             if !is_in_schema {
                 walk_value_mut(&value, &mut |value: &ValueRef| {
@@ -282,7 +280,7 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
     fn walk_schema_stmt(&self, schema_stmt: &'ctx ast::SchemaStmt) -> Self::Result {
         let body = Arc::new(schema_body);
         let check = Arc::new(schema_check);
-        let proxy = SchemaCaller {
+        let caller = SchemaCaller {
             ctx: Rc::new(RefCell::new(SchemaEvalContext::new_with_node(
                 schema_stmt.clone(),
             ))),
@@ -290,7 +288,7 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
             check,
         };
         // Add function to the global state
-        let index = self.add_schema(proxy);
+        let index = self.add_schema(caller);
         let runtime_type = schema_runtime_type(&schema_stmt.name.node, &self.current_pkgpath());
         let function = self.proxy_function_value_with_type(index, &runtime_type);
         // Store or add the variable in the scope
@@ -298,13 +296,14 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
         if !self.store_variable(name, function.clone()) {
             self.add_variable(name, function.clone());
         }
+        self.schemas.borrow_mut().insert(runtime_type, index);
         Ok(function)
     }
 
     fn walk_rule_stmt(&self, rule_stmt: &'ctx ast::RuleStmt) -> Self::Result {
         let body = Arc::new(rule_body);
         let check = Arc::new(rule_check);
-        let proxy = RuleCaller {
+        let caller = RuleCaller {
             ctx: Rc::new(RefCell::new(RuleEvalContext::new_with_node(
                 rule_stmt.clone(),
             ))),
@@ -312,7 +311,7 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
             check,
         };
         // Add function to the global state
-        let index = self.add_rule(proxy);
+        let index = self.add_rule(caller);
         let function = self.proxy_function_value(index);
         // Store or add the variable in the scope
         let name = &rule_stmt.name.node;
@@ -477,11 +476,12 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
         self.add_target_var(name);
         for decorator in &schema_attr.decorators {
             self.walk_decorator_with_name(&decorator.node, Some(name), false)
-                .expect(kcl_error::RUNTIME_ERROR_MSG);
+                .expect(kcl_error::INTERNAL_ERROR_MSG);
         }
-        let (mut schema_value, config_value) = self
-            .get_schema_and_config()
-            .expect(kcl_error::RUNTIME_ERROR_MSG);
+        let (mut schema_value, config_value, _) = self
+            .get_schema_or_rule_config_info()
+            .expect(kcl_error::INTERNAL_ERROR_MSG);
+        schema_value.update_attr_map(name, &schema_attr.ty.node.to_string());
         if let Some(entry) = config_value.dict_get_entry(name) {
             let is_override_attr = {
                 let is_override_op = matches!(
@@ -530,10 +530,13 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
             let value = match &schema_attr.value {
                 Some(value) => self.walk_expr(value).expect(kcl_error::RUNTIME_ERROR_MSG),
                 None => {
+                    let value = self.undefined_value();
                     // When the schema has no default value and config value,
                     // set it with a undefined value.
-                    let value = self.undefined_value();
-                    self.dict_insert_value(&mut schema_value, name, &value);
+                    // Note that do not override the existed attribute value.
+                    if schema_value.dict_get_entry(name).is_none() {
+                        self.dict_insert_value(&mut schema_value, name, &value);
+                    }
                     value
                 }
             };
@@ -914,12 +917,23 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
                 let value = (schema.body)(self, &schema.ctx, &list_value, &dict_value);
                 self.pop_pkgpath();
                 value
+            } else if let Proxy::Rule(rule) = &frame.proxy {
+                self.push_pkgpath(&frame.pkgpath);
+                // Set new rule and config
+                {
+                    let mut ctx = rule.ctx.borrow_mut();
+                    ctx.reset_with_config(config_value, config_meta);
+                }
+                let value = (rule.body)(self, &rule.ctx, &list_value, &dict_value);
+                self.pop_pkgpath();
+                value
             } else {
                 self.undefined_value()
             }
         } else {
-            schema_type.deep_copy().union_entry(
-                &mut self.runtime_ctx.borrow_mut(),
+            union_entry(
+                self,
+                &mut schema_type.deep_copy(),
                 &config_value,
                 true,
                 &UnionOptions::default(),
@@ -950,15 +964,15 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
             .expect(kcl_error::RUNTIME_ERROR_MSG);
         let msg = {
             if let Some(msg) = &check_expr.msg {
-                self.walk_expr(msg).expect(kcl_error::RUNTIME_ERROR_MSG)
+                self.walk_expr(msg).expect(kcl_error::INTERNAL_ERROR_MSG)
             } else {
                 self.string_value("")
             }
         }
         .as_str();
-        let config_meta = self
-            .get_schema_config_meta()
-            .expect(kcl_error::RUNTIME_ERROR_MSG);
+        let (_, _, config_meta) = self
+            .get_schema_or_rule_config_info()
+            .expect(kcl_error::INTERNAL_ERROR_MSG);
         schema_assert(
             &mut self.runtime_ctx.borrow_mut(),
             &check_result,
@@ -1196,7 +1210,9 @@ impl<'ctx> Evaluator<'ctx> {
                         let is_local_var = self.is_local_var(name);
                         let value = right_value.clone().expect(kcl_error::INTERNAL_ERROR_MSG);
                         match (is_local_var, is_in_schema) {
-                            (false, true) => self.update_schema_scope_value(name, Some(&value)),
+                            (false, true) => {
+                                self.update_schema_or_rule_scope_value(name, Some(&value))
+                            }
                             _ => self.add_variable(name, value),
                         }
                     }
@@ -1224,8 +1240,8 @@ impl<'ctx> Evaluator<'ctx> {
                                 value = value.load_attr(attr);
                             }
                             ast::ExprContext::Store => {
-                                value.dict_set_value(
-                                    &mut self.runtime_ctx.borrow_mut(),
+                                self.dict_set_value(
+                                    &mut value,
                                     attr,
                                     &right_value.clone().expect(kcl_error::INTERNAL_ERROR_MSG),
                                 );
@@ -1238,7 +1254,7 @@ impl<'ctx> Evaluator<'ctx> {
                                     && !is_in_lambda
                                     && !is_local_var
                                 {
-                                    self.update_schema_scope_value(name, None);
+                                    self.update_schema_or_rule_scope_value(name, None);
                                 }
                             }
                         }
@@ -1266,11 +1282,8 @@ impl<'ctx> Evaluator<'ctx> {
     ) -> EvalResult {
         let mut list_value = self.list_value();
         let mut dict_value = self.dict_value();
-        let (_, config_value) = self
-            .get_schema_and_config()
-            .expect(kcl_error::INTERNAL_ERROR_MSG);
-        let config_meta = self
-            .get_schema_config_meta()
+        let (_, config_value, config_meta) = self
+            .get_schema_or_rule_config_info()
             .expect(kcl_error::INTERNAL_ERROR_MSG);
         for arg in &decorator.args {
             let value = self.walk_expr(arg).expect(kcl_error::RUNTIME_ERROR_MSG);

@@ -1047,7 +1047,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
             // Schema function closures
             let list_value = self.list_values(&[
                 // is_sub_schema
-                self.bool_value(false),
+                self.bool_value(true),
                 schema_config_meta,
                 schema_config,
                 schema_value,
@@ -2827,9 +2827,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 };
                 // Store a local variable for every entry key.
                 let key = match &optional_name {
-                    Some(name) if !self.local_vars.borrow().contains(name) => {
-                        self.string_value(name)
-                    }
+                    Some(name) if !self.is_local_var(name) => self.string_value(name),
                     _ => self.walk_expr(key)?,
                 };
                 self.dict_insert_with_key_value(

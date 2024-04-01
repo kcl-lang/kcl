@@ -1,4 +1,4 @@
-use crate::{error as kcl_error, schema::SchemaEvalContextRef};
+use crate::{error as kcl_error, rule::RuleEvalContextRef, schema::SchemaEvalContextRef};
 use indexmap::{IndexMap, IndexSet};
 use kclvm_ast::ast;
 use kclvm_error::Position;
@@ -27,6 +27,8 @@ pub struct Scope {
     pub arguments: IndexSet<String>,
     /// Schema self denotes the scope that is belonged to a schema.
     pub schema_ctx: Option<SchemaEvalContextRef>,
+    /// Rule self denotes the scope that is belonged to a schema.
+    pub rule_ctx: Option<RuleEvalContextRef>,
 }
 
 impl<'ctx> Evaluator<'ctx> {
@@ -123,6 +125,20 @@ impl<'ctx> Evaluator<'ctx> {
         scopes.push(scope);
     }
 
+    /// Enter scope with the schema eval context.
+    pub(crate) fn enter_scope_with_schema_rule_context(&self, rule_ctx: &RuleEvalContextRef) {
+        let current_pkgpath = self.current_pkgpath();
+        let mut ctx = self.ctx.borrow_mut();
+        let pkg_scopes = &mut ctx.pkg_scopes;
+        let msg = format!("pkgpath {} is not found", current_pkgpath);
+        let scopes = pkg_scopes.get_mut(&current_pkgpath).expect(&msg);
+        let scope = Scope {
+            rule_ctx: Some(rule_ctx.clone()),
+            ..Default::default()
+        };
+        scopes.push(scope);
+    }
+
     pub(crate) fn get_schema_eval_context(&self) -> Option<SchemaEvalContextRef> {
         let pkgpath = self.current_pkgpath();
         let ctx = self.ctx.borrow();
@@ -142,16 +158,43 @@ impl<'ctx> Evaluator<'ctx> {
         None
     }
 
-    #[inline]
-    pub(crate) fn get_schema_and_config(&self) -> Option<(ValueRef, ValueRef)> {
-        self.get_schema_eval_context()
-            .map(|v| (v.borrow().value.clone(), v.borrow().config.clone()))
+    pub(crate) fn get_rule_eval_context(&self) -> Option<RuleEvalContextRef> {
+        let pkgpath = self.current_pkgpath();
+        let ctx = self.ctx.borrow();
+        let pkg_scopes = &ctx.pkg_scopes;
+        // Global or local variables.
+        let scopes = pkg_scopes
+            .get(&pkgpath)
+            .unwrap_or_else(|| panic!("package {} is not found", pkgpath));
+        // Scopes 0 is builtin scope, Scopes 1 is the global scope, Scopes 2~ are the local scopes
+        let scopes_len = scopes.len();
+        for i in 0..scopes_len {
+            let index = scopes_len - i - 1;
+            if let Some(ctx) = &scopes[index].rule_ctx {
+                return Some(ctx.clone());
+            }
+        }
+        None
     }
 
+    /// Returns (value, config, config_meta)
     #[inline]
-    pub(crate) fn get_schema_config_meta(&self) -> Option<ValueRef> {
-        self.get_schema_eval_context()
-            .map(|v| v.borrow().config_meta.clone())
+    pub(crate) fn get_schema_or_rule_config_info(&self) -> Option<(ValueRef, ValueRef, ValueRef)> {
+        match self.get_schema_eval_context() {
+            Some(v) => Some((
+                v.borrow().value.clone(),
+                v.borrow().config.clone(),
+                v.borrow().config_meta.clone(),
+            )),
+            None => match self.get_rule_eval_context() {
+                Some(v) => Some((
+                    v.borrow().value.clone(),
+                    v.borrow().config.clone(),
+                    v.borrow().config_meta.clone(),
+                )),
+                None => None,
+            },
+        }
     }
 
     /// Append a scalar value into the scope.
@@ -341,19 +384,26 @@ impl<'ctx> Evaluator<'ctx> {
     }
 
     /// Get the variable value named `name` from the scope, return Err when not found
-    pub fn get_variable_in_schema(&self, name: &str) -> EvalResult {
+    pub fn get_variable_in_schema_or_rule(&self, name: &str) -> EvalResult {
         let pkgpath = self.current_pkgpath();
         let ctx = self.ctx.borrow();
         let scopes = ctx
             .pkg_scopes
             .get(&pkgpath)
             .expect(kcl_error::INTERNAL_ERROR_MSG);
-        // Query the schema self value in all scopes.
+        // Query the schema or rule self value in all scopes.
         for i in 0..scopes.len() {
             let index = scopes.len() - i - 1;
             if let Some(schema_ctx) = &scopes[index].schema_ctx {
                 let schema_value: ValueRef = schema_ctx.borrow().value.clone();
                 return if let Some(value) = schema_value.dict_get_value(name) {
+                    Ok(value)
+                } else {
+                    self.get_variable_in_pkgpath(name, &pkgpath)
+                };
+            } else if let Some(rule_ctx) = &scopes[index].rule_ctx {
+                let rule_value: ValueRef = rule_ctx.borrow().value.clone();
+                return if let Some(value) = rule_value.dict_get_value(name) {
                     Ok(value)
                 } else {
                     self.get_variable_in_pkgpath(name, &pkgpath)
@@ -465,7 +515,7 @@ impl<'ctx> Evaluator<'ctx> {
                 // Get from local or global scope
                 (false, _, _) | (_, _, true) => self.get_variable(name),
                 // Get variable from the current schema scope.
-                (true, false, false) => self.get_variable_in_schema(name),
+                (true, false, false) => self.get_variable_in_schema_or_rule(name),
                 // Get from local scope including lambda arguments, lambda variables,
                 // loop variables or global variables.
                 (true, true, _) =>
@@ -476,7 +526,7 @@ impl<'ctx> Evaluator<'ctx> {
                         // Closure variable or local variables
                         Some(level) if level > GLOBAL_LEVEL => self.get_variable(name),
                         // Schema closure or global variables
-                        _ => self.get_variable_in_schema(name),
+                        _ => self.get_variable_in_schema_or_rule(name),
                     }
                 }
             }
