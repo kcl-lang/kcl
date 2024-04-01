@@ -1,13 +1,12 @@
 use crate::analysis::Analysis;
 use crate::config::Config;
-use crate::db::AnalysisDatabase;
+use crate::db::{AnalysisDatabase, DocumentVersion};
 use crate::from_lsp::file_path_from_url;
 use crate::to_lsp::{kcl_diag_to_lsp_diags, url};
 use crate::util::{compile_with_params, get_file_name, to_json, Params};
 use crate::word_index::build_word_index;
 use anyhow::Result;
 use crossbeam_channel::{select, unbounded, Receiver, Sender};
-use indexmap::IndexSet;
 use kclvm_parser::KCLModuleCache;
 use kclvm_sema::resolver::scope::{CachedScope, KCLScopeCache};
 use lsp_server::{ReqQueue, Request, Response};
@@ -80,7 +79,7 @@ pub(crate) struct LanguageServerState {
     pub analysis: Analysis,
 
     /// Documents that are currently kept in memory from the client
-    pub opened_files: IndexSet<FileId>,
+    pub opened_files: Arc<RwLock<HashMap<FileId, DocumentVersion>>>,
 
     /// The VFS loader
     pub loader: Handle<Box<dyn ra_ap_vfs::loader::Handle>, Receiver<ra_ap_vfs::loader::Message>>,
@@ -103,7 +102,7 @@ pub(crate) struct LanguageServerSnapshot {
     /// Holds the state of the analysis process
     pub db: Arc<RwLock<HashMap<FileId, Arc<AnalysisDatabase>>>>,
     /// Documents that are currently kept in memory from the client
-    pub opened_files: IndexSet<FileId>,
+    pub opened_files: Arc<RwLock<HashMap<FileId, DocumentVersion>>>,
     /// The word index map
     pub word_index_map: KCLWordIndexMap,
     /// KCL parse cache
@@ -139,7 +138,7 @@ impl LanguageServerState {
             task_receiver,
             shutdown_requested: false,
             analysis: Analysis::default(),
-            opened_files: IndexSet::new(),
+            opened_files: Arc::new(RwLock::new(HashMap::new())),
             word_index_map: Arc::new(RwLock::new(HashMap::new())),
             loader,
             module_cache: Some(KCLModuleCache::default()),
@@ -215,6 +214,7 @@ impl LanguageServerState {
         // Construct an AnalysisChange to apply to the analysis
         for file in changed_files {
             let filename = get_file_name(self.vfs.read(), file.file_id);
+            let version = *self.opened_files.read().get(&file.file_id).unwrap();
             match filename {
                 Ok(filename) => {
                     self.thread_pool.execute({
@@ -232,30 +232,40 @@ impl LanguageServerState {
                                     vfs: Some(snapshot.vfs),
                                 }) {
                                     Ok((prog, diags, gs)) => {
-                                        db.insert(
-                                            file.file_id,
-                                            Arc::new(AnalysisDatabase {
-                                                prog,
-                                                diags: diags.clone(),
-                                                gs,
-                                            }),
-                                        );
+                                        let current_version = *snapshot
+                                            .opened_files
+                                            .read()
+                                            .get(&file.file_id)
+                                            .unwrap();
 
-                                        let diagnostics = diags
-                                            .iter()
-                                            .flat_map(|diag| {
-                                                kcl_diag_to_lsp_diags(diag, filename.as_str())
-                                            })
-                                            .collect::<Vec<Diagnostic>>();
-                                        sender.send(Task::Notify(lsp_server::Notification {
-                                            method: PublishDiagnostics::METHOD.to_owned(),
-                                            params: to_json(PublishDiagnosticsParams {
-                                                uri,
-                                                diagnostics,
-                                                version: None,
-                                            })
-                                            .unwrap(),
-                                        }));
+                                        // If the text is updated during compilation, the current compilation result will not be output.
+                                        if current_version == version {
+                                            db.insert(
+                                                file.file_id,
+                                                Arc::new(AnalysisDatabase {
+                                                    prog,
+                                                    diags: diags.clone(),
+                                                    gs,
+                                                    version,
+                                                }),
+                                            );
+
+                                            let diagnostics = diags
+                                                .iter()
+                                                .flat_map(|diag| {
+                                                    kcl_diag_to_lsp_diags(diag, filename.as_str())
+                                                })
+                                                .collect::<Vec<Diagnostic>>();
+                                            sender.send(Task::Notify(lsp_server::Notification {
+                                                method: PublishDiagnostics::METHOD.to_owned(),
+                                                params: to_json(PublishDiagnosticsParams {
+                                                    uri,
+                                                    diagnostics,
+                                                    version: None,
+                                                })
+                                                .unwrap(),
+                                            }));
+                                        }
                                     }
                                     Err(err) => {
                                         db.remove(&file.file_id);
