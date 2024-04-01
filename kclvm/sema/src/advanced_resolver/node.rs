@@ -584,8 +584,11 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
     }
 
     fn walk_dict_comp(&mut self, dict_comp: &'ctx ast::DictComp) -> Self::Result {
-        let key = dict_comp.entry.key.as_ref().unwrap();
-        let start = key.get_pos();
+        let (start, key) = match dict_comp.entry.key.as_ref() {
+            Some(key) => (key.get_pos(), Some(key)),
+            None => (dict_comp.entry.value.get_pos(), None),
+        };
+
         let end = match dict_comp.generators.last() {
             Some(last) => last.get_end_pos(),
             None => dict_comp.entry.value.get_end_pos(),
@@ -599,7 +602,9 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
         for comp_clause in &dict_comp.generators {
             self.walk_comp_clause(&comp_clause.node);
         }
-        self.expr(key);
+        if let Some(key) = key {
+            self.expr(key);
+        }
         self.expr(&dict_comp.entry.value);
         self.leave_scope();
         None
