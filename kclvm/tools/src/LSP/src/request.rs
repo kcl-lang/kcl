@@ -135,9 +135,7 @@ impl LanguageServerSnapshot {
             None => Ok(None),
         }
     }
-}
 
-impl LanguageServerSnapshot {
     fn verify_request_version(
         &self,
         pre_version: DocumentVersion,

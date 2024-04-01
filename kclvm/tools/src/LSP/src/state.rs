@@ -232,22 +232,24 @@ impl LanguageServerState {
                                     vfs: Some(snapshot.vfs),
                                 }) {
                                     Ok((prog, diags, gs)) => {
-                                        db.insert(
-                                            file.file_id,
-                                            Arc::new(AnalysisDatabase {
-                                                prog,
-                                                diags: diags.clone(),
-                                                gs,
-                                                version,
-                                            }),
-                                        );
                                         let current_version = *snapshot
                                             .opened_files
                                             .read()
                                             .get(&file.file_id)
                                             .unwrap();
+
                                         // If the text is updated during compilation, the current compilation result will not be output.
                                         if current_version == version {
+                                            db.insert(
+                                                file.file_id,
+                                                Arc::new(AnalysisDatabase {
+                                                    prog,
+                                                    diags: diags.clone(),
+                                                    gs,
+                                                    version,
+                                                }),
+                                            );
+
                                             let diagnostics = diags
                                                 .iter()
                                                 .flat_map(|diag| {
