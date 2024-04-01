@@ -9,6 +9,7 @@ pub(crate) enum LSPError {
     Retry,
     FileIdNotFound(VfsPath),
     AnalysisDatabaseNotFound(VfsPath),
+    DocumentVersionNotFound(VfsPath),
 }
 
 impl fmt::Display for LSPError {
@@ -24,6 +25,10 @@ impl fmt::Display for LSPError {
                     "Internal bug: Path {path} analysisDatabase not found, maybe compile failed"
                 )
             }
+            LSPError::DocumentVersionNotFound(path) => write!(
+                f,
+                "Internal bug: {path} document version not found"
+            ),
         }
     }
 }

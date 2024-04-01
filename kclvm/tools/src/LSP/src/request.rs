@@ -3,11 +3,12 @@ use crossbeam_channel::Sender;
 
 use kclvm_sema::info::is_valid_kcl_name;
 use lsp_types::{Location, SemanticTokensResult, TextEdit};
-use ra_ap_vfs::VfsPath;
+use ra_ap_vfs::{AbsPathBuf, VfsPath};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Instant;
 
+use crate::db::DocumentVersion;
 use crate::error::LSPError;
 use crate::{
     completion::completion,
@@ -136,6 +137,25 @@ impl LanguageServerSnapshot {
     }
 }
 
+impl LanguageServerSnapshot {
+    fn verify_request_version(
+        &self,
+        pre_version: DocumentVersion,
+        path: &AbsPathBuf,
+    ) -> anyhow::Result<bool> {
+        let file_id = self
+            .vfs
+            .read()
+            .file_id(&path.clone().into())
+            .ok_or_else(|| anyhow::anyhow!(LSPError::FileIdNotFound(path.clone().into())))?;
+
+        let request_version = *self.opened_files.read().get(&file_id).ok_or_else(|| {
+            anyhow::anyhow!(LSPError::DocumentVersionNotFound(path.clone().into()))
+        })?;
+        return Ok(pre_version == request_version);
+    }
+}
+
 pub(crate) fn handle_semantic_tokens_full(
     snapshot: LanguageServerSnapshot,
     params: lsp_types::SemanticTokensParams,
@@ -148,6 +168,10 @@ pub(crate) fn handle_semantic_tokens_full(
         None => return Err(anyhow!(LSPError::Retry)),
     };
     let res = semantic_tokens_full(&file, &db.gs);
+
+    if !snapshot.verify_request_version(db.version, &path)? {
+        return Err(anyhow!(LSPError::Retry));
+    }
     Ok(res)
 }
 
@@ -282,25 +306,38 @@ pub(crate) fn handle_completion(
         .and_then(|ctx| ctx.trigger_character)
         .and_then(|s| s.chars().next());
 
-    let db = match completion_trigger_character {
-        // Some trigger characters need to re-compile
-        Some(ch) => match ch {
-            '=' | ':' => {
-                match compile_with_params(Params {
-                    file: file.clone(),
-                    module_cache: snapshot.module_cache,
-                    scope_cache: None,
-                    vfs: Some(snapshot.vfs.clone()),
-                }) {
-                    Ok((prog, diags, gs)) => Arc::new(AnalysisDatabase { prog, diags, gs }),
-                    Err(_) => return Ok(None),
-                }
-            }
-            _ => snapshot.get_db(&path.clone().into())?,
-        },
+    let db =
+        match completion_trigger_character {
+            // Some trigger characters need to re-compile
+            Some(ch) => match ch {
+                '=' | ':' => {
+                    let file_id = snapshot.vfs.read().file_id(&path.clone().into()).ok_or(
+                        anyhow::anyhow!(LSPError::FileIdNotFound(path.clone().into())),
+                    )?;
+                    let version = *snapshot.opened_files.read().get(&file_id).ok_or_else(|| {
+                        anyhow::anyhow!(LSPError::DocumentVersionNotFound(path.clone().into()))
+                    })?;
 
-        None => snapshot.get_db(&path.clone().into())?,
-    };
+                    match compile_with_params(Params {
+                        file: file.clone(),
+                        module_cache: snapshot.module_cache,
+                        scope_cache: None,
+                        vfs: Some(snapshot.vfs.clone()),
+                    }) {
+                        Ok((prog, diags, gs)) => Arc::new(AnalysisDatabase {
+                            prog,
+                            diags,
+                            gs,
+                            version,
+                        }),
+                        Err(_) => return Ok(None),
+                    }
+                }
+                _ => snapshot.get_db(&path.clone().into())?,
+            },
+
+            None => snapshot.get_db(&path.clone().into())?,
+        };
 
     let res = completion(completion_trigger_character, &db.prog, &kcl_pos, &db.gs);
 
@@ -343,6 +380,11 @@ pub(crate) fn handle_document_symbol(
         None => return Err(anyhow!(LSPError::Retry)),
     };
     let res = document_symbol(&file, &db.gs);
+
+    if !snapshot.verify_request_version(db.version, &path)? {
+        return Err(anyhow!(LSPError::Retry));
+    }
+
     Ok(res)
 }
 

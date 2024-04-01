@@ -51,7 +51,9 @@ impl LanguageServerState {
         );
 
         if let Some(id) = self.vfs.read().file_id(&path.into()) {
-            self.opened_files.insert(id);
+            self.opened_files
+                .write()
+                .insert(id, params.text_document.version);
         }
         Ok(())
     }
@@ -120,7 +122,7 @@ impl LanguageServerState {
         let path = from_lsp::abs_path(&params.text_document.uri)?;
 
         if let Some(id) = self.vfs.read().file_id(&path.clone().into()) {
-            self.opened_files.remove(&id);
+            self.opened_files.write().remove(&id);
         }
         self.loader.handle.invalidate(path);
 
