@@ -211,7 +211,7 @@ pub fn convert_collection_value(ctx: &mut Context, value: &ValueRef, tpe: &str) 
     if !is_collection || invalid_match {
         return value.clone();
     }
-    // Convert a vlaue to union types e.g., {a: 1} => A | B
+    // Convert a value to union types e.g., {a: 1} => A | B
     if is_type_union(&tpe) {
         let types = split_type_union(&tpe);
         convert_collection_value_with_union_types(ctx, value, &types)

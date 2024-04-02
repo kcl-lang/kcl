@@ -62,6 +62,7 @@ impl<'ctx> Evaluator<'ctx> {
             Proxy::Schema(schema) => {
                 {
                     let ctx = &mut schema.ctx.borrow_mut();
+                    // Reset config and config_meta
                     ctx.reset_with_config(self.dict_value(), self.dict_value());
                 }
                 (schema.body)(self, &schema.ctx, args, kwargs)

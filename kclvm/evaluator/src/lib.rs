@@ -14,13 +14,21 @@ mod proxy;
 mod rule;
 mod schema;
 mod scope;
+mod ty;
+mod union;
 mod value;
 
 extern crate kclvm_error;
 
 use context::EvaluatorContext;
-use generational_arena::Arena;
+use generational_arena::{Arena, Index};
+use indexmap::IndexMap;
+use lazy::BacktrackMeta;
 use proxy::{Frame, Proxy};
+use rule::RuleEvalContextRef;
+use schema::SchemaEvalContextRef;
+use scope::Scope;
+use std::collections::{HashMap, HashSet};
 use std::panic::RefUnwindSafe;
 use std::rc::Rc;
 use std::str;
@@ -46,7 +54,35 @@ pub struct Evaluator<'ctx> {
     pub program: &'ctx ast::Program,
     pub ctx: RefCell<EvaluatorContext>,
     pub frames: RefCell<Arena<Rc<Frame>>>,
+    pub schemas: RefCell<IndexMap<String, Index>>,
     pub runtime_ctx: Rc<RefCell<Context>>,
+    pub pkgpath_stack: RefCell<Vec<String>>,
+    pub filename_stack: RefCell<Vec<String>>,
+    /// The names of possible assignment objects for the current instruction.
+    pub target_vars: RefCell<Vec<String>>,
+    /// Imported package path set to judge is there a duplicate import.
+    pub imported: RefCell<HashSet<String>>,
+    /// The lambda stack index denotes the scope level of the lambda function.
+    pub lambda_stack: RefCell<Vec<usize>>,
+    /// To judge is in the schema statement.
+    pub schema_stack: RefCell<Vec<EvalContext>>,
+    /// To judge is in the schema expression.
+    pub schema_expr_stack: RefCell<Vec<()>>,
+    /// Import names mapping
+    pub import_names: RefCell<IndexMap<String, IndexMap<String, String>>>,
+    /// Package scope to store variable pointers.
+    pub pkg_scopes: RefCell<HashMap<String, Vec<Scope>>>,
+    /// Local variables in the loop.
+    pub local_vars: RefCell<HashSet<String>>,
+    /// The line number of the source file corresponding to the current instruction
+    pub current_line: RefCell<u64>,
+    /// Schema attr backtrack meta
+    pub backtrack_meta: RefCell<Option<BacktrackMeta>>,
+}
+
+pub enum EvalContext {
+    Schema(SchemaEvalContextRef),
+    Rule(RuleEvalContextRef),
 }
 
 impl<'ctx> Evaluator<'ctx> {
@@ -67,6 +103,19 @@ impl<'ctx> Evaluator<'ctx> {
             runtime_ctx,
             program,
             frames: RefCell::new(Arena::new()),
+            schemas: RefCell::new(IndexMap::new()),
+            target_vars: RefCell::new(vec![]),
+            imported: RefCell::new(Default::default()),
+            lambda_stack: RefCell::new(vec![GLOBAL_LEVEL]),
+            schema_stack: RefCell::new(Default::default()),
+            schema_expr_stack: RefCell::new(Default::default()),
+            pkgpath_stack: RefCell::new(vec![kclvm_ast::MAIN_PKG.to_string()]),
+            filename_stack: RefCell::new(Default::default()),
+            import_names: RefCell::new(Default::default()),
+            pkg_scopes: RefCell::new(Default::default()),
+            local_vars: RefCell::new(Default::default()),
+            current_line: RefCell::new(Default::default()),
+            backtrack_meta: RefCell::new(None),
         }
     }
 
@@ -82,8 +131,7 @@ impl<'ctx> Evaluator<'ctx> {
     /// Plan globals to a planed json and yaml string.
     pub fn plan_globals_to_string(&self) -> (String, String) {
         let current_pkgpath = self.current_pkgpath();
-        let ctx = self.ctx.borrow();
-        let pkg_scopes = &ctx.pkg_scopes;
+        let pkg_scopes = &self.pkg_scopes.borrow();
         let scopes = pkg_scopes
             .get(&current_pkgpath)
             .unwrap_or_else(|| panic!("pkgpath {} is not found", current_pkgpath));

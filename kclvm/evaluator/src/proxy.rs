@@ -2,7 +2,7 @@ use kclvm_runtime::ValueRef;
 
 use crate::error as kcl_error;
 use crate::func::FunctionCaller;
-use crate::rule::RuleCaller;
+use crate::rule::{RuleCaller, RuleEvalContextRef};
 use crate::schema::{SchemaCaller, SchemaEvalContextRef};
 use crate::Evaluator;
 
@@ -27,9 +27,8 @@ pub(crate) fn call_schema_body(
     func: &ValueRef,
     args: &ValueRef,
     kwargs: &ValueRef,
-    ctx: Option<&SchemaEvalContextRef>,
+    ctx: &SchemaEvalContextRef,
 ) -> ValueRef {
-    // Call base schema function
     if let Some(index) = func.try_get_proxy() {
         let frame = {
             let frames = s.frames.borrow();
@@ -40,23 +39,49 @@ pub(crate) fn call_schema_body(
         };
         if let Proxy::Schema(schema) = &frame.proxy {
             s.push_pkgpath(&frame.pkgpath);
-            if let Some(ctx) = ctx {
-                schema.ctx.borrow_mut().get_value_from(&ctx.borrow())
+            {
+                schema.ctx.borrow_mut().set_info_with_schema(&ctx.borrow())
             }
             let value = (schema.body)(s, &schema.ctx, args, kwargs);
             s.pop_pkgpath();
             value
         } else {
-            match ctx {
-                Some(ctx) => ctx.borrow().value.clone(),
-                None => s.undefined_value(),
-            }
+            ctx.borrow().value.clone()
         }
     } else {
-        match ctx {
-            Some(ctx) => ctx.borrow().value.clone(),
-            None => s.undefined_value(),
+        ctx.borrow().value.clone()
+    }
+}
+
+/// Call the associated schemas including parent schema and mixin schema
+pub(crate) fn call_schema_body_from_rule(
+    s: &Evaluator,
+    func: &ValueRef,
+    args: &ValueRef,
+    kwargs: &ValueRef,
+    ctx: &RuleEvalContextRef,
+) -> ValueRef {
+    if let Some(index) = func.try_get_proxy() {
+        let frame = {
+            let frames = s.frames.borrow();
+            frames
+                .get(index)
+                .expect(kcl_error::INTERNAL_ERROR_MSG)
+                .clone()
+        };
+        if let Proxy::Schema(schema) = &frame.proxy {
+            s.push_pkgpath(&frame.pkgpath);
+            {
+                schema.ctx.borrow_mut().set_info_with_rule(&ctx.borrow())
+            }
+            let value = (schema.body)(s, &schema.ctx, args, kwargs);
+            s.pop_pkgpath();
+            value
+        } else {
+            ctx.borrow().value.clone()
         }
+    } else {
+        ctx.borrow().value.clone()
     }
 }
 
@@ -78,7 +103,7 @@ pub(crate) fn call_schema_check(
         if let Proxy::Schema(schema) = &frame.proxy {
             s.push_pkgpath(&frame.pkgpath);
             if let Some(ctx) = ctx {
-                schema.ctx.borrow_mut().get_value_from(&ctx.borrow())
+                schema.ctx.borrow_mut().set_info_with_schema(&ctx.borrow())
             }
             (schema.check)(s, &schema.ctx, args, kwargs);
             s.pop_pkgpath();

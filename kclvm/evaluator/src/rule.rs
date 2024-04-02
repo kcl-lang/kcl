@@ -9,7 +9,7 @@ use kclvm_runtime::ValueRef;
 use crate::error as kcl_error;
 use crate::lazy::LazyEvalScope;
 
-use crate::proxy::{call_rule_check, call_schema_body};
+use crate::proxy::{call_rule_check, call_schema_body_from_rule};
 use crate::Evaluator;
 
 pub type RuleBodyHandler =
@@ -19,7 +19,7 @@ pub type RuleEvalContextRef = Rc<RefCell<RuleEvalContext>>;
 
 /// Proxy functions represent the saved functions of the runtime its,
 /// rather than executing KCL defined functions or plugin functions.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct RuleEvalContext {
     pub node: ast::RuleStmt,
     pub scope: LazyEvalScope,
@@ -46,11 +46,21 @@ impl RuleEvalContext {
         }
     }
 
-    /// Reset schema evaluation context state.
+    /// Reset rule evaluation context state.
     pub fn reset(&mut self) {
         self.value = ValueRef::dict(None);
         self.config = ValueRef::dict(None);
         self.config_meta = ValueRef::dict(None);
+        self.optional_mapping = ValueRef::dict(None);
+        self.is_sub_schema = true;
+        self.record_instance = true;
+    }
+
+    /// Reset rule evaluation context state.
+    pub fn reset_with_config(&mut self, config: ValueRef, config_meta: ValueRef) {
+        self.config = config;
+        self.config_meta = config_meta;
+        self.value = ValueRef::dict(None);
         self.optional_mapping = ValueRef::dict(None);
         self.is_sub_schema = true;
         self.record_instance = true;
@@ -71,21 +81,21 @@ pub fn rule_body(
     args: &ValueRef,
     kwargs: &ValueRef,
 ) -> ValueRef {
-    s.push_schema();
-    s.enter_scope();
-    let rule_name = &ctx.borrow().node.name.node;
-    // Evaluate arguments and keyword arguments and store values to local variables.
-    s.walk_arguments(&ctx.borrow().node.args, args, kwargs);
     // Schema Value
     let rule_value = if let Some(for_host_name) = &ctx.borrow().node.for_host_name {
         let base_constructor_func = s
             .walk_identifier_with_ctx(&for_host_name.node, &ast::ExprContext::Load, None)
             .expect(kcl_error::RUNTIME_ERROR_MSG);
         // Call base schema function
-        call_schema_body(s, &base_constructor_func, args, kwargs, None)
+        call_schema_body_from_rule(s, &base_constructor_func, args, kwargs, ctx)
     } else {
         ctx.borrow().value.clone()
     };
+    let rule_name = &ctx.borrow().node.name.node;
+    s.push_schema(crate::EvalContext::Rule(ctx.clone()));
+    s.enter_scope();
+    // Evaluate arguments and keyword arguments and store values to local variables.
+    s.walk_arguments(&ctx.borrow().node.args, args, kwargs);
     // Eval schema body and record schema instances.
     if ctx.borrow().record_instance {
         // Rule decorators check
@@ -99,7 +109,6 @@ pub fn rule_body(
         // Call rule check block function
         rule_check(s, ctx, args, kwargs);
     }
-
     s.leave_scope();
     s.pop_schema();
     rule_value
