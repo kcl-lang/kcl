@@ -120,10 +120,15 @@ impl LanguageServerState {
         params: lsp_types::DidCloseTextDocumentParams,
     ) -> anyhow::Result<()> {
         let path = from_lsp::abs_path(&params.text_document.uri)?;
+        self.log_message(format!("on did_close file: {:?}", path));
 
         if let Some(id) = self.vfs.read().file_id(&path.clone().into()) {
             self.opened_files.write().remove(&id);
         }
+
+        // Update vfs
+        let vfs = &mut *self.vfs.write();
+        vfs.set_file_contents(path.clone().into(), None);
         self.loader.handle.invalidate(path);
 
         Ok(())
