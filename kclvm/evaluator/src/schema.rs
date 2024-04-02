@@ -2,16 +2,17 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::Arc;
 
+use generational_arena::Index;
 use indexmap::IndexMap;
 use kclvm_ast::ast;
 use kclvm_ast::walker::TypedResultWalker;
 use kclvm_runtime::{schema_runtime_type, ConfigEntryOperationKind, ValueRef, MAIN_PKG_PATH};
 
-use crate::lazy::LazyEvalScope;
+use crate::lazy::{merge_setters, LazyEvalScope, LazyEvalScopeRef};
 use crate::proxy::{call_schema_body, call_schema_check};
 use crate::rule::RuleEvalContext;
 use crate::ty::type_pack_and_check;
-use crate::{error as kcl_error, Proxy};
+use crate::{error as kcl_error, EvalResult, Proxy};
 use crate::{Evaluator, INNER_LEVEL};
 
 pub type SchemaBodyHandler =
@@ -24,7 +25,8 @@ pub type SchemaEvalContextRef = Rc<RefCell<SchemaEvalContext>>;
 #[derive(Clone, Debug)]
 pub struct SchemaEvalContext {
     pub node: ast::SchemaStmt,
-    pub scope: LazyEvalScope,
+    pub scope: Option<LazyEvalScopeRef>,
+    pub index: Index,
     pub value: ValueRef,
     pub config: ValueRef,
     pub config_meta: ValueRef,
@@ -35,10 +37,11 @@ pub struct SchemaEvalContext {
 
 impl SchemaEvalContext {
     #[inline]
-    pub fn new_with_node(node: ast::SchemaStmt) -> Self {
+    pub fn new_with_node(node: ast::SchemaStmt, index: Index) -> Self {
         SchemaEvalContext {
             node,
-            scope: LazyEvalScope::default(),
+            scope: None,
+            index,
             value: ValueRef::dict(None),
             config: ValueRef::dict(None),
             config_meta: ValueRef::dict(None),
@@ -56,6 +59,13 @@ impl SchemaEvalContext {
         self.optional_mapping = ValueRef::dict(None);
         self.is_sub_schema = true;
         self.record_instance = true;
+        // Clear lazy eval scope.
+        if let Some(scope) = &self.scope {
+            let mut scope = scope.borrow_mut();
+            scope.cache.clear();
+            scope.levels.clear();
+            scope.cal_times.clear();
+        }
     }
 
     /// Pass value references from other schema eval context.
@@ -67,6 +77,17 @@ impl SchemaEvalContext {
         self.optional_mapping = other.optional_mapping.clone();
         self.record_instance = other.record_instance;
         self.is_sub_schema = false;
+        // Set lazy eval scope.
+        if let Some(scope) = &self.scope {
+            if let Some(other) = &other.scope {
+                let mut scope = scope.borrow_mut();
+                let other = other.borrow();
+                scope.cache = other.cache.clone();
+                scope.levels = other.levels.clone();
+                scope.cal_times = other.cal_times.clone();
+                scope.setters = other.setters.clone();
+            }
+        }
     }
 
     /// Pass value references from other rule eval context.
@@ -84,9 +105,9 @@ impl SchemaEvalContext {
     /// Update parent schema and mixin schema information
     pub fn get_parent_schema(
         s: &Evaluator,
-        ctx: &SchemaEvalContextRef,
-    ) -> Option<SchemaEvalContextRef> {
-        if let Some(parent_name) = &ctx.borrow().node.parent_name {
+        ctx: &SchemaEvalContext,
+    ) -> Option<(Index, SchemaEvalContextRef)> {
+        if let Some(parent_name) = &ctx.node.parent_name {
             let func = s
                 .walk_identifier_with_ctx(&parent_name.node, &ast::ExprContext::Load, None)
                 .expect(kcl_error::RUNTIME_ERROR_MSG);
@@ -99,7 +120,7 @@ impl SchemaEvalContext {
                         .clone()
                 };
                 if let Proxy::Schema(schema) = &frame.proxy {
-                    Some(schema.ctx.clone())
+                    Some((index, schema.ctx.clone()))
                 } else {
                     None
                 }
@@ -114,10 +135,10 @@ impl SchemaEvalContext {
     /// Update parent schema and mixin schema information
     pub fn get_mixin_schemas(
         s: &Evaluator,
-        ctx: &SchemaEvalContextRef,
-    ) -> Vec<SchemaEvalContextRef> {
+        ctx: &SchemaEvalContext,
+    ) -> Vec<(Index, SchemaEvalContextRef)> {
         let mut results = vec![];
-        for mixin in &ctx.borrow().node.mixins {
+        for mixin in &ctx.node.mixins {
             let func = s
                 .walk_identifier_with_ctx(&mixin.node, &ast::ExprContext::Load, None)
                 .expect(kcl_error::RUNTIME_ERROR_MSG);
@@ -130,7 +151,7 @@ impl SchemaEvalContext {
                         .clone()
                 };
                 if let Proxy::Schema(schema) = &frame.proxy {
-                    results.push(schema.ctx.clone())
+                    results.push((index, schema.ctx.clone()))
                 }
             }
         }
@@ -146,7 +167,7 @@ impl SchemaEvalContext {
                 }
             }
         }
-        if let Some(parent) = SchemaEvalContext::get_parent_schema(s, ctx) {
+        if let Some((_, parent)) = SchemaEvalContext::get_parent_schema(s, &ctx.borrow()) {
             return SchemaEvalContext::has_attr(s, &parent, name);
         }
         false
@@ -157,7 +178,7 @@ impl SchemaEvalContext {
         if ctx.borrow().node.index_signature.is_some() {
             return true;
         }
-        if let Some(parent) = SchemaEvalContext::get_parent_schema(s, ctx) {
+        if let Some((_, parent)) = SchemaEvalContext::get_parent_schema(s, &ctx.borrow()) {
             return SchemaEvalContext::has_index_signature(s, &parent);
         }
         false
@@ -180,6 +201,131 @@ impl SchemaEvalContext {
             false
         }
     }
+
+    /// Init the lazy scope used to
+    pub fn init_lazy_scope(&mut self, s: &Evaluator, index: Option<Index>) {
+        // TODO: cache the lazy scope cross different schema instances.
+        let mut setters = IndexMap::new();
+        // Parent schema setters
+        if let Some((idx, parent)) = SchemaEvalContext::get_parent_schema(s, self) {
+            {
+                let mut parent = parent.borrow_mut();
+                parent.init_lazy_scope(s, Some(idx));
+            }
+            if let Some(scope) = &parent.borrow().scope {
+                merge_setters(&mut self.value, &mut setters, &scope.borrow().setters);
+            }
+        }
+        // Self setters
+        merge_setters(
+            &mut self.value,
+            &mut setters,
+            &s.emit_setters(&self.node.body, index),
+        );
+        // Mixin schema setters
+        for (idx, mixin) in SchemaEvalContext::get_mixin_schemas(s, self) {
+            {
+                let mut mixin = mixin.borrow_mut();
+                mixin.init_lazy_scope(s, Some(idx));
+            }
+            if let Some(scope) = &mixin.borrow().scope {
+                merge_setters(&mut self.value, &mut setters, &scope.borrow().setters);
+            }
+        }
+        self.scope = Some(Rc::new(RefCell::new(LazyEvalScope {
+            setters,
+            ..Default::default()
+        })))
+    }
+
+    /// Get the value from the context.
+    pub fn get_value(&self, s: &Evaluator, key: &str, pkgpath: &str, target: &str) -> EvalResult {
+        if let Some(scope) = &self.scope {
+            let value = {
+                match self.value.get_by_key(key) {
+                    Some(value) => Ok(value.clone()),
+                    None => s.get_variable_in_pkgpath(key, &pkgpath),
+                }
+            };
+            // Deal in-place modify and return it self immediately.
+            if key == target && {
+                let scope = scope.borrow();
+                !scope.is_backtracking(key) || scope.setter_len(key) <= 1
+            } {
+                value
+            } else {
+                let cached_value = {
+                    let scope = scope.borrow();
+                    scope.cache.get(key).cloned()
+                };
+                match cached_value {
+                    Some(value) => Ok(value.clone()),
+                    None => {
+                        let setters = {
+                            let scope = scope.borrow();
+                            scope.setters.get(key).cloned()
+                        };
+                        match &setters {
+                            Some(setters) if !setters.is_empty() => {
+                                // Call all setters function to calculate the value recursively.
+                                let level = {
+                                    let scope = scope.borrow();
+                                    *scope.levels.get(key).unwrap_or(&0)
+                                };
+                                let next_level = level + 1;
+                                {
+                                    let mut scope = scope.borrow_mut();
+                                    scope.levels.insert(key.to_string(), next_level);
+                                }
+                                let n = setters.len();
+                                let index = n - next_level;
+                                if index >= n {
+                                    value
+                                } else {
+                                    // Call frame
+                                    s.walk_schema_stmt_with_setter(
+                                        &self.node.body,
+                                        &setters[index],
+                                    )
+                                    .expect(kcl_error::INTERNAL_ERROR_MSG);
+                                    {
+                                        let mut scope = scope.borrow_mut();
+                                        scope.levels.insert(key.to_string(), level);
+                                        let value = match self.value.get_by_key(key) {
+                                            Some(value) => value.clone(),
+                                            None => s.undefined_value(),
+                                        };
+                                        scope.cache.insert(key.to_string(), value.clone());
+                                        Ok(value)
+                                    }
+                                }
+                            }
+                            _ => value,
+                        }
+                    }
+                }
+            }
+        } else {
+            return if let Some(value) = self.value.dict_get_value(key) {
+                Ok(value)
+            } else {
+                s.get_variable_in_pkgpath(key, &pkgpath)
+            };
+        }
+    }
+
+    /// Set value to the context.
+    #[inline]
+    pub fn set_value(&self, s: &Evaluator, key: &str) {
+        if let Some(scope) = &self.scope {
+            let mut scope = scope.borrow_mut();
+            if scope.cal_increment(key) && scope.cache.get(key).is_none() {
+                scope
+                    .cache
+                    .insert(key.to_string(), s.dict_get_value(&self.value, key));
+            }
+        }
+    }
 }
 
 #[derive(Clone, Default, Debug)]
@@ -197,6 +343,15 @@ pub struct SchemaCaller {
     pub check: SchemaBodyHandler,
 }
 
+/// Init or reset the schema lazy eval scope.
+pub(crate) fn init_lazy_scope(s: &Evaluator, ctx: &mut SchemaEvalContext) {
+    let is_sub_schema = { ctx.is_sub_schema };
+    let index = { ctx.index };
+    if is_sub_schema {
+        ctx.init_lazy_scope(s, Some(index));
+    }
+}
+
 /// Schema body function
 pub(crate) fn schema_body(
     s: &Evaluator,
@@ -204,22 +359,25 @@ pub(crate) fn schema_body(
     args: &ValueRef,
     kwargs: &ValueRef,
 ) -> ValueRef {
-    s.push_schema();
-    s.enter_scope_with_schema_eval_context(ctx);
-    let schema_name = &ctx.borrow().node.name.node;
-    // Evaluate arguments and keyword arguments and store values to local variables.
-    s.walk_arguments(&ctx.borrow().node.args, args, kwargs);
-    // Schema Value
-    let mut schema_value = ctx.borrow().value.clone();
-    if let Some(parent_name) = &ctx.borrow().node.parent_name {
+    init_lazy_scope(s, &mut ctx.borrow_mut());
+    // Schema self value or parent schema value;
+    let mut schema_value = if let Some(parent_name) = &ctx.borrow().node.parent_name {
         let base_constructor_func = s
             .walk_identifier_with_ctx(&parent_name.node, &ast::ExprContext::Load, None)
             .expect(kcl_error::RUNTIME_ERROR_MSG);
         // Call base schema function
-        call_schema_body(s, &base_constructor_func, args, kwargs, ctx);
-    }
+        call_schema_body(s, &base_constructor_func, args, kwargs, ctx)
+    } else {
+        ctx.borrow().value.clone()
+    };
+    let schema_name = { ctx.borrow().node.name.node.to_string() };
+    s.push_schema(crate::EvalContext::Schema(ctx.clone()));
+    s.enter_scope();
+    // Evaluate arguments and keyword arguments and store values to local variables.
+    s.walk_arguments(&ctx.borrow().node.args, args, kwargs);
     // Eval schema body and record schema instances.
-    if ctx.borrow().record_instance {
+    let record_instance = { ctx.borrow().record_instance };
+    if record_instance {
         let schema_pkgpath = &s.current_pkgpath();
         // Run schema compiled function
         for stmt in &ctx.borrow().node.body {
@@ -227,34 +385,41 @@ pub(crate) fn schema_body(
         }
         // Schema decorators check
         for decorator in &ctx.borrow().node.decorators {
-            s.walk_decorator_with_name(&decorator.node, Some(schema_name), true)
+            s.walk_decorator_with_name(&decorator.node, Some(&schema_name), true)
                 .expect(kcl_error::RUNTIME_ERROR_MSG);
         }
-        let runtime_type = kclvm_runtime::schema_runtime_type(schema_name, schema_pkgpath);
+        let runtime_type = kclvm_runtime::schema_runtime_type(&schema_name, schema_pkgpath);
         schema_value.set_potential_schema_type(&runtime_type);
         // Set schema arguments and keyword arguments
         schema_value.set_schema_args(args, kwargs);
     }
     // Schema Mixins
-    for mixin in &ctx.borrow().node.mixins {
-        let mixin_func = s
-            .walk_identifier_with_ctx(&mixin.node, &ast::ExprContext::Load, None)
-            .expect(kcl_error::RUNTIME_ERROR_MSG);
-        schema_value = call_schema_body(s, &mixin_func, args, kwargs, ctx);
+    {
+        let ctx_ref = ctx.borrow();
+        for mixin in &ctx_ref.node.mixins {
+            let mixin_func = s
+                .walk_identifier_with_ctx(&mixin.node, &ast::ExprContext::Load, None)
+                .expect(kcl_error::RUNTIME_ERROR_MSG);
+            schema_value = call_schema_body(s, &mixin_func, args, kwargs, ctx);
+        }
     }
     // Schema Attribute optional check
-    let mut optional_mapping = ctx.borrow().optional_mapping.clone();
-    for stmt in &ctx.borrow().node.body {
-        if let ast::Stmt::SchemaAttr(schema_attr) = &stmt.node {
-            s.dict_insert_value(
-                &mut optional_mapping,
-                &schema_attr.name.node,
-                &s.bool_value(schema_attr.is_optional),
-            )
+    let mut optional_mapping = { ctx.borrow().optional_mapping.clone() };
+    {
+        let ctx = ctx.borrow();
+        for stmt in &ctx.node.body {
+            if let ast::Stmt::SchemaAttr(schema_attr) = &stmt.node {
+                s.dict_insert_value(
+                    &mut optional_mapping,
+                    &schema_attr.name.node,
+                    &s.bool_value(schema_attr.is_optional),
+                )
+            }
         }
     }
     // Do schema check for the sub schema.
-    if ctx.borrow().is_sub_schema {
+    let is_sub_schema = { ctx.borrow().is_sub_schema };
+    if is_sub_schema {
         let index_sign_key_name = if let Some(index_signature) = &ctx.borrow().node.index_signature
         {
             if let Some(key_name) = &index_signature.node.key_name {
@@ -270,7 +435,10 @@ pub(crate) fn schema_body(
             schema_check(s, ctx, args, kwargs);
         } else {
             // Do check function for every index signature key
-            let config = ctx.borrow().config.clone();
+            let config = {
+                let ctx = ctx.borrow();
+                ctx.config.clone()
+            };
             for (k, _) in &config.as_dict_ref().values {
                 // relaxed keys
                 if schema_value.attr_map_get(k).is_none() {
@@ -296,31 +464,38 @@ pub(crate) fn schema_with_config(
     args: &ValueRef,
     kwargs: &ValueRef,
 ) -> ValueRef {
-    let name = ctx.borrow().node.name.node.to_string();
+    let name = { ctx.borrow().node.name.node.to_string() };
     let pkgpath = s.current_pkgpath();
-    let config_keys: Vec<String> = ctx
-        .borrow()
-        .config
-        .as_dict_ref()
-        .values
-        .keys()
-        .cloned()
-        .collect();
-    let schema = schema_dict.dict_to_schema(
-        &name,
-        &pkgpath,
-        &config_keys,
-        &ctx.borrow().config_meta,
-        &ctx.borrow().optional_mapping,
-        Some(args.clone()),
-        Some(kwargs.clone()),
-    );
+    let config_keys: Vec<String> = {
+        ctx.borrow()
+            .config
+            .as_dict_ref()
+            .values
+            .keys()
+            .cloned()
+            .collect()
+    };
+    let schema = {
+        let ctx = ctx.borrow();
+        schema_dict.dict_to_schema(
+            &name,
+            &pkgpath,
+            &config_keys,
+            &ctx.config_meta,
+            &ctx.optional_mapping,
+            Some(args.clone()),
+            Some(kwargs.clone()),
+        )
+    };
     let runtime_type = schema_runtime_type(&name, &pkgpath);
     // Instance package path is the last frame calling package path.
     let instance_pkgpath = s.last_pkgpath();
-    if ctx.borrow().record_instance
-        && (instance_pkgpath.is_empty() || instance_pkgpath == MAIN_PKG_PATH)
-    {
+    let record_instance = { ctx.borrow().record_instance };
+    // Currently, `MySchema.instances()` it is only valid for files in the main package to
+    // avoid unexpected non idempotent calls. For example, I instantiated a MySchema in pkg1,
+    // but the length of the list returned by calling the instances method in other packages
+    // is uncertain.
+    if record_instance && (instance_pkgpath.is_empty() || instance_pkgpath == MAIN_PKG_PATH) {
         let mut ctx = s.runtime_ctx.borrow_mut();
         // Record schema instance in the context
         if !ctx.instances.contains_key(&runtime_type) {
@@ -332,7 +507,8 @@ pub(crate) fn schema_with_config(
             .push(schema_dict.clone());
     }
     // Dict to schema
-    if ctx.borrow().is_sub_schema {
+    let is_sub_schema = { ctx.borrow().is_sub_schema };
+    if is_sub_schema {
         schema
     } else {
         schema_dict.clone()
@@ -346,72 +522,85 @@ pub(crate) fn schema_check(
     args: &ValueRef,
     kwargs: &ValueRef,
 ) -> ValueRef {
-    let schema_name = &ctx.borrow().node.name.node;
-    let mut schema_value = ctx.borrow().value.clone();
+    let schema_name = { ctx.borrow().node.name.node.to_string() };
+    let mut schema_value = { ctx.borrow().value.clone() };
     // Do check function
     // Schema runtime index signature and relaxed check
-    if let Some(index_signature) = &ctx.borrow().node.index_signature {
-        let index_sign_value = if let Some(value) = &index_signature.node.value {
-            s.walk_expr(value).expect(kcl_error::RUNTIME_ERROR_MSG)
+    {
+        let ctx = ctx.borrow();
+        if let Some(index_signature) = &ctx.node.index_signature {
+            let index_sign_value = if let Some(value) = &index_signature.node.value {
+                s.walk_expr(value).expect(kcl_error::RUNTIME_ERROR_MSG)
+            } else {
+                s.undefined_value()
+            };
+            let key_name = if let Some(key_name) = &index_signature.node.key_name {
+                key_name.as_str()
+            } else {
+                ""
+            };
+            schema_value_check(
+                s,
+                &mut schema_value,
+                &ctx.config,
+                &schema_name,
+                &index_sign_value,
+                key_name,
+                index_signature.node.key_ty.node.to_string().as_str(),
+                index_signature.node.value_ty.node.to_string().as_str(),
+            );
         } else {
-            s.undefined_value()
-        };
-        let key_name = if let Some(key_name) = &index_signature.node.key_name {
-            key_name.as_str()
-        } else {
-            ""
-        };
-        schema_value_check(
-            s,
-            &mut schema_value,
-            &ctx.borrow().config,
-            schema_name,
-            &index_sign_value,
-            key_name,
-            index_signature.node.key_ty.node.to_string().as_str(),
-            index_signature.node.value_ty.node.to_string().as_str(),
-        );
-    } else {
-        schema_value_check(
-            s,
-            &mut schema_value,
-            &ctx.borrow().config,
-            schema_name,
-            &s.undefined_value(),
-            "",
-            "",
-            "",
-        );
+            schema_value_check(
+                s,
+                &mut schema_value,
+                &ctx.config,
+                &schema_name,
+                &s.undefined_value(),
+                "",
+                "",
+                "",
+            );
+        }
     }
     // Call base check function
-    if let Some(parent_name) = &ctx.borrow().node.parent_name {
-        let base_constructor_func = s
-            .walk_identifier_with_ctx(&parent_name.node, &ast::ExprContext::Load, None)
-            .expect(kcl_error::RUNTIME_ERROR_MSG);
-        call_schema_check(s, &base_constructor_func, args, kwargs, Some(ctx))
+    {
+        let ctx_ref = ctx.borrow();
+        if let Some(parent_name) = &ctx_ref.node.parent_name {
+            let base_constructor_func = s
+                .walk_identifier_with_ctx(&parent_name.node, &ast::ExprContext::Load, None)
+                .expect(kcl_error::RUNTIME_ERROR_MSG);
+            call_schema_check(s, &base_constructor_func, args, kwargs, Some(ctx))
+        }
     }
     // Call self check function
-    for check_expr in &ctx.borrow().node.checks {
-        s.walk_check_expr(&check_expr.node)
-            .expect(kcl_error::RUNTIME_ERROR_MSG);
+    {
+        let ctx = ctx.borrow();
+        for check_expr in &ctx.node.checks {
+            s.walk_check_expr(&check_expr.node)
+                .expect(kcl_error::RUNTIME_ERROR_MSG);
+        }
     }
+
     // Call mixin check functions
-    for mixin in &ctx.borrow().node.mixins {
-        let mixin_func = s
-            .walk_identifier_with_ctx(&mixin.node, &ast::ExprContext::Load, None)
-            .expect(kcl_error::RUNTIME_ERROR_MSG);
-        if let Some(index) = mixin_func.try_get_proxy() {
-            let frame = {
-                let frames = s.frames.borrow();
-                frames
-                    .get(index)
-                    .expect(kcl_error::INTERNAL_ERROR_MSG)
-                    .clone()
-            };
-            if let Proxy::Schema(schema) = &frame.proxy {
-                s.push_pkgpath(&frame.pkgpath);
-                (schema.check)(s, &schema.ctx, args, kwargs);
-                s.pop_pkgpath();
+    {
+        let ctx = ctx.borrow();
+        for mixin in &ctx.node.mixins {
+            let mixin_func = s
+                .walk_identifier_with_ctx(&mixin.node, &ast::ExprContext::Load, None)
+                .expect(kcl_error::RUNTIME_ERROR_MSG);
+            if let Some(index) = mixin_func.try_get_proxy() {
+                let frame = {
+                    let frames = s.frames.borrow();
+                    frames
+                        .get(index)
+                        .expect(kcl_error::INTERNAL_ERROR_MSG)
+                        .clone()
+                };
+                if let Proxy::Schema(schema) = &frame.proxy {
+                    s.push_pkgpath(&frame.pkgpath);
+                    (schema.check)(s, &schema.ctx, args, kwargs);
+                    s.pop_pkgpath();
+                }
             }
         }
     }
@@ -563,7 +752,7 @@ impl<'ctx> Evaluator<'ctx> {
             .expect(kcl_error::INTERNAL_ERROR_MSG);
         let config_value = config_value
             .dict_get_entry(name)
-            .unwrap_or(self.none_value());
+            .unwrap_or(self.undefined_value());
         if self.scope_level() >= INNER_LEVEL && !self.is_local_var(name) {
             if let Some(value) = value {
                 self.schema_dict_merge(
@@ -575,6 +764,10 @@ impl<'ctx> Evaluator<'ctx> {
                 );
             }
             self.value_union(&mut schema_value, &config_value);
+            // Set config cache for the schema eval context.
+            if let Some(schema_ctx) = self.get_schema_eval_context() {
+                schema_ctx.borrow().set_value(self, name);
+            }
         }
     }
 }

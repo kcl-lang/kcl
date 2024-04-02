@@ -25,18 +25,13 @@ pub struct Scope {
     pub variables: IndexMap<String, ValueRef>,
     /// Potential arguments in the current scope, such as schema/lambda arguments.
     pub arguments: IndexSet<String>,
-    /// Schema self denotes the scope that is belonged to a schema.
-    pub schema_ctx: Option<SchemaEvalContextRef>,
-    /// Rule self denotes the scope that is belonged to a schema.
-    pub rule_ctx: Option<RuleEvalContextRef>,
 }
 
 impl<'ctx> Evaluator<'ctx> {
     /// Init a scope named `pkgpath` with all builtin functions
     pub(crate) fn init_scope(&self, pkgpath: &str) {
         {
-            let mut ctx = self.ctx.borrow_mut();
-            let pkg_scopes = &mut ctx.pkg_scopes;
+            let pkg_scopes = &mut self.pkg_scopes.borrow_mut();
             if pkg_scopes.contains_key(pkgpath) {
                 return;
             }
@@ -82,8 +77,7 @@ impl<'ctx> Evaluator<'ctx> {
     /// Get the scope level
     pub(crate) fn scope_level(&self) -> usize {
         let current_pkgpath = self.current_pkgpath();
-        let ctx = self.ctx.borrow();
-        let pkg_scopes = &ctx.pkg_scopes;
+        let pkg_scopes = &self.pkg_scopes.borrow();
         let msg = format!("pkgpath {} is not found", current_pkgpath);
         let scopes = pkg_scopes.get(&current_pkgpath).expect(&msg);
         // Sub the builtin global scope
@@ -93,8 +87,7 @@ impl<'ctx> Evaluator<'ctx> {
     /// Enter scope
     pub(crate) fn enter_scope(&self) {
         let current_pkgpath = self.current_pkgpath();
-        let mut ctx = self.ctx.borrow_mut();
-        let pkg_scopes = &mut ctx.pkg_scopes;
+        let pkg_scopes = &mut self.pkg_scopes.borrow_mut();
         let msg = format!("pkgpath {} is not found", current_pkgpath);
         let scopes = pkg_scopes.get_mut(&current_pkgpath).expect(&msg);
         let scope = Scope::default();
@@ -104,77 +97,30 @@ impl<'ctx> Evaluator<'ctx> {
     /// Leave scope
     pub(crate) fn leave_scope(&self) {
         let current_pkgpath = self.current_pkgpath();
-        let mut ctx = self.ctx.borrow_mut();
-        let pkg_scopes = &mut ctx.pkg_scopes;
+        let pkg_scopes = &mut self.pkg_scopes.borrow_mut();
         let msg = format!("pkgpath {} is not found", current_pkgpath);
         let scopes = pkg_scopes.get_mut(&current_pkgpath).expect(&msg);
         scopes.pop();
     }
 
-    /// Enter scope with the schema eval context.
-    pub(crate) fn enter_scope_with_schema_eval_context(&self, schema_ctx: &SchemaEvalContextRef) {
-        let current_pkgpath = self.current_pkgpath();
-        let mut ctx = self.ctx.borrow_mut();
-        let pkg_scopes = &mut ctx.pkg_scopes;
-        let msg = format!("pkgpath {} is not found", current_pkgpath);
-        let scopes = pkg_scopes.get_mut(&current_pkgpath).expect(&msg);
-        let scope = Scope {
-            schema_ctx: Some(schema_ctx.clone()),
-            ..Default::default()
-        };
-        scopes.push(scope);
-    }
-
-    /// Enter scope with the schema eval context.
-    pub(crate) fn enter_scope_with_schema_rule_context(&self, rule_ctx: &RuleEvalContextRef) {
-        let current_pkgpath = self.current_pkgpath();
-        let mut ctx = self.ctx.borrow_mut();
-        let pkg_scopes = &mut ctx.pkg_scopes;
-        let msg = format!("pkgpath {} is not found", current_pkgpath);
-        let scopes = pkg_scopes.get_mut(&current_pkgpath).expect(&msg);
-        let scope = Scope {
-            rule_ctx: Some(rule_ctx.clone()),
-            ..Default::default()
-        };
-        scopes.push(scope);
-    }
-
     pub(crate) fn get_schema_eval_context(&self) -> Option<SchemaEvalContextRef> {
-        let pkgpath = self.current_pkgpath();
-        let ctx = self.ctx.borrow();
-        let pkg_scopes = &ctx.pkg_scopes;
-        // Global or local variables.
-        let scopes = pkg_scopes
-            .get(&pkgpath)
-            .unwrap_or_else(|| panic!("package {} is not found", pkgpath));
-        // Scopes 0 is builtin scope, Scopes 1 is the global scope, Scopes 2~ are the local scopes
-        let scopes_len = scopes.len();
-        for i in 0..scopes_len {
-            let index = scopes_len - i - 1;
-            if let Some(ctx) = &scopes[index].schema_ctx {
-                return Some(ctx.clone());
-            }
+        match self.schema_stack.borrow().last() {
+            Some(ctx) => match ctx {
+                crate::EvalContext::Schema(schema) => Some(schema.clone()),
+                crate::EvalContext::Rule(_) => None,
+            },
+            None => None,
         }
-        None
     }
 
     pub(crate) fn get_rule_eval_context(&self) -> Option<RuleEvalContextRef> {
-        let pkgpath = self.current_pkgpath();
-        let ctx = self.ctx.borrow();
-        let pkg_scopes = &ctx.pkg_scopes;
-        // Global or local variables.
-        let scopes = pkg_scopes
-            .get(&pkgpath)
-            .unwrap_or_else(|| panic!("package {} is not found", pkgpath));
-        // Scopes 0 is builtin scope, Scopes 1 is the global scope, Scopes 2~ are the local scopes
-        let scopes_len = scopes.len();
-        for i in 0..scopes_len {
-            let index = scopes_len - i - 1;
-            if let Some(ctx) = &scopes[index].rule_ctx {
-                return Some(ctx.clone());
-            }
+        match self.schema_stack.borrow().last() {
+            Some(ctx) => match ctx {
+                crate::EvalContext::Schema(_) => None,
+                crate::EvalContext::Rule(rule) => Some(rule.clone()),
+            },
+            None => None,
         }
-        None
     }
 
     /// Returns (value, config, config_meta)
@@ -200,8 +146,7 @@ impl<'ctx> Evaluator<'ctx> {
     /// Append a scalar value into the scope.
     pub fn add_scalar(&self, scalar: ValueRef, is_schema: bool) {
         let current_pkgpath = self.current_pkgpath();
-        let mut ctx = self.ctx.borrow_mut();
-        let pkg_scopes = &mut ctx.pkg_scopes;
+        let pkg_scopes = &mut self.pkg_scopes.borrow_mut();
         let scopes = pkg_scopes
             .get_mut(&current_pkgpath)
             .unwrap_or_else(|| panic!("pkgpath {} is not found", current_pkgpath));
@@ -226,8 +171,7 @@ impl<'ctx> Evaluator<'ctx> {
     /// Append a variable into the scope
     pub fn add_variable(&self, name: &str, pointer: ValueRef) {
         let current_pkgpath = self.current_pkgpath();
-        let mut ctx = self.ctx.borrow_mut();
-        let pkg_scopes = &mut ctx.pkg_scopes;
+        let pkg_scopes = &mut self.pkg_scopes.borrow_mut();
         let msg = format!("pkgpath {} is not found", current_pkgpath);
         let scopes = pkg_scopes.get_mut(&current_pkgpath).expect(&msg);
         if let Some(last) = scopes.last_mut() {
@@ -240,8 +184,7 @@ impl<'ctx> Evaluator<'ctx> {
     pub(crate) fn store_argument_in_current_scope(&self, name: &str) {
         // Find argument name in the scope
         let current_pkgpath = self.current_pkgpath();
-        let mut ctx = self.ctx.borrow_mut();
-        let pkg_scopes = &mut ctx.pkg_scopes;
+        let pkg_scopes = &mut self.pkg_scopes.borrow_mut();
         let msg = format!("pkgpath {} is not found", current_pkgpath);
         let scopes = pkg_scopes.get_mut(&current_pkgpath).expect(&msg);
         let index = scopes.len() - 1;
@@ -253,8 +196,7 @@ impl<'ctx> Evaluator<'ctx> {
     pub fn store_variable_in_current_scope(&self, name: &str, value: ValueRef) -> bool {
         // Find argument name in the scope
         let current_pkgpath = self.current_pkgpath();
-        let mut ctx = self.ctx.borrow_mut();
-        let pkg_scopes = &mut ctx.pkg_scopes;
+        let pkg_scopes = &mut self.pkg_scopes.borrow_mut();
         let msg = format!("pkgpath {} is not found", current_pkgpath);
         let scopes = pkg_scopes.get_mut(&current_pkgpath).expect(&msg);
         let index = scopes.len() - 1;
@@ -271,8 +213,7 @@ impl<'ctx> Evaluator<'ctx> {
     pub fn store_variable(&self, name: &str, value: ValueRef) -> bool {
         // Find argument name in the scope
         let current_pkgpath = self.current_pkgpath();
-        let mut ctx = self.ctx.borrow_mut();
-        let pkg_scopes = &mut ctx.pkg_scopes;
+        let pkg_scopes = &mut self.pkg_scopes.borrow_mut();
         let msg = format!("pkgpath {} is not found", current_pkgpath);
         let scopes = pkg_scopes.get_mut(&current_pkgpath).expect(&msg);
         for i in 0..scopes.len() {
@@ -297,8 +238,7 @@ impl<'ctx> Evaluator<'ctx> {
     pub fn resolve_variable_level(&self, name: &str) -> Option<usize> {
         // Find argument name in the scope
         let current_pkgpath = self.current_pkgpath();
-        let ctx = self.ctx.borrow();
-        let pkg_scopes = &ctx.pkg_scopes;
+        let pkg_scopes = &self.pkg_scopes.borrow();
         let msg = format!("pkgpath {} is not found", current_pkgpath);
         let scopes = pkg_scopes.get(&current_pkgpath).expect(&msg);
         let mut level = None;
@@ -322,8 +262,7 @@ impl<'ctx> Evaluator<'ctx> {
     pub fn add_or_update_local_variable(&self, name: &str, value: ValueRef) {
         let current_pkgpath = self.current_pkgpath();
         let is_local_var = self.is_local_var(name);
-        let mut ctx = self.ctx.borrow_mut();
-        let pkg_scopes = &mut ctx.pkg_scopes;
+        let pkg_scopes = &mut self.pkg_scopes.borrow_mut();
         let msg = format!("pkgpath {} is not found", current_pkgpath);
         let scopes = pkg_scopes.get_mut(&current_pkgpath).expect(&msg);
         let mut existed = false;
@@ -355,8 +294,7 @@ impl<'ctx> Evaluator<'ctx> {
     pub fn add_or_update_global_variable(&self, name: &str, value: ValueRef) {
         // Find argument name in the scope
         let current_pkgpath = self.current_pkgpath();
-        let mut ctx = self.ctx.borrow_mut();
-        let pkg_scopes = &mut ctx.pkg_scopes;
+        let pkg_scopes = &mut self.pkg_scopes.borrow_mut();
         let msg = format!("pkgpath {} is not found", current_pkgpath);
         let scopes = pkg_scopes.get_mut(&current_pkgpath).expect(&msg);
         let mut existed = false;
@@ -386,37 +324,25 @@ impl<'ctx> Evaluator<'ctx> {
     /// Get the variable value named `name` from the scope, return Err when not found
     pub fn get_variable_in_schema_or_rule(&self, name: &str) -> EvalResult {
         let pkgpath = self.current_pkgpath();
-        let ctx = self.ctx.borrow();
-        let scopes = ctx
-            .pkg_scopes
-            .get(&pkgpath)
-            .expect(kcl_error::INTERNAL_ERROR_MSG);
-        // Query the schema or rule self value in all scopes.
-        for i in 0..scopes.len() {
-            let index = scopes.len() - i - 1;
-            if let Some(schema_ctx) = &scopes[index].schema_ctx {
-                let schema_value: ValueRef = schema_ctx.borrow().value.clone();
-                return if let Some(value) = schema_value.dict_get_value(name) {
-                    Ok(value)
-                } else {
-                    self.get_variable_in_pkgpath(name, &pkgpath)
-                };
-            } else if let Some(rule_ctx) = &scopes[index].rule_ctx {
-                let rule_value: ValueRef = rule_ctx.borrow().value.clone();
-                return if let Some(value) = rule_value.dict_get_value(name) {
-                    Ok(value)
-                } else {
-                    self.get_variable_in_pkgpath(name, &pkgpath)
-                };
-            }
+        if let Some(schema_ctx) = self.get_schema_eval_context() {
+            return schema_ctx
+                .borrow()
+                .get_value(self, name, &pkgpath, &self.get_target_var());
+        } else if let Some(rule_ctx) = self.get_rule_eval_context() {
+            let rule_value: ValueRef = rule_ctx.borrow().value.clone();
+            return if let Some(value) = rule_value.dict_get_value(name) {
+                Ok(value)
+            } else {
+                self.get_variable_in_pkgpath(name, &pkgpath)
+            };
+        } else {
+            self.get_variable_in_pkgpath(name, &pkgpath)
         }
-        self.get_variable_in_pkgpath(name, &pkgpath)
     }
 
     /// Get the variable value named `name` from the scope named `pkgpath`, return Err when not found
     pub fn get_variable_in_pkgpath(&self, name: &str, pkgpath: &str) -> EvalResult {
-        let ctx = self.ctx.borrow();
-        let pkg_scopes = &ctx.pkg_scopes;
+        let pkg_scopes = self.pkg_scopes.borrow();
         let pkgpath =
             if !pkgpath.starts_with(kclvm_runtime::PKG_PATH_PREFIX) && pkgpath != MAIN_PKG_PATH {
                 format!("{}{}", kclvm_runtime::PKG_PATH_PREFIX, pkgpath)

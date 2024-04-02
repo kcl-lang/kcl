@@ -5,6 +5,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use anyhow::Ok;
+use generational_arena::Index;
 use kclvm_ast::ast::{self, CallExpr, ConfigEntry, NodeRef};
 use kclvm_ast::walker::TypedResultWalker;
 use kclvm_runtime::val_func::invoke_function;
@@ -16,7 +17,7 @@ use kclvm_runtime::{
 use kclvm_sema::{builtin, plugin};
 
 use crate::func::{func_body, FunctionCaller, FunctionEvalContext};
-use crate::lazy::EvalBodyRange;
+use crate::lazy::Setter;
 use crate::proxy::Proxy;
 use crate::rule::{rule_body, rule_check, RuleCaller, RuleEvalContext};
 use crate::schema::{schema_body, schema_check, SchemaCaller, SchemaEvalContext};
@@ -34,7 +35,6 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
      */
 
     fn walk_stmt(&self, stmt: &'ctx ast::Node<ast::Stmt>) -> Self::Result {
-        self.reset_target_vars();
         match &stmt.node {
             ast::Stmt::TypeAlias(type_alias) => self.walk_type_alias_stmt(type_alias),
             ast::Stmt::Expr(expr_stmt) => self.walk_expr_stmt(expr_stmt),
@@ -70,34 +70,28 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
         let name = &unification_stmt.target.node.names[0].node;
         self.add_target_var(name);
         // The right value of the unification_stmt is a schema_expr.
-        let value = self
-            .walk_schema_expr(&unification_stmt.value.node)
-            .expect(kcl_error::RUNTIME_ERROR_MSG);
+        let value = self.walk_schema_expr(&unification_stmt.value.node)?;
         if self.scope_level() == GLOBAL_LEVEL || self.is_in_lambda() {
             if self.resolve_variable(name) {
-                let mut org_value = self
-                    .walk_identifier_with_ctx(
-                        &unification_stmt.target.node,
-                        &ast::ExprContext::Load,
-                        None,
-                    )
-                    .expect(kcl_error::RUNTIME_ERROR_MSG);
+                let mut org_value = self.walk_identifier_with_ctx(
+                    &unification_stmt.target.node,
+                    &ast::ExprContext::Load,
+                    None,
+                )?;
                 let value = org_value.bin_aug_bit_or(&mut self.runtime_ctx.borrow_mut(), &value);
                 // Store the identifier value
                 self.walk_identifier_with_ctx(
                     &unification_stmt.target.node,
                     &ast::ExprContext::Store,
                     Some(value.clone()),
-                )
-                .expect(kcl_error::RUNTIME_ERROR_MSG);
+                )?;
                 return Ok(value.clone());
             } else {
                 self.walk_identifier_with_ctx(
                     &unification_stmt.target.node,
                     &unification_stmt.target.node.ctx,
                     Some(value.clone()),
-                )
-                .expect(kcl_error::RUNTIME_ERROR_MSG);
+                )?;
                 return Ok(value);
             }
         // Local variables including schema/rule/lambda
@@ -120,6 +114,7 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
             .expect(kcl_error::RUNTIME_ERROR_MSG);
             return Ok(value);
         }
+        self.pop_target_var();
         Ok(value)
     }
 
@@ -164,6 +159,10 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
                     .expect(kcl_error::RUNTIME_ERROR_MSG);
             }
         }
+        // Pop target vars.
+        for _ in &assign_stmt.targets {
+            self.pop_target_var();
+        }
         Ok(value)
     }
 
@@ -201,6 +200,7 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
             Some(value.clone()),
         )
         .expect(kcl_error::RUNTIME_ERROR_MSG);
+        self.pop_target_var();
         Ok(value)
     }
 
@@ -283,6 +283,7 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
         let caller = SchemaCaller {
             ctx: Rc::new(RefCell::new(SchemaEvalContext::new_with_node(
                 schema_stmt.clone(),
+                Index::from_raw_parts(self.frames.borrow().len(), 0),
             ))),
             body,
             check,
@@ -567,6 +568,11 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
                 }
             }
         }
+        // Set config cache for the schema eval context.
+        if let Some(schema_ctx) = self.get_schema_eval_context() {
+            schema_ctx.borrow().set_value(self, name);
+        }
+        self.pop_target_var();
         Ok(schema_value)
     }
 
@@ -1168,16 +1174,40 @@ impl<'ctx> Evaluator<'ctx> {
         result
     }
 
-    pub fn walk_stmts_with_range(
+    pub(crate) fn walk_schema_stmt_with_setter(
         &self,
         stmts: &'ctx [Box<ast::Node<ast::Stmt>>],
-        range: &EvalBodyRange,
+        setter: &Setter,
     ) -> EvalResult {
-        let mut result = self.ok_result();
-        if let Some(stmts) = stmts.get(range.clone()) {
-            result = self.walk_stmts(stmts);
+        if let Some(index) = setter.index {
+            let frame = {
+                let frames = self.frames.borrow();
+                frames
+                    .get(index)
+                    .expect(kcl_error::INTERNAL_ERROR_MSG)
+                    .clone()
+            };
+            if let Proxy::Schema(schema) = &frame.proxy {
+                if let Some(stmt) = schema.ctx.borrow().node.body.get(setter.stmt) {
+                    self.push_pkgpath(&frame.pkgpath);
+                    self.enter_scope();
+                    let value = self.walk_stmt(stmt);
+                    self.leave_scope();
+                    self.pop_pkgpath();
+                    value
+                } else {
+                    self.ok_result()
+                }
+            } else {
+                self.ok_result()
+            }
+        } else {
+            if let Some(stmt) = stmts.get(setter.stmt) {
+                self.walk_stmt(stmt)
+            } else {
+                self.ok_result()
+            }
         }
-        result
     }
 
     pub fn walk_identifier_with_ctx(

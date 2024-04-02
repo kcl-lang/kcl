@@ -1047,7 +1047,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
             // Schema function closures
             let list_value = self.list_values(&[
                 // is_sub_schema
-                self.bool_value(true),
+                self.bool_value(false),
                 schema_config_meta,
                 schema_config,
                 schema_value,

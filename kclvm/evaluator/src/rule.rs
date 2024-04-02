@@ -81,11 +81,6 @@ pub fn rule_body(
     args: &ValueRef,
     kwargs: &ValueRef,
 ) -> ValueRef {
-    s.push_schema();
-    s.enter_scope_with_schema_rule_context(ctx);
-    let rule_name = &ctx.borrow().node.name.node;
-    // Evaluate arguments and keyword arguments and store values to local variables.
-    s.walk_arguments(&ctx.borrow().node.args, args, kwargs);
     // Schema Value
     let rule_value = if let Some(for_host_name) = &ctx.borrow().node.for_host_name {
         let base_constructor_func = s
@@ -96,6 +91,11 @@ pub fn rule_body(
     } else {
         ctx.borrow().value.clone()
     };
+    let rule_name = &ctx.borrow().node.name.node;
+    s.push_schema(crate::EvalContext::Rule(ctx.clone()));
+    s.enter_scope();
+    // Evaluate arguments and keyword arguments and store values to local variables.
+    s.walk_arguments(&ctx.borrow().node.args, args, kwargs);
     // Eval schema body and record schema instances.
     if ctx.borrow().record_instance {
         // Rule decorators check
