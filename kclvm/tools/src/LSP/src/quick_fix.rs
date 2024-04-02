@@ -155,6 +155,7 @@ mod tests {
             module_cache: None,
             scope_cache: None,
             vfs: Some(KCLVfs::default()),
+            compile_unit_cache: None,
         })
         .unwrap();
 

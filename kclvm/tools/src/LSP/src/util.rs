@@ -19,7 +19,7 @@ use kclvm_sema::resolver::resolve_program_with_opts;
 use kclvm_sema::resolver::scope::KCLScopeCache;
 
 use crate::from_lsp;
-use crate::state::KCLVfs;
+use crate::state::{KCLCompileUnitCache, KCLVfs};
 use lsp_types::Url;
 use parking_lot::RwLockReadGuard;
 use ra_ap_vfs::{FileId, Vfs};
@@ -64,13 +64,30 @@ pub(crate) struct Params {
     pub module_cache: Option<KCLModuleCache>,
     pub scope_cache: Option<KCLScopeCache>,
     pub vfs: Option<KCLVfs>,
+    pub compile_unit_cache: Option<KCLCompileUnitCache>,
 }
 
 pub(crate) fn compile_with_params(
     params: Params,
 ) -> anyhow::Result<(Program, IndexSet<Diagnostic>, GlobalState)> {
     // Lookup compile unit (kcl.mod or kcl.yaml) from the entry file.
-    let (mut files, opt) = lookup_compile_unit(&params.file, true);
+    let (mut files, opt) = match &params.compile_unit_cache {
+        Some(cache) => {
+            let map = cache.read();
+            match map.get(&params.file) {
+                Some(compile_unit) => compile_unit.clone(),
+                None => lookup_compile_unit(&params.file, true),
+            }
+        }
+        None => lookup_compile_unit(&params.file, true),
+    };
+
+    if let Some(cache) = params.compile_unit_cache {
+        cache
+            .write()
+            .insert(params.file.clone(), (files.clone(), opt.clone()));
+    }
+
     if !files.contains(&params.file) {
         files.push(params.file.clone());
     }

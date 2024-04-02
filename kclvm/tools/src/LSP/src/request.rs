@@ -267,7 +267,8 @@ pub(crate) fn handle_reference(
     let pos = kcl_pos(&file, params.text_document_position.position);
     let log = |msg: String| log_message(msg, &sender);
     let module_cache = snapshot.module_cache.clone();
-    let scope_cache = snapshot.scope_cache.clone();
+    let _scope_cache = snapshot.scope_cache.clone();
+    let compile_unit_cache = snapshot.compile_unit_cache.clone();
     match find_refs(
         &db.prog,
         &pos,
@@ -276,8 +277,9 @@ pub(crate) fn handle_reference(
         Some(snapshot.vfs.clone()),
         log,
         &db.gs,
-        module_cache,
-        scope_cache,
+        Some(module_cache),
+        None,
+        Some(compile_unit_cache),
     ) {
         core::result::Result::Ok(locations) => Ok(Some(locations)),
         Err(msg) => {
@@ -319,9 +321,10 @@ pub(crate) fn handle_completion(
 
                     match compile_with_params(Params {
                         file: file.clone(),
-                        module_cache: snapshot.module_cache,
+                        module_cache: Some(Arc::clone(&snapshot.module_cache)),
                         scope_cache: None,
                         vfs: Some(snapshot.vfs.clone()),
+                        compile_unit_cache: Some(Arc::clone(&snapshot.compile_unit_cache)),
                     }) {
                         Ok((prog, diags, gs)) => Arc::new(AnalysisDatabase {
                             prog,
@@ -416,8 +419,9 @@ pub(crate) fn handle_rename(
         Some(snapshot.vfs.clone()),
         log,
         &db.gs,
-        snapshot.module_cache.clone(),
-        snapshot.scope_cache.clone(),
+        Some(snapshot.module_cache),
+        Some(snapshot.scope_cache),
+        Some(snapshot.compile_unit_cache),
     );
     match references {
         Result::Ok(locations) => {

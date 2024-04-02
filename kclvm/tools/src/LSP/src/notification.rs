@@ -1,3 +1,4 @@
+use kclvm_config::{modfile::KCL_MOD_FILE, settings::DEFAULT_SETTING_FILE};
 use lsp_types::notification::{
     Cancel, DidChangeTextDocument, DidChangeWatchedFiles, DidCloseTextDocument,
     DidOpenTextDocument, DidSaveTextDocument,
@@ -141,8 +142,14 @@ impl LanguageServerState {
     ) -> anyhow::Result<()> {
         for change in params.changes {
             let path = from_lsp::abs_path(&change.uri)?;
-            self.loader.handle.invalidate(path);
+            self.loader.handle.invalidate(path.clone());
+            if KCL_CONFIG_FILE.contains(&path.file_name().unwrap().to_str().unwrap()) {
+                self.compile_unit_cache.write().clear();
+            }
         }
+
         Ok(())
     }
 }
+
+const KCL_CONFIG_FILE: [&'static str; 2] = [DEFAULT_SETTING_FILE, KCL_MOD_FILE];

@@ -71,6 +71,7 @@ use crate::from_lsp::file_path_from_url;
 use crate::goto_def::goto_definition_with_gs;
 use crate::hover::hover;
 use crate::main_loop::main_loop;
+use crate::state::KCLCompileUnitCache;
 use crate::state::KCLVfs;
 use crate::to_lsp::kcl_diag_to_lsp_diags;
 use crate::util::to_json;
@@ -125,6 +126,7 @@ pub(crate) fn compile_test_file(
         module_cache: Some(KCLModuleCache::default()),
         scope_cache: Some(KCLScopeCache::default()),
         vfs: Some(KCLVfs::default()),
+        compile_unit_cache: Some(KCLCompileUnitCache::default()),
     })
     .unwrap();
     (file, program, diags, gs)
@@ -286,6 +288,7 @@ fn diagnostics_test() {
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
+        compile_unit_cache: Some(KCLCompileUnitCache::default()),
     })
     .unwrap();
 
@@ -472,6 +475,7 @@ fn complete_import_external_file_test() {
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
+        compile_unit_cache: Some(KCLCompileUnitCache::default()),
     })
     .unwrap();
 
@@ -529,6 +533,7 @@ fn goto_import_external_file_test() {
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
+        compile_unit_cache: Some(KCLCompileUnitCache::default()),
     })
     .unwrap();
 
@@ -1264,6 +1269,7 @@ fn konfig_goto_def_test_base() {
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
+        compile_unit_cache: Some(KCLCompileUnitCache::default()),
     })
     .unwrap();
 
@@ -1355,6 +1361,7 @@ fn konfig_goto_def_test_main() {
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
+        compile_unit_cache: Some(KCLCompileUnitCache::default()),
     })
     .unwrap();
 
@@ -1418,6 +1425,7 @@ fn konfig_completion_test_main() {
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
+        compile_unit_cache: Some(KCLCompileUnitCache::default()),
     })
     .unwrap();
 
@@ -1527,6 +1535,7 @@ fn konfig_hover_test_main() {
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
+        compile_unit_cache: Some(KCLCompileUnitCache::default()),
     })
     .unwrap();
 
@@ -1952,6 +1961,7 @@ fn compile_unit_test() {
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
+        compile_unit_cache: Some(KCLCompileUnitCache::default()),
     })
     .unwrap();
     // b.k is not contained in kcl.yaml but need to be contained in main pkg
