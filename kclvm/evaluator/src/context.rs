@@ -14,7 +14,8 @@ use crate::{
 };
 
 pub struct EvaluatorContext {
-    /// Error handler to store compile errors.
+    /// TODO: Error handler to store runtime errors with filename
+    /// and line information.
     pub handler: Handler,
     /// Program work directory
     pub workdir: String,

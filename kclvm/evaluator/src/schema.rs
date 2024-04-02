@@ -24,7 +24,7 @@ pub type SchemaEvalContextRef = Rc<RefCell<SchemaEvalContext>>;
 /// rather than executing KCL defined functions or plugin functions.
 #[derive(Clone, Debug)]
 pub struct SchemaEvalContext {
-    pub node: ast::SchemaStmt,
+    pub node: Rc<ast::SchemaStmt>,
     pub scope: Option<LazyEvalScopeRef>,
     pub index: Index,
     pub value: ValueRef,
@@ -32,14 +32,13 @@ pub struct SchemaEvalContext {
     pub config_meta: ValueRef,
     pub optional_mapping: ValueRef,
     pub is_sub_schema: bool,
-    pub record_instance: bool,
 }
 
 impl SchemaEvalContext {
     #[inline]
     pub fn new_with_node(node: ast::SchemaStmt, index: Index) -> Self {
         SchemaEvalContext {
-            node,
+            node: Rc::new(node),
             scope: None,
             index,
             value: ValueRef::dict(None),
@@ -47,7 +46,6 @@ impl SchemaEvalContext {
             config_meta: ValueRef::dict(None),
             optional_mapping: ValueRef::dict(None),
             is_sub_schema: true,
-            record_instance: true,
         }
     }
 
@@ -58,7 +56,6 @@ impl SchemaEvalContext {
         self.value = ValueRef::dict(None);
         self.optional_mapping = ValueRef::dict(None);
         self.is_sub_schema = true;
-        self.record_instance = true;
         // Clear lazy eval scope.
         if let Some(scope) = &self.scope {
             let mut scope = scope.borrow_mut();
@@ -75,7 +72,6 @@ impl SchemaEvalContext {
         self.config_meta = other.config_meta.clone();
         self.value = other.value.clone();
         self.optional_mapping = other.optional_mapping.clone();
-        self.record_instance = other.record_instance;
         self.is_sub_schema = false;
         // Set lazy eval scope.
         if let Some(scope) = &self.scope {
@@ -97,7 +93,6 @@ impl SchemaEvalContext {
         self.config_meta = other.config_meta.clone();
         self.value = other.value.clone();
         self.optional_mapping = other.optional_mapping.clone();
-        self.record_instance = other.record_instance;
         // Note that for the host schema, it will evaluate the final value.
         self.is_sub_schema = true;
     }
@@ -376,15 +371,19 @@ pub(crate) fn schema_body(
     // Evaluate arguments and keyword arguments and store values to local variables.
     s.walk_arguments(&ctx.borrow().node.args, args, kwargs);
     // Eval schema body and record schema instances.
-    let record_instance = { ctx.borrow().record_instance };
-    if record_instance {
+    {
         let schema_pkgpath = &s.current_pkgpath();
+        // To prevent schema recursive calling, thus clone the AST here.
+        let node = {
+            let ctx = ctx.borrow();
+            ctx.node.clone()
+        };
         // Run schema compiled function
-        for stmt in &ctx.borrow().node.body {
+        for stmt in &node.body {
             s.walk_stmt(stmt).expect(kcl_error::RUNTIME_ERROR_MSG);
         }
         // Schema decorators check
-        for decorator in &ctx.borrow().node.decorators {
+        for decorator in &node.decorators {
             s.walk_decorator_with_name(&decorator.node, Some(&schema_name), true)
                 .expect(kcl_error::RUNTIME_ERROR_MSG);
         }
@@ -490,12 +489,11 @@ pub(crate) fn schema_with_config(
     let runtime_type = schema_runtime_type(&name, &pkgpath);
     // Instance package path is the last frame calling package path.
     let instance_pkgpath = s.last_pkgpath();
-    let record_instance = { ctx.borrow().record_instance };
     // Currently, `MySchema.instances()` it is only valid for files in the main package to
     // avoid unexpected non idempotent calls. For example, I instantiated a MySchema in pkg1,
     // but the length of the list returned by calling the instances method in other packages
     // is uncertain.
-    if record_instance && (instance_pkgpath.is_empty() || instance_pkgpath == MAIN_PKG_PATH) {
+    if instance_pkgpath.is_empty() || instance_pkgpath == MAIN_PKG_PATH {
         let mut ctx = s.runtime_ctx.borrow_mut();
         // Record schema instance in the context
         if !ctx.instances.contains_key(&runtime_type) {

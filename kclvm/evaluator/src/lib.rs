@@ -23,6 +23,7 @@ extern crate kclvm_error;
 use context::EvaluatorContext;
 use generational_arena::{Arena, Index};
 use indexmap::IndexMap;
+use lazy::BacktrackMeta;
 use proxy::{Frame, Proxy};
 use rule::RuleEvalContextRef;
 use schema::SchemaEvalContextRef;
@@ -75,6 +76,8 @@ pub struct Evaluator<'ctx> {
     pub local_vars: RefCell<HashSet<String>>,
     /// The line number of the source file corresponding to the current instruction
     pub current_line: RefCell<u64>,
+    /// Schema attr backtrack meta
+    pub backtrack_meta: RefCell<Option<BacktrackMeta>>,
 }
 
 pub enum EvalContext {
@@ -112,6 +115,7 @@ impl<'ctx> Evaluator<'ctx> {
             pkg_scopes: RefCell::new(Default::default()),
             local_vars: RefCell::new(Default::default()),
             current_line: RefCell::new(Default::default()),
+            backtrack_meta: RefCell::new(None),
         }
     }
 

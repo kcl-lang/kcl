@@ -152,7 +152,6 @@ impl<'ctx> Evaluator<'ctx> {
             .unwrap_or_else(|| panic!("pkgpath {} is not found", current_pkgpath));
         if let Some(last) = scopes.last_mut() {
             let scalars = &mut last.scalars;
-            // TODO: To avoid conflicts, only the last schema scalar expressions are allowed.
             let schema_scalar_idx = &mut last.schema_scalar_idx;
             if is_schema {
                 // Remove the last schema scalar.

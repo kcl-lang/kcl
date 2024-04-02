@@ -80,9 +80,18 @@ pub(crate) fn merge_setters(
     }
 }
 
+/// TODO: Schema or Global internal order independent computation
+/// backtracking meta information.
+pub struct BacktrackMeta {
+    pub target: String,
+    pub level: usize,
+    pub count: usize,
+    pub stop: bool,
+}
+
 impl<'ctx> Evaluator<'ctx> {
     /// Emit setter functions for the AST body.
-    /// TODO: Separate if statements with the same targets, such as
+    /// TODO: Separate if statements with the same targets using the backtrack meta, such as
     /// ```no_check
     /// a = 1
     /// if True:
