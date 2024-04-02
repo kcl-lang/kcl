@@ -16,7 +16,7 @@ use lsp_types::{
     Diagnostic, InitializeParams, Location, PublishDiagnosticsParams,
 };
 use parking_lot::RwLock;
-use ra_ap_vfs::{FileId, Vfs};
+use ra_ap_vfs::{ChangeKind, FileId, Vfs};
 use std::collections::HashMap;
 use std::sync::Mutex;
 use std::thread;
@@ -213,81 +213,108 @@ impl LanguageServerState {
 
         // Construct an AnalysisChange to apply to the analysis
         for file in changed_files {
-            let filename = get_file_name(self.vfs.read(), file.file_id);
-            let version = *self.opened_files.read().get(&file.file_id).unwrap();
-            match filename {
-                Ok(filename) => {
-                    self.thread_pool.execute({
-                        let mut snapshot = self.snapshot();
-                        let sender = self.task_sender.clone();
-                        let module_cache = self.module_cache.clone();
-                        let scope_cache = self.scope_cache.clone();
-                        move || match url(&snapshot, file.file_id) {
-                            Ok(uri) => {
-                                let mut db = snapshot.db.write();
-                                match compile_with_params(Params {
-                                    file: filename.clone(),
-                                    module_cache,
-                                    scope_cache: None,
-                                    vfs: Some(snapshot.vfs),
-                                }) {
-                                    Ok((prog, diags, gs)) => {
-                                        let current_version = *snapshot
-                                            .opened_files
-                                            .read()
-                                            .get(&file.file_id)
-                                            .unwrap();
+            match file.change_kind {
+                ChangeKind::Create | ChangeKind::Modify => {
+                    let filename = get_file_name(self.vfs.read(), file.file_id);
+                    let version = self.opened_files.read().get(&file.file_id).cloned();
+                    match filename {
+                        Ok(filename) => {
+                            self.thread_pool.execute({
+                                let mut snapshot = self.snapshot();
+                                let sender = self.task_sender.clone();
+                                let module_cache = self.module_cache.clone();
+                                let scope_cache = self.scope_cache.clone();
+                                move || match url(&snapshot, file.file_id) {
+                                    Ok(uri) => {
+                                        let mut db = snapshot.db.write();
+                                        match compile_with_params(Params {
+                                            file: filename.clone(),
+                                            module_cache,
+                                            scope_cache: None,
+                                            vfs: Some(snapshot.vfs),
+                                        }) {
+                                            Ok((prog, diags, gs)) => {
+                                                let current_version = snapshot
+                                                    .opened_files
+                                                    .read()
+                                                    .get(&file.file_id)
+                                                    .cloned();
+                                                match (version, current_version) {
+                                                    (Some(version), Some(current_version)) => {
+                                                        // If the text is updated during compilation(current_version > version), the current compilation result will not be output.
+                                                        if current_version == version {
+                                                            db.insert(
+                                                                file.file_id,
+                                                                Arc::new(AnalysisDatabase {
+                                                                    prog,
+                                                                    diags: diags.clone(),
+                                                                    gs,
+                                                                    version,
+                                                                }),
+                                                            );
 
-                                        // If the text is updated during compilation, the current compilation result will not be output.
-                                        if current_version == version {
-                                            db.insert(
-                                                file.file_id,
-                                                Arc::new(AnalysisDatabase {
-                                                    prog,
-                                                    diags: diags.clone(),
-                                                    gs,
-                                                    version,
-                                                }),
-                                            );
-
-                                            let diagnostics = diags
-                                                .iter()
-                                                .flat_map(|diag| {
-                                                    kcl_diag_to_lsp_diags(diag, filename.as_str())
-                                                })
-                                                .collect::<Vec<Diagnostic>>();
-                                            sender.send(Task::Notify(lsp_server::Notification {
-                                                method: PublishDiagnostics::METHOD.to_owned(),
-                                                params: to_json(PublishDiagnosticsParams {
-                                                    uri,
-                                                    diagnostics,
-                                                    version: None,
-                                                })
-                                                .unwrap(),
-                                            }));
+                                                            let diagnostics = diags
+                                                                .iter()
+                                                                .flat_map(|diag| {
+                                                                    kcl_diag_to_lsp_diags(
+                                                                        diag,
+                                                                        filename.as_str(),
+                                                                    )
+                                                                })
+                                                                .collect::<Vec<Diagnostic>>();
+                                                            sender.send(Task::Notify(
+                                                                lsp_server::Notification {
+                                                                    method:
+                                                                        PublishDiagnostics::METHOD
+                                                                            .to_owned(),
+                                                                    params: to_json(
+                                                                        PublishDiagnosticsParams {
+                                                                            uri,
+                                                                            diagnostics,
+                                                                            version: None,
+                                                                        },
+                                                                    )
+                                                                    .unwrap(),
+                                                                },
+                                                            ));
+                                                        }
+                                                    }
+                                                    _ => {}
+                                                }
+                                            }
+                                            Err(err) => {
+                                                db.remove(&file.file_id);
+                                                log_message(
+                                                    format!(
+                                                        "Compile failed: {:?}",
+                                                        err.to_string()
+                                                    ),
+                                                    &sender,
+                                                );
+                                            }
                                         }
                                     }
-                                    Err(err) => {
-                                        db.remove(&file.file_id);
+                                    Err(_) => {
                                         log_message(
-                                            format!("Compile failed: {:?}", err.to_string()),
+                                            format!(
+                                                "Internal bug: not a valid file:{:?}",
+                                                filename
+                                            ),
                                             &sender,
                                         );
                                     }
                                 }
-                            }
-                            Err(_) => {
-                                log_message(
-                                    format!("Internal bug: not a valid file:{:?}", filename),
-                                    &sender,
-                                );
-                            }
+                            });
                         }
-                    });
+                        Err(_) => {
+                            self.log_message(format!("{:?} not found", file.file_id));
+                            continue;
+                        }
+                    }
                 }
-                Err(_) => {
-                    self.log_message(format!("{:?} not found", file.file_id));
-                    continue;
+                ChangeKind::Delete => {
+                    let mut db = self.analysis.db.write();
+                    db.remove(&file.file_id);
                 }
             }
         }

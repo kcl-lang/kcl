@@ -138,7 +138,7 @@ impl LanguageServerSnapshot {
 
     fn verify_request_version(
         &self,
-        pre_version: DocumentVersion,
+        db_version: DocumentVersion,
         path: &AbsPathBuf,
     ) -> anyhow::Result<bool> {
         let file_id = self
@@ -147,10 +147,11 @@ impl LanguageServerSnapshot {
             .file_id(&path.clone().into())
             .ok_or_else(|| anyhow::anyhow!(LSPError::FileIdNotFound(path.clone().into())))?;
 
-        let request_version = *self.opened_files.read().get(&file_id).ok_or_else(|| {
+        let current_version = *self.opened_files.read().get(&file_id).ok_or_else(|| {
             anyhow::anyhow!(LSPError::DocumentVersionNotFound(path.clone().into()))
         })?;
-        return Ok(pre_version == request_version);
+
+        return Ok(db_version == current_version);
     }
 }
 
