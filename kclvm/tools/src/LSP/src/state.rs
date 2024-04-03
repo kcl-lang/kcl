@@ -8,7 +8,7 @@ use crate::word_index::build_word_index;
 use anyhow::Result;
 use crossbeam_channel::{select, unbounded, Receiver, Sender};
 use kclvm_parser::{KCLModuleCache, LoadProgramOptions};
-use kclvm_sema::resolver::scope::{CachedScope, KCLScopeCache};
+use kclvm_sema::resolver::scope::KCLScopeCache;
 use lsp_server::{ReqQueue, Request, Response};
 use lsp_types::Url;
 use lsp_types::{
@@ -18,7 +18,6 @@ use lsp_types::{
 use parking_lot::RwLock;
 use ra_ap_vfs::{ChangeKind, ChangedFile, FileId, Vfs};
 use std::collections::HashMap;
-use std::sync::Mutex;
 use std::thread;
 use std::time::Duration;
 use std::{sync::Arc, time::Instant};
@@ -149,8 +148,8 @@ impl LanguageServerState {
             word_index_map: Arc::new(RwLock::new(HashMap::new())),
             loader,
             module_cache: KCLModuleCache::default(),
-            scope_cache: Arc::new(Mutex::new(CachedScope::default())),
-            compile_unit_cache: Arc::new(RwLock::new(HashMap::default())),
+            scope_cache: KCLScopeCache::default(),
+            compile_unit_cache: KCLCompileUnitCache::default(),
         };
 
         let word_index_map = state.word_index_map.clone();
