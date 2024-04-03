@@ -22,7 +22,6 @@ use crate::{
     hover, quick_fix,
     semantic_token::semantic_tokens_full,
     state::{log_message, LanguageServerSnapshot, LanguageServerState, Task},
-    util::{compile_with_params, Params},
 };
 
 impl LanguageServerState {
@@ -307,39 +306,7 @@ pub(crate) fn handle_completion(
         .and_then(|ctx| ctx.trigger_character)
         .and_then(|s| s.chars().next());
 
-    let db =
-        match completion_trigger_character {
-            // Some trigger characters need to re-compile
-            Some(ch) => match ch {
-                '=' | ':' => {
-                    let file_id = snapshot.vfs.read().file_id(&path.clone().into()).ok_or(
-                        anyhow::anyhow!(LSPError::FileIdNotFound(path.clone().into())),
-                    )?;
-                    let version = *snapshot.opened_files.read().get(&file_id).ok_or_else(|| {
-                        anyhow::anyhow!(LSPError::DocumentVersionNotFound(path.clone().into()))
-                    })?;
-
-                    match compile_with_params(Params {
-                        file: file.clone(),
-                        module_cache: Some(Arc::clone(&snapshot.module_cache)),
-                        scope_cache: None,
-                        vfs: Some(snapshot.vfs.clone()),
-                        compile_unit_cache: Some(Arc::clone(&snapshot.compile_unit_cache)),
-                    }) {
-                        Ok((prog, diags, gs)) => Arc::new(AnalysisDatabase {
-                            prog,
-                            diags,
-                            gs,
-                            version,
-                        }),
-                        Err(_) => return Ok(None),
-                    }
-                }
-                _ => snapshot.get_db(&path.clone().into())?,
-            },
-
-            None => snapshot.get_db(&path.clone().into())?,
-        };
+    let db = snapshot.get_db(&path.clone().into())?;
 
     let res = completion(completion_trigger_character, &db.prog, &kcl_pos, &db.gs);
 

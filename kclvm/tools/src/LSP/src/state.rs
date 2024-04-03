@@ -247,7 +247,7 @@ impl LanguageServerState {
                                     match compile_with_params(Params {
                                         file: filename.clone(),
                                         module_cache: Some(module_cache),
-                                        scope_cache: None,
+                                        scope_cache: Some(scope_cache),
                                         vfs: Some(snapshot.vfs),
                                         compile_unit_cache: Some(compile_unit_cache),
                                     }) {
