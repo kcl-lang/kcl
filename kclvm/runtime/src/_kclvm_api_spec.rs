@@ -1007,16 +1007,16 @@
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_print(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 // api-spec:       kclvm_builtin_len
-// api-spec(c):    kclvm_value_ref_t* kclvm_builtin_len(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
-// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_len(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+// api-spec(c):    kclvm_value_ref_t* kclvm_builtin_len(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_len(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 // api-spec:       kclvm_builtin_any_true
 // api-spec(c):    kclvm_value_ref_t* kclvm_builtin_any_true(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_any_true(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 // api-spec:       kclvm_builtin_isunique
-// api-spec(c):    kclvm_value_ref_t* kclvm_builtin_isunique(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
-// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_isunique(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+// api-spec(c):    kclvm_value_ref_t* kclvm_builtin_isunique(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_isunique(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 // api-spec:       kclvm_builtin_sorted
 // api-spec(c):    kclvm_value_ref_t* kclvm_builtin_sorted(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
@@ -1031,12 +1031,12 @@
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_float(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 // api-spec:       kclvm_builtin_bool
-// api-spec(c):    kclvm_value_ref_t* kclvm_builtin_bool(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
-// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_bool(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+// api-spec(c):    kclvm_value_ref_t* kclvm_builtin_bool(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_bool(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 // api-spec:       kclvm_builtin_str
-// api-spec(c):    kclvm_value_ref_t* kclvm_builtin_str(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
-// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_str(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+// api-spec(c):    kclvm_value_ref_t* kclvm_builtin_str(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_str(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 // api-spec:       kclvm_builtin_max
 // api-spec(c):    kclvm_value_ref_t* kclvm_builtin_max(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
@@ -1047,40 +1047,40 @@
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_min(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
 
 // api-spec:       kclvm_builtin_multiplyof
-// api-spec(c):    kclvm_value_ref_t* kclvm_builtin_multiplyof(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
-// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_multiplyof(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+// api-spec(c):    kclvm_value_ref_t* kclvm_builtin_multiplyof(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_multiplyof(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 // api-spec:       kclvm_builtin_abs
-// api-spec(c):    kclvm_value_ref_t* kclvm_builtin_abs(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
-// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_abs(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+// api-spec(c):    kclvm_value_ref_t* kclvm_builtin_abs(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_abs(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 // api-spec:       kclvm_builtin_all_true
-// api-spec(c):    kclvm_value_ref_t* kclvm_builtin_all_true(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
-// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_all_true(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+// api-spec(c):    kclvm_value_ref_t* kclvm_builtin_all_true(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_all_true(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 // api-spec:       kclvm_builtin_hex
-// api-spec(c):    kclvm_value_ref_t* kclvm_builtin_hex(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
-// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_hex(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+// api-spec(c):    kclvm_value_ref_t* kclvm_builtin_hex(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_hex(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 // api-spec:       kclvm_builtin_sum
-// api-spec(c):    kclvm_value_ref_t* kclvm_builtin_sum(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
-// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_sum(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+// api-spec(c):    kclvm_value_ref_t* kclvm_builtin_sum(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_sum(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 // api-spec:       kclvm_builtin_pow
-// api-spec(c):    kclvm_value_ref_t* kclvm_builtin_pow(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
-// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_pow(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+// api-spec(c):    kclvm_value_ref_t* kclvm_builtin_pow(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_pow(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 // api-spec:       kclvm_builtin_round
-// api-spec(c):    kclvm_value_ref_t* kclvm_builtin_round(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
-// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_round(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+// api-spec(c):    kclvm_value_ref_t* kclvm_builtin_round(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_round(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 // api-spec:       kclvm_builtin_zip
 // api-spec(c):    kclvm_value_ref_t* kclvm_builtin_zip(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_zip(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
 
 // api-spec:       kclvm_builtin_list
-// api-spec(c):    kclvm_value_ref_t* kclvm_builtin_list(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
-// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_list(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+// api-spec(c):    kclvm_value_ref_t* kclvm_builtin_list(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_list(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 // api-spec:       kclvm_builtin_dict
 // api-spec(c):    kclvm_value_ref_t* kclvm_builtin_dict(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
@@ -1091,20 +1091,20 @@
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_typeof(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 // api-spec:       kclvm_builtin_bin
-// api-spec(c):    kclvm_value_ref_t* kclvm_builtin_bin(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
-// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_bin(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+// api-spec(c):    kclvm_value_ref_t* kclvm_builtin_bin(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_bin(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 // api-spec:       kclvm_builtin_oct
-// api-spec(c):    kclvm_value_ref_t* kclvm_builtin_oct(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
-// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_oct(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+// api-spec(c):    kclvm_value_ref_t* kclvm_builtin_oct(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_oct(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 // api-spec:       kclvm_builtin_ord
-// api-spec(c):    kclvm_value_ref_t* kclvm_builtin_ord(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
-// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_ord(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+// api-spec(c):    kclvm_value_ref_t* kclvm_builtin_ord(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_ord(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 // api-spec:       kclvm_builtin_range
-// api-spec(c):    kclvm_value_ref_t* kclvm_builtin_range(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
-// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_range(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+// api-spec(c):    kclvm_value_ref_t* kclvm_builtin_range(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_range(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 // api-spec:       kclvm_plugin_init
 // api-spec(c):    void kclvm_plugin_init(void* fn_ptr);
@@ -1221,4 +1221,12 @@
 // api-spec:       kclvm_file_abs
 // api-spec(c):    kclvm_value_ref_t* kclvm_file_abs(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_file_abs(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
+
+// api-spec:       kclvm_template_execute
+// api-spec(c):    kclvm_value_ref_t* kclvm_template_execute(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_template_execute(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
+
+// api-spec:       kclvm_template_html_escape
+// api-spec(c):    kclvm_value_ref_t* kclvm_template_html_escape(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_template_html_escape(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 

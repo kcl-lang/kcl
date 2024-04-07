@@ -36,37 +36,37 @@ declare %kclvm_value_ref_t* @kclvm_base64_decode(%kclvm_context_t* %ctx, %kclvm_
 
 declare %kclvm_value_ref_t* @kclvm_base64_encode(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
 
-declare %kclvm_value_ref_t* @kclvm_builtin_abs(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+declare %kclvm_value_ref_t* @kclvm_builtin_abs(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
-declare %kclvm_value_ref_t* @kclvm_builtin_all_true(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+declare %kclvm_value_ref_t* @kclvm_builtin_all_true(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 declare %kclvm_value_ref_t* @kclvm_builtin_any_true(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
-declare %kclvm_value_ref_t* @kclvm_builtin_bin(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+declare %kclvm_value_ref_t* @kclvm_builtin_bin(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
-declare %kclvm_value_ref_t* @kclvm_builtin_bool(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+declare %kclvm_value_ref_t* @kclvm_builtin_bool(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 declare %kclvm_value_ref_t* @kclvm_builtin_dict(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 declare %kclvm_value_ref_t* @kclvm_builtin_float(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
-declare %kclvm_value_ref_t* @kclvm_builtin_hex(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+declare %kclvm_value_ref_t* @kclvm_builtin_hex(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 declare %kclvm_value_ref_t* @kclvm_builtin_int(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
-declare %kclvm_value_ref_t* @kclvm_builtin_isunique(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+declare %kclvm_value_ref_t* @kclvm_builtin_isunique(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
-declare %kclvm_value_ref_t* @kclvm_builtin_len(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+declare %kclvm_value_ref_t* @kclvm_builtin_len(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
-declare %kclvm_value_ref_t* @kclvm_builtin_list(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+declare %kclvm_value_ref_t* @kclvm_builtin_list(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 declare %kclvm_value_ref_t* @kclvm_builtin_max(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
 
 declare %kclvm_value_ref_t* @kclvm_builtin_min(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
 
-declare %kclvm_value_ref_t* @kclvm_builtin_multiplyof(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+declare %kclvm_value_ref_t* @kclvm_builtin_multiplyof(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
-declare %kclvm_value_ref_t* @kclvm_builtin_oct(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+declare %kclvm_value_ref_t* @kclvm_builtin_oct(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 declare %kclvm_value_ref_t* @kclvm_builtin_option(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
@@ -74,19 +74,19 @@ declare void @kclvm_builtin_option_init(%kclvm_context_t* %ctx, i8* %key, i8* %v
 
 declare %kclvm_value_ref_t* @kclvm_builtin_option_reset(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %_args, %kclvm_value_ref_t* %_kwargs);
 
-declare %kclvm_value_ref_t* @kclvm_builtin_ord(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+declare %kclvm_value_ref_t* @kclvm_builtin_ord(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
-declare %kclvm_value_ref_t* @kclvm_builtin_pow(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+declare %kclvm_value_ref_t* @kclvm_builtin_pow(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 declare %kclvm_value_ref_t* @kclvm_builtin_print(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
-declare %kclvm_value_ref_t* @kclvm_builtin_range(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+declare %kclvm_value_ref_t* @kclvm_builtin_range(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
-declare %kclvm_value_ref_t* @kclvm_builtin_round(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+declare %kclvm_value_ref_t* @kclvm_builtin_round(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 declare %kclvm_value_ref_t* @kclvm_builtin_sorted(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
-declare %kclvm_value_ref_t* @kclvm_builtin_str(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+declare %kclvm_value_ref_t* @kclvm_builtin_str(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 declare %kclvm_value_ref_t* @kclvm_builtin_str_capitalize(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
 
@@ -146,7 +146,7 @@ declare %kclvm_value_ref_t* @kclvm_builtin_str_title(%kclvm_context_t* %ctx, %kc
 
 declare %kclvm_value_ref_t* @kclvm_builtin_str_upper(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
 
-declare %kclvm_value_ref_t* @kclvm_builtin_sum(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+declare %kclvm_value_ref_t* @kclvm_builtin_sum(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 declare %kclvm_value_ref_t* @kclvm_builtin_typeof(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
@@ -429,6 +429,10 @@ declare %kclvm_value_ref_t* @kclvm_scope_get(%kclvm_context_t* %ctx, %kclvm_eval
 declare %kclvm_eval_scope_t* @kclvm_scope_new();
 
 declare void @kclvm_scope_set(%kclvm_context_t* %_ctx, %kclvm_eval_scope_t* %scope, i8* %pkg, i8* %name, %kclvm_value_ref_t* %value);
+
+declare %kclvm_value_ref_t* @kclvm_template_execute(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
+
+declare %kclvm_value_ref_t* @kclvm_template_html_escape(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 declare %kclvm_value_ref_t* @kclvm_units_to_G(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
 
