@@ -17,6 +17,8 @@ use lsp_types::CompletionResponse;
 use lsp_types::CompletionTriggerKind;
 use lsp_types::DocumentFormattingParams;
 use lsp_types::DocumentSymbolParams;
+use lsp_types::FileChangeType;
+use lsp_types::FileEvent;
 use lsp_types::GotoDefinitionParams;
 use lsp_types::GotoDefinitionResponse;
 use lsp_types::Hover;
@@ -45,8 +47,10 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 
+use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
+use std::time::Instant;
 
 use kclvm_ast::ast::Program;
 use kclvm_error::Diagnostic as KCLDiagnostic;
@@ -71,8 +75,10 @@ use crate::from_lsp::file_path_from_url;
 use crate::goto_def::goto_definition_with_gs;
 use crate::hover::hover;
 use crate::main_loop::main_loop;
+use crate::state::KCLCompileUnitCache;
 use crate::state::KCLVfs;
 use crate::to_lsp::kcl_diag_to_lsp_diags;
+use crate::util::compile_unit_with_cache;
 use crate::util::to_json;
 use crate::util::{apply_document_changes, compile_with_params, Params};
 
@@ -125,6 +131,7 @@ pub(crate) fn compile_test_file(
         module_cache: Some(KCLModuleCache::default()),
         scope_cache: Some(KCLScopeCache::default()),
         vfs: Some(KCLVfs::default()),
+        compile_unit_cache: Some(KCLCompileUnitCache::default()),
     })
     .unwrap();
     (file, program, diags, gs)
@@ -286,6 +293,7 @@ fn diagnostics_test() {
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
+        compile_unit_cache: Some(KCLCompileUnitCache::default()),
     })
     .unwrap();
 
@@ -472,6 +480,7 @@ fn complete_import_external_file_test() {
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
+        compile_unit_cache: Some(KCLCompileUnitCache::default()),
     })
     .unwrap();
 
@@ -529,6 +538,7 @@ fn goto_import_external_file_test() {
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
+        compile_unit_cache: Some(KCLCompileUnitCache::default()),
     })
     .unwrap();
 
@@ -875,6 +885,125 @@ fn cancel_test() {
     });
 
     assert!(server.receive_response(id.into()).is_none());
+}
+
+#[test]
+fn compile_unit_cache_test() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let mut path = root.clone();
+    path.push("src/test_data/compile_unit/b.k");
+
+    let path = path.to_str().unwrap();
+
+    let compile_unit_cache = KCLCompileUnitCache::default();
+    let start = Instant::now();
+    let _ = compile_unit_with_cache(&Some(Arc::clone(&compile_unit_cache)), &path.to_string());
+    let first_compile_time = start.elapsed();
+
+    let start = Instant::now();
+    let _ = compile_unit_with_cache(&Some(compile_unit_cache), &path.to_string());
+    let second_compile_time = start.elapsed();
+
+    assert!(first_compile_time > second_compile_time);
+}
+
+#[test]
+fn compile_unit_cache_e2e_test() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let mut path = root.clone();
+    let mut kcl_yaml = root.clone();
+    path.push("src/test_data/compile_unit/b.k");
+    kcl_yaml.push("src/test_data/compile_unit/kcl.yaml");
+
+    let path = path.to_str().unwrap();
+
+    let kcl_yaml = kcl_yaml.to_str().unwrap();
+    let src = std::fs::read_to_string(path).unwrap();
+    let server = Project {}.server(InitializeParams::default());
+
+    // Mock open file
+    server.notification::<lsp_types::notification::DidOpenTextDocument>(
+        lsp_types::DidOpenTextDocumentParams {
+            text_document: TextDocumentItem {
+                uri: Url::from_file_path(path).unwrap(),
+                language_id: "KCL".to_string(),
+                version: 0,
+                text: src,
+            },
+        },
+    );
+
+    let id = server.next_request_id.get();
+    server.next_request_id.set(id.wrapping_add(1));
+
+    let r: Request = Request::new(
+        id.into(),
+        "textDocument/documentSymbol".to_string(),
+        DocumentSymbolParams {
+            text_document: TextDocumentIdentifier {
+                uri: Url::from_file_path(path).unwrap(),
+            },
+            work_done_progress_params: Default::default(),
+            partial_result_params: Default::default(),
+        },
+    );
+
+    // First time send request and wait for it's response
+    let start = Instant::now();
+    let _ = server.send_and_receive(r);
+    let first_compile_time = start.elapsed();
+
+    let id = server.next_request_id.get();
+    server.next_request_id.set(id.wrapping_add(1));
+
+    // Second time send request and wait for it's response
+    let r: Request = Request::new(
+        id.into(),
+        "textDocument/documentSymbol".to_string(),
+        DocumentSymbolParams {
+            text_document: TextDocumentIdentifier {
+                uri: Url::from_file_path(path).unwrap(),
+            },
+            work_done_progress_params: Default::default(),
+            partial_result_params: Default::default(),
+        },
+    );
+
+    let start = Instant::now();
+    let _ = server.send_and_receive(r);
+    let second_compile_time = start.elapsed();
+    assert!(first_compile_time > second_compile_time);
+
+    // Mock edit config file, clear cache
+    server.notification::<lsp_types::notification::DidChangeWatchedFiles>(
+        lsp_types::DidChangeWatchedFilesParams {
+            changes: vec![FileEvent {
+                uri: Url::from_file_path(kcl_yaml).unwrap(),
+                typ: FileChangeType::CHANGED,
+            }],
+        },
+    );
+
+    let id = server.next_request_id.get();
+    server.next_request_id.set(id.wrapping_add(1));
+
+    // Third time send request and wait for it's response
+    let r: Request = Request::new(
+        id.into(),
+        "textDocument/documentSymbol".to_string(),
+        DocumentSymbolParams {
+            text_document: TextDocumentIdentifier {
+                uri: Url::from_file_path(path).unwrap(),
+            },
+            work_done_progress_params: Default::default(),
+            partial_result_params: Default::default(),
+        },
+    );
+
+    let start = Instant::now();
+    let _ = server.send_and_receive(r);
+    let third_compile_time = start.elapsed();
+    assert!(third_compile_time > second_compile_time);
 }
 
 #[test]
@@ -1264,6 +1393,7 @@ fn konfig_goto_def_test_base() {
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
+        compile_unit_cache: Some(KCLCompileUnitCache::default()),
     })
     .unwrap();
 
@@ -1355,6 +1485,7 @@ fn konfig_goto_def_test_main() {
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
+        compile_unit_cache: Some(KCLCompileUnitCache::default()),
     })
     .unwrap();
 
@@ -1418,6 +1549,7 @@ fn konfig_completion_test_main() {
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
+        compile_unit_cache: Some(KCLCompileUnitCache::default()),
     })
     .unwrap();
 
@@ -1527,6 +1659,7 @@ fn konfig_hover_test_main() {
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
+        compile_unit_cache: Some(KCLCompileUnitCache::default()),
     })
     .unwrap();
 
@@ -1952,6 +2085,7 @@ fn compile_unit_test() {
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
+        compile_unit_cache: Some(KCLCompileUnitCache::default()),
     })
     .unwrap();
     // b.k is not contained in kcl.yaml but need to be contained in main pkg

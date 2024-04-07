@@ -7,8 +7,8 @@ use crate::util::{compile_with_params, get_file_name, to_json, Params};
 use crate::word_index::build_word_index;
 use anyhow::Result;
 use crossbeam_channel::{select, unbounded, Receiver, Sender};
-use kclvm_parser::KCLModuleCache;
-use kclvm_sema::resolver::scope::{CachedScope, KCLScopeCache};
+use kclvm_parser::{KCLModuleCache, LoadProgramOptions};
+use kclvm_sema::resolver::scope::KCLScopeCache;
 use lsp_server::{ReqQueue, Request, Response};
 use lsp_types::Url;
 use lsp_types::{
@@ -18,7 +18,6 @@ use lsp_types::{
 use parking_lot::RwLock;
 use ra_ap_vfs::{ChangeKind, ChangedFile, FileId, Vfs};
 use std::collections::HashMap;
-use std::sync::Mutex;
 use std::thread;
 use std::time::Duration;
 use std::{sync::Arc, time::Instant};
@@ -48,6 +47,8 @@ pub(crate) struct Handle<H, C> {
 
 pub(crate) type KCLVfs = Arc<RwLock<Vfs>>;
 pub(crate) type KCLWordIndexMap = Arc<RwLock<HashMap<Url, HashMap<String, Vec<Location>>>>>;
+pub(crate) type KCLCompileUnitCache =
+    Arc<RwLock<HashMap<String, (Vec<String>, Option<LoadProgramOptions>)>>>;
 
 /// State for the language server
 pub(crate) struct LanguageServerState {
@@ -88,10 +89,13 @@ pub(crate) struct LanguageServerState {
     pub word_index_map: KCLWordIndexMap,
 
     /// KCL parse cache
-    pub module_cache: Option<KCLModuleCache>,
+    pub module_cache: KCLModuleCache,
 
     /// KCL resolver cache
-    pub scope_cache: Option<KCLScopeCache>,
+    pub scope_cache: KCLScopeCache,
+
+    /// KCL compile unit cache cache
+    pub compile_unit_cache: KCLCompileUnitCache,
 }
 
 /// A snapshot of the state of the language server
@@ -106,9 +110,11 @@ pub(crate) struct LanguageServerSnapshot {
     /// The word index map
     pub word_index_map: KCLWordIndexMap,
     /// KCL parse cache
-    pub module_cache: Option<KCLModuleCache>,
+    pub module_cache: KCLModuleCache,
     /// KCL resolver cache
-    pub scope_cache: Option<KCLScopeCache>,
+    pub scope_cache: KCLScopeCache,
+    /// KCL compile unit cache cache
+    pub compile_unit_cache: KCLCompileUnitCache,
 }
 
 #[allow(unused)]
@@ -141,8 +147,9 @@ impl LanguageServerState {
             opened_files: Arc::new(RwLock::new(HashMap::new())),
             word_index_map: Arc::new(RwLock::new(HashMap::new())),
             loader,
-            module_cache: Some(KCLModuleCache::default()),
-            scope_cache: Some(Arc::new(Mutex::new(CachedScope::default()))),
+            module_cache: KCLModuleCache::default(),
+            scope_cache: KCLScopeCache::default(),
+            compile_unit_cache: KCLCompileUnitCache::default(),
         };
 
         let word_index_map = state.word_index_map.clone();
@@ -228,8 +235,9 @@ impl LanguageServerState {
                         self.thread_pool.execute({
                             let mut snapshot = self.snapshot();
                             let sender = self.task_sender.clone();
-                            let module_cache = self.module_cache.clone();
-                            let scope_cache = self.scope_cache.clone();
+                            let module_cache = Arc::clone(&self.module_cache);
+                            let scope_cache = Arc::clone(&self.scope_cache);
+                            let compile_unit_cache = Arc::clone(&self.compile_unit_cache);
                             move || match url(&snapshot, file.file_id) {
                                 Ok(uri) => {
                                     let version =
@@ -237,9 +245,10 @@ impl LanguageServerState {
                                     let mut db = snapshot.db.write();
                                     match compile_with_params(Params {
                                         file: filename.clone(),
-                                        module_cache,
-                                        scope_cache: None,
+                                        module_cache: Some(module_cache),
+                                        scope_cache: Some(scope_cache),
                                         vfs: Some(snapshot.vfs),
+                                        compile_unit_cache: Some(compile_unit_cache),
                                     }) {
                                         Ok((prog, diags, gs)) => {
                                             let current_version = snapshot
@@ -374,6 +383,7 @@ impl LanguageServerState {
             word_index_map: self.word_index_map.clone(),
             module_cache: self.module_cache.clone(),
             scope_cache: self.scope_cache.clone(),
+            compile_unit_cache: self.compile_unit_cache.clone(),
         }
     }
 
