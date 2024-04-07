@@ -412,7 +412,7 @@ impl<'ctx> Evaluator<'ctx> {
                         let handler = &mut ctx.handler;
                         let pos = Position {
                             filename: self.current_filename(),
-                            line: self.current_line(),
+                            line: self.current_ctx_line(),
                             column: None,
                         };
                         handler.add_compile_error(&err.to_string(), (pos.clone(), pos));

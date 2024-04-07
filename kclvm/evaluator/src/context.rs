@@ -1,6 +1,7 @@
 use std::rc::Rc;
 
 use generational_arena::Index;
+use kclvm_ast::ast;
 use kclvm_error::Handler;
 use kclvm_runtime::MAIN_PKG_PATH;
 
@@ -14,7 +15,7 @@ use crate::{
 };
 
 pub struct EvaluatorContext {
-    /// TODO: Error handler to store runtime errors with filename
+    /// Error handler to store runtime errors with filename
     /// and line information.
     pub handler: Handler,
     /// Program work directory
@@ -62,12 +63,6 @@ impl<'ctx> Evaluator<'ctx> {
             .to_string()
     }
 
-    /// Current line
-    #[inline]
-    pub(crate) fn current_line(&self) -> u64 {
-        *self.current_line.borrow()
-    }
-
     #[inline]
     pub fn push_filename(&self, filename: &str) {
         self.filename_stack.borrow_mut().push(filename.to_string());
@@ -76,6 +71,20 @@ impl<'ctx> Evaluator<'ctx> {
     #[inline]
     pub fn pop_filename(&self) {
         self.filename_stack.borrow_mut().pop();
+    }
+
+    /// Current runtime context kcl line
+    #[inline]
+    pub(crate) fn current_ctx_line(&self) -> u64 {
+        self.runtime_ctx.borrow().panic_info.kcl_line as u64
+    }
+
+    /// Current runtime context kcl line
+    #[inline]
+    pub(crate) fn update_ctx_panic_info<T>(&self, node: &'ctx ast::Node<T>) {
+        let mut ctx = self.runtime_ctx.borrow_mut();
+        ctx.panic_info.kcl_file = node.filename.clone();
+        ctx.panic_info.kcl_line = node.line as i32;
     }
 
     /// Push a lambda definition scope into the lambda stack
