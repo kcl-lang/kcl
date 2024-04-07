@@ -226,6 +226,8 @@ pub enum ApiFunc {
     kclvm_scope_get,
     kclvm_scope_new,
     kclvm_scope_set,
+    kclvm_template_execute,
+    kclvm_template_html_escape,
     kclvm_units_to_G,
     kclvm_units_to_Gi,
     kclvm_units_to_K,

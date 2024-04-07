@@ -1640,8 +1640,62 @@ register_file_member! {
     )
 }
 
+// ------------------------------
+// template system package
+// ------------------------------
+
+pub const TEMPLATE: &str = "template";
+macro_rules! register_template_member {
+    ($($name:ident => $ty:expr)*) => (
+        pub const TEMPLATE_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
+            let mut builtin_mapping = IndexMap::default();
+            $( builtin_mapping.insert(stringify!($name).to_string(), $ty); )*
+            builtin_mapping
+        });
+        pub const TEMPLATE_FUNCTION_NAMES: &[&str] = &[
+            $( stringify!($name), )*
+        ];
+    )
+}
+register_template_member! {
+    execute => Type::function(
+        None,
+        Type::str_ref(),
+        &[
+            Parameter {
+                name: "template".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+            Parameter {
+                name: "data".to_string(),
+                ty: Type::dict_ref(Type::str_ref(), Type::any_ref()),
+                has_default: true,
+            },
+        ],
+        r#"Applies a parsed template to the specified data object and returns the string output. See https://handlebarsjs.com/ for more documents and examples."#,
+        false,
+        None,
+    )
+    html_escape => Type::function(
+        None,
+        Type::str_ref(),
+        &[
+            Parameter {
+                name: "data".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+        ],
+        r#"Replaces the characters `&"<>` with the equivalent html / xml entities."#,
+        false,
+        None,
+    )
+}
+
 pub const STANDARD_SYSTEM_MODULES: &[&str] = &[
     COLLECTION, NET, MANIFESTS, MATH, DATETIME, REGEX, YAML, JSON, CRYPTO, BASE64, UNITS, FILE,
+    TEMPLATE,
 ];
 
 pub const STANDARD_SYSTEM_MODULE_NAMES_WITH_AT: &[&str] = &[
@@ -1657,6 +1711,7 @@ pub const STANDARD_SYSTEM_MODULE_NAMES_WITH_AT: &[&str] = &[
     "@base64",
     "@units",
     "@file",
+    "@template",
 ];
 
 /// Get the system module members
@@ -1678,6 +1733,7 @@ pub fn get_system_module_members(name: &str) -> Vec<&str> {
         }
         COLLECTION => COLLECTION_FUNCTION_NAMES.to_vec(),
         FILE => FILE_FUNCTION_NAMES.to_vec(),
+        TEMPLATE => TEMPLATE_FUNCTION_NAMES.to_vec(),
         _ => bug!("invalid system module name '{}'", name),
     }
 }
@@ -1731,6 +1787,10 @@ pub fn get_system_member_function_ty(name: &str, func: &str) -> TypeRef {
         }
         FILE => {
             let types = FILE_FUNCTION_TYPES;
+            types.get(func).cloned()
+        }
+        TEMPLATE => {
+            let types = TEMPLATE_FUNCTION_TYPES;
             types.get(func).cloned()
         }
         _ => None,

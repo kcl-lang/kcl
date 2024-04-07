@@ -241,6 +241,8 @@ pub fn _kclvm_get_fn_ptr_by_name(name: &str) -> u64 {
         "kclvm_scope_get" => crate::kclvm_scope_get as *const () as u64,
         "kclvm_scope_new" => crate::kclvm_scope_new as *const () as u64,
         "kclvm_scope_set" => crate::kclvm_scope_set as *const () as u64,
+        "kclvm_template_execute" => crate::kclvm_template_execute as *const () as u64,
+        "kclvm_template_html_escape" => crate::kclvm_template_html_escape as *const () as u64,
         "kclvm_units_to_G" => crate::kclvm_units_to_G as *const () as u64,
         "kclvm_units_to_Gi" => crate::kclvm_units_to_Gi as *const () as u64,
         "kclvm_units_to_K" => crate::kclvm_units_to_K as *const () as u64,

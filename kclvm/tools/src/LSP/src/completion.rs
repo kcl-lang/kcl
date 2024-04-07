@@ -1123,6 +1123,7 @@ mod tests {
                 "base64",
                 "units",
                 "file",
+                "template",
             ]
             .iter()
             .map(|name| KCLCompletionItem {

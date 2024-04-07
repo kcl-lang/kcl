@@ -113,6 +113,9 @@ pub use self::yaml::*;
 pub mod file;
 pub use self::file::*;
 
+pub mod template;
+pub use self::template::*;
+
 pub mod _kcl_run;
 pub use self::_kcl_run::*;
 
