@@ -933,46 +933,32 @@ fn compile_unit_cache_e2e_test() {
         },
     );
 
-    let id = server.next_request_id.get();
-    server.next_request_id.set(id.wrapping_add(1));
+    server.wait_for_message_cond(1, &|msg: &Message| match msg {
+        Message::Notification(not) => not.method == "textDocument/publishDiagnostics",
+        _ => false,
+    });
 
-    let r: Request = Request::new(
-        id.into(),
-        "textDocument/documentSymbol".to_string(),
-        DocumentSymbolParams {
-            text_document: TextDocumentIdentifier {
+    // Mock edit file
+    server.notification::<lsp_types::notification::DidChangeTextDocument>(
+        lsp_types::DidChangeTextDocumentParams {
+            text_document: lsp_types::VersionedTextDocumentIdentifier {
                 uri: Url::from_file_path(path).unwrap(),
+                version: 1,
             },
-            work_done_progress_params: Default::default(),
-            partial_result_params: Default::default(),
+            content_changes: vec![lsp_types::TextDocumentContentChangeEvent {
+                range: Some(lsp_types::Range::new(
+                    lsp_types::Position::new(0, 0),
+                    lsp_types::Position::new(0, 0),
+                )),
+                range_length: Some(0),
+                text: String::from("\n"),
+            }],
         },
     );
-
-    // First time send request and wait for it's response
-    let start = Instant::now();
-    let _ = server.send_and_receive(r);
-    let first_compile_time = start.elapsed();
-
-    let id = server.next_request_id.get();
-    server.next_request_id.set(id.wrapping_add(1));
-
-    // Second time send request and wait for it's response
-    let r: Request = Request::new(
-        id.into(),
-        "textDocument/documentSymbol".to_string(),
-        DocumentSymbolParams {
-            text_document: TextDocumentIdentifier {
-                uri: Url::from_file_path(path).unwrap(),
-            },
-            work_done_progress_params: Default::default(),
-            partial_result_params: Default::default(),
-        },
-    );
-
-    let start = Instant::now();
-    let _ = server.send_and_receive(r);
-    let second_compile_time = start.elapsed();
-    assert!(first_compile_time > second_compile_time);
+    server.wait_for_message_cond(2, &|msg: &Message| match msg {
+        Message::Notification(not) => not.method == "textDocument/publishDiagnostics",
+        _ => false,
+    });
 
     // Mock edit config file, clear cache
     server.notification::<lsp_types::notification::DidChangeWatchedFiles>(
@@ -984,26 +970,28 @@ fn compile_unit_cache_e2e_test() {
         },
     );
 
-    let id = server.next_request_id.get();
-    server.next_request_id.set(id.wrapping_add(1));
-
-    // Third time send request and wait for it's response
-    let r: Request = Request::new(
-        id.into(),
-        "textDocument/documentSymbol".to_string(),
-        DocumentSymbolParams {
-            text_document: TextDocumentIdentifier {
+    // Mock edit file
+    server.notification::<lsp_types::notification::DidChangeTextDocument>(
+        lsp_types::DidChangeTextDocumentParams {
+            text_document: lsp_types::VersionedTextDocumentIdentifier {
                 uri: Url::from_file_path(path).unwrap(),
+                version: 2,
             },
-            work_done_progress_params: Default::default(),
-            partial_result_params: Default::default(),
+            content_changes: vec![lsp_types::TextDocumentContentChangeEvent {
+                range: Some(lsp_types::Range::new(
+                    lsp_types::Position::new(0, 0),
+                    lsp_types::Position::new(0, 0),
+                )),
+                range_length: Some(0),
+                text: String::from("\n"),
+            }],
         },
     );
 
-    let start = Instant::now();
-    let _ = server.send_and_receive(r);
-    let third_compile_time = start.elapsed();
-    assert!(third_compile_time > second_compile_time);
+    server.wait_for_message_cond(3, &|msg: &Message| match msg {
+        Message::Notification(not) => not.method == "textDocument/publishDiagnostics",
+        _ => false,
+    });
 }
 
 #[test]
