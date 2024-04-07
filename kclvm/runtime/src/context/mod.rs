@@ -161,7 +161,7 @@ impl crate::Context {
         self.panic_info.is_warning = true;
     }
 
-    pub(crate) fn set_panic_info(&mut self, record: &RuntimePanicRecord) {
+    pub fn set_panic_info(&mut self, record: &RuntimePanicRecord) {
         self.panic_info.__kcl_PanicInfo__ = true;
 
         self.panic_info.message = record.message.clone();
@@ -178,97 +178,5 @@ impl crate::Context {
         self.panic_info.rust_file = record.rust_file.clone();
         self.panic_info.rust_line = record.rust_line;
         self.panic_info.rust_col = record.rust_col;
-    }
-}
-
-impl crate::Context {
-    pub fn define_option(
-        &mut self,
-        name: &str,
-        ty: &str,
-        required: bool,
-        default_value: Option<String>,
-        help: &str,
-    ) {
-        // check dup
-        for i in 0..self.option_helps.len() {
-            if self.option_helps[i].name == name {
-                if ty.is_empty() && !required && default_value.is_none() && help.is_empty() {
-                    return;
-                }
-
-                if self.option_helps[i].ty.is_empty() {
-                    self.option_helps[i].ty = ty.to_string();
-                }
-
-                if !self.option_helps[i].required {
-                    self.option_helps[i].required = required;
-                }
-                if self.option_helps[i].default_value.is_none() {
-                    self.option_helps[i].default_value = default_value;
-                }
-                if self.option_helps[i].help.is_empty() {
-                    self.option_helps[i].help = help.to_string();
-                }
-
-                return;
-            }
-        }
-
-        self.option_helps.push(crate::OptionHelp {
-            name: name.to_string(),
-            ty: ty.to_string(),
-            required,
-            default_value,
-            help: help.to_string(),
-        });
-    }
-
-    pub fn list_option_help(&self) -> String {
-        let mut msg: String = "".to_string();
-
-        // name=? (required) set name value
-        // name=? (str,required) set name value
-        // a=42 set a value
-        // b=? set b value
-        // obj=?
-        // obj2=?
-
-        msg.push_str("option list:\n");
-        for opt in &self.option_helps {
-            let name = opt.name.clone();
-
-            let mut default_value: String = "?".to_string();
-            if let Some(ref v) = opt.default_value {
-                default_value = (*v).clone();
-            }
-
-            let s = format!("  -D {name}={default_value}");
-            msg.push_str(s.as_str());
-
-            // (required)
-            // (str,required)
-            if !opt.ty.is_empty() || opt.required {
-                if opt.required && !opt.ty.is_empty() {
-                    let s = format!(" ({},{})", opt.ty, "required");
-                    msg.push_str(s.as_str());
-                } else if !opt.ty.is_empty() {
-                    let s = format!(" ({})", opt.ty);
-                    msg.push_str(s.as_str());
-                } else {
-                    msg.push_str(" (required)");
-                }
-            }
-
-            if !opt.help.is_empty() {
-                msg.push(' ');
-                msg.push_str(opt.help.as_str());
-            }
-
-            msg.push('\n');
-        }
-
-        msg = msg.as_str().trim_end_matches('\n').to_string();
-        msg
     }
 }

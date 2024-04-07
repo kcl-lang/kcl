@@ -9,6 +9,7 @@ mod config;
 mod db;
 mod dispatcher;
 mod document_symbol;
+mod error;
 mod find_refs;
 mod from_lsp;
 mod goto_def;

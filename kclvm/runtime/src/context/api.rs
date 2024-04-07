@@ -143,7 +143,7 @@ pub unsafe extern "C" fn kclvm_context_set_kcl_line_col(
 #[no_mangle]
 #[runtime_fn]
 pub unsafe extern "C" fn kclvm_scope_new() -> *mut kclvm_eval_scope_t {
-    Box::into_raw(Box::new(LazyEvalScope::default()))
+    Box::into_raw(Box::default())
 }
 
 #[no_mangle]
@@ -250,16 +250,6 @@ pub unsafe extern "C" fn kclvm_context_set_disable_schema_check(
 ) {
     let p = mut_ptr_as_ref(p);
     p.cfg.disable_schema_check = v != 0;
-}
-
-#[no_mangle]
-#[runtime_fn]
-pub unsafe extern "C" fn kclvm_context_set_list_option_mode(
-    p: *mut kclvm_context_t,
-    v: kclvm_bool_t,
-) {
-    let p = mut_ptr_as_ref(p);
-    p.cfg.list_option_mode = v != 0;
 }
 
 // ----------------------------------------------------------------------------

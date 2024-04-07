@@ -29,7 +29,7 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
         owner: Some(
             SymbolRef {
                 id: Index {
-                    index: 13,
+                    index: 14,
                     generation: 0,
                 },
                 kind: Package,
@@ -38,7 +38,7 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
         def: Some(
             SymbolRef {
                 id: Index {
-                    index: 153,
+                    index: 157,
                     generation: 0,
                 },
                 kind: Value,

@@ -1,0 +1,6 @@
+content: |
+  &lt;div class&#x3D;&quot;entry&quot;&gt;
+  {{#if author}}
+  &lt;h1&gt;{{firstName}} {{lastName}}&lt;/h1&gt;
+  {{/if}}
+  &lt;/div&gt;

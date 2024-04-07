@@ -249,6 +249,7 @@ impl<'ctx> Resolver<'ctx> {
     /// float               # as defined by IEEE 754  1.0 < 2.0
     /// list/config/schema  # lexicographical         [1] == [2]
     /// iterable            # 1 in [1, 2, 3], "s" in "ss", "key" in Schema
+    /// relation            # a is True, b is Undefined
     pub fn compare(
         &mut self,
         left: TypeRef,
@@ -264,11 +265,11 @@ impl<'ctx> Resolver<'ctx> {
         if self
             .ctx
             .ty_ctx
-            .is_number_type_or_number_union_type(t1.clone())
+            .is_number_bool_type_or_number_bool_union_type(t1.clone())
             && self
                 .ctx
                 .ty_ctx
-                .is_number_type_or_number_union_type(t2.clone())
+                .is_number_bool_type_or_number_bool_union_type(t2.clone())
             && !matches!(op, ast::CmpOp::In | ast::CmpOp::NotIn)
         {
             return self.bool_ty();

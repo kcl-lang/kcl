@@ -36,7 +36,7 @@ type kclvm_int_t = i64;
 type kclvm_float_t = f64;
 
 #[derive(Debug, Default)]
-pub(crate) struct RuntimePanicRecord {
+pub struct RuntimePanicRecord {
     pub kcl_panic_info: bool,
     pub message: String,
     pub rust_file: String,
@@ -50,7 +50,6 @@ pub struct FFIRunOptions {
     pub strict_range_check: i32,
     pub disable_none: i32,
     pub disable_schema_check: i32,
-    pub list_option_mode: i32,
     pub debug_mode: i32,
     pub show_hidden: i32,
     pub sort_keys: i32,
@@ -67,8 +66,6 @@ fn new_ctx_with_opts(opts: FFIRunOptions, path_selector: &[String]) -> Context {
     // Config
     ctx.cfg.strict_range_check = opts.strict_range_check != 0;
     ctx.cfg.disable_schema_check = opts.disable_schema_check != 0;
-    ctx.cfg.disable_schema_check = opts.disable_schema_check != 0;
-    ctx.cfg.list_option_mode = opts.list_option_mode != 0;
     ctx.cfg.debug_mode = opts.debug_mode != 0;
     // Plan options
     ctx.plan_opts.disable_none = opts.disable_none != 0;

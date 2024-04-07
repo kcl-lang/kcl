@@ -6,11 +6,11 @@ use crate::*;
 /// UnionContext records some information during the value merging process,
 /// including the merging path and whether there are conflicts.
 #[derive(Default, Debug)]
-struct UnionContext {
-    path_backtrace: Vec<String>,
-    conflict: bool,
-    obj_json: String,
-    delta_json: String,
+pub struct UnionContext {
+    pub path_backtrace: Vec<String>,
+    pub conflict: bool,
+    pub obj_json: String,
+    pub delta_json: String,
 }
 
 /// UnionOptions denotes the union options between runtime values.

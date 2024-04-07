@@ -4,7 +4,7 @@ schema app_conf:
     check:
         all port in ports {
             int(port) >= 1024 and int(port) <= 65535
-        }, "invalid port"
+        }, "invalid ports {}".format(ports)
 
 
 main = app_conf {

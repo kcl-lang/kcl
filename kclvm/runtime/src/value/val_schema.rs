@@ -19,7 +19,8 @@ pub const CAL_MAP_RUNTIME_TYPE: &str = "cal_map_runtime_type";
 pub const CAL_MAP_META_LINE: &str = "cal_map_meta_line";
 pub const CAL_MAP_INDEX_SIGNATURE: &str = "$cal_map_index_signature";
 
-/// Get the schema runtime type use the schema name and pkgpath
+/// Get the schema runtime type use the schema name and pkgpath.
+#[inline]
 pub fn schema_runtime_type(name: &str, pkgpath: &str) -> String {
     format!("{pkgpath}.{name}")
 }
@@ -32,6 +33,34 @@ pub fn schema_config_meta(filename: &str, line: u64, column: u64) -> ValueRef {
         (CONFIG_META_LINE, &ValueRef::int(line as i64)),
         (CONFIG_META_COLUMN, &ValueRef::int(column as i64)),
     ]))
+}
+
+pub fn schema_assert(ctx: &mut Context, value: &ValueRef, msg: &str, config_meta: &ValueRef) {
+    if !value.is_truthy() {
+        ctx.set_err_type(&RuntimeErrorType::SchemaCheckFailure);
+        if let Some(config_meta_file) = config_meta.get_by_key(CONFIG_META_FILENAME) {
+            let config_meta_line = config_meta.get_by_key(CONFIG_META_LINE).unwrap();
+            let config_meta_column = config_meta.get_by_key(CONFIG_META_COLUMN).unwrap();
+            ctx.set_kcl_config_meta_location_info(
+                Some("Instance check failed"),
+                Some(config_meta_file.as_str().as_str()),
+                Some(config_meta_line.as_int() as i32),
+                Some(config_meta_column.as_int() as i32),
+            );
+        }
+
+        let arg_msg = format!(
+            "Check failed on the condition{}",
+            if msg.is_empty() {
+                "".to_string()
+            } else {
+                format!(": {msg}")
+            }
+        );
+        ctx.set_kcl_location_info(Some(arg_msg.as_str()), None, None, None);
+
+        panic!("{}", msg);
+    }
 }
 
 impl ValueRef {
@@ -182,12 +211,9 @@ impl ValueRef {
 
     /// Set the schema instance value with arguments and keyword arguments.
     pub fn set_schema_args(&mut self, args: &ValueRef, kwargs: &ValueRef) {
-        match &mut *self.rc.borrow_mut() {
-            Value::schema_value(ref mut schema) => {
-                schema.args = args.clone();
-                schema.kwargs = kwargs.clone();
-            }
-            _ => {}
+        if let Value::schema_value(ref mut schema) = &mut *self.rc.borrow_mut() {
+            schema.args = args.clone();
+            schema.kwargs = kwargs.clone();
         }
     }
 

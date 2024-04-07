@@ -1,9 +1,9 @@
 use crate::from_lsp::{file_path_from_url, kcl_pos};
 use crate::goto_def::{find_def_with_gs, goto_definition_with_gs};
 use crate::to_lsp::lsp_location;
-use crate::util::{parse_param_and_compile, Param};
+use crate::util::{compile_with_params, Params};
 
-use crate::state::{KCLVfs, KCLWordIndexMap};
+use crate::state::{KCLCompileUnitCache, KCLVfs, KCLWordIndexMap};
 use anyhow::Result;
 use kclvm_ast::ast::Program;
 use kclvm_error::Position as KCLPos;
@@ -24,6 +24,7 @@ pub(crate) fn find_refs<F: Fn(String) -> Result<(), anyhow::Error>>(
     gs: &GlobalState,
     module_cache: Option<KCLModuleCache>,
     scope_cache: Option<KCLScopeCache>,
+    compile_unit_cache: Option<KCLCompileUnitCache>,
 ) -> Result<Vec<Location>, String> {
     let def = find_def_with_gs(kcl_pos, gs, true);
     match def {
@@ -42,6 +43,7 @@ pub(crate) fn find_refs<F: Fn(String) -> Result<(), anyhow::Error>>(
                         logger,
                         module_cache,
                         scope_cache,
+                        compile_unit_cache,
                     ))
                 } else {
                     Err(format!("Invalid file path: {0}", start.filename))
@@ -67,6 +69,7 @@ pub(crate) fn find_refs_from_def<F: Fn(String) -> Result<(), anyhow::Error>>(
     logger: F,
     module_cache: Option<KCLModuleCache>,
     scope_cache: Option<KCLScopeCache>,
+    compile_unit_cache: Option<KCLCompileUnitCache>,
 ) -> Vec<Location> {
     let mut ref_locations = vec![];
     for word_index in (*word_index_map.write()).values_mut() {
@@ -87,15 +90,14 @@ pub(crate) fn find_refs_from_def<F: Fn(String) -> Result<(), anyhow::Error>>(
                     // return if the real def location matches the def_loc
                     match file_path_from_url(&ref_loc.uri) {
                         Ok(file_path) => {
-                            match parse_param_and_compile(
-                                Param {
-                                    file: file_path.clone(),
-                                    module_cache: module_cache.clone(),
-                                    scope_cache: scope_cache.clone(),
-                                },
-                                vfs.clone(),
-                            ) {
-                                Ok((prog, _, _, gs)) => {
+                            match compile_with_params(Params {
+                                file: file_path.clone(),
+                                module_cache: module_cache.clone(),
+                                scope_cache: scope_cache.clone(),
+                                vfs: vfs.clone(),
+                                compile_unit_cache: compile_unit_cache.clone(),
+                            }) {
+                                Ok((prog, _, gs)) => {
                                     let ref_pos = kcl_pos(&file_path, ref_loc.range.start);
                                     if *ref_loc == def_loc && !include_declaration {
                                         return false;
@@ -218,6 +220,7 @@ mod tests {
                         logger,
                         None,
                         None,
+                        None,
                     ),
                 );
             }
@@ -273,6 +276,7 @@ mod tests {
                         false,
                         Some(20),
                         logger,
+                        None,
                         None,
                         None,
                     ),
@@ -332,6 +336,7 @@ mod tests {
                         logger,
                         None,
                         None,
+                        None,
                     ),
                 );
             }
@@ -380,6 +385,7 @@ mod tests {
                         true,
                         Some(20),
                         logger,
+                        None,
                         None,
                         None,
                     ),

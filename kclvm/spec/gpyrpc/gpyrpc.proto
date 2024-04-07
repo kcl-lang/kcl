@@ -62,6 +62,7 @@ service KclvmService {
 	rpc ParseFile(ParseFile_Args) returns(ParseFile_Result);
 	rpc ParseProgram(ParseProgram_Args) returns(ParseProgram_Result);
 	rpc LoadPackage(LoadPackage_Args) returns(LoadPackage_Result);
+	rpc ListOptions(ParseProgram_Args) returns(ListOptions_Result);
 
 	rpc FormatCode(FormatCode_Args) returns(FormatCode_Result);
 	rpc FormatPath(FormatPath_Args) returns(FormatPath_Result);
@@ -140,6 +141,18 @@ message LoadPackage_Result {
 	map<string, ScopeIndex> pkg_scope_map = 10;      // Map key is the package path.
 }
 
+message ListOptions_Result {
+	repeated OptionHelp options = 2;   // Returns the files in the order they should be compiled
+}
+
+message OptionHelp {
+    string name = 1;
+    string type = 2;
+    bool required = 3;
+    string default_value = 4;
+    string help = 5;
+}
+
 message Symbol {
 	KclType ty = 1;
 	string name = 2;
@@ -210,6 +223,9 @@ message ExecProgram_Args {
 
 	// -S --path_selector
 	repeated string path_selector = 17;
+
+	// -K --fast_eval
+	bool fast_eval = 18;
 }
 
 message ExecProgram_Result {
@@ -358,6 +374,7 @@ message CliConfig {
 	bool sort_keys = 9;
 	bool show_hidden = 10;
 	bool include_schema_type_path = 11;
+	bool fast_eval = 12;
 }
 
 message KeyValuePair {

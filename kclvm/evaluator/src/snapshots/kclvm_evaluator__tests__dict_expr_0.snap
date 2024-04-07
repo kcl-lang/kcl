@@ -1,0 +1,15 @@
+---
+source: evaluator/src/tests.rs
+expression: "format!(\"{}\", evaluator.run().unwrap().1)"
+---
+a:
+  k1: v1
+  k2: v2
+b:
+  k1: v1
+  k2: v2
+c:
+  k1: v1
+d:
+  k1: v1
+  k2: v2

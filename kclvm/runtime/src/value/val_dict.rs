@@ -289,7 +289,8 @@ impl ValueRef {
         dict.insert_indexs.insert(key.to_string(), *index);
     }
 
-    /// Insert key value pair with the idempotent check
+    /// Insert key value pair with the idempotent check.
+    #[inline]
     pub fn dict_insert(
         &mut self,
         ctx: &mut Context,
@@ -394,6 +395,30 @@ impl ValueRef {
                 schema.config.values.remove(key);
             }
             _ => panic!("invalid dict remove value: {}", self.type_str()),
+        }
+    }
+
+    /// Set dict key with the value. When the dict is a schema and resolve schema validations.
+    pub fn dict_set_value(&mut self, ctx: &mut Context, key: &str, val: &ValueRef) {
+        let p = self;
+        if p.is_config() {
+            p.dict_update_key_value(key, val.clone());
+            if p.is_schema() {
+                let schema: ValueRef;
+                {
+                    let schema_value = p.as_schema();
+                    let mut config_keys = schema_value.config_keys.clone();
+                    config_keys.push(key.to_string());
+                    schema = resolve_schema(ctx, p, &config_keys);
+                }
+                p.schema_update_with_schema(&schema);
+            }
+        } else {
+            panic!(
+                "failed to update the dict. An iterable of key-value pairs was expected, but got {}. Check if the syntax for updating the dictionary with the attribute '{}' is correct",
+                p.type_str(),
+                key
+            );
         }
     }
 }

@@ -1,8 +1,7 @@
 schema Config:
     a: int = b
-    b: int
+    b: int = 1
     if True:
-        b = 1
         b += 1
 
 x0 = Config {}

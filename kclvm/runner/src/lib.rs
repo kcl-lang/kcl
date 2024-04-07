@@ -14,7 +14,7 @@ use kclvm_sema::resolver::{
 };
 use linker::Command;
 pub use runner::{Artifact, ExecProgramArgs, ExecProgramResult, MapErrorResult};
-use runner::{KclLibRunner, KclLibRunnerOptions, ProgramRunner};
+use runner::{FastRunner, LibRunner, ProgramRunner, RunnerOptions};
 use tempfile::tempdir;
 
 pub mod assembler;
@@ -23,6 +23,8 @@ pub mod runner;
 
 #[cfg(test)]
 pub mod tests;
+
+const KCL_FAST_EVAL_ENV_VAR: &str = "KCL_FAST_EVAL";
 
 /// After the kcl program passed through kclvm-parser in the compiler frontend,
 /// KCL needs to resolve ast, generate corresponding LLVM IR, dynamic link library or
@@ -167,38 +169,47 @@ pub fn execute(
     let scope = resolve_program(&mut program);
     // Emit parse and resolve errors if exists.
     emit_compile_diag_to_string(sess, &scope, false)?;
-    // Create a temp entry file and the temp dir will be delete automatically
-    let temp_dir = tempdir()?;
-    let temp_dir_path = temp_dir.path().to_str().ok_or(anyhow!(
-        "Internal error: {}: No such file or directory",
-        temp_dir.path().display()
-    ))?;
-    let temp_entry_file = temp_file(temp_dir_path)?;
+    Ok(
+        if args.fast_eval || std::env::var(KCL_FAST_EVAL_ENV_VAR).is_ok() {
+            FastRunner::new(Some(RunnerOptions {
+                plugin_agent_ptr: args.plugin_agent,
+            }))
+            .run(&program, args)?
+        } else {
+            // Create a temp entry file and the temp dir will be delete automatically
+            let temp_dir = tempdir()?;
+            let temp_dir_path = temp_dir.path().to_str().ok_or(anyhow!(
+                "Internal error: {}: No such file or directory",
+                temp_dir.path().display()
+            ))?;
+            let temp_entry_file = temp_file(temp_dir_path)?;
 
-    // Generate libs
-    let lib_paths = assembler::KclvmAssembler::new(
-        program,
-        scope,
-        temp_entry_file.clone(),
-        KclvmLibAssembler::LLVM,
-        args.get_package_maps_from_external_pkg(),
+            // Generate libs
+            let lib_paths = assembler::KclvmAssembler::new(
+                program,
+                scope,
+                temp_entry_file.clone(),
+                KclvmLibAssembler::LLVM,
+                args.get_package_maps_from_external_pkg(),
+            )
+            .gen_libs(args)?;
+
+            // Link libs into one library
+            let lib_suffix = Command::get_lib_suffix();
+            let temp_out_lib_file = format!("{}{}", temp_entry_file, lib_suffix);
+            let lib_path = linker::KclvmLinker::link_all_libs(lib_paths, temp_out_lib_file)?;
+
+            // Run the library
+            let runner = LibRunner::new(Some(RunnerOptions {
+                plugin_agent_ptr: args.plugin_agent,
+            }));
+            let result = runner.run(&lib_path, args)?;
+
+            remove_file(&lib_path)?;
+            clean_tmp_files(&temp_entry_file, &lib_suffix)?;
+            result
+        },
     )
-    .gen_libs(args)?;
-
-    // Link libs into one library
-    let lib_suffix = Command::get_lib_suffix();
-    let temp_out_lib_file = format!("{}{}", temp_entry_file, lib_suffix);
-    let lib_path = linker::KclvmLinker::link_all_libs(lib_paths, temp_out_lib_file)?;
-
-    // Run the library
-    let runner = KclLibRunner::new(Some(KclLibRunnerOptions {
-        plugin_agent_ptr: args.plugin_agent,
-    }));
-    let result = runner.run(&lib_path, args)?;
-
-    remove_file(&lib_path)?;
-    clean_tmp_files(&temp_entry_file, &lib_suffix)?;
-    Ok(result)
 }
 
 /// `execute_module` can directly execute the ast `Module`.

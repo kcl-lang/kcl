@@ -1,5 +1,7 @@
 //! Copyright The KCL Authors. All rights reserved.
 
+use generational_arena::Index;
+
 use crate::*;
 
 impl ValueRef {
@@ -81,6 +83,33 @@ impl ValueRef {
             name: name.to_string(),
             runtime_type: runtime_type.to_string(),
             is_external,
+            proxy: None,
+        })))
+    }
+
+    /// New a proxy function with function index in the function list.
+    pub fn proxy_func(proxy: Index) -> Self {
+        Self::from(Value::func_value(Box::new(FuncValue {
+            fn_ptr: 0,
+            check_fn_ptr: 0,
+            closure: ValueRef::undefined(),
+            name: "".to_string(),
+            runtime_type: "".to_string(),
+            is_external: false,
+            proxy: Some(proxy),
+        })))
+    }
+
+    /// New a proxy function with function index and the runtime type in the function list.
+    pub fn proxy_func_with_type(proxy: Index, runtime_type: &str) -> Self {
+        Self::from(Value::func_value(Box::new(FuncValue {
+            fn_ptr: 0,
+            check_fn_ptr: 0,
+            closure: ValueRef::undefined(),
+            name: "".to_string(),
+            runtime_type: runtime_type.to_string(),
+            is_external: false,
+            proxy: Some(proxy),
         })))
     }
 }

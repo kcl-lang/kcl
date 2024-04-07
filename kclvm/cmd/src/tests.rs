@@ -11,12 +11,9 @@ use kclvm_runner::{exec_program, MapErrorResult};
 
 use crate::{
     app,
-    fmt::fmt_command,
-    lint::lint_command,
     run::run_command,
     settings::{build_settings, must_build_settings},
     util::hashmaps_from_matches,
-    vet::vet_command,
 };
 
 #[cfg(unix)]
@@ -67,35 +64,6 @@ fn test_build_settings_fail() {
     let matches = app().get_matches_from(settings_arguments(work_dir().join("error_kcl.yaml")));
     let matches = matches.subcommand_matches("run").unwrap();
     assert!(build_settings(matches).is_err());
-}
-
-#[test]
-fn test_fmt_cmd() {
-    let input = std::path::Path::new(".")
-        .join("src")
-        .join("test_data")
-        .join("fmt")
-        .join("test.k");
-    let matches = app().get_matches_from(&[ROOT_CMD, "fmt", input.to_str().unwrap()]);
-    let matches = matches.subcommand_matches("fmt").unwrap();
-    assert!(fmt_command(&matches).is_ok())
-}
-
-fn test_vet_cmd() {
-    let test_path = std::path::Path::new(".")
-        .join("src")
-        .join("test_data")
-        .join("vet");
-    let data_file = test_path.join("data.json");
-    let kcl_file = test_path.join("test.k");
-    let matches = app().get_matches_from(&[
-        ROOT_CMD,
-        "vet",
-        data_file.to_str().unwrap(),
-        kcl_file.to_str().unwrap(),
-    ]);
-    let matches = matches.subcommand_matches("vet").unwrap();
-    assert!(vet_command(&matches).is_ok())
 }
 
 fn work_dir() -> std::path::PathBuf {
@@ -204,21 +172,8 @@ fn test_external_cmd_invalid() {
 }
 
 #[test]
-fn test_lint_cmd() {
-    let input = std::path::Path::new(".")
-        .join("src")
-        .join("test_data")
-        .join("lint")
-        .join("test.k");
-    let matches = app().get_matches_from(&[ROOT_CMD, "lint", input.to_str().unwrap()]);
-    let matches = matches.subcommand_matches("lint").unwrap();
-    assert!(lint_command(&matches).is_ok())
-}
-
-#[test]
 // All the unit test cases in [`test_run_command`] can not be executed concurrently.
 fn test_run_command() {
-    test_vet_cmd();
     test_run_command_with_import();
     test_run_command_with_konfig();
     test_load_cache_with_different_pkg();

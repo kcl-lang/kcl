@@ -15,6 +15,7 @@
   <img src="https://img.shields.io/github/license/kcl-lang/kcl.svg">
   <a href="https://www.bestpractices.dev/projects/7867"><img src="https://www.bestpractices.dev/projects/7867/badge"></a>
   <img src="https://img.shields.io/github/downloads/kcl-lang/kcl/total?label=Github%20downloads&logo=github">
+  <img src="https://app.fossa.com/api/projects/git%2Bgithub.com%2Fkcl-lang%2Fkcl.svg?type=shield">
 </p>
 
 ## 介绍
@@ -80,3 +81,7 @@ KCL 是一个开源的基于约束的记录及函数语言并通过成熟的编�
 ## 社区
 
 欢迎访问 [社区](https://github.com/kcl-lang/community) 加入我们。
+
+## License
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fkcl-lang%2Fkcl.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fkcl-lang%2Fkcl?ref=badge_large)

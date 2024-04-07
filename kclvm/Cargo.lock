@@ -1179,6 +1179,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eabb4a44450da02c90444cf74558da904edde8fb4e9035a9a6a4e15445af0bd7"
 
 [[package]]
+name = "handlebars"
+version = "5.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d08485b96a0e6393e9e4d1b8d48cf74ad6c063cd905eb33f42c1ce3f0377539b"
+dependencies = [
+ "log",
+ "pest",
+ "pest_derive",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "hashbrown"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1478,7 +1492,7 @@ dependencies = [
 
 [[package]]
 name = "kcl-language-server"
-version = "0.8.1"
+version = "0.8.4"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1522,7 +1536,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm"
-version = "0.8.1"
+version = "0.8.4"
 dependencies = [
  "anyhow",
  "cc",
@@ -1538,6 +1552,7 @@ dependencies = [
  "kclvm-config",
  "kclvm-driver",
  "kclvm-error",
+ "kclvm-evaluator",
  "kclvm-loader",
  "kclvm-parser",
  "kclvm-query",
@@ -1556,7 +1571,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-api"
-version = "0.8.1"
+version = "0.8.4"
 dependencies = [
  "anyhow",
  "criterion 0.4.0",
@@ -1594,7 +1609,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-ast"
-version = "0.8.1"
+version = "0.8.4"
 dependencies = [
  "compiler_base_span 0.0.2",
  "kclvm-error",
@@ -1608,7 +1623,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-ast-pretty"
-version = "0.8.1"
+version = "0.8.4"
 dependencies = [
  "compiler_base_macros",
  "compiler_base_session",
@@ -1622,7 +1637,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-cmd"
-version = "0.8.1"
+version = "0.8.4"
 dependencies = [
  "anyhow",
  "clap 4.3.19",
@@ -1640,7 +1655,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-compiler"
-version = "0.8.1"
+version = "0.8.4"
 dependencies = [
  "ahash",
  "bit-set",
@@ -1660,7 +1675,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-config"
-version = "0.8.1"
+version = "0.8.4"
 dependencies = [
  "ahash",
  "anyhow",
@@ -1684,7 +1699,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-driver"
-version = "0.8.1"
+version = "0.8.4"
 dependencies = [
  "anyhow",
  "glob",
@@ -1701,7 +1716,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-error"
-version = "0.8.1"
+version = "0.8.4"
 dependencies = [
  "annotate-snippets",
  "anyhow",
@@ -1719,8 +1734,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "kclvm-evaluator"
+version = "0.8.4"
+dependencies = [
+ "anyhow",
+ "generational-arena",
+ "indexmap 1.9.3",
+ "insta",
+ "kclvm-ast",
+ "kclvm-error",
+ "kclvm-loader",
+ "kclvm-parser",
+ "kclvm-runtime",
+ "kclvm-sema",
+]
+
+[[package]]
 name = "kclvm-lexer"
-version = "0.8.1"
+version = "0.8.4"
 dependencies = [
  "expect-test",
  "kclvm-error",
@@ -1730,12 +1761,13 @@ dependencies = [
 
 [[package]]
 name = "kclvm-loader"
-version = "0.8.1"
+version = "0.8.4"
 dependencies = [
  "anyhow",
  "indexmap 1.9.3",
  "insta",
  "kclvm-ast",
+ "kclvm-ast-pretty",
  "kclvm-error",
  "kclvm-parser",
  "kclvm-sema",
@@ -1743,7 +1775,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-macros"
-version = "0.8.1"
+version = "0.8.4"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1753,7 +1785,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-parser"
-version = "0.8.1"
+version = "0.8.4"
 dependencies = [
  "anyhow",
  "bstr",
@@ -1786,7 +1818,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-query"
-version = "0.8.1"
+version = "0.8.4"
 dependencies = [
  "anyhow",
  "compiler_base_macros",
@@ -1803,7 +1835,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-runner"
-version = "0.8.1"
+version = "0.8.4"
 dependencies = [
  "anyhow",
  "cc",
@@ -1819,6 +1851,7 @@ dependencies = [
  "kclvm-config",
  "kclvm-driver",
  "kclvm-error",
+ "kclvm-evaluator",
  "kclvm-parser",
  "kclvm-query",
  "kclvm-runtime",
@@ -1838,14 +1871,16 @@ dependencies = [
 
 [[package]]
 name = "kclvm-runtime"
-version = "0.8.1"
+version = "0.8.4"
 dependencies = [
  "ahash",
  "base64",
  "bstr",
  "chrono",
  "fancy-regex",
+ "generational-arena",
  "glob",
+ "handlebars",
  "indexmap 1.9.3",
  "itertools",
  "kclvm_runtime_internal_macros",
@@ -1867,7 +1902,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-sema"
-version = "0.8.1"
+version = "0.8.4"
 dependencies = [
  "ahash",
  "anyhow",
@@ -1902,7 +1937,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-span"
-version = "0.8.1"
+version = "0.8.4"
 dependencies = [
  "compiler_base_span 0.0.2",
  "kclvm-macros",
@@ -1912,7 +1947,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-tools"
-version = "0.8.1"
+version = "0.8.4"
 dependencies = [
  "anyhow",
  "compiler_base_session",
@@ -1945,14 +1980,14 @@ dependencies = [
 
 [[package]]
 name = "kclvm-utils"
-version = "0.8.1"
+version = "0.8.4"
 dependencies = [
  "anyhow",
 ]
 
 [[package]]
 name = "kclvm-version"
-version = "0.8.1"
+version = "0.8.4"
 dependencies = [
  "vergen",
 ]
@@ -2066,9 +2101,9 @@ checksum = "b06a4cde4c0f271a446782e3eff8de789548ce57dbc8eca9292c27f4a42004b4"
 
 [[package]]
 name = "lsp-server"
-version = "0.6.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f70570c1c29cf6654029b8fe201a5507c153f0d85be6f234d471d756bc36775a"
+checksum = "68a9b4c78d1c3f35c5864c90e9633377b5f374a4a4983ac64c30b8ae898f9305"
 dependencies = [
  "crossbeam-channel",
  "log",
@@ -2403,12 +2438,47 @@ checksum = "e3148f5046208a5d56bcfc03053e3ca6334e51da8dfb19b6cdc8b306fae3283e"
 
 [[package]]
 name = "pest"
-version = "2.7.1"
+version = "2.7.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0d2d1d55045829d65aad9d389139882ad623b33b904e7c9f1b10c5b8927298e5"
+checksum = "311fb059dee1a7b802f036316d790138c613a4e8b180c822e3925a662e9f0c95"
 dependencies = [
+ "memchr",
  "thiserror",
  "ucd-trie",
+]
+
+[[package]]
+name = "pest_derive"
+version = "2.7.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f73541b156d32197eecda1a4014d7f868fd2bcb3c550d5386087cfba442bf69c"
+dependencies = [
+ "pest",
+ "pest_generator",
+]
+
+[[package]]
+name = "pest_generator"
+version = "2.7.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c35eeed0a3fab112f75165fdc026b3913f4183133f19b49be773ac9ea966e8bd"
+dependencies = [
+ "pest",
+ "pest_meta",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.52",
+]
+
+[[package]]
+name = "pest_meta"
+version = "2.7.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2adbf29bb9776f28caece835398781ab24435585fe0d4dc1374a61db5accedca"
+dependencies = [
+ "once_cell",
+ "pest",
+ "sha2 0.10.7",
 ]
 
 [[package]]

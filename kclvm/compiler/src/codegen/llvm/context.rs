@@ -1701,11 +1701,11 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 _ => {}
             }
         }
-        // If not found, alloca a new varibale.
+        // If not found, alloc a new variable.
         if !existed {
             let ptr = self.builder.build_alloca(self.value_ptr_type(), name);
             self.builder.build_store(ptr, value);
-            // Store the value for the variable and add the varibale into the current scope.
+            // Store the value for the variable and add the variable into the current scope.
             if let Some(last) = scopes.last_mut() {
                 let mut variables = last.variables.borrow_mut();
                 variables.insert(name.to_string(), ptr);
@@ -1939,7 +1939,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                         if index >= last_lambda_scope {
                             self.builder.build_load(*var, name)
                         } else {
-                            // Outer lamba closure
+                            // Outer lambda closure
                             let variables = scopes[last_lambda_scope].variables.borrow();
                             let ptr = variables.get(value::LAMBDA_CLOSURE);
                             // Lambda closure

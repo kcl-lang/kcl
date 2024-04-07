@@ -79,6 +79,10 @@ test-runtime: install-kclvm-py install-pytest
 test-grammar: install-kclvm-py install-pytest
 	cd tests/integration/grammar && python3 -m pytest -v -n 5
 
+# E2E grammar tests with the fast evaluator
+test-grammar-evaluator: install-kclvm-py install-pytest
+	cd tests/integration/grammar && KCL_FAST_EVAL=1 python3 -m pytest -v -n 5
+
 # E2E konfig tests.
 test-konfig: install-kclvm-py install-pytest
 	cd tests/integration/konfig && python3 -m pytest -v -n 5

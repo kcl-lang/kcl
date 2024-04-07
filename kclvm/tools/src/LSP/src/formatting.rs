@@ -114,8 +114,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn format_range_test() {
-        let (file, _program, _prog_scope, _, _gs) =
-            compile_test_file("src/test_data/format/format_range.k");
+        let (file, _program, _, _gs) = compile_test_file("src/test_data/format/format_range.k");
         let lsp_range = Range::new(Position::new(0, 0), Position::new(11, 0));
         let text = std::fs::read_to_string(file.clone()).unwrap();
 

@@ -1,0 +1,985 @@
+---
+source: loader/src/tests.rs
+expression: "format!(\"{:#?}\", p.symbols.values())"
+---
+[
+    SymbolInfo {
+        ty: Type {
+            kind: Any,
+            is_type_alias: false,
+            flags: ANY,
+        },
+        name: "a",
+        range: (
+            Position {
+                filename: "test.k",
+                line: 1,
+                column: Some(
+                    0,
+                ),
+            },
+            Position {
+                filename: "test.k",
+                line: 1,
+                column: Some(
+                    1,
+                ),
+            },
+        ),
+        owner: Some(
+            SymbolRef {
+                id: Index {
+                    index: 14,
+                    generation: 0,
+                },
+                kind: Package,
+            },
+        ),
+        def: Some(
+            SymbolRef {
+                id: Index {
+                    index: 157,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+        ),
+        attrs: [],
+        is_global: true,
+    },
+    SymbolInfo {
+        ty: Type {
+            kind: Function(
+                FunctionType {
+                    doc: "Return the top level argument by the key",
+                    params: [
+                        Parameter {
+                            name: "key",
+                            ty: Type {
+                                kind: Str,
+                                is_type_alias: false,
+                                flags: STR,
+                            },
+                            has_default: false,
+                        },
+                        Parameter {
+                            name: "type",
+                            ty: Type {
+                                kind: Str,
+                                is_type_alias: false,
+                                flags: STR,
+                            },
+                            has_default: true,
+                        },
+                        Parameter {
+                            name: "required",
+                            ty: Type {
+                                kind: Bool,
+                                is_type_alias: false,
+                                flags: BOOL,
+                            },
+                            has_default: true,
+                        },
+                        Parameter {
+                            name: "default",
+                            ty: Type {
+                                kind: Any,
+                                is_type_alias: false,
+                                flags: ANY,
+                            },
+                            has_default: true,
+                        },
+                        Parameter {
+                            name: "help",
+                            ty: Type {
+                                kind: Str,
+                                is_type_alias: false,
+                                flags: STR,
+                            },
+                            has_default: true,
+                        },
+                    ],
+                    self_ty: None,
+                    return_ty: Type {
+                        kind: Any,
+                        is_type_alias: false,
+                        flags: ANY,
+                    },
+                    is_variadic: false,
+                    kw_only_index: Some(
+                        1,
+                    ),
+                },
+            ),
+            is_type_alias: false,
+            flags: FUNCTION,
+        },
+        name: "option",
+        range: (
+            Position {
+                filename: "test.k",
+                line: 1,
+                column: Some(
+                    4,
+                ),
+            },
+            Position {
+                filename: "test.k",
+                line: 1,
+                column: Some(
+                    10,
+                ),
+            },
+        ),
+        owner: None,
+        def: Some(
+            SymbolRef {
+                id: Index {
+                    index: 0,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+        ),
+        attrs: [],
+        is_global: false,
+    },
+    SymbolInfo {
+        ty: Type {
+            kind: StrLit(
+                "key",
+            ),
+            is_type_alias: false,
+            flags: STR | LITERAL,
+        },
+        name: "@StringLitExpression",
+        range: (
+            Position {
+                filename: "test.k",
+                line: 1,
+                column: Some(
+                    16,
+                ),
+            },
+            Position {
+                filename: "test.k",
+                line: 1,
+                column: Some(
+                    16,
+                ),
+            },
+        ),
+        owner: None,
+        def: Some(
+            SymbolRef {
+                id: Index {
+                    index: 0,
+                    generation: 0,
+                },
+                kind: Expression,
+            },
+        ),
+        attrs: [
+            SymbolRef {
+                id: Index {
+                    index: 128,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 129,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 130,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 131,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 132,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 133,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 134,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 135,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 136,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 137,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 138,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 139,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 140,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 141,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 142,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 143,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 144,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 145,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 146,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 147,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 148,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 149,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 150,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 151,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 152,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 153,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 154,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 155,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 156,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+        ],
+        is_global: false,
+    },
+    SymbolInfo {
+        ty: Type {
+            kind: StrLit(
+                "str",
+            ),
+            is_type_alias: false,
+            flags: STR | LITERAL,
+        },
+        name: "type",
+        range: (
+            Position {
+                filename: "test.k",
+                line: 1,
+                column: Some(
+                    18,
+                ),
+            },
+            Position {
+                filename: "test.k",
+                line: 1,
+                column: Some(
+                    28,
+                ),
+            },
+        ),
+        owner: None,
+        def: Some(
+            SymbolRef {
+                id: Index {
+                    index: 158,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+        ),
+        attrs: [
+            SymbolRef {
+                id: Index {
+                    index: 128,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 129,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 130,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 131,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 132,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 133,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 134,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 135,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 136,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 137,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 138,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 139,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 140,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 141,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 142,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 143,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 144,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 145,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 146,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 147,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 148,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 149,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 150,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 151,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 152,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 153,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 154,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 155,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 156,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+        ],
+        is_global: false,
+    },
+    SymbolInfo {
+        ty: Type {
+            kind: StrLit(
+                "str",
+            ),
+            is_type_alias: false,
+            flags: STR | LITERAL,
+        },
+        name: "@StringLitExpression",
+        range: (
+            Position {
+                filename: "test.k",
+                line: 1,
+                column: Some(
+                    28,
+                ),
+            },
+            Position {
+                filename: "test.k",
+                line: 1,
+                column: Some(
+                    28,
+                ),
+            },
+        ),
+        owner: None,
+        def: Some(
+            SymbolRef {
+                id: Index {
+                    index: 1,
+                    generation: 0,
+                },
+                kind: Expression,
+            },
+        ),
+        attrs: [
+            SymbolRef {
+                id: Index {
+                    index: 128,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 129,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 130,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 131,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 132,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 133,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 134,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 135,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 136,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 137,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 138,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 139,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 140,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 141,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 142,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 143,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 144,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 145,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 146,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 147,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 148,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 149,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 150,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 151,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 152,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 153,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 154,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 155,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 156,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+        ],
+        is_global: false,
+    },
+    SymbolInfo {
+        ty: Type {
+            kind: BoolLit(
+                true,
+            ),
+            is_type_alias: false,
+            flags: BOOL | LITERAL,
+        },
+        name: "required",
+        range: (
+            Position {
+                filename: "test.k",
+                line: 1,
+                column: Some(
+                    30,
+                ),
+            },
+            Position {
+                filename: "test.k",
+                line: 1,
+                column: Some(
+                    43,
+                ),
+            },
+        ),
+        owner: None,
+        def: Some(
+            SymbolRef {
+                id: Index {
+                    index: 159,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+        ),
+        attrs: [],
+        is_global: false,
+    },
+    SymbolInfo {
+        ty: Type {
+            kind: BoolLit(
+                true,
+            ),
+            is_type_alias: false,
+            flags: BOOL | LITERAL,
+        },
+        name: "@NameConstantLitExpression",
+        range: (
+            Position {
+                filename: "test.k",
+                line: 1,
+                column: Some(
+                    43,
+                ),
+            },
+            Position {
+                filename: "test.k",
+                line: 1,
+                column: Some(
+                    43,
+                ),
+            },
+        ),
+        owner: None,
+        def: Some(
+            SymbolRef {
+                id: Index {
+                    index: 2,
+                    generation: 0,
+                },
+                kind: Expression,
+            },
+        ),
+        attrs: [],
+        is_global: false,
+    },
+    SymbolInfo {
+        ty: Type {
+            kind: Any,
+            is_type_alias: false,
+            flags: ANY,
+        },
+        name: "@CallExpression",
+        range: (
+            Position {
+                filename: "test.k",
+                line: 1,
+                column: Some(
+                    44,
+                ),
+            },
+            Position {
+                filename: "test.k",
+                line: 1,
+                column: Some(
+                    44,
+                ),
+            },
+        ),
+        owner: None,
+        def: Some(
+            SymbolRef {
+                id: Index {
+                    index: 3,
+                    generation: 0,
+                },
+                kind: Expression,
+            },
+        ),
+        attrs: [],
+        is_global: false,
+    },
+]

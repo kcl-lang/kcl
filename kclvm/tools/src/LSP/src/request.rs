@@ -3,10 +3,13 @@ use crossbeam_channel::Sender;
 
 use kclvm_sema::info::is_valid_kcl_name;
 use lsp_types::{Location, SemanticTokensResult, TextEdit};
-use ra_ap_vfs::VfsPath;
+use ra_ap_vfs::{AbsPathBuf, VfsPath};
 use std::collections::HashMap;
+use std::sync::Arc;
 use std::time::Instant;
 
+use crate::db::DocumentVersion;
+use crate::error::LSPError;
 use crate::{
     completion::completion,
     db::AnalysisDatabase,
@@ -19,7 +22,6 @@ use crate::{
     hover, quick_fix,
     semantic_token::semantic_tokens_full,
     state::{log_message, LanguageServerSnapshot, LanguageServerState, Task},
-    util::{parse_param_and_compile, Param},
 };
 
 impl LanguageServerState {
@@ -29,7 +31,6 @@ impl LanguageServerState {
         request: lsp_server::Request,
         request_received: Instant,
     ) -> anyhow::Result<()> {
-        log_message(format!("on request {:?}", request), &self.task_sender)?;
         self.register_request(&request, request_received);
 
         // If a shutdown was requested earlier, immediately respond with an error
@@ -99,16 +100,57 @@ impl LanguageServerSnapshot {
         valid
     }
 
-    pub(crate) fn get_db(&self, path: &VfsPath) -> anyhow::Result<AnalysisDatabase> {
-        match self.vfs.read().file_id(path) {
+    pub(crate) fn get_db(&self, path: &VfsPath) -> anyhow::Result<Arc<AnalysisDatabase>> {
+        let file_id = self.vfs.read().file_id(path);
+        match file_id {
             Some(id) => match self.db.read().get(&id) {
-                Some(db) => Ok(db.clone()),
-                None => Err(anyhow::anyhow!(format!(
-                    "Path {path} AnalysisDatabase not found"
+                Some(db) => Ok(Arc::clone(db)),
+                None => Err(anyhow::anyhow!(LSPError::AnalysisDatabaseNotFound(
+                    path.clone()
                 ))),
             },
-            None => Err(anyhow::anyhow!(format!("Path {path} fileId not found"))),
+            None => Err(anyhow::anyhow!(LSPError::FileIdNotFound(path.clone()))),
         }
+    }
+
+    ///  Attempts to get db in cache, this function does not block.
+    pub(crate) fn try_get_db(
+        &self,
+        path: &VfsPath,
+    ) -> anyhow::Result<Option<Arc<AnalysisDatabase>>> {
+        match self.vfs.try_read() {
+            Some(vfs) => match vfs.file_id(path) {
+                Some(file_id) => match self.db.try_read() {
+                    Some(db) => match db.get(&file_id) {
+                        Some(db) => Ok(Some(Arc::clone(db))),
+                        None => Err(anyhow::anyhow!(LSPError::AnalysisDatabaseNotFound(
+                            path.clone()
+                        ))),
+                    },
+                    None => Ok(None),
+                },
+                None => Err(anyhow::anyhow!(LSPError::FileIdNotFound(path.clone()))),
+            },
+            None => Ok(None),
+        }
+    }
+
+    fn verify_request_version(
+        &self,
+        db_version: DocumentVersion,
+        path: &AbsPathBuf,
+    ) -> anyhow::Result<bool> {
+        let file_id = self
+            .vfs
+            .read()
+            .file_id(&path.clone().into())
+            .ok_or_else(|| anyhow::anyhow!(LSPError::FileIdNotFound(path.clone().into())))?;
+
+        let current_version = *self.opened_files.read().get(&file_id).ok_or_else(|| {
+            anyhow::anyhow!(LSPError::DocumentVersionNotFound(path.clone().into()))
+        })?;
+
+        return Ok(db_version == current_version);
     }
 }
 
@@ -118,30 +160,35 @@ pub(crate) fn handle_semantic_tokens_full(
     _sender: Sender<Task>,
 ) -> anyhow::Result<Option<SemanticTokensResult>> {
     let file = file_path_from_url(&params.text_document.uri)?;
+    let path = from_lsp::abs_path(&params.text_document.uri)?;
+    let db = match snapshot.try_get_db(&path.clone().into())? {
+        Some(db) => db,
+        None => return Err(anyhow!(LSPError::Retry)),
+    };
+    let res = semantic_tokens_full(&file, &db.gs);
 
-    match parse_param_and_compile(
-        Param {
-            file: file.clone(),
-            module_cache: None,
-            scope_cache: None,
-        },
-        Some(snapshot.vfs.clone()),
-    ) {
-        Ok((_, _, _, gs)) => {
-            let res = semantic_tokens_full(&file, &gs);
-            Ok(res)
-        }
-        Err(_) => Ok(None),
+    if !snapshot.verify_request_version(db.version, &path)? {
+        return Err(anyhow!(LSPError::Retry));
     }
+    Ok(res)
 }
 
 pub(crate) fn handle_formatting(
-    _snapshot: LanguageServerSnapshot,
+    snapshot: LanguageServerSnapshot,
     params: lsp_types::DocumentFormattingParams,
     _sender: Sender<Task>,
 ) -> anyhow::Result<Option<Vec<TextEdit>>> {
     let file = file_path_from_url(&params.text_document.uri)?;
-    let src = std::fs::read_to_string(file.clone())?;
+    let path = from_lsp::abs_path(&params.text_document.uri)?;
+    let src = {
+        let vfs = snapshot.vfs.read();
+        let file_id = vfs
+            .file_id(&path.into())
+            .ok_or(anyhow::anyhow!("Already checked that the file_id exists!"))?;
+
+        String::from_utf8(vfs.file_contents(file_id).to_vec())?
+    };
+
     format(file, src, None)
 }
 
@@ -219,7 +266,8 @@ pub(crate) fn handle_reference(
     let pos = kcl_pos(&file, params.text_document_position.position);
     let log = |msg: String| log_message(msg, &sender);
     let module_cache = snapshot.module_cache.clone();
-    let scope_cache = snapshot.scope_cache.clone();
+    let _scope_cache = snapshot.scope_cache.clone();
+    let compile_unit_cache = snapshot.compile_unit_cache.clone();
     match find_refs(
         &db.prog,
         &pos,
@@ -228,8 +276,9 @@ pub(crate) fn handle_reference(
         Some(snapshot.vfs.clone()),
         log,
         &db.gs,
-        module_cache,
-        scope_cache,
+        Some(module_cache),
+        None,
+        Some(compile_unit_cache),
     ) {
         core::result::Result::Ok(locations) => Ok(Some(locations)),
         Err(msg) => {
@@ -256,35 +305,10 @@ pub(crate) fn handle_completion(
         .context
         .and_then(|ctx| ctx.trigger_character)
         .and_then(|s| s.chars().next());
-    let (prog, gs) = match completion_trigger_character {
-        // Some trigger characters need to re-compile
-        Some(ch) => match ch {
-            '=' | ':' => {
-                match parse_param_and_compile(
-                    Param {
-                        file: file.clone(),
-                        module_cache: None,
-                        scope_cache: None,
-                    },
-                    Some(snapshot.vfs.clone()),
-                ) {
-                    Ok((prog, _, _, gs)) => (prog, gs),
-                    Err(_) => return Ok(None),
-                }
-            }
-            _ => {
-                let db = snapshot.get_db(&path.clone().into())?;
-                (db.prog, db.gs)
-            }
-        },
 
-        None => {
-            let db = snapshot.get_db(&path.clone().into())?;
-            (db.prog, db.gs)
-        }
-    };
+    let db = snapshot.get_db(&path.clone().into())?;
 
-    let res = completion(completion_trigger_character, &prog, &kcl_pos, &gs);
+    let res = completion(completion_trigger_character, &db.prog, &kcl_pos, &db.gs);
 
     if res.is_none() {
         log_message("Completion item not found".to_string(), &sender)?;
@@ -316,33 +340,21 @@ pub(crate) fn handle_hover(
 pub(crate) fn handle_document_symbol(
     snapshot: LanguageServerSnapshot,
     params: lsp_types::DocumentSymbolParams,
-    sender: Sender<Task>,
+    _sender: Sender<Task>,
 ) -> anyhow::Result<Option<lsp_types::DocumentSymbolResponse>> {
     let file = file_path_from_url(&params.text_document.uri)?;
+    let path = from_lsp::abs_path(&params.text_document.uri)?;
+    let db = match snapshot.try_get_db(&path.clone().into())? {
+        Some(db) => db,
+        None => return Err(anyhow!(LSPError::Retry)),
+    };
+    let res = document_symbol(&file, &db.gs);
 
-    match parse_param_and_compile(
-        Param {
-            file: file.clone(),
-            module_cache: None,
-            scope_cache: None,
-        },
-        Some(snapshot.vfs.clone()),
-    ) {
-        Ok((_, _, _, gs)) => {
-            let res = document_symbol(&file, &gs);
-            if res.is_none() {
-                log_message(format!("File {file} document symbol not found"), &sender)?;
-            }
-            Ok(res)
-        }
-        Err(e) => {
-            log_message(
-                format!("File {file} document symbol not found: {e}"),
-                &sender,
-            )?;
-            Ok(None)
-        }
+    if !snapshot.verify_request_version(db.version, &path)? {
+        return Err(anyhow!(LSPError::Retry));
     }
+
+    Ok(res)
 }
 
 /// Called when a `textDocument/rename` request was received.
@@ -374,8 +386,9 @@ pub(crate) fn handle_rename(
         Some(snapshot.vfs.clone()),
         log,
         &db.gs,
-        snapshot.module_cache.clone(),
-        snapshot.scope_cache.clone(),
+        Some(snapshot.module_cache),
+        Some(snapshot.scope_cache),
+        Some(snapshot.compile_unit_cache),
     );
     match references {
         Result::Ok(locations) => {

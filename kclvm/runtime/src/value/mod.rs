@@ -41,6 +41,7 @@ pub mod val_fmt;
 pub use val_fmt::*;
 
 pub mod val_from;
+pub mod val_func;
 
 pub mod val_get_set;
 
@@ -60,6 +61,8 @@ pub mod val_plan;
 pub use val_plan::*;
 
 pub mod val_str;
+
+pub mod val_attr;
 
 pub mod val_type;
 pub use val_type::*;

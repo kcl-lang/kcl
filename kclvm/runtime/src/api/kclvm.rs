@@ -1,6 +1,7 @@
 //! Copyright The KCL Authors. All rights reserved.
 
 use crate::{new_mut_ptr, IndexMap, PlanOptions};
+use generational_arena::Index;
 use indexmap::IndexSet;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
@@ -264,15 +265,9 @@ pub struct FuncValue {
     pub name: String,
     pub runtime_type: String,
     pub is_external: bool,
-}
-
-#[derive(PartialEq, Eq, Clone, Default, Debug)]
-pub struct OptionHelp {
-    pub name: String,
-    pub ty: String,
-    pub required: bool,
-    pub default_value: Option<String>,
-    pub help: String,
+    /// Proxy functions represent the saved functions of the runtime itself,
+    /// rather than executing KCL defined functions or plugin functions.
+    pub proxy: Option<Index>,
 }
 
 #[allow(non_snake_case)]
@@ -311,7 +306,6 @@ pub struct ContextConfig {
     pub debug_mode: bool,
     pub strict_range_check: bool,
     pub disable_schema_check: bool,
-    pub list_option_mode: bool,
 }
 
 #[derive(PartialEq, Eq, Clone, Debug)]
@@ -351,8 +345,6 @@ pub struct Context {
     /// Import graph
     pub import_names: IndexMap<String, IndexMap<String, String>>,
 
-    /// All option function calling help messages.
-    pub option_helps: Vec<OptionHelp>,
     /// A buffer to store plugin or hooks function calling results.
     pub buffer: ContextBuffer,
     /// Objects is to store all KCL object pointers at runtime.
@@ -412,12 +404,6 @@ impl Context {
             ..Default::default()
         }
     }
-}
-
-#[derive(PartialEq, Eq, Clone, Default, Debug)]
-pub struct FuncHandler {
-    pub namespace: String,
-    pub fn_pointer: u64,
 }
 
 #[repr(C)]

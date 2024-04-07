@@ -1,6 +1,6 @@
 [package]
 name = "kcl-language-server"
-version = "0.8.1"
+version = "0.8.4"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -34,7 +34,7 @@ compiler_base_session = { path = "../../../../compiler_base/session" }
 kclvm-query = { path = "../../../query" }
 kclvm-span = { path = "../../../span" }
 
-lsp-server = { version = "0.6.0", default-features = false }
+lsp-server = { version = "0.7.0", default-features = false }
 anyhow = { version = "1.0", default-features = false, features = ["std"] }
 crossbeam-channel = { version = "0.5.7", default-features = false }
 ra_ap_vfs = "0.0.149"

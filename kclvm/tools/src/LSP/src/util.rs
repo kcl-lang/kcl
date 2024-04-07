@@ -10,24 +10,23 @@ use kclvm_driver::lookup_compile_unit;
 use kclvm_error::Diagnostic;
 use kclvm_error::Position as KCLPos;
 use kclvm_parser::entry::get_dir_files;
-use kclvm_parser::{load_program, KCLModuleCache, ParseSession};
+use kclvm_parser::{load_program, KCLModuleCache, LoadProgramOptions, ParseSessionRef};
 use kclvm_sema::advanced_resolver::AdvancedResolver;
 use kclvm_sema::core::global_state::GlobalState;
 use kclvm_sema::namer::Namer;
 
 use kclvm_sema::resolver::resolve_program_with_opts;
-use kclvm_sema::resolver::scope::{KCLScopeCache, ProgramScope};
+use kclvm_sema::resolver::scope::KCLScopeCache;
 
 use crate::from_lsp;
-use crate::state::KCLVfs;
+use crate::state::{KCLCompileUnitCache, KCLVfs};
 use lsp_types::Url;
 use parking_lot::RwLockReadGuard;
 use ra_ap_vfs::{FileId, Vfs};
 use serde::{de::DeserializeOwned, Serialize};
 
 use std::path::Path;
-
-use std::{fs, sync::Arc};
+use std::{fs, panic};
 
 #[allow(unused)]
 /// Deserializes a `T` from a json value.
@@ -60,50 +59,81 @@ pub(crate) fn get_file_name(vfs: RwLockReadGuard<Vfs>, file_id: FileId) -> anyho
     }
 }
 
-pub(crate) struct Param {
+pub(crate) struct Params {
     pub file: String,
     pub module_cache: Option<KCLModuleCache>,
     pub scope_cache: Option<KCLScopeCache>,
+    pub vfs: Option<KCLVfs>,
+    pub compile_unit_cache: Option<KCLCompileUnitCache>,
 }
 
-pub(crate) fn parse_param_and_compile(
-    param: Param,
-    vfs: Option<KCLVfs>,
-) -> anyhow::Result<(Program, ProgramScope, IndexSet<Diagnostic>, GlobalState)> {
-    let (mut files, opt) = lookup_compile_unit(&param.file, true);
-    if !files.contains(&param.file) {
-        files.push(param.file.clone());
+pub(crate) fn compile_unit_with_cache(
+    compile_unit_cache: &Option<KCLCompileUnitCache>,
+    file: &str,
+) -> (Vec<String>, Option<LoadProgramOptions>) {
+    match compile_unit_cache {
+        Some(cache) => {
+            let map = cache.read();
+            match map.get(file) {
+                Some(compile_unit) => compile_unit.clone(),
+                None => lookup_compile_unit(file, true),
+            }
+        }
+        None => lookup_compile_unit(file, true),
+    }
+}
+
+pub(crate) fn compile_with_params(
+    params: Params,
+) -> anyhow::Result<(Program, IndexSet<Diagnostic>, GlobalState)> {
+    // Lookup compile unit (kcl.mod or kcl.yaml) from the entry file.
+    let (mut files, opt) = compile_unit_with_cache(&params.compile_unit_cache, &params.file);
+
+    if let Some(cache) = params.compile_unit_cache {
+        cache
+            .write()
+            .insert(params.file.clone(), (files.clone(), opt.clone()));
     }
 
+    if !files.contains(&params.file) {
+        files.push(params.file.clone());
+    }
     let files: Vec<&str> = files.iter().map(|s| s.as_str()).collect();
     let mut opt = opt.unwrap_or_default();
     opt.load_plugins = true;
-
     // Update opt.k_code_list
-    if let Some(vfs) = vfs {
+    if let Some(vfs) = params.vfs {
         let mut k_code_list = load_files_code_from_vfs(&files, vfs)?;
         opt.k_code_list.append(&mut k_code_list);
     }
-    let sess = Arc::new(ParseSession::default());
-    let mut program = load_program(sess.clone(), &files, Some(opt), param.module_cache)?.program;
-
-    let prog_scope = resolve_program_with_opts(
-        &mut program,
-        kclvm_sema::resolver::Options {
-            merge_program: false,
-            type_erasure: false,
-            ..Default::default()
-        },
-        param.scope_cache,
-    );
-
-    let gs = GlobalState::default();
-    let gs = Namer::find_symbols(&program, gs);
-    let gs = AdvancedResolver::resolve_program(&program, gs, prog_scope.node_ty_map.clone());
-
-    sess.append_diagnostic(prog_scope.handler.diagnostics.clone());
-    let diags = sess.1.borrow().diagnostics.clone();
-    Ok((program, prog_scope, diags, gs))
+    match panic::catch_unwind(move || {
+        // Parser
+        let sess = ParseSessionRef::default();
+        let mut program = load_program(sess.clone(), &files, Some(opt), params.module_cache)
+            .unwrap()
+            .program;
+        // Resolver
+        let prog_scope = resolve_program_with_opts(
+            &mut program,
+            kclvm_sema::resolver::Options {
+                merge_program: false,
+                type_erasure: false,
+                ..Default::default()
+            },
+            params.scope_cache,
+        );
+        // Please note that there is no global state cache at this stage.
+        let gs = GlobalState::default();
+        let gs = Namer::find_symbols(&program, gs);
+        let gs = AdvancedResolver::resolve_program(&program, gs, prog_scope.node_ty_map.clone());
+        // Merge parse diagnostic and resolve diagnostic
+        sess.append_diagnostic(prog_scope.handler.diagnostics.clone());
+        let diags = sess.1.borrow().diagnostics.clone();
+        Ok((program, diags, gs))
+    }) {
+        Ok(res) => return res,
+        Err(e) => Err(anyhow::anyhow!("Compile failed: {:?}", e)),
+    }
 }
 
 /// Update text with TextDocumentContentChangeEvent param

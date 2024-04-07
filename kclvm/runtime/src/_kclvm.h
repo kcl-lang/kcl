@@ -88,37 +88,37 @@ kclvm_value_ref_t* kclvm_base64_decode(kclvm_context_t* ctx, kclvm_value_ref_t* 
 
 kclvm_value_ref_t* kclvm_base64_encode(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
 
-kclvm_value_ref_t* kclvm_builtin_abs(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
+kclvm_value_ref_t* kclvm_builtin_abs(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
-kclvm_value_ref_t* kclvm_builtin_all_true(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
+kclvm_value_ref_t* kclvm_builtin_all_true(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
 kclvm_value_ref_t* kclvm_builtin_any_true(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
-kclvm_value_ref_t* kclvm_builtin_bin(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
+kclvm_value_ref_t* kclvm_builtin_bin(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
-kclvm_value_ref_t* kclvm_builtin_bool(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
+kclvm_value_ref_t* kclvm_builtin_bool(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
 kclvm_value_ref_t* kclvm_builtin_dict(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
 kclvm_value_ref_t* kclvm_builtin_float(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
-kclvm_value_ref_t* kclvm_builtin_hex(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
+kclvm_value_ref_t* kclvm_builtin_hex(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
 kclvm_value_ref_t* kclvm_builtin_int(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
-kclvm_value_ref_t* kclvm_builtin_isunique(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
+kclvm_value_ref_t* kclvm_builtin_isunique(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
-kclvm_value_ref_t* kclvm_builtin_len(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
+kclvm_value_ref_t* kclvm_builtin_len(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
-kclvm_value_ref_t* kclvm_builtin_list(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
+kclvm_value_ref_t* kclvm_builtin_list(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
 kclvm_value_ref_t* kclvm_builtin_max(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
 
 kclvm_value_ref_t* kclvm_builtin_min(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
 
-kclvm_value_ref_t* kclvm_builtin_multiplyof(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
+kclvm_value_ref_t* kclvm_builtin_multiplyof(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
-kclvm_value_ref_t* kclvm_builtin_oct(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
+kclvm_value_ref_t* kclvm_builtin_oct(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
 kclvm_value_ref_t* kclvm_builtin_option(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
@@ -126,19 +126,19 @@ void kclvm_builtin_option_init(kclvm_context_t* ctx, char* key, char* value);
 
 kclvm_value_ref_t* kclvm_builtin_option_reset(kclvm_context_t* ctx, kclvm_value_ref_t* _args, kclvm_value_ref_t* _kwargs);
 
-kclvm_value_ref_t* kclvm_builtin_ord(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
+kclvm_value_ref_t* kclvm_builtin_ord(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
-kclvm_value_ref_t* kclvm_builtin_pow(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
+kclvm_value_ref_t* kclvm_builtin_pow(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
 kclvm_value_ref_t* kclvm_builtin_print(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
-kclvm_value_ref_t* kclvm_builtin_range(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
+kclvm_value_ref_t* kclvm_builtin_range(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
-kclvm_value_ref_t* kclvm_builtin_round(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
+kclvm_value_ref_t* kclvm_builtin_round(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
 kclvm_value_ref_t* kclvm_builtin_sorted(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
-kclvm_value_ref_t* kclvm_builtin_str(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
+kclvm_value_ref_t* kclvm_builtin_str(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
 kclvm_value_ref_t* kclvm_builtin_str_capitalize(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
 
@@ -198,7 +198,7 @@ kclvm_value_ref_t* kclvm_builtin_str_title(kclvm_context_t* ctx, kclvm_value_ref
 
 kclvm_value_ref_t* kclvm_builtin_str_upper(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
 
-kclvm_value_ref_t* kclvm_builtin_sum(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
+kclvm_value_ref_t* kclvm_builtin_sum(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
 kclvm_value_ref_t* kclvm_builtin_typeof(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
@@ -233,8 +233,6 @@ void kclvm_context_set_kcl_modpath(kclvm_context_t* p, char* module_path);
 void kclvm_context_set_kcl_pkgpath(kclvm_context_t* p, char* pkgpath);
 
 void kclvm_context_set_kcl_workdir(kclvm_context_t* p, char* workdir);
-
-void kclvm_context_set_list_option_mode(kclvm_context_t* p, kclvm_bool_t v);
 
 void kclvm_context_set_strict_range_check(kclvm_context_t* p, kclvm_bool_t v);
 
@@ -306,11 +304,15 @@ void kclvm_dict_update_key_value(kclvm_value_ref_t* p, kclvm_value_ref_t* key, k
 
 kclvm_value_ref_t* kclvm_dict_values(kclvm_context_t* ctx, kclvm_value_ref_t* p);
 
-kclvm_value_ref_t* kclvm_file_glob(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
+kclvm_value_ref_t* kclvm_file_abs(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+
+kclvm_value_ref_t* kclvm_file_exists(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+
+kclvm_value_ref_t* kclvm_file_glob(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
 kclvm_value_ref_t* kclvm_file_modpath(kclvm_context_t* ctx, kclvm_value_ref_t* _args, kclvm_value_ref_t* _kwargs);
 
-kclvm_value_ref_t* kclvm_file_read(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
+kclvm_value_ref_t* kclvm_file_read(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
 kclvm_value_ref_t* kclvm_file_workdir(kclvm_context_t* ctx, kclvm_value_ref_t* _args, kclvm_value_ref_t* _kwargs);
 
@@ -479,6 +481,10 @@ kclvm_value_ref_t* kclvm_scope_get(kclvm_context_t* ctx, kclvm_eval_scope_t* sco
 kclvm_eval_scope_t* kclvm_scope_new();
 
 void kclvm_scope_set(kclvm_context_t* _ctx, kclvm_eval_scope_t* scope, char* pkg, char* name, kclvm_value_ref_t* value);
+
+kclvm_value_ref_t* kclvm_template_execute(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+
+kclvm_value_ref_t* kclvm_template_html_escape(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
 kclvm_value_ref_t* kclvm_units_to_G(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
 

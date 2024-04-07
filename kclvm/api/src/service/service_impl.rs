@@ -9,6 +9,7 @@ use anyhow::anyhow;
 use kcl_language_server::rename;
 use kclvm_config::settings::build_settings_pathbuf;
 use kclvm_driver::canonicalize_input_files;
+use kclvm_loader::option::list_options;
 use kclvm_loader::{load_packages, LoadPackageOptions};
 use kclvm_parser::load_program;
 use kclvm_parser::parse_file;
@@ -172,9 +173,9 @@ impl KclvmServiceImpl {
     /// assert_eq!(result.type_errors.len(), 0);
     /// assert_eq!(result.symbols.len(), 12);
     /// assert_eq!(result.scopes.len(), 3);
-    /// assert_eq!(result.node_symbol_map.len(), 165);
-    /// assert_eq!(result.symbol_node_map.len(), 165);
-    /// assert_eq!(result.fully_qualified_name_map.len(), 173);
+    /// assert_eq!(result.node_symbol_map.len(), 169);
+    /// assert_eq!(result.symbol_node_map.len(), 169);
+    /// assert_eq!(result.fully_qualified_name_map.len(), 178);
     /// assert_eq!(result.pkg_scope_map.len(), 3);
     /// ```
     pub fn load_package(&self, args: &LoadPackageArgs) -> anyhow::Result<LoadPackageResult> {
@@ -249,6 +250,54 @@ impl KclvmServiceImpl {
                 .type_errors
                 .into_iter()
                 .map(|e| e.into_error())
+                .collect(),
+        })
+    }
+
+    /// list_options provides users with the ability to parse kcl program and get all option
+    /// calling information.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
+    /// use kclvm_api::gpyrpc::*;
+    /// use std::path::Path;
+    ///
+    /// let serv = KclvmServiceImpl::default();
+    /// let args = &ParseProgramArgs {
+    ///     paths: vec![Path::new(".").join("src").join("testdata").join("option").join("main.k").canonicalize().unwrap().display().to_string()],
+    ///     ..Default::default()
+    /// };
+    /// let result = serv.list_options(args).unwrap();
+    /// assert_eq!(result.options.len(), 3);
+    /// ```
+    pub fn list_options(&self, args: &ParseProgramArgs) -> anyhow::Result<ListOptionsResult> {
+        let mut package_maps = HashMap::new();
+        for p in &args.external_pkgs {
+            package_maps.insert(p.pkg_name.to_string(), p.pkg_path.to_string());
+        }
+        let options = list_options(&LoadPackageOptions {
+            paths: args.paths.clone(),
+            load_opts: Some(LoadProgramOptions {
+                k_code_list: args.sources.clone(),
+                package_maps,
+                load_plugins: true,
+                ..Default::default()
+            }),
+            resolve_ast: true,
+            load_builtin: false,
+        })?;
+        Ok(ListOptionsResult {
+            options: options
+                .iter()
+                .map(|o| OptionHelp {
+                    name: o.name.clone(),
+                    r#type: o.ty.clone(),
+                    required: o.required.clone(),
+                    default_value: o.default_value.clone(),
+                    help: o.help.clone(),
+                })
                 .collect(),
         })
     }

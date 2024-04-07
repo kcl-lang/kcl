@@ -3,7 +3,8 @@ use crossbeam_channel::select;
 use indexmap::IndexSet;
 use kclvm_ast::MAIN_PKG;
 use kclvm_sema::core::global_state::GlobalState;
-use kclvm_sema::resolver::scope::CachedScope;
+
+use kclvm_sema::resolver::scope::KCLScopeCache;
 use lsp_server::RequestId;
 use lsp_server::Response;
 use lsp_types::notification::Exit;
@@ -16,6 +17,8 @@ use lsp_types::CompletionResponse;
 use lsp_types::CompletionTriggerKind;
 use lsp_types::DocumentFormattingParams;
 use lsp_types::DocumentSymbolParams;
+use lsp_types::FileChangeType;
+use lsp_types::FileEvent;
 use lsp_types::GotoDefinitionParams;
 use lsp_types::GotoDefinitionResponse;
 use lsp_types::Hover;
@@ -43,16 +46,16 @@ use std::env;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
+
 use std::sync::Arc;
-use std::sync::Mutex;
 use std::thread;
 use std::time::Duration;
+use std::time::Instant;
 
 use kclvm_ast::ast::Program;
 use kclvm_error::Diagnostic as KCLDiagnostic;
 use kclvm_error::Position as KCLPos;
 use kclvm_parser::KCLModuleCache;
-use kclvm_sema::resolver::scope::ProgramScope;
 
 use lsp_types::Diagnostic;
 use lsp_types::DiagnosticRelatedInformation;
@@ -60,7 +63,7 @@ use lsp_types::DiagnosticSeverity;
 use lsp_types::Location;
 use lsp_types::NumberOrString;
 use lsp_types::{Position, Range, TextDocumentContentChangeEvent};
-use parking_lot::RwLock;
+
 use proc_macro_crate::bench_test;
 
 use lsp_server::{Connection, Message, Notification, Request};
@@ -72,9 +75,12 @@ use crate::from_lsp::file_path_from_url;
 use crate::goto_def::goto_definition_with_gs;
 use crate::hover::hover;
 use crate::main_loop::main_loop;
+use crate::state::KCLCompileUnitCache;
+use crate::state::KCLVfs;
 use crate::to_lsp::kcl_diag_to_lsp_diags;
+use crate::util::compile_unit_with_cache;
 use crate::util::to_json;
-use crate::util::{apply_document_changes, parse_param_and_compile, Param};
+use crate::util::{apply_document_changes, compile_with_params, Params};
 
 macro_rules! wait_async_compile {
     () => {
@@ -113,29 +119,22 @@ pub(crate) fn compare_goto_res(
 
 pub(crate) fn compile_test_file(
     testfile: &str,
-) -> (
-    String,
-    Program,
-    ProgramScope,
-    IndexSet<KCLDiagnostic>,
-    GlobalState,
-) {
+) -> (String, Program, IndexSet<KCLDiagnostic>, GlobalState) {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let mut test_file = path;
     test_file.push(testfile);
 
     let file = test_file.to_str().unwrap().to_string();
 
-    let (program, prog_scope, diags, gs) = parse_param_and_compile(
-        Param {
-            file: file.clone(),
-            module_cache: Some(KCLModuleCache::default()),
-            scope_cache: Some(Arc::new(Mutex::new(CachedScope::default()))),
-        },
-        Some(Arc::new(RwLock::new(Default::default()))),
-    )
+    let (program, diags, gs) = compile_with_params(Params {
+        file: file.clone(),
+        module_cache: Some(KCLModuleCache::default()),
+        scope_cache: Some(KCLScopeCache::default()),
+        vfs: Some(KCLVfs::default()),
+        compile_unit_cache: Some(KCLCompileUnitCache::default()),
+    })
     .unwrap();
-    (file, program, prog_scope, diags, gs)
+    (file, program, diags, gs)
 }
 
 type Info = (String, (u32, u32, u32, u32), String);
@@ -289,14 +288,13 @@ fn diagnostics_test() {
     test_file.push("src/test_data/diagnostics.k");
     let file = test_file.to_str().unwrap();
 
-    let (_, _, diags, _) = parse_param_and_compile(
-        Param {
-            file: file.to_string(),
-            module_cache: None,
-            scope_cache: None,
-        },
-        Some(Arc::new(RwLock::new(Default::default()))),
-    )
+    let (_, diags, _) = compile_with_params(Params {
+        file: file.to_string(),
+        module_cache: None,
+        scope_cache: None,
+        vfs: Some(KCLVfs::default()),
+        compile_unit_cache: Some(KCLCompileUnitCache::default()),
+    })
     .unwrap();
 
     let diagnostics = diags
@@ -418,7 +416,7 @@ fn test_lsp_with_kcl_mod_in_order() {
 
 fn goto_import_pkg_with_line_test() {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let (file, program, _, _, gs) =
+    let (file, program, _, gs) =
         compile_test_file("src/test_data/goto_def_with_line_test/main_pkg/main.k");
     let pos = KCLPos {
         filename: file,
@@ -477,14 +475,13 @@ fn complete_import_external_file_test() {
         .output()
         .unwrap();
 
-    let (program, _, _, gs) = parse_param_and_compile(
-        Param {
-            file: path.to_string(),
-            module_cache: None,
-            scope_cache: None,
-        },
-        Some(Arc::new(RwLock::new(Default::default()))),
-    )
+    let (program, _, gs) = compile_with_params(Params {
+        file: path.to_string(),
+        module_cache: None,
+        scope_cache: None,
+        vfs: Some(KCLVfs::default()),
+        compile_unit_cache: Some(KCLCompileUnitCache::default()),
+    })
     .unwrap();
 
     let pos = KCLPos {
@@ -536,14 +533,13 @@ fn goto_import_external_file_test() {
         .output()
         .unwrap();
 
-    let (program, _, diags, gs) = parse_param_and_compile(
-        Param {
-            file: path.to_string(),
-            module_cache: None,
-            scope_cache: None,
-        },
-        Some(Arc::new(RwLock::new(Default::default()))),
-    )
+    let (program, diags, gs) = compile_with_params(Params {
+        file: path.to_string(),
+        module_cache: None,
+        scope_cache: None,
+        vfs: Some(KCLVfs::default()),
+        compile_unit_cache: Some(KCLCompileUnitCache::default()),
+    })
     .unwrap();
 
     assert_eq!(diags.len(), 0);
@@ -892,6 +888,113 @@ fn cancel_test() {
 }
 
 #[test]
+fn compile_unit_cache_test() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let mut path = root.clone();
+    path.push("src/test_data/compile_unit/b.k");
+
+    let path = path.to_str().unwrap();
+
+    let compile_unit_cache = KCLCompileUnitCache::default();
+    let start = Instant::now();
+    let _ = compile_unit_with_cache(&Some(Arc::clone(&compile_unit_cache)), &path.to_string());
+    let first_compile_time = start.elapsed();
+
+    let start = Instant::now();
+    let _ = compile_unit_with_cache(&Some(compile_unit_cache), &path.to_string());
+    let second_compile_time = start.elapsed();
+
+    assert!(first_compile_time > second_compile_time);
+}
+
+#[test]
+fn compile_unit_cache_e2e_test() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let mut path = root.clone();
+    let mut kcl_yaml = root.clone();
+    path.push("src/test_data/compile_unit/b.k");
+    kcl_yaml.push("src/test_data/compile_unit/kcl.yaml");
+
+    let path = path.to_str().unwrap();
+
+    let kcl_yaml = kcl_yaml.to_str().unwrap();
+    let src = std::fs::read_to_string(path).unwrap();
+    let server = Project {}.server(InitializeParams::default());
+
+    // Mock open file
+    server.notification::<lsp_types::notification::DidOpenTextDocument>(
+        lsp_types::DidOpenTextDocumentParams {
+            text_document: TextDocumentItem {
+                uri: Url::from_file_path(path).unwrap(),
+                language_id: "KCL".to_string(),
+                version: 0,
+                text: src,
+            },
+        },
+    );
+
+    server.wait_for_message_cond(1, &|msg: &Message| match msg {
+        Message::Notification(not) => not.method == "textDocument/publishDiagnostics",
+        _ => false,
+    });
+
+    // Mock edit file
+    server.notification::<lsp_types::notification::DidChangeTextDocument>(
+        lsp_types::DidChangeTextDocumentParams {
+            text_document: lsp_types::VersionedTextDocumentIdentifier {
+                uri: Url::from_file_path(path).unwrap(),
+                version: 1,
+            },
+            content_changes: vec![lsp_types::TextDocumentContentChangeEvent {
+                range: Some(lsp_types::Range::new(
+                    lsp_types::Position::new(0, 0),
+                    lsp_types::Position::new(0, 0),
+                )),
+                range_length: Some(0),
+                text: String::from("\n"),
+            }],
+        },
+    );
+    server.wait_for_message_cond(2, &|msg: &Message| match msg {
+        Message::Notification(not) => not.method == "textDocument/publishDiagnostics",
+        _ => false,
+    });
+
+    // Mock edit config file, clear cache
+    server.notification::<lsp_types::notification::DidChangeWatchedFiles>(
+        lsp_types::DidChangeWatchedFilesParams {
+            changes: vec![FileEvent {
+                uri: Url::from_file_path(kcl_yaml).unwrap(),
+                typ: FileChangeType::CHANGED,
+            }],
+        },
+    );
+
+    // Mock edit file
+    server.notification::<lsp_types::notification::DidChangeTextDocument>(
+        lsp_types::DidChangeTextDocumentParams {
+            text_document: lsp_types::VersionedTextDocumentIdentifier {
+                uri: Url::from_file_path(path).unwrap(),
+                version: 2,
+            },
+            content_changes: vec![lsp_types::TextDocumentContentChangeEvent {
+                range: Some(lsp_types::Range::new(
+                    lsp_types::Position::new(0, 0),
+                    lsp_types::Position::new(0, 0),
+                )),
+                range_length: Some(0),
+                text: String::from("\n"),
+            }],
+        },
+    );
+
+    server.wait_for_message_cond(3, &|msg: &Message| match msg {
+        Message::Notification(not) => not.method == "textDocument/publishDiagnostics",
+        _ => false,
+    });
+}
+
+#[test]
 fn goto_def_test() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let mut path = root.clone();
@@ -914,7 +1017,6 @@ fn goto_def_test() {
         },
     );
 
-    wait_async_compile!();
     let id = server.next_request_id.get();
     server.next_request_id.set(id.wrapping_add(1));
 
@@ -971,7 +1073,6 @@ fn complete_test() {
             },
         },
     );
-    wait_async_compile!();
 
     let id = server.next_request_id.get();
     server.next_request_id.set(id.wrapping_add(1));
@@ -1040,7 +1141,6 @@ fn hover_test() {
             },
         },
     );
-    wait_async_compile!();
 
     let id = server.next_request_id.get();
     server.next_request_id.set(id.wrapping_add(1));
@@ -1098,7 +1198,6 @@ fn hover_assign_in_lambda_test() {
             },
         },
     );
-    wait_async_compile!();
 
     let id = server.next_request_id.get();
     server.next_request_id.set(id.wrapping_add(1));
@@ -1181,6 +1280,77 @@ fn formatting_test() {
     )
 }
 
+#[test]
+fn formatting_unsaved_test() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let mut path = root.clone();
+
+    path.push("src/test_data/format/format_range.k");
+
+    let path = path.to_str().unwrap();
+    let src = std::fs::read_to_string(path).unwrap();
+    let server = Project {}.server(InitializeParams::default());
+
+    let uri = Url::from_file_path(path).unwrap();
+
+    // Mock open file
+    server.notification::<lsp_types::notification::DidOpenTextDocument>(
+        lsp_types::DidOpenTextDocumentParams {
+            text_document: TextDocumentItem {
+                uri: uri.clone(),
+                language_id: "KCL".to_string(),
+                version: 0,
+                text: src,
+            },
+        },
+    );
+
+    // Mock edit file
+    server.notification::<lsp_types::notification::DidChangeTextDocument>(
+        lsp_types::DidChangeTextDocumentParams {
+            text_document: lsp_types::VersionedTextDocumentIdentifier {
+                uri: uri.clone(),
+                version: 1,
+            },
+            content_changes: vec![lsp_types::TextDocumentContentChangeEvent {
+                range: Some(lsp_types::Range::new(
+                    lsp_types::Position::new(0, 0),
+                    lsp_types::Position::new(0, 0),
+                )),
+                range_length: Some(0),
+                text: String::from("unsaved = 0\n"),
+            }],
+        },
+    );
+
+    let id = server.next_request_id.get();
+    server.next_request_id.set(id.wrapping_add(1));
+
+    let r: Request = Request::new(
+        id.into(),
+        "textDocument/formatting".to_string(),
+        DocumentFormattingParams {
+            text_document: TextDocumentIdentifier {
+                uri: Url::from_file_path(path).unwrap(),
+            },
+            options: Default::default(),
+            work_done_progress_params: Default::default(),
+        },
+    );
+
+    // Send request and wait for it's response
+    let res = server.send_and_receive(r);
+
+    assert_eq!(
+        res.result.unwrap(),
+        to_json(Some(vec![TextEdit {
+            range: Range::new(Position::new(0, 0), Position::new(u32::MAX, u32::MAX),),
+            new_text: "unsaved = 0\na = 1\nb = 2\nc = 3\nd = 4\n".to_string()
+        }]))
+        .unwrap()
+    )
+}
+
 // Integration testing of lsp and konfig
 fn konfig_path() -> PathBuf {
     let konfig_path = Path::new(".")
@@ -1206,14 +1376,13 @@ fn konfig_goto_def_test_base() {
     let mut base_path = konfig_path.clone();
     base_path.push("appops/nginx-example/base/base.k");
     let base_path_str = base_path.to_str().unwrap().to_string();
-    let (program, _, _, gs) = parse_param_and_compile(
-        Param {
-            file: base_path_str.clone(),
-            module_cache: None,
-            scope_cache: None,
-        },
-        Some(Arc::new(RwLock::new(Default::default()))),
-    )
+    let (program, _, gs) = compile_with_params(Params {
+        file: base_path_str.clone(),
+        module_cache: None,
+        scope_cache: None,
+        vfs: Some(KCLVfs::default()),
+        compile_unit_cache: Some(KCLCompileUnitCache::default()),
+    })
     .unwrap();
 
     // schema def
@@ -1299,14 +1468,13 @@ fn konfig_goto_def_test_main() {
     let mut main_path = konfig_path.clone();
     main_path.push("appops/nginx-example/dev/main.k");
     let main_path_str = main_path.to_str().unwrap().to_string();
-    let (program, _, _, gs) = parse_param_and_compile(
-        Param {
-            file: main_path_str.clone(),
-            module_cache: None,
-            scope_cache: None,
-        },
-        Some(Arc::new(RwLock::new(Default::default()))),
-    )
+    let (program, _, gs) = compile_with_params(Params {
+        file: main_path_str.clone(),
+        module_cache: None,
+        scope_cache: None,
+        vfs: Some(KCLVfs::default()),
+        compile_unit_cache: Some(KCLCompileUnitCache::default()),
+    })
     .unwrap();
 
     // schema def
@@ -1364,14 +1532,13 @@ fn konfig_completion_test_main() {
     let mut main_path = konfig_path.clone();
     main_path.push("appops/nginx-example/dev/main.k");
     let main_path_str = main_path.to_str().unwrap().to_string();
-    let (program, _, _, gs) = parse_param_and_compile(
-        Param {
-            file: main_path_str.clone(),
-            module_cache: None,
-            scope_cache: None,
-        },
-        Some(Arc::new(RwLock::new(Default::default()))),
-    )
+    let (program, _, gs) = compile_with_params(Params {
+        file: main_path_str.clone(),
+        module_cache: None,
+        scope_cache: None,
+        vfs: Some(KCLVfs::default()),
+        compile_unit_cache: Some(KCLCompileUnitCache::default()),
+    })
     .unwrap();
 
     // pkg's definition(schema) completion
@@ -1475,14 +1642,13 @@ fn konfig_hover_test_main() {
     let mut main_path = konfig_path.clone();
     main_path.push("appops/nginx-example/dev/main.k");
     let main_path_str = main_path.to_str().unwrap().to_string();
-    let (program, _, _, gs) = parse_param_and_compile(
-        Param {
-            file: main_path_str.clone(),
-            module_cache: None,
-            scope_cache: None,
-        },
-        Some(Arc::new(RwLock::new(Default::default()))),
-    )
+    let (program, _, gs) = compile_with_params(Params {
+        file: main_path_str.clone(),
+        module_cache: None,
+        scope_cache: None,
+        vfs: Some(KCLVfs::default()),
+        compile_unit_cache: Some(KCLCompileUnitCache::default()),
+    })
     .unwrap();
 
     // schema def hover
@@ -1626,8 +1792,6 @@ fn find_refs_test() {
         },
     );
 
-    wait_async_compile!();
-
     let id = server.next_request_id.get();
     server.next_request_id.set(id.wrapping_add(1));
 
@@ -1750,7 +1914,7 @@ p2 = Person {
             }],
         },
     );
-    wait_async_compile!();
+
     let id = server.next_request_id.get();
     server.next_request_id.set(id.wrapping_add(1));
     // Mock trigger find references
@@ -1833,7 +1997,6 @@ fn rename_test() {
             },
         },
     );
-    wait_async_compile!();
 
     let id = server.next_request_id.get();
     server.next_request_id.set(id.wrapping_add(1));
@@ -1905,14 +2068,13 @@ fn compile_unit_test() {
     test_file.push("src/test_data/compile_unit/b.k");
     let file = test_file.to_str().unwrap();
 
-    let (prog, ..) = parse_param_and_compile(
-        Param {
-            file: file.to_string(),
-            module_cache: None,
-            scope_cache: None,
-        },
-        Some(Arc::new(RwLock::new(Default::default()))),
-    )
+    let (prog, ..) = compile_with_params(Params {
+        file: file.to_string(),
+        module_cache: None,
+        scope_cache: None,
+        vfs: Some(KCLVfs::default()),
+        compile_unit_cache: Some(KCLCompileUnitCache::default()),
+    })
     .unwrap();
     // b.k is not contained in kcl.yaml but need to be contained in main pkg
     assert!(prog

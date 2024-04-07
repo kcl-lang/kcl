@@ -1,6 +1,7 @@
 //! This package mainly contains the type definitions of built-in system libraries,
 //! functions, decorators and member methods.
 pub mod decorator;
+pub mod option;
 pub mod string;
 pub mod system_module;
 
@@ -60,16 +61,6 @@ register_builtin! {
             Parameter {
                 name: "help".to_string(),
                 ty: Arc::new(Type::STR),
-                has_default: true,
-            },
-            Parameter {
-                name: "file".to_string(),
-                ty: Arc::new(Type::STR),
-                has_default: true,
-            },
-            Parameter {
-                name: "line".to_string(),
-                ty: Arc::new(Type::INT),
                 has_default: true,
             },
         ],

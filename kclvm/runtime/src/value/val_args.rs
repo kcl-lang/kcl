@@ -215,6 +215,44 @@ impl ValueRef {
     }
 }
 
+/// Get value from arguments and keyword arguments.
+pub(crate) fn get_call_arg(
+    args: &ValueRef,
+    kwargs: &ValueRef,
+    index: usize,
+    key: Option<&str>,
+) -> Option<ValueRef> {
+    if let Some(key) = key {
+        if let Some(val) = kwargs.get_by_key(key) {
+            return Some(val);
+        }
+    }
+    if index < args.len() {
+        return Some(args.list_get(index as isize).unwrap());
+    }
+    None
+}
+
+#[inline]
+pub(crate) fn get_call_arg_str(
+    args: &ValueRef,
+    kwargs: &ValueRef,
+    index: usize,
+    key: Option<&str>,
+) -> Option<String> {
+    get_call_arg(args, kwargs, index, key).map(|v| v.as_str())
+}
+
+#[inline]
+pub(crate) fn get_call_arg_bool(
+    args: &ValueRef,
+    kwargs: &ValueRef,
+    index: usize,
+    key: Option<&str>,
+) -> Option<bool> {
+    get_call_arg(args, kwargs, index, key).map(|v| v.as_bool())
+}
+
 #[cfg(test)]
 mod test_value_args {
     use crate::*;

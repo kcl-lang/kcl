@@ -1,6 +1,6 @@
 [package]
 name = "kclvm-runtime"
-version = "0.8.1"
+version = "0.8.4"
 edition = "2021"
 
 [dependencies]
@@ -9,6 +9,7 @@ serde_json =  {package = "serde_json", version = "= 1.0.86"}
 serde = { version = "1", features = ["derive"] }
 serde_yaml = "0.9.32"
 
+generational-arena = "0.2.9"
 base64 = "0.13.0"
 libc = "0.2.112"
 itertools = "0.10.3"
@@ -28,3 +29,4 @@ fancy-regex = "0.7.1"
 num-integer = "0.1.44"
 glob = "0.3.0"
 uuid = { version = "1.7.0", features = ["serde", "v4"] }
+handlebars = "5.1.2"

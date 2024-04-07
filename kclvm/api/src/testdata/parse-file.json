@@ -1,0 +1,4 @@
+{
+	"path": "source.k",
+	"source": "import units\nimport data.cloud as cloud_pkg\n\ndata1 = 32 * units.Ki\nData2 = 42 * units.Ki * cloud_pkg.Foo\n\nlambda1 = lambda x: int, y: int -> int {\n    x - y\n}\nLambda2 = lambda x: int, y: int -> int {\n    x + y\n}\n"
+}

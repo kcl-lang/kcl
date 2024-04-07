@@ -281,6 +281,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         self.builder.position_at_end(end_block);
         Ok(self.none_value())
     }
+
     fn walk_import_stmt(&self, import_stmt: &'ctx ast::ImportStmt) -> Self::Result {
         check_backtrack_stop!(self);
         let pkgpath = import_stmt.path.node.as_str();
@@ -293,7 +294,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
             }
             // Deref the borrow mut
         }
-        // Stardard or plugin modules.
+        // Standard or plugin modules.
         if builtin::STANDARD_SYSTEM_MODULES.contains(&pkgpath)
             || pkgpath.starts_with(plugin::PLUGIN_MODULE_PREFIX)
         {
@@ -2763,7 +2764,13 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                         .expect(kcl_error::COMPILE_ERROR_MSG);
                     let key = self.walk_expr(elt).expect(kcl_error::COMPILE_ERROR_MSG);
                     let op = op.expect(kcl_error::INTERNAL_ERROR_MSG);
-                    self.dict_insert_with_key_value(collection_value, key, value, op.value(), -1);
+                    self.dict_insert_with_key_value(
+                        collection_value,
+                        key,
+                        self.value_deep_copy(value),
+                        op.value(),
+                        -1,
+                    );
                 }
             }
         } else {
@@ -2820,9 +2827,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 };
                 // Store a local variable for every entry key.
                 let key = match &optional_name {
-                    Some(name) if !self.local_vars.borrow().contains(name) => {
-                        self.string_value(name)
-                    }
+                    Some(name) if !self.is_local_var(name) => self.string_value(name),
                     _ => self.walk_expr(key)?,
                 };
                 self.dict_insert_with_key_value(

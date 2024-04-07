@@ -99,9 +99,6 @@ pub fn _kclvm_get_fn_ptr_by_name(name: &str) -> u64 {
         "kclvm_context_set_kcl_modpath" => crate::kclvm_context_set_kcl_modpath as *const () as u64,
         "kclvm_context_set_kcl_pkgpath" => crate::kclvm_context_set_kcl_pkgpath as *const () as u64,
         "kclvm_context_set_kcl_workdir" => crate::kclvm_context_set_kcl_workdir as *const () as u64,
-        "kclvm_context_set_list_option_mode" => {
-            crate::kclvm_context_set_list_option_mode as *const () as u64
-        }
         "kclvm_context_set_strict_range_check" => {
             crate::kclvm_context_set_strict_range_check as *const () as u64
         }
@@ -145,6 +142,8 @@ pub fn _kclvm_get_fn_ptr_by_name(name: &str) -> u64 {
         "kclvm_dict_update" => crate::kclvm_dict_update as *const () as u64,
         "kclvm_dict_update_key_value" => crate::kclvm_dict_update_key_value as *const () as u64,
         "kclvm_dict_values" => crate::kclvm_dict_values as *const () as u64,
+        "kclvm_file_abs" => crate::kclvm_file_abs as *const () as u64,
+        "kclvm_file_exists" => crate::kclvm_file_exists as *const () as u64,
         "kclvm_file_glob" => crate::kclvm_file_glob as *const () as u64,
         "kclvm_file_modpath" => crate::kclvm_file_modpath as *const () as u64,
         "kclvm_file_read" => crate::kclvm_file_read as *const () as u64,
@@ -242,6 +241,8 @@ pub fn _kclvm_get_fn_ptr_by_name(name: &str) -> u64 {
         "kclvm_scope_get" => crate::kclvm_scope_get as *const () as u64,
         "kclvm_scope_new" => crate::kclvm_scope_new as *const () as u64,
         "kclvm_scope_set" => crate::kclvm_scope_set as *const () as u64,
+        "kclvm_template_execute" => crate::kclvm_template_execute as *const () as u64,
+        "kclvm_template_html_escape" => crate::kclvm_template_html_escape as *const () as u64,
         "kclvm_units_to_G" => crate::kclvm_units_to_G as *const () as u64,
         "kclvm_units_to_Gi" => crate::kclvm_units_to_Gi as *const () as u64,
         "kclvm_units_to_K" => crate::kclvm_units_to_K as *const () as u64,
