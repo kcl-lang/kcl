@@ -4,11 +4,31 @@ use std::rc::Rc;
 use generational_arena::Index;
 use indexmap::IndexMap;
 use kclvm_ast::ast;
+use kclvm_ast::ast::AstIndex;
 use kclvm_runtime::ValueRef;
 
 use crate::error as kcl_error;
 use crate::Evaluator;
 pub type LazyEvalScopeRef = Rc<RefCell<LazyEvalScope>>;
+
+#[macro_export]
+macro_rules! check_backtrack_stop {
+    ($ctx: expr, $stmt: expr) => {
+        // If is break, do not execute the stmt and return immediately.
+        if $ctx.backtrack_meta.borrow().is_break {
+            return $ctx.ok_result();
+        }
+        // Check whether pass the breakpoint.
+        {
+            let meta = &mut $ctx.backtrack_meta.borrow_mut();
+            if let Some(stopped) = &meta.stopped {
+                if stopped == &$stmt.id {
+                    meta.is_break = true
+                }
+            }
+        }
+    };
+}
 
 /// LazyEvalScope represents a scope of sequentially independent calculations, where
 /// the calculation of values is lazy and only recursively performed through
@@ -50,12 +70,15 @@ impl LazyEvalScope {
     }
 }
 
+/// Setter function definition.
 #[derive(PartialEq, Clone, Default, Debug)]
 pub struct Setter {
-    // Schema or body index, none denotes the current schema.
+    /// Schema or body index, none denotes the current schema.
     pub index: Option<Index>,
-    // Statement index in the schema or body in the body array.
+    /// Statement index in the schema or body in the body array.
     pub stmt: usize,
+    /// If the statement is a if statement, stop the backtrack process at the stopped statement index.
+    pub stopped: Option<AstIndex>,
 }
 
 /// Merge setters and set the value with default undefined value.
@@ -80,18 +103,17 @@ pub(crate) fn merge_setters(
     }
 }
 
-/// TODO: Schema or Global internal order independent computation
+/// Schema or Global internal order independent computation
 /// backtracking meta information.
+#[derive(Debug, Default)]
 pub struct BacktrackMeta {
-    pub target: String,
-    pub level: usize,
-    pub count: usize,
-    pub stop: bool,
+    pub stopped: Option<AstIndex>,
+    pub is_break: bool,
 }
 
 impl<'ctx> Evaluator<'ctx> {
     /// Emit setter functions for the AST body.
-    /// TODO: Separate if statements with the same targets using the backtrack meta, such as
+    /// Separate if statements with the same targets using the backtrack meta, such as
     /// ```no_check
     /// a = 1
     /// if True:
@@ -114,10 +136,13 @@ impl<'ctx> Evaluator<'ctx> {
         body: &'ctx [Box<ast::Node<ast::Stmt>>],
         body_map: &mut IndexMap<String, Vec<Setter>>,
         is_in_if: bool,
-        in_if_names: &mut Vec<String>,
+        in_if_names: &mut Vec<(String, AstIndex)>,
         index: Option<Index>,
     ) {
-        let add_stmt = |name: &str, i: usize, body_map: &mut IndexMap<String, Vec<Setter>>| {
+        let add_stmt = |name: &str,
+                        i: usize,
+                        stopped: Option<AstIndex>,
+                        body_map: &mut IndexMap<String, Vec<Setter>>| {
             if !body_map.contains_key(name) {
                 body_map.insert(name.to_string(), vec![]);
             }
@@ -125,6 +150,7 @@ impl<'ctx> Evaluator<'ctx> {
             body_vec.push(Setter {
                 index: index.clone(),
                 stmt: i,
+                stopped,
             });
         };
         for (i, stmt) in body.into_iter().enumerate() {
@@ -132,18 +158,18 @@ impl<'ctx> Evaluator<'ctx> {
                 ast::Stmt::Unification(unification_stmt) => {
                     let name = &unification_stmt.target.node.names[0].node;
                     if is_in_if {
-                        in_if_names.push(name.to_string());
+                        in_if_names.push((name.to_string(), stmt.id.clone()));
                     } else {
-                        add_stmt(name, i, body_map);
+                        add_stmt(name, i, None, body_map);
                     }
                 }
                 ast::Stmt::Assign(assign_stmt) => {
                     for target in &assign_stmt.targets {
                         let name = &target.node.names[0].node;
                         if is_in_if {
-                            in_if_names.push(name.to_string());
+                            in_if_names.push((name.to_string(), stmt.id.clone()));
                         } else {
-                            add_stmt(name, i, body_map);
+                            add_stmt(name, i, None, body_map);
                         }
                     }
                 }
@@ -151,32 +177,32 @@ impl<'ctx> Evaluator<'ctx> {
                     let target = &aug_assign_stmt.target;
                     let name = &target.node.names[0].node;
                     if is_in_if {
-                        in_if_names.push(name.to_string());
+                        in_if_names.push((name.to_string(), stmt.id.clone()));
                     } else {
-                        add_stmt(name, i, body_map);
+                        add_stmt(name, i, None, body_map);
                     }
                 }
                 ast::Stmt::If(if_stmt) => {
-                    let mut names: Vec<String> = vec![];
+                    let mut names: Vec<(String, AstIndex)> = vec![];
                     self.emit_setters_with(&if_stmt.body, body_map, true, &mut names, index);
                     if is_in_if {
-                        for name in &names {
-                            in_if_names.push(name.to_string());
+                        for (name, id) in &names {
+                            in_if_names.push((name.to_string(), id.clone()));
                         }
                     } else {
-                        for name in &names {
-                            add_stmt(name, i, body_map);
+                        for (name, id) in &names {
+                            add_stmt(name, i, Some(id.clone()), body_map);
                         }
                         names.clear();
                     }
                     self.emit_setters_with(&if_stmt.orelse, body_map, true, &mut names, index);
                     if is_in_if {
-                        for name in &names {
-                            in_if_names.push(name.to_string());
+                        for (name, id) in &names {
+                            in_if_names.push((name.to_string(), id.clone()));
                         }
                     } else {
-                        for name in &names {
-                            add_stmt(name, i, body_map);
+                        for (name, id) in &names {
+                            add_stmt(name, i, Some(id.clone()), body_map);
                         }
                         names.clear();
                     }
@@ -184,9 +210,9 @@ impl<'ctx> Evaluator<'ctx> {
                 ast::Stmt::SchemaAttr(schema_attr) => {
                     let name = schema_attr.name.node.as_str();
                     if is_in_if {
-                        in_if_names.push(name.to_string());
+                        in_if_names.push((name.to_string(), stmt.id.clone()));
                     } else {
-                        add_stmt(name, i, body_map);
+                        add_stmt(name, i, None, body_map);
                     }
                 }
                 _ => {}

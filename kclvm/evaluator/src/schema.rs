@@ -278,11 +278,8 @@ impl SchemaEvalContext {
                                     value
                                 } else {
                                     // Call frame
-                                    s.walk_schema_stmt_with_setter(
-                                        &self.node.body,
-                                        &setters[index],
-                                    )
-                                    .expect(kcl_error::INTERNAL_ERROR_MSG);
+                                    s.walk_stmts_with_setter(&self.node.body, &setters[index])
+                                        .expect(kcl_error::INTERNAL_ERROR_MSG);
                                     {
                                         let mut scope = scope.borrow_mut();
                                         scope.levels.insert(key.to_string(), level);

@@ -11,11 +11,12 @@ use kclvm_ast::walker::TypedResultWalker;
 use kclvm_runtime::val_func::invoke_function;
 use kclvm_runtime::walker::walk_value_mut;
 use kclvm_runtime::{
-    schema_assert, schema_runtime_type, ApiFunc, ConfigEntryOperationKind, DecoratorValue,
-    RuntimeErrorType, UnionOptions, ValueRef, PKG_PATH_PREFIX,
+    schema_assert, schema_runtime_type, ConfigEntryOperationKind, DecoratorValue, RuntimeErrorType,
+    UnionOptions, ValueRef, PKG_PATH_PREFIX,
 };
 use kclvm_sema::{builtin, plugin};
 
+use crate::check_backtrack_stop;
 use crate::func::{func_body, FunctionCaller, FunctionEvalContext};
 use crate::lazy::Setter;
 use crate::proxy::Proxy;
@@ -35,6 +36,8 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
      */
 
     fn walk_stmt(&self, stmt: &'ctx ast::Node<ast::Stmt>) -> Self::Result {
+        check_backtrack_stop!(self, stmt);
+        self.update_ctx_panic_info(stmt);
         match &stmt.node {
             ast::Stmt::TypeAlias(type_alias) => self.walk_type_alias_stmt(type_alias),
             ast::Stmt::Expr(expr_stmt) => self.walk_expr_stmt(expr_stmt),
@@ -327,6 +330,7 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
      */
 
     fn walk_expr(&self, expr: &'ctx ast::Node<ast::Expr>) -> Self::Result {
+        self.update_ctx_panic_info(expr);
         match &expr.node {
             ast::Expr::Identifier(identifier) => self.walk_identifier(identifier),
             ast::Expr::Unary(unary_expr) => self.walk_unary_expr(unary_expr),
@@ -1126,7 +1130,6 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
         let formatted_expr_value = self
             .walk_expr(&formatted_value.value)
             .expect(kcl_error::RUNTIME_ERROR_MSG);
-        let _fn_name = ApiFunc::kclvm_value_to_str_value;
         let value = if let Some(spec) = &formatted_value.format_spec {
             match spec.to_lowercase().as_str() {
                 "#json" => formatted_expr_value.to_json_string(),
@@ -1174,7 +1177,7 @@ impl<'ctx> Evaluator<'ctx> {
         result
     }
 
-    pub(crate) fn walk_schema_stmt_with_setter(
+    pub(crate) fn walk_stmts_with_setter(
         &self,
         stmts: &'ctx [Box<ast::Node<ast::Stmt>>],
         setter: &Setter,

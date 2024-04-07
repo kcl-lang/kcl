@@ -7,6 +7,7 @@ mod calculation;
 mod context;
 mod error;
 mod func;
+#[macro_use]
 mod lazy;
 mod module;
 mod node;
@@ -74,10 +75,8 @@ pub struct Evaluator<'ctx> {
     pub pkg_scopes: RefCell<HashMap<String, Vec<Scope>>>,
     /// Local variables in the loop.
     pub local_vars: RefCell<HashSet<String>>,
-    /// The line number of the source file corresponding to the current instruction
-    pub current_line: RefCell<u64>,
     /// Schema attr backtrack meta
-    pub backtrack_meta: RefCell<Option<BacktrackMeta>>,
+    pub backtrack_meta: RefCell<BacktrackMeta>,
 }
 
 pub enum EvalContext {
@@ -114,8 +113,7 @@ impl<'ctx> Evaluator<'ctx> {
             import_names: RefCell::new(Default::default()),
             pkg_scopes: RefCell::new(Default::default()),
             local_vars: RefCell::new(Default::default()),
-            current_line: RefCell::new(Default::default()),
-            backtrack_meta: RefCell::new(None),
+            backtrack_meta: RefCell::new(BacktrackMeta::default()),
         }
     }
 
