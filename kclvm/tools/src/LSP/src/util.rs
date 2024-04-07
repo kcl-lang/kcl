@@ -69,7 +69,7 @@ pub(crate) struct Params {
 
 pub(crate) fn compile_unit_with_cache(
     compile_unit_cache: &Option<KCLCompileUnitCache>,
-    file: &String,
+    file: &str,
 ) -> (Vec<String>, Option<LoadProgramOptions>) {
     match compile_unit_cache {
         Some(cache) => {
