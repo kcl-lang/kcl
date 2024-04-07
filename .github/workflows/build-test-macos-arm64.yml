@@ -35,6 +35,10 @@ jobs:
           toolchain: 1.76
           override: true
           components: clippy, rustfmt
+      - name: Set up python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
       - name: Grammar test
         working-directory: ./kclvm
         run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin:/opt/homebrew/opt/llvm@12/bin/ && make && make test-grammar
