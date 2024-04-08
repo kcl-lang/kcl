@@ -919,22 +919,26 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
             };
             if let Proxy::Schema(schema) = &frame.proxy {
                 self.push_pkgpath(&frame.pkgpath);
+                self.push_backtrace(&frame);
                 // Set new schema and config
                 {
                     let mut ctx = schema.ctx.borrow_mut();
                     ctx.reset_with_config(config_value, config_meta);
                 }
                 let value = (schema.body)(self, &schema.ctx, &list_value, &dict_value);
+                self.pop_backtrace();
                 self.pop_pkgpath();
                 value
             } else if let Proxy::Rule(rule) = &frame.proxy {
                 self.push_pkgpath(&frame.pkgpath);
+                self.push_backtrace(&frame);
                 // Set new rule and config
                 {
                     let mut ctx = rule.ctx.borrow_mut();
                     ctx.reset_with_config(config_value, config_meta);
                 }
                 let value = (rule.body)(self, &rule.ctx, &list_value, &dict_value);
+                self.pop_backtrace();
                 self.pop_pkgpath();
                 value
             } else {

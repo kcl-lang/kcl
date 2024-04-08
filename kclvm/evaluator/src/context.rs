@@ -3,7 +3,7 @@ use std::rc::Rc;
 use generational_arena::Index;
 use kclvm_ast::ast;
 use kclvm_error::Handler;
-use kclvm_runtime::MAIN_PKG_PATH;
+use kclvm_runtime::{BacktraceFrame, MAIN_PKG_PATH};
 
 use crate::{
     error as kcl_error,
@@ -228,5 +228,23 @@ impl<'ctx> Evaluator<'ctx> {
             pkgpath,
             proxy: Proxy::Rule(rule),
         }))
+    }
+
+    pub(crate) fn push_backtrace(&self, frame: &Frame) {
+        let ctx = &mut self.runtime_ctx.borrow_mut();
+        if ctx.cfg.debug_mode {
+            let backtrace_frame = BacktraceFrame::from_panic_info(&ctx.panic_info);
+            ctx.backtrace.push(backtrace_frame);
+            ctx.panic_info.kcl_func = frame.proxy.get_name();
+        }
+    }
+
+    pub(crate) fn pop_backtrace(&self) {
+        let ctx = &mut self.runtime_ctx.borrow_mut();
+        if ctx.cfg.debug_mode {
+            if let Some(backtrace_frame) = ctx.backtrace.pop() {
+                ctx.panic_info.kcl_func = backtrace_frame.func;
+            }
+        }
     }
 }

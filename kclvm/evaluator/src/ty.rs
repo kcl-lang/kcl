@@ -36,12 +36,14 @@ pub fn resolve_schema(s: &Evaluator, schema: &ValueRef, keys: &[String]) -> Valu
         };
         let schema = if let Proxy::Schema(caller) = &frame.proxy {
             s.push_pkgpath(&frame.pkgpath);
+            s.push_backtrace(&frame);
             // Set new schema and config
             {
                 let mut ctx = caller.ctx.borrow_mut();
                 ctx.reset_with_config(config_value, config_meta);
             }
             let value = (caller.body)(s, &caller.ctx, &schema_value.args, &schema_value.kwargs);
+            s.pop_backtrace();
             s.pop_pkgpath();
             value
         } else {
@@ -157,12 +159,14 @@ pub fn convert_collection_value(s: &Evaluator, value: &ValueRef, tpe: &str) -> V
                     return value.clone();
                 }
                 s.push_pkgpath(&frame.pkgpath);
+                s.push_backtrace(&frame);
                 // Set new schema and config
                 {
                     let mut ctx = caller.ctx.borrow_mut();
                     ctx.reset_with_config(value.clone(), config_meta);
                 }
                 let value = (caller.body)(s, &caller.ctx, &s.list_value(), &s.dict_value());
+                s.pop_backtrace();
                 s.pop_pkgpath();
                 value
             } else {
