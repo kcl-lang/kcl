@@ -2,10 +2,7 @@ use anyhow::Result;
 use compiler_base_macros::bug;
 use indexmap::IndexMap;
 use kclvm_ast::ast::{self, Program};
-use kclvm_compiler::codegen::{
-    llvm::{emit_code, OBJECT_FILE_SUFFIX},
-    EmitOptions,
-};
+use kclvm_compiler::codegen::{emit_code, EmitOptions, OBJECT_FILE_SUFFIX};
 use kclvm_config::cache::{load_pkg_cache, save_pkg_cache, CacheOption, KCL_CACHE_PATH_ENV_VAR};
 use kclvm_sema::resolver::scope::ProgramScope;
 use std::{
