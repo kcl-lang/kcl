@@ -277,7 +277,7 @@ impl SchemaEvalContext {
                                 if index >= n {
                                     value
                                 } else {
-                                    // Call frame
+                                    // Call setter function
                                     s.walk_stmts_with_setter(&self.node.body, &setters[index])
                                         .expect(kcl_error::INTERNAL_ERROR_MSG);
                                     {

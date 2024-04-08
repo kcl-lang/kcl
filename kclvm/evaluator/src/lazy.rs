@@ -12,22 +12,29 @@ use crate::Evaluator;
 pub type LazyEvalScopeRef = Rc<RefCell<LazyEvalScope>>;
 
 #[macro_export]
-macro_rules! check_backtrack_stop {
-    ($ctx: expr, $stmt: expr) => {
+macro_rules! backtrack_break_here {
+    ($ctx: expr, $stmt: expr) => {{
         // If is break, do not execute the stmt and return immediately.
-        if $ctx.backtrack_meta.borrow().is_break {
-            return $ctx.ok_result();
+        if let Some(meta) = $ctx.backtrack_meta.borrow().last() {
+            if meta.is_break {
+                return $ctx.ok_result();
+            }
         }
+    }};
+}
+
+#[macro_export]
+macro_rules! backtrack_update_break {
+    ($ctx: expr, $stmt: expr) => {{
         // Check whether pass the breakpoint.
-        {
-            let meta = &mut $ctx.backtrack_meta.borrow_mut();
+        if let Some(meta) = $ctx.backtrack_meta.borrow_mut().last_mut() {
             if let Some(stopped) = &meta.stopped {
                 if stopped == &$stmt.id {
                     meta.is_break = true
                 }
             }
         }
-    };
+    }};
 }
 
 /// LazyEvalScope represents a scope of sequentially independent calculations, where

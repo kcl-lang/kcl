@@ -16,7 +16,6 @@ use kclvm_runtime::{
 };
 use kclvm_sema::{builtin, plugin};
 
-use crate::check_backtrack_stop;
 use crate::func::{func_body, FunctionCaller, FunctionEvalContext};
 use crate::lazy::Setter;
 use crate::proxy::Proxy;
@@ -24,6 +23,7 @@ use crate::rule::{rule_body, rule_check, RuleCaller, RuleEvalContext};
 use crate::schema::{schema_body, schema_check, SchemaCaller, SchemaEvalContext};
 use crate::ty::type_pack_and_check;
 use crate::union::union_entry;
+use crate::{backtrack_break_here, backtrack_update_break};
 use crate::{error as kcl_error, GLOBAL_LEVEL, INNER_LEVEL};
 use crate::{EvalResult, Evaluator};
 
@@ -36,9 +36,9 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
      */
 
     fn walk_stmt(&self, stmt: &'ctx ast::Node<ast::Stmt>) -> Self::Result {
-        check_backtrack_stop!(self, stmt);
+        backtrack_break_here!(self, stmt);
         self.update_ctx_panic_info(stmt);
-        match &stmt.node {
+        let value = match &stmt.node {
             ast::Stmt::TypeAlias(type_alias) => self.walk_type_alias_stmt(type_alias),
             ast::Stmt::Expr(expr_stmt) => self.walk_expr_stmt(expr_stmt),
             ast::Stmt::Unification(unification_stmt) => {
@@ -52,7 +52,9 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
             ast::Stmt::SchemaAttr(schema_attr) => self.walk_schema_attr(schema_attr),
             ast::Stmt::Schema(schema_stmt) => self.walk_schema_stmt(schema_stmt),
             ast::Stmt::Rule(rule_stmt) => self.walk_rule_stmt(rule_stmt),
-        }
+        };
+        backtrack_update_break!(self, stmt);
+        value
     }
 
     fn walk_expr_stmt(&self, expr_stmt: &'ctx ast::ExprStmt) -> Self::Result {
@@ -1198,7 +1200,9 @@ impl<'ctx> Evaluator<'ctx> {
                 if let Some(stmt) = schema.ctx.borrow().node.body.get(setter.stmt) {
                     self.push_pkgpath(&frame.pkgpath);
                     self.enter_scope();
+                    self.push_backtrack_meta(setter);
                     let value = self.walk_stmt(stmt);
+                    self.pop_backtrack_meta();
                     self.leave_scope();
                     self.pop_pkgpath();
                     value

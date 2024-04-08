@@ -8,6 +8,7 @@ use kclvm_runtime::{BacktraceFrame, MAIN_PKG_PATH};
 use crate::{
     error as kcl_error,
     func::FunctionCaller,
+    lazy::{BacktrackMeta, Setter},
     proxy::{Frame, Proxy},
     rule::RuleCaller,
     schema::SchemaCaller,
@@ -244,7 +245,22 @@ impl<'ctx> Evaluator<'ctx> {
         if ctx.cfg.debug_mode {
             if let Some(backtrace_frame) = ctx.backtrace.pop() {
                 ctx.panic_info.kcl_func = backtrace_frame.func;
+                ctx.panic_info.kcl_line = backtrace_frame.line;
+                ctx.panic_info.kcl_file = backtrace_frame.file;
             }
         }
+    }
+
+    pub(crate) fn push_backtrack_meta(&self, setter: &Setter) {
+        let meta = &mut self.backtrack_meta.borrow_mut();
+        meta.push(BacktrackMeta {
+            stopped: setter.stopped.clone(),
+            is_break: false,
+        });
+    }
+
+    pub(crate) fn pop_backtrack_meta(&self) {
+        let meta = &mut self.backtrack_meta.borrow_mut();
+        meta.pop();
     }
 }

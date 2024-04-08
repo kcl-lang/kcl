@@ -76,7 +76,7 @@ pub struct Evaluator<'ctx> {
     /// Local variables in the loop.
     pub local_vars: RefCell<HashSet<String>>,
     /// Schema attr backtrack meta
-    pub backtrack_meta: RefCell<BacktrackMeta>,
+    pub backtrack_meta: RefCell<Vec<BacktrackMeta>>,
 }
 
 pub enum EvalContext {
@@ -113,7 +113,7 @@ impl<'ctx> Evaluator<'ctx> {
             import_names: RefCell::new(Default::default()),
             pkg_scopes: RefCell::new(Default::default()),
             local_vars: RefCell::new(Default::default()),
-            backtrack_meta: RefCell::new(BacktrackMeta::default()),
+            backtrack_meta: RefCell::new(Default::default()),
         }
     }
 
