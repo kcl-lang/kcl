@@ -55,5 +55,5 @@ pub fn emit_code(
         workdir,
     );
     // Generate user KCL code LLVM IR
-    crate::codegen::emit_code(ctx, opts)
+    crate::codegen::emit_code_with(ctx, opts)
 }

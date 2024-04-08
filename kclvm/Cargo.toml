@@ -78,3 +78,6 @@ members = [
     "utils",
     "tools/src/LSP"
 ]
+
+[features]
+llvm = ["kclvm-compiler/llvm"]

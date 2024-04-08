@@ -8,7 +8,7 @@ use crate::{execute, runner::ExecProgramArgs};
 use anyhow::Context;
 use anyhow::Result;
 use kclvm_ast::ast::{Module, Program};
-use kclvm_compiler::codegen::llvm::OBJECT_FILE_SUFFIX;
+use kclvm_compiler::codegen::OBJECT_FILE_SUFFIX;
 use kclvm_config::settings::load_file;
 use kclvm_parser::load_program;
 use kclvm_parser::ParseSession;

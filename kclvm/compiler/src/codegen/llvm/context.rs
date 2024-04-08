@@ -37,7 +37,7 @@ use crate::codegen::{
 use crate::codegen::{CodeGenContext, GLOBAL_LEVEL};
 use crate::value;
 
-use super::OBJECT_FILE_SUFFIX;
+use crate::codegen::OBJECT_FILE_SUFFIX;
 
 /// SCALAR_KEY denotes the temp scalar key for the global variable json plan process.
 const SCALAR_KEY: &str = "";
