@@ -593,7 +593,9 @@ pub(crate) fn schema_check(
                 };
                 if let Proxy::Schema(schema) = &frame.proxy {
                     s.push_pkgpath(&frame.pkgpath);
+                    s.push_backtrace(&frame);
                     (schema.check)(s, &schema.ctx, args, kwargs);
+                    s.pop_backtrace();
                     s.pop_pkgpath();
                 }
             }

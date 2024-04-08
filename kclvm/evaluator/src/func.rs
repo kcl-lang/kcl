@@ -57,6 +57,7 @@ impl<'ctx> Evaluator<'ctx> {
                 .clone()
         };
         self.push_pkgpath(&frame.pkgpath);
+        self.push_backtrace(&frame);
         let value = match &frame.proxy {
             Proxy::Lambda(lambda) => (lambda.body)(self, &lambda.ctx, args, kwargs),
             Proxy::Schema(schema) => {
@@ -69,6 +70,7 @@ impl<'ctx> Evaluator<'ctx> {
             }
             Proxy::Rule(rule) => (rule.body)(self, &rule.ctx, args, kwargs),
         };
+        self.pop_backtrace();
         self.pop_pkgpath();
         value
     }
