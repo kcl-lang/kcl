@@ -261,6 +261,7 @@ impl<'a> Lexer<'a> {
                 self.sess.struct_span_error(
                     "invalid token '!', consider using 'not'",
                     self.span(start, self.pos),
+                    None,
                 );
                 token::UnaryOp(token::UNot)
             }
@@ -327,6 +328,7 @@ impl<'a> Lexer<'a> {
                         self.sess.struct_span_error(
                             "error nesting on close paren",
                             self.span(start, self.pos),
+                            None,
                         );
                         token::CloseDelim(token::Brace)
                     }
@@ -335,6 +337,7 @@ impl<'a> Lexer<'a> {
                         self.sess.struct_span_error(
                             "error nesting on close paren",
                             self.span(start, self.pos),
+                            None,
                         );
                         token::CloseDelim(token::Bracket)
                     }
@@ -346,6 +349,7 @@ impl<'a> Lexer<'a> {
                     self.sess.struct_span_error(
                         "error nesting on close paren",
                         self.span(start, self.pos),
+                        None,
                     );
                     token::CloseDelim(token::Paren)
                 }
@@ -364,6 +368,7 @@ impl<'a> Lexer<'a> {
                         self.sess.struct_span_error(
                             "error nesting on close brace",
                             self.span(start, self.pos),
+                            None,
                         );
                         token::CloseDelim(token::Paren)
                     }
@@ -372,6 +377,7 @@ impl<'a> Lexer<'a> {
                         self.sess.struct_span_error(
                             "error nesting on close brace",
                             self.span(start, self.pos),
+                            None,
                         );
                         token::CloseDelim(token::Bracket)
                     }
@@ -383,6 +389,7 @@ impl<'a> Lexer<'a> {
                     self.sess.struct_span_error(
                         "error nesting on close brace",
                         self.span(start, self.pos),
+                        None,
                     );
                     token::CloseDelim(token::Brace)
                 }
@@ -403,6 +410,7 @@ impl<'a> Lexer<'a> {
                         self.sess.struct_span_error(
                             "mismatched closing delimiter",
                             self.span(start, self.pos),
+                            None,
                         );
                         token::CloseDelim(token::Brace)
                     }
@@ -411,6 +419,7 @@ impl<'a> Lexer<'a> {
                         self.sess.struct_span_error(
                             "mismatched closing delimiter",
                             self.span(start, self.pos),
+                            None,
                         );
                         token::CloseDelim(token::Paren)
                     }
@@ -422,6 +431,7 @@ impl<'a> Lexer<'a> {
                     self.sess.struct_span_error(
                         "mismatched closing delimiter",
                         self.span(start, self.pos),
+                        None,
                     );
                     token::CloseDelim(token::Bracket)
                 }
@@ -433,6 +443,7 @@ impl<'a> Lexer<'a> {
                 self.sess.struct_span_error(
                     "unexpected character after line continuation character",
                     self.span(start, self.pos),
+                    None,
                 );
                 return None;
             }
@@ -441,12 +452,13 @@ impl<'a> Lexer<'a> {
                 self.sess.struct_span_error(
                     "the semicolon ';' here is unnecessary, please remove it",
                     self.span(start, self.pos),
+                    None,
                 );
                 return None;
             }
             _ => {
                 self.sess
-                    .struct_span_error("unknown start of token", self.span(start, self.pos));
+                    .struct_span_error("unknown start of token", self.span(start, self.pos),None);
                 return None;
             }
         })
@@ -506,6 +518,7 @@ impl<'a> Lexer<'a> {
                     self.sess.struct_span_error(
                         "unterminated string",
                         self.span(quote_char_pos, self.pos),
+                        None,
                     )
                 }
                 // Cut offset before validation.
@@ -537,6 +550,7 @@ impl<'a> Lexer<'a> {
                     self.sess.struct_span_error(
                         "invalid string syntax",
                         self.span(content_start, self.pos),
+                        None,
                     );
                     "".to_string()
                 } else {
@@ -550,6 +564,7 @@ impl<'a> Lexer<'a> {
                             self.sess.struct_span_error(
                                 "invalid string syntax",
                                 self.span(content_start, self.pos),
+                                None,
                             );
                             "".to_string()
                         }
@@ -571,6 +586,7 @@ impl<'a> Lexer<'a> {
                     self.sess.struct_span_error(
                         "no valid digits found for number",
                         self.span(start, self.pos),
+                        None,
                     );
                     // If it is a empty int, returns number 0.
                     (token::Integer, Symbol::intern("0"), None, None)
@@ -588,6 +604,7 @@ impl<'a> Lexer<'a> {
                             self.sess.struct_span_error(
                                 "invalid int binary suffix",
                                 self.span(start, self.pos),
+                                None,
                             );
                             None
                         } else {
@@ -643,6 +660,7 @@ impl<'a> Lexer<'a> {
                 self.sess.struct_span_error(
                     &format!("invalid digit for a base {base} literal, start: {lo}, stop: {hi}"),
                     self.span(lo, self.pos),
+                    None,
                 );
                 return false;
             }
@@ -655,6 +673,7 @@ impl<'a> Lexer<'a> {
             self.sess.struct_span_error(
                 "expected at least one digit in exponent",
                 self.span(start, self.pos),
+                None,
             );
             false
         } else {
@@ -665,6 +684,7 @@ impl<'a> Lexer<'a> {
                     self.sess.struct_span_error(
                         &format!("{} float literal is not supported", base.describe()),
                         self.span(start, self.pos),
+                        None,
                     );
                     false
                 }

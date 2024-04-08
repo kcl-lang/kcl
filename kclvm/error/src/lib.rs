@@ -337,7 +337,14 @@ pub enum ParseError {
     Message {
         message: String,
         span: Span,
+        fix_info: Option<FixInfo>,
     },
+}
+
+#[derive(Debug, Clone)]
+pub struct FixInfo {
+    pub error_kind: ErrorKind,
+    pub additional_info: Option<String>,
 }
 
 /// A single string error.
@@ -357,10 +364,11 @@ impl ParseError {
     }
 
     /// New a message parse error with span.
-    pub fn message(message: String, span: Span) -> Self {
+    pub fn message(message: String, span: Span, fix_info: Option<FixInfo>) -> Self {
         ParseError::Message {
             message,
             span,
+            fix_info,
         }
     }
 }
@@ -384,6 +392,7 @@ impl ParseError {
             ParseError::Message {
                 message,
                 span,
+                fix_info,
             } => {
                 let loc = sess.sm.lookup_char_pos(span.lo());
                 let pos: Position = loc.into();
@@ -433,6 +442,7 @@ impl SessionDiagnostic for ParseError {
             ParseError::Message {
                 message,
                 span,
+                fix_info,
             } => {
                 let code_snippet = CodeSnippet::new(span, Arc::clone(&sess.sm));
                 diag.append_component(Box::new(code_snippet));

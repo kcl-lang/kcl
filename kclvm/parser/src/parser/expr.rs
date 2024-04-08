@@ -55,6 +55,7 @@ impl<'a> Parser<'a> {
                         UnitUsize(n, "space".to_string()).into_string_with_unit(),
                     ),
                     self.token.span,
+                    None,
                 );
                 self.bump();
             }
@@ -90,6 +91,7 @@ impl<'a> Parser<'a> {
             self.sess.struct_span_error(
                 &format!("unexpected '{:?}'", self.token.kind),
                 self.token.span,
+                None,
             );
             self.bump();
         }
@@ -178,6 +180,7 @@ impl<'a> Parser<'a> {
                     self.sess.struct_span_error(
                         "'not is' here is invalid, consider using 'is not'",
                         self.token.span,
+                        None,
                     );
                     BinOrCmpOp::Cmp(CmpOp::IsNot)
                 } else {
@@ -506,7 +509,7 @@ impl<'a> Parser<'a> {
                     if !is_slice && round == 1 {
                         // it just has one round for an array
                         self.sess
-                            .struct_span_error("a list should have only one expr", self.token.span)
+                            .struct_span_error("a list should have only one expr", self.token.span, None,)
                     }
 
                     exprs[expr_index] = Some(self.parse_expr());
@@ -514,7 +517,7 @@ impl<'a> Parser<'a> {
 
                     if exprs_consecutive > 1 {
                         self.sess
-                            .struct_span_error("consecutive exprs found", self.token.span)
+                            .struct_span_error("consecutive exprs found", self.token.span, None,)
                     }
                 }
             }
@@ -523,7 +526,7 @@ impl<'a> Parser<'a> {
 
         if exprs.len() != 3 {
             self.sess
-                .struct_span_error("a slice should have three exprs", self.token.span)
+                .struct_span_error("a slice should have three exprs", self.token.span, None,)
         }
 
         // RIGHT_BRACKETS
@@ -554,11 +557,12 @@ impl<'a> Parser<'a> {
                 self.sess.struct_span_error(
                     &format!("expected expression got {}", token_str),
                     self.token.span,
+                    None,
                 )
             }
             if !(exprs[1].is_none() && exprs[2].is_none()) {
                 self.sess
-                    .struct_span_error("a list should have only one expr", self.token.span)
+                    .struct_span_error("a list should have only one expr", self.token.span, None,)
             }
             Box::new(Node::node(
                 Expr::Subscript(Subscript {
@@ -993,6 +997,7 @@ impl<'a> Parser<'a> {
                         items.len()
                     ),
                     item_start_token.span,
+                    None,
                 );
                 Box::new(Node::node(
                     Expr::ListComp(ListComp {
@@ -1013,6 +1018,7 @@ impl<'a> Parser<'a> {
                 self.sess.struct_span_error(
                     "missing list comp clause expression",
                     item_start_token.span,
+                    None,
                 );
                 Box::new(Node::node(
                     Expr::List(ListExpr {
@@ -1321,6 +1327,7 @@ impl<'a> Parser<'a> {
                         items.len()
                     ),
                     item_start_token.span,
+                    None,
                 );
                 Box::new(Node::node(
                     Expr::DictComp(DictComp {
@@ -1341,6 +1348,7 @@ impl<'a> Parser<'a> {
                 self.sess.struct_span_error(
                     "missing config comp clause expression",
                     item_start_token.span,
+                    None,
                 );
                 Box::new(Node::node(
                     Expr::Config(ConfigExpr { items }),
@@ -2027,6 +2035,7 @@ impl<'a> Parser<'a> {
                         self.sess.struct_span_error(
                             "positional argument follows keyword argument",
                             token.span,
+                            None,
                         )
                     }
                 }
@@ -2383,7 +2392,7 @@ impl<'a> Parser<'a> {
             x
         } else {
             self.sess
-                .struct_span_error("expected identifier", token.span);
+                .struct_span_error("expected identifier", token.span, None,);
             expr.into_missing_identifier().node
         }
     }

@@ -145,6 +145,7 @@ impl<'a> Parser<'a> {
             self.sess.struct_span_error(
                 &format!("expected expression got {}", token_str),
                 self.token.span,
+                None
             );
             self.bump();
             true

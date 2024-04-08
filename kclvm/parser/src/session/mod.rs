@@ -3,7 +3,7 @@ use compiler_base_macros::bug;
 use compiler_base_session::Session;
 use indexmap::IndexSet;
 use kclvm_ast::token::Token;
-use kclvm_error::{Diagnostic, Handler, ParseError};
+use kclvm_error::{Diagnostic, FixInfo, Handler, ParseError};
 use kclvm_span::{BytePos, Loc, Span};
 use std::{cell::RefCell, sync::Arc};
 
@@ -53,10 +53,11 @@ impl ParseSession {
 
     /// Struct and report an error based on a span and not abort the compiler process.
     #[inline]
-    pub fn struct_span_error(&self, msg: &str, span: Span) {
+    pub fn struct_span_error(&self, msg: &str, span: Span, fix_info: Option<FixInfo>) {
         self.add_parse_err(ParseError::Message {
             message: msg.to_string(),
             span,
+            fix_info,
         });
     }
 
