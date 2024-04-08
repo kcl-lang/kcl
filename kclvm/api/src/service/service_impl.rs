@@ -10,7 +10,7 @@ use kcl_language_server::rename;
 use kclvm_config::settings::build_settings_pathbuf;
 use kclvm_driver::canonicalize_input_files;
 use kclvm_loader::option::list_options;
-use kclvm_loader::{load_packages, LoadPackageOptions};
+use kclvm_loader::{load_packages_with_cache, LoadPackageOptions};
 use kclvm_parser::load_program;
 use kclvm_parser::parse_file;
 use kclvm_parser::KCLModuleCache;
@@ -22,6 +22,8 @@ use kclvm_query::query::get_full_schema_type;
 use kclvm_query::query::CompilationOptions;
 use kclvm_query::GetSchemaOption;
 use kclvm_runner::{build_program, exec_artifact, exec_program};
+use kclvm_sema::core::global_state::GlobalState;
+use kclvm_sema::resolver::scope::KCLScopeCache;
 use kclvm_sema::resolver::Options;
 use kclvm_tools::format::{format, format_source, FormatOptions};
 use kclvm_tools::lint::lint_files;
@@ -178,23 +180,40 @@ impl KclvmServiceImpl {
     /// assert_eq!(result.fully_qualified_name_map.len(), 178);
     /// assert_eq!(result.pkg_scope_map.len(), 3);
     /// ```
+    #[inline]
     pub fn load_package(&self, args: &LoadPackageArgs) -> anyhow::Result<LoadPackageResult> {
+        self.load_package_with_cache(args, KCLModuleCache::default(), KCLScopeCache::default())
+    }
+
+    /// load_package_with_cache provides users with the ability to parse kcl program and sematic model
+    /// information including symbols, types, definitions, etc.
+    pub fn load_package_with_cache(
+        &self,
+        args: &LoadPackageArgs,
+        module_cache: KCLModuleCache,
+        scope_cache: KCLScopeCache,
+    ) -> anyhow::Result<LoadPackageResult> {
         let mut package_maps = HashMap::new();
         let parse_args = args.parse_args.clone().unwrap_or_default();
         for p in &parse_args.external_pkgs {
             package_maps.insert(p.pkg_name.to_string(), p.pkg_path.to_string());
         }
-        let packages = load_packages(&LoadPackageOptions {
-            paths: parse_args.paths,
-            load_opts: Some(LoadProgramOptions {
-                k_code_list: parse_args.sources.clone(),
-                package_maps,
-                load_plugins: true,
-                ..Default::default()
-            }),
-            resolve_ast: args.resolve_ast,
-            load_builtin: args.load_builtin,
-        })?;
+        let packages = load_packages_with_cache(
+            &LoadPackageOptions {
+                paths: parse_args.paths,
+                load_opts: Some(LoadProgramOptions {
+                    k_code_list: parse_args.sources.clone(),
+                    package_maps,
+                    load_plugins: true,
+                    ..Default::default()
+                }),
+                resolve_ast: args.resolve_ast,
+                load_builtin: args.load_builtin,
+            },
+            module_cache,
+            scope_cache,
+            GlobalState::default(),
+        )?;
         if args.with_ast_index {
             // Thread local options
             kclvm_ast::ast::set_should_serialize_id(true);
