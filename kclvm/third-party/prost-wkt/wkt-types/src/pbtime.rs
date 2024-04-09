@@ -15,8 +15,8 @@ include!(concat!(env!("OUT_DIR"), "/prost_snippet.rs"));
 impl From<NaiveDateTime> for Timestamp {
     fn from(dt: NaiveDateTime) -> Self {
         Timestamp {
-            seconds: dt.timestamp(),
-            nanos: dt.timestamp_subsec_nanos() as i32,
+            seconds: dt.and_utc().timestamp(),
+            nanos: dt.and_utc().timestamp_subsec_nanos() as i32,
         }
     }
 }
@@ -40,9 +40,8 @@ impl From<Timestamp> for DateTime<Utc> {
         // deprecated in favour of TryFrom but unfortunately having `TryFrom` along with
         // `From` causes a conflict.
         value.normalize();
-        let dt = NaiveDateTime::from_timestamp_opt(value.seconds, value.nanos as u32)
-            .expect("invalid or out-of-range datetime");
-        DateTime::from_utc(dt, Utc)
+        DateTime::from_timestamp(value.seconds, value.nanos as u32)
+            .expect("invalid or out-of-range datetime")
     }
 }
 
