@@ -73,10 +73,14 @@ pub(crate) fn compile_unit_with_cache(
 ) -> (Vec<String>, Option<LoadProgramOptions>) {
     match compile_unit_cache {
         Some(cache) => {
-            let map = cache.read();
+            let mut map = cache.write();
             match map.get(file) {
                 Some(compile_unit) => compile_unit.clone(),
-                None => lookup_compile_unit(file, true),
+                None => {
+                    let res = lookup_compile_unit(file, true);
+                    map.insert(file.to_string(), res.clone());
+                    res
+                }
             }
         }
         None => lookup_compile_unit(file, true),
@@ -88,12 +92,6 @@ pub(crate) fn compile_with_params(
 ) -> anyhow::Result<(Program, IndexSet<Diagnostic>, GlobalState)> {
     // Lookup compile unit (kcl.mod or kcl.yaml) from the entry file.
     let (mut files, opt) = compile_unit_with_cache(&params.compile_unit_cache, &params.file);
-
-    if let Some(cache) = params.compile_unit_cache {
-        cache
-            .write()
-            .insert(params.file.clone(), (files.clone(), opt.clone()));
-    }
 
     if !files.contains(&params.file) {
         files.push(params.file.clone());
