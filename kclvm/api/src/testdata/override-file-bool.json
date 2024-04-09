@@ -1,0 +1,8 @@
+{
+	"file" : "./src/testdata/override_bool.k",
+	"specs":[
+        "isExist=False"
+	],
+	"import_paths":[
+	]
+}

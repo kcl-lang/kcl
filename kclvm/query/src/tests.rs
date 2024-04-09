@@ -1,4 +1,7 @@
-use std::path::PathBuf;
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 use super::{r#override::apply_override_on_module, *};
 use crate::path::parse_attribute_path;
@@ -8,6 +11,13 @@ use pretty_assertions::assert_eq;
 
 const CARGO_FILE_PATH: &str = env!("CARGO_MANIFEST_DIR");
 
+fn get_test_dir(sub: String) -> PathBuf {
+    let mut cargo_file_path = PathBuf::from(CARGO_FILE_PATH);
+    cargo_file_path.push("src/test_data");
+    cargo_file_path.push(sub);
+    cargo_file_path
+}
+
 /// Test override_file result.
 #[test]
 fn test_override_file_simple() {
@@ -15,17 +25,36 @@ fn test_override_file_simple() {
         "config.image=image/image".to_string(),
         ":config.image=\"image/image:v1\"".to_string(),
         ":config.data={id=1,value=\"override_value\"}".to_string(),
+        ":dict_config={\"image\": \"image/image:v2\" \"data\":{\"id\":2 \"value2\": \"override_value2\"}}".to_string(),
+        ":envs=[{key=\"key1\" value=\"value1\"} {key=\"key2\" value=\"value2\"}]".to_string(),
+        ":isfilter=False".to_string(),
+        ":count=2".to_string(),
+        ":msg=\"Hi World\"".to_string(),
+        ":delete-".to_string(),
     ];
 
-    let mut cargo_file_path = PathBuf::from(CARGO_FILE_PATH);
-    cargo_file_path.push("src/test_data/simple.k");
-    let abs_path = cargo_file_path.to_str().unwrap();
+    let simple_path = get_test_dir("simple.k".to_string());
+    let simple_bk_path = get_test_dir("simple.bk.k".to_string());
+    let except_path = get_test_dir("except.k".to_string());
+    if simple_path.exists() {
+        fs::remove_file(simple_path.clone()).unwrap();
+    }
+
+    fs::copy(simple_bk_path, simple_path.clone()).unwrap();
 
     let import_paths = vec![];
     assert_eq!(
-        override_file(abs_path, &specs, &import_paths).unwrap(),
+        override_file(simple_path.to_str().unwrap(), &specs, &import_paths).unwrap(),
         true
-    )
+    );
+
+    let simple_content = fs::read_to_string(simple_path).unwrap();
+    let expect_content = fs::read_to_string(except_path).unwrap();
+
+    let simple_content = simple_content.replace("\r\n", "").replace("\n", "");
+    let expect_content = expect_content.replace("\r\n", "").replace("\n", "");
+
+    assert_eq!(simple_content, expect_content);
 }
 /// Test override_file result.
 #[test]

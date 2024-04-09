@@ -65,11 +65,33 @@ fn test_c_api_call_exec_program_with_print() {
 
 #[test]
 fn test_c_api_call_override_file() {
-    test_c_api_without_wrapper::<OverrideFileArgs, OverrideFileResult>(
-        "KclvmService.OverrideFile",
-        "override-file.json",
-        "override-file.response.json",
-    );
+    let test_cases = [
+        ("override-file.json", "override-file.response.json"),
+        (
+            "override-file-dict.json",
+            "override-file-dict.response.json",
+        ),
+        (
+            "override-file-dict_0.json",
+            "override-file-dict_0.response.json",
+        ),
+        (
+            "override-file-list.json",
+            "override-file-list.response.json",
+        ),
+        (
+            "override-file-bool.json",
+            "override-file-bool.response.json",
+        ),
+    ];
+
+    for (input, output) in &test_cases {
+        test_c_api_without_wrapper::<OverrideFileArgs, OverrideFileResult>(
+            "KclvmService.OverrideFile",
+            input,
+            output,
+        );
+    }
 }
 
 #[test]
