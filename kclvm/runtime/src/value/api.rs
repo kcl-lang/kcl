@@ -81,12 +81,6 @@ static mut kclvm_value_Bool_true_obj: usize = 0;
 #[allow(non_camel_case_types, non_upper_case_globals)]
 static mut kclvm_value_Bool_false_obj: usize = 0;
 
-#[allow(non_camel_case_types, non_upper_case_globals)]
-static mut kclvm_value_Int_0_obj: usize = 0;
-
-#[allow(non_camel_case_types, non_upper_case_globals)]
-static mut kclvm_value_Float_0_obj: usize = 0;
-
 // Undefine/None
 
 #[no_mangle]
@@ -148,14 +142,6 @@ pub extern "C" fn kclvm_value_Int(
     v: kclvm_int_t,
 ) -> *mut kclvm_value_ref_t {
     let ctx = mut_ptr_as_ref(ctx);
-    if v == 0 {
-        unsafe {
-            if kclvm_value_Int_0_obj == 0 {
-                kclvm_value_Int_0_obj = new_mut_ptr(ctx, ValueRef::int(0)) as usize;
-            }
-            return kclvm_value_Int_0_obj as *mut kclvm_value_ref_t;
-        }
-    }
     new_mut_ptr(ctx, ValueRef::int(v))
 }
 
@@ -166,14 +152,6 @@ pub extern "C" fn kclvm_value_Float(
     v: kclvm_float_t,
 ) -> *mut kclvm_value_ref_t {
     let ctx = mut_ptr_as_ref(ctx);
-    if v == 0.0 {
-        unsafe {
-            if kclvm_value_Float_0_obj == 0 {
-                kclvm_value_Float_0_obj = new_mut_ptr(ctx, ValueRef::float(0.0)) as usize;
-            }
-            return kclvm_value_Float_0_obj as *mut kclvm_value_ref_t;
-        }
-    }
     new_mut_ptr(ctx, ValueRef::float(v))
 }
 
@@ -706,12 +684,6 @@ pub unsafe extern "C" fn kclvm_value_delete(p: *mut kclvm_value_ref_t) {
             return;
         }
         if p as usize == kclvm_value_Bool_false_obj {
-            return;
-        }
-        if p as usize == kclvm_value_Int_0_obj {
-            return;
-        }
-        if p as usize == kclvm_value_Float_0_obj {
             return;
         }
     }
