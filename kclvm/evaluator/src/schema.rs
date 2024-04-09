@@ -6,7 +6,7 @@ use generational_arena::Index;
 use indexmap::IndexMap;
 use kclvm_ast::ast;
 use kclvm_ast::walker::TypedResultWalker;
-use kclvm_runtime::{schema_runtime_type, ConfigEntryOperationKind, ValueRef, MAIN_PKG_PATH};
+use kclvm_runtime::{schema_runtime_type, ConfigEntryOperationKind, ValueRef};
 
 use crate::lazy::{merge_setters, LazyEvalScope, LazyEvalScopeRef};
 use crate::proxy::{call_schema_body, call_schema_check};
@@ -490,14 +490,19 @@ pub(crate) fn schema_with_config(
     // avoid unexpected non idempotent calls. For example, I instantiated a MySchema in pkg1,
     // but the length of the list returned by calling the instances method in other packages
     // is uncertain.
-    if instance_pkgpath.is_empty() || instance_pkgpath == MAIN_PKG_PATH {
+    {
         let mut ctx = s.runtime_ctx.borrow_mut();
         // Record schema instance in the context
         if !ctx.instances.contains_key(&runtime_type) {
-            ctx.instances.insert(runtime_type.clone(), vec![]);
+            ctx.instances
+                .insert(runtime_type.clone(), IndexMap::default());
         }
-        ctx.instances
-            .get_mut(&runtime_type)
+        let pkg_instance_map = ctx.instances.get_mut(&runtime_type).unwrap();
+        if !pkg_instance_map.contains_key(&instance_pkgpath) {
+            pkg_instance_map.insert(instance_pkgpath.clone(), vec![]);
+        }
+        pkg_instance_map
+            .get_mut(&instance_pkgpath)
             .unwrap()
             .push(schema_dict.clone());
     }

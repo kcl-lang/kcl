@@ -4,7 +4,9 @@ use crate::builtin::system_module::{get_system_module_members, UNITS, UNITS_NUMB
 use crate::builtin::{get_system_member_function_ty, STRING_MEMBER_FUNCTIONS};
 use crate::resolver::Resolver;
 use crate::ty::TypeKind::Schema;
-use crate::ty::{DictType, ModuleKind, Type, TypeKind, TypeRef, SCHEMA_MEMBER_FUNCTIONS};
+use crate::ty::{
+    DictType, ModuleKind, Parameter, Type, TypeKind, TypeRef, SCHEMA_MEMBER_FUNCTIONS,
+};
 use kclvm_error::diagnostic::Range;
 use kclvm_error::*;
 
@@ -72,7 +74,12 @@ impl<'ctx> Resolver<'ctx> {
                         Arc::new(Type::function(
                             Some(obj.clone()),
                             Type::list_ref(self.any_ty()),
-                            &[],
+                            &[Parameter {
+                                name: "full_pkg".to_string(),
+                                ty: Type::bool_ref(),
+                                // Default value is False
+                                has_default: true,
+                            }],
                             "",
                             false,
                             None,
