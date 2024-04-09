@@ -12,8 +12,8 @@ kclvm-ast = {path = "../ast"}
 indexmap = "1.0"
 fancy-regex = "0.7.1"
 pretty_assertions = "1.3.0"
-compiler_base_session = {path = "../../compiler_base/session"}
-compiler_base_macros = "0.0.1"
+compiler_base_session = "0.1.1"
+compiler_base_macros = "0.1.1"
 
 [dev-dependencies]
 kclvm-parser = {path = "../parser"}

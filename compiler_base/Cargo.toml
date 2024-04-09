@@ -1,6 +1,6 @@
 [package]
 name = "compiler_base"
-version = "0.1.0"
+version = "0.1.4"
 edition = "2021"
 authors = ["zongzhe1024@163.com"]
 license = "Apache-2.0 OR MIT"
@@ -23,4 +23,6 @@ members = [
     "error",
     "parallel",
     "3rdparty/rustc_errors",
+    "3rdparty/rustc_data_structures",
+    "3rdparty/rustc_span",
 ]

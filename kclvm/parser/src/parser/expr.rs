@@ -11,7 +11,7 @@ use either::{self, Either};
 use kclvm_ast::node_ref;
 
 use crate::parser::precedence::Precedence;
-use compiler_base_error_dev::unit_type::{TypeWithUnit, UnitUsize};
+use compiler_base_error::unit_type::{TypeWithUnit, UnitUsize};
 use kclvm_ast::ast::*;
 use kclvm_ast::token;
 use kclvm_ast::token::{BinOpToken, DelimToken, TokenKind, VALID_SPACES_LENGTH};

@@ -30,7 +30,7 @@ kclvm-sema = { path = "../../../sema" }
 kclvm-ast = { path = "../../../ast" }
 kclvm-utils = { path = "../../../utils" }
 kclvm-version = { path = "../../../version" }
-compiler_base_session = { path = "../../../../compiler_base/session" }
+compiler_base_session = "0.1.1"
 kclvm-query = { path = "../../../query" }
 kclvm-span = { path = "../../../span" }
 
