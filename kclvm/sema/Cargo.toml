@@ -29,10 +29,10 @@ kclvm-runtime = { path = "../runtime" }
 kclvm-error = { path = "../error" }
 kclvm-span = { path = "../span" }
 kclvm-utils ={ path = "../utils" }
-compiler_base_span = { path = "../../compiler_base/span", version = "0.0.2" }
-compiler_base_session = { path = "../../compiler_base/session" }
-compiler_base_macros = "0.0.1"
-compiler_base_error = { path = "../../compiler_base/error" }
+compiler_base_span = "0.1.1"
+compiler_base_session = "0.1.1"
+compiler_base_macros = "0.1.1"
+compiler_base_error = "0.1.3"
 suggestions = "0.1.1"
 
 [dev-dependencies]
