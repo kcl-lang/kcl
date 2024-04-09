@@ -1,7 +1,4 @@
-use std::{
-    fs,
-    path::{Path, PathBuf},
-};
+use std::{fs, path::PathBuf};
 
 use super::{r#override::apply_override_on_module, *};
 use crate::path::parse_attribute_path;
@@ -31,6 +28,8 @@ fn test_override_file_simple() {
         ":count=2".to_string(),
         ":msg=\"Hi World\"".to_string(),
         ":delete-".to_string(),
+        ":dict_delete.image-".to_string(),
+        ":dict_delete_whole-".to_string(),
     ];
 
     let simple_path = get_test_dir("simple.k".to_string());

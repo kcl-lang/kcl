@@ -21,3 +21,9 @@ envs = [{key = "key1", value = "value1"}, {key = "key2", value = "value2"}]
 isfilter = False
 count = 2
 msg = "Hi World"
+dict_delete = {
+    "data": {
+        "id": 1
+        "value": "override_value"
+    }
+}

@@ -41,3 +41,19 @@ count = 1
 msg = "Hello World"
 
 delete = "Delete"
+
+dict_delete = {
+    "image": "image/image:v1"
+    "data": {
+        "id": 1
+        "value": "override_value"
+    }
+}
+
+dict_delete_whole = {
+    "image": "image/image:v1"
+    "data": {
+        "id": 1
+        "value": "override_value"
+    }
+}

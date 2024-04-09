@@ -109,17 +109,14 @@ pub fn apply_override_on_module(
     // Apply import paths on AST module.
     apply_import_paths_on_module(m, import_paths)?;
     let ss = parse_attribute_path(&o.field_path)?;
-    let target_id = &ss[0];
+    let default = String::default();
+    let target_id = ss.get(0).unwrap_or(&default);
     let value = &o.field_value;
     let key = ast::Identifier {
-        names: if ss.len() <= 1 {
-            vec![ast::Node::dummy_node(ss[0].to_string())]
-        } else {
-            ss[1..]
-                .iter()
-                .map(|s| ast::Node::dummy_node(s.to_string()))
-                .collect()
-        },
+        names: ss[1..]
+            .iter()
+            .map(|s| ast::Node::dummy_node(s.to_string()))
+            .collect(),
         ctx: ast::ExprContext::Store,
         pkgpath: "".to_string(),
     };
@@ -243,39 +240,52 @@ struct OverrideTransformer {
 
 impl<'ctx> MutSelfMutWalker<'ctx> for OverrideTransformer {
     fn walk_module(&mut self, module: &'ctx mut ast::Module) {
-        // Walk the module body to find the target and override it.
-        if let ast::OverrideAction::CreateOrUpdate = self.action {
-            module.body.iter_mut().for_each(|stmt| {
-                if let ast::Stmt::Assign(assign_stmt) = &mut stmt.node {
-                    if assign_stmt.targets.len() == 1 && self.field_paths.len() == 0 {
-                        let (key, target) = self.get_key_target(assign_stmt);
-                        if target == key {
-                            let item = assign_stmt.value.clone();
+        match self.action {
+            // Walk the module body to find the target and override it.
+            ast::OverrideAction::CreateOrUpdate => {
+                module.body.iter_mut().for_each(|stmt| {
+                    if let ast::Stmt::Assign(assign_stmt) = &mut stmt.node {
+                        if assign_stmt.targets.len() == 1 && self.field_paths.len() == 0 {
+                            let target =
+                                &Some(Box::new(ast::Node::dummy_node(ast::Expr::Identifier(
+                                    assign_stmt.targets.get(0).unwrap().node.clone(),
+                                ))));
+                            let target = get_key_path(target);
+                            if target == self.target_id {
+                                let item = assign_stmt.value.clone();
 
-                            let mut value = self.clone_override_value();
-                            // Use position information that needs to override the expression.
-                            value.set_pos(item.pos());
-                            // Override the node value.
-                            assign_stmt.value = value;
-                            self.has_override = true;
+                                let mut value = self.clone_override_value();
+                                // Use position information that needs to override the expression.
+                                value.set_pos(item.pos());
+                                // Override the node value.
+                                assign_stmt.value = value;
+                                self.has_override = true;
+                            }
                         }
                     }
-                }
-            });
-        } else {
-            // Delete the override target when the action is DELETE.
-            module.body.retain(|stmt| {
-                if let ast::Stmt::Assign(assign_stmt) = &stmt.node {
-                    let (key, target) = self.get_key_target(assign_stmt);
-                    if target == key {
-                        if let ast::OverrideAction::Delete = self.action {
-                            self.has_override = true;
-                            return false;
+                });
+            }
+            ast::OverrideAction::Delete => {
+                // Delete the override target when the action is DELETE.
+                module.body.retain(|stmt| {
+                    if let ast::Stmt::Assign(assign_stmt) = &stmt.node {
+                        if assign_stmt.targets.len() == 1 && self.field_paths.len() == 0 {
+                            let target =
+                                &Some(Box::new(ast::Node::dummy_node(ast::Expr::Identifier(
+                                    assign_stmt.targets.get(0).unwrap().node.clone(),
+                                ))));
+                            let target = get_key_path(target);
+                            if target == self.target_id {
+                                if let ast::OverrideAction::Delete = self.action {
+                                    self.has_override = true;
+                                    return false;
+                                }
+                            }
                         }
                     }
-                }
-                true
-            });
+                    true
+                });
+            }
         }
 
         walk_list_mut!(self, walk_stmt, module.body)
@@ -363,19 +373,6 @@ impl<'ctx> MutSelfMutWalker<'ctx> for OverrideTransformer {
 }
 
 impl OverrideTransformer {
-    fn get_key_target(&self, assign_stmt: &ast::AssignStmt) -> (String, String) {
-        let key = &Some(Box::new(ast::Node::dummy_node(ast::Expr::Identifier(
-            self.override_key.clone(),
-        ))));
-        let key = get_key_path(key);
-
-        let target = &Some(Box::new(ast::Node::dummy_node(ast::Expr::Identifier(
-            assign_stmt.targets.get(0).unwrap().node.clone(),
-        ))));
-        let target = get_key_path(target);
-
-        (key, target)
-    }
     /// Lookup schema config all fields and replace if it is matched with the override spec,
     /// return whether is found a replaced one.
     fn lookup_config_and_replace(&self, config_expr: &mut ast::ConfigExpr) -> bool {
