@@ -60,14 +60,15 @@ impl<'ctx> Evaluator<'ctx> {
         self.push_backtrace(&frame);
         let value = match &frame.proxy {
             Proxy::Lambda(lambda) => (lambda.body)(self, &lambda.ctx, args, kwargs),
-            Proxy::Schema(schema) => {
-                {
-                    let ctx = &mut schema.ctx.borrow_mut();
-                    // Reset config and config_meta
-                    ctx.reset_with_config(self.dict_value(), self.dict_value());
-                }
-                (schema.body)(self, &schema.ctx, args, kwargs)
-            }
+            Proxy::Schema(schema) => (schema.body)(
+                self,
+                &schema
+                    .ctx
+                    .borrow()
+                    .snapshot(self.dict_value(), self.dict_value()),
+                args,
+                kwargs,
+            ),
             Proxy::Rule(rule) => (rule.body)(self, &rule.ctx, args, kwargs),
         };
         self.pop_backtrace();

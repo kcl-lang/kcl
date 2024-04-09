@@ -37,7 +37,7 @@ pub struct SchemaEvalContext {
 impl SchemaEvalContext {
     #[inline]
     pub fn new_with_node(node: ast::SchemaStmt, index: Index) -> Self {
-        SchemaEvalContext {
+        Self {
             node: Rc::new(node),
             scope: None,
             index,
@@ -50,19 +50,18 @@ impl SchemaEvalContext {
     }
 
     /// Reset schema evaluation context state.
-    pub fn reset_with_config(&mut self, config: ValueRef, config_meta: ValueRef) {
-        self.config = config;
-        self.config_meta = config_meta;
-        self.value = ValueRef::dict(None);
-        self.optional_mapping = ValueRef::dict(None);
-        self.is_sub_schema = true;
-        // Clear lazy eval scope.
-        if let Some(scope) = &self.scope {
-            let mut scope = scope.borrow_mut();
-            scope.cache.clear();
-            scope.levels.clear();
-            scope.cal_times.clear();
-        }
+    #[inline]
+    pub fn snapshot(&self, config: ValueRef, config_meta: ValueRef) -> SchemaEvalContextRef {
+        Rc::new(RefCell::new(Self {
+            node: self.node.clone(),
+            index: self.index,
+            scope: None,
+            value: ValueRef::dict(None),
+            config,
+            config_meta,
+            optional_mapping: ValueRef::dict(None),
+            is_sub_schema: true,
+        }))
     }
 
     /// Pass value references from other schema eval context.
