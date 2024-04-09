@@ -275,7 +275,9 @@ where
 
 #[inline]
 fn temp_file(cache_dir: &str, pkgpath: &str) -> String {
-    let timestamp = chrono::Local::now().timestamp_nanos();
+    let timestamp = chrono::Local::now()
+        .timestamp_nanos_opt()
+        .unwrap_or_default();
     let id = std::process::id();
     Path::new(cache_dir)
         .join(format!("{}.{}.{}.tmp", pkgpath, id, timestamp))

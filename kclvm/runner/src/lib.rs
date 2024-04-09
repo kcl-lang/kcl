@@ -314,7 +314,9 @@ fn remove_file(file: &str) -> Result<()> {
 
 /// Returns a temporary file name consisting of timestamp and process id.
 fn temp_file(dir: &str) -> Result<String> {
-    let timestamp = chrono::Local::now().timestamp_nanos();
+    let timestamp = chrono::Local::now()
+        .timestamp_nanos_opt()
+        .unwrap_or_default();
     let id = std::process::id();
     let file = format!("{}_{}", id, timestamp);
     std::fs::create_dir_all(dir)?;
