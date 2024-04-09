@@ -290,15 +290,18 @@ pub unsafe extern "C" fn kclvm_value_schema_with_config(
         Some(args.clone()),
         Some(kwargs.clone()),
     );
-    if record_instance.is_truthy()
-        && (instance_pkgpath.is_empty() || instance_pkgpath == MAIN_PKG_PATH)
-    {
+    if record_instance.is_truthy() {
         // Record schema instance in the context
         if !ctx.instances.contains_key(&runtime_type) {
-            ctx.instances.insert(runtime_type.clone(), vec![]);
+            ctx.instances
+                .insert(runtime_type.clone(), IndexMap::default());
         }
-        ctx.instances
-            .get_mut(&runtime_type)
+        let pkg_instance_map = ctx.instances.get_mut(&runtime_type).unwrap();
+        if !pkg_instance_map.contains_key(&instance_pkgpath) {
+            pkg_instance_map.insert(instance_pkgpath.clone(), vec![]);
+        }
+        pkg_instance_map
+            .get_mut(&instance_pkgpath)
             .unwrap()
             .push(schema_dict.clone());
     }
@@ -2060,50 +2063,60 @@ pub unsafe extern "C" fn kclvm_schema_instances(
     let kwargs = ptr_as_ref(kwargs);
     if let Some(val) = args.pop_arg_first() {
         let function = val.as_function();
-        let main_pkg = args.arg_0().or_else(|| kwargs.kwarg("main_pkg"));
-        let main_pkg = if let Some(v) = main_pkg {
+        let full_pkg = args.arg_0().or_else(|| kwargs.kwarg("full_pkg"));
+        let full_pkg = if let Some(v) = full_pkg {
             v.is_truthy()
         } else {
-            true
+            false
         };
         let runtime_type = &function.runtime_type;
         if ctx_ref.instances.contains_key(runtime_type) {
             let mut list = ValueRef::list(None);
-            for v in ctx_ref.instances.get(runtime_type).unwrap() {
-                if v.is_schema() {
-                    let schema = v.as_schema();
-                    if main_pkg {
-                        if schema.pkgpath == MAIN_PKG_PATH {
-                            list.list_append(v)
-                        }
-                    } else {
-                        list.list_append(v)
-                    }
-                } else if v.is_dict() {
-                    let runtime_type = v
-                        .get_potential_schema_type()
-                        .unwrap_or(runtime_type.to_string());
-                    let names: Vec<&str> = runtime_type.rsplit('.').collect();
-                    let name = names[0];
-                    let pkgpath = names[1];
-                    let v = v.dict_to_schema(
-                        name,
-                        pkgpath,
-                        &[],
-                        &ValueRef::dict(None),
-                        &ValueRef::dict(None),
-                        None,
-                        None,
-                    );
-                    list.list_append(&v);
+            let instance_map = ctx_ref.instances.get(runtime_type).unwrap();
+            if full_pkg {
+                for (_, v_list) in instance_map {
+                    collect_schema_instances(&mut list, &v_list, runtime_type)
                 }
-            }
+            } else {
+                // Get the schema instances only located at the main package.
+                if let Some(v_list) = instance_map.get(MAIN_PKG_PATH) {
+                    collect_schema_instances(&mut list, &v_list, runtime_type)
+                }
+                if let Some(v_list) = instance_map.get("") {
+                    collect_schema_instances(&mut list, &v_list, runtime_type)
+                }
+            };
             list.into_raw(ctx_ref)
         } else {
             kclvm_value_List(ctx)
         }
     } else {
         kclvm_value_None(ctx)
+    }
+}
+
+fn collect_schema_instances(list: &mut ValueRef, v_list: &[ValueRef], runtime_type: &str) {
+    for v in v_list {
+        if v.is_schema() {
+            list.list_append(v)
+        } else if v.is_dict() {
+            let runtime_type = v
+                .get_potential_schema_type()
+                .unwrap_or(runtime_type.to_string());
+            let names: Vec<&str> = runtime_type.rsplit('.').collect();
+            let name = names[0];
+            let pkgpath = names[1];
+            let v = v.dict_to_schema(
+                name,
+                pkgpath,
+                &[],
+                &ValueRef::dict(None),
+                &ValueRef::dict(None),
+                None,
+                None,
+            );
+            list.list_append(&v);
+        }
     }
 }
 

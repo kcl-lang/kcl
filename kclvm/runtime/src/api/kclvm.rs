@@ -236,9 +236,13 @@ pub struct DictValue {
 
 #[derive(PartialEq, Clone, Default, Debug)]
 pub struct SchemaValue {
+    /// Schema name without the package path prefix.
     pub name: String,
+    /// Schema instance package path, note is it not the schema definition package path.
     pub pkgpath: String,
+    /// Schema values.
     pub config: Box<DictValue>,
+    /// Schema instance config keys e.g., "a" in `MySchema {a = "foo"}`
     pub config_keys: Vec<String>,
     /// schema config meta information including filename, line and column.
     pub config_meta: ValueRef,
@@ -338,8 +342,9 @@ pub struct Context {
     pub imported_pkgpath: HashSet<String>,
     /// Runtime arguments for the option function.
     pub app_args: HashMap<String, u64>,
-    /// All schema instances
-    pub instances: HashMap<String, Vec<ValueRef>>,
+    /// All schema instances, the first key is the schema runtime type and
+    /// the second key is the schema instance package path
+    pub instances: IndexMap<String, IndexMap<String, Vec<ValueRef>>>,
     /// All schema types
     pub all_schemas: HashMap<String, SchemaType>,
     /// Import graph
@@ -396,7 +401,7 @@ impl BacktraceFrame {
 impl Context {
     pub fn new() -> Self {
         Context {
-            instances: HashMap::new(),
+            instances: IndexMap::default(),
             panic_info: PanicInfo {
                 kcl_func: "kclvm_main".to_string(),
                 ..Default::default()
