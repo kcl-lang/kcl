@@ -898,6 +898,8 @@ fn compile_unit_cache_test() {
     let compile_unit_cache = KCLCompileUnitCache::default();
     let start = Instant::now();
     let _ = compile_unit_with_cache(&Some(Arc::clone(&compile_unit_cache)), &path.to_string());
+
+    assert!(compile_unit_cache.read().get(&path.to_string()).is_some());
     let first_compile_time = start.elapsed();
 
     let start = Instant::now();
