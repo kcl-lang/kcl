@@ -1532,6 +1532,7 @@ dependencies = [
  "threadpool",
  "tokio",
  "tokio-test",
+ "walkdir",
 ]
 
 [[package]]

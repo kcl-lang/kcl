@@ -1,11 +1,13 @@
 use crate::main_loop::main_loop;
 use config::Config;
+use kcl_watch_system::KCLWatchSystem;
 use main_loop::app;
 
 mod analysis;
 mod capabilities;
 mod completion;
 mod config;
+mod config_manager;
 mod db;
 mod dispatcher;
 mod document_symbol;
@@ -27,6 +29,9 @@ mod word_index;
 mod formatting;
 #[cfg(test)]
 mod tests;
+
+mod file;
+mod kcl_watch_system; // Import the new module
 
 /// Main entry point for the `kcl-language-server` executable.
 fn main() -> Result<(), anyhow::Error> {
@@ -60,9 +65,9 @@ fn main() -> Result<(), anyhow::Error> {
 #[allow(dead_code)]
 /// Main entry point for the language server
 fn run_server() -> anyhow::Result<()> {
-    // Setup IO connections
+    /// Setup IO connections
     let (connection, io_threads) = lsp_server::Connection::stdio();
-    // Wait for a client to connect
+    /// Wait for a client to connect
     let (initialize_id, initialize_params) = connection.initialize_start()?;
 
     let initialize_params =
@@ -82,8 +87,21 @@ fn run_server() -> anyhow::Result<()> {
         .map_err(|_| anyhow::anyhow!("Initialize result error"))?;
 
     connection.initialize_finish(initialize_id, initialize_result)?;
-    let config = Config::default();
+
+    /// Load configuration from file
+    let config_file =
+        config_manager::config::get_config_file().expect("Failed to find configuration file");
+    let config =
+        config_manager::Config::load_from_file(&config_file).expect("Failed to load configuration");
+
+    /// Create a new KCL Watch System instance
+    let kcl_watch_system = KCLWatchSystem::new(config.clone());
+
+    // Start the observer
+    kcl_watch_system.start_observer();
+
     main_loop(connection, config, initialize_params)?;
+
     io_threads.join()?;
     Ok(())
 }

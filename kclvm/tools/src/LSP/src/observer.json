@@ -1,0 +1,5 @@
+{
+    "path": "./",
+    "recursive": true,
+    "patterns": ["k", "mod", "json", "yaml"]
+}

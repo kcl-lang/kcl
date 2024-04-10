@@ -1,10 +1,3 @@
-use kclvm_config::{modfile::KCL_MOD_FILE, settings::DEFAULT_SETTING_FILE};
-use lsp_types::notification::{
-    Cancel, DidChangeTextDocument, DidChangeWatchedFiles, DidCloseTextDocument,
-    DidOpenTextDocument, DidSaveTextDocument,
-};
-use std::path::Path;
-
 use crate::{
     dispatcher::NotificationDispatcher,
     from_lsp,
@@ -12,6 +5,12 @@ use crate::{
     util::apply_document_changes,
     word_index::{build_word_index_with_content, word_index_add, word_index_subtract},
 };
+use kclvm_config::{modfile::KCL_MOD_FILE, settings::DEFAULT_SETTING_FILE};
+use lsp_types::notification::{
+    Cancel, DidChangeTextDocument, DidChangeWatchedFiles, DidCloseTextDocument,
+    DidOpenTextDocument, DidSaveTextDocument,
+};
+use std::path::Path;
 
 impl LanguageServerState {
     pub fn on_notification(
@@ -59,7 +58,7 @@ impl LanguageServerState {
         Ok(())
     }
 
-    /// Called when a `DidChangeTextDocument` notification was received.
+    /// Called when a `DidSaveTextDocument` notification was received.
     fn on_did_save_text_document(
         &mut self,
         params: lsp_types::DidSaveTextDocumentParams,
