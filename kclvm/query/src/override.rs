@@ -280,12 +280,12 @@ impl<'ctx> MutSelfMutWalker<'ctx> for OverrideTransformer {
                             let mut value = self.clone_override_value();
                             // Use position information that needs to override the expression.
                             value.set_pos(item.pos());
-                            
+
                             // Unification is only support to override the schema expression.
-                            if let ast::Expr::Schema(schema_expr) = value.node
-                            {
+                            if let ast::Expr::Schema(schema_expr) = value.node {
                                 self.has_override = true;
-                                unification_stmt.value = Box::new(ast::Node::dummy_node(schema_expr));
+                                unification_stmt.value =
+                                    Box::new(ast::Node::dummy_node(schema_expr));
                             }
                         }
                     }
