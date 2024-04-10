@@ -55,7 +55,7 @@ pub extern "C" fn kclvm_manifests_yaml_stream(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
-) {
+) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
@@ -98,4 +98,5 @@ pub extern "C" fn kclvm_manifests_yaml_stream(
     } else {
         panic!("yaml_stream() missing 1 required positional argument: 'values'");
     }
+    ValueRef::undefined().into_raw(ctx)
 }

@@ -95,7 +95,7 @@ impl LibAssembler for KclvmLibAssembler {
         args: &ExecProgramArgs,
     ) -> Result<String> {
         match &self {
-            KclvmLibAssembler::LLVM => LlvmLibAssembler::default().assemble(
+            KclvmLibAssembler::LLVM => LlvmLibAssembler.assemble(
                 compile_prog,
                 import_names,
                 code_file,
@@ -108,14 +108,14 @@ impl LibAssembler for KclvmLibAssembler {
     #[inline]
     fn add_code_file_suffix(&self, code_file: &str) -> String {
         match &self {
-            KclvmLibAssembler::LLVM => LlvmLibAssembler::default().add_code_file_suffix(code_file),
+            KclvmLibAssembler::LLVM => LlvmLibAssembler.add_code_file_suffix(code_file),
         }
     }
 
     #[inline]
     fn get_code_file_suffix(&self) -> String {
         match &self {
-            KclvmLibAssembler::LLVM => LlvmLibAssembler::default().get_code_file_suffix(),
+            KclvmLibAssembler::LLVM => LlvmLibAssembler.get_code_file_suffix(),
         }
     }
 }

@@ -299,3 +299,44 @@ bob = Person {
     age = 18
 }
 "#}
+evaluator_snapshot! {schema_1, r#"
+schema Person:
+    name: str = "Alice"
+    age: int = 10
+
+alice: Person {}
+bob: Person {
+    name: "Bob"
+    age: 18
+}
+"#}
+
+evaluator_snapshot! {lazy_scope_0, r#"
+b = a + c
+a = 1
+c = a + 1
+"#}
+evaluator_snapshot! {lazy_scope_1, r#"
+schema Data:
+    b = a + c
+    a = 1
+    c = a + 1
+
+data = Data {}
+"#}
+evaluator_snapshot! {lazy_scope_2, r#"
+schema Data:
+    name: str
+    version?: str
+
+data1 = Data {
+    name = data2.name
+}
+
+data2 = Data {
+    name = "1"
+    version = version
+}
+
+version = "v0.1.0"
+"#}

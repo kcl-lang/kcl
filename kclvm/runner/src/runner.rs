@@ -447,8 +447,8 @@ impl FastRunner {
 
     /// Run kcl library with exec arguments.
     pub fn run(&self, program: &ast::Program, args: &ExecProgramArgs) -> Result<ExecProgramResult> {
-        let ctx = Rc::new(RefCell::new(args_to_ctx(&program, args)));
-        let evaluator = Evaluator::new_with_runtime_ctx(&program, ctx.clone());
+        let ctx = Rc::new(RefCell::new(args_to_ctx(program, args)));
+        let evaluator = Evaluator::new_with_runtime_ctx(program, ctx.clone());
         let prev_hook = std::panic::take_hook();
         std::panic::set_hook(Box::new(|info: &std::panic::PanicInfo| {
             KCL_RUNTIME_PANIC_RECORD.with(|record| {

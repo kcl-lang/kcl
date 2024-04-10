@@ -21,10 +21,9 @@ mod value;
 
 extern crate kclvm_error;
 
-use context::EvaluatorContext;
 use generational_arena::{Arena, Index};
 use indexmap::IndexMap;
-use lazy::BacktrackMeta;
+use lazy::{BacktrackMeta, LazyEvalScope};
 use proxy::{Frame, Proxy};
 use rule::RuleEvalContextRef;
 use schema::SchemaEvalContextRef;
@@ -53,11 +52,15 @@ pub type EvalResult = Result<ValueRef>;
 /// The evaluator for the program
 pub struct Evaluator<'ctx> {
     pub program: &'ctx ast::Program,
-    pub ctx: RefCell<EvaluatorContext>,
+    /// All frames including functions, schemas and rules
     pub frames: RefCell<Arena<Rc<Frame>>>,
+    /// All schema index in the package path, we can find the frame through the index.
     pub schemas: RefCell<IndexMap<String, Index>>,
+    /// Runtime evaluation context.
     pub runtime_ctx: Rc<RefCell<Context>>,
+    /// Package path stack.
     pub pkgpath_stack: RefCell<Vec<String>>,
+    /// Filename stack.
     pub filename_stack: RefCell<Vec<String>>,
     /// The names of possible assignment objects for the current instruction.
     pub target_vars: RefCell<Vec<String>>,
@@ -71,8 +74,10 @@ pub struct Evaluator<'ctx> {
     pub schema_expr_stack: RefCell<Vec<()>>,
     /// Import names mapping
     pub import_names: RefCell<IndexMap<String, IndexMap<String, String>>>,
-    /// Package scope to store variable pointers.
+    /// Package scope to store variable values.
     pub pkg_scopes: RefCell<HashMap<String, Vec<Scope>>>,
+    /// Package lazy scope to store variable cached values.
+    pub lazy_scopes: RefCell<HashMap<String, LazyEvalScope>>,
     /// Local variables in the loop.
     pub local_vars: RefCell<HashSet<String>>,
     /// Schema attr backtrack meta
@@ -98,7 +103,6 @@ impl<'ctx> Evaluator<'ctx> {
         runtime_ctx: Rc<RefCell<Context>>,
     ) -> Evaluator<'ctx> {
         Evaluator {
-            ctx: RefCell::new(EvaluatorContext::default()),
             runtime_ctx,
             program,
             frames: RefCell::new(Arena::new()),
@@ -112,6 +116,7 @@ impl<'ctx> Evaluator<'ctx> {
             filename_stack: RefCell::new(Default::default()),
             import_names: RefCell::new(Default::default()),
             pkg_scopes: RefCell::new(Default::default()),
+            lazy_scopes: RefCell::new(Default::default()),
             local_vars: RefCell::new(Default::default()),
             backtrack_meta: RefCell::new(Default::default()),
         }
@@ -166,16 +171,16 @@ impl<'ctx> Evaluator<'ctx> {
         Ok(self.undefined_value())
     }
 
-    fn plan_value(&self, p: &ValueRef) -> (String, String) {
+    fn plan_value(&self, value: &ValueRef) -> (String, String) {
         let mut ctx = self.runtime_ctx.borrow_mut();
         let value = match ctx.buffer.custom_manifests_output.clone() {
             Some(output) => ValueRef::from_yaml_stream(&mut ctx, &output).unwrap(),
-            None => p.clone(),
+            None => value.clone(),
         };
         let (json_string, yaml_string) = value.plan(&ctx);
         ctx.json_result = json_string.clone();
         ctx.yaml_result = yaml_string.clone();
-        (ctx.json_result.clone(), ctx.yaml_result.clone())
+        (json_string, yaml_string)
     }
 }
 

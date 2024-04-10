@@ -8,6 +8,7 @@ use kclvm_ast::ast::AstIndex;
 use kclvm_runtime::ValueRef;
 
 use crate::error as kcl_error;
+use crate::error::INTERNAL_ERROR_MSG;
 use crate::Evaluator;
 pub type LazyEvalScopeRef = Rc<RefCell<LazyEvalScope>>;
 
@@ -80,7 +81,7 @@ impl LazyEvalScope {
 /// Setter function definition.
 #[derive(PartialEq, Clone, Default, Debug)]
 pub struct Setter {
-    /// Schema or body index, none denotes the current schema.
+    /// Schema or body index, none denotes the current schema or body.
     pub index: Option<Index>,
     /// Statement index in the schema or body in the body array.
     pub stmt: usize,
@@ -89,7 +90,7 @@ pub struct Setter {
 }
 
 /// Merge setters and set the value with default undefined value.
-pub(crate) fn merge_setters(
+pub(crate) fn merge_variables_and_setters(
     v: &mut ValueRef,
     s: &mut IndexMap<String, Vec<Setter>>,
     other: &IndexMap<String, Vec<Setter>>,
@@ -106,6 +107,22 @@ pub(crate) fn merge_setters(
         // prevent self referencing.
         if v.get_by_key(key).is_none() {
             v.dict_update_key_value(key, ValueRef::undefined());
+        }
+    }
+}
+
+/// Merge setters and set the value with default undefined value.
+pub(crate) fn merge_setters(
+    s: &mut IndexMap<String, Vec<Setter>>,
+    other: &IndexMap<String, Vec<Setter>>,
+) {
+    for (key, setters) in other {
+        if let Some(values) = s.get_mut(key) {
+            for setter in setters {
+                values.push(setter.clone());
+            }
+        } else {
+            s.insert(key.to_string(), setters.clone());
         }
     }
 }
@@ -155,12 +172,12 @@ impl<'ctx> Evaluator<'ctx> {
             }
             let body_vec = body_map.get_mut(name).expect(kcl_error::INTERNAL_ERROR_MSG);
             body_vec.push(Setter {
-                index: index.clone(),
+                index,
                 stmt: i,
                 stopped,
             });
         };
-        for (i, stmt) in body.into_iter().enumerate() {
+        for (i, stmt) in body.iter().enumerate() {
             match &stmt.node {
                 ast::Stmt::Unification(unification_stmt) => {
                     let name = &unification_stmt.target.node.names[0].node;
@@ -224,6 +241,85 @@ impl<'ctx> Evaluator<'ctx> {
                 }
                 _ => {}
             }
+        }
+    }
+
+    /// Get the value from the context.
+    pub(crate) fn get_value_from_lazy_scope(
+        &self,
+        pkgpath: &str,
+        key: &str,
+        target: &str,
+        default: ValueRef,
+    ) -> ValueRef {
+        // Deal in-place modify and return it self immediately.
+        if key == target && {
+            let lazy_scopes = self.lazy_scopes.borrow();
+            let scope = lazy_scopes.get(pkgpath).expect(INTERNAL_ERROR_MSG);
+            !scope.is_backtracking(key) || scope.setter_len(key) <= 1
+        } {
+            default
+        } else {
+            let cached_value = {
+                let lazy_scopes = self.lazy_scopes.borrow();
+                let scope = lazy_scopes.get(pkgpath).expect(INTERNAL_ERROR_MSG);
+                scope.cache.get(key).cloned()
+            };
+            match cached_value {
+                Some(value) => value.clone(),
+                None => {
+                    let setters = {
+                        let lazy_scopes = self.lazy_scopes.borrow();
+                        let scope = lazy_scopes.get(pkgpath).expect(INTERNAL_ERROR_MSG);
+                        scope.setters.get(key).cloned()
+                    };
+                    match &setters {
+                        Some(setters) if !setters.is_empty() => {
+                            // Call all setters function to calculate the value recursively.
+                            let level = {
+                                let lazy_scopes = self.lazy_scopes.borrow();
+                                let scope = lazy_scopes.get(pkgpath).expect(INTERNAL_ERROR_MSG);
+                                *scope.levels.get(key).unwrap_or(&0)
+                            };
+                            let next_level = level + 1;
+                            {
+                                let mut lazy_scopes = self.lazy_scopes.borrow_mut();
+                                let scope = lazy_scopes.get_mut(pkgpath).expect(INTERNAL_ERROR_MSG);
+                                scope.levels.insert(key.to_string(), next_level);
+                            }
+                            let n = setters.len();
+                            let index = n - next_level;
+                            if index >= n {
+                                default
+                            } else {
+                                // Call setter function.
+                                self.walk_stmts_with_setter(&setters[index]);
+                                // Store cache value.
+                                {
+                                    let value = self.get_variable_in_pkgpath(key, pkgpath);
+                                    let mut lazy_scopes = self.lazy_scopes.borrow_mut();
+                                    let scope =
+                                        lazy_scopes.get_mut(pkgpath).expect(INTERNAL_ERROR_MSG);
+                                    scope.levels.insert(key.to_string(), level);
+                                    scope.cache.insert(key.to_string(), value.clone());
+                                    value
+                                }
+                            }
+                        }
+                        _ => default,
+                    }
+                }
+            }
+        }
+    }
+
+    /// Set value to the context.
+    #[inline]
+    pub(crate) fn set_value_to_lazy_scope(&self, pkgpath: &str, key: &str, value: &ValueRef) {
+        let mut lazy_scopes = self.lazy_scopes.borrow_mut();
+        let scope = lazy_scopes.get_mut(pkgpath).expect(INTERNAL_ERROR_MSG);
+        if scope.cal_increment(key) && scope.cache.get(key).is_none() {
+            scope.cache.insert(key.to_string(), value.clone());
         }
     }
 }

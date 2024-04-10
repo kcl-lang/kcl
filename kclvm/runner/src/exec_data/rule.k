@@ -5,7 +5,7 @@ rule DeprecatedRule:
     age == 0
 
 schema RuleProtocol:
-    age: int
+    age?: int
 
 rule Main for RuleProtocol:
     True

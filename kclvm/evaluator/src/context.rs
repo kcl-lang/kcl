@@ -2,7 +2,6 @@ use std::rc::Rc;
 
 use generational_arena::Index;
 use kclvm_ast::ast;
-use kclvm_error::Handler;
 use kclvm_runtime::{BacktraceFrame, MAIN_PKG_PATH};
 
 use crate::{
@@ -14,23 +13,6 @@ use crate::{
     schema::SchemaCaller,
     EvalContext, Evaluator, GLOBAL_LEVEL,
 };
-
-pub struct EvaluatorContext {
-    /// Error handler to store runtime errors with filename
-    /// and line information.
-    pub handler: Handler,
-    /// Program work directory
-    pub workdir: String,
-}
-
-impl Default for EvaluatorContext {
-    fn default() -> Self {
-        Self {
-            handler: Default::default(),
-            workdir: Default::default(),
-        }
-    }
-}
 
 impl<'ctx> Evaluator<'ctx> {
     /// Current package path
@@ -52,32 +34,6 @@ impl<'ctx> Evaluator<'ctx> {
             .get(if len > 2 { len - 2 } else { 2 - len })
             .unwrap_or(&MAIN_PKG_PATH.to_string())
             .to_string()
-    }
-
-    /// Current filename
-    #[inline]
-    pub(crate) fn current_filename(&self) -> String {
-        self.filename_stack
-            .borrow()
-            .last()
-            .expect(kcl_error::INTERNAL_ERROR_MSG)
-            .to_string()
-    }
-
-    #[inline]
-    pub fn push_filename(&self, filename: &str) {
-        self.filename_stack.borrow_mut().push(filename.to_string());
-    }
-
-    #[inline]
-    pub fn pop_filename(&self) {
-        self.filename_stack.borrow_mut().pop();
-    }
-
-    /// Current runtime context kcl line
-    #[inline]
-    pub(crate) fn current_ctx_line(&self) -> u64 {
-        self.runtime_ctx.borrow().panic_info.kcl_line as u64
     }
 
     /// Current runtime context kcl line
@@ -175,8 +131,8 @@ impl<'ctx> Evaluator<'ctx> {
         self.target_vars
             .borrow()
             .last()
-            .expect(kcl_error::INTERNAL_ERROR_MSG)
-            .to_string()
+            .cloned()
+            .unwrap_or_default()
     }
 
     #[inline]
@@ -201,7 +157,17 @@ impl<'ctx> Evaluator<'ctx> {
         self.pkgpath_stack.borrow_mut().pop();
     }
 
-    /// Append a function into the scope
+    /// Append a global body into the scope.
+    #[inline]
+    pub(crate) fn add_global_body(&self, index: usize) -> Index {
+        let pkgpath = self.current_pkgpath();
+        self.frames.borrow_mut().insert(Rc::new(Frame {
+            pkgpath,
+            proxy: Proxy::Global(index),
+        }))
+    }
+
+    /// Append a function into the scope.
     #[inline]
     pub(crate) fn add_function(&self, function: FunctionCaller) -> Index {
         let pkgpath = self.current_pkgpath();
@@ -211,7 +177,7 @@ impl<'ctx> Evaluator<'ctx> {
         }))
     }
 
-    /// Append a schema into the scope
+    /// Append a schema into the scope.
     #[inline]
     pub(crate) fn add_schema(&self, schema: SchemaCaller) -> Index {
         let pkgpath = self.current_pkgpath();
@@ -221,7 +187,7 @@ impl<'ctx> Evaluator<'ctx> {
         }))
     }
 
-    /// Append a rule into the scope
+    /// Append a rule into the scope.
     #[inline]
     pub(crate) fn add_rule(&self, rule: RuleCaller) -> Index {
         let pkgpath = self.current_pkgpath();

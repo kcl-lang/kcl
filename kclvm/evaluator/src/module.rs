@@ -51,7 +51,11 @@ impl<'ctx> Evaluator<'ctx> {
                 ast::Stmt::Unification(unification_stmt) => {
                     let names = &unification_stmt.target.node.names;
                     if names.len() == 1 {
-                        self.add_or_update_global_variable(&names[0].node, self.undefined_value());
+                        self.add_or_update_global_variable(
+                            &names[0].node,
+                            self.undefined_value(),
+                            false,
+                        );
                     }
                 }
                 ast::Stmt::Assign(assign_stmt) => {
@@ -61,6 +65,7 @@ impl<'ctx> Evaluator<'ctx> {
                             self.add_or_update_global_variable(
                                 &names[0].node,
                                 self.undefined_value(),
+                                false,
                             );
                         }
                     }
@@ -81,23 +86,17 @@ impl<'ctx> Evaluator<'ctx> {
     pub(crate) fn compile_ast_modules(&self, modules: &'ctx [ast::Module]) {
         // Scan global variables
         for ast_module in modules {
-            self.push_filename(&ast_module.filename);
             // Pre define global variables with undefined values
             self.predefine_global_vars(ast_module);
-            self.pop_filename();
         }
         // Scan global types
         for ast_module in modules {
-            self.push_filename(&ast_module.filename);
             self.compile_module_import_and_types(ast_module);
-            self.pop_filename();
         }
         // Compile the ast module in the pkgpath.
         for ast_module in modules {
-            self.push_filename(&ast_module.filename);
             self.walk_module(ast_module)
                 .expect(kcl_error::RUNTIME_ERROR_MSG);
-            self.pop_filename();
         }
     }
 }
