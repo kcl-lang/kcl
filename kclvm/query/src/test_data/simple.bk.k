@@ -16,6 +16,10 @@ config = Config {
     data = {id = 1, value = "override_value"}
 }
 
+config : Config {
+    image = "image/image:v3"
+}
+
 dict_config = {
     "image": "image/image:v1"
     "data": {
@@ -56,4 +60,20 @@ dict_delete_whole = {
         "id": 1
         "value": "override_value"
     }
+}
+
+insert_config = {} 
+
+uni_config = {
+    labels: {key1: "value1"}
+}
+
+config_unification: Config {
+    image = "image/image:v1"
+    data = {id = 1, value = "override_value"}
+}
+
+config_unification_delete: Config {
+    image = "image/image:v1"
+    data = {id = 1, value = "override_value"}
 }

@@ -30,6 +30,10 @@ fn test_override_file_simple() {
         ":delete-".to_string(),
         ":dict_delete.image-".to_string(),
         ":dict_delete_whole-".to_string(),
+        ":insert_config.key=1".to_string(),
+        ":uni_config.labels.key1=1".to_string(),
+        ":config_unification=Config {\"image\": \"image/image:v4\"}".to_string(),
+        ":config_unification_delete-".to_string()
     ];
 
     let simple_path = get_test_dir("simple.k".to_string());

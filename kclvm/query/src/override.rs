@@ -239,6 +239,9 @@ struct OverrideTransformer {
 }
 
 impl<'ctx> MutSelfMutWalker<'ctx> for OverrideTransformer {
+    // When override the global variable, it should be updated in the module level.
+    // Because the delete action may delete the global variable.
+    // TODO: combine the code of walk_module, walk_assign_stmt and walk_unification_stmt
     fn walk_module(&mut self, module: &'ctx mut ast::Module) {
         match self.action {
             // Walk the module body to find the target and override it.
@@ -263,6 +266,29 @@ impl<'ctx> MutSelfMutWalker<'ctx> for OverrideTransformer {
                             }
                         }
                     }
+                    if let ast::Stmt::Unification(unification_stmt) = &mut stmt.node {
+                        let target = match unification_stmt.target.node.names.get(0) {
+                            Some(name) => name,
+                            None => bug!(
+                                "Invalid AST unification target names {:?}",
+                                unification_stmt.target.node.names
+                            ),
+                        };
+                        if target.node == self.target_id {
+                            let item = unification_stmt.value.clone();
+
+                            let mut value = self.clone_override_value();
+                            // Use position information that needs to override the expression.
+                            value.set_pos(item.pos());
+                            
+                            // Unification is only support to override the schema expression.
+                            if let ast::Expr::Schema(schema_expr) = value.node
+                            {
+                                self.has_override = true;
+                                unification_stmt.value = Box::new(ast::Node::dummy_node(schema_expr));
+                            }
+                        }
+                    }
                 });
             }
             ast::OverrideAction::Delete => {
@@ -276,11 +302,22 @@ impl<'ctx> MutSelfMutWalker<'ctx> for OverrideTransformer {
                                 ))));
                             let target = get_key_path(target);
                             if target == self.target_id {
-                                if let ast::OverrideAction::Delete = self.action {
-                                    self.has_override = true;
-                                    return false;
-                                }
+                                self.has_override = true;
+                                return false;
                             }
+                        }
+                    }
+                    if let ast::Stmt::Unification(unification_stmt) = &stmt.node {
+                        let target = match unification_stmt.target.node.names.get(0) {
+                            Some(name) => name,
+                            None => bug!(
+                                "Invalid AST unification target names {:?}",
+                                unification_stmt.target.node.names
+                            ),
+                        };
+                        if target.node == self.target_id {
+                            self.has_override = true;
+                            return false;
                         }
                     }
                     true
@@ -299,7 +336,7 @@ impl<'ctx> MutSelfMutWalker<'ctx> for OverrideTransformer {
                 unification_stmt.target.node.names
             ),
         };
-        if name.node != self.target_id {
+        if name.node != self.target_id || self.field_paths.len() == 0 {
             return;
         }
         self.override_target_count = 1;
