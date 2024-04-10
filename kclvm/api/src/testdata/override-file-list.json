@@ -1,0 +1,7 @@
+{
+	"file": "./src/testdata/override_list.k",
+	"specs": [
+		"alice2=[1,2,3]"
+	],
+	"import_paths": []
+}

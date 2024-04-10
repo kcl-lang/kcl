@@ -1,0 +1,7 @@
+{
+	"file": "./src/testdata/override_dict.k",
+	"specs": [
+		"alice1.age=18"
+	],
+	"import_paths": []
+}
