@@ -315,7 +315,7 @@ impl<'ctx> MutSelfMutWalker<'ctx> for OverrideTransformer {
                                 unification_stmt.target.node.names
                             ),
                         };
-                        if target.node == self.target_id {
+                        if target.node == self.target_id && self.field_paths.len() == 0 {
                             self.has_override = true;
                             return false;
                         }
