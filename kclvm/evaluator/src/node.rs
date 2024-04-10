@@ -16,6 +16,7 @@ use kclvm_runtime::{
 };
 use kclvm_sema::{builtin, plugin};
 
+use crate::error::INTERNAL_ERROR_MSG;
 use crate::func::{func_body, FunctionCaller, FunctionEvalContext};
 use crate::lazy::Setter;
 use crate::proxy::Proxy;
@@ -713,17 +714,15 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
             self.dict_insert_value(&mut dict_value, name.node.as_str(), &value);
         }
         if let Some(proxy) = func.try_get_proxy() {
+            // Invoke user defined functions, schemas or rules.
             Ok(self.invoke_proxy_function(proxy, &list_value, &dict_value))
         } else {
-            let pkgpath = self.current_pkgpath();
-            let is_in_schema = self.is_in_schema() || self.is_in_schema_expr();
+            // Invoke builtin function or plugin functions.
             Ok(invoke_function(
                 &func,
                 &mut list_value,
                 &dict_value,
                 &mut self.runtime_ctx.borrow_mut(),
-                &pkgpath,
-                is_in_schema,
             ))
         }
     }
@@ -1184,7 +1183,30 @@ impl<'ctx> Evaluator<'ctx> {
         result
     }
 
-    pub(crate) fn walk_stmts_with_setter(
+    pub(crate) fn walk_stmts_with_setter(&self, setter: &Setter) {
+        if let Some(index) = setter.index {
+            let frame = {
+                let frames = self.frames.borrow();
+                frames
+                    .get(index)
+                    .expect(kcl_error::INTERNAL_ERROR_MSG)
+                    .clone()
+            };
+            if let Proxy::Global(index) = &frame.proxy {
+                if let Some(module_list) = self.program.pkgs.get(&frame.pkgpath) {
+                    if let Some(module) = module_list.get(*index) {
+                        if let Some(stmt) = module.body.get(setter.stmt) {
+                            self.push_backtrack_meta(setter);
+                            self.walk_stmt(stmt).expect(INTERNAL_ERROR_MSG);
+                            self.pop_backtrack_meta();
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    pub(crate) fn walk_schema_stmts_with_setter(
         &self,
         stmts: &'ctx [Box<ast::Node<ast::Stmt>>],
         setter: &Setter,
@@ -1213,12 +1235,10 @@ impl<'ctx> Evaluator<'ctx> {
             } else {
                 self.ok_result()
             }
+        } else if let Some(stmt) = stmts.get(setter.stmt) {
+            self.walk_stmt(stmt)
         } else {
-            if let Some(stmt) = stmts.get(setter.stmt) {
-                self.walk_stmt(stmt)
-            } else {
-                self.ok_result()
-            }
+            self.ok_result()
         }
     }
 
@@ -1239,6 +1259,7 @@ impl<'ctx> Evaluator<'ctx> {
                         self.add_or_update_global_variable(
                             name,
                             right_value.clone().expect(kcl_error::INTERNAL_ERROR_MSG),
+                            true,
                         );
                     // Lambda local variables.
                     } else if self.is_in_lambda() {
@@ -1263,9 +1284,7 @@ impl<'ctx> Evaluator<'ctx> {
                     let name = names[0].node.as_str();
                     // In KCL, we cannot modify global variables in other packages,
                     // so pkgpath is empty here.
-                    let mut value = self
-                        .load_value("", &[name])
-                        .expect(kcl_error::INTERNAL_ERROR_MSG);
+                    let mut value = self.load_value("", &[name]);
                     // Convert `store a.b.c = 1` -> `%t = load &a; %t = load_attr %t %b; store_attr %t %c with 1`
                     for i in 0..names.len() - 1 {
                         let attr = names[i + 1].node.as_str();
@@ -1305,14 +1324,14 @@ impl<'ctx> Evaluator<'ctx> {
                 Ok(right_value.expect(kcl_error::INTERNAL_ERROR_MSG))
             }
             // Load <pkg>.a.b.c
-            ast::ExprContext::Load => self.load_value(
+            ast::ExprContext::Load => Ok(self.load_value(
                 &identifier.pkgpath,
                 &identifier
                     .names
                     .iter()
                     .map(|n| n.node.as_str())
                     .collect::<Vec<&str>>(),
-            ),
+            )),
         }
     }
 

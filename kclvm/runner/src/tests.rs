@@ -1,31 +1,43 @@
+#[cfg(feature = "llvm")]
 use crate::assembler::clean_path;
+#[cfg(feature = "llvm")]
 use crate::assembler::KclvmAssembler;
+#[cfg(feature = "llvm")]
 use crate::assembler::KclvmLibAssembler;
+#[cfg(feature = "llvm")]
 use crate::assembler::LibAssembler;
 use crate::exec_program;
+#[cfg(feature = "llvm")]
 use crate::temp_file;
 use crate::{execute, runner::ExecProgramArgs};
+#[cfg(feature = "llvm")]
 use anyhow::Context;
 use anyhow::Result;
 use kclvm_ast::ast::{Module, Program};
+#[cfg(feature = "llvm")]
 use kclvm_compiler::codegen::OBJECT_FILE_SUFFIX;
 use kclvm_config::settings::load_file;
 use kclvm_parser::load_program;
 use kclvm_parser::ParseSession;
+#[cfg(feature = "llvm")]
 use kclvm_sema::resolver::resolve_program;
 use serde_json::Value;
+#[cfg(feature = "llvm")]
 use std::fs::create_dir_all;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+#[cfg(feature = "llvm")]
 use std::thread;
 use std::{
     collections::HashMap,
     fs::{self, File},
 };
+#[cfg(feature = "llvm")]
 use tempfile::tempdir;
 use uuid::Uuid;
 use walkdir::WalkDir;
 
+#[cfg(feature = "llvm")]
 const MULTI_FILE_TEST_CASES: &[&str; 5] = &[
     "no_kcl_mod_file",
     "relative_import",
@@ -57,6 +69,7 @@ fn custom_manifests_data_path() -> String {
         .to_string()
 }
 
+#[cfg(feature = "llvm")]
 fn multi_file_test_cases() -> Vec<String> {
     let mut test_cases: Vec<String> = MULTI_FILE_TEST_CASES
         .iter()
@@ -122,6 +135,7 @@ fn test_case_path() -> String {
 
 const KCL_FILE_NAME: &str = "main.k";
 const MAIN_PKG_NAME: &str = "__main__";
+#[cfg(feature = "llvm")]
 const CARGO_PATH: &str = env!("CARGO_MANIFEST_DIR");
 
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -131,6 +145,7 @@ struct SimplePanicInfo {
     message: String,
 }
 
+#[cfg(feature = "llvm")]
 fn gen_full_path(rel_path: String) -> Result<String> {
     let mut cargo_file_path = PathBuf::from(CARGO_PATH);
     cargo_file_path.push(&rel_path);
@@ -146,6 +161,7 @@ fn load_test_program(filename: String) -> Program {
     construct_program(module)
 }
 
+#[cfg(feature = "llvm")]
 fn parse_program(test_kcl_case_path: &str) -> Program {
     let args = ExecProgramArgs::default();
     let opts = args.get_load_program_options();
@@ -173,6 +189,7 @@ fn construct_program(mut module: Module) -> Program {
     }
 }
 
+#[cfg(feature = "llvm")]
 fn construct_pkg_lib_path(
     prog: &Program,
     assembler: &KclvmAssembler,
@@ -214,6 +231,7 @@ fn execute_for_test(kcl_path: &String) -> String {
         .json_result
 }
 
+#[cfg(feature = "llvm")]
 fn gen_assembler(entry_file: &str, test_kcl_case_path: &str) -> KclvmAssembler {
     let mut prog = parse_program(test_kcl_case_path);
     let scope = resolve_program(&mut prog);
@@ -226,6 +244,7 @@ fn gen_assembler(entry_file: &str, test_kcl_case_path: &str) -> KclvmAssembler {
     )
 }
 
+#[cfg(feature = "llvm")]
 fn gen_libs_for_test(entry_file: &str, test_kcl_case_path: &str) {
     let assembler = gen_assembler(entry_file, test_kcl_case_path);
 
@@ -252,6 +271,7 @@ fn gen_libs_for_test(entry_file: &str, test_kcl_case_path: &str) {
     assert_eq!(tmp_main_lib_path.exists(), false);
 }
 
+#[cfg(feature = "llvm")]
 fn assemble_lib_for_test(
     entry_file: &str,
     test_kcl_case_path: &str,
@@ -305,6 +325,7 @@ fn test_kclvm_runner_execute() {
 }
 
 #[test]
+#[cfg(feature = "llvm")]
 fn test_assemble_lib_llvm() {
     for case in TEST_CASES {
         let temp_dir = tempdir().unwrap();
@@ -331,6 +352,7 @@ fn test_assemble_lib_llvm() {
 }
 
 #[test]
+#[cfg(feature = "llvm")]
 fn test_gen_libs() {
     for case in multi_file_test_cases() {
         let temp_dir = tempdir().unwrap();
@@ -349,40 +371,8 @@ fn test_gen_libs() {
     }
 }
 
-// Fixme: parallel string/identifier clone panic.
-// #[test]
-fn _test_gen_libs_parallel() {
-    let gen_lib_1 = thread::spawn(|| {
-        for _ in 0..9 {
-            test_gen_libs();
-        }
-    });
-
-    let gen_lib_2 = thread::spawn(|| {
-        for _ in 0..9 {
-            test_gen_libs();
-        }
-    });
-
-    let gen_lib_3 = thread::spawn(|| {
-        for _ in 0..9 {
-            test_gen_libs();
-        }
-    });
-
-    let gen_lib_4 = thread::spawn(|| {
-        for _ in 0..9 {
-            test_gen_libs();
-        }
-    });
-
-    gen_lib_1.join().unwrap();
-    gen_lib_2.join().unwrap();
-    gen_lib_3.join().unwrap();
-    gen_lib_4.join().unwrap();
-}
-
 #[test]
+#[cfg(feature = "llvm")]
 fn test_clean_path_for_genlibs() {
     let mut prog = parse_program(
         &Path::new(".")
@@ -504,10 +494,7 @@ fn test_exec_with_err_result() {
 }
 
 fn clean_dir(path: String) {
-    match fs::remove_dir_all(path) {
-        Ok(_) => {}
-        Err(_) => {}
-    }
+    if let Ok(_) = fs::remove_dir_all(path) {}
 }
 
 #[test]

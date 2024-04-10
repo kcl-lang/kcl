@@ -13,8 +13,10 @@ use kclvm_sema::resolver::{
     resolve_program, resolve_program_with_opts, scope::ProgramScope, Options,
 };
 use linker::Command;
+#[cfg(feature = "llvm")]
+use runner::LibRunner;
 pub use runner::{Artifact, ExecProgramArgs, ExecProgramResult, MapErrorResult};
-use runner::{FastRunner, LibRunner, ProgramRunner, RunnerOptions};
+use runner::{FastRunner, ProgramRunner, RunnerOptions};
 use tempfile::tempdir;
 
 pub mod assembler;
@@ -170,44 +172,57 @@ pub fn execute(
     // Emit parse and resolve errors if exists.
     emit_compile_diag_to_string(sess, &scope, false)?;
     Ok(
+        // Use the fast evaluator to run the kcl program.
         if args.fast_eval || std::env::var(KCL_FAST_EVAL_ENV_VAR).is_ok() {
             FastRunner::new(Some(RunnerOptions {
                 plugin_agent_ptr: args.plugin_agent,
             }))
             .run(&program, args)?
         } else {
-            // Create a temp entry file and the temp dir will be delete automatically
-            let temp_dir = tempdir()?;
-            let temp_dir_path = temp_dir.path().to_str().ok_or(anyhow!(
-                "Internal error: {}: No such file or directory",
-                temp_dir.path().display()
-            ))?;
-            let temp_entry_file = temp_file(temp_dir_path)?;
+            // Compile the kcl program to native lib and run it.
+            #[cfg(feature = "llvm")]
+            {
+                // Create a temp entry file and the temp dir will be delete automatically
+                let temp_dir = tempdir()?;
+                let temp_dir_path = temp_dir.path().to_str().ok_or(anyhow!(
+                    "Internal error: {}: No such file or directory",
+                    temp_dir.path().display()
+                ))?;
+                let temp_entry_file = temp_file(temp_dir_path)?;
 
-            // Generate libs
-            let lib_paths = assembler::KclvmAssembler::new(
-                program,
-                scope,
-                temp_entry_file.clone(),
-                KclvmLibAssembler::LLVM,
-                args.get_package_maps_from_external_pkg(),
-            )
-            .gen_libs(args)?;
+                // Generate libs
+                let lib_paths = assembler::KclvmAssembler::new(
+                    program,
+                    scope,
+                    temp_entry_file.clone(),
+                    KclvmLibAssembler::LLVM,
+                    args.get_package_maps_from_external_pkg(),
+                )
+                .gen_libs(args)?;
 
-            // Link libs into one library
-            let lib_suffix = Command::get_lib_suffix();
-            let temp_out_lib_file = format!("{}{}", temp_entry_file, lib_suffix);
-            let lib_path = linker::KclvmLinker::link_all_libs(lib_paths, temp_out_lib_file)?;
+                // Link libs into one library
+                let lib_suffix = Command::get_lib_suffix();
+                let temp_out_lib_file = format!("{}{}", temp_entry_file, lib_suffix);
+                let lib_path = linker::KclvmLinker::link_all_libs(lib_paths, temp_out_lib_file)?;
 
-            // Run the library
-            let runner = LibRunner::new(Some(RunnerOptions {
-                plugin_agent_ptr: args.plugin_agent,
-            }));
-            let result = runner.run(&lib_path, args)?;
+                // Run the library
+                let runner = LibRunner::new(Some(RunnerOptions {
+                    plugin_agent_ptr: args.plugin_agent,
+                }));
+                let result = runner.run(&lib_path, args)?;
 
-            remove_file(&lib_path)?;
-            clean_tmp_files(&temp_entry_file, &lib_suffix)?;
-            result
+                remove_file(&lib_path)?;
+                clean_tmp_files(&temp_entry_file, &lib_suffix)?;
+                result
+            }
+            // If we don't enable llvm feature, the default running path is through the evaluator.
+            #[cfg(not(feature = "llvm"))]
+            {
+                FastRunner::new(Some(RunnerOptions {
+                    plugin_agent_ptr: args.plugin_agent,
+                }))
+                .run(&program, args)?
+            }
         },
     )
 }
@@ -272,12 +287,11 @@ pub fn build_program<P: AsRef<Path>>(
     // Link libs into one library.
     let lib_suffix = Command::get_lib_suffix();
     let temp_out_lib_file = if let Some(output) = output {
-        let path = output
+        output
             .as_ref()
             .to_str()
             .ok_or(anyhow!("build output path is not found"))?
-            .to_string();
-        path
+            .to_string()
     } else {
         format!("{}{}", temp_entry_file, lib_suffix)
     };
@@ -299,12 +313,14 @@ pub fn expand_files(args: &ExecProgramArgs) -> Result<Vec<String>> {
 
 /// Clean all the tmp files generated during lib generating and linking.
 #[inline]
+#[cfg(feature = "llvm")]
 fn clean_tmp_files(temp_entry_file: &String, lib_suffix: &String) -> Result<()> {
     let temp_entry_lib_file = format!("{}{}", temp_entry_file, lib_suffix);
     remove_file(&temp_entry_lib_file)
 }
 
 #[inline]
+#[cfg(feature = "llvm")]
 fn remove_file(file: &str) -> Result<()> {
     if Path::new(&file).exists() {
         std::fs::remove_file(file)?;
@@ -335,12 +351,12 @@ fn emit_compile_diag_to_string(
 ) -> Result<()> {
     let mut res_str = sess.1.borrow_mut().emit_to_string()?;
     let sema_err = scope.emit_diagnostics_to_string(sess.0.clone(), include_warnings);
-    if sema_err.is_err() {
+    if let Err(err) = &sema_err {
         #[cfg(not(target_os = "windows"))]
-        res_str.push_str("\n");
+        res_str.push('\n');
         #[cfg(target_os = "windows")]
         res_str.push_str("\r\n");
-        res_str.push_str(&sema_err.unwrap_err());
+        res_str.push_str(err);
     }
 
     res_str

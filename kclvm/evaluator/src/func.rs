@@ -70,6 +70,7 @@ impl<'ctx> Evaluator<'ctx> {
                 kwargs,
             ),
             Proxy::Rule(rule) => (rule.body)(self, &rule.ctx, args, kwargs),
+            Proxy::Global(_) => self.undefined_value(),
         };
         self.pop_backtrace();
         self.pop_pkgpath();

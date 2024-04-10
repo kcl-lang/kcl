@@ -19,6 +19,7 @@ pub enum Proxy {
     Lambda(FunctionCaller),
     Schema(SchemaCaller),
     Rule(RuleCaller),
+    Global(usize),
 }
 
 impl Proxy {
@@ -30,6 +31,7 @@ impl Proxy {
             Proxy::Lambda(_) => "lambda".to_string(),
             Proxy::Schema(s) => s.ctx.borrow().node.name.node.to_string(),
             Proxy::Rule(r) => r.ctx.borrow().node.name.node.to_string(),
+            Proxy::Global(index) => index.to_string(),
         }
     }
 }

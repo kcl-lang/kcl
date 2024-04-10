@@ -318,7 +318,7 @@ declare void @kclvm_list_resize(%kclvm_value_ref_t* %p, %kclvm_size_t %newsize);
 
 declare void @kclvm_list_set(%kclvm_value_ref_t* %p, %kclvm_size_t %i, %kclvm_value_ref_t* %v);
 
-declare void @kclvm_manifests_yaml_stream(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
+declare %kclvm_value_ref_t* @kclvm_manifests_yaml_stream(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 declare %kclvm_value_ref_t* @kclvm_math_ceil(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
 
