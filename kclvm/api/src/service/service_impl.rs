@@ -20,6 +20,7 @@ use kclvm_query::get_schema_type;
 use kclvm_query::override_file;
 use kclvm_query::query::get_full_schema_type;
 use kclvm_query::query::CompilationOptions;
+use kclvm_query::selector::list_variables;
 use kclvm_query::GetSchemaOption;
 use kclvm_runner::{build_program, exec_artifact, exec_program};
 use kclvm_sema::core::global_state::GlobalState;
@@ -319,6 +320,55 @@ impl KclvmServiceImpl {
                 })
                 .collect(),
         })
+    }
+
+    /// list_variables provides users with the ability to parse kcl program and get all variables by specs.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
+    /// use kclvm_api::gpyrpc::*;
+    /// use std::path::Path;
+    ///
+    /// let serv = KclvmServiceImpl::default();
+    /// let args = &ListVariablesArgs {
+    ///     file: Path::new(".").join("src").join("testdata").join("variables").join("main.k").canonicalize().unwrap().display().to_string(),
+    ///     specs: vec!["a".to_string()]
+    /// };
+    /// let result = serv.list_variables(args).unwrap();
+    /// assert_eq!(result.variables.len(), 1);
+    /// assert_eq!(result.variables.get("a").unwrap().value, "1");
+    /// ```
+    pub fn list_variables(&self, args: &ListVariablesArgs) -> anyhow::Result<ListVariablesResult> {
+        let k_file = args.file.to_string();
+        let specs = args.specs.clone();
+
+        let select_res = list_variables(k_file, specs)?;
+
+        let variables: HashMap<String, Variable> = select_res
+            .select_result
+            .iter()
+            .map(|(key, value)| {
+                (
+                    key.clone(),
+                    Variable {
+                        value: value.to_string(),
+                    },
+                )
+            })
+            .collect();
+
+        let unsupported_codes: Vec<String> = select_res
+            .unsupported
+            .iter()
+            .map(|code| code.code.to_string())
+            .collect();
+
+        return Ok(ListVariablesResult {
+            variables,
+            unsupported_codes,
+        });
     }
 
     /// Execute KCL file with args. **Note that it is not thread safe.**

@@ -244,6 +244,15 @@ fn test_c_api_list_options() {
 }
 
 #[test]
+fn test_c_api_list_variables() {
+    test_c_api_without_wrapper::<ListVariablesArgs, ListVariablesResult>(
+        "KclvmService.ListVariables",
+        "list-variables.json",
+        "list-variables.response.json",
+    );
+}
+
+#[test]
 fn test_c_api_parse_file() {
     test_c_api_without_wrapper::<ParseFileArgs, ParseFileResult>(
         "KclvmService.ParseFile",

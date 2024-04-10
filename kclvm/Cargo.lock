@@ -1753,7 +1753,9 @@ dependencies = [
  "kclvm-ast-pretty",
  "kclvm-error",
  "kclvm-parser",
+ "kclvm-query",
  "kclvm-sema",
+ "maplit",
 ]
 
 [[package]]

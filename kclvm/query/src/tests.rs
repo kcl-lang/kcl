@@ -1,7 +1,7 @@
 use std::{fs, path::PathBuf};
 
 use super::{r#override::apply_override_on_module, *};
-use crate::path::parse_attribute_path;
+use crate::{path::parse_attribute_path, selector::list_variables};
 use kclvm_ast::ast;
 use kclvm_parser::parse_file_force_errors;
 use pretty_assertions::assert_eq;
@@ -215,4 +215,221 @@ fn test_parse_property_path() {
     );
     assert!(parse_attribute_path(r#"a.[b.c-d.e"#).is_err(),);
     assert!(parse_attribute_path(r#"a.[b.c]-d.e"#).is_err(),);
+}
+
+#[test]
+fn test_list_variables() {
+    let file = PathBuf::from("./src/test_data/test_list_variables/supported.k")
+        .canonicalize()
+        .unwrap()
+        .display()
+        .to_string();
+    let test_cases = vec![
+        ("a", "1"),
+        ("a1", "2"),
+        ("a3", "3m"),
+        ("b1", "True"),
+        ("b2", "False"),
+        ("s1", "\"Hello\""),
+        ("array1", "[1, 2, 3]"),
+        ("dict1", "{\"a\": 1, \"b\": 2}"),
+        ("dict1.a", "1"),
+        ("dict1.b", "2"),
+        (
+            "dict2",
+            r#"{
+    "a": 1
+    "b": {
+        "c": 2
+        "d": 3
+    }
+}"#,
+        ),
+        ("dict2.a", "1"),
+        (
+            "dict2.b",
+            r#"{
+    "c": 2
+    "d": 3
+}"#,
+        ),
+        ("dict2.b.c", "2"),
+        ("dict2.b.d", "3"),
+        (
+            "sha",
+            r#"A {
+    name: "Hello"
+    ids: [1, 2, 3]
+    data: {
+        "a": {
+            "b": {"c": 2}
+        }
+    }
+}"#,
+        ),
+        ("sha.name", "\"Hello\""),
+        ("sha.ids", "[1, 2, 3]"),
+        (
+            "sha.data",
+            r#"{
+    "a": {
+        "b": {"c": 2}
+    }
+}"#,
+        ),
+        (
+            "sha.data.a",
+            r#"{
+    "b": {"c": 2}
+}"#,
+        ),
+        ("sha.data.a.b", r#"{"c": 2}"#),
+        ("sha.data.a.b.c", "2"),
+        (
+            "shb",
+            r#"B {
+    a: {
+        name: "HelloB"
+        ids: [4, 5, 6]
+        data: {
+            "d": {
+                "e": {"f": 3}
+            }
+        }
+    }
+}"#,
+        ),
+        (
+            "shb.a",
+            r#"{
+    name: "HelloB"
+    ids: [4, 5, 6]
+    data: {
+        "d": {
+            "e": {"f": 3}
+        }
+    }
+}"#,
+        ),
+        ("shb.a.name", "\"HelloB\""),
+        ("shb.a.ids", "[4, 5, 6]"),
+        (
+            "shb.a.data",
+            r#"{
+    "d": {
+        "e": {"f": 3}
+    }
+}"#,
+        ),
+        (
+            "shb.a.data.d",
+            r#"{
+    "e": {"f": 3}
+}"#,
+        ),
+        ("shb.a.data.d.e", "{\"f\": 3}"),
+        ("uconfa.name", "\"b\""),
+        ("c.a", "{ids: [7, 8, 9]}"),
+    ];
+
+    for (spec, expected) in test_cases {
+        let specs = vec![spec.to_string()];
+        let result = list_variables(file.clone(), specs).unwrap();
+        assert_eq!(result.select_result.get(spec).unwrap(), expected);
+    }
+}
+
+#[test]
+fn test_list_all_variables() {
+    let file = PathBuf::from("./src/test_data/test_list_variables/supported.k")
+        .canonicalize()
+        .unwrap()
+        .display()
+        .to_string();
+    let test_cases = vec![
+        ("a", "1"),
+        ("a1", "2"),
+        ("a3", "3m"),
+        ("b1", "True"),
+        ("b2", "False"),
+        ("s1", "\"Hello\""),
+        ("array1", "[1, 2, 3]"),
+        ("dict1", "{\"a\": 1, \"b\": 2}"),
+        (
+            "dict2",
+            r#"{
+    "a": 1
+    "b": {
+        "c": 2
+        "d": 3
+    }
+}"#,
+        ),
+        (
+            "sha",
+            r#"A {
+    name: "Hello"
+    ids: [1, 2, 3]
+    data: {
+        "a": {
+            "b": {"c": 2}
+        }
+    }
+}"#,
+        ),
+        (
+            "shb",
+            r#"B {
+    a: {
+        name: "HelloB"
+        ids: [4, 5, 6]
+        data: {
+            "d": {
+                "e": {"f": 3}
+            }
+        }
+    }
+}"#,
+        ),
+    ];
+
+    for (spec, expected) in test_cases {
+        let result = list_variables(file.clone(), vec![]).unwrap();
+        assert_eq!(result.select_result.get(spec).unwrap(), expected);
+    }
+}
+
+#[test]
+fn test_list_unsupported_variables() {
+    let file = PathBuf::from("./src/test_data/test_list_variables/unsupported.k")
+        .canonicalize()
+        .unwrap()
+        .display()
+        .to_string();
+    let test_cases = vec![
+        ("list", "[_x for _x in range(20) if _x % 2 == 0]"),
+        ("list1", "[i if i > 2 else i + 1 for i in [1, 2, 3]]"),
+        ("dict", "{str(i): 2 * i for i in range(3)}"),
+        (
+            "func",
+            r#"lambda x: int, y: int -> int {
+    x + y
+}"#,
+        ),
+        (
+            "if_schema.falseValue",
+            "if True:\n    trueValue: 1\nelse:\n    falseValue: 2",
+        ),
+        (
+            "if_schema.trueValue",
+            "if True:\n    trueValue: 1\nelse:\n    falseValue: 2",
+        ),
+    ];
+
+    for (spec, expected_code) in test_cases {
+        let specs = vec![spec.to_string()];
+        let result = list_variables(file.clone(), specs).unwrap();
+        assert_eq!(result.select_result.get(spec), None);
+        assert_eq!(result.unsupported[0].code, expected_code);
+    }
 }
