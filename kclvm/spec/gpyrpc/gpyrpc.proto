@@ -63,6 +63,7 @@ service KclvmService {
 	rpc ParseProgram(ParseProgram_Args) returns(ParseProgram_Result);
 	rpc LoadPackage(LoadPackage_Args) returns(LoadPackage_Result);
 	rpc ListOptions(ParseProgram_Args) returns(ListOptions_Result);
+	rpc ListVariables(ListVariables_Args) returns(ListVariables_Result);
 
 	rpc FormatCode(FormatCode_Args) returns(FormatCode_Result);
 	rpc FormatPath(FormatPath_Args) returns(FormatPath_Result);
@@ -288,6 +289,20 @@ message OverrideFile_Args {
 
 message OverrideFile_Result {
 	bool result = 1;
+}
+
+message ListVariables_Args {
+	string file = 1;
+	repeated string specs = 2;
+}
+
+message ListVariables_Result {
+	map<string, Variable> variables = 1;
+	repeated string unsupported_codes = 2; 
+}
+
+message Variable {
+	string value = 1;
 }
 
 message GetFullSchemaType_Args {

@@ -170,6 +170,7 @@ pub(crate) fn kclvm_get_service_fn_ptr_by_name(name: &str) -> u64 {
         "KclvmService.ParseProgram" => parse_program as *const () as u64,
         "KclvmService.LoadPackage" => load_package as *const () as u64,
         "KclvmService.ListOptions" => list_options as *const () as u64,
+        "KclvmService.ListVariables" => list_variables as *const () as u64,
         "KclvmService.ExecProgram" => exec_program as *const () as u64,
         "KclvmService.BuildProgram" => build_program as *const () as u64,
         "KclvmService.ExecArtifact" => exec_artifact as *const () as u64,
@@ -295,6 +296,31 @@ pub(crate) fn list_options(
     result_len: *mut usize,
 ) -> *const c_char {
     call!(serv, args, result_len, ParseProgramArgs, list_options)
+}
+
+/// list_variables provides users with the ability to parse kcl program and get all variables
+/// calling information.
+///
+/// # Parameters
+///
+/// `serv`: [*mut kclvm_service]
+///     The pointer of &\[[KclvmServiceImpl]]
+///
+///
+/// `args`: [*const c_char]
+///     the items and compile parameters selected by the user in the KCL CLI
+///     serialized as protobuf byte sequence
+///
+/// # Returns
+///
+/// result: [*const c_char]
+///     Result of the call serialized as protobuf byte sequence
+pub(crate) fn list_variables(
+    serv: *mut kclvm_service,
+    args: *const c_char,
+    result_len: *mut usize,
+) -> *const c_char {
+    call!(serv, args, result_len, ListVariablesArgs, list_variables)
 }
 
 /// exec_program provides users with the ability to execute KCL code
