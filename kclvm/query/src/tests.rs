@@ -330,6 +330,7 @@ fn test_list_variables() {
         ("shb.a.data.d.e", "{\"f\": 3}"),
         ("uconfa.name", "\"b\""),
         ("c.a", "{ids: [7, 8, 9]}"),
+        ("job.name", r#""{}-{}".format("app", "test").lower()"#),
     ];
 
     for (spec, expected) in test_cases {
@@ -390,6 +391,10 @@ fn test_list_all_variables() {
         }
     }
 }"#,
+        ),
+        (
+            "job",
+            r#"Job {name = "{}-{}".format("app", "test").lower()}"#,
         ),
     ];
 

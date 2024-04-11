@@ -70,3 +70,10 @@ c = C {
     a: {name: "Hello"}
     a: {ids: [7, 8, 9]}
 }
+
+schema Job:
+    name: str
+
+job = Job {
+    name = "{}-{}".format("app", "test").lower()
+}
