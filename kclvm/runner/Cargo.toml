@@ -47,3 +47,6 @@ criterion = "0.3"
 [[bench]]
 name = "bench_runner"
 harness = false
+
+[features]
+llvm = []
