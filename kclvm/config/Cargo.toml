@@ -23,5 +23,5 @@ kclvm-version = {path = "../version"}
 kclvm-utils = {path = "../utils"}
 kclvm-ast = {path = "../ast"}
 dirs = "5.0.0"
-pcre2 = "0.2.4"
 md-5 = "0.8.0"
+regex = "1.10.4"

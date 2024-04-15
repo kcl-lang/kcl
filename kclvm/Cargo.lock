@@ -345,10 +345,6 @@ name = "cc"
 version = "1.0.92"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2678b2e3449475e95b0aa6f9b506a28e61b3dc8996592b983695e8ebb58a8b41"
-dependencies = [
- "jobserver",
- "libc",
-]
 
 [[package]]
 name = "cfg-if"
@@ -1672,7 +1668,7 @@ dependencies = [
  "kclvm-version",
  "md-5 0.8.0",
  "pathdiff",
- "pcre2",
+ "regex",
  "ron",
  "serde",
  "serde_json",
@@ -2397,28 +2393,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8835116a5c179084a830efb3adc117ab007512b535bc1a21c991d3b32a6b44dd"
 
 [[package]]
-name = "pcre2"
-version = "0.2.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5ea92ff5eabd27703ab12cefe01b08b2809ec3dc75fdc69d4e6b75fbce0cbd67"
-dependencies = [
- "libc",
- "log",
- "pcre2-sys",
-]
-
-[[package]]
-name = "pcre2-sys"
-version = "0.2.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "550f5d18fb1b90c20b87e161852c10cde77858c3900c5059b5ad2a1449f11d8a"
-dependencies = [
- "cc",
- "libc",
- "pkg-config",
-]
-
-[[package]]
 name = "percent-encoding"
 version = "2.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2534,12 +2508,6 @@ name = "pin-utils"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
-
-[[package]]
-name = "pkg-config"
-version = "0.3.30"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d231b230927b5e4ad203db57bbcbee2802f6bce620b1e4a9024a07d94e2907ec"
 
 [[package]]
 name = "plotters"
