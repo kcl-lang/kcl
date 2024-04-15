@@ -1909,7 +1909,6 @@ dependencies = [
  "kclvm-utils",
  "lazy_static",
  "once_cell",
- "pcre2",
  "petgraph",
  "phf",
  "regex",

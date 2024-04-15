@@ -1,24 +1,29 @@
 use kclvm_ast::ast::SchemaStmt;
-use pcre2::bytes::Regex;
 use std::collections::{HashMap, HashSet};
 use std::iter::Iterator;
 use std::str;
 
-lazy_static::lazy_static! {
-    static ref RE: Regex = Regex::new(r#"(?s)^(['\"]{3})(.*?)(['\"]{3})$"#).unwrap();
-}
+const SINGLE_QUOTES_STR: &str = "'''";
+const DOUBLE_QUOTES_STR: &str = "\"\"\"";
 
-/// strip leading and trailing triple quotes from the original docstring content
-fn strip_quotes(original: &mut String) {
-    let quote = original.chars().next().unwrap();
-    if quote != '"' && quote != '\'' {
-        return;
-    }
-    if let Ok(Some(mat)) = RE.find(original.as_bytes()) {
-        let content = str::from_utf8(&original.as_bytes()[mat.start() + 3..mat.end() - 3])
-            .unwrap()
-            .to_owned();
-        *original = content;
+/// Strip leading and trailing triple quotes from the original docstring content
+fn strip_quotes(original: &str) -> &str {
+    match original.chars().next() {
+        Some('\'') => match original.strip_prefix(SINGLE_QUOTES_STR) {
+            Some(s) => match s.strip_suffix(SINGLE_QUOTES_STR) {
+                Some(s) => s,
+                None => original,
+            },
+            None => original,
+        },
+        Some('"') => match original.strip_prefix(DOUBLE_QUOTES_STR) {
+            Some(s) => match s.strip_suffix(DOUBLE_QUOTES_STR) {
+                Some(s) => s,
+                None => original,
+            },
+            None => original,
+        },
+        _ => original,
     }
 }
 
@@ -27,7 +32,7 @@ fn expand_tabs(s: &str, spaces_per_tab: usize) -> String {
 }
 
 /// Clean up indentation by removing any common leading whitespace on all lines after the first line.
-fn clean_doc(doc: &mut String) {
+fn clean_doc(doc: &str) -> String {
     let tab_expanded = expand_tabs(&doc, 4);
     let mut lines: Vec<&str> = tab_expanded.split('\n').collect();
     // Find minimum indentation of any non-blank lines after first line.
@@ -60,7 +65,7 @@ fn clean_doc(doc: &mut String) {
             lines.remove(0);
         }
     }
-    *doc = lines.join("\n");
+    lines.join("\n")
 }
 
 /// A line-based string reader.
@@ -158,27 +163,6 @@ impl Reader {
     }
 }
 
-/// remove the leading and trailing empty lines
-fn _strip(doc: Vec<String>) -> Vec<String> {
-    let mut i = 0;
-    let mut j = 0;
-    for (line_num, line) in doc.iter().enumerate() {
-        if !line.trim().is_empty() {
-            i = line_num;
-            break;
-        }
-    }
-
-    for (line_num, line) in doc.iter().enumerate().rev() {
-        if !line.trim().is_empty() {
-            j = line_num;
-            break;
-        }
-    }
-
-    doc[i..j + 1].to_vec()
-}
-
 /// Checks if current line is at the beginning of a section
 fn is_at_section(doc: &mut Reader) -> bool {
     doc.seek_next_non_empty_line();
@@ -202,7 +186,7 @@ fn is_at_section(doc: &mut Reader) -> bool {
     l2.starts_with(&"-".repeat(l1.len())) || l2.starts_with(&"=".repeat(l1.len()))
 }
 
-/// read lines before next section beginning, continuous empty lines will be merged to one
+/// Reads lines before next section beginning, continuous empty lines will be merged to one
 fn read_to_next_section(doc: &mut Reader) -> Vec<String> {
     let mut section = doc.read_to_next_empty_line();
 
@@ -215,7 +199,7 @@ fn read_to_next_section(doc: &mut Reader) -> Vec<String> {
     section
 }
 
-/// parse the Attribute Section of the docstring to list of Attribute
+/// Parse the Attribute Section of the docstring to list of Attribute
 fn parse_attr_list(content: String) -> Vec<Attribute> {
     let mut r = Reader::new(content);
     let mut attrs = vec![];
@@ -239,7 +223,7 @@ fn parse_attr_list(content: String) -> Vec<Attribute> {
     attrs
 }
 
-/// parse the summary of the schema. The final summary content will be a concat of lines in the original summary with whitespace.
+/// Parse the summary of the schema. The final summary content will be a concat of lines in the original summary with whitespace.
 fn parse_summary(doc: &mut Reader) -> String {
     if is_at_section(doc) {
         // no summary provided
@@ -255,17 +239,14 @@ fn parse_summary(doc: &mut Reader) -> String {
         .to_string()
 }
 
-/// parse the schema docstring to Doc.
+/// Parse the schema docstring to Doc.
 /// The summary of the schema content will be concatenated to a single line string by whitespaces.
 /// The description of each attribute will be returned as separate lines.
-pub fn parse_doc_string(ori: &String) -> Doc {
+pub fn parse_doc_string(ori: &str) -> Doc {
     if ori.is_empty() {
         return Doc::new("".to_string(), vec![], HashMap::new());
     }
-    let mut ori = ori.clone();
-    strip_quotes(&mut ori);
-    clean_doc(&mut ori);
-    let mut doc = Reader::new(ori);
+    let mut doc = Reader::new(clean_doc(strip_quotes(&ori)));
     doc.reset();
     let summary = parse_summary(&mut doc);
 
@@ -441,17 +422,13 @@ de",
         ];
 
         for (ori, res) in oris.iter().zip(results.iter()) {
-            let from = &mut ori.to_string();
-            strip_quotes(from);
-            assert_eq!(from.to_string(), res.to_string());
+            assert_eq!(strip_quotes(ori).to_string(), res.to_string());
         }
     }
 
     #[test]
     fn test_clean_doc() {
-        let mut ori = read_doc_content();
-        strip_quotes(&mut ori);
-        clean_doc(&mut ori);
+        let ori = clean_doc(strip_quotes(&read_doc_content()));
         let expect_cleaned = r#"Server is the common user interface for long-running
 services adopting the best practice of Kubernetes.
 
@@ -566,14 +543,13 @@ unindented line
 
     #[test]
     fn test_at_section() {
-        let mut data = "Summary
+        let data = "Summary
     Attribute
     ---------
     description"
             .to_string();
 
-        clean_doc(&mut data);
-
+        let data = clean_doc(&data);
         let mut doc = Reader::new(data);
         assert!(!is_at_section(&mut doc));
 
@@ -586,7 +562,7 @@ unindented line
 
     #[test]
     fn test_read_to_next_section() {
-        let mut data = "Summary
+        let data = "Summary
     
 
     SummaryContinue
@@ -610,8 +586,7 @@ unindented line
     --------
     content"
             .to_string();
-        clean_doc(&mut data);
-
+        let data = clean_doc(&data);
         let mut doc = Reader::new(data);
         assert_eq!(
             read_to_next_section(&mut doc),

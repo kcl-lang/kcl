@@ -21,7 +21,6 @@ petgraph = "0.6.0"
 anyhow = "1.0"
 regex = "1.7.0"
 lazy_static = "1.4.0"
-pcre2 = "*"
 
 kclvm-ast = { path = "../ast" }
 kclvm-ast-pretty = { path = "../ast_pretty" }
