@@ -29,18 +29,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ahash"
-version = "0.8.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e89da841a80418a9b391ebaea17f5c112ffaaa96f621d2c285b5174da76b9011"
-dependencies = [
- "cfg-if 1.0.0",
- "once_cell",
- "version_check",
- "zerocopy",
-]
-
-[[package]]
 name = "aho-corasick"
 version = "1.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -48,12 +36,6 @@ checksum = "8e60d3430d3a69478ad0993f19238d2df97c507009a52b3c10addcd7f6bcb916"
 dependencies = [
  "memchr",
 ]
-
-[[package]]
-name = "allocator-api2"
-version = "0.2.16"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0942ffc6dcaadf03badf6e6a2d0228460359d5e34b57ccdc720b7382dfbd5ec5"
 
 [[package]]
 name = "always-assert"
@@ -371,16 +353,6 @@ dependencies = [
  "serde",
  "wasm-bindgen",
  "windows-targets 0.52.4",
-]
-
-[[package]]
-name = "chumsky"
-version = "0.9.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8eebd66744a15ded14960ab4ccdbfb51ad3b81f51f3f04a80adac98c985396c9"
-dependencies = [
- "hashbrown 0.14.3",
- "stacker",
 ]
 
 [[package]]
@@ -1185,10 +1157,6 @@ name = "hashbrown"
 version = "0.14.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "290f1a1d9242c78d09ce40a5e87e7554ee637af1351968159f4952f028f75604"
-dependencies = [
- "ahash 0.8.11",
- "allocator-api2",
-]
 
 [[package]]
 name = "heck"
@@ -1475,7 +1443,6 @@ version = "0.8.4"
 dependencies = [
  "anyhow",
  "chrono",
- "chumsky",
  "clap 4.5.4",
  "compiler_base_session",
  "crossbeam-channel",
@@ -1636,7 +1603,7 @@ dependencies = [
 name = "kclvm-compiler"
 version = "0.8.4"
 dependencies = [
- "ahash 0.7.8",
+ "ahash",
  "bit-set",
  "bitflags 1.3.2",
  "fancy-regex",
@@ -1656,7 +1623,7 @@ dependencies = [
 name = "kclvm-config"
 version = "0.8.4"
 dependencies = [
- "ahash 0.7.8",
+ "ahash",
  "anyhow",
  "chrono",
  "dirs",
@@ -1853,7 +1820,7 @@ dependencies = [
 name = "kclvm-runtime"
 version = "0.8.4"
 dependencies = [
- "ahash 0.7.8",
+ "ahash",
  "base64",
  "bstr",
  "chrono",
@@ -1884,7 +1851,7 @@ dependencies = [
 name = "kclvm-sema"
 version = "0.8.4"
 dependencies = [
- "ahash 0.7.8",
+ "ahash",
  "anyhow",
  "bit-set",
  "bitflags 1.3.2",
@@ -4456,24 +4423,4 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fe5c30ade05e61656247b2e334a031dfd0cc466fadef865bdcdea8d537951bf1"
 dependencies = [
  "winapi",
-]
-
-[[package]]
-name = "zerocopy"
-version = "0.7.32"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "74d4d3961e53fa4c9a25a8637fc2bfaf2595b3d3ae34875568a5cf64787716be"
-dependencies = [
- "zerocopy-derive",
-]
-
-[[package]]
-name = "zerocopy-derive"
-version = "0.7.32"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9ce1b18ccd8e73a9321186f97e46f9f04b778851177567b1975109d26a08d2a6"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.58",
 ]
