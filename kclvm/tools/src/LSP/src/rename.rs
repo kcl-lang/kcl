@@ -2,7 +2,6 @@ use crate::state::KCLVfs;
 use crate::word_index::{build_virtual_word_index, VirtualLocation};
 use crate::{from_lsp::kcl_pos, goto_def::find_def_with_gs};
 use anyhow::{anyhow, Result};
-use chumsky::chain::Chain;
 use kclvm_ast::ast::{self, Program};
 use kclvm_error::diagnostic;
 use kclvm_parser::{load_program, LoadProgramOptions, ParseSessionRef};

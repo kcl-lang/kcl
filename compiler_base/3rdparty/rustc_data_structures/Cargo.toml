@@ -28,7 +28,6 @@ rayon-core = { version = "0.3.2", package = "rustc-rayon-core" }
 rustc-hash = "1.1.0"
 bitflags = "1.2.1"
 libc = "0.2"
-stacker = "0.1.14"
 tempfile = "3.5.0"
 
 [dependencies.parking_lot]

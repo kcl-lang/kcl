@@ -44,7 +44,6 @@ pub mod stable_set;
 #[macro_use]
 
 mod atomic_ref;
-pub mod stack;
 pub mod sync;
 pub use atomic_ref::AtomicRef;
 pub mod frozen;
