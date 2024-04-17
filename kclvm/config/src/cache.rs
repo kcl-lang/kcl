@@ -2,7 +2,7 @@
 extern crate chrono;
 use super::modfile::KCL_FILE_SUFFIX;
 use anyhow::Result;
-use fslock::LockFile;
+use kclvm_utils::fslock::open_lock_file;
 use kclvm_utils::pkgpath::{parse_external_pkg_name, rm_external_pkg_name};
 use md5::{Digest, Md5};
 use serde::{de::DeserializeOwned, Serialize};
@@ -203,7 +203,7 @@ pub fn write_info_cache(
     let relative_path = filepath.replacen(root, ".", 1);
     let cache_info = get_cache_info(filepath);
     let tmp_filename = temp_file(&cache_dir, "");
-    let mut lock_file = LockFile::open(&format!("{}{}", dst_filename, LOCK_SUFFIX)).unwrap();
+    let mut lock_file = open_lock_file(&format!("{}{}", dst_filename, LOCK_SUFFIX)).unwrap();
     lock_file.lock().unwrap();
     let mut cache = read_info_cache(root, target, cache_name);
     cache.insert(relative_path, cache_info);
@@ -265,7 +265,7 @@ pub fn save_data_to_file<T>(dst_filename: &str, tmp_filename: &str, data: T)
 where
     T: Serialize,
 {
-    let mut lock_file = LockFile::open(&format!("{}{}", dst_filename, LOCK_SUFFIX)).unwrap();
+    let mut lock_file = open_lock_file(&format!("{}{}", dst_filename, LOCK_SUFFIX)).unwrap();
     lock_file.lock().unwrap();
     let file = File::create(tmp_filename).unwrap();
     ron::ser::to_writer(file, &data).unwrap();

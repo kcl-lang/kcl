@@ -1627,7 +1627,6 @@ dependencies = [
  "anyhow",
  "chrono",
  "dirs",
- "fslock",
  "glob",
  "indexmap 1.9.3",
  "kclvm-ast",
@@ -1790,7 +1789,6 @@ dependencies = [
  "compiler_base_macros",
  "compiler_base_session",
  "criterion 0.3.6",
- "fslock",
  "glob",
  "indexmap 1.9.3",
  "kclvm-ast",
@@ -1929,6 +1927,7 @@ name = "kclvm-utils"
 version = "0.8.4"
 dependencies = [
  "anyhow",
+ "fslock",
 ]
 
 [[package]]

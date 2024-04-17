@@ -2,7 +2,6 @@ use std::{collections::HashMap, ffi::OsStr, path::Path};
 
 use anyhow::{anyhow, bail, Result};
 use assembler::KclvmLibAssembler;
-use fslock::LockFile;
 use kclvm_ast::{
     ast::{Module, Program},
     MAIN_PKG,
@@ -14,6 +13,7 @@ use kclvm_query::apply_overrides;
 use kclvm_sema::resolver::{
     resolve_program, resolve_program_with_opts, scope::ProgramScope, Options,
 };
+use kclvm_utils::fslock::open_lock_file;
 use linker::Command;
 #[cfg(feature = "llvm")]
 use runner::LibRunner;
@@ -289,7 +289,7 @@ fn build_with_lock<P: AsRef<Path>>(
         .join(format!("pkg.lock"))
         .display()
         .to_string();
-    let mut lock_file = LockFile::open(&lock_file)?;
+    let mut lock_file = open_lock_file(&lock_file)?;
     lock_file.lock()?;
     let artifact = build(args, program, scope, output);
     lock_file.unlock()?;

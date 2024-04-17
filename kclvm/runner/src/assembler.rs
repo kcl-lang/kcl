@@ -5,6 +5,7 @@ use kclvm_ast::ast::{self, Program};
 use kclvm_compiler::codegen::{emit_code, EmitOptions, OBJECT_FILE_SUFFIX};
 use kclvm_config::cache::{load_pkg_cache, save_pkg_cache, CacheOption, KCL_CACHE_PATH_ENV_VAR};
 use kclvm_sema::resolver::scope::ProgramScope;
+use kclvm_utils::fslock::open_lock_file;
 use std::{
     collections::HashMap,
     env,
@@ -330,7 +331,7 @@ impl KclvmAssembler {
             let target = self.target.clone();
             {
                 // Locking file for parallel code generation.
-                let mut file_lock = fslock::LockFile::open(&lock_file_path)?;
+                let mut file_lock = open_lock_file(&lock_file_path)?;
                 file_lock.lock()?;
 
                 let root = &compile_prog.root;
