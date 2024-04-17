@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0"
-compiler_base_session = "0.1.1"
+compiler_base_session = "0.1.2"
 compiler_base_macros = "0.1.1"
 indexmap = "1.0"
 
