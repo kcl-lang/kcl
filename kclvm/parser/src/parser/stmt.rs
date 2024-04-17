@@ -39,10 +39,9 @@ impl<'a> Parser<'a> {
             return Some(stmt);
         }
 
-        self.sess.struct_span_error(
-            &format!("unexpected '{:?}'", self.token.kind),
-            self.token.span,
-        );
+        let tok: String = self.token.into();
+        self.sess
+            .struct_span_error(&format!("unexpected token '{}'", tok), self.token.span);
 
         None
     }

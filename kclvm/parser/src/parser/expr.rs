@@ -87,10 +87,9 @@ impl<'a> Parser<'a> {
     /// test: if_expr | simple_expr
     pub(crate) fn parse_expr(&mut self) -> NodeRef<Expr> {
         if self.token.is_in_recovery_set() {
-            self.sess.struct_span_error(
-                &format!("unexpected '{:?}'", self.token.kind),
-                self.token.span,
-            );
+            let tok: String = self.token.into();
+            self.sess
+                .struct_span_error(&format!("unexpected token '{}'", tok), self.token.span);
             self.bump();
         }
 
