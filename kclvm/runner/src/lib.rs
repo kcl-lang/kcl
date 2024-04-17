@@ -2,10 +2,12 @@ use std::{collections::HashMap, ffi::OsStr, path::Path};
 
 use anyhow::{anyhow, bail, Result};
 use assembler::KclvmLibAssembler;
+use fslock::LockFile;
 use kclvm_ast::{
     ast::{Module, Program},
     MAIN_PKG,
 };
+use kclvm_config::cache::KCL_CACHE_PATH_ENV_VAR;
 use kclvm_driver::{canonicalize_input_files, expand_input_files};
 use kclvm_parser::{load_program, KCLModuleCache, ParseSessionRef};
 use kclvm_query::apply_overrides;
@@ -267,6 +269,39 @@ pub fn build_program<P: AsRef<Path>>(
     let scope = resolve_program(&mut program);
     // Emit parse and resolve errors if exists.
     emit_compile_diag_to_string(sess, &scope, false)?;
+    // When set the common package cache path, lock the package to prevent the
+    // data competition during compilation of different modules.
+    if let Ok(cache_path) = std::env::var(KCL_CACHE_PATH_ENV_VAR) {
+        build_with_lock(args, program, scope, &cache_path, output)
+    } else {
+        build(args, program, scope, output)
+    }
+}
+
+fn build_with_lock<P: AsRef<Path>>(
+    args: &ExecProgramArgs,
+    program: Program,
+    scope: ProgramScope,
+    cache_path: &str,
+    output: Option<P>,
+) -> Result<Artifact> {
+    let lock_file = Path::new(&cache_path)
+        .join(format!("pkg.lock"))
+        .display()
+        .to_string();
+    let mut lock_file = LockFile::open(&lock_file)?;
+    lock_file.lock()?;
+    let artifact = build(args, program, scope, output);
+    lock_file.unlock()?;
+    artifact
+}
+
+fn build<P: AsRef<Path>>(
+    args: &ExecProgramArgs,
+    program: Program,
+    scope: ProgramScope,
+    output: Option<P>,
+) -> Result<Artifact> {
     // Create a temp entry file and the temp dir will be delete automatically.
     let temp_dir = tempdir()?;
     let temp_dir_path = temp_dir.path().to_str().ok_or(anyhow!(
@@ -274,18 +309,10 @@ pub fn build_program<P: AsRef<Path>>(
         temp_dir.path().display()
     ))?;
     let temp_entry_file = temp_file(temp_dir_path)?;
-    // Generate native libs.
-    let lib_paths = assembler::KclvmAssembler::new(
-        program,
-        scope,
-        temp_entry_file.clone(),
-        KclvmLibAssembler::LLVM,
-        args.get_package_maps_from_external_pkg(),
-    )
-    .gen_libs(args)?;
 
     // Link libs into one library.
     let lib_suffix = Command::get_lib_suffix();
+    // Temporary output of linker
     let temp_out_lib_file = if let Some(output) = output {
         output
             .as_ref()
@@ -295,6 +322,15 @@ pub fn build_program<P: AsRef<Path>>(
     } else {
         format!("{}{}", temp_entry_file, lib_suffix)
     };
+    // Generate native libs.
+    let lib_paths = assembler::KclvmAssembler::new(
+        program,
+        scope,
+        temp_entry_file.clone(),
+        KclvmLibAssembler::LLVM,
+        args.get_package_maps_from_external_pkg(),
+    )
+    .gen_libs(args)?;
     let lib_path = linker::KclvmLinker::link_all_libs(lib_paths, temp_out_lib_file)?;
 
     // Return the library artifact.

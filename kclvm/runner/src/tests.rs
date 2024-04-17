@@ -26,8 +26,6 @@ use serde_json::Value;
 use std::fs::create_dir_all;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-#[cfg(feature = "llvm")]
-use std::thread;
 use std::{
     collections::HashMap,
     fs::{self, File},
