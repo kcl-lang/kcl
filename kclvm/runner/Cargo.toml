@@ -49,4 +49,4 @@ name = "bench_runner"
 harness = false
 
 [features]
-llvm = []
+llvm = ["kclvm-compiler/llvm"]
