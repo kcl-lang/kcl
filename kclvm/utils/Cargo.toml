@@ -7,3 +7,9 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1"
+
+[target.'cfg(windows)'.dependencies]
+fslock = "0.2.1"
+
+[target.'cfg(unix)'.dependencies]
+fslock = "0.2.1"
