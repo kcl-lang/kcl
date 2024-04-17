@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-compiler_base_span = "0.1.1" 
+compiler_base_span = "0.1.2" 
 
 kclvm-macros = { path = "../macros" }
 scoped-tls = "1.0"

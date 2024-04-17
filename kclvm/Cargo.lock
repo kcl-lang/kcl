@@ -449,17 +449,17 @@ checksum = "acbf1af155f9b9ef647e42cdc158db4b64a1b61f743629225fde6f3e0be2a7c7"
 
 [[package]]
 name = "compiler_base_error"
-version = "0.1.3"
+version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b533fb758758f8ff7eef3b94e6f7fc9eb4b8381c7d773b7f7e0ff48dbd0b27be"
+checksum = "7cf99f1bfacfe17a038c94694849eceace20556c5fdbe0348cab8aa94ec0b810"
 dependencies = [
  "anyhow",
  "compiler_base_macros",
- "compiler_base_span 0.1.1",
+ "compiler_base_span",
  "fluent",
  "pretty_assertions",
  "rustc_errors",
- "rustc_span 0.1.0",
+ "rustc_span",
  "termcolor",
  "unic-langid",
  "walkdir",
@@ -473,31 +473,22 @@ checksum = "21900034f34b69f860a5ff66e0577b8e66d310090b04bf0334afea9a041e0cee"
 
 [[package]]
 name = "compiler_base_session"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f32819e42e9c59ff3907c96c6d028c3f97b84d0f221b0d51f19ef38131019911"
+checksum = "97b341da4005c8ae1956b12f6e06a41348c8f7e17212495b667de674439ee1b7"
 dependencies = [
  "anyhow",
  "compiler_base_error",
- "compiler_base_span 0.1.1",
+ "compiler_base_span",
 ]
 
 [[package]]
 name = "compiler_base_span"
-version = "0.0.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1616c7ca53a60881a4f1f2e3a30665cfb1f026d9d1b4101782028fc371354aa3"
+checksum = "f6e8afa5c627c3a70cfb1ecf2b387da163975752a04fcc560cdd63bb7d3de565"
 dependencies = [
- "rustc_span 0.0.1",
-]
-
-[[package]]
-name = "compiler_base_span"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "260583ce8d04f581240b77922602791ef9852812ebb2a5eaa670dab4861e115d"
-dependencies = [
- "rustc_span 0.1.0",
+ "rustc_span",
 ]
 
 [[package]]
@@ -1557,7 +1548,7 @@ dependencies = [
 name = "kclvm-ast"
 version = "0.8.4"
 dependencies = [
- "compiler_base_span 0.1.1",
+ "compiler_base_span",
  "kclvm-error",
  "kclvm-parser",
  "kclvm-span",
@@ -1670,7 +1661,7 @@ dependencies = [
  "compiler_base_error",
  "compiler_base_macros",
  "compiler_base_session",
- "compiler_base_span 0.1.1",
+ "compiler_base_span",
  "indexmap 1.9.3",
  "kclvm-runtime",
  "kclvm-span",
@@ -1740,7 +1731,7 @@ dependencies = [
  "compiler_base_error",
  "compiler_base_macros",
  "compiler_base_session",
- "compiler_base_span 0.1.1",
+ "compiler_base_span",
  "either",
  "enquote",
  "expect-test",
@@ -1858,7 +1849,7 @@ dependencies = [
  "compiler_base_error",
  "compiler_base_macros",
  "compiler_base_session",
- "compiler_base_span 0.1.1",
+ "compiler_base_span",
  "criterion 0.3.6",
  "fancy-regex",
  "generational-arena",
@@ -1885,7 +1876,7 @@ dependencies = [
 name = "kclvm-span"
 version = "0.8.4"
 dependencies = [
- "compiler_base_span 0.1.1",
+ "compiler_base_span",
  "kclvm-macros",
  "parking_lot 0.11.2",
  "scoped-tls",
@@ -1897,7 +1888,7 @@ version = "0.8.4"
 dependencies = [
  "anyhow",
  "compiler_base_session",
- "compiler_base_span 0.0.1",
+ "compiler_base_span",
  "criterion 0.3.6",
  "fancy-regex",
  "indexmap 1.9.3",
@@ -2706,15 +2697,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9653c3ed92974e34c5a6e0a510864dab979760481714c172e0a34e437cb98804"
 
 [[package]]
-name = "psm"
-version = "0.1.21"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5787f7cda34e3033a72192c018bc5883100330f362ef279a8cbccfce8bb4e874"
-dependencies = [
- "cc",
-]
-
-[[package]]
 name = "quote"
 version = "1.0.35"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2972,9 +2954,9 @@ dependencies = [
 
 [[package]]
 name = "rustc_data_structures"
-version = "0.0.1"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c44a5f9188372885b2cafd1e0297755679e3fc451a6eccabba5ffd9b261d4c1e"
+checksum = "06e6fc6fb8151c7a509b42dbc6ce73de4d5609790f4c2be2e3ef014d414ff4a4"
 dependencies = [
  "arrayvec",
  "bitflags 1.3.2",
@@ -2989,7 +2971,6 @@ dependencies = [
  "rustc-rayon 0.3.2",
  "rustc-rayon-core 0.3.2",
  "stable_deref_trait",
- "stacker",
  "tempfile",
  "tracing",
  "winapi",
@@ -3016,25 +2997,9 @@ dependencies = [
 
 [[package]]
 name = "rustc_span"
-version = "0.0.1"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ee78969130992735ace193e2c463da2bddd275e90e648871198312a7aed7baf"
-dependencies = [
- "cfg-if 0.1.10",
- "md-5 0.10.6",
- "rustc_data_structures",
- "scoped-tls",
- "sha-1",
- "sha2 0.10.8",
- "tracing",
- "unicode-width",
-]
-
-[[package]]
-name = "rustc_span"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a62d237703c76d98c58148acb781b8454da7ac5d116ed19c0800631ee5a3aafa"
+checksum = "f68b517583d87938f5974aeed7b166e6bd8e3f09ce55cfb72542166316e3cd2a"
 dependencies = [
  "cfg-if 0.1.10",
  "md-5 0.10.6",
@@ -3369,19 +3334,6 @@ name = "stable_deref_trait"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a8f112729512f8e442d81f95a8a7ddf2b7c6b8a1a6f509a95864142b30cab2d3"
-
-[[package]]
-name = "stacker"
-version = "0.1.15"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c886bd4480155fd3ef527d45e9ac8dd7118a898a46530b7b94c3e21866259fce"
-dependencies = [
- "cc",
- "cfg-if 1.0.0",
- "libc",
- "psm",
- "winapi",
-]
 
 [[package]]
 name = "standback"
