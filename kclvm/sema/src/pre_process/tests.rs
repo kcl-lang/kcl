@@ -94,7 +94,7 @@ fn test_config_merge() {
     .unwrap()
     .program;
     merge_program(&mut program);
-    let modules = program.pkgs.get_mut(kclvm_ast::MAIN_PKG).unwrap();
+    let modules = program.pkgs.get_mut(&kclvm_ast::get_main_pkg()).unwrap();
     assert_eq!(modules.len(), 4);
     // Test the module merge result
     let module = modules.last().unwrap();
@@ -137,7 +137,7 @@ fn test_config_override() {
     .unwrap()
     .program;
     merge_program(&mut program);
-    let modules = program.pkgs.get_mut(kclvm_ast::MAIN_PKG).unwrap();
+    let modules = program.pkgs.get_mut(&kclvm_ast::get_main_pkg()).unwrap();
     assert_eq!(modules.len(), 1);
     // Test the module merge result
     let module = modules.first().unwrap();
@@ -183,7 +183,7 @@ fn test_skip_merge_program() {
     .program;
     // skip merge program and save raw config ast node
     // merge_program(&mut program);
-    let modules = program.pkgs.get_mut(kclvm_ast::MAIN_PKG).unwrap();
+    let modules = program.pkgs.get_mut(&kclvm_ast::get_main_pkg()).unwrap();
     assert_eq!(modules.len(), 3);
     let config1 = &modules[1];
     let config2 = &modules[1];

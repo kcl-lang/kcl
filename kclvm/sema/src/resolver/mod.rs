@@ -182,17 +182,17 @@ pub fn resolve_program_with_opts(
         if let Ok(mut cached_scope) = cached_scope.try_lock() {
             cached_scope.update(program);
             resolver.scope_map = cached_scope.scope_map.clone();
-            resolver.scope_map.remove(kclvm_ast::MAIN_PKG);
+            resolver.scope_map.remove(&kclvm_ast::get_main_pkg());
             resolver.node_ty_map = cached_scope.node_ty_map.clone()
         }
     }
-    let scope = resolver.check_and_lint(kclvm_ast::MAIN_PKG);
+    let scope = resolver.check_and_lint(&kclvm_ast::get_main_pkg());
     if let Some(cached_scope) = cached_scope.as_ref() {
         if let Ok(mut cached_scope) = cached_scope.try_lock() {
             cached_scope.update(program);
             cached_scope.scope_map = scope.scope_map.clone();
             cached_scope.node_ty_map = scope.node_ty_map.clone();
-            cached_scope.scope_map.remove(kclvm_ast::MAIN_PKG);
+            cached_scope.scope_map.remove(&kclvm_ast::get_main_pkg());
         }
     }
 

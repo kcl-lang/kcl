@@ -1,7 +1,6 @@
 use crossbeam_channel::after;
 use crossbeam_channel::select;
 use indexmap::IndexSet;
-use kclvm_ast::MAIN_PKG;
 use kclvm_sema::core::global_state::GlobalState;
 
 use kclvm_sema::resolver::scope::KCLScopeCache;
@@ -2081,7 +2080,7 @@ fn compile_unit_test() {
     // b.k is not contained in kcl.yaml but need to be contained in main pkg
     assert!(prog
         .pkgs
-        .get(MAIN_PKG)
+        .get(&kclvm_ast::get_main_pkg())
         .unwrap()
         .iter()
         .any(|m| m.filename == file))

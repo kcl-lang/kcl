@@ -314,7 +314,7 @@ impl KclvmAssembler {
             let assembler = self.single_file_assembler.clone();
             // Generate paths for some intermediate files (*.o, *.lock).
             let entry_file = self.entry_file.clone();
-            let is_main_pkg = pkgpath == kclvm_ast::MAIN_PKG;
+            let is_main_pkg = pkgpath == kclvm_ast::get_main_pkg();
             let file = if is_main_pkg {
                 // The path to the generated files(*.o or *.lock) when the main package is compiled.
                 PathBuf::from(entry_file)

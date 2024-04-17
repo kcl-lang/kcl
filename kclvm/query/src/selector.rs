@@ -12,7 +12,6 @@ use kclvm_parser::parse_file;
 
 use kclvm_sema::resolver::Options;
 
-use kclvm_ast::MAIN_PKG;
 use kclvm_sema::pre_process::pre_process_program;
 use maplit::hashmap;
 #[derive(Debug, Default)]
@@ -348,7 +347,7 @@ pub fn list_variables(file: String, specs: Vec<String>) -> Result<ListVariablesR
     pre_process_program(
         &mut ast::Program {
             root: file,
-            pkgs: hashmap! { MAIN_PKG.to_string() => vec![ast.module.clone()] },
+            pkgs: hashmap! { kclvm_ast::get_main_pkg() => vec![ast.module.clone()] },
         },
         &opts,
     );

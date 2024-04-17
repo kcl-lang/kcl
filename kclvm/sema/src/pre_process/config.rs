@@ -126,7 +126,7 @@ impl ConfigMergeTransformer {
             Vec<(String, usize, usize, ConfigMergeKind)>,
         > = IndexMap::default();
         // 1. Collect merged config
-        if let Some(modules) = program.pkgs.get_mut(kclvm_ast::MAIN_PKG) {
+        if let Some(modules) = program.pkgs.get_mut(&kclvm_ast::get_main_pkg()) {
             for (module_id, module) in modules.iter_mut().enumerate() {
                 for (i, stmt) in module.body.iter_mut().enumerate() {
                     match &mut stmt.node {
@@ -200,7 +200,7 @@ impl ConfigMergeTransformer {
                 let (filename, merged_id, merged_index, merged_kind) = index_list.last().unwrap();
                 let mut items: Vec<ast::NodeRef<ast::ConfigEntry>> = vec![];
                 for (merged_filename, merged_id, index, kind) in index_list {
-                    if let Some(modules) = program.pkgs.get_mut(kclvm_ast::MAIN_PKG) {
+                    if let Some(modules) = program.pkgs.get_mut(&kclvm_ast::get_main_pkg()) {
                         for (module_id, module) in modules.iter_mut().enumerate() {
                             if &module.filename == merged_filename && module_id == *merged_id {
                                 let stmt = module.body.get_mut(*index).unwrap();
@@ -237,7 +237,7 @@ impl ConfigMergeTransformer {
                         }
                     }
                 }
-                if let Some(modules) = program.pkgs.get_mut(kclvm_ast::MAIN_PKG) {
+                if let Some(modules) = program.pkgs.get_mut(&kclvm_ast::get_main_pkg()) {
                     for (module_id, module) in modules.iter_mut().enumerate() {
                         if &module.filename == filename && module_id == *merged_id {
                             if let Some(stmt) = module.body.get_mut(*merged_index) {
@@ -277,7 +277,7 @@ impl ConfigMergeTransformer {
             }
         }
         // 3. Delete redundant config.
-        if let Some(modules) = program.pkgs.get_mut(kclvm_ast::MAIN_PKG) {
+        if let Some(modules) = program.pkgs.get_mut(&kclvm_ast::get_main_pkg()) {
             for (i, module) in modules.iter_mut().enumerate() {
                 let mut delete_index_set: IndexSet<usize> = IndexSet::default();
                 for (_, index_list) in &name_declaration_mapping {

@@ -18,7 +18,7 @@ use crate::resolver::Options;
 pub fn pre_process_program(program: &mut ast::Program, opts: &Options) {
     for (pkgpath, modules) in program.pkgs.iter_mut() {
         let mut import_names = IndexMap::default();
-        if pkgpath == kclvm_ast::MAIN_PKG {
+        if pkgpath == &kclvm_ast::get_main_pkg() {
             for module in modules.iter_mut() {
                 for stmt in &module.body {
                     if let ast::Stmt::Import(import_stmt) = &stmt.node {
@@ -29,7 +29,7 @@ pub fn pre_process_program(program: &mut ast::Program, opts: &Options) {
             }
         }
         for module in modules.iter_mut() {
-            if pkgpath != kclvm_ast::MAIN_PKG {
+            if pkgpath != &kclvm_ast::get_main_pkg() {
                 import_names.clear();
             }
             // First we should transform the raw identifier to avoid raw identifier that happens to be a package path.

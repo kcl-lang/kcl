@@ -113,7 +113,7 @@ impl<'ctx> Evaluator<'ctx> {
             lambda_stack: RefCell::new(vec![GLOBAL_LEVEL]),
             schema_stack: RefCell::new(Default::default()),
             schema_expr_stack: RefCell::new(Default::default()),
-            pkgpath_stack: RefCell::new(vec![kclvm_ast::MAIN_PKG.to_string()]),
+            pkgpath_stack: RefCell::new(vec![kclvm_ast::get_main_pkg()]),
             filename_stack: RefCell::new(Default::default()),
             import_names: RefCell::new(Default::default()),
             pkg_scopes: RefCell::new(Default::default()),
@@ -125,8 +125,8 @@ impl<'ctx> Evaluator<'ctx> {
 
     /// Evaluate the program and return the JSON and YAML result.
     pub fn run(self: &Evaluator<'ctx>) -> Result<(String, String)> {
-        if let Some(modules) = self.program.pkgs.get(kclvm_ast::MAIN_PKG) {
-            self.init_scope(kclvm_ast::MAIN_PKG);
+        if let Some(modules) = self.program.pkgs.get(&kclvm_ast::get_main_pkg()) {
+            self.init_scope(&kclvm_ast::get_main_pkg());
             self.compile_ast_modules(modules)
         }
         Ok(self.plan_globals_to_string())

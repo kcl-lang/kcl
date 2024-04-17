@@ -41,7 +41,7 @@ use std::fmt::Debug;
 use uuid;
 
 use super::token;
-use crate::{node_ref, pos::ContainsPos};
+use crate::{get_main_pkg, node_ref, pos::ContainsPos};
 use kclvm_error::{diagnostic::Range, Position};
 use std::cell::RefCell;
 
@@ -368,14 +368,14 @@ pub struct Program {
 impl Program {
     /// Get main entry files.
     pub fn get_main_files(&self) -> Vec<String> {
-        match self.pkgs.get(crate::MAIN_PKG) {
+        match self.pkgs.get(&get_main_pkg()) {
             Some(modules) => modules.iter().map(|m| m.filename.clone()).collect(),
             None => vec![],
         }
     }
     /// Get the first module in the main package.
     pub fn get_main_package_first_module(&self) -> Option<&Module> {
-        match self.pkgs.get(crate::MAIN_PKG) {
+        match self.pkgs.get(&get_main_pkg()) {
             Some(modules) => modules.first(),
             None => None,
         }

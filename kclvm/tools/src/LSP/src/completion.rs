@@ -21,7 +21,6 @@ use std::{fs, path::Path};
 use crate::goto_def::find_def_with_gs;
 use indexmap::IndexSet;
 use kclvm_ast::ast::{self, ImportStmt, Program, Stmt};
-use kclvm_ast::MAIN_PKG;
 use kclvm_config::modfile::KCL_FILE_EXTENSION;
 use kclvm_sema::core::global_state::GlobalState;
 
@@ -642,7 +641,7 @@ fn ty_complete_label(ty: &Type, module: Option<&ModuleInfo>) -> Vec<String> {
         TypeKind::Schema(schema) => {
             vec![format!(
                 "{}{}{}",
-                if schema.pkgpath.is_empty() || schema.pkgpath == MAIN_PKG {
+                if schema.pkgpath.is_empty() || schema.pkgpath == kclvm_ast::get_main_pkg() {
                     "".to_string()
                 } else if let Some(m) = module {
                     format!("{}.", pkg_real_name(&schema.pkgpath, m))

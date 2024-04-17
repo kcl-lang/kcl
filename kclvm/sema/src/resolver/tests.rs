@@ -30,11 +30,10 @@ pub fn parse_program(filename: &str) -> Result<ast::Program> {
 
     let mut module = parse_file_force_errors(abspath.to_str().unwrap(), None)?;
     module.filename = filename.to_string();
-    module.pkg = kclvm_ast::MAIN_PKG.to_string();
-    module.name = kclvm_ast::MAIN_PKG.to_string();
+    module.pkg = kclvm_ast::get_main_pkg();
+    module.name = kclvm_ast::get_main_pkg();
 
-    prog.pkgs
-        .insert(kclvm_ast::MAIN_PKG.to_string(), vec![module]);
+    prog.pkgs.insert(kclvm_ast::get_main_pkg(), vec![module]);
 
     Ok(prog)
 }
@@ -380,7 +379,7 @@ fn test_lint() {
     pre_process_program(&mut program, &opts);
     let mut resolver = Resolver::new(&program, opts);
     resolver.resolve_import();
-    resolver.check_and_lint(kclvm_ast::MAIN_PKG);
+    resolver.check_and_lint(&kclvm_ast::get_main_pkg());
 
     let root = &program.root.clone();
     let filename = Path::new(&root.clone())

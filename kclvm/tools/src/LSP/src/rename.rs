@@ -132,7 +132,7 @@ where
     ) {
         if let Some(symbol_ref) = gs
             .get_symbols()
-            .get_symbol_by_fully_qualified_name(kclvm_ast::MAIN_PKG)
+            .get_symbol_by_fully_qualified_name(&kclvm_ast::get_main_pkg())
         {
             let mut owner_ref = symbol_ref;
             let mut target = None;

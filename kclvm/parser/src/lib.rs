@@ -194,8 +194,8 @@ pub fn parse_file_with_session(
     let mut p = parser::Parser::new(&sess, stream);
     let mut m = p.parse_module();
     m.filename = filename.to_string();
-    m.pkg = kclvm_ast::MAIN_PKG.to_string();
-    m.name = kclvm_ast::MAIN_PKG.to_string();
+    m.pkg = kclvm_ast::get_main_pkg();
+    m.name = kclvm_ast::get_main_pkg();
 
     Ok(m)
 }
@@ -368,7 +368,7 @@ impl Loader {
             }
 
             // Insert an empty vec to determine whether there is a circular import.
-            pkgs.insert(kclvm_ast::MAIN_PKG.to_string(), vec![]);
+            pkgs.insert(kclvm_ast::get_main_pkg(), vec![]);
             self.load_import_package(
                 entry.path(),
                 entry.name().to_string(),
@@ -377,7 +377,7 @@ impl Loader {
             )?;
         }
         // Insert the complete ast to replace the empty list.
-        pkgs.insert(kclvm_ast::MAIN_PKG.to_string(), pkg_files);
+        pkgs.insert(kclvm_ast::get_main_pkg(), pkg_files);
         let program = ast::Program {
             root: workdir,
             pkgs,
@@ -736,7 +736,7 @@ impl Loader {
     ) -> Result<Option<PkgInfo>> {
         match self.pkg_exists(vec![pkg_root.to_string()], pkg_path) {
             Some(internal_pkg_root) => {
-                let fullpath = if pkg_name == kclvm_ast::MAIN_PKG {
+                let fullpath = if pkg_name == kclvm_ast::get_main_pkg() {
                     pkg_path.to_string()
                 } else {
                     format!("{}.{}", pkg_name, pkg_path)

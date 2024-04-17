@@ -2,11 +2,7 @@ use std::{collections::HashMap, ffi::OsStr, path::Path};
 
 use anyhow::{anyhow, bail, Result};
 use assembler::KclvmLibAssembler;
-use kclvm_ast::{
-    ast::{Module, Program},
-    MAIN_PKG,
-};
-use kclvm_config::cache::KCL_CACHE_PATH_ENV_VAR;
+use kclvm_ast::ast::{Module, Program};
 use kclvm_driver::{canonicalize_input_files, expand_input_files};
 use kclvm_parser::{load_program, KCLModuleCache, ParseSessionRef};
 use kclvm_query::apply_overrides;
@@ -236,13 +232,13 @@ pub fn execute(
 ///
 /// **Note that it is not thread safe.**
 pub fn execute_module(mut m: Module) -> Result<ExecProgramResult> {
-    m.pkg = MAIN_PKG.to_string();
+    m.pkg = kclvm_ast::get_main_pkg();
 
     let mut pkgs = HashMap::new();
-    pkgs.insert(MAIN_PKG.to_string(), vec![m]);
+    pkgs.insert(kclvm_ast::get_main_pkg(), vec![m]);
 
     let prog = Program {
-        root: MAIN_PKG.to_string(),
+        root: kclvm_ast::get_main_pkg(),
         pkgs,
     };
 

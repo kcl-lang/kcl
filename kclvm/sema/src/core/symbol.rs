@@ -281,7 +281,7 @@ impl SymbolData {
                 let fully_qualified_ty_name = if name.contains('.') {
                     name.replacen(&pkgname, pkgpath, 1)
                 } else {
-                    kclvm_ast::MAIN_PKG.to_string() + name
+                    kclvm_ast::get_main_pkg() + name
                 };
 
                 self.get_symbol_by_fully_qualified_name(&fully_qualified_ty_name)
@@ -1701,13 +1701,13 @@ impl UnresolvedSymbol {
     pub fn get_fully_qualified_name(&self, module_info: &ModuleInfo) -> String {
         let names: Vec<_> = self.name.split('.').collect();
         let pkg_path = if names.len() == 1 {
-            kclvm_ast::MAIN_PKG.to_string()
+            kclvm_ast::get_main_pkg()
         } else {
             let pkg_alias = names.first().unwrap();
             let import_info = module_info.get_import_info(*pkg_alias);
             match import_info {
                 Some(info) => info.fully_qualified_name.clone(),
-                None => kclvm_ast::MAIN_PKG.to_string(),
+                None => kclvm_ast::get_main_pkg(),
             }
         };
 

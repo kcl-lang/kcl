@@ -116,7 +116,7 @@ impl<'ctx> Namer<'ctx> {
                     .to_str()
                     .unwrap()
                     .to_string();
-                if name == kclvm_ast::MAIN_PKG {
+                if name == &kclvm_ast::get_main_pkg() {
                     real_path = program.root.clone()
                 }
                 let pkg_pos = Position {
