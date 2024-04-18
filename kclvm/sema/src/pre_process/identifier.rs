@@ -175,9 +175,7 @@ impl<'ctx> MutSelfMutWalker<'ctx> for RawIdentifierTransformer {
     fn walk_schema_attr(&mut self, schema_attr: &'ctx mut ast::SchemaAttr) {
         // If the attribute is an identifier and then fix it.
         // Note that we do not fix a string-like attribute e.g., `"$name"`
-        if schema_attr.name.end_column - schema_attr.name.column
-            <= schema_attr.name.node.chars().count() as u64
-        {
+        if schema_attr.is_ident_attr() {
             schema_attr.name.node = remove_raw_ident_prefix(&schema_attr.name.node);
         }
         walk_list_mut!(self, walk_call_expr, schema_attr.decorators);

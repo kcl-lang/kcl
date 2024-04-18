@@ -351,7 +351,12 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
         if !schema_attr.decorators.is_empty() {
             self.write_newline();
         }
-        self.write_attribute(&schema_attr.name);
+        // A schema string attribute needs quote.
+        if !schema_attr.is_ident_attr() {
+            self.write(&format!("{:?}", schema_attr.name.node));
+        } else {
+            self.write_attribute(&schema_attr.name);
+        }
         if schema_attr.is_optional {
             self.write("?");
         }

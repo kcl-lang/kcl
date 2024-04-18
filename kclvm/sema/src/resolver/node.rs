@@ -360,7 +360,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
     fn walk_schema_attr(&mut self, schema_attr: &'ctx ast::SchemaAttr) -> Self::Result {
         self.ctx.local_vars.clear();
         let (start, end) = schema_attr.name.get_span_pos();
-        let name = if schema_attr.name.node.contains('.') {
+        let name = if schema_attr.is_ident_attr() && schema_attr.name.node.contains('.') {
             self.handler.add_compile_error(
                 "schema attribute can not be selected",
                 schema_attr.name.get_span_pos(),
