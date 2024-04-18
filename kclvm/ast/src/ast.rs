@@ -683,6 +683,13 @@ pub struct SchemaAttr {
     pub ty: NodeRef<Type>,
 }
 
+impl SchemaAttr {
+    #[inline]
+    pub fn is_ident_attr(&self) -> bool {
+        self.name.end_column - self.name.column <= self.name.node.chars().count() as u64
+    }
+}
+
 /// RuleStmt, e.g.
 /// ```kcl
 /// rule RuleExample:
