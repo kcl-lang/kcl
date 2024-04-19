@@ -912,12 +912,14 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             }
             TypeKind::Schema(schema_ty) => {
                 if !schema_ty.is_instance {
-                    let ty_annotation_str = ty_str_replace_pkgpath(
-                        &def_ty.into_type_annotation_str(),
-                        &self.ctx.pkgpath,
-                    );
                     let name = schema_expr.name.node.get_name();
-                    self.add_type_alias(&name, &ty_annotation_str);
+                    if !self.ctx.local_vars.contains(&name) {
+                        let ty_annotation_str = ty_str_replace_pkgpath(
+                            &def_ty.into_type_annotation_str(),
+                            &self.ctx.pkgpath,
+                        );
+                        self.add_type_alias(&name, &ty_annotation_str);
+                    }
                 }
                 let obj = self.new_config_expr_context_item(
                     &schema_ty.name,
