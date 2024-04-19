@@ -117,6 +117,12 @@ mod test_value_yaml {
     use crate::*;
 
     #[test]
+    fn test_serde_yaml_on_str() {
+        let on_str = serde_yaml::to_string("on").unwrap();
+        assert_eq!(on_str, "'on'\n");
+    }
+
+    #[test]
     fn test_value_from_yaml() {
         let mut ctx = Context::new();
         let cases = [

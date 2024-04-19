@@ -1263,6 +1263,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "indoc"
+version = "2.0.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b248f5224d1d606005e02c97f5aa4e88eeb230488bcc03bc9ca4d7991399f2b5"
+
+[[package]]
 name = "inkwell"
 version = "0.2.0"
 source = "git+https://github.com/TheDan64/inkwell?branch=master#4030f764f1c889f36429ac02ef32e04fcfa8ce33"
@@ -3212,13 +3218,14 @@ dependencies = [
 [[package]]
 name = "serde_yaml"
 version = "0.9.34+deprecated"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6a8b1a1a2ebf674015cc02edccce75287f1a0130d394307b36743c2f5d504b47"
 dependencies = [
+ "anyhow",
  "indexmap 2.2.6",
+ "indoc",
  "itoa",
  "ryu",
  "serde",
+ "serde_derive",
  "unsafe-libyaml",
 ]
 
