@@ -5,9 +5,9 @@ use generational_arena::Index;
 use kclvm_ast::ast;
 use kclvm_runtime::ValueRef;
 
-use crate::error as kcl_error;
 use crate::proxy::Proxy;
 use crate::Evaluator;
+use crate::{error as kcl_error, EvalContext};
 
 pub type FunctionHandler =
     Arc<dyn Fn(&Evaluator, &FunctionEvalContext, &ValueRef, &ValueRef) -> ValueRef>;
@@ -15,6 +15,7 @@ pub type FunctionHandler =
 #[derive(Clone)]
 pub struct FunctionEvalContext {
     pub node: ast::LambdaExpr,
+    pub this: Option<EvalContext>,
 }
 
 /// Proxy functions represent the saved functions of the runtime itself,
@@ -59,7 +60,18 @@ impl<'ctx> Evaluator<'ctx> {
         self.push_pkgpath(&frame.pkgpath);
         self.push_backtrace(&frame);
         let value = match &frame.proxy {
-            Proxy::Lambda(lambda) => (lambda.body)(self, &lambda.ctx, args, kwargs),
+            Proxy::Lambda(lambda) => {
+                // Capture function schema this reference.
+                if let Some(this) = lambda.ctx.this.clone() {
+                    self.push_schema(this);
+                }
+                let value = (lambda.body)(self, &lambda.ctx, args, kwargs);
+                // Release function schema this reference.
+                if lambda.ctx.this.is_some() {
+                    self.pop_schema()
+                }
+                value
+            }
             Proxy::Schema(schema) => (schema.body)(
                 self,
                 &schema

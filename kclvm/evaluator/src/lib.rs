@@ -84,6 +84,7 @@ pub struct Evaluator<'ctx> {
     pub backtrack_meta: RefCell<Vec<BacktrackMeta>>,
 }
 
+#[derive(Clone)]
 pub enum EvalContext {
     Schema(SchemaEvalContextRef),
     Rule(RuleEvalContextRef),
