@@ -1,0 +1,5 @@
+myJob:
+  name: myJob
+myCronJob:
+  name: myJob
+name: myJob

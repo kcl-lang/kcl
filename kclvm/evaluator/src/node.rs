@@ -1000,9 +1000,11 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
 
     fn walk_lambda_expr(&self, lambda_expr: &'ctx ast::LambdaExpr) -> Self::Result {
         let func = Arc::new(func_body);
+        // Capture schema self
         let proxy = FunctionCaller::new(
             FunctionEvalContext {
                 node: lambda_expr.clone(),
+                this: self.schema_stack.borrow().last().cloned(),
             },
             func,
         );
