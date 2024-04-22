@@ -438,3 +438,51 @@ fn test_list_unsupported_variables() {
         assert_eq!(result.unsupported[0].code, expected_code);
     }
 }
+
+#[test]
+fn test_overridefile_insert() {
+    let specs = vec![
+        r#"b={
+            "c": 2
+        }"#
+        .to_string(),
+        r#"c.b={"a": "b"}"#.to_string(),
+        r#"d.e.f.g=3"#.to_string(),
+        r#"_access3=test.ServiceAccess {
+    iType = "kkkkkkk"
+    sType = dsType
+    TestStr = ["${test_str}"]
+    ports = [80, 443]
+    booltest = True
+}"#
+        .to_string(),
+        r#"_access.iType="kkkkkkk""#.to_string(),
+        r#"_access5.iType="dddddd""#.to_string(),
+    ];
+
+    let simple_path = get_test_dir("test_override_file/main.k".to_string());
+    let simple_bk_path = get_test_dir("test_override_file/main.bk.k".to_string());
+    let except_path = get_test_dir("test_override_file/expect.k".to_string());
+    fs::copy(simple_bk_path.clone(), simple_path.clone()).unwrap();
+
+    for spec in specs {
+        let import_paths = vec![];
+        assert_eq!(
+            override_file(
+                &simple_path.display().to_string(),
+                &vec![spec],
+                &import_paths
+            )
+            .unwrap(),
+            true
+        );
+    }
+    let simple_content = fs::read_to_string(simple_path.clone()).unwrap();
+    let expect_content = fs::read_to_string(except_path.clone()).unwrap();
+
+    let simple_content = simple_content.replace("\r\n", "").replace("\n", "");
+    let expect_content = expect_content.replace("\r\n", "").replace("\n", "");
+
+    assert_eq!(simple_content, expect_content);
+    fs::copy(simple_bk_path.clone(), simple_path.clone()).unwrap();
+}
