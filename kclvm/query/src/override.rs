@@ -140,7 +140,6 @@ pub fn apply_override_on_module(
         action: o.action.clone(),
     };
     transformer.walk_module(m);
-    fix_config_expr_nest_attr(m);
     Ok(transformer.has_override)
 }
 
@@ -330,43 +329,51 @@ impl<'ctx> MutSelfMutWalker<'ctx> for OverrideTransformer {
 
         // If the variable is not found, add a new variable with the override value.
         if !self.has_override {
-            let value = if self.field_paths.len() == 0 {
-                self.clone_override_value()
-            } else {
-                // if the spec is b.c.d=1 and the b is not found, add config b: {c: {d: 1}}
-                Box::new(ast::Node::dummy_node(ast::Expr::Config(ast::ConfigExpr {
-                    items: vec![Box::new(ast::Node::dummy_node(ast::ConfigEntry {
-                        key: Some(Box::new(ast::Node::dummy_node(ast::Expr::Identifier(
-                            ast::Identifier {
-                                names: self
-                                    .field_paths
-                                    .iter()
-                                    .map(|s| ast::Node::dummy_node(s.to_string()))
-                                    .collect(),
-                                ctx: ast::ExprContext::Store,
-                                pkgpath: "".to_string(),
-                            },
-                        )))),
-                        value: self.clone_override_value(),
-                        operation: ast::ConfigEntryOperation::Override,
-                        insert_index: -1,
-                    }))],
-                })))
-            };
+            match self.action {
+                // Walk the module body to find the target and override it.
+                ast::OverrideAction::CreateOrUpdate => {
+                    let value = if self.field_paths.len() == 0 {
+                        self.clone_override_value()
+                    } else {
+                        // if the spec is b.c.d=1 and the b is not found, add config b: {c: {d: 1}}
+                        Box::new(ast::Node::dummy_node(ast::Expr::Config(ast::ConfigExpr {
+                            items: vec![Box::new(ast::Node::dummy_node(ast::ConfigEntry {
+                                key: Some(Box::new(ast::Node::dummy_node(ast::Expr::Identifier(
+                                    ast::Identifier {
+                                        names: self
+                                            .field_paths
+                                            .iter()
+                                            .map(|s| ast::Node::dummy_node(s.to_string()))
+                                            .collect(),
+                                        ctx: ast::ExprContext::Store,
+                                        pkgpath: "".to_string(),
+                                    },
+                                )))),
+                                value: self.clone_override_value(),
+                                operation: ast::ConfigEntryOperation::Override,
+                                insert_index: -1,
+                            }))],
+                        })))
+                    };
 
-            let assign = ast::AssignStmt {
-                targets: vec![Box::new(ast::Node::dummy_node(ast::Identifier {
-                    names: vec![ast::Node::dummy_node(self.target_id.clone())],
-                    ctx: ast::ExprContext::Store,
-                    pkgpath: "".to_string(),
-                }))],
-                ty: None,
-                value,
-            };
-            module
-                .body
-                .push(Box::new(ast::Node::dummy_node(ast::Stmt::Assign(assign))));
-            self.has_override = true;
+                    let assign = ast::AssignStmt {
+                        targets: vec![Box::new(ast::Node::dummy_node(ast::Identifier {
+                            names: vec![ast::Node::dummy_node(self.target_id.clone())],
+                            ctx: ast::ExprContext::Store,
+                            pkgpath: "".to_string(),
+                        }))],
+                        ty: None,
+                        value,
+                    };
+                    module
+                        .body
+                        .push(Box::new(ast::Node::dummy_node(ast::Stmt::Assign(assign))));
+                    self.has_override = true;
+                }
+                ast::OverrideAction::Delete => {
+                    return;
+                }
+            }
         }
     }
 
