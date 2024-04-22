@@ -3,12 +3,14 @@ use std::{collections::HashMap, ffi::OsStr, path::Path};
 use anyhow::{anyhow, bail, Result};
 use assembler::KclvmLibAssembler;
 use kclvm_ast::ast::{Module, Program};
+use kclvm_config::cache::KCL_CACHE_PATH_ENV_VAR;
 use kclvm_driver::{canonicalize_input_files, expand_input_files};
 use kclvm_parser::{load_program, KCLModuleCache, ParseSessionRef};
 use kclvm_query::apply_overrides;
 use kclvm_sema::resolver::{
     resolve_program, resolve_program_with_opts, scope::ProgramScope, Options,
 };
+
 use kclvm_utils::fslock::open_lock_file;
 use linker::Command;
 #[cfg(feature = "llvm")]
