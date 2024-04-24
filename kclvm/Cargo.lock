@@ -449,9 +449,9 @@ checksum = "acbf1af155f9b9ef647e42cdc158db4b64a1b61f743629225fde6f3e0be2a7c7"
 
 [[package]]
 name = "compiler_base_error"
-version = "0.1.5"
+version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7cf99f1bfacfe17a038c94694849eceace20556c5fdbe0348cab8aa94ec0b810"
+checksum = "32e6a143200e9657a565b093fde64a590af93884d1f820829db6461de1ff0086"
 dependencies = [
  "anyhow",
  "compiler_base_macros",
@@ -473,9 +473,9 @@ checksum = "21900034f34b69f860a5ff66e0577b8e66d310090b04bf0334afea9a041e0cee"
 
 [[package]]
 name = "compiler_base_session"
-version = "0.1.2"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "97b341da4005c8ae1956b12f6e06a41348c8f7e17212495b667de674439ee1b7"
+checksum = "67411f0b5421d9c9f045ec08c4d01fe3861197d11215d1e2e448be663aff9ad9"
 dependencies = [
  "anyhow",
  "compiler_base_error",
@@ -484,9 +484,9 @@ dependencies = [
 
 [[package]]
 name = "compiler_base_span"
-version = "0.1.2"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f6e8afa5c627c3a70cfb1ecf2b387da163975752a04fcc560cdd63bb7d3de565"
+checksum = "a42aae2adfa4b418441ede52835f3c96e9ca63d595f0ac861d94935757e9cb2e"
 dependencies = [
  "rustc_span",
 ]
@@ -2959,9 +2959,9 @@ dependencies = [
 
 [[package]]
 name = "rustc_data_structures"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "06e6fc6fb8151c7a509b42dbc6ce73de4d5609790f4c2be2e3ef014d414ff4a4"
+checksum = "a38bae9c6afa27015bcaa2869e03bb111ecf0d0e0edc2da559a91d4057174c9a"
 dependencies = [
  "arrayvec",
  "bitflags 1.3.2",
@@ -3002,9 +3002,9 @@ dependencies = [
 
 [[package]]
 name = "rustc_span"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f68b517583d87938f5974aeed7b166e6bd8e3f09ce55cfb72542166316e3cd2a"
+checksum = "043e9cc06c53de1f6a125e41e4b915d23a130241610a114ad4fe4f654617eae4"
 dependencies = [
  "cfg-if 0.1.10",
  "md-5 0.10.6",
