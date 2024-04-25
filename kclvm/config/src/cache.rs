@@ -133,7 +133,8 @@ where
     let cache_dir = get_cache_dir(root, Some(&option.cache_dir));
     create_dir_all(&cache_dir).unwrap();
     let tmp_filename = temp_file(&cache_dir, pkgpath);
-    save_data_to_file(&dst_filename, &tmp_filename, data);
+    save_data_to_file(&dst_filename, &tmp_filename, data)
+        .map_err(|e| anyhow::anyhow!(e.to_string()))?;
     Ok(())
 }
 
@@ -199,19 +200,18 @@ pub fn write_info_cache(
     let dst_filename = get_cache_info_filename(root, target, cache_name);
     let cache_dir = get_cache_dir(root, cache_name);
     let path = Path::new(&cache_dir);
-    create_dir_all(path).unwrap();
+    create_dir_all(path)?;
     let relative_path = filepath.replacen(root, ".", 1);
     let cache_info = get_cache_info(filepath);
     let tmp_filename = temp_file(&cache_dir, "");
-    let mut lock_file = open_lock_file(&format!("{}{}", dst_filename, LOCK_SUFFIX)).unwrap();
-    lock_file.lock().unwrap();
+    let mut lock_file = open_lock_file(&format!("{}{}", dst_filename, LOCK_SUFFIX))?;
+    lock_file.lock()?;
     let mut cache = read_info_cache(root, target, cache_name);
     cache.insert(relative_path, cache_info);
-    let mut file = File::create(&tmp_filename).unwrap();
-    file.write_all(ron::ser::to_string(&cache).unwrap().as_bytes())
-        .unwrap();
-    std::fs::rename(&tmp_filename, &dst_filename).unwrap();
-    lock_file.unlock().unwrap();
+    let mut file = File::create(&tmp_filename)?;
+    file.write_all(ron::ser::to_string(&cache)?.as_bytes())?;
+    std::fs::rename(&tmp_filename, &dst_filename)?;
+    lock_file.unlock()?;
     Ok(())
 }
 
@@ -261,16 +261,21 @@ where
     }
 }
 
-pub fn save_data_to_file<T>(dst_filename: &str, tmp_filename: &str, data: T)
+pub fn save_data_to_file<T>(
+    dst_filename: &str,
+    tmp_filename: &str,
+    data: T,
+) -> Result<(), Box<dyn error::Error>>
 where
     T: Serialize,
 {
-    let mut lock_file = open_lock_file(&format!("{}{}", dst_filename, LOCK_SUFFIX)).unwrap();
-    lock_file.lock().unwrap();
-    let file = File::create(tmp_filename).unwrap();
-    ron::ser::to_writer(file, &data).unwrap();
-    std::fs::rename(tmp_filename, dst_filename).unwrap();
-    lock_file.unlock().unwrap();
+    let mut lock_file = open_lock_file(&format!("{}{}", dst_filename, LOCK_SUFFIX))?;
+    lock_file.lock()?;
+    let file = File::create(tmp_filename)?;
+    ron::ser::to_writer(file, &data)?;
+    std::fs::rename(tmp_filename, dst_filename)?;
+    lock_file.unlock()?;
+    Ok(())
 }
 
 #[inline]
