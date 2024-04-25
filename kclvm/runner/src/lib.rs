@@ -274,7 +274,8 @@ pub fn build_program<P: AsRef<Path>>(
     if let Ok(cache_path) = std::env::var(KCL_CACHE_PATH_ENV_VAR) {
         build_with_lock(args, program, scope, &cache_path, output)
     } else {
-        build(args, program, scope, output)
+        let temp_dir = std::env::temp_dir();
+        build_with_lock(args, program, scope, &temp_dir.to_string_lossy(), output)
     }
 }
 
