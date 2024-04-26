@@ -602,13 +602,12 @@ impl DependencyGraph {
         if let Some(pkgpaths) = self.module_map.get(&module_file).cloned() {
             let mut pkg_queue = VecDeque::new();
             for pkgpath in pkgpaths.iter() {
-                invalidated_set.insert(pkgpath.clone());
                 pkg_queue.push_back(self.node_map.get(pkgpath));
             }
 
-            let mut old_size = 0;
-            while old_size < invalidated_set.len() {
-                old_size = invalidated_set.len();
+            let mut old_size: i64 = -1;
+            while old_size < invalidated_set.len() as i64 {
+                old_size = invalidated_set.len() as i64;
                 let cur_node = loop {
                     match pkg_queue.pop_front() {
                         Some(cur_node) => match cur_node {

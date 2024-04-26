@@ -344,14 +344,13 @@ impl Loader {
         let workdir = compile_entries.get_root_path().to_string();
         let mut pkgs = HashMap::new();
         let mut pkg_files = Vec::new();
-        for entry in compile_entries.iter() {
-            // Get files from options with root.
-            // let k_files = self.get_main_files_from_pkg(entry.path(), entry.name())?;
-            let k_files = entry.get_k_files();
-            let maybe_k_codes = entry.get_k_codes();
-            // Load main package.
-            for (i, filename) in k_files.iter().enumerate() {
-                let mut m = if let Some(module_cache) = self.module_cache.as_ref() {
+        // update cache
+        if let Some(module_cache) = self.module_cache.as_ref() {
+            for entry in compile_entries.iter() {
+                let k_files = entry.get_k_files();
+                let maybe_k_codes = entry.get_k_codes();
+                // Load main package.
+                for (i, filename) in k_files.iter().enumerate() {
                     let m = parse_file_with_session(
                         self.sess.clone(),
                         filename,
@@ -359,7 +358,18 @@ impl Loader {
                     )?;
                     let mut module_cache_ref = module_cache.write().unwrap();
                     module_cache_ref.insert(filename.clone(), m.clone());
-                    m
+                }
+            }
+        }
+
+        for entry in compile_entries.iter() {
+            let k_files = entry.get_k_files();
+            let maybe_k_codes = entry.get_k_codes();
+            // Load main package.
+            for (i, filename) in k_files.iter().enumerate() {
+                let mut m = if let Some(module_cache) = self.module_cache.as_ref() {
+                    let module_cache_ref = module_cache.read().unwrap();
+                    module_cache_ref.get(filename).unwrap().clone()
                 } else {
                     parse_file_with_session(self.sess.clone(), filename, maybe_k_codes[i].clone())?
                 };
