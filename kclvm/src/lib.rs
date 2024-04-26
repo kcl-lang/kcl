@@ -1,7 +1,5 @@
 #![allow(clippy::missing_safety_doc)]
 
-extern crate serde;
-
 use kclvm_parser::ParseSession;
 use kclvm_runner::exec_program;
 use kclvm_runner::runner::*;
