@@ -1,3 +1,4 @@
+use crate::func::ClosureMap;
 use crate::lazy::merge_setters;
 use crate::{
     error as kcl_error, lazy::LazyEvalScope, rule::RuleEvalContextRef, schema::SchemaEvalContextRef,
@@ -7,7 +8,7 @@ use kclvm_ast::ast;
 use kclvm_runtime::{ValueRef, _kclvm_get_fn_ptr_by_name, MAIN_PKG_PATH};
 use kclvm_sema::{builtin, plugin};
 
-use crate::{Evaluator, GLOBAL_LEVEL};
+use crate::{Evaluator, GLOBAL_LEVEL, INNER_LEVEL};
 
 /// The evaluator scope.
 #[derive(Debug, Default)]
@@ -419,17 +420,69 @@ impl<'ctx> Evaluator<'ctx> {
                 .unwrap_or_else(|| panic!("package {} is not found", pkgpath));
             // Scopes 0 is builtin scope, Scopes 1 is the global scope, Scopes 2~ are the local scopes
             let scopes_len = scopes.len();
+            let mut found = false;
             for i in 0..scopes_len {
                 let index = scopes_len - i - 1;
                 let variables = &scopes[index].variables;
-                if let Some(var) = variables.get(&name.to_string()) {
+                if let Some(var) = variables.get(name) {
                     // Closure vars, 2 denotes the builtin scope and the global scope, here is a closure scope.
-                    result = var.clone();
+                    result = if let Some(lambda_ctx) = self.last_lambda_ctx() {
+                        let last_lambda_scope = lambda_ctx.level;
+                        // Local scope variable or lambda closure variable.
+                        let ignore = if let Some((start, end)) = self.scope_covers.borrow().last() {
+                            *start <= index && index <= *end
+                        } else {
+                            false
+                        };
+                        if index >= last_lambda_scope && !ignore {
+                            var.clone()
+                        } else {
+                            lambda_ctx.closure.get(name).unwrap_or(var).clone()
+                        }
+                    } else {
+                        // Not in the lambda, maybe a local variable.
+                        var.clone()
+                    };
+                    found = true;
                     break;
                 }
             }
-            result
+            if found {
+                result
+            } else {
+                // Not found variable in the scope, maybe lambda closures captured in other package scopes.
+                self.last_lambda_ctx()
+                    .map(|ctx| ctx.closure.get(name).cloned().unwrap_or(result.clone()))
+                    .unwrap_or(result)
+            }
         }
+    }
+
+    /// Get closure map in the current inner scope.
+    pub(crate) fn get_current_closure_map(&self) -> ClosureMap {
+        // Get variable map in the current scope.
+        let pkgpath = self.current_pkgpath();
+        let pkg_scopes = self.pkg_scopes.borrow();
+        let scopes = pkg_scopes
+            .get(&pkgpath)
+            .unwrap_or_else(|| panic!("package {} is not found", pkgpath));
+        let last_lambda_ctx = self.last_lambda_ctx();
+        // Get current closure map.
+        let mut closure_map = last_lambda_ctx
+            .as_ref()
+            .map(|ctx| ctx.closure.clone())
+            .unwrap_or_default();
+        // Get variable map including schema  in the current scope.
+        for i in INNER_LEVEL..scopes.len() {
+            let variables = &scopes
+                .get(i)
+                .expect(kcl_error::INTERNAL_ERROR_MSG)
+                .variables;
+            for (k, v) in variables {
+                closure_map.insert(k.to_string(), v.clone());
+            }
+        }
+        closure_map
     }
 
     /// Load value from name.

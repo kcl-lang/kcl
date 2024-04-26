@@ -6,12 +6,12 @@ use kclvm_runtime::{BacktraceFrame, MAIN_PKG_PATH};
 
 use crate::{
     error as kcl_error,
-    func::FunctionCaller,
+    func::{FunctionCaller, FunctionEvalContextRef},
     lazy::{BacktrackMeta, Setter},
     proxy::{Frame, Proxy},
     rule::RuleCaller,
     schema::SchemaCaller,
-    EvalContext, Evaluator, GLOBAL_LEVEL,
+    EvalContext, Evaluator,
 };
 
 impl<'ctx> Evaluator<'ctx> {
@@ -46,24 +46,54 @@ impl<'ctx> Evaluator<'ctx> {
 
     /// Push a lambda definition scope into the lambda stack
     #[inline]
-    pub fn push_lambda(&self, scope: usize) {
-        self.lambda_stack.borrow_mut().push(scope);
+    pub fn push_lambda(
+        &self,
+        lambda_ctx: FunctionEvalContextRef,
+        current_pkgpath: &str,
+        frame_pkgpath: &str,
+        level: usize,
+    ) {
+        // Capture function schema this reference.
+        if let Some(this) = &lambda_ctx.this {
+            self.push_schema(this.clone());
+        }
+        // Inner scope function calling.
+        // Note the minimum lambda.ctx.level is 2 for the top level lambda definitions.
+        if frame_pkgpath == current_pkgpath && level >= lambda_ctx.level {
+            // The scope cover is [lambda.ctx.level, self.scope_level()]
+            self.push_scope_cover(lambda_ctx.level, level);
+        }
+        self.lambda_stack.borrow_mut().push(lambda_ctx);
     }
 
     /// Pop a lambda definition scope.
     #[inline]
-    pub fn pop_lambda(&self) {
+    pub fn pop_lambda(
+        &self,
+        lambda_ctx: FunctionEvalContextRef,
+        current_pkgpath: &str,
+        frame_pkgpath: &str,
+        level: usize,
+    ) {
         self.lambda_stack.borrow_mut().pop();
+        // Inner scope function calling.
+        if frame_pkgpath == current_pkgpath && level >= lambda_ctx.level {
+            self.pop_scope_cover();
+        }
+        // Release function schema this reference.
+        if lambda_ctx.this.is_some() {
+            self.pop_schema()
+        }
     }
 
     #[inline]
     pub fn is_in_lambda(&self) -> bool {
-        *self
-            .lambda_stack
-            .borrow()
-            .last()
-            .expect(kcl_error::INTERNAL_ERROR_MSG)
-            > GLOBAL_LEVEL
+        !self.lambda_stack.borrow().is_empty()
+    }
+
+    #[inline]
+    pub fn last_lambda_ctx(&self) -> Option<FunctionEvalContextRef> {
+        self.lambda_stack.borrow().last().cloned()
     }
 
     #[inline]
@@ -228,5 +258,13 @@ impl<'ctx> Evaluator<'ctx> {
     pub(crate) fn pop_backtrack_meta(&self) {
         let meta = &mut self.backtrack_meta.borrow_mut();
         meta.pop();
+    }
+
+    pub(crate) fn push_scope_cover(&self, start: usize, stop: usize) {
+        self.scope_covers.borrow_mut().push((start, stop));
+    }
+
+    pub(crate) fn pop_scope_cover(&self) {
+        self.scope_covers.borrow_mut().pop();
     }
 }
