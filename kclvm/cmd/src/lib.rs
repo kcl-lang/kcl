@@ -23,11 +23,12 @@ pub fn main(args: &[&str]) -> Result<()> {
     // Sub commands
     match matches.subcommand() {
         Some(("run", sub_matches)) => run_command(sub_matches, &mut io::stdout()),
-        Some(("server", _)) => kclvm_api::service::jsonrpc::start_stdio_server(),
         Some(("version", _)) => {
             println!("{}", kclvm_version::get_version_info());
             Ok(())
         }
+        #[cfg(not(target_arch = "wasm32"))]
+        Some(("server", _)) => kclvm_api::service::jsonrpc::start_stdio_server(),
         _ => Ok(()),
     }
 }

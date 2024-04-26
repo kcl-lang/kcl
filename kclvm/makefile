@@ -49,6 +49,9 @@ lint:
 fix:
 	cargo clippy --fix --allow-dirty
 
+build-wasm:
+	cargo build --target=wasm32-wasi --release
+
 # ------------------------
 # Tests
 # ------------------------
