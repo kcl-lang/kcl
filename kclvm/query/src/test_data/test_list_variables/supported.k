@@ -77,3 +77,7 @@ schema Job:
 job = Job {
     name = "{}-{}".format("app", "test").lower()
 }
+
+select = a.b.c {
+    a: 1
+}

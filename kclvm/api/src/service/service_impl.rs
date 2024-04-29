@@ -349,11 +349,12 @@ impl KclvmServiceImpl {
         let variables: HashMap<String, Variable> = select_res
             .select_result
             .iter()
-            .map(|(key, value)| {
+            .map(|(key, var)| {
                 (
                     key.clone(),
                     Variable {
-                        value: value.to_string(),
+                        value: var.value.to_string(),
+                        type_name: var.type_name.to_string(),
                     },
                 )
             })
