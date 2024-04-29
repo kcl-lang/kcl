@@ -154,7 +154,7 @@ pub fn apply_override_on_module(
 pub fn parse_override_spec(spec: &str) -> Result<ast::OverrideSpec> {
     if spec.contains('=') {
         // Create or update the override value.
-        let split_values = spec.splitn(2, '=').collect::<Vec<&str>>();
+        let split_values = spec.splitn(2, '=').map(|s| s.trim()).collect::<Vec<&str>>();
         let path = split_values
             .first()
             .ok_or_else(|| invalid_spec_error(spec))?;

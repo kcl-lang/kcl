@@ -5,6 +5,7 @@ _access = test.ServiceAccess {
     TestStr = ["${test_str}"]
     ports = [80, 443]
     booltest = True
+    mergedattr = 1
 }
 
 b = {"c": 2}
@@ -24,3 +25,5 @@ _access3 = test.ServiceAccess {
 _access5 = {iType = "dddddd"}
 
 a = b
+
+_access6 = "a6"
