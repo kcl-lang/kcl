@@ -22,3 +22,5 @@ _access3 = test.ServiceAccess {
 }
 
 _access5 = {iType = "dddddd"}
+
+a = b
