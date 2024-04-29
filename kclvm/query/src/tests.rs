@@ -458,6 +458,7 @@ fn test_overridefile_insert() {
         .to_string(),
         r#"_access.iType="kkkkkkk""#.to_string(),
         r#"_access5.iType="dddddd""#.to_string(),
+        r#"a=b"#.to_string()
     ];
 
     let simple_path = get_test_dir("test_override_file/main.k".to_string());
