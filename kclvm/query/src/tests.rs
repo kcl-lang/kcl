@@ -85,7 +85,7 @@ fn test_override_file_import_paths() {
 fn test_override_file_config() {
     let specs = vec![
         "appConfiguration.image=\"kcl/kcl:{}\".format(version)".to_string(),
-        "appConfiguration.mainContainer.name=override_name".to_string(),
+        r#"appConfiguration.mainContainer.name="override_name""#.to_string(),
         "appConfiguration.labels.key.key=\"override_value\"".to_string(),
         "appConfiguration.labels.key.str-key=\"override_value\"".to_string(),
         "appConfiguration.labels.key['dot.key']=\"override_value\"".to_string(),
@@ -93,7 +93,7 @@ fn test_override_file_config() {
         "appConfiguration.probe={periodSeconds=20}".to_string(),
         "appConfiguration.resource-".to_string(),
         "appConfigurationUnification.image=\"kcl/kcl:v0.1\"".to_string(),
-        "appConfigurationUnification.mainContainer.name=\"override_name\"".to_string(),
+        r#"appConfigurationUnification.mainContainer.name="override_name""#.to_string(),
         "appConfigurationUnification.labels.key.key=\"override_value\"".to_string(),
         "appConfigurationUnification.overQuota=False".to_string(),
         "appConfigurationUnification.resource.cpu-".to_string(),
