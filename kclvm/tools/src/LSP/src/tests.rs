@@ -84,7 +84,7 @@ use crate::util::{apply_document_changes, compile_with_params, Params};
 
 macro_rules! wait_async_compile {
     () => {
-        thread::sleep(Duration::from_secs(2));
+        thread::sleep(Duration::from_millis(50));
     };
 }
 
@@ -608,12 +608,13 @@ impl Server {
         N::Params: Serialize,
     {
         let r = Notification::new(N::METHOD.to_string(), params);
-        self.send_notification(r)
+        self.send_notification(r);
     }
 
     /// Sends a server notification to the main loop
     fn send_notification(&self, not: Notification) {
         self.client.sender.send(Message::Notification(not)).unwrap();
+        wait_async_compile!();
     }
 
     /// A function to wait for a specific message to arrive
