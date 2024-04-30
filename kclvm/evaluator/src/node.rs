@@ -418,10 +418,9 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
             }
             // Check the if filter condition
             if let Some(if_expr) = &quant_expr.if_cond {
-                let if_truth = self.walk_expr(if_expr)?;
-                let is_truth = self.value_is_truthy(&if_truth);
-                if is_truth {
-                    // Skip this iteration and goto the start block
+                let value = self.walk_expr(if_expr)?;
+                // Skip the iteration
+                if !value.is_truthy() {
                     continue;
                 }
             }
