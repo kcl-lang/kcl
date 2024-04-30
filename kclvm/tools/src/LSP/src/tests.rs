@@ -609,7 +609,6 @@ impl Server {
     {
         let r = Notification::new(N::METHOD.to_string(), params);
         self.send_notification(r);
-        wait_async_compile!();
     }
 
     /// Sends a server notification to the main loop
