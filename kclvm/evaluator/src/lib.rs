@@ -21,6 +21,7 @@ mod value;
 
 extern crate kclvm_error;
 
+use func::FunctionEvalContextRef;
 use generational_arena::{Arena, Index};
 use indexmap::IndexMap;
 use lazy::{BacktrackMeta, LazyEvalScope};
@@ -67,7 +68,7 @@ pub struct Evaluator<'ctx> {
     /// Imported package path set to judge is there a duplicate import.
     pub imported: RefCell<HashSet<String>>,
     /// The lambda stack index denotes the scope level of the lambda function.
-    pub lambda_stack: RefCell<Vec<usize>>,
+    pub lambda_stack: RefCell<Vec<FunctionEvalContextRef>>,
     /// To judge is in the schema statement.
     pub schema_stack: RefCell<Vec<EvalContext>>,
     /// To judge is in the schema expression.
@@ -78,12 +79,15 @@ pub struct Evaluator<'ctx> {
     pub pkg_scopes: RefCell<HashMap<String, Vec<Scope>>>,
     /// Package lazy scope to store variable cached values.
     pub lazy_scopes: RefCell<HashMap<String, LazyEvalScope>>,
+    /// Scope cover to block the acquisition of certain scopes.
+    pub scope_covers: RefCell<Vec<(usize, usize)>>,
     /// Local variables in the loop.
     pub local_vars: RefCell<HashSet<String>>,
     /// Schema attr backtrack meta
     pub backtrack_meta: RefCell<Vec<BacktrackMeta>>,
 }
 
+#[derive(Clone)]
 pub enum EvalContext {
     Schema(SchemaEvalContextRef),
     Rule(RuleEvalContextRef),
@@ -108,8 +112,8 @@ impl<'ctx> Evaluator<'ctx> {
             frames: RefCell::new(Arena::new()),
             schemas: RefCell::new(IndexMap::new()),
             target_vars: RefCell::new(vec![]),
+            lambda_stack: RefCell::new(vec![]),
             imported: RefCell::new(Default::default()),
-            lambda_stack: RefCell::new(vec![GLOBAL_LEVEL]),
             schema_stack: RefCell::new(Default::default()),
             schema_expr_stack: RefCell::new(Default::default()),
             pkgpath_stack: RefCell::new(vec![kclvm_ast::MAIN_PKG.to_string()]),
@@ -117,6 +121,7 @@ impl<'ctx> Evaluator<'ctx> {
             import_names: RefCell::new(Default::default()),
             pkg_scopes: RefCell::new(Default::default()),
             lazy_scopes: RefCell::new(Default::default()),
+            scope_covers: RefCell::new(Default::default()),
             local_vars: RefCell::new(Default::default()),
             backtrack_meta: RefCell::new(Default::default()),
         }

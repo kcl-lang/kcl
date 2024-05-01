@@ -1948,7 +1948,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                                     let closure_map = self.builder.build_load(*ptr, "");
                                     let string_ptr_value =
                                         self.native_global_string(name, "").into();
-                                    // Not a closure, mapbe a local variale
+                                    // Not a closure, maybe a local variable
                                     self.build_call(
                                         &ApiFunc::kclvm_dict_get_value.name(),
                                         &[

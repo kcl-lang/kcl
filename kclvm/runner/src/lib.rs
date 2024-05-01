@@ -15,10 +15,10 @@ use kclvm_sema::resolver::{
 };
 use kclvm_utils::fslock::open_lock_file;
 use linker::Command;
-#[cfg(feature = "llvm")]
-use runner::LibRunner;
 pub use runner::{Artifact, ExecProgramArgs, ExecProgramResult, MapErrorResult};
-use runner::{FastRunner, ProgramRunner, RunnerOptions};
+use runner::{FastRunner, RunnerOptions};
+#[cfg(feature = "llvm")]
+use runner::{LibRunner, ProgramRunner};
 use tempfile::tempdir;
 
 pub mod assembler;
@@ -102,7 +102,16 @@ pub fn exec_artifact<P: AsRef<OsStr>>(
     path: P,
     args: &ExecProgramArgs,
 ) -> Result<ExecProgramResult> {
-    Artifact::from_path(path)?.run(args)
+    #[cfg(feature = "llvm")]
+    {
+        Artifact::from_path(path)?.run(args)
+    }
+    #[cfg(not(feature = "llvm"))]
+    {
+        let _ = path;
+        let _ = args;
+        Err(anyhow::anyhow!("error: llvm feature is not enabled. Note: Set KCL_FAST_EVAL=1 or rebuild the crate with the llvm feature."))
+    }
 }
 
 /// After the kcl program passed through kclvm-parser in the compiler frontend,
@@ -274,7 +283,8 @@ pub fn build_program<P: AsRef<Path>>(
     if let Ok(cache_path) = std::env::var(KCL_CACHE_PATH_ENV_VAR) {
         build_with_lock(args, program, scope, &cache_path, output)
     } else {
-        build(args, program, scope, output)
+        let temp_dir = std::env::temp_dir();
+        build_with_lock(args, program, scope, &temp_dir.to_string_lossy(), output)
     }
 }
 

@@ -85,7 +85,7 @@ fn test_override_file_import_paths() {
 fn test_override_file_config() {
     let specs = vec![
         "appConfiguration.image=\"kcl/kcl:{}\".format(version)".to_string(),
-        "appConfiguration.mainContainer.name=override_name".to_string(),
+        r#"appConfiguration.mainContainer.name="override_name""#.to_string(),
         "appConfiguration.labels.key.key=\"override_value\"".to_string(),
         "appConfiguration.labels.key.str-key=\"override_value\"".to_string(),
         "appConfiguration.labels.key['dot.key']=\"override_value\"".to_string(),
@@ -93,7 +93,7 @@ fn test_override_file_config() {
         "appConfiguration.probe={periodSeconds=20}".to_string(),
         "appConfiguration.resource-".to_string(),
         "appConfigurationUnification.image=\"kcl/kcl:v0.1\"".to_string(),
-        "appConfigurationUnification.mainContainer.name=\"override_name\"".to_string(),
+        r#"appConfigurationUnification.mainContainer.name="override_name""#.to_string(),
         "appConfigurationUnification.labels.key.key=\"override_value\"".to_string(),
         "appConfigurationUnification.overQuota=False".to_string(),
         "appConfigurationUnification.resource.cpu-".to_string(),
@@ -437,4 +437,55 @@ fn test_list_unsupported_variables() {
         assert_eq!(result.select_result.get(spec), None);
         assert_eq!(result.unsupported[0].code, expected_code);
     }
+}
+
+#[test]
+fn test_overridefile_insert() {
+    let specs = vec![
+        r#"b={
+            "c": 2
+        }"#
+        .to_string(),
+        r#"c.b={"a": "b"}"#.to_string(),
+        r#"d.e.f.g=3"#.to_string(),
+        r#"_access3=test.ServiceAccess {
+    iType = "kkkkkkk"
+    sType = dsType
+    TestStr = ["${test_str}"]
+    ports = [80, 443]
+    booltest = True
+}"#
+        .to_string(),
+        r#"_access.iType="kkkkkkk""#.to_string(),
+        r#"_access5.iType="dddddd""#.to_string(),
+        r#"a=b"#.to_string(),
+        r#"_access6      ="a6""#.to_string(),
+        r#"_access.mergedattr=1"#.to_string(),
+    ];
+
+    let simple_path = get_test_dir("test_override_file/main.k".to_string());
+    let simple_bk_path = get_test_dir("test_override_file/main.bk.k".to_string());
+    let except_path = get_test_dir("test_override_file/expect.k".to_string());
+    fs::copy(simple_bk_path.clone(), simple_path.clone()).unwrap();
+
+    for spec in specs {
+        let import_paths = vec![];
+        assert_eq!(
+            override_file(
+                &simple_path.display().to_string(),
+                &vec![spec],
+                &import_paths
+            )
+            .unwrap(),
+            true
+        );
+    }
+    let simple_content = fs::read_to_string(simple_path.clone()).unwrap();
+    let expect_content = fs::read_to_string(except_path.clone()).unwrap();
+
+    let simple_content = simple_content.replace("\r\n", "").replace("\n", "");
+    let expect_content = expect_content.replace("\r\n", "").replace("\n", "");
+
+    assert_eq!(simple_content, expect_content);
+    fs::copy(simple_bk_path.clone(), simple_path.clone()).unwrap();
 }
