@@ -120,3 +120,55 @@ pub extern "C" fn kclvm_file_abs(
 
     panic!("read() takes exactly one argument (0 given)");
 }
+
+#[no_mangle]
+#[runtime_fn]
+pub extern "C" fn kclvm_file_mkdir(
+    ctx: *mut kclvm_context_t,
+    args: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
+) -> *const kclvm_value_ref_t {
+    let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
+    let ctx = mut_ptr_as_ref(ctx);
+
+    if let Some(path) = get_call_arg_str(args, kwargs, 0, Some("directory")) {
+        if let Err(e) = fs::create_dir(&path) {
+            panic!("Failed to create directory '{}': {}", path, e);
+        }
+        return ValueRef::none().into_raw(ctx);
+    }
+
+    panic!("mkdir() takes exactly one argument (0 given)");
+}
+
+#[no_mangle]
+#[runtime_fn]
+pub extern "C" fn kclvm_file_delete(
+    ctx: *mut kclvm_context_t,
+    args: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
+) -> *const kclvm_value_ref_t {
+    let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
+    let ctx = mut_ptr_as_ref(ctx);
+
+    if let Some(path) = get_call_arg_str(args, kwargs, 0, Some("filepath")) {
+        if let Err(e) = fs::remove_file(&path) {
+            match e.kind() {
+                std::io::ErrorKind::NotFound => {
+                    // if file not found, try to remove it as a directory
+                    if let Err(e) = fs::remove_dir(&path) {
+                        panic!("failed to delete '{}': {}", path, e);
+                    }
+                }
+                _ => {
+                    panic!("failed to delete '{}': {}", path, e);
+                }
+            }
+        }
+        return ValueRef::none().into_raw(ctx);
+    }
+
+    panic!("delete() takes exactly one argument (0 given)");
+}
