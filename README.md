@@ -35,7 +35,7 @@ You can use KCL to
 + Define schemas with [rule constraints for configuration data and validate](https://kcl-lang.io/docs/user_docs/guides/validation) them automatically.
 + Organize, simplify, unify and manage large configurations without side effects through [gradient automation schemes and GitOps](https://kcl-lang.io/docs/user_docs/guides/automation).
 + Manage large configurations in a scalable way for different environments with [isolated configuration blocks](https://kcl-lang.io/docs/reference/lang/tour#config-operations).
-+ Mutating or validating Kubernetes resources with [cloud-native configuration tool plugins](https://kcl-lang.io/docs/user_docs/guides/working-with-k8s/).
++ Mutating or validating Kubernetes resources with [cloud-native configuration tool plugins](https://www.kcl-lang.io/docs/user_docs/guides/working-with-k8s/mutate-manifests/kubectl-kcl-plugin).
 + Used as a platform engineering programming language to deliver modern applications with [KusionStack](https://kusionstack.io).
 
 ## Features
@@ -51,7 +51,7 @@ You can use KCL to
 + **API affinity**: Native support for ecological API specifications such as [OpenAPI](https://github.com/kcl-lang/kcl-openapi), Kubernetes CRD, Kubernetes Resource Model (KRM) spec.
 + **Developer-friendly**: Friendly development experiences with rich [language tools](https://kcl-lang.io/docs/tools/cli/kcl/) (Format, Lint, Test, Vet, Doc, package management tools etc.), and multiple [IDE extensions](https://kcl-lang.io/docs/tools/Ide/).
 + **Safety & maintainable**: Domain-oriented, no system-level functions such as native threads and IO, low noise and security risk, easy maintenance and governance.
-+ **Rich multi-language SDK**: [Go](https://github.com/kcl-lang/kcl-go), [Python](https://github.com/kcl-lang/kcl-py), and [Java](https://github.com/kcl-lang/kcl-java) meet different scenarios and application use prelude.
++ **Rich multi-language SDK**: Rust, Go, Python, Java and Node.js SDKs meet different scenarios and application use prelude.
 + **Integrations**: Abstract, mutate and validate manifests through [Kubectl KCL Plugin](https://github.com/kcl-lang/kubectl-kcl), [Kustomize KCL Plugin](https://github.com/kcl-lang/kustomize-kcl), [Helm KCL Plugin](https://github.com/kcl-lang/helm-kcl), [KPT KCL SDK](https://github.com/kcl-lang/kpt-kcl) or [Crossplane KCL Function](https://github.com/kcl-lang/crossplane-kcl).
 + **Production-ready**: Widely used in production practices of platform engineering and automation at Ant Group.
 
