@@ -955,6 +955,9 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 }
                 self.any_ty()
             }
+            TypeKind::Any => {
+                return self.any_ty();
+            }
             _ => {
                 range.0.filename = self.ctx.filename.clone();
                 range.1.filename = self.ctx.filename.clone();

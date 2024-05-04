@@ -1167,7 +1167,7 @@ pub unsafe extern "C" fn kclvm_dict_merge(
         }
     };
     if attr_map.contains_key(key) {
-        let v = type_pack_and_check(ctx, v, vec![attr_map.get(key).unwrap()]);
+        let v = type_pack_and_check(ctx, v, vec![attr_map.get(key).unwrap()], false);
         p.dict_merge(
             ctx,
             key,
@@ -1489,7 +1489,7 @@ pub unsafe extern "C" fn kclvm_value_as(
     let b = ptr_as_ref(b);
     let ty_str = b.as_str();
     let ctx = mut_ptr_as_ref(ctx);
-    let value = type_pack_and_check(ctx, a, vec![ty_str.as_str()]);
+    let value = type_pack_and_check(ctx, a, vec![ty_str.as_str()], true);
     value.into_raw(ctx)
 }
 
@@ -1869,7 +1869,7 @@ pub unsafe extern "C" fn kclvm_value_union(
             // Has type annotation
             if let Some(ty) = attr_map.get(k) {
                 let value = a.dict_get_value(k).unwrap();
-                a.dict_update_key_value(k, type_pack_and_check(ctx, &value, vec![ty]));
+                a.dict_update_key_value(k, type_pack_and_check(ctx, &value, vec![ty], false));
             }
         }
         a.clone().into_raw(ctx)
@@ -2173,7 +2173,7 @@ pub unsafe extern "C" fn kclvm_schema_value_check(
                 let value = schema_value.dict_get_value(key).unwrap();
                 schema_value.dict_update_key_value(
                     key.as_str(),
-                    type_pack_and_check(ctx, &value, vec![value_type]),
+                    type_pack_and_check(ctx, &value, vec![value_type], false),
                 );
             }
         } else if !has_index_signature && no_such_attr {
@@ -2407,7 +2407,7 @@ pub unsafe extern "C" fn kclvm_convert_collection_value(
     let value = ptr_as_ref(value);
     let ctx = mut_ptr_as_ref(ctx);
     let tpe = c2str(tpe);
-    let value = type_pack_and_check(ctx, value, vec![tpe]);
+    let value = type_pack_and_check(ctx, value, vec![tpe], false);
     let is_in_schema = ptr_as_ref(is_in_schema);
     // Schema required attribute validating.
     if !is_in_schema.is_truthy() {
