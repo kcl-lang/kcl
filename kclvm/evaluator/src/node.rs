@@ -139,7 +139,7 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
         // Runtime type cast if exists the type annotation.
         if let Some(ty) = &assign_stmt.ty {
             let is_in_schema = self.is_in_schema() || self.is_in_schema_expr();
-            value = type_pack_and_check(self, &value, vec![&ty.node.to_string()]);
+            value = type_pack_and_check(self, &value, vec![&ty.node.to_string()], false);
             // Schema required attribute validating.
             if !is_in_schema {
                 walk_value_mut(&value, &mut |value: &ValueRef| {
@@ -309,7 +309,8 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
         };
         // Add function to the global state
         let index = self.add_rule(caller);
-        let function = self.proxy_function_value(index);
+        let runtime_type = schema_runtime_type(&rule_stmt.name.node, &self.current_pkgpath());
+        let function = self.proxy_function_value_with_type(index, &runtime_type);
         // Store or add the variable in the scope
         let name = &rule_stmt.name.node;
         if !self.store_variable(name, function.clone()) {

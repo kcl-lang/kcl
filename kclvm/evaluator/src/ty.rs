@@ -49,15 +49,18 @@ pub fn resolve_schema(s: &Evaluator, schema: &ValueRef, keys: &[String]) -> Valu
         } else {
             schema.clone()
         };
-        // ctx.panic_info = now_panic_info;
         return schema;
     }
-    // ctx.panic_info = now_panic_info;
     schema.clone()
 }
 
 /// Type pack and check ValueRef with the expected type vector
-pub fn type_pack_and_check(s: &Evaluator, value: &ValueRef, expected_types: Vec<&str>) -> ValueRef {
+pub fn type_pack_and_check(
+    s: &Evaluator,
+    value: &ValueRef,
+    expected_types: Vec<&str>,
+    strict: bool,
+) -> ValueRef {
     if value.is_none_or_undefined() || expected_types.is_empty() {
         return value.clone();
     }
@@ -71,7 +74,7 @@ pub fn type_pack_and_check(s: &Evaluator, value: &ValueRef, expected_types: Vec<
             converted_value = convert_collection_value(s, value, tpe);
         }
         // Runtime type check
-        checked = check_type(&converted_value, tpe);
+        checked = check_type(&converted_value, tpe, strict);
         if checked {
             break;
         }
@@ -192,7 +195,7 @@ pub fn convert_collection_value_with_union_types(
         for tpe in types {
             // Try match every type and convert the value, if matched, return the value.
             let value = convert_collection_value(s, value, tpe);
-            if check_type(&value, tpe) {
+            if check_type(&value, tpe, false) {
                 return value;
             }
         }
