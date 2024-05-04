@@ -51,6 +51,10 @@ pub(crate) fn kcl_schema_ty_to_pb_ty(schema_ty: &SchemaType) -> KclType {
         filename: schema_ty.filename.clone(),
         pkg_path: schema_ty.pkgpath.clone(),
         description: schema_ty.doc.clone(),
+        base_schema: schema_ty
+            .base
+            .as_ref()
+            .map(|base| Box::new(kcl_schema_ty_to_pb_ty(&**base))),
         ..Default::default()
     }
 }

@@ -477,6 +477,7 @@ message KclType {
 	string pkg_path = 13;                // `pkg_path` represents the path name of the package where the attribute is located.
 	string description = 14;             // `description` represents the document of the attribute.
 	map<string, Example> examples = 15;  // A map object to hold examples, the key is the example name.
+	KclType base_schema = 16;
 }
 
 message Decorator {
