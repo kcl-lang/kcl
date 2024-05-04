@@ -164,7 +164,10 @@ pub fn get_full_schema_type(
     let scope = resolve_file(&opts)?;
     for (name, o) in &scope.borrow().elems {
         if o.borrow().ty.is_schema() {
-            let schema_ty = o.borrow().ty.into_schema_type();
+            let mut schema_ty = o.borrow().ty.into_schema_type();
+            if let Some(base) = &schema_ty.base {
+                schema_ty.base = Some(Box::new(get_full_schema_type_recursive(*base.clone())?));
+            }
             if opts.get_schema_opts == GetSchemaOption::All
                 || (opts.get_schema_opts == GetSchemaOption::Definitions && !schema_ty.is_instance)
                 || (opts.get_schema_opts == GetSchemaOption::Instances && schema_ty.is_instance)
