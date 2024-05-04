@@ -165,7 +165,7 @@ fn handle_schema(ctx: &Context, value: &ValueRef) -> Vec<ValueRef> {
 }
 
 /// Returns the type path of the runtime value `v`.
-fn value_type_path(v: &ValueRef, full_name: bool) -> String {
+pub(crate) fn value_type_path(v: &ValueRef, full_name: bool) -> String {
     match v.get_potential_schema_type() {
         Some(ty_str) => {
             if full_name {

@@ -655,7 +655,7 @@ fn schema_value_check(
                 let value = schema_value.dict_get_value(key).unwrap();
                 schema_value.dict_update_key_value(
                     key.as_str(),
-                    type_pack_and_check(s, &value, vec![value_type]),
+                    type_pack_and_check(s, &value, vec![value_type], false),
                 );
             }
         } else if !has_index_signature && no_such_attr {

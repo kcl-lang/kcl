@@ -857,9 +857,9 @@ fn test_pkg_asname() {
     .program;
     let scope = resolve_program(&mut program);
     let diags = scope.handler.diagnostics;
-    assert_eq!(diags.len(), 6);
+    assert_eq!(diags.len(), 4);
     assert_eq!(diags[0].messages[0].message, "name 'pkg' is not defined");
-    assert_eq!(diags[2].messages[0].message, "name 'subpkg' is not defined");
+    assert_eq!(diags[1].messages[0].message, "name 'subpkg' is not defined");
 }
 
 #[test]
