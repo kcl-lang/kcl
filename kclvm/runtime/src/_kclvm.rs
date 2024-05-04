@@ -143,6 +143,8 @@ pub enum ApiFunc {
     kclvm_file_modpath,
     kclvm_file_read,
     kclvm_file_workdir,
+    kclvm_file_mkdir,
+    kclvm_file_delete,
     kclvm_iterator_cur_key,
     kclvm_iterator_cur_value,
     kclvm_iterator_delete,

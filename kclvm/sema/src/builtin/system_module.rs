@@ -1638,6 +1638,34 @@ register_file_member! {
         false,
         None,
     )
+    mkdir => Type::function(
+        None,
+        Type::any_ref(),
+        &[
+            Parameter {
+                name: "directory".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+        ],
+        r#"Create a new directory at the specified path if it doesn't already exist."#,
+        false,
+        None,
+    )
+    delete => Type::function(
+        None,
+        Type::any_ref(),
+        &[
+            Parameter {
+                name: "filepath".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+        ],
+        r#"Delete a file or an empty directory at the specified path."#,
+        false,
+        None,
+    )
 }
 
 // ------------------------------

@@ -176,9 +176,9 @@ impl KclvmServiceImpl {
     /// assert_eq!(result.type_errors.len(), 0);
     /// assert_eq!(result.symbols.len(), 12);
     /// assert_eq!(result.scopes.len(), 3);
-    /// assert_eq!(result.node_symbol_map.len(), 169);
-    /// assert_eq!(result.symbol_node_map.len(), 169);
-    /// assert_eq!(result.fully_qualified_name_map.len(), 178);
+    /// assert_eq!(result.node_symbol_map.len(), 171);
+    /// assert_eq!(result.symbol_node_map.len(), 171);
+    /// assert_eq!(result.fully_qualified_name_map.len(), 180);
     /// assert_eq!(result.pkg_scope_map.len(), 3);
     /// ```
     #[inline]
