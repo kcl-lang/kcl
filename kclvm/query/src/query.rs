@@ -189,6 +189,14 @@ pub fn get_full_schema_type(
     Ok(result)
 }
 
+fn get_full_schema_type_recursive(schema_ty: SchemaType) -> Result<SchemaType> {
+    let mut result = schema_ty;
+    if let Some(base) = result.base {
+        result.base = Some(Box::new(get_full_schema_type_recursive(*base)?));
+    }
+    Ok(result)
+}
+
 fn resolve_file(opts: &CompilationOptions) -> Result<Rc<RefCell<Scope>>> {
     let sess = Arc::new(ParseSession::default());
     let mut program = match load_program(
