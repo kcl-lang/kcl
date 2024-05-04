@@ -82,7 +82,7 @@ pub extern "C" fn kclvm_yaml_decode_all(
 
     let ctx = mut_ptr_as_ref(ctx);
     if let Some(arg0) = args.arg_i(0) {
-        match ValueRef::from_yaml_stream(ctx, arg0.as_str().as_ref()) {
+        match ValueRef::list_from_yaml_stream(ctx, arg0.as_str().as_ref()) {
             Ok(x) => return x.into_raw(ctx),
             Err(err) => panic!("{}", err),
         }

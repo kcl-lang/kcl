@@ -1647,6 +1647,11 @@ register_file_member! {
                 ty: Type::str_ref(),
                 has_default: false,
             },
+            Parameter {
+                name: "exists".to_string(),
+                ty: Type::bool_ref(),
+                has_default: true,
+            },
         ],
         r#"Create a new directory at the specified path if it doesn't already exist."#,
         false,

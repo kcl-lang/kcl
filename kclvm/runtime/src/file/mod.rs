@@ -1,4 +1,4 @@
-use std::fs;
+use std::{fs, io::ErrorKind};
 
 use crate::*;
 use glob::glob;
@@ -133,7 +133,12 @@ pub extern "C" fn kclvm_file_mkdir(
     let ctx = mut_ptr_as_ref(ctx);
 
     if let Some(path) = get_call_arg_str(args, kwargs, 0, Some("directory")) {
-        if let Err(e) = fs::create_dir(&path) {
+        let exists = get_call_arg_bool(args, kwargs, 1, Some("exists")).unwrap_or_default();
+        if let Err(e) = fs::create_dir_all(&path) {
+            // Ignore the file exists error.
+            if exists && matches!(e.kind(), ErrorKind::AlreadyExists) {
+                return ValueRef::none().into_raw(ctx);
+            }
             panic!("Failed to create directory '{}': {}", path, e);
         }
         return ValueRef::none().into_raw(ctx);
