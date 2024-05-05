@@ -1,0 +1,6 @@
+yamlStr: |
+  key: value
+data:
+  key: value
+dataList:
+- key: value
