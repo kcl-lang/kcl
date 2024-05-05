@@ -1671,6 +1671,44 @@ register_file_member! {
         false,
         None,
     )
+    cp => Type::function(
+        None,
+        Type::any_ref(),
+        &[
+            Parameter {
+                name: "src_path".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+            Parameter {
+                name: "dest_path".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+        ],
+        r#"Copy a file or directory from the source path to the destination path."#,
+        false,
+        None,
+    )
+    mv => Type::function(
+        None,
+        Type::any_ref(),
+        &[
+            Parameter {
+                name: "src_path".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+            Parameter {
+                name: "dest_path".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+        ],
+        r#"Move a file or directory from the source path to the destination path."#,
+        false,
+        None,
+    )
 }
 
 // ------------------------------

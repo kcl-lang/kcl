@@ -177,3 +177,53 @@ pub extern "C" fn kclvm_file_delete(
 
     panic!("delete() takes exactly one argument (0 given)");
 }
+
+#[no_mangle]
+#[runtime_fn]
+pub extern "C" fn kclvm_file_cp(
+    ctx: *mut kclvm_context_t,
+    args: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
+) -> *const kclvm_value_ref_t {
+    let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
+    let ctx = mut_ptr_as_ref(ctx);
+
+    if let Some(src_path) = get_call_arg_str(args, kwargs, 0, Some("src_path")) {
+        if let Some(dest_path) = get_call_arg_str(args, kwargs, 1, Some("dest_path")) {
+            if let Err(e) = fs::copy(&src_path, &dest_path) {
+                panic!("Failed to copy '{}' to '{}': {}", src_path, dest_path, e);
+            }
+            return ValueRef::none().into_raw(ctx);
+        } else {
+            panic!("cp() missing 'dest_path' argument");
+        }
+    } else {
+        panic!("cp() missing 'src_path' argument");
+    }
+}
+
+#[no_mangle]
+#[runtime_fn]
+pub extern "C" fn kclvm_file_mv(
+    ctx: *mut kclvm_context_t,
+    args: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
+) -> *const kclvm_value_ref_t {
+    let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
+    let ctx = mut_ptr_as_ref(ctx);
+
+    if let Some(src_path) = get_call_arg_str(args, kwargs, 0, Some("src_path")) {
+        if let Some(dest_path) = get_call_arg_str(args, kwargs, 1, Some("dest_path")) {
+            if let Err(e) = fs::rename(&src_path, &dest_path) {
+                panic!("Failed to move '{}' to '{}': {}", src_path, dest_path, e);
+            }
+            return ValueRef::none().into_raw(ctx);
+        } else {
+            panic!("mv() missing 'dest_path' argument");
+        }
+    } else {
+        panic!("mv() missing 'src_path' argument");
+    }
+}
