@@ -4,9 +4,10 @@ on: ["push", "pull_request"]
 jobs:
   build-and-test:
     # Ref: https://github.com/actions/runner-images/tree/main/images/macos
+    # Note: The arch of macos-14 is arm64
     strategy:
       matrix:
-        os: [macos-13-xlarge]
+        os: [macos-13-xlarge, macos-14]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Git checkout

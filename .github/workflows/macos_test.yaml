@@ -5,7 +5,7 @@ jobs:
     # Ref: https://github.com/actions/runner-images/tree/main/images/macos
     strategy:
       matrix:
-        os: [macos-11, macos-12]
+        os: [macos-11, macos-12, macos-13]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Git checkout
@@ -16,7 +16,7 @@ jobs:
       - name: Set up python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9'
+          python-version: '3.11'
 
       - name: Set up Go
         uses: actions/setup-go@v2
@@ -50,14 +50,18 @@ jobs:
         working-directory: ./kclvm
         run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin:/usr/local/opt/llvm@12/bin && make && make test-grammar
         shell: bash
+      - name: Evaluator Grammar test
+        working-directory: ./kclvm
+        run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin:/usr/local/opt/llvm@12/bin && make test-grammar-evaluator
+        shell: bash
       - name: Runtime test
         working-directory: ./kclvm
-        run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin:/usr/local/opt/llvm@12/bin && make && make test-runtime
+        run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin:/usr/local/opt/llvm@12/bin && make test-runtime
         shell: bash
 
       - name: Unit test
         working-directory: ./kclvm
-        run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin:/usr/local/opt/llvm@12/bin && make && make codecov-lcov
+        run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin:/usr/local/opt/llvm@12/bin && make codecov-lcov
         shell: bash
 
       - name: Coveralls upload
