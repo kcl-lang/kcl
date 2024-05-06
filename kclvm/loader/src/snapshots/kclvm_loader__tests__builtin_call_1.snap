@@ -369,7 +369,7 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
                 },
                 kind: Value,
             },
-             SymbolRef {
+            SymbolRef {
                 id: Index {
                     index: 159,
                     generation: 0,
