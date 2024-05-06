@@ -1676,12 +1676,12 @@ register_file_member! {
         Type::any_ref(),
         &[
             Parameter {
-                name: "src_path".to_string(),
+                name: "src".to_string(),
                 ty: Type::str_ref(),
                 has_default: false,
             },
             Parameter {
-                name: "dest_path".to_string(),
+                name: "dest".to_string(),
                 ty: Type::str_ref(),
                 has_default: false,
             },
@@ -1695,12 +1695,12 @@ register_file_member! {
         Type::any_ref(),
         &[
             Parameter {
-                name: "src_path".to_string(),
+                name: "src".to_string(),
                 ty: Type::str_ref(),
                 has_default: false,
             },
             Parameter {
-                name: "dest_path".to_string(),
+                name: "dest".to_string(),
                 ty: Type::str_ref(),
                 has_default: false,
             },
