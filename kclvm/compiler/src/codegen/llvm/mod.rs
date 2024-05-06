@@ -3,7 +3,7 @@
 //! module modules pass extern and declare keys. Declare and call them in words, and finally use clang to link
 //! them together.
 //!
-//! Copyright 2021 The KCL Authors. All rights reserved.
+//! Copyright The KCL Authors. All rights reserved.
 
 mod backtrack;
 mod context;

@@ -1,4 +1,4 @@
-//! Copyright 2021 The KCL Authors. All rights reserved.
+//! Copyright The KCL Authors. All rights reserved.
 //! Reference: https://github.com/rust-lang/rust/blob/master/compiler/rustc_target/src/lib.rs
 
 #![allow(dead_code)]
