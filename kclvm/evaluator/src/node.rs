@@ -14,7 +14,7 @@ use kclvm_runtime::{
     schema_assert, schema_runtime_type, ConfigEntryOperationKind, DecoratorValue, RuntimeErrorType,
     UnionOptions, ValueRef, PKG_PATH_PREFIX,
 };
-use kclvm_sema::{builtin, plugin};
+use kclvm_sema::{builtin, pkgpath_without_prefix, plugin};
 
 use crate::error::INTERNAL_ERROR_MSG;
 use crate::func::{func_body, FunctionCaller, FunctionEvalContext};
@@ -1148,7 +1148,11 @@ impl<'ctx> Evaluator<'ctx> {
                     .clone()
             };
             if let Proxy::Global(index) = &frame.proxy {
-                if let Some(module_list) = self.program.pkgs.get(&frame.pkgpath) {
+                if let Some(module_list) = self
+                    .program
+                    .pkgs
+                    .get(&pkgpath_without_prefix!(frame.pkgpath))
+                {
                     if let Some(module) = module_list.get(*index) {
                         if let Some(stmt) = module.body.get(setter.stmt) {
                             self.push_backtrack_meta(setter);

@@ -3,8 +3,6 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context, Result};
 
 use crate::util::loader::LoaderKind;
-#[cfg(target_os = "windows")]
-use kclvm_runtime::PanicInfo;
 
 const CARGO_DIR: &str = env!("CARGO_MANIFEST_DIR");
 pub(crate) fn rel_path() -> String {
@@ -56,14 +54,6 @@ fn construct_full_path(path: &str) -> Result<String> {
         .to_string())
 }
 
-#[cfg(target_os = "windows")]
-pub(crate) fn path_to_windows(panic_info: &mut PanicInfo) {
-    panic_info.rust_file = panic_info.rust_file.replace("/", "\\");
-    panic_info.kcl_pkgpath = panic_info.kcl_pkgpath.replace("/", "\\");
-    panic_info.kcl_file = panic_info.kcl_file.replace("/", "\\");
-    panic_info.kcl_config_meta_file = panic_info.kcl_config_meta_file.replace("/", "\\");
-}
-
 mod test_expr_builder {
     use regex::Regex;
 
@@ -77,7 +67,9 @@ mod test_expr_builder {
             },
         },
     };
-    use std::{fs, panic, path::Path};
+    use std::panic;
+    #[cfg(not(target_os = "windows"))]
+    use std::{fs, path::Path};
 
     #[test]
     #[cfg(not(target_os = "windows"))]
@@ -334,9 +326,6 @@ mod test_validater {
     };
 
     use super::{construct_full_path, LOADER_KIND};
-
-    #[cfg(target_os = "windows")]
-    use super::path_to_windows;
 
     const KCL_TEST_CASES: &[&str] = &["test.k", "simple.k", "list.k", "plain_value.k", "complex.k"];
     const VALIDATED_FILE_TYPE: &[&str] = &["json", "yaml"];

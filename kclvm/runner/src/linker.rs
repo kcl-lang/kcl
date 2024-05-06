@@ -96,6 +96,7 @@ impl Command {
     }
 
     /// Add args for cc on unix os.
+    #[cfg(not(target_os = "windows"))]
     pub(crate) fn unix_args(
         &self,
         libs: &[String],

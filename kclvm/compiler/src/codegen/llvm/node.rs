@@ -2402,6 +2402,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                         self.add_or_update_global_variable(
                             name,
                             right_value.expect(kcl_error::INTERNAL_ERROR_MSG),
+                            true,
                         );
                     // Lambda local variables.
                     } else if self.is_in_lambda() {
