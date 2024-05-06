@@ -303,6 +303,7 @@ message ListVariables_Result {
 
 message Variable {
 	string value = 1;
+	string type_name = 2;
 }
 
 message GetFullSchemaType_Args {

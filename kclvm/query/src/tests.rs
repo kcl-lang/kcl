@@ -225,16 +225,16 @@ fn test_list_variables() {
         .display()
         .to_string();
     let test_cases = vec![
-        ("a", "1"),
-        ("a1", "2"),
-        ("a3", "3m"),
-        ("b1", "True"),
-        ("b2", "False"),
-        ("s1", "\"Hello\""),
-        ("array1", "[1, 2, 3]"),
-        ("dict1", "{\"a\": 1, \"b\": 2}"),
-        ("dict1.a", "1"),
-        ("dict1.b", "2"),
+        ("a", "1", ""),
+        ("a1", "2", ""),
+        ("a3", "3m", ""),
+        ("b1", "True", ""),
+        ("b2", "False", ""),
+        ("s1", "\"Hello\"", ""),
+        ("array1", "[1, 2, 3]", ""),
+        ("dict1", "{\"a\": 1, \"b\": 2}", ""),
+        ("dict1.a", "1", ""),
+        ("dict1.b", "2", ""),
         (
             "dict2",
             r#"{
@@ -244,17 +244,19 @@ fn test_list_variables() {
         "d": 3
     }
 }"#,
+            "",
         ),
-        ("dict2.a", "1"),
+        ("dict2.a", "1", ""),
         (
             "dict2.b",
             r#"{
     "c": 2
     "d": 3
 }"#,
+            "",
         ),
-        ("dict2.b.c", "2"),
-        ("dict2.b.d", "3"),
+        ("dict2.b.c", "2", ""),
+        ("dict2.b.d", "3", ""),
         (
             "sha",
             r#"A {
@@ -266,9 +268,10 @@ fn test_list_variables() {
         }
     }
 }"#,
+            "A",
         ),
-        ("sha.name", "\"Hello\""),
-        ("sha.ids", "[1, 2, 3]"),
+        ("sha.name", "\"Hello\"", ""),
+        ("sha.ids", "[1, 2, 3]", ""),
         (
             "sha.data",
             r#"{
@@ -276,15 +279,17 @@ fn test_list_variables() {
         "b": {"c": 2}
     }
 }"#,
+            "",
         ),
         (
             "sha.data.a",
             r#"{
     "b": {"c": 2}
 }"#,
+            "",
         ),
-        ("sha.data.a.b", r#"{"c": 2}"#),
-        ("sha.data.a.b.c", "2"),
+        ("sha.data.a.b", r#"{"c": 2}"#, ""),
+        ("sha.data.a.b.c", "2", ""),
         (
             "shb",
             r#"B {
@@ -298,6 +303,7 @@ fn test_list_variables() {
         }
     }
 }"#,
+            "B",
         ),
         (
             "shb.a",
@@ -310,9 +316,10 @@ fn test_list_variables() {
         }
     }
 }"#,
+            "",
         ),
-        ("shb.a.name", "\"HelloB\""),
-        ("shb.a.ids", "[4, 5, 6]"),
+        ("shb.a.name", "\"HelloB\"", ""),
+        ("shb.a.ids", "[4, 5, 6]", ""),
         (
             "shb.a.data",
             r#"{
@@ -320,23 +327,29 @@ fn test_list_variables() {
         "e": {"f": 3}
     }
 }"#,
+            "",
         ),
         (
             "shb.a.data.d",
             r#"{
     "e": {"f": 3}
 }"#,
+            "",
         ),
-        ("shb.a.data.d.e", "{\"f\": 3}"),
-        ("uconfa.name", "\"b\""),
-        ("c.a", "{ids: [7, 8, 9]}"),
-        ("job.name", r#""{}-{}".format("app", "test").lower()"#),
+        ("shb.a.data.d.e", "{\"f\": 3}", ""),
+        ("uconfa.name", "\"b\"", ""),
+        ("c.a", "{ids: [7, 8, 9]}", ""),
+        ("job.name", r#""{}-{}".format("app", "test").lower()"#, ""),
     ];
 
-    for (spec, expected) in test_cases {
+    for (spec, expected, expected_name) in test_cases {
         let specs = vec![spec.to_string()];
         let result = list_variables(file.clone(), specs).unwrap();
-        assert_eq!(result.select_result.get(spec).unwrap(), expected);
+        assert_eq!(result.select_result.get(spec).unwrap().value, expected);
+        assert_eq!(
+            result.select_result.get(spec).unwrap().type_name,
+            expected_name
+        );
     }
 }
 
@@ -348,14 +361,14 @@ fn test_list_all_variables() {
         .display()
         .to_string();
     let test_cases = vec![
-        ("a", "1"),
-        ("a1", "2"),
-        ("a3", "3m"),
-        ("b1", "True"),
-        ("b2", "False"),
-        ("s1", "\"Hello\""),
-        ("array1", "[1, 2, 3]"),
-        ("dict1", "{\"a\": 1, \"b\": 2}"),
+        ("a", "1", ""),
+        ("a1", "2", ""),
+        ("a3", "3m", ""),
+        ("b1", "True", ""),
+        ("b2", "False", ""),
+        ("s1", "\"Hello\"", ""),
+        ("array1", "[1, 2, 3]", ""),
+        ("dict1", "{\"a\": 1, \"b\": 2}", ""),
         (
             "dict2",
             r#"{
@@ -365,6 +378,7 @@ fn test_list_all_variables() {
         "d": 3
     }
 }"#,
+            "",
         ),
         (
             "sha",
@@ -377,6 +391,7 @@ fn test_list_all_variables() {
         }
     }
 }"#,
+            "A",
         ),
         (
             "shb",
@@ -391,16 +406,23 @@ fn test_list_all_variables() {
         }
     }
 }"#,
+            "B",
         ),
         (
             "job",
             r#"Job {name = "{}-{}".format("app", "test").lower()}"#,
+            "Job",
         ),
+        ("select", r#"a.b.c {a: 1}"#, "a.b.c"),
     ];
 
-    for (spec, expected) in test_cases {
+    for (spec, expected, expected_name) in test_cases {
         let result = list_variables(file.clone(), vec![]).unwrap();
-        assert_eq!(result.select_result.get(spec).unwrap(), expected);
+        assert_eq!(result.select_result.get(spec).unwrap().value, expected);
+        assert_eq!(
+            result.select_result.get(spec).unwrap().type_name,
+            expected_name
+        );
     }
 }
 
