@@ -1709,6 +1709,20 @@ register_file_member! {
         false,
         None,
     )
+    size => Type::function(
+        None,
+        Type::any_ref(),
+        &[
+            Parameter {
+                name: "filepath".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+        ],
+        r#"Get the size of a file at the specified path."#,
+        false,
+        None,
+    )
 }
 
 // ------------------------------

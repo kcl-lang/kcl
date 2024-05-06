@@ -1238,6 +1238,10 @@
 // api-spec(c):    kclvm_value_ref_t* kclvm_file_mv(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_file_mv(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
+// api-spec:       kclvm_file_size
+// api-spec(c):    kclvm_value_ref_t* kclvm_file_size(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_file_size(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
+
 // api-spec:       kclvm_template_execute
 // api-spec(c):    kclvm_value_ref_t* kclvm_template_execute(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_template_execute(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);

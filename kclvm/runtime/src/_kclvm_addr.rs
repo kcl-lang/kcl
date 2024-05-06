@@ -151,6 +151,7 @@ pub fn _kclvm_get_fn_ptr_by_name(name: &str) -> u64 {
         "kclvm_file_modpath" => crate::kclvm_file_modpath as *const () as u64,
         "kclvm_file_mv" => crate::kclvm_file_mv as *const () as u64,
         "kclvm_file_read" => crate::kclvm_file_read as *const () as u64,
+        "kclvm_file_size" => crate::kclvm_file_size as *const () as u64,
         "kclvm_file_workdir" => crate::kclvm_file_workdir as *const () as u64,
         "kclvm_iterator_cur_key" => crate::kclvm_iterator_cur_key as *const () as u64,
         "kclvm_iterator_cur_value" => crate::kclvm_iterator_cur_value as *const () as u64,

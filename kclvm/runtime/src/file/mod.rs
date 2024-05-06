@@ -241,3 +241,31 @@ pub extern "C" fn kclvm_file_mv(
         panic!("mv() missing 'src_path' argument");
     }
 }
+
+#[no_mangle]
+#[runtime_fn]
+pub extern "C" fn kclvm_file_size(
+    ctx: *mut kclvm_context_t,
+    args: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
+) -> *const kclvm_value_ref_t {
+    let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
+    let ctx = mut_ptr_as_ref(ctx);
+
+    if let Some(path) = get_call_arg_str(args, kwargs, 0, Some("filepath")) {
+        let metadata = fs::metadata(&path);
+        match metadata {
+            Ok(metadata) => {
+                let size = metadata.len();
+                let value = kclvm::ValueRef::int(size as i64);
+                return value.into_raw(ctx);
+            }
+            Err(e) => {
+                panic!("failed to get size of '{}': {}", path, e);
+            }
+        }
+    }
+
+    panic!("size() takes exactly one argument (0 given)");
+}
