@@ -1,3 +1,5 @@
+mod utils;
+
 use std::{fs, io::ErrorKind};
 
 use crate::*;
@@ -189,10 +191,22 @@ pub extern "C" fn kclvm_file_cp(
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
 
-    if let Some(src_path) = get_call_arg_str(args, kwargs, 0, Some("src_path")) {
-        if let Some(dest_path) = get_call_arg_str(args, kwargs, 1, Some("dest_path")) {
-            if let Err(e) = fs::copy(&src_path, &dest_path) {
-                panic!("Failed to copy '{}' to '{}': {}", src_path, dest_path, e);
+    if let Some(src_path) = get_call_arg_str(args, kwargs, 0, Some("src")) {
+        if let Some(dest_path) = get_call_arg_str(args, kwargs, 1, Some("dest")) {
+            let src_path = Path::new(&src_path);
+            let dest_path = Path::new(&dest_path);
+            let result = if src_path.is_dir() {
+                utils::copy_directory(&src_path, &dest_path)
+            } else {
+                fs::copy(&src_path, &dest_path).map(|_| ())
+            };
+            if let Err(e) = result {
+                panic!(
+                    "Failed to copy from '{}' to '{}': {}",
+                    src_path.display(),
+                    dest_path.display(),
+                    e
+                );
             }
             return ValueRef::none().into_raw(ctx);
         } else {
@@ -214,8 +228,8 @@ pub extern "C" fn kclvm_file_mv(
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
 
-    if let Some(src_path) = get_call_arg_str(args, kwargs, 0, Some("src_path")) {
-        if let Some(dest_path) = get_call_arg_str(args, kwargs, 1, Some("dest_path")) {
+    if let Some(src_path) = get_call_arg_str(args, kwargs, 0, Some("src")) {
+        if let Some(dest_path) = get_call_arg_str(args, kwargs, 1, Some("dest")) {
             if let Err(e) = fs::rename(&src_path, &dest_path) {
                 panic!("Failed to move '{}' to '{}': {}", src_path, dest_path, e);
             }
