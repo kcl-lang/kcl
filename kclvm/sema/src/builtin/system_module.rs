@@ -1711,7 +1711,7 @@ register_file_member! {
     )
     size => Type::function(
         None,
-        Type::any_ref(),
+        Type::int_ref(),
         &[
             Parameter {
                 name: "filepath".to_string(),
