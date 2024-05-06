@@ -150,7 +150,11 @@ impl<'ctx> MutSelfWalker for Selector {
 
             self.select_result.insert(
                 target.to_string(),
-                Variable::new(unification_stmt.value.node.name.node.get_name(), kcode),
+                Variable::new(
+                    unification_stmt.value.node.name.node.get_name(),
+                    ast::ConfigEntryOperation::Union.symbol().to_string(),
+                    kcode,
+                ),
             );
         } else {
             // if length of spec is largr or equal to target
@@ -165,7 +169,11 @@ impl<'ctx> MutSelfWalker for Selector {
                             ))));
                         self.select_result.insert(
                             target.to_string(),
-                            Variable::new(unification_stmt.value.node.name.node.get_name(), kcode),
+                            Variable::new(
+                                unification_stmt.value.node.name.node.get_name(),
+                                ast::ConfigEntryOperation::Union.symbol().to_string(),
+                                kcode,
+                            ),
                         );
                     } else {
                         // walk ahead
@@ -201,8 +209,14 @@ impl<'ctx> MutSelfWalker for Selector {
                     target.node.clone(),
                 ))));
                 let key = get_key_path(&target);
-                self.select_result
-                    .insert(key.to_string(), Variable::new(type_name, kcode));
+                self.select_result.insert(
+                    key.to_string(),
+                    Variable::new(
+                        type_name,
+                        ast::ConfigEntryOperation::Override.symbol().to_string(),
+                        kcode,
+                    ),
+                );
             }
         } else {
             // Compare the target with the spec
@@ -230,8 +244,14 @@ impl<'ctx> MutSelfWalker for Selector {
                                 } else {
                                     "".to_string()
                                 };
-                            self.select_result
-                                .insert(target.to_string(), Variable::new(type_name, kcode));
+                            self.select_result.insert(
+                                target.to_string(),
+                                Variable::new(
+                                    type_name,
+                                    ast::ConfigEntryOperation::Override.symbol().to_string(),
+                                    kcode,
+                                ),
+                            );
                         } else {
                             // walk ahead
                             self.walk_expr(&assign_stmt.value.node)
@@ -276,7 +296,11 @@ impl<'ctx> MutSelfWalker for Selector {
                         };
                         self.select_result.insert(
                             self.inner.current_spec.to_string(),
-                            Variable::new(type_name, kcode),
+                            Variable::new(
+                                type_name,
+                                item.node.operation.symbol().to_string(),
+                                kcode,
+                            ),
                         );
                     } else {
                         // the spec is still not used up
@@ -367,12 +391,17 @@ pub struct ListVariablesResult {
 #[derive(Debug, PartialEq)]
 pub struct Variable {
     pub type_name: String,
+    pub op_sym: String,
     pub value: String,
 }
 
 impl Variable {
-    pub fn new(type_name: String, value: String) -> Self {
-        Self { type_name, value }
+    pub fn new(type_name: String, op_sym: String, value: String) -> Self {
+        Self {
+            type_name,
+            op_sym,
+            value,
+        }
     }
 }
 
