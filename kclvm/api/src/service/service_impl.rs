@@ -355,6 +355,7 @@ impl KclvmServiceImpl {
                     Variable {
                         value: var.value.to_string(),
                         type_name: var.type_name.to_string(),
+                        op_sym: var.op_sym.to_string(),
                     },
                 )
             })
