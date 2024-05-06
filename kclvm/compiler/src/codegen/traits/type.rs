@@ -1,7 +1,7 @@
 //! Copyright The KCL Authors. All rights reserved.
 
 use crate::codegen::abi::AddressSpace;
-use crate::codegen::{CONTEXT_TYPE_NAME, VALUE_TYPE_NAME};
+use crate::codegen::{CONTEXT_TYPE_NAME, SCOPE_TYPE_NAME, VALUE_TYPE_NAME};
 
 use super::BackendTypes;
 
@@ -53,6 +53,10 @@ pub trait DerivedTypeMethods: BaseTypeMethods {
     fn context_ptr_type(&self) -> Self::Type {
         self.ptr_type_to(self.get_intrinsic_type(CONTEXT_TYPE_NAME))
     }
+    /// Get the context pointer type.
+    fn scope_ptr_type(&self) -> Self::Type {
+        self.ptr_type_to(self.get_intrinsic_type(SCOPE_TYPE_NAME))
+    }
     /// Get the function type.
     fn function_type(&self) -> Self::FunctionLet {
         let value_ptr_type = self.value_ptr_type();
@@ -61,6 +65,13 @@ pub trait DerivedTypeMethods: BaseTypeMethods {
             &[context_ptr_type, value_ptr_type, value_ptr_type],
             value_ptr_type,
         )
+    }
+    /// Get the setter function type.
+    fn setter_func_type(&self) -> Self::FunctionLet {
+        let context_ptr_type = self.context_ptr_type();
+        let scope_ptr_type = self.scope_ptr_type();
+        let value_ptr_type = self.value_ptr_type();
+        self.function_let(&[context_ptr_type, scope_ptr_type], value_ptr_type)
     }
 }
 

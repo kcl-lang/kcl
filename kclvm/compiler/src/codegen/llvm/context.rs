@@ -85,6 +85,7 @@ pub struct LLVMCodeGenContext<'ctx> {
     pub program: &'ctx ast::Program,
     pub functions: RefCell<Vec<Rc<FunctionValue<'ctx>>>>,
     pub imported: RefCell<HashSet<String>>,
+    pub setter_keys: RefCell<HashSet<String>>,
     pub schema_stack: RefCell<Vec<value::SchemaType>>,
     pub lambda_stack: RefCell<Vec<usize>>,
     pub schema_expr_stack: RefCell<Vec<()>>,
@@ -365,6 +366,20 @@ impl<'ctx> BuilderMethods for LLVMCodeGenContext<'ctx> {
             self.module.add_function(name, fn_ty, None)
         }
     }
+
+    /// Add a setter function named `name`.
+    fn add_setter_function(&self, name: &str) -> Self::Function {
+        let fn_ty = self.setter_func_type();
+        if self.no_link {
+            let pkgpath = self.current_pkgpath();
+            let msg = format!("pkgpath {} is not found", pkgpath);
+            let modules = self.modules.borrow_mut();
+            let module = modules.get(&pkgpath).expect(&msg).borrow_mut();
+            module.inner.add_function(name, fn_ty, None)
+        } else {
+            self.module.add_function(name, fn_ty, None)
+        }
+    }
 }
 
 /* Value methods */
@@ -602,6 +617,16 @@ impl<'ctx> ValueMethods for LLVMCodeGenContext<'ctx> {
             .get_parent()
             .unwrap()
             .get_first_param()
+            .expect(kcl_error::CONTEXT_VAR_NOT_FOUND_MSG)
+    }
+    /// Get the global evaluation scope pointer.
+    fn current_scope_ptr(&self) -> Self::Value {
+        self.builder
+            .get_insert_block()
+            .unwrap()
+            .get_parent()
+            .unwrap()
+            .get_nth_param(1)
             .expect(kcl_error::CONTEXT_VAR_NOT_FOUND_MSG)
     }
 }
@@ -1255,6 +1280,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             functions: RefCell::new(vec![]),
             imported: RefCell::new(HashSet::new()),
             local_vars: RefCell::new(HashSet::new()),
+            setter_keys: RefCell::new(HashSet::new()),
             schema_stack: RefCell::new(vec![]),
             // 1 denotes the top global main function lambda and 0 denotes the builtin scope.
             // Any user-defined lambda scope greater than 1.
@@ -1714,7 +1740,12 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
     }
 
     /// Append a variable or update the existed variable
-    pub fn add_or_update_global_variable(&self, name: &str, value: BasicValueEnum<'ctx>) {
+    pub fn add_or_update_global_variable(
+        &self,
+        name: &str,
+        value: BasicValueEnum<'ctx>,
+        save_scope: bool,
+    ) {
         // Find argument name in the scope
         let current_pkgpath = self.current_pkgpath();
         let mut pkg_scopes = self.pkg_scopes.borrow_mut();

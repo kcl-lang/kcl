@@ -5,8 +5,13 @@ use std::os::raw::c_char;
 
 use crate::*;
 
+use self::eval::LazyEvalScope;
+
 #[allow(dead_code, non_camel_case_types)]
 type kclvm_context_t = Context;
+
+#[allow(dead_code, non_camel_case_types)]
+type kclvm_eval_scope_t = LazyEvalScope;
 
 #[allow(dead_code, non_camel_case_types)]
 type kclvm_kind_t = Kind;
@@ -79,6 +84,7 @@ fn new_ctx_with_opts(opts: FFIRunOptions, path_selector: &[String]) -> Context {
 
 #[no_mangle]
 #[runtime_fn]
+#[allow(clippy::too_many_arguments)]
 pub unsafe extern "C" fn _kcl_run(
     kclvm_main_ptr: u64, // main.k => kclvm_main
     option_len: kclvm_size_t,
@@ -124,6 +130,8 @@ pub unsafe extern "C" fn _kcl_run(
             }
         })
     }));
+    // let scope = Box::into_raw(Box::new(LazyEvalScope::default()));
+    // let result = std::panic::catch_unwind(|| _kcl_run_in_closure(ctx, scope, kclvm_main_ptr));
     let result = std::panic::catch_unwind(|| _kcl_run_in_closure(ctx, kclvm_main_ptr));
     std::panic::set_hook(prev_hook);
     KCL_RUNTIME_PANIC_RECORD.with(|record| {
@@ -157,7 +165,6 @@ pub unsafe extern "C" fn _kcl_run(
     result.is_err() as kclvm_size_t
 }
 
-#[allow(clippy::too_many_arguments)]
 unsafe fn _kcl_run_in_closure(
     ctx: *mut Context,
     kclvm_main_ptr: u64, // main.k => kclvm_main
