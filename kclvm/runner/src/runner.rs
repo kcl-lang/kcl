@@ -313,10 +313,10 @@ impl LibRunner {
         let kclvm_plugin_init: libloading::Symbol<
             unsafe extern "C" fn(
                 fn_ptr: extern "C" fn(
-                    method: *const i8,
-                    args_json: *const i8,
-                    kwargs_json: *const i8,
-                ) -> *const i8,
+                    method: *const c_char,
+                    args_json: *const c_char,
+                    kwargs_json: *const c_char,
+                ) -> *const c_char,
             ),
         > = lib.get(b"kclvm_plugin_init")?;
 
@@ -324,15 +324,15 @@ impl LibRunner {
         let plugin_method_ptr = plugin_method_ptr;
         let plugin_method_ptr = (plugin_method_ptr as *const u64) as *const ()
             as *const extern "C" fn(
-                method: *const i8,
-                args: *const i8,
-                kwargs: *const i8,
-            ) -> *const i8;
+                method: *const c_char,
+                args: *const c_char,
+                kwargs: *const c_char,
+            ) -> *const c_char;
         let plugin_method: extern "C" fn(
-            method: *const i8,
-            args: *const i8,
-            kwargs: *const i8,
-        ) -> *const i8 = std::mem::transmute(plugin_method_ptr);
+            method: *const c_char,
+            args: *const c_char,
+            kwargs: *const c_char,
+        ) -> *const c_char = std::mem::transmute(plugin_method_ptr);
 
         // register plugin agent
         kclvm_plugin_init(plugin_method);
@@ -506,7 +506,7 @@ impl FastRunner {
                 #[cfg(not(target_arch = "wasm32"))]
                 unsafe {
                     let plugin_method: extern "C" fn(
-                        method: *const i8,
+                        method: *const c_char,
                         args: *const c_char,
                         kwargs: *const c_char,
                     ) -> *const c_char = std::mem::transmute(self.opts.plugin_agent_ptr);

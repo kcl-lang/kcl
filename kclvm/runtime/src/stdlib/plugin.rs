@@ -4,23 +4,33 @@
 
 use crate::*;
 
+use lazy_static::lazy_static;
 use std::os::raw::c_char;
+use std::sync::Mutex;
 
-#[allow(non_upper_case_globals)]
-static mut _plugin_handler_fn_ptr: u64 = 0;
+lazy_static! {
+    static ref PLUGIN_HANDLER_FN_PTR: Mutex<
+        Option<
+            extern "C" fn(
+                method: *const c_char,
+                args_json: *const c_char,
+                kwargs_json: *const c_char,
+            ) -> *const c_char,
+        >,
+    > = Mutex::new(None);
+}
 
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_plugin_init(
     fn_ptr: extern "C" fn(
-        method: *const i8,
+        method: *const c_char,
         args_json: *const c_char,
         kwargs_json: *const c_char,
     ) -> *const c_char,
 ) {
-    unsafe {
-        _plugin_handler_fn_ptr = fn_ptr as usize as u64;
-    }
+    let mut fn_ptr_guard = PLUGIN_HANDLER_FN_PTR.lock().unwrap();
+    *fn_ptr_guard = Some(fn_ptr);
 }
 
 // import kcl_plugin.hello
@@ -69,19 +79,11 @@ pub extern "C" fn kclvm_plugin_invoke_json(
     args: *const c_char,
     kwargs: *const c_char,
 ) -> *const c_char {
-    unsafe {
-        if _plugin_handler_fn_ptr == 0 {
-            panic!("plugin is nil, should call kclvm_plugin_init at first");
-        }
-
-        let ptr = (&_plugin_handler_fn_ptr as *const u64) as *const ()
-            as *const extern "C" fn(
-                method: *const c_char,
-                args: *const c_char,
-                kwargs: *const c_char,
-            ) -> *const c_char;
-
-        (*ptr)(method, args, kwargs)
+    let fn_ptr_guard = PLUGIN_HANDLER_FN_PTR.lock().unwrap();
+    if let Some(fn_ptr) = *fn_ptr_guard {
+        fn_ptr(method, args, kwargs)
+    } else {
+        panic!("plugin handler is nil, should call kclvm_plugin_init at first");
     }
 }
 
@@ -89,7 +91,7 @@ pub extern "C" fn kclvm_plugin_invoke_json(
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_plugin_invoke_json(
-    method: *const i8,
+    method: *const c_char,
     args: *const c_char,
     kwargs: *const c_char,
 ) -> *const c_char {
@@ -101,7 +103,7 @@ pub extern "C" fn kclvm_plugin_invoke_json(
 #[cfg(target_arch = "wasm32")]
 extern "C" {
     pub fn kclvm_plugin_invoke_json_wasm(
-        method: *const i8,
+        method: *const c_char,
         args: *const c_char,
         kwargs: *const c_char,
     ) -> *const c_char;

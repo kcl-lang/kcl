@@ -1813,6 +1813,7 @@ dependencies = [
  "indexmap 1.9.3",
  "itertools",
  "kclvm_runtime_internal_macros",
+ "lazy_static",
  "libc",
  "md5",
  "num-integer",

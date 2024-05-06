@@ -82,4 +82,6 @@ pub trait BuilderMethods: BackendTypes {
     fn lookup_function(&self, name: &str) -> Self::Function;
     /// Add a function named `name`.
     fn add_function(&self, name: &str) -> Self::Function;
+    /// Add a setter function named `name`.
+    fn add_setter_function(&self, name: &str) -> Self::Function;
 }

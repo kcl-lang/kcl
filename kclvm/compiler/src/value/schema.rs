@@ -23,6 +23,7 @@ pub const SCHEMA_VARIABLE_LIST: &[&str] = &[
 ];
 pub const BACKTRACK_LEVEL_MAP: &str = "$backtrack_level_map";
 pub const BACKTRACK_CACHE: &str = "$backtrack_cache";
+pub const GLOBAL_SETTER: &str = "$set";
 
 /// KCL schema type
 pub struct SchemaType {
