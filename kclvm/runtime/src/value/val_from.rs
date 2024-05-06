@@ -1,4 +1,4 @@
-// Copyright 2022 The KCL Authors. All rights reserved.
+// Copyright The KCL Authors. All rights reserved.
 
 use crate::*;
 use std::cell::RefCell;

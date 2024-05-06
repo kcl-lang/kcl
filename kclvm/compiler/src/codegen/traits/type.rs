@@ -1,4 +1,4 @@
-//! Copyright 2021 The KCL Authors. All rights reserved.
+//! Copyright The KCL Authors. All rights reserved.
 
 use crate::codegen::abi::AddressSpace;
 use crate::codegen::{CONTEXT_TYPE_NAME, VALUE_TYPE_NAME};
