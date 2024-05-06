@@ -25,7 +25,7 @@ pub struct UnsupportedSelectee {
 /// Selector is used to select the target variable from the kcl program.
 pub struct Selector {
     select_specs: Vec<String>,
-    select_result: HashMap<String, String>,
+    select_result: HashMap<String, Variable>,
     unsupported: Vec<UnsupportedSelectee>,
     inner: SelectorInner,
 }
@@ -147,7 +147,11 @@ impl<'ctx> MutSelfWalker for Selector {
             let kcode = print_ast_node(ASTNode::Expr(&Box::new(ast::Node::dummy_node(
                 ast::Expr::Schema(unification_stmt.value.node.clone()),
             ))));
-            self.select_result.insert(target.to_string(), kcode);
+
+            self.select_result.insert(
+                target.to_string(),
+                Variable::new(unification_stmt.value.node.name.node.get_name(), kcode),
+            );
         } else {
             // if length of spec is largr or equal to target
             let selector = self.inner.pop_front();
@@ -159,7 +163,10 @@ impl<'ctx> MutSelfWalker for Selector {
                             print_ast_node(ASTNode::Expr(&Box::new(ast::Node::dummy_node(
                                 ast::Expr::Schema(unification_stmt.value.node.clone()),
                             ))));
-                        self.select_result.insert(target.to_string(), kcode);
+                        self.select_result.insert(
+                            target.to_string(),
+                            Variable::new(unification_stmt.value.node.name.node.get_name(), kcode),
+                        );
                     } else {
                         // walk ahead
                         self.walk_schema_expr(&unification_stmt.value.node);
@@ -182,6 +189,11 @@ impl<'ctx> MutSelfWalker for Selector {
             }
             // get the value source code of the assign statement
             let kcode = print_ast_node(ASTNode::Expr(&assign_stmt.value));
+            let type_name = if let ast::Expr::Schema(schema) = &assign_stmt.value.node {
+                schema.name.node.get_name()
+            } else {
+                "".to_string()
+            };
             // The length of name for variable in top level is 1
             if assign_stmt.targets.len() == 1 {
                 let target = &assign_stmt.targets[0];
@@ -189,7 +201,8 @@ impl<'ctx> MutSelfWalker for Selector {
                     target.node.clone(),
                 ))));
                 let key = get_key_path(&target);
-                self.select_result.insert(key.to_string(), kcode);
+                self.select_result
+                    .insert(key.to_string(), Variable::new(type_name, kcode));
             }
         } else {
             // Compare the target with the spec
@@ -211,7 +224,14 @@ impl<'ctx> MutSelfWalker for Selector {
 
                             // matched
                             let kcode = print_ast_node(ASTNode::Expr(&assign_stmt.value));
-                            self.select_result.insert(target.to_string(), kcode);
+                            let type_name =
+                                if let ast::Expr::Schema(schema) = &assign_stmt.value.node {
+                                    schema.name.node.get_name()
+                                } else {
+                                    "".to_string()
+                                };
+                            self.select_result
+                                .insert(target.to_string(), Variable::new(type_name, kcode));
                         } else {
                             // walk ahead
                             self.walk_expr(&assign_stmt.value.node)
@@ -249,8 +269,15 @@ impl<'ctx> MutSelfWalker for Selector {
                             return;
                         }
                         let kcode = print_ast_node(ASTNode::Expr(&item.node.value));
-                        self.select_result
-                            .insert(self.inner.current_spec.to_string(), kcode);
+                        let type_name = if let ast::Expr::Schema(schema) = &item.node.value.node {
+                            schema.name.node.get_name()
+                        } else {
+                            "".to_string()
+                        };
+                        self.select_result.insert(
+                            self.inner.current_spec.to_string(),
+                            Variable::new(type_name, kcode),
+                        );
                     } else {
                         // the spec is still not used up
                         // walk ahead
@@ -333,8 +360,20 @@ impl<'ctx> MutSelfWalker for Selector {
 }
 
 pub struct ListVariablesResult {
-    pub select_result: HashMap<String, String>,
+    pub select_result: HashMap<String, Variable>,
     pub unsupported: Vec<UnsupportedSelectee>,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Variable {
+    pub type_name: String,
+    pub value: String,
+}
+
+impl Variable {
+    pub fn new(type_name: String, value: String) -> Self {
+        Self { type_name, value }
+    }
 }
 
 /// list_options provides users with the ability to parse kcl program and get all option
