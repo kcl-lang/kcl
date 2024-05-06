@@ -43,16 +43,20 @@ jobs:
         working-directory: ./kclvm
         run: export PATH=$PATH:$PWD/../_build/dist/ubuntu/kclvm/bin && make && make test-grammar
         shell: bash
+      - name: Evaluator Grammar test
+        working-directory: ./kclvm
+        run: export PATH=$PATH:$PWD/../_build/dist/ubuntu/kclvm/bin && make test-grammar-evaluator
+        shell: bash
       - name: Runtime test
         working-directory: ./kclvm
-        run: export PATH=$PATH:$PWD/../_build/dist/ubuntu/kclvm/bin && make && make test-runtime
+        run: export PATH=$PATH:$PWD/../_build/dist/ubuntu/kclvm/bin && make test-runtime
         shell: bash
       - name: Install KCL CLI
         run: go install kcl-lang.io/cli/cmd/kcl@latest
 
       - name: Unit test
         working-directory: ./kclvm
-        run: export PATH=$PATH:$PWD/../_build/dist/ubuntu/kclvm/bin && make && make test
+        run: export PATH=$PATH:$PWD/../_build/dist/ubuntu/kclvm/bin && make test
         shell: bash
 
       - uses: actions/upload-artifact@v3
