@@ -317,7 +317,10 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
                         PKG_INIT_FUNCTION_SUFFIX
                     );
                     let tpe = self.context.void_type();
-                    let fn_type = tpe.fn_type(&[self.context_ptr_type().into()], false);
+                    let fn_type = tpe.fn_type(
+                        &[self.context_ptr_type().into(), self.scope_ptr_type().into()],
+                        false,
+                    );
                     let function = module.add_function(
                         // Function name
                         &module_name,
@@ -367,10 +370,14 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
                         );
                     }
                     let tpe = self.context.void_type();
-                    let fn_type = tpe.fn_type(&[self.context_ptr_type().into()], false);
+                    let fn_type = tpe.fn_type(
+                        &[self.context_ptr_type().into(), self.scope_ptr_type().into()],
+                        false,
+                    );
                     module.add_function(&name, fn_type, Some(Linkage::External))
                 };
                 let ctx = self.current_runtime_ctx_ptr();
+                let scope = self.current_scope_ptr();
                 let pkgpath_value = self.native_global_string_value(&name);
                 let is_imported = self
                     .build_call(
@@ -389,7 +396,8 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
                 self.builder
                     .build_conditional_branch(is_not_imported, then_block, else_block);
                 self.builder.position_at_end(then_block);
-                self.builder.build_call(function, &[ctx.into()], "");
+                self.builder
+                    .build_call(function, &[ctx.into(), scope.into()], "");
                 self.br(else_block);
                 self.builder.position_at_end(else_block);
             }

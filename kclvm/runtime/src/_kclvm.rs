@@ -229,7 +229,7 @@ pub enum ApiFunc {
     kclvm_schema_value_check,
     kclvm_schema_value_new,
     kclvm_scope_add_setter,
-    kclvm_scope_free,
+    kclvm_scope_delete,
     kclvm_scope_get,
     kclvm_scope_new,
     kclvm_scope_set,

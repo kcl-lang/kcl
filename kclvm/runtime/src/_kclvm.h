@@ -488,7 +488,7 @@ kclvm_value_ref_t* kclvm_schema_value_new(kclvm_context_t* ctx, kclvm_value_ref_
 
 void kclvm_scope_add_setter(kclvm_context_t* _ctx, kclvm_eval_scope_t* scope, char* pkg, char* name, uint64_t* setter);
 
-void kclvm_scope_free(kclvm_eval_scope_t* scope);
+void kclvm_scope_delete(kclvm_eval_scope_t* scope);
 
 kclvm_value_ref_t* kclvm_scope_get(kclvm_context_t* ctx, kclvm_eval_scope_t* scope, char* pkg, char* name, char* target, kclvm_value_ref_t* default);
 

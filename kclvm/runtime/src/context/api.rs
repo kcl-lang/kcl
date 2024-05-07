@@ -148,7 +148,7 @@ pub unsafe extern "C" fn kclvm_scope_new() -> *mut kclvm_eval_scope_t {
 
 #[no_mangle]
 #[runtime_fn]
-pub unsafe extern "C" fn kclvm_scope_free(scope: *mut kclvm_eval_scope_t) {
+pub unsafe extern "C" fn kclvm_scope_delete(scope: *mut kclvm_eval_scope_t) {
     drop(Box::from_raw(scope));
 }
 

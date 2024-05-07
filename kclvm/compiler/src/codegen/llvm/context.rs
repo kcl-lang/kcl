@@ -1311,8 +1311,10 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         let tpe = self.value_ptr_type().into_pointer_type();
         let void_type = self.context.void_type();
         let context_ptr_type = self.context_ptr_type();
-        let fn_type = tpe.fn_type(&[context_ptr_type.into()], false);
-        let void_fn_type = void_type.fn_type(&[context_ptr_type.into()], false);
+        let scope_ptr_type = self.scope_ptr_type();
+        let fn_type = tpe.fn_type(&[context_ptr_type.into(), scope_ptr_type.into()], false);
+        let void_fn_type =
+            void_type.fn_type(&[context_ptr_type.into(), scope_ptr_type.into()], false);
         let has_main_pkg = self.program.pkgs.contains_key(MAIN_PKG_PATH);
         let function = if self.no_link {
             let mut modules = self.modules.borrow_mut();
@@ -1756,6 +1758,18 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             let variables = last.variables.borrow();
             if let Some(var) = variables.get(&name.to_string()) {
                 self.builder.build_store(*var, value);
+                if save_scope {
+                    self.build_void_call(
+                        &ApiFunc::kclvm_scope_set.name(),
+                        &[
+                            self.current_runtime_ctx_ptr(),
+                            self.current_scope_ptr(),
+                            self.native_global_string(&current_pkgpath, "").into(),
+                            self.native_global_string(name, "").into(),
+                            value,
+                        ],
+                    );
+                }
                 existed = true;
             }
         }
@@ -1766,6 +1780,18 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 let var_name = format!("${}.${}", pkgpath_without_prefix!(pkgpath), name);
                 let pointer = self.new_global_kcl_value_ptr(&var_name);
                 self.builder.build_store(pointer, value);
+                if save_scope {
+                    self.build_void_call(
+                        &ApiFunc::kclvm_scope_set.name(),
+                        &[
+                            self.current_runtime_ctx_ptr(),
+                            self.current_scope_ptr(),
+                            self.native_global_string(&current_pkgpath, "").into(),
+                            self.native_global_string(name, "").into(),
+                            value,
+                        ],
+                    );
+                }
                 if !variables.contains_key(name) {
                     variables.insert(name.to_string(), pointer);
                 }
@@ -1993,7 +2019,41 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                             }
                         }
                     } else {
-                        self.builder.build_load(*var, name)
+                        // Not a local schema attribute or a global type.
+                        let key = format!("{}.{name}", pkgpath_without_prefix!(pkgpath));
+                        let is_in_lambda = self.is_in_lambda();
+                        if !is_in_schema
+                            && !is_in_lambda
+                            && index <= GLOBAL_LEVEL
+                            && !self.local_vars.borrow().contains(name)
+                            && self.setter_keys.borrow().contains(&key)
+                        {
+                            let target = self
+                                .target_vars
+                                .borrow_mut()
+                                .last()
+                                .expect(kcl_error::INTERNAL_ERROR_MSG)
+                                .clone();
+                            self.build_call(
+                                &ApiFunc::kclvm_scope_get.name(),
+                                &[
+                                    // Runtime context ptr
+                                    self.current_runtime_ctx_ptr(),
+                                    // Scope ptr
+                                    self.current_scope_ptr(),
+                                    // Package path
+                                    self.native_global_string(&pkgpath, "").into(),
+                                    // Attribute name
+                                    self.native_global_string(name, "").into(),
+                                    // Target
+                                    self.native_global_string(&target, "").into(),
+                                    // Default
+                                    self.builder.build_load(*var, name),
+                                ],
+                            )
+                        } else {
+                            self.builder.build_load(*var, name)
+                        }
                     };
                     result = Ok(value);
                     break;
