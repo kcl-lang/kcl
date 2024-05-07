@@ -1068,7 +1068,11 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
                     generation: 0,
                 },
                 kind: Value,
+<<<<<<< HEAD
             },            
+=======
+            },
+>>>>>>> 7703eece (feat: add file.size  (#1286))
         ],
         is_global: false,
     },
