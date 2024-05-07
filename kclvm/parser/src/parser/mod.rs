@@ -31,7 +31,6 @@ use kclvm_ast::ast::{Comment, NodeRef, PosTuple};
 use kclvm_ast::token::{CommentKind, Token, TokenKind};
 use kclvm_ast::token_stream::{Cursor, TokenStream};
 use kclvm_span::symbol::Symbol;
-use kclvm_utils::path::PathPrefix;
 
 /// The parser is built on top of the [`kclvm_parser::lexer`], and ordering KCL tokens
 /// [`kclvm_ast::token`] to KCL ast nodes [`kclvm_ast::ast`].
@@ -85,14 +84,14 @@ impl<'a> Parser<'a> {
 
         let filename: String = format!("{}", lo.file.name.prefer_remapped());
 
-        #[cfg(windows)]
+        #[cfg(target_os = "windows")]
         {
+            use kclvm_utils::path::PathPrefix;
             // The canonicalize() function will change the drive letter to uppercase in Windows.
             // e.g.: c:\\xx -> C:\\xx
-            // To be consistent with the rest, all capital letters have been changed here
             let file = std::path::Path::new(filename).canonicalize().unwrap();
             let case_insensitive_filename = file.adjust_canonicalization();
-            return (
+            (
                 case_insensitive_filename,
                 lo.line as u64,
                 lo.col.0 as u64,
@@ -100,13 +99,16 @@ impl<'a> Parser<'a> {
                 hi.col.0 as u64,
             );
         }
-        (
-            filename,
-            lo.line as u64,
-            lo.col.0 as u64,
-            hi.line as u64,
-            hi.col.0 as u64,
-        )
+        #[cfg(not(target_os = "windows"))]
+        {
+            (
+                filename,
+                lo.line as u64,
+                lo.col.0 as u64,
+                hi.line as u64,
+                hi.col.0 as u64,
+            )
+        }
     }
 
     pub(crate) fn bump(&mut self) {
