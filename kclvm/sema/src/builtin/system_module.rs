@@ -1638,6 +1638,25 @@ register_file_member! {
         false,
         None,
     )
+    append => Type::function(
+        None,
+        Type::any_ref(),
+        &[
+            Parameter {
+                name: "filepath".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+            Parameter {
+                name: "content".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+        ],
+        r#"Append content to a file at the specified path. If the file doesn't exist, it will be created."#,
+        false,
+        None,
+    )
     mkdir => Type::function(
         None,
         Type::any_ref(),
