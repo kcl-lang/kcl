@@ -287,11 +287,10 @@ pub extern "C" fn rmdir(
                 return ValueRef::none().into_raw(ctx);
             }
             Err(e) => {
-                panic!("Failed to remove directory '{}': {}", path, e);
+                panic!("Failed to remove directory '{}': {}", directory, e);
             }
         }
     }
 
     panic!("rmdir() takes exactly one argument (0 given)");
 }
-x   
