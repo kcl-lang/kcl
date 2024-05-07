@@ -4,6 +4,7 @@ use std::{fs, io::ErrorKind};
 
 use crate::*;
 use glob::glob;
+use std::io::Write;
 use std::path::Path;
 
 #[no_mangle]
@@ -268,4 +269,34 @@ pub extern "C" fn kclvm_file_size(
     }
 
     panic!("size() takes exactly one argument (0 given)");
+}
+
+#[no_mangle]
+#[runtime_fn]
+pub extern "C" fn kclvm_file_write(
+    ctx: *mut kclvm_context_t,
+    args: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
+) -> *const kclvm_value_ref_t {
+    let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
+    let ctx = mut_ptr_as_ref(ctx);
+
+    if let Some(path) = get_call_arg_str(args, kwargs, 0, Some("filepath")) {
+        if let Some(content) = get_call_arg_str(args, kwargs, 1, Some("content")) {
+            match fs::File::create(&path) {
+                Ok(mut file) => {
+                    if let Err(e) = file.write_all(content.as_bytes()) {
+                        panic!("Failed to write to '{}': {}", path, e);
+                    }
+                    return ValueRef::none().into_raw(ctx);
+                }
+                Err(e) => panic!("Failed to create file '{}': {}", path, e),
+            }
+        } else {
+            panic!("write() missing 'content' argument");
+        }
+    } else {
+        panic!("write() missing 'filepath' argument");
+    }
 }
