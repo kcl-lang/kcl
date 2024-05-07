@@ -173,17 +173,9 @@ const TMP_FILE: &str = "validationTempKCLCode.k";
 /// }
 /// ```
 pub fn validate(val_opt: ValidateOption) -> Result<bool> {
-    let k_path = match val_opt.kcl_path {
-        Some(path) => path,
-        None => TMP_FILE.to_string(),
-    };
 
-    let k_code = match val_opt.kcl_code {
-        Some(code) => vec![code],
-        None => {
-            vec!["".to_string()]
-        }
-    };
+    let k_path = val_opt.kcl_path.unwrap_or_else(|| TMP_FILE.to_string());
+    let k_code = val_opt.kcl_code.map_or_else(Vec::new, |code| vec![code]);
 
     let sess = ParseSessionRef::default();
     let mut compile_res = kclvm_parser::load_program(

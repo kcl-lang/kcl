@@ -551,7 +551,7 @@ mod test_validater {
             Err(err) => {
                 assert_eq!(
                     err.to_string(),
-                    "Failed to Load 'The validated file path is invalid'"
+                    "Cannot find the kcl file, please check the file path validationTempKCLCode.k"
                 );
             }
         }
