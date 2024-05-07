@@ -300,3 +300,36 @@ pub extern "C" fn kclvm_file_write(
         panic!("write() missing 'filepath' argument");
     }
 }
+
+#[no_mangle]
+#[runtime_fn]
+pub extern "C" fn kclvm_file_append(
+    ctx: *mut kclvm_context_t,
+    args: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
+) -> *const kclvm_value_ref_t {
+    let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
+    let ctx = mut_ptr_as_ref(ctx);
+
+    if let Some(path) = get_call_arg_str(args, kwargs, 0, Some("filepath")) {
+        if let Some(content) = get_call_arg_str(args, kwargs, 1, Some("content")) {
+            // Open the file in append mode, creating it if it doesn't exist
+            match fs::OpenOptions::new().append(true).create(true).open(&path) {
+                Ok(mut file) => {
+                    if let Err(e) = file.write_all(content.as_bytes()) {
+                        panic!("Failed to append to file '{}': {}", path, e);
+                    }
+                    return ValueRef::none().into_raw(ctx);
+                }
+                Err(e) => {
+                    panic!("Failed to open or create file '{}': {}", path, e);
+                }
+            }
+        } else {
+            panic!("append() requires 'content' argument");
+        }
+    } else {
+        panic!("append() requires 'filepath' argument");
+    }
+}

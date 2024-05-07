@@ -306,6 +306,8 @@ kclvm_value_ref_t* kclvm_dict_values(kclvm_context_t* ctx, kclvm_value_ref_t* p)
 
 kclvm_value_ref_t* kclvm_file_abs(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
+kclvm_value_ref_t* kclvm_file_append(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+
 kclvm_value_ref_t* kclvm_file_cp(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
 kclvm_value_ref_t* kclvm_file_delete(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
