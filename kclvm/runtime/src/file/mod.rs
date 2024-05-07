@@ -5,6 +5,7 @@ use std::{fs, io::ErrorKind};
 use crate::*;
 use glob::glob;
 use std::path::Path;
+use std::io::Write;
 
 #[no_mangle]
 #[runtime_fn]
@@ -288,8 +289,8 @@ pub extern "C" fn kclvm_file_write(
                     panic!("Failed to write to '{}': {}", path, e);
                 }
                 return ValueRef::none().into_raw(ctx);
-            } else {
-                panic!("Failed to create file '{}'", path);
+            }   else if let Err(e) = fs::File::create(&path) {
+                    panic!("Failed to create file '{}': {}", path, e);
             }
         } else {
             panic!("write() missing 'content' argument");
