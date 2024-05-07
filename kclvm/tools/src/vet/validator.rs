@@ -173,7 +173,6 @@ const TMP_FILE: &str = "validationTempKCLCode.k";
 /// }
 /// ```
 pub fn validate(val_opt: ValidateOption) -> Result<bool> {
-
     let k_path = val_opt.kcl_path.unwrap_or_else(|| TMP_FILE.to_string());
     let k_code = val_opt.kcl_code.map_or_else(Vec::new, |code| vec![code]);
 
