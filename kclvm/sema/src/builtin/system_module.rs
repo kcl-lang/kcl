@@ -1723,6 +1723,25 @@ register_file_member! {
         false,
         None,
     )
+    write => Type::function(
+        None,
+        Type::any_ref(),
+        &[
+            Parameter {
+                name: "filepath".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+            Parameter {
+                name: "content".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+        ],
+        r#"Write content to a file at the specified path. If the file doesn't exist, it will be created. If it does exist, its content will be replaced."#,
+        false,
+        None,
+    )
 }
 
 // ------------------------------
