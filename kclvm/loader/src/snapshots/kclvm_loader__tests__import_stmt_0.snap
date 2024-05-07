@@ -181,7 +181,7 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
                 column: Some(
                     1,
                 ),
-            },
+            },https://github.com/kcl-lang/kcl/pull/1289/conflict?name=kclvm%252Floader%252Fsrc%252Fsnapshots%252Fkclvm_loader__tests__import_stmt_0.snap&ancestor_oid=86c22cbd246d733c14426b8d42ea0fb9abb9a2f9&base_oid=34d7145b87a025e2ab9111466f97983053a78da7&head_oid=a5d7e0a2eb8281575285bc692efcd39f72a56643
         ),
         owner: Some(
             SymbolRef {
