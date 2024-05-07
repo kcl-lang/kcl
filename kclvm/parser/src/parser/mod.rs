@@ -87,7 +87,7 @@ impl<'a> Parser<'a> {
 
         #[cfg(windows)]
         {
-            // The canonicalize() function will change the drive letter to uppercase in Windows. 
+            // The canonicalize() function will change the drive letter to uppercase in Windows.
             // e.g.: c:\\xx -> C:\\xx
             // To be consistent with the rest, all capital letters have been changed here
             let file = std::path::Path::new(filename).canonicalize().unwrap();
