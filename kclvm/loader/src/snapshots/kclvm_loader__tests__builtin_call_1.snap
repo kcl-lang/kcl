@@ -38,7 +38,7 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
         def: Some(
             SymbolRef {
                 id: Index {
-                    index: 163,
+                    index: 162,
                     generation: 0,
                 },
                 kind: Value,
@@ -182,6 +182,13 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
         attrs: [
             SymbolRef {
                 id: Index {
+                    index: 133,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
                     index: 134,
                     generation: 0,
                 },
@@ -372,13 +379,6 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
             SymbolRef {
                 id: Index {
                     index: 161,
-                    generation: 0,
-                },
-                kind: Value,
-            },
-            SymbolRef {
-                id: Index {
-                    index: 162,
                     generation: 0,
                 },
                 kind: Value,
@@ -415,13 +415,20 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
         def: Some(
             SymbolRef {
                 id: Index {
-                    index: 164,
+                    index: 163,
                     generation: 0,
                 },
                 kind: Value,
             },
         ),
         attrs: [
+            SymbolRef {
+                id: Index {
+                    index: 133,
+                    generation: 0,
+                },
+                kind: Value,
+            },
             SymbolRef {
                 id: Index {
                     index: 134,
@@ -614,13 +621,6 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
             SymbolRef {
                 id: Index {
                     index: 161,
-                    generation: 0,
-                },
-                kind: Value,
-            },
-            SymbolRef {
-                id: Index {
-                    index: 162,
                     generation: 0,
                 },
                 kind: Value,
@@ -666,6 +666,13 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
         attrs: [
             SymbolRef {
                 id: Index {
+                    index: 133,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+            SymbolRef {
+                id: Index {
                     index: 134,
                     generation: 0,
                 },
@@ -860,13 +867,6 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
                 },
                 kind: Value,
             },
-            SymbolRef {
-                id: Index {
-                    index: 162,
-                    generation: 0,
-                },
-                kind: Value,
-            },
         ],
         is_global: false,
     },
@@ -899,7 +899,7 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
         def: Some(
             SymbolRef {
                 id: Index {
-                    index: 165,
+                    index: 164,
                     generation: 0,
                 },
                 kind: Value,
