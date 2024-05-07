@@ -763,7 +763,7 @@ Bob = vars.Person {
     #[test]
     fn test_rename_symbol_on_file() {
         let mut root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        root.push("src/test_data/rename_test/");
+        root.push("src/test_data/rename_test/rename_on_file");
 
         let mut main_path = root.clone();
         let mut base_path = root.clone();
