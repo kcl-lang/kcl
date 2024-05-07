@@ -89,7 +89,7 @@ impl<'a> Parser<'a> {
             use kclvm_utils::path::PathPrefix;
             // The canonicalize() function will change the drive letter to uppercase in Windows.
             // e.g.: c:\\xx -> C:\\xx
-            let file = std::path::Path::new(filename).canonicalize().unwrap();
+            let file = std::path::Path::new(&filename).canonicalize().unwrap();
             let case_insensitive_filename = file.adjust_canonicalization();
             (
                 case_insensitive_filename,
@@ -97,7 +97,7 @@ impl<'a> Parser<'a> {
                 lo.col.0 as u64,
                 hi.line as u64,
                 hi.col.0 as u64,
-            );
+            )
         }
         #[cfg(not(target_os = "windows"))]
         {
