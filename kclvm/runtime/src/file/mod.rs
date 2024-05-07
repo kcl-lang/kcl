@@ -269,3 +269,29 @@ pub extern "C" fn kclvm_file_size(
 
     panic!("size() takes exactly one argument (0 given)");
 }
+
+#[no_mangle]
+#[runtime_fn]
+pub extern "C" fn rmdir(
+    ctx: *mut kclvm_context_t,
+    args: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
+) -> *const kclvm_value_ref_t {
+    let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
+    let ctx = mut_ptr_as_ref(ctx);
+
+    if let Some(directory) = get_call_arg_str(args, kwargs, 0, Some("directory")) {
+        match fs::remove_dir(&directory) {
+            Ok(_) => {
+                return ValueRef::none().into_raw(ctx);
+            }
+            Err(e) => {
+                panic!("Failed to remove directory '{}': {}", path, e);
+            }
+        }
+    }
+
+    panic!("rmdir() takes exactly one argument (0 given)");
+}
+x   

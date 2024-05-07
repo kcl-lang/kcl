@@ -1723,6 +1723,20 @@ register_file_member! {
         false,
         None,
     )
+    rmdir => Type::function(
+        None,
+        Type::any_ref(),
+        &[
+            Parameter {
+                name: "directory".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+        ],
+        r#"Remove the directory specified by the path. The directory must be empty."#,
+        false,
+        None,
+    )
 }
 
 // ------------------------------
