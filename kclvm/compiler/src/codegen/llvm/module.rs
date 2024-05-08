@@ -38,7 +38,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             };
         }
         // Pre define global variables with setter functions.
-        // self.predefine_global_setters(module);
+        self.predefine_global_setters(module);
     }
 
     pub fn predefine_global_types(&self, name: &str) {
@@ -59,7 +59,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
 
     /// Predefine all global variables.
     pub fn predefine_global_setters(&self, module: &'ctx ast::Module) {
-        // New a function block to the global setter constrcution process.
+        // New a function block to the global setter construction process.
         let global_setter_block = self.append_block("");
         self.br(global_setter_block);
         self.builder.position_at_end(global_setter_block);

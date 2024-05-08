@@ -436,7 +436,7 @@ declare %kclvm_value_ref_t* @kclvm_schema_value_new(%kclvm_context_t* %ctx, %kcl
 
 declare void @kclvm_scope_add_setter(%kclvm_context_t* %_ctx, %kclvm_eval_scope_t* %scope, i8* %pkg, i8* %name, i64* %setter);
 
-declare void @kclvm_scope_free(%kclvm_eval_scope_t* %scope);
+declare void @kclvm_scope_delete(%kclvm_eval_scope_t* %scope);
 
 declare %kclvm_value_ref_t* @kclvm_scope_get(%kclvm_context_t* %ctx, %kclvm_eval_scope_t* %scope, i8* %pkg, i8* %name, i8* %target, %kclvm_value_ref_t* %default);
 

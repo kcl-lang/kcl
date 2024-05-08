@@ -38,9 +38,9 @@
 // api-spec(c):    kclvm_eval_scope_t* kclvm_scope_new();
 // api-spec(llvm): declare %kclvm_eval_scope_t* @kclvm_scope_new();
 
-// api-spec:       kclvm_scope_free
-// api-spec(c):    void kclvm_scope_free(kclvm_eval_scope_t* scope);
-// api-spec(llvm): declare void @kclvm_scope_free(%kclvm_eval_scope_t* %scope);
+// api-spec:       kclvm_scope_delete
+// api-spec(c):    void kclvm_scope_delete(kclvm_eval_scope_t* scope);
+// api-spec(llvm): declare void @kclvm_scope_delete(%kclvm_eval_scope_t* %scope);
 
 // api-spec:       kclvm_scope_add_setter
 // api-spec(c):    void kclvm_scope_add_setter(kclvm_context_t* _ctx, kclvm_eval_scope_t* scope, char* pkg, char* name, uint64_t* setter);

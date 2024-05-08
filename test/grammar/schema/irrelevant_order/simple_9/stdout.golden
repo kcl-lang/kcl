@@ -1,0 +1,4 @@
+output:
+  name: my_app
+  versions:
+    my-app: 1.0.0

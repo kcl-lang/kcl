@@ -460,7 +460,13 @@ impl SessionDiagnostic for Diagnostic {
             match Session::new_with_file_and_code(&msg.range.0.filename, None) {
                 Ok(sess) => {
                     let source = sess.sm.lookup_source_file(new_byte_pos(0));
-                    let line = source.get_line((msg.range.0.line - 1) as usize);
+                    let line = source.get_line(
+                        (if msg.range.0.line >= 1 {
+                            msg.range.0.line - 1
+                        } else {
+                            0
+                        }) as usize,
+                    );
                     match line.as_ref() {
                         Some(content) => {
                             let length = content.chars().count();

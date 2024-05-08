@@ -244,7 +244,7 @@ pub fn _kclvm_get_fn_ptr_by_name(name: &str) -> u64 {
         "kclvm_schema_value_check" => crate::kclvm_schema_value_check as *const () as u64,
         "kclvm_schema_value_new" => crate::kclvm_schema_value_new as *const () as u64,
         "kclvm_scope_add_setter" => crate::kclvm_scope_add_setter as *const () as u64,
-        "kclvm_scope_free" => crate::kclvm_scope_free as *const () as u64,
+        "kclvm_scope_delete" => crate::kclvm_scope_delete as *const () as u64,
         "kclvm_scope_get" => crate::kclvm_scope_get as *const () as u64,
         "kclvm_scope_new" => crate::kclvm_scope_new as *const () as u64,
         "kclvm_scope_set" => crate::kclvm_scope_set as *const () as u64,
