@@ -65,7 +65,6 @@ pub fn type_pack_and_check(
         return value.clone();
     }
     let is_schema = value.is_schema();
-    let value_tpe = value.type_str();
     let mut checked = false;
     let mut converted_value = value.clone();
     let expected_type = &expected_types.join(" | ").replace('@', "");
@@ -80,7 +79,7 @@ pub fn type_pack_and_check(
         }
     }
     if !checked {
-        panic!("expect {expected_type}, got {value_tpe}");
+        panic!("expect {expected_type}, got {}", value.type_str());
     }
     converted_value
 }
