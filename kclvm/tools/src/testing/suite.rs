@@ -8,9 +8,11 @@ use kclvm_driver::{get_kcl_files, get_pkg_list};
 use kclvm_parser::{parse_file_force_errors, ParseSessionRef};
 #[cfg(feature = "llvm")]
 use kclvm_runner::build_program;
+#[cfg(not(feature = "llvm"))]
+use kclvm_runner::exec_program;
 #[cfg(feature = "llvm")]
 use kclvm_runner::runner::ProgramRunner;
-use kclvm_runner::{exec_program, ExecProgramArgs};
+use kclvm_runner::ExecProgramArgs;
 use std::time::Instant;
 
 /// File suffix for test files.
