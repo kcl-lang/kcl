@@ -31,7 +31,6 @@ use kclvm_ast::ast::{Comment, NodeRef, PosTuple};
 use kclvm_ast::token::{CommentKind, Token, TokenKind};
 use kclvm_ast::token_stream::{Cursor, TokenStream};
 use kclvm_span::symbol::Symbol;
-use kclvm_utils::path::fix_windows_filename_canonicalization;
 
 /// The parser is built on top of the [`kclvm_parser::lexer`], and ordering KCL tokens
 /// [`kclvm_ast::token`] to KCL ast nodes [`kclvm_ast::ast`].
@@ -83,9 +82,20 @@ impl<'a> Parser<'a> {
         let lo = self.sess.lookup_char_pos(lo);
         let hi = self.sess.lookup_char_pos(hi);
 
-        let filename: String =
-            fix_windows_filename_canonicalization(&format!("{}", lo.file.name.prefer_remapped()));
+        let filename = {
+            #[cfg(target_os = "windows")]
+            {
+                kclvm_utils::path::convert_windows_drive_letter(&format!(
+                    "{}",
+                    lo.file.name.prefer_remapped()
+                ))
+            }
 
+            #[cfg(not(target_os = "windows"))]
+            {
+                format!("{}", lo.file.name.prefer_remapped())
+            }
+        };
         (
             filename,
             lo.line as u64,

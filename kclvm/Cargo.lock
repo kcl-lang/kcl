@@ -1521,6 +1521,7 @@ dependencies = [
  "kclvm-runtime",
  "kclvm-sema",
  "kclvm-tools",
+ "kclvm-utils",
  "maplit",
  "once_cell",
  "prost",
@@ -1913,6 +1914,7 @@ version = "0.8.6"
 dependencies = [
  "anyhow",
  "fslock",
+ "regex",
 ]
 
 [[package]]
