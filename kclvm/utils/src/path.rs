@@ -70,6 +70,22 @@ where
     }
 }
 
+pub fn fix_windows_filename_canonicalization(filename: &String) -> String {
+    #[cfg(target_os = "windows")]
+    {
+        // The canonicalize() function will change the drive letter to uppercase in Windows.
+        // e.g.: c:\\xx -> C:\\xx
+        match std::path::Path::new(&filename).canonicalize() {
+            Ok(file) => file.adjust_canonicalization(),
+            Err(_) => filename.clone(),
+        }
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        filename.clone()
+    }
+}
+
 #[test]
 #[cfg(target_os = "windows")]
 fn test_adjust_canonicalization() {

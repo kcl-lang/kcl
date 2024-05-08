@@ -33,6 +33,7 @@
 //! in the compiler and regenerate the walker code.
 //! :copyright: Copyright The KCL Authors. All rights reserved.
 
+use kclvm_utils::path::fix_windows_filename_canonicalization;
 use serde::{ser::SerializeStruct, Deserialize, Serialize, Serializer};
 use std::collections::HashMap;
 
@@ -200,7 +201,10 @@ impl<T> Node<T> {
         Self {
             id: AstIndex::default(),
             node,
-            filename: format!("{}", lo.file.name.prefer_remapped()),
+            filename: fix_windows_filename_canonicalization(&format!(
+                "{}",
+                lo.file.name.prefer_remapped()
+            )),
             line: lo.line as u64,
             column: lo.col.0 as u64,
             end_line: hi.line as u64,

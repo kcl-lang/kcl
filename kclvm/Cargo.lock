@@ -1545,6 +1545,7 @@ dependencies = [
  "kclvm-error",
  "kclvm-parser",
  "kclvm-span",
+ "kclvm-utils",
  "serde",
  "serde_json",
  "thread_local",
