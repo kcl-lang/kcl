@@ -70,6 +70,31 @@ where
     }
 }
 
+/// Conver windows drive letter to upcase
+#[cfg(target_os = "windows")]
+pub fn convert_windows_drive_letter(path: &str) -> String {
+    {
+        let regex = regex::Regex::new(r"(?i)^\\\\\?\\[a-z]:\\").unwrap();
+        const VERBATIM_PREFIX: &str = r#"\\?\"#;
+        let mut p = path.to_string();
+        if p.starts_with(VERBATIM_PREFIX) && regex.is_match(&p) {
+            let drive_letter = p[VERBATIM_PREFIX.len()..VERBATIM_PREFIX.len() + 1].to_string();
+            p.replace_range(
+                VERBATIM_PREFIX.len()..VERBATIM_PREFIX.len() + 1,
+                &drive_letter.to_uppercase(),
+            );
+        }
+        p
+    }
+}
+
+#[test]
+#[cfg(target_os = "windows")]
+fn test_convert_drive_letter() {
+    let path = r"\\?\d:\xx";
+    assert_eq!(convert_windows_drive_letter(path), r"\\?\D:\xx".to_string())
+}
+
 #[test]
 #[cfg(target_os = "windows")]
 fn test_adjust_canonicalization() {

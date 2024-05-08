@@ -32,6 +32,7 @@ kclvm-runtime = {path = "../runtime"}
 kclvm-tools = {path = "../tools" }
 kclvm-query = {path = "../query"}
 kcl-language-server = {path = "../tools/src/LSP"}
+kclvm-utils = {path = "../utils"}
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 jsonrpc-stdio-server = "18.0.0"

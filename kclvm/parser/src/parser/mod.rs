@@ -82,7 +82,20 @@ impl<'a> Parser<'a> {
         let lo = self.sess.lookup_char_pos(lo);
         let hi = self.sess.lookup_char_pos(hi);
 
-        let filename: String = format!("{}", lo.file.name.prefer_remapped());
+        let filename = {
+            #[cfg(target_os = "windows")]
+            {
+                kclvm_utils::path::convert_windows_drive_letter(&format!(
+                    "{}",
+                    lo.file.name.prefer_remapped()
+                ))
+            }
+
+            #[cfg(not(target_os = "windows"))]
+            {
+                format!("{}", lo.file.name.prefer_remapped())
+            }
+        };
         (
             filename,
             lo.line as u64,

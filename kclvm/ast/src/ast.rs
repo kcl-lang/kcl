@@ -197,10 +197,24 @@ impl<T> Node<T> {
     }
 
     pub fn node(node: T, (lo, hi): (Loc, Loc)) -> Self {
+        let filename = {
+            #[cfg(target_os = "windows")]
+            {
+                kclvm_utils::path::convert_windows_drive_letter(&format!(
+                    "{}",
+                    lo.file.name.prefer_remapped()
+                ))
+            }
+
+            #[cfg(not(target_os = "windows"))]
+            {
+                format!("{}", lo.file.name.prefer_remapped())
+            }
+        };
         Self {
             id: AstIndex::default(),
             node,
-            filename: format!("{}", lo.file.name.prefer_remapped()),
+            filename,
             line: lo.line as u64,
             column: lo.col.0 as u64,
             end_line: hi.line as u64,

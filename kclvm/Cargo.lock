@@ -1521,6 +1521,7 @@ dependencies = [
  "kclvm-runtime",
  "kclvm-sema",
  "kclvm-tools",
+ "kclvm-utils",
  "maplit",
  "once_cell",
  "prost",
@@ -1545,6 +1546,7 @@ dependencies = [
  "kclvm-error",
  "kclvm-parser",
  "kclvm-span",
+ "kclvm-utils",
  "serde",
  "serde_json",
  "thread_local",
@@ -1913,6 +1915,7 @@ version = "0.8.7"
 dependencies = [
  "anyhow",
  "fslock",
+ "regex",
 ]
 
 [[package]]
