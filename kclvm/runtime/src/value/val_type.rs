@@ -168,7 +168,6 @@ pub fn type_pack_and_check(
         return value.clone();
     }
     let is_schema = value.is_schema();
-    let value_tpe = value.type_str();
     let mut checked = false;
     let mut converted_value = value.clone();
     let expected_type = &expected_types.join(" | ").replace('@', "");
@@ -192,7 +191,7 @@ pub fn type_pack_and_check(
         }
     }
     if !checked {
-        panic!("expect {expected_type}, got {value_tpe}");
+        panic!("expect {expected_type}, got {}", value.type_str());
     }
     converted_value
 }
@@ -418,6 +417,10 @@ pub fn check_type(value: &ValueRef, tpe: &str, strict: bool) -> bool {
         if value.is_schema() {
             if strict {
                 let value_ty = crate::val_plan::value_type_path(value, tpe.contains('.'));
+                let tpe = match tpe.strip_prefix('@') {
+                    Some(ty_str) => ty_str.to_string(),
+                    None => tpe.to_string(),
+                };
                 return value_ty == tpe;
             } else {
                 // not list/dict, not built-in type, treat as user defined schema,
