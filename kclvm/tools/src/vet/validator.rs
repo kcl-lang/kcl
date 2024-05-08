@@ -209,7 +209,7 @@ pub fn validate(val_opt: ValidateOption) -> Result<bool> {
     match compile_res.program.pkgs.get_mut(kclvm_ast::MAIN_PKG) {
         Some(pkg) => {
             if let Some(module) = pkg.first_mut() {
-                module.body.push(assign_stmt);
+                module.body.insert(0, assign_stmt);
             } else {
                 return Err(anyhow::anyhow!("No main module found"));
             }
