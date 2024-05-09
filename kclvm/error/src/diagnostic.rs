@@ -81,8 +81,12 @@ impl Position {
 
 impl From<Loc> for Position {
     fn from(loc: Loc) -> Self {
+        let filename = kclvm_utils::path::convert_windows_drive_letter(&format!(
+            "{}",
+            loc.file.name.prefer_remapped()
+        ));
         Self {
-            filename: format!("{}", loc.file.name.prefer_remapped()),
+            filename,
             line: loc.line as u64,
             column: if loc.col_display > 0 {
                 // Loc col is the (0-based) column offset.
