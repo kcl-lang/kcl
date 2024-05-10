@@ -66,7 +66,10 @@ impl DataLoader {
     pub fn byte_pos_to_pos_in_sourcemap(&self, lo: BytePos, hi: BytePos) -> PosTuple {
         let lo = self.sm.lookup_char_pos(lo);
         let hi = self.sm.lookup_char_pos(hi);
-        let filename: String = format!("{}", lo.file.name.prefer_remapped());
+        let filename = kclvm_utils::path::convert_windows_drive_letter(&format!(
+            "{}",
+            lo.file.name.prefer_remapped()
+        ));
         (
             filename,
             lo.line as u64,
@@ -77,12 +80,14 @@ impl DataLoader {
     }
 
     pub fn file_name(&self) -> String {
-        self.sm
-            .lookup_char_pos(new_byte_pos(0))
-            .file
-            .name
-            .prefer_remapped()
-            .to_string()
+        kclvm_utils::path::convert_windows_drive_letter(&format!(
+            "{}",
+            self.sm
+                .lookup_char_pos(new_byte_pos(0))
+                .file
+                .name
+                .prefer_remapped()
+        ))
     }
 }
 

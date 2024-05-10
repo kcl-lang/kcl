@@ -17,7 +17,7 @@ pub(crate) fn abs_path(uri: &Url) -> anyhow::Result<AbsPathBuf> {
 // The position in lsp protocol is different with position in ast node whose line number is 1 based.
 pub(crate) fn kcl_pos(file: &str, pos: Position) -> KCLPos {
     KCLPos {
-        filename: file.to_string(),
+        filename: kclvm_utils::path::convert_windows_drive_letter(file),
         line: (pos.line + 1) as u64,
         column: Some(pos.character as u64),
     }
@@ -52,6 +52,9 @@ pub(crate) fn text_range(text: &str, range: lsp_types::Range) -> Range<usize> {
 pub(crate) fn file_path_from_url(url: &Url) -> anyhow::Result<String> {
     url.to_file_path()
         .ok()
-        .and_then(|path| path.to_str().map(|p| p.to_string()))
+        .and_then(|path| {
+            path.to_str()
+                .map(|p| kclvm_utils::path::convert_windows_drive_letter(p))
+        })
         .ok_or_else(|| anyhow::anyhow!("can't convert url to file path: {}", url))
 }

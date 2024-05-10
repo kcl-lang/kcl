@@ -12,6 +12,7 @@ compiler_base_error = "0.1.6"
 compiler_base_macros = "0.1.1"
 kclvm-span = {path = "../span"}
 kclvm-runtime = {path = "../runtime"}
+kclvm-utils = {path = "../utils"}
 
 anyhow = "1.0"
 tracing = "0.1"

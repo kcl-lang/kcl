@@ -326,7 +326,10 @@ impl Loader {
     ) -> Self {
         Self {
             sess,
-            paths: paths.iter().map(|s| s.to_string()).collect(),
+            paths: paths
+                .iter()
+                .map(|s| kclvm_utils::path::convert_windows_drive_letter(s))
+                .collect(),
             opts: opts.unwrap_or_default(),
             module_cache,
             missing_pkgs: Default::default(),
