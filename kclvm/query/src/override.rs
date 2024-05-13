@@ -13,7 +13,7 @@ use kclvm_ast_pretty::print_ast_module;
 use kclvm_parser::parse_expr;
 use kclvm_sema::pre_process::{fix_config_expr_nest_attr, transform_multi_assign};
 
-use crate::path::parse_attribute_path;
+use crate::{node::AstNodeMover, path::parse_attribute_path};
 
 use super::util::{invalid_spec_error, split_field_path};
 
@@ -193,10 +193,13 @@ fn apply_import_paths_on_module(m: &mut ast::Module, import_paths: &[String]) ->
             if let Some(asname) = &import_stmt.asname {
                 exist_import_set.insert(format!("{} as {}", import_stmt.path.node, asname.node));
             } else {
-                exist_import_set.insert(import_stmt.path.node.to_string());
+                exist_import_set.insert(import_stmt.rawpath.to_string());
             }
         }
     }
+
+    let mut new_imports_count = 0;
+
     for (i, path) in import_paths.iter().enumerate() {
         let line: u64 = i as u64 + 1;
         if exist_import_set.contains(path) {
@@ -208,7 +211,7 @@ fn apply_import_paths_on_module(m: &mut ast::Module, import_paths: &[String]) ->
             .ok_or_else(|| anyhow!("Invalid import path {}", path))?;
         let import_node = ast::ImportStmt {
             path: ast::Node::dummy_node(path.to_string()),
-            rawpath: "".to_string(),
+            rawpath: path.to_string(),
             name: name.to_string(),
             asname: None,
             pkg_name: String::new(),
@@ -222,8 +225,17 @@ fn apply_import_paths_on_module(m: &mut ast::Module, import_paths: &[String]) ->
             // i denotes the space len between the `import` keyword and the path.
             ("import".len() + path.len() + 1) as u64,
         ));
+        new_imports_count += 1;
         m.body.insert((line - 1) as usize, import_stmt)
     }
+
+    // Walk the AST module to update the line number of the all the nodes except the import statement.
+    let mut nlw = AstNodeMover {
+        line_offset: new_imports_count,
+    };
+
+    nlw.walk_module(m);
+
     Ok(())
 }
 

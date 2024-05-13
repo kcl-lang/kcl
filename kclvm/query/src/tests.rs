@@ -510,18 +510,20 @@ fn test_overridefile_insert() {
     let except_path = get_test_dir("test_override_file/expect.k".to_string());
     fs::copy(simple_bk_path.clone(), simple_path.clone()).unwrap();
 
-    for spec in specs {
-        let import_paths = vec![];
-        assert_eq!(
-            override_file(
-                &simple_path.display().to_string(),
-                &vec![spec],
-                &import_paths
-            )
-            .unwrap(),
-            true
-        );
-    }
+    let import_paths = vec![
+        "base.pkg.kusion_models.app".to_string(),
+        "base.pkg.kusion_models.app.vip as vip".to_string(),
+        "base.pkg.kusion_models.app.container".to_string(),
+        "base.pkg.kusion_models.app.resource as res".to_string(),
+        "base.pkg.kusion_models.app.sidecar".to_string(),
+        ".values".to_string(),
+    ];
+
+    assert_eq!(
+        override_file(&simple_path.display().to_string(), &specs, &import_paths).unwrap(),
+        true
+    );
+
     let simple_content = fs::read_to_string(simple_path.clone()).unwrap();
     let expect_content = fs::read_to_string(except_path.clone()).unwrap();
 
