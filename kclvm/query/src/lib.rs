@@ -3,6 +3,7 @@
 //! function to modify the file. The main principle is to parse the AST according to the
 //! input file name, and according to the ast::OverrideSpec transforms the nodes in the
 //! AST, recursively modifying or deleting the values of the nodes in the AST.
+pub mod node;
 pub mod r#override;
 pub mod path;
 pub mod query;
