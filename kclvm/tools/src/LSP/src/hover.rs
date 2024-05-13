@@ -170,6 +170,7 @@ fn build_func_hover_content(func_ty: &FunctionType, name: String) -> Vec<String>
 
 #[cfg(test)]
 mod tests {
+    use crate::hover::docs_to_hover;
     use std::path::PathBuf;
 
     use kclvm_error::Position as KCLPos;
@@ -224,6 +225,42 @@ mod tests {
                 }
             }
             _ => unreachable!("test error"),
+        }
+    }
+
+    #[test]
+    #[bench_test]
+    fn test_docs_to_hover_multiple_docs() {
+        // Given multiple documentation strings
+        let docs = vec![
+            "Documentation string 1".to_string(),
+            "Documentation string 2".to_string(),
+            "Documentation string 3".to_string(),
+        ];
+
+        // When converting to hover content
+        let hover = docs_to_hover(docs.clone());
+
+        // Then the result should be a Hover object with an Array of MarkedString::String
+        assert!(hover.is_some());
+        let hover = hover.unwrap();
+        match hover.contents {
+            lsp_types::HoverContents::Array(vec) => {
+                assert_eq!(vec.len(), 3);
+                assert_eq!(
+                    vec[0],
+                    MarkedString::String("Documentation string 1".to_string())
+                );
+                assert_eq!(
+                    vec[1],
+                    MarkedString::String("Documentation string 2".to_string())
+                );
+                assert_eq!(
+                    vec[2],
+                    MarkedString::String("Documentation string 3".to_string())
+                );
+            }
+            _ => panic!("Unexpected hover contents"),
         }
     }
 
