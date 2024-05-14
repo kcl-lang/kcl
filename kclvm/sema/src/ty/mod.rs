@@ -312,7 +312,17 @@ impl SchemaType {
                     .join(", ")
             )
         };
-        format!("{}\n\nschema {}{}{}", self.pkgpath, self.name, params, base)
+        let params_str = if !params.is_empty() && !base.is_empty() {
+            format!("\\{}{}", params, base)
+        } else if !params.is_empty() {
+            format!("{}", params)
+        } else if !base.is_empty() {
+            format!("{}", base)
+        } else {
+            "".to_string()
+        };
+
+        format!("{}\n\nschema {}{}", self.pkgpath, self.name, params_str)
     }
 }
 
