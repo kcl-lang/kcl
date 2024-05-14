@@ -1,6 +1,7 @@
 use super::util::{invalid_symbol_selector_spec_error, split_field_path};
 use anyhow::Result;
 use kclvm_ast::ast;
+use kclvm_error::diagnostic::Errors;
 
 use std::collections::{HashMap, VecDeque};
 
@@ -385,6 +386,7 @@ impl<'ctx> MutSelfWalker for Selector {
 pub struct ListVariablesResult {
     pub select_result: HashMap<String, Variable>,
     pub unsupported: Vec<UnsupportedSelectee>,
+    pub errs: Errors,
 }
 
 #[derive(Debug, PartialEq)]
@@ -408,23 +410,24 @@ impl Variable {
 /// calling information.
 pub fn list_variables(file: String, specs: Vec<String>) -> Result<ListVariablesResult> {
     let mut selector = Selector::new(specs)?;
-    let ast = parse_file(&file, None)?;
+    let parse_result = parse_file(&file, None)?;
 
     let mut opts = Options::default();
     opts.merge_program = true;
     pre_process_program(
         &mut ast::Program {
             root: file,
-            pkgs: hashmap! { MAIN_PKG.to_string() => vec![ast.module.clone()] },
+            pkgs: hashmap! { MAIN_PKG.to_string() => vec![parse_result.module.clone()] },
         },
         &opts,
     );
 
-    selector.walk_module(&ast.module);
+    selector.walk_module(&parse_result.module);
 
     Ok(ListVariablesResult {
         select_result: selector.select_result,
         unsupported: selector.unsupported,
+        errs: parse_result.errors,
     })
 }
 

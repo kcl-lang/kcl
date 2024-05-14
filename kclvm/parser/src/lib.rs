@@ -17,10 +17,10 @@ use compiler_base_macros::bug;
 use compiler_base_session::Session;
 use compiler_base_span::span::new_byte_pos;
 use file_graph::FileGraph;
-use indexmap::{IndexMap, IndexSet};
+use indexmap::IndexMap;
 use kclvm_ast::ast;
 use kclvm_config::modfile::{get_vendor_home, KCL_FILE_EXTENSION, KCL_FILE_SUFFIX, KCL_MOD_FILE};
-use kclvm_error::diagnostic::{Diagnostic, Range};
+use kclvm_error::diagnostic::{Errors, Range};
 use kclvm_error::{ErrorKind, Message, Position, Style};
 use kclvm_sema::plugin::PLUGIN_MODULE_PREFIX;
 use kclvm_utils::pkgpath::parse_external_pkg_name;
@@ -71,8 +71,6 @@ pub enum ParseMode {
     Null,
     ParseComments,
 }
-
-type Errors = IndexSet<Diagnostic>;
 
 /// LoadProgramResult denotes the result of the whole program and a topological
 /// ordering of all known files,

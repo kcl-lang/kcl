@@ -370,6 +370,11 @@ impl KclvmServiceImpl {
         return Ok(ListVariablesResult {
             variables,
             unsupported_codes,
+            errs: select_res
+                .errs
+                .into_iter()
+                .map(|e| e.into_error())
+                .collect(),
         });
     }
 
