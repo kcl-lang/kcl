@@ -503,6 +503,8 @@ fn test_overridefile_insert() {
         r#"a=b"#.to_string(),
         r#"_access6      ="a6""#.to_string(),
         r#"_access.mergedattr=1"#.to_string(),
+        r#"_access.a.b=2"#.to_string(),
+        r#"_access.a.c=3"#.to_string(),
     ];
 
     let simple_path = get_test_dir("test_override_file/main.k".to_string());

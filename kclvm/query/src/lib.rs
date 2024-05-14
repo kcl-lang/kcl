@@ -18,6 +18,7 @@ use kclvm_ast::ast;
 use kclvm_ast_pretty::print_ast_module;
 use kclvm_parser::parse_file;
 
+use kclvm_sema::pre_process::{fix_config_expr_nest_attr, transform_multi_assign};
 pub use query::{get_schema_type, GetSchemaOption};
 pub use r#override::{apply_override_on_module, apply_overrides};
 
@@ -96,6 +97,17 @@ pub fn override_file(file: &str, specs: &[String], import_paths: &[String]) -> R
             result = true;
         }
     }
+
+    // Transform config expr to simplify the config path query and override.
+    fix_config_expr_nest_attr(&mut module);
+    // When there is a multi-target assignment statement of the form `a = b = Config {}`,
+    // it needs to be transformed into the following form first to prevent the configuration
+    // from being incorrectly modified.
+    // ```kcl
+    // a = Config {}
+    // b = Config {}
+    // ```
+    transform_multi_assign(&mut module);
     // Print AST module.
     if result {
         let code_str = print_ast_module(&module);

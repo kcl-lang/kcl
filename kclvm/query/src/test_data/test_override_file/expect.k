@@ -22,6 +22,7 @@ _access = test.ServiceAccess {
     ports = [80, 443]
     booltest = True
     mergedattr = 1
+    a: {b = 2, c = 3}
 }
 
 b = {"c": 2}
