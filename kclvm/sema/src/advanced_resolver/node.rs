@@ -140,11 +140,14 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
 
         let mut unresolved =
             UnresolvedSymbol::new(import_stmt.path.node.clone(), start_pos, end_pos, None);
-        let package_symbol = self
+        let package_symbol = match self
             .gs
             .get_symbols()
             .get_symbol_by_fully_qualified_name(&import_stmt.path.node)
-            .ok_or(anyhow!("package_symbol not found"))?;
+        {
+            Some(symbol) => symbol,
+            None => return Ok(None),
+        };
         unresolved.def = Some(package_symbol);
         let unresolved_ref = self
             .gs
@@ -521,11 +524,14 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
             .ok_or(anyhow!("parent_ty not found"))?
             .clone();
         for name in &selector_expr.attr.node.names {
-            let def_symbol_ref = self
-                .gs
-                .get_symbols()
-                .get_type_attribute(&parent_ty, &name.node, self.get_current_module_info())
-                .ok_or(anyhow!("def_symbol_ref not found"))?;
+            let def_symbol_ref = match self.gs.get_symbols().get_type_attribute(
+                &parent_ty,
+                &name.node,
+                self.get_current_module_info(),
+            ) {
+                Some(symbol) => symbol,
+                None => return Ok(None),
+            };
 
             let (start_pos, end_pos): Range = name.get_span_pos();
             let ast_id = name.id.clone();
@@ -540,12 +546,10 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
                 .get_scopes_mut()
                 .add_ref_to_scope(cur_scope, unresolved_ref);
 
-            parent_ty = self
-                .ctx
-                .node_ty_map
-                .get(&self.ctx.get_node_key(&name.id))
-                .ok_or(anyhow!("parent_ty not found"))?
-                .clone();
+            parent_ty = match self.ctx.node_ty_map.get(&self.ctx.get_node_key(&name.id)) {
+                Some(ty) => ty.clone(),
+                None => return Ok(None),
+            };
         }
         Ok(None)
     }
@@ -936,19 +940,19 @@ impl<'ctx> AdvancedResolver<'ctx> {
                         .ctx
                         .node_ty_map
                         .get(&self.ctx.get_node_key(&first_name.id))
-                        .ok_or(anyhow!("parent_ty not found"))?;
+                        .ok_or(anyhow!("parent_ty not found"))?
+                        .clone();
 
                     for index in 1..names.len() {
                         let name = names.get(index).unwrap();
-                        let def_symbol_ref = self
-                            .gs
-                            .get_symbols()
-                            .get_type_attribute(
-                                &parent_ty,
-                                &name.node,
-                                self.get_current_module_info(),
-                            )
-                            .ok_or(anyhow!("def_symbol_ref not found"))?;
+                        let def_symbol_ref = match self.gs.get_symbols().get_type_attribute(
+                            &parent_ty,
+                            &name.node,
+                            self.get_current_module_info(),
+                        ) {
+                            Some(symbol) => symbol,
+                            None => return Ok(None),
+                        };
 
                         let (start_pos, end_pos): Range = name.get_span_pos();
                         let ast_id = name.id.clone();
@@ -969,7 +973,8 @@ impl<'ctx> AdvancedResolver<'ctx> {
                             .ctx
                             .node_ty_map
                             .get(&self.ctx.get_node_key(&name.id))
-                            .ok_or(anyhow!("parent_ty not found"))?;
+                            .ok_or(anyhow!("parent_ty not found"))?
+                            .clone();
                         if index == names.len() - 1 {
                             return Ok(Some(unresolved_ref));
                         }
@@ -1093,8 +1098,10 @@ impl<'ctx> AdvancedResolver<'ctx> {
             }
             identifier_symbol
         } else {
-            self.resolve_names(&identifier.node.names, self.ctx.maybe_def)?
-                .ok_or(anyhow!("parent_ty not found"))?
+            match self.resolve_names(&identifier.node.names, self.ctx.maybe_def)? {
+                Some(symbol) => symbol,
+                None => return Ok(None),
+            }
         };
 
         Ok(Some(symbol_ref))
