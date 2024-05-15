@@ -276,8 +276,7 @@ impl<'ctx> MutSelfWalker for Selector {
                 if key.is_empty() {
                     // chack the value of the config entry is supported
                     if self.check_node_supported(&item.node.value.node) {
-                        self.inner.restore();
-                        return;
+                        continue;
                     }
                 }
                 // match the key with the selector
@@ -286,7 +285,7 @@ impl<'ctx> MutSelfWalker for Selector {
                         // If all the spec items are matched
                         // check and return
                         if self.check_node_supported(&item.node.value.node) {
-                            return;
+                            continue;
                         }
                         let kcode = print_ast_node(ASTNode::Expr(&item.node.value));
                         let type_name = if let ast::Expr::Schema(schema) = &item.node.value.node {
