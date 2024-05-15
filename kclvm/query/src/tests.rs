@@ -39,25 +39,28 @@ fn test_override_file_simple() {
     let simple_path = get_test_dir("simple.k".to_string());
     let simple_bk_path = get_test_dir("simple.bk.k".to_string());
     let except_path = get_test_dir("except.k".to_string());
+    fs::copy(simple_bk_path.clone(), simple_path.clone()).unwrap();
     if simple_path.exists() {
         fs::remove_file(simple_path.clone()).unwrap();
     }
 
-    fs::copy(simple_bk_path, simple_path.clone()).unwrap();
+    fs::copy(simple_bk_path.clone(), simple_path.clone()).unwrap();
 
     let import_paths = vec![];
     assert_eq!(
-        override_file(simple_path.to_str().unwrap(), &specs, &import_paths).unwrap(),
+        override_file(simple_path.clone().to_str().unwrap(), &specs, &import_paths).unwrap(),
         true
     );
 
-    let simple_content = fs::read_to_string(simple_path).unwrap();
+    let simple_content = fs::read_to_string(simple_path.clone()).unwrap();
     let expect_content = fs::read_to_string(except_path).unwrap();
 
     let simple_content = simple_content.replace("\r\n", "").replace("\n", "");
     let expect_content = expect_content.replace("\r\n", "").replace("\n", "");
 
     assert_eq!(simple_content, expect_content);
+
+    fs::copy(simple_bk_path.clone(), simple_path.clone()).unwrap();
 }
 /// Test override_file result.
 #[test]
