@@ -347,7 +347,7 @@ impl KclvmServiceImpl {
         let select_res = list_variables(k_file, specs)?;
 
         let variables: HashMap<String, Variable> = select_res
-            .select_result
+            .variables
             .iter()
             .map(|(key, var)| {
                 (
@@ -370,8 +370,8 @@ impl KclvmServiceImpl {
         return Ok(ListVariablesResult {
             variables,
             unsupported_codes,
-            errs: select_res
-                .errs
+            parse_errs: select_res
+                .parse_errs
                 .into_iter()
                 .map(|e| e.into_error())
                 .collect(),

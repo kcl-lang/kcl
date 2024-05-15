@@ -384,9 +384,9 @@ impl<'ctx> MutSelfWalker for Selector {
 }
 
 pub struct ListVariablesResult {
-    pub select_result: HashMap<String, Variable>,
+    pub variables: HashMap<String, Variable>,
     pub unsupported: Vec<UnsupportedSelectee>,
-    pub errs: Errors,
+    pub parse_errs: Errors,
 }
 
 #[derive(Debug, PartialEq)]
@@ -425,9 +425,9 @@ pub fn list_variables(file: String, specs: Vec<String>) -> Result<ListVariablesR
     selector.walk_module(&parse_result.module);
 
     Ok(ListVariablesResult {
-        select_result: selector.select_result,
+        variables: selector.select_result,
         unsupported: selector.unsupported,
-        errs: parse_result.errors,
+        parse_errs: parse_result.errors,
     })
 }
 
