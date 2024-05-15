@@ -95,7 +95,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
         program: &'ctx Program,
         gs: GlobalState,
         node_ty_map: NodeTyMap,
-    ) -> GlobalState {
+    ) -> anyhow::Result<GlobalState> {
         let mut advanced_resolver = Self {
             gs,
             ctx: Context {
@@ -128,14 +128,14 @@ impl<'ctx> AdvancedResolver<'ctx> {
                 );
                 for module in modules.iter() {
                     advanced_resolver.ctx.current_filename = Some(module.filename.clone());
-                    advanced_resolver.walk_module(module);
+                    advanced_resolver.walk_module(module)?;
                 }
                 advanced_resolver.leave_scope()
             }
         }
 
         advanced_resolver.gs.build_sema_db();
-        advanced_resolver.gs
+        Ok(advanced_resolver.gs)
     }
 
     fn enter_root_scope(
@@ -303,7 +303,7 @@ mod tests {
             None,
         )
         .node_ty_map;
-        let gs = AdvancedResolver::resolve_program(&program, gs, node_ty_map);
+        let gs = AdvancedResolver::resolve_program(&program, gs, node_ty_map).unwrap();
         let base_path = Path::new(".").canonicalize().unwrap();
         // print_symbols_info(&gs);
         let except_symbols = vec![
@@ -1232,7 +1232,7 @@ mod tests {
         let gs = GlobalState::default();
         let gs = Namer::find_symbols(&program, gs);
         let node_ty_map = resolver::resolve_program(&mut program).node_ty_map;
-        let gs = AdvancedResolver::resolve_program(&program, gs, node_ty_map);
+        let gs = AdvancedResolver::resolve_program(&program, gs, node_ty_map).unwrap();
         let base_path = Path::new(".").canonicalize().unwrap();
 
         let test_cases = vec![
@@ -1309,7 +1309,7 @@ mod tests {
         let gs = GlobalState::default();
         let gs = Namer::find_symbols(&program, gs);
         let node_ty_map = resolver::resolve_program(&mut program).node_ty_map;
-        let gs = AdvancedResolver::resolve_program(&program, gs, node_ty_map);
+        let gs = AdvancedResolver::resolve_program(&program, gs, node_ty_map).unwrap();
         let base_path = Path::new(".").canonicalize().unwrap();
 
         let scope_test_cases = vec![
