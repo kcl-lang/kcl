@@ -456,6 +456,8 @@ fn test_list_unsupported_variables() {
         .unwrap()
         .display()
         .to_string();
+
+    // test unsupport code
     let test_cases = vec![
         ("list", "[_x for _x in range(20) if _x % 2 == 0]"),
         ("list1", "[i if i > 2 else i + 1 for i in [1, 2, 3]]"),
@@ -481,6 +483,28 @@ fn test_list_unsupported_variables() {
         let result = list_variables(file.clone(), specs).unwrap();
         assert_eq!(result.select_result.get(spec), None);
         assert_eq!(result.unsupported[0].code, expected_code);
+    }
+
+    // test list variables from unsupported code
+    let test_cases = vec![
+        ("if_schema.name", r#""name""#),
+        ("if_schema.age", "1"),
+        ("if_schema.inner", r#"IfSchemaInner {innerValue: 1}"#),
+        ("if_schema.inner.innerValue", "1"),
+        ("if_schema.inner2", r#"{innerValue: 2}"#),
+        ("if_schema.inner2.innerValue", "2"),
+        ("if_schema1.name", r#""name""#),
+        ("if_schema1.age", "1"),
+        ("if_schema1.inner", r#"IfSchemaInner {innerValue: 1}"#),
+        ("if_schema1.inner.innerValue", "1"),
+        ("if_schema1.inner2", r#"{innerValue: 2}"#),
+        ("if_schema1.inner2.innerValue", "2"),
+    ];
+
+    for (spec, expected_code) in test_cases {
+        let specs = vec![spec.to_string()];
+        let result = list_variables(file.clone(), specs).unwrap();
+        assert_eq!(result.select_result.get(spec).unwrap().value, expected_code);
     }
 }
 
