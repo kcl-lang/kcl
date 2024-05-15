@@ -123,7 +123,7 @@ pub(crate) fn compile_with_params(
         // Please note that there is no global state cache at this stage.
         let gs = GlobalState::default();
         let gs = Namer::find_symbols(&program, gs);
-        let gs = AdvancedResolver::resolve_program(&program, gs, prog_scope.node_ty_map.clone());
+        let gs = AdvancedResolver::resolve_program(&program, gs, prog_scope.node_ty_map.clone())?;
         // Merge parse diagnostic and resolve diagnostic
         sess.append_diagnostic(prog_scope.handler.diagnostics.clone());
         let diags = sess.1.borrow().diagnostics.clone();

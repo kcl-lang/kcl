@@ -192,7 +192,7 @@ where
     let gs = GlobalState::default();
     let gs = Namer::find_symbols(&program, gs);
     let node_ty_map = prog_scope.node_ty_map.clone();
-    let global_state = AdvancedResolver::resolve_program(&program, gs, node_ty_map);
+    let global_state = AdvancedResolver::resolve_program(&program, gs, node_ty_map)?;
 
     Ok((program, global_state))
 }
