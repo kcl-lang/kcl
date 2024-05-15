@@ -1,8 +1,11 @@
+use indexmap::IndexSet;
 use kclvm_span::Loc;
 use std::fmt;
 use std::hash::Hash;
 
 use crate::{ErrorKind, WarningKind};
+
+pub type Errors = IndexSet<Diagnostic>;
 
 /// Diagnostic structure.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]

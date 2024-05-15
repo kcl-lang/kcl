@@ -3,6 +3,7 @@ use std::{fs, path::PathBuf};
 use super::{r#override::apply_override_on_module, *};
 use crate::{path::parse_attribute_path, selector::list_variables};
 use kclvm_ast::ast;
+use kclvm_error::{DiagnosticId, ErrorKind, Level};
 use kclvm_parser::parse_file_force_errors;
 use pretty_assertions::assert_eq;
 
@@ -362,12 +363,9 @@ fn test_list_variables() {
     for (spec, expected, expected_name, op_sym) in test_cases {
         let specs = vec![spec.to_string()];
         let result = list_variables(file.clone(), specs).unwrap();
-        assert_eq!(result.select_result.get(spec).unwrap().value, expected);
-        assert_eq!(
-            result.select_result.get(spec).unwrap().type_name,
-            expected_name
-        );
-        assert_eq!(result.select_result.get(spec).unwrap().op_sym, op_sym);
+        assert_eq!(result.variables.get(spec).unwrap().value, expected);
+        assert_eq!(result.variables.get(spec).unwrap().type_name, expected_name);
+        assert_eq!(result.variables.get(spec).unwrap().op_sym, op_sym);
     }
 }
 
@@ -440,12 +438,10 @@ fn test_list_all_variables() {
 
     for (spec, expected, expected_name, op_sym) in test_cases {
         let result = list_variables(file.clone(), vec![]).unwrap();
-        assert_eq!(result.select_result.get(spec).unwrap().value, expected);
-        assert_eq!(
-            result.select_result.get(spec).unwrap().type_name,
-            expected_name
-        );
-        assert_eq!(result.select_result.get(spec).unwrap().op_sym, op_sym);
+        assert_eq!(result.variables.get(spec).unwrap().value, expected);
+        assert_eq!(result.variables.get(spec).unwrap().type_name, expected_name);
+        assert_eq!(result.variables.get(spec).unwrap().op_sym, op_sym);
+        assert_eq!(result.parse_errs.len(), 0);
     }
 }
 
@@ -481,8 +477,9 @@ fn test_list_unsupported_variables() {
     for (spec, expected_code) in test_cases {
         let specs = vec![spec.to_string()];
         let result = list_variables(file.clone(), specs).unwrap();
-        assert_eq!(result.select_result.get(spec), None);
+        assert_eq!(result.variables.get(spec), None);
         assert_eq!(result.unsupported[0].code, expected_code);
+        assert_eq!(result.parse_errs.len(), 0);
     }
 
     // test list variables from unsupported code
@@ -504,7 +501,7 @@ fn test_list_unsupported_variables() {
     for (spec, expected_code) in test_cases {
         let specs = vec![spec.to_string()];
         let result = list_variables(file.clone(), specs).unwrap();
-        assert_eq!(result.select_result.get(spec).unwrap().value, expected_code);
+        assert_eq!(result.variables.get(spec).unwrap().value, expected_code);
     }
 }
 
@@ -572,4 +569,56 @@ fn test_overridefile_insert() {
     }
 
     fs::copy(simple_bk_path.clone(), simple_path.clone()).unwrap();
+}
+
+#[test]
+fn test_list_variable_with_invalid_kcl() {
+    let file = PathBuf::from("./src/test_data/test_list_variables/invalid.k")
+        .canonicalize()
+        .unwrap()
+        .display()
+        .to_string();
+    let specs = vec!["a".to_string()];
+    let result = list_variables(file.clone(), specs).unwrap();
+    assert_eq!(result.variables.get("a"), None);
+    assert_eq!(result.parse_errs.len(), 1);
+    assert_eq!(result.parse_errs[0].level, Level::Error);
+    assert_eq!(
+        result.parse_errs[0].code,
+        Some(DiagnosticId::Error(ErrorKind::InvalidSyntax))
+    );
+    assert_eq!(
+        result.parse_errs[0].messages[0].message,
+        "unexpected token ':'"
+    );
+    assert_eq!(result.parse_errs[0].messages[0].range.0.filename, file);
+    assert_eq!(result.parse_errs[0].messages[0].range.0.line, 1);
+    assert_eq!(result.parse_errs[0].messages[0].range.0.column, Some(3));
+}
+
+#[test]
+fn test_list_variables_with_file_noexist() {
+    let file = PathBuf::from("./src/test_data/test_list_variables/noexist.k")
+        .display()
+        .to_string();
+    let specs = vec!["a".to_string()];
+    let result = list_variables(file.clone(), specs);
+    assert!(result.is_err());
+    let err = result.err().unwrap();
+    assert_eq!(err.to_string(), "Cannot find the kcl file, please check the file path ./src/test_data/test_list_variables/noexist.k");
+}
+
+#[test]
+fn test_override_file_with_invalid_spec() {
+    let specs = vec!["....".to_string()];
+    let import_paths = vec![];
+    let file = PathBuf::from("./src/test_data/test_override_file/main.k")
+        .canonicalize()
+        .unwrap()
+        .display()
+        .to_string();
+    let result = override_file(&file, &specs, &import_paths);
+    assert!(result.is_err());
+    let err = result.err().unwrap();
+    assert_eq!(err.to_string(), "Invalid spec format '....', expected <pkgpath>:<field_path>=<filed_value> or <pkgpath>:<field_path>-");
 }
