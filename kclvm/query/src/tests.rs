@@ -364,10 +364,7 @@ fn test_list_variables() {
         let specs = vec![spec.to_string()];
         let result = list_variables(file.clone(), specs).unwrap();
         assert_eq!(result.variables.get(spec).unwrap().value, expected);
-        assert_eq!(
-            result.variables.get(spec).unwrap().type_name,
-            expected_name
-        );
+        assert_eq!(result.variables.get(spec).unwrap().type_name, expected_name);
         assert_eq!(result.variables.get(spec).unwrap().op_sym, op_sym);
     }
 }
@@ -442,10 +439,7 @@ fn test_list_all_variables() {
     for (spec, expected, expected_name, op_sym) in test_cases {
         let result = list_variables(file.clone(), vec![]).unwrap();
         assert_eq!(result.variables.get(spec).unwrap().value, expected);
-        assert_eq!(
-            result.variables.get(spec).unwrap().type_name,
-            expected_name
-        );
+        assert_eq!(result.variables.get(spec).unwrap().type_name, expected_name);
         assert_eq!(result.variables.get(spec).unwrap().op_sym, op_sym);
         assert_eq!(result.parse_errs.len(), 0);
     }
@@ -593,7 +587,10 @@ fn test_list_variable_with_invalid_kcl() {
         result.parse_errs[0].code,
         Some(DiagnosticId::Error(ErrorKind::InvalidSyntax))
     );
-    assert_eq!(result.parse_errs[0].messages[0].message, "unexpected token ':'");
+    assert_eq!(
+        result.parse_errs[0].messages[0].message,
+        "unexpected token ':'"
+    );
     assert_eq!(result.parse_errs[0].messages[0].range.0.filename, file);
     assert_eq!(result.parse_errs[0].messages[0].range.0.line, 1);
     assert_eq!(result.parse_errs[0].messages[0].range.0.column, Some(3));
