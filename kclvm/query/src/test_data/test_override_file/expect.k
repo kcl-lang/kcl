@@ -25,12 +25,6 @@ _access = test.ServiceAccess {
     a: {b: {c = 2}, c: {b = 3}}
 }
 
-b = {"c": 2}
-d = {
-    e: {
-        f: {g = 3}
-    }
-}
 _access3 = test.ServiceAccess {
     iType = "kkkkkkk"
     sType = dsType
@@ -39,8 +33,20 @@ _access3 = test.ServiceAccess {
     booltest = True
 }
 
+b = {"c": 2}
+d = {
+    e: {
+        f: {g = 3}
+    }
+}
+_access4 = test.ServiceAccess {
+    iType = "kkkkkkk"
+    sType = dsType
+    TestStr = ["${test_str}"]
+    ports = [80, 443]
+    booltest = True
+}
+
 _access5 = {iType = "dddddd"}
-
 a = b
-
 _access6 = "a6"

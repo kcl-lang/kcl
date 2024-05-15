@@ -498,6 +498,14 @@ fn test_overridefile_insert() {
     booltest = True
 }"#
         .to_string(),
+        r#"_access4=test.ServiceAccess {
+    iType = "kkkkkkk"
+    sType = dsType
+    TestStr = ["${test_str}"]
+    ports = [80, 443]
+    booltest = True
+}"#
+        .to_string(),
         r#"_access.iType="kkkkkkk""#.to_string(),
         r#"_access5.iType="dddddd""#.to_string(),
         r#"a=b"#.to_string(),
@@ -511,7 +519,6 @@ fn test_overridefile_insert() {
     let simple_bk_path = get_test_dir("test_override_file/main.bk.k".to_string());
     let except_path = get_test_dir("test_override_file/expect.k".to_string());
     fs::copy(simple_bk_path.clone(), simple_path.clone()).unwrap();
-
     let import_paths = vec![
         "base.pkg.kusion_models.app".to_string(),
         "base.pkg.kusion_models.app.vip as vip".to_string(),
@@ -521,17 +528,21 @@ fn test_overridefile_insert() {
         ".values".to_string(),
     ];
 
-    assert_eq!(
-        override_file(&simple_path.display().to_string(), &specs, &import_paths).unwrap(),
-        true
-    );
+    // test insert multiple times
+    for _ in 1..=5 {
+        assert_eq!(
+            override_file(&simple_path.display().to_string(), &specs, &import_paths).unwrap(),
+            true
+        );
 
-    let simple_content = fs::read_to_string(simple_path.clone()).unwrap();
-    let expect_content = fs::read_to_string(except_path.clone()).unwrap();
+        let simple_content = fs::read_to_string(simple_path.clone()).unwrap();
+        let expect_content = fs::read_to_string(except_path.clone()).unwrap();
 
-    let simple_content = simple_content.replace("\r\n", "").replace("\n", "");
-    let expect_content = expect_content.replace("\r\n", "").replace("\n", "");
+        let simple_content = simple_content.replace("\r\n", "").replace("\n", "");
+        let expect_content = expect_content.replace("\r\n", "").replace("\n", "");
 
-    assert_eq!(simple_content, expect_content);
+        assert_eq!(simple_content, expect_content);
+    }
+
     fs::copy(simple_bk_path.clone(), simple_path.clone()).unwrap();
 }

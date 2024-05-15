@@ -255,6 +255,9 @@ impl<'ctx> MutSelfMutWalker<'ctx> for OverrideTransformer {
     // Because the delete action may delete the global variable.
     // TODO: combine the code of walk_module, walk_assign_stmt and walk_unification_stmt
     fn walk_module(&mut self, module: &'ctx mut ast::Module) {
+        if self.has_override {
+            return;
+        }
         match self.action {
             // Walk the module body to find the target and override it.
             ast::OverrideAction::CreateOrUpdate => {
@@ -390,6 +393,9 @@ impl<'ctx> MutSelfMutWalker<'ctx> for OverrideTransformer {
     }
 
     fn walk_unification_stmt(&mut self, unification_stmt: &'ctx mut ast::UnificationStmt) {
+        if self.has_override {
+            return;
+        }
         let name = match unification_stmt.target.node.names.get(0) {
             Some(name) => name,
             None => bug!(
@@ -401,11 +407,13 @@ impl<'ctx> MutSelfMutWalker<'ctx> for OverrideTransformer {
             return;
         }
         self.override_target_count = 1;
-        self.has_override = true;
         self.walk_schema_expr(&mut unification_stmt.value.node);
     }
 
     fn walk_assign_stmt(&mut self, assign_stmt: &'ctx mut ast::AssignStmt) {
+        if self.has_override {
+            return;
+        }
         if let ast::Expr::Schema(_) | ast::Expr::Config(_) = &assign_stmt.value.node {
             self.override_target_count = 0;
             for target in &assign_stmt.targets {
@@ -420,12 +428,14 @@ impl<'ctx> MutSelfMutWalker<'ctx> for OverrideTransformer {
             if self.override_target_count == 0 {
                 return;
             }
-            self.has_override = true;
             self.walk_expr(&mut assign_stmt.value.node);
         }
     }
 
     fn walk_schema_expr(&mut self, schema_expr: &'ctx mut ast::SchemaExpr) {
+        if self.has_override {
+            return;
+        }
         if self.override_target_count == 0 {
             return;
         }
@@ -444,18 +454,25 @@ impl<'ctx> MutSelfMutWalker<'ctx> for OverrideTransformer {
                                 operation: ast::ConfigEntryOperation::Override,
                                 insert_index: -1,
                             })));
+                        self.has_override = true;
                     }
                 }
+            } else {
+                self.has_override = true;
             }
         }
         self.override_target_count = 0;
     }
 
     fn walk_config_expr(&mut self, config_expr: &'ctx mut ast::ConfigExpr) {
+        if self.has_override {
+            return;
+        }
         // Lookup config all fields and replace if it is matched with the override spec.
         if !self.lookup_config_and_replace(config_expr) {
             return;
         }
+        self.has_override = true;
         self.override_target_count = 0;
     }
 
