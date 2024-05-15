@@ -18,3 +18,11 @@ _access = test.ServiceAccess {
     ports = [80, 443]
     booltest = True
 }
+
+_access3 = test.ServiceAccess {
+    iType = "kkkkkkk"
+    sType = dsType
+    TestStr = ["${test_str}"]
+    ports = [80, 443]
+    booltest = True
+}
