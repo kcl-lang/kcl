@@ -18,6 +18,7 @@ use std::{
 };
 
 use crate::resolver::Resolver;
+use crate::ty::SchemaType;
 use crate::ty::TypeRef;
 use crate::{builtin::BUILTIN_FUNCTIONS, ty::TypeInferMethods};
 use kclvm_ast::ast::AstIndex;
@@ -284,6 +285,7 @@ impl Scope {
 pub struct ProgramScope {
     pub scope_map: IndexMap<String, Rc<RefCell<Scope>>>,
     pub import_names: IndexMap<String, IndexMap<String, String>>,
+    pub schema_mapping: IndexMap<String, Arc<RefCell<SchemaType>>>,
     pub node_ty_map: NodeTyMap,
     pub handler: Handler,
 }
@@ -508,6 +510,7 @@ pub type KCLScopeCache = Arc<Mutex<CachedScope>>;
 pub struct CachedScope {
     pub program_root: String,
     pub scope_map: IndexMap<String, Rc<RefCell<Scope>>>,
+    pub schema_mapping: IndexMap<String, Arc<RefCell<SchemaType>>>,
     pub node_ty_map: NodeTyMap,
     dependency_graph: DependencyGraph,
 }
@@ -672,6 +675,7 @@ impl CachedScope {
             scope_map: scope.scope_map.clone(),
             node_ty_map: scope.node_ty_map.clone(),
             dependency_graph: DependencyGraph::default(),
+            schema_mapping: scope.schema_mapping.clone(),
         };
         let invalidated_pkgs = cached_scope.dependency_graph.update(program);
         cached_scope.invalidate_cache(invalidated_pkgs.as_ref());
