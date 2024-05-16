@@ -38,7 +38,7 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
         def: Some(
             SymbolRef {
                 id: Index {
-                    index: 164,
+                    index: 165,
                     generation: 0,
                 },
                 kind: Value,
