@@ -272,6 +272,8 @@ declare %kclvm_value_ref_t* @kclvm_file_mv(%kclvm_context_t* %ctx, %kclvm_value_
 
 declare %kclvm_value_ref_t* @kclvm_file_read(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
+declare %kclvm_value_ref_t* @kclvm_file_read_env(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
+
 declare %kclvm_value_ref_t* @kclvm_file_size(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 declare %kclvm_value_ref_t* @kclvm_file_workdir(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %_args, %kclvm_value_ref_t* %_kwargs);

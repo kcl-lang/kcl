@@ -1761,6 +1761,20 @@ register_file_member! {
         false,
         None,
     )
+    read_env => Type::function(
+        None,
+        Type::str_ref(),
+        &[
+            Parameter {
+                name: "key".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+        ],
+        r#"Read the environment variable key from the current process."#,
+        false,
+        None,
+    )
 }
 
 // ------------------------------

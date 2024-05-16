@@ -333,3 +333,24 @@ pub extern "C" fn kclvm_file_append(
         panic!("append() requires 'filepath' argument");
     }
 }
+
+#[no_mangle]
+#[runtime_fn]
+pub extern "C" fn kclvm_file_read_env(
+    ctx: *mut kclvm_context_t,
+    args: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
+) -> *const kclvm_value_ref_t {
+    let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
+    let ctx = mut_ptr_as_ref(ctx);
+
+    if let Some(key) = get_call_arg_str(args, kwargs, 0, Some("key")) {
+        match std::env::var(key) {
+            Ok(v) => ValueRef::str(&v).into_raw(ctx),
+            Err(_) => ValueRef::undefined().into_raw(ctx),
+        }
+    } else {
+        panic!("read_env() requires 'key' argument");
+    }
+}
