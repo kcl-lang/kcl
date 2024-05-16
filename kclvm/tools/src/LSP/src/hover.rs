@@ -3,7 +3,7 @@ use kclvm_error::Position as KCLPos;
 use kclvm_sema::{
     builtin::BUILTIN_DECORATORS,
     core::global_state::GlobalState,
-    ty::{FunctionType, SchemaType, ANY_TYPE_STR},
+    ty::{FunctionType, ANY_TYPE_STR},
 };
 use lsp_types::{Hover, HoverContents, MarkedString};
 
