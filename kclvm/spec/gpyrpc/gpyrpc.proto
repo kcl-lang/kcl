@@ -299,7 +299,7 @@ message ListVariables_Args {
 message ListVariables_Result {
 	map<string, Variable> variables = 1;
 	repeated string unsupported_codes = 2; 
-	repeated Error parse_errs = 3;
+	repeated Error parse_errors = 3;
 }
 
 message Variable {
