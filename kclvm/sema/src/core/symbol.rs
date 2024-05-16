@@ -1207,7 +1207,13 @@ impl Symbol for AttributeSymbol {
 }
 
 impl AttributeSymbol {
-    pub fn new(name: String, start: Position, end: Position, owner: SymbolRef, is_optional: bool) -> Self {
+    pub fn new(
+        name: String,
+        start: Position,
+        end: Position,
+        owner: SymbolRef,
+        is_optional: bool,
+    ) -> Self {
         Self {
             id: None,
             name,

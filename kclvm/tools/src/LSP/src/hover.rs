@@ -598,11 +598,10 @@ mod tests {
         };
         let got = hover(&program, &pos, &gs).unwrap();
 
-        let expect_content = vec![MarkedString::String(
-            "__main__\n\nschema Data1\\[m: {str:str}](Data)".to_string(),
-        ), MarkedString::String(
-            "Attributes:\n\nname: str\n\nage: int".to_string(),
-        )];
+        let expect_content = vec![
+            MarkedString::String("__main__\n\nschema Data1\\[m: {str:str}](Data)".to_string()),
+            MarkedString::String("Attributes:\n\nname: str\n\nage: int".to_string()),
+        ];
 
         match got.contents {
             lsp_types::HoverContents::Array(vec) => {
