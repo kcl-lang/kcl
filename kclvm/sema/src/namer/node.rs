@@ -226,7 +226,13 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Namer<'ctx> {
         let (start_pos, end_pos): Range = schema_attr.name.get_span_pos();
         let owner = self.ctx.owner_symbols.last().unwrap().clone();
         let attribute_ref = self.gs.get_symbols_mut().alloc_attribute_symbol(
-            AttributeSymbol::new(schema_attr.name.node.clone(), start_pos, end_pos, owner),
+            AttributeSymbol::new(
+                schema_attr.name.node.clone(),
+                start_pos,
+                end_pos,
+                owner,
+                schema_attr.is_optional,
+            ),
             self.ctx.get_node_key(&schema_attr.name.id),
         );
         Some(vec![attribute_ref])
