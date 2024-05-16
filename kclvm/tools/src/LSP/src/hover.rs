@@ -3,7 +3,7 @@ use kclvm_error::Position as KCLPos;
 use kclvm_sema::{
     builtin::BUILTIN_DECORATORS,
     core::global_state::GlobalState,
-    ty::{FunctionType, SchemaType},
+    ty::{FunctionType, SchemaType, ANY_TYPE_STR},
 };
 use lsp_types::{Hover, HoverContents, MarkedString};
 
@@ -22,8 +22,51 @@ pub(crate) fn hover(
         Some(def_ref) => match gs.get_symbols().get_symbol(def_ref) {
             Some(obj) => match def_ref.get_kind() {
                 kclvm_sema::core::symbol::SymbolKind::Schema => match &obj.get_sema_info().ty {
-                    Some(schema_ty) => {
-                        docs.extend(build_schema_hover_content(&schema_ty.into_schema_type()));
+                    Some(ty) => {
+                        // Build hover content for schema definition
+                        // Schema Definition hover
+                        // ```
+                        // pkg
+                        // schema Foo(Base)[param: type]
+                        // -----------------
+                        // doc
+                        // -----------------
+                        // Attributes:
+                        // attr1: type
+                        // attr2? type
+                        // ```
+                        let schema_ty = ty.into_schema_type();
+                        docs.push(schema_ty.schema_ty_signature_str());
+                        if !schema_ty.doc.is_empty() {
+                            docs.push(schema_ty.doc.clone());
+                        }
+
+                        // The attr of schema_ty does not contain the attrs from inherited base schema.
+                        // Use the api provided by GlobalState to get all attrs
+                        let module_info = gs.get_packages().get_module_info(&kcl_pos.filename);
+                        let schema_attrs = obj.get_all_attributes(gs.get_symbols(), module_info);
+                        let mut attrs = vec!["Attributes:".to_string()];
+                        for schema_attr in schema_attrs {
+                            if let kclvm_sema::core::symbol::SymbolKind::Attribute =
+                                schema_attr.get_kind()
+                            {
+                                let attr = gs.get_symbols().get_symbol(schema_attr).unwrap();
+                                let name = attr.get_name();
+                                let attr_symbol =
+                                    gs.get_symbols().get_attr_symbol(schema_attr).unwrap();
+                                let attr_ty_str = match &attr.get_sema_info().ty {
+                                    Some(ty) => ty.ty_str(),
+                                    None => ANY_TYPE_STR.to_string(),
+                                };
+                                attrs.push(format!(
+                                    "{}{}: {}",
+                                    name,
+                                    if attr_symbol.is_optional() { "?" } else { "" },
+                                    attr_ty_str,
+                                ));
+                            }
+                        }
+                        docs.push(attrs.join("\n\n"));
                     }
                     _ => {}
                 },
@@ -98,37 +141,6 @@ fn docs_to_hover(docs: Vec<String>) -> Option<lsp_types::Hover> {
             range: None,
         }),
     }
-}
-
-// Build hover content for schema definition
-// Schema Definition hover
-// ```
-// pkg
-// schema Foo(Base)[param: type]
-// -----------------
-// doc
-// -----------------
-// Attributes:
-// attr1: type
-// attr2? type
-// ```
-fn build_schema_hover_content(schema_ty: &SchemaType) -> Vec<String> {
-    let mut docs = vec![];
-    docs.push(schema_ty.schema_ty_signature_str());
-    if !schema_ty.doc.is_empty() {
-        docs.push(schema_ty.doc.clone());
-    }
-    let mut attrs = vec!["Attributes:".to_string()];
-    for (name, attr) in &schema_ty.attrs {
-        attrs.push(format!(
-            "{}{}: {}",
-            name,
-            if attr.is_optional { "?" } else { "" },
-            attr.ty.ty_str(),
-        ));
-    }
-    docs.push(attrs.join("\n\n"));
-    docs
 }
 
 // Build hover content for function call
@@ -567,6 +579,31 @@ mod tests {
             column: Some(8),
         };
         let got = hover(&program, &pos, &gs).unwrap();
+        match got.contents {
+            lsp_types::HoverContents::Array(vec) => {
+                assert_eq!(vec, expect_content);
+            }
+            _ => unreachable!("test error"),
+        }
+    }
+
+    #[test]
+    #[bench_test]
+    fn inherit_schema_attr_hover() {
+        let (file, program, _, gs) = compile_test_file("src/test_data/hover_test/inherit.k");
+        let pos = KCLPos {
+            filename: file.clone(),
+            line: 5,
+            column: Some(9),
+        };
+        let got = hover(&program, &pos, &gs).unwrap();
+
+        let expect_content = vec![MarkedString::String(
+            "__main__\n\nschema Data1\\[m: {str:str}](Data)".to_string(),
+        ), MarkedString::String(
+            "Attributes:\n\nname: str\n\nage: int".to_string(),
+        )];
+
         match got.contents {
             lsp_types::HoverContents::Array(vec) => {
                 assert_eq!(vec, expect_content);
