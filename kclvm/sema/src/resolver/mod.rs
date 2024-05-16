@@ -99,6 +99,7 @@ impl<'ctx> Resolver<'ctx> {
             import_names: self.ctx.import_names.clone(),
             node_ty_map: self.node_ty_map.clone(),
             handler: self.handler.clone(),
+            schema_mapping: self.ctx.schema_mapping.clone(),
         };
         self.lint_check_scope_map();
         for diag in &self.linter.handler.diagnostics {
@@ -117,7 +118,7 @@ pub struct Context {
     pub pkgpath: String,
     /// What schema are we in.
     pub schema: Option<Rc<RefCell<SchemaType>>>,
-    /// What schema are we in.
+    /// Global schemas name and type mapping.
     pub schema_mapping: IndexMap<String, Arc<RefCell<SchemaType>>>,
     /// For loop local vars.
     pub local_vars: Vec<String>,
@@ -183,7 +184,8 @@ pub fn resolve_program_with_opts(
             cached_scope.update(program);
             resolver.scope_map = cached_scope.scope_map.clone();
             resolver.scope_map.remove(kclvm_ast::MAIN_PKG);
-            resolver.node_ty_map = cached_scope.node_ty_map.clone()
+            resolver.node_ty_map = cached_scope.node_ty_map.clone();
+            resolver.ctx.schema_mapping = cached_scope.schema_mapping.clone();
         }
     }
     let scope = resolver.check_and_lint(kclvm_ast::MAIN_PKG);
@@ -193,6 +195,7 @@ pub fn resolve_program_with_opts(
             cached_scope.scope_map = scope.scope_map.clone();
             cached_scope.node_ty_map = scope.node_ty_map.clone();
             cached_scope.scope_map.remove(kclvm_ast::MAIN_PKG);
+            cached_scope.schema_mapping = resolver.ctx.schema_mapping;
         }
     }
 
