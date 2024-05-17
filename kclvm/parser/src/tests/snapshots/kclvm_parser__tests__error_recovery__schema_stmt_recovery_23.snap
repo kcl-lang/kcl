@@ -1,6 +1,5 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 248
 expression: "crate::tests::parsing_module_string(r#\"@deprecated(a,\nschema A:\n    a: \"#)"
 ---
 Module {
@@ -111,16 +110,6 @@ Module {
                                         end_line: 1,
                                         end_column: 13,
                                     },
-                                    Node {
-                                        node: Missing(
-                                            MissingExpr,
-                                        ),
-                                        filename: "",
-                                        line: 1,
-                                        column: 14,
-                                        end_line: 2,
-                                        end_column: 0,
-                                    },
                                 ],
                                 keywords: [],
                             },
@@ -144,4 +133,3 @@ Module {
     ],
     comments: [],
 }
-

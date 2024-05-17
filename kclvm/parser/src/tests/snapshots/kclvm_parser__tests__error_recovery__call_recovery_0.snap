@@ -28,18 +28,7 @@ Node {
                 end_line: 1,
                 end_column: 1,
             },
-            args: [
-                Node {
-                    node: Missing(
-                        MissingExpr,
-                    ),
-                    filename: "",
-                    line: 1,
-                    column: 2,
-                    end_line: 1,
-                    end_column: 2,
-                },
-            ],
+            args: [],
             keywords: [],
         },
     ),
@@ -49,4 +38,3 @@ Node {
     end_line: 1,
     end_column: 2,
 }
-

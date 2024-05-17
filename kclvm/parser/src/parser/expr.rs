@@ -18,7 +18,7 @@ use kclvm_ast::token::{BinOpToken, DelimToken, TokenKind, VALID_SPACES_LENGTH};
 use kclvm_span::symbol::kw;
 
 /// Parser implementation of expressions, which consists of sub-expressions,
-/// operand and tokens. Like the general LL1 paser, parser constantly looking for
+/// operand and tokens. Like the general LL1 parser, parser constantly looking for
 /// left-side derivation, priority is specified by matching code explicitly.
 /// The entrances of expression parsing are `parse_exprlist` and `parse_expr`.
 /// TODO: operand design is quite complex, can be simplified later.
@@ -427,11 +427,28 @@ impl<'a> Parser<'a> {
             ),
         }
 
+        let has_newline = if self.token.kind == TokenKind::Newline {
+            self.skip_newlines();
+            self.clean_all_indentations();
+            if self.token.kind == TokenKind::CloseDelim(DelimToken::Paren) {
+                // bump bracket close delim token `)`
+                self.bump();
+                return CallExpr {
+                    func,
+                    args: vec![],
+                    keywords: vec![],
+                };
+            }
+            true
+        } else {
+            false
+        };
+
         // arguments or empty
         let (args, keywords) = if self.token.kind == TokenKind::CloseDelim(DelimToken::Paren) {
             (Vec::new(), Vec::new())
         } else {
-            self.parse_arguments_expr()
+            self.parse_arguments_expr(has_newline)
         };
 
         // [COMMA]
@@ -2011,17 +2028,36 @@ impl<'a> Parser<'a> {
 
     /// Syntax:
     /// arguments: argument (COMMA argument)*
-    fn parse_arguments_expr(&mut self) -> (Vec<NodeRef<Expr>>, Vec<NodeRef<Keyword>>) {
+    fn parse_arguments_expr(
+        &mut self,
+        has_newline: bool,
+    ) -> (Vec<NodeRef<Expr>>, Vec<NodeRef<Keyword>>) {
         let mut args: Vec<NodeRef<Expr>> = Vec::new();
         let mut keywords: Vec<NodeRef<Keyword>> = Vec::new();
         let mut has_keyword = false;
+        let is_terminator = |token: &kclvm_ast::token::Token| match &token.kind {
+            TokenKind::CloseDelim(DelimToken::Paren) | TokenKind::Eof => true,
+            TokenKind::Newline if !has_newline => true,
+            _ => token.is_keyword(kw::For),
+        };
 
         loop {
+            let marker = self.mark();
+            self.clean_all_indentations();
+            if is_terminator(&self.token) {
+                break;
+            }
             // Record the argument expression start token.
             let token = self.token;
             match self.parse_argument_expr() {
                 Either::Left(expr) => {
-                    args.push(Box::new(expr));
+                    if matches!(expr.node, Expr::Missing(_)) {
+                        self.sess
+                            .struct_token_error(&[TokenKind::Comma.into()], self.token);
+                        self.bump();
+                    } else {
+                        args.push(Box::new(expr));
+                    }
                     if has_keyword {
                         self.sess.struct_span_error(
                             "positional argument follows keyword argument",
@@ -2037,9 +2073,11 @@ impl<'a> Parser<'a> {
 
             if self.token.kind == TokenKind::Comma {
                 self.bump();
-            } else {
-                break;
             }
+            if has_newline {
+                self.skip_newlines();
+            }
+            self.drop(marker);
         }
 
         (args, keywords)
