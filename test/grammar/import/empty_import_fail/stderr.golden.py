@@ -19,7 +19,7 @@ kcl_error.print_kcl_error_message(
                 end_col_no=17
             )
         ],
-        arg_msg=kcl_error.CANNOT_FIND_MODULE_MSG.format(modulename, '{}'.format(location))
+        arg_msg=kcl_error.CANNOT_FIND_MODULE_MSG.format(modulename, '{}'.format(location)) + ", attempted import folder with no kcl files"
     ),
     file=sys.stdout
 )
