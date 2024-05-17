@@ -490,7 +490,8 @@ fn schema_ty_to_value_complete_item(schema_ty: &SchemaType) -> KCLCompletionItem
     );
     let detail = {
         let mut details = vec![];
-        details.push(schema_ty.schema_ty_signature_str());
+        let (pkgpath, rest_sign) = schema_ty.schema_ty_signature_str();
+        details.push(format!("{}\n\n{}", pkgpath, rest_sign));
         details.push("Attributes:".to_string());
         for (name, attr) in &schema_ty.attrs {
             details.push(format!(
@@ -543,7 +544,8 @@ fn schema_ty_to_value_complete_item(schema_ty: &SchemaType) -> KCLCompletionItem
 fn schema_ty_to_type_complete_item(schema_ty: &SchemaType) -> KCLCompletionItem {
     let detail = {
         let mut details = vec![];
-        details.push(schema_ty.schema_ty_signature_str());
+        let (pkgpath, rest_sign) = schema_ty.schema_ty_signature_str();
+        details.push(format!("{}\n\n{}", pkgpath, rest_sign));
         details.push("Attributes:".to_string());
         for (name, attr) in &schema_ty.attrs {
             details.push(format!(
@@ -1259,7 +1261,7 @@ mod tests {
                         label: "Person(b){}".to_string(),
                         kind: Some(CompletionItemKind::CLASS),
                         detail: Some(
-                            "__main__\n\nschema Person\\[b: int](Base)\nAttributes:\nc: int"
+                            "__main__\n\nschema Person[b: int](Base):\nAttributes:\nc: int"
                                 .to_string()
                         ),
                         documentation: Some(lsp_types::Documentation::String("".to_string())),

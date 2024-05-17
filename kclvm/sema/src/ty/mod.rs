@@ -293,7 +293,7 @@ impl SchemaType {
         }
     }
 
-    pub fn schema_ty_signature_str(&self) -> String {
+    pub fn schema_ty_signature_str(&self) -> (String, String) {
         let base: String = if let Some(base) = &self.base {
             format!("({})", base.name)
         } else {
@@ -312,17 +312,10 @@ impl SchemaType {
                     .join(", ")
             )
         };
-        let params_str = if !params.is_empty() && !base.is_empty() {
-            format!("\\{}{}", params, base)
-        } else if !params.is_empty() {
-            format!("{}", params)
-        } else if !base.is_empty() {
-            format!("{}", base)
-        } else {
-            "".to_string()
-        };
 
-        format!("{}\n\nschema {}{}", self.pkgpath, self.name, params_str)
+        let rest_sign = format!("schema {}{}{}:", self.name, params, base);
+
+        (self.pkgpath.clone(), rest_sign)
     }
 }
 
