@@ -37,34 +37,50 @@ impl<'ctx> Resolver<'ctx> {
                         let real_path =
                             Path::new(&self.program.root).join(pkgpath.replace('.', "/"));
                         if !self.program.pkgs.contains_key(pkgpath) {
-                            self.handler.add_error(
-                                ErrorKind::CannotFindModule,
-                                &[Message {
-                                    range: stmt.get_span_pos(),
-                                    style: Style::Line,
-                                    message: format!(
-                                        "Cannot find the module {} from {}",
-                                        import_stmt.rawpath,
-                                        real_path.to_str().unwrap()
-                                    ),
-                                    note: None,
-                                    suggested_replacement: None,
-                                }],
-                            );
-
-                            let mut suggestions =
-                                vec![format!("find more package on 'https://artifacthub.io'")];
-
-                            if let Ok(pkg_name) = parse_external_pkg_name(pkgpath) {
-                                suggestions.insert(
-                                    0,
-                                    format!(
-                                        "try 'kcl mod add {}' to download the package not found",
-                                        pkg_name
-                                    ),
+                            if real_path.exists() {
+                                self.handler.add_error(
+                                    ErrorKind::CannotFindModule,
+                                    &[Message {
+                                        range: stmt.get_span_pos(),
+                                        style: Style::Line,
+                                        message: format!(
+                                            "Cannot import the module {} from {}, attempted import folder with no kcl files",
+                                            import_stmt.rawpath,
+                                            real_path.to_str().unwrap()
+                                        ),
+                                        note: None,
+                                        suggested_replacement: None,
+                                    }],
                                 );
+                            } else {
+                                self.handler.add_error(
+                                    ErrorKind::CannotFindModule,
+                                    &[Message {
+                                        range: stmt.get_span_pos(),
+                                        style: Style::Line,
+                                        message: format!(
+                                            "Cannot find the module {} from {}",
+                                            import_stmt.rawpath,
+                                            real_path.to_str().unwrap()
+                                        ),
+                                        note: None,
+                                        suggested_replacement: None,
+                                    }],
+                                );
+                                let mut suggestions =
+                                    vec![format!("find more package on 'https://artifacthub.io'")];
+
+                                if let Ok(pkg_name) = parse_external_pkg_name(pkgpath) {
+                                    suggestions.insert(
+                                        0,
+                                        format!(
+                                            "try 'kcl mod add {}' to download the package not found",
+                                            pkg_name
+                                        ),
+                                    );
+                                }
+                                self.handler.add_suggestions(suggestions);
                             }
-                            self.handler.add_suggestions(suggestions);
                         } else {
                             let file = real_path.to_str().unwrap().to_string();
                             if real_path.is_file() && main_files.contains(&file) {
