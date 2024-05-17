@@ -1,6 +1,6 @@
 ---
 source: parser/src/tests/error_recovery.rs
-expression: "crate::tests::parsing_expr_string(r#\"a(a,,)\"#)"
+expression: "crate::tests::parsing_expr_string(r#\"a(1,2\n)\"#)"
 ---
 Node {
     node: Call(
@@ -30,20 +30,12 @@ Node {
             },
             args: [
                 Node {
-                    node: Identifier(
-                        Identifier {
-                            names: [
-                                Node {
-                                    node: "a",
-                                    filename: "",
-                                    line: 1,
-                                    column: 2,
-                                    end_line: 1,
-                                    end_column: 3,
-                                },
-                            ],
-                            pkgpath: "",
-                            ctx: Load,
+                    node: NumberLit(
+                        NumberLit {
+                            binary_suffix: None,
+                            value: Int(
+                                1,
+                            ),
                         },
                     ),
                     filename: "",
@@ -51,6 +43,21 @@ Node {
                     column: 2,
                     end_line: 1,
                     end_column: 3,
+                },
+                Node {
+                    node: NumberLit(
+                        NumberLit {
+                            binary_suffix: None,
+                            value: Int(
+                                2,
+                            ),
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 4,
+                    end_line: 1,
+                    end_column: 5,
                 },
             ],
             keywords: [],
@@ -60,5 +67,5 @@ Node {
     line: 1,
     column: 0,
     end_line: 1,
-    end_column: 6,
+    end_column: 5,
 }
