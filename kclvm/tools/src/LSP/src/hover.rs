@@ -231,6 +231,7 @@ mod tests {
             lsp_types::HoverContents::Array(vec) => {
                 if let MarkedString::String(s) = vec[0].clone() {
                     assert_eq!(s, "pkg");
+                    assert_eq!(s, "pkg");
                 }
                 if let MarkedString::String(s) = vec[1].clone() {
                     assert_eq!(s, "schema Person:");
@@ -317,6 +318,7 @@ mod tests {
         match got.contents {
             lsp_types::HoverContents::Array(vec) => {
                 if let MarkedString::String(s) = vec[0].clone() {
+                    assert_eq!(s, "__main__");
                     assert_eq!(s, "__main__");
                 }
                 if let MarkedString::String(s) = vec[1].clone() {
@@ -543,6 +545,7 @@ mod tests {
             lsp_types::HoverContents::Array(vec) => {
                 assert_eq!(vec.len(), 2);
                 if let MarkedString::String(s) = vec[0].clone() {
+                    assert_eq!(s, "fib");
                     assert_eq!(s, "fib");
                 }
                 if let MarkedString::String(s) = vec[1].clone() {
