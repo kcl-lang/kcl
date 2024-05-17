@@ -15,7 +15,7 @@ use crate::{
             UnresolvedSymbol, ValueSymbol,
         },
     },
-    ty::{Type, SCHEMA_MEMBER_FUNCTIONS},
+    ty::{Type, TypeKind, SCHEMA_MEMBER_FUNCTIONS},
 };
 
 use super::AdvancedResolver;
@@ -347,7 +347,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
             .ctx
             .node_ty_map
             .get(&self.ctx.get_node_key(&rule_stmt.name.id))
-            .ok_or(anyhow!("schema_symbol not found"))?
+            .ok_or(anyhow!("rule_ty not found"))?
             .clone();
         let rule_symbol = self
             .gs
@@ -444,16 +444,13 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
     }
 
     fn walk_schema_attr(&mut self, schema_attr: &'ctx ast::SchemaAttr) -> Self::Result {
-        let attr_symbol = match self
+        let attr_symbol = *self
             .gs
             .get_symbols()
             .symbols_info
             .node_symbol_map
             .get(&self.ctx.get_node_key(&schema_attr.name.id))
-        {
-            Some(symbol) => *symbol,
-            None => return Err(anyhow!("attr_symbol not found")),
-        };
+            .ok_or(anyhow!("attr_symbol not found"))?;
         let parent_scope = *self.ctx.scopes.last().unwrap();
         let parent_scope = self.gs.get_scopes().get_scope(&parent_scope).unwrap();
         let mut doc = None;
@@ -517,12 +514,14 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
 
     fn walk_selector_expr(&mut self, selector_expr: &'ctx ast::SelectorExpr) -> Self::Result {
         self.expr(&selector_expr.value)?;
-        let mut parent_ty = self
+        let mut parent_ty = match self
             .ctx
             .node_ty_map
             .get(&self.ctx.get_node_key(&selector_expr.value.id))
-            .ok_or(anyhow!("parent_ty not found"))?
-            .clone();
+        {
+            Some(ty) => ty.clone(),
+            None => return Ok(None),
+        };
         for name in &selector_expr.attr.node.names {
             let def_symbol_ref = match self.gs.get_symbols().get_type_attribute(
                 &parent_ty,
@@ -687,14 +686,24 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
             .get(&self.ctx.get_node_key(&schema_expr.name.id))
             .ok_or(anyhow!("schema_ty not found"))?
             .clone();
-        let schema_symbol = self
-            .gs
-            .get_symbols()
-            .get_type_symbol(&schema_ty, self.get_current_module_info())
-            .ok_or(anyhow!("schema_symbol not found"))?;
-        self.ctx.current_schema_symbol = Some(schema_symbol);
-        self.expr(&schema_expr.config)?;
-        self.do_arguments_symbol_resolve(&schema_expr.args, &schema_expr.kwargs)?;
+        match schema_ty.kind {
+            TypeKind::Schema(_) => {
+                let schema_symbol = self
+                    .gs
+                    .get_symbols()
+                    .get_type_symbol(&schema_ty, self.get_current_module_info())
+                    .ok_or(anyhow!("schema_symbol not found"))?;
+                self.ctx.current_schema_symbol = Some(schema_symbol);
+                self.expr(&schema_expr.config)?;
+                self.do_arguments_symbol_resolve(&schema_expr.args, &schema_expr.kwargs)?;
+            }
+            TypeKind::Dict(_) => {
+                // TODO: for builtin ty symbol, get_type_symbol()  just return None
+            }
+            _ => {
+                // Invalid schema type, nothing todo
+            }
+        }
         Ok(None)
     }
 
@@ -936,12 +945,14 @@ impl<'ctx> AdvancedResolver<'ctx> {
                         .add_ref_to_scope(cur_scope, first_unresolved_ref);
                 }
                 if names.len() > 1 {
-                    let mut parent_ty = self
+                    let mut parent_ty = match self
                         .ctx
                         .node_ty_map
                         .get(&self.ctx.get_node_key(&first_name.id))
-                        .ok_or(anyhow!("parent_ty not found"))?
-                        .clone();
+                    {
+                        Some(ty) => ty.clone(),
+                        None => return Ok(None),
+                    };
 
                     for index in 1..names.len() {
                         let name = names.get(index).unwrap();
@@ -969,12 +980,11 @@ impl<'ctx> AdvancedResolver<'ctx> {
                             .get_scopes_mut()
                             .add_ref_to_scope(cur_scope, unresolved_ref);
 
-                        parent_ty = self
-                            .ctx
-                            .node_ty_map
-                            .get(&self.ctx.get_node_key(&name.id))
-                            .ok_or(anyhow!("parent_ty not found"))?
-                            .clone();
+                        parent_ty = match self.ctx.node_ty_map.get(&self.ctx.get_node_key(&name.id))
+                        {
+                            Some(ty) => ty.clone(),
+                            None => return Ok(None),
+                        };
                         if index == names.len() - 1 {
                             return Ok(Some(unresolved_ref));
                         }
