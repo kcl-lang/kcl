@@ -6,13 +6,13 @@ use generational_arena::Index;
 use indexmap::IndexMap;
 use kclvm_ast::ast;
 use kclvm_ast::walker::TypedResultWalker;
-use kclvm_runtime::{schema_runtime_type, ConfigEntryOperationKind, ValueRef, MAIN_PKG_PATH};
+use kclvm_runtime::{schema_runtime_type, ConfigEntryOperationKind, ValueRef};
 
-use crate::lazy::{merge_setters, LazyEvalScope, LazyEvalScopeRef};
+use crate::lazy::{merge_variables_and_setters, LazyEvalScope, LazyEvalScopeRef};
 use crate::proxy::{call_schema_body, call_schema_check};
 use crate::rule::RuleEvalContext;
 use crate::ty::type_pack_and_check;
-use crate::{error as kcl_error, EvalResult, Proxy};
+use crate::{error as kcl_error, Proxy};
 use crate::{Evaluator, INNER_LEVEL};
 
 pub type SchemaBodyHandler =
@@ -37,7 +37,7 @@ pub struct SchemaEvalContext {
 impl SchemaEvalContext {
     #[inline]
     pub fn new_with_node(node: ast::SchemaStmt, index: Index) -> Self {
-        SchemaEvalContext {
+        Self {
             node: Rc::new(node),
             scope: None,
             index,
@@ -50,19 +50,18 @@ impl SchemaEvalContext {
     }
 
     /// Reset schema evaluation context state.
-    pub fn reset_with_config(&mut self, config: ValueRef, config_meta: ValueRef) {
-        self.config = config;
-        self.config_meta = config_meta;
-        self.value = ValueRef::dict(None);
-        self.optional_mapping = ValueRef::dict(None);
-        self.is_sub_schema = true;
-        // Clear lazy eval scope.
-        if let Some(scope) = &self.scope {
-            let mut scope = scope.borrow_mut();
-            scope.cache.clear();
-            scope.levels.clear();
-            scope.cal_times.clear();
-        }
+    #[inline]
+    pub fn snapshot(&self, config: ValueRef, config_meta: ValueRef) -> SchemaEvalContextRef {
+        Rc::new(RefCell::new(Self {
+            node: self.node.clone(),
+            index: self.index,
+            scope: None,
+            value: ValueRef::dict(None),
+            config,
+            config_meta,
+            optional_mapping: ValueRef::dict(None),
+            is_sub_schema: true,
+        }))
     }
 
     /// Pass value references from other schema eval context.
@@ -157,7 +156,7 @@ impl SchemaEvalContext {
     pub fn has_attr(s: &Evaluator, ctx: &SchemaEvalContextRef, name: &str) -> bool {
         for stmt in &ctx.borrow().node.body {
             if let ast::Stmt::SchemaAttr(attr) = &stmt.node {
-                if &attr.name.node == name {
+                if attr.name.node == name {
                     return true;
                 }
             }
@@ -208,11 +207,11 @@ impl SchemaEvalContext {
                 parent.init_lazy_scope(s, Some(idx));
             }
             if let Some(scope) = &parent.borrow().scope {
-                merge_setters(&mut self.value, &mut setters, &scope.borrow().setters);
+                merge_variables_and_setters(&mut self.value, &mut setters, &scope.borrow().setters);
             }
         }
         // Self setters
-        merge_setters(
+        merge_variables_and_setters(
             &mut self.value,
             &mut setters,
             &s.emit_setters(&self.node.body, index),
@@ -224,7 +223,7 @@ impl SchemaEvalContext {
                 mixin.init_lazy_scope(s, Some(idx));
             }
             if let Some(scope) = &mixin.borrow().scope {
-                merge_setters(&mut self.value, &mut setters, &scope.borrow().setters);
+                merge_variables_and_setters(&mut self.value, &mut setters, &scope.borrow().setters);
             }
         }
         self.scope = Some(Rc::new(RefCell::new(LazyEvalScope {
@@ -234,12 +233,12 @@ impl SchemaEvalContext {
     }
 
     /// Get the value from the context.
-    pub fn get_value(&self, s: &Evaluator, key: &str, pkgpath: &str, target: &str) -> EvalResult {
+    pub fn get_value(&self, s: &Evaluator, key: &str, pkgpath: &str, target: &str) -> ValueRef {
         if let Some(scope) = &self.scope {
             let value = {
                 match self.value.get_by_key(key) {
-                    Some(value) => Ok(value.clone()),
-                    None => s.get_variable_in_pkgpath(key, &pkgpath),
+                    Some(value) => value.clone(),
+                    None => s.get_variable_in_pkgpath(key, pkgpath),
                 }
             };
             // Deal in-place modify and return it self immediately.
@@ -254,7 +253,7 @@ impl SchemaEvalContext {
                     scope.cache.get(key).cloned()
                 };
                 match cached_value {
-                    Some(value) => Ok(value.clone()),
+                    Some(value) => value.clone(),
                     None => {
                         let setters = {
                             let scope = scope.borrow();
@@ -277,9 +276,12 @@ impl SchemaEvalContext {
                                 if index >= n {
                                     value
                                 } else {
-                                    // Call frame
-                                    s.walk_stmts_with_setter(&self.node.body, &setters[index])
-                                        .expect(kcl_error::INTERNAL_ERROR_MSG);
+                                    // Call setter function
+                                    s.walk_schema_stmts_with_setter(
+                                        &self.node.body,
+                                        &setters[index],
+                                    )
+                                    .expect(kcl_error::INTERNAL_ERROR_MSG);
                                     {
                                         let mut scope = scope.borrow_mut();
                                         scope.levels.insert(key.to_string(), level);
@@ -288,7 +290,7 @@ impl SchemaEvalContext {
                                             None => s.undefined_value(),
                                         };
                                         scope.cache.insert(key.to_string(), value.clone());
-                                        Ok(value)
+                                        value
                                     }
                                 }
                             }
@@ -297,12 +299,10 @@ impl SchemaEvalContext {
                     }
                 }
             }
+        } else if let Some(value) = self.value.dict_get_value(key) {
+            value
         } else {
-            return if let Some(value) = self.value.dict_get_value(key) {
-                Ok(value)
-            } else {
-                s.get_variable_in_pkgpath(key, &pkgpath)
-            };
+            s.get_variable_in_pkgpath(key, pkgpath)
         }
     }
 
@@ -490,14 +490,19 @@ pub(crate) fn schema_with_config(
     // avoid unexpected non idempotent calls. For example, I instantiated a MySchema in pkg1,
     // but the length of the list returned by calling the instances method in other packages
     // is uncertain.
-    if instance_pkgpath.is_empty() || instance_pkgpath == MAIN_PKG_PATH {
+    {
         let mut ctx = s.runtime_ctx.borrow_mut();
         // Record schema instance in the context
         if !ctx.instances.contains_key(&runtime_type) {
-            ctx.instances.insert(runtime_type.clone(), vec![]);
+            ctx.instances
+                .insert(runtime_type.clone(), IndexMap::default());
         }
-        ctx.instances
-            .get_mut(&runtime_type)
+        let pkg_instance_map = ctx.instances.get_mut(&runtime_type).unwrap();
+        if !pkg_instance_map.contains_key(&instance_pkgpath) {
+            pkg_instance_map.insert(instance_pkgpath.clone(), vec![]);
+        }
+        pkg_instance_map
+            .get_mut(&instance_pkgpath)
             .unwrap()
             .push(schema_dict.clone());
     }
@@ -593,7 +598,9 @@ pub(crate) fn schema_check(
                 };
                 if let Proxy::Schema(schema) = &frame.proxy {
                     s.push_pkgpath(&frame.pkgpath);
+                    s.push_backtrace(&frame);
                     (schema.check)(s, &schema.ctx, args, kwargs);
+                    s.pop_backtrace();
                     s.pop_pkgpath();
                 }
             }
@@ -648,7 +655,7 @@ fn schema_value_check(
                 let value = schema_value.dict_get_value(key).unwrap();
                 schema_value.dict_update_key_value(
                     key.as_str(),
-                    type_pack_and_check(s, &value, vec![value_type]),
+                    type_pack_and_check(s, &value, vec![value_type], false),
                 );
             }
         } else if !has_index_signature && no_such_attr {

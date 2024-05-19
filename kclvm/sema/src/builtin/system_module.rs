@@ -1638,6 +1638,143 @@ register_file_member! {
         false,
         None,
     )
+    append => Type::function(
+        None,
+        Type::any_ref(),
+        &[
+            Parameter {
+                name: "filepath".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+            Parameter {
+                name: "content".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+        ],
+        r#"Append content to a file at the specified path. If the file doesn't exist, it will be created."#,
+        false,
+        None,
+    )
+    mkdir => Type::function(
+        None,
+        Type::any_ref(),
+        &[
+            Parameter {
+                name: "directory".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+            Parameter {
+                name: "exists".to_string(),
+                ty: Type::bool_ref(),
+                has_default: true,
+            },
+        ],
+        r#"Create a new directory at the specified path if it doesn't already exist."#,
+        false,
+        None,
+    )
+    delete => Type::function(
+        None,
+        Type::any_ref(),
+        &[
+            Parameter {
+                name: "filepath".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+        ],
+        r#"Delete a file or an empty directory at the specified path."#,
+        false,
+        None,
+    )
+    cp => Type::function(
+        None,
+        Type::any_ref(),
+        &[
+            Parameter {
+                name: "src".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+            Parameter {
+                name: "dest".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+        ],
+        r#"Copy a file or directory from the source path to the destination path."#,
+        false,
+        None,
+    )
+    mv => Type::function(
+        None,
+        Type::any_ref(),
+        &[
+            Parameter {
+                name: "src".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+            Parameter {
+                name: "dest".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+        ],
+        r#"Move a file or directory from the source path to the destination path."#,
+        false,
+        None,
+    )
+    size => Type::function(
+        None,
+        Type::int_ref(),
+        &[
+            Parameter {
+                name: "filepath".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+        ],
+        r#"Get the size of a file at the specified path."#,
+        false,
+        None,
+    )
+    write => Type::function(
+        None,
+        Type::any_ref(),
+        &[
+            Parameter {
+                name: "filepath".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+            Parameter {
+                name: "content".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+        ],
+        r#"Write content to a file at the specified path. If the file doesn't exist, it will be created. If it does exist, its content will be replaced."#,
+        false,
+        None,
+    )
+    read_env => Type::function(
+        None,
+        Type::str_ref(),
+        &[
+            Parameter {
+                name: "key".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+            },
+        ],
+        r#"Read the environment variable key from the current process."#,
+        false,
+        None,
+    )
 }
 
 // ------------------------------

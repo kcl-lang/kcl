@@ -81,12 +81,6 @@ static mut kclvm_value_Bool_true_obj: usize = 0;
 #[allow(non_camel_case_types, non_upper_case_globals)]
 static mut kclvm_value_Bool_false_obj: usize = 0;
 
-#[allow(non_camel_case_types, non_upper_case_globals)]
-static mut kclvm_value_Int_0_obj: usize = 0;
-
-#[allow(non_camel_case_types, non_upper_case_globals)]
-static mut kclvm_value_Float_0_obj: usize = 0;
-
 // Undefine/None
 
 #[no_mangle]
@@ -148,14 +142,6 @@ pub extern "C" fn kclvm_value_Int(
     v: kclvm_int_t,
 ) -> *mut kclvm_value_ref_t {
     let ctx = mut_ptr_as_ref(ctx);
-    if v == 0 {
-        unsafe {
-            if kclvm_value_Int_0_obj == 0 {
-                kclvm_value_Int_0_obj = new_mut_ptr(ctx, ValueRef::int(0)) as usize;
-            }
-            return kclvm_value_Int_0_obj as *mut kclvm_value_ref_t;
-        }
-    }
     new_mut_ptr(ctx, ValueRef::int(v))
 }
 
@@ -166,14 +152,6 @@ pub extern "C" fn kclvm_value_Float(
     v: kclvm_float_t,
 ) -> *mut kclvm_value_ref_t {
     let ctx = mut_ptr_as_ref(ctx);
-    if v == 0.0 {
-        unsafe {
-            if kclvm_value_Float_0_obj == 0 {
-                kclvm_value_Float_0_obj = new_mut_ptr(ctx, ValueRef::float(0.0)) as usize;
-            }
-            return kclvm_value_Float_0_obj as *mut kclvm_value_ref_t;
-        }
-    }
     new_mut_ptr(ctx, ValueRef::float(v))
 }
 
@@ -312,15 +290,18 @@ pub unsafe extern "C" fn kclvm_value_schema_with_config(
         Some(args.clone()),
         Some(kwargs.clone()),
     );
-    if record_instance.is_truthy()
-        && (instance_pkgpath.is_empty() || instance_pkgpath == MAIN_PKG_PATH)
-    {
+    if record_instance.is_truthy() {
         // Record schema instance in the context
         if !ctx.instances.contains_key(&runtime_type) {
-            ctx.instances.insert(runtime_type.clone(), vec![]);
+            ctx.instances
+                .insert(runtime_type.clone(), IndexMap::default());
         }
-        ctx.instances
-            .get_mut(&runtime_type)
+        let pkg_instance_map = ctx.instances.get_mut(&runtime_type).unwrap();
+        if !pkg_instance_map.contains_key(&instance_pkgpath) {
+            pkg_instance_map.insert(instance_pkgpath.clone(), vec![]);
+        }
+        pkg_instance_map
+            .get_mut(&instance_pkgpath)
             .unwrap()
             .push(schema_dict.clone());
     }
@@ -706,12 +687,6 @@ pub unsafe extern "C" fn kclvm_value_delete(p: *mut kclvm_value_ref_t) {
             return;
         }
         if p as usize == kclvm_value_Bool_false_obj {
-            return;
-        }
-        if p as usize == kclvm_value_Int_0_obj {
-            return;
-        }
-        if p as usize == kclvm_value_Float_0_obj {
             return;
         }
     }
@@ -1192,7 +1167,7 @@ pub unsafe extern "C" fn kclvm_dict_merge(
         }
     };
     if attr_map.contains_key(key) {
-        let v = type_pack_and_check(ctx, v, vec![attr_map.get(key).unwrap()]);
+        let v = type_pack_and_check(ctx, v, vec![attr_map.get(key).unwrap()], false);
         p.dict_merge(
             ctx,
             key,
@@ -1514,7 +1489,7 @@ pub unsafe extern "C" fn kclvm_value_as(
     let b = ptr_as_ref(b);
     let ty_str = b.as_str();
     let ctx = mut_ptr_as_ref(ctx);
-    let value = type_pack_and_check(ctx, a, vec![ty_str.as_str()]);
+    let value = type_pack_and_check(ctx, a, vec![ty_str.as_str()], true);
     value.into_raw(ctx)
 }
 
@@ -1894,7 +1869,7 @@ pub unsafe extern "C" fn kclvm_value_union(
             // Has type annotation
             if let Some(ty) = attr_map.get(k) {
                 let value = a.dict_get_value(k).unwrap();
-                a.dict_update_key_value(k, type_pack_and_check(ctx, &value, vec![ty]));
+                a.dict_update_key_value(k, type_pack_and_check(ctx, &value, vec![ty], false));
             }
         }
         a.clone().into_raw(ctx)
@@ -2088,50 +2063,60 @@ pub unsafe extern "C" fn kclvm_schema_instances(
     let kwargs = ptr_as_ref(kwargs);
     if let Some(val) = args.pop_arg_first() {
         let function = val.as_function();
-        let main_pkg = args.arg_0().or_else(|| kwargs.kwarg("main_pkg"));
-        let main_pkg = if let Some(v) = main_pkg {
+        let full_pkg = args.arg_0().or_else(|| kwargs.kwarg("full_pkg"));
+        let full_pkg = if let Some(v) = full_pkg {
             v.is_truthy()
         } else {
-            true
+            false
         };
         let runtime_type = &function.runtime_type;
         if ctx_ref.instances.contains_key(runtime_type) {
             let mut list = ValueRef::list(None);
-            for v in ctx_ref.instances.get(runtime_type).unwrap() {
-                if v.is_schema() {
-                    let schema = v.as_schema();
-                    if main_pkg {
-                        if schema.pkgpath == MAIN_PKG_PATH {
-                            list.list_append(v)
-                        }
-                    } else {
-                        list.list_append(v)
-                    }
-                } else if v.is_dict() {
-                    let runtime_type = v
-                        .get_potential_schema_type()
-                        .unwrap_or(runtime_type.to_string());
-                    let names: Vec<&str> = runtime_type.rsplit('.').collect();
-                    let name = names[0];
-                    let pkgpath = names[1];
-                    let v = v.dict_to_schema(
-                        name,
-                        pkgpath,
-                        &[],
-                        &ValueRef::dict(None),
-                        &ValueRef::dict(None),
-                        None,
-                        None,
-                    );
-                    list.list_append(&v);
+            let instance_map = ctx_ref.instances.get(runtime_type).unwrap();
+            if full_pkg {
+                for (_, v_list) in instance_map {
+                    collect_schema_instances(&mut list, &v_list, runtime_type)
                 }
-            }
+            } else {
+                // Get the schema instances only located at the main package.
+                if let Some(v_list) = instance_map.get(MAIN_PKG_PATH) {
+                    collect_schema_instances(&mut list, &v_list, runtime_type)
+                }
+                if let Some(v_list) = instance_map.get("") {
+                    collect_schema_instances(&mut list, &v_list, runtime_type)
+                }
+            };
             list.into_raw(ctx_ref)
         } else {
             kclvm_value_List(ctx)
         }
     } else {
         kclvm_value_None(ctx)
+    }
+}
+
+fn collect_schema_instances(list: &mut ValueRef, v_list: &[ValueRef], runtime_type: &str) {
+    for v in v_list {
+        if v.is_schema() {
+            list.list_append(v)
+        } else if v.is_dict() {
+            let runtime_type = v
+                .get_potential_schema_type()
+                .unwrap_or(runtime_type.to_string());
+            let names: Vec<&str> = runtime_type.rsplit('.').collect();
+            let name = names[0];
+            let pkgpath = names[1];
+            let v = v.dict_to_schema(
+                name,
+                pkgpath,
+                &[],
+                &ValueRef::dict(None),
+                &ValueRef::dict(None),
+                None,
+                None,
+            );
+            list.list_append(&v);
+        }
     }
 }
 
@@ -2188,7 +2173,7 @@ pub unsafe extern "C" fn kclvm_schema_value_check(
                 let value = schema_value.dict_get_value(key).unwrap();
                 schema_value.dict_update_key_value(
                     key.as_str(),
-                    type_pack_and_check(ctx, &value, vec![value_type]),
+                    type_pack_and_check(ctx, &value, vec![value_type], false),
                 );
             }
         } else if !has_index_signature && no_such_attr {
@@ -2422,7 +2407,7 @@ pub unsafe extern "C" fn kclvm_convert_collection_value(
     let value = ptr_as_ref(value);
     let ctx = mut_ptr_as_ref(ctx);
     let tpe = c2str(tpe);
-    let value = type_pack_and_check(ctx, value, vec![tpe]);
+    let value = type_pack_and_check(ctx, value, vec![tpe], false);
     let is_in_schema = ptr_as_ref(is_in_schema);
     // Schema required attribute validating.
     if !is_in_schema.is_truthy() {

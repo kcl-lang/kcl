@@ -49,19 +49,22 @@ lint:
 fix:
 	cargo clippy --fix --allow-dirty
 
+build-wasm:
+	cargo build --target=wasm32-wasi --release
+
 # ------------------------
 # Tests
 # ------------------------
 
 # Unit tests without code cov
 test:
-	cargo test --workspace -r -- --nocapture
+	cargo test --workspace -r --features llvm -- --nocapture
 
 # Unit tests with code cov (Requires rust 1.60+)
 codecov:
 	rustup component add llvm-tools-preview
 	cargo install cargo-llvm-cov
-	cargo llvm-cov --workspace --ignore-filename-regex gpyrpc.rs --html --open -- --nocapture
+	cargo llvm-cov --workspace --features llvm --ignore-filename-regex gpyrpc.rs --html --open -- --nocapture
 
 # Unit tests with code cov and output the lcov file (Requires rust 1.60+)
 codecov-lcov:
@@ -69,7 +72,7 @@ codecov-lcov:
 	cargo install cargo-llvm-cov
 	rm -rf $(PWD)/.kclvm_cov
 	mkdir $(PWD)/.kclvm_cov
-	cargo llvm-cov --lcov --output-path $(PWD)/.kclvm_cov/lcov.info -r --workspace --ignore-filename-regex gpyrpc.rs -- --nocapture
+	cargo llvm-cov --features llvm --lcov --output-path $(PWD)/.kclvm_cov/lcov.info -r --workspace --ignore-filename-regex gpyrpc.rs -- --nocapture
 
 # Test runtime libaries using python functions
 test-runtime: install-kclvm-py install-pytest

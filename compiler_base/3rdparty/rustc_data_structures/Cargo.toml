@@ -1,6 +1,6 @@
 [package]
 name = "rustc_data_structures"
-version = "0.0.1"
+version = "0.1.2"
 edition = "2021"
 authors = ["zongzhe1024@163.com"]
 license = "Apache-2.0 OR MIT"
@@ -28,14 +28,13 @@ rayon-core = { version = "0.3.2", package = "rustc-rayon-core" }
 rustc-hash = "1.1.0"
 bitflags = "1.2.1"
 libc = "0.2"
-stacker = "0.1.14"
 tempfile = "3.5.0"
 
 [dependencies.parking_lot]
 version = "0.12"
 
 [target.'cfg(windows)'.dependencies]
-winapi = { version = "0.3", features = ["fileapi", "psapi", "winerror"] }
+winapi = { version = "0.3", features = ["std", "fileapi", "psapi", "winerror"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 memmap2 = "0.2.1"

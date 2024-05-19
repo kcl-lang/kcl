@@ -8,7 +8,6 @@
 
 #![doc(html_root_url = "https://doc.rust-lang.org/nightly/nightly-rustc/")]
 #![allow(rustc::default_hash_types)]
-#![deny(unaligned_references)]
 #![allow(rustc::potential_query_instability)]
 
 extern crate tracing;
@@ -44,7 +43,6 @@ pub mod stable_set;
 #[macro_use]
 
 mod atomic_ref;
-pub mod stack;
 pub mod sync;
 pub use atomic_ref::AtomicRef;
 pub mod frozen;

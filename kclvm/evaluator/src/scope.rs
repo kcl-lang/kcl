@@ -1,11 +1,14 @@
-use crate::{error as kcl_error, rule::RuleEvalContextRef, schema::SchemaEvalContextRef};
+use crate::func::ClosureMap;
+use crate::lazy::merge_setters;
+use crate::{
+    error as kcl_error, lazy::LazyEvalScope, rule::RuleEvalContextRef, schema::SchemaEvalContextRef,
+};
 use indexmap::{IndexMap, IndexSet};
 use kclvm_ast::ast;
-use kclvm_error::Position;
 use kclvm_runtime::{ValueRef, _kclvm_get_fn_ptr_by_name, MAIN_PKG_PATH};
 use kclvm_sema::{builtin, plugin};
 
-use crate::{EvalResult, Evaluator, GLOBAL_LEVEL};
+use crate::{Evaluator, GLOBAL_LEVEL, INNER_LEVEL};
 
 /// The evaluator scope.
 #[derive(Debug, Default)]
@@ -39,7 +42,7 @@ impl<'ctx> Evaluator<'ctx> {
             pkg_scopes.insert(String::from(pkgpath), scopes);
         }
         let msg = format!("pkgpath {} is not found", pkgpath);
-        // Init all global types including schema and rule
+        // Get the AST module list in the package path.
         let module_list: &Vec<ast::Module> = if self.program.pkgs.contains_key(pkgpath) {
             self.program.pkgs.get(pkgpath).expect(&msg)
         } else if pkgpath.starts_with(kclvm_runtime::PKG_PATH_PREFIX)
@@ -52,6 +55,7 @@ impl<'ctx> Evaluator<'ctx> {
         } else {
             panic!("pkgpath {} not found", pkgpath);
         };
+        // Init all global types including schema and rule.
         for module in module_list {
             for stmt in &module.body {
                 let name = match &stmt.node {
@@ -71,6 +75,25 @@ impl<'ctx> Evaluator<'ctx> {
             let function_ptr = _kclvm_get_fn_ptr_by_name(&function_name);
             self.add_variable(symbol, self.function_value_with_ptr(function_ptr));
         }
+        // Init lazy scopes.
+        {
+            let mut lazy_scopes = self.lazy_scopes.borrow_mut();
+            let mut setters = IndexMap::new();
+            for (index, module) in module_list.iter().enumerate() {
+                let index = self.add_global_body(index);
+                merge_setters(&mut setters, &self.emit_setters(&module.body, Some(index)))
+            }
+            if !lazy_scopes.contains_key(pkgpath) {
+                lazy_scopes.insert(
+                    pkgpath.to_string(),
+                    LazyEvalScope {
+                        setters,
+                        ..Default::default()
+                    },
+                );
+            }
+        }
+        // Enter the global scope.
         self.enter_scope();
     }
 
@@ -132,14 +155,13 @@ impl<'ctx> Evaluator<'ctx> {
                 v.borrow().config.clone(),
                 v.borrow().config_meta.clone(),
             )),
-            None => match self.get_rule_eval_context() {
-                Some(v) => Some((
+            None => self.get_rule_eval_context().map(|v| {
+                (
                     v.borrow().value.clone(),
                     v.borrow().config.clone(),
                     v.borrow().config_meta.clone(),
-                )),
-                None => None,
-            },
+                )
+            }),
         }
     }
 
@@ -290,7 +312,12 @@ impl<'ctx> Evaluator<'ctx> {
     }
 
     /// Append a variable or update the existed variable
-    pub fn add_or_update_global_variable(&self, name: &str, value: ValueRef) {
+    pub fn add_or_update_global_variable(
+        &self,
+        name: &str,
+        value: ValueRef,
+        save_lazy_scope: bool,
+    ) {
         // Find argument name in the scope
         let current_pkgpath = self.current_pkgpath();
         let pkg_scopes = &mut self.pkg_scopes.borrow_mut();
@@ -301,6 +328,9 @@ impl<'ctx> Evaluator<'ctx> {
             let variables = &mut last.variables;
             if variables.get(&name.to_string()).is_some() {
                 variables.insert(name.to_string(), value.clone());
+                if save_lazy_scope {
+                    self.set_value_to_lazy_scope(&current_pkgpath, name, &value)
+                }
                 existed = true;
             }
         }
@@ -308,20 +338,23 @@ impl<'ctx> Evaluator<'ctx> {
             if let Some(last) = scopes.last_mut() {
                 let variables = &mut last.variables;
                 if !variables.contains_key(name) {
-                    variables.insert(name.to_string(), value);
+                    variables.insert(name.to_string(), value.clone());
+                    if save_lazy_scope {
+                        self.set_value_to_lazy_scope(&current_pkgpath, name, &value)
+                    }
                 }
             }
         }
     }
 
     /// Get the variable value named `name` from the scope, return Err when not found
-    pub fn get_variable(&self, name: &str) -> EvalResult {
+    pub fn get_variable(&self, name: &str) -> ValueRef {
         let current_pkgpath = self.current_pkgpath();
         self.get_variable_in_pkgpath(name, &current_pkgpath)
     }
 
     /// Get the variable value named `name` from the scope, return Err when not found
-    pub fn get_variable_in_schema_or_rule(&self, name: &str) -> EvalResult {
+    pub fn get_variable_in_schema_or_rule(&self, name: &str) -> ValueRef {
         let pkgpath = self.current_pkgpath();
         if let Some(schema_ctx) = self.get_schema_eval_context() {
             return schema_ctx
@@ -330,7 +363,7 @@ impl<'ctx> Evaluator<'ctx> {
         } else if let Some(rule_ctx) = self.get_rule_eval_context() {
             let rule_value: ValueRef = rule_ctx.borrow().value.clone();
             return if let Some(value) = rule_value.dict_get_value(name) {
-                Ok(value)
+                value
             } else {
                 self.get_variable_in_pkgpath(name, &pkgpath)
             };
@@ -340,7 +373,7 @@ impl<'ctx> Evaluator<'ctx> {
     }
 
     /// Get the variable value named `name` from the scope named `pkgpath`, return Err when not found
-    pub fn get_variable_in_pkgpath(&self, name: &str, pkgpath: &str) -> EvalResult {
+    pub fn get_variable_in_pkgpath(&self, name: &str, pkgpath: &str) -> ValueRef {
         let pkg_scopes = self.pkg_scopes.borrow();
         let pkgpath =
             if !pkgpath.starts_with(kclvm_runtime::PKG_PATH_PREFIX) && pkgpath != MAIN_PKG_PATH {
@@ -348,12 +381,12 @@ impl<'ctx> Evaluator<'ctx> {
             } else {
                 pkgpath.to_string()
             };
-        let mut result = Err(anyhow::anyhow!("name '{}' is not defined", name));
-        let is_in_schema = self.is_in_schema();
+        let mut result = self.undefined_value();
         // System module
         if builtin::STANDARD_SYSTEM_MODULE_NAMES_WITH_AT.contains(&pkgpath.as_str()) {
             let pkgpath = &pkgpath[1..];
-            let value = if pkgpath == builtin::system_module::UNITS
+
+            if pkgpath == builtin::system_module::UNITS
                 && builtin::system_module::UNITS_FIELD_NAMES.contains(&name)
             {
                 let value_float: f64 = kclvm_runtime::f64_unit_value(name);
@@ -372,21 +405,13 @@ impl<'ctx> Evaluator<'ctx> {
                 );
                 let function_ptr = _kclvm_get_fn_ptr_by_name(&func_name);
                 self.function_value_with_ptr(function_ptr)
-            };
-            Ok(value)
+            }
         }
         // Plugin pkgpath
         else if pkgpath.starts_with(plugin::PLUGIN_PREFIX_WITH_AT) {
             // Strip the @kcl_plugin to kcl_plugin.
             let name = format!("{}.{}", &pkgpath[1..], name);
-            return Ok(ValueRef::func(
-                0,
-                0,
-                self.undefined_value(),
-                &name,
-                "",
-                true,
-            ));
+            ValueRef::func(0, 0, self.undefined_value(), &name, "", true)
         // User pkgpath
         } else {
             // Global or local variables.
@@ -395,39 +420,75 @@ impl<'ctx> Evaluator<'ctx> {
                 .unwrap_or_else(|| panic!("package {} is not found", pkgpath));
             // Scopes 0 is builtin scope, Scopes 1 is the global scope, Scopes 2~ are the local scopes
             let scopes_len = scopes.len();
+            let mut found = false;
             for i in 0..scopes_len {
                 let index = scopes_len - i - 1;
                 let variables = &scopes[index].variables;
-                if let Some(var) = variables.get(&name.to_string()) {
+                if let Some(var) = variables.get(name) {
                     // Closure vars, 2 denotes the builtin scope and the global scope, here is a closure scope.
-                    result = Ok(var.clone());
+                    result = if let Some(lambda_ctx) = self.last_lambda_ctx() {
+                        let last_lambda_scope = lambda_ctx.level;
+                        // Local scope variable or lambda closure variable.
+                        let ignore = if let Some((start, end)) = self.scope_covers.borrow().last() {
+                            *start <= index && index <= *end
+                        } else {
+                            false
+                        };
+                        if index >= last_lambda_scope && !ignore {
+                            var.clone()
+                        } else {
+                            lambda_ctx.closure.get(name).unwrap_or(var).clone()
+                        }
+                    } else {
+                        // Not in the lambda, maybe a local variable.
+                        var.clone()
+                    };
+                    found = true;
                     break;
                 }
             }
-            match result {
-                Ok(_) => result,
-                Err(ref err) => {
-                    if !is_in_schema {
-                        let mut ctx = self.ctx.borrow_mut();
-                        let handler = &mut ctx.handler;
-                        let pos = Position {
-                            filename: self.current_filename(),
-                            line: self.current_ctx_line(),
-                            column: None,
-                        };
-                        handler.add_compile_error(&err.to_string(), (pos.clone(), pos));
-                        handler.abort_if_any_errors()
-                    }
-                    result
-                }
+            if found {
+                result
+            } else {
+                // Not found variable in the scope, maybe lambda closures captured in other package scopes.
+                self.last_lambda_ctx()
+                    .map(|ctx| ctx.closure.get(name).cloned().unwrap_or(result.clone()))
+                    .unwrap_or(result)
             }
         }
     }
 
+    /// Get closure map in the current inner scope.
+    pub(crate) fn get_current_closure_map(&self) -> ClosureMap {
+        // Get variable map in the current scope.
+        let pkgpath = self.current_pkgpath();
+        let pkg_scopes = self.pkg_scopes.borrow();
+        let scopes = pkg_scopes
+            .get(&pkgpath)
+            .unwrap_or_else(|| panic!("package {} is not found", pkgpath));
+        let last_lambda_ctx = self.last_lambda_ctx();
+        // Get current closure map.
+        let mut closure_map = last_lambda_ctx
+            .as_ref()
+            .map(|ctx| ctx.closure.clone())
+            .unwrap_or_default();
+        // Get variable map including schema  in the current scope.
+        for i in INNER_LEVEL..scopes.len() {
+            let variables = &scopes
+                .get(i)
+                .expect(kcl_error::INTERNAL_ERROR_MSG)
+                .variables;
+            for (k, v) in variables {
+                closure_map.insert(k.to_string(), v.clone());
+            }
+        }
+        closure_map
+    }
+
     /// Load value from name.
-    pub fn load_value(&self, pkgpath: &str, names: &[&str]) -> EvalResult {
+    pub fn load_value(&self, pkgpath: &str, names: &[&str]) -> ValueRef {
         if names.is_empty() {
-            return Err(anyhow::anyhow!("error: read value from empty name"));
+            return self.undefined_value();
         }
         let name = names[0];
         // Get variable from the scope.
@@ -437,7 +498,22 @@ impl<'ctx> Evaluator<'ctx> {
                 self.is_in_lambda(),
                 self.is_local_var(name),
             ) {
-                // Get from local or global scope
+                // Get variable from the global lazy scope.
+                (false, false, false) => {
+                    let variable = self.get_variable(name);
+                    match self.resolve_variable_level(name) {
+                        // Closure variable or local variables
+                        Some(level) if level <= GLOBAL_LEVEL => self.get_value_from_lazy_scope(
+                            &self.current_pkgpath(),
+                            name,
+                            &self.get_target_var(),
+                            variable,
+                        ),
+                        // Schema closure or global variables
+                        _ => variable,
+                    }
+                }
+                // Get variable from the local or global scope.
                 (false, _, _) | (_, _, true) => self.get_variable(name),
                 // Get variable from the current schema scope.
                 (true, false, false) => self.get_variable_in_schema_or_rule(name),
@@ -462,20 +538,17 @@ impl<'ctx> Evaluator<'ctx> {
             let mut value = if pkgpath.is_empty() {
                 get(name)
             } else {
-                self.ok_result()
-            }
-            .expect(kcl_error::INTERNAL_ERROR_MSG);
+                self.undefined_value()
+            };
             for i in 0..names.len() - 1 {
                 let attr = names[i + 1];
                 if i == 0 && !pkgpath.is_empty() {
-                    value = self
-                        .get_variable_in_pkgpath(attr, pkgpath)
-                        .expect(kcl_error::INTERNAL_ERROR_MSG)
+                    value = self.get_variable_in_pkgpath(attr, pkgpath);
                 } else {
                     value = value.load_attr(attr)
                 }
             }
-            Ok(value)
+            value
         }
     }
 }

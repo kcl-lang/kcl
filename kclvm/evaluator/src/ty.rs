@@ -36,46 +36,50 @@ pub fn resolve_schema(s: &Evaluator, schema: &ValueRef, keys: &[String]) -> Valu
         };
         let schema = if let Proxy::Schema(caller) = &frame.proxy {
             s.push_pkgpath(&frame.pkgpath);
-            // Set new schema and config
-            {
-                let mut ctx = caller.ctx.borrow_mut();
-                ctx.reset_with_config(config_value, config_meta);
-            }
-            let value = (caller.body)(s, &caller.ctx, &schema_value.args, &schema_value.kwargs);
+            s.push_backtrace(&frame);
+            let value = (caller.body)(
+                s,
+                &caller.ctx.borrow().snapshot(config_value, config_meta),
+                &schema_value.args,
+                &schema_value.kwargs,
+            );
+            s.pop_backtrace();
             s.pop_pkgpath();
             value
         } else {
             schema.clone()
         };
-        // ctx.panic_info = now_panic_info;
         return schema;
     }
-    // ctx.panic_info = now_panic_info;
     schema.clone()
 }
 
 /// Type pack and check ValueRef with the expected type vector
-pub fn type_pack_and_check(s: &Evaluator, value: &ValueRef, expected_types: Vec<&str>) -> ValueRef {
+pub fn type_pack_and_check(
+    s: &Evaluator,
+    value: &ValueRef,
+    expected_types: Vec<&str>,
+    strict: bool,
+) -> ValueRef {
     if value.is_none_or_undefined() || expected_types.is_empty() {
         return value.clone();
     }
     let is_schema = value.is_schema();
-    let value_tpe = value.type_str();
     let mut checked = false;
     let mut converted_value = value.clone();
     let expected_type = &expected_types.join(" | ").replace('@', "");
     for tpe in expected_types {
         if !is_schema {
-            converted_value = convert_collection_value(s, value, &tpe);
+            converted_value = convert_collection_value(s, value, tpe);
         }
         // Runtime type check
-        checked = check_type(&converted_value, &tpe);
+        checked = check_type(&converted_value, tpe, strict);
         if checked {
             break;
         }
     }
     if !checked {
-        panic!("expect {expected_type}, got {value_tpe}");
+        panic!("expect {expected_type}, got {}", value.type_str());
     }
     converted_value
 }
@@ -86,19 +90,19 @@ pub fn convert_collection_value(s: &Evaluator, value: &ValueRef, tpe: &str) -> V
         return value.clone();
     }
     let is_collection = value.is_list() || value.is_dict();
-    let invalid_match_dict = is_dict_type(&tpe) && !value.is_dict();
-    let invalid_match_list = is_list_type(&tpe) && !value.is_list();
+    let invalid_match_dict = is_dict_type(tpe) && !value.is_dict();
+    let invalid_match_list = is_list_type(tpe) && !value.is_list();
     let invalid_match = invalid_match_dict || invalid_match_list;
     if !is_collection || invalid_match {
         return value.clone();
     }
     // Convert a value to union types e.g., {a: 1} => A | B
-    if is_type_union(&tpe) {
-        let types = split_type_union(&tpe);
+    if is_type_union(tpe) {
+        let types = split_type_union(tpe);
         convert_collection_value_with_union_types(s, value, &types)
-    } else if is_dict_type(&tpe) {
+    } else if is_dict_type(tpe) {
         //let (key_tpe, value_tpe) = separate_kv(tpe);
-        let (_, value_tpe) = separate_kv(&dereference_type(&tpe));
+        let (_, value_tpe) = separate_kv(&dereference_type(tpe));
         let mut expected_dict = ValueRef::dict(None);
         let dict_ref = value.as_dict_ref();
         expected_dict
@@ -113,8 +117,8 @@ pub fn convert_collection_value(s: &Evaluator, value: &ValueRef, tpe: &str) -> V
             expected_dict.dict_update_entry(k, &expected_value, op, index)
         }
         expected_dict
-    } else if is_list_type(&tpe) {
-        let expected_type = dereference_type(&tpe);
+    } else if is_list_type(tpe) {
+        let expected_type = dereference_type(tpe);
         let mut expected_list = ValueRef::list(None);
         let list_ref = value.as_list_ref();
         for v in &list_ref.values {
@@ -153,16 +157,18 @@ pub fn convert_collection_value(s: &Evaluator, value: &ValueRef, tpe: &str) -> V
             };
             let schema = if let Proxy::Schema(caller) = &frame.proxy {
                 // Try convert the  config to schema, if failed, return the config
-                if !SchemaEvalContext::is_fit_config(s, &caller.ctx, &value) {
+                if !SchemaEvalContext::is_fit_config(s, &caller.ctx, value) {
                     return value.clone();
                 }
                 s.push_pkgpath(&frame.pkgpath);
-                // Set new schema and config
-                {
-                    let mut ctx = caller.ctx.borrow_mut();
-                    ctx.reset_with_config(value.clone(), config_meta);
-                }
-                let value = (caller.body)(s, &caller.ctx, &s.list_value(), &s.dict_value());
+                s.push_backtrace(&frame);
+                let value = (caller.body)(
+                    s,
+                    &caller.ctx.borrow().snapshot(value.clone(), config_meta),
+                    &s.list_value(),
+                    &s.dict_value(),
+                );
+                s.pop_backtrace();
                 s.pop_pkgpath();
                 value
             } else {
@@ -188,7 +194,7 @@ pub fn convert_collection_value_with_union_types(
         for tpe in types {
             // Try match every type and convert the value, if matched, return the value.
             let value = convert_collection_value(s, value, tpe);
-            if check_type(&value, tpe) {
+            if check_type(&value, tpe, false) {
                 return value;
             }
         }

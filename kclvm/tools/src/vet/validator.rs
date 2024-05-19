@@ -68,10 +68,11 @@ use super::expr_builder::ExprBuilder;
 pub use crate::util::loader::LoaderKind;
 use anyhow::Result;
 use kclvm_ast::{
-    ast::{AssignStmt, Expr, ExprContext, Identifier, Module, Node, NodeRef, SchemaStmt, Stmt},
+    ast::{AssignStmt, Expr, ExprContext, Identifier, Node, NodeRef, Program, SchemaStmt, Stmt},
     node_ref,
 };
-use kclvm_runner::{execute_module, MapErrorResult};
+use kclvm_parser::{LoadProgramOptions, ParseSessionRef};
+use kclvm_runner::{execute, ExecProgramArgs, MapErrorResult};
 
 const TMP_FILE: &str = "validationTempKCLCode.k";
 
@@ -172,14 +173,27 @@ const TMP_FILE: &str = "validationTempKCLCode.k";
 /// }
 /// ```
 pub fn validate(val_opt: ValidateOption) -> Result<bool> {
-    let k_path = match val_opt.kcl_path {
-        Some(path) => path,
-        None => TMP_FILE.to_string(),
-    };
+    let k_path = val_opt.kcl_path.unwrap_or_else(|| TMP_FILE.to_string());
+    let k_code = val_opt.kcl_code.map_or_else(Vec::new, |code| vec![code]);
 
-    let mut module = kclvm_parser::parse_file_force_errors(&k_path, val_opt.kcl_code)?;
+    let sess = ParseSessionRef::default();
+    let mut compile_res = kclvm_parser::load_program(
+        sess,
+        vec![k_path]
+            .iter()
+            .map(|s| s.as_str())
+            .collect::<Vec<&str>>()
+            .as_slice(),
+        Some(LoadProgramOptions {
+            k_code_list: k_code,
+            package_maps: Default::default(),
+            load_plugins: true,
+            ..Default::default()
+        }),
+        None,
+    )?;
 
-    let schemas = filter_schema_stmt(&module);
+    let schemas = filter_schema_stmt_from_prog(&compile_res.program);
     let schema_name = match val_opt.schema_name {
         Some(name) => Some(name),
         None => schemas.get(0).map(|schema| schema.name.node.clone()),
@@ -192,9 +206,26 @@ pub fn validate(val_opt: ValidateOption) -> Result<bool> {
 
     let assign_stmt = build_assign(&val_opt.attribute_name, validated_expr);
 
-    module.body.insert(0, assign_stmt);
+    match compile_res.program.pkgs.get_mut(kclvm_ast::MAIN_PKG) {
+        Some(pkg) => {
+            if let Some(module) = pkg.first_mut() {
+                module.body.insert(0, assign_stmt);
+            } else {
+                return Err(anyhow::anyhow!("No main module found"));
+            }
+        }
+        None => {
+            return Err(anyhow::anyhow!("No main package found"));
+        }
+    }
 
-    execute_module(module).map_err_to_result().map(|_| true)
+    execute(
+        ParseSessionRef::default(),
+        compile_res.program,
+        &ExecProgramArgs::default(),
+    )
+    .map_err_to_result()
+    .map(|_| true)
 }
 
 fn build_assign(attr_name: &str, node: NodeRef<Expr>) -> NodeRef<Stmt> {
@@ -209,13 +240,21 @@ fn build_assign(attr_name: &str, node: NodeRef<Expr>) -> NodeRef<Stmt> {
     }))
 }
 
-fn filter_schema_stmt(module: &Module) -> Vec<&SchemaStmt> {
+fn filter_schema_stmt_from_prog(prog: &Program) -> Vec<&SchemaStmt> {
     let mut result = vec![];
-    for stmt in &module.body {
-        if let Stmt::Schema(s) = &stmt.node {
-            result.push(s);
+    for (pkg_name, modules) in &prog.pkgs {
+        if pkg_name != kclvm_ast::MAIN_PKG {
+            continue;
+        }
+        for module in modules {
+            for stmt in &module.body {
+                if let Stmt::Schema(s) = &stmt.node {
+                    result.push(s);
+                }
+            }
         }
     }
+
     result
 }
 

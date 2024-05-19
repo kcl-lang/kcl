@@ -1,6 +1,6 @@
 [package]
 name = "kclvm-loader"
-version = "0.8.4"
+version = "0.9.0-alpha.2"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -14,6 +14,8 @@ kclvm-ast-pretty = { path = "../ast_pretty" }
 kclvm-parser = {path = "../parser"}
 kclvm-sema = {path = "../sema"}
 kclvm-error = {path = "../error"}
+kclvm-query = {path = "../query"}
+maplit = "1.0.2"
 
 [dev-dependencies]
 insta = "1.8.0"

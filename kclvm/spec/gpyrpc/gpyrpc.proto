@@ -63,6 +63,7 @@ service KclvmService {
 	rpc ParseProgram(ParseProgram_Args) returns(ParseProgram_Result);
 	rpc LoadPackage(LoadPackage_Args) returns(LoadPackage_Result);
 	rpc ListOptions(ParseProgram_Args) returns(ListOptions_Result);
+	rpc ListVariables(ListVariables_Args) returns(ListVariables_Result);
 
 	rpc FormatCode(FormatCode_Args) returns(FormatCode_Result);
 	rpc FormatPath(FormatPath_Args) returns(FormatPath_Result);
@@ -290,6 +291,23 @@ message OverrideFile_Result {
 	bool result = 1;
 }
 
+message ListVariables_Args {
+	string file = 1;
+	repeated string specs = 2;
+}
+
+message ListVariables_Result {
+	map<string, Variable> variables = 1;
+	repeated string unsupported_codes = 2; 
+	repeated Error parse_errors = 3;
+}
+
+message Variable {
+	string value = 1;
+	string type_name = 2;
+	string op_sym = 3;
+}
+
 message GetFullSchemaType_Args {
 	ExecProgram_Args exec_args = 1;
 	string schema_name = 2;
@@ -462,6 +480,7 @@ message KclType {
 	string pkg_path = 13;                // `pkg_path` represents the path name of the package where the attribute is located.
 	string description = 14;             // `description` represents the document of the attribute.
 	map<string, Example> examples = 15;  // A map object to hold examples, the key is the example name.
+	KclType base_schema = 16;
 }
 
 message Decorator {

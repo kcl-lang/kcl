@@ -1,4 +1,4 @@
-// Copyright 2021 The KCL Authors. All rights reserved.
+// Copyright The KCL Authors. All rights reserved.
 
 use indexmap::{IndexMap, IndexSet};
 use inkwell::basic_block::BasicBlock;
@@ -37,7 +37,7 @@ use crate::codegen::{
 use crate::codegen::{CodeGenContext, GLOBAL_LEVEL};
 use crate::value;
 
-use super::OBJECT_FILE_SUFFIX;
+use crate::codegen::OBJECT_FILE_SUFFIX;
 
 /// SCALAR_KEY denotes the temp scalar key for the global variable json plan process.
 const SCALAR_KEY: &str = "";
@@ -85,6 +85,7 @@ pub struct LLVMCodeGenContext<'ctx> {
     pub program: &'ctx ast::Program,
     pub functions: RefCell<Vec<Rc<FunctionValue<'ctx>>>>,
     pub imported: RefCell<HashSet<String>>,
+    pub setter_keys: RefCell<HashSet<String>>,
     pub schema_stack: RefCell<Vec<value::SchemaType>>,
     pub lambda_stack: RefCell<Vec<usize>>,
     pub schema_expr_stack: RefCell<Vec<()>>,
@@ -365,6 +366,20 @@ impl<'ctx> BuilderMethods for LLVMCodeGenContext<'ctx> {
             self.module.add_function(name, fn_ty, None)
         }
     }
+
+    /// Add a setter function named `name`.
+    fn add_setter_function(&self, name: &str) -> Self::Function {
+        let fn_ty = self.setter_func_type();
+        if self.no_link {
+            let pkgpath = self.current_pkgpath();
+            let msg = format!("pkgpath {} is not found", pkgpath);
+            let modules = self.modules.borrow_mut();
+            let module = modules.get(&pkgpath).expect(&msg).borrow_mut();
+            module.inner.add_function(name, fn_ty, None)
+        } else {
+            self.module.add_function(name, fn_ty, None)
+        }
+    }
 }
 
 /* Value methods */
@@ -602,6 +617,16 @@ impl<'ctx> ValueMethods for LLVMCodeGenContext<'ctx> {
             .get_parent()
             .unwrap()
             .get_first_param()
+            .expect(kcl_error::CONTEXT_VAR_NOT_FOUND_MSG)
+    }
+    /// Get the global evaluation scope pointer.
+    fn current_scope_ptr(&self) -> Self::Value {
+        self.builder
+            .get_insert_block()
+            .unwrap()
+            .get_parent()
+            .unwrap()
+            .get_nth_param(1)
             .expect(kcl_error::CONTEXT_VAR_NOT_FOUND_MSG)
     }
 }
@@ -1255,6 +1280,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             functions: RefCell::new(vec![]),
             imported: RefCell::new(HashSet::new()),
             local_vars: RefCell::new(HashSet::new()),
+            setter_keys: RefCell::new(HashSet::new()),
             schema_stack: RefCell::new(vec![]),
             // 1 denotes the top global main function lambda and 0 denotes the builtin scope.
             // Any user-defined lambda scope greater than 1.
@@ -1285,8 +1311,10 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         let tpe = self.value_ptr_type().into_pointer_type();
         let void_type = self.context.void_type();
         let context_ptr_type = self.context_ptr_type();
-        let fn_type = tpe.fn_type(&[context_ptr_type.into()], false);
-        let void_fn_type = void_type.fn_type(&[context_ptr_type.into()], false);
+        let scope_ptr_type = self.scope_ptr_type();
+        let fn_type = tpe.fn_type(&[context_ptr_type.into(), scope_ptr_type.into()], false);
+        let void_fn_type =
+            void_type.fn_type(&[context_ptr_type.into(), scope_ptr_type.into()], false);
         let has_main_pkg = self.program.pkgs.contains_key(MAIN_PKG_PATH);
         let function = if self.no_link {
             let mut modules = self.modules.borrow_mut();
@@ -1714,7 +1742,12 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
     }
 
     /// Append a variable or update the existed variable
-    pub fn add_or_update_global_variable(&self, name: &str, value: BasicValueEnum<'ctx>) {
+    pub fn add_or_update_global_variable(
+        &self,
+        name: &str,
+        value: BasicValueEnum<'ctx>,
+        save_scope: bool,
+    ) {
         // Find argument name in the scope
         let current_pkgpath = self.current_pkgpath();
         let mut pkg_scopes = self.pkg_scopes.borrow_mut();
@@ -1725,6 +1758,18 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             let variables = last.variables.borrow();
             if let Some(var) = variables.get(&name.to_string()) {
                 self.builder.build_store(*var, value);
+                if save_scope {
+                    self.build_void_call(
+                        &ApiFunc::kclvm_scope_set.name(),
+                        &[
+                            self.current_runtime_ctx_ptr(),
+                            self.current_scope_ptr(),
+                            self.native_global_string(&current_pkgpath, "").into(),
+                            self.native_global_string(name, "").into(),
+                            value,
+                        ],
+                    );
+                }
                 existed = true;
             }
         }
@@ -1735,6 +1780,18 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 let var_name = format!("${}.${}", pkgpath_without_prefix!(pkgpath), name);
                 let pointer = self.new_global_kcl_value_ptr(&var_name);
                 self.builder.build_store(pointer, value);
+                if save_scope {
+                    self.build_void_call(
+                        &ApiFunc::kclvm_scope_set.name(),
+                        &[
+                            self.current_runtime_ctx_ptr(),
+                            self.current_scope_ptr(),
+                            self.native_global_string(&current_pkgpath, "").into(),
+                            self.native_global_string(name, "").into(),
+                            value,
+                        ],
+                    );
+                }
                 if !variables.contains_key(name) {
                     variables.insert(name.to_string(), pointer);
                 }
@@ -1948,7 +2005,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                                     let closure_map = self.builder.build_load(*ptr, "");
                                     let string_ptr_value =
                                         self.native_global_string(name, "").into();
-                                    // Not a closure, mapbe a local variale
+                                    // Not a closure, maybe a local variable
                                     self.build_call(
                                         &ApiFunc::kclvm_dict_get_value.name(),
                                         &[
@@ -1962,7 +2019,41 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                             }
                         }
                     } else {
-                        self.builder.build_load(*var, name)
+                        // Not a local schema attribute or a global type.
+                        let key = format!("{}.{name}", pkgpath_without_prefix!(pkgpath));
+                        let is_in_lambda = self.is_in_lambda();
+                        if !is_in_schema
+                            && !is_in_lambda
+                            && index <= GLOBAL_LEVEL
+                            && !self.local_vars.borrow().contains(name)
+                            && self.setter_keys.borrow().contains(&key)
+                        {
+                            let target = self
+                                .target_vars
+                                .borrow_mut()
+                                .last()
+                                .expect(kcl_error::INTERNAL_ERROR_MSG)
+                                .clone();
+                            self.build_call(
+                                &ApiFunc::kclvm_scope_get.name(),
+                                &[
+                                    // Runtime context ptr
+                                    self.current_runtime_ctx_ptr(),
+                                    // Scope ptr
+                                    self.current_scope_ptr(),
+                                    // Package path
+                                    self.native_global_string(&pkgpath, "").into(),
+                                    // Attribute name
+                                    self.native_global_string(name, "").into(),
+                                    // Target
+                                    self.native_global_string(&target, "").into(),
+                                    // Default
+                                    self.builder.build_load(*var, name),
+                                ],
+                            )
+                        } else {
+                            self.builder.build_load(*var, name)
+                        }
                     };
                     result = Ok(value);
                     break;

@@ -1,6 +1,6 @@
 [package]
 name = "rustc_span"
-version = "0.0.1"
+version = "0.1.2"
 edition = "2021"
 authors = ["zongzhe1024@163.com"]
 license = "Apache-2.0 OR MIT"
@@ -15,7 +15,7 @@ categories = ["command-line-utilities"]
 doctest = false
 
 [dependencies]
-rustc_data_structures = "0.0.1"
+rustc_data_structures = "0.1.2"
 scoped-tls = "1.0"
 unicode-width = "0.1.4"
 cfg-if = "0.1.2"

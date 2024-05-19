@@ -1,3 +1,4 @@
+use anyhow::Result;
 use std::path::Path;
 use std::sync::Arc;
 
@@ -29,15 +30,17 @@ pub fn criterion_benchmark(c: &mut Criterion) {
 criterion_group!(benches, criterion_benchmark);
 criterion_main!(benches);
 
-fn exec(file: &str) -> Result<String, String> {
+fn exec(file: &str) -> Result<String> {
     let mut args = ExecProgramArgs::default();
     args.k_filename_list.push(file.to_string());
     let opts = args.get_load_program_options();
     let sess = Arc::new(ParseSession::default());
     // Load AST program
-    let program = load_program(sess.clone(), &[file], Some(opts), None).unwrap();
+    let program = load_program(sess.clone(), &[file], Some(opts), None)
+        .unwrap()
+        .program;
     // Resolve ATS, generate libs, link libs and execute.
-    execute(sess, program, &args)
+    execute(sess, program, &args).map(|r| r.yaml_result)
 }
 
 /// Get kcl files from path.

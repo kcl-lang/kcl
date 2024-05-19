@@ -197,10 +197,14 @@ impl<T> Node<T> {
     }
 
     pub fn node(node: T, (lo, hi): (Loc, Loc)) -> Self {
+        let filename = kclvm_utils::path::convert_windows_drive_letter(&format!(
+            "{}",
+            lo.file.name.prefer_remapped()
+        ));
         Self {
             id: AstIndex::default(),
             node,
-            filename: format!("{}", lo.file.name.prefer_remapped()),
+            filename,
             line: lo.line as u64,
             column: lo.col.0 as u64,
             end_line: hi.line as u64,
@@ -681,6 +685,13 @@ pub struct SchemaAttr {
     pub decorators: Vec<NodeRef<CallExpr>>,
 
     pub ty: NodeRef<Type>,
+}
+
+impl SchemaAttr {
+    #[inline]
+    pub fn is_ident_attr(&self) -> bool {
+        self.name.end_column - self.name.column <= self.name.node.chars().count() as u64
+    }
 }
 
 /// RuleStmt, e.g.

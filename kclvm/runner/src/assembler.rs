@@ -2,12 +2,10 @@ use anyhow::Result;
 use compiler_base_macros::bug;
 use indexmap::IndexMap;
 use kclvm_ast::ast::{self, Program};
-use kclvm_compiler::codegen::{
-    llvm::{emit_code, OBJECT_FILE_SUFFIX},
-    EmitOptions,
-};
+use kclvm_compiler::codegen::{emit_code, EmitOptions, OBJECT_FILE_SUFFIX};
 use kclvm_config::cache::{load_pkg_cache, save_pkg_cache, CacheOption, KCL_CACHE_PATH_ENV_VAR};
 use kclvm_sema::resolver::scope::ProgramScope;
+use kclvm_utils::fslock::open_lock_file;
 use std::{
     collections::HashMap,
     env,
@@ -98,7 +96,7 @@ impl LibAssembler for KclvmLibAssembler {
         args: &ExecProgramArgs,
     ) -> Result<String> {
         match &self {
-            KclvmLibAssembler::LLVM => LlvmLibAssembler::default().assemble(
+            KclvmLibAssembler::LLVM => LlvmLibAssembler.assemble(
                 compile_prog,
                 import_names,
                 code_file,
@@ -111,14 +109,14 @@ impl LibAssembler for KclvmLibAssembler {
     #[inline]
     fn add_code_file_suffix(&self, code_file: &str) -> String {
         match &self {
-            KclvmLibAssembler::LLVM => LlvmLibAssembler::default().add_code_file_suffix(code_file),
+            KclvmLibAssembler::LLVM => LlvmLibAssembler.add_code_file_suffix(code_file),
         }
     }
 
     #[inline]
     fn get_code_file_suffix(&self) -> String {
         match &self {
-            KclvmLibAssembler::LLVM => LlvmLibAssembler::default().get_code_file_suffix(),
+            KclvmLibAssembler::LLVM => LlvmLibAssembler.get_code_file_suffix(),
         }
     }
 }
@@ -333,7 +331,7 @@ impl KclvmAssembler {
             let target = self.target.clone();
             {
                 // Locking file for parallel code generation.
-                let mut file_lock = fslock::LockFile::open(&lock_file_path)?;
+                let mut file_lock = open_lock_file(&lock_file_path)?;
                 file_lock.lock()?;
 
                 let root = &compile_prog.root;

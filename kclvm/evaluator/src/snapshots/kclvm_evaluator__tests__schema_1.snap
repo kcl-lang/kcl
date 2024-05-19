@@ -1,0 +1,10 @@
+---
+source: evaluator/src/tests.rs
+expression: "format!(\"{}\", evaluator.run().unwrap().1)"
+---
+alice:
+  name: Alice
+  age: 10
+bob:
+  name: Bob
+  age: 18

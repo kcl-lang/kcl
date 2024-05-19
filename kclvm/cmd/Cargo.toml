@@ -1,12 +1,12 @@
 [package]
 name = "kclvm-cmd"
-version = "0.8.4"
+version = "0.9.0-alpha.2"
 edition = "2021"
 
 [dependencies]
 anyhow = "1.0"
 clap = "4.3.0"
-compiler_base_session = {path = "../../compiler_base/session"}
+compiler_base_session = "0.1.3"
 
 kclvm-api = {path = "../api"}
 kclvm-parser = {path = "../parser"}

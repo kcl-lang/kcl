@@ -1,6 +1,6 @@
 [package]
 name = "kcl-language-server"
-version = "0.8.4"
+version = "0.9.0-alpha.2"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -8,10 +8,8 @@ edition = "2021"
 [dependencies]
 chrono = "0.4.19"
 indexmap = "1.0"
-chumsky = "0.9.0"
 env_logger = "0.11.2"
 ropey = "1.3.2"
-tokio = { version = "1.17.0", features = ["full"] }
 tokio-test = "0.4.2"
 serde = { version = "1.0", features = ["derive"] }
 dashmap = "5.1.0"
@@ -30,7 +28,7 @@ kclvm-sema = { path = "../../../sema" }
 kclvm-ast = { path = "../../../ast" }
 kclvm-utils = { path = "../../../utils" }
 kclvm-version = { path = "../../../version" }
-compiler_base_session = { path = "../../../../compiler_base/session" }
+compiler_base_session = "0.1.3"
 kclvm-query = { path = "../../../query" }
 kclvm-span = { path = "../../../span" }
 
@@ -46,3 +44,6 @@ serde_json = { version = "1.0", default-features = false }
 parking_lot = { version = "0.12.0", default-features = false }
 rustc-hash = { version = "1.1.0", default-features = false }
 proc_macro_crate = { path = "../../benches/proc_macro_crate" }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+tokio = { version = "1.37.0", features = ["full"] }

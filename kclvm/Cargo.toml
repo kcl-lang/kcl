@@ -1,6 +1,6 @@
 [package]
 name = "kclvm"
-version = "0.8.4"
+version = "0.9.0-alpha.2"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -12,24 +12,7 @@ crate-type = [
 path = "src/lib.rs"
 name = "kclvm_cli_cdylib"
 
-
-[build-dependencies]
-cc = "1.0"
-
 [dependencies]
-serde_json = "1.0"
-serde = { version = "1", features = ["derive"] }
-glob = "0.3.0"
-walkdir = "2"
-libc = "0.2.112"
-indexmap = "1.0"
-fslock = "0.2.1"
-libloading = "0.7.3"
-chrono = "0.4.19"
-maplit = "1.0.2"
-anyhow = { version = "1.0.70", features = ["backtrace"] }
-compiler_base_session = {path = "../compiler_base/session"}
-
 kclvm-api = {path = "./api"}
 kclvm-cmd = {path = "./cmd"}
 kclvm-ast = {path = "./ast"}
@@ -78,3 +61,6 @@ members = [
     "utils",
     "tools/src/LSP"
 ]
+
+[features]
+llvm = ["kclvm-compiler/llvm", "kclvm-runner/llvm", "kclvm-tools/llvm"]

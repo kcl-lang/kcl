@@ -4,9 +4,10 @@ on: ["push", "pull_request"]
 jobs:
   build-and-test:
     # Ref: https://github.com/actions/runner-images/tree/main/images/macos
+    # Note: The arch of macos-14 is arm64
     strategy:
       matrix:
-        os: [macos-13-xlarge]
+        os: [macos-13-xlarge, macos-14]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Git checkout
@@ -42,6 +43,10 @@ jobs:
       - name: Grammar test
         working-directory: ./kclvm
         run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin:/opt/homebrew/opt/llvm@12/bin/ && make && make test-grammar
+        shell: bash
+      - name: Evaluator Grammar test
+        working-directory: ./kclvm
+        run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin:/opt/homebrew/opt/llvm@12/bin/ && make test-grammar-evaluator
         shell: bash
 
       - uses: actions/upload-artifact@v3

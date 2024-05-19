@@ -70,6 +70,50 @@ where
     }
 }
 
+/// Conver windows drive letter to upcase
+pub fn convert_windows_drive_letter(path: &str) -> String {
+    #[cfg(target_os = "windows")]
+    {
+        let regex = regex::Regex::new(r"(?i)^\\\\\?\\[a-z]:\\").unwrap();
+        const VERBATIM_PREFIX: &str = r#"\\?\"#;
+        let mut p = path.to_string();
+        if p.starts_with(VERBATIM_PREFIX) && regex.is_match(&p) {
+            let drive_letter = p[VERBATIM_PREFIX.len()..VERBATIM_PREFIX.len() + 1].to_string();
+            p.replace_range(
+                VERBATIM_PREFIX.len()..VERBATIM_PREFIX.len() + 1,
+                &drive_letter.to_uppercase(),
+            );
+        }
+        let regex = regex::Regex::new(r"[a-z]:\\").unwrap();
+        if regex.is_match(&p) {
+            let drive_letter = p[0..1].to_string();
+            p.replace_range(0..1, &drive_letter.to_uppercase());
+        }
+        p
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        path.to_owned()
+    }
+}
+
+#[test]
+fn test_convert_drive_letter() {
+    #[cfg(target_os = "windows")]
+    {
+        let path = r"\\?\d:\xx";
+        assert_eq!(convert_windows_drive_letter(path), r"\\?\D:\xx".to_string());
+
+        let path = r"d:\xx";
+        assert_eq!(convert_windows_drive_letter(path), r"D:\xx".to_string());
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let path = r".\xx";
+        assert_eq!(convert_windows_drive_letter(path), path.to_string());
+    }
+}
+
 #[test]
 #[cfg(target_os = "windows")]
 fn test_adjust_canonicalization() {

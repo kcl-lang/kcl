@@ -1,19 +1,20 @@
 [package]
 name = "kclvm-ast"
-version = "0.8.4"
+version = "0.9.0-alpha.2"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 uuid = { version = "1.4.1", features = ["v4"] }
-compiler_base_span = { path = "../../compiler_base/span", version = "0.0.2" }
+compiler_base_span = "0.1.2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1.0"
 
 kclvm-span = { path = "../span" }
 kclvm-error = { path = "../error" }
 thread_local = "1.1.7"
+kclvm-utils = {path = "../utils"}
 
 [dev-dependencies]
 kclvm-parser = { path = "../parser" }

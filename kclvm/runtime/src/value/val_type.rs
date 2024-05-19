@@ -21,6 +21,7 @@ pub const KCL_TYPE_ANY: &str = "any";
 pub const KCL_TYPE_LIST: &str = "list";
 pub const KCL_TYPE_DICT: &str = "dict";
 pub const KCL_TYPE_FUNCTION: &str = "function";
+pub const KCL_TYPE_TYPE: &str = "type";
 pub const KCL_TYPE_NUMBER_MULTIPLY: &str = "number_multiplier";
 pub const KCL_NAME_CONSTANT_NONE: &str = "None";
 pub const KCL_NAME_CONSTANT_UNDEFINED: &str = "Undefined";
@@ -58,7 +59,13 @@ impl ValueRef {
             Value::list_value(..) => String::from(KCL_TYPE_LIST),
             Value::dict_value(..) => String::from(KCL_TYPE_DICT),
             Value::schema_value(ref v) => v.name.clone(),
-            Value::func_value(..) => String::from(KCL_TYPE_FUNCTION),
+            Value::func_value(func) => {
+                if func.runtime_type.is_empty() {
+                    String::from(KCL_TYPE_FUNCTION)
+                } else {
+                    String::from(KCL_TYPE_TYPE)
+                }
+            }
         }
     }
 }
@@ -155,12 +162,12 @@ pub fn type_pack_and_check(
     ctx: &mut Context,
     value: &ValueRef,
     expected_types: Vec<&str>,
+    strict: bool,
 ) -> ValueRef {
     if value.is_none_or_undefined() || expected_types.is_empty() {
         return value.clone();
     }
     let is_schema = value.is_schema();
-    let value_tpe = value.type_str();
     let mut checked = false;
     let mut converted_value = value.clone();
     let expected_type = &expected_types.join(" | ").replace('@', "");
@@ -178,13 +185,13 @@ pub fn type_pack_and_check(
             converted_value = convert_collection_value(ctx, value, &tpe);
         }
         // Runtime type check
-        checked = check_type(&converted_value, &tpe);
+        checked = check_type(&converted_value, &tpe, strict);
         if checked {
             break;
         }
     }
     if !checked {
-        panic!("expect {expected_type}, got {value_tpe}");
+        panic!("expect {expected_type}, got {}", value.type_str());
     }
     converted_value
 }
@@ -368,7 +375,7 @@ pub fn convert_collection_value_with_union_types(
         for tpe in types {
             // Try match every type and convert the value, if matched, return the value.
             let value = convert_collection_value(ctx, value, tpe);
-            if check_type(&value, tpe) {
+            if check_type(&value, tpe, false) {
                 return value;
             }
         }
@@ -377,7 +384,7 @@ pub fn convert_collection_value_with_union_types(
 }
 
 /// check_type returns the value wether match the given the type string
-pub fn check_type(value: &ValueRef, tpe: &str) -> bool {
+pub fn check_type(value: &ValueRef, tpe: &str, strict: bool) -> bool {
     if tpe.is_empty() || tpe == KCL_TYPE_ANY {
         return true;
     }
@@ -408,9 +415,18 @@ pub fn check_type(value: &ValueRef, tpe: &str) -> bool {
             return true;
         }
         if value.is_schema() {
-            // not list/dict, not built-in type, treat as user defined schema,
-            // do not check user schema type because it has been checked at compile time
-            return is_schema_type(tpe);
+            if strict {
+                let value_ty = crate::val_plan::value_type_path(value, tpe.contains('.'));
+                let tpe = match tpe.strip_prefix('@') {
+                    Some(ty_str) => ty_str.to_string(),
+                    None => tpe.to_string(),
+                };
+                return value_ty == tpe;
+            } else {
+                // not list/dict, not built-in type, treat as user defined schema,
+                // do not check user schema type because it has been checked at compile time
+                return is_schema_type(tpe);
+            }
         }
         // Type error
         return false;
@@ -425,7 +441,9 @@ pub fn check_type_union(value: &ValueRef, tpe: &str) -> bool {
     if expected_types.len() <= 1 {
         false
     } else {
-        expected_types.iter().any(|tpe| check_type(value, tpe))
+        expected_types
+            .iter()
+            .any(|tpe| check_type(value, tpe, false))
     }
 }
 
@@ -483,7 +501,7 @@ pub fn check_type_dict(value: &ValueRef, tpe: &str) -> bool {
     let (_, expected_value_type) = separate_kv(&expected_type);
     let dict_ref = value.as_dict_ref();
     for (_, v) in &dict_ref.values {
-        if !check_type(v, &expected_value_type) {
+        if !check_type(v, &expected_value_type, false) {
             return false;
         }
     }
@@ -501,7 +519,7 @@ pub fn check_type_list(value: &ValueRef, tpe: &str) -> bool {
     let expected_type = dereference_type(tpe);
     let list_ref = value.as_list_ref();
     for v in &list_ref.values {
-        if !check_type(v, &expected_type) {
+        if !check_type(v, &expected_type, false) {
             return false;
         }
     }
@@ -724,7 +742,7 @@ mod test_value_type {
             (ValueRef::str("0"), "int", false),
         ];
         for (value, tpe, expected) in cases {
-            assert_eq!(check_type(&value, tpe), expected);
+            assert_eq!(check_type(&value, tpe, false), expected);
         }
     }
 

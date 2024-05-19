@@ -120,7 +120,7 @@ impl<'ctx> Evaluator<'ctx> {
     /// lhs as rhs
     #[inline]
     pub(crate) fn r#as(&self, lhs: ValueRef, rhs: ValueRef) -> ValueRef {
-        type_pack_and_check(self, &lhs, vec![&rhs.as_str()])
+        type_pack_and_check(self, &lhs, vec![&rhs.as_str()], true)
     }
     /// lhs is rhs
     #[inline]
@@ -175,7 +175,10 @@ impl<'ctx> Evaluator<'ctx> {
                 // Has type annotation
                 if let Some(ty) = attr_map.get(k) {
                     let value = lhs.dict_get_value(k).unwrap();
-                    lhs.dict_update_key_value(k, type_pack_and_check(self, &value, vec![ty]));
+                    lhs.dict_update_key_value(
+                        k,
+                        type_pack_and_check(self, &value, vec![ty], false),
+                    );
                 }
             }
             lhs.clone()
@@ -240,7 +243,7 @@ impl<'ctx> Evaluator<'ctx> {
             }
         };
         if attr_map.contains_key(key) {
-            let v = type_pack_and_check(self, value, vec![attr_map.get(key).unwrap()]);
+            let v = type_pack_and_check(self, value, vec![attr_map.get(key).unwrap()], false);
             self.dict_merge_key_value_pair(dict, key, &v, op, insert_index, false);
         } else {
             self.dict_merge_key_value_pair(dict, key, value, op, insert_index, false);

@@ -11,7 +11,7 @@
 //! `${my_pkg:KCL_MOD}/sub/main.k` is a mod relative path.
 //! The real path of `${my_pkg:KCL_MOD}/xxx/main.k` is `/usr/my_pkg/sub/main.k`.
 use anyhow::Result;
-use pcre2::bytes::Regex;
+use regex::Regex;
 use std::path::PathBuf;
 
 #[derive(Clone, Debug, Default)]
@@ -72,7 +72,7 @@ impl ModRelativePath {
     /// ```
     pub fn is_relative_path(&self) -> Result<bool> {
         Ok(Regex::new(RELATIVE_PATH_PREFFIX)?
-            .find(self.path.as_bytes())?
+            .find(&self.path)
             .map_or(false, |mat| mat.start() == 0))
     }
 
@@ -97,10 +97,9 @@ impl ModRelativePath {
         }
 
         Ok(Regex::new(RELATIVE_PATH_PREFFIX)?
-            .captures(self.path.as_bytes())?
+            .captures(&self.path)
             .and_then(|caps| caps.name(ROOT_PKG_NAME_FLAG))
-            .map(|mat| std::str::from_utf8(mat.as_bytes()).map(|s| s.to_string()))
-            .transpose()?)
+            .map(|mat| mat.as_str().to_string()))
     }
 
     /// [`canonicalize_by_root_path`] returns the canonicalized path by the root path.
@@ -124,17 +123,14 @@ impl ModRelativePath {
         }
 
         Ok(Regex::new(RELATIVE_PATH_PREFFIX)?
-            .captures(self.path.as_bytes())?
+            .captures(&self.path)
             .map_or_else(
                 || self.get_path(),
                 |caps| {
                     // Due to the path format is different between windows and linux,
                     // Can not use the replace method directly
                     // by 'replace(std::str::from_utf8(caps.get(0).unwrap().as_bytes()).unwrap(), root_path)'.
-                    let sub_path = self.get_path().replace(
-                        std::str::from_utf8(caps.get(0).unwrap().as_bytes()).unwrap(),
-                        "",
-                    );
+                    let sub_path = self.get_path().replace(caps.get(0).unwrap().as_str(), "");
                     let res = PathBuf::from(root_path)
                         .join(sub_path)
                         .display()

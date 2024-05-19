@@ -1259,7 +1259,7 @@ mod tests {
                         label: "Person(b){}".to_string(),
                         kind: Some(CompletionItemKind::CLASS),
                         detail: Some(
-                            "__main__\n\nschema Person[b: int](Base)\nAttributes:\nc: int"
+                            "__main__\n\nschema Person\\[b: int](Base)\nAttributes:\nc: int"
                                 .to_string()
                         ),
                         documentation: Some(lsp_types::Documentation::String("".to_string())),

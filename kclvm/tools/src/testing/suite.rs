@@ -5,10 +5,14 @@ use anyhow::{anyhow, Result};
 use indexmap::IndexMap;
 use kclvm_ast::ast;
 use kclvm_driver::{get_kcl_files, get_pkg_list};
-use kclvm_parser::{parse_file_force_errors, ParseSession};
+use kclvm_parser::{parse_file_force_errors, ParseSessionRef};
+#[cfg(feature = "llvm")]
+use kclvm_runner::build_program;
+#[cfg(not(feature = "llvm"))]
+use kclvm_runner::exec_program;
+#[cfg(feature = "llvm")]
 use kclvm_runner::runner::ProgramRunner;
-use kclvm_runner::{build_program, ExecProgramArgs};
-use std::sync::Arc;
+use kclvm_runner::ExecProgramArgs;
 use std::time::Instant;
 
 /// File suffix for test files.
@@ -59,7 +63,8 @@ impl TestRun for TestSuite {
             ..opts.exec_args.clone()
         };
         // Build the program.
-        let artifact = build_program::<String>(Arc::new(ParseSession::default()), &args, None)?;
+        #[cfg(feature = "llvm")]
+        let artifact = build_program::<String>(ParseSessionRef::default(), &args, None)?;
         // Test every case in the suite.
         for (name, _) in &self.cases {
             args.args = vec![ast::CmdArgSpec {
@@ -67,7 +72,10 @@ impl TestRun for TestSuite {
                 value: format!("{:?}", name),
             }];
             let start = Instant::now();
+            #[cfg(feature = "llvm")]
             let exec_result = artifact.run(&args)?;
+            #[cfg(not(feature = "llvm"))]
+            let exec_result = exec_program(ParseSessionRef::default(), &args)?;
             // Check if there was an error.
             let error = if exec_result.err_message.is_empty() {
                 None

@@ -3,6 +3,7 @@
 //! function to modify the file. The main principle is to parse the AST according to the
 //! input file name, and according to the ast::OverrideSpec transforms the nodes in the
 //! AST, recursively modifying or deleting the values of the nodes in the AST.
+pub mod node;
 pub mod r#override;
 pub mod path;
 pub mod query;
@@ -17,6 +18,7 @@ use kclvm_ast::ast;
 use kclvm_ast_pretty::print_ast_module;
 use kclvm_parser::parse_file;
 
+use kclvm_sema::pre_process::fix_config_expr_nest_attr;
 pub use query::{get_schema_type, GetSchemaOption};
 pub use r#override::{apply_override_on_module, apply_overrides};
 
@@ -81,8 +83,7 @@ pub fn override_file(file: &str, specs: &[String], import_paths: &[String]) -> R
     let overrides = specs
         .iter()
         .map(|s| parse_override_spec(s))
-        .filter_map(Result::ok)
-        .collect::<Vec<ast::OverrideSpec>>();
+        .collect::<Result<Vec<ast::OverrideSpec>, _>>()?;
     // Parse file to AST module.
     let mut module = match parse_file(file, None) {
         Ok(module) => module.module,
@@ -95,6 +96,9 @@ pub fn override_file(file: &str, specs: &[String], import_paths: &[String]) -> R
             result = true;
         }
     }
+
+    // Transform config expr to simplify the config path query and override.
+    fix_config_expr_nest_attr(&mut module);
     // Print AST module.
     if result {
         let code_str = print_ast_module(&module);

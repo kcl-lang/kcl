@@ -10,7 +10,7 @@ use kcl_language_server::rename;
 use kclvm_config::settings::build_settings_pathbuf;
 use kclvm_driver::canonicalize_input_files;
 use kclvm_loader::option::list_options;
-use kclvm_loader::{load_packages, LoadPackageOptions};
+use kclvm_loader::{load_packages_with_cache, LoadPackageOptions};
 use kclvm_parser::load_program;
 use kclvm_parser::parse_file;
 use kclvm_parser::KCLModuleCache;
@@ -20,8 +20,11 @@ use kclvm_query::get_schema_type;
 use kclvm_query::override_file;
 use kclvm_query::query::get_full_schema_type;
 use kclvm_query::query::CompilationOptions;
+use kclvm_query::selector::list_variables;
 use kclvm_query::GetSchemaOption;
 use kclvm_runner::{build_program, exec_artifact, exec_program};
+use kclvm_sema::core::global_state::GlobalState;
+use kclvm_sema::resolver::scope::KCLScopeCache;
 use kclvm_sema::resolver::Options;
 use kclvm_tools::format::{format, format_source, FormatOptions};
 use kclvm_tools::lint::lint_files;
@@ -173,28 +176,45 @@ impl KclvmServiceImpl {
     /// assert_eq!(result.type_errors.len(), 0);
     /// assert_eq!(result.symbols.len(), 12);
     /// assert_eq!(result.scopes.len(), 3);
-    /// assert_eq!(result.node_symbol_map.len(), 169);
-    /// assert_eq!(result.symbol_node_map.len(), 169);
-    /// assert_eq!(result.fully_qualified_name_map.len(), 178);
+    /// assert_eq!(result.node_symbol_map.len(), 177);
+    /// assert_eq!(result.symbol_node_map.len(), 177);
+    /// assert_eq!(result.fully_qualified_name_map.len(), 186);
     /// assert_eq!(result.pkg_scope_map.len(), 3);
     /// ```
+    #[inline]
     pub fn load_package(&self, args: &LoadPackageArgs) -> anyhow::Result<LoadPackageResult> {
+        self.load_package_with_cache(args, KCLModuleCache::default(), KCLScopeCache::default())
+    }
+
+    /// load_package_with_cache provides users with the ability to parse kcl program and sematic model
+    /// information including symbols, types, definitions, etc.
+    pub fn load_package_with_cache(
+        &self,
+        args: &LoadPackageArgs,
+        module_cache: KCLModuleCache,
+        scope_cache: KCLScopeCache,
+    ) -> anyhow::Result<LoadPackageResult> {
         let mut package_maps = HashMap::new();
         let parse_args = args.parse_args.clone().unwrap_or_default();
         for p in &parse_args.external_pkgs {
             package_maps.insert(p.pkg_name.to_string(), p.pkg_path.to_string());
         }
-        let packages = load_packages(&LoadPackageOptions {
-            paths: parse_args.paths,
-            load_opts: Some(LoadProgramOptions {
-                k_code_list: parse_args.sources.clone(),
-                package_maps,
-                load_plugins: true,
-                ..Default::default()
-            }),
-            resolve_ast: args.resolve_ast,
-            load_builtin: args.load_builtin,
-        })?;
+        let packages = load_packages_with_cache(
+            &LoadPackageOptions {
+                paths: parse_args.paths,
+                load_opts: Some(LoadProgramOptions {
+                    k_code_list: parse_args.sources.clone(),
+                    package_maps,
+                    load_plugins: true,
+                    ..Default::default()
+                }),
+                resolve_ast: args.resolve_ast,
+                load_builtin: args.load_builtin,
+            },
+            module_cache,
+            scope_cache,
+            GlobalState::default(),
+        )?;
         if args.with_ast_index {
             // Thread local options
             kclvm_ast::ast::set_should_serialize_id(true);
@@ -300,6 +320,62 @@ impl KclvmServiceImpl {
                 })
                 .collect(),
         })
+    }
+
+    /// list_variables provides users with the ability to parse kcl program and get all variables by specs.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
+    /// use kclvm_api::gpyrpc::*;
+    /// use std::path::Path;
+    ///
+    /// let serv = KclvmServiceImpl::default();
+    /// let args = &ListVariablesArgs {
+    ///     file: Path::new(".").join("src").join("testdata").join("variables").join("main.k").canonicalize().unwrap().display().to_string(),
+    ///     specs: vec!["a".to_string()]
+    /// };
+    /// let result = serv.list_variables(args).unwrap();
+    /// assert_eq!(result.variables.len(), 1);
+    /// assert_eq!(result.variables.get("a").unwrap().value, "1");
+    /// ```
+    pub fn list_variables(&self, args: &ListVariablesArgs) -> anyhow::Result<ListVariablesResult> {
+        let k_file = args.file.to_string();
+        let specs = args.specs.clone();
+
+        let select_res = list_variables(k_file, specs)?;
+
+        let variables: HashMap<String, Variable> = select_res
+            .variables
+            .iter()
+            .map(|(key, var)| {
+                (
+                    key.clone(),
+                    Variable {
+                        value: var.value.to_string(),
+                        type_name: var.type_name.to_string(),
+                        op_sym: var.op_sym.to_string(),
+                    },
+                )
+            })
+            .collect();
+
+        let unsupported_codes: Vec<String> = select_res
+            .unsupported
+            .iter()
+            .map(|code| code.code.to_string())
+            .collect();
+
+        return Ok(ListVariablesResult {
+            variables,
+            unsupported_codes,
+            parse_errors: select_res
+                .parse_errors
+                .into_iter()
+                .map(|e| e.into_error())
+                .collect(),
+        });
     }
 
     /// Execute KCL file with args. **Note that it is not thread safe.**

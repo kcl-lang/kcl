@@ -29,12 +29,13 @@ pub fn emit_code(
 ) -> Result<(), Box<dyn error::Error>> {
     // Init LLVM targets
     LLVM_INIT.get_or_init(|| {
-        // TODO: WASM target.
         #[cfg(target_os = "linux")]
         inkwell::targets::Target::initialize_x86(&Default::default());
         #[cfg(all(target_os = "linux", target_arch = "aarch64"))]
         inkwell::targets::Target::initialize_aarch64(&Default::default());
-        #[cfg(not(target_os = "linux"))]
+        #[cfg(target_arch = "wasm32")]
+        inkwell::targets::Target::initialize_webassembly(&Default::default());
+        #[cfg(not(any(target_os = "linux", target_arch = "wasm32")))]
         inkwell::targets::Target::initialize_all(&Default::default());
     });
     // Create a LLVM context
@@ -55,5 +56,5 @@ pub fn emit_code(
         workdir,
     );
     // Generate user KCL code LLVM IR
-    crate::codegen::emit_code(ctx, opts)
+    crate::codegen::emit_code_with(ctx, opts)
 }

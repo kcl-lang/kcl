@@ -19,6 +19,21 @@ pub enum Proxy {
     Lambda(FunctionCaller),
     Schema(SchemaCaller),
     Rule(RuleCaller),
+    Global(usize),
+}
+
+impl Proxy {
+    /// Get the name of the proxy, if it is an anonymous function, returns "lambda"
+    /// if it is a schema or rule, returns its name.
+    #[inline]
+    pub fn get_name(&self) -> String {
+        match self {
+            Proxy::Lambda(_) => "lambda".to_string(),
+            Proxy::Schema(s) => s.ctx.borrow().node.name.node.to_string(),
+            Proxy::Rule(r) => r.ctx.borrow().node.name.node.to_string(),
+            Proxy::Global(index) => index.to_string(),
+        }
+    }
 }
 
 /// Call the associated schemas including parent schema and mixin schema
@@ -39,10 +54,12 @@ pub(crate) fn call_schema_body(
         };
         if let Proxy::Schema(schema) = &frame.proxy {
             s.push_pkgpath(&frame.pkgpath);
+            s.push_backtrace(&frame);
             {
                 schema.ctx.borrow_mut().set_info_with_schema(&ctx.borrow())
             }
             let value = (schema.body)(s, &schema.ctx, args, kwargs);
+            s.pop_backtrace();
             s.pop_pkgpath();
             value
         } else {
@@ -71,10 +88,12 @@ pub(crate) fn call_schema_body_from_rule(
         };
         if let Proxy::Schema(schema) = &frame.proxy {
             s.push_pkgpath(&frame.pkgpath);
+            s.push_backtrace(&frame);
             {
                 schema.ctx.borrow_mut().set_info_with_rule(&ctx.borrow())
             }
             let value = (schema.body)(s, &schema.ctx, args, kwargs);
+            s.pop_backtrace();
             s.pop_pkgpath();
             value
         } else {
@@ -102,10 +121,12 @@ pub(crate) fn call_schema_check(
         };
         if let Proxy::Schema(schema) = &frame.proxy {
             s.push_pkgpath(&frame.pkgpath);
+            s.push_backtrace(&frame);
             if let Some(ctx) = ctx {
                 schema.ctx.borrow_mut().set_info_with_schema(&ctx.borrow())
             }
             (schema.check)(s, &schema.ctx, args, kwargs);
+            s.pop_backtrace();
             s.pop_pkgpath();
         }
     }
@@ -122,7 +143,9 @@ pub(crate) fn call_rule_check(s: &Evaluator, func: &ValueRef, args: &ValueRef, k
         };
         if let Proxy::Rule(rule) = &frame.proxy {
             s.push_pkgpath(&frame.pkgpath);
+            s.push_backtrace(&frame);
             (rule.check)(s, &rule.ctx, args, kwargs);
+            s.pop_backtrace();
             s.pop_pkgpath();
         }
     }

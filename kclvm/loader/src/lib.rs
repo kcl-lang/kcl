@@ -150,7 +150,7 @@ pub fn load_packages_with_cache(
         );
         let node_ty_map = prog_scope.node_ty_map;
         let gs = Namer::find_symbols(&program, gs);
-        let gs = AdvancedResolver::resolve_program(&program, gs, node_ty_map.clone());
+        let gs = AdvancedResolver::resolve_program(&program, gs, node_ty_map.clone())?;
         (program, prog_scope.handler.diagnostics.clone(), gs)
     } else {
         (parse_result.program, IndexSet::default(), gs)

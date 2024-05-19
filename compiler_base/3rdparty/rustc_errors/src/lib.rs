@@ -23,6 +23,9 @@ pub trait Style {
     /// # Example
     ///
     /// ```rust
+    /// use termcolor::Color;
+    /// use termcolor::ColorSpec;
+    /// use rustc_errors::Style;
     /// #[derive(Copy, Clone, Debug, PartialEq, Eq)]
     /// pub enum DummyStyle {
     ///     Dummy,
@@ -37,6 +40,7 @@ pub trait Style {
     ///             DummyStyle::Dummy => {
     ///                 spec.set_fg(Some(Color::Red)).set_intense(true);
     ///             }
+    ///             DummyStyle::NoStyle => todo!()
     ///         }
     ///         spec
     ///     }

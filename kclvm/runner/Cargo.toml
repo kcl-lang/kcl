@@ -1,6 +1,6 @@
 [package]
 name = "kclvm-runner"
-version = "0.8.4"
+version = "0.9.0-alpha.2"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -15,7 +15,6 @@ glob = "0.3.0"
 walkdir = "2"
 libc = "0.2.112"
 indexmap = "1.0"
-fslock = "0.2.1"
 libloading = "0.7.3"
 threadpool = "1.0"
 chrono = "0.4.19"
@@ -24,8 +23,8 @@ anyhow = "1.0"
 once_cell = "1.10"
 cc = "1.0"
 uuid = "1.7.0"
-compiler_base_session = {path = "../../compiler_base/session"}
-compiler_base_macros = "0.0.1"
+compiler_base_session = "0.1.3"
+compiler_base_macros = "0.1.1"
 
 kclvm-ast = {path = "../ast"}
 kclvm-parser = {path = "../parser"}
@@ -47,3 +46,6 @@ criterion = "0.3"
 [[bench]]
 name = "bench_runner"
 harness = false
+
+[features]
+llvm = ["kclvm-compiler/llvm"]

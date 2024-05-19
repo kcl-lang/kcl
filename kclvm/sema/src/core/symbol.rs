@@ -130,6 +130,14 @@ impl SymbolData {
         }
     }
 
+    pub fn get_attr_symbol(&self, id: SymbolRef) -> Option<&AttributeSymbol> {
+        if matches!(id.get_kind(), SymbolKind::Attribute) {
+            self.attributes.get(id.get_id())
+        } else {
+            None
+        }
+    }
+
     pub fn get_symbol(&self, id: SymbolRef) -> Option<&KCLSymbol> {
         match id.get_kind() {
             SymbolKind::Schema => self
@@ -1095,6 +1103,7 @@ pub struct AttributeSymbol {
     pub(crate) end: Position,
     pub(crate) owner: SymbolRef,
     pub(crate) sema_info: KCLSymbolSemanticInfo,
+    pub(crate) is_optional: bool,
 }
 
 impl Symbol for AttributeSymbol {
@@ -1198,7 +1207,13 @@ impl Symbol for AttributeSymbol {
 }
 
 impl AttributeSymbol {
-    pub fn new(name: String, start: Position, end: Position, owner: SymbolRef) -> Self {
+    pub fn new(
+        name: String,
+        start: Position,
+        end: Position,
+        owner: SymbolRef,
+        is_optional: bool,
+    ) -> Self {
         Self {
             id: None,
             name,
@@ -1206,7 +1221,12 @@ impl AttributeSymbol {
             end,
             sema_info: KCLSymbolSemanticInfo::default(),
             owner,
+            is_optional,
         }
+    }
+
+    pub fn is_optional(&self) -> bool {
+        self.is_optional
     }
 }
 #[allow(unused)]

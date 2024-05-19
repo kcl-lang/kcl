@@ -6,7 +6,7 @@ import math as alias_math
 schema Person(Base):
     name: str
     age: int
-    attr: str
+    "attr": str
     "attr-x": str
 
     check:

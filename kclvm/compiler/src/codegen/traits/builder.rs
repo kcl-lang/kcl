@@ -1,4 +1,4 @@
-//! Copyright 2021 The KCL Authors. All rights reserved.
+//! Copyright The KCL Authors. All rights reserved.
 
 use crate::codegen::abi::Align;
 
@@ -82,4 +82,6 @@ pub trait BuilderMethods: BackendTypes {
     fn lookup_function(&self, name: &str) -> Self::Function;
     /// Add a function named `name`.
     fn add_function(&self, name: &str) -> Self::Function;
+    /// Add a setter function named `name`.
+    fn add_setter_function(&self, name: &str) -> Self::Function;
 }

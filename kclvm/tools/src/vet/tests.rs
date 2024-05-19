@@ -3,8 +3,6 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context, Result};
 
 use crate::util::loader::LoaderKind;
-#[cfg(target_os = "windows")]
-use kclvm_runtime::PanicInfo;
 
 const CARGO_DIR: &str = env!("CARGO_MANIFEST_DIR");
 pub(crate) fn rel_path() -> String {
@@ -56,14 +54,6 @@ fn construct_full_path(path: &str) -> Result<String> {
         .to_string())
 }
 
-#[cfg(target_os = "windows")]
-pub(crate) fn path_to_windows(panic_info: &mut PanicInfo) {
-    panic_info.rust_file = panic_info.rust_file.replace("/", "\\");
-    panic_info.kcl_pkgpath = panic_info.kcl_pkgpath.replace("/", "\\");
-    panic_info.kcl_file = panic_info.kcl_file.replace("/", "\\");
-    panic_info.kcl_config_meta_file = panic_info.kcl_config_meta_file.replace("/", "\\");
-}
-
 mod test_expr_builder {
     use regex::Regex;
 
@@ -77,7 +67,9 @@ mod test_expr_builder {
             },
         },
     };
-    use std::{fs, panic, path::Path};
+    use std::panic;
+    #[cfg(not(target_os = "windows"))]
+    use std::{fs, path::Path};
 
     #[test]
     #[cfg(not(target_os = "windows"))]
@@ -323,8 +315,6 @@ mod test_validater {
         path::{Path, PathBuf},
     };
 
-    use regex::Regex;
-
     use crate::{
         util::loader::LoaderKind,
         vet::{
@@ -335,18 +325,24 @@ mod test_validater {
 
     use super::{construct_full_path, LOADER_KIND};
 
-    #[cfg(target_os = "windows")]
-    use super::path_to_windows;
-
-    const KCL_TEST_CASES: &[&str] = &["test.k", "simple.k", "list.k", "plain_value.k", "complex.k"];
+    const KCL_TEST_CASES: &[&str] = &[
+        "test.k",
+        "simple.k",
+        "list.k",
+        "plain_value.k",
+        "complex.k",
+        "with_import.k",
+    ];
+    const KCL_TEST_CASES_WITH_CODE: &[&str] =
+        &["test.k", "simple.k", "list.k", "plain_value.k", "complex.k"];
     const VALIDATED_FILE_TYPE: &[&str] = &["json", "yaml"];
 
     #[test]
     fn test_validator() {
         test_validate();
         println!("test_validate - PASS");
-        test_invalid_validate();
-        println!("test_invalid_validate - PASS");
+        test_invalid_validate_only_code();
+        println!("test_invalid_validate_only_code - PASS");
         test_validate_with_invalid_kcl_path();
         println!("test_validate_with_invalid_kcl_path - PASS");
         test_validate_with_invalid_file_path();
@@ -385,7 +381,7 @@ mod test_validater {
 
                 match validate(opt) {
                     Ok(res) => assert!(res),
-                    Err(_) => panic!("Unreachable"),
+                    Err(err) => assert!(false, "{:?}", err),
                 }
             }
         }
@@ -501,9 +497,10 @@ mod test_validater {
         }
     }
 
-    fn test_invalid_validate() {
+    #[test]
+    fn test_invalid_validate_only_code() {
         for (i, file_suffix) in VALIDATED_FILE_TYPE.iter().enumerate() {
-            for case in KCL_TEST_CASES {
+            for case in KCL_TEST_CASES_WITH_CODE {
                 let validated_file_path = construct_full_path(&format!(
                     "{}.{}",
                     Path::new("invalid_validate_cases").join(case).display(),
@@ -552,11 +549,10 @@ mod test_validater {
                 panic!("unreachable")
             }
             Err(err) => {
-                assert!(Regex::new(
-                    r"^Failed to load KCL file 'validationTempKCLCode.k'. Because .*"
-                )
-                .unwrap()
-                .is_match(&err.to_string()))
+                assert_eq!(
+                    err.to_string(),
+                    "Cannot find the kcl file, please check the file path validationTempKCLCode.k"
+                );
             }
         }
     }

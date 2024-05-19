@@ -25,6 +25,7 @@ __kcl_test_main.k
 /kcl-go*
 /_build_dist
 .kusion
+._target
 
 /venv/
 

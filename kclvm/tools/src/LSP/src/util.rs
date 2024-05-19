@@ -73,10 +73,14 @@ pub(crate) fn compile_unit_with_cache(
 ) -> (Vec<String>, Option<LoadProgramOptions>) {
     match compile_unit_cache {
         Some(cache) => {
-            let map = cache.read();
+            let mut map = cache.write();
             match map.get(file) {
                 Some(compile_unit) => compile_unit.clone(),
-                None => lookup_compile_unit(file, true),
+                None => {
+                    let res = lookup_compile_unit(file, true);
+                    map.insert(file.to_string(), res.clone());
+                    res
+                }
             }
         }
         None => lookup_compile_unit(file, true),
@@ -88,12 +92,6 @@ pub(crate) fn compile_with_params(
 ) -> anyhow::Result<(Program, IndexSet<Diagnostic>, GlobalState)> {
     // Lookup compile unit (kcl.mod or kcl.yaml) from the entry file.
     let (mut files, opt) = compile_unit_with_cache(&params.compile_unit_cache, &params.file);
-
-    if let Some(cache) = params.compile_unit_cache {
-        cache
-            .write()
-            .insert(params.file.clone(), (files.clone(), opt.clone()));
-    }
 
     if !files.contains(&params.file) {
         files.push(params.file.clone());
@@ -125,7 +123,7 @@ pub(crate) fn compile_with_params(
         // Please note that there is no global state cache at this stage.
         let gs = GlobalState::default();
         let gs = Namer::find_symbols(&program, gs);
-        let gs = AdvancedResolver::resolve_program(&program, gs, prog_scope.node_ty_map.clone());
+        let gs = AdvancedResolver::resolve_program(&program, gs, prog_scope.node_ty_map.clone())?;
         // Merge parse diagnostic and resolve diagnostic
         sess.append_diagnostic(prog_scope.handler.diagnostics.clone());
         let diags = sess.1.borrow().diagnostics.clone();

@@ -17,10 +17,10 @@ use compiler_base_macros::bug;
 use compiler_base_session::Session;
 use compiler_base_span::span::new_byte_pos;
 use file_graph::FileGraph;
-use indexmap::{IndexMap, IndexSet};
+use indexmap::IndexMap;
 use kclvm_ast::ast;
 use kclvm_config::modfile::{get_vendor_home, KCL_FILE_EXTENSION, KCL_FILE_SUFFIX, KCL_MOD_FILE};
-use kclvm_error::diagnostic::{Diagnostic, Range};
+use kclvm_error::diagnostic::{Errors, Range};
 use kclvm_error::{ErrorKind, Message, Position, Style};
 use kclvm_sema::plugin::PLUGIN_MODULE_PREFIX;
 use kclvm_utils::pkgpath::parse_external_pkg_name;
@@ -71,8 +71,6 @@ pub enum ParseMode {
     Null,
     ParseComments,
 }
-
-type Errors = IndexSet<Diagnostic>;
 
 /// LoadProgramResult denotes the result of the whole program and a topological
 /// ordering of all known files,
@@ -326,7 +324,10 @@ impl Loader {
     ) -> Self {
         Self {
             sess,
-            paths: paths.iter().map(|s| s.to_string()).collect(),
+            paths: paths
+                .iter()
+                .map(|s| kclvm_utils::path::convert_windows_drive_letter(s))
+                .collect(),
             opts: opts.unwrap_or_default(),
             module_cache,
             missing_pkgs: Default::default(),
@@ -344,14 +345,13 @@ impl Loader {
         let workdir = compile_entries.get_root_path().to_string();
         let mut pkgs = HashMap::new();
         let mut pkg_files = Vec::new();
-        for entry in compile_entries.iter() {
-            // Get files from options with root.
-            // let k_files = self.get_main_files_from_pkg(entry.path(), entry.name())?;
-            let k_files = entry.get_k_files();
-            let maybe_k_codes = entry.get_k_codes();
-            // Load main package.
-            for (i, filename) in k_files.iter().enumerate() {
-                let mut m = if let Some(module_cache) = self.module_cache.as_ref() {
+        // update cache
+        if let Some(module_cache) = self.module_cache.as_ref() {
+            for entry in compile_entries.iter() {
+                let k_files = entry.get_k_files();
+                let maybe_k_codes = entry.get_k_codes();
+                // Load main package.
+                for (i, filename) in k_files.iter().enumerate() {
                     let m = parse_file_with_session(
                         self.sess.clone(),
                         filename,
@@ -359,7 +359,18 @@ impl Loader {
                     )?;
                     let mut module_cache_ref = module_cache.write().unwrap();
                     module_cache_ref.insert(filename.clone(), m.clone());
-                    m
+                }
+            }
+        }
+
+        for entry in compile_entries.iter() {
+            let k_files = entry.get_k_files();
+            let maybe_k_codes = entry.get_k_codes();
+            // Load main package.
+            for (i, filename) in k_files.iter().enumerate() {
+                let mut m = if let Some(module_cache) = self.module_cache.as_ref() {
+                    let module_cache_ref = module_cache.read().unwrap();
+                    module_cache_ref.get(filename).unwrap().clone()
                 } else {
                     parse_file_with_session(self.sess.clone(), filename, maybe_k_codes[i].clone())?
                 };

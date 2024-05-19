@@ -52,26 +52,6 @@ Node {
                     end_line: 1,
                     end_column: 3,
                 },
-                Node {
-                    node: Missing(
-                        MissingExpr,
-                    ),
-                    filename: "",
-                    line: 1,
-                    column: 4,
-                    end_line: 1,
-                    end_column: 5,
-                },
-                Node {
-                    node: Missing(
-                        MissingExpr,
-                    ),
-                    filename: "",
-                    line: 1,
-                    column: 5,
-                    end_line: 1,
-                    end_column: 6,
-                },
             ],
             keywords: [],
         },
@@ -82,4 +62,3 @@ Node {
     end_line: 1,
     end_column: 6,
 }
-

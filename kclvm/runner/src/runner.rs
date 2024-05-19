@@ -10,7 +10,11 @@ use kclvm_config::{
 };
 use kclvm_error::{Diagnostic, Handler};
 use kclvm_query::r#override::parse_override_spec;
-use kclvm_runtime::{kclvm_plugin_init, Context, FFIRunOptions, PanicInfo, RuntimePanicRecord};
+#[cfg(not(target_arch = "wasm32"))]
+use kclvm_runtime::kclvm_plugin_init;
+#[cfg(feature = "llvm")]
+use kclvm_runtime::FFIRunOptions;
+use kclvm_runtime::{Context, PanicInfo, RuntimePanicRecord};
 use serde::{Deserialize, Serialize};
 use std::ffi::OsStr;
 use std::os::raw::c_char;
@@ -214,8 +218,16 @@ impl TryFrom<SettingsPathBuf> for ExecProgramArgs {
     }
 }
 
+#[derive(Debug, Default)]
+pub struct RunnerOptions {
+    pub plugin_agent_ptr: u64,
+}
+
+#[cfg(feature = "llvm")]
 /// A public struct named [Artifact] which wraps around the native library [libloading::Library].
 pub struct Artifact(libloading::Library, String);
+#[cfg(not(feature = "llvm"))]
+pub struct Artifact(String);
 
 pub trait ProgramRunner {
     /// Run with the arguments [ExecProgramArgs] and return the program execute result that
@@ -225,13 +237,20 @@ pub trait ProgramRunner {
 
 impl ProgramRunner for Artifact {
     fn run(&self, args: &ExecProgramArgs) -> Result<ExecProgramResult> {
+        #[cfg(feature = "llvm")]
         unsafe {
             LibRunner::lib_kclvm_plugin_init(&self.0, args.plugin_agent)?;
             LibRunner::lib_kcl_run(&self.0, args)
         }
+        #[cfg(not(feature = "llvm"))]
+        {
+            let _ = args;
+            Err(anyhow::anyhow!("error: llvm feature is not enabled. Note: Set KCL_FAST_EVAL=1 or rebuild the crate with the llvm feature."))
+        }
     }
 }
 
+#[cfg(feature = "llvm")]
 impl Artifact {
     #[inline]
     pub fn from_path<P: AsRef<OsStr>>(path: P) -> Result<Self> {
@@ -246,15 +265,26 @@ impl Artifact {
     }
 }
 
-#[derive(Debug, Default)]
-pub struct RunnerOptions {
-    pub plugin_agent_ptr: u64,
+#[cfg(not(feature = "llvm"))]
+impl Artifact {
+    #[inline]
+    pub fn from_path<P: AsRef<OsStr>>(path: P) -> Result<Self> {
+        let path = path.as_ref().to_str().unwrap().to_string();
+        Ok(Self(path))
+    }
+
+    #[inline]
+    pub fn get_path(&self) -> &String {
+        &self.0
+    }
 }
 
+#[cfg(feature = "llvm")]
 pub struct LibRunner {
     opts: RunnerOptions,
 }
 
+#[cfg(feature = "llvm")]
 impl LibRunner {
     /// New a runner using the lib path and options.
     pub fn new(opts: Option<RunnerOptions>) -> Self {
@@ -273,6 +303,7 @@ impl LibRunner {
     }
 }
 
+#[cfg(feature = "llvm")]
 impl LibRunner {
     unsafe fn lib_kclvm_plugin_init(
         lib: &libloading::Library,
@@ -282,10 +313,10 @@ impl LibRunner {
         let kclvm_plugin_init: libloading::Symbol<
             unsafe extern "C" fn(
                 fn_ptr: extern "C" fn(
-                    method: *const i8,
-                    args_json: *const i8,
-                    kwargs_json: *const i8,
-                ) -> *const i8,
+                    method: *const c_char,
+                    args_json: *const c_char,
+                    kwargs_json: *const c_char,
+                ) -> *const c_char,
             ),
         > = lib.get(b"kclvm_plugin_init")?;
 
@@ -293,15 +324,15 @@ impl LibRunner {
         let plugin_method_ptr = plugin_method_ptr;
         let plugin_method_ptr = (plugin_method_ptr as *const u64) as *const ()
             as *const extern "C" fn(
-                method: *const i8,
-                args: *const i8,
-                kwargs: *const i8,
-            ) -> *const i8;
+                method: *const c_char,
+                args: *const c_char,
+                kwargs: *const c_char,
+            ) -> *const c_char;
         let plugin_method: extern "C" fn(
-            method: *const i8,
-            args: *const i8,
-            kwargs: *const i8,
-        ) -> *const i8 = std::mem::transmute(plugin_method_ptr);
+            method: *const c_char,
+            args: *const c_char,
+            kwargs: *const c_char,
+        ) -> *const c_char = std::mem::transmute(plugin_method_ptr);
 
         // register plugin agent
         kclvm_plugin_init(plugin_method);
@@ -447,8 +478,8 @@ impl FastRunner {
 
     /// Run kcl library with exec arguments.
     pub fn run(&self, program: &ast::Program, args: &ExecProgramArgs) -> Result<ExecProgramResult> {
-        let ctx = Rc::new(RefCell::new(args_to_ctx(&program, args)));
-        let evaluator = Evaluator::new_with_runtime_ctx(&program, ctx.clone());
+        let ctx = Rc::new(RefCell::new(args_to_ctx(program, args)));
+        let evaluator = Evaluator::new_with_runtime_ctx(program, ctx.clone());
         let prev_hook = std::panic::take_hook();
         std::panic::set_hook(Box::new(|info: &std::panic::PanicInfo| {
             KCL_RUNTIME_PANIC_RECORD.with(|record| {
@@ -472,9 +503,10 @@ impl FastRunner {
         }));
         let evaluator_result = std::panic::catch_unwind(|| {
             if self.opts.plugin_agent_ptr > 0 {
+                #[cfg(not(target_arch = "wasm32"))]
                 unsafe {
                     let plugin_method: extern "C" fn(
-                        method: *const i8,
+                        method: *const c_char,
                         args: *const c_char,
                         kwargs: *const c_char,
                     ) -> *const c_char = std::mem::transmute(self.opts.plugin_agent_ptr);
@@ -547,27 +579,27 @@ pub(crate) fn args_to_ctx(program: &ast::Program, args: &ExecProgramArgs) -> Con
 }
 
 #[repr(C)]
-struct Buffer(Vec<u8>, i32);
+pub struct Buffer(Vec<u8>, i32);
 
 impl Buffer {
     #[inline]
-    fn make() -> Self {
+    pub fn make() -> Self {
         let buffer = vec![0u8; RESULT_SIZE];
         Self(buffer, RESULT_SIZE as i32 - 1)
     }
 
     #[inline]
-    fn to_string(&self) -> anyhow::Result<String> {
+    pub fn to_string(&self) -> anyhow::Result<String> {
         Ok(String::from_utf8(self.0[0..self.1 as usize].to_vec())?)
     }
 
     #[inline]
-    fn mut_ptr(&mut self) -> *mut c_char {
+    pub fn mut_ptr(&mut self) -> *mut c_char {
         self.0.as_mut_ptr() as *mut c_char
     }
 
     #[inline]
-    fn mut_len(&mut self) -> &mut i32 {
+    pub fn mut_len(&mut self) -> &mut i32 {
         &mut self.1
     }
 }

@@ -2,7 +2,6 @@ use crate::state::KCLVfs;
 use crate::word_index::{build_virtual_word_index, VirtualLocation};
 use crate::{from_lsp::kcl_pos, goto_def::find_def_with_gs};
 use anyhow::{anyhow, Result};
-use chumsky::chain::Chain;
 use kclvm_ast::ast::{self, Program};
 use kclvm_error::diagnostic;
 use kclvm_parser::{load_program, LoadProgramOptions, ParseSessionRef};
@@ -193,7 +192,7 @@ where
     let gs = GlobalState::default();
     let gs = Namer::find_symbols(&program, gs);
     let node_ty_map = prog_scope.node_ty_map.clone();
-    let global_state = AdvancedResolver::resolve_program(&program, gs, node_ty_map);
+    let global_state = AdvancedResolver::resolve_program(&program, gs, node_ty_map)?;
 
     Ok((program, global_state))
 }
@@ -764,7 +763,7 @@ Bob = vars.Person {
     #[test]
     fn test_rename_symbol_on_file() {
         let mut root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        root.push("src/test_data/rename_test/");
+        root.push("src/test_data/rename_test/rename_on_file");
 
         let mut main_path = root.clone();
         let mut base_path = root.clone();

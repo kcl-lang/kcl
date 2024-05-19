@@ -152,7 +152,9 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
 
     fn walk_import_stmt(&mut self, import_stmt: &'ctx ast::ImportStmt) -> Self::Result {
         self.write("import ");
-        self.write(&import_stmt.path.node);
+        // use `import_stmt.rawpath` to write the raw path
+        // otherwise, use `import_stmt.path` will replace `import .xxx` with `import xxx`
+        self.write(&import_stmt.rawpath);
         if let Some(as_name) = &import_stmt.asname {
             self.write(" as ");
             self.write(&as_name.node);
@@ -351,7 +353,12 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
         if !schema_attr.decorators.is_empty() {
             self.write_newline();
         }
-        self.write_attribute(&schema_attr.name);
+        // A schema string attribute needs quote.
+        if !schema_attr.is_ident_attr() {
+            self.write(&format!("{:?}", schema_attr.name.node));
+        } else {
+            self.write_attribute(&schema_attr.name);
+        }
         if schema_attr.is_optional {
             self.write("?");
         }

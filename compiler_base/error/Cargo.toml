@@ -1,6 +1,6 @@
 [package]
 name = "compiler_base_error"
-version = "0.0.10"
+version = "0.1.6"
 edition = "2021"
 authors = ["zongzhe1024@163.com"]
 license = "Apache-2.0 OR MIT"
@@ -14,11 +14,11 @@ categories = ["command-line-utilities"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-compiler_base_span = "0.0.1"
-compiler_base_macros = "0.0.1"
+compiler_base_span = "0.1.3"
+compiler_base_macros = "0.1.1"
 pretty_assertions = "1.3.0"
-rustc_span = "0.0.1"
-rustc_errors = "0.0.2"
+rustc_span = "0.1.2"
+rustc_errors = "0.1.2"
 unic-langid = {version="0.9.0", features = ["macros"]}
 
 fluent = "0.16.0"

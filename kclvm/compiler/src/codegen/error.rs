@@ -3,15 +3,16 @@
 use std::error;
 use std::fmt::{self, Debug};
 
-pub(crate) const VALUE_TYPE_NOT_FOUND_MSG: &str = "Type is not found";
-pub(crate) const CONTEXT_VAR_NOT_FOUND_MSG: &str = "Context variable is not found";
-pub(crate) const FUNCTION_RETURN_VALUE_NOT_FOUND_MSG: &str = "Function return value is not found";
-pub(crate) const COMPILE_ERROR_MSG: &str = "Compile error";
-pub(crate) const INTERNAL_ERROR_MSG: &str = "Internal error, please report a bug to us";
-pub(crate) const CODE_GEN_ERROR_MSG: &str = "Code gen error";
-pub(crate) const INVALID_OPERATOR_MSG: &str = "Invalid operator";
-pub(crate) const INVALID_JOINED_STR_MSG: &str = "Invalid AST JoinedString value";
-pub(crate) const INVALID_STR_INTERPOLATION_SPEC_MSG: &str =
+pub const VALUE_TYPE_NOT_FOUND_MSG: &str = "Internal error, value type is not found";
+pub const CONTEXT_VAR_NOT_FOUND_MSG: &str = "Internal error, context variable is not found";
+pub const INTERNAL_ERROR_MSG: &str = "Internal error, please report a bug to us";
+pub const FUNCTION_RETURN_VALUE_NOT_FOUND_MSG: &str =
+    "Internal error, function return value is not found";
+pub const COMPILE_ERROR_MSG: &str = "Compile error";
+pub const CODE_GEN_ERROR_MSG: &str = "Code gen error";
+pub const INVALID_OPERATOR_MSG: &str = "Invalid operator";
+pub const INVALID_JOINED_STR_MSG: &str = "Invalid AST JoinedString value";
+pub const INVALID_STR_INTERPOLATION_SPEC_MSG: &str =
     "Invalid string interpolation format specification";
 
 #[derive(Debug, Clone, PartialEq, Eq)]

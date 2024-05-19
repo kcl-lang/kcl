@@ -242,16 +242,14 @@ pub fn lookup_kcl_yaml(dir: &Path) -> io::Result<PathBuf> {
 /// Path("project/prod") or Path("project/test")
 pub fn lookup_compile_unit_path(file: &str) -> io::Result<PathBuf> {
     let path = PathBuf::from(file);
-    let path_ancestors = path.as_path().parent().unwrap().ancestors();
-    for p in path_ancestors {
-        let entrys = read_dir(p)?;
-        for entry in entrys {
-            let entry = entry?;
-            if entry.file_name() == *DEFAULT_SETTING_FILE {
-                // If find "kcl.yaml", the input file is in a stack, return the
-                // path of this stack
-                return Ok(PathBuf::from(p));
-            }
+    let current_dir_path = path.as_path().parent().unwrap();
+    let entrys = read_dir(current_dir_path)?;
+    for entry in entrys {
+        let entry = entry?;
+        if entry.file_name() == *DEFAULT_SETTING_FILE {
+            // If find "kcl.yaml", the input file is in a stack, return the
+            // path of this stack
+            return Ok(PathBuf::from(current_dir_path));
         }
     }
     Err(io::Error::new(

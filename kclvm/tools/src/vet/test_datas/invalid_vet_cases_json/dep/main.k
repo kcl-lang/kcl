@@ -1,0 +1,2 @@
+schema A :
+    name: str

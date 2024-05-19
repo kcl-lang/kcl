@@ -21,28 +21,26 @@ pub type RuleEvalContextRef = Rc<RefCell<RuleEvalContext>>;
 /// rather than executing KCL defined functions or plugin functions.
 #[derive(Clone, Debug)]
 pub struct RuleEvalContext {
-    pub node: ast::RuleStmt,
+    pub node: Rc<ast::RuleStmt>,
     pub scope: LazyEvalScope,
     pub value: ValueRef,
     pub config: ValueRef,
     pub config_meta: ValueRef,
     pub optional_mapping: ValueRef,
     pub is_sub_schema: bool,
-    pub record_instance: bool,
 }
 
 impl RuleEvalContext {
     #[inline]
     pub fn new_with_node(node: ast::RuleStmt) -> Self {
         RuleEvalContext {
-            node,
+            node: Rc::new(node),
             scope: LazyEvalScope::default(),
             value: ValueRef::dict(None),
             config: ValueRef::dict(None),
             config_meta: ValueRef::dict(None),
             optional_mapping: ValueRef::dict(None),
             is_sub_schema: true,
-            record_instance: true,
         }
     }
 
@@ -53,17 +51,20 @@ impl RuleEvalContext {
         self.config_meta = ValueRef::dict(None);
         self.optional_mapping = ValueRef::dict(None);
         self.is_sub_schema = true;
-        self.record_instance = true;
     }
 
-    /// Reset rule evaluation context state.
-    pub fn reset_with_config(&mut self, config: ValueRef, config_meta: ValueRef) {
-        self.config = config;
-        self.config_meta = config_meta;
-        self.value = ValueRef::dict(None);
-        self.optional_mapping = ValueRef::dict(None);
-        self.is_sub_schema = true;
-        self.record_instance = true;
+    /// Reset schema evaluation context state.
+    #[inline]
+    pub fn snapshot(&self, config: ValueRef, config_meta: ValueRef) -> RuleEvalContextRef {
+        Rc::new(RefCell::new(Self {
+            node: self.node.clone(),
+            scope: LazyEvalScope::default(),
+            value: ValueRef::dict(None),
+            config,
+            config_meta,
+            optional_mapping: ValueRef::dict(None),
+            is_sub_schema: true,
+        }))
     }
 }
 
@@ -97,7 +98,7 @@ pub fn rule_body(
     // Evaluate arguments and keyword arguments and store values to local variables.
     s.walk_arguments(&ctx.borrow().node.args, args, kwargs);
     // Eval schema body and record schema instances.
-    if ctx.borrow().record_instance {
+    {
         // Rule decorators check
         for decorator in &ctx.borrow().node.decorators {
             s.walk_decorator_with_name(&decorator.node, Some(rule_name), true)

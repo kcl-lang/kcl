@@ -1,8 +1,11 @@
+use indexmap::IndexSet;
 use kclvm_span::Loc;
 use std::fmt;
 use std::hash::Hash;
 
 use crate::{ErrorKind, WarningKind};
+
+pub type Errors = IndexSet<Diagnostic>;
 
 /// Diagnostic structure.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -81,8 +84,12 @@ impl Position {
 
 impl From<Loc> for Position {
     fn from(loc: Loc) -> Self {
+        let filename = kclvm_utils::path::convert_windows_drive_letter(&format!(
+            "{}",
+            loc.file.name.prefer_remapped()
+        ));
         Self {
-            filename: format!("{}", loc.file.name.prefer_remapped()),
+            filename,
             line: loc.line as u64,
             column: if loc.col_display > 0 {
                 // Loc col is the (0-based) column offset.

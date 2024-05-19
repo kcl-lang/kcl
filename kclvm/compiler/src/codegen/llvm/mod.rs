@@ -3,7 +3,7 @@
 //! module modules pass extern and declare keys. Declare and call them in words, and finally use clang to link
 //! them together.
 //!
-//! Copyright 2021 The KCL Authors. All rights reserved.
+//! Copyright The KCL Authors. All rights reserved.
 
 mod backtrack;
 mod context;
@@ -15,11 +15,3 @@ mod schema;
 mod utils;
 
 pub use emit::emit_code;
-
-/// Object file type format suffix.
-#[cfg(target_os = "windows")]
-pub const OBJECT_FILE_SUFFIX: &str = ".obj";
-#[cfg(not(target_os = "windows"))]
-pub const OBJECT_FILE_SUFFIX: &str = ".o";
-/// LLVM IR text format suffix .ll
-pub const LL_FILE_SUFFIX: &str = ".ll";

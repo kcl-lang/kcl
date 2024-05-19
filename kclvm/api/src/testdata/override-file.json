@@ -1,8 +1,7 @@
 {
-	"file" : "./src/testdata/test.k",
-	"specs":[
-        "alice.age=18"
+	"file": "./src/testdata/test.k",
+	"specs": [
+		"alice.age=18"
 	],
-	"import_paths":[
-	]
+	"import_paths": []
 }

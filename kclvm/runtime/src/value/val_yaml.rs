@@ -70,6 +70,18 @@ impl ValueRef {
         }
     }
 
+    /// Decode yaml stream string that contains `---` to a ValueRef.
+    /// Returns [serde_yaml::Error] when decoding fails.
+    pub fn list_from_yaml_stream(ctx: &mut Context, s: &str) -> Result<Self, serde_yaml::Error> {
+        let documents = serde_yaml::Deserializer::from_str(s);
+        let mut result = ValueRef::list_value(None);
+        for document in documents {
+            let json_value: JsonValue = JsonValue::deserialize(document)?;
+            result.list_append(&ValueRef::parse_json(ctx, &json_value))
+        }
+        Ok(result)
+    }
+
     pub fn to_yaml(&self) -> Vec<u8> {
         let json = self.to_json_string();
         let yaml_value: serde_yaml::Value = serde_json::from_str(json.as_ref()).unwrap();
@@ -115,6 +127,12 @@ impl ValueRef {
 #[cfg(test)]
 mod test_value_yaml {
     use crate::*;
+
+    #[test]
+    fn test_serde_yaml_on_str() {
+        let on_str = serde_yaml::to_string("on").unwrap();
+        assert_eq!(on_str, "'on'\n");
+    }
 
     #[test]
     fn test_value_from_yaml() {

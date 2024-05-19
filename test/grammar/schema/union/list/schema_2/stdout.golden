@@ -1,0 +1,8 @@
+f:
+  finalValues:
+  - id: hello
+    someField: 0
+  - id: world
+    someField: 1
+  - id: id
+    someField: 2
