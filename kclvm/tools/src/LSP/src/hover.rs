@@ -129,13 +129,23 @@ fn docs_to_hover(docs: Vec<String>) -> Option<lsp_types::Hover> {
     match docs.len() {
         0 => None,
         1 => Some(Hover {
-            contents: HoverContents::Scalar(MarkedString::String(docs[0].clone())),
+            contents: HoverContents::Scalar(MarkedString::LanguageString(
+                lsp_types::LanguageString {
+                    language: "kcl".to_string(),
+                    value: docs[0].clone(),
+                },
+            )),
             range: None,
         }),
         _ => Some(Hover {
             contents: HoverContents::Array(
                 docs.iter()
-                    .map(|doc| MarkedString::String(doc.clone()))
+                    .map(|doc| {
+                        MarkedString::LanguageString(lsp_types::LanguageString {
+                            language: "kcl".to_string(),
+                            value: doc.clone(),
+                        })
+                    })
                     .collect(),
             ),
             range: None,
