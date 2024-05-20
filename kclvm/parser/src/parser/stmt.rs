@@ -441,7 +441,7 @@ impl<'a> Parser<'a> {
                 1 => Some(ident.names[0].clone()),
                 _ => {
                     self.sess
-                        .struct_span_error("Invalid import asname", self.token.span, None);
+                        .struct_span_error("Invalid import asname", self.token.span);
                     None
                 }
             }
@@ -602,7 +602,6 @@ impl<'a> Parser<'a> {
                 self.sess.struct_span_error(
                     "'else if' here is invalid in KCL, consider using the 'elif' keyword",
                     self.token.span,
-                    None,
                 );
             } else if self.token.kind != TokenKind::Colon {
                 self.sess
@@ -1035,7 +1034,6 @@ impl<'a> Parser<'a> {
                         self.sess.struct_span_error(
                             "duplicate schema index signature definitions, only one is allowed in the schema",
                             token.span,
-                            None,
                         );
                     }
                     body_index_signature =
@@ -1052,7 +1050,6 @@ impl<'a> Parser<'a> {
                             Into::<String>::into(self.token)
                         ),
                         self.token.span,
-                        None,
                     );
                 }
 
@@ -1587,7 +1584,6 @@ impl<'a> Parser<'a> {
                 this.sess.struct_span_error(
                     "string interpolation expression can not be empty",
                     Span::new(start_pos, end_pos),
-                    None,
                 );
             }
 
@@ -1624,7 +1620,6 @@ impl<'a> Parser<'a> {
                     this.sess.struct_span_error(
                         "invalid joined string spec without #",
                         parser.token.span,
-                        None,
                     );
                 }
                 // Whether there is syntax error or not, bump the joined string spec token.
@@ -1642,7 +1637,6 @@ impl<'a> Parser<'a> {
                 parser.sess.struct_span_error(
                     &format!("invalid string interpolation expression: '{src}'"),
                     Span::new(lo, hi),
-                    None,
                 )
             }
 
@@ -1680,7 +1674,7 @@ impl<'a> Parser<'a> {
                     continue;
                 } else {
                     self.sess
-                        .struct_span_error("invalid joined string", self.token.span, None,);
+                        .struct_span_error("invalid joined string", self.token.span);
                     joined_value
                         .values
                         .push(node_ref!(Expr::StringLit(StringLit {

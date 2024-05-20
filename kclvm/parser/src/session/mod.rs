@@ -53,11 +53,25 @@ impl ParseSession {
 
     /// Struct and report an error based on a span and not abort the compiler process.
     #[inline]
-    pub fn struct_span_error(&self, msg: &str, span: Span, fix_info: Option<FixInfo>) {
+    pub fn struct_span_error(&self, msg: &str, span: Span) {
         self.add_parse_err(ParseError::Message {
             message: msg.to_string(),
             span,
-            fix_info,
+            fix_info:None,
+        });
+    }
+
+    #[inline]
+    pub fn struct_span_error_with_suggestions(&self, msg: &str, span: Span, suggestion_text: Option<String>, replacement_text:Option<String>) {
+        let fix_info = suggestion_text.map(|text| FixInfo {
+            suggestion: Some(text),
+            replacement:replacement_text,
+            additional_info: None,
+        });
+        self.add_parse_err(ParseError::Message {
+            message: msg.to_string(),
+            span,
+            fix_info
         });
     }
 

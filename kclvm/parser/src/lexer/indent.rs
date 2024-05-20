@@ -139,7 +139,7 @@ impl<'a> Lexer<'a> {
                                 }
                                 Err(msg) => {
                                     self.sess
-                                        .struct_span_error(msg, self.span(self.pos, self.pos), None);
+                                        .struct_span_error(msg, self.span(self.pos, self.pos));
                                     break;
                                 }
                             }
@@ -151,7 +151,7 @@ impl<'a> Lexer<'a> {
             }
             Err(msg) => {
                 self.sess
-                    .struct_span_error(msg, self.span(self.pos, self.pos), None);
+                    .struct_span_error(msg, self.span(self.pos, self.pos));
                 None
             }
         }
@@ -161,7 +161,7 @@ impl<'a> Lexer<'a> {
     fn last_indent(&mut self) -> &IndentLevel {
         if self.indent_cxt.indents.is_empty() {
             self.sess
-                .struct_span_error("mismatched indent level", self.span(self.pos, self.pos), None);
+                .struct_span_error("mismatched indent level", self.span(self.pos, self.pos));
             self.indent_cxt.indents.push(IndentLevel::default());
         }
         self.indent_cxt.indents.last().unwrap()
