@@ -16,7 +16,7 @@ pub(crate) fn hover(
     kcl_pos: &KCLPos,
     gs: &GlobalState,
 ) -> Option<lsp_types::Hover> {
-    let mut docs: Vec<String> = vec![];
+    let mut docs: Vec<(String, &str)> = vec![];
     let def = find_def_with_gs(kcl_pos, gs, true);
     match def {
         Some(def_ref) => match gs.get_symbols().get_symbol(def_ref) {
@@ -36,16 +36,28 @@ pub(crate) fn hover(
                         // attr2? type
                         // ```
                         let schema_ty = ty.into_schema_type();
-                        docs.push(schema_ty.schema_ty_signature_str());
-                        if !schema_ty.doc.is_empty() {
-                            docs.push(schema_ty.doc.clone());
+                        let schema_text = schema_ty.schema_ty_signature_str();
+
+                        for (i, ele) in schema_text.split("\n\n").enumerate() {
+                            if i == 0 {
+                                docs.push((ele.to_string(), "String"));
+                            } else {
+                                docs.push((ele.to_string(), "LanguageString"));
+                            }
                         }
+
+                        if !schema_ty.doc.is_empty() {
+                            docs.push((schema_ty.doc.clone(), "String"));
+                        }
+
+                        docs.push(("\n\n".to_string(), "String"));
 
                         // The attr of schema_ty does not contain the attrs from inherited base schema.
                         // Use the api provided by GlobalState to get all attrs
                         let module_info = gs.get_packages().get_module_info(&kcl_pos.filename);
                         let schema_attrs = obj.get_all_attributes(gs.get_symbols(), module_info);
-                        let mut attrs = vec!["Attributes:".to_string()];
+                        docs.push(("Attributes\n".to_string(), "String"));
+                        let mut attrs = vec![];
                         for schema_attr in schema_attrs {
                             if let kclvm_sema::core::symbol::SymbolKind::Attribute =
                                 schema_attr.get_kind()
@@ -66,7 +78,7 @@ pub(crate) fn hover(
                                 ));
                             }
                         }
-                        docs.push(attrs.join("\n\n"));
+                        docs.push((attrs.join("\n\n"), "LanguageString"));
                     }
                     _ => {}
                 },
@@ -74,10 +86,13 @@ pub(crate) fn hover(
                     let sema_info = obj.get_sema_info();
                     match &sema_info.ty {
                         Some(ty) => {
-                            docs.push(format!("{}: {}", &obj.get_name(), ty.ty_str()));
+                            docs.push((
+                                format!("{}: {}", &obj.get_name(), ty.ty_str()),
+                                "LanguageString",
+                            ));
                             if let Some(doc) = &sema_info.doc {
                                 if !doc.is_empty() {
-                                    docs.push(doc.clone());
+                                    docs.push((doc.clone(), "String"));
                                 }
                             }
                         }
@@ -87,10 +102,17 @@ pub(crate) fn hover(
                 kclvm_sema::core::symbol::SymbolKind::Value => match &obj.get_sema_info().ty {
                     Some(ty) => match &ty.kind {
                         kclvm_sema::ty::TypeKind::Function(func_ty) => {
-                            docs.extend(build_func_hover_content(func_ty, obj.get_name().clone()));
+                            docs.push((
+                                build_func_hover_content(func_ty, obj.get_name().clone())
+                                    .join("\n"),
+                                "LanguageString",
+                            ));
                         }
                         _ => {
-                            docs.push(format!("{}: {}", &obj.get_name(), ty.ty_str()));
+                            docs.push((
+                                format!("{}: {}", &obj.get_name(), ty.ty_str()),
+                                "LanguageString",
+                            ));
                         }
                     },
                     _ => {}
@@ -100,9 +122,13 @@ pub(crate) fn hover(
                 kclvm_sema::core::symbol::SymbolKind::Decorator => {
                     match BUILTIN_DECORATORS.get(&obj.get_name()) {
                         Some(ty) => {
-                            docs.extend(build_func_hover_content(
-                                &ty.into_func_type(),
-                                obj.get_name().clone(),
+                            docs.push((
+                                build_func_hover_content(
+                                    &ty.into_func_type(),
+                                    obj.get_name().clone(),
+                                )
+                                .join("\n"),
+                                "LanguageString",
                             ));
                         }
                         None => todo!(),
@@ -113,7 +139,7 @@ pub(crate) fn hover(
                         Some(ty) => ty.ty_str(),
                         None => "".to_string(),
                     };
-                    docs.push(format!("{}: {}", &obj.get_name(), ty_str));
+                    docs.push((format!("{}: {}", &obj.get_name(), ty_str), "LanguageString"));
                 }
             },
             None => {}
@@ -125,26 +151,32 @@ pub(crate) fn hover(
 
 // Convert docs to Hover. This function will convert to
 // None, Scalar or Array according to the number of positions
-fn docs_to_hover(docs: Vec<String>) -> Option<lsp_types::Hover> {
+fn docs_to_hover(docs: Vec<(String, &str)>) -> Option<lsp_types::Hover> {
     match docs.len() {
         0 => None,
         1 => Some(Hover {
-            contents: HoverContents::Scalar(MarkedString::LanguageString(
-                lsp_types::LanguageString {
+            contents: HoverContents::Scalar(if docs[0].1 == "LanguageString" {
+                MarkedString::LanguageString(lsp_types::LanguageString {
                     language: "kcl".to_string(),
-                    value: docs[0].clone(),
-                },
-            )),
+                    value: docs[0].0.clone(),
+                })
+            } else {
+                MarkedString::String(docs[0].0.clone())
+            }),
             range: None,
         }),
         _ => Some(Hover {
             contents: HoverContents::Array(
                 docs.iter()
                     .map(|doc| {
-                        MarkedString::LanguageString(lsp_types::LanguageString {
-                            language: "kcl".to_string(),
-                            value: doc.clone(),
-                        })
+                        if doc.1 == "LanguageString" {
+                            MarkedString::LanguageString(lsp_types::LanguageString {
+                                language: "kcl".to_string(),
+                                value: doc.0.clone(),
+                            })
+                        } else {
+                            MarkedString::String(doc.0.clone())
+                        }
                     })
                     .collect(),
             ),
@@ -255,9 +287,9 @@ mod tests {
     fn test_docs_to_hover_multiple_docs() {
         // Given multiple documentation strings
         let docs = vec![
-            "Documentation string 1".to_string(),
-            "Documentation string 2".to_string(),
-            "Documentation string 3".to_string(),
+            ("Documentation string 1".to_string(), "String"),
+            ("Documentation string 2".to_string(), "String"),
+            ("Documentation string 3".to_string(), "String"),
         ];
 
         // When converting to hover content
