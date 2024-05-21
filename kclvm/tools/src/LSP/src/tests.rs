@@ -1170,11 +1170,11 @@ fn hover_test() {
         to_json(Hover {
             contents: HoverContents::Array(vec![
                 MarkedString::String("__main__".to_string()),
-                MarkedString::String("hover doc test".to_string()),
                 MarkedString::LanguageString(lsp_types::LanguageString {
                     language: "kcl".to_string(),
-                    value: "schema Person\n\n\tname: str\n\n\tage?: int".to_string()
+                    value: "schema Person\n\tname: str\n\tage?: int".to_string()
                 }),
+                MarkedString::String("hover doc test".to_string()),
             ]),
             range: None
         })
@@ -1673,11 +1673,11 @@ fn konfig_hover_test_main() {
         HoverContents::Array(arr) => {
             let expect: Vec<MarkedString> = vec![
                 MarkedString::String("base.pkg.kusion_models.kube.frontend".to_string()),
-                MarkedString::String("Server is abstaction of Deployment and StatefulSet.".to_string()),
                 MarkedString::LanguageString(lsp_types::LanguageString {
                     language: "kcl".to_string(),
                     value: "schema Server\n\n\tname?: str\n\n\tworkloadType: str(Deployment) | str(StatefulSet)\n\n\trenderType?: str(Server) | str(KubeVelaApplication)\n\n\treplicas: int\n\n\timage: str\n\n\tschedulingStrategy: SchedulingStrategy\n\n\tmainContainer: Main\n\n\tsidecarContainers?: [Sidecar]\n\n\tinitContainers?: [Sidecar]\n\n\tuseBuiltInLabels?: bool\n\n\tlabels?: {str:str}\n\n\tannotations?: {str:str}\n\n\tuseBuiltInSelector?: bool\n\n\tselector?: {str:str}\n\n\tpodMetadata?: ObjectMeta\n\n\tvolumes?: [Volume]\n\n\tneedNamespace?: bool\n\n\tenableMonitoring?: bool\n\n\tconfigMaps?: [ConfigMap]\n\n\tsecrets?: [Secret]\n\n\tservices?: [Service]\n\n\tingresses?: [Ingress]\n\n\tserviceAccount?: ServiceAccount\n\n\tstorage?: ObjectStorage\n\n\tdatabase?: DataBase".to_string()
                 }),
+                MarkedString::String("Server is abstaction of Deployment and StatefulSet.".to_string()),
             ];
             assert_eq!(expect, arr);
         }

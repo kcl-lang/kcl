@@ -47,10 +47,6 @@ pub(crate) fn hover(
 
                         docs.push((schema_ty.pkgpath, MarkedStringType::String));
 
-                        if !schema_ty.doc.is_empty() {
-                            docs.push((schema_ty.doc.clone(), MarkedStringType::String));
-                        }
-
                         // The attr of schema_ty does not contain the attrs from inherited base schema.
                         // Use the api provided by GlobalState to get all attrs
                         let module_info = gs.get_packages().get_module_info(&kcl_pos.filename);
@@ -76,7 +72,10 @@ pub(crate) fn hover(
                                 ));
                             }
                         }
-                        docs.push((attrs.join("\n\n"), MarkedStringType::LanguageString));
+                        docs.push((attrs.join("\n"), MarkedStringType::LanguageString));
+                        if !schema_ty.doc.is_empty() {
+                            docs.push((schema_ty.doc.clone(), MarkedStringType::String));
+                        }
                     }
                     _ => {}
                 },
@@ -258,16 +257,16 @@ mod tests {
                 if let MarkedString::String(s) = vec[0].clone() {
                     assert_eq!(s, "pkg");
                 }
-                if let MarkedString::String(s) = vec[1].clone() {
-                    assert_eq!(s, "hover doc test");
+                if let MarkedString::LanguageString(s) = vec[1].clone() {
+                    assert_eq!(
+                        s.value,
+                        "schema Person\n\tname: str\n\tage: int".to_string()
+                    );
                 } else {
                     unreachable!("Wrong type");
                 }
-                if let MarkedString::LanguageString(s) = vec[2].clone() {
-                    assert_eq!(
-                        s.value,
-                        "schema Person\n\n\tname: str\n\n\tage: int".to_string()
-                    );
+                if let MarkedString::String(s) = vec[2].clone() {
+                    assert_eq!(s, "hover doc test");
                 } else {
                     unreachable!("Wrong type");
                 }
@@ -352,13 +351,13 @@ mod tests {
                 if let MarkedString::String(s) = vec[0].clone() {
                     assert_eq!(s, "__main__");
                 }
-                if let MarkedString::String(s) = vec[1].clone() {
-                    assert_eq!(s, "hover doc test");
+                if let MarkedString::LanguageString(s) = vec[1].clone() {
+                    assert_eq!(s.value, "schema Person\n\tname: str\n\tage?: int");
                 } else {
                     unreachable!("Wrong type");
                 }
-                if let MarkedString::LanguageString(s) = vec[2].clone() {
-                    assert_eq!(s.value, "schema Person\n\n\tname: str\n\n\tage?: int");
+                if let MarkedString::String(s) = vec[2].clone() {
+                    assert_eq!(s, "hover doc test");
                 } else {
                     unreachable!("Wrong type");
                 }
@@ -665,8 +664,7 @@ mod tests {
             MarkedString::String("__main__".to_string()),
             MarkedString::LanguageString(lsp_types::LanguageString {
                 language: "kcl".to_string(),
-                value: "schema Data1\\[m: {str:str}](Data)\n\n\tname: str\n\n\tage: int"
-                    .to_string(),
+                value: "schema Data1\\[m: {str:str}](Data)\n\tname: str\n\tage: int".to_string(),
             }),
         ];
 
