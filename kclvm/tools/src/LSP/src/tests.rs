@@ -1697,8 +1697,11 @@ fn konfig_hover_test_main() {
             let expect: Vec<MarkedString> = vec![
                 MarkedString::LanguageString(lsp_types::LanguageString {
                     language: "kcl".to_string(),
-                    value: "schedulingStrategy: SchedulingStrategy\n\nSchedulingStrategy represents scheduling strategy.".to_string(),
+                    value: "schedulingStrategy: SchedulingStrategy".to_string(),
                 }),
+                MarkedString::String(
+                    "SchedulingStrategy represents scheduling strategy.".to_string(),
+                ),
             ];
             assert_eq!(expect, arr);
         }

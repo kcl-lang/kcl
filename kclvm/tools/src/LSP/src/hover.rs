@@ -348,7 +348,6 @@ mod tests {
         let got = hover(&program, &pos, &gs).unwrap();
 
         match got.contents {
-            // left: Object {"contents": Array [String("__main__"), String("hover doc test"), Object {"language": String("kcl"), "value": String("schema Person\n\n\tname: str\n\n\tage?: int")}]}
             lsp_types::HoverContents::Array(vec) => {
                 if let MarkedString::String(s) = vec[0].clone() {
                     assert_eq!(s, "__main__");
