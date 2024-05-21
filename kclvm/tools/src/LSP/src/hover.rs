@@ -34,12 +34,12 @@ pub(crate) fn hover(
                         // ```
                         // pkg
                         // schema Foo(Base)[param: type]
+                        // attr1: type
+                        // attr2? type
+                        // ```
                         // -----------------
                         // doc
                         // -----------------
-                        // Attributes:
-                        // attr1: type
-                        // attr2? type
                         // ```
                         let schema_ty = ty.into_schema_type();
 
@@ -100,10 +100,9 @@ pub(crate) fn hover(
                 kclvm_sema::core::symbol::SymbolKind::Value => match &obj.get_sema_info().ty {
                     Some(ty) => match &ty.kind {
                         kclvm_sema::ty::TypeKind::Function(func_ty) => {
-                            docs.push((
-                                build_func_hover_content(func_ty, obj.get_name().clone())
-                                    .join("\n"),
-                                MarkedStringType::LanguageString,
+                            docs.append(&mut build_func_hover_content(
+                                func_ty.clone(),
+                                obj.get_name().clone(),
                             ));
                         }
                         _ => {
@@ -120,31 +119,12 @@ pub(crate) fn hover(
                 kclvm_sema::core::symbol::SymbolKind::Decorator => {
                     match BUILTIN_DECORATORS.get(&obj.get_name()) {
                         Some(ty) => {
-                            let hover_content = build_func_hover_content(
-                                &ty.into_func_type(),
+                            let mut hover_content = build_func_hover_content(
+                                ty.into_func_type(),
                                 obj.get_name().clone(),
-                            )
-                            .join("\n");
+                            );
 
-                            for (i, ele) in hover_content.split("fn").enumerate() {
-                                if i == 0 {
-                                    docs.push((ele.to_string(), MarkedStringType::String));
-                                } else {
-                                    docs.push((
-                                        format!("fn{}", ele),
-                                        MarkedStringType::LanguageString,
-                                    ));
-                                }
-                            }
-
-                            // docs.push((
-                            //     build_func_hover_content(
-                            //         &ty.into_func_type(),
-                            //         obj.get_name().clone(),
-                            //     )
-                            //     .join("\n"),
-                            //     MarkedStringType::LanguageString,
-                            // ));
+                            docs.append(&mut hover_content);
                         }
                         None => todo!(),
                     }
@@ -207,11 +187,14 @@ fn docs_to_hover(docs: Vec<(String, MarkedStringType)>) -> Option<lsp_types::Hov
 // -----------------
 // doc
 // ```
-fn build_func_hover_content(func_ty: &FunctionType, name: String) -> Vec<String> {
-    let mut docs = vec![];
+fn build_func_hover_content(
+    func_ty: FunctionType,
+    name: String,
+) -> Vec<(String, MarkedStringType)> {
+    let mut docs: Vec<(String, MarkedStringType)> = vec![];
     if let Some(ty) = &func_ty.self_ty {
         let self_ty = format!("{}\n\n", ty.ty_str());
-        docs.push(self_ty);
+        docs.push((self_ty, MarkedStringType::String));
     }
 
     let mut sig = format!("fn {}(", name);
@@ -228,10 +211,13 @@ fn build_func_hover_content(func_ty: &FunctionType, name: String) -> Vec<String>
         sig.push(')');
     }
     sig.push_str(&format!(" -> {}", func_ty.return_ty.ty_str()));
-    docs.push(sig);
+    docs.push((sig, MarkedStringType::LanguageString));
 
     if !func_ty.doc.is_empty() {
-        docs.push(func_ty.doc.clone().replace('\n', "\n\n"));
+        docs.push((
+            func_ty.doc.clone().replace('\n', "\n\n"),
+            MarkedStringType::String,
+        ));
     }
     docs
 }
