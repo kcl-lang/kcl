@@ -610,4 +610,34 @@ mod tests {
             _ => unreachable!("test error"),
         }
     }
+
+    #[test]
+    #[bench_test]
+    fn dict_key_in_schema() {
+        let (file, program, _, gs) =
+            compile_test_file("src/test_data/hover_test/dict_key_in_schema/dict_key_in_schema.k");
+        let pos = KCLPos {
+            filename: file.clone(),
+            line: 5,
+            column: Some(5),
+        };
+        let got = hover(&program, &pos, &gs).unwrap();
+        insta::assert_snapshot!(format!("{:?}", got));
+
+        let pos = KCLPos {
+            filename: file.clone(),
+            line: 9,
+            column: Some(5),
+        };
+        let got = hover(&program, &pos, &gs).unwrap();
+        insta::assert_snapshot!(format!("{:?}", got));
+
+        let pos = KCLPos {
+            filename: file.clone(),
+            line: 13,
+            column: Some(5),
+        };
+        let got = hover(&program, &pos, &gs).unwrap();
+        insta::assert_snapshot!(format!("{:?}", got));
+    }
 }
