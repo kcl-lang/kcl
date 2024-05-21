@@ -1,0 +1,11 @@
+error[E3M38]: EvaluationError
+ --> ${CWD}/main.k:3:9
+  |
+3 | alice = pkg.Person {}
+  |         ^ Instance check failed
+  |
+ --> ${CWD}/pkg/person.k:5:1
+  |
+5 |         name, "name should be defined"
+  |  Check failed on the condition: name should be defined
+  |

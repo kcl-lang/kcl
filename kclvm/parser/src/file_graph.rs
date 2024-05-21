@@ -66,17 +66,20 @@ impl FileGraph {
                 .rev()
                 .map(|n| self.graph[n].clone())
                 .collect::<Vec<_>>()),
-            Err(_) => {
+            Err(err) => {
                 // toposort function in the `petgraph` library doesn't return the cycle itself,
                 // so we need to use Tarjan's algorithm to find one instead
                 let strongly_connected_components = petgraph::algo::tarjan_scc(&self.graph);
 
                 // a strongly connected component is a cycle if it has more than one node
                 // let's just return the first one we find
-                let cycle = strongly_connected_components
+                let cycle = match strongly_connected_components
                     .into_iter()
                     .find(|component| component.len() > 1)
-                    .unwrap();
+                {
+                    Some(vars) => vars,
+                    None => vec![err.node_id()],
+                };
                 Err(cycle
                     .iter()
                     .map(|n| self.graph[*n].clone())

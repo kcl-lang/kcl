@@ -1,0 +1,12 @@
+error[E1001]: ImmutableError
+  --> ${CWD}/main.k:10:1
+   |
+10 | config = Config {
+   | ^ Can not change the value of 'config', because it was declared immutable
+   |
+ --> ${CWD}/main.k:6:1
+  |
+6 | config = Config {
+  | ^ The variable 'config' is declared here
+  |
+note: change the variable name to '_config' to make it mutable

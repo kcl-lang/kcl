@@ -1,0 +1,12 @@
+error[E2D34]: IllegalInheritError
+ --> ${CWD}/main.k:3:12
+  |
+3 | schema Son(a):
+  |            ^ invalid schema inherit object type, expect schema, got 'int'
+  |
+error[E2L23]: CompileError
+ --> ${CWD}/main.k:7:5
+  |
+7 |     fields: "asa"
+  |     ^ Cannot add member 'fields' to schema 'Son', did you mean '["field"]'?
+  |

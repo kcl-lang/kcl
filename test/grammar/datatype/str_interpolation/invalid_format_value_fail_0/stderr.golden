@@ -1,0 +1,6 @@
+error[E1001]: InvalidSyntax
+ --> ${CWD}/main.k:2:8
+  |
+2 | b = "${b = a + 1}"
+  |        ^ invalid string interpolation expression: 'b = a + 1'
+  |

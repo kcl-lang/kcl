@@ -1,0 +1,6 @@
+error[E3M38]: EvaluationError
+ --> ${CWD}/main.k:2:1
+  |
+2 |     a.b = 1
+  |  failed to update the dict. An iterable of key-value pairs was expected, but got UndefinedType. Check if the syntax for updating the dictionary with the attribute 'b' is correct
+  |

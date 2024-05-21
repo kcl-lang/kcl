@@ -1,0 +1,20 @@
+error[E1001]: InvalidSyntax
+ --> ${CWD}/main.k:1:15
+  |
+1 | import .some0..pkg1 as some00  # some0 not found in app-main package
+  |               ^ expected one of ["identifier"] got .
+  |
+error[E2F04]: CannotFindModule
+ --> ${CWD}/main.k:1:1
+  |
+1 | import .some0..pkg1 as some00  # some0 not found in app-main package
+  | ^ Cannot find the module .some0..pkg1 from ${CWD}/some0//pkg1
+  |
+suggestion: try 'kcl mod add app-main' to download the package not found
+suggestion: find more package on 'https://artifacthub.io'
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:3:9
+  |
+3 | Name1 = some00.Name  # some0.pkg1.name
+  |         ^ attribute 'Name' not found in 'module 'app-main.some0..pkg1''
+  |

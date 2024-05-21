@@ -1,0 +1,44 @@
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:6:13
+  |
+6 |             "image": "image",
+  |             ^ expected Container, got str(image)
+  |
+ --> ${CWD}/pkg/person.k:3:5
+  |
+3 |     spec: [Container]
+  |     ^ variable is defined here, its type is Container, but got str(image)
+  |
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:7:13
+  |
+7 |             "name": "name"
+  |             ^ expected Container, got str(name)
+  |
+ --> ${CWD}/pkg/person.k:3:5
+  |
+3 |     spec: [Container]
+  |     ^ variable is defined here, its type is Container, but got str(name)
+  |
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:5:9
+  |
+5 |         spec: {
+  |         ^ expected [Container], got {str(image) | str(name):str(image) | str(name)}
+  |
+ --> ${CWD}/pkg/person.k:3:5
+  |
+3 |     spec: [Container]
+  |     ^ variable is defined here, its type is [Container], but got {str(image) | str(name):str(image) | str(name)}
+  |
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:4:5
+  |
+4 |     name: {
+  |     ^ expected [Container], got {str(image) | str(name):str(image) | str(name)}
+  |
+ --> ${CWD}/pkg/person.k:3:5
+  |
+3 |     spec: [Container]
+  |     ^ variable is defined here, its type is [Container], but got {str(image) | str(name):str(image) | str(name)}
+  |

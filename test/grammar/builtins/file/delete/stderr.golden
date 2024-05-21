@@ -1,1 +1,6 @@
-delete: failed to delete 'test_dir': No such file or directory
+error[E3M38]: EvaluationError
+ --> ${CWD}/main.k:3:1
+  |
+3 | file.delete("test_dir")
+  |  failed to delete 'test_dir': No such file or directory (os error 2)
+  |

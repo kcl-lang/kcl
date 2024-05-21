@@ -1,0 +1,11 @@
+error[E2G22]: TypeError
+  --> ${CWD}/main.k:38:21
+   |
+38 |                     "name2": 1
+   |                     ^ expected Name1, got int(1)
+   |
+  --> ${CWD}/main.k:13:5
+   |
+13 |     name2: Name1
+   |     ^ variable is defined here, its type is Name1, but got int(1)
+   |

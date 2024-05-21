@@ -1,0 +1,11 @@
+error[E3M38]: EvaluationError
+  --> ${CWD}/main.k:10:13
+   |
+10 |     "name": Name {}
+   |             ^ Instance check failed
+   |
+ --> ${CWD}/main.k:4:1
+  |
+4 |         firstName, "firstName should be defined and not empty"
+  |  Check failed on the condition: firstName should be defined and not empty
+  |

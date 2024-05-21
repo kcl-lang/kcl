@@ -1,0 +1,6 @@
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:1:5
+  |
+1 | a = {} < {}
+  |     ^ unsupported operand type(s) for <: '{any:any}' and '{any:any}'
+  |

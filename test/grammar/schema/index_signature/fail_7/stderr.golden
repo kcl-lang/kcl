@@ -1,0 +1,1 @@
+attribute 'type' of WithComponent is required and can't be None or Undefined

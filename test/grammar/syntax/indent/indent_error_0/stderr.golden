@@ -1,0 +1,12 @@
+error[E1001]: InvalidSyntax
+ --> ${CWD}/main.k:3:4
+  |
+3 |    age: int
+  |    ^ invalid indentation with 3 spaces, try to align indents by adding or removing spaces
+  |
+error[E1001]: InvalidSyntax
+ --> ${CWD}/main.k:4:3
+  |
+4 |   info: str
+  |   ^ invalid indentation with 2 spaces, try to align indents by adding or removing spaces
+  |

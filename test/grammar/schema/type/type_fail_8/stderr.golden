@@ -1,0 +1,28 @@
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:7:18
+  |
+7 |     "cards": {1:{"error":"error"}}
+  |                  ^ expected {int:any}, got str(error)
+  |
+ --> ${CWD}/main.k:3:5
+  |
+3 |     cards : {int:{int:}}
+  |     ^ variable is defined here, its type is {int:any}, but got str(error)
+  |
+error[E2A31]: IllegalAttributeError
+ --> ${CWD}/main.k:7:15
+  |
+7 |     "cards": {1:{"error":"error"}}
+  |               ^ A attribute must be string type, got 'int(1)'
+  |
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:7:5
+  |
+7 |     "cards": {1:{"error":"error"}}
+  |     ^ expected {int:{int:any}}, got {int(1):{str(error):str(error)}}
+  |
+ --> ${CWD}/main.k:3:5
+  |
+3 |     cards : {int:{int:}}
+  |     ^ variable is defined here, its type is {int:{int:any}}, but got {int(1):{str(error):str(error)}}
+  |

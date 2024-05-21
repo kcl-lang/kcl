@@ -1,0 +1,28 @@
+error[E2G22]: TypeError
+  --> ${CWD}/main.k:10:9
+   |
+10 |         "classID" = "aa"
+   |         ^ expected int, got str(aa)
+   |
+ --> ${CWD}/main.k:6:5
+  |
+6 |     name: Name
+  |     ^ variable is defined here, its type is int, but got str(aa)
+  |
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:9:5
+  |
+9 |     name: {
+  |     ^ expected schema index signature value type int, got str(aa)
+  |
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:9:5
+  |
+9 |     name: {
+  |     ^ expected Name, got {str(classID):str(aa)}
+  |
+ --> ${CWD}/main.k:6:5
+  |
+6 |     name: Name
+  |     ^ variable is defined here, its type is Name, but got {str(classID):str(aa)}
+  |

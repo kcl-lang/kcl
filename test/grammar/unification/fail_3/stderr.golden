@@ -1,0 +1,11 @@
+error[E3M38]: EvaluationError
+  --> ${CWD}/main.k:11:1
+   |
+11 | _config |= {age = -1}
+   | ^ Instance check failed
+   |
+ --> ${CWD}/main.k:5:1
+  |
+5 |         age > 0 if age
+  |  Check failed on the condition
+  |

@@ -1,0 +1,6 @@
+error[E2L23]: CompileError
+  --> ${CWD}/main.k:11:9
+   |
+11 |         ccc > 2
+   |         ^ name 'ccc' is not defined
+   |

@@ -1,0 +1,11 @@
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:5:5
+  |
+5 |     int_0: 0.0
+  |     ^ expected int(0), got float(0)
+  |
+ --> ${CWD}/main.k:2:5
+  |
+2 |     int_0: 0
+  |     ^ variable is defined here, its type is int(0), but got float(0)
+  |

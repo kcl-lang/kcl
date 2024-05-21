@@ -1,0 +1,6 @@
+error[E2G22]: TypeError
+  --> ${CWD}/main.k:10:7
+   |
+10 | val = {"key": "value"} | person
+   |       ^ unsupported operand type(s) for |: '{str(key):str(value)}' and 'Person'
+   |

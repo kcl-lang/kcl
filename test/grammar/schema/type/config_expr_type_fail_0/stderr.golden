@@ -1,0 +1,11 @@
+error[E2G22]: TypeError
+  --> ${CWD}/main.k:42:44
+   |
+42 |                                elif False: ID = "123"
+   |                                            ^ expected int, got str(123)
+   |
+ --> ${CWD}/main.k:4:5
+  |
+4 |     ID: int = 1
+  |     ^ variable is defined here, its type is int, but got str(123)
+  |

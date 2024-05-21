@@ -1,0 +1,11 @@
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:6:5
+  |
+6 |     int_01 = 123
+  |     ^ expected number_multiplier(123K) | int(456), got int(123)
+  |
+ --> ${CWD}/main.k:2:5
+  |
+2 |     int_01: 123K | 456
+  |     ^ variable is defined here, its type is number_multiplier(123K) | int(456), but got int(123)
+  |

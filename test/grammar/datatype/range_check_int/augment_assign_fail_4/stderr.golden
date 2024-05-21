@@ -1,0 +1,12 @@
+error[E1001]: ImmutableError
+ --> ${CWD}/main.k:2:1
+  |
+2 | a += 1
+  | ^ Immutable variable 'a' is modified during compiling
+  |
+ --> ${CWD}/main.k:1:1
+  |
+1 | a = 2147483646
+  | ^ The variable 'a' is declared here firstly
+  |
+note: change the variable name to '_a' to make it mutable

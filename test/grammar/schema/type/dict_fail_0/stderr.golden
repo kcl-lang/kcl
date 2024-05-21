@@ -1,0 +1,6 @@
+error[E2A31]: IllegalAttributeError
+ --> ${CWD}/main.k:5:16
+  |
+5 |     "labels": {None: None}
+  |                ^ A attribute must be string type, got 'NoneType'
+  |

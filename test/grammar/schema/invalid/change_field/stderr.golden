@@ -1,0 +1,12 @@
+error[E1001]: ImmutableError
+ --> ${CWD}/main.k:9:1
+  |
+9 | JohnDoe.lastName = "John0"
+  | ^ Can not change the value of 'JohnDoe', because it was declared immutable
+  |
+ --> ${CWD}/main.k:5:1
+  |
+5 | JohnDoe = Person {
+  | ^ The variable 'JohnDoe' is declared here
+  |
+note: change the variable name to '_JohnDoe' to make it mutable

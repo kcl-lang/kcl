@@ -1,0 +1,6 @@
+error[E2L23]: CompileError
+ --> ${CWD}/main.k:1:5
+  |
+1 | a = "".startswith()
+  |     ^ expected 1 positional argument, found 0
+  |

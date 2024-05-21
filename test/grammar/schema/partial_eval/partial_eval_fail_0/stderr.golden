@@ -1,0 +1,6 @@
+error[E3M38]: EvaluationError
+  --> ${CWD}/main.k:11:1
+   |
+11 | config = Config {
+   |  attribute 'name' of Config is required and can't be None or Undefined
+   |

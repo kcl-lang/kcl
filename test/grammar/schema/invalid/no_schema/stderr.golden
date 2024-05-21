@@ -1,0 +1,6 @@
+error[E2L23]: CompileError
+ --> ${CWD}/main.k:1:11
+  |
+1 | JohnDoe = Person {
+  |           ^ name 'Person' is not defined
+  |

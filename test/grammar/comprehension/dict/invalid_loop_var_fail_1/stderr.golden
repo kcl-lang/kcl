@@ -1,0 +1,36 @@
+error[E1001]: InvalidSyntax
+ --> ${CWD}/main.k:2:20
+  |
+2 | dataLoop = [i for i() in data]  # error
+  |                    ^ expected one of ["in"] got (
+  |
+error[E1001]: InvalidSyntax
+ --> ${CWD}/main.k:2:21
+  |
+2 | dataLoop = [i for i() in data]  # error
+  |                     ^ expected one of ["identifier", "literal", "(", "[", "{"] got )
+  |
+error[E1001]: InvalidSyntax
+ --> ${CWD}/main.k:2:21
+  |
+2 | dataLoop = [i for i() in data]  # error
+  |                     ^ expected one of ["]"] got )
+  |
+error[E1001]: InvalidSyntax
+ --> ${CWD}/main.k:2:21
+  |
+2 | dataLoop = [i for i() in data]  # error
+  |                     ^ unexpected token ')'
+  |
+error[E1001]: InvalidSyntax
+ --> ${CWD}/main.k:2:30
+  |
+2 | dataLoop = [i for i() in data]  # error
+  |                              ^ unexpected token ']'
+  |
+error[E2L23]: CompileError
+ --> ${CWD}/main.k:2:23
+  |
+2 | dataLoop = [i for i() in data]  # error
+  |                       ^ name 'in' is not defined, did you mean '["int"]'?
+  |

@@ -1,0 +1,6 @@
+error[E2L23]: CompileError
+ --> ${CWD}/main.k:8:10
+  |
+8 |     name.err_name: "Alice"
+  |          ^ Cannot add member 'err_name' to schema 'Name'
+  |
