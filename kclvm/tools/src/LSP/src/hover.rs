@@ -65,7 +65,7 @@ pub(crate) fn hover(
                                     None => ANY_TYPE_STR.to_string(),
                                 };
                                 attrs.push(format!(
-                                    "\t{}{}: {}",
+                                    "    {}{}: {}",
                                     name,
                                     if attr_symbol.is_optional() { "?" } else { "" },
                                     attr_ty_str,
@@ -260,7 +260,7 @@ mod tests {
                 if let MarkedString::LanguageString(s) = vec[1].clone() {
                     assert_eq!(
                         s.value,
-                        "schema Person\n\tname: str\n\tage: int".to_string()
+                        "schema Person\n    name: str\n    age: int".to_string()
                     );
                 } else {
                     unreachable!("Wrong type");
@@ -352,7 +352,7 @@ mod tests {
                     assert_eq!(s, "__main__");
                 }
                 if let MarkedString::LanguageString(s) = vec[1].clone() {
-                    assert_eq!(s.value, "schema Person\n\tname: str\n\tage?: int");
+                    assert_eq!(s.value, "schema Person\n    name: str\n    age?: int");
                 } else {
                     unreachable!("Wrong type");
                 }
@@ -566,7 +566,7 @@ mod tests {
                     assert_eq!(s, "fib");
                 }
                 if let MarkedString::String(s) = vec[1].clone() {
-                    assert_eq!(s, "schema Fib\n\n\tn: int\n\n\tvalue: int");
+                    assert_eq!(s, "schema Fib\n\n    n: int\n\n    value: int");
                 }
             }
             _ => unreachable!("test error"),
@@ -664,7 +664,8 @@ mod tests {
             MarkedString::String("__main__".to_string()),
             MarkedString::LanguageString(lsp_types::LanguageString {
                 language: "kcl".to_string(),
-                value: "schema Data1\\[m: {str:str}](Data)\n\tname: str\n\tage: int".to_string(),
+                value: "schema Data1\\[m: {str:str}](Data)\n    name: str\n    age: int"
+                    .to_string(),
             }),
         ];
 
