@@ -258,28 +258,16 @@ mod tests {
                 if let MarkedString::String(s) = vec[0].clone() {
                     assert_eq!(s, "pkg");
                 }
-                if let MarkedString::LanguageString(s) = vec[1].clone() {
-                    assert_eq!(s.value, "schema Person");
-                } else {
-                    unreachable!("Wrong type");
-                }
-                if let MarkedString::String(s) = vec[2].clone() {
+                if let MarkedString::String(s) = vec[1].clone() {
                     assert_eq!(s, "hover doc test");
                 } else {
                     unreachable!("Wrong type");
                 }
-                if let MarkedString::String(s) = vec[3].clone() {
-                    assert_eq!(s, "\n\n");
-                } else {
-                    unreachable!("Wrong type");
-                }
-                if let MarkedString::String(s) = vec[4].clone() {
-                    assert_eq!(s, "Attributes:\n");
-                } else {
-                    unreachable!("Wrong type");
-                }
-                if let MarkedString::LanguageString(s) = vec[5].clone() {
-                    assert_eq!(s.value, "name: str\n\nage: int");
+                if let MarkedString::LanguageString(s) = vec[2].clone() {
+                    assert_eq!(
+                        s.value,
+                        "schema Person\n\n\tname: str\n\n\tage: int".to_string()
+                    );
                 } else {
                     unreachable!("Wrong type");
                 }
@@ -294,8 +282,8 @@ mod tests {
         let got = hover(&program, &pos, &gs).unwrap();
         match got.contents {
             lsp_types::HoverContents::Scalar(marked_string) => {
-                if let MarkedString::String(s) = marked_string {
-                    assert_eq!(s, "name: str");
+                if let MarkedString::LanguageString(s) = marked_string {
+                    assert_eq!(s.value, "name: str");
                 }
             }
             _ => unreachable!("test error"),
@@ -360,32 +348,18 @@ mod tests {
         let got = hover(&program, &pos, &gs).unwrap();
 
         match got.contents {
+            // left: Object {"contents": Array [String("__main__"), String("hover doc test"), Object {"language": String("kcl"), "value": String("schema Person\n\n\tname: str\n\n\tage?: int")}]}
             lsp_types::HoverContents::Array(vec) => {
                 if let MarkedString::String(s) = vec[0].clone() {
                     assert_eq!(s, "__main__");
                 }
-                if let MarkedString::LanguageString(s) = vec[1].clone() {
-                    assert_eq!(s.value, "schema Person");
-                } else {
-                    unreachable!("Wrong type");
-                }
-                if let MarkedString::String(s) = vec[2].clone() {
+                if let MarkedString::String(s) = vec[1].clone() {
                     assert_eq!(s, "hover doc test");
                 } else {
                     unreachable!("Wrong type");
                 }
-                if let MarkedString::String(s) = vec[3].clone() {
-                    assert_eq!(s, "\n\n");
-                } else {
-                    unreachable!("Wrong type");
-                }
-                if let MarkedString::String(s) = vec[4].clone() {
-                    assert_eq!(s, "Attributes:\n");
-                } else {
-                    unreachable!("Wrong type");
-                }
-                if let MarkedString::LanguageString(s) = vec[5].clone() {
-                    assert_eq!(s.value, "name: str\n\nage?: int");
+                if let MarkedString::LanguageString(s) = vec[2].clone() {
+                    assert_eq!(s.value, "schema Person\n\n\tname: str\n\n\tage?: int");
                 } else {
                     unreachable!("Wrong type");
                 }
@@ -591,10 +565,10 @@ mod tests {
             lsp_types::HoverContents::Array(vec) => {
                 assert_eq!(vec.len(), 2);
                 if let MarkedString::String(s) = vec[0].clone() {
-                    assert_eq!(s, "fib\n\nschema Fib");
+                    assert_eq!(s, "fib");
                 }
                 if let MarkedString::String(s) = vec[1].clone() {
-                    assert_eq!(s, "Attributes:\n\nn: int\n\nvalue: int");
+                    assert_eq!(s, "schema Fib\n\n\tn: int\n\n\tvalue: int");
                 }
             }
             _ => unreachable!("test error"),
@@ -651,10 +625,11 @@ mod tests {
             column: Some(1),
         };
         let got = hover(&program, &pos, &gs).unwrap();
-        let expect_content = vec![MarkedString::String("".to_string()), MarkedString::LanguageString(lsp_types::LanguageString {
+        let expect_content = vec![MarkedString::LanguageString(lsp_types::LanguageString {
             language: "kcl".to_string(),
-            value: "fn deprecated(version: str, reason: str, strict: bool) -> any\nThis decorator is used to get the deprecation message according to the wrapped key-value pair.".to_string(),
-            })];
+            value: "fn deprecated(version: str, reason: str, strict: bool) -> any".to_string(),
+            }),
+            MarkedString::String("This decorator is used to get the deprecation message according to the wrapped key-value pair.".to_string())];
         match got.contents {
             lsp_types::HoverContents::Array(vec) => {
                 assert_eq!(vec, expect_content)
@@ -687,9 +662,14 @@ mod tests {
         };
         let got = hover(&program, &pos, &gs).unwrap();
 
-        let expect_content = vec![
-            MarkedString::String("__main__\n\nschema Data1\\[m: {str:str}](Data)".to_string()),
-            MarkedString::String("Attributes:\n\nname: str\n\nage: int".to_string()),
+        // [String("__main__"), LanguageString(LanguageString { language: "kcl", value: "schema Data1\\[m: {str:str}](Data)\n\n\tname: str\n\n\tage: int" })]
+        let expect_content: Vec<MarkedString> = vec![
+            MarkedString::String("__main__".to_string()),
+            MarkedString::LanguageString(lsp_types::LanguageString {
+                language: "kcl".to_string(),
+                value: "schema Data1\\[m: {str:str}](Data)\n\n\tname: str\n\n\tage: int"
+                    .to_string(),
+            }),
         ];
 
         match got.contents {
