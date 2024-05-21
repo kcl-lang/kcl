@@ -1,0 +1,6 @@
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:1:5
+  |
+1 | a = [0] < [1]
+  |     ^ unsupported operand type(s) for <: '[int(0)]' and '[int(1)]'
+  |

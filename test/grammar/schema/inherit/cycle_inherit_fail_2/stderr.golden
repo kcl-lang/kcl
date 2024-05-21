@@ -1,0 +1,18 @@
+error[E2L23]: CompileError
+ --> ${CWD}/pkg/c.k:2:8
+  |
+2 | schema C(B):
+  |        ^ There is a circular reference between schema C and B
+  |
+error[E2L23]: CompileError
+ --> ${CWD}/main.k:3:8
+  |
+3 | schema Son(pkg.B):
+  |        ^ There is a circular reference between schema Son and B
+  |
+error[E2L23]: CompileError
+ --> ${CWD}/main.k:9:5
+  |
+9 |     fields: "asa",
+  |     ^ Cannot add member 'fields' to schema 'Son', did you mean '["field"]'?
+  |

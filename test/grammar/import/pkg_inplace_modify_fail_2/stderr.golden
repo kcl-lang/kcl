@@ -1,0 +1,6 @@
+error[E3M38]: EvaluationError
+ --> ${CWD}/main.k:4:1
+  |
+4 |     pkg.a = 2
+  |  failed to update the dict. An iterable of key-value pairs was expected, but got UndefinedType. Check if the syntax for updating the dictionary with the attribute 'a' is correct
+  |

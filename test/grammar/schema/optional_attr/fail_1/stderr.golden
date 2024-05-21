@@ -1,0 +1,6 @@
+error[E3M38]: EvaluationError
+ --> ${CWD}/main.k:8:1
+  |
+8 | person = Person {
+  |  attribute 'info' of Person is required and can't be None or Undefined
+  |

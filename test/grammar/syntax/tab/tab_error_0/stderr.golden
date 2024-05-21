@@ -1,0 +1,6 @@
+error[E1001]: InvalidSyntax
+ --> ${CWD}/main.k:3:2
+  |
+3 | 	age: int
+  | ^ inconsistent use of tabs and spaces in indentation
+  |

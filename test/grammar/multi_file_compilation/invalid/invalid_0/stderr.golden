@@ -1,0 +1,18 @@
+error[E1001]: ImmutableError
+ --> ${CWD}/pkg.k:1:1
+  |
+1 | list_data = 1
+  | ^ Can not change the value of 'list_data', because it was declared immutable
+  |
+ --> ${CWD}/main.k:1:1
+  |
+1 | list_data = [1, 2, 3]
+  | ^ The variable 'list_data' is declared here
+  |
+note: change the variable name to '_list_data' to make it mutable
+error[E2G22]: TypeError
+ --> ${CWD}/pkg.k:1:1
+  |
+1 | list_data = 1
+  | ^ expected [int], got int(1)
+  |

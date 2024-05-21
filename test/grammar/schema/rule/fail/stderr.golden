@@ -1,0 +1,11 @@
+error[E3M38]: EvaluationError
+  --> ${CWD}/main.k:16:1
+   |
+16 | ServiceCheckRule {
+   | ^ Instance check failed
+   |
+ --> ${CWD}/main.k:9:1
+  |
+9 |     svc.name != "123"
+  |  Check failed on the condition
+  |

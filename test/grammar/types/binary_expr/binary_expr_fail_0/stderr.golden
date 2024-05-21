@@ -1,0 +1,6 @@
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:1:10
+  |
+1 | a: int = 1 + True
+  |          ^ unsupported operand type(s) for +: 'int(1)' and 'bool(True)'
+  |

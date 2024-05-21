@@ -1,0 +1,11 @@
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:7:5
+  |
+7 |     int_02: 789
+  |     ^ expected int(123) | int(456), got int(789)
+  |
+ --> ${CWD}/main.k:3:5
+  |
+3 |     int_02: 123 | 456
+  |     ^ variable is defined here, its type is int(123) | int(456), but got int(789)
+  |

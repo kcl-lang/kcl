@@ -1,0 +1,6 @@
+error[E2A31]: IllegalAttributeError
+  --> ${CWD}/main.k:16:13
+   |
+16 |             service: service["name"],
+   |             ^ A attribute must be string type, got '{str:str}'
+   |

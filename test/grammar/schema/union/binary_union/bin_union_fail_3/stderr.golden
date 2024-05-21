@@ -1,0 +1,6 @@
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:5:7
+  |
+5 | val = [1, 2, 3] | Person {
+  |       ^ unsupported operand type(s) for |: '[int(1) | int(2) | int(3)]' and 'Person'
+  |

@@ -1,0 +1,11 @@
+error[E2G22]: TypeError
+  --> ${CWD}/main.k:14:5
+   |
+14 |     "name": Name1 {
+   |     ^ expected Name0, got Name1
+   |
+  --> ${CWD}/main.k:10:5
+   |
+10 |     name: Name0
+   |     ^ variable is defined here, its type is Name0, but got Name1
+   |

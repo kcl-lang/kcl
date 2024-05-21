@@ -1,0 +1,6 @@
+error[E3M38]: EvaluationError
+ --> ${CWD}/main.k:1:1
+  |
+1 | name = option("name", required=True, help="set name value")
+  |  option('name') must be initialized, try '-D name=?' argument
+  |

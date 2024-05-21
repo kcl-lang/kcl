@@ -1,0 +1,6 @@
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:1:1
+  |
+1 | name: ["aa\"ab|"] = ["aa\"ab"]
+  | ^ expected [str(aa"ab|)], got [str(aa"ab)]
+  |

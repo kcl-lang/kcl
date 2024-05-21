@@ -1,0 +1,17 @@
+error[E2A31]: IllegalAttributeError
+ --> ${CWD}/main.k:7:15
+  |
+7 |     "cards": {1: 1}
+  |               ^ A attribute must be string type, got 'int(1)'
+  |
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:7:5
+  |
+7 |     "cards": {1: 1}
+  |     ^ expected {int:{int:any}}, got {int(1):int(1)}
+  |
+ --> ${CWD}/main.k:3:5
+  |
+3 |     cards: {int:{int:}}
+  |     ^ variable is defined here, its type is {int:{int:any}}, but got {int(1):int(1)}
+  |

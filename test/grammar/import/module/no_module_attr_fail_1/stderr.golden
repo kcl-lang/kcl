@@ -1,0 +1,12 @@
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:3:10
+  |
+3 | schema A(p.D):
+  |          ^ attribute 'D' not found in 'module 'pkg''
+  |
+error[E2D34]: IllegalInheritError
+ --> ${CWD}/main.k:3:10
+  |
+3 | schema A(p.D):
+  |          ^ invalid schema inherit object type, expect schema, got 'any'
+  |

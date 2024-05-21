@@ -1,7 +1,7 @@
 schema Person:
     firstName?: str = "John"
     lastName?: str
-    @deprecated(strict=False)
+    @deprecated(strict=True)
     name?: str
 
 JohnDoe = Person {

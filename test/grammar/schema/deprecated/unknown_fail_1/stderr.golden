@@ -1,0 +1,6 @@
+error[E2L23]: CompileError
+ --> ${CWD}/main.k:1:2
+  |
+1 | @err_deprecated
+  |  ^ UnKnown decorator err_deprecated
+  |

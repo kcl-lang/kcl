@@ -1,0 +1,6 @@
+error[E2L23]: CompileError
+ --> ${CWD}/main.k:7:9
+  |
+7 |         "gender": "female"
+  |         ^ Cannot add member 'gender' to schema 'Name'
+  |

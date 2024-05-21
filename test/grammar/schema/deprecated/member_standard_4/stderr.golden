@@ -1,0 +1,6 @@
+error[E3M38]: EvaluationError
+  --> ${CWD}/main.k:10:1
+   |
+10 | JohnDoe = Son {
+   |  name was deprecated since version 1.16, use firstName and lastName instead
+   |

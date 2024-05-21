@@ -1,0 +1,6 @@
+error[E2L23]: CompileError
+  --> ${CWD}/main.k:18:13
+   |
+18 |             "fullName": "Alice Terry"
+   |             ^ Cannot add member 'fullName' to schema 'Name'
+   |

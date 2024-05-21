@@ -1,0 +1,33 @@
+error[E2G22]: TypeError
+  --> ${CWD}/main.k:12:16
+   |
+12 |     name.name0.name = 123
+   |                ^ expected str, got int(123)
+   |
+ --> ${CWD}/main.k:2:5
+  |
+2 |     name: str = "Kiki"
+  |     ^ variable is defined here, its type is str, but got int(123)
+  |
+error[E2G22]: TypeError
+  --> ${CWD}/main.k:12:10
+   |
+12 |     name.name0.name = 123
+   |          ^ expected str, got int(123)
+   |
+ --> ${CWD}/main.k:2:5
+  |
+2 |     name: str = "Kiki"
+  |     ^ variable is defined here, its type is str, but got int(123)
+  |
+error[E2G22]: TypeError
+  --> ${CWD}/main.k:12:5
+   |
+12 |     name.name0.name = 123
+   |     ^ expected str, got int(123)
+   |
+ --> ${CWD}/main.k:2:5
+  |
+2 |     name: str = "Kiki"
+  |     ^ variable is defined here, its type is str, but got int(123)
+  |

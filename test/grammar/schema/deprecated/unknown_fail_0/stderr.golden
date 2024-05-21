@@ -1,0 +1,6 @@
+error[E2L23]: CompileError
+ --> ${CWD}/main.k:4:6
+  |
+4 |     @err_deprecated(version="1.16", reason="use firstName and lastName instead", strict=False)
+  |      ^ UnKnown decorator err_deprecated
+  |

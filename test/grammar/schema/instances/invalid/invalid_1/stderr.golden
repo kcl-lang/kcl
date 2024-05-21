@@ -1,0 +1,6 @@
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:6:9
+  |
+6 | count = Person.err_instances()
+  |         ^ attribute 'err_instances' not found in 'Person', did you mean '["instances"]'?
+  |

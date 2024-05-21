@@ -1,0 +1,6 @@
+error[E2L23]: CompileError
+ --> ${CWD}/main.k:7:8
+  |
+7 | schema GrandSon(Parent):
+  |        ^ There is a circular reference between schema GrandSon and Parent
+  |

@@ -1,0 +1,6 @@
+error[E3M38]: EvaluationError
+ --> ${CWD}/main.k:2:1
+  |
+2 |     float_01: 0.0
+  |  expect 0.0, got int
+  |

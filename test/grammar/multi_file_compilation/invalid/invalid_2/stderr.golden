@@ -1,0 +1,12 @@
+error[E1001]: ImmutableError
+ --> ${CWD}/pkg2.k:1:1
+  |
+1 | a = 3
+  | ^ Can not change the value of 'a', because it was declared immutable
+  |
+ --> ${CWD}/pkg1.k:1:1
+  |
+1 | a = _a
+  | ^ The variable 'a' is declared here
+  |
+note: change the variable name to '_a' to make it mutable

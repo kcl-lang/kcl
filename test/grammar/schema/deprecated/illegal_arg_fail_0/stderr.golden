@@ -1,0 +1,6 @@
+error[E1001]: InvalidSyntax
+ --> ${CWD}/main.k:3:31
+  |
+3 |     @deprecated(strict=False, "1.16")
+  |                               ^ positional argument follows keyword argument
+  |

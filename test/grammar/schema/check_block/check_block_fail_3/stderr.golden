@@ -1,0 +1,11 @@
+error[E3M38]: EvaluationError
+  --> ${CWD}/main.k:13:11
+   |
+13 | JohnDoe = Student {
+   |           ^ Instance check failed
+   |
+ --> ${CWD}/main.k:6:1
+  |
+6 |         len(lastName) < 10
+  |  Check failed on the condition
+  |

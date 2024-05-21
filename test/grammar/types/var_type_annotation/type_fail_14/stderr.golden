@@ -1,0 +1,6 @@
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:1:1
+  |
+1 | config: {"A"|"B": int} = {
+  | ^ expected {str(A) | str(B):int}, got {str(C):int(1)}
+  |

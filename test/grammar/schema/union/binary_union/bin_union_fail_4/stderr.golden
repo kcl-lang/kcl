@@ -1,0 +1,6 @@
+error[E2L23]: CompileError
+  --> ${CWD}/main.k:10:5
+   |
+10 |     err: "123"
+   |     ^ Cannot add member 'err' to schema 'Person'
+   |

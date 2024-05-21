@@ -1,0 +1,6 @@
+error[E2L23]: CompileError
+  --> ${CWD}/main.k:16:9
+   |
+16 |         "frist": first
+   |         ^ Cannot add member 'frist' to schema 'Person', did you mean '["first"]'?
+   |

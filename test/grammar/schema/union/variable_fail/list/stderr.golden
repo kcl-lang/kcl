@@ -1,0 +1,12 @@
+error[E1001]: ImmutableError
+ --> ${CWD}/main.k:2:1
+  |
+2 | lists1 |= [5]
+  | ^ Immutable variable 'lists1' is modified during compiling
+  |
+ --> ${CWD}/main.k:1:1
+  |
+1 | lists1 = [1,2,3]
+  | ^ The variable 'lists1' is declared here firstly
+  |
+note: change the variable name to '_lists1' to make it mutable

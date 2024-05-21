@@ -1,0 +1,6 @@
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:6:46
+  |
+6 | x1 = CheckArgType([123, True], ["abc", 456], ["aa", True])
+  |                                              ^ expected [str], got [str(aa) | bool(True)]
+  |

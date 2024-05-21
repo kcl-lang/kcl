@@ -1,0 +1,6 @@
+error[E1001]: InvalidSyntax
+ --> ${CWD}/main.k:5:32
+  |
+5 | person = Person(_name="Alice", 12) {}
+  |                                ^ positional argument follows keyword argument
+  |
