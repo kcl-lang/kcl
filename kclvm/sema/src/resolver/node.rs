@@ -11,6 +11,7 @@ use crate::ty::{
     RESERVED_TYPE_IDENTIFIERS,
 };
 
+use super::doc::extract_doc_from_body;
 use super::format::VALID_FORMAT_SPEC_SET;
 use super::scope::{ScopeKind, ScopeObject, ScopeObjectKind};
 use super::ty::ty_str_replace_pkgpath;
@@ -1071,7 +1072,15 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
         if !real_ret_ty.is_any() && ret_ty.is_any() && lambda_expr.return_ty.is_none() {
             ret_ty = real_ret_ty;
         }
-        Arc::new(Type::function(None, ret_ty, &params, "", false, None))
+        let doc = extract_doc_from_body(&lambda_expr.body);
+        Arc::new(Type::function(
+            None,
+            ret_ty,
+            &params,
+            &doc.unwrap_or_default(),
+            false,
+            None,
+        ))
     }
 
     fn walk_keyword(&mut self, keyword: &'ctx ast::Keyword) -> Self::Result {
