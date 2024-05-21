@@ -61,7 +61,7 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
         let mut result = self.ok_result();
         for expr in &expr_stmt.exprs {
             let scalar = self.walk_expr(expr)?;
-            // Only non-call expressions are allowed to emit values bacause of the function void return type.
+            // Only non-call expressions are allowed to emit values because of the function void return type.
             if !matches!(expr.node, ast::Expr::Call(_)) {
                 self.add_scalar(scalar.clone(), matches!(expr.node, ast::Expr::Schema(_)));
             }

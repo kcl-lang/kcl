@@ -350,6 +350,31 @@ mod tests {
 
     #[test]
     #[bench_test]
+    fn lambda_doc_hover_test() {
+        let (file, program, _, gs) = compile_test_file("src/test_data/hover_test/lambda.k");
+
+        let pos = KCLPos {
+            filename: file.clone(),
+            line: 1,
+            column: Some(1),
+        };
+        let got = hover(&program, &pos, &gs).unwrap();
+
+        match got.contents {
+            lsp_types::HoverContents::Array(vec) => {
+                if let MarkedString::String(s) = vec[0].clone() {
+                    assert_eq!(s, "fn f(x: any) -> any");
+                }
+                if let MarkedString::String(s) = vec[1].clone() {
+                    assert_eq!(s, "lambda documents");
+                }
+            }
+            _ => unreachable!("test error"),
+        }
+    }
+
+    #[test]
+    #[bench_test]
     fn func_def_hover() {
         let (file, program, _, gs) = compile_test_file("src/test_data/hover_test/hover.k");
 

@@ -30,7 +30,7 @@ use kclvm_error::Position as KCLPos;
 use kclvm_sema::builtin::{BUILTIN_FUNCTIONS, STANDARD_SYSTEM_MODULES};
 use kclvm_sema::core::package::ModuleInfo;
 use kclvm_sema::core::symbol::SymbolKind;
-use kclvm_sema::resolver::doc::{parse_doc_string, Doc};
+use kclvm_sema::resolver::doc::{parse_schema_doc_string, SchemaDoc};
 use kclvm_sema::ty::{FunctionType, SchemaType, Type, TypeKind};
 use lsp_types::{CompletionItem, CompletionItemKind, InsertTextFormat};
 
@@ -371,10 +371,10 @@ fn completion_newline(
     let mut completions: IndexSet<KCLCompletionItem> = IndexSet::new();
 
     if let Some((doc, schema)) = is_in_docstring(program, pos) {
-        let doc = parse_doc_string(&doc.node);
+        let doc = parse_schema_doc_string(&doc.node);
         if doc.summary.is_empty() && doc.attrs.is_empty() && doc.examples.is_empty() {
             // empty docstring, provide total completion
-            let doc_parsed = Doc::new_from_schema_stmt(&schema);
+            let doc_parsed = SchemaDoc::new_from_schema_stmt(&schema);
             let label = doc_parsed.to_doc_string();
             // generate docstring from doc
             completions.insert(KCLCompletionItem {

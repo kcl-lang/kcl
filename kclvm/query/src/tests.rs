@@ -587,7 +587,7 @@ fn test_list_variable_with_invalid_kcl() {
     let specs = vec!["a".to_string()];
     let result = list_variables(file.clone(), specs).unwrap();
     assert_eq!(result.variables.get("a"), None);
-    assert_eq!(result.parse_errors.len(), 1);
+    assert_eq!(result.parse_errors.len(), 2);
     assert_eq!(result.parse_errors[0].level, Level::Error);
     assert_eq!(
         result.parse_errors[0].code,
@@ -595,11 +595,11 @@ fn test_list_variable_with_invalid_kcl() {
     );
     assert_eq!(
         result.parse_errors[0].messages[0].message,
-        "unexpected token ':'"
+        "expected one of [\"=\"] got eof",
     );
     assert_eq!(result.parse_errors[0].messages[0].range.0.filename, file);
     assert_eq!(result.parse_errors[0].messages[0].range.0.line, 1);
-    assert_eq!(result.parse_errors[0].messages[0].range.0.column, Some(3));
+    assert_eq!(result.parse_errors[0].messages[0].range.0.column, Some(8));
 }
 
 #[test]
@@ -617,7 +617,7 @@ fn test_overridefile_with_invalid_kcl() {
 
     fs::copy(simple_bk_path.clone(), simple_path.clone()).unwrap();
     assert_eq!(result.result, true);
-    assert_eq!(result.parse_errors.len(), 1);
+    assert_eq!(result.parse_errors.len(), 2);
     assert_eq!(result.parse_errors[0].level, Level::Error);
     assert_eq!(
         result.parse_errors[0].code,
@@ -625,14 +625,14 @@ fn test_overridefile_with_invalid_kcl() {
     );
     assert_eq!(
         result.parse_errors[0].messages[0].message,
-        "unexpected token ':'"
+        "expected one of [\"=\"] got eof"
     );
     assert_eq!(
         result.parse_errors[0].messages[0].range.0.filename,
         simple_path.display().to_string()
     );
     assert_eq!(result.parse_errors[0].messages[0].range.0.line, 1);
-    assert_eq!(result.parse_errors[0].messages[0].range.0.column, Some(3));
+    assert_eq!(result.parse_errors[0].messages[0].range.0.column, Some(8));
 }
 
 #[test]

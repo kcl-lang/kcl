@@ -1474,26 +1474,7 @@ impl<'a> Parser<'a> {
         self.bump_token(TokenKind::Indent(VALID_SPACES_LENGTH));
 
         // doc string
-        let body_doc = match self.token.kind {
-            TokenKind::Literal(lit) => {
-                if let LitKind::Str { .. } = lit.kind {
-                    let doc_expr = self.parse_str_expr(lit);
-                    self.skip_newlines();
-                    match &doc_expr.node {
-                        Expr::StringLit(str) => {
-                            Some(node_ref!(str.raw_value.clone(), doc_expr.pos()))
-                        }
-                        Expr::JoinedString(str) => {
-                            Some(node_ref!(str.raw_value.clone(), doc_expr.pos()))
-                        }
-                        _ => None,
-                    }
-                } else {
-                    None
-                }
-            }
-            _ => None,
-        };
+        let body_doc = self.parse_doc();
 
         let mut check_expr_list = vec![];
         self.validate_dedent();

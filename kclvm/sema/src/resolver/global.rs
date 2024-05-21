@@ -12,7 +12,7 @@ use kclvm_ast::ast;
 use kclvm_ast_pretty::{print_ast_node, print_schema_expr, ASTNode};
 use kclvm_error::*;
 
-use super::doc::parse_doc_string;
+use super::doc::parse_schema_doc_string;
 use super::scope::{ScopeObject, ScopeObjectKind};
 use kclvm_ast::pos::GetPos;
 
@@ -79,7 +79,7 @@ impl<'ctx> Resolver<'ctx> {
                             );
                             continue;
                         }
-                        let parsed_doc = parse_doc_string(&doc);
+                        let parsed_doc = parse_schema_doc_string(&doc);
                         let schema_ty = SchemaType {
                             name: name.to_string(),
                             pkgpath: self.ctx.pkgpath.clone(),
@@ -567,7 +567,7 @@ impl<'ctx> Resolver<'ctx> {
         };
         // Schema attributes
         let mut attr_obj_map: IndexMap<String, SchemaAttr> = IndexMap::default();
-        let parsed_doc = parse_doc_string(
+        let parsed_doc = parse_schema_doc_string(
             &schema_stmt
                 .doc
                 .as_ref()
@@ -900,7 +900,7 @@ impl<'ctx> Resolver<'ctx> {
             &rule_stmt.name.node,
         );
 
-        let parsed_doc = parse_doc_string(
+        let parsed_doc = parse_schema_doc_string(
             &rule_stmt
                 .doc
                 .as_ref()
