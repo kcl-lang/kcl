@@ -1447,6 +1447,7 @@ dependencies = [
  "env_logger",
  "im-rc",
  "indexmap 1.9.3",
+ "insta",
  "kclvm-ast",
  "kclvm-config",
  "kclvm-driver",

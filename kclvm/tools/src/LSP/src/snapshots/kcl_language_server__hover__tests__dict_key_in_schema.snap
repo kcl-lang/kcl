@@ -1,0 +1,5 @@
+---
+source: tools/src/LSP/src/hover.rs
+expression: "format!(\"{:?}\", got)"
+---
+Hover { contents: Scalar(String("name: int")), range: None }
