@@ -1,0 +1,9 @@
+{
+  "job.name": {
+    "type_name": "",
+    "op_sym": "=",
+    "value": "\"{}-{}\".format(\"app\", \"test\").lower()",
+    "list_items": [],
+    "dict_entries": []
+  }
+}

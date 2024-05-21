@@ -1,0 +1,31 @@
+{
+  "shb.a.data.d": {
+    "type_name": "",
+    "op_sym": ":",
+    "value": "{\n    \"e\": {\"f\": 3}\n}",
+    "list_items": [],
+    "dict_entries": [
+      {
+        "key": "e",
+        "value": {
+          "type_name": "",
+          "op_sym": ":",
+          "value": "{\"f\": 3}",
+          "list_items": [],
+          "dict_entries": [
+            {
+              "key": "f",
+              "value": {
+                "type_name": "",
+                "op_sym": ":",
+                "value": "3",
+                "list_items": [],
+                "dict_entries": []
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

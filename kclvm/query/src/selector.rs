@@ -2,6 +2,7 @@ use super::util::{invalid_symbol_selector_spec_error, split_field_path};
 use anyhow::Result;
 use kclvm_ast::ast;
 use kclvm_error::diagnostic::Errors;
+use serde::{Deserialize, Serialize};
 
 use std::collections::{HashMap, VecDeque};
 
@@ -106,6 +107,61 @@ impl Selector {
 
         return self.inner.has_err;
     }
+
+    // The value of Variable includes the three types: String, List, Dict.
+    fn fill_variable_value(&mut self, variable: &mut Variable, value_expr: &ast::Expr) {
+        let k_code = print_ast_node(ASTNode::Expr(&Box::new(ast::Node::dummy_node(
+            value_expr.clone(),
+        ))));
+
+        variable.value = k_code;
+
+        self.inner.has_err = false;
+        match value_expr {
+            ast::Expr::List(list) => {
+                let mut variables = vec![];
+                for item in &list.elts {
+                    let mut variable = Variable::default();
+                    self.fill_variable_value(&mut variable, &item.node);
+                    variables.push(variable);
+                }
+                variable.list_items = variables;
+            }
+            ast::Expr::Config(dict) => {
+                let mut variables = Vec::new();
+                for item in &dict.items {
+                    let key = get_key_path(&item.node.key);
+
+                    let mut variable = Variable::default();
+                    variable.op_sym = item.node.operation.symbol().to_string();
+                    self.fill_variable_value(&mut variable, &item.node.value.node);
+                    variables.push(DictEntry {
+                        key,
+                        value: variable,
+                    });
+                }
+                variable.dict_entries = variables;
+            }
+            ast::Expr::Schema(schema_expr) => {
+                let mut variables = Vec::new();
+                if let ast::Expr::Config(config_expr) = &schema_expr.config.node {
+                    for item in &config_expr.items {
+                        let key = get_key_path(&item.node.key);
+
+                        let mut variable = Variable::default();
+                        variable.op_sym = item.node.operation.symbol().to_string();
+                        self.fill_variable_value(&mut variable, &item.node.value.node);
+                        variables.push(DictEntry {
+                            key,
+                            value: variable,
+                        });
+                    }
+                    variable.dict_entries = variables;
+                }
+            }
+            _ => return,
+        }
+    }
 }
 
 impl<'ctx> MutSelfWalker for Selector {
@@ -142,40 +198,31 @@ impl<'ctx> MutSelfWalker for Selector {
             target.node.clone(),
         ))));
         let target = get_key_path(&target);
-
+        let mut variable = Variable::default();
         // If the spec is empty, all the top level variables are returned.
         if self.inner.current_spec.is_empty() {
-            let kcode = print_ast_node(ASTNode::Expr(&Box::new(ast::Node::dummy_node(
-                ast::Expr::Schema(unification_stmt.value.node.clone()),
-            ))));
-
-            self.select_result.insert(
-                target.to_string(),
-                Variable::new(
-                    unification_stmt.value.node.name.node.get_name(),
-                    ast::ConfigEntryOperation::Union.symbol().to_string(),
-                    kcode,
-                ),
+            self.fill_variable_value(
+                &mut variable,
+                &ast::Expr::Schema(unification_stmt.value.node.clone()),
             );
+            variable.type_name = unification_stmt.value.node.name.node.get_name();
+            variable.op_sym = ast::ConfigEntryOperation::Union.symbol().to_string();
+            self.select_result.insert(target.to_string(), variable);
         } else {
             // if length of spec is largr or equal to target
             let selector = self.inner.pop_front();
             if let Some(selector) = selector {
                 if selector == target.to_string() {
                     if self.inner.current_spec_items.is_empty() {
-                        // matched
-                        let kcode =
-                            print_ast_node(ASTNode::Expr(&Box::new(ast::Node::dummy_node(
-                                ast::Expr::Schema(unification_stmt.value.node.clone()),
-                            ))));
-                        self.select_result.insert(
-                            target.to_string(),
-                            Variable::new(
-                                unification_stmt.value.node.name.node.get_name(),
-                                ast::ConfigEntryOperation::Union.symbol().to_string(),
-                                kcode,
-                            ),
+                        self.fill_variable_value(
+                            &mut variable,
+                            &ast::Expr::Schema(unification_stmt.value.node.clone()),
                         );
+                        variable.type_name = unification_stmt.value.node.name.node.get_name();
+                        variable.op_sym = ast::ConfigEntryOperation::Union.symbol().to_string();
+
+                        // matched
+                        self.select_result.insert(target.to_string(), variable);
                     } else {
                         // walk ahead
                         self.walk_schema_expr(&unification_stmt.value.node);
@@ -190,6 +237,7 @@ impl<'ctx> MutSelfWalker for Selector {
 
     fn walk_assign_stmt(&mut self, assign_stmt: &ast::AssignStmt) {
         self.inner.init();
+        let mut variable = Variable::default();
         // If the spec is empty, all the top level variables are returned.
         if self.inner.current_spec.is_empty() {
             // check the value of the assign statement is supported
@@ -197,7 +245,8 @@ impl<'ctx> MutSelfWalker for Selector {
                 return;
             }
             // get the value source code of the assign statement
-            let kcode = print_ast_node(ASTNode::Expr(&assign_stmt.value));
+            self.fill_variable_value(&mut variable, &assign_stmt.value.node);
+
             let type_name = if let ast::Expr::Schema(schema) = &assign_stmt.value.node {
                 schema.name.node.get_name()
             } else {
@@ -210,14 +259,9 @@ impl<'ctx> MutSelfWalker for Selector {
                     target.node.clone(),
                 ))));
                 let key = get_key_path(&target);
-                self.select_result.insert(
-                    key.to_string(),
-                    Variable::new(
-                        type_name,
-                        ast::ConfigEntryOperation::Override.symbol().to_string(),
-                        kcode,
-                    ),
-                );
+                variable.type_name = type_name;
+                variable.op_sym = ast::ConfigEntryOperation::Override.symbol().to_string();
+                self.select_result.insert(key.to_string(), variable);
             }
         } else {
             // Compare the target with the spec
@@ -238,21 +282,17 @@ impl<'ctx> MutSelfWalker for Selector {
                             }
 
                             // matched
-                            let kcode = print_ast_node(ASTNode::Expr(&assign_stmt.value));
+                            self.fill_variable_value(&mut variable, &assign_stmt.value.node);
                             let type_name =
                                 if let ast::Expr::Schema(schema) = &assign_stmt.value.node {
                                     schema.name.node.get_name()
                                 } else {
                                     "".to_string()
                                 };
-                            self.select_result.insert(
-                                target.to_string(),
-                                Variable::new(
-                                    type_name,
-                                    ast::ConfigEntryOperation::Override.symbol().to_string(),
-                                    kcode,
-                                ),
-                            );
+                            variable.type_name = type_name;
+                            variable.op_sym =
+                                ast::ConfigEntryOperation::Override.symbol().to_string();
+                            self.select_result.insert(target.to_string(), variable);
                         } else {
                             // walk ahead
                             self.walk_expr(&assign_stmt.value.node)
@@ -272,6 +312,7 @@ impl<'ctx> MutSelfWalker for Selector {
 
         if let Some(selector) = selector {
             for item in &config_expr.items {
+                let mut variable = Variable::default();
                 let key = get_key_path(&item.node.key);
                 // key is empty, the value of the config entry may be supported action. e.g. if, for
                 if key.is_empty() {
@@ -288,20 +329,16 @@ impl<'ctx> MutSelfWalker for Selector {
                         if self.check_node_supported(&item.node.value.node) {
                             continue;
                         }
-                        let kcode = print_ast_node(ASTNode::Expr(&item.node.value));
+                        self.fill_variable_value(&mut variable, &item.node.value.node);
                         let type_name = if let ast::Expr::Schema(schema) = &item.node.value.node {
                             schema.name.node.get_name()
                         } else {
                             "".to_string()
                         };
-                        self.select_result.insert(
-                            self.inner.current_spec.to_string(),
-                            Variable::new(
-                                type_name,
-                                item.node.operation.symbol().to_string(),
-                                kcode,
-                            ),
-                        );
+                        variable.type_name = type_name;
+                        variable.op_sym = item.node.operation.symbol().to_string();
+                        self.select_result
+                            .insert(self.inner.current_spec.to_string(), variable);
                     } else {
                         // the spec is still not used up
                         // walk ahead
@@ -389,19 +426,35 @@ pub struct ListVariablesResult {
     pub parse_errors: Errors,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Default, Serialize, Deserialize)]
 pub struct Variable {
     pub type_name: String,
     pub op_sym: String,
     pub value: String,
+    pub list_items: Vec<Variable>,
+    pub dict_entries: Vec<DictEntry>,
+}
+
+#[derive(Debug, PartialEq, Default, Serialize, Deserialize)]
+pub struct DictEntry {
+    pub key: String,
+    pub value: Variable,
 }
 
 impl Variable {
-    pub fn new(type_name: String, op_sym: String, value: String) -> Self {
+    pub fn new(
+        type_name: String,
+        op_sym: String,
+        value: String,
+        list_items: Vec<Variable>,
+        dict_entries: Vec<DictEntry>,
+    ) -> Self {
         Self {
             type_name,
             op_sym,
             value,
+            list_items,
+            dict_entries,
         }
     }
 }

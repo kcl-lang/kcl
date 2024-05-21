@@ -305,8 +305,15 @@ message ListVariables_Result {
 
 message Variable {
 	string value = 1;
-	string type_name = 2;
-	string op_sym = 3;
+	string type_name = 2; 
+	string op_sym = 3; 
+	repeated Variable list_items = 4; 
+	repeated MapEntry dict_entries = 5;
+}
+
+message MapEntry {
+	string key = 1;
+	Variable value = 2;
 }
 
 message GetFullSchemaType_Args {

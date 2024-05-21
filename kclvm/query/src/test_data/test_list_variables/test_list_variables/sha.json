@@ -1,0 +1,95 @@
+{
+  "sha": {
+    "type_name": "A",
+    "op_sym": "=",
+    "value": "A {\n    name: \"Hello\"\n    ids: [1, 2, 3]\n    data: {\n        \"a\": {\n            \"b\": {\"c\": 2}\n        }\n    }\n}",
+    "list_items": [],
+    "dict_entries": [
+      {
+        "key": "name",
+        "value": {
+          "type_name": "",
+          "op_sym": ":",
+          "value": "\"Hello\"",
+          "list_items": [],
+          "dict_entries": []
+        }
+      },
+      {
+        "key": "ids",
+        "value": {
+          "type_name": "",
+          "op_sym": ":",
+          "value": "[1, 2, 3]",
+          "list_items": [
+            {
+              "type_name": "",
+              "op_sym": "",
+              "value": "1",
+              "list_items": [],
+              "dict_entries": []
+            },
+            {
+              "type_name": "",
+              "op_sym": "",
+              "value": "2",
+              "list_items": [],
+              "dict_entries": []
+            },
+            {
+              "type_name": "",
+              "op_sym": "",
+              "value": "3",
+              "list_items": [],
+              "dict_entries": []
+            }
+          ],
+          "dict_entries": []
+        }
+      },
+      {
+        "key": "data",
+        "value": {
+          "type_name": "",
+          "op_sym": ":",
+          "value": "{\n    \"a\": {\n        \"b\": {\"c\": 2}\n    }\n}",
+          "list_items": [],
+          "dict_entries": [
+            {
+              "key": "a",
+              "value": {
+                "type_name": "",
+                "op_sym": ":",
+                "value": "{\n    \"b\": {\"c\": 2}\n}",
+                "list_items": [],
+                "dict_entries": [
+                  {
+                    "key": "b",
+                    "value": {
+                      "type_name": "",
+                      "op_sym": ":",
+                      "value": "{\"c\": 2}",
+                      "list_items": [],
+                      "dict_entries": [
+                        {
+                          "key": "c",
+                          "value": {
+                            "type_name": "",
+                            "op_sym": ":",
+                            "value": "2",
+                            "list_items": [],
+                            "dict_entries": []
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

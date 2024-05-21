@@ -1,0 +1,617 @@
+{
+  "_list0": {
+    "type_name": "",
+    "op_sym": "=",
+    "value": "[1, 2, 3]",
+    "list_items": [
+      {
+        "type_name": "",
+        "op_sym": "",
+        "value": "1",
+        "list_items": [],
+        "dict_entries": []
+      },
+      {
+        "type_name": "",
+        "op_sym": "",
+        "value": "2",
+        "list_items": [],
+        "dict_entries": []
+      },
+      {
+        "type_name": "",
+        "op_sym": "",
+        "value": "3",
+        "list_items": [],
+        "dict_entries": []
+      }
+    ],
+    "dict_entries": []
+  },
+  "uconfa": {
+    "type_name": "UnificationConf",
+    "op_sym": ":",
+    "value": "UnificationConf {name = \"b\"}",
+    "list_items": [],
+    "dict_entries": [
+      {
+        "key": "name",
+        "value": {
+          "type_name": "",
+          "op_sym": "=",
+          "value": "\"b\"",
+          "list_items": [],
+          "dict_entries": []
+        }
+      }
+    ]
+  },
+  "_part1": {
+    "type_name": "",
+    "op_sym": "=",
+    "value": "{a = \"b\"}",
+    "list_items": [],
+    "dict_entries": [
+      {
+        "key": "a",
+        "value": {
+          "type_name": "",
+          "op_sym": "=",
+          "value": "\"b\"",
+          "list_items": [],
+          "dict_entries": []
+        }
+      }
+    ]
+  },
+  "s1": {
+    "type_name": "",
+    "op_sym": "=",
+    "value": "\"Hello\"",
+    "list_items": [],
+    "dict_entries": []
+  },
+  "a3": {
+    "type_name": "",
+    "op_sym": "=",
+    "value": "3m",
+    "list_items": [],
+    "dict_entries": []
+  },
+  "union_list": {
+    "type_name": "",
+    "op_sym": "=",
+    "value": "[*_list0, *_list1]",
+    "list_items": [
+      {
+        "type_name": "",
+        "op_sym": "",
+        "value": "*_list0",
+        "list_items": [],
+        "dict_entries": []
+      },
+      {
+        "type_name": "",
+        "op_sym": "",
+        "value": "*_list1",
+        "list_items": [],
+        "dict_entries": []
+      }
+    ],
+    "dict_entries": []
+  },
+  "array1": {
+    "type_name": "",
+    "op_sym": "=",
+    "value": "[1, 2, 3]",
+    "list_items": [
+      {
+        "type_name": "",
+        "op_sym": "",
+        "value": "1",
+        "list_items": [],
+        "dict_entries": []
+      },
+      {
+        "type_name": "",
+        "op_sym": "",
+        "value": "2",
+        "list_items": [],
+        "dict_entries": []
+      },
+      {
+        "type_name": "",
+        "op_sym": "",
+        "value": "3",
+        "list_items": [],
+        "dict_entries": []
+      }
+    ],
+    "dict_entries": []
+  },
+  "c": {
+    "type_name": "C",
+    "op_sym": "=",
+    "value": "C {\n    a: {name: \"Hello\"}\n    a: {ids: [7, 8, 9]}\n}",
+    "list_items": [],
+    "dict_entries": [
+      {
+        "key": "a",
+        "value": {
+          "type_name": "",
+          "op_sym": ":",
+          "value": "{name: \"Hello\"}",
+          "list_items": [],
+          "dict_entries": [
+            {
+              "key": "name",
+              "value": {
+                "type_name": "",
+                "op_sym": ":",
+                "value": "\"Hello\"",
+                "list_items": [],
+                "dict_entries": []
+              }
+            }
+          ]
+        }
+      },
+      {
+        "key": "a",
+        "value": {
+          "type_name": "",
+          "op_sym": ":",
+          "value": "{ids: [7, 8, 9]}",
+          "list_items": [],
+          "dict_entries": [
+            {
+              "key": "ids",
+              "value": {
+                "type_name": "",
+                "op_sym": ":",
+                "value": "[7, 8, 9]",
+                "list_items": [
+                  {
+                    "type_name": "",
+                    "op_sym": "",
+                    "value": "7",
+                    "list_items": [],
+                    "dict_entries": []
+                  },
+                  {
+                    "type_name": "",
+                    "op_sym": "",
+                    "value": "8",
+                    "list_items": [],
+                    "dict_entries": []
+                  },
+                  {
+                    "type_name": "",
+                    "op_sym": "",
+                    "value": "9",
+                    "list_items": [],
+                    "dict_entries": []
+                  }
+                ],
+                "dict_entries": []
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "b2": {
+    "type_name": "",
+    "op_sym": "=",
+    "value": "False",
+    "list_items": [],
+    "dict_entries": []
+  },
+  "a": {
+    "type_name": "",
+    "op_sym": "=",
+    "value": "1",
+    "list_items": [],
+    "dict_entries": []
+  },
+  "a_dict": {
+    "type_name": "",
+    "op_sym": "=",
+    "value": "{**_part1, **_part2}",
+    "list_items": [],
+    "dict_entries": [
+      {
+        "key": "",
+        "value": {
+          "type_name": "",
+          "op_sym": ":",
+          "value": "_part1",
+          "list_items": [],
+          "dict_entries": []
+        }
+      },
+      {
+        "key": "",
+        "value": {
+          "type_name": "",
+          "op_sym": ":",
+          "value": "_part2",
+          "list_items": [],
+          "dict_entries": []
+        }
+      }
+    ]
+  },
+  "a1": {
+    "type_name": "",
+    "op_sym": "=",
+    "value": "2",
+    "list_items": [],
+    "dict_entries": []
+  },
+  "_list1": {
+    "type_name": "",
+    "op_sym": "=",
+    "value": "[4, 5, 6]",
+    "list_items": [
+      {
+        "type_name": "",
+        "op_sym": "",
+        "value": "4",
+        "list_items": [],
+        "dict_entries": []
+      },
+      {
+        "type_name": "",
+        "op_sym": "",
+        "value": "5",
+        "list_items": [],
+        "dict_entries": []
+      },
+      {
+        "type_name": "",
+        "op_sym": "",
+        "value": "6",
+        "list_items": [],
+        "dict_entries": []
+      }
+    ],
+    "dict_entries": []
+  },
+  "shb": {
+    "type_name": "B",
+    "op_sym": "=",
+    "value": "B {\n    a: {\n        name: \"HelloB\"\n        ids: [4, 5, 6]\n        data: {\n            \"d\": {\n                \"e\": {\"f\": 3}\n            }\n        }\n    }\n}",
+    "list_items": [],
+    "dict_entries": [
+      {
+        "key": "a",
+        "value": {
+          "type_name": "",
+          "op_sym": ":",
+          "value": "{\n    name: \"HelloB\"\n    ids: [4, 5, 6]\n    data: {\n        \"d\": {\n            \"e\": {\"f\": 3}\n        }\n    }\n}",
+          "list_items": [],
+          "dict_entries": [
+            {
+              "key": "name",
+              "value": {
+                "type_name": "",
+                "op_sym": ":",
+                "value": "\"HelloB\"",
+                "list_items": [],
+                "dict_entries": []
+              }
+            },
+            {
+              "key": "ids",
+              "value": {
+                "type_name": "",
+                "op_sym": ":",
+                "value": "[4, 5, 6]",
+                "list_items": [
+                  {
+                    "type_name": "",
+                    "op_sym": "",
+                    "value": "4",
+                    "list_items": [],
+                    "dict_entries": []
+                  },
+                  {
+                    "type_name": "",
+                    "op_sym": "",
+                    "value": "5",
+                    "list_items": [],
+                    "dict_entries": []
+                  },
+                  {
+                    "type_name": "",
+                    "op_sym": "",
+                    "value": "6",
+                    "list_items": [],
+                    "dict_entries": []
+                  }
+                ],
+                "dict_entries": []
+              }
+            },
+            {
+              "key": "data",
+              "value": {
+                "type_name": "",
+                "op_sym": ":",
+                "value": "{\n    \"d\": {\n        \"e\": {\"f\": 3}\n    }\n}",
+                "list_items": [],
+                "dict_entries": [
+                  {
+                    "key": "d",
+                    "value": {
+                      "type_name": "",
+                      "op_sym": ":",
+                      "value": "{\n    \"e\": {\"f\": 3}\n}",
+                      "list_items": [],
+                      "dict_entries": [
+                        {
+                          "key": "e",
+                          "value": {
+                            "type_name": "",
+                            "op_sym": ":",
+                            "value": "{\"f\": 3}",
+                            "list_items": [],
+                            "dict_entries": [
+                              {
+                                "key": "f",
+                                "value": {
+                                  "type_name": "",
+                                  "op_sym": ":",
+                                  "value": "3",
+                                  "list_items": [],
+                                  "dict_entries": []
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "b1": {
+    "type_name": "",
+    "op_sym": "=",
+    "value": "True",
+    "list_items": [],
+    "dict_entries": []
+  },
+  "dict1": {
+    "type_name": "",
+    "op_sym": "=",
+    "value": "{\"a\": 1, \"b\": 2}",
+    "list_items": [],
+    "dict_entries": [
+      {
+        "key": "a",
+        "value": {
+          "type_name": "",
+          "op_sym": ":",
+          "value": "1",
+          "list_items": [],
+          "dict_entries": []
+        }
+      },
+      {
+        "key": "b",
+        "value": {
+          "type_name": "",
+          "op_sym": ":",
+          "value": "2",
+          "list_items": [],
+          "dict_entries": []
+        }
+      }
+    ]
+  },
+  "sha": {
+    "type_name": "A",
+    "op_sym": "=",
+    "value": "A {\n    name: \"Hello\"\n    ids: [1, 2, 3]\n    data: {\n        \"a\": {\n            \"b\": {\"c\": 2}\n        }\n    }\n}",
+    "list_items": [],
+    "dict_entries": [
+      {
+        "key": "name",
+        "value": {
+          "type_name": "",
+          "op_sym": ":",
+          "value": "\"Hello\"",
+          "list_items": [],
+          "dict_entries": []
+        }
+      },
+      {
+        "key": "ids",
+        "value": {
+          "type_name": "",
+          "op_sym": ":",
+          "value": "[1, 2, 3]",
+          "list_items": [
+            {
+              "type_name": "",
+              "op_sym": "",
+              "value": "1",
+              "list_items": [],
+              "dict_entries": []
+            },
+            {
+              "type_name": "",
+              "op_sym": "",
+              "value": "2",
+              "list_items": [],
+              "dict_entries": []
+            },
+            {
+              "type_name": "",
+              "op_sym": "",
+              "value": "3",
+              "list_items": [],
+              "dict_entries": []
+            }
+          ],
+          "dict_entries": []
+        }
+      },
+      {
+        "key": "data",
+        "value": {
+          "type_name": "",
+          "op_sym": ":",
+          "value": "{\n    \"a\": {\n        \"b\": {\"c\": 2}\n    }\n}",
+          "list_items": [],
+          "dict_entries": [
+            {
+              "key": "a",
+              "value": {
+                "type_name": "",
+                "op_sym": ":",
+                "value": "{\n    \"b\": {\"c\": 2}\n}",
+                "list_items": [],
+                "dict_entries": [
+                  {
+                    "key": "b",
+                    "value": {
+                      "type_name": "",
+                      "op_sym": ":",
+                      "value": "{\"c\": 2}",
+                      "list_items": [],
+                      "dict_entries": [
+                        {
+                          "key": "c",
+                          "value": {
+                            "type_name": "",
+                            "op_sym": ":",
+                            "value": "2",
+                            "list_items": [],
+                            "dict_entries": []
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "dict2": {
+    "type_name": "",
+    "op_sym": "=",
+    "value": "{\n    \"a\": 1\n    \"b\": {\n        \"c\": 2\n        \"d\": 3\n    }\n}",
+    "list_items": [],
+    "dict_entries": [
+      {
+        "key": "a",
+        "value": {
+          "type_name": "",
+          "op_sym": ":",
+          "value": "1",
+          "list_items": [],
+          "dict_entries": []
+        }
+      },
+      {
+        "key": "b",
+        "value": {
+          "type_name": "",
+          "op_sym": ":",
+          "value": "{\n    \"c\": 2\n    \"d\": 3\n}",
+          "list_items": [],
+          "dict_entries": [
+            {
+              "key": "c",
+              "value": {
+                "type_name": "",
+                "op_sym": ":",
+                "value": "2",
+                "list_items": [],
+                "dict_entries": []
+              }
+            },
+            {
+              "key": "d",
+              "value": {
+                "type_name": "",
+                "op_sym": ":",
+                "value": "3",
+                "list_items": [],
+                "dict_entries": []
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "job": {
+    "type_name": "Job",
+    "op_sym": "=",
+    "value": "Job {name = \"{}-{}\".format(\"app\", \"test\").lower()}",
+    "list_items": [],
+    "dict_entries": [
+      {
+        "key": "name",
+        "value": {
+          "type_name": "",
+          "op_sym": "=",
+          "value": "\"{}-{}\".format(\"app\", \"test\").lower()",
+          "list_items": [],
+          "dict_entries": []
+        }
+      }
+    ]
+  },
+  "select": {
+    "type_name": "a.b.c",
+    "op_sym": "=",
+    "value": "a.b.c {a: 1}",
+    "list_items": [],
+    "dict_entries": [
+      {
+        "key": "a",
+        "value": {
+          "type_name": "",
+          "op_sym": ":",
+          "value": "1",
+          "list_items": [],
+          "dict_entries": []
+        }
+      }
+    ]
+  },
+  "_part2": {
+    "type_name": "",
+    "op_sym": "=",
+    "value": "{c = \"d\"}",
+    "list_items": [],
+    "dict_entries": [
+      {
+        "key": "c",
+        "value": {
+          "type_name": "",
+          "op_sym": "=",
+          "value": "\"d\"",
+          "list_items": [],
+          "dict_entries": []
+        }
+      }
+    ]
+  }
+}

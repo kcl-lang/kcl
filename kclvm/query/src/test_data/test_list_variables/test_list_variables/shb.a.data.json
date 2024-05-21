@@ -1,0 +1,42 @@
+{
+  "shb.a.data": {
+    "type_name": "",
+    "op_sym": ":",
+    "value": "{\n    \"d\": {\n        \"e\": {\"f\": 3}\n    }\n}",
+    "list_items": [],
+    "dict_entries": [
+      {
+        "key": "d",
+        "value": {
+          "type_name": "",
+          "op_sym": ":",
+          "value": "{\n    \"e\": {\"f\": 3}\n}",
+          "list_items": [],
+          "dict_entries": [
+            {
+              "key": "e",
+              "value": {
+                "type_name": "",
+                "op_sym": ":",
+                "value": "{\"f\": 3}",
+                "list_items": [],
+                "dict_entries": [
+                  {
+                    "key": "f",
+                    "value": {
+                      "type_name": "",
+                      "op_sym": ":",
+                      "value": "3",
+                      "list_items": [],
+                      "dict_entries": []
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

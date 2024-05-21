@@ -1,4 +1,8 @@
-use std::{fs, path::PathBuf};
+use std::{
+    fs::{self, File},
+    io::Read,
+    path::PathBuf,
+};
 
 use super::{r#override::apply_override_on_module, *};
 use crate::{path::parse_attribute_path, selector::list_variables};
@@ -6,6 +10,7 @@ use kclvm_ast::ast;
 use kclvm_error::{DiagnosticId, ErrorKind, Level};
 use kclvm_parser::parse_file_force_errors;
 use pretty_assertions::assert_eq;
+use serde_json::Value;
 
 const CARGO_FILE_PATH: &str = env!("CARGO_MANIFEST_DIR");
 
@@ -362,6 +367,8 @@ fn test_list_variables() {
             "",
             "=",
         ),
+        ("union_list", r#"[*_list0, *_list1]"#, "", "="),
+        ("a_dict", r#"{**_part1, **_part2}"#, "", "="),
     ];
 
     for (spec, expected, expected_name, op_sym) in test_cases {
@@ -370,6 +377,18 @@ fn test_list_variables() {
         assert_eq!(result.variables.get(spec).unwrap().value, expected);
         assert_eq!(result.variables.get(spec).unwrap().type_name, expected_name);
         assert_eq!(result.variables.get(spec).unwrap().op_sym, op_sym);
+
+        let path = PathBuf::from("./src/test_data/test_list_variables/test_list_variables");
+        let mut file = File::open(path.join(format!("{}.json", spec))).unwrap();
+        let mut contents = String::new();
+        file.read_to_string(&mut contents).unwrap();
+
+        let expect_json: Value = serde_json::from_str(&contents).unwrap();
+        let got_json: Value =
+            serde_json::from_str(&serde_json::to_string_pretty(&result.variables).unwrap())
+                .unwrap();
+
+        assert_eq!(expect_json, got_json);
     }
 }
 
@@ -438,6 +457,8 @@ fn test_list_all_variables() {
             "=",
         ),
         ("select", r#"a.b.c {a: 1}"#, "a.b.c", "="),
+        ("union_list", r#"[*_list0, *_list1]"#, "", "="),
+        ("a_dict", r#"{**_part1, **_part2}"#, "", "="),
     ];
 
     for (spec, expected, expected_name, op_sym) in test_cases {
@@ -446,6 +467,18 @@ fn test_list_all_variables() {
         assert_eq!(result.variables.get(spec).unwrap().type_name, expected_name);
         assert_eq!(result.variables.get(spec).unwrap().op_sym, op_sym);
         assert_eq!(result.parse_errors.len(), 0);
+
+        let path = PathBuf::from("./src/test_data/test_list_variables/test_list_all_variables");
+        let mut file = File::open(path.join(format!("{}.json", spec))).unwrap();
+        let mut contents = String::new();
+        file.read_to_string(&mut contents).unwrap();
+
+        let expect_json: Value = serde_json::from_str(&contents).unwrap();
+        let got_json: Value =
+            serde_json::from_str(&serde_json::to_string_pretty(&result.variables).unwrap())
+                .unwrap();
+
+        assert_eq!(expect_json, got_json);
     }
 }
 

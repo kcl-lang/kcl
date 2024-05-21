@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::io::Write;
 use std::path::PathBuf;
 use std::string::String;
+use std::vec;
 
 use crate::gpyrpc::*;
 
@@ -43,6 +44,25 @@ use super::util::{transform_exec_para, transform_str_para};
 #[derive(Debug, Clone, Default)]
 pub struct KclvmServiceImpl {
     pub plugin_agent: u64,
+}
+
+impl From<&kclvm_query::selector::Variable> for Variable {
+    fn from(var: &kclvm_query::selector::Variable) -> Self {
+        Variable {
+            value: var.value.to_string(),
+            type_name: var.type_name.to_string(),
+            op_sym: var.op_sym.to_string(),
+            list_items: var.list_items.iter().map(|item| item.into()).collect(),
+            dict_entries: var
+                .dict_entries
+                .iter()
+                .map(|entry| MapEntry {
+                    key: entry.key.to_string(),
+                    value: Some((&entry.value).into()),
+                })
+                .collect(),
+        }
+    }
 }
 
 impl KclvmServiceImpl {
@@ -349,16 +369,7 @@ impl KclvmServiceImpl {
         let variables: HashMap<String, Variable> = select_res
             .variables
             .iter()
-            .map(|(key, var)| {
-                (
-                    key.clone(),
-                    Variable {
-                        value: var.value.to_string(),
-                        type_name: var.type_name.to_string(),
-                        op_sym: var.op_sym.to_string(),
-                    },
-                )
-            })
+            .map(|(key, var)| (key.clone(), var.into()))
             .collect();
 
         let unsupported_codes: Vec<String> = select_res

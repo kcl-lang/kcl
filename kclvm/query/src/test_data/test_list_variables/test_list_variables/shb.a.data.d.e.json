@@ -1,0 +1,20 @@
+{
+  "shb.a.data.d.e": {
+    "type_name": "",
+    "op_sym": ":",
+    "value": "{\"f\": 3}",
+    "list_items": [],
+    "dict_entries": [
+      {
+        "key": "f",
+        "value": {
+          "type_name": "",
+          "op_sym": ":",
+          "value": "3",
+          "list_items": [],
+          "dict_entries": []
+        }
+      }
+    ]
+  }
+}
