@@ -289,6 +289,7 @@ message OverrideFile_Args {
 
 message OverrideFile_Result {
 	bool result = 1;
+	repeated Error parse_errors = 2;
 }
 
 message ListVariables_Args {

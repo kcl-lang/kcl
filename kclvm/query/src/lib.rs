@@ -16,6 +16,7 @@ mod util;
 use anyhow::{anyhow, Result};
 use kclvm_ast::ast;
 use kclvm_ast_pretty::print_ast_module;
+use kclvm_error::diagnostic::Errors;
 use kclvm_parser::parse_file;
 
 use kclvm_sema::pre_process::fix_config_expr_nest_attr;
@@ -78,31 +79,43 @@ use self::r#override::parse_override_spec;
 ///     age = 18
 /// }
 /// ```
-pub fn override_file(file: &str, specs: &[String], import_paths: &[String]) -> Result<bool> {
+pub fn override_file(
+    file: &str,
+    specs: &[String],
+    import_paths: &[String],
+) -> Result<OverrideFileResult> {
     // Parse override spec strings.
     let overrides = specs
         .iter()
         .map(|s| parse_override_spec(s))
         .collect::<Result<Vec<ast::OverrideSpec>, _>>()?;
     // Parse file to AST module.
-    let mut module = match parse_file(file, None) {
-        Ok(module) => module.module,
+    let mut parse_result = match parse_file(file, None) {
+        Ok(module) => module,
         Err(msg) => return Err(anyhow!("{}", msg)),
     };
     let mut result = false;
     // Override AST module.
     for o in &overrides {
-        if apply_override_on_module(&mut module, o, import_paths)? {
+        if apply_override_on_module(&mut parse_result.module, o, import_paths)? {
             result = true;
         }
     }
 
     // Transform config expr to simplify the config path query and override.
-    fix_config_expr_nest_attr(&mut module);
+    fix_config_expr_nest_attr(&mut parse_result.module);
     // Print AST module.
     if result {
-        let code_str = print_ast_module(&module);
+        let code_str = print_ast_module(&parse_result.module);
         std::fs::write(file, code_str)?
     }
-    Ok(result)
+    Ok(OverrideFileResult {
+        result,
+        parse_errors: parse_result.errors,
+    })
+}
+
+pub struct OverrideFileResult {
+    pub result: bool,
+    pub parse_errors: Errors,
 }

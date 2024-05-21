@@ -49,7 +49,9 @@ fn test_override_file_simple() {
 
     let import_paths = vec![];
     assert_eq!(
-        override_file(simple_path.clone().to_str().unwrap(), &specs, &import_paths).unwrap(),
+        override_file(simple_path.clone().to_str().unwrap(), &specs, &import_paths)
+            .unwrap()
+            .result,
         true
     );
 
@@ -79,7 +81,9 @@ fn test_override_file_import_paths() {
     let abs_path = cargo_file_path.to_str().unwrap();
 
     assert_eq!(
-        override_file(abs_path, &specs, &import_paths).unwrap(),
+        override_file(abs_path, &specs, &import_paths)
+            .unwrap()
+            .result,
         true
     )
 }
@@ -555,7 +559,9 @@ fn test_overridefile_insert() {
     // test insert multiple times
     for _ in 1..=5 {
         assert_eq!(
-            override_file(&simple_path.display().to_string(), &specs, &import_paths).unwrap(),
+            override_file(&simple_path.display().to_string(), &specs, &import_paths)
+                .unwrap()
+                .result,
             true
         );
 
@@ -592,6 +598,39 @@ fn test_list_variable_with_invalid_kcl() {
         "unexpected token ':'"
     );
     assert_eq!(result.parse_errors[0].messages[0].range.0.filename, file);
+    assert_eq!(result.parse_errors[0].messages[0].range.0.line, 1);
+    assert_eq!(result.parse_errors[0].messages[0].range.0.column, Some(3));
+}
+
+#[test]
+fn test_overridefile_with_invalid_kcl() {
+    let simple_path = get_test_dir("test_override_file/invalid.k".to_string());
+    let simple_bk_path = get_test_dir("invalid.bk.k".to_string());
+    fs::copy(simple_bk_path.clone(), simple_path.clone()).unwrap();
+
+    let result = override_file(
+        &simple_path.display().to_string(),
+        &vec!["a=b".to_string()],
+        &vec![],
+    )
+    .unwrap();
+
+    fs::copy(simple_bk_path.clone(), simple_path.clone()).unwrap();
+    assert_eq!(result.result, true);
+    assert_eq!(result.parse_errors.len(), 1);
+    assert_eq!(result.parse_errors[0].level, Level::Error);
+    assert_eq!(
+        result.parse_errors[0].code,
+        Some(DiagnosticId::Error(ErrorKind::InvalidSyntax))
+    );
+    assert_eq!(
+        result.parse_errors[0].messages[0].message,
+        "unexpected token ':'"
+    );
+    assert_eq!(
+        result.parse_errors[0].messages[0].range.0.filename,
+        simple_path.display().to_string()
+    );
     assert_eq!(result.parse_errors[0].messages[0].range.0.line, 1);
     assert_eq!(result.parse_errors[0].messages[0].range.0.column, Some(3));
 }
