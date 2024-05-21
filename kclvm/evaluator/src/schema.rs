@@ -18,6 +18,9 @@ use crate::{Evaluator, INNER_LEVEL};
 pub type SchemaBodyHandler =
     Arc<dyn Fn(&Evaluator, &SchemaEvalContextRef, &ValueRef, &ValueRef) -> ValueRef>;
 
+pub type SchemaCheckHandler =
+    Arc<dyn Fn(&Evaluator, &SchemaEvalContextRef, &ValueRef, &ValueRef, &ValueRef) -> ()>;
+
 pub type SchemaEvalContextRef = Rc<RefCell<SchemaEvalContext>>;
 
 /// Proxy functions represent the saved functions of the runtime its,
@@ -332,7 +335,7 @@ pub struct ConfigMeta {
 pub struct SchemaCaller {
     pub ctx: SchemaEvalContextRef,
     pub body: SchemaBodyHandler,
-    pub check: SchemaBodyHandler,
+    pub check: SchemaCheckHandler,
 }
 
 /// Init or reset the schema lazy eval scope.
@@ -353,7 +356,7 @@ pub(crate) fn schema_body(
 ) -> ValueRef {
     init_lazy_scope(s, &mut ctx.borrow_mut());
     // Schema self value or parent schema value;
-    let mut schema_value = if let Some(parent_name) = &ctx.borrow().node.parent_name {
+    let mut schema_ctx_value = if let Some(parent_name) = &ctx.borrow().node.parent_name {
         let base_constructor_func = s
             .walk_identifier_with_ctx(&parent_name.node, &ast::ExprContext::Load, None)
             .expect(kcl_error::RUNTIME_ERROR_MSG);
@@ -385,9 +388,9 @@ pub(crate) fn schema_body(
                 .expect(kcl_error::RUNTIME_ERROR_MSG);
         }
         let runtime_type = kclvm_runtime::schema_runtime_type(&schema_name, schema_pkgpath);
-        schema_value.set_potential_schema_type(&runtime_type);
+        schema_ctx_value.set_potential_schema_type(&runtime_type);
         // Set schema arguments and keyword arguments
-        schema_value.set_schema_args(args, kwargs);
+        schema_ctx_value.set_schema_args(args, kwargs);
     }
     // Schema Mixins
     {
@@ -396,7 +399,7 @@ pub(crate) fn schema_body(
             let mixin_func = s
                 .walk_identifier_with_ctx(&mixin.node, &ast::ExprContext::Load, None)
                 .expect(kcl_error::RUNTIME_ERROR_MSG);
-            schema_value = call_schema_body(s, &mixin_func, args, kwargs, ctx);
+            schema_ctx_value = call_schema_body(s, &mixin_func, args, kwargs, ctx);
         }
     }
     // Schema Attribute optional check
@@ -415,7 +418,7 @@ pub(crate) fn schema_body(
     }
     // Do schema check for the sub schema.
     let is_sub_schema = { ctx.borrow().is_sub_schema };
-    if is_sub_schema {
+    let schema = if is_sub_schema {
         let index_sign_key_name = if let Some(index_signature) = &ctx.borrow().node.index_signature
         {
             if let Some(key_name) = &index_signature.node.key_name {
@@ -427,8 +430,15 @@ pub(crate) fn schema_body(
             "".to_string()
         };
         if index_sign_key_name.is_empty() {
+            // Update schema relaxed attribute
+            update_schema_relaxed_attr(s, ctx, &mut schema_ctx_value);
+            // Construct schema instance
+            let schema = schema_with_config(s, ctx, &schema_ctx_value, args, kwargs);
+            // Do schema optional attribute check recursively before evaluate check expressions.
+            check_schema_optional_attr(s, &schema);
             // Call schema check block function
-            schema_check(s, ctx, args, kwargs);
+            schema_check(s, ctx, &schema, args, kwargs);
+            schema
         } else {
             // Do check function for every index signature key
             let config = {
@@ -437,131 +447,40 @@ pub(crate) fn schema_body(
             };
             for (k, _) in &config.as_dict_ref().values {
                 // relaxed keys
-                if schema_value.attr_map_get(k).is_none() {
+                if schema_ctx_value.attr_map_get(k).is_none() {
                     // Update index signature key value
                     let value = ValueRef::str(k);
-                    schema_value.dict_update_key_value(&index_sign_key_name, value);
+                    schema_ctx_value.dict_update_key_value(&index_sign_key_name, value.clone());
+                    // Update schema relaxed attribute
+                    update_schema_relaxed_attr(s, ctx, &mut schema_ctx_value);
                     // Call schema check block function
-                    schema_check(s, ctx, args, kwargs);
+                    schema_check(s, ctx, &schema_ctx_value, args, kwargs);
                 }
             }
-            schema_value.dict_remove(&index_sign_key_name);
+            schema_ctx_value.dict_remove(&index_sign_key_name);
+            // Construct schema instance
+            let schema = schema_with_config(s, ctx, &schema_ctx_value, args, kwargs);
+            // Do schema optional attribute check recursively before evaluate check expressions.
+            check_schema_optional_attr(s, &schema);
+            schema
         }
-    }
+    } else {
+        // Record base schema instances.
+        schema_with_config(s, ctx, &schema_ctx_value, args, kwargs)
+    };
     s.leave_scope();
     s.pop_schema();
-    schema_with_config(s, ctx, &schema_value, args, kwargs)
+    schema
 }
 
-pub(crate) fn schema_with_config(
-    s: &Evaluator,
-    ctx: &SchemaEvalContextRef,
-    schema_dict: &ValueRef,
-    args: &ValueRef,
-    kwargs: &ValueRef,
-) -> ValueRef {
-    let name = { ctx.borrow().node.name.node.to_string() };
-    let pkgpath = s.current_pkgpath();
-    let config_keys: Vec<String> = {
-        ctx.borrow()
-            .config
-            .as_dict_ref()
-            .values
-            .keys()
-            .cloned()
-            .collect()
-    };
-    let schema = {
-        let ctx = ctx.borrow();
-        schema_dict.dict_to_schema(
-            &name,
-            &pkgpath,
-            &config_keys,
-            &ctx.config_meta,
-            &ctx.optional_mapping,
-            Some(args.clone()),
-            Some(kwargs.clone()),
-        )
-    };
-    let runtime_type = schema_runtime_type(&name, &pkgpath);
-    // Instance package path is the last frame calling package path.
-    let instance_pkgpath = s.last_pkgpath();
-    // Currently, `MySchema.instances()` it is only valid for files in the main package to
-    // avoid unexpected non idempotent calls. For example, I instantiated a MySchema in pkg1,
-    // but the length of the list returned by calling the instances method in other packages
-    // is uncertain.
-    {
-        let mut ctx = s.runtime_ctx.borrow_mut();
-        // Record schema instance in the context
-        if !ctx.instances.contains_key(&runtime_type) {
-            ctx.instances
-                .insert(runtime_type.clone(), IndexMap::default());
-        }
-        let pkg_instance_map = ctx.instances.get_mut(&runtime_type).unwrap();
-        if !pkg_instance_map.contains_key(&instance_pkgpath) {
-            pkg_instance_map.insert(instance_pkgpath.clone(), vec![]);
-        }
-        pkg_instance_map
-            .get_mut(&instance_pkgpath)
-            .unwrap()
-            .push(schema_dict.clone());
-    }
-    // Dict to schema
-    let is_sub_schema = { ctx.borrow().is_sub_schema };
-    if is_sub_schema {
-        schema
-    } else {
-        schema_dict.clone()
-    }
-}
-
-// Schema check function
+// Schema check and index sign value update function
 pub(crate) fn schema_check(
     s: &Evaluator,
     ctx: &SchemaEvalContextRef,
+    schema_value: &ValueRef,
     args: &ValueRef,
     kwargs: &ValueRef,
-) -> ValueRef {
-    let schema_name = { ctx.borrow().node.name.node.to_string() };
-    let mut schema_value = { ctx.borrow().value.clone() };
-    // Do check function
-    // Schema runtime index signature and relaxed check
-    {
-        let ctx = ctx.borrow();
-        if let Some(index_signature) = &ctx.node.index_signature {
-            let index_sign_value = if let Some(value) = &index_signature.node.value {
-                s.walk_expr(value).expect(kcl_error::RUNTIME_ERROR_MSG)
-            } else {
-                s.undefined_value()
-            };
-            let key_name = if let Some(key_name) = &index_signature.node.key_name {
-                key_name.as_str()
-            } else {
-                ""
-            };
-            schema_value_check(
-                s,
-                &mut schema_value,
-                &ctx.config,
-                &schema_name,
-                &index_sign_value,
-                key_name,
-                index_signature.node.key_ty.node.to_string().as_str(),
-                index_signature.node.value_ty.node.to_string().as_str(),
-            );
-        } else {
-            schema_value_check(
-                s,
-                &mut schema_value,
-                &ctx.config,
-                &schema_name,
-                &s.undefined_value(),
-                "",
-                "",
-                "",
-            );
-        }
-    }
+) {
     // Call base check function
     {
         let ctx_ref = ctx.borrow();
@@ -569,7 +488,14 @@ pub(crate) fn schema_check(
             let base_constructor_func = s
                 .walk_identifier_with_ctx(&parent_name.node, &ast::ExprContext::Load, None)
                 .expect(kcl_error::RUNTIME_ERROR_MSG);
-            call_schema_check(s, &base_constructor_func, args, kwargs, Some(ctx))
+            call_schema_check(
+                s,
+                &base_constructor_func,
+                schema_value,
+                args,
+                kwargs,
+                Some(ctx),
+            )
         }
     }
     // Call self check function
@@ -599,18 +525,129 @@ pub(crate) fn schema_check(
                 if let Proxy::Schema(schema) = &frame.proxy {
                     s.push_pkgpath(&frame.pkgpath);
                     s.push_backtrace(&frame);
-                    (schema.check)(s, &schema.ctx, args, kwargs);
+                    (schema.check)(s, &schema.ctx, schema_value, args, kwargs);
                     s.pop_backtrace();
                     s.pop_pkgpath();
                 }
             }
         }
     }
-    schema_value
+}
+
+pub(crate) fn schema_with_config(
+    s: &Evaluator,
+    ctx: &SchemaEvalContextRef,
+    schema_ctx_value: &ValueRef,
+    args: &ValueRef,
+    kwargs: &ValueRef,
+) -> ValueRef {
+    let name = { ctx.borrow().node.name.node.to_string() };
+    let pkgpath = s.current_pkgpath();
+    let config_keys: Vec<String> = {
+        ctx.borrow()
+            .config
+            .as_dict_ref()
+            .values
+            .keys()
+            .cloned()
+            .collect()
+    };
+    let runtime_type = schema_runtime_type(&name, &pkgpath);
+    // Instance package path is the last frame calling package path.
+    let instance_pkgpath = s.last_pkgpath();
+    // Currently, `MySchema.instances()` it is only valid for files in the main package to
+    // avoid unexpected non idempotent calls. For example, I instantiated a MySchema in pkg1,
+    // but the length of the list returned by calling the instances method in other packages
+    // is uncertain.
+    {
+        let mut ctx = s.runtime_ctx.borrow_mut();
+        // Record schema instance in the context
+        if !ctx.instances.contains_key(&runtime_type) {
+            ctx.instances
+                .insert(runtime_type.clone(), IndexMap::default());
+        }
+        let pkg_instance_map = ctx.instances.get_mut(&runtime_type).unwrap();
+        if !pkg_instance_map.contains_key(&instance_pkgpath) {
+            pkg_instance_map.insert(instance_pkgpath.clone(), vec![]);
+        }
+        pkg_instance_map
+            .get_mut(&instance_pkgpath)
+            .unwrap()
+            .push(schema_ctx_value.clone());
+    }
+    // Dict to schema
+    let is_sub_schema = { ctx.borrow().is_sub_schema };
+    if is_sub_schema {
+        let ctx = ctx.borrow();
+        // Record instance copy and convert it to schema value.
+        schema_ctx_value.dict_to_schema(
+            &name,
+            &pkgpath,
+            &config_keys,
+            &ctx.config_meta,
+            &ctx.optional_mapping,
+            Some(args.clone()),
+            Some(kwargs.clone()),
+        )
+    } else {
+        schema_ctx_value.clone()
+    }
+}
+
+fn update_schema_relaxed_attr(
+    s: &Evaluator,
+    ctx: &SchemaEvalContextRef,
+    schema_value: &mut ValueRef,
+) {
+    let schema_name = { ctx.borrow().node.name.node.to_string() };
+    // Do check function
+    // Schema runtime index signature and relaxed check
+    {
+        let ctx = ctx.borrow();
+        if let Some(index_signature) = &ctx.node.index_signature {
+            let index_sign_value = if let Some(value) = &index_signature.node.value {
+                s.walk_expr(value).expect(kcl_error::RUNTIME_ERROR_MSG)
+            } else {
+                s.undefined_value()
+            };
+            let key_name = if let Some(key_name) = &index_signature.node.key_name {
+                key_name.as_str()
+            } else {
+                ""
+            };
+            schema_relaxed_attr_update_and_check(
+                s,
+                schema_value,
+                &ctx.config,
+                &schema_name,
+                &index_sign_value,
+                key_name,
+                index_signature.node.key_ty.node.to_string().as_str(),
+                index_signature.node.value_ty.node.to_string().as_str(),
+            );
+        } else {
+            schema_relaxed_attr_update_and_check(
+                s,
+                schema_value,
+                &ctx.config,
+                &schema_name,
+                &s.undefined_value(),
+                "",
+                "",
+                "",
+            );
+        }
+    }
+}
+
+fn check_schema_optional_attr(s: &Evaluator, schema_value: &ValueRef) {
+    if is_top_level_schema_instance(s) {
+        schema_value.schema_check_attr_optional(&mut s.runtime_ctx.borrow_mut(), true);
+    }
 }
 
 /// Schema additional value check
-fn schema_value_check(
+fn schema_relaxed_attr_update_and_check(
     s: &Evaluator,
     schema_value: &mut ValueRef,
     schema_config: &ValueRef,
@@ -662,6 +699,13 @@ fn schema_value_check(
             panic!("No attribute named '{key}' in the schema '{schema_name}'");
         }
     }
+}
+
+/// For a schema instance returned by the schema body. Its schema and schema expr stack
+/// length are both 1, if > 1, it's not a top level schema instance.
+#[inline]
+fn is_top_level_schema_instance(s: &Evaluator) -> bool {
+    !(s.schema_stack.borrow().len() > 1 || s.schema_expr_stack.borrow().len() > 1)
 }
 
 impl<'ctx> Evaluator<'ctx> {

@@ -1,0 +1,1 @@
+attribute 'name' of Name is required and can't be None or Undefined
