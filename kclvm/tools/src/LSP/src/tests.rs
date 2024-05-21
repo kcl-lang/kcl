@@ -1224,7 +1224,6 @@ fn hover_assign_in_lambda_test() {
 
     // Send request and wait for it's response
     let res = server.send_and_receive(r);
-    // left: Object {"contents": Object {"language": String("kcl"), "value": String("images: [str]")}}
 
     assert_eq!(
         res.result.unwrap(),

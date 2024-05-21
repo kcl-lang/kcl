@@ -661,7 +661,6 @@ mod tests {
         };
         let got = hover(&program, &pos, &gs).unwrap();
 
-        // [String("__main__"), LanguageString(LanguageString { language: "kcl", value: "schema Data1\\[m: {str:str}](Data)\n\n\tname: str\n\n\tage: int" })]
         let expect_content: Vec<MarkedString> = vec![
             MarkedString::String("__main__".to_string()),
             MarkedString::LanguageString(lsp_types::LanguageString {
