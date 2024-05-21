@@ -24,17 +24,21 @@ impl<'a> Parser<'a> {
         // doc string
         match self.token.kind {
             TokenKind::Literal(lit) => {
-                if let LitKind::Str { .. } = lit.kind {
-                    let doc_expr = self.parse_str_expr(lit);
-                    self.skip_newlines();
-                    match &doc_expr.node {
-                        Expr::StringLit(str) => {
-                            Some(node_ref!(str.raw_value.clone(), doc_expr.pos()))
+                if let LitKind::Str { is_long_string, .. } = lit.kind {
+                    if is_long_string {
+                        let doc_expr = self.parse_str_expr(lit);
+                        self.skip_newlines();
+                        match &doc_expr.node {
+                            Expr::StringLit(str) => {
+                                Some(node_ref!(str.raw_value.clone(), doc_expr.pos()))
+                            }
+                            Expr::JoinedString(str) => {
+                                Some(node_ref!(str.raw_value.clone(), doc_expr.pos()))
+                            }
+                            _ => None,
                         }
-                        Expr::JoinedString(str) => {
-                            Some(node_ref!(str.raw_value.clone(), doc_expr.pos()))
-                        }
-                        _ => None,
+                    } else {
+                        None
                     }
                 } else {
                     None

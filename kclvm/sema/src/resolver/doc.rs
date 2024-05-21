@@ -1,4 +1,4 @@
-use kclvm_ast::ast::SchemaStmt;
+use kclvm_ast::ast::{self, SchemaStmt};
 use std::collections::{HashMap, HashSet};
 use std::iter::Iterator;
 use std::str;
@@ -157,10 +157,6 @@ impl Reader {
             }
         }
     }
-
-    fn _is_empty(&self) -> bool {
-        return self.data.iter().all(|x| x.trim().len() == 0);
-    }
 }
 
 /// Checks if current line is at the beginning of a section
@@ -240,11 +236,11 @@ fn parse_summary(doc: &mut Reader) -> String {
 }
 
 /// Parse the schema docstring to Doc.
-/// The summary of the schema content will be concatenated to a single line string by whitespaces.
+/// The summary of the schema content will be concatenated to a single line string by whitespace.
 /// The description of each attribute will be returned as separate lines.
-pub fn parse_doc_string(ori: &str) -> Doc {
+pub fn parse_schema_doc_string(ori: &str) -> SchemaDoc {
     if ori.is_empty() {
-        return Doc::new("".to_string(), vec![], HashMap::new());
+        return SchemaDoc::new("".to_string(), vec![], HashMap::new());
     }
     let mut doc = Reader::new(clean_doc(strip_quotes(&ori)));
     doc.reset();
@@ -268,18 +264,18 @@ pub fn parse_doc_string(ori: &str) -> Doc {
             Example::new("".to_string(), "".to_string(), default_example_content),
         );
     }
-    Doc::new(summary, attrs, examples)
+    SchemaDoc::new(summary, attrs, examples)
 }
 
 /// The Doc struct contains a summary of schema and all the attributes described in the the docstring.
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct Doc {
+pub struct SchemaDoc {
     pub summary: String,
     pub attrs: Vec<Attribute>,
     pub examples: HashMap<String, Example>,
 }
 
-impl Doc {
+impl SchemaDoc {
     pub fn new(summary: String, attrs: Vec<Attribute>, examples: HashMap<String, Example>) -> Self {
         Self {
             summary,
@@ -357,10 +353,32 @@ impl Example {
     }
 }
 
+/// Extract doc string from the AST body, if the first statement is a long string expression
+/// statement, convert it to a doc string.
+pub fn extract_doc_from_body(stmts: &[Box<ast::Node<ast::Stmt>>]) -> Option<String> {
+    match stmts.first() {
+        Some(stmt) => match &stmt.node {
+            ast::Stmt::Expr(expr_stmt) => match expr_stmt.exprs.first() {
+                Some(expr) => match &expr.node {
+                    ast::Expr::StringLit(str) if str.is_long_string => Some(str.raw_value.clone()),
+                    ast::Expr::JoinedString(str) if str.is_long_string => {
+                        Some(str.raw_value.clone())
+                    }
+                    _ => None,
+                },
+                None => None,
+            },
+            _ => None,
+        },
+        None => None,
+    }
+    .map(|v| clean_doc(strip_quotes(&v)))
+}
+
 #[cfg(test)]
 mod tests {
     use super::{clean_doc, is_at_section, read_to_next_section, strip_quotes, Reader};
-    use crate::resolver::doc::{parse_doc_string, Example};
+    use crate::resolver::doc::{parse_schema_doc_string, Example};
     use std::fs::File;
     use std::io::prelude::*;
     use std::path::PathBuf;
@@ -597,7 +615,7 @@ unindented line
     #[test]
     fn test_parse_doc() {
         let mut content = read_doc_content();
-        let doc = parse_doc_string(&mut content);
+        let doc = parse_schema_doc_string(&mut content);
         assert_eq!(
             doc.summary,
             "Server is the common user interface for long-running services adopting the best practice of Kubernetes."

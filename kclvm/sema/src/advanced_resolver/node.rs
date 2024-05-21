@@ -93,6 +93,20 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
             }
             self.ctx.maybe_def = true;
             self.walk_identifier_expr(target)?;
+
+            if let Some(target_ty) = self.ctx.node_ty_map.get(&self.ctx.get_node_key(&target.id)) {
+                match &target_ty.kind {
+                    TypeKind::Schema(_) => {
+                        let schema_symbol = self
+                            .gs
+                            .get_symbols()
+                            .get_type_symbol(&target_ty, self.get_current_module_info())
+                            .ok_or(anyhow!("schema_symbol not found"))?;
+                        self.ctx.current_schema_symbol = Some(schema_symbol);
+                    }
+                    _ => {}
+                }
+            }
             self.ctx.maybe_def = false;
         }
         self.walk_type_expr(assign_stmt.ty.as_ref().map(|ty| ty.as_ref()))?;
@@ -861,7 +875,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
                 }
                 None => Ok(None),
             },
-            some => some,
+            res => res,
         }
     }
 

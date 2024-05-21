@@ -537,7 +537,14 @@ impl KclvmServiceImpl {
     pub fn override_file(&self, args: &OverrideFileArgs) -> Result<OverrideFileResult, String> {
         override_file(&args.file, &args.specs, &args.import_paths)
             .map_err(|err| err.to_string())
-            .map(|result| OverrideFileResult { result })
+            .map(|result| OverrideFileResult {
+                result: result.result,
+                parse_errors: result
+                    .parse_errors
+                    .into_iter()
+                    .map(|e| e.into_error())
+                    .collect(),
+            })
     }
 
     /// Service for getting the schema type list.

@@ -60,6 +60,10 @@ build-wasm:
 test:
 	cargo test --workspace -r --features llvm -- --nocapture
 
+# Unit tests without code cov and llvm-features
+test-without-llvm:
+	cargo test --workspace -r -- --nocapture
+
 # Unit tests with code cov (Requires rust 1.60+)
 codecov:
 	rustup component add llvm-tools-preview

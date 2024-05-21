@@ -281,15 +281,6 @@ pub unsafe extern "C" fn kclvm_value_schema_with_config(
     let optional_mapping = ptr_as_ref(optional_mapping);
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
-    let schema = schema_dict.dict_to_schema(
-        name,
-        pkgpath,
-        &config_keys,
-        config_meta,
-        optional_mapping,
-        Some(args.clone()),
-        Some(kwargs.clone()),
-    );
     if record_instance.is_truthy() {
         // Record schema instance in the context
         if !ctx.instances.contains_key(&runtime_type) {
@@ -307,6 +298,15 @@ pub unsafe extern "C" fn kclvm_value_schema_with_config(
     }
     // Dict to schema
     if is_sub_schema.is_truthy() {
+        let schema = schema_dict.dict_to_schema(
+            name,
+            pkgpath,
+            &config_keys,
+            config_meta,
+            optional_mapping,
+            Some(args.clone()),
+            Some(kwargs.clone()),
+        );
         schema.into_raw(ctx)
     } else {
         schema_dict.clone().into_raw(ctx)

@@ -9,7 +9,6 @@ use generational_arena::Index;
 use kclvm_ast::ast::{self, CallExpr, ConfigEntry, NodeRef};
 use kclvm_ast::walker::TypedResultWalker;
 use kclvm_runtime::val_func::invoke_function;
-use kclvm_runtime::walker::walk_value_mut;
 use kclvm_runtime::{
     schema_assert, schema_runtime_type, ConfigEntryOperationKind, DecoratorValue, RuntimeErrorType,
     UnionOptions, ValueRef, PKG_PATH_PREFIX,
@@ -62,7 +61,7 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
         let mut result = self.ok_result();
         for expr in &expr_stmt.exprs {
             let scalar = self.walk_expr(expr)?;
-            // Only non-call expressions are allowed to emit values bacause of the function void return type.
+            // Only non-call expressions are allowed to emit values because of the function void return type.
             if !matches!(expr.node, ast::Expr::Call(_)) {
                 self.add_scalar(scalar.clone(), matches!(expr.node, ast::Expr::Schema(_)));
             }
@@ -138,16 +137,7 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
         let mut value = self.walk_expr(&assign_stmt.value)?;
         // Runtime type cast if exists the type annotation.
         if let Some(ty) = &assign_stmt.ty {
-            let is_in_schema = self.is_in_schema() || self.is_in_schema_expr();
             value = type_pack_and_check(self, &value, vec![&ty.node.to_string()], false);
-            // Schema required attribute validating.
-            if !is_in_schema {
-                walk_value_mut(&value, &mut |value: &ValueRef| {
-                    if value.is_schema() {
-                        value.schema_check_attr_optional(&mut self.runtime_ctx.borrow_mut(), true);
-                    }
-                })
-            }
         }
         if assign_stmt.targets.len() == 1 {
             // Store the single target
@@ -843,7 +833,6 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
     fn walk_schema_expr(&self, schema_expr: &'ctx ast::SchemaExpr) -> Self::Result {
         // Check the required attributes only when the values of all attributes
         // in the final schema are solved.
-        let is_in_schema = self.is_in_schema() || self.is_in_schema_expr();
         self.push_schema_expr();
         let config_value = self.walk_expr(&schema_expr.config)?;
         let schema_type = self.walk_identifier_with_ctx(
@@ -888,7 +877,6 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
                     &list_value,
                     &dict_value,
                 );
-                {}
                 self.pop_backtrace();
                 self.pop_pkgpath();
                 value
@@ -916,9 +904,6 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
                 &UnionOptions::default(),
             )
         };
-        if !is_in_schema {
-            schema.schema_check_attr_optional(&mut self.runtime_ctx.borrow_mut(), true)
-        }
         self.pop_schema_expr();
         Ok(schema)
     }
