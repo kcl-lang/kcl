@@ -42,28 +42,20 @@ pub(crate) fn hover(
                         // attr2? type
                         // ```
                         let schema_ty = ty.into_schema_type();
-                        let schema_text = schema_ty.schema_ty_signature_str();
 
-                        for (i, ele) in schema_text.split("\n\n").enumerate() {
-                            if i == 0 {
-                                docs.push((ele.to_string(), MarkedStringType::String));
-                            } else {
-                                docs.push((ele.to_string(), MarkedStringType::LanguageString));
-                            }
-                        }
+                        let schema_ty_signature_no_pkg = schema_ty.schema_ty_signature_no_pkg();
+
+                        docs.push((schema_ty.pkgpath, MarkedStringType::String));
 
                         if !schema_ty.doc.is_empty() {
                             docs.push((schema_ty.doc.clone(), MarkedStringType::String));
                         }
 
-                        docs.push(("\n\n".to_string(), MarkedStringType::String));
-
                         // The attr of schema_ty does not contain the attrs from inherited base schema.
                         // Use the api provided by GlobalState to get all attrs
                         let module_info = gs.get_packages().get_module_info(&kcl_pos.filename);
                         let schema_attrs = obj.get_all_attributes(gs.get_symbols(), module_info);
-                        docs.push(("Attributes:\n".to_string(), MarkedStringType::String));
-                        let mut attrs = vec![];
+                        let mut attrs = vec![schema_ty_signature_no_pkg];
                         for schema_attr in schema_attrs {
                             if let kclvm_sema::core::symbol::SymbolKind::Attribute =
                                 schema_attr.get_kind()
@@ -77,7 +69,7 @@ pub(crate) fn hover(
                                     None => ANY_TYPE_STR.to_string(),
                                 };
                                 attrs.push(format!(
-                                    "{}{}: {}",
+                                    "\t{}{}: {}",
                                     name,
                                     if attr_symbol.is_optional() { "?" } else { "" },
                                     attr_ty_str,
