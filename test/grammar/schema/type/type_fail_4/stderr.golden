@@ -1,0 +1,6 @@
+error[E2L23]: CompileError
+ --> ${CWD}/main.k:8:5
+  |
+8 |     "fullName": "John Doe"  # undefined field
+  |     ^ Cannot add member 'fullName' to schema 'Person'
+  |

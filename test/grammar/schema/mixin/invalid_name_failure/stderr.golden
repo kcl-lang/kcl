@@ -1,0 +1,24 @@
+error[E1001]: NameError
+  --> ${CWD}/main.k:10:12
+   |
+10 |     mixin [Fullname]
+   |            ^ a valid mixin name should end with 'Mixin', got 'Fullname'
+   |
+error[E2D34]: IllegalInheritError
+  --> ${CWD}/main.k:10:12
+   |
+10 |     mixin [Fullname]
+   |            ^ illegal schema mixin object type, expected mixin, got 'Fullname'
+   |
+error[E2L23]: CompileError
+ --> ${CWD}/main.k:7:31
+  |
+7 |     fullName = "{} {}".format(firstName, lastName)
+  |                               ^ name 'firstName' is not defined
+  |
+error[E2L23]: CompileError
+ --> ${CWD}/main.k:7:42
+  |
+7 |     fullName = "{} {}".format(firstName, lastName)
+  |                                          ^ name 'lastName' is not defined
+  |

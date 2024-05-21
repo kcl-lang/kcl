@@ -1,0 +1,11 @@
+error[E3M38]: EvaluationError
+ --> ${CWD}/main.k:8:14
+  |
+8 | SameenShaw = Person {
+  |              ^ Instance check failed
+  |
+ --> ${CWD}/main.k:6:1
+  |
+6 |         "father" not in family if family
+  |  Check failed on the condition
+  |

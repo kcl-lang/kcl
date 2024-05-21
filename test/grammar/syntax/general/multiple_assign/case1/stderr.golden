@@ -1,0 +1,18 @@
+error[E1001]: InvalidSyntax
+ --> ${CWD}/main.k:1:2
+  |
+1 | a, b = 1, 2
+  |  ^ unexpected token ','
+  |
+error[E1001]: InvalidSyntax
+ --> ${CWD}/main.k:1:9
+  |
+1 | a, b = 1, 2
+  |         ^ unexpected token ','
+  |
+error[E2L23]: CompileError
+ --> ${CWD}/main.k:1:1
+  |
+1 | a, b = 1, 2
+  | ^ name 'a' is not defined
+  |

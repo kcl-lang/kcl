@@ -1,0 +1,11 @@
+error[E2G22]: TypeError
+  --> ${CWD}/main.k:39:25
+   |
+39 |                         age = "123"
+   |                         ^ expected int, got str(123)
+   |
+ --> ${CWD}/main.k:3:5
+  |
+3 |     age: int = 10
+  |     ^ variable is defined here, its type is int, but got str(123)
+  |

@@ -1,0 +1,11 @@
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:5:30
+  |
+5 | personB: Person = personA | {"name" = 123}
+  |                              ^ expected str, got int(123)
+  |
+ --> ${CWD}/main.k:2:5
+  |
+2 |     name: str = "Alice"
+  |     ^ variable is defined here, its type is str, but got int(123)
+  |

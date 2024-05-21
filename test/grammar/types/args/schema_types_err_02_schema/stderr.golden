@@ -1,0 +1,6 @@
+error[E2G22]: TypeError
+  --> ${CWD}/main.k:13:19
+   |
+13 | x1 = CheckArgType(_x) {}
+   |                   ^ expected Person, got Person
+   |

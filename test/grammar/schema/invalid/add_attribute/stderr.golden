@@ -1,0 +1,18 @@
+error[E2L23]: CompileError
+  --> ${CWD}/main.k:10:5
+   |
+10 |     "first": "alice",
+   |     ^ Cannot add member 'first' to schema 'Girl'
+   |
+error[E2L23]: CompileError
+  --> ${CWD}/main.k:11:5
+   |
+11 |     "last": " Green",
+   |     ^ Cannot add member 'last' to schema 'Girl'
+   |
+error[E2L23]: CompileError
+  --> ${CWD}/main.k:12:5
+   |
+12 |     "age": 10
+   |     ^ Cannot add member 'age' to schema 'Girl'
+   |

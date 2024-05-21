@@ -1,0 +1,50 @@
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:2:1
+  |
+2 | _a: {str:int} = {"key2": 1}
+  | ^ can not change the type of '_a' to {str:str}
+  |
+ --> ${CWD}/main.k:1:1
+  |
+1 | _a: {str:str} = {"key": "value"}
+  | ^ expected {str:str}
+  |
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:1:1
+  |
+1 | _a: {str:str} = {"key": "value"}
+  | ^ can not change the type of '_a' to {str:int}
+  |
+ --> ${CWD}/main.k:2:1
+  |
+2 | _a: {str:int} = {"key2": 1}
+  | ^ expected {str:int}
+  |
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:1:18
+  |
+1 | _a: {str:str} = {"key": "value"}
+  |                  ^ expected int, got str(value)
+  |
+ --> ${CWD}/main.k:1:1
+  |
+1 | _a: {str:str} = {"key": "value"}
+  | ^ variable is defined here, its type is int, but got str(value)
+  |
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:1:1
+  |
+1 | _a: {str:str} = {"key": "value"}
+  | ^ can not change the type of '_a' to {str:str}
+  |
+ --> ${CWD}/main.k:2:1
+  |
+2 | _a: {str:int} = {"key2": 1}
+  | ^ expected {str:int}
+  |
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:1:1
+  |
+1 | _a: {str:str} = {"key": "value"}
+  | ^ expected {str:int}, got {str(key):str(value)}
+  |

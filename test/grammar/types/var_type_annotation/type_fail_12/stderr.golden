@@ -1,0 +1,6 @@
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:7:1
+  |
+7 | foo: int = Foo {
+  | ^ expected int, got Foo
+  |

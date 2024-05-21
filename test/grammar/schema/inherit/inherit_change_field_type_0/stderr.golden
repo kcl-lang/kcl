@@ -1,0 +1,17 @@
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:6:5
+  |
+6 |     firstName: int
+  |     ^ can't change schema field type of 'firstName' from int to int
+  |
+error[E2G22]: TypeError
+  --> ${CWD}/main.k:16:5
+   |
+16 |     "firstName": "John",
+   |     ^ expected int, got str(John)
+   |
+ --> ${CWD}/main.k:6:5
+  |
+6 |     firstName: int
+  |     ^ variable is defined here, its type is int, but got str(John)
+  |

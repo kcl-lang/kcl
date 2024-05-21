@@ -1,0 +1,14 @@
+error[E1001]: IllegalParameterError
+ --> ${CWD}/main.k:1:25
+  |
+1 | schema A[a1 = 100, a2 = 200, a3]:
+  |                         ^ non-default argument follows default argument
+  |
+note: A default argument
+error[E1001]: IllegalParameterError
+ --> ${CWD}/main.k:1:15
+  |
+1 | schema A[a1 = 100, a2 = 200, a3]:
+  |               ^ non-default argument follows default argument
+  |
+note: A default argument

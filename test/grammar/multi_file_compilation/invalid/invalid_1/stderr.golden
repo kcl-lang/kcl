@@ -1,0 +1,11 @@
+error[E2G22]: TypeError
+ --> ${CWD}/pkg.k:3:5
+  |
+3 |     age: "18"
+  |     ^ expected int, got str(18)
+  |
+ --> ${CWD}/main.k:3:5
+  |
+3 |     age: int
+  |     ^ variable is defined here, its type is int, but got str(18)
+  |

@@ -1,0 +1,6 @@
+error[E2L23]: CompileError
+ --> ${CWD}/main.k:1:1
+  |
+1 | import main
+  | ^ There is a circular import reference between module main and main
+  |

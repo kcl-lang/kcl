@@ -1,0 +1,6 @@
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:1:5
+  |
+1 | a = 1 as str
+  |     ^ Conversion of type 'int(1)' to type 'str' may be a mistake because neither type sufficiently overlaps with the other
+  |

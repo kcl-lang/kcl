@@ -1,0 +1,72 @@
+error[E1001]: InvalidSyntax
+ --> ${CWD}/main.k:9:30
+  |
+9 | schema Scholar(KnowledgeMixin, Person):
+  |                              ^ expected one of [")"] got ,
+  |
+error[E1001]: InvalidSyntax
+ --> ${CWD}/main.k:9:32
+  |
+9 | schema Scholar(KnowledgeMixin, Person):
+  |                                ^ expected one of [":"] got identifier
+  |
+error[E1001]: InvalidSyntax
+ --> ${CWD}/main.k:9:38
+  |
+9 | schema Scholar(KnowledgeMixin, Person):
+  |                                      ^ unexpected token ')'
+  |
+error[E1001]: InvalidSyntax
+ --> ${CWD}/main.k:9:39
+  |
+9 | schema Scholar(KnowledgeMixin, Person):
+  |                                       ^ unexpected token ':'
+  |
+error[E1001]: InvalidSyntax
+  --> ${CWD}/main.k:10:5
+   |
+10 |     school: str
+   |     ^ unexpected token 'indent'
+   |
+error[E1001]: InvalidSyntax
+  --> ${CWD}/main.k:12:1
+   |
+12 | JonSnow = Person {
+   |  expected one of ["="] got dedent
+   |
+error[E1001]: InvalidSyntax
+  --> ${CWD}/main.k:12:1
+   |
+12 | JonSnow = Person {
+   |  unexpected token 'dedent'
+   |
+error[E2D34]: IllegalInheritError
+ --> ${CWD}/main.k:9:16
+  |
+9 | schema Scholar(KnowledgeMixin, Person):
+  |                ^ invalid schema inherit object type, expect schema, got 'KnowledgeMixin'
+  |
+error[E2L23]: CompileError
+  --> ${CWD}/main.k:18:5
+   |
+18 |     "firstName": "John",
+   |     ^ Cannot add member 'firstName' to schema 'Scholar'
+   |
+error[E2L23]: CompileError
+  --> ${CWD}/main.k:19:5
+   |
+19 |     "lastName": "Doe",
+   |     ^ Cannot add member 'lastName' to schema 'Scholar'
+   |
+error[E2L23]: CompileError
+  --> ${CWD}/main.k:20:5
+   |
+20 |     "subject": "CS",
+   |     ^ Cannot add member 'subject' to schema 'Scholar'
+   |
+error[E2L23]: CompileError
+  --> ${CWD}/main.k:21:5
+   |
+21 |     "school": "PKU"
+   |     ^ Cannot add member 'school' to schema 'Scholar'
+   |

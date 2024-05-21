@@ -1,0 +1,12 @@
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:4:5
+  |
+4 |     c: str = a3
+  |     ^ expected str, got int
+  |
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:7:17
+  |
+7 | a = A(a1=1,a2=2,a3="3")
+  |                 ^ expected int, got str(3)
+  |

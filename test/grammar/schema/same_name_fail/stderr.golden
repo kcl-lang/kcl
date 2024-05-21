@@ -1,0 +1,23 @@
+error[E2L28]: UniqueKeyError
+ --> ${CWD}/main.k:5:1
+  |
+5 | schema Person:
+  | ^ unique key error name 'Person'
+  |
+error[E2L28]: UniqueKeyError
+ --> ${CWD}/main.k:5:8
+  |
+5 | schema Person:
+  |        ^ Unique key error name 'Person'
+  |
+ --> ${CWD}/main.k:1:8
+  |
+1 | schema Person:
+  |        ^ The variable 'Person' is declared here
+  |
+error[E2L23]: CompileError
+ --> ${CWD}/main.k:9:13
+  |
+9 | x1 = Person{age:101}
+  |             ^ Cannot add member 'age' to schema 'Person'
+  |

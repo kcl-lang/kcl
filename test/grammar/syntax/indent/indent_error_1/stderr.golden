@@ -1,0 +1,6 @@
+error[E1001]: InvalidSyntax
+ --> ${CWD}/main.k:4:3
+  |
+4 |   c = 3
+  |   ^ invalid indentation with 2 spaces, try to align indents by adding or removing spaces
+  |

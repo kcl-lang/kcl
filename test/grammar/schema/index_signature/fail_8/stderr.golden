@@ -1,0 +1,6 @@
+error[E3M38]: EvaluationError
+ --> ${CWD}/main.k:9:1
+  |
+9 |     ws: WithComponent {}
+  |  attribute 'type' of WithComponent is required and can't be None or Undefined
+  |

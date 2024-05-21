@@ -1,0 +1,6 @@
+error[E2L23]: CompileError
+ --> ${CWD}/main.k:2:19
+  |
+2 | dataLoop = [i for i.j.k in data]  # error
+  |                   ^ loop variables can only be ordinary identifiers
+  |

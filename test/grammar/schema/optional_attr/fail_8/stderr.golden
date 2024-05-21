@@ -1,0 +1,6 @@
+error[E2L23]: CompileError
+  --> ${CWD}/main.k:12:9
+   |
+12 |     c = TeamSpec {
+   |         ^ expected 1 positional argument, found 0
+   |

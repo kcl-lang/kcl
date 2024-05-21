@@ -1,0 +1,6 @@
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:3:1
+  |
+3 | _name: Int = "Green"
+  | ^ expected int, got str(Green)
+  |

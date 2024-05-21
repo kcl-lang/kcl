@@ -1,0 +1,6 @@
+error[E1001]: InvalidSyntax
+ --> ${CWD}/main.k:1:6
+  |
+1 | mi = 1mi
+  |      ^ invalid int binary suffix
+  |

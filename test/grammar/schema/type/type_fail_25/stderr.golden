@@ -1,0 +1,6 @@
+error[E2L23]: CompileError
+ --> ${CWD}/main.k:5:11
+  |
+5 |     name: ErrOther
+  |           ^ name 'ErrOther' is not defined, did you mean '["Other"]'?
+  |

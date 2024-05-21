@@ -1,0 +1,6 @@
+error[E2L23]: CompileError
+ --> ${CWD}/main.k:3:11
+  |
+3 | data = "${a: #js}" + " $$ "
+  |           ^ #js is a invalid format spec
+  |

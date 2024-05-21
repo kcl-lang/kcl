@@ -259,14 +259,7 @@ impl<'ctx> Evaluator<'ctx> {
     /// Insert an entry including key and value into the dict, and merge the original entry.
     #[inline]
     pub(crate) fn dict_insert_merge_value(&self, dict: &mut ValueRef, key: &str, value: &ValueRef) {
-        self.dict_merge_key_value_pair(
-            dict,
-            key,
-            value,
-            ConfigEntryOperationKind::Union,
-            -1,
-            false,
-        );
+        self.dict_merge_key_value_pair(dict, key, value, ConfigEntryOperationKind::Union, -1, true);
     }
 
     /// Set dict key with the value. When the dict is a schema and resolve schema validations.

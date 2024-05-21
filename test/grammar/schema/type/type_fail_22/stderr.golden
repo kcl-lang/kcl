@@ -1,0 +1,11 @@
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:9:5
+  |
+9 |     "firstName": 2,
+  |     ^ expected str | Name, got int(2)
+  |
+ --> ${CWD}/main.k:5:5
+  |
+5 |     firstName: str | Name
+  |     ^ variable is defined here, its type is str | Name, but got int(2)
+  |

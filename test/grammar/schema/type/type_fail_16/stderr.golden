@@ -1,0 +1,11 @@
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:7:5
+  |
+7 |     "cards": {"error":"error"}
+  |     ^ expected [str], got {str(error):str(error)}
+  |
+ --> ${CWD}/main.k:3:5
+  |
+3 |     cards : [str]
+  |     ^ variable is defined here, its type is [str], but got {str(error):str(error)}
+  |

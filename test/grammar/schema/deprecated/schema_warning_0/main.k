@@ -1,4 +1,4 @@
-@deprecated(strict=False)
+@deprecated(strict=True)
 schema Person:
     firstName?: str = "John"
     lastName?: str

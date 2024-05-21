@@ -1,0 +1,6 @@
+error[E3M38]: EvaluationError
+ --> ${CWD}/main.k:4:1
+  |
+4 | result2 = _list1 + _list2
+  |  can only concatenate list (not "NoneType") to list
+  |

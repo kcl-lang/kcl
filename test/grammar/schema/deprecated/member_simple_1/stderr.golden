@@ -1,0 +1,6 @@
+error[E3M38]: EvaluationError
+ --> ${CWD}/main.k:8:1
+  |
+8 | JohnDoe = Person {
+  |  name was deprecated 
+  |

@@ -1,0 +1,11 @@
+error[E2G22]: TypeError
+  --> ${CWD}/main.k:17:11
+   |
+17 |           "lastName": "Terry"
+   |           ^ expected int, got str(Terry)
+   |
+ --> ${CWD}/main.k:3:3
+  |
+3 |   lastName: int
+  |   ^ variable is defined here, its type is int, but got str(Terry)
+  |

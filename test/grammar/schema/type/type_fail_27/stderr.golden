@@ -1,0 +1,6 @@
+error[E3M38]: EvaluationError
+ --> ${CWD}/main.k:4:1
+  |
+4 |     config?: [str]
+  |  expect [str], got Person
+  |

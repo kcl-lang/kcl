@@ -1,0 +1,6 @@
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:5:5
+  |
+5 |     name?: str
+  |     ^ can't change the required schema attribute of 'name' to optional
+  |

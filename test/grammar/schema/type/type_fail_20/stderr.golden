@@ -1,0 +1,6 @@
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:6:12
+  |
+6 |     info0: info.inf
+  |            ^ attribute 'inf' not found in 'module 'pkg.info''
+  |
