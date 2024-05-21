@@ -71,7 +71,7 @@ impl ValueRef {
         if let Some(x) = self.arg_i(i) {
             match *x.rc.borrow() {
                 Value::bool_value(v) => return Some(v),
-                Value::none => return default,
+                Value::none | Value::undefined => return default,
                 _ => return None,
             }
         }
@@ -82,7 +82,7 @@ impl ValueRef {
         if let Some(x) = self.arg_i(i) {
             match *x.rc.borrow() {
                 Value::int_value(v) => return Some(v),
-                Value::none => return default,
+                Value::none | Value::undefined => return default,
                 _ => return None,
             }
         }
@@ -94,7 +94,7 @@ impl ValueRef {
             match *x.rc.borrow() {
                 Value::bool_value(v) => return Some(v as i64),
                 Value::int_value(v) => return Some(v),
-                Value::none => return default,
+                Value::none | Value::undefined => return default,
                 _ => return None,
             }
         }
@@ -105,7 +105,7 @@ impl ValueRef {
         if let Some(x) = self.arg_i(i) {
             match *x.rc.borrow() {
                 Value::float_value(v) => return Some(v),
-                Value::none => return default,
+                Value::none | Value::undefined => return default,
                 _ => return None,
             }
         }
@@ -117,7 +117,7 @@ impl ValueRef {
             match *x.rc.borrow() {
                 Value::float_value(v) => return Some(v),
                 Value::int_value(v) => return Some(v as f64),
-                Value::none => return default,
+                Value::none | Value::undefined => return default,
                 _ => return None,
             }
         }
@@ -128,7 +128,7 @@ impl ValueRef {
         if let Some(x) = self.arg_i(i) {
             match &*x.rc.borrow() {
                 Value::str_value(s) => return Some(s.to_string()),
-                Value::none => return default,
+                Value::none | Value::undefined => return default,
                 _ => return None,
             }
         }
@@ -160,7 +160,7 @@ impl ValueRef {
         if let Some(x) = self.kwarg(name) {
             match *x.rc.borrow() {
                 Value::bool_value(v) => return Some(v),
-                Value::none => return default,
+                Value::none | Value::undefined => return default,
                 _ => return None,
             }
         }
@@ -171,7 +171,7 @@ impl ValueRef {
         if let Some(x) = self.kwarg(name) {
             match *x.rc.borrow() {
                 Value::int_value(v) => return Some(v),
-                Value::none => return default,
+                Value::none | Value::undefined => return default,
                 _ => return None,
             }
         }
@@ -182,7 +182,7 @@ impl ValueRef {
         if let Some(x) = self.kwarg(name) {
             match *x.rc.borrow() {
                 Value::float_value(v) => return Some(v),
-                Value::none => return default,
+                Value::none | Value::undefined => return default,
                 _ => return None,
             }
         }
@@ -193,7 +193,7 @@ impl ValueRef {
         if let Some(x) = self.kwarg(name) {
             match &*x.rc.borrow() {
                 Value::str_value(s) => return Some(s.to_string()),
-                Value::none => return default,
+                Value::none | Value::undefined => return default,
                 _ => return None,
             }
         }

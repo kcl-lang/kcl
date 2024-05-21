@@ -229,8 +229,9 @@ pub struct DictValue {
     pub values: IndexMap<String, ValueRef>,
     pub ops: IndexMap<String, ConfigEntryOperationKind>,
     pub insert_indexs: IndexMap<String, i32>,
+    /// Attribute type annotation string mapping.
     pub attr_map: IndexMap<String, String>,
-    // The runtime dict to schema reflect type string.
+    /// The runtime dict to schema reflect type string.
     pub potential_schema: Option<String>,
 }
 
