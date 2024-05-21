@@ -1169,9 +1169,12 @@ fn hover_test() {
         res.result.unwrap(),
         to_json(Hover {
             contents: HoverContents::Array(vec![
-                MarkedString::String("__main__\n\nschema Person".to_string()),
+                MarkedString::String("__main__".to_string()),
+                MarkedString::LanguageString(lsp_types::LanguageString {
+                    language: "kcl".to_string(),
+                    value: "schema Person\n    name: str\n    age?: int".to_string()
+                }),
                 MarkedString::String("hover doc test".to_string()),
-                MarkedString::String("Attributes:\n\nname: str\n\nage?: int".to_string()),
             ]),
             range: None
         })
@@ -1225,7 +1228,12 @@ fn hover_assign_in_lambda_test() {
     assert_eq!(
         res.result.unwrap(),
         to_json(Hover {
-            contents: HoverContents::Scalar(MarkedString::String("images: [str]".to_string()),),
+            contents: HoverContents::Scalar(MarkedString::LanguageString(
+                lsp_types::LanguageString {
+                    language: "kcl".to_string(),
+                    value: "images: [str]".to_string()
+                }
+            )),
             range: None
         })
         .unwrap()
@@ -1663,12 +1671,14 @@ fn konfig_hover_test_main() {
     let got = hover(&program, &pos, &gs).unwrap();
     match got.contents {
         HoverContents::Array(arr) => {
-            let expect: Vec<MarkedString> = ["base.pkg.kusion_models.kube.frontend\n\nschema Server",
-                "Server is abstaction of Deployment and StatefulSet.",
-                "Attributes:\n\nname?: str\n\nworkloadType: str(Deployment) | str(StatefulSet)\n\nrenderType?: str(Server) | str(KubeVelaApplication)\n\nreplicas: int\n\nimage: str\n\nschedulingStrategy: SchedulingStrategy\n\nmainContainer: Main\n\nsidecarContainers?: [Sidecar]\n\ninitContainers?: [Sidecar]\n\nuseBuiltInLabels?: bool\n\nlabels?: {str:str}\n\nannotations?: {str:str}\n\nuseBuiltInSelector?: bool\n\nselector?: {str:str}\n\npodMetadata?: ObjectMeta\n\nvolumes?: [Volume]\n\nneedNamespace?: bool\n\nenableMonitoring?: bool\n\nconfigMaps?: [ConfigMap]\n\nsecrets?: [Secret]\n\nservices?: [Service]\n\ningresses?: [Ingress]\n\nserviceAccount?: ServiceAccount\n\nstorage?: ObjectStorage\n\ndatabase?: DataBase"]
-            .iter()
-            .map(|s| MarkedString::String(s.to_string()))
-            .collect();
+            let expect: Vec<MarkedString> = vec![
+                MarkedString::String("base.pkg.kusion_models.kube.frontend".to_string()),
+                MarkedString::LanguageString(lsp_types::LanguageString {
+                    language: "kcl".to_string(),
+                    value: "schema Server\n    name?: str\n    workloadType: str(Deployment) | str(StatefulSet)\n    renderType?: str(Server) | str(KubeVelaApplication)\n    replicas: int\n    image: str\n    schedulingStrategy: SchedulingStrategy\n    mainContainer: Main\n    sidecarContainers?: [Sidecar]\n    initContainers?: [Sidecar]\n    useBuiltInLabels?: bool\n    labels?: {str:str}\n    annotations?: {str:str}\n    useBuiltInSelector?: bool\n    selector?: {str:str}\n    podMetadata?: ObjectMeta\n    volumes?: [Volume]\n    needNamespace?: bool\n    enableMonitoring?: bool\n    configMaps?: [ConfigMap]\n    secrets?: [Secret]\n    services?: [Service]\n    ingresses?: [Ingress]\n    serviceAccount?: ServiceAccount\n    storage?: ObjectStorage\n    database?: DataBase".to_string()
+                }),
+                MarkedString::String("Server is abstaction of Deployment and StatefulSet.".to_string()),
+            ];
             assert_eq!(expect, arr);
         }
         _ => unreachable!("test error"),
@@ -1683,13 +1693,15 @@ fn konfig_hover_test_main() {
     let got = hover(&program, &pos, &gs).unwrap();
     match got.contents {
         HoverContents::Array(arr) => {
-            let expect: Vec<MarkedString> = [
-                "schedulingStrategy: SchedulingStrategy",
-                "SchedulingStrategy represents scheduling strategy.",
-            ]
-            .iter()
-            .map(|s| MarkedString::String(s.to_string()))
-            .collect();
+            let expect: Vec<MarkedString> = vec![
+                MarkedString::LanguageString(lsp_types::LanguageString {
+                    language: "kcl".to_string(),
+                    value: "schedulingStrategy: SchedulingStrategy".to_string(),
+                }),
+                MarkedString::String(
+                    "SchedulingStrategy represents scheduling strategy.".to_string(),
+                ),
+            ];
             assert_eq!(expect, arr);
         }
         _ => unreachable!("test error"),
@@ -1706,7 +1718,10 @@ fn konfig_hover_test_main() {
         HoverContents::Scalar(s) => {
             assert_eq!(
                 s,
-                MarkedString::String("appConfiguration: Server".to_string())
+                MarkedString::LanguageString(lsp_types::LanguageString {
+                    language: "kcl".to_string(),
+                    value: "appConfiguration: Server".to_string()
+                })
             );
         }
         _ => unreachable!("test error"),
