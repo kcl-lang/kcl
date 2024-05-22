@@ -29,14 +29,14 @@ pub fn is_rel_pkgpath(pkgpath: &str) -> bool {
 
 pub fn fix_import_path(root: &str, filepath: &str, import_path: &str) -> String {
     // relpath: import .sub
-    // FixImportPath(root, "path/to/app/file.k", ".sub")        => path.to.app.sub
-    // FixImportPath(root, "path/to/app/file.k", "..sub")       => path.to.sub
-    // FixImportPath(root, "path/to/app/file.k", "...sub")      => path.sub
-    // FixImportPath(root, "path/to/app/file.k", "....sub")     => sub
-    // FixImportPath(root, "path/to/app/file.k", ".....sub")    => ""
+    // fix_import_path(root, "path/to/app/file.k", ".sub")        => path.to.app.sub
+    // fix_import_path(root, "path/to/app/file.k", "..sub")       => path.to.sub
+    // fix_import_path(root, "path/to/app/file.k", "...sub")      => path.sub
+    // fix_import_path(root, "path/to/app/file.k", "....sub")     => sub
+    // fix_import_path(root, "path/to/app/file.k", ".....sub")    => ""
     //
     // abspath: import path.to.sub
-    // FixImportPath(root, "path/to/app/file.k", "path.to.sub") => path.to.sub
+    // fix_import_path(root, "path/to/app/file.k", "path.to.sub") => path.to.sub
 
     if !import_path.starts_with('.') {
         return import_path.to_string();

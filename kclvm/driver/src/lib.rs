@@ -8,7 +8,10 @@ mod tests;
 
 use glob::glob;
 use kclvm_config::{
-    modfile::{get_pkg_root, KCL_FILE_EXTENSION, KCL_FILE_SUFFIX, KCL_MOD_PATH_ENV},
+    modfile::{
+        get_pkg_root, load_mod_file, KCL_FILE_EXTENSION, KCL_FILE_SUFFIX, KCL_MOD_FILE,
+        KCL_MOD_PATH_ENV,
+    },
     path::ModRelativePath,
     settings::{build_settings_pathbuf, DEFAULT_SETTING_FILE},
 };
@@ -25,7 +28,7 @@ use std::{
 };
 use walkdir::WalkDir;
 
-/// Expand the file pattern to a list of files.
+/// Expand the single file pattern to a list of files.
 pub fn expand_if_file_pattern(file_pattern: String) -> Result<Vec<String>, String> {
     let paths = glob(&file_pattern).map_err(|_| format!("invalid file pattern {file_pattern}"))?;
     let mut matched_files = vec![];
@@ -37,6 +40,7 @@ pub fn expand_if_file_pattern(file_pattern: String) -> Result<Vec<String>, Strin
     Ok(matched_files)
 }
 
+/// Expand input kcl files with the file patterns.
 pub fn expand_input_files(k_files: &[String]) -> Vec<String> {
     let mut res = vec![];
     for file in k_files {
@@ -124,34 +128,28 @@ pub fn canonicalize_input_files(
     Ok(kcl_paths)
 }
 
-/// Get compile uint(files and options) from a single file
+/// Get compile uint(files and options) from a single file input.
+/// 1. Lookup entry files in kcl.yaml
+/// 2. Lookup entry files in kcl.mod
+/// 3. If not found, consider the path or folder where the file is
+///    located as the compilation entry point
 pub fn lookup_compile_unit(
     file: &str,
     load_pkg: bool,
 ) -> (Vec<String>, Option<LoadProgramOptions>) {
-    let compiled_file: String = file.to_string();
     match lookup_compile_unit_path(file) {
-        Ok(dir) => {
+        Ok(CompileUnit::SettingFile(dir)) => {
             let settings_files = lookup_setting_files(&dir);
             let files = if settings_files.is_empty() {
                 vec![file]
             } else {
                 vec![]
             };
-
             let settings_files = settings_files.iter().map(|f| f.to_str().unwrap()).collect();
             match build_settings_pathbuf(&files, Some(settings_files), None) {
                 Ok(setting_buf) => {
                     let setting = setting_buf.settings();
-                    let files = if let Some(cli_configs) = setting.clone().kcl_cli_configs {
-                        let mut k_filename_list = cli_configs.files.unwrap_or_default();
-                        if k_filename_list.is_empty() {
-                            k_filename_list = cli_configs.file.unwrap_or_default();
-                        }
-                        k_filename_list
-                    } else {
-                        vec![]
-                    };
+                    let files = setting.input();
 
                     let work_dir = setting_buf
                         .path()
@@ -166,7 +164,7 @@ pub fn lookup_compile_unit(
                     match canonicalize_input_files(&files, work_dir, true) {
                         Ok(kcl_paths) => {
                             // 1. find the kcl.mod path
-                            let _ = fill_pkg_maps_for_k_file(compiled_file.into(), &mut load_opt);
+                            let _ = fill_pkg_maps_for_k_file(file.into(), &mut load_opt);
                             (kcl_paths, Some(load_opt))
                         }
                         Err(_) => (vec![file.to_string()], None),
@@ -175,9 +173,41 @@ pub fn lookup_compile_unit(
                 Err(_) => (vec![file.to_string()], None),
             }
         }
-        Err(_) => {
+        Ok(CompileUnit::ModFile(dir)) => match load_mod_file(&dir) {
+            Ok(mod_file) => {
+                let mut load_opt = kclvm_parser::LoadProgramOptions::default();
+                let _ = fill_pkg_maps_for_k_file(file.into(), &mut load_opt);
+                if let Some(files) = mod_file.get_entries() {
+                    let work_dir = dir.to_string_lossy().to_string();
+                    load_opt.work_dir = work_dir.clone();
+                    match canonicalize_input_files(&files, work_dir, true) {
+                        Ok(kcl_paths) => {
+                            let _ = fill_pkg_maps_for_k_file(file.into(), &mut load_opt);
+                            (kcl_paths, Some(load_opt))
+                        }
+                        Err(_) => (vec![file.to_string()], None),
+                    }
+                } else {
+                    if load_pkg {
+                        let path = Path::new(file);
+                        if let Some(ext) = path.extension() {
+                            if ext == KCL_FILE_EXTENSION && path.is_file() {
+                                if let Some(parent) = path.parent() {
+                                    if let Ok(files) = get_kcl_files(parent, false) {
+                                        return (files, Some(load_opt));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    (vec![file.to_string()], Some(load_opt))
+                }
+            }
+            Err(_) => (vec![file.to_string()], None),
+        },
+        Ok(CompileUnit::NotFound) | Err(_) => {
             let mut load_opt = kclvm_parser::LoadProgramOptions::default();
-            let _ = fill_pkg_maps_for_k_file(compiled_file.into(), &mut load_opt);
+            let _ = fill_pkg_maps_for_k_file(file.into(), &mut load_opt);
 
             if load_pkg {
                 let path = Path::new(file);
@@ -196,6 +226,7 @@ pub fn lookup_compile_unit(
     }
 }
 
+/// Lookup default setting files e.g. kcl.yaml
 pub fn lookup_setting_files(dir: &Path) -> Vec<PathBuf> {
     let mut settings = vec![];
     if let Ok(p) = lookup_kcl_yaml(dir) {
@@ -204,7 +235,7 @@ pub fn lookup_setting_files(dir: &Path) -> Vec<PathBuf> {
     settings
 }
 
-pub fn lookup_kcl_yaml(dir: &Path) -> io::Result<PathBuf> {
+fn lookup_kcl_yaml(dir: &Path) -> io::Result<PathBuf> {
     let mut path = dir.to_path_buf();
     path.push(DEFAULT_SETTING_FILE);
     if path.is_file() {
@@ -215,6 +246,15 @@ pub fn lookup_kcl_yaml(dir: &Path) -> io::Result<PathBuf> {
             "Ran out of places to find kcl.yaml",
         ))
     }
+}
+
+/// CompileUnit is the kcl program default entries that are defined
+/// in the config files.
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum CompileUnit {
+    SettingFile(PathBuf),
+    ModFile(PathBuf),
+    NotFound,
 }
 
 /// For the KCL project, some definitions may be introduced through multi-file
@@ -231,31 +271,29 @@ pub fn lookup_kcl_yaml(dir: &Path) -> io::Result<PathBuf> {
 /// | +-- prod
 /// | | +-- main.k
 /// | | +-- kcl.yaml
-/// | | +-- stack.yaml
 /// | +-- test
 /// | | +-- main.k
 /// | | +-- kcl.yaml
-/// | | +-- stack.yaml
-/// | +-- project.yaml
+/// | +-- kcl.mod
 ///
 /// If the input file is project/prod/main.k or project/test/main.k, it will return
 /// Path("project/prod") or Path("project/test")
-pub fn lookup_compile_unit_path(file: &str) -> io::Result<PathBuf> {
+pub fn lookup_compile_unit_path(file: &str) -> io::Result<CompileUnit> {
     let path = PathBuf::from(file);
     let current_dir_path = path.as_path().parent().unwrap();
-    let entrys = read_dir(current_dir_path)?;
-    for entry in entrys {
+    let entries = read_dir(current_dir_path)?;
+    for entry in entries {
         let entry = entry?;
+        // The entry priority of `kcl.yaml`` is higher than that of `kcl.mod`.
         if entry.file_name() == *DEFAULT_SETTING_FILE {
-            // If find "kcl.yaml", the input file is in a stack, return the
-            // path of this stack
-            return Ok(PathBuf::from(current_dir_path));
+            // If find "kcl.yaml", the input file is in a compile stack, return the
+            // path of this compile stack
+            return Ok(CompileUnit::SettingFile(PathBuf::from(current_dir_path)));
+        } else if entry.file_name() == *KCL_MOD_FILE {
+            return Ok(CompileUnit::ModFile(PathBuf::from(current_dir_path)));
         }
     }
-    Err(io::Error::new(
-        ErrorKind::NotFound,
-        "Ran out of places to find kcl.yaml",
-    ))
+    Ok(CompileUnit::NotFound)
 }
 
 /// Get kcl files from path.
