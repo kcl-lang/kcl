@@ -22,7 +22,6 @@ pub(crate) fn hover(
     gs: &GlobalState,
 ) -> Option<lsp_types::Hover> {
     let mut docs: Vec<(String, MarkedStringType)> = vec![];
-    let mut pkg_path = String::new();
     let def = find_def_with_gs(kcl_pos, gs, true);
     match def {
         Some(def_ref) => match gs.get_symbols().get_symbol(def_ref) {
@@ -42,8 +41,10 @@ pub(crate) fn hover(
                         // ```
                         let schema_ty = ty.into_schema_type();
                         let (pkgpath, rest_sign) = schema_ty.schema_ty_signature_str();
-                        pkg_path = pkgpath;
-
+                        if !pkgpath.is_empty() {
+                            docs.push((pkgpath.clone(), MarkedStringType::String));
+                        }
+                        
                         // The attr of schema_ty does not contain the attrs from inherited base schema.
                         // Use the api provided by GlobalState to get all attrs
                         let module_info = gs.get_packages().get_module_info(&kcl_pos.filename);
@@ -143,7 +144,7 @@ pub(crate) fn hover(
         },
         None => {}
     }
-    docs_to_hover(docs, pkg_path)
+    docs_to_hover(docs)
 }
 
 // Convert doc to Marked String. This function will convert docs to Markedstrings
@@ -163,13 +164,8 @@ fn convert_doc_to_marked_string(doc: &(String, MarkedStringType)) -> MarkedStrin
 // None, Scalar or Array according to the number of positions
 fn docs_to_hover(
     docs: Vec<(String, MarkedStringType)>,
-    pkg_path: String,
 ) -> Option<lsp_types::Hover> {
     let mut all_docs: Vec<MarkedString> = Vec::new();
-
-    if !pkg_path.is_empty() {
-        all_docs.push(MarkedString::String(pkg_path.clone()));
-    }
 
     for doc in docs {
         all_docs.push(convert_doc_to_marked_string(&doc));
@@ -319,7 +315,7 @@ mod tests {
         ];
 
         // When converting to hover content
-        let hover = docs_to_hover(docs, "".to_string());
+        let hover = docs_to_hover(docs);
 
         // Then the result should be a Hover object with an Array of MarkedString::String
         assert!(hover.is_some());
