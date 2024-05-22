@@ -44,7 +44,7 @@ pub(crate) fn hover(
                         if !pkgpath.is_empty() {
                             docs.push((pkgpath.clone(), MarkedStringType::String));
                         }
-                        
+
                         // The attr of schema_ty does not contain the attrs from inherited base schema.
                         // Use the api provided by GlobalState to get all attrs
                         let module_info = gs.get_packages().get_module_info(&kcl_pos.filename);
@@ -162,9 +162,7 @@ fn convert_doc_to_marked_string(doc: &(String, MarkedStringType)) -> MarkedStrin
 
 // Convert docs to Hover. This function will convert to
 // None, Scalar or Array according to the number of positions
-fn docs_to_hover(
-    docs: Vec<(String, MarkedStringType)>,
-) -> Option<lsp_types::Hover> {
+fn docs_to_hover(docs: Vec<(String, MarkedStringType)>) -> Option<lsp_types::Hover> {
     let mut all_docs: Vec<MarkedString> = Vec::new();
 
     for doc in docs {
