@@ -1,4 +1,4 @@
 {
 	"file": "./src/testdata/variables/main.k",
-	"specs": ["a"]
+	"specs": ["a", "b", "c"]
 }

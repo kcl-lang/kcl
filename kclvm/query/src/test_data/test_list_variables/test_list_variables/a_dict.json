@@ -1,0 +1,30 @@
+{
+  "a_dict": {
+    "type_name": "",
+    "op_sym": "=",
+    "value": "{**_part1, **_part2}",
+    "list_items": [],
+    "dict_entries": [
+      {
+        "key": "",
+        "value": {
+          "type_name": "",
+          "op_sym": ":",
+          "value": "_part1",
+          "list_items": [],
+          "dict_entries": []
+        }
+      },
+      {
+        "key": "",
+        "value": {
+          "type_name": "",
+          "op_sym": ":",
+          "value": "_part2",
+          "list_items": [],
+          "dict_entries": []
+        }
+      }
+    ]
+  }
+}

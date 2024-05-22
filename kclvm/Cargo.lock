@@ -1661,6 +1661,7 @@ dependencies = [
  "kclvm-runtime",
  "kclvm-span",
  "kclvm-utils",
+ "serde",
  "serde_json",
  "termize",
  "tracing",
@@ -1765,6 +1766,8 @@ dependencies = [
  "kclvm-sema",
  "maplit",
  "pretty_assertions",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
