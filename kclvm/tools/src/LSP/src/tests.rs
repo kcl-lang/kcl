@@ -1695,7 +1695,7 @@ fn konfig_hover_test_main() {
         HoverContents::Array(arr) => {
             let expect: Vec<MarkedString> = vec![
                 MarkedString::LanguageString(lsp_types::LanguageString {
-                    language: "kcl".to_string(),
+                    language: "KCL".to_string(),
                     value: "schedulingStrategy: SchedulingStrategy".to_string(),
                 }),
                 MarkedString::String(
@@ -1719,7 +1719,7 @@ fn konfig_hover_test_main() {
             assert_eq!(
                 s,
                 MarkedString::LanguageString(lsp_types::LanguageString {
-                    language: "kcl".to_string(),
+                    language: "KCL".to_string(),
                     value: "appConfiguration: Server".to_string()
                 })
             );

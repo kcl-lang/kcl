@@ -355,7 +355,7 @@ mod tests {
                     assert_eq!(s, "__main__");
                 }
                 if let MarkedString::String(s) = vec[1].clone() {
-                    assert_eq!(s, "schema Person:\n\tname: str\n\tage?: int");
+                    assert_eq!(s, "schema Person:\n    name: str\n    age?: int");
                 }
                 if let MarkedString::String(s) = vec[2].clone() {
                     assert_eq!(s, "hover doc test");
@@ -581,7 +581,7 @@ mod tests {
                     assert_eq!(s, "fib");
                 }
                 if let MarkedString::String(s) = vec[1].clone() {
-                    assert_eq!(s, "schema Fib:\n\tn: int\n\tvalue: int");
+                    assert_eq!(s, "schema Fib:\n    n: int\n    value: int");
                 }
             }
             _ => unreachable!("test error"),
