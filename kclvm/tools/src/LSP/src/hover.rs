@@ -89,7 +89,7 @@ pub(crate) fn hover(
                             ));
                             if let Some(doc) = &sema_info.doc {
                                 if !doc.is_empty() {
-                                    docs.push((doc.clone(), MarkedStringType::LanguageString));
+                                    docs.push((doc.clone(), MarkedStringType::String));
                                 }
                             }
                         }
