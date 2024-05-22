@@ -71,21 +71,25 @@ pub(crate) fn hover(
                         }
 
                         let merged_doc = format!("{}\n{}", rest_sign.clone(), attrs.join("\n"));
-                        docs.push((merged_doc,MarkedStringType::LanguageString));
+                        docs.push((merged_doc, MarkedStringType::LanguageString));
 
                         if !schema_ty.doc.is_empty() {
-                            docs.push((schema_ty.doc.clone(),MarkedStringType::String));
-                        }}
+                            docs.push((schema_ty.doc.clone(), MarkedStringType::String));
+                        }
+                    }
                     _ => {}
                 },
                 kclvm_sema::core::symbol::SymbolKind::Attribute => {
                     let sema_info = obj.get_sema_info();
                     match &sema_info.ty {
                         Some(ty) => {
-                            docs.push((format!("{}: {}", &obj.get_name(), ty.ty_str()),MarkedStringType::LanguageString));
+                            docs.push((
+                                format!("{}: {}", &obj.get_name(), ty.ty_str()),
+                                MarkedStringType::LanguageString,
+                            ));
                             if let Some(doc) = &sema_info.doc {
                                 if !doc.is_empty() {
-                                    docs.push((doc.clone(),MarkedStringType::LanguageString));
+                                    docs.push((doc.clone(), MarkedStringType::LanguageString));
                                 }
                             }
                         }
@@ -157,14 +161,16 @@ fn convert_doc_to_marked_string(doc: &(String, MarkedStringType)) -> MarkedStrin
 
 // Convert docs to Hover. This function will convert to
 // None, Scalar or Array according to the number of positions
-fn docs_to_hover(docs: Vec<(String, MarkedStringType)>, pkg_path: String) -> Option<lsp_types::Hover> {
+fn docs_to_hover(
+    docs: Vec<(String, MarkedStringType)>,
+    pkg_path: String,
+) -> Option<lsp_types::Hover> {
     let mut all_docs: Vec<MarkedString> = Vec::new();
 
     if !pkg_path.is_empty() {
         all_docs.push(MarkedString::String(pkg_path.clone()));
     }
 
-    // Add other strings
     for doc in docs {
         all_docs.push(convert_doc_to_marked_string(&doc));
     }
@@ -306,7 +312,7 @@ mod tests {
         ];
 
         // When converting to hover content
-        let hover = docs_to_hover(docs,"".to_string());
+        let hover = docs_to_hover(docs, "".to_string());
 
         // Then the result should be a Hover object with an Array of MarkedString::String
         assert!(hover.is_some());
