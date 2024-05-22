@@ -337,15 +337,14 @@ pub enum ParseError {
     Message {
         message: String,
         span: Span,
-        fix_info: Option<FixInfo>
+        fix_info: Option<FixInfo>,
     },
 }
 
 #[derive(Debug, Clone)]
-pub struct FixInfo{
+pub struct FixInfo {
     pub suggestion: Option<String>,
     pub replacement: Option<String>,
-    pub additional_info: Option<String>,
 }
 
 /// A single string error.
@@ -365,8 +364,12 @@ impl ParseError {
     }
 
     /// New a message parse error with span.
-    pub fn message(message: String, span: Span, fix_info:Option<FixInfo>) -> Self {
-        ParseError::Message { message, span, fix_info }
+    pub fn message(message: String, span: Span, fix_info: Option<FixInfo>) -> Self {
+        ParseError::Message {
+            message,
+            span,
+            fix_info,
+        }
     }
 }
 
@@ -380,12 +383,15 @@ impl ParseError {
         let loc = sess.sm.lookup_char_pos(span.lo());
         let pos: Position = loc.into();
         let suggestions = match self {
-            ParseError::Message { fix_info: Some(ref info), .. } => {
-                Some(vec![
-                    info.suggestion.clone().unwrap_or_else(|| "No suggestion available".to_string()),
-                    info.replacement.clone().unwrap_or_else(|| "".to_string())
-                ])
-            }
+            ParseError::Message {
+                fix_info: Some(ref info),
+                ..
+            } => Some(vec![
+                info.suggestion
+                    .clone()
+                    .unwrap_or_else(|| "No suggestion available".to_string()),
+                info.replacement.clone().unwrap_or_else(|| "".to_string()),
+            ]),
             _ => None,
         };
         Ok(Diagnostic::new_with_code(
@@ -422,7 +428,11 @@ impl SessionDiagnostic for ParseError {
                 diag.append_component(Box::new(format!(" {}\n", self.to_string())));
                 Ok(diag)
             }
-            ParseError::Message { message, span, fix_info } => {
+            ParseError::Message {
+                message,
+                span,
+                fix_info: _,
+            } => {
                 let code_snippet = CodeSnippet::new(span, Arc::clone(&sess.sm));
                 diag.append_component(Box::new(code_snippet));
                 diag.append_component(Box::new(format!(" {message}\n")));
