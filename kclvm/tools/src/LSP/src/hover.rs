@@ -267,11 +267,18 @@ mod tests {
                 if let MarkedString::String(s) = vec[0].clone() {
                     assert_eq!(s, "pkg");
                 }
-                if let MarkedString::String(s) = vec[1].clone() {
-                    assert_eq!(s, "schema Person:\n    name: str\n    age: int");
+                if let MarkedString::LanguageString(s) = vec[1].clone() {
+                    assert_eq!(
+                        s.value,
+                        "schema Person:\n    name: str\n    age: int".to_string()
+                    );
+                } else {
+                    unreachable!("Wrong type");
                 }
                 if let MarkedString::String(s) = vec[2].clone() {
                     assert_eq!(s, "hover doc test");
+                } else {
+                    unreachable!("Wrong type");
                 }
             }
             _ => unreachable!("test error"),
@@ -284,8 +291,8 @@ mod tests {
         let got = hover(&program, &pos, &gs).unwrap();
         match got.contents {
             lsp_types::HoverContents::Scalar(marked_string) => {
-                if let MarkedString::String(s) = marked_string {
-                    assert_eq!(s, "name: str");
+                if let MarkedString::LanguageString(s) = marked_string {
+                    assert_eq!(s.value, "name: str");
                 }
             }
             _ => unreachable!("test error"),
@@ -354,8 +361,8 @@ mod tests {
                 if let MarkedString::String(s) = vec[0].clone() {
                     assert_eq!(s, "__main__");
                 }
-                if let MarkedString::String(s) = vec[1].clone() {
-                    assert_eq!(s, "schema Person:\n    name: str\n    age?: int");
+                if let MarkedString::LanguageString(s) = vec[1].clone() {
+                    assert_eq!(s.value, "schema Person:\n    name: str\n    age?: int");
                 }
                 if let MarkedString::String(s) = vec[2].clone() {
                     assert_eq!(s, "hover doc test");
@@ -379,8 +386,11 @@ mod tests {
 
         match got.contents {
             lsp_types::HoverContents::Array(vec) => {
-                if let MarkedString::String(s) = vec[0].clone() {
-                    assert_eq!(s, "name: str\nname doc test");
+                if let MarkedString::LanguageString(s) = vec[0].clone() {
+                    assert_eq!(s.value, "name: str");
+                }
+                if let MarkedString::String(s) = vec[1].clone() {
+                    assert_eq!(s, "name doc test");
                 }
             }
             _ => unreachable!("test error"),
@@ -395,8 +405,11 @@ mod tests {
 
         match got.contents {
             lsp_types::HoverContents::Array(vec) => {
+                if let MarkedString::LanguageString(s) = vec[0].clone() {
+                    assert_eq!(s.value, "age: int");
+                }
                 if let MarkedString::String(s) = vec[0].clone() {
-                    assert_eq!(s, "age: int\nage doc test");
+                    assert_eq!(s, "age doc test");
                 }
             }
             _ => unreachable!("test error"),
@@ -417,8 +430,11 @@ mod tests {
 
         match got.contents {
             lsp_types::HoverContents::Array(vec) => {
+                if let MarkedString::LanguageString(s) = vec[0].clone() {
+                    assert_eq!(s.value, "fn f(x: any) -> any");
+                }
                 if let MarkedString::String(s) = vec[0].clone() {
-                    assert_eq!(s, "fn f(x: any) -> any\nlambda documents");
+                    assert_eq!(s, "lambda documents");
                 }
             }
             _ => unreachable!("test error"),
@@ -440,8 +456,8 @@ mod tests {
         match got.contents {
             lsp_types::HoverContents::Array(vec) => {
                 assert_eq!(vec.len(), 2);
-                if let MarkedString::String(s) = vec[0].clone() {
-                    assert_eq!(s, "fn encode(value: str, encoding: str) -> str");
+                if let MarkedString::LanguageString(s) = vec[0].clone() {
+                    assert_eq!(s.value, "fn encode(value: str, encoding: str) -> str");
                 }
                 if let MarkedString::String(s) = vec[1].clone() {
                     assert_eq!(
@@ -466,8 +482,8 @@ mod tests {
                 if let MarkedString::String(s) = vec[0].clone() {
                     assert_eq!(s, "str\n\n");
                 }
-                if let MarkedString::String(s) = vec[1].clone() {
-                    assert_eq!(s, "fn count(sub: str, start: int, end: int) -> int");
+                if let MarkedString::LanguageString(s) = vec[1].clone() {
+                    assert_eq!(s.value, "fn count(sub: str, start: int, end: int) -> int");
                 }
                 if let MarkedString::String(s) = vec[2].clone() {
                     assert_eq!(s, "Return the number of non-overlapping occurrences of substring sub in the range [start, end]. Optional arguments start and end are interpreted as in slice notation.");
@@ -486,8 +502,8 @@ mod tests {
         match got.contents {
             lsp_types::HoverContents::Array(vec) => {
                 assert_eq!(vec.len(), 2);
-                if let MarkedString::String(s) = vec[0].clone() {
-                    assert_eq!(s, "fn print() -> NoneType");
+                if let MarkedString::LanguageString(s) = vec[0].clone() {
+                    assert_eq!(s.value, "fn print() -> NoneType");
                 }
                 if let MarkedString::String(s) = vec[1].clone() {
                     assert_eq!(s, "Prints the values to a stream, or to the system stdout by default.\n\nOptional keyword arguments:\n\nsep:   string inserted between values, default a space.\n\nend:   string appended after the last value, default a newline.");
@@ -509,8 +525,8 @@ mod tests {
         let got = hover(&program, &pos, &gs).unwrap();
         match got.contents {
             lsp_types::HoverContents::Scalar(marked_string) => {
-                if let MarkedString::String(s) = marked_string {
-                    assert_eq!(s, "value: int");
+                if let MarkedString::LanguageString(s) = marked_string {
+                    assert_eq!(s.value, "value: int");
                 }
             }
             _ => unreachable!("test error"),
@@ -529,8 +545,8 @@ mod tests {
         let got = hover(&program, &pos, &gs).unwrap();
         match got.contents {
             lsp_types::HoverContents::Scalar(marked_string) => {
-                if let MarkedString::String(s) = marked_string {
-                    assert_eq!(s, "result: {str:str}");
+                if let MarkedString::LanguageString(s) = marked_string {
+                    assert_eq!(s.value, "result: {str:str}");
                 }
             }
             _ => unreachable!("test error"),
@@ -553,8 +569,8 @@ mod tests {
                 if let MarkedString::String(s) = vec[0].clone() {
                     assert_eq!(s, "str\n\n");
                 }
-                if let MarkedString::String(s) = vec[1].clone() {
-                    assert_eq!(s, "fn capitalize() -> str");
+                if let MarkedString::LanguageString(s) = vec[1].clone() {
+                    assert_eq!(s.value, "fn capitalize() -> str");
                 }
                 if let MarkedString::String(s) = vec[2].clone() {
                     assert_eq!(s, "Return a copy of the string with its first character capitalized and the rest lowercased.");
@@ -580,8 +596,8 @@ mod tests {
                 if let MarkedString::String(s) = vec[0].clone() {
                     assert_eq!(s, "fib");
                 }
-                if let MarkedString::String(s) = vec[1].clone() {
-                    assert_eq!(s, "schema Fib:\n    n: int\n    value: int");
+                if let MarkedString::LanguageString(s) = vec[1].clone() {
+                    assert_eq!(s.value, "schema Fib:\n    n: int\n    value: int");
                 }
             }
             _ => unreachable!("test error"),
@@ -600,8 +616,8 @@ mod tests {
         let got = hover(&program, &pos, &gs).unwrap();
         match got.contents {
             lsp_types::HoverContents::Scalar(marked_string) => {
-                if let MarkedString::String(s) = marked_string {
-                    assert_eq!(s, "stratege: str");
+                if let MarkedString::LanguageString(s) = marked_string {
+                    assert_eq!(s.value, "stratege: str");
                 }
             }
             _ => unreachable!("test error"),
@@ -620,8 +636,8 @@ mod tests {
         let got = hover(&program, &pos, &gs).unwrap();
         match got.contents {
             lsp_types::HoverContents::Scalar(marked_string) => {
-                if let MarkedString::String(s) = marked_string {
-                    assert_eq!(s, "n1: int");
+                if let MarkedString::LanguageString(s) = marked_string {
+                    assert_eq!(s.value, "n1: int");
                 }
             }
             _ => unreachable!("test error"),
@@ -709,8 +725,8 @@ mod tests {
 
         match got.contents {
             lsp_types::HoverContents::Scalar(marked_string) => {
-                if let MarkedString::String(s) = marked_string {
-                    assert_eq!(s, "name: int");
+                if let MarkedString::LanguageString(s) = marked_string {
+                    assert_eq!(s.value, "name: int");
                 }
             }
             _ => unreachable!("test error"),
