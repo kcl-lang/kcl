@@ -12,6 +12,7 @@ pub struct TypeContext {
     pub dep_graph: DiGraph<String, ()>,
     pub builtin_types: BuiltinTypes,
     node_index_map: HashMap<String, NodeIndex>,
+    pub expected_ty: Option<TypeRef>,
 }
 
 #[derive(Debug)]
@@ -46,6 +47,7 @@ impl TypeContext {
                 none: Arc::new(Type::NONE),
             },
             node_index_map: HashMap::new(),
+            expected_ty: None,
         }
     }
 

@@ -465,6 +465,7 @@ impl<'ctx> Resolver<'ctx> {
         &mut self,
         entries: &'ctx [ast::NodeRef<ast::ConfigEntry>],
     ) -> TypeRef {
+        // println!("{:?}", "walk_config_entries");
         let (start, end) = match entries.len() {
             0 => (self.ctx.start_pos.clone(), self.ctx.end_pos.clone()),
             1 => entries[0].get_span_pos(),
@@ -482,13 +483,37 @@ impl<'ctx> Resolver<'ctx> {
             let value = &item.node.value;
             let op = &item.node.operation;
             let mut stack_depth: usize = 0;
-            self.check_config_entry(key, value);
             stack_depth += self.switch_config_expr_context_by_key(key);
             let mut has_insert_index = false;
             let val_ty = match key {
                 Some(key) => match &key.node {
                     ast::Expr::Identifier(identifier) => {
+                        let old_expected_ty = self.ctx.ty_ctx.expected_ty.clone();
+                        if let Some(expected_ty) = self.ctx.ty_ctx.expected_ty.clone() {
+                            match &expected_ty.kind {
+                                TypeKind::Dict(dict_ty) => {
+                                    self.ctx.ty_ctx.expected_ty = Some(dict_ty.val_ty.clone());
+                                }
+
+                                TypeKind::Schema(schema_ty) => {
+                                    match identifier.names.len() {
+                                        1 => match schema_ty.attrs.get(&identifier.names[0].node) {
+                                            Some(attr) => {
+                                                self.ctx.ty_ctx.expected_ty = Some(attr.ty.clone())
+                                            }
+                                            None => {}
+                                        },
+                                        _ => {
+                                            // unreachable, len() = 0 is error, len() > 1 has be desuger in pre_process()
+                                        }
+                                    };
+                                }
+                                _ => {}
+                            }
+                        }
                         let mut val_ty = self.expr(value);
+                        self.ctx.ty_ctx.expected_ty = old_expected_ty;
+
                         for _ in 0..identifier.names.len() - 1 {
                             val_ty = Type::dict_ref(self.str_ty(), val_ty.clone());
                         }

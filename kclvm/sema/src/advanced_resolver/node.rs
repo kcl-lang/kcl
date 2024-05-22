@@ -87,6 +87,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
     }
 
     fn walk_assign_stmt(&mut self, assign_stmt: &'ctx ast::AssignStmt) -> Self::Result {
+        let old_current_schema_symbol = self.ctx.current_schema_symbol.clone();
         for target in &assign_stmt.targets {
             if target.node.names.is_empty() {
                 continue;
@@ -111,6 +112,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
         }
         self.walk_type_expr(assign_stmt.ty.as_ref().map(|ty| ty.as_ref()))?;
         self.expr(&assign_stmt.value)?;
+        self.ctx.current_schema_symbol = old_current_schema_symbol;
         Ok(None)
     }
 
@@ -854,7 +856,27 @@ impl<'ctx> AdvancedResolver<'ctx> {
             self.ctx.end_pos = end;
         }
         self.ctx.cur_node = expr.id.clone();
-        match self.walk_expr(&expr.node) {
+
+        let old_current_schema_symbol = self.ctx.current_schema_symbol.clone();
+
+        if let Some(expr_ty) = self.ctx.node_ty_map.get(&self.ctx.get_node_key(&expr.id)) {
+            match &expr_ty.kind {
+                TypeKind::Schema(_) => {
+                    let schema_symbol = self
+                        .gs
+                        .get_symbols()
+                        .get_type_symbol(&expr_ty, self.get_current_module_info())
+                        .ok_or(anyhow!("schema_symbol not found"))?;
+                    self.ctx.current_schema_symbol = Some(schema_symbol);
+                }
+                _ => {}
+            }
+        }
+
+        let expr_symbol = self.walk_expr(&expr.node);
+        self.ctx.current_schema_symbol = old_current_schema_symbol;
+
+        match expr_symbol {
             Ok(None) => match self.ctx.node_ty_map.get(&self.ctx.get_node_key(&expr.id)) {
                 Some(ty) => {
                     if let ast::Expr::Missing(_) = expr.node {

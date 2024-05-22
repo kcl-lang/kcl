@@ -132,6 +132,30 @@ impl<'ctx> Resolver<'ctx> {
         }
     }
 
+    // Upgrade the dict type into schema type if it is expected to schema
+    pub fn upgrade_dict_to_schema(&mut self, ty: TypeRef, expected_ty: TypeRef) -> TypeRef {
+        match (&ty.kind, &expected_ty.kind) {
+            (TypeKind::Dict(DictType { .. }), TypeKind::Schema(_)) => expected_ty,
+            (TypeKind::List(item_ty), TypeKind::List(expected_item_ty)) => {
+                Type::list(self.upgrade_dict_to_schema(item_ty.clone(), expected_item_ty.clone()))
+                    .into()
+            }
+            (
+                TypeKind::Dict(DictType { key_ty, val_ty, .. }),
+                TypeKind::Dict(DictType {
+                    key_ty: expected_key_ty,
+                    val_ty: expected_val_ty,
+                    ..
+                }),
+            ) => Type::dict(
+                self.upgrade_dict_to_schema(key_ty.clone(), expected_key_ty.clone()),
+                self.upgrade_dict_to_schema(val_ty.clone(), expected_val_ty.clone()),
+            )
+            .into(),
+            _ => expected_ty,
+        }
+    }
+
     /// Check the type assignment statement between type annotation and target.
     pub fn check_assignment_type_annotation(
         &mut self,

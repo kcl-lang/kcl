@@ -148,6 +148,9 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             if target.node.names.len() == 1 {
                 self.ctx.l_value = true;
                 let expected_ty = self.walk_identifier_expr(target);
+                // println!("ssign expecy ty{:?}", expected_ty);
+                let old_expected_ty = self.ctx.ty_ctx.expected_ty.clone();
+                self.ctx.ty_ctx.expected_ty = Some(expected_ty.clone());
                 self.ctx.l_value = false;
                 match &expected_ty.kind {
                     TypeKind::Schema(ty) => {
@@ -185,6 +188,15 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                     target.get_span_pos(),
                     None,
                 );
+
+                self.ctx.ty_ctx.expected_ty = old_expected_ty;
+                let upgrade_schema_type =
+                    self.upgrade_dict_to_schema(value_ty.clone(), expected_ty.clone());
+                self.node_ty_map.insert(
+                    self.get_node_key(assign_stmt.value.id.clone()),
+                    upgrade_schema_type.clone(),
+                );
+
                 if !value_ty.is_any() && expected_ty.is_any() && assign_stmt.ty.is_none() {
                     self.set_type_to_scope(name, value_ty.clone(), &target.node.names[0]);
                     if let Some(schema_ty) = &self.ctx.schema {
@@ -199,11 +211,25 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 self.lookup_type_from_scope(name, target.get_span_pos());
                 self.ctx.l_value = true;
                 let expected_ty = self.walk_identifier_expr(target);
+                self.ctx.ty_ctx.expected_ty = Some(expected_ty.clone());
                 self.ctx.l_value = false;
                 value_ty = self.expr(&assign_stmt.value);
+                self.ctx.ty_ctx.expected_ty = None;
                 // Check type annotation if exists.
                 self.check_assignment_type_annotation(assign_stmt, value_ty.clone());
-                self.must_assignable_to(value_ty.clone(), expected_ty, target.get_span_pos(), None)
+                self.must_assignable_to(
+                    value_ty.clone(),
+                    expected_ty.clone(),
+                    target.get_span_pos(),
+                    None,
+                );
+
+                let upgrade_schema_type =
+                    self.upgrade_dict_to_schema(value_ty.clone(), expected_ty.clone());
+                self.node_ty_map.insert(
+                    self.get_node_key(assign_stmt.value.id.clone()),
+                    upgrade_schema_type.clone(),
+                );
             }
         }
         value_ty
@@ -677,7 +703,15 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
 
     fn walk_list_expr(&mut self, list_expr: &'ctx ast::ListExpr) -> Self::Result {
         let stack_depth = self.switch_list_expr_context();
+        let old_expected_ty = self.ctx.ty_ctx.expected_ty.clone();
+        if let Some(ty) = self.ctx.ty_ctx.expected_ty.clone() {
+            match &ty.kind {
+                TypeKind::List(item_ty) => self.ctx.ty_ctx.expected_ty = Some(item_ty.clone()),
+                _ => {}
+            }
+        }
         let item_type = sup(&self.exprs(&list_expr.elts).to_vec());
+        self.ctx.ty_ctx.expected_ty = old_expected_ty;
         self.clear_config_expr_context(stack_depth, false);
         Type::list_ref(item_type)
     }
@@ -1233,8 +1267,15 @@ impl<'ctx> Resolver<'ctx> {
             self.ctx.end_pos = end;
         }
         let ty = self.walk_expr(&expr.node);
-        self.node_ty_map
-            .insert(self.get_node_key(expr.id.clone()), ty.clone());
+        if let Some(expected_ty) = self.ctx.ty_ctx.expected_ty.clone() {
+            let upgrade_ty = self.upgrade_dict_to_schema(ty.clone(), expected_ty);
+            self.node_ty_map
+                .insert(self.get_node_key(expr.id.clone()), upgrade_ty);
+        } else {
+            self.node_ty_map
+                .insert(self.get_node_key(expr.id.clone()), ty.clone());
+        }
+
         ty
     }
 

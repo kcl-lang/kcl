@@ -1671,4 +1671,72 @@ mod tests {
             CompletionResponse::List(_) => panic!("test failed"),
         }
     }
+
+    #[test]
+    #[bench_test]
+    fn nested_test() {
+        let (file, program, _, gs) =
+            compile_test_file("src/test_data/completion_test/dot/nested/nested.k");
+
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 9,
+            column: Some(9),
+        };
+
+        let mut got = completion(None, &program, &pos, &gs).unwrap();
+
+        match &mut got {
+            CompletionResponse::Array(arr) => {
+                let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
+                insta::assert_snapshot!(format!("{:?}", labels));
+            }
+            CompletionResponse::List(_) => panic!("test failed"),
+        }
+
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 18,
+            column: Some(9),
+        };
+
+        let mut got = completion(None, &program, &pos, &gs).unwrap();
+        match &mut got {
+            CompletionResponse::Array(arr) => {
+                let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
+                insta::assert_snapshot!(format!("{:?}", labels));
+            }
+            CompletionResponse::List(_) => panic!("test failed"),
+        }
+
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 24,
+            column: Some(13),
+        };
+
+        let mut got = completion(None, &program, &pos, &gs).unwrap();
+        match &mut got {
+            CompletionResponse::Array(arr) => {
+                let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
+                insta::assert_snapshot!(format!("{:?}", labels));
+            }
+            CompletionResponse::List(_) => panic!("test failed"),
+        }
+
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 33,
+            column: Some(13),
+        };
+
+        let mut got = completion(None, &program, &pos, &gs).unwrap();
+        match &mut got {
+            CompletionResponse::Array(arr) => {
+                let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
+                insta::assert_snapshot!(format!("{:?}", labels));
+            }
+            CompletionResponse::List(_) => panic!("test failed"),
+        }
+    }
 }
