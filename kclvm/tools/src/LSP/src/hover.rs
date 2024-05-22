@@ -5,9 +5,14 @@ use kclvm_sema::{
     core::global_state::GlobalState,
     ty::{FunctionType, ANY_TYPE_STR},
 };
-use lsp_types::{Hover, HoverContents, LanguageString, MarkedString};
+use lsp_types::{Hover, HoverContents, MarkedString};
 
 use crate::goto_def::find_def_with_gs;
+
+enum MarkedStringType {
+    String,
+    LanguageString,
+}
 
 /// Returns a short text describing element at position.
 /// Specifically, the doc for schema and schema attr(todo)
@@ -16,7 +21,7 @@ pub(crate) fn hover(
     kcl_pos: &KCLPos,
     gs: &GlobalState,
 ) -> Option<lsp_types::Hover> {
-    let mut docs: Vec<String> = vec![];
+    let mut docs: Vec<(String, MarkedStringType)> = vec![];
     let mut pkg_path = String::new();
     let def = find_def_with_gs(kcl_pos, gs, true);
     match def {
@@ -57,7 +62,7 @@ pub(crate) fn hover(
                                     None => ANY_TYPE_STR.to_string(),
                                 };
                                 attrs.push(format!(
-                                    "\t{}{}: {}",
+                                    "    {}{}: {}",
                                     name,
                                     if attr_symbol.is_optional() { "?" } else { "" },
                                     attr_ty_str,
@@ -65,27 +70,22 @@ pub(crate) fn hover(
                             }
                         }
 
-                        let merged_doc = if !attrs.is_empty() {
-                            format!("{}\n{}", rest_sign.clone(), attrs.join("\n"))
-                        } else {
-                            rest_sign.clone()
-                        };
-                        docs.push(merged_doc);
+                        let merged_doc = format!("{}\n{}", rest_sign.clone(), attrs.join("\n"));
+                        docs.push((merged_doc,MarkedStringType::LanguageString));
 
                         if !schema_ty.doc.is_empty() {
-                            docs.push(schema_ty.doc.clone());
-                        }
-                    }
+                            docs.push((schema_ty.doc.clone(),MarkedStringType::String));
+                        }}
                     _ => {}
                 },
                 kclvm_sema::core::symbol::SymbolKind::Attribute => {
                     let sema_info = obj.get_sema_info();
                     match &sema_info.ty {
                         Some(ty) => {
-                            docs.push(format!("{}: {}", &obj.get_name(), ty.ty_str()));
+                            docs.push((format!("{}: {}", &obj.get_name(), ty.ty_str()),MarkedStringType::LanguageString));
                             if let Some(doc) = &sema_info.doc {
                                 if !doc.is_empty() {
-                                    docs.push(doc.clone());
+                                    docs.push((doc.clone(),MarkedStringType::LanguageString));
                                 }
                             }
                         }
@@ -95,10 +95,16 @@ pub(crate) fn hover(
                 kclvm_sema::core::symbol::SymbolKind::Value => match &obj.get_sema_info().ty {
                     Some(ty) => match &ty.kind {
                         kclvm_sema::ty::TypeKind::Function(func_ty) => {
-                            docs.extend(build_func_hover_content(func_ty, obj.get_name().clone()));
+                            docs.append(&mut build_func_hover_content(
+                                func_ty.clone(),
+                                obj.get_name().clone(),
+                            ));
                         }
                         _ => {
-                            docs.push(format!("{}: {}", &obj.get_name(), ty.ty_str()));
+                            docs.push((
+                                format!("{}: {}", &obj.get_name(), ty.ty_str()),
+                                MarkedStringType::LanguageString,
+                            ));
                         }
                     },
                     _ => {}
@@ -108,10 +114,12 @@ pub(crate) fn hover(
                 kclvm_sema::core::symbol::SymbolKind::Decorator => {
                     match BUILTIN_DECORATORS.get(&obj.get_name()) {
                         Some(ty) => {
-                            docs.extend(build_func_hover_content(
-                                &ty.into_func_type(),
+                            let mut hover_content = build_func_hover_content(
+                                ty.into_func_type(),
                                 obj.get_name().clone(),
-                            ));
+                            );
+
+                            docs.append(&mut hover_content);
                         }
                         None => todo!(),
                     }
@@ -121,7 +129,10 @@ pub(crate) fn hover(
                         Some(ty) => ty.ty_str(),
                         None => "".to_string(),
                     };
-                    docs.push(format!("{}: {}", &obj.get_name(), ty_str));
+                    docs.push((
+                        format!("{}: {}", &obj.get_name(), ty_str),
+                        MarkedStringType::LanguageString,
+                    ));
                 }
             },
             None => {}
@@ -131,21 +142,32 @@ pub(crate) fn hover(
     docs_to_hover(docs, pkg_path)
 }
 
+// Convert doc to Marked String. This function will convert docs to Markedstrings
+fn convert_doc_to_marked_string(doc: &(String, MarkedStringType)) -> MarkedString {
+    match doc.1 {
+        MarkedStringType::String => MarkedString::String(doc.0.clone()),
+        MarkedStringType::LanguageString => {
+            MarkedString::LanguageString(lsp_types::LanguageString {
+                language: "KCL".to_owned(),
+                value: doc.0.clone(),
+            })
+        }
+    }
+}
+
 // Convert docs to Hover. This function will convert to
 // None, Scalar or Array according to the number of positions
-fn docs_to_hover(docs: Vec<String>, pkg_path: String) -> Option<lsp_types::Hover> {
-    let mut all_docs = Vec::new();
+fn docs_to_hover(docs: Vec<(String, MarkedStringType)>, pkg_path: String) -> Option<lsp_types::Hover> {
+    let mut all_docs: Vec<MarkedString> = Vec::new();
 
     if !pkg_path.is_empty() {
-        all_docs.push(MarkedString::String(pkg_path));
+        all_docs.push(MarkedString::String(pkg_path.clone()));
     }
 
-    all_docs.extend(docs.iter().map(|doc| {
-        MarkedString::LanguageString(LanguageString {
-            language: "KCL".to_owned(),
-            value: doc.clone(),
-        })
-    }));
+    // Add other strings
+    for doc in docs {
+        all_docs.push(convert_doc_to_marked_string(&doc));
+    }
 
     match all_docs.len() {
         0 => None,
@@ -168,11 +190,14 @@ fn docs_to_hover(docs: Vec<String>, pkg_path: String) -> Option<lsp_types::Hover
 // -----------------
 // doc
 // ```
-fn build_func_hover_content(func_ty: &FunctionType, name: String) -> Vec<String> {
-    let mut docs = vec![];
+fn build_func_hover_content(
+    func_ty: FunctionType,
+    name: String,
+) -> Vec<(String, MarkedStringType)> {
+    let mut docs: Vec<(String, MarkedStringType)> = vec![];
     if let Some(ty) = &func_ty.self_ty {
         let self_ty = format!("{}\n\n", ty.ty_str());
-        docs.push(self_ty);
+        docs.push((self_ty, MarkedStringType::String));
     }
 
     let mut sig = format!("fn {}(", name);
@@ -189,10 +214,13 @@ fn build_func_hover_content(func_ty: &FunctionType, name: String) -> Vec<String>
         sig.push(')');
     }
     sig.push_str(&format!(" -> {}", func_ty.return_ty.ty_str()));
-    docs.push(sig);
+    docs.push((sig, MarkedStringType::LanguageString));
 
     if !func_ty.doc.is_empty() {
-        docs.push(func_ty.doc.clone().replace('\n', "\n\n"));
+        docs.push((
+            func_ty.doc.clone().replace('\n', "\n\n"),
+            MarkedStringType::String,
+        ));
     }
     docs
 }
@@ -200,6 +228,7 @@ fn build_func_hover_content(func_ty: &FunctionType, name: String) -> Vec<String>
 #[cfg(test)]
 mod tests {
     use crate::hover::docs_to_hover;
+    use crate::hover::MarkedStringType;
     use std::path::PathBuf;
 
     use kclvm_error::Position as KCLPos;
@@ -231,13 +260,12 @@ mod tests {
             lsp_types::HoverContents::Array(vec) => {
                 if let MarkedString::String(s) = vec[0].clone() {
                     assert_eq!(s, "pkg");
-                    assert_eq!(s, "pkg");
                 }
                 if let MarkedString::String(s) = vec[1].clone() {
-                    assert_eq!(s, "schema Person:");
+                    assert_eq!(s, "schema Person:\n    name: str\n    age: int");
                 }
                 if let MarkedString::String(s) = vec[2].clone() {
-                    assert_eq!(s, "\tname: str\n\tage: int");
+                    assert_eq!(s, "hover doc test");
                 }
             }
             _ => unreachable!("test error"),
@@ -263,15 +291,24 @@ mod tests {
     fn test_docs_to_hover_multiple_docs() {
         // Given multiple documentation strings
         let docs = vec![
-            "Documentation string 1".to_string(),
-            "Documentation string 2".to_string(),
-            "Documentation string 3".to_string(),
+            (
+                "Documentation string 1".to_string(),
+                MarkedStringType::String,
+            ),
+            (
+                "Documentation string 2".to_string(),
+                MarkedStringType::String,
+            ),
+            (
+                "Documentation string 3".to_string(),
+                MarkedStringType::String,
+            ),
         ];
 
         // When converting to hover content
-        let hover = docs_to_hover(docs.clone(), "".to_string());
+        let hover = docs_to_hover(docs,"".to_string());
 
-        // Then the result should be a Hover object with an Array of MarkedString::LanguageString
+        // Then the result should be a Hover object with an Array of MarkedString::String
         assert!(hover.is_some());
         let hover = hover.unwrap();
         match hover.contents {
@@ -279,24 +316,15 @@ mod tests {
                 assert_eq!(vec.len(), 3);
                 assert_eq!(
                     vec[0],
-                    MarkedString::LanguageString(LanguageString {
-                        language: "KCL".to_string(),
-                        value: "Documentation string 1".to_string()
-                    })
+                    MarkedString::String("Documentation string 1".to_string())
                 );
                 assert_eq!(
                     vec[1],
-                    MarkedString::LanguageString(LanguageString {
-                        language: "KCL".to_string(),
-                        value: "Documentation string 2".to_string()
-                    })
+                    MarkedString::String("Documentation string 2".to_string())
                 );
                 assert_eq!(
                     vec[2],
-                    MarkedString::LanguageString(LanguageString {
-                        language: "KCL".to_string(),
-                        value: "Documentation string 3".to_string()
-                    })
+                    MarkedString::String("Documentation string 3".to_string())
                 );
             }
             _ => panic!("Unexpected hover contents"),
@@ -318,7 +346,6 @@ mod tests {
         match got.contents {
             lsp_types::HoverContents::Array(vec) => {
                 if let MarkedString::String(s) = vec[0].clone() {
-                    assert_eq!(s, "__main__");
                     assert_eq!(s, "__main__");
                 }
                 if let MarkedString::String(s) = vec[1].clone() {
@@ -546,7 +573,6 @@ mod tests {
                 assert_eq!(vec.len(), 2);
                 if let MarkedString::String(s) = vec[0].clone() {
                     assert_eq!(s, "fib");
-                    assert_eq!(s, "fib");
                 }
                 if let MarkedString::String(s) = vec[1].clone() {
                     assert_eq!(s, "schema Fib:\n\tn: int\n\tvalue: int");
@@ -611,10 +637,9 @@ mod tests {
                 language: "KCL".to_string(),
                 value: "fn deprecated(version: str, reason: str, strict: bool) -> any".to_string(),
             }),
-            MarkedString::LanguageString(LanguageString {
-                language: "KCL".to_string(),
-                value: "This decorator is used to get the deprecation message according to the wrapped key-value pair.".to_string(),
-            }),
+            MarkedString::String(
+                "This decorator is used to get the deprecation message according to the wrapped key-value pair.".to_string(),
+            ),
         ];
         match got.contents {
             lsp_types::HoverContents::Array(vec) => {
@@ -652,7 +677,7 @@ mod tests {
             MarkedString::String("__main__".to_string()),
             MarkedString::LanguageString(LanguageString {
                 language: "KCL".to_string(),
-                value: "schema Data1[m: {str:str}](Data):\n\tname: str\n\tage: int".to_string(),
+                value: "schema Data1[m: {str:str}](Data):\n    name: str\n    age: int".to_string(),
             }),
         ];
 

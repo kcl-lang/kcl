@@ -25,7 +25,6 @@ use lsp_types::Hover;
 use lsp_types::HoverContents;
 use lsp_types::HoverParams;
 use lsp_types::InitializeParams;
-use lsp_types::LanguageString;
 use lsp_types::MarkedString;
 use lsp_types::PublishDiagnosticsParams;
 use lsp_types::ReferenceContext;
@@ -1171,14 +1170,11 @@ fn hover_test() {
         to_json(Hover {
             contents: HoverContents::Array(vec![
                 MarkedString::String("__main__".to_string()),
-                MarkedString::LanguageString(LanguageString {
+                MarkedString::LanguageString(lsp_types::LanguageString {
                     language: "KCL".to_string(),
-                    value: "schema Person:\n\tname: str\n\tage?: int".to_string()
+                    value: "schema Person:\n    name: str\n    age?: int".to_string()
                 }),
-                MarkedString::LanguageString(LanguageString {
-                    language: "KCL".to_string(),
-                    value: "hover doc test".to_string()
-                }),
+                MarkedString::String("hover doc test".to_string()),
             ]),
             range: None
         })
@@ -1232,10 +1228,12 @@ fn hover_assign_in_lambda_test() {
     assert_eq!(
         res.result.unwrap(),
         to_json(Hover {
-            contents: HoverContents::Scalar(MarkedString::LanguageString(LanguageString {
-                language: "KCL".to_string(),
-                value: "images: [str]".to_string(),
-            })),
+            contents: HoverContents::Scalar(MarkedString::LanguageString(
+                lsp_types::LanguageString {
+                    language: "KCL".to_string(),
+                    value: "images: [str]".to_string()
+                }
+            )),
             range: None
         })
         .unwrap()
@@ -1675,14 +1673,11 @@ fn konfig_hover_test_main() {
         HoverContents::Array(arr) => {
             let expect: Vec<MarkedString> = vec![
                 MarkedString::String("base.pkg.kusion_models.kube.frontend".to_string()),
-                MarkedString::LanguageString(LanguageString {
+                MarkedString::LanguageString(lsp_types::LanguageString {
                     language: "KCL".to_string(),
-                    value: "schema Server:\n\tname?: str\n\tworkloadType: str(Deployment) | str(StatefulSet)\n\trenderType?: str(Server) | str(KubeVelaApplication)\n\treplicas: int\n\timage: str\n\tschedulingStrategy: SchedulingStrategy\n\tmainContainer: Main\n\tsidecarContainers?: [Sidecar]\n\tinitContainers?: [Sidecar]\n\tuseBuiltInLabels?: bool\n\tlabels?: {str:str}\n\tannotations?: {str:str}\n\tuseBuiltInSelector?: bool\n\tselector?: {str:str}\n\tpodMetadata?: ObjectMeta\n\tvolumes?: [Volume]\n\tneedNamespace?: bool\n\tenableMonitoring?: bool\n\tconfigMaps?: [ConfigMap]\n\tsecrets?: [Secret]\n\tservices?: [Service]\n\tingresses?: [Ingress]\n\tserviceAccount?: ServiceAccount\n\tstorage?: ObjectStorage\n\tdatabase?: DataBase".to_string(),
+                    value: "schema Server:\n    name?: str\n    workloadType: str(Deployment) | str(StatefulSet)\n    renderType?: str(Server) | str(KubeVelaApplication)\n    replicas: int\n    image: str\n    schedulingStrategy: SchedulingStrategy\n    mainContainer: Main\n    sidecarContainers?: [Sidecar]\n    initContainers?: [Sidecar]\n    useBuiltInLabels?: bool\n    labels?: {str:str}\n    annotations?: {str:str}\n    useBuiltInSelector?: bool\n    selector?: {str:str}\n    podMetadata?: ObjectMeta\n    volumes?: [Volume]\n    needNamespace?: bool\n    enableMonitoring?: bool\n    configMaps?: [ConfigMap]\n    secrets?: [Secret]\n    services?: [Service]\n    ingresses?: [Ingress]\n    serviceAccount?: ServiceAccount\n    storage?: ObjectStorage\n    database?: DataBase".to_string()
                 }),
-                MarkedString::LanguageString(LanguageString {
-                    language: "KCL".to_string(),
-                    value: "Server is abstaction of Deployment and StatefulSet.".to_string(),
-                }),
+                MarkedString::String("Server is abstaction of Deployment and StatefulSet.".to_string()),
             ];
             assert_eq!(expect, arr);
         }
@@ -1699,14 +1694,13 @@ fn konfig_hover_test_main() {
     match got.contents {
         HoverContents::Array(arr) => {
             let expect: Vec<MarkedString> = vec![
-                MarkedString::LanguageString(LanguageString {
-                    language: "KCL".to_string(),
+                MarkedString::LanguageString(lsp_types::LanguageString {
+                    language: "kcl".to_string(),
                     value: "schedulingStrategy: SchedulingStrategy".to_string(),
                 }),
-                MarkedString::LanguageString(LanguageString {
-                    language: "KCL".to_string(),
-                    value: "SchedulingStrategy represents scheduling strategy.".to_string(),
-                }),
+                MarkedString::String(
+                    "SchedulingStrategy represents scheduling strategy.".to_string(),
+                ),
             ];
             assert_eq!(expect, arr);
         }
@@ -1724,9 +1718,9 @@ fn konfig_hover_test_main() {
         HoverContents::Scalar(s) => {
             assert_eq!(
                 s,
-                MarkedString::LanguageString(LanguageString {
-                    language: "KCL".to_string(),
-                    value: "appConfiguration: Server".to_string(),
+                MarkedString::LanguageString(lsp_types::LanguageString {
+                    language: "kcl".to_string(),
+                    value: "appConfiguration: Server".to_string()
                 })
             );
         }
