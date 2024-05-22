@@ -23,7 +23,6 @@ pub const KCL_CACHE_PATH_ENV_VAR: &str = "KCL_CACHE_PATH";
 pub type CacheInfo = Vec<u8>;
 pub type Cache = HashMap<String, CacheInfo>;
 
-#[allow(dead_code)]
 pub struct CacheOption {
     cache_dir: String,
 }
@@ -150,7 +149,6 @@ fn get_cache_dir(root: &str, cache_dir: Option<&str>) -> String {
 }
 
 #[inline]
-#[allow(dead_code)]
 fn get_cache_filename(root: &str, target: &str, pkgpath: &str, cache_dir: Option<&str>) -> String {
     let cache_dir = cache_dir.unwrap_or(DEFAULT_CACHE_DIR);
     let root = std::env::var(KCL_CACHE_PATH_ENV_VAR).unwrap_or(root.to_string());
