@@ -152,7 +152,7 @@ impl<'ctx> Resolver<'ctx> {
                 self.upgrade_dict_to_schema(val_ty.clone(), expected_val_ty.clone()),
             )
             .into(),
-            _ => expected_ty,
+            _ => ty,
         }
     }
 
