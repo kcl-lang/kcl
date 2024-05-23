@@ -1716,8 +1716,6 @@ mod tests {
             }
             CompletionResponse::List(_) => panic!("test failed"),
         }
-
-        
     }
     #[test]
     #[bench_test]

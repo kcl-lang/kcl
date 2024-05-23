@@ -465,7 +465,6 @@ impl<'ctx> Resolver<'ctx> {
         &mut self,
         entries: &'ctx [ast::NodeRef<ast::ConfigEntry>],
     ) -> TypeRef {
-        // println!("{:?}", "walk_config_entries");
         let (start, end) = match entries.len() {
             0 => (self.ctx.start_pos.clone(), self.ctx.end_pos.clone()),
             1 => entries[0].get_span_pos(),

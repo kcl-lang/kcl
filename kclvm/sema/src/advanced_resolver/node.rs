@@ -87,35 +87,12 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
     }
 
     fn walk_assign_stmt(&mut self, assign_stmt: &'ctx ast::AssignStmt) -> Self::Result {
-        for (i, target) in assign_stmt.targets.iter().enumerate() {
+        for target in &assign_stmt.targets {
             if target.node.names.is_empty() {
                 continue;
             }
             self.ctx.maybe_def = true;
             self.walk_identifier_expr(target)?;
-
-            // for multi target, e.g. a = b = {}, only push one schema_symbol
-            if i == 0 {
-                if let Some(target_ty) =
-                    self.ctx.node_ty_map.get(&self.ctx.get_node_key(&target.id))
-                {
-                    match &target_ty.kind {
-                        TypeKind::Schema(_) => {
-                            let schema_symbol = self
-                                .gs
-                                .get_symbols()
-                                .get_type_symbol(&target_ty, self.get_current_module_info())
-                                .ok_or(anyhow!("schema_symbol not found"))?;
-                            self.ctx.schema_symbol_stack.push(Some(schema_symbol));
-                        }
-                        _ => {
-                            self.ctx.schema_symbol_stack.push(None);
-                        }
-                    }
-                } else {
-                    self.ctx.schema_symbol_stack.push(None);
-                }
-            }
             self.ctx.maybe_def = false;
         }
         self.walk_type_expr(assign_stmt.ty.as_ref().map(|ty| ty.as_ref()))?;
@@ -1241,7 +1218,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
     ) -> anyhow::Result<()> {
         let (start, end) = (self.ctx.start_pos.clone(), self.ctx.end_pos.clone());
 
-        let schema_symbol = self.ctx.schema_symbol_stack.last().unwrap().clone();
+        let schema_symbol = self.ctx.schema_symbol_stack.last().unwrap_or(&None).clone();
         let kind = match &schema_symbol {
             Some(_) => LocalSymbolScopeKind::SchemaConfig,
             None => LocalSymbolScopeKind::Value,

@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use super::node::ResolvedResult;
 use crate::resolver::Resolver;
 use crate::ty::parser::parse_type_str;
 use crate::ty::{
@@ -10,8 +11,6 @@ use kclvm_ast::ast;
 use kclvm_ast::pos::GetPos;
 use kclvm_error::diagnostic::Range;
 use kclvm_error::*;
-
-use super::node::ResolvedResult;
 
 fn ty_str_to_pkgpath(ty_str: &str) -> &str {
     let splits: Vec<&str> = ty_str.rsplitn(2, '.').collect();
@@ -133,13 +132,25 @@ impl<'ctx> Resolver<'ctx> {
     }
 
     // Upgrade the dict type into schema type if it is expected to schema
-    pub fn upgrade_dict_to_schema(&mut self, ty: TypeRef, expected_ty: TypeRef) -> TypeRef {
+    pub fn upgrade_dict_to_schema(
+        &mut self,
+        ty: TypeRef,
+        expected_ty: TypeRef,
+        range: &Range,
+    ) -> TypeRef {
         match (&ty.kind, &expected_ty.kind) {
-            (TypeKind::Dict(DictType { .. }), TypeKind::Schema(_)) => expected_ty,
-            (TypeKind::List(item_ty), TypeKind::List(expected_item_ty)) => {
-                Type::list(self.upgrade_dict_to_schema(item_ty.clone(), expected_item_ty.clone()))
-                    .into()
+            (TypeKind::Dict(DictType { key_ty, val_ty, .. }), TypeKind::Schema(schema_ty)) => {
+                if self.dict_assignable_to_schema(key_ty.clone(), val_ty.clone(), schema_ty, range)
+                {
+                    expected_ty
+                } else {
+                    ty
+                }
             }
+            (TypeKind::List(item_ty), TypeKind::List(expected_item_ty)) => Type::list(
+                self.upgrade_dict_to_schema(item_ty.clone(), expected_item_ty.clone(), range),
+            )
+            .into(),
             (
                 TypeKind::Dict(DictType { key_ty, val_ty, .. }),
                 TypeKind::Dict(DictType {
@@ -148,10 +159,41 @@ impl<'ctx> Resolver<'ctx> {
                     ..
                 }),
             ) => Type::dict(
-                self.upgrade_dict_to_schema(key_ty.clone(), expected_key_ty.clone()),
-                self.upgrade_dict_to_schema(val_ty.clone(), expected_val_ty.clone()),
+                self.upgrade_dict_to_schema(key_ty.clone(), expected_key_ty.clone(), range),
+                self.upgrade_dict_to_schema(val_ty.clone(), expected_val_ty.clone(), range),
             )
             .into(),
+            (
+                TypeKind::Dict(DictType { key_ty, val_ty, .. }),
+                TypeKind::Union(expected_union_type),
+            ) => {
+                let types: Vec<&Arc<Type>> = expected_union_type
+                    .iter()
+                    .filter(|ty| match ty.kind {
+                        TypeKind::Schema(_) => true,
+                        _ => false,
+                    })
+                    .filter(|ty| {
+                        self.dict_assignable_to_schema(
+                            key_ty.clone(),
+                            val_ty.clone(),
+                            &ty.into_schema_type(),
+                            range,
+                        )
+                    })
+                    .collect();
+                match types.len() {
+                    0 => ty,
+                    1 => types[0].clone(),
+                    _ => Type::union(
+                        &types
+                            .into_iter()
+                            .map(|ty| ty.clone())
+                            .collect::<Vec<TypeRef>>(),
+                    )
+                    .into(),
+                }
+            }
             _ => ty,
         }
     }

@@ -186,8 +186,11 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                     None,
                 );
 
-                let upgrade_schema_type =
-                    self.upgrade_dict_to_schema(value_ty.clone(), expected_ty.clone());
+                let upgrade_schema_type = self.upgrade_dict_to_schema(
+                    value_ty.clone(),
+                    expected_ty.clone(),
+                    &assign_stmt.value.get_span_pos(),
+                );
                 self.node_ty_map.insert(
                     self.get_node_key(assign_stmt.value.id.clone()),
                     upgrade_schema_type.clone(),
@@ -218,8 +221,11 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                     None,
                 );
 
-                let upgrade_schema_type =
-                    self.upgrade_dict_to_schema(value_ty.clone(), expected_ty.clone());
+                let upgrade_schema_type = self.upgrade_dict_to_schema(
+                    value_ty.clone(),
+                    expected_ty.clone(),
+                    &assign_stmt.value.get_span_pos(),
+                );
                 self.node_ty_map.insert(
                     self.get_node_key(assign_stmt.value.id.clone()),
                     upgrade_schema_type.clone(),
@@ -1259,7 +1265,8 @@ impl<'ctx> Resolver<'ctx> {
             None => None,
         };
         if let Some(expected_ty) = expected_ty {
-            let upgrade_ty = self.upgrade_dict_to_schema(ty.clone(), expected_ty);
+            let upgrade_ty =
+                self.upgrade_dict_to_schema(ty.clone(), expected_ty, &expr.get_span_pos());
             self.node_ty_map
                 .insert(self.get_node_key(expr.id.clone()), upgrade_ty);
         } else {
