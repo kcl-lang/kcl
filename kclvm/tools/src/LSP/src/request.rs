@@ -8,17 +8,16 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Instant;
 
-use crate::db::DocumentVersion;
-use crate::error::LSPError;
 use crate::{
+    analysis::{AnalysisDatabase, DocumentVersion},
     completion::completion,
-    db::AnalysisDatabase,
     dispatcher::RequestDispatcher,
     document_symbol::document_symbol,
+    error::LSPError,
     find_refs::find_refs,
     formatting::format,
     from_lsp::{self, file_path_from_url, kcl_pos},
-    goto_def::goto_definition_with_gs,
+    goto_def::goto_def,
     hover, quick_fix,
     semantic_token::semantic_tokens_full,
     state::{log_message, LanguageServerSnapshot, LanguageServerState, Task},
@@ -150,7 +149,7 @@ impl LanguageServerSnapshot {
             anyhow::anyhow!(LSPError::DocumentVersionNotFound(path.clone().into()))
         })?;
 
-        return Ok(db_version == current_version);
+        Ok(db_version == current_version)
     }
 }
 
@@ -241,7 +240,7 @@ pub(crate) fn handle_goto_definition(
     }
     let db = snapshot.get_db(&path.clone().into())?;
     let kcl_pos = kcl_pos(&file, params.text_document_position_params.position);
-    let res = goto_definition_with_gs(&db.prog, &kcl_pos, &db.gs);
+    let res = goto_def(&kcl_pos, &db.gs);
     if res.is_none() {
         log_message("Definition item not found".to_string(), &sender)?;
     }
@@ -267,9 +266,8 @@ pub(crate) fn handle_reference(
     let log = |msg: String| log_message(msg, &sender);
     let module_cache = snapshot.module_cache.clone();
     let _scope_cache = snapshot.scope_cache.clone();
-    let compile_unit_cache = snapshot.compile_unit_cache.clone();
+    let entry_cache = snapshot.entry_cache.clone();
     match find_refs(
-        &db.prog,
         &pos,
         include_declaration,
         snapshot.word_index_map.clone(),
@@ -278,7 +276,7 @@ pub(crate) fn handle_reference(
         &db.gs,
         Some(module_cache),
         None,
-        Some(compile_unit_cache),
+        Some(entry_cache),
     ) {
         core::result::Result::Ok(locations) => Ok(Some(locations)),
         Err(msg) => {
@@ -308,7 +306,13 @@ pub(crate) fn handle_completion(
 
     let db = snapshot.get_db(&path.clone().into())?;
 
-    let res = completion(completion_trigger_character, &db.prog, &kcl_pos, &db.gs);
+    let res = completion(
+        completion_trigger_character,
+        &db.prog,
+        &kcl_pos,
+        &db.gs,
+        &*snapshot.tool.read(),
+    );
 
     if res.is_none() {
         log_message("Completion item not found".to_string(), &sender)?;
@@ -329,7 +333,7 @@ pub(crate) fn handle_hover(
     }
     let db = snapshot.get_db(&path.clone().into())?;
     let kcl_pos = kcl_pos(&file, params.text_document_position_params.position);
-    let res = hover::hover(&db.prog, &kcl_pos, &db.gs);
+    let res = hover::hover(&kcl_pos, &db.gs);
     if res.is_none() {
         log_message("Hover definition not found".to_string(), &sender)?;
     }
@@ -379,7 +383,6 @@ pub(crate) fn handle_rename(
     let kcl_pos = kcl_pos(&file, params.text_document_position.position);
     let log = |msg: String| log_message(msg, &sender);
     let references = find_refs(
-        &db.prog,
         &kcl_pos,
         true,
         snapshot.word_index_map.clone(),
@@ -388,7 +391,7 @@ pub(crate) fn handle_rename(
         &db.gs,
         Some(snapshot.module_cache),
         Some(snapshot.scope_cache),
-        Some(snapshot.compile_unit_cache),
+        Some(snapshot.entry_cache),
     );
     match references {
         Result::Ok(locations) => {

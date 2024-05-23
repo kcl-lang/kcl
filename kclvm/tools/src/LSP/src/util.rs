@@ -6,11 +6,12 @@ use kclvm_ast::ast::{
 use kclvm_ast::node_ref;
 use kclvm_ast::pos::ContainsPos;
 
-use kclvm_driver::lookup_compile_unit;
+use kclvm_driver::toolchain::Toolchain;
+use kclvm_driver::{lookup_compile_unit, CompileUnitOptions};
 use kclvm_error::Diagnostic;
 use kclvm_error::Position as KCLPos;
 use kclvm_parser::entry::get_dir_files;
-use kclvm_parser::{load_program, KCLModuleCache, LoadProgramOptions, ParseSessionRef};
+use kclvm_parser::{load_program, KCLModuleCache, ParseSessionRef};
 use kclvm_sema::advanced_resolver::AdvancedResolver;
 use kclvm_sema::core::global_state::GlobalState;
 use kclvm_sema::namer::Namer;
@@ -19,7 +20,7 @@ use kclvm_sema::resolver::resolve_program_with_opts;
 use kclvm_sema::resolver::scope::KCLScopeCache;
 
 use crate::from_lsp;
-use crate::state::{KCLCompileUnitCache, KCLVfs};
+use crate::state::{KCLEntryCache, KCLToolChain, KCLVfs};
 use lsp_types::Url;
 use parking_lot::RwLockReadGuard;
 use ra_ap_vfs::{FileId, Vfs};
@@ -63,27 +64,29 @@ pub(crate) struct Params {
     pub file: String,
     pub module_cache: Option<KCLModuleCache>,
     pub scope_cache: Option<KCLScopeCache>,
+    pub entry_cache: Option<KCLEntryCache>,
     pub vfs: Option<KCLVfs>,
-    pub compile_unit_cache: Option<KCLCompileUnitCache>,
+    pub tool: KCLToolChain,
 }
 
-pub(crate) fn compile_unit_with_cache(
-    compile_unit_cache: &Option<KCLCompileUnitCache>,
+pub(crate) fn lookup_compile_unit_with_cache(
+    tool: &dyn Toolchain,
+    entry_map: &Option<KCLEntryCache>,
     file: &str,
-) -> (Vec<String>, Option<LoadProgramOptions>) {
-    match compile_unit_cache {
+) -> CompileUnitOptions {
+    match entry_map {
         Some(cache) => {
             let mut map = cache.write();
             match map.get(file) {
                 Some(compile_unit) => compile_unit.clone(),
                 None => {
-                    let res = lookup_compile_unit(file, true);
+                    let res = lookup_compile_unit(tool, file, true);
                     map.insert(file.to_string(), res.clone());
                     res
                 }
             }
         }
-        None => lookup_compile_unit(file, true),
+        None => lookup_compile_unit(tool, file, true),
     }
 }
 
@@ -91,7 +94,8 @@ pub(crate) fn compile_with_params(
     params: Params,
 ) -> anyhow::Result<(Program, IndexSet<Diagnostic>, GlobalState)> {
     // Lookup compile unit (kcl.mod or kcl.yaml) from the entry file.
-    let (mut files, opt) = compile_unit_with_cache(&params.compile_unit_cache, &params.file);
+    let (mut files, opt) =
+        lookup_compile_unit_with_cache(&*params.tool.read(), &params.entry_cache, &params.file);
 
     if !files.contains(&params.file) {
         files.push(params.file.clone());
@@ -129,7 +133,7 @@ pub(crate) fn compile_with_params(
         let diags = sess.1.borrow().diagnostics.clone();
         Ok((program, diags, gs))
     }) {
-        Ok(res) => return res,
+        Ok(res) => res,
         Err(e) => Err(anyhow::anyhow!("Compile failed: {:?}", e)),
     }
 }

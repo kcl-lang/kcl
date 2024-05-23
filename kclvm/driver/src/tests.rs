@@ -7,9 +7,10 @@ use kclvm_parser::LoadProgramOptions;
 use walkdir::WalkDir;
 
 use crate::arguments::parse_key_value_pair;
-use crate::kpm::{fetch_metadata, fill_pkg_maps_for_k_file, update_dependencies};
-use crate::lookup_the_nearest_file_dir;
+use crate::toolchain::fill_pkg_maps_for_k_file;
+use crate::toolchain::Toolchain;
 use crate::{canonicalize_input_files, expand_input_files, get_pkg_list};
+use crate::{lookup_the_nearest_file_dir, toolchain};
 
 #[test]
 fn test_canonicalize_input_files() {
@@ -199,7 +200,7 @@ fn test_fill_pkg_maps_for_k_file_with_line() {
     let mut opts = LoadProgramOptions::default();
     assert_eq!(format!("{:?}", opts.package_maps), "{}");
 
-    let res = fill_pkg_maps_for_k_file(main_pkg_path.clone(), &mut opts);
+    let res = fill_pkg_maps_for_k_file(&toolchain::default(), main_pkg_path.clone(), &mut opts);
     assert!(res.is_ok());
 
     let pkg_maps = opts.package_maps.clone();
@@ -241,7 +242,7 @@ fn test_fill_pkg_maps_for_k_file() {
     let mut opts = LoadProgramOptions::default();
     assert_eq!(format!("{:?}", opts.package_maps), "{}");
 
-    let res = fill_pkg_maps_for_k_file(path.clone(), &mut opts);
+    let res = fill_pkg_maps_for_k_file(&toolchain::default(), path.clone(), &mut opts);
     assert!(res.is_ok());
     let vendor_home = get_vendor_home();
 
@@ -316,7 +317,8 @@ fn test_fetch_metadata() {
     );
     let vendor_home = get_vendor_home();
 
-    let metadata = fetch_metadata(path.clone());
+    let tool = toolchain::default();
+    let metadata = tool.fetch_metadata(path.clone());
     // Show more information when the test fails.
     println!("{:?}", metadata);
     assert!(metadata.is_ok());
@@ -346,7 +348,8 @@ fn test_fetch_metadata() {
 #[test]
 fn test_fetch_metadata_invalid() {
     let result = panic::catch_unwind(|| {
-        let result = fetch_metadata("invalid_path".to_string().into());
+        let tool = toolchain::default();
+        let result = tool.fetch_metadata("invalid_path".to_string().into());
         match result {
             Ok(_) => {
                 panic!("The method should not return Ok")
@@ -378,7 +381,8 @@ fn test_update_dependencies() {
         .join("test_data")
         .join("kpm_update");
 
-    let update_mod = update_dependencies(path.clone());
+    let tool = toolchain::default();
+    let update_mod = tool.update_dependencies(path.clone());
     // Show more information when the test fails.
     println!("{:?}", update_mod);
     assert!(update_mod.is_ok());

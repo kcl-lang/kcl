@@ -1,21 +1,23 @@
+use std::sync::Arc;
+
 use crate::from_lsp::{file_path_from_url, kcl_pos};
-use crate::goto_def::{find_def_with_gs, goto_definition_with_gs};
+use crate::goto_def::{find_def, goto_def};
 use crate::to_lsp::lsp_location;
 use crate::util::{compile_with_params, Params};
 
-use crate::state::{KCLCompileUnitCache, KCLVfs, KCLWordIndexMap};
+use crate::state::{KCLEntryCache, KCLVfs, KCLWordIndexMap};
 use anyhow::Result;
-use kclvm_ast::ast::Program;
+use kclvm_driver::toolchain;
 use kclvm_error::Position as KCLPos;
 use kclvm_parser::KCLModuleCache;
 use kclvm_sema::core::global_state::GlobalState;
 use kclvm_sema::resolver::scope::KCLScopeCache;
 use lsp_types::Location;
+use parking_lot::lock_api::RwLock;
 
 const FIND_REFS_LIMIT: usize = 20;
 
 pub(crate) fn find_refs<F: Fn(String) -> Result<(), anyhow::Error>>(
-    _program: &Program,
     kcl_pos: &KCLPos,
     include_declaration: bool,
     word_index_map: KCLWordIndexMap,
@@ -24,9 +26,9 @@ pub(crate) fn find_refs<F: Fn(String) -> Result<(), anyhow::Error>>(
     gs: &GlobalState,
     module_cache: Option<KCLModuleCache>,
     scope_cache: Option<KCLScopeCache>,
-    compile_unit_cache: Option<KCLCompileUnitCache>,
+    entry_cache: Option<KCLEntryCache>,
 ) -> Result<Vec<Location>, String> {
-    let def = find_def_with_gs(kcl_pos, gs, true);
+    let def = find_def(kcl_pos, gs, true);
     match def {
         Some(def_ref) => match gs.get_symbols().get_symbol(def_ref) {
             Some(obj) => {
@@ -43,7 +45,7 @@ pub(crate) fn find_refs<F: Fn(String) -> Result<(), anyhow::Error>>(
                         logger,
                         module_cache,
                         scope_cache,
-                        compile_unit_cache,
+                        entry_cache,
                     ))
                 } else {
                     Err(format!("Invalid file path: {0}", start.filename))
@@ -69,7 +71,7 @@ pub(crate) fn find_refs_from_def<F: Fn(String) -> Result<(), anyhow::Error>>(
     logger: F,
     module_cache: Option<KCLModuleCache>,
     scope_cache: Option<KCLScopeCache>,
-    compile_unit_cache: Option<KCLCompileUnitCache>,
+    entry_cache: Option<KCLEntryCache>,
 ) -> Vec<Location> {
     let mut ref_locations = vec![];
     for word_index in (*word_index_map.write()).values_mut() {
@@ -95,17 +97,16 @@ pub(crate) fn find_refs_from_def<F: Fn(String) -> Result<(), anyhow::Error>>(
                                 module_cache: module_cache.clone(),
                                 scope_cache: scope_cache.clone(),
                                 vfs: vfs.clone(),
-                                compile_unit_cache: compile_unit_cache.clone(),
+                                entry_cache: entry_cache.clone(),
+                                tool: Arc::new(RwLock::new(toolchain::default())),
                             }) {
-                                Ok((prog, _, gs)) => {
+                                Ok((_, _, gs)) => {
                                     let ref_pos = kcl_pos(&file_path, ref_loc.range.start);
                                     if *ref_loc == def_loc && !include_declaration {
                                         return false;
                                     }
                                     // find def from the ref_pos
-                                    if let Some(real_def) =
-                                        goto_definition_with_gs(&prog, &ref_pos, &gs)
-                                    {
+                                    if let Some(real_def) = goto_def(&ref_pos, &gs) {
                                         match real_def {
                                             lsp_types::GotoDefinitionResponse::Scalar(
                                                 real_def_loc,
