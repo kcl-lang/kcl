@@ -1,4 +1,3 @@
-use crate::config::Config;
 use crate::state::LanguageServerState;
 use clap::Command;
 use lsp_server::Connection;
@@ -8,10 +7,9 @@ use lsp_types::InitializeParams;
 /// Runs the main loop of the language server. This will receive requests and handle them.
 pub(crate) fn main_loop(
     connection: Connection,
-    config: Config,
     initialize_params: InitializeParams,
 ) -> anyhow::Result<()> {
-    LanguageServerState::new(connection.sender, config, initialize_params).run(connection.receiver)
+    LanguageServerState::new(connection.sender, initialize_params).run(connection.receiver)
 }
 
 #[allow(dead_code)]

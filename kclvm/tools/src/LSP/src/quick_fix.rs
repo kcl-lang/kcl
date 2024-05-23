@@ -6,7 +6,7 @@ use lsp_types::{
 };
 use serde_json::Value;
 
-pub(crate) fn quick_fix(uri: &Url, diags: &Vec<Diagnostic>) -> Vec<lsp_types::CodeActionOrCommand> {
+pub(crate) fn quick_fix(uri: &Url, diags: &[Diagnostic]) -> Vec<lsp_types::CodeActionOrCommand> {
     let mut code_actions: Vec<lsp_types::CodeActionOrCommand> = vec![];
     for diag in diags {
         if let Some(code) = &diag.code {

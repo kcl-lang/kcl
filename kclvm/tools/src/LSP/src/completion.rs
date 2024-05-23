@@ -18,7 +18,7 @@
 use std::io;
 use std::{fs, path::Path};
 
-use crate::goto_def::find_def_with_gs;
+use crate::goto_def::find_def;
 use indexmap::IndexSet;
 use kclvm_ast::ast::{self, ImportStmt, Program, Stmt};
 use kclvm_ast::MAIN_PKG;
@@ -245,9 +245,9 @@ fn completion_dot(
     }
 
     // look_up_exact_symbol
-    let mut def = find_def_with_gs(&pre_pos, gs, true);
+    let mut def = find_def(&pre_pos, gs, true);
     if def.is_none() {
-        def = find_def_with_gs(pos, gs, false);
+        def = find_def(pos, gs, false);
     }
 
     match def {
@@ -324,7 +324,7 @@ fn completion_dot(
 /// Now, just completion for schema attr value
 fn completion_assign(pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::CompletionResponse> {
     let mut items = IndexSet::new();
-    if let Some(symbol_ref) = find_def_with_gs(pos, gs, false) {
+    if let Some(symbol_ref) = find_def(pos, gs, false) {
         if let Some(symbol) = gs.get_symbols().get_symbol(symbol_ref) {
             if let Some(def) = symbol.get_definition() {
                 match def.get_kind() {

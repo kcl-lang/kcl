@@ -144,7 +144,7 @@ impl LanguageServerState {
             let path = from_lsp::abs_path(&change.uri)?;
             self.loader.handle.invalidate(path.clone());
             if KCL_CONFIG_FILE.contains(&path.file_name().unwrap().to_str().unwrap()) {
-                self.entry.write().clear();
+                self.entry_cache.write().clear();
             }
         }
 
@@ -152,4 +152,4 @@ impl LanguageServerState {
     }
 }
 
-const KCL_CONFIG_FILE: [&'static str; 2] = [DEFAULT_SETTING_FILE, KCL_MOD_FILE];
+const KCL_CONFIG_FILE: [&str; 2] = [DEFAULT_SETTING_FILE, KCL_MOD_FILE];

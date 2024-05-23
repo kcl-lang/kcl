@@ -133,7 +133,7 @@ pub(crate) fn compile_with_params(
         let diags = sess.1.borrow().diagnostics.clone();
         Ok((program, diags, gs))
     }) {
-        Ok(res) => return res,
+        Ok(res) => res,
         Err(e) => Err(anyhow::anyhow!("Compile failed: {:?}", e)),
     }
 }

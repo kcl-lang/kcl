@@ -71,10 +71,9 @@ use proc_macro_crate::bench_test;
 use lsp_server::{Connection, Message, Notification, Request};
 
 use crate::completion::completion;
-use crate::config::Config;
 use crate::from_lsp::file_path_from_url;
 
-use crate::goto_def::goto_definition_with_gs;
+use crate::goto_def::goto_def;
 use crate::hover::hover;
 use crate::main_loop::main_loop;
 use crate::state::KCLEntryCache;
@@ -420,7 +419,7 @@ fn test_lsp_with_kcl_mod_in_order() {
 
 fn goto_import_pkg_with_line_test() {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let (file, program, _, gs) =
+    let (file, _program, _, gs) =
         compile_test_file("src/test_data/goto_def_with_line_test/main_pkg/main.k");
     let pos = KCLPos {
         filename: file,
@@ -428,7 +427,7 @@ fn goto_import_pkg_with_line_test() {
         column: Some(27),
     };
 
-    let res = goto_definition_with_gs(&program, &pos, &gs);
+    let res = goto_def(&pos, &gs);
 
     match res.unwrap() {
         lsp_types::GotoDefinitionResponse::Scalar(loc) => {
@@ -539,7 +538,7 @@ fn goto_import_external_file_test() {
         .output()
         .unwrap();
 
-    let (program, diags, gs) = compile_with_params(Params {
+    let (_program, diags, gs) = compile_with_params(Params {
         file: path.to_string(),
         module_cache: None,
         scope_cache: None,
@@ -557,7 +556,7 @@ fn goto_import_external_file_test() {
         line: 1,
         column: Some(57),
     };
-    let res = goto_definition_with_gs(&program, &pos, &gs);
+    let res = goto_def(&pos, &gs);
     assert!(res.is_some());
 }
 
@@ -570,8 +569,7 @@ pub struct Project {}
 impl Project {
     /// Instantiates a language server for this project.
     pub fn server(self, initialize_params: InitializeParams) -> Server {
-        let config = Config::default();
-        Server::new(config, initialize_params)
+        Server::new(initialize_params)
     }
 }
 
@@ -586,11 +584,11 @@ pub struct Server {
 
 impl Server {
     /// Constructs and initializes a new `Server`
-    pub fn new(config: Config, initialize_params: InitializeParams) -> Self {
+    pub fn new(initialize_params: InitializeParams) -> Self {
         let (connection, client) = Connection::memory();
 
         let worker = std::thread::spawn(move || {
-            main_loop(connection, config, initialize_params).unwrap();
+            main_loop(connection, initialize_params).unwrap();
         });
 
         Self {
@@ -906,13 +904,13 @@ fn entry_test() {
     let tool = toolchain::default();
     let entry = KCLEntryCache::default();
     let start = Instant::now();
-    let _ = lookup_compile_unit_with_cache(&tool, &Some(Arc::clone(&entry)), &path.to_string());
+    let _ = lookup_compile_unit_with_cache(&tool, &Some(Arc::clone(&entry)), path);
 
     assert!(entry.read().get(&path.to_string()).is_some());
     let first_compile_time = start.elapsed();
 
     let start = Instant::now();
-    let _ = lookup_compile_unit_with_cache(&tool, &Some(entry), &path.to_string());
+    let _ = lookup_compile_unit_with_cache(&tool, &Some(entry), path);
     let second_compile_time = start.elapsed();
 
     assert!(first_compile_time > second_compile_time);
@@ -1395,7 +1393,7 @@ fn konfig_goto_def_test_base() {
     let mut base_path = konfig_path.clone();
     base_path.push("appops/nginx-example/base/base.k");
     let base_path_str = base_path.to_str().unwrap().to_string();
-    let (program, _, gs) = compile_with_params(Params {
+    let (_program, _, gs) = compile_with_params(Params {
         file: base_path_str.clone(),
         module_cache: None,
         scope_cache: None,
@@ -1411,7 +1409,7 @@ fn konfig_goto_def_test_base() {
         line: 7,
         column: Some(30),
     };
-    let res = goto_definition_with_gs(&program, &pos, &gs);
+    let res = goto_def(&pos, &gs);
     let mut expected_path = konfig_path.clone();
     expected_path.push("base/pkg/kusion_models/kube/frontend/server.k");
     compare_goto_res(
@@ -1425,7 +1423,7 @@ fn konfig_goto_def_test_base() {
         line: 9,
         column: Some(32),
     };
-    let res = goto_definition_with_gs(&program, &pos, &gs);
+    let res = goto_def(&pos, &gs);
     let mut expected_path = konfig_path.clone();
     expected_path.push("base/pkg/kusion_models/kube/frontend/container/container.k");
     compare_goto_res(
@@ -1439,7 +1437,7 @@ fn konfig_goto_def_test_base() {
         line: 9,
         column: Some(9),
     };
-    let res = goto_definition_with_gs(&program, &pos, &gs);
+    let res = goto_def(&pos, &gs);
     let mut expected_path = konfig_path.clone();
     expected_path.push("base/pkg/kusion_models/kube/frontend/server.k");
     compare_goto_res(
@@ -1459,7 +1457,7 @@ fn konfig_goto_def_test_base() {
         line: 10,
         column: Some(10),
     };
-    let res = goto_definition_with_gs(&program, &pos, &gs);
+    let res = goto_def(&pos, &gs);
     let mut expected_path = konfig_path.clone();
     expected_path.push("base/pkg/kusion_models/kube/frontend/container/container.k");
     compare_goto_res(
@@ -1473,7 +1471,7 @@ fn konfig_goto_def_test_base() {
         line: 2,
         column: Some(49),
     };
-    let res = goto_definition_with_gs(&program, &pos, &gs);
+    let res = goto_def(&pos, &gs);
     let mut expected_path = konfig_path.clone();
     expected_path.push("base/pkg/kusion_models/kube/frontend/service/service.k");
     compare_goto_res(
@@ -1488,7 +1486,7 @@ fn konfig_goto_def_test_main() {
     let mut main_path = konfig_path.clone();
     main_path.push("appops/nginx-example/dev/main.k");
     let main_path_str = main_path.to_str().unwrap().to_string();
-    let (program, _, gs) = compile_with_params(Params {
+    let (_program, _, gs) = compile_with_params(Params {
         file: main_path_str.clone(),
         module_cache: None,
         scope_cache: None,
@@ -1504,7 +1502,7 @@ fn konfig_goto_def_test_main() {
         line: 6,
         column: Some(31),
     };
-    let res = goto_definition_with_gs(&program, &pos, &gs);
+    let res = goto_def(&pos, &gs);
     let mut expected_path = konfig_path.clone();
     expected_path.push("base/pkg/kusion_models/kube/frontend/server.k");
     compare_goto_res(
@@ -1518,7 +1516,7 @@ fn konfig_goto_def_test_main() {
         line: 7,
         column: Some(14),
     };
-    let res = goto_definition_with_gs(&program, &pos, &gs);
+    let res = goto_def(&pos, &gs);
     let mut expected_path = konfig_path.clone();
     expected_path.push("base/pkg/kusion_models/kube/frontend/server.k");
     compare_goto_res(
@@ -1538,7 +1536,7 @@ fn konfig_goto_def_test_main() {
         line: 2,
         column: Some(61),
     };
-    let res = goto_definition_with_gs(&program, &pos, &gs);
+    let res = goto_def(&pos, &gs);
     let mut expected_path = konfig_path.clone();
     expected_path.push("base/pkg/kusion_models/kube/templates/resource.k");
     compare_goto_res(
@@ -1667,7 +1665,7 @@ fn konfig_hover_test_main() {
     let mut main_path = konfig_path.clone();
     main_path.push("appops/nginx-example/dev/main.k");
     let main_path_str = main_path.to_str().unwrap().to_string();
-    let (program, _, gs) = compile_with_params(Params {
+    let (_program, _, gs) = compile_with_params(Params {
         file: main_path_str.clone(),
         module_cache: None,
         scope_cache: None,
@@ -1683,7 +1681,7 @@ fn konfig_hover_test_main() {
         line: 6,
         column: Some(32),
     };
-    let got = hover(&program, &pos, &gs).unwrap();
+    let got = hover(&pos, &gs).unwrap();
     match got.contents {
         HoverContents::Array(arr) => {
             let expect: Vec<MarkedString> = vec![
@@ -1705,7 +1703,7 @@ fn konfig_hover_test_main() {
         line: 7,
         column: Some(15),
     };
-    let got = hover(&program, &pos, &gs).unwrap();
+    let got = hover(&pos, &gs).unwrap();
     match got.contents {
         HoverContents::Array(arr) => {
             let expect: Vec<MarkedString> = vec![
@@ -1728,7 +1726,7 @@ fn konfig_hover_test_main() {
         line: 6,
         column: Some(3),
     };
-    let got = hover(&program, &pos, &gs).unwrap();
+    let got = hover(&pos, &gs).unwrap();
     match got.contents {
         HoverContents::Scalar(s) => {
             assert_eq!(

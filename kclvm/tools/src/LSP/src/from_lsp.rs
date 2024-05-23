@@ -54,7 +54,7 @@ pub(crate) fn file_path_from_url(url: &Url) -> anyhow::Result<String> {
         .ok()
         .and_then(|path| {
             path.to_str()
-                .map(|p| kclvm_utils::path::convert_windows_drive_letter(p))
+                .map(kclvm_utils::path::convert_windows_drive_letter)
         })
         .ok_or_else(|| anyhow::anyhow!("can't convert url to file path: {}", url))
 }
