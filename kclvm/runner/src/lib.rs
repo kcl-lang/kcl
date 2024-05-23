@@ -28,7 +28,7 @@ pub mod runner;
 #[cfg(test)]
 pub mod tests;
 
-const KCL_FAST_EVAL_ENV_VAR: &str = "KCL_FAST_EVAL";
+pub const KCL_FAST_EVAL_ENV_VAR: &str = "KCL_FAST_EVAL";
 
 /// After the kcl program passed through kclvm-parser in the compiler frontend,
 /// KCL needs to resolve ast, generate corresponding LLVM IR, dynamic link library or

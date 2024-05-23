@@ -8,11 +8,10 @@ use kclvm_driver::{get_kcl_files, get_pkg_list};
 use kclvm_parser::{parse_file_force_errors, ParseSessionRef};
 #[cfg(feature = "llvm")]
 use kclvm_runner::build_program;
-#[cfg(not(feature = "llvm"))]
 use kclvm_runner::exec_program;
 #[cfg(feature = "llvm")]
 use kclvm_runner::runner::ProgramRunner;
-use kclvm_runner::ExecProgramArgs;
+use kclvm_runner::{Artifact, ExecProgramArgs, KCL_FAST_EVAL_ENV_VAR};
 use std::time::Instant;
 
 /// File suffix for test files.
@@ -62,9 +61,21 @@ impl TestRun for TestSuite {
             disable_yaml_result: true,
             ..opts.exec_args.clone()
         };
-        // Build the program.
-        #[cfg(feature = "llvm")]
-        let artifact = build_program::<String>(ParseSessionRef::default(), &args, None)?;
+        let is_fast_eval_mode = std::env::var(KCL_FAST_EVAL_ENV_VAR).is_ok();
+        // Build the program
+        let artifact: Option<Artifact> = if is_fast_eval_mode {
+            None
+        } else {
+            #[cfg(feature = "llvm")]
+            let artifact = Some(build_program::<String>(
+                ParseSessionRef::default(),
+                &args,
+                None,
+            )?);
+            #[cfg(not(feature = "llvm"))]
+            let artifact = None;
+            artifact
+        };
         // Test every case in the suite.
         for (name, _) in &self.cases {
             args.args = vec![ast::CmdArgSpec {
@@ -72,10 +83,17 @@ impl TestRun for TestSuite {
                 value: format!("{:?}", name),
             }];
             let start = Instant::now();
-            #[cfg(feature = "llvm")]
-            let exec_result = artifact.run(&args)?;
-            #[cfg(not(feature = "llvm"))]
-            let exec_result = exec_program(ParseSessionRef::default(), &args)?;
+            // Check if is the fast eval mode.
+            let exec_result = if let Some(_artifact) = &artifact {
+                #[cfg(feature = "llvm")]
+                let exec_result = _artifact.run(&args)?;
+                #[cfg(not(feature = "llvm"))]
+                let exec_result = exec_program(ParseSessionRef::default(), &args)?;
+                exec_result
+            } else {
+                args.fast_eval = true;
+                exec_program(ParseSessionRef::default(), &args)?
+            };
             // Check if there was an error.
             let error = if exec_result.err_message.is_empty() {
                 None
