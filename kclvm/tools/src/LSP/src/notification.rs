@@ -144,7 +144,7 @@ impl LanguageServerState {
             let path = from_lsp::abs_path(&change.uri)?;
             self.loader.handle.invalidate(path.clone());
             if KCL_CONFIG_FILE.contains(&path.file_name().unwrap().to_str().unwrap()) {
-                self.compile_unit_cache.write().clear();
+                self.entry.write().clear();
             }
         }
 

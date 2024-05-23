@@ -267,7 +267,7 @@ pub(crate) fn handle_reference(
     let log = |msg: String| log_message(msg, &sender);
     let module_cache = snapshot.module_cache.clone();
     let _scope_cache = snapshot.scope_cache.clone();
-    let compile_unit_cache = snapshot.compile_unit_cache.clone();
+    let entry = snapshot.entry.clone();
     match find_refs(
         &db.prog,
         &pos,
@@ -278,7 +278,7 @@ pub(crate) fn handle_reference(
         &db.gs,
         Some(module_cache),
         None,
-        Some(compile_unit_cache),
+        Some(entry),
     ) {
         core::result::Result::Ok(locations) => Ok(Some(locations)),
         Err(msg) => {
@@ -308,7 +308,13 @@ pub(crate) fn handle_completion(
 
     let db = snapshot.get_db(&path.clone().into())?;
 
-    let res = completion(completion_trigger_character, &db.prog, &kcl_pos, &db.gs);
+    let res = completion(
+        completion_trigger_character,
+        &db.prog,
+        &kcl_pos,
+        &db.gs,
+        &*snapshot.tool.read(),
+    );
 
     if res.is_none() {
         log_message("Completion item not found".to_string(), &sender)?;
@@ -388,7 +394,7 @@ pub(crate) fn handle_rename(
         &db.gs,
         Some(snapshot.module_cache),
         Some(snapshot.scope_cache),
-        Some(snapshot.compile_unit_cache),
+        Some(snapshot.entry),
     );
     match references {
         Result::Ok(locations) => {

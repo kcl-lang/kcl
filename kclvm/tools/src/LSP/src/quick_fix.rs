@@ -128,12 +128,14 @@ pub(crate) fn convert_code_to_kcl_diag_id(code: &NumberOrString) -> Option<Diagn
 #[cfg(test)]
 mod tests {
 
+    use kclvm_driver::toolchain;
     use lsp_types::{
         CodeAction, CodeActionKind, CodeActionOrCommand, Diagnostic, Position, Range, TextEdit,
         Url, WorkspaceEdit,
     };
+    use parking_lot::RwLock;
     use proc_macro_crate::bench_test;
-    use std::path::PathBuf;
+    use std::{path::PathBuf, sync::Arc};
 
     use super::quick_fix;
     use crate::{
@@ -155,7 +157,8 @@ mod tests {
             module_cache: None,
             scope_cache: None,
             vfs: Some(KCLVfs::default()),
-            compile_unit_cache: None,
+            entry_cache: None,
+            tool: Arc::new(RwLock::new(toolchain::default())),
         })
         .unwrap();
 

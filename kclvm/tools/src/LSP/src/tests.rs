@@ -2,6 +2,7 @@ use crossbeam_channel::after;
 use crossbeam_channel::select;
 use indexmap::IndexSet;
 use kclvm_ast::MAIN_PKG;
+use kclvm_driver::toolchain;
 use kclvm_sema::core::global_state::GlobalState;
 
 use kclvm_sema::resolver::scope::KCLScopeCache;
@@ -38,6 +39,7 @@ use lsp_types::Url;
 use lsp_types::WorkspaceEdit;
 use lsp_types::WorkspaceFolder;
 
+use parking_lot::lock_api::RwLock;
 use serde::Serialize;
 use std::cell::Cell;
 use std::cell::RefCell;
@@ -75,10 +77,10 @@ use crate::from_lsp::file_path_from_url;
 use crate::goto_def::goto_definition_with_gs;
 use crate::hover::hover;
 use crate::main_loop::main_loop;
-use crate::state::KCLCompileUnitCache;
+use crate::state::KCLEntryCache;
 use crate::state::KCLVfs;
 use crate::to_lsp::kcl_diag_to_lsp_diags;
-use crate::util::compile_unit_with_cache;
+use crate::util::lookup_compile_unit_with_cache;
 use crate::util::to_json;
 use crate::util::{apply_document_changes, compile_with_params, Params};
 
@@ -131,7 +133,8 @@ pub(crate) fn compile_test_file(
         module_cache: Some(KCLModuleCache::default()),
         scope_cache: Some(KCLScopeCache::default()),
         vfs: Some(KCLVfs::default()),
-        compile_unit_cache: Some(KCLCompileUnitCache::default()),
+        entry_cache: Some(KCLEntryCache::default()),
+        tool: Arc::new(RwLock::new(toolchain::default())),
     })
     .unwrap();
     (file, program, diags, gs)
@@ -293,7 +296,8 @@ fn diagnostics_test() {
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
-        compile_unit_cache: Some(KCLCompileUnitCache::default()),
+        entry_cache: Some(KCLEntryCache::default()),
+        tool: Arc::new(RwLock::new(toolchain::default())),
     })
     .unwrap();
 
@@ -480,7 +484,8 @@ fn complete_import_external_file_test() {
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
-        compile_unit_cache: Some(KCLCompileUnitCache::default()),
+        entry_cache: Some(KCLEntryCache::default()),
+        tool: Arc::new(RwLock::new(toolchain::default())),
     })
     .unwrap();
 
@@ -489,7 +494,8 @@ fn complete_import_external_file_test() {
         line: 1,
         column: Some(11),
     };
-    let res = completion(Some('.'), &program, &pos, &gs).unwrap();
+    let tool = toolchain::default();
+    let res = completion(Some('.'), &program, &pos, &gs, &tool).unwrap();
 
     let got_labels: Vec<String> = match &res {
         CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
@@ -538,7 +544,8 @@ fn goto_import_external_file_test() {
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
-        compile_unit_cache: Some(KCLCompileUnitCache::default()),
+        entry_cache: Some(KCLEntryCache::default()),
+        tool: Arc::new(RwLock::new(toolchain::default())),
     })
     .unwrap();
 
@@ -889,29 +896,30 @@ fn cancel_test() {
 }
 
 #[test]
-fn compile_unit_cache_test() {
+fn entry_test() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let mut path = root.clone();
     path.push("src/test_data/compile_unit/b.k");
 
     let path = path.to_str().unwrap();
 
-    let compile_unit_cache = KCLCompileUnitCache::default();
+    let tool = toolchain::default();
+    let entry = KCLEntryCache::default();
     let start = Instant::now();
-    let _ = compile_unit_with_cache(&Some(Arc::clone(&compile_unit_cache)), &path.to_string());
+    let _ = lookup_compile_unit_with_cache(&tool, &Some(Arc::clone(&entry)), &path.to_string());
 
-    assert!(compile_unit_cache.read().get(&path.to_string()).is_some());
+    assert!(entry.read().get(&path.to_string()).is_some());
     let first_compile_time = start.elapsed();
 
     let start = Instant::now();
-    let _ = compile_unit_with_cache(&Some(compile_unit_cache), &path.to_string());
+    let _ = lookup_compile_unit_with_cache(&tool, &Some(entry), &path.to_string());
     let second_compile_time = start.elapsed();
 
     assert!(first_compile_time > second_compile_time);
 }
 
 #[test]
-fn compile_unit_cache_e2e_test() {
+fn entry_e2e_test() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let mut path = root.clone();
     let mut kcl_yaml = root.clone();
@@ -1392,7 +1400,8 @@ fn konfig_goto_def_test_base() {
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
-        compile_unit_cache: Some(KCLCompileUnitCache::default()),
+        entry_cache: Some(KCLEntryCache::default()),
+        tool: Arc::new(RwLock::new(toolchain::default())),
     })
     .unwrap();
 
@@ -1484,7 +1493,8 @@ fn konfig_goto_def_test_main() {
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
-        compile_unit_cache: Some(KCLCompileUnitCache::default()),
+        entry_cache: Some(KCLEntryCache::default()),
+        tool: Arc::new(RwLock::new(toolchain::default())),
     })
     .unwrap();
 
@@ -1548,7 +1558,8 @@ fn konfig_completion_test_main() {
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
-        compile_unit_cache: Some(KCLCompileUnitCache::default()),
+        entry_cache: Some(KCLEntryCache::default()),
+        tool: Arc::new(RwLock::new(toolchain::default())),
     })
     .unwrap();
 
@@ -1558,7 +1569,8 @@ fn konfig_completion_test_main() {
         line: 6,
         column: Some(27),
     };
-    let got = completion(Some('.'), &program, &pos, &gs).unwrap();
+    let tool = toolchain::default();
+    let got = completion(Some('.'), &program, &pos, &gs, &tool).unwrap();
     let got_labels: Vec<String> = match got {
         CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
         CompletionResponse::List(_) => panic!("test failed"),
@@ -1576,7 +1588,8 @@ fn konfig_completion_test_main() {
         line: 7,
         column: Some(4),
     };
-    let got = completion(None, &program, &pos, &gs).unwrap();
+    let tool = toolchain::default();
+    let got = completion(None, &program, &pos, &gs, &tool).unwrap();
     let mut got_labels: Vec<String> = match got {
         CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
         CompletionResponse::List(_) => panic!("test failed"),
@@ -1620,7 +1633,8 @@ fn konfig_completion_test_main() {
         line: 1,
         column: Some(35),
     };
-    let got = completion(Some('.'), &program, &pos, &gs).unwrap();
+    let tool = toolchain::default();
+    let got = completion(Some('.'), &program, &pos, &gs, &tool).unwrap();
     let mut got_labels: Vec<String> = match got {
         CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
         CompletionResponse::List(_) => panic!("test failed"),
@@ -1658,7 +1672,8 @@ fn konfig_hover_test_main() {
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
-        compile_unit_cache: Some(KCLCompileUnitCache::default()),
+        entry_cache: Some(KCLEntryCache::default()),
+        tool: Arc::new(RwLock::new(toolchain::default())),
     })
     .unwrap();
 
@@ -2091,7 +2106,8 @@ fn compile_unit_test() {
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
-        compile_unit_cache: Some(KCLCompileUnitCache::default()),
+        entry_cache: Some(KCLEntryCache::default()),
+        tool: Arc::new(RwLock::new(toolchain::default())),
     })
     .unwrap();
     // b.k is not contained in kcl.yaml but need to be contained in main pkg

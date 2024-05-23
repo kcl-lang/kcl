@@ -7,7 +7,9 @@ use crate::util::{compile_with_params, get_file_name, to_json, Params};
 use crate::word_index::build_word_index;
 use anyhow::Result;
 use crossbeam_channel::{select, unbounded, Receiver, Sender};
-use kclvm_parser::{KCLModuleCache, LoadProgramOptions};
+use kclvm_driver::toolchain::{self, Toolchain};
+use kclvm_driver::CompileUnitOptions;
+use kclvm_parser::KCLModuleCache;
 use kclvm_sema::resolver::scope::KCLScopeCache;
 use lsp_server::{ReqQueue, Request, Response};
 use lsp_types::Url;
@@ -47,8 +49,8 @@ pub(crate) struct Handle<H, C> {
 
 pub(crate) type KCLVfs = Arc<RwLock<Vfs>>;
 pub(crate) type KCLWordIndexMap = Arc<RwLock<HashMap<Url, HashMap<String, Vec<Location>>>>>;
-pub(crate) type KCLCompileUnitCache =
-    Arc<RwLock<HashMap<String, (Vec<String>, Option<LoadProgramOptions>)>>>;
+pub(crate) type KCLEntryCache = Arc<RwLock<HashMap<String, CompileUnitOptions>>>;
+pub(crate) type KCLToolChain = Arc<RwLock<dyn Toolchain>>;
 
 /// State for the language server
 pub(crate) struct LanguageServerState {
@@ -95,7 +97,10 @@ pub(crate) struct LanguageServerState {
     pub scope_cache: KCLScopeCache,
 
     /// KCL compile unit cache cache
-    pub compile_unit_cache: KCLCompileUnitCache,
+    pub entry: KCLEntryCache,
+
+    /// Toolchain is used to provider KCL tool features for the language server.
+    pub tool: KCLToolChain,
 }
 
 /// A snapshot of the state of the language server
@@ -114,7 +119,9 @@ pub(crate) struct LanguageServerSnapshot {
     /// KCL resolver cache
     pub scope_cache: KCLScopeCache,
     /// KCL compile unit cache cache
-    pub compile_unit_cache: KCLCompileUnitCache,
+    pub entry: KCLEntryCache,
+    /// Toolchain is used to provider KCL tool features for the language server.
+    pub tool: KCLToolChain,
 }
 
 #[allow(unused)]
@@ -149,7 +156,8 @@ impl LanguageServerState {
             loader,
             module_cache: KCLModuleCache::default(),
             scope_cache: KCLScopeCache::default(),
-            compile_unit_cache: KCLCompileUnitCache::default(),
+            entry: KCLEntryCache::default(),
+            tool: Arc::new(RwLock::new(toolchain::default())),
         };
 
         let word_index_map = state.word_index_map.clone();
@@ -237,7 +245,8 @@ impl LanguageServerState {
                             let sender = self.task_sender.clone();
                             let module_cache = Arc::clone(&self.module_cache);
                             let scope_cache = Arc::clone(&self.scope_cache);
-                            let compile_unit_cache = Arc::clone(&self.compile_unit_cache);
+                            let entry = Arc::clone(&self.entry);
+                            let tool = Arc::clone(&self.tool);
                             move || match url(&snapshot, file.file_id) {
                                 Ok(uri) => {
                                     let version =
@@ -248,7 +257,8 @@ impl LanguageServerState {
                                         module_cache: Some(module_cache),
                                         scope_cache: Some(scope_cache),
                                         vfs: Some(snapshot.vfs),
-                                        compile_unit_cache: Some(compile_unit_cache),
+                                        entry_cache: Some(entry),
+                                        tool,
                                     }) {
                                         Ok((prog, diags, gs)) => {
                                             let current_version = snapshot
@@ -316,8 +326,8 @@ impl LanguageServerState {
                             }
                         });
                     }
-                    Err(_) => {
-                        self.log_message(format!("{:?} not found", file.file_id));
+                    Err(err) => {
+                        self.log_message(format!("{:?} not found: {}", file.file_id, err));
                     }
                 }
             }
@@ -383,7 +393,8 @@ impl LanguageServerState {
             word_index_map: self.word_index_map.clone(),
             module_cache: self.module_cache.clone(),
             scope_cache: self.scope_cache.clone(),
-            compile_unit_cache: self.compile_unit_cache.clone(),
+            entry: self.entry.clone(),
+            tool: self.tool.clone(),
         }
     }
 
