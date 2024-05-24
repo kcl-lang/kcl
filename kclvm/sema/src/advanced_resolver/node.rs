@@ -97,9 +97,6 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
         }
         self.walk_type_expr(assign_stmt.ty.as_ref().map(|ty| ty.as_ref()))?;
         self.expr(&assign_stmt.value)?;
-        if !assign_stmt.targets.is_empty() {
-            self.ctx.schema_symbol_stack.pop();
-        };
         Ok(None)
     }
 

@@ -1270,12 +1270,14 @@ impl<'ctx> Resolver<'ctx> {
             self.ctx.start_pos = start;
             self.ctx.end_pos = end;
         }
-        let ty = self.walk_expr(&expr.node);
 
         let expected_ty = match self.ctx.config_expr_context.last() {
             Some(ty) => ty.clone().map(|o| o.ty),
             None => None,
         };
+
+        let ty = self.walk_expr(&expr.node);
+
         if let Some(expected_ty) = expected_ty {
             let upgrade_ty =
                 self.upgrade_dict_to_schema(ty.clone(), expected_ty, &expr.get_span_pos());
