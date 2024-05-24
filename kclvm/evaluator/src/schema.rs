@@ -367,7 +367,7 @@ pub(crate) fn schema_body(
     };
     let schema_name = { ctx.borrow().node.name.node.to_string() };
     s.push_schema(crate::EvalContext::Schema(ctx.clone()));
-    s.enter_scope();
+    s.enter_schema_scope(true);
     // Evaluate arguments and keyword arguments and store values to local variables.
     s.walk_arguments(&ctx.borrow().node.args, args, kwargs);
     // Eval schema body and record schema instances.

@@ -1208,10 +1208,22 @@ impl<'ctx> Evaluator<'ctx> {
                     // Lambda local variables.
                     } else if self.is_in_lambda() {
                         let value = right_value.clone().expect(kcl_error::INTERNAL_ERROR_MSG);
-                        // If variable exists in the scope and update it, if not, add it to the scope.
-                        if !self.store_variable_in_current_scope(name, value.clone()) {
-                            self.add_variable(name, self.undefined_value());
-                            self.store_variable(name, value);
+                        // schema frame in the lambda
+                        if self.is_schema_scope() {
+                            let is_local_var = self.is_local_var(name);
+                            let value = right_value.clone().expect(kcl_error::INTERNAL_ERROR_MSG);
+                            match (is_local_var, is_in_schema) {
+                                (false, true) => {
+                                    self.update_schema_or_rule_scope_value(name, Some(&value))
+                                }
+                                _ => self.add_variable(name, value),
+                            }
+                        } else {
+                            // If variable exists in the scope and update it, if not, add it to the scope.
+                            if !self.store_variable_in_current_scope(name, value.clone()) {
+                                self.add_variable(name, self.undefined_value());
+                                self.store_variable(name, value);
+                            }
                         }
                     } else {
                         let is_local_var = self.is_local_var(name);
