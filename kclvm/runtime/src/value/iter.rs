@@ -8,7 +8,6 @@ pub struct ValueIterator {
     pub len: usize,
     pub cur_key: ValueRef,
     pub cur_val: ValueRef,
-    pub end_val: *const ValueRef,
     pub keys: Vec<String>,
     pub pos: i32,
 }
@@ -19,7 +18,6 @@ impl Default for ValueIterator {
             len: 0,
             cur_key: Default::default(),
             cur_val: Default::default(),
-            end_val: std::ptr::null(),
             keys: Vec::new(),
             pos: 0,
         }
@@ -35,33 +33,26 @@ impl ValueIterator {
             return Default::default();
         }
         match *p.rc.borrow() {
-            Value::str_value(ref s) => {
-                ValueIterator {
-                    len: s.len(),
-                    cur_key: Default::default(),
-                    cur_val: Default::default(),
-                    end_val: 1 as *const ValueRef, // just as bool flag
-                    keys: Vec::new(),
-                    pos: 0,
-                }
-            }
-            Value::list_value(ref list) => {
-                ValueIterator {
-                    len: list.values.len(),
-                    cur_key: Default::default(),
-                    cur_val: Default::default(),
-                    end_val: 1 as *const ValueRef, // just as bool flag
-                    keys: Vec::new(),
-                    pos: 0,
-                }
-            }
+            Value::str_value(ref s) => ValueIterator {
+                len: s.len(),
+                cur_key: Default::default(),
+                cur_val: Default::default(),
+                keys: Vec::new(),
+                pos: 0,
+            },
+            Value::list_value(ref list) => ValueIterator {
+                len: list.values.len(),
+                cur_key: Default::default(),
+                cur_val: Default::default(),
+                keys: Vec::new(),
+                pos: 0,
+            },
             Value::dict_value(ref dict) => {
                 let keys: Vec<String> = dict.values.keys().map(|s| (*s).clone()).collect();
                 ValueIterator {
                     len: dict.values.len(),
                     cur_key: Default::default(),
                     cur_val: Default::default(),
-                    end_val: 1 as *const ValueRef, // just as bool flag
                     keys,
                     pos: 0,
                 }
@@ -73,7 +64,6 @@ impl ValueIterator {
                     len: schema.config.values.len(),
                     cur_key: Default::default(),
                     cur_val: Default::default(),
-                    end_val: 1 as *const ValueRef, // just as bool flag
                     keys,
                     pos: 0,
                 }
@@ -91,22 +81,14 @@ impl ValueIterator {
         if self.pos == 0 || self.pos > self.len as i32 {
             return Option::None;
         }
-        if !self.end_val.is_null() {
-            Some(&self.cur_key)
-        } else {
-            Option::None
-        }
+        Some(&self.cur_key)
     }
 
     pub fn value(&mut self) -> Option<&ValueRef> {
         if self.pos == 0 {
             return Option::None;
         }
-        if !self.end_val.is_null() {
-            Some(&self.cur_val)
-        } else {
-            Option::None
-        }
+        Some(&self.cur_val)
     }
 
     /// Get the next value, iterate key and value of the iterator.
@@ -127,7 +109,6 @@ impl ValueIterator {
             return None;
         }
         if self.pos >= host.len() as i32 {
-            self.end_val = std::ptr::null();
             return None;
         }
         match *host.rc.borrow() {
@@ -135,14 +116,12 @@ impl ValueIterator {
                 let ch = s.chars().nth(self.pos as usize).unwrap();
                 self.cur_key = ValueRef::int(self.pos as i64);
                 self.cur_val = ValueRef::str(&ch.to_string());
-                self.end_val = &self.cur_val;
                 self.pos += 1;
                 Some(&self.cur_val)
             }
             Value::list_value(ref list) => {
                 self.cur_key = ValueRef::int(self.pos as i64);
                 self.cur_val = list.values[self.pos as usize].clone();
-                self.end_val = &self.cur_val;
                 self.pos += 1;
                 Some(&self.cur_val)
             }
@@ -150,7 +129,6 @@ impl ValueIterator {
                 let key = &self.keys[self.pos as usize];
                 self.cur_key = ValueRef::str(key);
                 self.cur_val = dict.values[key].clone();
-                self.end_val = &self.cur_val;
                 self.pos += 1;
                 Some(&self.cur_key)
             }
@@ -158,7 +136,6 @@ impl ValueIterator {
                 let key = &self.keys[self.pos as usize];
                 self.cur_key = ValueRef::str(key);
                 self.cur_val = schema.config.values[key].clone();
-                self.end_val = &self.cur_val;
                 self.pos += 1;
                 Some(&self.cur_key)
             }

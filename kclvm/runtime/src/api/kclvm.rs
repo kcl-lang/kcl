@@ -342,7 +342,7 @@ pub struct Context {
     /// Imported package path to check the cyclic import process.
     pub imported_pkgpath: HashSet<String>,
     /// Runtime arguments for the option function.
-    pub app_args: HashMap<String, u64>,
+    pub option_values: HashMap<String, ValueRef>,
     /// All schema instances, the first key is the schema runtime type and
     /// the second key is the schema instance package path
     pub instances: IndexMap<String, IndexMap<String, Vec<ValueRef>>>,
@@ -350,7 +350,6 @@ pub struct Context {
     pub all_schemas: HashMap<String, SchemaType>,
     /// Import graph
     pub import_names: IndexMap<String, IndexMap<String, String>>,
-
     /// A buffer to store plugin or hooks function calling results.
     pub buffer: ContextBuffer,
     /// Objects is to store all KCL object pointers at runtime.
