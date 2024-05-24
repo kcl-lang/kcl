@@ -44,28 +44,15 @@ pub(crate) fn quick_fix(uri: &Url, diags: &Vec<Diagnostic>) -> Vec<lsp_types::Co
                             let replacement_texts = extract_suggested_replacements(&diag.data);
                             if replacement_texts.len() >= 2 {
                                 let title = &replacement_texts[0];
-                                let new_code_line = &replacement_texts[1];
+                                let replacement_text = &replacement_texts[1];
 
                                 let mut changes = HashMap::new();
 
-                                // Create a new range that covers the entire line
-                                let line_range = lsp_types::Range {
-                                    start: lsp_types::Position {
-                                        line: diag.range.start.line,
-                                        character: 0,
-                                    },
-                                    end: lsp_types::Position {
-                                        line: diag.range.start.line,
-                                        character: u32::MAX, // Ensure it covers to the end of the line
-                                    },
-                                };
-
-                                // Add the new text with a newline character at the end
                                 changes.insert(
                                     uri.clone(),
                                     vec![TextEdit {
-                                        range: line_range,
-                                        new_text: format!("{}", new_code_line),
+                                        range: diag.range,
+                                        new_text: replacement_text.clone(),
                                     }],
                                 );
 

@@ -464,7 +464,7 @@ impl<'a> Lexer<'a> {
                     "the semicolon ';' here is unnecessary, please remove it",
                     self.span(start, self.pos),
                     Some("Remove ';'".to_string()),
-                    Some("".to_string()),
+                    Some(" ".to_string()),
                 );
                 return None;
             }

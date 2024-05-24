@@ -374,7 +374,7 @@ impl ParseError {
 }
 
 impl ParseError {
-    /// Convert a parse error into a error diagnostic.
+    /// Convert a parse error into an error diagnostic.
     pub fn into_diag(self, sess: &Session) -> Result<Diagnostic> {
         let span = match self {
             ParseError::UnexpectedToken { span, .. } => span,
@@ -390,20 +390,120 @@ impl ParseError {
                 info.suggestion
                     .clone()
                     .unwrap_or_else(|| "No suggestion available".to_string()),
-                info.replacement.clone().unwrap_or_else(|| "".to_string()),
+                info.replacement.clone().unwrap_or_else(|| " ".to_string()),
             ]),
             _ => None,
         };
+
+        let (start_pos, end_pos) = self.generate_modified_range(&self.to_string(), &pos);
+
         Ok(Diagnostic::new_with_code(
             Level::Error,
             &self.to_string(),
             None,
-            (pos.clone(), pos),
+            (start_pos, end_pos),
             Some(DiagnosticId::Error(ErrorKind::InvalidSyntax)),
             suggestions,
         ))
     }
+
+    fn generate_modified_range(
+        &self,
+        msg: &str,
+        pos: &Position,
+    ) -> (Position, Position) {
+        match msg {
+            "invalid token '!', consider using 'not '" => {
+                let start_column = pos.column.unwrap_or(0);
+                let end_column = start_column + 1;
+                (
+                    Position {
+                        column: Some(start_column),
+                        ..pos.clone()
+                    },
+                    Position {
+                        column: Some(end_column),
+                        ..pos.clone()
+                    },
+                )
+            }
+            "'else if' here is invalid in KCL, consider using the 'elif' keyword" => {
+                let start_column = pos.column.map(|col| col.saturating_sub(5)).unwrap_or(0);
+                let end_column = pos.column.map(|col| col.saturating_add(2)).unwrap_or(0);
+                (
+                    Position {
+                        column: Some(start_column),
+                        ..pos.clone()
+                    },
+                    Position {
+                        column: Some(end_column),
+                        ..pos.clone()
+                    },
+                )
+            }
+            "error nesting on close paren"
+            | "mismatched closing delimiter"
+            | "error nesting on close brace" => {
+                let start_column = pos.column.unwrap_or(0);
+                let end_column = start_column + 1;
+                (
+                    Position {
+                        column: Some(start_column),
+                        ..pos.clone()
+                    },
+                    Position {
+                        column: Some(end_column),
+                        ..pos.clone()
+                    },
+                )
+            }
+            "unterminated string" => {
+                let start_column = pos.column.unwrap_or(0);
+                let end_column = start_column + 1;
+                (
+                    Position {
+                        column: Some(start_column),
+                        ..pos.clone()
+                    },
+                    Position {
+                        column: Some(end_column),
+                        ..pos.clone()
+                    },
+                )
+            }
+            "unexpected character after line continuation character" => {
+                let start_column = pos.column.unwrap_or(0);
+                let end_column = u32::MAX;
+                (
+                    Position {
+                        column: Some(start_column),
+                        ..pos.clone()
+                    },
+                    Position {
+                        column: Some(end_column.into()),
+                        ..pos.clone()
+                    },
+                )
+            }
+            "the semicolon ';' here is unnecessary, please remove it" => {
+                let start_column = pos.column.unwrap_or(0);
+                let end_column = start_column + 1;
+                (
+                    Position {
+                        column: Some(start_column),
+                        ..pos.clone()
+                    },
+                    Position {
+                        column: Some(end_column),
+                        ..pos.clone()
+                    },
+                )
+            }
+            _ => (pos.clone(), pos.clone()),
+        }
+    }
 }
+
 
 impl ToString for ParseError {
     fn to_string(&self) -> String {
