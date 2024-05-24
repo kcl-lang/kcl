@@ -407,11 +407,7 @@ impl ParseError {
         ))
     }
 
-    fn generate_modified_range(
-        &self,
-        msg: &str,
-        pos: &Position,
-    ) -> (Position, Position) {
+    fn generate_modified_range(&self, msg: &str, pos: &Position) -> (Position, Position) {
         match msg {
             "invalid token '!', consider using 'not '" => {
                 let start_column = pos.column.unwrap_or(0);
@@ -503,7 +499,6 @@ impl ParseError {
         }
     }
 }
-
 
 impl ToString for ParseError {
     fn to_string(&self) -> String {
