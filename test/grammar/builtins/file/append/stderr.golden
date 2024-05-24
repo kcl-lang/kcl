@@ -1,6 +1,0 @@
-error[E3M38]: EvaluationError
- --> ${CWD}/main.k:5:1
-  |
-5 | file.append("", "sample content without path")
-  |  Failed to open or create file '': No such file or directory (os error 2)
-  |
