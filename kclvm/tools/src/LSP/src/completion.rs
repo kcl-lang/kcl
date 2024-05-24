@@ -1683,8 +1683,9 @@ mod tests {
             line: 9,
             column: Some(9),
         };
+        let tool = toolchain::default();
 
-        let mut got = completion(None, &program, &pos, &gs).unwrap();
+        let mut got = completion(None, &program, &pos, &gs, &tool).unwrap();
 
         match &mut got {
             CompletionResponse::Array(arr) => {
@@ -1707,7 +1708,9 @@ mod tests {
             column: Some(9),
         };
 
-        let mut got = completion(None, &program, &pos, &gs).unwrap();
+        let tool = toolchain::default();
+
+        let mut got = completion(None, &program, &pos, &gs, &tool).unwrap();
 
         match &mut got {
             CompletionResponse::Array(arr) => {
@@ -1729,7 +1732,8 @@ mod tests {
             column: Some(13),
         };
 
-        let mut got = completion(None, &program, &pos, &gs).unwrap();
+        let tool = toolchain::default();
+        let mut got = completion(None, &program, &pos, &gs, &tool).unwrap();
 
         match &mut got {
             CompletionResponse::Array(arr) => {
@@ -1752,7 +1756,9 @@ mod tests {
             column: Some(9),
         };
 
-        let mut got = completion(None, &program, &pos, &gs).unwrap();
+        let tool = toolchain::default();
+
+        let mut got = completion(None, &program, &pos, &gs, &tool).unwrap();
 
         match &mut got {
             CompletionResponse::Array(arr) => {
