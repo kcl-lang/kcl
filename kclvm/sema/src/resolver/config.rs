@@ -320,6 +320,7 @@ impl<'ctx> Resolver<'ctx> {
                         ty,
                         key.get_span_pos(),
                         Some(obj_last.get_span_pos()),
+                        true,
                     );
                 }
                 self.clear_config_expr_context(stack_depth, false);
@@ -489,6 +490,7 @@ impl<'ctx> Resolver<'ctx> {
                 Some(key) => match &key.node {
                     ast::Expr::Identifier(identifier) => {
                         let mut val_ty = self.expr(value);
+
                         for _ in 0..identifier.names.len() - 1 {
                             val_ty = Type::dict_ref(self.str_ty(), val_ty.clone());
                         }

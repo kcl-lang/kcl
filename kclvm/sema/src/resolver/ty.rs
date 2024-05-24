@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use super::node::ResolvedResult;
 use crate::resolver::Resolver;
 use crate::ty::parser::parse_type_str;
 use crate::ty::{
@@ -10,8 +11,6 @@ use kclvm_ast::ast;
 use kclvm_ast::pos::GetPos;
 use kclvm_error::diagnostic::Range;
 use kclvm_error::*;
-
-use super::node::ResolvedResult;
 
 fn ty_str_to_pkgpath(ty_str: &str) -> &str {
     let splits: Vec<&str> = ty_str.rsplitn(2, '.').collect();
@@ -94,7 +93,7 @@ impl<'ctx> Resolver<'ctx> {
     #[inline]
     pub fn must_be_type(&mut self, expr: &'ctx ast::NodeRef<ast::Expr>, expected_ty: TypeRef) {
         let ty = self.expr(expr);
-        self.must_assignable_to(ty, expected_ty, expr.get_span_pos(), None);
+        self.must_assignable_to(ty, expected_ty, expr.get_span_pos(), None, true);
     }
 
     /// Must assignable to the expected type.
@@ -105,8 +104,9 @@ impl<'ctx> Resolver<'ctx> {
         expected_ty: TypeRef,
         range: Range,
         expected_pos: Option<Range>,
+        emit_error: bool,
     ) {
-        if !self.check_type(ty.clone(), expected_ty.clone(), &range) {
+        if !self.check_type(ty.clone(), expected_ty.clone(), &range, emit_error) && emit_error {
             let mut msgs = vec![Message {
                 range,
                 style: Style::LineAndColumn,
@@ -129,6 +129,71 @@ impl<'ctx> Resolver<'ctx> {
                 });
             }
             self.handler.add_error(ErrorKind::TypeError, &msgs);
+        }
+    }
+
+    // Upgrade the dict type into schema type if it is expected to schema
+    pub fn upgrade_dict_to_schema(
+        &mut self,
+        ty: TypeRef,
+        expected_ty: TypeRef,
+        range: &Range,
+    ) -> TypeRef {
+        match (&ty.kind, &expected_ty.kind) {
+            (TypeKind::Dict(DictType { key_ty, val_ty, .. }), TypeKind::Schema(schema_ty)) => {
+                if self.dict_assignable_to_schema(
+                    key_ty.clone(),
+                    val_ty.clone(),
+                    schema_ty,
+                    range,
+                    false,
+                ) {
+                    expected_ty
+                } else {
+                    ty
+                }
+            }
+            (TypeKind::List(item_ty), TypeKind::List(expected_item_ty)) => Type::list(
+                self.upgrade_dict_to_schema(item_ty.clone(), expected_item_ty.clone(), range),
+            )
+            .into(),
+            (
+                TypeKind::Dict(DictType { key_ty, val_ty, .. }),
+                TypeKind::Dict(DictType {
+                    key_ty: expected_key_ty,
+                    val_ty: expected_val_ty,
+                    ..
+                }),
+            ) => Type::dict(
+                self.upgrade_dict_to_schema(key_ty.clone(), expected_key_ty.clone(), range),
+                self.upgrade_dict_to_schema(val_ty.clone(), expected_val_ty.clone(), range),
+            )
+            .into(),
+            (
+                TypeKind::Dict(DictType { key_ty, val_ty, .. }),
+                TypeKind::Union(expected_union_type),
+            ) => {
+                let types: Vec<Arc<Type>> = expected_union_type
+                    .iter()
+                    .filter(|ty| match ty.kind {
+                        TypeKind::Schema(_) => true,
+                        _ => false,
+                    })
+                    .filter(|ty| {
+                        self.dict_assignable_to_schema(
+                            key_ty.clone(),
+                            val_ty.clone(),
+                            &ty.into_schema_type(),
+                            range,
+                            false,
+                        )
+                    })
+                    .map(|ty| ty.clone())
+                    .collect();
+
+                crate::ty::sup(&types).into()
+            }
+            _ => ty,
         }
     }
 
@@ -191,17 +256,29 @@ impl<'ctx> Resolver<'ctx> {
                 self.set_type_to_scope(name, target_ty.clone(), &target.node.names[0]);
 
                 // Check the type of value and the type annotation of target
-                self.must_assignable_to(value_ty.clone(), target_ty, target.get_span_pos(), None)
+                self.must_assignable_to(
+                    value_ty.clone(),
+                    target_ty,
+                    target.get_span_pos(),
+                    None,
+                    true,
+                )
             }
         }
     }
 
     /// The check type main function, returns a boolean result.
     #[inline]
-    pub fn check_type(&mut self, ty: TypeRef, expected_ty: TypeRef, range: &Range) -> bool {
+    pub fn check_type(
+        &mut self,
+        ty: TypeRef,
+        expected_ty: TypeRef,
+        range: &Range,
+        emit_error: bool,
+    ) -> bool {
         match (&ty.kind, &expected_ty.kind) {
             (TypeKind::List(item_ty), TypeKind::List(expected_item_ty)) => {
-                self.check_type(item_ty.clone(), expected_item_ty.clone(), range)
+                self.check_type(item_ty.clone(), expected_item_ty.clone(), range, emit_error)
             }
             (
                 TypeKind::Dict(DictType { key_ty, val_ty, .. }),
@@ -211,18 +288,23 @@ impl<'ctx> Resolver<'ctx> {
                     ..
                 }),
             ) => {
-                self.check_type(key_ty.clone(), expected_key_ty.clone(), range)
-                    && self.check_type(val_ty.clone(), expected_val_ty.clone(), range)
+                self.check_type(key_ty.clone(), expected_key_ty.clone(), range, emit_error)
+                    && self.check_type(val_ty.clone(), expected_val_ty.clone(), range, emit_error)
             }
-            (TypeKind::Dict(DictType { key_ty, val_ty, .. }), TypeKind::Schema(schema_ty)) => {
-                self.dict_assignable_to_schema(key_ty.clone(), val_ty.clone(), schema_ty, range)
-            }
+            (TypeKind::Dict(DictType { key_ty, val_ty, .. }), TypeKind::Schema(schema_ty)) => self
+                .dict_assignable_to_schema(
+                    key_ty.clone(),
+                    val_ty.clone(),
+                    schema_ty,
+                    range,
+                    emit_error,
+                ),
             (TypeKind::Union(types), _) => types
                 .iter()
-                .all(|ty| self.check_type(ty.clone(), expected_ty.clone(), range)),
-            (_, TypeKind::Union(types)) => types
-                .iter()
-                .any(|expected_ty| self.check_type(ty.clone(), expected_ty.clone(), range)),
+                .all(|ty| self.check_type(ty.clone(), expected_ty.clone(), range, emit_error)),
+            (_, TypeKind::Union(types)) => types.iter().any(|expected_ty| {
+                self.check_type(ty.clone(), expected_ty.clone(), range, emit_error)
+            }),
             _ => assignable_to(ty, expected_ty),
         }
     }
@@ -235,9 +317,16 @@ impl<'ctx> Resolver<'ctx> {
         val_ty: TypeRef,
         schema_ty: &SchemaType,
         range: &Range,
+        emit_error: bool,
     ) -> bool {
         if let Some(index_signature) = &schema_ty.index_signature {
-            if !self.check_type(val_ty.clone(), index_signature.val_ty.clone(), range) {
+            if !self.check_type(
+                val_ty.clone(),
+                index_signature.val_ty.clone(),
+                range,
+                emit_error,
+            ) && emit_error
+            {
                 self.handler.add_type_error(
                     &format!(
                         "expected schema index signature value type {}, got {}",
@@ -248,8 +337,8 @@ impl<'ctx> Resolver<'ctx> {
                 );
             }
             if index_signature.any_other {
-                return self.check_type(key_ty, index_signature.key_ty.clone(), range)
-                    && self.check_type(val_ty, index_signature.val_ty.clone(), range);
+                return self.check_type(key_ty, index_signature.key_ty.clone(), range, emit_error)
+                    && self.check_type(val_ty, index_signature.val_ty.clone(), range, emit_error);
             }
             true
         } else {
@@ -262,6 +351,7 @@ impl<'ctx> Resolver<'ctx> {
                         attr_obj.ty.clone(),
                         range.clone(),
                         Some(attr_obj.range.clone()),
+                        emit_error,
                     );
                     return true;
                 }

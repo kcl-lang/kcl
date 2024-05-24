@@ -1671,4 +1671,101 @@ mod tests {
             CompletionResponse::List(_) => panic!("test failed"),
         }
     }
+
+    #[test]
+    #[bench_test]
+    fn nested_1_test() {
+        let (file, program, _, gs) =
+            compile_test_file("src/test_data/completion_test/dot/nested/nested_1/nested_1.k");
+
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 9,
+            column: Some(9),
+        };
+        let tool = toolchain::default();
+
+        let mut got = completion(None, &program, &pos, &gs, &tool).unwrap();
+
+        match &mut got {
+            CompletionResponse::Array(arr) => {
+                let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
+                insta::assert_snapshot!(format!("{:?}", labels));
+            }
+            CompletionResponse::List(_) => panic!("test failed"),
+        }
+    }
+
+    #[test]
+    #[bench_test]
+    fn nested_2_test() {
+        let (file, program, _, gs) =
+            compile_test_file("src/test_data/completion_test/dot/nested/nested_2/nested_2.k");
+
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 9,
+            column: Some(9),
+        };
+
+        let tool = toolchain::default();
+
+        let mut got = completion(None, &program, &pos, &gs, &tool).unwrap();
+
+        match &mut got {
+            CompletionResponse::Array(arr) => {
+                let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
+                insta::assert_snapshot!(format!("{:?}", labels));
+            }
+            CompletionResponse::List(_) => panic!("test failed"),
+        }
+    }
+    #[test]
+    #[bench_test]
+    fn nested_3_test() {
+        let (file, program, _, gs) =
+            compile_test_file("src/test_data/completion_test/dot/nested/nested_3/nested_3.k");
+
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 10,
+            column: Some(13),
+        };
+
+        let tool = toolchain::default();
+        let mut got = completion(None, &program, &pos, &gs, &tool).unwrap();
+
+        match &mut got {
+            CompletionResponse::Array(arr) => {
+                let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
+                insta::assert_snapshot!(format!("{:?}", labels));
+            }
+            CompletionResponse::List(_) => panic!("test failed"),
+        }
+    }
+
+    #[test]
+    #[bench_test]
+    fn nested_4_test() {
+        let (file, program, _, gs) =
+            compile_test_file("src/test_data/completion_test/dot/nested/nested_4/nested_4.k");
+
+        let pos = KCLPos {
+            filename: file.to_owned(),
+            line: 9,
+            column: Some(9),
+        };
+
+        let tool = toolchain::default();
+
+        let mut got = completion(None, &program, &pos, &gs, &tool).unwrap();
+
+        match &mut got {
+            CompletionResponse::Array(arr) => {
+                let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
+                insta::assert_snapshot!(format!("{:?}", labels));
+            }
+            CompletionResponse::List(_) => panic!("test failed"),
+        }
+    }
 }

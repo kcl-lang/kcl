@@ -101,7 +101,7 @@ impl<'ctx> Resolver<'ctx> {
                     return;
                 }
             };
-            self.must_assignable_to(ty.clone(), expected_ty, args[i].get_span_pos(), None)
+            self.must_assignable_to(ty.clone(), expected_ty, args[i].get_span_pos(), None, true)
         }
         // Do keyword argument type check
         for (i, (arg_name, kwarg_ty)) in kwarg_types.iter().enumerate() {
@@ -132,6 +132,7 @@ impl<'ctx> Resolver<'ctx> {
                     expected_types[0].clone(),
                     kwargs[i].get_span_pos(),
                     None,
+                    true,
                 );
             };
         }

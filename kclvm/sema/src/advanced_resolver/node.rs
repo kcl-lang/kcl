@@ -93,20 +93,6 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
             }
             self.ctx.maybe_def = true;
             self.walk_identifier_expr(target)?;
-
-            if let Some(target_ty) = self.ctx.node_ty_map.get(&self.ctx.get_node_key(&target.id)) {
-                match &target_ty.kind {
-                    TypeKind::Schema(_) => {
-                        let schema_symbol = self
-                            .gs
-                            .get_symbols()
-                            .get_type_symbol(&target_ty, self.get_current_module_info())
-                            .ok_or(anyhow!("schema_symbol not found"))?;
-                        self.ctx.current_schema_symbol = Some(schema_symbol);
-                    }
-                    _ => {}
-                }
-            }
             self.ctx.maybe_def = false;
         }
         self.walk_type_expr(assign_stmt.ty.as_ref().map(|ty| ty.as_ref()))?;
@@ -702,17 +688,8 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
             .clone();
         match schema_ty.kind {
             TypeKind::Schema(_) => {
-                let schema_symbol = self
-                    .gs
-                    .get_symbols()
-                    .get_type_symbol(&schema_ty, self.get_current_module_info())
-                    .ok_or(anyhow!("schema_symbol not found"))?;
-                self.ctx.current_schema_symbol = Some(schema_symbol);
                 self.expr(&schema_expr.config)?;
                 self.do_arguments_symbol_resolve(&schema_expr.args, &schema_expr.kwargs)?;
-            }
-            TypeKind::Dict(_) => {
-                // TODO: for builtin ty symbol, get_type_symbol()  just return None
             }
             _ => {
                 // Invalid schema type, nothing todo
@@ -854,7 +831,27 @@ impl<'ctx> AdvancedResolver<'ctx> {
             self.ctx.end_pos = end;
         }
         self.ctx.cur_node = expr.id.clone();
-        match self.walk_expr(&expr.node) {
+
+        if let Some(expr_ty) = self.ctx.node_ty_map.get(&self.ctx.get_node_key(&expr.id)) {
+            match &expr_ty.kind {
+                TypeKind::Schema(_) => {
+                    let schema_symbol = self
+                        .gs
+                        .get_symbols()
+                        .get_type_symbol(&expr_ty, self.get_current_module_info())
+                        .ok_or(anyhow!("schema_symbol not found"))?;
+                    self.ctx.schema_symbol_stack.push(Some(schema_symbol));
+                }
+                _ => {
+                    self.ctx.schema_symbol_stack.push(None);
+                }
+            }
+        }
+
+        let expr_symbol = self.walk_expr(&expr.node);
+        self.ctx.schema_symbol_stack.pop();
+
+        match expr_symbol {
             Ok(None) => match self.ctx.node_ty_map.get(&self.ctx.get_node_key(&expr.id)) {
                 Some(ty) => {
                     if let ast::Expr::Missing(_) = expr.node {
@@ -1208,7 +1205,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
     ) -> anyhow::Result<()> {
         let (start, end) = (self.ctx.start_pos.clone(), self.ctx.end_pos.clone());
 
-        let schema_symbol = self.ctx.current_schema_symbol.take();
+        let schema_symbol = self.ctx.schema_symbol_stack.last().unwrap_or(&None).clone();
         let kind = match &schema_symbol {
             Some(_) => LocalSymbolScopeKind::SchemaConfig,
             None => LocalSymbolScopeKind::Value,
@@ -1231,9 +1228,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
         for entry in entries.iter() {
             if let Some(key) = &entry.node.key {
                 self.ctx.maybe_def = true;
-                if let Some(key_symbol_ref) = self.expr(key)? {
-                    self.set_current_schema_symbol(key_symbol_ref)?;
-                }
+                self.expr(key)?;
                 self.ctx.maybe_def = false;
             }
 
@@ -1250,43 +1245,6 @@ impl<'ctx> AdvancedResolver<'ctx> {
             self.leave_scope();
         }
         self.leave_scope();
-        Ok(())
-    }
-
-    pub(crate) fn set_current_schema_symbol(
-        &mut self,
-        key_symbol_ref: SymbolRef,
-    ) -> anyhow::Result<()> {
-        let symbols = self.gs.get_symbols();
-
-        if let Some(def_symbol_ref) = symbols
-            .get_symbol(key_symbol_ref)
-            .ok_or(anyhow!("def_symbol_ref not found"))?
-            .get_definition()
-        {
-            if let Some(node_key) = symbols.symbols_info.symbol_node_map.get(&def_symbol_ref) {
-                if let Some(def_ty) = self.ctx.node_ty_map.get(node_key) {
-                    if let Some(ty) = get_possible_schema_ty(def_ty.clone()) {
-                        self.ctx.current_schema_symbol =
-                            self.gs.get_symbols().get_type_symbol(&ty, None);
-                    }
-                }
-            }
-        }
-        fn get_possible_schema_ty(ty: Arc<Type>) -> Option<Arc<Type>> {
-            match &ty.kind {
-                crate::ty::TypeKind::List(ty) => get_possible_schema_ty(ty.clone()),
-                crate::ty::TypeKind::Dict(dict_ty) => {
-                    get_possible_schema_ty(dict_ty.val_ty.clone())
-                }
-                crate::ty::TypeKind::Union(_) => {
-                    // Todo: fix union schema type
-                    None
-                }
-                crate::ty::TypeKind::Schema(_) => Some(ty.clone()),
-                _ => None,
-            }
-        }
         Ok(())
     }
 
