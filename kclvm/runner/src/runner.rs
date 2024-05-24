@@ -557,6 +557,9 @@ impl FastRunner {
                 Err(err) => err.to_string(),
             };
         }
+        // Free all value references at runtime. This is because the runtime context marks
+        // all KCL objects and holds their copies, so it is necessary to actively GC them.
+        ctx.borrow().gc();
         Ok(result)
     }
 }

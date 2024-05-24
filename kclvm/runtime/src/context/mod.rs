@@ -4,7 +4,7 @@ pub mod api;
 pub use api::*;
 use std::fmt;
 
-use crate::{BacktraceFrame, PanicInfo, RuntimePanicRecord};
+use crate::{kclvm_value_delete, kclvm_value_ref_t, BacktraceFrame, PanicInfo, RuntimePanicRecord};
 
 impl fmt::Display for PanicInfo {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -178,5 +178,14 @@ impl crate::Context {
         self.panic_info.rust_file = record.rust_file.clone();
         self.panic_info.rust_line = record.rust_line;
         self.panic_info.rust_col = record.rust_col;
+    }
+
+    pub fn gc(&self) {
+        unsafe {
+            for o in &self.objects {
+                let ptr = (*o) as *mut kclvm_value_ref_t;
+                kclvm_value_delete(ptr);
+            }
+        }
     }
 }

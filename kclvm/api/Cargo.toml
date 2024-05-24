@@ -41,7 +41,7 @@ tokio = { version = "1.37.0", features = ["full"] }
 [dev-dependencies]
 criterion = "0.4.0"
 
-[build_dependencies]
+[build-dependencies]
 protoc-bin-vendored = "3.0.0"
 prost-build = "0.11.8"
 prost-wkt-build = {path = "../third-party/prost-wkt/wkt-build", version = "0.4.1"}

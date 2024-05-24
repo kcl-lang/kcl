@@ -41,7 +41,7 @@ pub unsafe extern "C" fn kclvm_builtin_option(
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
 ) -> *mut kclvm_value_ref_t {
-    let ctx_ref = mut_ptr_as_ref(ctx);
+    let ctx = mut_ptr_as_ref(ctx);
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
 
@@ -172,34 +172,24 @@ pub unsafe extern "C" fn kclvm_builtin_option(
     }
 
     if let Some(arg0) = get_call_arg_str(args, kwargs, 0, Some("key")) {
-        if let Some(x) = ctx_ref.app_args.get(&arg0) {
-            if *x == 0 {
-                return kclvm_value_Undefined(ctx);
-            }
-
-            let opt_value = mut_ptr_as_ref((*x) as *mut kclvm_value_ref_t);
-
+        if let Some(x) = ctx.option_values.get(&arg0) {
             if let Some(kwarg_type) = get_call_arg_str(args, kwargs, 1, Some("type")) {
-                return _value_to_type(opt_value, kwarg_type).into_raw(ctx_ref);
+                return _value_to_type(x, kwarg_type).into_raw(ctx);
             }
-
-            return (*x) as *mut kclvm_value_ref_t;
+            return x.clone().into_raw(ctx);
         } else if let Some(kwarg_default) = get_call_arg(args, kwargs, 3, Some("default")) {
             if let Some(kwarg_type) = get_call_arg_str(args, kwargs, 1, Some("type")) {
-                return _value_to_type(&kwarg_default, kwarg_type).into_raw(ctx_ref);
+                return _value_to_type(&kwarg_default, kwarg_type).into_raw(ctx);
             }
-
-            return kwarg_default.into_raw(ctx_ref);
+            return kwarg_default.into_raw(ctx);
         }
     }
-
     let required = get_call_arg_bool(args, kwargs, 2, Some("required")).unwrap_or_default();
     if required {
         let name = args.arg_i_str(0, Some("?".to_string())).unwrap();
         panic!("option('{name}') must be initialized, try '-D {name}=?' argument");
     }
-
-    kclvm_value_None(ctx)
+    ValueRef::none().into_raw(ctx)
 }
 
 #[no_mangle]
