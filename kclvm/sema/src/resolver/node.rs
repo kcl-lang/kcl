@@ -528,13 +528,28 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
         let mut value_ty = self.expr(&selector_expr.value);
         if value_ty.is_module() && selector_expr.has_question {
             let attr = selector_expr.attr.node.get_name();
-            self.handler.add_compile_error(
+            let fix_range=selector_expr.value.get_span_pos();
+            let (start_pos, end_pos)=fix_range;
+            let start_column=end_pos.column;
+            let end_column=end_pos.column.map(|col| col.saturating_add(1));
+            let modified_start_pos = Position {
+                column: start_column,
+                ..start_pos.clone()
+            };
+            let modified_end_pos = Position {
+                column: end_column,
+                ..end_pos.clone()
+            };
+            let modified_fix_range=(modified_start_pos,modified_end_pos);
+
+            self.handler.add_compile_error_with_suggestions(
                 &format!(
                     "For the module type, the use of '?.{}' is unnecessary and it can be modified as '.{}'",
                     attr,
                     attr
                 ),
-                selector_expr.value.get_span_pos(),
+                modified_fix_range,
+                Some(vec![])
             );
         }
         for name in &selector_expr.attr.node.names {
