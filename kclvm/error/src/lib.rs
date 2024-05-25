@@ -337,7 +337,14 @@ pub enum ParseError {
     Message {
         message: String,
         span: Span,
+        fix_info: Option<FixInfo>,
     },
+}
+
+#[derive(Debug, Clone)]
+pub struct FixInfo {
+    pub suggestion: Option<String>,
+    pub replacement: Option<String>,
 }
 
 /// A single string error.
@@ -357,13 +364,17 @@ impl ParseError {
     }
 
     /// New a message parse error with span.
-    pub fn message(message: String, span: Span) -> Self {
-        ParseError::Message { message, span }
+    pub fn message(message: String, span: Span, fix_info: Option<FixInfo>) -> Self {
+        ParseError::Message {
+            message,
+            span,
+            fix_info,
+        }
     }
 }
 
 impl ParseError {
-    /// Convert a parse error into a error diagnostic.
+    /// Convert a parse error into an error diagnostic.
     pub fn into_diag(self, sess: &Session) -> Result<Diagnostic> {
         let span = match self {
             ParseError::UnexpectedToken { span, .. } => span,
@@ -371,14 +382,121 @@ impl ParseError {
         };
         let loc = sess.sm.lookup_char_pos(span.lo());
         let pos: Position = loc.into();
+        let suggestions = match self {
+            ParseError::Message {
+                fix_info: Some(ref info),
+                ..
+            } => Some(vec![
+                info.suggestion
+                    .clone()
+                    .unwrap_or_else(|| "No suggestion available".to_string()),
+                info.replacement.clone().unwrap_or_else(|| " ".to_string()),
+            ]),
+            _ => None,
+        };
+
+        let (start_pos, end_pos) = self.generate_modified_range(&self.to_string(), &pos);
+
         Ok(Diagnostic::new_with_code(
             Level::Error,
             &self.to_string(),
             None,
-            (pos.clone(), pos),
+            (start_pos, end_pos),
             Some(DiagnosticId::Error(ErrorKind::InvalidSyntax)),
-            None,
+            suggestions,
         ))
+    }
+
+    fn generate_modified_range(&self, msg: &str, pos: &Position) -> (Position, Position) {
+        match msg {
+            "invalid token '!', consider using 'not '" => {
+                let start_column = pos.column.unwrap_or(0);
+                let end_column = start_column + 1;
+                (
+                    Position {
+                        column: Some(start_column),
+                        ..pos.clone()
+                    },
+                    Position {
+                        column: Some(end_column),
+                        ..pos.clone()
+                    },
+                )
+            }
+            "'else if' here is invalid in KCL, consider using the 'elif' keyword" => {
+                let start_column = pos.column.map(|col| col.saturating_sub(5)).unwrap_or(0);
+                let end_column = pos.column.map(|col| col.saturating_add(2)).unwrap_or(0);
+                (
+                    Position {
+                        column: Some(start_column),
+                        ..pos.clone()
+                    },
+                    Position {
+                        column: Some(end_column),
+                        ..pos.clone()
+                    },
+                )
+            }
+            "error nesting on close paren"
+            | "mismatched closing delimiter"
+            | "error nesting on close brace" => {
+                let start_column = pos.column.unwrap_or(0);
+                let end_column = start_column + 1;
+                (
+                    Position {
+                        column: Some(start_column),
+                        ..pos.clone()
+                    },
+                    Position {
+                        column: Some(end_column),
+                        ..pos.clone()
+                    },
+                )
+            }
+            "unterminated string" => {
+                let start_column = pos.column.unwrap_or(0);
+                let end_column = start_column + 1;
+                (
+                    Position {
+                        column: Some(start_column),
+                        ..pos.clone()
+                    },
+                    Position {
+                        column: Some(end_column),
+                        ..pos.clone()
+                    },
+                )
+            }
+            "unexpected character after line continuation character" => {
+                let start_column = pos.column.unwrap_or(0);
+                let end_column = u32::MAX;
+                (
+                    Position {
+                        column: Some(start_column),
+                        ..pos.clone()
+                    },
+                    Position {
+                        column: Some(end_column.into()),
+                        ..pos.clone()
+                    },
+                )
+            }
+            "the semicolon ';' here is unnecessary, please remove it" => {
+                let start_column = pos.column.unwrap_or(0);
+                let end_column = start_column + 1;
+                (
+                    Position {
+                        column: Some(start_column),
+                        ..pos.clone()
+                    },
+                    Position {
+                        column: Some(end_column),
+                        ..pos.clone()
+                    },
+                )
+            }
+            _ => (pos.clone(), pos.clone()),
+        }
     }
 }
 
@@ -405,7 +523,11 @@ impl SessionDiagnostic for ParseError {
                 diag.append_component(Box::new(format!(" {}\n", self.to_string())));
                 Ok(diag)
             }
-            ParseError::Message { message, span } => {
+            ParseError::Message {
+                message,
+                span,
+                fix_info: _,
+            } => {
                 let code_snippet = CodeSnippet::new(span, Arc::clone(&sess.sm));
                 diag.append_component(Box::new(code_snippet));
                 diag.append_component(Box::new(format!(" {message}\n")));

@@ -46,6 +46,34 @@ pub(crate) fn quick_fix(uri: &Url, diags: &[Diagnostic]) -> Vec<lsp_types::CodeA
                                 }));
                             }
                         }
+                        ErrorKind::InvalidSyntax => {
+                            let replacement_texts = extract_suggested_replacements(&diag.data);
+                            if replacement_texts.len() >= 2 {
+                                let title = &replacement_texts[0];
+                                let replacement_text = &replacement_texts[1];
+
+                                let mut changes = HashMap::new();
+
+                                changes.insert(
+                                    uri.clone(),
+                                    vec![TextEdit {
+                                        range: diag.range,
+                                        new_text: replacement_text.clone(),
+                                    }],
+                                );
+
+                                code_actions.push(CodeActionOrCommand::CodeAction(CodeAction {
+                                    title: title.clone(),
+                                    kind: Some(CodeActionKind::QUICKFIX),
+                                    diagnostics: Some(vec![diag.clone()]),
+                                    edit: Some(lsp_types::WorkspaceEdit {
+                                        changes: Some(changes),
+                                        ..Default::default()
+                                    }),
+                                    ..Default::default()
+                                }));
+                            }
+                        }
                         _ => continue,
                     },
                     DiagnosticId::Warning(warn) => match warn {
@@ -123,6 +151,7 @@ pub(crate) fn convert_code_to_kcl_diag_id(code: &NumberOrString) -> Option<Diagn
             "UnusedImportWarning" => Some(DiagnosticId::Warning(WarningKind::UnusedImportWarning)),
             "ReimportWarning" => Some(DiagnosticId::Warning(WarningKind::ReimportWarning)),
             "CompileError" => Some(DiagnosticId::Error(ErrorKind::CompileError)),
+            "InvalidSyntax" => Some(DiagnosticId::Error(ErrorKind::InvalidSyntax)),
             "ImportPositionWarning" => {
                 Some(DiagnosticId::Warning(WarningKind::ImportPositionWarning))
             }

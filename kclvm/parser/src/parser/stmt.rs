@@ -599,9 +599,11 @@ impl<'a> Parser<'a> {
 
             // `else if -> elif` error recovery.
             if self.token.is_keyword(kw::If) {
-                self.sess.struct_span_error(
+                self.sess.struct_span_error_with_suggestions(
                     "'else if' here is invalid in KCL, consider using the 'elif' keyword",
                     self.token.span,
+                    Some("Use 'elif' instead of 'else if'".to_string()),
+                    Some("elif".to_string()),
                 );
             } else if self.token.kind != TokenKind::Colon {
                 self.sess

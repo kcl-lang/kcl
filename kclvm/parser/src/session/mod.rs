@@ -3,7 +3,7 @@ use compiler_base_macros::bug;
 use compiler_base_session::Session;
 use indexmap::IndexSet;
 use kclvm_ast::token::Token;
-use kclvm_error::{Diagnostic, Handler, ParseError};
+use kclvm_error::{Diagnostic, FixInfo, Handler, ParseError};
 use kclvm_span::{BytePos, Loc, Span};
 use std::{cell::RefCell, sync::Arc};
 
@@ -65,6 +65,27 @@ impl ParseSession {
         self.add_parse_err(ParseError::Message {
             message: msg.to_string(),
             span,
+            fix_info: None,
+        });
+    }
+
+    #[inline]
+    pub fn struct_span_error_with_suggestions(
+        &self,
+        msg: &str,
+        span: Span,
+        suggestion_text: Option<String>,
+        replacement_text: Option<String>,
+    ) {
+        let fix_info = Some(FixInfo {
+            suggestion: suggestion_text,
+            replacement: replacement_text,
+        });
+
+        self.add_parse_err(ParseError::Message {
+            message: msg.to_string(),
+            span,
+            fix_info,
         });
     }
 
