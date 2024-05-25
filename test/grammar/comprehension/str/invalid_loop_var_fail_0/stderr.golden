@@ -2,5 +2,5 @@ error[E2L23]: CompileError
  --> ${CWD}/main.k:2:25
   |
 2 | dataLoop = [i for i, j, k in dataString]  # error
-  |                         ^ the number of loop variables is 3, which can only be 1 or 2
+  |                       ^ the number of loop variables is 3, which can only be 1 or 2
   |
