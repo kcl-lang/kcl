@@ -228,7 +228,7 @@ impl<'ctx> Resolver<'ctx> {
                         self.handler.add_compile_error_with_suggestions(
                             &format!("UnKnown decorator {}", name),
                             decorator.get_span_pos(),
-                            Some(vec![])
+                            Some(vec![]),
                         );
                     }
                 },
