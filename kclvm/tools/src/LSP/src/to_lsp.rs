@@ -55,8 +55,13 @@ fn kcl_msg_to_lsp_diags(
                 .filter(|s| !s.is_empty())
                 .collect::<Vec<&String>>()
         })
-        .filter(|v| !v.is_empty())
-        .map(|s| json!({ "suggested_replacement": s }));
+        .map(|s| {
+            if s.is_empty() {
+                json!({ "suggested_replacement": "" })
+            } else {
+                json!({ "suggested_replacement": s })
+            }
+        });
 
     let related_information = if related_msg.is_empty() {
         None

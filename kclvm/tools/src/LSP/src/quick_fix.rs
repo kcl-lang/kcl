@@ -24,10 +24,16 @@ pub(crate) fn quick_fix(uri: &Url, diags: &[Diagnostic]) -> Vec<lsp_types::CodeA
                                         new_text: replacement_text.clone(),
                                     }],
                                 );
-                                let action_title = format!(
-                                    "a local variable with a similar name exists: `{}`",
-                                    replacement_text
-                                );
+
+                                let action_title = if replacement_text.is_empty() {
+                                    "Consider removing the problematic code".to_string()
+                                } else {
+                                    format!(
+                                        "A local variable with a similar name exists: `{}`",
+                                        replacement_text
+                                    )
+                                };
+
                                 code_actions.push(CodeActionOrCommand::CodeAction(CodeAction {
                                     title: action_title,
                                     kind: Some(CodeActionKind::QUICKFIX),

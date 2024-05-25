@@ -38,12 +38,17 @@ impl<'ctx> Resolver<'ctx> {
         let mut kwarg_types: Vec<(String, TypeRef)> = vec![];
         let mut check_table: IndexSet<String> = IndexSet::default();
         for kw in kwargs {
+            let (suggs, msg) = self.get_arg_kw_err_suggestion(kw, func_ty);
             if !kw.node.arg.node.names.is_empty() {
                 let arg_name = &kw.node.arg.node.names[0].node;
                 if check_table.contains(arg_name) {
-                    self.handler.add_compile_error(
-                        &format!("{} has duplicated keyword argument {}", func_name, arg_name),
+                    self.handler.add_compile_error_with_suggestions(
+                        &format!(
+                            "{} has duplicated keyword argument {}{}",
+                            func_name, arg_name, msg
+                        ),
                         kw.get_span_pos(),
+                        Some(suggs),
                     );
                 }
                 check_table.insert(arg_name.to_string());
@@ -53,7 +58,7 @@ impl<'ctx> Resolver<'ctx> {
                 kwarg_types.push((arg_name.to_string(), arg_value_type.clone()));
             } else {
                 self.handler
-                    .add_compile_error("missing argument", kw.get_span_pos());
+                    .add_compile_error(&format!("missing argument{}", msg), kw.get_span_pos());
             }
         }
         // Do few argument count check
@@ -87,7 +92,7 @@ impl<'ctx> Resolver<'ctx> {
                 Some(param) => param.ty.clone(),
                 None => {
                     if !func_ty.is_variadic {
-                        self.handler.add_compile_error(
+                        self.handler.add_compile_error_with_suggestions(
                             &format!(
                                 "{} takes {} but {} were given",
                                 func_name,
@@ -96,6 +101,7 @@ impl<'ctx> Resolver<'ctx> {
                                 args.len(),
                             ),
                             args[i].get_span_pos(),
+                            Some(vec![]),
                         );
                     }
                     return;
@@ -112,12 +118,14 @@ impl<'ctx> Resolver<'ctx> {
                 .any(|x| x == *arg_name)
                 && !func_ty.is_variadic
             {
-                self.handler.add_compile_error(
+                let (suggs, msg) = self.get_arg_kw_err_suggestion_from_name(arg_name, func_ty);
+                self.handler.add_compile_error_with_suggestions(
                     &format!(
-                        "{} got an unexpected keyword argument '{}'",
-                        func_name, arg_name
+                        "{} got an unexpected keyword argument '{}'{}",
+                        func_name, arg_name, msg
                     ),
                     kwargs[i].get_span_pos(),
+                    Some(suggs),
                 );
             }
             let expected_types: Vec<TypeRef> = func_ty
@@ -136,5 +144,47 @@ impl<'ctx> Resolver<'ctx> {
                 );
             };
         }
+    }
+
+    /// Generate suggestions for keyword argument errors.
+    pub(crate) fn get_arg_kw_err_suggestion(
+        &self,
+        kw: &ast::NodeRef<ast::Keyword>,
+        func_ty: &FunctionType,
+    ) -> (Vec<String>, String) {
+        let attr = &kw.node.arg.node.names[0].node;
+        let valid_params: Vec<&str> = func_ty
+            .params
+            .iter()
+            .map(|param| param.name.as_str())
+            .collect();
+        let suggs = suggestions::provide_suggestions(attr, valid_params.into_iter());
+
+        let suggestion = if !suggs.is_empty() {
+            format!(", did you mean '{}'?", suggs.join(" or "))
+        } else {
+            String::new()
+        };
+
+        (suggs, suggestion)
+    }
+
+    pub(crate) fn get_arg_kw_err_suggestion_from_name(
+        &self,
+        arg_name: &str,
+        func_ty: &FunctionType,
+    ) -> (Vec<String>, String) {
+        let valid_params: Vec<&str> = func_ty
+            .params
+            .iter()
+            .map(|param| param.name.as_str())
+            .collect();
+        let suggs = suggestions::provide_suggestions(arg_name, valid_params.into_iter());
+        let suggestion = if !suggs.is_empty() {
+            format!(", did you mean '{}'?", suggs.join(" or "))
+        } else {
+            String::new()
+        };
+        (suggs, suggestion)
     }
 }

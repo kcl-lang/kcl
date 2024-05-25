@@ -8,5 +8,5 @@ error[E2L23]: CompileError
  --> ${CWD}/main.k:4:17
   |
 4 | person = Person(_naem="Alice") {}
-  |                 ^ "Person" got an unexpected keyword argument '_naem'
+  |                 ^ "Person" got an unexpected keyword argument '_naem', did you mean '_name'?
   |
