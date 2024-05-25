@@ -1758,6 +1758,7 @@ dependencies = [
  "anyhow",
  "compiler_base_macros",
  "compiler_base_session",
+ "fancy-regex",
  "indexmap 1.9.3",
  "kclvm-ast",
  "kclvm-ast-pretty",

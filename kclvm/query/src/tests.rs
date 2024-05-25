@@ -5,8 +5,9 @@ use std::{
 };
 
 use super::{r#override::apply_override_on_module, *};
-use crate::{path::parse_attribute_path, selector::list_variables};
-use kclvm_ast::ast;
+use crate::{
+    path::parse_attribute_path, r#override::parse_override_spec, selector::list_variables,
+};
 use kclvm_error::{DiagnosticId, ErrorKind, Level};
 use kclvm_parser::parse_file_force_errors;
 use pretty_assertions::assert_eq;
@@ -26,20 +27,20 @@ fn get_test_dir(sub: String) -> PathBuf {
 fn test_override_file_simple() {
     let specs = vec![
         "config.image=image/image".to_string(),
-        ":config.image=\"image/image:v1\"".to_string(),
-        ":config.data={id=1,value=\"override_value\"}".to_string(),
-        ":dict_config={\"image\": \"image/image:v2\" \"data\":{\"id\":2 \"value2\": \"override_value2\"}}".to_string(),
-        ":envs=[{key=\"key1\" value=\"value1\"} {key=\"key2\" value=\"value2\"}]".to_string(),
-        ":isfilter=False".to_string(),
-        ":count=2".to_string(),
-        ":msg=\"Hi World\"".to_string(),
-        ":delete-".to_string(),
-        ":dict_delete.image-".to_string(),
-        ":dict_delete_whole-".to_string(),
-        ":insert_config.key=1".to_string(),
-        ":uni_config.labels.key1=1".to_string(),
-        ":config_unification=Config {\"image\": \"image/image:v4\"}".to_string(),
-        ":config_unification_delete-".to_string()
+        "config.image=\"image/image:v1\"".to_string(),
+        "config.data={id=1,value=\"override_value\"}".to_string(),
+        "dict_config={\"image\": \"image/image:v2\" \"data\":{\"id\":2 \"value2\": \"override_value2\"}}".to_string(),
+        "envs=[{key=\"key1\" value=\"value1\"} {key=\"key2\" value=\"value2\"}]".to_string(),
+        "isfilter=False".to_string(),
+        "count=2".to_string(),
+        "msg=\"Hi World\"".to_string(),
+        "delete-".to_string(),
+        "dict_delete.image-".to_string(),
+        "dict_delete_whole-".to_string(),
+        "insert_config.key=1".to_string(),
+        "uni_config.labels.key1=1".to_string(),
+        "config_unification=Config {\"image\": \"image/image:v4\"}".to_string(),
+        "config_unification_delete-".to_string()
     ];
 
     let simple_path = get_test_dir("simple.k".to_string());
@@ -110,12 +111,14 @@ fn test_override_file_config() {
         "appConfigurationUnification.labels.key.key=\"override_value\"".to_string(),
         "appConfigurationUnification.overQuota=False".to_string(),
         "appConfigurationUnification.resource.cpu-".to_string(),
+        "config.x:1".to_string(),
+        "config.y=1".to_string(),
+        "config.z+=[1,2,3]".to_string(),
+        "var1:1".to_string(),
+        "var2=1".to_string(),
+        "var3+=[1,2,3]".to_string(),
+        "var4:AppConfiguration {image:'image'}".to_string(),
     ];
-    let overrides = specs
-        .iter()
-        .map(|s| parse_override_spec(s))
-        .filter_map(Result::ok)
-        .collect::<Vec<ast::OverrideSpec>>();
     let import_paths = vec![];
 
     let mut cargo_file_path = PathBuf::from(CARGO_FILE_PATH);
@@ -123,8 +126,8 @@ fn test_override_file_config() {
     let abs_path = cargo_file_path.to_str().unwrap();
 
     let mut module = parse_file_force_errors(abs_path, None).unwrap();
-    for o in &overrides {
-        apply_override_on_module(&mut module, o, &import_paths).unwrap();
+    for s in &specs {
+        apply_override_on_module(&mut module, s, &import_paths).unwrap();
     }
     let expected_code = print_ast_module(&module);
     assert_eq!(
@@ -178,6 +181,11 @@ appConfigurationUnification: AppConfiguration {
     mainContainer: Main {name: "override_name"}
     overQuota: False
 }
+config = {x: 1, y = 1, z += [1, 2, 3]}
+var1 = 1
+var2 = 1
+var3 += [1, 2, 3]
+var4: AppConfiguration {image: 'image'}
 "#
     );
 }
@@ -692,5 +700,5 @@ fn test_override_file_with_invalid_spec() {
     let result = override_file(&file, &specs, &import_paths);
     assert!(result.is_err());
     let err = result.err().unwrap();
-    assert_eq!(err.to_string(), "Invalid spec format '....', expected <pkgpath>:<field_path>=<filed_value> or <pkgpath>:<field_path>-");
+    assert_eq!(err.to_string(), "Invalid spec format '....', expected <field_path>=filed_value>, <field_path>:filed_value>, <field_path>+=filed_value> or <field_path>-");
 }

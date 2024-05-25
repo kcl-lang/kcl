@@ -18,14 +18,6 @@ message CmdArgSpec {
 	string value = 2;
 }
 
-// kcl main.k -O pkgpath:path.to.field=field_value
-message CmdOverrideSpec {
-	string pkgpath = 1;
-	string field_path = 2;
-	string field_value = 3;
-	string action = 4;
-}
-
 // ----------------------------------------------------------------------------
 // Error types
 // ----------------------------------------------------------------------------
@@ -190,7 +182,7 @@ message ExecProgram_Args {
 	repeated string k_code_list = 3;
 	
 	repeated CmdArgSpec args = 4;
-	repeated CmdOverrideSpec overrides = 5;
+	repeated string overrides = 5;
 
 	bool disable_yaml_result = 6;
 
