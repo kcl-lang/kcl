@@ -1,0 +1,11 @@
+error[E3M38]: EvaluationError
+ --> ${CWD}/main.k:9:11
+  |
+9 | JohnDoe = Person {
+  |           ^ Instance check failed
+  |
+ --> ${CWD}/main.k:7:1
+  |
+7 |         labels, "labels should be defined and not empty"
+  |  Check failed on the condition: labels should be defined and not empty
+  |

@@ -293,7 +293,32 @@ impl SchemaType {
         }
     }
 
-    pub fn schema_ty_signature_str(&self) -> String {
+    pub fn schema_ty_signature_str(&self) -> (String, String) {
+        let base: String = if let Some(base) = &self.base {
+            format!("({})", base.name)
+        } else {
+            "".to_string()
+        };
+        let params: String = if self.func.params.is_empty() {
+            "".to_string()
+        } else {
+            format!(
+                "[{}]",
+                self.func
+                    .params
+                    .iter()
+                    .map(|p| format!("{}: {}", p.name.clone(), p.ty.ty_str()))
+                    .collect::<Vec<String>>()
+                    .join(", ")
+            )
+        };
+
+        let rest_sign = format!("schema {}{}{}:", self.name, params, base);
+
+        (self.pkgpath.clone(), rest_sign)
+    }
+
+    pub fn schema_ty_signature_no_pkg(&self) -> String {
         let base: String = if let Some(base) = &self.base {
             format!("({})", base.name)
         } else {
@@ -321,8 +346,7 @@ impl SchemaType {
         } else {
             "".to_string()
         };
-
-        format!("{}\n\nschema {}{}", self.pkgpath, self.name, params_str)
+        format!("schema {}{}", self.name, params_str)
     }
 }
 

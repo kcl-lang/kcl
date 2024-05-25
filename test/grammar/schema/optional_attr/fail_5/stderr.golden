@@ -1,0 +1,6 @@
+error[E3M38]: EvaluationError
+ --> ${CWD}/main.k:4:1
+  |
+4 | values: Values = Values {a = 1} | {a = Undefined}
+  |  attribute 'a' of Values is required and can't be None or Undefined
+  |

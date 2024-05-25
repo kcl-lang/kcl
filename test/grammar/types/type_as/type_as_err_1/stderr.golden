@@ -1,0 +1,6 @@
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:2:12
+  |
+2 | b: float = a as float
+  |            ^ Conversion of type 'int | str' to type 'float' may be a mistake because neither type sufficiently overlaps with the other
+  |

@@ -1,0 +1,11 @@
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:5:5
+  |
+5 |     x_01: "HTTP"
+  |     ^ expected str(TCP) | str(UDP), got str(HTTP)
+  |
+ --> ${CWD}/main.k:2:5
+  |
+2 |     x_01: "TCP" | 'UDP'
+  |     ^ variable is defined here, its type is str(TCP) | str(UDP), but got str(HTTP)
+  |

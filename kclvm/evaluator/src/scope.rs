@@ -24,6 +24,8 @@ pub struct Scope {
     pub scalars: Vec<ValueRef>,
     /// schema_scalar_idx denotes whether a schema exists in the scalar list.
     pub schema_scalar_idx: usize,
+    /// is_schema denotes whether the scope is a schema.
+    pub is_schema: bool,
     /// Scope normal variables
     pub variables: IndexMap<String, ValueRef>,
     /// Potential arguments in the current scope, such as schema/lambda arguments.
@@ -107,14 +109,34 @@ impl<'ctx> Evaluator<'ctx> {
         scopes.len() - 1
     }
 
-    /// Enter scope
-    pub(crate) fn enter_scope(&self) {
+    /// Get the scope level
+    pub(crate) fn is_schema_scope(&self) -> bool {
+        let current_pkgpath = self.current_pkgpath();
+        let pkg_scopes = &self.pkg_scopes.borrow();
+        let msg = format!("pkgpath {} is not found", current_pkgpath);
+        let scopes = pkg_scopes.get(&current_pkgpath).expect(&msg);
+        if let Some(last_scope) = scopes.last() {
+            last_scope.is_schema
+        } else {
+            false
+        }
+    }
+
+    /// Enter a schema scope
+    pub(crate) fn enter_schema_scope(&self, is_schema: bool) {
         let current_pkgpath = self.current_pkgpath();
         let pkg_scopes = &mut self.pkg_scopes.borrow_mut();
         let msg = format!("pkgpath {} is not found", current_pkgpath);
         let scopes = pkg_scopes.get_mut(&current_pkgpath).expect(&msg);
-        let scope = Scope::default();
+        let mut scope = Scope::default();
+        scope.is_schema = is_schema;
         scopes.push(scope);
+    }
+
+    /// Enter scope
+    #[inline]
+    pub(crate) fn enter_scope(&self) {
+        self.enter_schema_scope(false);
     }
 
     /// Leave scope

@@ -1,0 +1,30 @@
+{
+  "dict1": {
+    "type_name": "",
+    "op_sym": "=",
+    "value": "{\"a\": 1, \"b\": 2}",
+    "list_items": [],
+    "dict_entries": [
+      {
+        "key": "a",
+        "value": {
+          "type_name": "",
+          "op_sym": ":",
+          "value": "1",
+          "list_items": [],
+          "dict_entries": []
+        }
+      },
+      {
+        "key": "b",
+        "value": {
+          "type_name": "",
+          "op_sym": ":",
+          "value": "2",
+          "list_items": [],
+          "dict_entries": []
+        }
+      }
+    ]
+  }
+}

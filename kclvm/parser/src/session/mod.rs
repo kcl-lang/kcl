@@ -41,6 +41,14 @@ impl ParseSession {
         )
     }
 
+    /// Construct an loc of ont token.
+    pub fn token_loc(&self, tok: Token) -> (Loc, Loc) {
+        (
+            self.lookup_char_pos(tok.span.lo()),
+            self.lookup_char_pos(tok.span.hi()),
+        )
+    }
+
     /// Struct and report an error based on a token and not abort the compiler process.
     #[inline]
     pub fn struct_token_error(&self, expected: &[String], got: Token) {

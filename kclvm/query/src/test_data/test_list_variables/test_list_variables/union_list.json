@@ -1,0 +1,24 @@
+{
+  "union_list": {
+    "type_name": "",
+    "op_sym": "=",
+    "value": "[*_list0, *_list1]",
+    "list_items": [
+      {
+        "type_name": "",
+        "op_sym": "",
+        "value": "*_list0",
+        "list_items": [],
+        "dict_entries": []
+      },
+      {
+        "type_name": "",
+        "op_sym": "",
+        "value": "*_list1",
+        "list_items": [],
+        "dict_entries": []
+      }
+    ],
+    "dict_entries": []
+  }
+}

@@ -7,21 +7,15 @@ use crate::*;
 impl Context {
     pub fn builtin_option_init(&mut self, key: &str, value: &str) {
         if let Ok(x) = ValueRef::from_json(self, value) {
-            let addr = x.into_raw(self) as u64;
-            self.app_args.insert(key.to_string(), addr);
+            self.option_values.insert(key.to_string(), x);
             return;
         }
-        let addr = ValueRef::str(value).into_raw(self) as u64;
-        self.app_args.insert(key.to_string(), addr);
+        self.option_values
+            .insert(key.to_string(), ValueRef::str(value));
     }
 
     pub fn builtin_option_reset(&mut self) {
-        for (_, x) in self.app_args.iter() {
-            if (*x) != 0 {
-                // kclvm_value_delete((*x) as *mut ValueRef);
-            }
-        }
-        self.app_args.clear();
+        self.option_values.clear();
     }
 }
 

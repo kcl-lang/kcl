@@ -1,0 +1,6 @@
+error[E3M38]: EvaluationError
+ --> ${CWD}/main.k:1:1
+  |
+1 | assert 1 == 2, '1 is not equal to 2'
+  |  1 is not equal to 2
+  |

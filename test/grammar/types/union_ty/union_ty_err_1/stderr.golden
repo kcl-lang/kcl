@@ -1,0 +1,6 @@
+error[E2L23]: CompileError
+  --> ${CWD}/main.k:14:7
+   |
+14 |     x.d = 1
+   |       ^ Cannot add member 'd' to 'schemas ["A", "B", "C"]'
+   |

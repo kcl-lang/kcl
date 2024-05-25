@@ -47,3 +47,6 @@ proc_macro_crate = { path = "../../benches/proc_macro_crate" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tokio = { version = "1.37.0", features = ["full"] }
+
+[dev-dependencies]
+insta = "1.8.0"

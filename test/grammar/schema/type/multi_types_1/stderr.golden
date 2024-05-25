@@ -1,0 +1,11 @@
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:5:5
+  |
+5 |     "port": float(80)
+  |     ^ expected int | str, got float
+  |
+ --> ${CWD}/main.k:2:5
+  |
+2 |     port: int | str
+  |     ^ variable is defined here, its type is int | str, but got float
+  |

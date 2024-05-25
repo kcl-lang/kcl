@@ -1,0 +1,6 @@
+error[E2L23]: CompileError
+ --> ${CWD}/main.k:2:8
+  |
+2 | b = "${c + 1}"
+  |        ^ name 'c' is not defined
+  |

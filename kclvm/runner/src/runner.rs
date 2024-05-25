@@ -9,7 +9,6 @@ use kclvm_config::{
     settings::{SettingsFile, SettingsPathBuf},
 };
 use kclvm_error::{Diagnostic, Handler};
-use kclvm_query::r#override::parse_override_spec;
 #[cfg(not(target_arch = "wasm32"))]
 use kclvm_runtime::kclvm_plugin_init;
 #[cfg(feature = "llvm")]
@@ -42,7 +41,7 @@ pub struct ExecProgramArgs {
     /// -D key=value
     pub args: Vec<ast::CmdArgSpec>,
     /// -O override_spec
-    pub overrides: Vec<ast::OverrideSpec>,
+    pub overrides: Vec<String>,
     /// -S path_selector
     pub path_selector: Vec<String>,
     pub disable_yaml_result: bool,
@@ -188,8 +187,8 @@ impl TryFrom<SettingsFile> for ExecProgramArgs {
             args.fast_eval = cli_configs.fast_eval.unwrap_or_default();
             args.include_schema_type_path =
                 cli_configs.include_schema_type_path.unwrap_or_default();
-            for override_str in &cli_configs.overrides.unwrap_or_default() {
-                args.overrides.push(parse_override_spec(override_str)?);
+            for override_str in cli_configs.overrides.unwrap_or_default() {
+                args.overrides.push(override_str);
             }
             args.path_selector = cli_configs.path_selector.unwrap_or_default();
             args.set_external_pkg_from_package_maps(
@@ -557,6 +556,9 @@ impl FastRunner {
                 Err(err) => err.to_string(),
             };
         }
+        // Free all value references at runtime. This is because the runtime context marks
+        // all KCL objects and holds their copies, so it is necessary to actively GC them.
+        ctx.borrow().gc();
         Ok(result)
     }
 }

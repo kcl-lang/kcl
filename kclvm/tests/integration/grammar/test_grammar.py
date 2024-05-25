@@ -10,8 +10,6 @@ from ruamel.yaml import YAML
 TEST_FILE = "main.k"
 STDOUT_GOLDEN = "stdout.golden"
 STDERR_GOLDEN = "stderr.golden"
-STDOUT_GOLDEN_PY = "stdout.golden.py"
-STDERR_GOLDEN_PY = "stderr.golden.py"
 SETTINGS_FILE = "settings.yaml"
 TEST_PATH = "test/grammar"
 
@@ -106,6 +104,16 @@ test_path = pathlib.Path(__file__).parent.parent.parent.parent.parent.joinpath(
 test_dirs = find_test_dirs(str(test_path), "")
 
 
+def remove_ansi_escape_sequences(text):
+    ansi_escape_pattern = re.compile(r'(?:\x1B[@-_]|[\x80-\x9F])[0-?]*[ -/]*[@-~]')
+    return ansi_escape_pattern.sub('', text)
+
+
+def remove_extra_empty_lines(text):
+    lines = [line for line in text.splitlines() if line.strip()]
+    return '\n'.join(lines)
+
+
 @pytest.mark.parametrize("test_dir", test_dirs)
 def test_grammar(test_dir):
     print("Testing {}".format(test_dir))
@@ -123,31 +131,37 @@ def test_grammar(test_dir):
     stdout, stderr = process.communicate()
     print("STDOUT:\n{}".format(stdout.decode()))
     print("STDERR:\n{}".format(stderr.decode()))
-    RETURN_CODE = 0
-    KCLVM_OUTPUT = 1
-    GOLDEN_FILE = 2
-    GOLDEN_FILE_SCRIPT = 3
-    settings = {
-        "stdout": (None, stdout, STDOUT_GOLDEN, STDOUT_GOLDEN_PY),
-    }
-    for _, setting in settings.items():
-        # Attempt to generate a golden stdout.
-        golden_file_result = generate_golden_file(
-            os.path.join(test_dir, setting[GOLDEN_FILE_SCRIPT])
-        )
-        if golden_file_result:
-            compare_results(setting[KCLVM_OUTPUT], golden_file_result)
-        else:
-            # Attempt to use existing golden stdout.
-            try:
-                with open(
-                    os.path.join(test_dir, setting[GOLDEN_FILE]), "r"
-                ) as golden_file:
-                    compare_results_with_lines(setting[KCLVM_OUTPUT], golden_file)
-                if setting[RETURN_CODE] is not None:
-                    assert process.returncode == setting[RETURN_CODE]
-            except OSError:
-                # Ignore when a golden file does not exist.
-                pass
-            except Exception:
-                raise
+    # Attempt to use existing golden stdout.
+    try:
+        with open(
+            os.path.join(test_dir, STDOUT_GOLDEN), "r"
+        ) as golden_file:
+            compare_results_with_lines(stdout, golden_file)
+            assert process.returncode == 0
+    except OSError:
+        # Ignore when a golden file does not exist.
+        pass
+    except Exception:
+        raise
+
+    # Attempt to compare existing golden stdout.
+    try:
+        with open(
+            os.path.join(test_dir, STDOUT_GOLDEN), "r"
+        ) as golden_file:
+            compare_results_with_lines(stdout, golden_file)
+            assert process.returncode == 0
+    except OSError:
+        # Ignore when a golden file does not exist.
+        pass
+    except Exception:
+        raise
+
+    stderr_file = pathlib.Path(test_dir).joinpath(STDERR_GOLDEN)
+    cwd = os.path.abspath(test_dir)
+    if stderr_file.exists():
+        golden = remove_extra_empty_lines(remove_ansi_escape_sequences(stderr_file.read_text()))
+        stderr = remove_extra_empty_lines(remove_ansi_escape_sequences(stderr.decode()))
+        golden = golden.replace("${CWD}", cwd)
+        assert golden in stderr
+        assert process.returncode > 0

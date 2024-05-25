@@ -1,0 +1,6 @@
+error[E2L23]: CompileError
+ --> ${CWD}/main.k:4:34
+  |
+4 | schema_in_main_k = SchemaInMainK('I am the instance of SchemaInMainK')
+  |                                  ^ "SchemaInMainK" takes 0 positional argument but 1 were given
+  |

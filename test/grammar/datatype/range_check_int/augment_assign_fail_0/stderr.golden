@@ -1,0 +1,9 @@
+error[E3M38]: EvaluationError
+ --> ${CWD}/main.k:2:1
+  |
+2 | _a += 1
+  |  2147483648: A 32 bit integer overflow
+  |
+note: backtrace:
+	0: kclvm_main
+		at ${CWD}/main.k:2

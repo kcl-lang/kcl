@@ -107,6 +107,7 @@ pub(crate) fn call_schema_body_from_rule(
 pub(crate) fn call_schema_check(
     s: &Evaluator,
     func: &ValueRef,
+    schema_value: &ValueRef,
     args: &ValueRef,
     kwargs: &ValueRef,
     ctx: Option<&SchemaEvalContextRef>,
@@ -125,7 +126,7 @@ pub(crate) fn call_schema_check(
             if let Some(ctx) = ctx {
                 schema.ctx.borrow_mut().set_info_with_schema(&ctx.borrow())
             }
-            (schema.check)(s, &schema.ctx, args, kwargs);
+            (schema.check)(s, &schema.ctx, schema_value, args, kwargs);
             s.pop_backtrace();
             s.pop_pkgpath();
         }

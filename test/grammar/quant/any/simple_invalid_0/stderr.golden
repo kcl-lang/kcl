@@ -1,0 +1,11 @@
+error[E3M38]: EvaluationError
+  --> ${CWD}/main.k:10:8
+   |
+10 | main = app_conf {
+   |        ^ Instance check failed
+   |
+ --> ${CWD}/main.k:7:1
+  |
+7 |         }, "no server defined"
+  |  Check failed on the condition: no server defined
+  |

@@ -1,0 +1,13 @@
+error[E1001]: IllegalParameterError
+ --> ${CWD}/main.k:1:19
+  |
+1 | schema A[a1, a2 = 200, a3]:
+  |                   ^ non-default argument follows default argument
+  |
+note: A default argument
+error[E2L23]: CompileError
+ --> ${CWD}/main.k:7:5
+  |
+7 | a = A(a1=1,a2=2)
+  |     ^ expected 2 positional arguments, found 1
+  |

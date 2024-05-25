@@ -271,7 +271,7 @@ impl ValueRef {
         }
     }
 
-    pub fn attr_map_get(&mut self, name: &str) -> Option<String> {
+    pub fn attr_map_get(&self, name: &str) -> Option<String> {
         match &*self.rc.borrow() {
             Value::dict_value(dict) => dict.attr_map.get(name).cloned(),
             Value::schema_value(schema) => schema.config.attr_map.get(name).cloned(),

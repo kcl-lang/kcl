@@ -1,0 +1,6 @@
+error[E3M38]: EvaluationError
+  --> ${CWD}/main.k:10:1
+   |
+10 |     ss = [S {b = "b"}]
+   |  attribute 'a' of S is required and can't be None or Undefined
+   |

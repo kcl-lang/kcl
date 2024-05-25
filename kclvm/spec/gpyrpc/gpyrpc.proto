@@ -18,14 +18,6 @@ message CmdArgSpec {
 	string value = 2;
 }
 
-// kcl main.k -O pkgpath:path.to.field=field_value
-message CmdOverrideSpec {
-	string pkgpath = 1;
-	string field_path = 2;
-	string field_value = 3;
-	string action = 4;
-}
-
 // ----------------------------------------------------------------------------
 // Error types
 // ----------------------------------------------------------------------------
@@ -190,7 +182,7 @@ message ExecProgram_Args {
 	repeated string k_code_list = 3;
 	
 	repeated CmdArgSpec args = 4;
-	repeated CmdOverrideSpec overrides = 5;
+	repeated string overrides = 5;
 
 	bool disable_yaml_result = 6;
 
@@ -289,6 +281,7 @@ message OverrideFile_Args {
 
 message OverrideFile_Result {
 	bool result = 1;
+	repeated Error parse_errors = 2;
 }
 
 message ListVariables_Args {
@@ -304,8 +297,15 @@ message ListVariables_Result {
 
 message Variable {
 	string value = 1;
-	string type_name = 2;
-	string op_sym = 3;
+	string type_name = 2; 
+	string op_sym = 3; 
+	repeated Variable list_items = 4; 
+	repeated MapEntry dict_entries = 5;
+}
+
+message MapEntry {
+	string key = 1;
+	Variable value = 2;
 }
 
 message GetFullSchemaType_Args {

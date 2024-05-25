@@ -1,0 +1,6 @@
+error[E3M38]: EvaluationError
+ --> ${CWD}/main.k:1:1
+  |
+1 | a = option("key1", type="list", default={"key": "value"})
+  |  cannot use '{'key': 'value'}' as type 'list'
+  |

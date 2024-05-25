@@ -1,0 +1,42 @@
+{
+  "c.a": {
+    "type_name": "",
+    "op_sym": ":",
+    "value": "{ids: [7, 8, 9]}",
+    "list_items": [],
+    "dict_entries": [
+      {
+        "key": "ids",
+        "value": {
+          "type_name": "",
+          "op_sym": ":",
+          "value": "[7, 8, 9]",
+          "list_items": [
+            {
+              "type_name": "",
+              "op_sym": "",
+              "value": "7",
+              "list_items": [],
+              "dict_entries": []
+            },
+            {
+              "type_name": "",
+              "op_sym": "",
+              "value": "8",
+              "list_items": [],
+              "dict_entries": []
+            },
+            {
+              "type_name": "",
+              "op_sym": "",
+              "value": "9",
+              "list_items": [],
+              "dict_entries": []
+            }
+          ],
+          "dict_entries": []
+        }
+      }
+    ]
+  }
+}

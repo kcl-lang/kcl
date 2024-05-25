@@ -1,13 +1,13 @@
-use crate::analysis::Analysis;
-use crate::config::Config;
-use crate::db::{AnalysisDatabase, DocumentVersion};
+use crate::analysis::{Analysis, AnalysisDatabase, DocumentVersion};
 use crate::from_lsp::file_path_from_url;
 use crate::to_lsp::{kcl_diag_to_lsp_diags, url};
 use crate::util::{compile_with_params, get_file_name, to_json, Params};
 use crate::word_index::build_word_index;
 use anyhow::Result;
 use crossbeam_channel::{select, unbounded, Receiver, Sender};
-use kclvm_parser::{KCLModuleCache, LoadProgramOptions};
+use kclvm_driver::toolchain::{self, Toolchain};
+use kclvm_driver::CompileUnitOptions;
+use kclvm_parser::KCLModuleCache;
 use kclvm_sema::resolver::scope::KCLScopeCache;
 use lsp_server::{ReqQueue, Request, Response};
 use lsp_types::Url;
@@ -47,55 +47,41 @@ pub(crate) struct Handle<H, C> {
 
 pub(crate) type KCLVfs = Arc<RwLock<Vfs>>;
 pub(crate) type KCLWordIndexMap = Arc<RwLock<HashMap<Url, HashMap<String, Vec<Location>>>>>;
-pub(crate) type KCLCompileUnitCache =
-    Arc<RwLock<HashMap<String, (Vec<String>, Option<LoadProgramOptions>)>>>;
+pub(crate) type KCLEntryCache = Arc<RwLock<HashMap<String, CompileUnitOptions>>>;
+pub(crate) type KCLToolChain = Arc<RwLock<dyn Toolchain>>;
 
 /// State for the language server
 pub(crate) struct LanguageServerState {
     /// Channel to send language server messages to the client
     pub(crate) sender: Sender<lsp_server::Message>,
-
     /// The request queue keeps track of all incoming and outgoing requests.
     pub(crate) request_queue: lsp_server::ReqQueue<(String, Instant), RequestHandler>,
-
-    /// The configuration passed by the client
-    pub _config: Config,
-
     /// Thread pool for async execution
     pub thread_pool: threadpool::ThreadPool,
-
     /// Channel to send tasks to from background operations
     pub task_sender: Sender<Task>,
-
     /// Channel to receive tasks on from background operations
     pub task_receiver: Receiver<Task>,
-
-    /// The virtual filesystem that holds all the file contents
-    pub vfs: KCLVfs,
-
     /// True if the client requested that we shut down
     pub shutdown_requested: bool,
-
+    /// The virtual filesystem that holds all the file contents
+    pub vfs: KCLVfs,
     /// Holds the state of the analysis process
     pub analysis: Analysis,
-
     /// Documents that are currently kept in memory from the client
     pub opened_files: Arc<RwLock<HashMap<FileId, DocumentVersion>>>,
-
     /// The VFS loader
     pub loader: Handle<Box<dyn ra_ap_vfs::loader::Handle>, Receiver<ra_ap_vfs::loader::Message>>,
-
     /// The word index map
     pub word_index_map: KCLWordIndexMap,
-
     /// KCL parse cache
     pub module_cache: KCLModuleCache,
-
     /// KCL resolver cache
     pub scope_cache: KCLScopeCache,
-
     /// KCL compile unit cache cache
-    pub compile_unit_cache: KCLCompileUnitCache,
+    pub entry_cache: KCLEntryCache,
+    /// Toolchain is used to provider KCL tool features for the language server.
+    pub tool: KCLToolChain,
 }
 
 /// A snapshot of the state of the language server
@@ -114,16 +100,14 @@ pub(crate) struct LanguageServerSnapshot {
     /// KCL resolver cache
     pub scope_cache: KCLScopeCache,
     /// KCL compile unit cache cache
-    pub compile_unit_cache: KCLCompileUnitCache,
+    pub entry_cache: KCLEntryCache,
+    /// Toolchain is used to provider KCL tool features for the language server.
+    pub tool: KCLToolChain,
 }
 
 #[allow(unused)]
 impl LanguageServerState {
-    pub fn new(
-        sender: Sender<lsp_server::Message>,
-        config: Config,
-        initialize_params: InitializeParams,
-    ) -> Self {
+    pub fn new(sender: Sender<lsp_server::Message>, initialize_params: InitializeParams) -> Self {
         let (task_sender, task_receiver) = unbounded::<Task>();
 
         let loader = {
@@ -137,7 +121,6 @@ impl LanguageServerState {
         let state = LanguageServerState {
             sender,
             request_queue: ReqQueue::default(),
-            _config: config,
             vfs: Arc::new(RwLock::new(Default::default())),
             thread_pool: threadpool::ThreadPool::default(),
             task_sender: task_sender.clone(),
@@ -149,7 +132,8 @@ impl LanguageServerState {
             loader,
             module_cache: KCLModuleCache::default(),
             scope_cache: KCLScopeCache::default(),
-            compile_unit_cache: KCLCompileUnitCache::default(),
+            entry_cache: KCLEntryCache::default(),
+            tool: Arc::new(RwLock::new(toolchain::default())),
         };
 
         let word_index_map = state.word_index_map.clone();
@@ -237,7 +221,8 @@ impl LanguageServerState {
                             let sender = self.task_sender.clone();
                             let module_cache = Arc::clone(&self.module_cache);
                             let scope_cache = Arc::clone(&self.scope_cache);
-                            let compile_unit_cache = Arc::clone(&self.compile_unit_cache);
+                            let entry = Arc::clone(&self.entry_cache);
+                            let tool = Arc::clone(&self.tool);
                             move || match url(&snapshot, file.file_id) {
                                 Ok(uri) => {
                                     let version =
@@ -248,7 +233,8 @@ impl LanguageServerState {
                                         module_cache: Some(module_cache),
                                         scope_cache: Some(scope_cache),
                                         vfs: Some(snapshot.vfs),
-                                        compile_unit_cache: Some(compile_unit_cache),
+                                        entry_cache: Some(entry),
+                                        tool,
                                     }) {
                                         Ok((prog, diags, gs)) => {
                                             let current_version = snapshot
@@ -264,7 +250,6 @@ impl LanguageServerState {
                                                             file.file_id,
                                                             Arc::new(AnalysisDatabase {
                                                                 prog,
-                                                                diags: diags.clone(),
                                                                 gs,
                                                                 version,
                                                             }),
@@ -316,8 +301,8 @@ impl LanguageServerState {
                             }
                         });
                     }
-                    Err(_) => {
-                        self.log_message(format!("{:?} not found", file.file_id));
+                    Err(err) => {
+                        self.log_message(format!("{:?} not found: {}", file.file_id, err));
                     }
                 }
             }
@@ -383,7 +368,8 @@ impl LanguageServerState {
             word_index_map: self.word_index_map.clone(),
             module_cache: self.module_cache.clone(),
             scope_cache: self.scope_cache.clone(),
-            compile_unit_cache: self.compile_unit_cache.clone(),
+            entry_cache: self.entry_cache.clone(),
+            tool: self.tool.clone(),
         }
     }
 

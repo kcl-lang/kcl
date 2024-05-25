@@ -1,0 +1,11 @@
+error[E3M38]: EvaluationError
+ --> ${CWD}/main.k:8:8
+  |
+8 | data = Data {
+  |        ^ Instance check failed
+  |
+ --> ${CWD}/main.k:6:1
+  |
+6 |         regex.match(attr, r'^[-._a-zA-Z0-9]+$')
+  |  Check failed on the condition
+  |

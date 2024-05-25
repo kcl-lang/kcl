@@ -1,0 +1,6 @@
+error[E1001]: InvalidSyntax
+ --> ${CWD}/main.k:1:6
+  |
+1 | a = 1, 2
+  |      ^ unexpected token ','
+  |

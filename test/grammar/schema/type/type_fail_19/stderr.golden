@@ -1,0 +1,22 @@
+error[E2G22]: TypeError
+  --> ${CWD}/main.k:19:25
+   |
+19 |     "cards": [info.card{"num": 123}]
+   |                         ^ expected str, got int(123)
+   |
+ --> ${CWD}/pkg/info.k:2:5
+  |
+2 |     num: str
+  |     ^ variable is defined here, its type is str, but got int(123)
+  |
+error[E2G22]: TypeError
+  --> ${CWD}/main.k:19:5
+   |
+19 |     "cards": [info.card{"num": 123}]
+   |     ^ expected [{str:any}], got [card]
+   |
+ --> ${CWD}/main.k:5:5
+  |
+5 |     cards: [{str:}]
+  |     ^ variable is defined here, its type is [{str:any}], but got [card]
+  |

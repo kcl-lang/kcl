@@ -1,0 +1,24 @@
+error[E1001]: InvalidSyntax
+  --> ${CWD}/main.k:12:19
+   |
+12 |         (lastName not None)
+   |                   ^ expected one of [")"] got identifier
+   |
+error[E1001]: InvalidSyntax
+  --> ${CWD}/main.k:12:27
+   |
+12 |         (lastName not None)
+   |                           ^ expected one of ["identifier", "literal", "(", "[", "{"] got )
+   |
+error[E1001]: InvalidSyntax
+  --> ${CWD}/main.k:12:27
+   |
+12 |         (lastName not None)
+   |                           ^ expected expression got )
+   |
+error[E1001]: InvalidSyntax
+  --> ${CWD}/main.k:12:27
+   |
+12 |         (lastName not None)
+   |                           ^ expected one of ["identifier", "literal", "(", "[", "{"] got newline
+   |

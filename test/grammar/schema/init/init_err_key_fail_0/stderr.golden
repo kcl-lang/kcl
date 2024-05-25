@@ -1,0 +1,6 @@
+error[E2G22]: TypeError
+  --> ${CWD}/main.k:13:21
+   |
+13 |             "name": data.name_err_key,
+   |                     ^ attribute 'name_err_key' not found in 'Frontend'
+   |

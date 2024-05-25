@@ -1,0 +1,11 @@
+error[E3M38]: EvaluationError
+ --> ${CWD}/main.k:6:8
+  |
+6 | data = Data {
+  |        ^ Instance check failed
+  |
+ --> ${CWD}/main.k:4:1
+  |
+4 |         name in ["Alice", "Bob", "John"]
+  |  Check failed on the condition
+  |

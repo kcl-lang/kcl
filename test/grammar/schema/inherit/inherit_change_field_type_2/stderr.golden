@@ -1,0 +1,6 @@
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:7:5
+  |
+7 |     name: pkg.Name0
+  |     ^ can't change schema field type of 'name' from Name0 to Name0
+  |

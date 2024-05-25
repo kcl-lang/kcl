@@ -46,21 +46,22 @@ fn kcl_msg_to_lsp_diags(
     let start_position = lsp_pos(&range.0);
     let end_position = lsp_pos(&range.1);
 
-    let mut data_map = serde_json::Map::new();
-    if let Some(s_vec) = msg.suggested_replacement.as_ref().filter(|v| !v.is_empty()) {
-        let suggestions = s_vec
-            .iter()
-            .filter(|s| !s.is_empty())
-            .collect::<Vec<&String>>();
-        if !suggestions.is_empty() {
-            data_map.insert("suggested_replacement".to_string(), json!(suggestions));
-        }
-    }
-    let data = if data_map.is_empty() {
-        None
-    } else {
-        Some(json!(data_map))
-    };
+    let data = msg
+        .suggested_replacement
+        .as_ref()
+        .map(|s_vec| {
+            s_vec
+                .iter()
+                .filter(|s| !s.is_empty())
+                .collect::<Vec<&String>>()
+        })
+        .map(|s| {
+            if s.is_empty() {
+                json!({ "suggested_replacement": "" })
+            } else {
+                json!({ "suggested_replacement": s })
+            }
+        });
 
     let related_information = if related_msg.is_empty() {
         None

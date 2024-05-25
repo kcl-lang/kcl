@@ -1,0 +1,6 @@
+error[E3M38]: EvaluationError
+ --> ${CWD}/main.k:2:1
+  |
+2 | 2
+  |  conflicting values between 2 and 1
+  |

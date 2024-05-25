@@ -2,6 +2,7 @@ use crossbeam_channel::after;
 use crossbeam_channel::select;
 use indexmap::IndexSet;
 use kclvm_ast::MAIN_PKG;
+use kclvm_driver::toolchain;
 use kclvm_sema::core::global_state::GlobalState;
 
 use kclvm_sema::resolver::scope::KCLScopeCache;
@@ -38,6 +39,7 @@ use lsp_types::Url;
 use lsp_types::WorkspaceEdit;
 use lsp_types::WorkspaceFolder;
 
+use parking_lot::lock_api::RwLock;
 use serde::Serialize;
 use std::cell::Cell;
 use std::cell::RefCell;
@@ -69,16 +71,15 @@ use proc_macro_crate::bench_test;
 use lsp_server::{Connection, Message, Notification, Request};
 
 use crate::completion::completion;
-use crate::config::Config;
 use crate::from_lsp::file_path_from_url;
 
-use crate::goto_def::goto_definition_with_gs;
+use crate::goto_def::goto_def;
 use crate::hover::hover;
 use crate::main_loop::main_loop;
-use crate::state::KCLCompileUnitCache;
+use crate::state::KCLEntryCache;
 use crate::state::KCLVfs;
 use crate::to_lsp::kcl_diag_to_lsp_diags;
-use crate::util::compile_unit_with_cache;
+use crate::util::lookup_compile_unit_with_cache;
 use crate::util::to_json;
 use crate::util::{apply_document_changes, compile_with_params, Params};
 
@@ -131,7 +132,8 @@ pub(crate) fn compile_test_file(
         module_cache: Some(KCLModuleCache::default()),
         scope_cache: Some(KCLScopeCache::default()),
         vfs: Some(KCLVfs::default()),
-        compile_unit_cache: Some(KCLCompileUnitCache::default()),
+        entry_cache: Some(KCLEntryCache::default()),
+        tool: Arc::new(RwLock::new(toolchain::default())),
     })
     .unwrap();
     (file, program, diags, gs)
@@ -293,7 +295,8 @@ fn diagnostics_test() {
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
-        compile_unit_cache: Some(KCLCompileUnitCache::default()),
+        entry_cache: Some(KCLEntryCache::default()),
+        tool: Arc::new(RwLock::new(toolchain::default())),
     })
     .unwrap();
 
@@ -416,7 +419,7 @@ fn test_lsp_with_kcl_mod_in_order() {
 
 fn goto_import_pkg_with_line_test() {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let (file, program, _, gs) =
+    let (file, _program, _, gs) =
         compile_test_file("src/test_data/goto_def_with_line_test/main_pkg/main.k");
     let pos = KCLPos {
         filename: file,
@@ -424,7 +427,7 @@ fn goto_import_pkg_with_line_test() {
         column: Some(27),
     };
 
-    let res = goto_definition_with_gs(&program, &pos, &gs);
+    let res = goto_def(&pos, &gs);
 
     match res.unwrap() {
         lsp_types::GotoDefinitionResponse::Scalar(loc) => {
@@ -480,7 +483,8 @@ fn complete_import_external_file_test() {
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
-        compile_unit_cache: Some(KCLCompileUnitCache::default()),
+        entry_cache: Some(KCLEntryCache::default()),
+        tool: Arc::new(RwLock::new(toolchain::default())),
     })
     .unwrap();
 
@@ -489,7 +493,8 @@ fn complete_import_external_file_test() {
         line: 1,
         column: Some(11),
     };
-    let res = completion(Some('.'), &program, &pos, &gs).unwrap();
+    let tool = toolchain::default();
+    let res = completion(Some('.'), &program, &pos, &gs, &tool).unwrap();
 
     let got_labels: Vec<String> = match &res {
         CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
@@ -533,12 +538,13 @@ fn goto_import_external_file_test() {
         .output()
         .unwrap();
 
-    let (program, diags, gs) = compile_with_params(Params {
+    let (_program, diags, gs) = compile_with_params(Params {
         file: path.to_string(),
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
-        compile_unit_cache: Some(KCLCompileUnitCache::default()),
+        entry_cache: Some(KCLEntryCache::default()),
+        tool: Arc::new(RwLock::new(toolchain::default())),
     })
     .unwrap();
 
@@ -550,7 +556,7 @@ fn goto_import_external_file_test() {
         line: 1,
         column: Some(57),
     };
-    let res = goto_definition_with_gs(&program, &pos, &gs);
+    let res = goto_def(&pos, &gs);
     assert!(res.is_some());
 }
 
@@ -563,8 +569,7 @@ pub struct Project {}
 impl Project {
     /// Instantiates a language server for this project.
     pub fn server(self, initialize_params: InitializeParams) -> Server {
-        let config = Config::default();
-        Server::new(config, initialize_params)
+        Server::new(initialize_params)
     }
 }
 
@@ -579,11 +584,11 @@ pub struct Server {
 
 impl Server {
     /// Constructs and initializes a new `Server`
-    pub fn new(config: Config, initialize_params: InitializeParams) -> Self {
+    pub fn new(initialize_params: InitializeParams) -> Self {
         let (connection, client) = Connection::memory();
 
         let worker = std::thread::spawn(move || {
-            main_loop(connection, config, initialize_params).unwrap();
+            main_loop(connection, initialize_params).unwrap();
         });
 
         Self {
@@ -889,29 +894,30 @@ fn cancel_test() {
 }
 
 #[test]
-fn compile_unit_cache_test() {
+fn entry_test() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let mut path = root.clone();
     path.push("src/test_data/compile_unit/b.k");
 
     let path = path.to_str().unwrap();
 
-    let compile_unit_cache = KCLCompileUnitCache::default();
+    let tool = toolchain::default();
+    let entry = KCLEntryCache::default();
     let start = Instant::now();
-    let _ = compile_unit_with_cache(&Some(Arc::clone(&compile_unit_cache)), &path.to_string());
+    let _ = lookup_compile_unit_with_cache(&tool, &Some(Arc::clone(&entry)), path);
 
-    assert!(compile_unit_cache.read().get(&path.to_string()).is_some());
+    assert!(entry.read().get(&path.to_string()).is_some());
     let first_compile_time = start.elapsed();
 
     let start = Instant::now();
-    let _ = compile_unit_with_cache(&Some(compile_unit_cache), &path.to_string());
+    let _ = lookup_compile_unit_with_cache(&tool, &Some(entry), path);
     let second_compile_time = start.elapsed();
 
     assert!(first_compile_time > second_compile_time);
 }
 
 #[test]
-fn compile_unit_cache_e2e_test() {
+fn entry_e2e_test() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let mut path = root.clone();
     let mut kcl_yaml = root.clone();
@@ -1169,9 +1175,12 @@ fn hover_test() {
         res.result.unwrap(),
         to_json(Hover {
             contents: HoverContents::Array(vec![
-                MarkedString::String("__main__\n\nschema Person".to_string()),
+                MarkedString::String("__main__".to_string()),
+                MarkedString::LanguageString(lsp_types::LanguageString {
+                    language: "KCL".to_string(),
+                    value: "schema Person:\n    name: str\n    age?: int".to_string()
+                }),
                 MarkedString::String("hover doc test".to_string()),
-                MarkedString::String("Attributes:\n\nname: str\n\nage?: int".to_string()),
             ]),
             range: None
         })
@@ -1225,7 +1234,12 @@ fn hover_assign_in_lambda_test() {
     assert_eq!(
         res.result.unwrap(),
         to_json(Hover {
-            contents: HoverContents::Scalar(MarkedString::String("images: [str]".to_string()),),
+            contents: HoverContents::Scalar(MarkedString::LanguageString(
+                lsp_types::LanguageString {
+                    language: "KCL".to_string(),
+                    value: "images: [str]".to_string()
+                }
+            )),
             range: None
         })
         .unwrap()
@@ -1379,12 +1393,13 @@ fn konfig_goto_def_test_base() {
     let mut base_path = konfig_path.clone();
     base_path.push("appops/nginx-example/base/base.k");
     let base_path_str = base_path.to_str().unwrap().to_string();
-    let (program, _, gs) = compile_with_params(Params {
+    let (_program, _, gs) = compile_with_params(Params {
         file: base_path_str.clone(),
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
-        compile_unit_cache: Some(KCLCompileUnitCache::default()),
+        entry_cache: Some(KCLEntryCache::default()),
+        tool: Arc::new(RwLock::new(toolchain::default())),
     })
     .unwrap();
 
@@ -1394,7 +1409,7 @@ fn konfig_goto_def_test_base() {
         line: 7,
         column: Some(30),
     };
-    let res = goto_definition_with_gs(&program, &pos, &gs);
+    let res = goto_def(&pos, &gs);
     let mut expected_path = konfig_path.clone();
     expected_path.push("base/pkg/kusion_models/kube/frontend/server.k");
     compare_goto_res(
@@ -1408,7 +1423,7 @@ fn konfig_goto_def_test_base() {
         line: 9,
         column: Some(32),
     };
-    let res = goto_definition_with_gs(&program, &pos, &gs);
+    let res = goto_def(&pos, &gs);
     let mut expected_path = konfig_path.clone();
     expected_path.push("base/pkg/kusion_models/kube/frontend/container/container.k");
     compare_goto_res(
@@ -1422,7 +1437,7 @@ fn konfig_goto_def_test_base() {
         line: 9,
         column: Some(9),
     };
-    let res = goto_definition_with_gs(&program, &pos, &gs);
+    let res = goto_def(&pos, &gs);
     let mut expected_path = konfig_path.clone();
     expected_path.push("base/pkg/kusion_models/kube/frontend/server.k");
     compare_goto_res(
@@ -1442,7 +1457,7 @@ fn konfig_goto_def_test_base() {
         line: 10,
         column: Some(10),
     };
-    let res = goto_definition_with_gs(&program, &pos, &gs);
+    let res = goto_def(&pos, &gs);
     let mut expected_path = konfig_path.clone();
     expected_path.push("base/pkg/kusion_models/kube/frontend/container/container.k");
     compare_goto_res(
@@ -1456,7 +1471,7 @@ fn konfig_goto_def_test_base() {
         line: 2,
         column: Some(49),
     };
-    let res = goto_definition_with_gs(&program, &pos, &gs);
+    let res = goto_def(&pos, &gs);
     let mut expected_path = konfig_path.clone();
     expected_path.push("base/pkg/kusion_models/kube/frontend/service/service.k");
     compare_goto_res(
@@ -1471,12 +1486,13 @@ fn konfig_goto_def_test_main() {
     let mut main_path = konfig_path.clone();
     main_path.push("appops/nginx-example/dev/main.k");
     let main_path_str = main_path.to_str().unwrap().to_string();
-    let (program, _, gs) = compile_with_params(Params {
+    let (_program, _, gs) = compile_with_params(Params {
         file: main_path_str.clone(),
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
-        compile_unit_cache: Some(KCLCompileUnitCache::default()),
+        entry_cache: Some(KCLEntryCache::default()),
+        tool: Arc::new(RwLock::new(toolchain::default())),
     })
     .unwrap();
 
@@ -1486,7 +1502,7 @@ fn konfig_goto_def_test_main() {
         line: 6,
         column: Some(31),
     };
-    let res = goto_definition_with_gs(&program, &pos, &gs);
+    let res = goto_def(&pos, &gs);
     let mut expected_path = konfig_path.clone();
     expected_path.push("base/pkg/kusion_models/kube/frontend/server.k");
     compare_goto_res(
@@ -1500,7 +1516,7 @@ fn konfig_goto_def_test_main() {
         line: 7,
         column: Some(14),
     };
-    let res = goto_definition_with_gs(&program, &pos, &gs);
+    let res = goto_def(&pos, &gs);
     let mut expected_path = konfig_path.clone();
     expected_path.push("base/pkg/kusion_models/kube/frontend/server.k");
     compare_goto_res(
@@ -1520,7 +1536,7 @@ fn konfig_goto_def_test_main() {
         line: 2,
         column: Some(61),
     };
-    let res = goto_definition_with_gs(&program, &pos, &gs);
+    let res = goto_def(&pos, &gs);
     let mut expected_path = konfig_path.clone();
     expected_path.push("base/pkg/kusion_models/kube/templates/resource.k");
     compare_goto_res(
@@ -1540,7 +1556,8 @@ fn konfig_completion_test_main() {
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
-        compile_unit_cache: Some(KCLCompileUnitCache::default()),
+        entry_cache: Some(KCLEntryCache::default()),
+        tool: Arc::new(RwLock::new(toolchain::default())),
     })
     .unwrap();
 
@@ -1550,7 +1567,8 @@ fn konfig_completion_test_main() {
         line: 6,
         column: Some(27),
     };
-    let got = completion(Some('.'), &program, &pos, &gs).unwrap();
+    let tool = toolchain::default();
+    let got = completion(Some('.'), &program, &pos, &gs, &tool).unwrap();
     let got_labels: Vec<String> = match got {
         CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
         CompletionResponse::List(_) => panic!("test failed"),
@@ -1568,7 +1586,8 @@ fn konfig_completion_test_main() {
         line: 7,
         column: Some(4),
     };
-    let got = completion(None, &program, &pos, &gs).unwrap();
+    let tool = toolchain::default();
+    let got = completion(None, &program, &pos, &gs, &tool).unwrap();
     let mut got_labels: Vec<String> = match got {
         CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
         CompletionResponse::List(_) => panic!("test failed"),
@@ -1612,7 +1631,8 @@ fn konfig_completion_test_main() {
         line: 1,
         column: Some(35),
     };
-    let got = completion(Some('.'), &program, &pos, &gs).unwrap();
+    let tool = toolchain::default();
+    let got = completion(Some('.'), &program, &pos, &gs, &tool).unwrap();
     let mut got_labels: Vec<String> = match got {
         CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
         CompletionResponse::List(_) => panic!("test failed"),
@@ -1645,12 +1665,13 @@ fn konfig_hover_test_main() {
     let mut main_path = konfig_path.clone();
     main_path.push("appops/nginx-example/dev/main.k");
     let main_path_str = main_path.to_str().unwrap().to_string();
-    let (program, _, gs) = compile_with_params(Params {
+    let (_program, _, gs) = compile_with_params(Params {
         file: main_path_str.clone(),
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
-        compile_unit_cache: Some(KCLCompileUnitCache::default()),
+        entry_cache: Some(KCLEntryCache::default()),
+        tool: Arc::new(RwLock::new(toolchain::default())),
     })
     .unwrap();
 
@@ -1660,15 +1681,17 @@ fn konfig_hover_test_main() {
         line: 6,
         column: Some(32),
     };
-    let got = hover(&program, &pos, &gs).unwrap();
+    let got = hover(&pos, &gs).unwrap();
     match got.contents {
         HoverContents::Array(arr) => {
-            let expect: Vec<MarkedString> = ["base.pkg.kusion_models.kube.frontend\n\nschema Server",
-                "Server is abstaction of Deployment and StatefulSet.",
-                "Attributes:\n\nname?: str\n\nworkloadType: str(Deployment) | str(StatefulSet)\n\nrenderType?: str(Server) | str(KubeVelaApplication)\n\nreplicas: int\n\nimage: str\n\nschedulingStrategy: SchedulingStrategy\n\nmainContainer: Main\n\nsidecarContainers?: [Sidecar]\n\ninitContainers?: [Sidecar]\n\nuseBuiltInLabels?: bool\n\nlabels?: {str:str}\n\nannotations?: {str:str}\n\nuseBuiltInSelector?: bool\n\nselector?: {str:str}\n\npodMetadata?: ObjectMeta\n\nvolumes?: [Volume]\n\nneedNamespace?: bool\n\nenableMonitoring?: bool\n\nconfigMaps?: [ConfigMap]\n\nsecrets?: [Secret]\n\nservices?: [Service]\n\ningresses?: [Ingress]\n\nserviceAccount?: ServiceAccount\n\nstorage?: ObjectStorage\n\ndatabase?: DataBase"]
-            .iter()
-            .map(|s| MarkedString::String(s.to_string()))
-            .collect();
+            let expect: Vec<MarkedString> = vec![
+                MarkedString::String("base.pkg.kusion_models.kube.frontend".to_string()),
+                MarkedString::LanguageString(lsp_types::LanguageString {
+                    language: "KCL".to_string(),
+                    value: "schema Server:\n    name?: str\n    workloadType: str(Deployment) | str(StatefulSet)\n    renderType?: str(Server) | str(KubeVelaApplication)\n    replicas: int\n    image: str\n    schedulingStrategy: SchedulingStrategy\n    mainContainer: Main\n    sidecarContainers?: [Sidecar]\n    initContainers?: [Sidecar]\n    useBuiltInLabels?: bool\n    labels?: {str:str}\n    annotations?: {str:str}\n    useBuiltInSelector?: bool\n    selector?: {str:str}\n    podMetadata?: ObjectMeta\n    volumes?: [Volume]\n    needNamespace?: bool\n    enableMonitoring?: bool\n    configMaps?: [ConfigMap]\n    secrets?: [Secret]\n    services?: [Service]\n    ingresses?: [Ingress]\n    serviceAccount?: ServiceAccount\n    storage?: ObjectStorage\n    database?: DataBase".to_string()
+                }),
+                MarkedString::String("Server is abstaction of Deployment and StatefulSet.".to_string()),
+            ];
             assert_eq!(expect, arr);
         }
         _ => unreachable!("test error"),
@@ -1680,16 +1703,18 @@ fn konfig_hover_test_main() {
         line: 7,
         column: Some(15),
     };
-    let got = hover(&program, &pos, &gs).unwrap();
+    let got = hover(&pos, &gs).unwrap();
     match got.contents {
         HoverContents::Array(arr) => {
-            let expect: Vec<MarkedString> = [
-                "schedulingStrategy: SchedulingStrategy",
-                "SchedulingStrategy represents scheduling strategy.",
-            ]
-            .iter()
-            .map(|s| MarkedString::String(s.to_string()))
-            .collect();
+            let expect: Vec<MarkedString> = vec![
+                MarkedString::LanguageString(lsp_types::LanguageString {
+                    language: "KCL".to_string(),
+                    value: "schedulingStrategy: SchedulingStrategy".to_string(),
+                }),
+                MarkedString::String(
+                    "SchedulingStrategy represents scheduling strategy.".to_string(),
+                ),
+            ];
             assert_eq!(expect, arr);
         }
         _ => unreachable!("test error"),
@@ -1701,12 +1726,15 @@ fn konfig_hover_test_main() {
         line: 6,
         column: Some(3),
     };
-    let got = hover(&program, &pos, &gs).unwrap();
+    let got = hover(&pos, &gs).unwrap();
     match got.contents {
         HoverContents::Scalar(s) => {
             assert_eq!(
                 s,
-                MarkedString::String("appConfiguration: Server".to_string())
+                MarkedString::LanguageString(lsp_types::LanguageString {
+                    language: "KCL".to_string(),
+                    value: "appConfiguration: Server".to_string()
+                })
             );
         }
         _ => unreachable!("test error"),
@@ -2076,7 +2104,8 @@ fn compile_unit_test() {
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
-        compile_unit_cache: Some(KCLCompileUnitCache::default()),
+        entry_cache: Some(KCLEntryCache::default()),
+        tool: Arc::new(RwLock::new(toolchain::default())),
     })
     .unwrap();
     // b.k is not contained in kcl.yaml but need to be contained in main pkg

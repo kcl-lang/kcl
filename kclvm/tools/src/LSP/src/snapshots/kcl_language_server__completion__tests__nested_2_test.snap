@@ -1,0 +1,5 @@
+---
+source: tools/src/LSP/src/completion.rs
+expression: "format!(\"{:?}\", labels)"
+---
+["ab"]

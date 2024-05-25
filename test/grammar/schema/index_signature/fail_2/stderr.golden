@@ -1,0 +1,6 @@
+error[E1001]: IndexSignatureError
+ --> ${CWD}/main.k:3:5
+  |
+3 |     [name: str]: str
+  |     ^ index signature attribute name 'name' cannot have the same name as schema attributes
+  |

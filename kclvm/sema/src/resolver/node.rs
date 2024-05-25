@@ -11,6 +11,7 @@ use crate::ty::{
     RESERVED_TYPE_IDENTIFIERS,
 };
 
+use super::doc::extract_doc_from_body;
 use super::format::VALID_FORMAT_SPEC_SET;
 use super::scope::{ScopeKind, ScopeObject, ScopeObjectKind};
 use super::ty::ty_str_replace_pkgpath;
@@ -74,6 +75,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             expected_ty.clone(),
             unification_stmt.target.get_span_pos(),
             None,
+            true,
         );
         if !ty.is_any() && expected_ty.is_any() {
             self.set_type_to_scope(&names[0].node, ty, &names[0]);
@@ -183,7 +185,19 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                     expected_ty.clone(),
                     target.get_span_pos(),
                     None,
+                    true,
                 );
+
+                let upgrade_schema_type = self.upgrade_dict_to_schema(
+                    value_ty.clone(),
+                    expected_ty.clone(),
+                    &assign_stmt.value.get_span_pos(),
+                );
+                self.node_ty_map.insert(
+                    self.get_node_key(assign_stmt.value.id.clone()),
+                    upgrade_schema_type.clone(),
+                );
+
                 if !value_ty.is_any() && expected_ty.is_any() && assign_stmt.ty.is_none() {
                     self.set_type_to_scope(name, value_ty.clone(), &target.node.names[0]);
                     if let Some(schema_ty) = &self.ctx.schema {
@@ -202,7 +216,23 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 value_ty = self.expr(&assign_stmt.value);
                 // Check type annotation if exists.
                 self.check_assignment_type_annotation(assign_stmt, value_ty.clone());
-                self.must_assignable_to(value_ty.clone(), expected_ty, target.get_span_pos(), None)
+                self.must_assignable_to(
+                    value_ty.clone(),
+                    expected_ty.clone(),
+                    target.get_span_pos(),
+                    None,
+                    true,
+                );
+
+                let upgrade_schema_type = self.upgrade_dict_to_schema(
+                    value_ty.clone(),
+                    expected_ty.clone(),
+                    &assign_stmt.value.get_span_pos(),
+                );
+                self.node_ty_map.insert(
+                    self.get_node_key(assign_stmt.value.id.clone()),
+                    upgrade_schema_type.clone(),
+                );
             }
         }
         value_ty
@@ -260,6 +290,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             expected_ty,
             aug_assign_stmt.target.get_span_pos(),
             None,
+            true,
         );
         self.ctx.l_value = false;
         new_target_ty
@@ -426,6 +457,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                             expected_ty,
                             schema_attr.name.get_span_pos(),
                             None,
+                            true,
                         );
                     }
                     // Assign
@@ -434,6 +466,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                         expected_ty,
                         schema_attr.name.get_span_pos(),
                         None,
+                        true,
                     ),
                 },
                 None => bug!("invalid ast schema attr op kind"),
@@ -1067,11 +1100,25 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
         let real_ret_ty = self.stmts(&lambda_expr.body);
         self.leave_scope();
         self.ctx.in_lambda_expr.pop();
-        self.must_assignable_to(real_ret_ty.clone(), ret_ty.clone(), (start, end), None);
+        self.must_assignable_to(
+            real_ret_ty.clone(),
+            ret_ty.clone(),
+            (start, end),
+            None,
+            true,
+        );
         if !real_ret_ty.is_any() && ret_ty.is_any() && lambda_expr.return_ty.is_none() {
             ret_ty = real_ret_ty;
         }
-        Arc::new(Type::function(None, ret_ty, &params, "", false, None))
+        let doc = extract_doc_from_body(&lambda_expr.body);
+        Arc::new(Type::function(
+            None,
+            ret_ty,
+            &params,
+            &doc.unwrap_or_default(),
+            false,
+            None,
+        ))
     }
 
     fn walk_keyword(&mut self, keyword: &'ctx ast::Keyword) -> Self::Result {
@@ -1223,9 +1270,24 @@ impl<'ctx> Resolver<'ctx> {
             self.ctx.start_pos = start;
             self.ctx.end_pos = end;
         }
+
+        let expected_ty = match self.ctx.config_expr_context.last() {
+            Some(ty) => ty.clone().map(|o| o.ty),
+            None => None,
+        };
+
         let ty = self.walk_expr(&expr.node);
-        self.node_ty_map
-            .insert(self.get_node_key(expr.id.clone()), ty.clone());
+
+        if let Some(expected_ty) = expected_ty {
+            let upgrade_ty =
+                self.upgrade_dict_to_schema(ty.clone(), expected_ty, &expr.get_span_pos());
+            self.node_ty_map
+                .insert(self.get_node_key(expr.id.clone()), upgrade_ty);
+        } else {
+            self.node_ty_map
+                .insert(self.get_node_key(expr.id.clone()), ty.clone());
+        }
+
         ty
     }
 

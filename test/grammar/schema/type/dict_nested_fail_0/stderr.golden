@@ -1,0 +1,44 @@
+error[E2G22]: TypeError
+  --> ${CWD}/main.k:15:17
+   |
+15 |                 "name3":123
+   |                 ^ expected str, got int(123)
+   |
+ --> ${CWD}/main.k:3:5
+  |
+3 |     ids: {str:{str:{str:str}}}
+  |     ^ variable is defined here, its type is str, but got int(123)
+  |
+error[E2G22]: TypeError
+  --> ${CWD}/main.k:14:13
+   |
+14 |             "name2":{
+   |             ^ expected {str:str}, got {str(name3):int(123)}
+   |
+ --> ${CWD}/main.k:3:5
+  |
+3 |     ids: {str:{str:{str:str}}}
+  |     ^ variable is defined here, its type is {str:str}, but got {str(name3):int(123)}
+  |
+error[E2G22]: TypeError
+  --> ${CWD}/main.k:13:9
+   |
+13 |         "name1":{
+   |         ^ expected {str:{str:str}}, got {str(name2):{str(name3):int(123)}}
+   |
+ --> ${CWD}/main.k:3:5
+  |
+3 |     ids: {str:{str:{str:str}}}
+  |     ^ variable is defined here, its type is {str:{str:str}}, but got {str(name2):{str(name3):int(123)}}
+  |
+error[E2G22]: TypeError
+  --> ${CWD}/main.k:12:5
+   |
+12 |     ids: {
+   |     ^ expected {str:{str:{str:str}}}, got {str(name1):{str(name2):{str(name3):int(123)}}}
+   |
+ --> ${CWD}/main.k:3:5
+  |
+3 |     ids: {str:{str:{str:str}}}
+  |     ^ variable is defined here, its type is {str:{str:{str:str}}}, but got {str(name1):{str(name2):{str(name3):int(123)}}}
+  |

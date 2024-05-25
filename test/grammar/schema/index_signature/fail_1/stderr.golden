@@ -1,0 +1,13 @@
+error[E1001]: InvalidSyntax
+ --> ${CWD}/main.k:3:5
+  |
+3 |     [str]: int
+  |     ^ duplicate schema index signature definitions, only one is allowed in the schema
+  |
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:6:5
+  |
+6 |     name: "test"
+  |     ^ expected int, got str(test)
+  |
+variable is defined here, its type is int, but got str(test)

@@ -1,0 +1,6 @@
+error[E2L23]: CompileError
+ --> ${CWD}/main.k:6:9
+  |
+6 | count = PersonErr.instances()
+  |         ^ name 'PersonErr' is not defined, did you mean '["Person"]'?
+  |

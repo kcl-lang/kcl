@@ -1,0 +1,6 @@
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:8:5
+  |
+8 |     name: Name = Name0 {
+  |     ^ expected Name, got Name0
+  |

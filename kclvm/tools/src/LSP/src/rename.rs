@@ -1,6 +1,6 @@
 use crate::state::KCLVfs;
 use crate::word_index::{build_virtual_word_index, VirtualLocation};
-use crate::{from_lsp::kcl_pos, goto_def::find_def_with_gs};
+use crate::{from_lsp::kcl_pos, goto_def::find_def};
 use anyhow::{anyhow, Result};
 use kclvm_ast::ast::{self, Program};
 use kclvm_error::diagnostic;
@@ -352,7 +352,7 @@ where
                     ) {
                         for loc in locs {
                             let kcl_pos = kcl_pos(fp, loc.range.start);
-                            if let Some(symbol_ref) = find_def_with_gs(&kcl_pos, &gs, true) {
+                            if let Some(symbol_ref) = find_def(&kcl_pos, &gs, true) {
                                 if let Some(symbol_def) = gs.get_symbols().get_symbol(symbol_ref) {
                                     if symbol_def.get_range() == range {
                                         refs.push(loc)

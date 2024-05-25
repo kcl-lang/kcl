@@ -1,0 +1,6 @@
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:5:22
+  |
+5 | x1 = CheckArgType(1, "Golang") {}
+  |                      ^ expected str(KCL) | str(CUE), got str(Golang)
+  |

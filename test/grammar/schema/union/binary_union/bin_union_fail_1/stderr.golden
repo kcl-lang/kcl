@@ -1,0 +1,6 @@
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:3:9
+  |
+3 | temp3 = temp1 | temp2
+  |         ^ unsupported operand type(s) for |: '{str:str}' and '[int]'
+  |

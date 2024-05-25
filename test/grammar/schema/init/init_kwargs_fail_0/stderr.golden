@@ -1,0 +1,12 @@
+error[E2L23]: CompileError
+ --> ${CWD}/main.k:4:10
+  |
+4 | person = Person(_naem="Alice") {}
+  |          ^ expected 1 positional argument, found 0
+  |
+error[E2L23]: CompileError
+ --> ${CWD}/main.k:4:17
+  |
+4 | person = Person(_naem="Alice") {}
+  |                 ^ "Person" got an unexpected keyword argument '_naem', did you mean '_name'?
+  |

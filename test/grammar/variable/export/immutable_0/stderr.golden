@@ -1,0 +1,12 @@
+error[E1001]: ImmutableError
+ --> ${CWD}/main.k:2:1
+  |
+2 | a = 2
+  | ^ Can not change the value of 'a', because it was declared immutable
+  |
+ --> ${CWD}/main.k:1:1
+  |
+1 | a = 1
+  | ^ The variable 'a' is declared here
+  |
+note: change the variable name to '_a' to make it mutable

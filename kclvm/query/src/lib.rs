@@ -14,15 +14,13 @@ mod tests;
 mod util;
 
 use anyhow::{anyhow, Result};
-use kclvm_ast::ast;
 use kclvm_ast_pretty::print_ast_module;
+use kclvm_error::diagnostic::Errors;
 use kclvm_parser::parse_file;
 
 use kclvm_sema::pre_process::fix_config_expr_nest_attr;
 pub use query::{get_schema_type, GetSchemaOption};
 pub use r#override::{apply_override_on_module, apply_overrides};
-
-use self::r#override::parse_override_spec;
 
 /// Override and rewrite a file with override specifications. Please note that this is an external user API,
 /// and it can directly modify the KCL file in place.
@@ -78,31 +76,38 @@ use self::r#override::parse_override_spec;
 ///     age = 18
 /// }
 /// ```
-pub fn override_file(file: &str, specs: &[String], import_paths: &[String]) -> Result<bool> {
-    // Parse override spec strings.
-    let overrides = specs
-        .iter()
-        .map(|s| parse_override_spec(s))
-        .collect::<Result<Vec<ast::OverrideSpec>, _>>()?;
+pub fn override_file(
+    file: &str,
+    specs: &[String],
+    import_paths: &[String],
+) -> Result<OverrideFileResult> {
     // Parse file to AST module.
-    let mut module = match parse_file(file, None) {
-        Ok(module) => module.module,
+    let mut parse_result = match parse_file(file, None) {
+        Ok(module) => module,
         Err(msg) => return Err(anyhow!("{}", msg)),
     };
     let mut result = false;
     // Override AST module.
-    for o in &overrides {
-        if apply_override_on_module(&mut module, o, import_paths)? {
+    for s in specs {
+        if apply_override_on_module(&mut parse_result.module, s, import_paths)? {
             result = true;
         }
     }
 
     // Transform config expr to simplify the config path query and override.
-    fix_config_expr_nest_attr(&mut module);
+    fix_config_expr_nest_attr(&mut parse_result.module);
     // Print AST module.
     if result {
-        let code_str = print_ast_module(&module);
+        let code_str = print_ast_module(&parse_result.module);
         std::fs::write(file, code_str)?
     }
-    Ok(result)
+    Ok(OverrideFileResult {
+        result,
+        parse_errors: parse_result.errors,
+    })
+}
+
+pub struct OverrideFileResult {
+    pub result: bool,
+    pub parse_errors: Errors,
 }

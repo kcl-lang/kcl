@@ -1,0 +1,12 @@
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:6:15
+  |
+6 | x1 = typeFunc("1", "Golang")
+  |               ^ expected int, got str(1)
+  |
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:6:20
+  |
+6 | x1 = typeFunc("1", "Golang")
+  |                    ^ expected str(KCL) | str(CUE), got str(Golang)
+  |
