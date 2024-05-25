@@ -15,7 +15,7 @@ use kclvm_sema::pre_process::{fix_config_expr_nest_attr, transform_multi_assign}
 
 use crate::{node::AstNodeMover, path::parse_attribute_path};
 
-use super::util::{invalid_spec_error, split_field_path};
+use super::util::invalid_spec_error;
 
 /// Import statement column offset always start with 1.
 /// todo: The (1-based) column offset needs to be constrained by specifications.
@@ -40,17 +40,12 @@ const IMPORT_STMT_COLUMN_OFFSET: u64 = 1;
 /// ```
 pub fn apply_overrides(
     prog: &mut ast::Program,
-    overrides: &[ast::OverrideSpec],
+    overrides: &[String],
     import_paths: &[String],
     print_ast: bool,
 ) -> Result<()> {
     for o in overrides {
-        let pkgpath = if o.pkgpath.is_empty() {
-            MAIN_PKG
-        } else {
-            &o.pkgpath
-        };
-        if let Some(modules) = prog.pkgs.get_mut(pkgpath) {
+        if let Some(modules) = prog.pkgs.get_mut(MAIN_PKG) {
             for m in modules.iter_mut() {
                 if apply_override_on_module(m, o, import_paths)? && print_ast {
                     let code_str = print_ast_module(m);
@@ -103,11 +98,12 @@ fn build_expr_from_string(value: &str) -> Option<ast::NodeRef<ast::Expr>> {
 /// ```
 pub fn apply_override_on_module(
     m: &mut ast::Module,
-    o: &ast::OverrideSpec,
+    o: &str,
     import_paths: &[String],
 ) -> Result<bool> {
     // Apply import paths on AST module.
     apply_import_paths_on_module(m, import_paths)?;
+    let o = parse_override_spec(o)?;
     let ss = parse_attribute_path(&o.field_path)?;
     let default = String::default();
     let target_id = ss.get(0).unwrap_or(&default);
@@ -137,7 +133,8 @@ pub fn apply_override_on_module(
         override_value: build_expr_from_string(value),
         override_target_count: 0,
         has_override: false,
-        action: o.action.clone(),
+        action: o.action,
+        operation: o.operation,
     };
     transformer.walk_module(m);
     Ok(transformer.has_override)
@@ -152,34 +149,95 @@ pub fn apply_override_on_module(
 ///     action: ast::OverrideAction::CreateOrUpdate,
 /// }
 pub fn parse_override_spec(spec: &str) -> Result<ast::OverrideSpec> {
-    if spec.contains('=') {
+    if let Some((path, value, operation)) = split_override_spec_op(spec) {
         // Create or update the override value.
-        let split_values = spec.splitn(2, '=').map(|s| s.trim()).collect::<Vec<&str>>();
-        let path = split_values
-            .first()
-            .ok_or_else(|| invalid_spec_error(spec))?;
-        let field_value = split_values
-            .get(1)
-            .ok_or_else(|| invalid_spec_error(spec))?;
-        let (pkgpath, field_path) = split_field_path(path)?;
-        Ok(ast::OverrideSpec {
-            pkgpath,
-            field_path,
-            field_value: field_value.to_string(),
-            action: ast::OverrideAction::CreateOrUpdate,
-        })
+        let field_path = path.trim().to_string();
+        let field_value = value.trim().to_string();
+        if field_path.is_empty() || field_value.is_empty() {
+            Err(invalid_spec_error(spec))
+        } else {
+            Ok(ast::OverrideSpec {
+                field_path,
+                field_value,
+                action: ast::OverrideAction::CreateOrUpdate,
+                operation,
+            })
+        }
     } else if let Some(stripped_spec) = spec.strip_suffix('-') {
         // Delete the override value.
-        let (pkgpath, field_path) = split_field_path(stripped_spec)?;
-        Ok(ast::OverrideSpec {
-            pkgpath,
-            field_path,
-            field_value: "".to_string(),
-            action: ast::OverrideAction::Delete,
-        })
+        let field_path = stripped_spec.trim().to_string();
+        if field_path.is_empty() {
+            Err(invalid_spec_error(spec))
+        } else {
+            Ok(ast::OverrideSpec {
+                field_path: stripped_spec.trim().to_string(),
+                field_value: "".to_string(),
+                action: ast::OverrideAction::Delete,
+                operation: ast::ConfigEntryOperation::Override,
+            })
+        }
     } else {
         Err(invalid_spec_error(spec))
     }
+}
+
+/// split_override_spec_op split the override_spec and do not split the override_op in list
+/// expr, dict expr and string e.g., "a.b=1" -> (a.b, 1, =), "a["a=1"]=1" -> (a["a=1"], =, 1)
+pub fn split_override_spec_op(spec: &str) -> Option<(String, String, ast::ConfigEntryOperation)> {
+    let mut i = 0;
+    let mut stack = String::new();
+    while i < spec.chars().count() {
+        let (c_idx, c) = spec.char_indices().nth(i).unwrap();
+        if c == '=' && stack.is_empty() {
+            return Some((
+                spec[..c_idx].to_string(),
+                spec[c_idx + 1..].to_string(),
+                ast::ConfigEntryOperation::Override,
+            ));
+        } else if c == ':' && stack.is_empty() {
+            return Some((
+                spec[..c_idx].to_string(),
+                spec[c_idx + 1..].to_string(),
+                ast::ConfigEntryOperation::Union,
+            ));
+        } else if c == '+' && stack.is_empty() {
+            if let Some((c_next_idx, c_next)) = spec.char_indices().nth(i + 1) {
+                if c_next == '=' {
+                    return Some((
+                        spec[..c_idx].to_string(),
+                        spec[c_next_idx + 1..].to_string(),
+                        ast::ConfigEntryOperation::Insert,
+                    ));
+                }
+            }
+        }
+        // List/Dict type
+        else if c == '[' || c == '{' {
+            stack.push(c);
+        }
+        // List/Dict type
+        else if c == ']' || c == '}' {
+            stack.pop();
+        }
+        // String literal type
+        else if c == '\"' {
+            let t: String = spec.chars().skip(i).collect();
+            let re = fancy_regex::Regex::new(r#""(?!"").*?(?<!\\)(\\\\)*?""#).unwrap();
+            if let Ok(Some(v)) = re.find(&t) {
+                i += v.as_str().chars().count() - 1;
+            }
+        }
+        // String literal type
+        else if c == '\'' {
+            let t: String = spec.chars().skip(i).collect();
+            let re = fancy_regex::Regex::new(r#"'(?!'').*?(?<!\\)(\\\\)*?'"#).unwrap();
+            if let Ok(Some(v)) = re.find(&t) {
+                i += v.as_str().chars().count() - 1;
+            }
+        }
+        i += 1;
+    }
+    None
 }
 
 // Transform the AST module with the import path list.
@@ -248,6 +306,7 @@ struct OverrideTransformer {
     pub override_target_count: usize,
     pub has_override: bool,
     pub action: ast::OverrideAction,
+    pub operation: ast::ConfigEntryOperation,
 }
 
 impl<'ctx> MutSelfMutWalker<'ctx> for OverrideTransformer {
@@ -365,24 +424,81 @@ impl<'ctx> MutSelfMutWalker<'ctx> for OverrideTransformer {
                                     },
                                 )))),
                                 value: self.clone_override_value(),
-                                operation: ast::ConfigEntryOperation::Override,
+                                operation: self.operation.clone(),
                                 insert_index: -1,
                             }))],
                         })))
                     };
+                    match &self.operation {
+                        ast::ConfigEntryOperation::Override => {
+                            let assign = ast::AssignStmt {
+                                targets: vec![Box::new(ast::Node::dummy_node(ast::Identifier {
+                                    names: vec![ast::Node::dummy_node(self.target_id.clone())],
+                                    ctx: ast::ExprContext::Store,
+                                    pkgpath: "".to_string(),
+                                }))],
+                                ty: None,
+                                value,
+                            };
+                            module
+                                .body
+                                .push(Box::new(ast::Node::dummy_node(ast::Stmt::Assign(assign))));
+                        }
+                        ast::ConfigEntryOperation::Union => {
+                            let schema_expr: Result<ast::Node<ast::SchemaExpr>, _> =
+                                value.as_ref().clone().try_into();
+                            match schema_expr {
+                                Ok(schema_expr) => {
+                                    let stmt = ast::UnificationStmt {
+                                        target: Box::new(ast::Node::dummy_node(ast::Identifier {
+                                            names: vec![ast::Node::dummy_node(
+                                                self.target_id.clone(),
+                                            )],
+                                            ctx: ast::ExprContext::Store,
+                                            pkgpath: "".to_string(),
+                                        })),
+                                        value: Box::new(schema_expr),
+                                    };
+                                    module.body.push(Box::new(ast::Node::dummy_node(
+                                        ast::Stmt::Unification(stmt),
+                                    )));
+                                }
+                                Err(_) => {
+                                    let stmt = ast::AssignStmt {
+                                        targets: vec![Box::new(ast::Node::dummy_node(
+                                            ast::Identifier {
+                                                names: vec![ast::Node::dummy_node(
+                                                    self.target_id.clone(),
+                                                )],
+                                                ctx: ast::ExprContext::Store,
+                                                pkgpath: "".to_string(),
+                                            },
+                                        ))],
+                                        ty: None,
+                                        value,
+                                    };
+                                    module.body.push(Box::new(ast::Node::dummy_node(
+                                        ast::Stmt::Assign(stmt),
+                                    )));
+                                }
+                            }
+                        }
+                        ast::ConfigEntryOperation::Insert => {
+                            let stmt = ast::AugAssignStmt {
+                                target: Box::new(ast::Node::dummy_node(ast::Identifier {
+                                    names: vec![ast::Node::dummy_node(self.target_id.clone())],
+                                    ctx: ast::ExprContext::Store,
+                                    pkgpath: "".to_string(),
+                                })),
+                                op: ast::AugOp::Add,
+                                value,
+                            };
+                            module
+                                .body
+                                .push(Box::new(ast::Node::dummy_node(ast::Stmt::AugAssign(stmt))));
+                        }
+                    }
 
-                    let assign = ast::AssignStmt {
-                        targets: vec![Box::new(ast::Node::dummy_node(ast::Identifier {
-                            names: vec![ast::Node::dummy_node(self.target_id.clone())],
-                            ctx: ast::ExprContext::Store,
-                            pkgpath: "".to_string(),
-                        }))],
-                        ty: None,
-                        value,
-                    };
-                    module
-                        .body
-                        .push(Box::new(ast::Node::dummy_node(ast::Stmt::Assign(assign))));
                     self.has_override = true;
                 }
                 ast::OverrideAction::Delete => {
@@ -451,7 +567,7 @@ impl<'ctx> MutSelfMutWalker<'ctx> for OverrideTransformer {
                                     self.override_key.clone(),
                                 )))),
                                 value: self.clone_override_value(),
-                                operation: ast::ConfigEntryOperation::Override,
+                                operation: self.operation.clone(),
                                 insert_index: -1,
                             })));
                         self.has_override = true;
@@ -585,7 +701,7 @@ impl OverrideTransformer {
                     .push(Box::new(ast::Node::dummy_node(ast::ConfigEntry {
                         key: Some(Box::new(ast::Node::dummy_node(ast::Expr::Identifier(key)))),
                         value: self.clone_override_value(),
-                        operation: ast::ConfigEntryOperation::Override,
+                        operation: self.operation.clone(),
                         insert_index: -1,
                     })));
                 changed = true;

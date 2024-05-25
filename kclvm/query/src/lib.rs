@@ -14,7 +14,6 @@ mod tests;
 mod util;
 
 use anyhow::{anyhow, Result};
-use kclvm_ast::ast;
 use kclvm_ast_pretty::print_ast_module;
 use kclvm_error::diagnostic::Errors;
 use kclvm_parser::parse_file;
@@ -22,8 +21,6 @@ use kclvm_parser::parse_file;
 use kclvm_sema::pre_process::fix_config_expr_nest_attr;
 pub use query::{get_schema_type, GetSchemaOption};
 pub use r#override::{apply_override_on_module, apply_overrides};
-
-use self::r#override::parse_override_spec;
 
 /// Override and rewrite a file with override specifications. Please note that this is an external user API,
 /// and it can directly modify the KCL file in place.
@@ -84,11 +81,6 @@ pub fn override_file(
     specs: &[String],
     import_paths: &[String],
 ) -> Result<OverrideFileResult> {
-    // Parse override spec strings.
-    let overrides = specs
-        .iter()
-        .map(|s| parse_override_spec(s))
-        .collect::<Result<Vec<ast::OverrideSpec>, _>>()?;
     // Parse file to AST module.
     let mut parse_result = match parse_file(file, None) {
         Ok(module) => module,
@@ -96,8 +88,8 @@ pub fn override_file(
     };
     let mut result = false;
     // Override AST module.
-    for o in &overrides {
-        if apply_override_on_module(&mut parse_result.module, o, import_paths)? {
+    for s in specs {
+        if apply_override_on_module(&mut parse_result.module, s, import_paths)? {
             result = true;
         }
     }

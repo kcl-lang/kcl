@@ -341,10 +341,10 @@ pub struct CmdArgSpec {
 /// KCL command line override spec, e.g. `kcl main.k -O pkgpath:path.to.field=field_value`
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct OverrideSpec {
-    pub pkgpath: String,
     pub field_path: String,
     pub field_value: String,
     pub action: OverrideAction,
+    pub operation: ConfigEntryOperation,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
