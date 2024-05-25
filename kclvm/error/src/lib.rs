@@ -135,9 +135,10 @@ impl Handler {
         range: Range,
         suggestions: Option<Vec<String>>,
     ) -> &mut Self {
+        let debud_msg = format!("{}{:?}", msg, range.clone());
         let diag = Diagnostic::new_with_code(
             Level::Error,
-            msg,
+            &debud_msg,
             None,
             range,
             Some(DiagnosticId::Error(E2L23.kind)),

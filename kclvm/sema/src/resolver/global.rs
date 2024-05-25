@@ -471,24 +471,30 @@ impl<'ctx> Resolver<'ctx> {
     ) -> SchemaType {
         let name = &schema_stmt.name.node;
         if RESERVED_TYPE_IDENTIFIERS.contains(&name.as_str()) {
-            self.handler.add_compile_error(
+            self.handler.add_compile_error_with_suggestions(
                 &format!(
                     "schema name '{}' cannot be the same as the built-in types ({:?})",
                     name, RESERVED_TYPE_IDENTIFIERS
                 ),
                 schema_stmt.name.get_span_pos(),
+                Some(vec![]),
             );
         }
         if schema_stmt.is_protocol && !name.ends_with(PROTOCOL_SUFFIX) {
-            self.handler.add_error(
-                ErrorKind::CompileError,
-                &[Message {
-                    range: schema_stmt.name.get_span_pos(),
-                    style: Style::LineAndColumn,
-                    message: format!("schema protocol name must end with '{}'", PROTOCOL_SUFFIX),
-                    note: None,
-                    suggested_replacement: None,
-                }],
+            let fix_range = schema_stmt.name.get_span_pos();
+            let (start_pos, end_pos) = fix_range;
+            let start_column = end_pos.column;
+
+            let modified_start_pos = Position {
+                column: start_column,
+                ..start_pos.clone()
+            };
+            let modified_fix_range = (modified_start_pos, end_pos);
+
+            self.handler.add_compile_error_with_suggestions(
+                &format!("schema protocol name must end with '{}'", PROTOCOL_SUFFIX),
+                modified_fix_range,
+                Some(vec![PROTOCOL_SUFFIX.to_string()]),
             );
         }
         if schema_stmt.is_protocol && !schema_stmt.has_only_attribute_definitions() {

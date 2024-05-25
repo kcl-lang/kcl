@@ -349,12 +349,22 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             } else if i == 1 {
                 val_name = Some(name)
             } else {
-                self.handler.add_compile_error(
+                let fix_range=target.get_span_pos();
+                let (start_pos, end_pos) = fix_range;
+                let start_column = start_pos.column.map(|col| col.saturating_sub(2));
+    
+                let modified_start_pos = Position {
+                    column: start_column,
+                    ..start_pos.clone()
+                };
+                let modified_fix_range = (modified_start_pos, end_pos);
+                self.handler.add_compile_error_with_suggestions(
                     &format!(
-                        "the number of loop variables is {}, which can only be 1 or 2",
+                        "the numbesssr of loop variables is {}, which can only be 1 or 2",
                         quant_expr.variables.len()
                     ),
-                    target.get_span_pos(),
+                    modified_fix_range,
+                    Some(vec![])
                 );
                 break;
             }
@@ -1339,3 +1349,6 @@ impl<'ctx> Resolver<'ctx> {
         ident_ty
     }
 }
+
+
+
