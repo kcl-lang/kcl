@@ -5,6 +5,7 @@ use indexmap::IndexSet;
 use kclvm_ast::ast;
 
 use kclvm_ast::pos::GetPos;
+use kclvm_error::Position;
 
 use crate::ty::TypeRef;
 
@@ -38,17 +39,21 @@ impl<'ctx> Resolver<'ctx> {
         let mut kwarg_types: Vec<(String, TypeRef)> = vec![];
         let mut check_table: IndexSet<String> = IndexSet::default();
         for kw in kwargs {
-            let (suggs, msg) = self.get_arg_kw_err_suggestion(kw, func_ty);
             if !kw.node.arg.node.names.is_empty() {
                 let arg_name = &kw.node.arg.node.names[0].node;
+                let fix_range = kw.get_span_pos();
+                let (start_pos, end_pos) = fix_range;
+                let start_column = start_pos.column.map(|col| col.saturating_sub(2));
+                let modified_start_pos = Position {
+                    column: start_column,
+                    ..start_pos.clone()
+                };
+                let modified_fix_range = (modified_start_pos, end_pos);
                 if check_table.contains(arg_name) {
                     self.handler.add_compile_error_with_suggestions(
-                        &format!(
-                            "{} has duplicated keyword argument {}{}",
-                            func_name, arg_name, msg
-                        ),
-                        kw.get_span_pos(),
-                        Some(suggs),
+                        &format!("{} has duplicated keyword argument {}", func_name, arg_name),
+                        modified_fix_range,
+                        Some(vec![]),
                     );
                 }
                 check_table.insert(arg_name.to_string());
@@ -58,7 +63,7 @@ impl<'ctx> Resolver<'ctx> {
                 kwarg_types.push((arg_name.to_string(), arg_value_type.clone()));
             } else {
                 self.handler
-                    .add_compile_error(&format!("missing argument{}", msg), kw.get_span_pos());
+                    .add_compile_error(&format!("missing argument"), kw.get_span_pos());
             }
         }
         // Do few argument count check
@@ -124,7 +129,7 @@ impl<'ctx> Resolver<'ctx> {
                         "{} got an unexpected keyword argument '{}'{}",
                         func_name, arg_name, msg
                     ),
-                    kwargs[i].get_span_pos(),
+                    kwargs[i].node.arg.get_span_pos(),
                     Some(suggs),
                 );
             }
@@ -147,28 +152,6 @@ impl<'ctx> Resolver<'ctx> {
     }
 
     /// Generate suggestions for keyword argument errors.
-    pub(crate) fn get_arg_kw_err_suggestion(
-        &self,
-        kw: &ast::NodeRef<ast::Keyword>,
-        func_ty: &FunctionType,
-    ) -> (Vec<String>, String) {
-        let attr = &kw.node.arg.node.names[0].node;
-        let valid_params: Vec<&str> = func_ty
-            .params
-            .iter()
-            .map(|param| param.name.as_str())
-            .collect();
-        let suggs = suggestions::provide_suggestions(attr, valid_params.into_iter());
-
-        let suggestion = if !suggs.is_empty() {
-            format!(", did you mean '{}'?", suggs.join(" or "))
-        } else {
-            String::new()
-        };
-
-        (suggs, suggestion)
-    }
-
     pub(crate) fn get_arg_kw_err_suggestion_from_name(
         &self,
         arg_name: &str,

@@ -225,9 +225,10 @@ impl<'ctx> Resolver<'ctx> {
                         _ => bug!("invalid builtin decorator function type"),
                     },
                     None => {
-                        self.handler.add_compile_error(
+                        self.handler.add_compile_error_with_suggestions(
                             &format!("UnKnown decorator {}", name),
                             decorator.get_span_pos(),
+                            Some(vec![]),
                         );
                     }
                 },
