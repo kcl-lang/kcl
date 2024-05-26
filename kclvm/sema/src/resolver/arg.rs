@@ -41,20 +41,17 @@ impl<'ctx> Resolver<'ctx> {
         for kw in kwargs {
             if !kw.node.arg.node.names.is_empty() {
                 let arg_name = &kw.node.arg.node.names[0].node;
-                let fix_range=kw.get_span_pos();
-                let (start_pos,end_pos)=fix_range;
-                let start_column=start_pos.column.map(|col| col.saturating_sub(2));
-                let modified_start_pos=Position{
-                    column:start_column,
+                let fix_range = kw.get_span_pos();
+                let (start_pos, end_pos) = fix_range;
+                let start_column = start_pos.column.map(|col| col.saturating_sub(2));
+                let modified_start_pos = Position {
+                    column: start_column,
                     ..start_pos.clone()
                 };
-                let modified_fix_range=(modified_start_pos,end_pos);
+                let modified_fix_range = (modified_start_pos, end_pos);
                 if check_table.contains(arg_name) {
                     self.handler.add_compile_error_with_suggestions(
-                        &format!(
-                            "{} has duplicated keyword argument {}",
-                            func_name, arg_name
-                        ),
+                        &format!("{} has duplicated keyword argument {}", func_name, arg_name),
                         modified_fix_range,
                         Some(vec![]),
                     );
