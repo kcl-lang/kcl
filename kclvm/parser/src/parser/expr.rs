@@ -9,6 +9,7 @@ use super::Parser;
 
 use either::{self, Either};
 use kclvm_ast::node_ref;
+use kclvm_error::constants;
 
 use crate::parser::precedence::Precedence;
 use compiler_base_error::unit_type::{TypeWithUnit, UnitUsize};
@@ -2059,9 +2060,11 @@ impl<'a> Parser<'a> {
                         args.push(Box::new(expr));
                     }
                     if has_keyword {
-                        self.sess.struct_span_error(
-                            "positional argument follows keyword argument",
+                        self.sess.struct_span_error_with_suggestions(
+                            constants::POSITIONAL_ARG_FOLLOWS_KW_ARG_MSG,
                             token.span,
+                            Some("Remove unnecessary positional argument".to_string()),
+                            Some("".to_string()),
                         )
                     }
                 }

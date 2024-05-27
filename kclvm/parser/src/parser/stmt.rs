@@ -5,7 +5,7 @@ use compiler_base_span::{span::new_byte_pos, BytePos, Span};
 use kclvm_ast::token::VALID_SPACES_LENGTH;
 use kclvm_ast::token::{CommentKind, DelimToken, LitKind, Token, TokenKind};
 use kclvm_ast::{ast::*, expr_as, node_ref};
-use kclvm_error::ParseErrorMessage;
+use kclvm_error::constants;
 use kclvm_span::symbol::kw;
 
 use super::Parser;
@@ -601,14 +601,13 @@ impl<'a> Parser<'a> {
 
             // `else if -> elif` error recovery.
             if self.token.is_keyword(kw::If) {
-                self.sess.struct_message_error_with_suggestions(
-                    ParseErrorMessage::InvalidTokenElseIf,
-                    Span::new(lo, self.token.span.hi()),
-                    Some(vec!["elif".to_string()]),
+                self.sess.struct_span_error_with_suggestions(
+                    constants::ELSE_IF_INVALID_MSG,
+                    self.token.span,
+                    Some("Use 'elif' instead of 'else if'".to_string()),
+                    Some("elif".to_string()),
                 );
-                self.bump_keyword(kw::If);
-            }
-            if self.token.kind != TokenKind::Colon {
+            } else if self.token.kind != TokenKind::Colon {
                 self.sess
                     .struct_token_error(&[TokenKind::Colon.into()], self.token);
             }

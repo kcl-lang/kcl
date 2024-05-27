@@ -3,6 +3,7 @@
 //!
 //! We can use `Handler` to create and emit diagnostics.
 
+pub mod constants;
 pub mod diagnostic;
 mod error;
 
@@ -20,6 +21,7 @@ use compiler_base_error::{
 };
 use compiler_base_session::{Session, SessionDiagnostic};
 use compiler_base_span::{span::new_byte_pos, Span};
+use constants::*;
 use diagnostic::Range;
 use indexmap::IndexSet;
 use kclvm_runtime::PanicInfo;
@@ -406,12 +408,21 @@ impl ParseError {
             ParseError::Message { span, .. } => span,
             ParseError::String { span, .. } => span,
         };
-        let start_pos = sess.sm.lookup_char_pos(span.lo()).into();
-        let end_pos = sess.sm.lookup_char_pos(span.hi()).into();
-        let suggestions = match &self {
-            ParseError::Message { suggestions, .. } => suggestions.clone(),
+        let suggestions = match self {
+            ParseError::Message {
+                fix_info: Some(ref info),
+                ..
+            } => Some(vec![
+                info.suggestion
+                    .clone()
+                    .unwrap_or_else(|| "No suggestion available".to_string()),
+                info.replacement.clone().unwrap_or_else(|| "".to_string()),
+            ]),
             _ => None,
         };
+
+        let (start_pos, end_pos) = self.generate_modified_range(&self.to_string(), sess, &span);
+
         Ok(Diagnostic::new_with_code(
             Level::Error,
             &self.to_string(),
@@ -420,6 +431,92 @@ impl ParseError {
             Some(DiagnosticId::Error(ErrorKind::InvalidSyntax)),
             suggestions,
         ))
+    }
+
+    fn generate_modified_range(
+        &self,
+        msg: &str,
+        sess: &Session,
+        span: &Span,
+    ) -> (Position, Position) {
+        let start_loc = sess.sm.lookup_char_pos(span.lo());
+        let end_loc = sess.sm.lookup_char_pos(span.hi());
+        let start_pos: Position = start_loc.into();
+        let end_pos: Position = end_loc.into();
+
+        match msg {
+            ELSE_IF_INVALID_MSG => {
+                let start_column = start_pos
+                    .column
+                    .map(|col| col.saturating_sub(5))
+                    .unwrap_or(0);
+                let end_column = start_pos
+                    .column
+                    .map(|col| col.saturating_add(2))
+                    .unwrap_or(0);
+                (
+                    Position {
+                        column: Some(start_column),
+                        ..start_pos.clone()
+                    },
+                    Position {
+                        column: Some(end_column),
+                        ..start_pos.clone()
+                    },
+                )
+            }
+            ERROR_NESTING_CLOSE_PAREN_MSG
+            | MISMATCHED_CLOSING_DELIMITER_MSG
+            | ERROR_NESTING_CLOSE_BRACE_MSG
+            | UNTERMINATED_STRING_MSG
+            | UNNECESSARY_SEMICOLON_MSG
+            | INVALID_NOT_TOKEN_MSG => {
+                let start_column = start_pos.column.unwrap_or(0);
+                let end_column = start_column + 1;
+                (
+                    Position {
+                        column: Some(start_column),
+                        ..start_pos.clone()
+                    },
+                    Position {
+                        column: Some(end_column),
+                        ..start_pos.clone()
+                    },
+                )
+            }
+            UNEXPECTED_CHAR_AFTER_LINE_CONTINUATION_MSG => {
+                let start_column = start_pos.column.unwrap_or(0);
+                let end_column = u32::MAX;
+                (
+                    Position {
+                        column: Some(start_column),
+                        ..start_pos.clone()
+                    },
+                    Position {
+                        column: Some(end_column.into()),
+                        ..start_pos.clone()
+                    },
+                )
+            }
+            POSITIONAL_ARG_FOLLOWS_KW_ARG_MSG => {
+                let start_column = start_pos
+                    .column
+                    .map(|col| col.saturating_sub(2))
+                    .unwrap_or(0);
+                let end_column = end_pos.column.unwrap_or_default();
+                (
+                    Position {
+                        column: Some(start_column),
+                        ..start_pos.clone()
+                    },
+                    Position {
+                        column: Some(end_column),
+                        ..start_pos.clone()
+                    },
+                )
+            }
+            _ => (start_pos, end_pos),
+        }
     }
 }
 
