@@ -3,6 +3,7 @@
 //!
 //! We can use `Handler` to create and emit diagnostics.
 
+pub mod constants;
 pub mod diagnostic;
 mod error;
 
@@ -20,6 +21,7 @@ use compiler_base_error::{
 };
 use compiler_base_session::{Session, SessionDiagnostic};
 use compiler_base_span::{span::new_byte_pos, Span};
+use constants::*;
 use diagnostic::Range;
 use indexmap::IndexSet;
 use kclvm_runtime::PanicInfo;
@@ -380,8 +382,6 @@ impl ParseError {
             ParseError::UnexpectedToken { span, .. } => span,
             ParseError::Message { span, .. } => span,
         };
-        let loc = sess.sm.lookup_char_pos(span.lo());
-        let pos: Position = loc.into();
         let suggestions = match self {
             ParseError::Message {
                 fix_info: Some(ref info),
@@ -390,12 +390,12 @@ impl ParseError {
                 info.suggestion
                     .clone()
                     .unwrap_or_else(|| "No suggestion available".to_string()),
-                info.replacement.clone().unwrap_or_else(|| " ".to_string()),
+                info.replacement.clone().unwrap_or_else(|| "".to_string()),
             ]),
             _ => None,
         };
 
-        let (start_pos, end_pos) = self.generate_modified_range(&self.to_string(), &pos);
+        let (start_pos, end_pos) = self.generate_modified_range(&self.to_string(), sess, &span);
 
         Ok(Diagnostic::new_with_code(
             Level::Error,
@@ -407,95 +407,89 @@ impl ParseError {
         ))
     }
 
-    fn generate_modified_range(&self, msg: &str, pos: &Position) -> (Position, Position) {
+    fn generate_modified_range(
+        &self,
+        msg: &str,
+        sess: &Session,
+        span: &Span,
+    ) -> (Position, Position) {
+        let start_loc = sess.sm.lookup_char_pos(span.lo());
+        let end_loc = sess.sm.lookup_char_pos(span.hi());
+        let start_pos: Position = start_loc.into();
+        let end_pos: Position = end_loc.into();
+
         match msg {
-            "invalid token '!', consider using 'not '" => {
-                let start_column = pos.column.unwrap_or(0);
+            ELSE_IF_INVALID_MSG => {
+                let start_column = start_pos
+                    .column
+                    .map(|col| col.saturating_sub(5))
+                    .unwrap_or(0);
+                let end_column = start_pos
+                    .column
+                    .map(|col| col.saturating_add(2))
+                    .unwrap_or(0);
+                (
+                    Position {
+                        column: Some(start_column),
+                        ..start_pos.clone()
+                    },
+                    Position {
+                        column: Some(end_column),
+                        ..start_pos.clone()
+                    },
+                )
+            }
+            ERROR_NESTING_CLOSE_PAREN_MSG
+            | MISMATCHED_CLOSING_DELIMITER_MSG
+            | ERROR_NESTING_CLOSE_BRACE_MSG
+            | UNTERMINATED_STRING_MSG
+            | UNNECESSARY_SEMICOLON_MSG
+            | INVALID_NOT_TOKEN_MSG => {
+                let start_column = start_pos.column.unwrap_or(0);
                 let end_column = start_column + 1;
                 (
                     Position {
                         column: Some(start_column),
-                        ..pos.clone()
+                        ..start_pos.clone()
                     },
                     Position {
                         column: Some(end_column),
-                        ..pos.clone()
+                        ..start_pos.clone()
                     },
                 )
             }
-            "'else if' here is invalid in KCL, consider using the 'elif' keyword" => {
-                let start_column = pos.column.map(|col| col.saturating_sub(5)).unwrap_or(0);
-                let end_column = pos.column.map(|col| col.saturating_add(2)).unwrap_or(0);
-                (
-                    Position {
-                        column: Some(start_column),
-                        ..pos.clone()
-                    },
-                    Position {
-                        column: Some(end_column),
-                        ..pos.clone()
-                    },
-                )
-            }
-            "error nesting on close paren"
-            | "mismatched closing delimiter"
-            | "error nesting on close brace" => {
-                let start_column = pos.column.unwrap_or(0);
-                let end_column = start_column + 1;
-                (
-                    Position {
-                        column: Some(start_column),
-                        ..pos.clone()
-                    },
-                    Position {
-                        column: Some(end_column),
-                        ..pos.clone()
-                    },
-                )
-            }
-            "unterminated string" => {
-                let start_column = pos.column.unwrap_or(0);
-                let end_column = start_column + 1;
-                (
-                    Position {
-                        column: Some(start_column),
-                        ..pos.clone()
-                    },
-                    Position {
-                        column: Some(end_column),
-                        ..pos.clone()
-                    },
-                )
-            }
-            "unexpected character after line continuation character" => {
-                let start_column = pos.column.unwrap_or(0);
+            UNEXPECTED_CHAR_AFTER_LINE_CONTINUATION_MSG => {
+                let start_column = start_pos.column.unwrap_or(0);
                 let end_column = u32::MAX;
                 (
                     Position {
                         column: Some(start_column),
-                        ..pos.clone()
+                        ..start_pos.clone()
                     },
                     Position {
                         column: Some(end_column.into()),
-                        ..pos.clone()
+                        ..start_pos.clone()
                     },
                 )
             }
-            "the semicolon ';' here is unnecessary, please remove it" => {
-                let start_column = pos.column.unwrap_or(0);
-                let end_column = start_column + 1;
+            POSITIONAL_ARG_FOLLOWS_KW_ARG_MSG => {
+                let start_column = start_pos
+                    .column
+                    .map(|col| col.saturating_sub(2))
+                    .unwrap_or(0);
+                let end_column = end_pos.column.unwrap_or_default();
                 (
                     Position {
                         column: Some(start_column),
-                        ..pos.clone()
+                        ..start_pos.clone()
                     },
                     Position {
                         column: Some(end_column),
-                        ..pos.clone()
+                        ..start_pos.clone()
                     },
                 )
             }
-            _ => (pos.clone(), pos.clone()),
+            _ => (start_pos, end_pos),
         }
     }
 }

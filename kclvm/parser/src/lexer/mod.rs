@@ -32,6 +32,7 @@ pub(crate) use string::str_content_eval;
 
 use self::indent::IndentLevel;
 use crate::session::ParseSession;
+use kclvm_error::constants;
 
 /// EntryPoint of the lexer.
 /// Parse token streams from an input raw string and a fixed start point.
@@ -259,7 +260,7 @@ impl<'a> Lexer<'a> {
             kclvm_lexer::TokenKind::Tilde => token::UnaryOp(token::UTilde),
             kclvm_lexer::TokenKind::Bang => {
                 self.sess.struct_span_error_with_suggestions(
-                    "invalid token '!', consider using 'not'",
+                    constants::INVALID_NOT_TOKEN_MSG,
                     self.span(start, self.pos),
                     Some("Replace '!' with 'not'".to_string()),
                     Some("not ".to_string()),
@@ -327,7 +328,7 @@ impl<'a> Lexer<'a> {
                     // error recovery
                     token::OpenDelim(token::Brace) => {
                         self.sess.struct_span_error_with_suggestions(
-                            "error nesting on close paren",
+                            constants::ERROR_NESTING_CLOSE_PAREN_MSG,
                             self.span(start, self.pos),
                             Some("Replace with '}'".to_string()),
                             Some("}".to_string()),
@@ -337,7 +338,7 @@ impl<'a> Lexer<'a> {
                     // error recovery
                     token::OpenDelim(token::Bracket) => {
                         self.sess.struct_span_error_with_suggestions(
-                            "error nesting on close paren",
+                            constants::ERROR_NESTING_CLOSE_PAREN_MSG,
                             self.span(start, self.pos),
                             Some("Replace with ']'".to_string()),
                             Some("]".to_string()),
@@ -350,7 +351,7 @@ impl<'a> Lexer<'a> {
                 // error recovery
                 None => {
                     self.sess.struct_span_error_with_suggestions(
-                        "error nesting on close paren",
+                        constants::ERROR_NESTING_CLOSE_PAREN_MSG,
                         self.span(start, self.pos),
                         Some("Insert ')'".to_string()),
                         Some(")".to_string()),
@@ -370,7 +371,7 @@ impl<'a> Lexer<'a> {
                     // error recovery
                     token::OpenDelim(token::Paren) => {
                         self.sess.struct_span_error_with_suggestions(
-                            "error nesting on close brace",
+                            constants::ERROR_NESTING_CLOSE_BRACE_MSG,
                             self.span(start, self.pos),
                             Some("Replace with ')'".to_string()),
                             Some(")".to_string()),
@@ -380,7 +381,7 @@ impl<'a> Lexer<'a> {
                     // error recovery
                     token::OpenDelim(token::Bracket) => {
                         self.sess.struct_span_error_with_suggestions(
-                            "error nesting on close brace",
+                            constants::ERROR_NESTING_CLOSE_BRACE_MSG,
                             self.span(start, self.pos),
                             Some("Replace with ']'".to_string()),
                             Some("]".to_string()),
@@ -393,7 +394,7 @@ impl<'a> Lexer<'a> {
                 // error recovery
                 None => {
                     self.sess.struct_span_error_with_suggestions(
-                        "error nesting on close brace",
+                        constants::ERROR_NESTING_CLOSE_BRACE_MSG,
                         self.span(start, self.pos),
                         Some("Insert '}'".to_string()),
                         Some("}".to_string()),
@@ -415,7 +416,7 @@ impl<'a> Lexer<'a> {
                     // error recovery
                     token::OpenDelim(token::Brace) => {
                         self.sess.struct_span_error_with_suggestions(
-                            "mismatched closing delimiter",
+                            constants::MISMATCHED_CLOSING_DELIMITER_MSG,
                             self.span(start, self.pos),
                             Some("Replace with '}'".to_string()),
                             Some("}".to_string()),
@@ -425,7 +426,7 @@ impl<'a> Lexer<'a> {
                     // error recovery
                     token::OpenDelim(token::Paren) => {
                         self.sess.struct_span_error_with_suggestions(
-                            "mismatched closing delimiter",
+                            constants::MISMATCHED_CLOSING_DELIMITER_MSG,
                             self.span(start, self.pos),
                             Some("Replace with ')'".to_string()),
                             Some(")".to_string()),
@@ -438,7 +439,7 @@ impl<'a> Lexer<'a> {
                 // error recovery
                 None => {
                     self.sess.struct_span_error_with_suggestions(
-                        "mismatched closing delimiter",
+                        constants::MISMATCHED_CLOSING_DELIMITER_MSG,
                         self.span(start, self.pos),
                         Some("Insert ']'".to_string()),
                         Some("]".to_string()),
@@ -451,7 +452,7 @@ impl<'a> Lexer<'a> {
                 // If we encounter an illegal line continuation character,
                 // we will restore it to a normal line continuation character.
                 self.sess.struct_span_error_with_suggestions(
-                    "unexpected character after line continuation character",
+                    constants::UNEXPECTED_CHAR_AFTER_LINE_CONTINUATION_MSG,
                     self.span(start, self.pos),
                     Some("Replace with '\\'".to_string()),
                     Some("\\".to_string()),
@@ -461,10 +462,10 @@ impl<'a> Lexer<'a> {
             kclvm_lexer::TokenKind::Semi => {
                 // If we encounter an illegal semi token ';', raise a friendly error.
                 self.sess.struct_span_error_with_suggestions(
-                    "the semicolon ';' here is unnecessary, please remove it",
+                    constants::UNNECESSARY_SEMICOLON_MSG,
                     self.span(start, self.pos),
                     Some("Remove ';'".to_string()),
-                    Some(" ".to_string()),
+                    Some("".to_string()),
                 );
                 return None;
             }
@@ -532,7 +533,7 @@ impl<'a> Lexer<'a> {
                 };
                 if !terminated {
                     self.sess.struct_span_error_with_suggestions(
-                        "unterminated string",
+                        constants::UNTERMINATED_STRING_MSG,
                         self.span(quote_char_pos, self.pos),
                         Some("Close the string with matching quote".to_string()),
                         Some("\"".to_string()),

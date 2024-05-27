@@ -49,12 +49,7 @@ fn kcl_msg_to_lsp_diags(
     let data = msg
         .suggested_replacement
         .as_ref()
-        .map(|s_vec| {
-            s_vec
-                .iter()
-                .filter(|s| !s.is_empty())
-                .collect::<Vec<&String>>()
-        })
+        .map(|s_vec| s_vec.iter().collect::<Vec<&String>>())
         .map(|s| {
             if s.is_empty() {
                 json!({ "suggested_replacement": "" })
