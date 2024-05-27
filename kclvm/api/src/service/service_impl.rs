@@ -16,7 +16,6 @@ use kclvm_parser::parse_file;
 use kclvm_parser::KCLModuleCache;
 use kclvm_parser::LoadProgramOptions;
 use kclvm_parser::ParseSessionRef;
-use kclvm_query::get_schema_type;
 use kclvm_query::override_file;
 use kclvm_query::query::get_full_schema_type;
 use kclvm_query::query::CompilationOptions;
@@ -557,58 +556,7 @@ impl KclvmServiceImpl {
             })
     }
 
-    /// Service for getting the schema type list.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
-    /// use kclvm_api::gpyrpc::*;
-    ///
-    /// let serv = KclvmServiceImpl::default();
-    /// let file = "schema.k".to_string();
-    /// let code = r#"
-    /// schema Person:
-    ///     name: str
-    ///     age: int
-    ///
-    /// person = Person {
-    ///     name = "Alice"
-    ///     age = 18
-    /// }
-    /// "#.to_string();
-    /// let result = serv.get_schema_type(&GetSchemaTypeArgs {
-    ///     file,
-    ///     code,
-    ///     ..Default::default()
-    /// }).unwrap();
-    /// assert_eq!(result.schema_type_list.len(), 2);
-    /// ```
-    pub fn get_schema_type(&self, args: &GetSchemaTypeArgs) -> anyhow::Result<GetSchemaTypeResult> {
-        let mut type_list = Vec::new();
-        for (_k, schema_ty) in get_schema_type(
-            &args.file,
-            if args.code.is_empty() {
-                None
-            } else {
-                Some(&args.code)
-            },
-            if args.schema_name.is_empty() {
-                None
-            } else {
-                Some(&args.schema_name)
-            },
-            Default::default(),
-        )? {
-            type_list.push(kcl_schema_ty_to_pb_ty(&schema_ty));
-        }
-
-        Ok(GetSchemaTypeResult {
-            schema_type_list: type_list,
-        })
-    }
-
-    /// Service for getting the full schema type list.
+    /// Service for getting the schema mapping.
     ///
     /// # Examples
     ///
@@ -633,19 +581,19 @@ impl KclvmServiceImpl {
     ///     ..Default::default()
     /// };
     ///
-    /// let result = serv.get_full_schema_type(&GetFullSchemaTypeArgs {
+    /// let result = serv.get_schema_type_mapping(&GetSchemaTypeMappingArgs {
     ///     exec_args: Some(args),
-    ///     schema_name: "a".to_string()
+    ///     ..Default::default()
     /// }).unwrap();
-    /// assert_eq!(result.schema_type_list.len(), 1);
+    /// assert_eq!(result.schema_type_mapping.len(), 1);
     /// ```
-    pub fn get_full_schema_type(
+    pub fn get_schema_type_mapping(
         &self,
-        args: &GetFullSchemaTypeArgs,
-    ) -> anyhow::Result<GetSchemaTypeResult> {
-        let mut type_list = Vec::new();
+        args: &GetSchemaTypeMappingArgs,
+    ) -> anyhow::Result<GetSchemaTypeMappingResult> {
+        let mut type_mapping = HashMap::new();
         let exec_args = transform_exec_para(&args.exec_args, self.plugin_agent)?;
-        for (_k, schema_ty) in get_full_schema_type(
+        for (k, schema_ty) in get_full_schema_type(
             Some(&args.schema_name),
             CompilationOptions {
                 k_files: exec_args.clone().k_filename_list,
@@ -656,60 +604,6 @@ impl KclvmServiceImpl {
                 },
                 get_schema_opts: GetSchemaOption::default(),
             },
-        )? {
-            type_list.push(kcl_schema_ty_to_pb_ty(&schema_ty));
-        }
-
-        Ok(GetSchemaTypeResult {
-            schema_type_list: type_list,
-        })
-    }
-
-    /// Service for getting the schema mapping.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
-    /// use kclvm_api::gpyrpc::*;
-    ///
-    /// let serv = KclvmServiceImpl::default();
-    /// let file = "schema.k".to_string();
-    /// let code = r#"
-    /// schema Person:
-    ///     name: str
-    ///     age: int
-    ///
-    /// person = Person {
-    ///     name = "Alice"
-    ///     age = 18
-    /// }
-    /// "#.to_string();
-    /// let result = serv.get_schema_type_mapping(&GetSchemaTypeMappingArgs {
-    ///     file,
-    ///     code,
-    ///     ..Default::default()
-    /// }).unwrap();
-    /// assert_eq!(result.schema_type_mapping.len(), 2);
-    /// ```
-    pub fn get_schema_type_mapping(
-        &self,
-        args: &GetSchemaTypeMappingArgs,
-    ) -> anyhow::Result<GetSchemaTypeMappingResult> {
-        let mut type_mapping = HashMap::new();
-        for (k, schema_ty) in get_schema_type(
-            &args.file,
-            if args.code.is_empty() {
-                None
-            } else {
-                Some(&args.code)
-            },
-            if args.schema_name.is_empty() {
-                None
-            } else {
-                Some(&args.schema_name)
-            },
-            Default::default(),
         )? {
             type_mapping.insert(k, kcl_schema_ty_to_pb_ty(&schema_ty));
         }

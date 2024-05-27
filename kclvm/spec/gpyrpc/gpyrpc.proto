@@ -62,8 +62,6 @@ service KclvmService {
 	rpc LintPath(LintPath_Args) returns(LintPath_Result);
 	rpc OverrideFile(OverrideFile_Args) returns (OverrideFile_Result);
 
-	rpc GetSchemaType(GetSchemaType_Args) returns(GetSchemaType_Result);
-	rpc GetFullSchemaType(GetFullSchemaType_Args) returns(GetSchemaType_Result);
 	rpc GetSchemaTypeMapping(GetSchemaTypeMapping_Args) returns(GetSchemaTypeMapping_Result);
 	rpc ValidateCode(ValidateCode_Args) returns(ValidateCode_Result);
 
@@ -308,24 +306,9 @@ message MapEntry {
 	Variable value = 2;
 }
 
-message GetFullSchemaType_Args {
+message GetSchemaTypeMapping_Args {
 	ExecProgram_Args exec_args = 1;
 	string schema_name = 2;
-}
-
-message GetSchemaType_Args {
-	string file = 1;
-	string code = 2;
-	string schema_name = 3;
-}
-message GetSchemaType_Result {
-	repeated KclType schema_type_list = 1;
-}
-
-message GetSchemaTypeMapping_Args {
-	string file = 1;
-	string code = 2;
-	string schema_name = 3;
 }
 message GetSchemaTypeMapping_Result {
 	map<string, KclType> schema_type_mapping = 1;
