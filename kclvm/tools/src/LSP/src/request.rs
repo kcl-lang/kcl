@@ -238,7 +238,10 @@ pub(crate) fn handle_goto_definition(
     if !snapshot.verify_request_path(&path.clone().into(), &sender) {
         return Ok(None);
     }
-    let db = snapshot.get_db(&path.clone().into())?;
+    let db = match snapshot.get_db(&path.clone().into()) {
+        Ok(db) => db,
+        Err(_) => return Ok(None),
+    };
     let kcl_pos = kcl_pos(&file, params.text_document_position_params.position);
     let res = goto_def(&kcl_pos, &db.gs);
     if res.is_none() {
@@ -261,7 +264,10 @@ pub(crate) fn handle_reference(
     if !snapshot.verify_request_path(&path.clone().into(), &sender) {
         return Ok(None);
     }
-    let db = snapshot.get_db(&path.clone().into())?;
+    let db = match snapshot.get_db(&path.clone().into()) {
+        Ok(db) => db,
+        Err(_) => return Ok(None),
+    };
     let pos = kcl_pos(&file, params.text_document_position.position);
     let log = |msg: String| log_message(msg, &sender);
     let module_cache = snapshot.module_cache.clone();
@@ -304,7 +310,10 @@ pub(crate) fn handle_completion(
         .and_then(|ctx| ctx.trigger_character)
         .and_then(|s| s.chars().next());
 
-    let db = snapshot.get_db(&path.clone().into())?;
+    let db = match snapshot.get_db(&path.clone().into()) {
+        Ok(db) => db,
+        Err(_) => return Ok(None),
+    };
 
     let res = completion(
         completion_trigger_character,
@@ -331,7 +340,10 @@ pub(crate) fn handle_hover(
     if !snapshot.verify_request_path(&path.clone().into(), &sender) {
         return Ok(None);
     }
-    let db = snapshot.get_db(&path.clone().into())?;
+    let db = match snapshot.get_db(&path.clone().into()) {
+        Ok(db) => db,
+        Err(_) => return Ok(None),
+    };
     let kcl_pos = kcl_pos(&file, params.text_document_position_params.position);
     let res = hover::hover(&kcl_pos, &db.gs);
     if res.is_none() {
@@ -379,7 +391,10 @@ pub(crate) fn handle_rename(
     if !snapshot.verify_request_path(&path.clone().into(), &sender) {
         return Ok(None);
     }
-    let db = snapshot.get_db(&path.clone().into())?;
+    let db = match snapshot.get_db(&path.clone().into()) {
+        Ok(db) => db,
+        Err(_) => return Ok(None),
+    };
     let kcl_pos = kcl_pos(&file, params.text_document_position.position);
     let log = |msg: String| log_message(msg, &sender);
     let references = find_refs(
