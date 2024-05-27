@@ -552,6 +552,12 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 Some(vec![])
             );
         }
+
+        self.node_ty_map.insert(
+            self.get_node_key(selector_expr.attr.id.clone()),
+            value_ty.clone(),
+        );
+
         for name in &selector_expr.attr.node.names {
             value_ty = self.load_attr(
                 value_ty.clone(),
@@ -938,6 +944,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             );
         }
         if iter_ty.is_any() {
+            self.exprs(&comp_clause.ifs);
             iter_ty
         } else {
             self.do_loop_type_check(key_name, val_name, iter_ty, comp_clause.iter.get_span_pos());
