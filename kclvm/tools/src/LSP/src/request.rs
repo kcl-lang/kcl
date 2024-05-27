@@ -238,7 +238,7 @@ pub(crate) fn handle_goto_definition(
     if !snapshot.verify_request_path(&path.clone().into(), &sender) {
         return Ok(None);
     }
-    let db = match snapshot.get_db(&path.clone().into()){
+    let db = match snapshot.get_db(&path.clone().into()) {
         Ok(db) => db,
         Err(_) => return Ok(None),
     };
@@ -264,7 +264,7 @@ pub(crate) fn handle_reference(
     if !snapshot.verify_request_path(&path.clone().into(), &sender) {
         return Ok(None);
     }
-    let db = match snapshot.get_db(&path.clone().into()){
+    let db = match snapshot.get_db(&path.clone().into()) {
         Ok(db) => db,
         Err(_) => return Ok(None),
     };
@@ -310,10 +310,10 @@ pub(crate) fn handle_completion(
         .and_then(|ctx| ctx.trigger_character)
         .and_then(|s| s.chars().next());
 
-        let db = match snapshot.get_db(&path.clone().into()){
-            Ok(db) => db,
-            Err(_) => return Ok(None),
-        };
+    let db = match snapshot.get_db(&path.clone().into()) {
+        Ok(db) => db,
+        Err(_) => return Ok(None),
+    };
 
     let res = completion(
         completion_trigger_character,
@@ -340,7 +340,7 @@ pub(crate) fn handle_hover(
     if !snapshot.verify_request_path(&path.clone().into(), &sender) {
         return Ok(None);
     }
-    let db = match snapshot.get_db(&path.clone().into()){
+    let db = match snapshot.get_db(&path.clone().into()) {
         Ok(db) => db,
         Err(_) => return Ok(None),
     };
@@ -391,7 +391,7 @@ pub(crate) fn handle_rename(
     if !snapshot.verify_request_path(&path.clone().into(), &sender) {
         return Ok(None);
     }
-    let db = match snapshot.get_db(&path.clone().into()){
+    let db = match snapshot.get_db(&path.clone().into()) {
         Ok(db) => db,
         Err(_) => return Ok(None),
     };
