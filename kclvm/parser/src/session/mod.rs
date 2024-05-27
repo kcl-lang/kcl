@@ -3,7 +3,7 @@ use compiler_base_macros::bug;
 use compiler_base_session::Session;
 use indexmap::IndexSet;
 use kclvm_ast::token::Token;
-use kclvm_error::{Diagnostic, FixInfo, Handler, ParseError};
+use kclvm_error::{Diagnostic, Handler, ParseError, ParseErrorMessage};
 use kclvm_span::{BytePos, Loc, Span};
 use std::{cell::RefCell, sync::Arc};
 
@@ -62,30 +62,32 @@ impl ParseSession {
     /// Struct and report an error based on a span and not abort the compiler process.
     #[inline]
     pub fn struct_span_error(&self, msg: &str, span: Span) {
-        self.add_parse_err(ParseError::Message {
+        self.add_parse_err(ParseError::String {
             message: msg.to_string(),
             span,
-            fix_info: None,
         });
     }
 
     #[inline]
-    pub fn struct_span_error_with_suggestions(
-        &self,
-        msg: &str,
-        span: Span,
-        suggestion_text: Option<String>,
-        replacement_text: Option<String>,
-    ) {
-        let fix_info = Some(FixInfo {
-            suggestion: suggestion_text,
-            replacement: replacement_text,
-        });
-
+    pub fn struct_message_error(&self, msg: ParseErrorMessage, span: Span) {
         self.add_parse_err(ParseError::Message {
-            message: msg.to_string(),
+            message: msg,
             span,
-            fix_info,
+            suggestions: None,
+        });
+    }
+
+    #[inline]
+    pub fn struct_message_error_with_suggestions(
+        &self,
+        msg: ParseErrorMessage,
+        span: Span,
+        suggestions: Option<Vec<String>>,
+    ) {
+        self.add_parse_err(ParseError::Message {
+            message: msg,
+            span,
+            suggestions,
         });
     }
 

@@ -30,6 +30,7 @@ use compiler_base_span::span::{new_byte_pos, BytePos};
 use kclvm_ast::ast::{Comment, NodeRef, PosTuple};
 use kclvm_ast::token::{CommentKind, Token, TokenKind};
 use kclvm_ast::token_stream::{Cursor, TokenStream};
+use kclvm_error::ParseErrorMessage;
 use kclvm_span::symbol::Symbol;
 
 /// The parser is built on top of the [`kclvm_parser::lexer`], and ordering KCL tokens
@@ -146,10 +147,8 @@ impl<'a> Parser<'a> {
     pub(crate) fn drop(&mut self, marker: DropMarker) -> bool {
         if marker.0 == self.cursor.index() {
             let token_str: String = self.token.into();
-            self.sess.struct_span_error(
-                &format!("expected expression got {}", token_str),
-                self.token.span,
-            );
+            self.sess
+                .struct_message_error(ParseErrorMessage::ExpectExpr(token_str), self.token.span);
             self.bump();
             true
         } else {

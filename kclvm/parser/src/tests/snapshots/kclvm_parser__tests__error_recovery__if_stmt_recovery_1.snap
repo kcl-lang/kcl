@@ -1,6 +1,5 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 200
 expression: "crate::tests::parsing_module_string(r#\"if True: a = 1 else if b = 2\"#)"
 ---
 Module {
@@ -83,24 +82,15 @@ Module {
                                     targets: [
                                         Node {
                                             node: Identifier {
-                                                names: [
-                                                    Node {
-                                                        node: "b",
-                                                        filename: "",
-                                                        line: 1,
-                                                        column: 23,
-                                                        end_line: 1,
-                                                        end_column: 24,
-                                                    },
-                                                ],
+                                                names: [],
                                                 pkgpath: "",
-                                                ctx: Store,
+                                                ctx: Load,
                                             },
                                             filename: "",
                                             line: 1,
-                                            column: 23,
+                                            column: 25,
                                             end_line: 1,
-                                            end_column: 24,
+                                            end_column: 26,
                                         },
                                     ],
                                     value: Node {
@@ -123,7 +113,7 @@ Module {
                             ),
                             filename: "",
                             line: 1,
-                            column: 23,
+                            column: 25,
                             end_line: 1,
                             end_column: 28,
                         },
@@ -139,4 +129,3 @@ Module {
     ],
     comments: [],
 }
-
