@@ -5,7 +5,6 @@ use indexmap::IndexSet;
 use kclvm_ast::ast;
 
 use kclvm_ast::pos::GetPos;
-use kclvm_error::Position;
 
 use crate::ty::TypeRef;
 
@@ -38,21 +37,20 @@ impl<'ctx> Resolver<'ctx> {
         let arg_types = self.exprs(args);
         let mut kwarg_types: Vec<(String, TypeRef)> = vec![];
         let mut check_table: IndexSet<String> = IndexSet::default();
+        let mut prev_kw_pos = None;
         for kw in kwargs {
             if !kw.node.arg.node.names.is_empty() {
-                let arg_name = &kw.node.arg.node.names[0].node;
-                let fix_range = kw.get_span_pos();
-                let (start_pos, end_pos) = fix_range;
-                let start_column = start_pos.column.map(|col| col.saturating_sub(2));
-                let modified_start_pos = Position {
-                    column: start_column,
-                    ..start_pos.clone()
+                let previous_pos = if let Some(prev_pos) = prev_kw_pos {
+                    prev_pos
+                } else {
+                    kw.get_end_pos()
                 };
-                let modified_fix_range = (modified_start_pos, end_pos);
+                let arg_name = &kw.node.arg.node.names[0].node;
+
                 if check_table.contains(arg_name) {
                     self.handler.add_compile_error_with_suggestions(
                         &format!("{} has duplicated keyword argument {}", func_name, arg_name),
-                        modified_fix_range,
+                        (previous_pos, kw.get_end_pos()),
                         Some(vec![]),
                     );
                 }
@@ -65,6 +63,7 @@ impl<'ctx> Resolver<'ctx> {
                 self.handler
                     .add_compile_error(&format!("missing argument"), kw.get_span_pos());
             }
+            prev_kw_pos = Some(kw.get_end_pos());
         }
         // Do few argument count check
         if !func_ty.is_variadic {

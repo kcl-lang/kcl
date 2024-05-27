@@ -481,19 +481,12 @@ impl<'ctx> Resolver<'ctx> {
             );
         }
         if schema_stmt.is_protocol && !name.ends_with(PROTOCOL_SUFFIX) {
-            let fix_range = schema_stmt.name.get_span_pos();
-            let (start_pos, end_pos) = fix_range;
-            let start_column = end_pos.column;
-
-            let modified_start_pos = Position {
-                column: start_column,
-                ..start_pos.clone()
-            };
-            let modified_fix_range = (modified_start_pos, end_pos);
-
             self.handler.add_compile_error_with_suggestions(
                 &format!("schema protocol name must end with '{}'", PROTOCOL_SUFFIX),
-                modified_fix_range,
+                (
+                    schema_stmt.name.get_end_pos(),
+                    schema_stmt.name.get_end_pos(),
+                ),
                 Some(vec![PROTOCOL_SUFFIX.to_string()]),
             );
         }
