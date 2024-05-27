@@ -70,7 +70,7 @@ impl Type {
             TypeKind::Float => FLOAT_TYPE_STR.to_string(),
             TypeKind::FloatLit(v) => format!("{}({})", FLOAT_TYPE_STR, v),
             TypeKind::Str => STR_TYPE_STR.to_string(),
-            TypeKind::StrLit(v) => format!("{}({})", STR_TYPE_STR, v),
+            TypeKind::StrLit(v) => format!("{}(\"{}\")", STR_TYPE_STR, v),
             TypeKind::List(item_ty) => format!("[{}]", item_ty.ty_str()),
             TypeKind::Dict(DictType { key_ty, val_ty, .. }) => {
                 format!("{{{}:{}}}", key_ty.ty_str(), val_ty.ty_str())
