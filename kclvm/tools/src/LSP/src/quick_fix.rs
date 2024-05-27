@@ -48,12 +48,9 @@ pub(crate) fn quick_fix(uri: &Url, diags: &[Diagnostic]) -> Vec<lsp_types::CodeA
                         }
                         ErrorKind::InvalidSyntax => {
                             let replacement_texts = extract_suggested_replacements(&diag.data);
-                            if replacement_texts.len() >= 2 {
-                                let title = &replacement_texts[0];
-                                let replacement_text = &replacement_texts[1];
-
+                            for replacement_text in replacement_texts {
+                                let title = "Consider fix the problematic code".to_string();
                                 let mut changes = HashMap::new();
-
                                 changes.insert(
                                     uri.clone(),
                                     vec![TextEdit {
@@ -61,9 +58,8 @@ pub(crate) fn quick_fix(uri: &Url, diags: &[Diagnostic]) -> Vec<lsp_types::CodeA
                                         new_text: replacement_text.clone(),
                                     }],
                                 );
-
                                 code_actions.push(CodeActionOrCommand::CodeAction(CodeAction {
-                                    title: title.clone(),
+                                    title,
                                     kind: Some(CodeActionKind::QUICKFIX),
                                     diagnostics: Some(vec![diag.clone()]),
                                     edit: Some(lsp_types::WorkspaceEdit {

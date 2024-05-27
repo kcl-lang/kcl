@@ -5,6 +5,7 @@ use compiler_base_span::{span::new_byte_pos, BytePos, Span};
 use kclvm_ast::token::VALID_SPACES_LENGTH;
 use kclvm_ast::token::{CommentKind, DelimToken, LitKind, Token, TokenKind};
 use kclvm_ast::{ast::*, expr_as, node_ref};
+use kclvm_error::ParseErrorMessage;
 use kclvm_span::symbol::kw;
 
 use super::Parser;
@@ -595,17 +596,19 @@ impl<'a> Parser<'a> {
 
         // else
         if self.token.is_keyword(kw::Else) {
+            let lo = self.token.span.lo();
             self.bump_keyword(kw::Else);
 
             // `else if -> elif` error recovery.
             if self.token.is_keyword(kw::If) {
-                self.sess.struct_span_error_with_suggestions(
-                    "'else if' here is invalid in KCL, consider using the 'elif' keyword",
-                    self.token.span,
-                    Some("Use 'elif' instead of 'else if'".to_string()),
-                    Some("elif".to_string()),
+                self.sess.struct_message_error_with_suggestions(
+                    ParseErrorMessage::InvalidTokenElseIf,
+                    Span::new(lo, self.token.span.hi()),
+                    Some(vec!["elif".to_string()]),
                 );
-            } else if self.token.kind != TokenKind::Colon {
+                self.bump_keyword(kw::If);
+            }
+            if self.token.kind != TokenKind::Colon {
                 self.sess
                     .struct_token_error(&[TokenKind::Colon.into()], self.token);
             }
@@ -1564,8 +1567,8 @@ impl<'a> Parser<'a> {
             // Skip the start '${' and end '}'
             let src = &src[2..src.len() - 1];
             if src.is_empty() {
-                this.sess.struct_span_error(
-                    "string interpolation expression can not be empty",
+                this.sess.struct_message_error(
+                    ParseErrorMessage::InvalidStringInterpolationExpr("".to_string()),
                     Span::new(start_pos, end_pos),
                 );
             }
@@ -1600,8 +1603,8 @@ impl<'a> Parser<'a> {
                 if let TokenKind::DocComment(CommentKind::Line(symbol)) = parser.token.kind {
                     formatted_value.format_spec = Some(symbol.as_str());
                 } else {
-                    this.sess.struct_span_error(
-                        "invalid joined string spec without #",
+                    this.sess.struct_message_error(
+                        ParseErrorMessage::InvalidJoinedStringSpec,
                         parser.token.span,
                     );
                 }
@@ -1617,8 +1620,8 @@ impl<'a> Parser<'a> {
             // If there are still remaining tokens, it indicates that an
             // unexpected expression has occurred here.
             if !src.is_empty() && parser.has_next() {
-                parser.sess.struct_span_error(
-                    &format!("invalid string interpolation expression: '{src}'"),
+                parser.sess.struct_message_error(
+                    ParseErrorMessage::InvalidStringInterpolationExpr(src.to_string()),
                     Span::new(lo, hi),
                 )
             }
@@ -1656,8 +1659,10 @@ impl<'a> Parser<'a> {
                     off = hi;
                     continue;
                 } else {
-                    self.sess
-                        .struct_span_error("invalid joined string", self.token.span);
+                    self.sess.struct_message_error(
+                        ParseErrorMessage::InvalidJoinedStringExpr,
+                        self.token.span,
+                    );
                     joined_value
                         .values
                         .push(node_ref!(Expr::StringLit(StringLit {

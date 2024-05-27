@@ -203,7 +203,7 @@ fn build_expect_diags() -> Vec<Diagnostic> {
     let file = test_file.to_str().unwrap();
     let expected_diags: Vec<Diagnostic> = vec![
         build_lsp_diag(
-            (1, 4, 1, 4),
+            (1, 4, 2, 0),
             "expected one of [\"identifier\", \"literal\", \"(\", \"[\", \"{\"] got newline"
                 .to_string(),
             Some(DiagnosticSeverity::ERROR),

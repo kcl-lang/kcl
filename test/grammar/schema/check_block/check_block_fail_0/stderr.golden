@@ -14,7 +14,7 @@ error[E1001]: InvalidSyntax
   --> ${CWD}/main.k:12:27
    |
 12 |         (lastName not None)
-   |                           ^ expected expression got )
+   |                           ^ expected expression, got )
    |
 error[E1001]: InvalidSyntax
   --> ${CWD}/main.k:12:27
