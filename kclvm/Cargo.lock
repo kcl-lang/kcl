@@ -1436,7 +1436,7 @@ dependencies = [
 
 [[package]]
 name = "kcl-language-server"
-version = "0.9.0-alpha.2"
+version = "0.9.0-beta.1"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1480,7 +1480,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm"
-version = "0.9.0-alpha.2"
+version = "0.9.0-beta.1"
 dependencies = [
  "kclvm-api",
  "kclvm-ast",
@@ -1502,7 +1502,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-api"
-version = "0.9.0-alpha.2"
+version = "0.9.0-beta.1"
 dependencies = [
  "anyhow",
  "criterion 0.4.0",
@@ -1541,7 +1541,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-ast"
-version = "0.9.0-alpha.2"
+version = "0.9.0-beta.1"
 dependencies = [
  "compiler_base_span",
  "kclvm-error",
@@ -1556,7 +1556,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-ast-pretty"
-version = "0.9.0-alpha.2"
+version = "0.9.0-beta.1"
 dependencies = [
  "compiler_base_macros",
  "compiler_base_session",
@@ -1570,7 +1570,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-cmd"
-version = "0.9.0-alpha.2"
+version = "0.9.0-beta.1"
 dependencies = [
  "anyhow",
  "clap 4.5.4",
@@ -1588,7 +1588,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-compiler"
-version = "0.9.0-alpha.2"
+version = "0.9.0-beta.1"
 dependencies = [
  "ahash",
  "bit-set",
@@ -1608,7 +1608,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-config"
-version = "0.9.0-alpha.2"
+version = "0.9.0-beta.1"
 dependencies = [
  "ahash",
  "anyhow",
@@ -1631,7 +1631,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-driver"
-version = "0.9.0-alpha.2"
+version = "0.9.0-beta.1"
 dependencies = [
  "anyhow",
  "glob",
@@ -1648,7 +1648,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-error"
-version = "0.9.0-alpha.2"
+version = "0.9.0-beta.1"
 dependencies = [
  "annotate-snippets",
  "anyhow",
@@ -1669,7 +1669,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-evaluator"
-version = "0.9.0-alpha.2"
+version = "0.9.0-beta.1"
 dependencies = [
  "anyhow",
  "generational-arena",
@@ -1685,7 +1685,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-lexer"
-version = "0.9.0-alpha.2"
+version = "0.9.0-beta.1"
 dependencies = [
  "expect-test",
  "kclvm-error",
@@ -1695,7 +1695,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-loader"
-version = "0.9.0-alpha.2"
+version = "0.9.0-beta.1"
 dependencies = [
  "anyhow",
  "indexmap 1.9.3",
@@ -1711,7 +1711,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-macros"
-version = "0.9.0-alpha.2"
+version = "0.9.0-beta.1"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1721,7 +1721,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-parser"
-version = "0.9.0-alpha.2"
+version = "0.9.0-beta.1"
 dependencies = [
  "anyhow",
  "bstr",
@@ -1753,7 +1753,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-query"
-version = "0.9.0-alpha.2"
+version = "0.9.0-beta.1"
 dependencies = [
  "anyhow",
  "compiler_base_macros",
@@ -1773,7 +1773,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-runner"
-version = "0.9.0-alpha.2"
+version = "0.9.0-beta.1"
 dependencies = [
  "anyhow",
  "cc",
@@ -1808,7 +1808,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-runtime"
-version = "0.9.0-alpha.2"
+version = "0.9.0-beta.1"
 dependencies = [
  "ahash",
  "base64",
@@ -1840,7 +1840,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-sema"
-version = "0.9.0-alpha.2"
+version = "0.9.0-beta.1"
 dependencies = [
  "ahash",
  "anyhow",
@@ -1874,7 +1874,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-span"
-version = "0.9.0-alpha.2"
+version = "0.9.0-beta.1"
 dependencies = [
  "compiler_base_span",
  "kclvm-macros",
@@ -1884,7 +1884,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-tools"
-version = "0.9.0-alpha.2"
+version = "0.9.0-beta.1"
 dependencies = [
  "anyhow",
  "compiler_base_session",
@@ -1917,7 +1917,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-utils"
-version = "0.9.0-alpha.2"
+version = "0.9.0-beta.1"
 dependencies = [
  "anyhow",
  "fslock",
@@ -1926,7 +1926,7 @@ dependencies = [
 
 [[package]]
 name = "kclvm-version"
-version = "0.9.0-alpha.2"
+version = "0.9.0-beta.1"
 dependencies = [
  "vergen",
 ]
