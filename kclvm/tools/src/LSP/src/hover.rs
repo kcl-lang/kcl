@@ -2,7 +2,7 @@ use kclvm_error::Position as KCLPos;
 use kclvm_sema::{
     builtin::BUILTIN_DECORATORS,
     core::global_state::GlobalState,
-    ty::{FunctionType, ANY_TYPE_STR},
+    ty::{FunctionType, Type, ANY_TYPE_STR, STR_TYPE_STR},
 };
 use lsp_types::{Hover, HoverContents, MarkedString};
 
@@ -54,7 +54,7 @@ pub(crate) fn hover(kcl_pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::Hov
                                 let attr_symbol =
                                     gs.get_symbols().get_attr_symbol(schema_attr).unwrap();
                                 let attr_ty_str = match &attr.get_sema_info().ty {
-                                    Some(ty) => ty.ty_str(),
+                                    Some(ty) => ty_hover_content(ty),
                                     None => ANY_TYPE_STR.to_string(),
                                 };
                                 attrs.push(format!(
@@ -140,6 +140,13 @@ pub(crate) fn hover(kcl_pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::Hov
         None => {}
     }
     docs_to_hover(docs)
+}
+
+fn ty_hover_content(ty: &Type) -> String {
+    match &ty.kind {
+        kclvm_sema::ty::TypeKind::StrLit(s) => format!("{}({:?})", STR_TYPE_STR, s),
+        _ => ty.ty_str(),
+    }
 }
 
 // Convert doc to Marked String. This function will convert docs to Markedstrings
