@@ -18,13 +18,10 @@ use std::sync::Arc;
 
 use crate::toolchain::{Metadata, Package};
 
-use self::git::clone_git_repo_to;
-
 pub const DEFAULT_OCI_REGISTRY: &str = "ghcr.io/kcl-lang";
 pub const KCL_SRC_URL_ENV_VAR: &str = "KCL_SRC_URL";
 pub const KCL_SRC_URL_USERNAME_ENV_VAR: &str = "KCL_SRC_USERNAME";
 pub const KCL_SRC_URL_PASSWORD_ENV_VAR: &str = "KCL_SRC_PASSWORD";
-pub const KCL_GIT_USE_CMD_ENV_VAR: &str = "KCL_GIT_USE_CMD";
 
 #[derive(Default)]
 pub struct ModClient {
@@ -199,23 +196,13 @@ impl ModClient {
     }
 
     pub fn download_git_source_to(&self, git_source: &GitSource, path: &Path) -> Result<PathBuf> {
-        let path = if std::env::var(KCL_GIT_USE_CMD_ENV_VAR).is_ok() {
-            cmd_clone_git_repo_to(
-                &git_source.git,
-                &git_source.branch,
-                &git_source.tag,
-                &git_source.commit,
-                path,
-            )?
-        } else {
-            clone_git_repo_to(
-                &git_source.git,
-                &git_source.branch,
-                &git_source.tag,
-                &git_source.commit,
-                path,
-            )?
-        };
+        let path = cmd_clone_git_repo_to(
+            &git_source.git,
+            &git_source.branch,
+            &git_source.tag,
+            &git_source.commit,
+            path,
+        )?;
         Ok(path)
     }
 
