@@ -160,9 +160,12 @@ pub(crate) fn handle_semantic_tokens_full(
 ) -> anyhow::Result<Option<SemanticTokensResult>> {
     let file = file_path_from_url(&params.text_document.uri)?;
     let path = from_lsp::abs_path(&params.text_document.uri)?;
-    let db = match snapshot.try_get_db(&path.clone().into())? {
-        Some(db) => db,
-        None => return Err(anyhow!(LSPError::Retry)),
+    let db = match snapshot.try_get_db(&path.clone().into()) {
+        Ok(option_db) => match option_db {
+            Some(db) => db,
+            None => return Err(anyhow!(LSPError::Retry)),
+        },
+        Err(_) => return Ok(None),
     };
     let res = semantic_tokens_full(&file, &db.gs);
 
@@ -360,9 +363,12 @@ pub(crate) fn handle_document_symbol(
 ) -> anyhow::Result<Option<lsp_types::DocumentSymbolResponse>> {
     let file = file_path_from_url(&params.text_document.uri)?;
     let path = from_lsp::abs_path(&params.text_document.uri)?;
-    let db = match snapshot.try_get_db(&path.clone().into())? {
-        Some(db) => db,
-        None => return Err(anyhow!(LSPError::Retry)),
+    let db = match snapshot.try_get_db(&path.clone().into()) {
+        Ok(option_db) => match option_db {
+            Some(db) => db,
+            None => return Err(anyhow!(LSPError::Retry)),
+        },
+        Err(_) => return Ok(None),
     };
     let res = document_symbol(&file, &db.gs);
 
