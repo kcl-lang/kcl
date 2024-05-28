@@ -211,6 +211,14 @@ fn register_kclvm_service(io: &mut IoHandler) {
         };
         futures::future::ready(catch!(kclvm_service_impl, args, test))
     });
+    io.add_method("KclvmService.UpdateDependencies", |params: Params| {
+        let kclvm_service_impl = KclvmServiceImpl::default();
+        let args: UpdateDependenciesArgs = match params.parse() {
+            Ok(val) => val,
+            Err(err) => return futures::future::ready(Err(err)),
+        };
+        futures::future::ready(catch!(kclvm_service_impl, args, update_dependencies))
+    });
 }
 
 fn register_builtin_service(io: &mut IoHandler) {

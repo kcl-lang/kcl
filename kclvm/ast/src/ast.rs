@@ -326,14 +326,14 @@ pub type NodeRef<T> = Box<Node<T>>;
 
 /// KCL command line argument spec, e.g. `kcl main.k -E pkg_name=pkg_path`
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct CmdExternalPkgSpec {
+pub struct ExternalPkg {
     pub pkg_name: String,
     pub pkg_path: String,
 }
 
 /// KCL command line argument spec, e.g. `kcl main.k -D name=value`
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct CmdArgSpec {
+pub struct Argument {
     pub name: String,
     pub value: String,
 }

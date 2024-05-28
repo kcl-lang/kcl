@@ -184,6 +184,7 @@ pub(crate) fn kclvm_get_service_fn_ptr_by_name(name: &str) -> u64 {
         "KclvmService.Rename" => rename as *const () as u64,
         "KclvmService.RenameCode" => rename_code as *const () as u64,
         "KclvmService.Test" => test as *const () as u64,
+        "KclvmService.UpdateDependencies" => update_dependencies as *const () as u64,
         _ => panic!("unknown method name : {name}"),
     }
 }
@@ -521,4 +522,35 @@ pub(crate) fn test(
     result_len: *mut usize,
 ) -> *const c_char {
     call!(serv, args, result_len, TestArgs, test)
+}
+
+/// Service for the dependencies updating
+/// calling information.
+///
+/// # Parameters
+///
+/// `serv`: [*mut kclvm_service]
+///     The pointer of &\[[KclvmServiceImpl]]
+///
+///
+/// `args`: [*const c_char]
+///     the items and compile parameters selected by the user in the KCL CLI
+///     serialized as protobuf byte sequence
+///
+/// # Returns
+///
+/// result: [*const c_char]
+///     Result of the call serialized as protobuf byte sequence
+pub(crate) fn update_dependencies(
+    serv: *mut kclvm_service,
+    args: *const c_char,
+    result_len: *mut usize,
+) -> *const c_char {
+    call!(
+        serv,
+        args,
+        result_len,
+        UpdateDependenciesArgs,
+        update_dependencies
+    )
 }

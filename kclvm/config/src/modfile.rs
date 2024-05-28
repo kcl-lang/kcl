@@ -30,6 +30,12 @@ pub struct ModFile {
     pub dependencies: Option<Dependencies>,
 }
 
+/// ModLockFile is kcl package file 'kc.mod.lock'.
+#[derive(Debug, Default, Serialize, Deserialize, Clone, PartialEq, Eq)]
+pub struct ModLockFile {
+    pub dependencies: Option<LockDependencies>,
+}
+
 /// Package is the kcl package section of 'kcl.mod'.
 #[derive(Debug, Default, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct Package {
@@ -67,6 +73,7 @@ pub struct Profile {
 
 /// A map of package names to their respective dependency specifications.
 pub type Dependencies = HashMap<String, Dependency>;
+pub type LockDependencies = HashMap<String, LockDependency>;
 
 /// Dependency represents a single dependency for a package, which may come in different forms
 /// such as version, Git repository, OCI repository, or a local path.
@@ -81,6 +88,29 @@ pub enum Dependency {
     Oci(OciSource),
     /// Specifies a local path dependency.
     Local(LocalSource),
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+pub struct LockDependency {
+    /* Common field */
+    pub name: String,
+    pub full_name: Option<String>,
+    pub version: Option<String>,
+    pub sum: Option<String>,
+
+    /* OCI Source */
+    pub reg: Option<String>,
+    pub repo: Option<String>,
+    pub oci_tag: Option<String>,
+
+    /* Git Source */
+    pub url: Option<String>,
+    pub branch: Option<String>,
+    pub commit: Option<String>,
+    pub git_tag: Option<String>,
+
+    /* Local Source */
+    pub path: Option<String>,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize, Clone, PartialEq, Eq)]
@@ -123,6 +153,15 @@ impl ModFile {
 /// Load kcl mod file from path
 pub fn load_mod_file<P: AsRef<Path>>(path: P) -> Result<ModFile> {
     let file_path = path.as_ref().join(KCL_MOD_FILE);
+    let mut file = std::fs::File::open(file_path)?;
+    let mut buffer: Vec<u8> = vec![];
+    file.read_to_end(&mut buffer)?;
+    toml::from_slice(buffer.as_slice()).map_err(|e| anyhow::anyhow!(e))
+}
+
+/// Load kcl mod lock file from path
+pub fn load_mod_lock_file<P: AsRef<Path>>(path: P) -> Result<ModLockFile> {
+    let file_path = path.as_ref().join(KCL_MOD_LOCK_FILE);
     let mut file = std::fs::File::open(file_path)?;
     let mut buffer: Vec<u8> = vec![];
     file.read_to_end(&mut buffer)?;

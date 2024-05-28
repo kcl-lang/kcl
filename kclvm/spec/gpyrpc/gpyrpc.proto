@@ -7,13 +7,13 @@ syntax = "proto3";
 package gpyrpc;
 
 // kcl main.k -E pkg_name=pkg_path
-message CmdExternalPkgSpec {
+message ExternalPkg {
 	string pkg_name = 1;
 	string pkg_path = 2;
 }
 
 // kcl main.k -D name=value
-message CmdArgSpec {
+message Argument {
 	string name = 1;
 	string value = 2;
 }
@@ -72,6 +72,8 @@ service KclvmService {
 	rpc RenameCode(RenameCode_Args) returns(RenameCode_Result);
 
 	rpc Test(Test_Args) returns (Test_Result);
+
+	rpc UpdateDependencies(UpdateDependencies_Args) returns (UpdateDependencies_Result);
 }
 
 message Ping_Args {
@@ -91,7 +93,7 @@ message ListMethod_Result {
 message ParseFile_Args {
 	string path = 1;
 	string source = 2;
-	repeated CmdExternalPkgSpec external_pkgs = 3;  // External packages path
+	repeated ExternalPkg external_pkgs = 3;  // External packages path
 }
 
 message ParseFile_Result {
@@ -103,7 +105,7 @@ message ParseFile_Result {
 message ParseProgram_Args {
 	repeated string paths = 1;
 	repeated string sources = 2;
-	repeated CmdExternalPkgSpec external_pkgs = 3;  // External packages path
+	repeated ExternalPkg external_pkgs = 3;  // External packages path
 }
 
 message ParseProgram_Result {
@@ -179,7 +181,7 @@ message ExecProgram_Args {
 	repeated string k_filename_list = 2;
 	repeated string k_code_list = 3;
 	
-	repeated CmdArgSpec args = 4;
+	repeated Argument args = 4;
 	repeated string overrides = 5;
 
 	bool disable_yaml_result = 6;
@@ -201,7 +203,7 @@ message ExecProgram_Args {
 	bool sort_keys = 12;
 
 	// -E --external : external packages path
-	repeated CmdExternalPkgSpec external_pkgs = 13;
+	repeated ExternalPkg external_pkgs = 13;
 
 	// Whether including schema type in JSON/YAML result
 	bool include_schema_type_path = 14;
@@ -436,6 +438,20 @@ message TestCaseInfo {
 	string error = 2;
 	uint64 duration = 3;         // Number of whole microseconds in the duration.
 	string log_message = 4;
+}
+
+// ---------------------------------------------------------------------------------
+// UpdateDependencies API
+//    Download and update dependencies defined in the kcl.mod file
+// ---------------------------------------------------------------------------------
+
+message UpdateDependencies_Args {
+	string manifest_path = 1;
+	bool vendor = 2;
+}
+
+message UpdateDependencies_Result {
+	repeated ExternalPkg external_pkgs = 3;
 }
 
 // ----------------------------------------------------------------------------

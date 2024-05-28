@@ -1,10 +1,11 @@
-use anyhow::Result;
 pub mod arguments;
+pub mod client;
 pub mod toolchain;
 
 #[cfg(test)]
 mod tests;
 
+use anyhow::Result;
 use glob::glob;
 use kclvm_config::{
     modfile::{

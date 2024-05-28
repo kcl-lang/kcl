@@ -78,7 +78,7 @@ impl TestRun for TestSuite {
         };
         // Test every case in the suite.
         for (name, _) in &self.cases {
-            args.args = vec![ast::CmdArgSpec {
+            args.args = vec![ast::Argument {
                 name: TEST_CASE_RUN_OPTION.into(),
                 value: format!("{:?}", name),
             }];

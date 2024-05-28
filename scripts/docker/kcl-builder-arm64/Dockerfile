@@ -9,6 +9,7 @@ FROM arm64v8/ubuntu:20.04
 RUN apt-get update
 
 RUN apt-get install -y curl make gcc git zlib1g-dev
+RUN apt install -y pkg-config libssl-dev
 
 # rust
 RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
