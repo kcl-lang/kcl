@@ -1,10 +1,13 @@
+use crate::client::ModClient;
 use crate::{kcl, lookup_the_nearest_file_dir};
 use anyhow::{bail, Result};
 use kclvm_config::modfile::KCL_MOD_FILE;
 use kclvm_parser::LoadProgramOptions;
 use kclvm_utils::pkgpath::rm_external_pkg_name;
+use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 use std::ffi::OsStr;
+use std::sync::Arc;
 use std::{collections::HashMap, path::PathBuf, process::Command};
 
 /// `Toolchain` is a trait that outlines a standard set of operations that must be
@@ -96,17 +99,38 @@ impl<S: AsRef<OsStr> + Send + Sync> Toolchain for CommandToolchain<S> {
     }
 }
 
-#[derive(Deserialize, Serialize, Default, Debug, Clone)]
+#[derive(Default)]
+pub struct NativeToolchain {
+    client: Arc<Mutex<ModClient>>,
+}
+
+impl Toolchain for NativeToolchain {
+    fn fetch_metadata(&self, manifest_path: PathBuf) -> Result<Metadata> {
+        let mut client = self.client.lock();
+        client.change_work_dir(manifest_path)?;
+        match client.get_metadata_from_mod_lock_file() {
+            Some(metadata) => Ok(metadata),
+            None => client.resolve_all_deps(false),
+        }
+    }
+
+    fn update_dependencies(&self, manifest_path: PathBuf) -> Result<()> {
+        let mut client = self.client.lock();
+        client.change_work_dir(manifest_path)?;
+        let _ = client.resolve_all_deps(true)?;
+        Ok(())
+    }
+}
 
 /// [`Metadata`] is the metadata of the current KCL module,
 /// currently only the mapping between the name and path of the external dependent package is included.
+#[derive(Deserialize, Serialize, Default, Debug, Clone)]
 pub struct Metadata {
     pub packages: HashMap<String, Package>,
 }
 
-/// Structure representing a package.
+/// [`Package`] is a structure representing a package.
 #[derive(Clone, Debug, Serialize, Deserialize)]
-/// [`Package`] is a kcl package.
 pub struct Package {
     /// Name as given in the `kcl.mod`
     pub name: String,

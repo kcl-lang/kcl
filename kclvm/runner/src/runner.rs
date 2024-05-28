@@ -36,10 +36,10 @@ pub struct ExecProgramArgs {
     pub work_dir: Option<String>,
     pub k_filename_list: Vec<String>,
     /// -E key=value
-    pub external_pkgs: Vec<ast::CmdExternalPkgSpec>,
+    pub external_pkgs: Vec<ast::ExternalPkg>,
     pub k_code_list: Vec<String>,
     /// -D key=value
-    pub args: Vec<ast::CmdArgSpec>,
+    pub args: Vec<ast::Argument>,
     /// -O override_spec
     pub overrides: Vec<String>,
     /// -S path_selector
@@ -86,7 +86,7 @@ impl ExecProgramArgs {
     pub fn set_external_pkg_from_package_maps(&mut self, package_maps: HashMap<String, String>) {
         self.external_pkgs = package_maps
             .iter()
-            .map(|(pkg_name, pkg_path)| ast::CmdExternalPkgSpec {
+            .map(|(pkg_name, pkg_path)| ast::ExternalPkg {
                 pkg_name: pkg_name.clone(),
                 pkg_path: pkg_path.clone(),
             })
@@ -198,7 +198,7 @@ impl TryFrom<SettingsFile> for ExecProgramArgs {
         if let Some(options) = settings.kcl_options {
             args.args = options
                 .iter()
-                .map(|o| ast::CmdArgSpec {
+                .map(|o| ast::Argument {
                     name: o.key.to_string(),
                     value: o.value.to_string(),
                 })

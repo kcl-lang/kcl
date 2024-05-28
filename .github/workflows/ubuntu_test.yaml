@@ -52,7 +52,7 @@ jobs:
         run: export PATH=$PATH:$PWD/../_build/dist/ubuntu/kclvm/bin && make test-runtime
         shell: bash
       - name: Install KCL CLI
-        run: go install kcl-lang.io/cli/cmd/kcl@latest
+        run: go install kcl-lang.io/cli/cmd/kcl@main
 
       - name: Unit test
         working-directory: ./kclvm

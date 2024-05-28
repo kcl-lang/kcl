@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::string::String;
 
 use crate::gpyrpc::*;
@@ -9,6 +9,7 @@ use anyhow::anyhow;
 use kcl_language_server::rename;
 use kclvm_config::settings::build_settings_pathbuf;
 use kclvm_driver::canonicalize_input_files;
+use kclvm_driver::client::ModClient;
 use kclvm_loader::option::list_options;
 use kclvm_loader::{load_packages_with_cache, LoadPackageOptions};
 use kclvm_parser::load_program;
@@ -573,7 +574,7 @@ impl KclvmServiceImpl {
     ///         work_dir_parent.join("aaa").join("main.k").canonicalize().unwrap().display().to_string()
     ///     ],
     ///     external_pkgs: vec![
-    ///         CmdExternalPkgSpec{
+    ///         ExternalPkg {
     ///             pkg_name:"bbb".to_string(),
     ///             pkg_path: work_dir_parent.join("bbb").canonicalize().unwrap().display().to_string()
     ///         }
@@ -954,5 +955,52 @@ impl KclvmServiceImpl {
             }
         }
         Ok(result)
+    }
+
+    /// update_dependencies provides users with the ability to update kcl module dependencies.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
+    /// use kclvm_api::gpyrpc::*;
+    /// use std::path::Path;
+    /// use std::fs::remove_dir_all;
+    ///
+    /// let serv = KclvmServiceImpl::default();
+    /// let result = serv.update_dependencies(&UpdateDependenciesArgs {
+    ///     manifest_path: "./src/testdata/update_dependencies".to_string(),
+    ///     ..Default::default()
+    /// }).unwrap();
+    /// assert_eq!(result.external_pkgs.len(), 1);
+    ///
+    /// let result = serv.update_dependencies(&UpdateDependenciesArgs {
+    ///     manifest_path: "./src/testdata/update_dependencies".to_string(),
+    ///     vendor: true,
+    /// }).unwrap();
+    /// assert_eq!(result.external_pkgs.len(), 1);
+    /// let vendor_path = Path::new("./src/testdata/update_dependencies/vendor");
+    /// remove_dir_all(vendor_path);
+    /// ```
+    pub fn update_dependencies(
+        &self,
+        args: &UpdateDependenciesArgs,
+    ) -> anyhow::Result<UpdateDependenciesResult> {
+        let mut client = ModClient::new(&args.manifest_path)?;
+        if args.vendor {
+            client.set_vendor(&Path::new(&args.manifest_path).join("vendor"));
+        }
+        client.auth()?;
+        let metadata = client.resolve_all_deps(true)?;
+        Ok(UpdateDependenciesResult {
+            external_pkgs: metadata
+                .packages
+                .iter()
+                .map(|(n, p)| ExternalPkg {
+                    pkg_name: n.to_string(),
+                    pkg_path: p.manifest_path.to_string_lossy().to_string(),
+                })
+                .collect(),
+        })
     }
 }
