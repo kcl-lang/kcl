@@ -143,7 +143,7 @@ pub(crate) fn compile_with_params(
     let gs = Namer::find_symbols(&program, gs);
     match AdvancedResolver::resolve_program(&program, gs, prog_scope.node_ty_map.clone()) {
         Ok(gs) => (diags, Ok((program, gs))),
-        Err(e) => (diags, Err(anyhow::anyhow!("Parse failed: {:?}", e))),
+        Err(e) => (diags, Err(anyhow::anyhow!("Resolve failed: {:?}", e))),
     }
 }
 

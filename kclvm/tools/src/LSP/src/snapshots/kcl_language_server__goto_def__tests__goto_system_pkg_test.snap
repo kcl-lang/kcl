@@ -1,0 +1,5 @@
+---
+source: tools/src/LSP/src/goto_def.rs
+expression: "format!(\"{:?}\", res)"
+---
+None

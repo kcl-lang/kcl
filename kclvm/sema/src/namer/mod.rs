@@ -102,8 +102,13 @@ impl<'ctx> Namer<'ctx> {
         namer.ctx.current_package_info = Some(PackageInfo::new(
             BUILTIN_SYMBOL_PKG_PATH.to_string(),
             "".to_string(),
+            true,
         ));
         namer.init_builtin_symbols();
+        namer
+            .gs
+            .get_packages_mut()
+            .add_package(namer.ctx.current_package_info.take().unwrap());
 
         for (name, modules) in namer.ctx.program.pkgs.iter() {
             {
@@ -130,7 +135,7 @@ impl<'ctx> Namer<'ctx> {
                 namer.ctx.owner_symbols.push(symbol_ref);
 
                 namer.ctx.current_package_info =
-                    Some(PackageInfo::new(name.to_string(), real_path));
+                    Some(PackageInfo::new(name.to_string(), real_path, false));
             }
 
             for module in modules.iter() {

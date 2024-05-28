@@ -25,7 +25,13 @@ pub(crate) fn goto_def(
         Some(def_ref) => match gs.get_symbols().get_symbol(def_ref) {
             Some(def) => match def_ref.get_kind() {
                 kclvm_sema::core::symbol::SymbolKind::Package => {
-                    let pkg_info = gs.get_packages().get_package_info(&def.get_name()).unwrap();
+                    let pkg_info = match gs.get_packages().get_package_info(&def.get_name()) {
+                        Some(pkg_info) => pkg_info,
+                        None => return None,
+                    };
+                    if pkg_info.is_system() {
+                        return None;
+                    }
                     for file in pkg_info.get_kfile_paths() {
                         let dummy_pos = KCLPos {
                             filename: file.clone(),
@@ -688,4 +694,30 @@ mod tests {
         let res = goto_def(&pos, &gs);
         compare_goto_res(res, (&file, 94, 11, 94, 12));
     }
+
+    #[macro_export]
+    macro_rules! goto_def_test_snapshot {
+        ($name:ident, $file:expr, $line:expr, $column: expr) => {
+            #[test]
+            fn $name() {
+                insta::assert_snapshot!(format!("{:?}", {
+                    let (file, _program, _, gs) = compile_test_file($file);
+
+                    let pos = KCLPos {
+                        filename: file.clone(),
+                        line: $line,
+                        column: Some($column),
+                    };
+                    goto_def(&pos, &gs)
+                }));
+            }
+        };
+    }
+
+    goto_def_test_snapshot!(
+        goto_system_pkg_test,
+        "src/test_data/goto_def_test/goto_def.k",
+        3,
+        1
+    );
 }

@@ -45,14 +45,16 @@ pub struct PackageInfo {
     pub(crate) fully_qualified_name: String,
     pub(crate) pkg_filepath: String,
     pub(crate) kfile_paths: IndexSet<String>,
+    pub(crate) is_system: bool,
 }
 
 impl PackageInfo {
-    pub fn new(fully_qualified_name: String, pkg_filepath: String) -> Self {
+    pub fn new(fully_qualified_name: String, pkg_filepath: String, is_system: bool) -> Self {
         Self {
             fully_qualified_name,
             pkg_filepath,
             kfile_paths: IndexSet::default(),
+            is_system,
         }
     }
 
@@ -62,6 +64,10 @@ impl PackageInfo {
 
     pub fn get_pkg_filepath(&self) -> &String {
         &self.pkg_filepath
+    }
+
+    pub fn is_system(&self) -> bool {
+        self.is_system
     }
 }
 #[allow(unused)]
