@@ -99,8 +99,10 @@ pub(crate) fn find_refs_from_def<F: Fn(String) -> Result<(), anyhow::Error>>(
                                 vfs: vfs.clone(),
                                 entry_cache: entry_cache.clone(),
                                 tool: Arc::new(RwLock::new(toolchain::default())),
-                            }) {
-                                Ok((_, _, gs)) => {
+                            })
+                            .1
+                            {
+                                Ok((_, gs)) => {
                                     let ref_pos = kcl_pos(&file_path, ref_loc.range.start);
                                     if *ref_loc == def_loc && !include_declaration {
                                         return false;

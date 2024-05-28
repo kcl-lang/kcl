@@ -228,24 +228,46 @@ impl LanguageServerState {
                                     let version =
                                         snapshot.opened_files.read().get(&file.file_id).cloned();
                                     let mut db = snapshot.db.write();
-                                    match compile_with_params(Params {
+                                    let (diags, compile_res) = compile_with_params(Params {
                                         file: filename.clone(),
                                         module_cache: Some(module_cache),
                                         scope_cache: Some(scope_cache),
                                         vfs: Some(snapshot.vfs),
                                         entry_cache: Some(entry),
                                         tool,
-                                    }) {
-                                        Ok((prog, diags, gs)) => {
-                                            let current_version = snapshot
-                                                .opened_files
-                                                .read()
-                                                .get(&file.file_id)
-                                                .cloned();
-                                            match (version, current_version) {
-                                                (Some(version), Some(current_version)) => {
-                                                    // If the text is updated during compilation(current_version > version), the current compilation result will not be output.
-                                                    if current_version == version {
+                                    });
+
+                                    let current_version =
+                                        snapshot.opened_files.read().get(&file.file_id).cloned();
+
+                                    match (version, current_version) {
+                                        (Some(version), Some(current_version)) => {
+                                            // If the text is updated during compilation(current_version > version), the current compilation result will not be output.
+                                            if current_version == version {
+                                                let diagnostics = diags
+                                                    .iter()
+                                                    .flat_map(|diag| {
+                                                        kcl_diag_to_lsp_diags(
+                                                            diag,
+                                                            filename.as_str(),
+                                                        )
+                                                    })
+                                                    .collect::<Vec<Diagnostic>>();
+                                                sender.send(Task::Notify(
+                                                    lsp_server::Notification {
+                                                        method: PublishDiagnostics::METHOD
+                                                            .to_owned(),
+                                                        params: to_json(PublishDiagnosticsParams {
+                                                            uri,
+                                                            diagnostics,
+                                                            version: None,
+                                                        })
+                                                        .unwrap(),
+                                                    },
+                                                ));
+
+                                                match compile_res {
+                                                    Ok((prog, gs)) => {
                                                         db.insert(
                                                             file.file_id,
                                                             Arc::new(AnalysisDatabase {
@@ -254,42 +276,21 @@ impl LanguageServerState {
                                                                 version,
                                                             }),
                                                         );
-
-                                                        let diagnostics = diags
-                                                            .iter()
-                                                            .flat_map(|diag| {
-                                                                kcl_diag_to_lsp_diags(
-                                                                    diag,
-                                                                    filename.as_str(),
-                                                                )
-                                                            })
-                                                            .collect::<Vec<Diagnostic>>();
-                                                        sender.send(Task::Notify(
-                                                            lsp_server::Notification {
-                                                                method: PublishDiagnostics::METHOD
-                                                                    .to_owned(),
-                                                                params: to_json(
-                                                                    PublishDiagnosticsParams {
-                                                                        uri,
-                                                                        diagnostics,
-                                                                        version: None,
-                                                                    },
-                                                                )
-                                                                .unwrap(),
-                                                            },
-                                                        ));
+                                                    }
+                                                    Err(err) => {
+                                                        db.remove(&file.file_id);
+                                                        log_message(
+                                                            format!(
+                                                                "Compile failed: {:?}",
+                                                                err.to_string()
+                                                            ),
+                                                            &sender,
+                                                        );
                                                     }
                                                 }
-                                                _ => {}
                                             }
                                         }
-                                        Err(err) => {
-                                            db.remove(&file.file_id);
-                                            log_message(
-                                                format!("Compile failed: {:?}", err.to_string()),
-                                                &sender,
-                                            );
-                                        }
+                                        _ => {}
                                     }
                                 }
                                 Err(_) => {
