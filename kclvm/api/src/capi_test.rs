@@ -96,10 +96,15 @@ fn test_c_api_call_override_file() {
 
 #[test]
 fn test_c_api_get_schema_type_mapping() {
-    test_c_api_without_wrapper::<GetSchemaTypeMappingArgs, GetSchemaTypeMappingResult>(
+    test_c_api::<GetSchemaTypeMappingArgs, GetSchemaTypeMappingResult>(
         "KclvmService.GetSchemaTypeMapping",
         "get-schema-type-mapping.json",
         "get-schema-type-mapping.response.json",
+        |r| {
+            for (_, s_ty) in &mut r.schema_type_mapping {
+                s_ty.filename = s_ty.filename.replace('/', "").replace('\\', "")
+            }
+        },
     );
 }
 
