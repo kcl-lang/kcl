@@ -70,7 +70,7 @@ where
     }
 }
 
-/// Conver windows drive letter to upcase
+/// Convert windows drive letter to upcase
 pub fn convert_windows_drive_letter(path: &str) -> String {
     #[cfg(target_os = "windows")]
     {
