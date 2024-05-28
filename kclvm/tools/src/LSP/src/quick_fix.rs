@@ -183,15 +183,14 @@ mod tests {
         test_file.push("src/test_data/quick_fix.k");
         let file = test_file.to_str().unwrap();
 
-        let (_, diags, _) = compile_with_params(Params {
+        let diags = compile_with_params(Params {
             file: file.to_string(),
             module_cache: None,
             scope_cache: None,
             vfs: Some(KCLVfs::default()),
             entry_cache: None,
             tool: Arc::new(RwLock::new(toolchain::default())),
-        })
-        .unwrap();
+        }).0;
 
         let diagnostics = diags
             .iter()

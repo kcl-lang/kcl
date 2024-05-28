@@ -27,7 +27,7 @@ use ra_ap_vfs::{FileId, Vfs};
 use serde::{de::DeserializeOwned, Serialize};
 
 use std::path::Path;
-use std::{fs, panic};
+use std::fs;
 
 #[allow(unused)]
 /// Deserializes a `T` from a json value.
@@ -92,7 +92,7 @@ pub(crate) fn lookup_compile_unit_with_cache(
 
 pub(crate) fn compile_with_params(
     params: Params,
-) -> anyhow::Result<(Program, IndexSet<Diagnostic>, GlobalState)> {
+) -> (IndexSet<Diagnostic>, anyhow::Result<(Program, GlobalState)>) {
     // Lookup compile unit (kcl.mod or kcl.yaml) from the entry file.
     let (mut files, opt) =
         lookup_compile_unit_with_cache(&*params.tool.read(), &params.entry_cache, &params.file);
@@ -105,37 +105,47 @@ pub(crate) fn compile_with_params(
     opt.load_plugins = true;
     // Update opt.k_code_list
     if let Some(vfs) = params.vfs {
-        let mut k_code_list = load_files_code_from_vfs(&files, vfs)?;
+        let mut k_code_list = match load_files_code_from_vfs(&files, vfs) {
+            Ok(code_list) => code_list,
+            Err(e) => {
+                return (
+                    IndexSet::new(),
+                    Err(anyhow::anyhow!("Compile failed: {:?}", e)),
+                )
+            }
+        };
         opt.k_code_list.append(&mut k_code_list);
     }
-    match panic::catch_unwind(move || {
-        // Parser
-        let sess = ParseSessionRef::default();
-        let mut program = load_program(sess.clone(), &files, Some(opt), params.module_cache)
-            .unwrap()
-            .program;
-        // Resolver
-        let prog_scope = resolve_program_with_opts(
-            &mut program,
-            kclvm_sema::resolver::Options {
-                merge_program: false,
-                type_erasure: false,
-                ..Default::default()
-            },
-            params.scope_cache,
-        );
-        // Please note that there is no global state cache at this stage.
-        let gs = GlobalState::default();
-        let gs = Namer::find_symbols(&program, gs);
-        let gs = AdvancedResolver::resolve_program(&program, gs, prog_scope.node_ty_map.clone())?;
-        // Merge parse diagnostic and resolve diagnostic
-        sess.append_diagnostic(prog_scope.handler.diagnostics.clone());
-        let diags = sess.1.borrow().diagnostics.clone();
-        Ok((program, diags, gs))
-    }) {
-        Ok(res) => res,
-        Err(e) => Err(anyhow::anyhow!("Compile failed: {:?}", e)),
+
+    let mut diags = IndexSet::new();
+
+    // Parser
+    let sess = ParseSessionRef::default();
+    let mut program = match load_program(sess.clone(), &files, Some(opt), params.module_cache) {
+        Ok(r) => r.program,
+        Err(e) => return (diags, Err(anyhow::anyhow!("Parse failed: {:?}", e))),
+    };
+    diags.extend(sess.1.borrow().diagnostics.clone());
+    // Resolver
+    let prog_scope = resolve_program_with_opts(
+        &mut program,
+        kclvm_sema::resolver::Options {
+            merge_program: false,
+            type_erasure: false,
+            ..Default::default()
+        },
+        params.scope_cache,
+    );
+    diags.extend(prog_scope.handler.diagnostics);
+
+    // Please note that there is no global state cache at this stage.
+    let gs = GlobalState::default();
+    let gs = Namer::find_symbols(&program, gs);
+    match AdvancedResolver::resolve_program(&program, gs, prog_scope.node_ty_map.clone()) {
+        Ok(gs) => (diags, Ok((program, gs))),
+        Err(e) => (diags, Err(anyhow::anyhow!("Parse failed: {:?}", e))),
     }
+
 }
 
 /// Update text with TextDocumentContentChangeEvent param

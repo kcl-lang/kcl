@@ -127,15 +127,15 @@ pub(crate) fn compile_test_file(
 
     let file = test_file.to_str().unwrap().to_string();
 
-    let (program, diags, gs) = compile_with_params(Params {
+    let (diags, compile_res) = compile_with_params(Params {
         file: file.clone(),
         module_cache: Some(KCLModuleCache::default()),
         scope_cache: Some(KCLScopeCache::default()),
         vfs: Some(KCLVfs::default()),
         entry_cache: Some(KCLEntryCache::default()),
         tool: Arc::new(RwLock::new(toolchain::default())),
-    })
-    .unwrap();
+    });
+    let (program, gs) = compile_res.unwrap();
     (file, program, diags, gs)
 }
 
@@ -290,7 +290,7 @@ fn diagnostics_test() {
     test_file.push("src/test_data/diagnostics.k");
     let file = test_file.to_str().unwrap();
 
-    let (_, diags, _) = compile_with_params(Params {
+    let diags = compile_with_params(Params {
         file: file.to_string(),
         module_cache: None,
         scope_cache: None,
@@ -298,7 +298,7 @@ fn diagnostics_test() {
         entry_cache: Some(KCLEntryCache::default()),
         tool: Arc::new(RwLock::new(toolchain::default())),
     })
-    .unwrap();
+    .0;
 
     let diagnostics = diags
         .iter()
@@ -478,7 +478,7 @@ fn complete_import_external_file_test() {
         .output()
         .unwrap();
 
-    let (program, _, gs) = compile_with_params(Params {
+    let (program, gs) = compile_with_params(Params {
         file: path.to_string(),
         module_cache: None,
         scope_cache: None,
@@ -486,6 +486,7 @@ fn complete_import_external_file_test() {
         entry_cache: Some(KCLEntryCache::default()),
         tool: Arc::new(RwLock::new(toolchain::default())),
     })
+    .1
     .unwrap();
 
     let pos = KCLPos {
@@ -538,15 +539,15 @@ fn goto_import_external_file_test() {
         .output()
         .unwrap();
 
-    let (_program, diags, gs) = compile_with_params(Params {
+    let (diags, compile_res) = compile_with_params(Params {
         file: path.to_string(),
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
         entry_cache: Some(KCLEntryCache::default()),
         tool: Arc::new(RwLock::new(toolchain::default())),
-    })
-    .unwrap();
+    });
+    let gs = compile_res.unwrap().1;
 
     assert_eq!(diags.len(), 0);
 
@@ -1393,7 +1394,7 @@ fn konfig_goto_def_test_base() {
     let mut base_path = konfig_path.clone();
     base_path.push("appops/nginx-example/base/base.k");
     let base_path_str = base_path.to_str().unwrap().to_string();
-    let (_program, _, gs) = compile_with_params(Params {
+    let (_program, gs) = compile_with_params(Params {
         file: base_path_str.clone(),
         module_cache: None,
         scope_cache: None,
@@ -1401,6 +1402,7 @@ fn konfig_goto_def_test_base() {
         entry_cache: Some(KCLEntryCache::default()),
         tool: Arc::new(RwLock::new(toolchain::default())),
     })
+    .1
     .unwrap();
 
     // schema def
@@ -1486,7 +1488,7 @@ fn konfig_goto_def_test_main() {
     let mut main_path = konfig_path.clone();
     main_path.push("appops/nginx-example/dev/main.k");
     let main_path_str = main_path.to_str().unwrap().to_string();
-    let (_program, _, gs) = compile_with_params(Params {
+    let (_program, gs) = compile_with_params(Params {
         file: main_path_str.clone(),
         module_cache: None,
         scope_cache: None,
@@ -1494,6 +1496,7 @@ fn konfig_goto_def_test_main() {
         entry_cache: Some(KCLEntryCache::default()),
         tool: Arc::new(RwLock::new(toolchain::default())),
     })
+    .1
     .unwrap();
 
     // schema def
@@ -1551,7 +1554,7 @@ fn konfig_completion_test_main() {
     let mut main_path = konfig_path.clone();
     main_path.push("appops/nginx-example/dev/main.k");
     let main_path_str = main_path.to_str().unwrap().to_string();
-    let (program, _, gs) = compile_with_params(Params {
+    let (program, gs) = compile_with_params(Params {
         file: main_path_str.clone(),
         module_cache: None,
         scope_cache: None,
@@ -1559,6 +1562,7 @@ fn konfig_completion_test_main() {
         entry_cache: Some(KCLEntryCache::default()),
         tool: Arc::new(RwLock::new(toolchain::default())),
     })
+    .1
     .unwrap();
 
     // pkg's definition(schema) completion
@@ -1665,7 +1669,7 @@ fn konfig_hover_test_main() {
     let mut main_path = konfig_path.clone();
     main_path.push("appops/nginx-example/dev/main.k");
     let main_path_str = main_path.to_str().unwrap().to_string();
-    let (_program, _, gs) = compile_with_params(Params {
+    let (_program, gs) = compile_with_params(Params {
         file: main_path_str.clone(),
         module_cache: None,
         scope_cache: None,
@@ -1673,6 +1677,7 @@ fn konfig_hover_test_main() {
         entry_cache: Some(KCLEntryCache::default()),
         tool: Arc::new(RwLock::new(toolchain::default())),
     })
+    .1
     .unwrap();
 
     // schema def hover
@@ -2099,7 +2104,7 @@ fn compile_unit_test() {
     test_file.push("src/test_data/compile_unit/b.k");
     let file = test_file.to_str().unwrap();
 
-    let (prog, ..) = compile_with_params(Params {
+    let prog = compile_with_params(Params {
         file: file.to_string(),
         module_cache: None,
         scope_cache: None,
@@ -2107,7 +2112,9 @@ fn compile_unit_test() {
         entry_cache: Some(KCLEntryCache::default()),
         tool: Arc::new(RwLock::new(toolchain::default())),
     })
-    .unwrap();
+    .1
+    .unwrap()
+    .0;
     // b.k is not contained in kcl.yaml but need to be contained in main pkg
     assert!(prog
         .pkgs
