@@ -96,7 +96,7 @@ fn test_c_api_call_override_file() {
 
 #[test]
 fn test_c_api_get_schema_type_mapping() {
-    test_c_api::<GetSchemaTypeMappingArgs, GetSchemaTypeMappingResult>(
+    test_c_api::<GetSchemaTypeMappingArgs, GetSchemaTypeMappingResult, _>(
         "KclvmService.GetSchemaTypeMapping",
         "get-schema-type-mapping.json",
         "get-schema-type-mapping.response.json",
