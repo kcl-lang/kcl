@@ -26,8 +26,8 @@ use parking_lot::RwLockReadGuard;
 use ra_ap_vfs::{FileId, Vfs};
 use serde::{de::DeserializeOwned, Serialize};
 
-use std::path::Path;
 use std::fs;
+use std::path::Path;
 
 #[allow(unused)]
 /// Deserializes a `T` from a json value.
@@ -145,7 +145,6 @@ pub(crate) fn compile_with_params(
         Ok(gs) => (diags, Ok((program, gs))),
         Err(e) => (diags, Err(anyhow::anyhow!("Parse failed: {:?}", e))),
     }
-
 }
 
 /// Update text with TextDocumentContentChangeEvent param

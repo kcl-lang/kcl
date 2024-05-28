@@ -190,7 +190,8 @@ mod tests {
             vfs: Some(KCLVfs::default()),
             entry_cache: None,
             tool: Arc::new(RwLock::new(toolchain::default())),
-        }).0;
+        })
+        .0;
 
         let diagnostics = diags
             .iter()
