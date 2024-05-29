@@ -680,21 +680,6 @@ mod tests {
         compare_goto_res(res, (&file, 88, 0, 88, 1));
     }
 
-    #[test]
-    #[bench_test]
-    fn lambda_local_var_test() {
-        let (file, _program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
-
-        let pos = KCLPos {
-            filename: file.clone(),
-            line: 96,
-            column: Some(9),
-        };
-
-        let res = goto_def(&pos, &gs);
-        compare_goto_res(res, (&file, 94, 11, 94, 12));
-    }
-
     #[macro_export]
     macro_rules! goto_def_test_snapshot {
         ($name:ident, $file:expr, $line:expr, $column: expr) => {
@@ -716,8 +701,15 @@ mod tests {
 
     goto_def_test_snapshot!(
         goto_system_pkg_test,
-        "src/test_data/goto_def_test/goto_def.k",
+        "src/test_data/goto_def_test/goto_sys_pkg_test.k",
         3,
         1
+    );
+
+    goto_def_test_snapshot!(
+        lambda_local_var_test,
+        "src/test_data/goto_def_test/lambda_local_var_test/lambda_local_var_test.k",
+        2,
+        9
     );
 }
