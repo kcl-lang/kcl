@@ -644,25 +644,6 @@ fn inner_most_expr_in_config_entry(
     }
 }
 
-pub(crate) fn is_in_schema_expr(
-    program: &Program,
-    pos: &KCLPos,
-) -> Option<(Node<Stmt>, SchemaExpr)> {
-    match program.pos_to_stmt(pos) {
-        Some(node) => {
-            let parent_expr = inner_most_expr_in_stmt(&node.node, pos, None).1;
-            match parent_expr {
-                Some(expr) => match expr.node {
-                    Expr::Schema(schema) => Some((node, schema)),
-                    _ => None,
-                },
-                None => None,
-            }
-        }
-        None => None,
-    }
-}
-
 pub(crate) fn is_in_docstring(
     program: &Program,
     pos: &KCLPos,

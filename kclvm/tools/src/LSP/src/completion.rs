@@ -29,12 +29,13 @@ use kclvm_sema::core::global_state::GlobalState;
 use kclvm_error::Position as KCLPos;
 use kclvm_sema::builtin::{BUILTIN_FUNCTIONS, STANDARD_SYSTEM_MODULES};
 use kclvm_sema::core::package::ModuleInfo;
+use kclvm_sema::core::scope::{LocalSymbolScopeKind, ScopeKind};
 use kclvm_sema::core::symbol::SymbolKind;
 use kclvm_sema::resolver::doc::{parse_schema_doc_string, SchemaDoc};
 use kclvm_sema::ty::{FunctionType, SchemaType, Type, TypeKind};
 use lsp_types::{CompletionItem, CompletionItemKind, InsertTextFormat};
 
-use crate::util::{inner_most_expr_in_stmt, is_in_docstring, is_in_schema_expr};
+use crate::util::{inner_most_expr_in_stmt, is_in_docstring};
 
 #[derive(Debug, Clone, PartialEq, Hash, Eq)]
 pub enum KCLCompletionItemKind {
@@ -390,47 +391,51 @@ fn completion_newline(
         return Some(into_completion_items(&completions).into());
     }
 
-    // todo: judge based on scope kind instead of `is_in_schema_expr`
-    if let Some(_) = is_in_schema_expr(program, pos) {
-        // Complete schema attr when input newline in schema
-        if let Some(scope) = gs.look_up_scope(pos) {
-            if let Some(defs) = gs.get_all_defs_in_scope(scope) {
-                for symbol_ref in defs {
-                    match gs.get_symbols().get_symbol(symbol_ref) {
-                        Some(def) => {
-                            let sema_info = def.get_sema_info();
-                            let name = def.get_name();
-                            match symbol_ref.get_kind() {
-                                SymbolKind::Attribute => {
-                                    completions.insert(KCLCompletionItem {
-                                        label: name.clone(),
-                                        detail: sema_info
-                                            .ty
-                                            .as_ref()
-                                            .map(|ty| format!("{}: {}", name, ty.ty_str())),
-                                        documentation: match &sema_info.doc {
-                                            Some(doc) => {
-                                                if doc.is_empty() {
-                                                    None
-                                                } else {
-                                                    Some(doc.clone())
-                                                }
-                                            }
-                                            None => None,
-                                        },
-                                        kind: Some(KCLCompletionItemKind::SchemaAttr),
-                                        insert_text: None,
-                                    });
+    // Complete schema attr when input newline in schema
+    if let Some(scope) = gs.look_up_scope(pos) {
+        if let ScopeKind::Local = scope.get_kind() {
+            if let Some(locol_scope) = gs.get_scopes().try_get_local_scope(&scope) {
+                if let LocalSymbolScopeKind::SchemaConfig = locol_scope.get_kind() {
+                    if let Some(defs) = gs.get_all_defs_in_scope(scope) {
+                        for symbol_ref in defs {
+                            match gs.get_symbols().get_symbol(symbol_ref) {
+                                Some(def) => {
+                                    let sema_info = def.get_sema_info();
+                                    let name = def.get_name();
+                                    match symbol_ref.get_kind() {
+                                        SymbolKind::Attribute => {
+                                            completions.insert(KCLCompletionItem {
+                                                label: name.clone(),
+                                                detail: sema_info
+                                                    .ty
+                                                    .as_ref()
+                                                    .map(|ty| format!("{}: {}", name, ty.ty_str())),
+                                                documentation: match &sema_info.doc {
+                                                    Some(doc) => {
+                                                        if doc.is_empty() {
+                                                            None
+                                                        } else {
+                                                            Some(doc.clone())
+                                                        }
+                                                    }
+                                                    None => None,
+                                                },
+                                                kind: Some(KCLCompletionItemKind::SchemaAttr),
+                                                insert_text: None,
+                                            });
+                                        }
+                                        _ => {}
+                                    }
                                 }
-                                _ => {}
+                                None => {}
                             }
                         }
-                        None => {}
                     }
                 }
             }
         }
     }
+
     Some(into_completion_items(&completions).into())
 }
 
