@@ -1,0 +1,29 @@
+name: build-and-test-wasm
+on: ["push", "pull_request"]
+jobs:
+  build-and-test:
+    # Ref: https://github.com/actions/runner-images/tree/main/images/linux
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+        with:
+          submodules: "true"
+
+      - name: Install rust nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.76
+          override: true
+          components: clippy, rustfmt
+
+      - name: Unit test
+        working-directory: ./kclvm
+        run: rustup target add wasm32-wasi && make build-wasm
+        shell: bash
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: kcl-wasm
+          path: kclvm/target/wasm32-wasi/release/kclvm_cli_cdylib.wasm
