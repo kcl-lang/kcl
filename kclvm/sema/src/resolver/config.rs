@@ -352,7 +352,6 @@ impl<'ctx> Resolver<'ctx> {
                         ty,
                         key.get_span_pos(),
                         Some(obj_last.get_span_pos()),
-                        true,
                     );
                 }
                 self.clear_config_expr_context(stack_depth, false);
