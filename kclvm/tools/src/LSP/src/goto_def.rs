@@ -105,7 +105,7 @@ mod tests {
     use indexmap::IndexSet;
     use kclvm_error::Position as KCLPos;
     use proc_macro_crate::bench_test;
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
 
     #[test]
     #[bench_test]
@@ -708,10 +708,27 @@ mod tests {
                         line: $line,
                         column: Some($column),
                     };
-                    goto_def(&pos, &gs)
+                    let res = goto_def(&pos, &gs);
+                    fmt_resp(&res)
                 }));
             }
         };
+    }
+
+    fn fmt_resp(resp: &Option<lsp_types::GotoDefinitionResponse>) -> String {
+        let root_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        match resp {
+            Some(resp) => match resp {
+                lsp_types::GotoDefinitionResponse::Scalar(loc) => {
+                    let url = file_path_from_url(&loc.uri).unwrap();
+                    let got_path = Path::new(&url);
+                    let relative_path = got_path.strip_prefix(root_path).unwrap();
+                    format!("path: {:?}, range: {:?}", relative_path, loc.range)
+                }
+                _ => todo!(),
+            },
+            None => "None".to_string(),
+        }
     }
 
     goto_def_test_snapshot!(

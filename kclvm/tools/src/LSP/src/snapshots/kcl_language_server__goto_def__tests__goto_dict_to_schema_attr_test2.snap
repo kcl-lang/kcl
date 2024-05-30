@@ -1,5 +1,5 @@
 ---
 source: tools/src/LSP/src/goto_def.rs
-expression: "format!(\"{:?}\",\n    {\n        let(file, _program, _, gs) =\n        compile_test_file(\"src/test_data/goto_def_test/dict_to_schema/dict_to_schema.k\")\n        ; let pos = KCLPos\n        { filename : file.clone(), line : 15, column : Some(7), } ;\n        goto_def(& pos, & gs)\n    })"
+expression: "format!(\"{:?}\",\n    {\n        let(file, _program, _, gs) =\n        compile_test_file(\"src/test_data/goto_def_test/dict_to_schema/dict_to_schema.k\")\n        ; let pos = KCLPos\n        { filename : file.clone(), line : 15, column : Some(7), } ; let res =\n        goto_def(& pos, & gs) ; fmt_resp(& res)\n    })"
 ---
-Some(Scalar(Location { uri: Url { scheme: "file", cannot_be_a_base: false, username: "", password: None, host: None, port: None, path: "/Users/zz/code/he1pa/KCLVM/kclvm/tools/src/LSP/src/test_data/goto_def_test/dict_to_schema/dict_to_schema.k", query: None, fragment: None }, range: Range { start: Position { line: 4, character: 4 }, end: Position { line: 4, character: 8 } } }))
+"path: \"src/test_data/goto_def_test/dict_to_schema/dict_to_schema.k\", range: Range { start: Position { line: 4, character: 4 }, end: Position { line: 4, character: 8 } }"
