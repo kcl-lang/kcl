@@ -75,7 +75,6 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             expected_ty.clone(),
             unification_stmt.target.get_span_pos(),
             None,
-            true,
         );
         if !ty.is_any() && expected_ty.is_any() {
             self.set_type_to_scope(&names[0].node, ty, &names[0]);
@@ -185,7 +184,6 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                     expected_ty.clone(),
                     target.get_span_pos(),
                     None,
-                    true,
                 );
 
                 let upgrade_schema_type = self.upgrade_dict_to_schema(
@@ -221,7 +219,6 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                     expected_ty.clone(),
                     target.get_span_pos(),
                     None,
-                    true,
                 );
 
                 let upgrade_schema_type = self.upgrade_dict_to_schema(
@@ -290,7 +287,6 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             expected_ty,
             aug_assign_stmt.target.get_span_pos(),
             None,
-            true,
         );
         self.ctx.l_value = false;
         new_target_ty
@@ -457,7 +453,6 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                             expected_ty,
                             schema_attr.name.get_span_pos(),
                             None,
-                            true,
                         );
                     }
                     // Assign
@@ -466,7 +461,6 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                         expected_ty,
                         schema_attr.name.get_span_pos(),
                         None,
-                        true,
                     ),
                 },
                 None => bug!("invalid ast schema attr op kind"),
@@ -1117,13 +1111,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
         let real_ret_ty = self.stmts(&lambda_expr.body);
         self.leave_scope();
         self.ctx.in_lambda_expr.pop();
-        self.must_assignable_to(
-            real_ret_ty.clone(),
-            ret_ty.clone(),
-            (start, end),
-            None,
-            true,
-        );
+        self.must_assignable_to(real_ret_ty.clone(), ret_ty.clone(), (start, end), None);
         if !real_ret_ty.is_any() && ret_ty.is_any() && lambda_expr.return_ty.is_none() {
             ret_ty = real_ret_ty;
         }
