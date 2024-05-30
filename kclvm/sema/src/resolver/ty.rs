@@ -139,9 +139,8 @@ impl<'ctx> Resolver<'ctx> {
         range: &Range,
     ) -> TypeRef {
         match (&ty.kind, &expected_ty.kind) {
-            (TypeKind::Dict(DictType { key_ty, val_ty, .. }), TypeKind::Schema(schema_ty)) => {
-                if self.dict_assignable_to_schema(key_ty.clone(), val_ty.clone(), schema_ty, range)
-                {
+            (TypeKind::Dict(DictType { key_ty, .. }), TypeKind::Schema(schema_ty)) => {
+                if self.upgrade_dict_to_schema_attr_check(key_ty.clone(), schema_ty) {
                     expected_ty
                 } else {
                     ty
@@ -333,7 +332,15 @@ impl<'ctx> Resolver<'ctx> {
             return true;
         }
         match &key_ty.kind {
+            // empty dict {}
+            TypeKind::Any => true,
+            // single key: {key1: value1}
             TypeKind::StrLit(s) => schema_ty.attrs.len() == 1 && schema_ty.attrs.contains_key(s),
+            // multi key: {
+            // key1: value1
+            // key2: value2
+            // ...
+            // }
             TypeKind::Union(types) => {
                 schema_ty.attrs.len() == types.len()
                     && types.iter().all(|ty| match &ty.kind {
