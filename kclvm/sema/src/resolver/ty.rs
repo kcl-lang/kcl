@@ -169,10 +169,7 @@ impl<'ctx> Resolver<'ctx> {
                 self.upgrade_dict_to_schema(val_ty.clone(), expected_val_ty.clone(), range),
             )
             .into(),
-            (
-                TypeKind::Dict(DictType { key_ty, val_ty, .. }),
-                TypeKind::Union(expected_union_type),
-            ) => {
+            (TypeKind::Dict(DictType { key_ty, .. }), TypeKind::Union(expected_union_type)) => {
                 let types: Vec<Arc<Type>> = expected_union_type
                     .iter()
                     .filter(|ty| match ty.kind {
@@ -180,17 +177,13 @@ impl<'ctx> Resolver<'ctx> {
                         _ => false,
                     })
                     .filter(|ty| {
-                        self.dict_assignable_to_schema(
+                        self.upgrade_dict_to_schema_attr_check(
                             key_ty.clone(),
-                            val_ty.clone(),
                             &ty.into_schema_type(),
-                            range,
-                            false,
                         )
                     })
                     .map(|ty| ty.clone())
                     .collect();
-
                 crate::ty::sup(&types).into()
             }
             _ => ty,
@@ -357,6 +350,29 @@ impl<'ctx> Resolver<'ctx> {
                 }
             }
             true
+        }
+    }
+
+    /// Judge a dict can be upgrade to schema.
+    /// More strict than `dict_assign_to_schema()`: schema attr contains all attributes in key
+    pub fn upgrade_dict_to_schema_attr_check(
+        &mut self,
+        key_ty: TypeRef,
+        schema_ty: &SchemaType,
+    ) -> bool {
+        if schema_ty.index_signature.is_some() {
+            return true;
+        }
+        match &key_ty.kind {
+            TypeKind::StrLit(s) => schema_ty.attrs.len() == 1 && schema_ty.attrs.contains_key(s),
+            TypeKind::Union(types) => {
+                schema_ty.attrs.len() == types.len()
+                    && types.iter().all(|ty| match &ty.kind {
+                        TypeKind::StrLit(s) => schema_ty.attrs.contains_key(s),
+                        _ => false,
+                    })
+            }
+            _ => false,
         }
     }
 

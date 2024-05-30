@@ -720,4 +720,39 @@ mod tests {
         3,
         1
     );
+
+    goto_def_test_snapshot!(
+        goto_dict_to_schema_attr_test1,
+        "src/test_data/goto_def_test/dict_to_schema/dict_to_schema.k",
+        13,
+        15
+    );
+
+    goto_def_test_snapshot!(
+        goto_dict_to_schema_attr_test2,
+        "src/test_data/goto_def_test/dict_to_schema/dict_to_schema.k",
+        15,
+        7
+    );
+
+    goto_def_test_snapshot!(
+        goto_dict_to_schema_attr_test3,
+        "src/test_data/goto_def_test/dict_to_schema/dict_to_schema.k",
+        19,
+        7
+    );
+
+    goto_def_test_snapshot!(
+        goto_dict_to_schema_attr_test4,
+        "src/test_data/goto_def_test/dict_to_schema/dict_to_schema.k",
+        26,
+        11
+    );
+
+    goto_def_test_snapshot!(
+        goto_dict_to_schema_attr_test5,
+        "src/test_data/goto_def_test/dict_to_schema/dict_to_schema.k",
+        33,
+        11
+    );
 }

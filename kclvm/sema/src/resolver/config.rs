@@ -107,6 +107,38 @@ impl<'ctx> Resolver<'ctx> {
                                     },
                                 }
                             }
+                            TypeKind::Union(types) => {
+                                let mut possible_types = vec![];
+                                for ty in types {
+                                    match &ty.kind {
+                                        TypeKind::Schema(schema_ty) => {
+                                            match schema_ty.get_obj_of_attr(key_name) {
+                                                Some(attr_ty_obj) => {
+                                                    possible_types.push(attr_ty_obj.ty.clone());
+                                                }
+                                                None => match &schema_ty.index_signature {
+                                                    Some(index_signature) => {
+                                                        possible_types
+                                                            .push(index_signature.val_ty.clone());
+                                                    }
+                                                    None => continue,
+                                                },
+                                            }
+                                        }
+                                        TypeKind::Dict(DictType { val_ty, .. }) => {
+                                            possible_types.push(val_ty.clone());
+                                        }
+                                        _ => continue,
+                                    }
+                                }
+
+                                Some(self.new_config_expr_context_item(
+                                    key_name,
+                                    crate::ty::sup(&possible_types).into(),
+                                    obj.start.clone(),
+                                    obj.end.clone(),
+                                ))
+                            }
                             _ => None,
                         },
                         None => None,
@@ -350,19 +382,23 @@ impl<'ctx> Resolver<'ctx> {
             let mut schema_names = vec![];
             let mut total_suggs = vec![];
             for ty in types {
-                if let TypeKind::Schema(schema_ty) = &ty.kind {
-                    if schema_ty.get_obj_of_attr(attr).is_none()
-                        && !schema_ty.is_mixin
-                        && schema_ty.index_signature.is_none()
-                    {
-                        let mut suggs =
-                            suggestions::provide_suggestions(attr, schema_ty.attrs.keys());
-                        total_suggs.append(&mut suggs);
-                        schema_names.push(schema_ty.name.clone());
-                    } else {
-                        // If there is a schema attribute that meets the condition, the type check passes
-                        return;
+                match &ty.kind {
+                    TypeKind::Schema(schema_ty) => {
+                        if schema_ty.get_obj_of_attr(attr).is_none()
+                            && !schema_ty.is_mixin
+                            && schema_ty.index_signature.is_none()
+                        {
+                            let mut suggs =
+                                suggestions::provide_suggestions(attr, schema_ty.attrs.keys());
+                            total_suggs.append(&mut suggs);
+                            schema_names.push(schema_ty.name.clone());
+                        } else {
+                            // If there is a schema attribute that meets the condition, the type check passes
+                            return;
+                        }
                     }
+                    TypeKind::Dict(..) => return,
+                    _ => continue,
                 }
             }
             if !schema_names.is_empty() {
@@ -497,7 +533,11 @@ impl<'ctx> Resolver<'ctx> {
                         let key_ty = if identifier.names.len() == 1 {
                             let name = &identifier.names[0].node;
                             let key_ty = if self.ctx.local_vars.contains(name) {
-                                self.expr(key)
+                                // set key context expected schema as None
+                                self.ctx.config_expr_context.push(None);
+                                let key_ty = self.expr(key);
+                                self.ctx.config_expr_context.pop();
+                                key_ty
                             } else {
                                 Arc::new(Type::str_lit(name))
                             };
@@ -543,7 +583,10 @@ impl<'ctx> Resolver<'ctx> {
                         val_ty
                     }
                     _ => {
+                        // set key context expected schema as None
+                        self.ctx.config_expr_context.push(None);
                         let key_ty = self.expr(key);
+                        self.ctx.config_expr_context.pop();
                         let val_ty = self.expr(value);
                         self.check_attr_ty(&key_ty, key.get_span_pos());
                         if let ast::Expr::StringLit(string_lit) = &key.node {
