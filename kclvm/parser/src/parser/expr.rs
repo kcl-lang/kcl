@@ -1163,6 +1163,7 @@ impl<'a> Parser<'a> {
         // elif ...
         let mut elif_list = Vec::new();
         loop {
+            let marker = self.mark();
             if !self.token.is_keyword(kw::Elif) {
                 break;
             }
@@ -1188,6 +1189,7 @@ impl<'a> Parser<'a> {
                 x,
                 self.sess.struct_token_loc(token, self.prev_token),
             )));
+            self.drop(marker);
         }
 
         if let TokenKind::Newline = self.token.kind {
@@ -1259,6 +1261,7 @@ impl<'a> Parser<'a> {
         let mut body = Vec::new();
 
         loop {
+            let marker = self.mark();
             self.validate_dedent();
             if matches!(self.token.kind, TokenKind::Dedent(VALID_SPACES_LENGTH)) {
                 break;
@@ -1270,6 +1273,7 @@ impl<'a> Parser<'a> {
                 self.bump();
             }
             self.skip_newlines();
+            self.drop(marker);
         }
         self.validate_dedent();
         self.bump_token(TokenKind::Dedent(VALID_SPACES_LENGTH));
@@ -1581,6 +1585,7 @@ impl<'a> Parser<'a> {
         let mut elif_list = Vec::new();
         let mut last_token = self.token;
         loop {
+            let marker = self.mark();
             if !self.token.is_keyword(kw::Elif) {
                 break;
             }
@@ -1607,6 +1612,7 @@ impl<'a> Parser<'a> {
                 self.sess.struct_token_loc(token, self.prev_token),
             )));
             last_token = self.prev_token;
+            self.drop(marker);
         }
 
         if let TokenKind::Newline = self.token.kind {
