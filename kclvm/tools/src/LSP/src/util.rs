@@ -1,7 +1,6 @@
 use indexmap::IndexSet;
 use kclvm_ast::ast::{
-    ConfigEntry, Expr, Identifier, Node, NodeRef, PosTuple, Program, SchemaExpr, SchemaStmt, Stmt,
-    Type,
+    ConfigEntry, Expr, Identifier, Node, NodeRef, PosTuple, Program, SchemaStmt, Stmt, Type,
 };
 use kclvm_ast::node_ref;
 use kclvm_ast::pos::ContainsPos;
