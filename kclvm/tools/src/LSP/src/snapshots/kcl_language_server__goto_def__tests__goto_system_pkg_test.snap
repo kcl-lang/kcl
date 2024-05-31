@@ -1,5 +1,5 @@
 ---
 source: tools/src/LSP/src/goto_def.rs
-expression: "format!(\"{:?}\",\n    {\n        let(file, _program, _, gs) =\n        compile_test_file(\"src/test_data/goto_def_test/goto_def.k\") ; let pos\n        = KCLPos { filename : file.clone(), line : 3, column : Some(1), } ;\n        let res = goto_def(& pos, & gs) ; fmt_resp(& res)\n    })"
+expression: "format!(\"{:?}\",\n    {\n        let (file, _program, _, gs) =\n        compile_test_file(\"src/test_data/goto_def_test/goto_system_pkg_test/goto_system_pkg_test.k\");\n        let pos = KCLPos\n        { filename : file.clone(), line : 1, column : Some(1), }; let res =\n        goto_def(& pos, & gs); fmt_resp(& res)\n    })"
 ---
 "None"

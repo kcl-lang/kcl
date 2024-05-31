@@ -1,5 +1,0 @@
----
-source: tools/src/LSP/src/hover.rs
-expression: "format!(\"{:?}\", got)"
----
-Hover { contents: Scalar(LanguageString(LanguageString { language: "kcl", value: "name: int" })), range: None }

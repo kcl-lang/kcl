@@ -1,0 +1,5 @@
+---
+source: tools/src/LSP/src/goto_def.rs
+expression: "format!(\"{:?}\",\n    {\n        let (file, _program, _, gs) =\n        compile_test_file(\"src/test_data/goto_def_test/test_goto_identifier_names/test_goto_identifier_names.k\");\n        let pos = KCLPos\n        { filename : file.clone(), line : 13, column : Some(5), }; let res =\n        goto_def(& pos, & gs); fmt_resp(& res)\n    })"
+---
+"path: \"src/test_data/goto_def_test/test_goto_identifier_names/test_goto_identifier_names.k\", range: Range { start: Position { line: 8, character: 0 }, end: Position { line: 8, character: 2 } }"
