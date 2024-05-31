@@ -98,7 +98,6 @@ impl<'ctx> Resolver<'ctx> {
                     expected_ty,
                     index_signature_node.get_span_pos(),
                     None,
-                    true,
                 );
             }
         }

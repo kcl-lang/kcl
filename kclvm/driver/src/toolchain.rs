@@ -1,14 +1,13 @@
-use crate::client::ModClient;
 use crate::{kcl, lookup_the_nearest_file_dir};
 use anyhow::{bail, Result};
 use kclvm_config::modfile::KCL_MOD_FILE;
 use kclvm_parser::LoadProgramOptions;
 use kclvm_utils::pkgpath::rm_external_pkg_name;
-use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 use std::ffi::OsStr;
-use std::sync::Arc;
 use std::{collections::HashMap, path::PathBuf, process::Command};
+#[cfg(not(target_arch = "wasm32"))]
+use {crate::client::ModClient, parking_lot::Mutex, std::sync::Arc};
 
 /// `Toolchain` is a trait that outlines a standard set of operations that must be
 /// implemented for a KCL module (mod), typically involving fetching metadata from,
@@ -99,11 +98,13 @@ impl<S: AsRef<OsStr> + Send + Sync> Toolchain for CommandToolchain<S> {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[derive(Default)]
 pub struct NativeToolchain {
     client: Arc<Mutex<ModClient>>,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl Toolchain for NativeToolchain {
     fn fetch_metadata(&self, manifest_path: PathBuf) -> Result<Metadata> {
         let mut client = self.client.lock();

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::string::String;
 
 use crate::gpyrpc::*;
@@ -9,7 +9,6 @@ use anyhow::anyhow;
 use kcl_language_server::rename;
 use kclvm_config::settings::build_settings_pathbuf;
 use kclvm_driver::canonicalize_input_files;
-use kclvm_driver::client::ModClient;
 use kclvm_loader::option::list_options;
 use kclvm_loader::{load_packages_with_cache, LoadPackageOptions};
 use kclvm_parser::load_program;
@@ -957,6 +956,7 @@ impl KclvmServiceImpl {
         Ok(result)
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     /// update_dependencies provides users with the ability to update kcl module dependencies.
     ///
     /// # Examples
@@ -986,6 +986,8 @@ impl KclvmServiceImpl {
         &self,
         args: &UpdateDependenciesArgs,
     ) -> anyhow::Result<UpdateDependenciesResult> {
+        use kclvm_driver::client::ModClient;
+        use std::path::Path;
         let mut client = ModClient::new(&args.manifest_path)?;
         if args.vendor {
             client.set_vendor(&Path::new(&args.manifest_path).join("vendor"));
