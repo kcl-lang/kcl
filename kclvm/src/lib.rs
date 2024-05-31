@@ -1,12 +1,15 @@
 #![allow(clippy::missing_safety_doc)]
 
+use kclvm_api::{gpyrpc::ExecProgramArgs as ExecProgramOptions, API};
 use kclvm_parser::ParseSession;
 use kclvm_runner::exec_program;
 use kclvm_runner::runner::*;
 pub use kclvm_runtime::*;
+use std::alloc::{alloc, dealloc, Layout};
 use std::ffi::c_char;
 use std::ffi::c_int;
-use std::ffi::CStr;
+use std::ffi::{CStr, CString};
+use std::mem;
 use std::process::ExitCode;
 use std::sync::Arc;
 
@@ -104,4 +107,75 @@ pub unsafe extern "C" fn kclvm_cli_main(argc: c_int, argv: *const *const c_char)
             Box::into_raw(Box::new(ExitCode::FAILURE))
         }
     }
+}
+
+/// Exposes a normal kcl run function to the WASM host.
+#[no_mangle]
+pub unsafe extern "C" fn kcl_run(
+    filename_ptr: *const c_char,
+    src_ptr: *const c_char,
+) -> *const c_char {
+    if filename_ptr.is_null() || src_ptr.is_null() {
+        return std::ptr::null();
+    }
+    let filename = unsafe { CStr::from_ptr(filename_ptr).to_str().unwrap() };
+    let src = unsafe { CStr::from_ptr(src_ptr).to_str().unwrap() };
+
+    match intern_run(filename, src) {
+        Ok(result) => CString::new(result).unwrap().into_raw(),
+        Err(err) => CString::new(format!("ERROR:{}", err)).unwrap().into_raw(),
+    }
+}
+
+fn intern_run(filename: &str, src: &str) -> Result<String, String> {
+    let api = API::default();
+    let args = &ExecProgramOptions {
+        k_filename_list: vec![filename.to_string()],
+        k_code_list: vec![src.to_string()],
+        ..Default::default()
+    };
+    match api.exec_program(args) {
+        Ok(result) => {
+            if result.err_message.is_empty() {
+                Ok(result.yaml_result)
+            } else {
+                Err(result.err_message)
+            }
+        }
+        Err(err) => Err(err.to_string()),
+    }
+}
+
+/// Exposes an allocation function to the WASM host.
+///
+/// _This implementation is copied from wasm-bindgen_
+#[no_mangle]
+pub unsafe extern "C" fn kcl_malloc(size: usize) -> *mut u8 {
+    let align = mem::align_of::<usize>();
+    let layout = Layout::from_size_align(size, align).expect("Invalid layout");
+    if layout.size() > 0 {
+        let ptr = alloc(layout);
+        if !ptr.is_null() {
+            return ptr;
+        } else {
+            std::alloc::handle_alloc_error(layout);
+        }
+    } else {
+        return align as *mut u8;
+    }
+}
+
+/// Expose a deallocation function to the WASM host.
+///
+/// _This implementation is copied from wasm-bindgen_
+#[no_mangle]
+pub unsafe extern "C" fn kcl_free(ptr: *mut u8, size: usize) {
+    // This happens for zero-length slices, and in that case `ptr` is
+    // likely bogus so don't actually send this to the system allocator
+    if size == 0 {
+        return;
+    }
+    let align = mem::align_of::<usize>();
+    let layout = Layout::from_size_align_unchecked(size, align);
+    dealloc(ptr, layout);
 }
