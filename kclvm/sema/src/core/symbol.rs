@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{collections::HashSet, sync::Arc};
 
 use generational_arena::Arena;
 use indexmap::{IndexMap, IndexSet};
@@ -54,6 +54,7 @@ pub struct KCLSymbolSemanticInfo {
 }
 
 pub(crate) const BUILTIN_STR_PACKAGE: &'static str = "@str";
+pub(crate) const BUILTIN_FUNCTION_PACKAGE: &'static str = "@builtin";
 
 #[derive(Default, Debug, Clone)]
 pub struct SymbolData {
@@ -67,6 +68,7 @@ pub struct SymbolData {
     pub(crate) exprs: Arena<ExpressionSymbol>,
     pub(crate) comments: Arena<CommentSymbol>,
     pub(crate) decorators: Arena<DecoratorSymbol>,
+    pub(crate) functions: Arena<FunctionSymbol>,
 
     pub(crate) symbols_info: SymbolDB,
 }
@@ -79,6 +81,7 @@ pub struct SymbolDB {
     pub(crate) schema_builtin_symbols: IndexMap<SymbolRef, IndexMap<String, SymbolRef>>,
     pub(crate) node_symbol_map: IndexMap<NodeKey, SymbolRef>,
     pub(crate) symbol_node_map: IndexMap<SymbolRef, NodeKey>,
+    pub(crate) pkg_symbol_map: IndexMap<String, IndexSet<SymbolRef>>,
 }
 
 impl SymbolData {
@@ -138,6 +141,14 @@ impl SymbolData {
         }
     }
 
+    pub fn get_function_symbol(&self, id: SymbolRef) -> Option<&FunctionSymbol> {
+        if matches!(id.get_kind(), SymbolKind::Function) {
+            self.functions.get(id.get_id())
+        } else {
+            None
+        }
+    }
+
     pub fn get_symbol(&self, id: SymbolRef) -> Option<&KCLSymbol> {
         match id.get_kind() {
             SymbolKind::Schema => self
@@ -180,6 +191,48 @@ impl SymbolData {
                 .decorators
                 .get(id.get_id())
                 .map(|symbol| symbol as &KCLSymbol),
+            SymbolKind::Function => self
+                .functions
+                .get(id.get_id())
+                .map(|symbol| symbol as &KCLSymbol),
+        }
+    }
+
+    pub fn remove_symbol(&mut self, id: &SymbolRef) {
+        match id.get_kind() {
+            SymbolKind::Schema => {
+                self.schemas.remove(id.get_id());
+            }
+            SymbolKind::Attribute => {
+                self.attributes.remove(id.get_id());
+            }
+            SymbolKind::Value => {
+                self.values.remove(id.get_id());
+            }
+            SymbolKind::Package => {
+                self.packages.remove(id.get_id());
+            }
+            SymbolKind::TypeAlias => {
+                self.type_aliases.remove(id.get_id());
+            }
+            SymbolKind::Unresolved => {
+                self.unresolved.remove(id.get_id());
+            }
+            SymbolKind::Rule => {
+                self.rules.remove(id.get_id());
+            }
+            SymbolKind::Expression => {
+                self.exprs.remove(id.get_id());
+            }
+            SymbolKind::Comment => {
+                self.comments.remove(id.get_id());
+            }
+            SymbolKind::Decorator => {
+                self.decorators.remove(id.get_id());
+            }
+            SymbolKind::Function => {
+                self.functions.remove(id.get_id());
+            }
         }
     }
 
@@ -241,6 +294,12 @@ impl SymbolData {
             }
             SymbolKind::Decorator => {
                 self.decorators.get_mut(id.get_id()).map(|symbol| {
+                    symbol.sema_info.ty = Some(ty);
+                    symbol
+                });
+            }
+            SymbolKind::Function => {
+                self.functions.get_mut(id.get_id()).map(|symbol| {
                     symbol.sema_info.ty = Some(ty);
                     symbol
                 });
@@ -496,19 +555,50 @@ impl SymbolData {
                 symbol_ref,
             );
         }
+
+        for (id, _) in self.functions.iter() {
+            let symbol_ref = SymbolRef {
+                id,
+                kind: SymbolKind::Function,
+            };
+            self.symbols_info.fully_qualified_name_map.insert(
+                self.get_fully_qualified_name(symbol_ref).unwrap(),
+                symbol_ref,
+            );
+        }
     }
 
-    pub fn alloc_package_symbol(&mut self, pkg: PackageSymbol) -> SymbolRef {
+    pub fn insert_package_symbol(&mut self, symbol_ref: SymbolRef, pkg_name: String) {
+        if !self.symbols_info.pkg_symbol_map.contains_key(&pkg_name) {
+            self.symbols_info
+                .pkg_symbol_map
+                .insert(pkg_name.clone(), IndexSet::default());
+        }
+
+        self.symbols_info
+            .pkg_symbol_map
+            .get_mut(&pkg_name)
+            .unwrap()
+            .insert(symbol_ref);
+    }
+
+    pub fn alloc_package_symbol(&mut self, pkg: PackageSymbol, pkg_name: String) -> SymbolRef {
         let symbol_id = self.packages.insert(pkg);
         let symbol_ref = SymbolRef {
             id: symbol_id,
             kind: SymbolKind::Package,
         };
         self.packages.get_mut(symbol_id).unwrap().id = Some(symbol_ref);
+        self.insert_package_symbol(symbol_ref, pkg_name);
         symbol_ref
     }
 
-    pub fn alloc_schema_symbol(&mut self, schema: SchemaSymbol, node_key: NodeKey) -> SymbolRef {
+    pub fn alloc_schema_symbol(
+        &mut self,
+        schema: SchemaSymbol,
+        node_key: NodeKey,
+        pkg_name: String,
+    ) -> SymbolRef {
         self.symbols_info.symbol_pos_set.insert(schema.end.clone());
         let symbol_id = self.schemas.insert(schema);
         let symbol_ref = SymbolRef {
@@ -522,6 +612,7 @@ impl SymbolData {
             .symbol_node_map
             .insert(symbol_ref, node_key);
         self.schemas.get_mut(symbol_id).unwrap().id = Some(symbol_ref);
+        self.insert_package_symbol(symbol_ref, pkg_name);
         symbol_ref
     }
 
@@ -529,6 +620,7 @@ impl SymbolData {
         &mut self,
         unresolved: UnresolvedSymbol,
         node_key: NodeKey,
+        pkg_name: String,
     ) -> SymbolRef {
         self.symbols_info
             .symbol_pos_set
@@ -545,6 +637,7 @@ impl SymbolData {
             .symbol_node_map
             .insert(symbol_ref, node_key);
         self.unresolved.get_mut(symbol_id).unwrap().id = Some(symbol_ref);
+        self.insert_package_symbol(symbol_ref, pkg_name);
         symbol_ref
     }
 
@@ -552,6 +645,7 @@ impl SymbolData {
         &mut self,
         alias: TypeAliasSymbol,
         node_key: NodeKey,
+        pkg_name: String,
     ) -> SymbolRef {
         self.symbols_info.symbol_pos_set.insert(alias.end.clone());
         let symbol_id = self.type_aliases.insert(alias);
@@ -566,10 +660,16 @@ impl SymbolData {
             .symbol_node_map
             .insert(symbol_ref, node_key);
         self.type_aliases.get_mut(symbol_id).unwrap().id = Some(symbol_ref);
+        self.insert_package_symbol(symbol_ref, pkg_name);
         symbol_ref
     }
 
-    pub fn alloc_rule_symbol(&mut self, rule: RuleSymbol, node_key: NodeKey) -> SymbolRef {
+    pub fn alloc_rule_symbol(
+        &mut self,
+        rule: RuleSymbol,
+        node_key: NodeKey,
+        pkg_name: String,
+    ) -> SymbolRef {
         self.symbols_info.symbol_pos_set.insert(rule.end.clone());
         let symbol_id = self.rules.insert(rule);
         let symbol_ref = SymbolRef {
@@ -583,6 +683,7 @@ impl SymbolData {
             .symbol_node_map
             .insert(symbol_ref, node_key);
         self.rules.get_mut(symbol_id).unwrap().id = Some(symbol_ref);
+        self.insert_package_symbol(symbol_ref, pkg_name);
         symbol_ref
     }
 
@@ -590,6 +691,7 @@ impl SymbolData {
         &mut self,
         attribute: AttributeSymbol,
         node_key: NodeKey,
+        pkg_name: String,
     ) -> SymbolRef {
         self.symbols_info
             .symbol_pos_set
@@ -606,10 +708,16 @@ impl SymbolData {
             .symbol_node_map
             .insert(symbol_ref, node_key);
         self.attributes.get_mut(symbol_id).unwrap().id = Some(symbol_ref);
+        self.insert_package_symbol(symbol_ref, pkg_name);
         symbol_ref
     }
 
-    pub fn alloc_value_symbol(&mut self, value: ValueSymbol, node_key: NodeKey) -> SymbolRef {
+    pub fn alloc_value_symbol(
+        &mut self,
+        value: ValueSymbol,
+        node_key: NodeKey,
+        pkg_name: String,
+    ) -> SymbolRef {
         self.symbols_info.symbol_pos_set.insert(value.end.clone());
         let symbol_id = self.values.insert(value);
         let symbol_ref = SymbolRef {
@@ -623,6 +731,7 @@ impl SymbolData {
             .symbol_node_map
             .insert(symbol_ref, node_key);
         self.values.get_mut(symbol_id).unwrap().id = Some(symbol_ref);
+        self.insert_package_symbol(symbol_ref, pkg_name);
         symbol_ref
     }
 
@@ -630,6 +739,7 @@ impl SymbolData {
         &mut self,
         expr: ExpressionSymbol,
         node_key: NodeKey,
+        pkg_name: String,
     ) -> Option<SymbolRef> {
         if self.symbols_info.symbol_pos_set.contains(&expr.end) {
             return None;
@@ -647,6 +757,7 @@ impl SymbolData {
             .symbol_node_map
             .insert(symbol_ref, node_key);
         self.exprs.get_mut(symbol_id).unwrap().id = Some(symbol_ref);
+        self.insert_package_symbol(symbol_ref, pkg_name);
         Some(symbol_ref)
     }
 
@@ -654,6 +765,7 @@ impl SymbolData {
         &mut self,
         comment: CommentSymbol,
         node_key: NodeKey,
+        pkg_name: String,
     ) -> Option<SymbolRef> {
         let symbol_id = self.comments.insert(comment);
         let symbol_ref = SymbolRef {
@@ -667,6 +779,7 @@ impl SymbolData {
             .symbol_node_map
             .insert(symbol_ref, node_key);
         self.comments.get_mut(symbol_id).unwrap().id = Some(symbol_ref);
+        self.insert_package_symbol(symbol_ref, pkg_name);
         Some(symbol_ref)
     }
 
@@ -674,6 +787,7 @@ impl SymbolData {
         &mut self,
         decorator: DecoratorSymbol,
         node_key: NodeKey,
+        pkg_name: String,
     ) -> Option<SymbolRef> {
         let symbol_id = self.decorators.insert(decorator);
         let symbol_ref = SymbolRef {
@@ -687,7 +801,31 @@ impl SymbolData {
             .symbol_node_map
             .insert(symbol_ref, node_key);
         self.decorators.get_mut(symbol_id).unwrap().id = Some(symbol_ref);
+        self.insert_package_symbol(symbol_ref, pkg_name);
         Some(symbol_ref)
+    }
+
+    pub fn alloc_function_symbol(
+        &mut self,
+        func: FunctionSymbol,
+        node_key: NodeKey,
+        pkg_name: String,
+    ) -> SymbolRef {
+        self.symbols_info.symbol_pos_set.insert(func.end.clone());
+        let symbol_id = self.functions.insert(func);
+        let symbol_ref = SymbolRef {
+            id: symbol_id,
+            kind: SymbolKind::Function,
+        };
+        self.symbols_info
+            .node_symbol_map
+            .insert(node_key.clone(), symbol_ref);
+        self.symbols_info
+            .symbol_node_map
+            .insert(symbol_ref, node_key);
+        self.functions.get_mut(symbol_id).unwrap().id = Some(symbol_ref);
+        self.insert_package_symbol(symbol_ref, pkg_name);
+        symbol_ref
     }
 
     #[inline]
@@ -709,6 +847,19 @@ impl SymbolData {
     pub fn get_builtin_symbols(&self) -> &IndexMap<String, SymbolRef> {
         &self.symbols_info.global_builtin_symbols
     }
+
+    pub fn clear_cache(&mut self, invalidate_pkgs: &HashSet<String>) {
+        let mut to_remove: Vec<SymbolRef> = Vec::new();
+
+        for invalidate_pkg in invalidate_pkgs {
+            if let Some(symbols) = self.symbols_info.pkg_symbol_map.get(invalidate_pkg) {
+                to_remove.extend(symbols.iter().cloned());
+            }
+        }
+        for symbol in to_remove {
+            self.remove_symbol(&symbol);
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
@@ -716,6 +867,7 @@ pub enum SymbolKind {
     Schema,
     Attribute,
     Value,
+    Function,
     Package,
     TypeAlias,
     Unresolved,
@@ -2068,5 +2220,136 @@ impl DecoratorSymbol {
 
     pub fn name(&self) -> String {
         self.name.clone()
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct FunctionSymbol {
+    pub(crate) id: Option<SymbolRef>,
+    pub(crate) name: String,
+    pub(crate) start: Position,
+    pub(crate) end: Position,
+    pub(crate) owner: Option<SymbolRef>,
+    pub(crate) sema_info: KCLSymbolSemanticInfo,
+
+    pub(crate) is_global: bool,
+}
+
+impl Symbol for FunctionSymbol {
+    type SymbolData = SymbolData;
+    type SemanticInfo = KCLSymbolSemanticInfo;
+
+    fn is_global(&self) -> bool {
+        self.is_global
+    }
+
+    fn get_range(&self) -> Range {
+        (self.start.clone(), self.end.clone())
+    }
+
+    fn get_owner(&self) -> Option<SymbolRef> {
+        self.owner.clone()
+    }
+
+    fn get_definition(&self) -> Option<SymbolRef> {
+        self.id.clone()
+    }
+
+    fn get_name(&self) -> String {
+        self.name.clone()
+    }
+
+    fn get_id(&self) -> Option<SymbolRef> {
+        self.id.clone()
+    }
+
+    fn get_attribute(
+        &self,
+        name: &str,
+        data: &Self::SymbolData,
+        module_info: Option<&ModuleInfo>,
+    ) -> Option<SymbolRef> {
+        data.get_type_attribute(self.sema_info.ty.as_ref()?, name, module_info)
+    }
+
+    fn get_all_attributes(
+        &self,
+        data: &Self::SymbolData,
+        module_info: Option<&ModuleInfo>,
+    ) -> Vec<SymbolRef> {
+        let mut result = vec![];
+        if let Some(ty) = self.sema_info.ty.as_ref() {
+            if let Some(symbol_ref) = data.get_type_symbol(ty, module_info) {
+                if let Some(symbol) = data.get_symbol(symbol_ref) {
+                    result.append(&mut symbol.get_all_attributes(data, module_info))
+                }
+            }
+        }
+
+        result
+    }
+
+    fn has_attribute(
+        &self,
+        name: &str,
+        data: &Self::SymbolData,
+        module_info: Option<&ModuleInfo>,
+    ) -> bool {
+        self.get_attribute(name, data, module_info).is_some()
+    }
+
+    fn simple_dump(&self) -> String {
+        let mut output = "{\n".to_string();
+        output.push_str("\"kind\": \"FunctionSymbol\",\n");
+        output.push_str(&format!("\"name\":\"{}\",\n", self.name));
+        output.push_str(&format!(
+            "\"range\": \"{}:{}",
+            self.start.filename, self.start.line
+        ));
+        if let Some(start_col) = self.start.column {
+            output.push_str(&format!(":{}", start_col));
+        }
+
+        output.push_str(&format!(" to {}", self.end.line));
+        if let Some(end_col) = self.end.column {
+            output.push_str(&format!(":{}", end_col));
+        }
+        output.push_str("\"\n}");
+        output
+    }
+
+    fn full_dump(&self, data: &Self::SymbolData) -> Option<String> {
+        let mut output = format!("{{\n\"simple_info\": {},\n", self.simple_dump());
+        output.push_str("\"additional_info\": {\n");
+        if let Some(owner) = self.owner.as_ref() {
+            let owner_symbol = data.get_symbol(*owner)?;
+            output.push_str(&format!("\"owner\": {}\n", owner_symbol.simple_dump()));
+        }
+        output.push_str("\n}\n}");
+        Some(output)
+    }
+
+    fn get_sema_info(&self) -> &Self::SemanticInfo {
+        &self.sema_info
+    }
+}
+
+impl FunctionSymbol {
+    pub fn new(
+        name: String,
+        start: Position,
+        end: Position,
+        owner: Option<SymbolRef>,
+        is_global: bool,
+    ) -> Self {
+        Self {
+            id: None,
+            name,
+            start,
+            end,
+            owner,
+            sema_info: KCLSymbolSemanticInfo::default(),
+            is_global,
+        }
     }
 }

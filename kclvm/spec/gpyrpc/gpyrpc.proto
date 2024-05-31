@@ -285,7 +285,7 @@ message OverrideFile_Result {
 }
 
 message ListVariables_Args {
-	string file = 1;
+	repeated string files = 1;
 	repeated string specs = 2;
 }
 

@@ -273,8 +273,6 @@ pub(crate) fn handle_reference(
     };
     let pos = kcl_pos(&file, params.text_document_position.position);
     let log = |msg: String| log_message(msg, &sender);
-    let module_cache = snapshot.module_cache.clone();
-    let _scope_cache = snapshot.scope_cache.clone();
     let entry_cache = snapshot.entry_cache.clone();
     match find_refs(
         &pos,
@@ -283,8 +281,6 @@ pub(crate) fn handle_reference(
         Some(snapshot.vfs.clone()),
         log,
         &db.gs,
-        Some(module_cache),
-        None,
         Some(entry_cache),
     ) {
         core::result::Result::Ok(locations) => Ok(Some(locations)),
@@ -410,8 +406,6 @@ pub(crate) fn handle_rename(
         Some(snapshot.vfs.clone()),
         log,
         &db.gs,
-        Some(snapshot.module_cache),
-        Some(snapshot.scope_cache),
         Some(snapshot.entry_cache),
     );
     match references {

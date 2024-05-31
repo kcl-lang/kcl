@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use indexmap::{IndexMap, IndexSet};
 
 #[derive(Default, Debug, Clone)]
@@ -38,6 +40,12 @@ impl PackageDB {
 
     pub fn get_module_info(&self, name: &str) -> Option<&ModuleInfo> {
         self.module_info.get(name)
+    }
+
+    pub fn clear_cache(&mut self, invalidate_pkgs: &HashSet<String>) {
+        for invalidate_pkg in invalidate_pkgs {
+            self.package_info.remove(invalidate_pkg);
+        }
     }
 }
 #[derive(Debug, Clone)]

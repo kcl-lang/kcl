@@ -130,6 +130,7 @@ fn symbol_kind_to_document_symbol_kind(kind: KCLSymbolKind) -> Option<SymbolKind
         KCLSymbolKind::Schema => Some(SymbolKind::STRUCT),
         KCLSymbolKind::Attribute => Some(SymbolKind::PROPERTY),
         KCLSymbolKind::Value => Some(SymbolKind::VARIABLE),
+        KCLSymbolKind::Function => Some(SymbolKind::FUNCTION),
         KCLSymbolKind::Package => Some(SymbolKind::PACKAGE),
         KCLSymbolKind::TypeAlias => Some(SymbolKind::TYPE_PARAMETER),
         KCLSymbolKind::Unresolved => Some(SymbolKind::NULL),

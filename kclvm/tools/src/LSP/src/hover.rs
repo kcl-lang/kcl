@@ -92,7 +92,8 @@ pub(crate) fn hover(kcl_pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::Hov
                         _ => {}
                     }
                 }
-                kclvm_sema::core::symbol::SymbolKind::Value => match &obj.get_sema_info().ty {
+                kclvm_sema::core::symbol::SymbolKind::Value
+                | kclvm_sema::core::symbol::SymbolKind::Function => match &obj.get_sema_info().ty {
                     Some(ty) => match &ty.kind {
                         kclvm_sema::ty::TypeKind::Function(func_ty) => {
                             docs.append(&mut build_func_hover_content(

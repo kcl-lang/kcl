@@ -45,7 +45,9 @@ use crate::builtin::{
 };
 use crate::core::global_state::GlobalState;
 use crate::core::package::{ModuleInfo, PackageInfo};
-use crate::core::symbol::{PackageSymbol, SymbolRef, ValueSymbol, BUILTIN_STR_PACKAGE};
+use crate::core::symbol::{
+    FunctionSymbol, PackageSymbol, SymbolRef, BUILTIN_FUNCTION_PACKAGE, BUILTIN_STR_PACKAGE,
+};
 use crate::resolver::scope::NodeKey;
 use indexmap::IndexSet;
 use kclvm_ast::ast::AstIndex;
@@ -57,7 +59,7 @@ mod node;
 pub const BUILTIN_SYMBOL_PKG_PATH: &str = "@builtin";
 
 pub struct Namer<'ctx> {
-    gs: GlobalState,
+    gs: &'ctx mut GlobalState,
     ctx: NamerContext<'ctx>,
 }
 
@@ -83,7 +85,7 @@ impl<'ctx> NamerContext<'ctx> {
 }
 
 impl<'ctx> Namer<'ctx> {
-    fn new(program: &'ctx Program, gs: GlobalState) -> Self {
+    fn new(program: &'ctx Program, gs: &'ctx mut GlobalState) -> Self {
         Self {
             ctx: NamerContext {
                 program,
@@ -97,7 +99,7 @@ impl<'ctx> Namer<'ctx> {
     }
 
     // serial namer pass
-    pub fn find_symbols(program: &'ctx Program, gs: GlobalState) -> GlobalState {
+    pub fn find_symbols(program: &'ctx Program, gs: &'ctx mut GlobalState) {
         let mut namer = Self::new(program, gs);
         namer.ctx.current_package_info = Some(PackageInfo::new(
             BUILTIN_SYMBOL_PKG_PATH.to_string(),
@@ -111,6 +113,16 @@ impl<'ctx> Namer<'ctx> {
             .add_package(namer.ctx.current_package_info.take().unwrap());
 
         for (name, modules) in namer.ctx.program.pkgs.iter() {
+            // new pkgs or invalidate pkg
+            if namer.gs.get_packages().get_package_info(name).is_some()
+                && !namer.gs.new_or_invalidate_pkgs.contains(name)
+            {
+                continue;
+            }
+
+            // add new pkgs to invalidate pkgs
+            namer.gs.new_or_invalidate_pkgs.insert(name.clone());
+
             {
                 if modules.is_empty() {
                     continue;
@@ -131,7 +143,10 @@ impl<'ctx> Namer<'ctx> {
                 };
 
                 let pkg_symbol = PackageSymbol::new(name.clone(), pkg_pos.clone(), pkg_pos);
-                let symbol_ref = namer.gs.get_symbols_mut().alloc_package_symbol(pkg_symbol);
+                let symbol_ref = namer
+                    .gs
+                    .get_symbols_mut()
+                    .alloc_package_symbol(pkg_symbol, name.to_string());
                 namer.ctx.owner_symbols.push(symbol_ref);
 
                 namer.ctx.current_package_info =
@@ -164,25 +179,27 @@ impl<'ctx> Namer<'ctx> {
 
         namer.define_symbols();
 
-        namer.gs
+        // namer.gs
     }
 
     fn init_builtin_symbols(&mut self) {
         //add global built functions
         for (name, builtin_func) in BUILTIN_FUNCTIONS.iter() {
-            let mut value_symbol = ValueSymbol::new(
+            let mut func_symbol = FunctionSymbol::new(
                 name.to_string(),
                 Position::dummy_pos(),
                 Position::dummy_pos(),
                 None,
                 true,
             );
-            value_symbol.sema_info.ty = Some(Arc::new(builtin_func.clone()));
-            value_symbol.sema_info.doc = builtin_func.ty_doc();
-            let symbol_ref = self
-                .gs
-                .get_symbols_mut()
-                .alloc_value_symbol(value_symbol, self.ctx.get_node_key(&AstIndex::default()));
+
+            func_symbol.sema_info.ty = Some(Arc::new(builtin_func.clone()));
+            func_symbol.sema_info.doc = builtin_func.ty_doc();
+            let symbol_ref = self.gs.get_symbols_mut().alloc_function_symbol(
+                func_symbol,
+                self.ctx.get_node_key(&AstIndex::default()),
+                BUILTIN_FUNCTION_PACKAGE.to_string(),
+            );
             self.gs
                 .get_symbols_mut()
                 .symbols_info
@@ -192,29 +209,31 @@ impl<'ctx> Namer<'ctx> {
 
         //add system modules
         for system_pkg_name in STANDARD_SYSTEM_MODULES {
-            let package_symbol_ref =
-                self.gs
-                    .get_symbols_mut()
-                    .alloc_package_symbol(PackageSymbol::new(
-                        system_pkg_name.to_string(),
-                        Position::dummy_pos(),
-                        Position::dummy_pos(),
-                    ));
+            let package_symbol_ref = self.gs.get_symbols_mut().alloc_package_symbol(
+                PackageSymbol::new(
+                    system_pkg_name.to_string(),
+                    Position::dummy_pos(),
+                    Position::dummy_pos(),
+                ),
+                system_pkg_name.to_string(),
+            );
             for func_name in get_system_module_members(system_pkg_name) {
                 let func_ty = get_system_member_function_ty(*system_pkg_name, func_name);
-                let mut value_symbol = ValueSymbol::new(
+                let mut func_symbol = FunctionSymbol::new(
                     func_name.to_string(),
                     Position::dummy_pos(),
                     Position::dummy_pos(),
                     Some(package_symbol_ref),
                     false,
                 );
-                value_symbol.sema_info.ty = Some(func_ty.clone());
-                value_symbol.sema_info.doc = func_ty.ty_doc();
-                let func_symbol_ref = self
-                    .gs
-                    .get_symbols_mut()
-                    .alloc_value_symbol(value_symbol, self.ctx.get_node_key(&AstIndex::default()));
+
+                func_symbol.sema_info.ty = Some(func_ty.clone());
+                func_symbol.sema_info.doc = func_ty.ty_doc();
+                let func_symbol_ref = self.gs.get_symbols_mut().alloc_function_symbol(
+                    func_symbol,
+                    self.ctx.get_node_key(&AstIndex::default()),
+                    system_pkg_name.to_string(),
+                );
                 self.gs
                     .get_symbols_mut()
                     .packages
@@ -226,28 +245,30 @@ impl<'ctx> Namer<'ctx> {
         }
 
         //add string builtin function
-        let package_symbol_ref =
-            self.gs
-                .get_symbols_mut()
-                .alloc_package_symbol(PackageSymbol::new(
-                    BUILTIN_STR_PACKAGE.to_string(),
-                    Position::dummy_pos(),
-                    Position::dummy_pos(),
-                ));
+        let package_symbol_ref = self.gs.get_symbols_mut().alloc_package_symbol(
+            PackageSymbol::new(
+                BUILTIN_STR_PACKAGE.to_string(),
+                Position::dummy_pos(),
+                Position::dummy_pos(),
+            ),
+            BUILTIN_STR_PACKAGE.to_string(),
+        );
         for (name, builtin_func) in STRING_MEMBER_FUNCTIONS.iter() {
-            let mut value_symbol = ValueSymbol::new(
+            let mut func_symbol = FunctionSymbol::new(
                 name.to_string(),
                 Position::dummy_pos(),
                 Position::dummy_pos(),
                 Some(package_symbol_ref),
                 true,
             );
-            value_symbol.sema_info.ty = Some(Arc::new(builtin_func.clone()));
-            value_symbol.sema_info.doc = builtin_func.ty_doc();
-            let symbol_ref = self
-                .gs
-                .get_symbols_mut()
-                .alloc_value_symbol(value_symbol, self.ctx.get_node_key(&AstIndex::default()));
+
+            func_symbol.sema_info.ty = Some(Arc::new(builtin_func.clone()));
+            func_symbol.sema_info.doc = builtin_func.ty_doc();
+            let symbol_ref = self.gs.get_symbols_mut().alloc_function_symbol(
+                func_symbol,
+                self.ctx.get_node_key(&AstIndex::default()),
+                BUILTIN_STR_PACKAGE.to_string(),
+            );
             self.gs
                 .get_symbols_mut()
                 .packages
@@ -283,8 +304,10 @@ mod tests {
         )
         .unwrap()
         .program;
-        let gs = GlobalState::default();
-        let gs = Namer::find_symbols(&program, gs);
+        let mut gs = GlobalState::default();
+        Namer::find_symbols(&program, &mut gs);
+        let mut gs = GlobalState::default();
+        Namer::find_symbols(&program, &mut gs);
 
         let symbols = gs.get_symbols();
 

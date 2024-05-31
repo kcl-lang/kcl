@@ -286,7 +286,7 @@ pub struct ProgramScope {
     pub scope_map: IndexMap<String, Rc<RefCell<Scope>>>,
     pub import_names: IndexMap<String, IndexMap<String, String>>,
     pub schema_mapping: IndexMap<String, Arc<RefCell<SchemaType>>>,
-    pub node_ty_map: NodeTyMap,
+    pub node_ty_map: Rc<RefCell<NodeTyMap>>,
     pub handler: Handler,
 }
 
@@ -460,6 +460,7 @@ impl<'ctx> Resolver<'ctx> {
                 let mut obj = obj.borrow_mut();
                 let infer_ty = self.ctx.ty_ctx.infer_to_variable_type(ty);
                 self.node_ty_map
+                    .borrow_mut()
                     .insert(self.get_node_key(node.id.clone()), infer_ty.clone());
                 obj.ty = infer_ty;
             }
@@ -511,7 +512,8 @@ pub struct CachedScope {
     pub program_root: String,
     pub scope_map: IndexMap<String, Rc<RefCell<Scope>>>,
     pub schema_mapping: IndexMap<String, Arc<RefCell<SchemaType>>>,
-    pub node_ty_map: NodeTyMap,
+    pub node_ty_map: Rc<RefCell<NodeTyMap>>,
+    pub invalidate_pkgs: HashSet<String>,
     dependency_graph: DependencyGraph,
 }
 
@@ -674,6 +676,7 @@ impl CachedScope {
             program_root: program.root.to_string(),
             scope_map: scope.scope_map.clone(),
             node_ty_map: scope.node_ty_map.clone(),
+            invalidate_pkgs: HashSet::default(),
             dependency_graph: DependencyGraph::default(),
             schema_mapping: scope.schema_mapping.clone(),
         };
@@ -684,8 +687,9 @@ impl CachedScope {
 
     pub fn clear(&mut self) {
         self.scope_map.clear();
-        self.node_ty_map.clear();
+        self.node_ty_map.borrow_mut().clear();
         self.dependency_graph.clear();
+        self.invalidate_pkgs.clear();
     }
 
     pub fn invalidate_cache(&mut self, invalidated_pkgs: Result<&HashSet<String>, &String>) {
@@ -694,6 +698,7 @@ impl CachedScope {
                 for invalidated_pkg in invalidated_pkgs.iter() {
                     self.scope_map.remove(invalidated_pkg);
                 }
+                self.invalidate_pkgs = invalidated_pkgs.clone();
             }
             Err(_) => self.clear(),
         }

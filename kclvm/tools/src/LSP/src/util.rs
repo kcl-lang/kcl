@@ -19,12 +19,14 @@ use kclvm_sema::resolver::resolve_program_with_opts;
 use kclvm_sema::resolver::scope::KCLScopeCache;
 
 use crate::from_lsp;
-use crate::state::{KCLEntryCache, KCLToolChain, KCLVfs};
+use crate::state::{KCLEntryCache, KCLToolChain};
+use crate::state::{KCLGlobalStateCache, KCLVfs};
 use lsp_types::Url;
 use parking_lot::RwLockReadGuard;
 use ra_ap_vfs::{FileId, Vfs};
 use serde::{de::DeserializeOwned, Serialize};
 
+use std::collections::HashSet;
 use std::fs;
 use std::path::Path;
 
@@ -66,6 +68,7 @@ pub(crate) struct Params {
     pub entry_cache: Option<KCLEntryCache>,
     pub vfs: Option<KCLVfs>,
     pub tool: KCLToolChain,
+    pub gs_cache: Option<KCLGlobalStateCache>,
 }
 
 pub(crate) fn lookup_compile_unit_with_cache(
@@ -125,6 +128,7 @@ pub(crate) fn compile_with_params(
         Err(e) => return (diags, Err(anyhow::anyhow!("Parse failed: {:?}", e))),
     };
     diags.extend(sess.1.borrow().diagnostics.clone());
+
     // Resolver
     let prog_scope = resolve_program_with_opts(
         &mut program,
@@ -133,15 +137,37 @@ pub(crate) fn compile_with_params(
             type_erasure: false,
             ..Default::default()
         },
-        params.scope_cache,
+        params.scope_cache.clone(),
     );
     diags.extend(prog_scope.handler.diagnostics);
 
-    // Please note that there is no global state cache at this stage.
-    let gs = GlobalState::default();
-    let gs = Namer::find_symbols(&program, gs);
-    match AdvancedResolver::resolve_program(&program, gs, prog_scope.node_ty_map.clone()) {
-        Ok(gs) => (diags, Ok((program, gs))),
+    let mut default = GlobalState::default();
+    let mut gs_ref;
+
+    let mut gs = match &params.gs_cache {
+        Some(cache) => match cache.try_lock() {
+            Ok(locked_state) => {
+                gs_ref = locked_state;
+                &mut gs_ref
+            }
+            Err(_) => &mut default,
+        },
+        None => &mut default,
+    };
+
+    gs.new_or_invalidate_pkgs = match &params.scope_cache {
+        Some(cache) => match cache.try_lock() {
+            Ok(scope) => scope.invalidate_pkgs.clone(),
+            Err(_) => HashSet::new(),
+        },
+        None => HashSet::new(),
+    };
+    gs.clear_cache();
+
+    Namer::find_symbols(&program, &mut gs);
+
+    match AdvancedResolver::resolve_program(&program, gs, prog_scope.node_ty_map) {
+        Ok(_) => (diags, Ok((program, gs.clone()))),
         Err(e) => (diags, Err(anyhow::anyhow!("Resolve failed: {:?}", e))),
     }
 }

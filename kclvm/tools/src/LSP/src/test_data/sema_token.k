@@ -7,3 +7,7 @@ p5: Persons = Persons {
     name: "alice"
 }
 n: num = 1
+
+func = lambda x{
+    x
+}
