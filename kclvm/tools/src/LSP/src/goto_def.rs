@@ -98,602 +98,9 @@ fn positions_to_goto_def_resp(
 #[cfg(test)]
 mod tests {
     use super::goto_def;
-    use crate::{
-        from_lsp::file_path_from_url,
-        tests::{compare_goto_res, compile_test_file},
-    };
-    use indexmap::IndexSet;
+    use crate::{from_lsp::file_path_from_url, tests::compile_test_file};
     use kclvm_error::Position as KCLPos;
-    use proc_macro_crate::bench_test;
     use std::path::{Path, PathBuf};
-
-    #[test]
-    #[bench_test]
-    fn goto_import_pkg_test() {
-        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let (file, _program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
-        let pos = KCLPos {
-            filename: file,
-            line: 1,
-            column: Some(10),
-        };
-
-        let res = goto_def(&pos, &gs);
-
-        let mut expected_files = IndexSet::new();
-        let path_str = path.to_str().unwrap();
-        let test_files = [
-            "src/test_data/goto_def_test/pkg/schema_def1.k",
-            "src/test_data/goto_def_test/pkg/schema_def.k",
-        ];
-        expected_files.insert(format!("{}/{}", path_str, test_files[0]));
-        expected_files.insert(format!("{}/{}", path_str, test_files[1]));
-
-        match res.unwrap() {
-            lsp_types::GotoDefinitionResponse::Array(arr) => {
-                assert_eq!(expected_files.len(), arr.len());
-                for loc in arr {
-                    let got_path = file_path_from_url(&loc.uri).unwrap();
-                    assert!(expected_files.contains(&got_path));
-                }
-            }
-            _ => {
-                unreachable!("test error")
-            }
-        }
-    }
-
-    #[test]
-    #[bench_test]
-    fn goto_import_file_test() {
-        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-
-        let (file, _program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
-
-        let mut expected_path = path;
-        expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
-
-        // test goto import file: import .pkg.schema_def
-        let pos = KCLPos {
-            filename: file,
-            line: 2,
-            column: Some(10),
-        };
-        let res = goto_def(&pos, &gs);
-        match res.unwrap() {
-            lsp_types::GotoDefinitionResponse::Scalar(loc) => {
-                let got_path = file_path_from_url(&loc.uri).unwrap();
-                assert_eq!(got_path, expected_path.to_str().unwrap())
-            }
-            _ => {
-                unreachable!("test error")
-            }
-        }
-    }
-
-    #[test]
-    #[bench_test]
-    fn goto_pkg_prefix_def_test() {
-        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-
-        let (file, _program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
-
-        // test goto pkg prefix def: p = pkg.Person {  <- pkg
-        let pos = KCLPos {
-            filename: file,
-            line: 4,
-            column: Some(7),
-        };
-        let res = goto_def(&pos, &gs);
-        let mut expected_files = IndexSet::new();
-        let path_str = path.to_str().unwrap();
-        let test_files = [
-            "src/test_data/goto_def_test/pkg/schema_def1.k",
-            "src/test_data/goto_def_test/pkg/schema_def.k",
-        ];
-        expected_files.insert(format!("{}/{}", path_str, test_files[0]));
-        expected_files.insert(format!("{}/{}", path_str, test_files[1]));
-
-        match res.unwrap() {
-            lsp_types::GotoDefinitionResponse::Array(arr) => {
-                assert_eq!(expected_files.len(), arr.len());
-                for loc in arr {
-                    let got_path = file_path_from_url(&loc.uri).unwrap();
-                    assert!(expected_files.contains(&got_path));
-                }
-            }
-            _ => {
-                unreachable!("test error")
-            }
-        }
-    }
-
-    #[test]
-    #[bench_test]
-    fn goto_schema_def_test() {
-        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-
-        let (file, _program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
-
-        let mut expected_path = path;
-        expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
-
-        // test goto schema definition: p = pkg.Person <- Person
-        let pos = KCLPos {
-            filename: file,
-            line: 4,
-            column: Some(11),
-        };
-
-        let res = goto_def(&pos, &gs);
-        compare_goto_res(
-            res,
-            (&expected_path.to_str().unwrap().to_string(), 0, 7, 0, 13),
-        );
-    }
-
-    #[test]
-    #[bench_test]
-    fn goto_var_def_in_config_and_config_if_test() {
-        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-
-        let (file, _program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
-
-        let mut expected_path = path;
-        expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
-
-        let pos = KCLPos {
-            filename: file.clone(),
-            line: 67,
-            column: Some(36),
-        };
-        let res = goto_def(&pos, &gs);
-        compare_goto_res(res, (&file, 65, 11, 65, 14));
-
-        let pos = KCLPos {
-            filename: file.clone(),
-            line: 67,
-            column: Some(44),
-        };
-
-        let res = goto_def(&pos, &gs);
-        compare_goto_res(res, (&file, 65, 16, 65, 21));
-        let pos = KCLPos {
-            filename: file.clone(),
-            line: 64,
-            column: Some(11),
-        };
-
-        let res = goto_def(&pos, &gs);
-        compare_goto_res(res, (&file, 69, 6, 69, 10));
-        let pos = KCLPos {
-            filename: file.clone(),
-            line: 67,
-            column: Some(10),
-        };
-
-        let res = goto_def(&pos, &gs);
-        compare_goto_res(res, (&file, 69, 6, 69, 10));
-    }
-
-    #[test]
-    #[bench_test]
-    fn goto_var_def_in_dict_comp_test() {
-        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-
-        let (file, _program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
-
-        let mut expected_path = path;
-        expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
-
-        let pos = KCLPos {
-            filename: file.clone(),
-            line: 77,
-            column: Some(68),
-        };
-
-        let res = goto_def(&pos, &gs);
-        compare_goto_res(res, (&file, 76, 143, 76, 145));
-
-        let pos = KCLPos {
-            filename: file.clone(),
-            line: 77,
-            column: Some(61),
-        };
-
-        let res = goto_def(&pos, &gs);
-        compare_goto_res(res, (&file, 76, 143, 76, 145));
-    }
-
-    #[test]
-    #[bench_test]
-    fn goto_schema_attr_def_test() {
-        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-
-        let (file, _program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
-
-        let mut expected_path = path;
-        expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
-
-        // test goto schema attr definition: name: "alice"
-        let pos = KCLPos {
-            filename: file,
-            line: 5,
-            column: Some(7),
-        };
-
-        let res = goto_def(&pos, &gs);
-        compare_goto_res(
-            res,
-            (&expected_path.to_str().unwrap().to_string(), 4, 4, 4, 8),
-        );
-    }
-
-    #[test]
-    #[bench_test]
-    fn goto_schema_attr_def_test1() {
-        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-
-        let (file, _program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
-
-        let mut expected_path = path;
-        expected_path.push("src/test_data/goto_def_test/goto_def.k");
-
-        // test goto schema attr definition, goto name in: s = p2.n.name
-        let pos = KCLPos {
-            filename: file,
-            line: 30,
-            column: Some(12),
-        };
-
-        let res = goto_def(&pos, &gs);
-        compare_goto_res(
-            res,
-            (&expected_path.to_str().unwrap().to_string(), 18, 4, 18, 8),
-        );
-    }
-
-    #[test]
-    #[bench_test]
-    fn test_goto_identifier_names() {
-        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-
-        let (file, _program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
-
-        let mut expected_path = path;
-        expected_path.push("src/test_data/goto_def_test/goto_def.k");
-
-        // test goto p2 in: s = p2.n.name
-        let pos = KCLPos {
-            filename: file.clone(),
-            line: 30,
-            column: Some(5),
-        };
-
-        let res = goto_def(&pos, &gs);
-        compare_goto_res(
-            res,
-            (&expected_path.to_str().unwrap().to_string(), 23, 0, 23, 2),
-        );
-
-        // test goto n in: s = p2.n.name
-        let pos = KCLPos {
-            filename: file.clone(),
-            line: 30,
-            column: Some(8),
-        };
-
-        let res = goto_def(&pos, &gs);
-        compare_goto_res(
-            res,
-            (&expected_path.to_str().unwrap().to_string(), 21, 1, 21, 2),
-        );
-
-        // test goto name in: s = p2.n.name
-        let pos = KCLPos {
-            filename: file,
-            line: 30,
-            column: Some(12),
-        };
-
-        let res = goto_def(&pos, &gs);
-        compare_goto_res(
-            res,
-            (&expected_path.to_str().unwrap().to_string(), 18, 4, 18, 8),
-        );
-    }
-
-    #[test]
-    #[bench_test]
-    fn goto_identifier_def_test() {
-        let (file, _program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
-
-        // test goto identifier definition: p1 = p
-        let pos = KCLPos {
-            filename: file.to_string(),
-            line: 9,
-            column: Some(6),
-        };
-
-        let res = goto_def(&pos, &gs);
-        compare_goto_res(res, (&file, 3, 0, 3, 1));
-    }
-
-    #[test]
-    #[bench_test]
-    fn goto_assign_type_test() {
-        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-
-        let (file, _program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
-
-        let mut expected_path = path;
-        expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
-
-        // test goto schema attr definition: name: "alice"
-        let pos = KCLPos {
-            filename: file.clone(),
-            line: 38,
-            column: Some(17),
-        };
-
-        let res = goto_def(&pos, &gs);
-        compare_goto_res(res, (&file, 33, 7, 33, 15));
-    }
-
-    #[test]
-    #[bench_test]
-    fn goto_schema_attr_ty_def_test() {
-        // test goto schema attr type definition: p1: pkg.Person
-        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-
-        let (file, _program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
-
-        let mut expected_path = path;
-        expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
-
-        let pos = KCLPos {
-            filename: file,
-            line: 12,
-            column: Some(15),
-        };
-
-        let res = goto_def(&pos, &gs);
-        compare_goto_res(
-            res,
-            (&expected_path.to_str().unwrap().to_string(), 0, 7, 0, 13),
-        );
-    }
-
-    #[test]
-    #[bench_test]
-    fn goto_schema_attr_ty_def_test1() {
-        // test goto schema attr type definition: p2: [pkg.Person]
-        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-
-        let (file, _program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
-
-        let mut expected_path = path;
-        expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
-
-        let pos = KCLPos {
-            filename: file,
-            line: 13,
-            column: Some(15),
-        };
-        let res = goto_def(&pos, &gs);
-        compare_goto_res(
-            res,
-            (&expected_path.to_str().unwrap().to_string(), 0, 7, 0, 13),
-        );
-    }
-
-    #[test]
-    #[bench_test]
-    fn goto_schema_attr_ty_def_test3() {
-        // test goto schema attr type definition: p3: {str: pkg.Person}
-        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-
-        let (file, _program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
-
-        let mut expected_path = path;
-        expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
-
-        let pos = KCLPos {
-            filename: file,
-            line: 14,
-            column: Some(22),
-        };
-        let res = goto_def(&pos, &gs);
-        compare_goto_res(
-            res,
-            (&expected_path.to_str().unwrap().to_string(), 0, 7, 0, 13),
-        );
-    }
-
-    #[test]
-    #[bench_test]
-    fn goto_schema_attr_ty_def_test4() {
-        // test goto schema attr type definition(Person): p4: pkg.Person | pkg.Person1
-        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-
-        let (file, _program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
-
-        let mut expected_path = path;
-        expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
-
-        let pos = KCLPos {
-            filename: file,
-            line: 15,
-            column: Some(17),
-        };
-
-        let res = goto_def(&pos, &gs);
-        compare_goto_res(
-            res,
-            (&expected_path.to_str().unwrap().to_string(), 0, 7, 0, 13),
-        );
-    }
-
-    #[test]
-    #[bench_test]
-    fn goto_schema_attr_ty_def_test5() {
-        // test goto schema attr type definition(Person1): p4: pkg.Person | pkg.Person1
-        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-
-        let (file, _program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
-
-        let mut expected_path = path;
-        expected_path.push("src/test_data/goto_def_test/pkg/schema_def1.k");
-
-        let pos = KCLPos {
-            filename: file,
-            line: 15,
-            column: Some(28),
-        };
-        let res = goto_def(&pos, &gs);
-        compare_goto_res(
-            res,
-            (&expected_path.to_str().unwrap().to_string(), 0, 7, 0, 14),
-        );
-    }
-
-    #[test]
-    #[bench_test]
-    fn goto_local_var_def_test() {
-        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-
-        let (file, _program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
-
-        let mut expected_path = path;
-        expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
-
-        // test goto local var def
-        let pos = KCLPos {
-            filename: file.clone(),
-            line: 47,
-            column: Some(11),
-        };
-
-        let res = goto_def(&pos, &gs);
-        compare_goto_res(res, (&file, 43, 4, 43, 9));
-
-        let pos = KCLPos {
-            filename: file.clone(),
-            line: 49,
-            column: Some(11),
-        };
-
-        let res = goto_def(&pos, &gs);
-        compare_goto_res(res, (&file, 43, 4, 43, 9));
-
-        let pos = KCLPos {
-            filename: file.clone(),
-            line: 51,
-            column: Some(11),
-        };
-
-        let res = goto_def(&pos, &gs);
-        compare_goto_res(res, (&file, 43, 4, 43, 9));
-    }
-
-    #[test]
-    #[bench_test]
-    fn complex_select_goto_def() {
-        let (file, _program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
-
-        let pos = KCLPos {
-            filename: file.clone(),
-            line: 52,
-            column: Some(22),
-        };
-
-        let res = goto_def(&pos, &gs);
-        compare_goto_res(res, (&file, 43, 4, 43, 9));
-    }
-
-    #[test]
-    #[bench_test]
-    fn schema_attribute_def_goto_def() {
-        let (file, _program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
-
-        let pos = KCLPos {
-            filename: file.clone(),
-            line: 19,
-            column: Some(5),
-        };
-
-        let res = goto_def(&pos, &gs);
-        compare_goto_res(res, (&file, 18, 4, 18, 8));
-    }
-
-    #[test]
-    #[bench_test]
-    fn config_desuger_def_goto_def() {
-        let (file, _program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
-
-        let pos = KCLPos {
-            filename: file.clone(),
-            line: 82,
-            column: Some(9),
-        };
-
-        let res = goto_def(&pos, &gs);
-        compare_goto_res(res, (&file, 18, 4, 18, 8));
-    }
-
-    #[test]
-    #[bench_test]
-    fn lambda_param_goto_def() {
-        let (file, _program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
-
-        let pos = KCLPos {
-            filename: file.clone(),
-            line: 86,
-            column: Some(4),
-        };
-
-        let res = goto_def(&pos, &gs);
-        compare_goto_res(res, (&file, 84, 14, 84, 15));
-
-        let pos = KCLPos {
-            filename: file.clone(),
-            line: 86,
-            column: Some(8),
-        };
-
-        let res = goto_def(&pos, &gs);
-        compare_goto_res(res, (&file, 84, 22, 84, 23));
-    }
-
-    #[test]
-    #[bench_test]
-    fn list_if_expr_test() {
-        let (file, _program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
-
-        let pos = KCLPos {
-            filename: file.clone(),
-            line: 91,
-            column: Some(8),
-        };
-
-        let res = goto_def(&pos, &gs);
-        compare_goto_res(res, (&file, 88, 0, 88, 1));
-    }
-
-    #[test]
-    #[bench_test]
-    fn lambda_local_var_test() {
-        let (file, _program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
-
-        let pos = KCLPos {
-            filename: file.clone(),
-            line: 96,
-            column: Some(9),
-        };
-
-        let res = goto_def(&pos, &gs);
-        compare_goto_res(res, (&file, 94, 11, 94, 12));
-    }
 
     #[macro_export]
     macro_rules! goto_def_test_snapshot {
@@ -725,17 +132,162 @@ mod tests {
                     let relative_path = got_path.strip_prefix(root_path).unwrap();
                     format!("path: {:?}, range: {:?}", relative_path, loc.range)
                 }
-                _ => todo!(),
+                lsp_types::GotoDefinitionResponse::Array(vec_location) => {
+                    let mut res = String::new();
+                    for loc in vec_location {
+                        let url = file_path_from_url(&loc.uri).unwrap();
+                        let got_path = Path::new(&url);
+                        let relative_path = got_path.strip_prefix(root_path.clone()).unwrap();
+                        res.push_str(&format!(
+                            "path: {:?}, range: {:?}\n",
+                            relative_path, loc.range
+                        ));
+                    }
+                    res
+                }
+                lsp_types::GotoDefinitionResponse::Link(vec_location_link) => {
+                    let mut res = String::new();
+                    for loc in vec_location_link {
+                        let url = file_path_from_url(&loc.target_uri).unwrap();
+                        let got_path = Path::new(&url);
+                        let relative_path = got_path.strip_prefix(root_path.clone()).unwrap();
+                        res.push_str(&format!(
+                            "path: {:?}, range: {:?}\n",
+                            relative_path, loc.target_selection_range
+                        ));
+                    }
+                    res
+                }
             },
             None => "None".to_string(),
         }
     }
 
     goto_def_test_snapshot!(
-        goto_system_pkg_test,
-        "src/test_data/goto_def_test/goto_def.k",
+        goto_import_pkg_test,
+        "src/test_data/goto_def_test/goto_import_pkg_test/goto_import_pkg_test.k",
+        1,
+        11
+    );
+
+    goto_def_test_snapshot!(
+        goto_pkg_prefix_def_test,
+        "src/test_data/goto_def_test/goto_pkg_prefix_def_test/goto_pkg_prefix_def_test.k",
         3,
+        7
+    );
+
+    goto_def_test_snapshot!(
+        goto_var_def_in_config_and_config_if_test1,
+        "src/test_data/goto_def_test/goto_var_def_in_config_and_config_if_test/goto_var_def_in_config_and_config_if_test.k",
+        7,
+        36
+    );
+
+    goto_def_test_snapshot!(
+        goto_var_def_in_config_and_config_if_test2,
+        "src/test_data/goto_def_test/goto_var_def_in_config_and_config_if_test/goto_var_def_in_config_and_config_if_test.k",
+        7,
+        44
+    );
+
+    goto_def_test_snapshot!(
+        goto_var_def_in_config_and_config_if_test3,
+        "src/test_data/goto_def_test/goto_var_def_in_config_and_config_if_test/goto_var_def_in_config_and_config_if_test.k",
+        4,
+        11
+    );
+
+    goto_def_test_snapshot!(
+        goto_var_def_in_config_and_config_if_test4,
+        "src/test_data/goto_def_test/goto_var_def_in_config_and_config_if_test/goto_var_def_in_config_and_config_if_test.k",
+        7,
+        10
+    );
+
+    goto_def_test_snapshot!(
+        goto_var_def_in_dict_comp_test1,
+        "src/test_data/goto_def_test/goto_var_def_in_dict_comp_test/goto_var_def_in_dict_comp_test.k",
+        5,
+        68
+    );
+
+    goto_def_test_snapshot!(
+        goto_var_def_in_dict_comp_test2,
+        "src/test_data/goto_def_test/goto_var_def_in_dict_comp_test/goto_var_def_in_dict_comp_test.k",
+        5,
+        61
+    );
+
+    goto_def_test_snapshot!(
+        test_goto_identifier_names1,
+        "src/test_data/goto_def_test/test_goto_identifier_names/test_goto_identifier_names.k",
+        13,
+        5
+    );
+
+    goto_def_test_snapshot!(
+        test_goto_identifier_names2,
+        "src/test_data/goto_def_test/test_goto_identifier_names/test_goto_identifier_names.k",
+        13,
+        8
+    );
+
+    goto_def_test_snapshot!(
+        test_goto_identifier_names3,
+        "src/test_data/goto_def_test/test_goto_identifier_names/test_goto_identifier_names.k",
+        13,
+        12
+    );
+
+    goto_def_test_snapshot!(
+        goto_local_var_def_test1,
+        "src/test_data/goto_def_test/goto_local_var_def_test/goto_local_var_def_test.k",
+        7,
+        11
+    );
+
+    goto_def_test_snapshot!(
+        goto_local_var_def_test2,
+        "src/test_data/goto_def_test/goto_local_var_def_test/goto_local_var_def_test.k",
+        9,
+        11
+    );
+
+    goto_def_test_snapshot!(
+        goto_local_var_def_test3,
+        "src/test_data/goto_def_test/goto_local_var_def_test/goto_local_var_def_test.k",
+        11,
+        11
+    );
+
+    goto_def_test_snapshot!(
+        goto_lambda_param_goto_def1,
+        "src/test_data/goto_def_test/goto_lambda_param_goto_def/goto_lambda_param_goto_def.k",
+        2,
+        5
+    );
+
+    goto_def_test_snapshot!(
+        goto_lambda_param_goto_def2,
+        "src/test_data/goto_def_test/goto_lambda_param_goto_def/goto_lambda_param_goto_def.k",
+        2,
+        9
+    );
+
+    // To implement
+    goto_def_test_snapshot!(
+        goto_system_pkg_test,
+        "src/test_data/goto_def_test/goto_system_pkg_test/goto_system_pkg_test.k",
+        1,
         1
+    );
+
+    goto_def_test_snapshot!(
+        lambda_local_var_test,
+        "src/test_data/goto_def_test/lambda_local_var_test/lambda_local_var_test.k",
+        2,
+        9
     );
 
     goto_def_test_snapshot!(
@@ -771,5 +323,103 @@ mod tests {
         "src/test_data/goto_def_test/dict_to_schema/dict_to_schema.k",
         33,
         11
+    );
+
+    goto_def_test_snapshot!(
+        list_if_expr_test,
+        "src/test_data/goto_def_test/list_if_expr_test/list_if_expr_test.k",
+        3,
+        8
+    );
+
+    goto_def_test_snapshot!(
+        goto_identifier_def_test,
+        "src/test_data/goto_def_test/goto_identifier_def_test/goto_identifier_def_test.k",
+        8,
+        6
+    );
+
+    goto_def_test_snapshot!(
+        complex_select_goto_def,
+        "src/test_data/goto_def_test/complex_select_goto_def/complex_select_goto_def.k",
+        13,
+        22
+    );
+
+    goto_def_test_snapshot!(
+        schema_attribute_def_goto_def,
+        "src/test_data/goto_def_test/schema_attribute_def_goto_def/schema_attribute_def_goto_def.k",
+        2,
+        5
+    );
+
+    goto_def_test_snapshot!(
+        config_desuger_def_goto_def,
+        "src/test_data/goto_def_test/config_desuger_def_goto_def/config_desuger_def_goto_def.k",
+        7,
+        9
+    );
+
+    goto_def_test_snapshot!(
+        goto_schema_attr_ty_def_test5,
+        "src/test_data/goto_def_test/goto_schema_attr_ty_def_test/goto_schema_attr_ty_def_test.k",
+        7,
+        28
+    );
+
+    goto_def_test_snapshot!(
+        goto_schema_attr_ty_def_test4,
+        "src/test_data/goto_def_test/goto_schema_attr_ty_def_test/goto_schema_attr_ty_def_test.k",
+        7,
+        17
+    );
+
+    goto_def_test_snapshot!(
+        goto_schema_attr_ty_def_test3,
+        "src/test_data/goto_def_test/goto_schema_attr_ty_def_test/goto_schema_attr_ty_def_test.k",
+        6,
+        22
+    );
+
+    goto_def_test_snapshot!(
+        goto_schema_attr_ty_def_test2,
+        "src/test_data/goto_def_test/goto_schema_attr_ty_def_test/goto_schema_attr_ty_def_test.k",
+        5,
+        15
+    );
+
+    goto_def_test_snapshot!(
+        goto_schema_attr_ty_def_test1,
+        "src/test_data/goto_def_test/goto_schema_attr_ty_def_test/goto_schema_attr_ty_def_test.k",
+        4,
+        15
+    );
+
+    goto_def_test_snapshot!(
+        goto_assign_type_test,
+        "src/test_data/goto_def_test/goto_assign_type_test/goto_assign_type_test.k",
+        5,
+        17
+    );
+
+    goto_def_test_snapshot!(
+        goto_schema_def_test,
+        "src/test_data/goto_def_test/goto_schema_def_test/goto_schema_def_test.k",
+        3,
+        11
+    );
+
+    goto_def_test_snapshot!(
+        goto_schema_attr_def_test1,
+        "src/test_data/goto_def_test/goto_schema_attr_def_test/goto_schema_attr_def_test.k",
+        4,
+        7
+    );
+
+    goto_def_test_snapshot!(
+        goto_schema_attr_def_test2,
+        "src/test_data/goto_def_test/goto_schema_attr_def_test/goto_schema_attr_def_test.k",
+        18,
+        12
     );
 }
