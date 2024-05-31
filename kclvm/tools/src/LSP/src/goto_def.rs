@@ -242,21 +242,21 @@ mod tests {
 
     goto_def_test_snapshot!(
         goto_local_var_def_test1,
-        "src/test_data/goto_def_test/goto_local_var_def/goto_local_var_def.k",
+        "src/test_data/goto_def_test/goto_local_var_def_test/goto_local_var_def_test.k",
         7,
         11
     );
 
     goto_def_test_snapshot!(
         goto_local_var_def_test2,
-        "src/test_data/goto_def_test/goto_local_var_def/goto_local_var_def.k",
+        "src/test_data/goto_def_test/goto_local_var_def_test/goto_local_var_def_test.k",
         9,
         11
     );
 
     goto_def_test_snapshot!(
         goto_local_var_def_test3,
-        "src/test_data/goto_def_test/goto_local_var_def/goto_local_var_def.k",
+        "src/test_data/goto_def_test/goto_local_var_def_test/goto_local_var_def_test.k",
         11,
         11
     );
