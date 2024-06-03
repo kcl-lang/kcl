@@ -306,8 +306,6 @@ mod tests {
         .program;
         let mut gs = GlobalState::default();
         Namer::find_symbols(&program, &mut gs);
-        let mut gs = GlobalState::default();
-        Namer::find_symbols(&program, &mut gs);
 
         let symbols = gs.get_symbols();
 
