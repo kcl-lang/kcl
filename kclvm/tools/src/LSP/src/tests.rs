@@ -77,6 +77,7 @@ use crate::goto_def::goto_def;
 use crate::hover::hover;
 use crate::main_loop::main_loop;
 use crate::state::KCLEntryCache;
+use crate::state::KCLGlobalStateCache;
 use crate::state::KCLVfs;
 use crate::to_lsp::kcl_diag_to_lsp_diags;
 use crate::util::lookup_compile_unit_with_cache;
@@ -134,6 +135,7 @@ pub(crate) fn compile_test_file(
         vfs: Some(KCLVfs::default()),
         entry_cache: Some(KCLEntryCache::default()),
         tool: Arc::new(RwLock::new(toolchain::default())),
+        gs_cache: Some(KCLGlobalStateCache::default()),
     });
     let (program, gs) = compile_res.unwrap();
     (file, program, diags, gs)
@@ -297,6 +299,7 @@ fn diagnostics_test() {
         vfs: Some(KCLVfs::default()),
         entry_cache: Some(KCLEntryCache::default()),
         tool: Arc::new(RwLock::new(toolchain::default())),
+        gs_cache: Some(KCLGlobalStateCache::default()),
     })
     .0;
 
@@ -485,6 +488,7 @@ fn complete_import_external_file_test() {
         vfs: Some(KCLVfs::default()),
         entry_cache: Some(KCLEntryCache::default()),
         tool: Arc::new(RwLock::new(toolchain::default())),
+        gs_cache: Some(KCLGlobalStateCache::default()),
     })
     .1
     .unwrap();
@@ -546,6 +550,7 @@ fn goto_import_external_file_test() {
         vfs: Some(KCLVfs::default()),
         entry_cache: Some(KCLEntryCache::default()),
         tool: Arc::new(RwLock::new(toolchain::default())),
+        gs_cache: Some(KCLGlobalStateCache::default()),
     });
     let gs = compile_res.unwrap().1;
 
@@ -1401,6 +1406,7 @@ fn konfig_goto_def_test_base() {
         vfs: Some(KCLVfs::default()),
         entry_cache: Some(KCLEntryCache::default()),
         tool: Arc::new(RwLock::new(toolchain::default())),
+        gs_cache: Some(KCLGlobalStateCache::default()),
     })
     .1
     .unwrap();
@@ -1495,6 +1501,7 @@ fn konfig_goto_def_test_main() {
         vfs: Some(KCLVfs::default()),
         entry_cache: Some(KCLEntryCache::default()),
         tool: Arc::new(RwLock::new(toolchain::default())),
+        gs_cache: Some(KCLGlobalStateCache::default()),
     })
     .1
     .unwrap();
@@ -1561,6 +1568,7 @@ fn konfig_completion_test_main() {
         vfs: Some(KCLVfs::default()),
         entry_cache: Some(KCLEntryCache::default()),
         tool: Arc::new(RwLock::new(toolchain::default())),
+        gs_cache: Some(KCLGlobalStateCache::default()),
     })
     .1
     .unwrap();
@@ -1676,6 +1684,7 @@ fn konfig_hover_test_main() {
         vfs: Some(KCLVfs::default()),
         entry_cache: Some(KCLEntryCache::default()),
         tool: Arc::new(RwLock::new(toolchain::default())),
+        gs_cache: Some(KCLGlobalStateCache::default()),
     })
     .1
     .unwrap();
@@ -2111,6 +2120,7 @@ fn compile_unit_test() {
         vfs: Some(KCLVfs::default()),
         entry_cache: Some(KCLEntryCache::default()),
         tool: Arc::new(RwLock::new(toolchain::default())),
+        gs_cache: Some(KCLGlobalStateCache::default()),
     })
     .1
     .unwrap()

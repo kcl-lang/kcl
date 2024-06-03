@@ -9,9 +9,7 @@ use crate::state::{KCLEntryCache, KCLVfs, KCLWordIndexMap};
 use anyhow::Result;
 use kclvm_driver::toolchain;
 use kclvm_error::Position as KCLPos;
-use kclvm_parser::KCLModuleCache;
 use kclvm_sema::core::global_state::GlobalState;
-use kclvm_sema::resolver::scope::KCLScopeCache;
 use lsp_types::Location;
 use parking_lot::lock_api::RwLock;
 
@@ -24,8 +22,6 @@ pub(crate) fn find_refs<F: Fn(String) -> Result<(), anyhow::Error>>(
     vfs: Option<KCLVfs>,
     logger: F,
     gs: &GlobalState,
-    module_cache: Option<KCLModuleCache>,
-    scope_cache: Option<KCLScopeCache>,
     entry_cache: Option<KCLEntryCache>,
 ) -> Result<Vec<Location>, String> {
     let def = find_def(kcl_pos, gs, true);
@@ -43,8 +39,6 @@ pub(crate) fn find_refs<F: Fn(String) -> Result<(), anyhow::Error>>(
                         include_declaration,
                         Some(FIND_REFS_LIMIT),
                         logger,
-                        module_cache,
-                        scope_cache,
                         entry_cache,
                     ))
                 } else {
@@ -69,8 +63,6 @@ pub(crate) fn find_refs_from_def<F: Fn(String) -> Result<(), anyhow::Error>>(
     include_declaration: bool,
     limit: Option<usize>,
     logger: F,
-    module_cache: Option<KCLModuleCache>,
-    scope_cache: Option<KCLScopeCache>,
     entry_cache: Option<KCLEntryCache>,
 ) -> Vec<Location> {
     let mut ref_locations = vec![];
@@ -94,9 +86,10 @@ pub(crate) fn find_refs_from_def<F: Fn(String) -> Result<(), anyhow::Error>>(
                         Ok(file_path) => {
                             match compile_with_params(Params {
                                 file: file_path.clone(),
-                                module_cache: module_cache.clone(),
-                                scope_cache: scope_cache.clone(),
+                                module_cache: None,
+                                scope_cache: None,
                                 vfs: vfs.clone(),
+                                gs_cache: None,
                                 entry_cache: entry_cache.clone(),
                                 tool: Arc::new(RwLock::new(toolchain::default())),
                             })
@@ -222,8 +215,6 @@ mod tests {
                         Some(20),
                         logger,
                         None,
-                        None,
-                        None,
                     ),
                 );
             }
@@ -279,8 +270,6 @@ mod tests {
                         false,
                         Some(20),
                         logger,
-                        None,
-                        None,
                         None,
                     ),
                 );
@@ -338,8 +327,6 @@ mod tests {
                         Some(20),
                         logger,
                         None,
-                        None,
-                        None,
                     ),
                 );
             }
@@ -388,8 +375,6 @@ mod tests {
                         true,
                         Some(20),
                         logger,
-                        None,
-                        None,
                         None,
                     ),
                 );

@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{collections::HashSet, sync::Arc};
 
 use generational_arena::Arena;
 use indexmap::{IndexMap, IndexSet};
@@ -54,6 +54,7 @@ pub struct KCLSymbolSemanticInfo {
 }
 
 pub(crate) const BUILTIN_STR_PACKAGE: &'static str = "@str";
+pub(crate) const BUILTIN_FUNCTION_PACKAGE: &'static str = "@builtin";
 
 #[derive(Default, Debug, Clone)]
 pub struct SymbolData {
@@ -79,6 +80,7 @@ pub struct SymbolDB {
     pub(crate) schema_builtin_symbols: IndexMap<SymbolRef, IndexMap<String, SymbolRef>>,
     pub(crate) node_symbol_map: IndexMap<NodeKey, SymbolRef>,
     pub(crate) symbol_node_map: IndexMap<SymbolRef, NodeKey>,
+    pub(crate) pkg_symbol_map: IndexMap<String, IndexSet<SymbolRef>>,
 }
 
 impl SymbolData {
@@ -180,6 +182,41 @@ impl SymbolData {
                 .decorators
                 .get(id.get_id())
                 .map(|symbol| symbol as &KCLSymbol),
+        }
+    }
+
+    pub fn remove_symbol(&mut self, id: &SymbolRef) {
+        match id.get_kind() {
+            SymbolKind::Schema => {
+                self.schemas.remove(id.get_id());
+            }
+            SymbolKind::Attribute => {
+                self.attributes.remove(id.get_id());
+            }
+            SymbolKind::Value => {
+                self.values.remove(id.get_id());
+            }
+            SymbolKind::Package => {
+                self.packages.remove(id.get_id());
+            }
+            SymbolKind::TypeAlias => {
+                self.type_aliases.remove(id.get_id());
+            }
+            SymbolKind::Unresolved => {
+                self.unresolved.remove(id.get_id());
+            }
+            SymbolKind::Rule => {
+                self.rules.remove(id.get_id());
+            }
+            SymbolKind::Expression => {
+                self.exprs.remove(id.get_id());
+            }
+            SymbolKind::Comment => {
+                self.comments.remove(id.get_id());
+            }
+            SymbolKind::Decorator => {
+                self.decorators.remove(id.get_id());
+            }
         }
     }
 
@@ -498,17 +535,37 @@ impl SymbolData {
         }
     }
 
-    pub fn alloc_package_symbol(&mut self, pkg: PackageSymbol) -> SymbolRef {
+    pub fn insert_package_symbol(&mut self, symbol_ref: SymbolRef, pkg_name: String) {
+        if !self.symbols_info.pkg_symbol_map.contains_key(&pkg_name) {
+            self.symbols_info
+                .pkg_symbol_map
+                .insert(pkg_name.clone(), IndexSet::default());
+        }
+
+        self.symbols_info
+            .pkg_symbol_map
+            .get_mut(&pkg_name)
+            .unwrap()
+            .insert(symbol_ref);
+    }
+
+    pub fn alloc_package_symbol(&mut self, pkg: PackageSymbol, pkg_name: String) -> SymbolRef {
         let symbol_id = self.packages.insert(pkg);
         let symbol_ref = SymbolRef {
             id: symbol_id,
             kind: SymbolKind::Package,
         };
         self.packages.get_mut(symbol_id).unwrap().id = Some(symbol_ref);
+        self.insert_package_symbol(symbol_ref, pkg_name);
         symbol_ref
     }
 
-    pub fn alloc_schema_symbol(&mut self, schema: SchemaSymbol, node_key: NodeKey) -> SymbolRef {
+    pub fn alloc_schema_symbol(
+        &mut self,
+        schema: SchemaSymbol,
+        node_key: NodeKey,
+        pkg_name: String,
+    ) -> SymbolRef {
         self.symbols_info.symbol_pos_set.insert(schema.end.clone());
         let symbol_id = self.schemas.insert(schema);
         let symbol_ref = SymbolRef {
@@ -522,6 +579,7 @@ impl SymbolData {
             .symbol_node_map
             .insert(symbol_ref, node_key);
         self.schemas.get_mut(symbol_id).unwrap().id = Some(symbol_ref);
+        self.insert_package_symbol(symbol_ref, pkg_name);
         symbol_ref
     }
 
@@ -529,6 +587,7 @@ impl SymbolData {
         &mut self,
         unresolved: UnresolvedSymbol,
         node_key: NodeKey,
+        pkg_name: String,
     ) -> SymbolRef {
         self.symbols_info
             .symbol_pos_set
@@ -545,6 +604,7 @@ impl SymbolData {
             .symbol_node_map
             .insert(symbol_ref, node_key);
         self.unresolved.get_mut(symbol_id).unwrap().id = Some(symbol_ref);
+        self.insert_package_symbol(symbol_ref, pkg_name);
         symbol_ref
     }
 
@@ -552,6 +612,7 @@ impl SymbolData {
         &mut self,
         alias: TypeAliasSymbol,
         node_key: NodeKey,
+        pkg_name: String,
     ) -> SymbolRef {
         self.symbols_info.symbol_pos_set.insert(alias.end.clone());
         let symbol_id = self.type_aliases.insert(alias);
@@ -566,10 +627,16 @@ impl SymbolData {
             .symbol_node_map
             .insert(symbol_ref, node_key);
         self.type_aliases.get_mut(symbol_id).unwrap().id = Some(symbol_ref);
+        self.insert_package_symbol(symbol_ref, pkg_name);
         symbol_ref
     }
 
-    pub fn alloc_rule_symbol(&mut self, rule: RuleSymbol, node_key: NodeKey) -> SymbolRef {
+    pub fn alloc_rule_symbol(
+        &mut self,
+        rule: RuleSymbol,
+        node_key: NodeKey,
+        pkg_name: String,
+    ) -> SymbolRef {
         self.symbols_info.symbol_pos_set.insert(rule.end.clone());
         let symbol_id = self.rules.insert(rule);
         let symbol_ref = SymbolRef {
@@ -583,6 +650,7 @@ impl SymbolData {
             .symbol_node_map
             .insert(symbol_ref, node_key);
         self.rules.get_mut(symbol_id).unwrap().id = Some(symbol_ref);
+        self.insert_package_symbol(symbol_ref, pkg_name);
         symbol_ref
     }
 
@@ -590,6 +658,7 @@ impl SymbolData {
         &mut self,
         attribute: AttributeSymbol,
         node_key: NodeKey,
+        pkg_name: String,
     ) -> SymbolRef {
         self.symbols_info
             .symbol_pos_set
@@ -606,10 +675,16 @@ impl SymbolData {
             .symbol_node_map
             .insert(symbol_ref, node_key);
         self.attributes.get_mut(symbol_id).unwrap().id = Some(symbol_ref);
+        self.insert_package_symbol(symbol_ref, pkg_name);
         symbol_ref
     }
 
-    pub fn alloc_value_symbol(&mut self, value: ValueSymbol, node_key: NodeKey) -> SymbolRef {
+    pub fn alloc_value_symbol(
+        &mut self,
+        value: ValueSymbol,
+        node_key: NodeKey,
+        pkg_name: String,
+    ) -> SymbolRef {
         self.symbols_info.symbol_pos_set.insert(value.end.clone());
         let symbol_id = self.values.insert(value);
         let symbol_ref = SymbolRef {
@@ -623,6 +698,7 @@ impl SymbolData {
             .symbol_node_map
             .insert(symbol_ref, node_key);
         self.values.get_mut(symbol_id).unwrap().id = Some(symbol_ref);
+        self.insert_package_symbol(symbol_ref, pkg_name);
         symbol_ref
     }
 
@@ -630,6 +706,7 @@ impl SymbolData {
         &mut self,
         expr: ExpressionSymbol,
         node_key: NodeKey,
+        pkg_name: String,
     ) -> Option<SymbolRef> {
         if self.symbols_info.symbol_pos_set.contains(&expr.end) {
             return None;
@@ -647,6 +724,7 @@ impl SymbolData {
             .symbol_node_map
             .insert(symbol_ref, node_key);
         self.exprs.get_mut(symbol_id).unwrap().id = Some(symbol_ref);
+        self.insert_package_symbol(symbol_ref, pkg_name);
         Some(symbol_ref)
     }
 
@@ -654,6 +732,7 @@ impl SymbolData {
         &mut self,
         comment: CommentSymbol,
         node_key: NodeKey,
+        pkg_name: String,
     ) -> Option<SymbolRef> {
         let symbol_id = self.comments.insert(comment);
         let symbol_ref = SymbolRef {
@@ -667,6 +746,7 @@ impl SymbolData {
             .symbol_node_map
             .insert(symbol_ref, node_key);
         self.comments.get_mut(symbol_id).unwrap().id = Some(symbol_ref);
+        self.insert_package_symbol(symbol_ref, pkg_name);
         Some(symbol_ref)
     }
 
@@ -674,6 +754,7 @@ impl SymbolData {
         &mut self,
         decorator: DecoratorSymbol,
         node_key: NodeKey,
+        pkg_name: String,
     ) -> Option<SymbolRef> {
         let symbol_id = self.decorators.insert(decorator);
         let symbol_ref = SymbolRef {
@@ -687,6 +768,7 @@ impl SymbolData {
             .symbol_node_map
             .insert(symbol_ref, node_key);
         self.decorators.get_mut(symbol_id).unwrap().id = Some(symbol_ref);
+        self.insert_package_symbol(symbol_ref, pkg_name);
         Some(symbol_ref)
     }
 
@@ -708,6 +790,19 @@ impl SymbolData {
     #[inline]
     pub fn get_builtin_symbols(&self) -> &IndexMap<String, SymbolRef> {
         &self.symbols_info.global_builtin_symbols
+    }
+
+    pub fn clear_cache(&mut self, invalidate_pkgs: &HashSet<String>) {
+        let mut to_remove: Vec<SymbolRef> = Vec::new();
+
+        for invalidate_pkg in invalidate_pkgs {
+            if let Some(symbols) = self.symbols_info.pkg_symbol_map.get(invalidate_pkg) {
+                to_remove.extend(symbols.iter().cloned());
+            }
+        }
+        for symbol in to_remove {
+            self.remove_symbol(&symbol);
+        }
     }
 }
 

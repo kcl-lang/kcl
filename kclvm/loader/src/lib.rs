@@ -116,7 +116,7 @@ pub fn load_packages(opts: &LoadPackageOptions) -> Result<Packages> {
         opts,
         KCLModuleCache::default(),
         KCLScopeCache::default(),
-        GlobalState::default(),
+        &mut GlobalState::default(),
     )
 }
 
@@ -126,7 +126,7 @@ pub fn load_packages_with_cache(
     opts: &LoadPackageOptions,
     module_cache: KCLModuleCache,
     scope_cache: KCLScopeCache,
-    gs: GlobalState,
+    gs: &mut GlobalState,
 ) -> Result<Packages> {
     let sess = ParseSessionRef::default();
     let paths: Vec<&str> = opts.paths.iter().map(|s| s.as_str()).collect();
@@ -149,8 +149,8 @@ pub fn load_packages_with_cache(
             Some(scope_cache),
         );
         let node_ty_map = prog_scope.node_ty_map;
-        let gs = Namer::find_symbols(&program, gs);
-        let gs = AdvancedResolver::resolve_program(&program, gs, node_ty_map.clone())?;
+        Namer::find_symbols(&program, gs);
+        AdvancedResolver::resolve_program(&program, gs, node_ty_map.clone())?;
         (program, prog_scope.handler.diagnostics.clone(), gs)
     } else {
         (parse_result.program, IndexSet::default(), gs)

@@ -231,7 +231,7 @@ impl KclvmServiceImpl {
             },
             module_cache,
             scope_cache,
-            GlobalState::default(),
+            &mut GlobalState::default(),
         )?;
         if args.with_ast_index {
             // Thread local options

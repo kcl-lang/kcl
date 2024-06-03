@@ -76,6 +76,7 @@ impl<'ctx> Resolver<'ctx> {
         );
         if let Some(ty) = ty_node {
             self.node_ty_map
+                .borrow_mut()
                 .insert(self.get_node_key(ty.id.clone()), ret_ty.clone());
         };
         ret_ty
@@ -451,10 +452,12 @@ impl<'ctx> Resolver<'ctx> {
                     if let ast::Type::Named(identifier) = &ty_node.node {
                         for (index, name) in identifier.names.iter().enumerate() {
                             self.node_ty_map
+                                .borrow_mut()
                                 .insert(self.get_node_key(name.id.clone()), tys[index].clone());
                         }
                         let ident_ty = tys.last().unwrap().clone();
                         self.node_ty_map
+                            .borrow_mut()
                             .insert(self.get_node_key(ty_node.id.clone()), ident_ty.clone());
                     }
                 };

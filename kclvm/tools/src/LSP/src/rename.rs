@@ -189,12 +189,12 @@ where
         None,
     );
 
-    let gs = GlobalState::default();
-    let gs = Namer::find_symbols(&program, gs);
-    let node_ty_map = prog_scope.node_ty_map.clone();
-    let global_state = AdvancedResolver::resolve_program(&program, gs, node_ty_map)?;
+    let mut gs = GlobalState::default();
+    Namer::find_symbols(&program, &mut gs);
+    let node_ty_map = prog_scope.node_ty_map;
+    AdvancedResolver::resolve_program(&program, &mut gs, node_ty_map)?;
 
-    Ok((program, global_state))
+    Ok((program, gs))
 }
 
 fn apply_rename_changes(

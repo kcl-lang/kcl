@@ -43,7 +43,7 @@ pub struct Resolver<'ctx> {
     pub scope_map: IndexMap<String, Rc<RefCell<Scope>>>,
     pub scope: Rc<RefCell<Scope>>,
     pub scope_level: usize,
-    pub node_ty_map: NodeTyMap,
+    pub node_ty_map: Rc<RefCell<NodeTyMap>>,
     pub builtin_scope: Rc<RefCell<Scope>>,
     pub ctx: Context,
     pub options: Options,
@@ -61,7 +61,7 @@ impl<'ctx> Resolver<'ctx> {
             builtin_scope,
             scope,
             scope_level: 0,
-            node_ty_map: IndexMap::default(),
+            node_ty_map: Rc::new(RefCell::new(IndexMap::default())),
             ctx: Context::default(),
             options,
             handler: Handler::default(),
@@ -181,11 +181,15 @@ pub fn resolve_program_with_opts(
     resolver.resolve_import();
     if let Some(cached_scope) = cached_scope.as_ref() {
         if let Ok(mut cached_scope) = cached_scope.try_lock() {
+            cached_scope.invalidate_pkgs.clear();
             cached_scope.update(program);
             resolver.scope_map = cached_scope.scope_map.clone();
             resolver.scope_map.remove(kclvm_ast::MAIN_PKG);
             resolver.node_ty_map = cached_scope.node_ty_map.clone();
             resolver.ctx.schema_mapping = cached_scope.schema_mapping.clone();
+            cached_scope
+                .invalidate_pkgs
+                .insert(kclvm_ast::MAIN_PKG.to_string());
         }
     }
     let scope = resolver.check_and_lint(kclvm_ast::MAIN_PKG);
@@ -196,9 +200,11 @@ pub fn resolve_program_with_opts(
             cached_scope.node_ty_map = scope.node_ty_map.clone();
             cached_scope.scope_map.remove(kclvm_ast::MAIN_PKG);
             cached_scope.schema_mapping = resolver.ctx.schema_mapping;
+            cached_scope
+                .invalidate_pkgs
+                .insert(kclvm_ast::MAIN_PKG.to_string());
         }
     }
-
     if opts.type_erasure {
         let type_alias_mapping = resolver.ctx.type_alias_mapping.clone();
         // Erase all the function type to a named type "function"
