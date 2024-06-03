@@ -2,21 +2,22 @@ use super::util::{invalid_symbol_selector_spec_error, split_field_path};
 use anyhow::Result;
 use kclvm_ast::ast;
 use kclvm_error::diagnostic::Errors;
+use kclvm_parser::ParseSession;
 use serde::{Deserialize, Serialize};
 
-use std::collections::{HashMap, VecDeque};
+use std::{
+    collections::{HashMap, VecDeque},
+    sync::Arc,
+};
 
 use kclvm_ast::path::get_key_path;
 
 use kclvm_ast::walker::MutSelfWalker;
 use kclvm_ast_pretty::{print_ast_node, ASTNode};
-use kclvm_parser::parse_file;
+use kclvm_parser::load_program;
 
-use kclvm_sema::resolver::Options;
-
-use kclvm_ast::MAIN_PKG;
 use kclvm_sema::pre_process::pre_process_program;
-use maplit::hashmap;
+use kclvm_sema::resolver::Options;
 #[derive(Debug, Default)]
 /// UnsupportedSelectee is used to store the unsupported selectee, such as if, for, etc.
 pub struct UnsupportedSelectee {
@@ -461,26 +462,25 @@ impl Variable {
 
 /// list_options provides users with the ability to parse kcl program and get all option
 /// calling information.
-pub fn list_variables(file: String, specs: Vec<String>) -> Result<ListVariablesResult> {
+pub fn list_variables(files: Vec<&str>, specs: Vec<String>) -> Result<ListVariablesResult> {
     let mut selector = Selector::new(specs)?;
-    let parse_result = parse_file(&file, None)?;
+    // let parse_result = parse_file(&file, None)?;
+    let mut load_result = load_program(Arc::new(ParseSession::default()), &files, None, None)?;
 
     let mut opts = Options::default();
     opts.merge_program = true;
-    pre_process_program(
-        &mut ast::Program {
-            root: file,
-            pkgs: hashmap! { MAIN_PKG.to_string() => vec![parse_result.module.clone()] },
-        },
-        &opts,
-    );
+    pre_process_program(&mut load_result.program, &opts);
 
-    selector.walk_module(&parse_result.module);
+    for (_, modules) in load_result.program.pkgs.iter() {
+        for module in modules.iter() {
+            selector.walk_module(&module);
+        }
+    }
 
     Ok(ListVariablesResult {
         variables: selector.select_result,
         unsupported: selector.unsupported,
-        parse_errors: parse_result.errors,
+        parse_errors: load_result.errors,
     })
 }
 
