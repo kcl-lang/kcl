@@ -130,6 +130,14 @@ pub(crate) fn compile_with_params(
     diags.extend(sess.1.borrow().diagnostics.clone());
 
     // Resolver
+    if let Some(cached_scope) = params.scope_cache.as_ref() {
+        if let Ok(mut cached_scope) = cached_scope.try_lock() {
+            let mut invalidate_main_pkg_modules = HashSet::new();
+            invalidate_main_pkg_modules.insert(params.file);
+            cached_scope.invalidate_main_pkg_modules = Some(invalidate_main_pkg_modules);
+        }
+    }
+
     let prog_scope = resolve_program_with_opts(
         &mut program,
         kclvm_sema::resolver::Options {
