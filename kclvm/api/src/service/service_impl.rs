@@ -359,7 +359,7 @@ impl KclvmServiceImpl {
     /// assert_eq!(result.variables.get("a").unwrap().value, "1");
     /// ```
     pub fn list_variables(&self, args: &ListVariablesArgs) -> anyhow::Result<ListVariablesResult> {
-        let k_files = args.files.iter().map(|s| s.as_str()).collect();
+        let k_files = args.files.clone();
         let specs = args.specs.clone();
 
         let select_res = list_variables(k_files, specs)?;

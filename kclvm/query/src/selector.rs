@@ -462,10 +462,14 @@ impl Variable {
 
 /// list_options provides users with the ability to parse kcl program and get all option
 /// calling information.
-pub fn list_variables(files: Vec<&str>, specs: Vec<String>) -> Result<ListVariablesResult> {
+pub fn list_variables(files: Vec<String>, specs: Vec<String>) -> Result<ListVariablesResult> {
     let mut selector = Selector::new(specs)?;
-    // let parse_result = parse_file(&file, None)?;
-    let mut load_result = load_program(Arc::new(ParseSession::default()), &files, None, None)?;
+    let mut load_result = load_program(
+        Arc::new(ParseSession::default()),
+        &files.iter().map(AsRef::as_ref).collect::<Vec<&str>>(),
+        None,
+        None,
+    )?;
 
     let mut opts = Options::default();
     opts.merge_program = true;
