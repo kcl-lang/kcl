@@ -236,41 +236,6 @@ impl SymbolData {
         }
     }
 
-    pub fn remove_symbol(&mut self, id: &SymbolRef) {
-        match id.get_kind() {
-            SymbolKind::Schema => {
-                self.schemas.remove(id.get_id());
-            }
-            SymbolKind::Attribute => {
-                self.attributes.remove(id.get_id());
-            }
-            SymbolKind::Value => {
-                self.values.remove(id.get_id());
-            }
-            SymbolKind::Package => {
-                self.packages.remove(id.get_id());
-            }
-            SymbolKind::TypeAlias => {
-                self.type_aliases.remove(id.get_id());
-            }
-            SymbolKind::Unresolved => {
-                self.unresolved.remove(id.get_id());
-            }
-            SymbolKind::Rule => {
-                self.rules.remove(id.get_id());
-            }
-            SymbolKind::Expression => {
-                self.exprs.remove(id.get_id());
-            }
-            SymbolKind::Comment => {
-                self.comments.remove(id.get_id());
-            }
-            SymbolKind::Decorator => {
-                self.decorators.remove(id.get_id());
-            }
-        }
-    }
-
     pub fn set_symbol_type(&mut self, id: SymbolRef, ty: TypeRef) {
         match id.get_kind() {
             SymbolKind::Schema => {
