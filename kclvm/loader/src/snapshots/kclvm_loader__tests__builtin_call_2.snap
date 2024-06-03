@@ -1,5 +1,6 @@
 ---
 source: loader/src/tests.rs
+assertion_line: 39
 expression: "format!(\"{:#?}\", p.symbols.values())"
 ---
 [
@@ -99,7 +100,7 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
         def: Some(
             SymbolRef {
                 id: Index {
-                    index: 165,
+                    index: 0,
                     generation: 0,
                 },
                 kind: Value,
@@ -199,7 +200,7 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
                     index: 0,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
         ),
         attrs: [],
@@ -240,7 +241,7 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
         def: Some(
             SymbolRef {
                 id: Index {
-                    index: 166,
+                    index: 1,
                     generation: 0,
                 },
                 kind: Value,
@@ -337,7 +338,7 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
         def: Some(
             SymbolRef {
                 id: Index {
-                    index: 165,
+                    index: 0,
                     generation: 0,
                 },
                 kind: Value,
@@ -387,203 +388,203 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
                     index: 136,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 137,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 138,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 139,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 140,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 141,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 142,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 143,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 144,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 145,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 146,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 147,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 148,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 149,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 150,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 151,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 152,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 153,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 154,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 155,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 156,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 157,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 158,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 159,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 160,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 161,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 162,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 163,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 164,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
         ],
         is_global: false,
@@ -617,7 +618,7 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
         def: Some(
             SymbolRef {
                 id: Index {
-                    index: 167,
+                    index: 2,
                     generation: 0,
                 },
                 kind: Value,
@@ -629,203 +630,203 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
                     index: 136,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 137,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 138,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 139,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 140,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 141,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 142,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 143,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 144,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 145,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 146,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 147,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 148,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 149,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 150,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 151,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 152,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 153,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 154,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 155,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 156,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 157,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 158,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 159,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 160,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 161,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 162,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 163,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 164,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
         ],
         is_global: false,
@@ -871,203 +872,203 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
                     index: 136,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 137,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 138,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 139,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 140,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 141,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 142,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 143,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 144,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 145,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 146,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 147,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 148,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 149,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 150,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 151,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 152,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 153,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 154,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 155,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 156,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 157,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 158,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 159,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 160,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 161,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 162,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 163,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
             SymbolRef {
                 id: Index {
                     index: 164,
                     generation: 0,
                 },
-                kind: Value,
+                kind: Function,
             },
         ],
         is_global: false,
@@ -1101,7 +1102,7 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
         def: Some(
             SymbolRef {
                 id: Index {
-                    index: 168,
+                    index: 3,
                     generation: 0,
                 },
                 kind: Value,

@@ -739,7 +739,7 @@ mod tests {
                         0,
                         "".to_string()
                             .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
-                        SymbolKind::Value,
+                        SymbolKind::Function,
                     ),
                     (19, 20, 19, 24, "name".to_string(), SymbolKind::Unresolved),
                     (

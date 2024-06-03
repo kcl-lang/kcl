@@ -46,7 +46,7 @@ use crate::builtin::{
 use crate::core::global_state::GlobalState;
 use crate::core::package::{ModuleInfo, PackageInfo};
 use crate::core::symbol::{
-    PackageSymbol, SymbolRef, ValueSymbol, BUILTIN_FUNCTION_PACKAGE, BUILTIN_STR_PACKAGE,
+    FunctionSymbol, PackageSymbol, SymbolRef, BUILTIN_FUNCTION_PACKAGE, BUILTIN_STR_PACKAGE,
 };
 use crate::resolver::scope::NodeKey;
 use indexmap::IndexSet;
@@ -185,17 +185,18 @@ impl<'ctx> Namer<'ctx> {
     fn init_builtin_symbols(&mut self) {
         //add global built functions
         for (name, builtin_func) in BUILTIN_FUNCTIONS.iter() {
-            let mut value_symbol = ValueSymbol::new(
+            let mut func_symbol = FunctionSymbol::new(
                 name.to_string(),
                 Position::dummy_pos(),
                 Position::dummy_pos(),
                 None,
                 true,
             );
-            value_symbol.sema_info.ty = Some(Arc::new(builtin_func.clone()));
-            value_symbol.sema_info.doc = builtin_func.ty_doc();
-            let symbol_ref = self.gs.get_symbols_mut().alloc_value_symbol(
-                value_symbol,
+
+            func_symbol.sema_info.ty = Some(Arc::new(builtin_func.clone()));
+            func_symbol.sema_info.doc = builtin_func.ty_doc();
+            let symbol_ref = self.gs.get_symbols_mut().alloc_function_symbol(
+                func_symbol,
                 self.ctx.get_node_key(&AstIndex::default()),
                 BUILTIN_FUNCTION_PACKAGE.to_string(),
             );
@@ -218,17 +219,18 @@ impl<'ctx> Namer<'ctx> {
             );
             for func_name in get_system_module_members(system_pkg_name) {
                 let func_ty = get_system_member_function_ty(*system_pkg_name, func_name);
-                let mut value_symbol = ValueSymbol::new(
+                let mut func_symbol = FunctionSymbol::new(
                     func_name.to_string(),
                     Position::dummy_pos(),
                     Position::dummy_pos(),
                     Some(package_symbol_ref),
                     false,
                 );
-                value_symbol.sema_info.ty = Some(func_ty.clone());
-                value_symbol.sema_info.doc = func_ty.ty_doc();
-                let func_symbol_ref = self.gs.get_symbols_mut().alloc_value_symbol(
-                    value_symbol,
+
+                func_symbol.sema_info.ty = Some(func_ty.clone());
+                func_symbol.sema_info.doc = func_ty.ty_doc();
+                let func_symbol_ref = self.gs.get_symbols_mut().alloc_function_symbol(
+                    func_symbol,
                     self.ctx.get_node_key(&AstIndex::default()),
                     system_pkg_name.to_string(),
                 );
@@ -252,17 +254,18 @@ impl<'ctx> Namer<'ctx> {
             BUILTIN_STR_PACKAGE.to_string(),
         );
         for (name, builtin_func) in STRING_MEMBER_FUNCTIONS.iter() {
-            let mut value_symbol = ValueSymbol::new(
+            let mut func_symbol = FunctionSymbol::new(
                 name.to_string(),
                 Position::dummy_pos(),
                 Position::dummy_pos(),
                 Some(package_symbol_ref),
                 true,
             );
-            value_symbol.sema_info.ty = Some(Arc::new(builtin_func.clone()));
-            value_symbol.sema_info.doc = builtin_func.ty_doc();
-            let symbol_ref = self.gs.get_symbols_mut().alloc_value_symbol(
-                value_symbol,
+
+            func_symbol.sema_info.ty = Some(Arc::new(builtin_func.clone()));
+            func_symbol.sema_info.doc = builtin_func.ty_doc();
+            let symbol_ref = self.gs.get_symbols_mut().alloc_function_symbol(
+                func_symbol,
                 self.ctx.get_node_key(&AstIndex::default()),
                 BUILTIN_STR_PACKAGE.to_string(),
             );

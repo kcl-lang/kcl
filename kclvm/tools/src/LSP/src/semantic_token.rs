@@ -5,6 +5,7 @@ use kclvm_sema::core::{
     global_state::GlobalState,
     symbol::{KCLSymbol, SymbolKind},
 };
+use kclvm_sema::ty::TypeKind;
 use lsp_types::{SemanticToken, SemanticTokenType, SemanticTokens, SemanticTokensResult};
 
 pub const LEGEND_TYPE: &[SemanticTokenType] = &[
@@ -16,6 +17,7 @@ pub const LEGEND_TYPE: &[SemanticTokenType] = &[
     SemanticTokenType::MACRO,
     SemanticTokenType::COMMENT,
     SemanticTokenType::PARAMETER,
+    SemanticTokenType::FUNCTION,
 ];
 
 pub(crate) struct KCLSemanticToken {
@@ -62,7 +64,17 @@ pub(crate) fn get_kind(ty: SymbolKind, symbol: &KCLSymbol, gs: &GlobalState) -> 
         SymbolKind::Attribute => Some(type_index(SemanticTokenType::PROPERTY)),
         SymbolKind::Package => Some(type_index(SemanticTokenType::NAMESPACE)),
         SymbolKind::TypeAlias => Some(type_index(SemanticTokenType::TYPE)),
-        SymbolKind::Value => Some(type_index(SemanticTokenType::VARIABLE)),
+        SymbolKind::Value => {
+            if let Some(ty) = &symbol.get_sema_info().ty {
+                match ty.kind {
+                    TypeKind::Function(_) => Some(type_index(SemanticTokenType::FUNCTION)),
+                    _ => Some(type_index(SemanticTokenType::VARIABLE)),
+                }
+            } else {
+                Some(type_index(SemanticTokenType::VARIABLE))
+            }
+        }
+        SymbolKind::Function => Some(type_index(SemanticTokenType::FUNCTION)),
         SymbolKind::Rule => Some(type_index(SemanticTokenType::MACRO)),
         SymbolKind::Unresolved => match &symbol.get_definition() {
             Some(def_ref) => match gs.get_symbols().get_symbol(*def_ref) {
@@ -153,6 +165,9 @@ mod tests {
             (1, 4, 4, 2),  // name
             (2, 0, 1, 0),  // n
             (0, 3, 3, 4),  // num
+            (2, 0, 4, 8),  // func
+            (0, 14, 1, 0), // x
+            (1, 4, 1, 0),  // x
         ];
         let res = semantic_tokens_full(&file, &gs);
         if let Some(tokens) = res {

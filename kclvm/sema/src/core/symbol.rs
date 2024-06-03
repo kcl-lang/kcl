@@ -68,6 +68,7 @@ pub struct SymbolData {
     pub(crate) exprs: Arena<ExpressionSymbol>,
     pub(crate) comments: Arena<CommentSymbol>,
     pub(crate) decorators: Arena<DecoratorSymbol>,
+    pub(crate) functions: Arena<FunctionSymbol>,
 
     pub(crate) symbols_info: SymbolDB,
 }
@@ -140,6 +141,14 @@ impl SymbolData {
         }
     }
 
+    pub fn get_function_symbol(&self, id: SymbolRef) -> Option<&FunctionSymbol> {
+        if matches!(id.get_kind(), SymbolKind::Function) {
+            self.functions.get(id.get_id())
+        } else {
+            None
+        }
+    }
+
     pub fn get_symbol(&self, id: SymbolRef) -> Option<&KCLSymbol> {
         match id.get_kind() {
             SymbolKind::Schema => self
@@ -182,6 +191,10 @@ impl SymbolData {
                 .decorators
                 .get(id.get_id())
                 .map(|symbol| symbol as &KCLSymbol),
+            SymbolKind::Function => self
+                .functions
+                .get(id.get_id())
+                .map(|symbol| symbol as &KCLSymbol),
         }
     }
 
@@ -216,6 +229,9 @@ impl SymbolData {
             }
             SymbolKind::Decorator => {
                 self.decorators.remove(id.get_id());
+            }
+            SymbolKind::Function => {
+                self.functions.remove(id.get_id());
             }
         }
     }
@@ -278,6 +294,12 @@ impl SymbolData {
             }
             SymbolKind::Decorator => {
                 self.decorators.get_mut(id.get_id()).map(|symbol| {
+                    symbol.sema_info.ty = Some(ty);
+                    symbol
+                });
+            }
+            SymbolKind::Function => {
+                self.functions.get_mut(id.get_id()).map(|symbol| {
                     symbol.sema_info.ty = Some(ty);
                     symbol
                 });
@@ -533,6 +555,17 @@ impl SymbolData {
                 symbol_ref,
             );
         }
+
+        for (id, _) in self.functions.iter() {
+            let symbol_ref = SymbolRef {
+                id,
+                kind: SymbolKind::Function,
+            };
+            self.symbols_info.fully_qualified_name_map.insert(
+                self.get_fully_qualified_name(symbol_ref).unwrap(),
+                symbol_ref,
+            );
+        }
     }
 
     pub fn insert_package_symbol(&mut self, symbol_ref: SymbolRef, pkg_name: String) {
@@ -772,6 +805,29 @@ impl SymbolData {
         Some(symbol_ref)
     }
 
+    pub fn alloc_function_symbol(
+        &mut self,
+        func: FunctionSymbol,
+        node_key: NodeKey,
+        pkg_name: String,
+    ) -> SymbolRef {
+        self.symbols_info.symbol_pos_set.insert(func.end.clone());
+        let symbol_id = self.functions.insert(func);
+        let symbol_ref = SymbolRef {
+            id: symbol_id,
+            kind: SymbolKind::Function,
+        };
+        self.symbols_info
+            .node_symbol_map
+            .insert(node_key.clone(), symbol_ref);
+        self.symbols_info
+            .symbol_node_map
+            .insert(symbol_ref, node_key);
+        self.functions.get_mut(symbol_id).unwrap().id = Some(symbol_ref);
+        self.insert_package_symbol(symbol_ref, pkg_name);
+        symbol_ref
+    }
+
     #[inline]
     pub fn get_node_symbol_map(&self) -> &IndexMap<NodeKey, SymbolRef> {
         &self.symbols_info.node_symbol_map
@@ -811,6 +867,7 @@ pub enum SymbolKind {
     Schema,
     Attribute,
     Value,
+    Function,
     Package,
     TypeAlias,
     Unresolved,
@@ -2163,5 +2220,136 @@ impl DecoratorSymbol {
 
     pub fn name(&self) -> String {
         self.name.clone()
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct FunctionSymbol {
+    pub(crate) id: Option<SymbolRef>,
+    pub(crate) name: String,
+    pub(crate) start: Position,
+    pub(crate) end: Position,
+    pub(crate) owner: Option<SymbolRef>,
+    pub(crate) sema_info: KCLSymbolSemanticInfo,
+
+    pub(crate) is_global: bool,
+}
+
+impl Symbol for FunctionSymbol {
+    type SymbolData = SymbolData;
+    type SemanticInfo = KCLSymbolSemanticInfo;
+
+    fn is_global(&self) -> bool {
+        self.is_global
+    }
+
+    fn get_range(&self) -> Range {
+        (self.start.clone(), self.end.clone())
+    }
+
+    fn get_owner(&self) -> Option<SymbolRef> {
+        self.owner.clone()
+    }
+
+    fn get_definition(&self) -> Option<SymbolRef> {
+        self.id.clone()
+    }
+
+    fn get_name(&self) -> String {
+        self.name.clone()
+    }
+
+    fn get_id(&self) -> Option<SymbolRef> {
+        self.id.clone()
+    }
+
+    fn get_attribute(
+        &self,
+        name: &str,
+        data: &Self::SymbolData,
+        module_info: Option<&ModuleInfo>,
+    ) -> Option<SymbolRef> {
+        data.get_type_attribute(self.sema_info.ty.as_ref()?, name, module_info)
+    }
+
+    fn get_all_attributes(
+        &self,
+        data: &Self::SymbolData,
+        module_info: Option<&ModuleInfo>,
+    ) -> Vec<SymbolRef> {
+        let mut result = vec![];
+        if let Some(ty) = self.sema_info.ty.as_ref() {
+            if let Some(symbol_ref) = data.get_type_symbol(ty, module_info) {
+                if let Some(symbol) = data.get_symbol(symbol_ref) {
+                    result.append(&mut symbol.get_all_attributes(data, module_info))
+                }
+            }
+        }
+
+        result
+    }
+
+    fn has_attribute(
+        &self,
+        name: &str,
+        data: &Self::SymbolData,
+        module_info: Option<&ModuleInfo>,
+    ) -> bool {
+        self.get_attribute(name, data, module_info).is_some()
+    }
+
+    fn simple_dump(&self) -> String {
+        let mut output = "{\n".to_string();
+        output.push_str("\"kind\": \"FunctionSymbol\",\n");
+        output.push_str(&format!("\"name\":\"{}\",\n", self.name));
+        output.push_str(&format!(
+            "\"range\": \"{}:{}",
+            self.start.filename, self.start.line
+        ));
+        if let Some(start_col) = self.start.column {
+            output.push_str(&format!(":{}", start_col));
+        }
+
+        output.push_str(&format!(" to {}", self.end.line));
+        if let Some(end_col) = self.end.column {
+            output.push_str(&format!(":{}", end_col));
+        }
+        output.push_str("\"\n}");
+        output
+    }
+
+    fn full_dump(&self, data: &Self::SymbolData) -> Option<String> {
+        let mut output = format!("{{\n\"simple_info\": {},\n", self.simple_dump());
+        output.push_str("\"additional_info\": {\n");
+        if let Some(owner) = self.owner.as_ref() {
+            let owner_symbol = data.get_symbol(*owner)?;
+            output.push_str(&format!("\"owner\": {}\n", owner_symbol.simple_dump()));
+        }
+        output.push_str("\n}\n}");
+        Some(output)
+    }
+
+    fn get_sema_info(&self) -> &Self::SemanticInfo {
+        &self.sema_info
+    }
+}
+
+impl FunctionSymbol {
+    pub fn new(
+        name: String,
+        start: Position,
+        end: Position,
+        owner: Option<SymbolRef>,
+        is_global: bool,
+    ) -> Self {
+        Self {
+            id: None,
+            name,
+            start,
+            end,
+            owner,
+            sema_info: KCLSymbolSemanticInfo::default(),
+            is_global,
+        }
     }
 }
