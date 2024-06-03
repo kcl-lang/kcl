@@ -1,4 +1,6 @@
-use indexmap::IndexMap;
+use std::collections::HashSet;
+
+use indexmap::{IndexMap, IndexSet};
 use kclvm_error::Position;
 
 use super::{
@@ -19,6 +21,8 @@ pub struct GlobalState {
     packages: PackageDB,
     // store semantic information after analysis
     pub(crate) sema_db: SemanticDB,
+    // new and invalidate(changed and affected by changed) pkg from CachedScope::update()
+    pub new_or_invalidate_pkgs: HashSet<String>,
 }
 
 impl GlobalState {
@@ -48,6 +52,10 @@ impl GlobalState {
 
     pub fn get_sema_db(&self) -> &SemanticDB {
         &self.sema_db
+    }
+
+    pub fn get_sema_db_mut(&mut self) -> &mut SemanticDB {
+        &mut self.sema_db
     }
 }
 
@@ -288,18 +296,26 @@ impl GlobalState {
 }
 
 impl GlobalState {
-    fn build_sema_db_with_symbols(&self, file_sema_map: &mut IndexMap<String, FileSemanticInfo>) {
+    fn build_sema_db_with_symbols(
+        &self,
+        file_sema_map_cache: &mut IndexMap<String, FileSemanticInfo>,
+    ) {
         // put symbols
+        let mut file_sema_map: IndexMap<String, FileSemanticInfo> = IndexMap::new();
+
         for (index, symbol) in self.symbols.schemas.iter() {
+            if file_sema_map_cache.contains_key(&symbol.start.filename) {
+                continue;
+            }
             let symbol_ref = SymbolRef {
                 kind: SymbolKind::Schema,
                 id: index,
             };
-            let filename = symbol.start.filename.clone();
-            if !file_sema_map.contains_key(&filename) {
+            let filename = &symbol.start.filename;
+            if !file_sema_map.contains_key(filename) {
                 file_sema_map.insert(filename.clone(), FileSemanticInfo::new(filename.clone()));
             }
-            let file_sema_info = file_sema_map.get_mut(&filename).unwrap();
+            let file_sema_info = file_sema_map.get_mut(filename).unwrap();
             file_sema_info.symbols.push(symbol_ref);
             file_sema_info.symbol_locs.insert(
                 symbol_ref,
@@ -310,15 +326,18 @@ impl GlobalState {
             );
         }
         for (index, symbol) in self.symbols.type_aliases.iter() {
+            if file_sema_map_cache.contains_key(&symbol.start.filename) {
+                continue;
+            }
             let symbol_ref = SymbolRef {
                 kind: SymbolKind::TypeAlias,
                 id: index,
             };
-            let filename = symbol.start.filename.clone();
-            if !file_sema_map.contains_key(&filename) {
+            let filename = &symbol.start.filename;
+            if !file_sema_map.contains_key(filename) {
                 file_sema_map.insert(filename.clone(), FileSemanticInfo::new(filename.clone()));
             }
-            let file_sema_info = file_sema_map.get_mut(&filename).unwrap();
+            let file_sema_info = file_sema_map.get_mut(filename).unwrap();
             file_sema_info.symbols.push(symbol_ref);
             file_sema_info.symbol_locs.insert(
                 symbol_ref,
@@ -329,15 +348,18 @@ impl GlobalState {
             );
         }
         for (index, symbol) in self.symbols.attributes.iter() {
+            if file_sema_map_cache.contains_key(&symbol.start.filename) {
+                continue;
+            }
             let symbol_ref = SymbolRef {
                 kind: SymbolKind::Attribute,
                 id: index,
             };
-            let filename = symbol.start.filename.clone();
-            if !file_sema_map.contains_key(&filename) {
+            let filename = &symbol.start.filename;
+            if !file_sema_map.contains_key(filename) {
                 file_sema_map.insert(filename.clone(), FileSemanticInfo::new(filename.clone()));
             }
-            let file_sema_info = file_sema_map.get_mut(&filename).unwrap();
+            let file_sema_info = file_sema_map.get_mut(filename).unwrap();
             file_sema_info.symbols.push(symbol_ref);
             file_sema_info.symbol_locs.insert(
                 symbol_ref,
@@ -348,15 +370,18 @@ impl GlobalState {
             );
         }
         for (index, symbol) in self.symbols.rules.iter() {
+            if file_sema_map_cache.contains_key(&symbol.start.filename) {
+                continue;
+            }
             let symbol_ref = SymbolRef {
                 kind: SymbolKind::Rule,
                 id: index,
             };
-            let filename = symbol.start.filename.clone();
-            if !file_sema_map.contains_key(&filename) {
+            let filename = &symbol.start.filename;
+            if !file_sema_map.contains_key(filename) {
                 file_sema_map.insert(filename.clone(), FileSemanticInfo::new(filename.clone()));
             }
-            let file_sema_info = file_sema_map.get_mut(&filename).unwrap();
+            let file_sema_info = file_sema_map.get_mut(filename).unwrap();
             file_sema_info.symbols.push(symbol_ref);
             file_sema_info.symbol_locs.insert(
                 symbol_ref,
@@ -367,15 +392,18 @@ impl GlobalState {
             );
         }
         for (index, symbol) in self.symbols.values.iter() {
+            if file_sema_map_cache.contains_key(&symbol.start.filename) {
+                continue;
+            }
             let symbol_ref = SymbolRef {
                 kind: SymbolKind::Value,
                 id: index,
             };
-            let filename = symbol.start.filename.clone();
-            if !file_sema_map.contains_key(&filename) {
+            let filename = &symbol.start.filename;
+            if !file_sema_map.contains_key(filename) {
                 file_sema_map.insert(filename.clone(), FileSemanticInfo::new(filename.clone()));
             }
-            let file_sema_info = file_sema_map.get_mut(&filename).unwrap();
+            let file_sema_info = file_sema_map.get_mut(filename).unwrap();
             file_sema_info.symbols.push(symbol_ref);
             file_sema_info.symbol_locs.insert(
                 symbol_ref,
@@ -386,15 +414,18 @@ impl GlobalState {
             );
         }
         for (index, symbol) in self.symbols.unresolved.iter() {
+            if file_sema_map_cache.contains_key(&symbol.start.filename) {
+                continue;
+            }
             let symbol_ref = SymbolRef {
                 kind: SymbolKind::Unresolved,
                 id: index,
             };
-            let filename = symbol.start.filename.clone();
-            if !file_sema_map.contains_key(&filename) {
+            let filename = &symbol.start.filename;
+            if !file_sema_map.contains_key(filename) {
                 file_sema_map.insert(filename.clone(), FileSemanticInfo::new(filename.clone()));
             }
-            let file_sema_info = file_sema_map.get_mut(&filename).unwrap();
+            let file_sema_info = file_sema_map.get_mut(filename).unwrap();
             file_sema_info.symbols.push(symbol_ref);
             file_sema_info.symbol_locs.insert(
                 symbol_ref,
@@ -406,15 +437,19 @@ impl GlobalState {
         }
 
         for (index, symbol) in self.symbols.exprs.iter() {
+            if file_sema_map_cache.contains_key(&symbol.start.filename) {
+                continue;
+            }
+
             let symbol_ref = SymbolRef {
                 kind: SymbolKind::Expression,
                 id: index,
             };
-            let filename = symbol.start.filename.clone();
-            if !file_sema_map.contains_key(&filename) {
+            let filename = &symbol.start.filename;
+            if !file_sema_map.contains_key(filename) {
                 file_sema_map.insert(filename.clone(), FileSemanticInfo::new(filename.clone()));
             }
-            let file_sema_info = file_sema_map.get_mut(&filename).unwrap();
+            let file_sema_info = file_sema_map.get_mut(filename).unwrap();
             file_sema_info.symbols.push(symbol_ref);
             file_sema_info.symbol_locs.insert(
                 symbol_ref,
@@ -426,15 +461,18 @@ impl GlobalState {
         }
 
         for (index, symbol) in self.symbols.comments.iter() {
+            if file_sema_map_cache.contains_key(&symbol.start.filename) {
+                continue;
+            }
             let symbol_ref = SymbolRef {
                 kind: SymbolKind::Comment,
                 id: index,
             };
-            let filename = symbol.start.filename.clone();
-            if !file_sema_map.contains_key(&filename) {
+            let filename = &symbol.start.filename;
+            if !file_sema_map.contains_key(filename) {
                 file_sema_map.insert(filename.clone(), FileSemanticInfo::new(filename.clone()));
             }
-            let file_sema_info = file_sema_map.get_mut(&filename).unwrap();
+            let file_sema_info = file_sema_map.get_mut(filename).unwrap();
             file_sema_info.symbols.push(symbol_ref);
             file_sema_info.symbol_locs.insert(
                 symbol_ref,
@@ -446,15 +484,18 @@ impl GlobalState {
         }
 
         for (index, symbol) in self.symbols.decorators.iter() {
+            if file_sema_map_cache.contains_key(&symbol.start.filename) {
+                continue;
+            }
             let symbol_ref = SymbolRef {
                 kind: SymbolKind::Decorator,
                 id: index,
             };
-            let filename = symbol.start.filename.clone();
-            if !file_sema_map.contains_key(&filename) {
+            let filename = &symbol.start.filename;
+            if !file_sema_map.contains_key(filename) {
                 file_sema_map.insert(filename.clone(), FileSemanticInfo::new(filename.clone()));
             }
-            let file_sema_info = file_sema_map.get_mut(&filename).unwrap();
+            let file_sema_info = file_sema_map.get_mut(filename).unwrap();
             file_sema_info.symbols.push(symbol_ref);
             file_sema_info.symbol_locs.insert(
                 symbol_ref,
@@ -473,6 +514,8 @@ impl GlobalState {
                 .symbols
                 .sort_by_key(|symbol_ref| sema_info.symbol_locs.get(symbol_ref).unwrap())
         }
+
+        file_sema_map_cache.extend(file_sema_map);
     }
     fn build_sema_db_with_scopes(&self, file_sema_map: &mut IndexMap<String, FileSemanticInfo>) {
         // put scope
@@ -481,11 +524,11 @@ impl GlobalState {
                 kind: ScopeKind::Local,
                 id: index,
             };
-            let filename = scope.start.filename.clone();
-            if !file_sema_map.contains_key(&filename) {
+            let filename = &scope.start.filename;
+            if !file_sema_map.contains_key(filename) {
                 file_sema_map.insert(filename.clone(), FileSemanticInfo::new(filename.clone()));
             }
-            let file_sema_info = file_sema_map.get_mut(&filename).unwrap();
+            let file_sema_info = file_sema_map.get_mut(filename).unwrap();
             file_sema_info.local_scope_locs.insert(
                 scope_ref,
                 CachedRange {
@@ -500,7 +543,7 @@ impl GlobalState {
                 },
             );
             file_sema_map
-                .get_mut(&filename)
+                .get_mut(filename)
                 .unwrap()
                 .scopes
                 .push(scope_ref);
@@ -535,11 +578,43 @@ impl GlobalState {
     }
 
     pub(crate) fn build_sema_db(&mut self) {
-        let mut file_sema_map = IndexMap::<String, FileSemanticInfo>::default();
-        self.build_sema_db_with_symbols(&mut file_sema_map);
-        self.build_sema_db_with_scopes(&mut file_sema_map);
-        self.sort_local_scopes(&mut file_sema_map);
+        let mut file_sema_map_cache = self.get_sema_db_mut().file_sema_map.clone();
 
-        self.sema_db.file_sema_map = file_sema_map;
+        self.build_sema_db_with_symbols(&mut file_sema_map_cache);
+        self.build_sema_db_with_scopes(&mut file_sema_map_cache);
+        self.sort_local_scopes(&mut file_sema_map_cache);
+
+        self.sema_db.file_sema_map = file_sema_map_cache;
+    }
+
+    pub fn clear_cache(&mut self) {
+        let invalidate_pkgs = self.new_or_invalidate_pkgs.clone();
+        self.clear_sema_db_cache(&invalidate_pkgs);
+        self.get_scopes_mut().clear_cache(&invalidate_pkgs);
+        self.get_packages_mut().clear_cache(&invalidate_pkgs);
+        self.get_symbols_mut().clear_cache(&invalidate_pkgs);
+    }
+
+    fn clear_sema_db_cache(&mut self, invalidate_pkgs: &HashSet<String>) {
+        let mut to_remove: Vec<SymbolRef> = Vec::new();
+        let mut files: IndexSet<String> = IndexSet::new();
+        for invalidate_pkg in invalidate_pkgs {
+            if let Some(symbols) = self
+                .get_symbols()
+                .symbols_info
+                .pkg_symbol_map
+                .get(invalidate_pkg)
+            {
+                to_remove.extend(symbols.iter().cloned());
+            }
+        }
+        for symbol in to_remove {
+            if let Some(s) = self.get_symbols().get_symbol(symbol) {
+                files.insert(s.get_range().0.filename);
+            }
+        }
+        for file in files {
+            self.sema_db.file_sema_map.remove(&file);
+        }
     }
 }

@@ -34,6 +34,8 @@
                         └─────────────────────┘
 */
 
+use std::{cell::RefCell, rc::Rc};
+
 use indexmap::IndexSet;
 use kclvm_error::Position;
 
@@ -60,12 +62,12 @@ mod node;
 ///  so that toolchain can query semantic information about the AST
 pub struct AdvancedResolver<'ctx> {
     pub(crate) ctx: Context<'ctx>,
-    pub(crate) gs: GlobalState,
+    pub(crate) gs: &'ctx mut GlobalState,
 }
 
 pub struct Context<'ctx> {
     pub program: &'ctx Program,
-    node_ty_map: NodeTyMap,
+    node_ty_map: Rc<RefCell<NodeTyMap>>,
     scopes: Vec<ScopeRef>,
     current_pkgpath: Option<String>,
     current_filename: Option<String>,
@@ -93,9 +95,9 @@ impl<'ctx> Context<'ctx> {
 impl<'ctx> AdvancedResolver<'ctx> {
     pub fn resolve_program(
         program: &'ctx Program,
-        gs: GlobalState,
-        node_ty_map: NodeTyMap,
-    ) -> anyhow::Result<GlobalState> {
+        gs: &'ctx mut GlobalState,
+        node_ty_map: Rc<RefCell<NodeTyMap>>,
+    ) -> anyhow::Result<()> {
         let mut advanced_resolver = Self {
             gs,
             ctx: Context {
@@ -111,8 +113,10 @@ impl<'ctx> AdvancedResolver<'ctx> {
                 maybe_def: false,
             },
         };
-
         for (name, modules) in advanced_resolver.ctx.program.pkgs.iter() {
+            if !advanced_resolver.gs.new_or_invalidate_pkgs.contains(name) {
+                continue;
+            }
             advanced_resolver.ctx.current_pkgpath = Some(name.clone());
             if let Some(pkg_info) = advanced_resolver.gs.get_packages().get_package_info(name) {
                 if modules.is_empty() {
@@ -135,7 +139,8 @@ impl<'ctx> AdvancedResolver<'ctx> {
         }
 
         advanced_resolver.gs.build_sema_db();
-        Ok(advanced_resolver.gs)
+        advanced_resolver.gs.new_or_invalidate_pkgs.clear();
+        Ok(())
     }
 
     fn enter_root_scope(
@@ -290,8 +295,8 @@ mod tests {
         let mut program = load_program(sess.clone(), &[&path], None, None)
             .unwrap()
             .program;
-        let gs = GlobalState::default();
-        let gs = Namer::find_symbols(&program, gs);
+        let mut gs = GlobalState::default();
+        Namer::find_symbols(&program, &mut gs);
 
         let node_ty_map = resolver::resolve_program_with_opts(
             &mut program,
@@ -303,7 +308,7 @@ mod tests {
             None,
         )
         .node_ty_map;
-        let gs = AdvancedResolver::resolve_program(&program, gs, node_ty_map).unwrap();
+        AdvancedResolver::resolve_program(&program, &mut gs, node_ty_map).unwrap();
         let base_path = Path::new(".").canonicalize().unwrap();
         // print_symbols_info(&gs);
         let except_symbols = vec![
@@ -1229,10 +1234,10 @@ mod tests {
         let mut program = load_program(sess.clone(), &[&path], None, None)
             .unwrap()
             .program;
-        let gs = GlobalState::default();
-        let gs = Namer::find_symbols(&program, gs);
+        let mut gs = GlobalState::default();
+        Namer::find_symbols(&program, &mut gs);
         let node_ty_map = resolver::resolve_program(&mut program).node_ty_map;
-        let gs = AdvancedResolver::resolve_program(&program, gs, node_ty_map).unwrap();
+        AdvancedResolver::resolve_program(&program, &mut gs, node_ty_map).unwrap();
         let base_path = Path::new(".").canonicalize().unwrap();
 
         let test_cases = vec![
@@ -1306,10 +1311,10 @@ mod tests {
         let mut program = load_program(sess.clone(), &[&path], None, None)
             .unwrap()
             .program;
-        let gs = GlobalState::default();
-        let gs = Namer::find_symbols(&program, gs);
+        let mut gs = GlobalState::default();
+        Namer::find_symbols(&program, &mut gs);
         let node_ty_map = resolver::resolve_program(&mut program).node_ty_map;
-        let gs = AdvancedResolver::resolve_program(&program, gs, node_ty_map).unwrap();
+        AdvancedResolver::resolve_program(&program, &mut gs, node_ty_map).unwrap();
         let base_path = Path::new(".").canonicalize().unwrap();
 
         let scope_test_cases = vec![

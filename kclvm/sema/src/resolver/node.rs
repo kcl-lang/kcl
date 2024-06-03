@@ -119,7 +119,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 doc: None,
             },
         );
-        self.node_ty_map.insert(
+        self.node_ty_map.borrow_mut().insert(
             self.get_node_key(type_alias_stmt.type_name.id.clone()),
             ty.clone(),
         );
@@ -191,7 +191,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                     expected_ty.clone(),
                     &assign_stmt.value.get_span_pos(),
                 );
-                self.node_ty_map.insert(
+                self.node_ty_map.borrow_mut().insert(
                     self.get_node_key(assign_stmt.value.id.clone()),
                     upgrade_schema_type.clone(),
                 );
@@ -226,7 +226,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                     expected_ty.clone(),
                     &assign_stmt.value.get_span_pos(),
                 );
-                self.node_ty_map.insert(
+                self.node_ty_map.borrow_mut().insert(
                     self.get_node_key(assign_stmt.value.id.clone()),
                     upgrade_schema_type.clone(),
                 );
@@ -402,7 +402,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             .get_type_of_attr(name)
             .map_or(self.any_ty(), |ty| ty);
 
-        self.node_ty_map.insert(
+        self.node_ty_map.borrow_mut().insert(
             self.get_node_key(schema_attr.name.id.clone()),
             expected_ty.clone(),
         );
@@ -534,7 +534,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             );
         }
 
-        self.node_ty_map.insert(
+        self.node_ty_map.borrow_mut().insert(
             self.get_node_key(selector_expr.attr.id.clone()),
             value_ty.clone(),
         );
@@ -546,6 +546,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 selector_expr.attr.get_span_pos(),
             );
             self.node_ty_map
+                .borrow_mut()
                 .insert(self.get_node_key(name.id.clone()), value_ty.clone());
         }
 
@@ -973,7 +974,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 );
                 let init_stack_depth = self.switch_config_expr_context(Some(obj));
                 self.expr(&schema_expr.config);
-                self.node_ty_map.insert(
+                self.node_ty_map.borrow_mut().insert(
                     self.get_node_key(schema_expr.config.id.clone()),
                     def_ty.clone(),
                 );
@@ -1061,6 +1062,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 };
                 if let Some(name) = arg.node.names.last() {
                     self.node_ty_map
+                        .borrow_mut()
                         .insert(self.get_node_key(name.id.clone()), ty.clone());
                 }
 
@@ -1137,6 +1139,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             let ty = self.parse_ty_with_scope(ty, arg.get_span_pos());
             if let Some(name) = arg.node.names.last() {
                 self.node_ty_map
+                    .borrow_mut()
                     .insert(self.get_node_key(name.id.clone()), ty.clone());
             }
             let value = &arguments.defaults[i];
@@ -1175,6 +1178,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
         );
         for (index, name) in identifier.names.iter().enumerate() {
             self.node_ty_map
+                .borrow_mut()
                 .insert(self.get_node_key(name.id.clone()), tys[index].clone());
         }
         tys.last().unwrap().clone()
@@ -1287,9 +1291,11 @@ impl<'ctx> Resolver<'ctx> {
             let upgrade_ty =
                 self.upgrade_dict_to_schema(ty.clone(), expected_ty, &expr.get_span_pos());
             self.node_ty_map
+                .borrow_mut()
                 .insert(self.get_node_key(expr.id.clone()), upgrade_ty);
         } else {
             self.node_ty_map
+                .borrow_mut()
                 .insert(self.get_node_key(expr.id.clone()), ty.clone());
         }
 
@@ -1303,6 +1309,7 @@ impl<'ctx> Resolver<'ctx> {
         self.ctx.end_pos = end;
         let ty = self.walk_stmt(&stmt.node);
         self.node_ty_map
+            .borrow_mut()
             .insert(self.get_node_key(stmt.id.clone()), ty.clone());
         ty
     }
@@ -1316,6 +1323,7 @@ impl<'ctx> Resolver<'ctx> {
             Some(expr) => {
                 let ty = self.walk_expr(&expr.node);
                 self.node_ty_map
+                    .borrow_mut()
                     .insert(self.get_node_key(expr.id.clone()), ty.clone());
                 ty
             }
@@ -1335,10 +1343,12 @@ impl<'ctx> Resolver<'ctx> {
         );
         for (index, name) in identifier.node.names.iter().enumerate() {
             self.node_ty_map
+                .borrow_mut()
                 .insert(self.get_node_key(name.id.clone()), tys[index].clone());
         }
         let ident_ty = tys.last().unwrap().clone();
         self.node_ty_map
+            .borrow_mut()
             .insert(self.get_node_key(identifier.id.clone()), ident_ty.clone());
 
         ident_ty

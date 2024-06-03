@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use indexmap::{IndexMap, IndexSet};
 use kclvm_error::Position;
@@ -108,6 +108,17 @@ impl ScopeData {
         }
     }
 
+    pub fn remove_scope(&mut self, scope: &ScopeRef) {
+        match scope.get_kind() {
+            ScopeKind::Local => {
+                self.locals.remove(scope.get_id());
+            }
+            ScopeKind::Root => {
+                self.roots.remove(scope.get_id());
+            }
+        }
+    }
+
     pub fn try_get_local_scope(&self, scope: &ScopeRef) -> Option<&LocalSymbolScope> {
         match scope.get_kind() {
             ScopeKind::Local => Some(self.locals.get(scope.get_id())?),
@@ -179,6 +190,24 @@ impl ScopeData {
             id,
             kind: ScopeKind::Local,
         }
+    }
+
+    pub fn clear_cache(&mut self, invalidate_pkgs: &HashSet<String>) {
+        for invalidate_pkg in invalidate_pkgs {
+            if let Some(scope_ref) = self.root_map.remove(invalidate_pkg) {
+                self.clear_scope_and_child(scope_ref);
+                self.roots.remove(scope_ref.get_id());
+            }
+        }
+    }
+
+    pub fn clear_scope_and_child(&mut self, scope_ref: ScopeRef) {
+        if let Some(scope) = self.get_scope(&scope_ref) {
+            for c in scope.get_children() {
+                self.clear_scope_and_child(c)
+            }
+        }
+        self.remove_scope(&scope_ref)
     }
 }
 

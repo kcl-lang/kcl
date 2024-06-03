@@ -8,6 +8,7 @@ use crossbeam_channel::{select, unbounded, Receiver, Sender};
 use kclvm_driver::toolchain::{self, Toolchain};
 use kclvm_driver::CompileUnitOptions;
 use kclvm_parser::KCLModuleCache;
+use kclvm_sema::core::global_state::GlobalState;
 use kclvm_sema::resolver::scope::KCLScopeCache;
 use lsp_server::{ReqQueue, Request, Response};
 use lsp_types::Url;
@@ -18,6 +19,7 @@ use lsp_types::{
 use parking_lot::RwLock;
 use ra_ap_vfs::{ChangeKind, ChangedFile, FileId, Vfs};
 use std::collections::HashMap;
+use std::sync::Mutex;
 use std::thread;
 use std::time::Duration;
 use std::{sync::Arc, time::Instant};
@@ -49,6 +51,7 @@ pub(crate) type KCLVfs = Arc<RwLock<Vfs>>;
 pub(crate) type KCLWordIndexMap = Arc<RwLock<HashMap<Url, HashMap<String, Vec<Location>>>>>;
 pub(crate) type KCLEntryCache = Arc<RwLock<HashMap<String, CompileUnitOptions>>>;
 pub(crate) type KCLToolChain = Arc<RwLock<dyn Toolchain>>;
+pub(crate) type KCLGlobalStateCache = Arc<Mutex<GlobalState>>;
 
 /// State for the language server
 pub(crate) struct LanguageServerState {
@@ -82,6 +85,8 @@ pub(crate) struct LanguageServerState {
     pub entry_cache: KCLEntryCache,
     /// Toolchain is used to provider KCL tool features for the language server.
     pub tool: KCLToolChain,
+    /// KCL globalstate cache
+    pub gs_cache: KCLGlobalStateCache,
 }
 
 /// A snapshot of the state of the language server
@@ -134,6 +139,7 @@ impl LanguageServerState {
             scope_cache: KCLScopeCache::default(),
             entry_cache: KCLEntryCache::default(),
             tool: Arc::new(RwLock::new(toolchain::default())),
+            gs_cache: KCLGlobalStateCache::default(),
         };
 
         let word_index_map = state.word_index_map.clone();
@@ -223,6 +229,7 @@ impl LanguageServerState {
                             let scope_cache = Arc::clone(&self.scope_cache);
                             let entry = Arc::clone(&self.entry_cache);
                             let tool = Arc::clone(&self.tool);
+                            let gs_cache = Arc::clone(&self.gs_cache);
                             move || match url(&snapshot, file.file_id) {
                                 Ok(uri) => {
                                     let version =
@@ -235,6 +242,7 @@ impl LanguageServerState {
                                         vfs: Some(snapshot.vfs),
                                         entry_cache: Some(entry),
                                         tool,
+                                        gs_cache: Some(gs_cache),
                                     });
 
                                     let current_version =
