@@ -381,7 +381,7 @@ fn test_list_variables() {
 
     for (spec, expected, expected_name, op_sym) in test_cases {
         let specs = vec![spec.to_string()];
-        let result = list_variables(file.clone(), specs).unwrap();
+        let result = list_variables(vec![file.clone()], specs).unwrap();
         assert_eq!(result.variables.get(spec).unwrap().value, expected);
         assert_eq!(result.variables.get(spec).unwrap().type_name, expected_name);
         assert_eq!(result.variables.get(spec).unwrap().op_sym, op_sym);
@@ -470,7 +470,7 @@ fn test_list_all_variables() {
     ];
 
     for (spec, expected, expected_name, op_sym) in test_cases {
-        let result = list_variables(file.clone(), vec![]).unwrap();
+        let result = list_variables(vec![file.clone()], vec![]).unwrap();
         assert_eq!(result.variables.get(spec).unwrap().value, expected);
         assert_eq!(result.variables.get(spec).unwrap().type_name, expected_name);
         assert_eq!(result.variables.get(spec).unwrap().op_sym, op_sym);
@@ -521,7 +521,7 @@ fn test_list_unsupported_variables() {
 
     for (spec, expected_code) in test_cases {
         let specs = vec![spec.to_string()];
-        let result = list_variables(file.clone(), specs).unwrap();
+        let result = list_variables(vec![file.clone()], specs).unwrap();
         assert_eq!(result.variables.get(spec), None);
         assert_eq!(result.unsupported[0].code, expected_code);
         assert_eq!(result.parse_errors.len(), 0);
@@ -545,7 +545,7 @@ fn test_list_unsupported_variables() {
 
     for (spec, expected_code) in test_cases {
         let specs = vec![spec.to_string()];
-        let result = list_variables(file.clone(), specs).unwrap();
+        let result = list_variables(vec![file.clone()], specs).unwrap();
         assert_eq!(result.variables.get(spec).unwrap().value, expected_code);
     }
 }
@@ -626,7 +626,7 @@ fn test_list_variable_with_invalid_kcl() {
         .display()
         .to_string();
     let specs = vec!["a".to_string()];
-    let result = list_variables(file.clone(), specs).unwrap();
+    let result = list_variables(vec![file.clone()], specs).unwrap();
     assert_eq!(result.variables.get("a"), None);
     assert_eq!(result.parse_errors.len(), 2);
     assert_eq!(result.parse_errors[0].level, Level::Error);
@@ -682,7 +682,7 @@ fn test_list_variables_with_file_noexist() {
         .display()
         .to_string();
     let specs = vec!["a".to_string()];
-    let result = list_variables(file.clone(), specs);
+    let result = list_variables(vec![file.clone()], specs);
     assert!(result.is_err());
     let err = result.err().unwrap();
     assert_eq!(err.to_string(), "Cannot find the kcl file, please check the file path ./src/test_data/test_list_variables/noexist.k");
@@ -701,4 +701,59 @@ fn test_override_file_with_invalid_spec() {
     assert!(result.is_err());
     let err = result.err().unwrap();
     assert_eq!(err.to_string(), "Invalid spec format '....', expected <field_path>=filed_value>, <field_path>:filed_value>, <field_path>+=filed_value> or <field_path>-");
+}
+
+#[test]
+fn test_list_merged_variables() {
+    let file = PathBuf::from("./src/test_data/test_list_variables/test_list_merged_variables")
+        .canonicalize()
+        .unwrap();
+
+    let test_cases = vec![
+        (
+            "override/base.k",
+            "override/main.k",
+            vec!["_tests.aType".to_string(), "_tests.pots".to_string()],
+            r#""Internet""#.to_string(),
+            r#"[test.Pot {
+    name: "http"
+    number: 90
+}]"#
+            .to_string(),
+        ),
+        (
+            "union/base.k",
+            "union/main.k",
+            vec!["tests.aType".to_string(), "tests.pots".to_string()],
+            r#""Internet""#.to_string(),
+            r#"[test.Pot {
+    name: "http"
+    number: 90
+}]"#
+            .to_string(),
+        ),
+    ];
+
+    for (base_file_name, main_file_name, specs, expected_value1, expected_value2) in test_cases {
+        let base_file = file.join(base_file_name).display().to_string();
+        let main_file = file.join(main_file_name).display().to_string();
+
+        let result = list_variables(vec![main_file, base_file], specs.clone()).unwrap();
+        assert_eq!(
+            result
+                .variables
+                .get(&specs.get(0).unwrap().to_string())
+                .unwrap()
+                .value,
+            expected_value1
+        );
+        assert_eq!(
+            result
+                .variables
+                .get(&specs.get(1).unwrap().to_string())
+                .unwrap()
+                .value,
+            expected_value2
+        );
+    }
 }
