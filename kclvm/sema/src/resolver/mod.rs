@@ -190,7 +190,6 @@ pub fn resolve_program_with_opts(
             cached_scope
                 .invalidate_pkgs
                 .insert(kclvm_ast::MAIN_PKG.to_string());
-            cached_scope.invalidate_main_pkg_modules = None;
         }
     }
     let scope = resolver.check_and_lint(kclvm_ast::MAIN_PKG);
@@ -204,6 +203,7 @@ pub fn resolve_program_with_opts(
             cached_scope
                 .invalidate_pkgs
                 .insert(kclvm_ast::MAIN_PKG.to_string());
+            cached_scope.invalidate_main_pkg_modules = None;
         }
     }
     if opts.type_erasure {

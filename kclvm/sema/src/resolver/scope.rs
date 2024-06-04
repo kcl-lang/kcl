@@ -599,14 +599,6 @@ impl DependencyGraph {
                     }
                 }
             }
-            for module in main_modules {
-                let result = self.invalidate_module(module)?;
-                for pkg in result {
-                    invalidated_set.insert(pkg);
-                }
-                self.remove_dependency_from_pkg(&module.filename);
-                self.add_new_module(module);
-            }
         }
         Ok(invalidated_set)
     }
