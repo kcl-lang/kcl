@@ -52,6 +52,9 @@ fix:
 build-wasm:
 	cargo build --target=wasm32-wasi --release
 
+build-lsp:
+	cargo build --release --manifest-path tools/src/LSP/Cargo.toml
+
 # ------------------------
 # Tests
 # ------------------------

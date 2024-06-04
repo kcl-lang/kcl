@@ -25,6 +25,10 @@ RUN_IN_DOCKER+=-w /root/kclvm ${BUILD_IMAGE}
 build:
 	${PWD}/run.sh -a build
 
+.PHONY: build-lsp
+build-lsp:
+	make -C ./kclvm build-lsp
+
 .PHONY: release
 release:
 	${PWD}/run.sh -a release
