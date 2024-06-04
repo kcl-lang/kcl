@@ -328,11 +328,46 @@ fn completion_assign(pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::Comple
     if let Some(symbol_ref) = find_def(pos, gs, false) {
         if let Some(symbol) = gs.get_symbols().get_symbol(symbol_ref) {
             if let Some(def) = symbol.get_definition() {
-                match def.get_kind() {
-                    SymbolKind::Attribute => {
-                        let sema_info = symbol.get_sema_info();
-                        match &sema_info.ty {
-                            Some(ty) => {
+                if let SymbolKind::Attribute = def.get_kind() {
+                    let sema_info = symbol.get_sema_info();
+                    if let Some(ty) = &sema_info.ty {
+                        match &ty.kind {
+                            TypeKind::Union(types) => {
+                                let string_literals: Vec<String> = types
+                                    .iter()
+                                    .filter_map(|ty| {
+                                        if let TypeKind::StrLit(lit) = &ty.kind {
+                                            Some(lit.clone())
+                                        } else {
+                                            None
+                                        }
+                                    })
+                                    .collect();
+
+                                for lit in string_literals {
+                                    items.extend(
+                                        ty_complete_label(
+                                            ty,
+                                            gs.get_packages().get_module_info(&pos.filename),
+                                        )
+                                        .iter()
+                                        .map(|_label| {
+                                            KCLCompletionItem {
+                                                label: format!(" \"{}\"", lit),
+                                                detail: Some(format!(
+                                                    "{}: {}",
+                                                    symbol.get_name(),
+                                                    ty.ty_str()
+                                                )),
+                                                kind: Some(KCLCompletionItemKind::Variable),
+                                                documentation: sema_info.doc.clone(),
+                                                insert_text: None,
+                                            }
+                                        }),
+                                    );
+                                }
+                            }
+                            _ => {
                                 items.extend(
                                     ty_complete_label(
                                         ty,
@@ -353,12 +388,10 @@ fn completion_assign(pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::Comple
                                         }
                                     }),
                                 );
-                                return Some(into_completion_items(&items).into());
                             }
-                            None => {}
                         }
+                        return Some(into_completion_items(&items).into());
                     }
-                    _ => {}
                 }
             }
         }
