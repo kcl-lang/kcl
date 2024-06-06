@@ -318,8 +318,116 @@ fn completion_dot(
         }
         None => {}
     }
+
+    if let Some(scope) = gs.look_up_scope(pos) {
+        if let Some(defs) = gs.get_all_defs_in_scope(scope) {
+            for symbol_ref in defs {
+                if let Some(def) = gs.get_symbols().get_symbol(symbol_ref) {
+                    let sema_info = def.get_sema_info();
+                    if let Some(ty) = &sema_info.ty {
+                        if let TypeKind::Union(union_types) = &ty.kind {
+                            for union_ty in union_types {
+                                if let TypeKind::StrLit(_) = &union_ty.kind {
+                                    let module_info =
+                                        gs.get_packages().get_module_info(&pos.filename);
+                                    let str_refs =
+                                        gs.get_symbols().get_type_symbol(union_ty, module_info);
+                                    if let Some(str_ref) = str_refs {
+                                        if let Some(str_def) = gs.get_symbols().get_symbol(str_ref)
+                                        {
+                                            let str_attrs = str_def
+                                                .get_all_attributes(gs.get_symbols(), module_info);
+                                            for str_attr in str_attrs {
+                                                let str_attr_def =
+                                                    gs.get_symbols().get_symbol(str_attr);
+                                                if let Some(str_attr_def) = str_attr_def {
+                                                    let str_sema_info =
+                                                        str_attr_def.get_sema_info();
+                                                    let attr_name = str_attr_def.get_name();
+                                                    match &str_sema_info.ty {
+                                                        Some(str_attr_ty) => {
+                                                            let label: String =
+                                                                match &str_attr_ty.kind {
+                                                                    TypeKind::Function(func_ty) => {
+                                                                        func_ty_complete_label(
+                                                                            &attr_name, func_ty,
+                                                                        )
+                                                                    }
+                                                                    _ => attr_name.clone(),
+                                                                };
+                                                            let insert_text = match &str_attr_ty
+                                                                .kind
+                                                            {
+                                                                TypeKind::Function(func_ty) => Some(
+                                                                    func_ty_complete_insert_text(
+                                                                        &attr_name, func_ty,
+                                                                    ),
+                                                                ),
+                                                                _ => None,
+                                                            };
+                                                            let kind = match &str_def.get_sema_info().ty {
+                                                                Some(symbol_ty) => match &symbol_ty.kind {
+                                                                    TypeKind::Schema(_) => {
+                                                                        Some(KCLCompletionItemKind::SchemaAttr)
+                                                                    }
+                                                                    _ => type_to_item_kind(str_attr_ty),
+                                                                },
+                                                                None => type_to_item_kind(str_attr_ty),
+                                                            };
+                                                            let documentation =
+                                                                match &str_sema_info.doc {
+                                                                    Some(doc) => {
+                                                                        if doc.is_empty() {
+                                                                            None
+                                                                        } else {
+                                                                            Some(doc.clone())
+                                                                        }
+                                                                    }
+                                                                    None => None,
+                                                                };
+                                                            items.insert(KCLCompletionItem {
+                                                                label,
+                                                                detail: Some(format!(
+                                                                    "{}: {}",
+                                                                    attr_name,
+                                                                    str_attr_ty.ty_str()
+                                                                )),
+                                                                documentation,
+                                                                kind,
+                                                                insert_text,
+                                                            });
+                                                        }
+                                                        None => {
+                                                            items.insert(KCLCompletionItem {
+                                                                label: attr_name,
+                                                                detail: None,
+                                                                documentation: None,
+                                                                kind: None,
+                                                                insert_text: None,
+                                                            });
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     Some(into_completion_items(&items).into())
 }
+
+// let str_ref = gs.get_symbols().get_type_symbol(union_ty,module_info);
+//                                     if let Some(refs) = str_ref{
+//                                         if let Some(str_def) = gs.get_symbols().get_symbol(refs) {
+
+//                                     }
 
 /// Get completion items for trigger '=' or ':'
 /// Now, just completion for schema attr value
@@ -328,46 +436,11 @@ fn completion_assign(pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::Comple
     if let Some(symbol_ref) = find_def(pos, gs, false) {
         if let Some(symbol) = gs.get_symbols().get_symbol(symbol_ref) {
             if let Some(def) = symbol.get_definition() {
-                if let SymbolKind::Attribute = def.get_kind() {
-                    let sema_info = symbol.get_sema_info();
-                    if let Some(ty) = &sema_info.ty {
-                        match &ty.kind {
-                            TypeKind::Union(types) => {
-                                let string_literals: Vec<String> = types
-                                    .iter()
-                                    .filter_map(|ty| {
-                                        if let TypeKind::StrLit(lit) = &ty.kind {
-                                            Some(lit.clone())
-                                        } else {
-                                            None
-                                        }
-                                    })
-                                    .collect();
-
-                                for lit in string_literals {
-                                    items.extend(
-                                        ty_complete_label(
-                                            ty,
-                                            gs.get_packages().get_module_info(&pos.filename),
-                                        )
-                                        .iter()
-                                        .map(|_label| {
-                                            KCLCompletionItem {
-                                                label: format!(" \"{}\"", lit),
-                                                detail: Some(format!(
-                                                    "{}: {}",
-                                                    symbol.get_name(),
-                                                    ty.ty_str()
-                                                )),
-                                                kind: Some(KCLCompletionItemKind::Variable),
-                                                documentation: sema_info.doc.clone(),
-                                                insert_text: None,
-                                            }
-                                        }),
-                                    );
-                                }
-                            }
-                            _ => {
+                match def.get_kind() {
+                    SymbolKind::Attribute => {
+                        let sema_info = symbol.get_sema_info();
+                        match &sema_info.ty {
+                            Some(ty) => {
                                 items.extend(
                                     ty_complete_label(
                                         ty,
@@ -388,10 +461,12 @@ fn completion_assign(pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::Comple
                                         }
                                     }),
                                 );
+                                return Some(into_completion_items(&items).into());
                             }
+                            None => {}
                         }
-                        return Some(into_completion_items(&items).into());
                     }
+                    _ => {}
                 }
             }
         }
