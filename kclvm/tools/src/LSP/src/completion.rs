@@ -423,12 +423,6 @@ fn completion_dot(
     Some(into_completion_items(&items).into())
 }
 
-// let str_ref = gs.get_symbols().get_type_symbol(union_ty,module_info);
-//                                     if let Some(refs) = str_ref{
-//                                         if let Some(str_def) = gs.get_symbols().get_symbol(refs) {
-
-//                                     }
-
 /// Get completion items for trigger '=' or ':'
 /// Now, just completion for schema attr value
 fn completion_assign(pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::CompletionResponse> {
