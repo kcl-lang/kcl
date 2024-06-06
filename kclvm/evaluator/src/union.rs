@@ -121,7 +121,7 @@ fn do_union(
         }
     };
 
-    //union schema vars
+    // whether to union schema vars and resolve it and do the check of schema
     let mut union_schema = false;
     let mut pkgpath: String = "".to_string();
     let mut name: String = "".to_string();
