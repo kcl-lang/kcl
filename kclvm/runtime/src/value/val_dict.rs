@@ -236,6 +236,49 @@ impl ValueRef {
         }
     }
 
+    /// Dict get entries e.g., {k1: v1, k2, v2}.get_entries([k1, k2]) == {k1: v1, k1: v2}
+    pub fn dict_get_entries_with_op(
+        &self,
+        keys: Vec<&str>,
+        op: &ConfigEntryOperationKind,
+    ) -> ValueRef {
+        match &*self.rc.borrow() {
+            Value::dict_value(ref dict) => {
+                let mut d = ValueRef::dict(None);
+                for key in keys {
+                    if dict.values.contains_key(key) {
+                        let value = dict.values.get(key).unwrap();
+                        let index = dict.insert_indexs.get(key).unwrap_or(&-1);
+                        d.dict_update_entry(key, value, op, index);
+                    }
+                }
+                d.set_potential_schema_type(&dict.potential_schema.clone().unwrap_or_default());
+                d
+            }
+            Value::schema_value(ref schema) => {
+                let mut d = ValueRef::dict(None);
+                for key in keys {
+                    if schema.config.values.contains_key(key) {
+                        let value = schema.config.values.get(key).unwrap();
+                        let index = schema.config.insert_indexs.get(key).unwrap_or(&-1);
+                        d.dict_update_entry(key, value, op, index);
+                    }
+                }
+                d.set_potential_schema_type(
+                    &schema
+                        .config
+                        .potential_schema
+                        .as_ref()
+                        .map(|v| v.to_string())
+                        .unwrap_or_default(),
+                );
+                d
+            }
+            // Panic
+            _ => panic!("invalid config value in dict_get_entries"),
+        }
+    }
+
     /// Update dict value without attribute operator check, only update
     pub fn dict_update(&mut self, v: &ValueRef) {
         let mut binding = self.rc.borrow_mut();

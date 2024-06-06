@@ -17,7 +17,8 @@ pub fn resolve_schema(s: &Evaluator, schema: &ValueRef, keys: &[String]) -> Valu
     let schema_type_name = schema_runtime_type(&schema_value.name, &schema_value.pkgpath);
     if let Some(index) = s.schemas.borrow().get(&schema_type_name) {
         let keys = keys.iter().map(|v| v.as_str()).collect();
-        let config_value = schema.dict_get_entries(keys);
+        let config_value =
+            schema.dict_get_entries_with_op(keys, &ConfigEntryOperationKind::Override);
         let config_meta = {
             let ctx = s.runtime_ctx.borrow();
             schema_config_meta(

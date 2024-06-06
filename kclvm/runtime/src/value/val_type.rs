@@ -84,7 +84,7 @@ pub fn resolve_schema(ctx: &mut Context, schema: &ValueRef, keys: &[String]) -> 
         let schema_type = schema_type.func.as_function();
         let schema_fn_ptr = schema_type.fn_ptr;
         let keys = keys.iter().map(|v| v.as_str()).collect();
-        let config = schema.dict_get_entries(keys);
+        let config = schema.dict_get_entries_with_op(keys, &ConfigEntryOperationKind::Override);
         let config_new = config.clone();
         let config_meta = schema_config_meta(
             &ctx.panic_info.kcl_file,
