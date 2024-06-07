@@ -327,7 +327,7 @@ fn completion_dot(
                     if let Some(ty) = &sema_info.ty {
                         if let TypeKind::Union(union_types) = &ty.kind {
                             for union_ty in union_types {
-                                if let TypeKind::StrLit(_) = &union_ty.kind {
+                                if let TypeKind::StrLit(_) | TypeKind::Str = &union_ty.kind {
                                     let module_info =
                                         gs.get_packages().get_module_info(&pos.filename);
                                     let str_refs =
