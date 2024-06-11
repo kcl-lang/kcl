@@ -382,7 +382,15 @@ impl SymbolData {
                 }
                 result
             }
-            TypeKind::StrLit(_) => vec![],
+            TypeKind::StrLit(_) => {
+                let mut result = vec![];
+                if let Some(symbol_ref) = self.get_type_symbol(ty, module_info) {
+                    if let Some(symbol) = self.get_symbol(symbol_ref) {
+                        result = symbol.get_all_attributes(self, module_info);
+                    }
+                }
+                result
+            }
             TypeKind::List(_) => vec![],
             TypeKind::Dict(_) => vec![],
             TypeKind::NumberMultiplier(_) => vec![],
