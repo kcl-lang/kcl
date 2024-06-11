@@ -328,10 +328,12 @@ fn completion_dot(
                         if let TypeKind::Union(union_types) = &ty.kind {
                             for union_ty in union_types {
                                 if let TypeKind::StrLit(_) | TypeKind::Str = &union_ty.kind {
+                                    let module_info =
+                                        gs.get_packages().get_module_info(&pos.filename);
                                     let str_attrs = gs.get_symbols().get_type_all_attribute(
                                         &union_ty,
                                         "",
-                                        gs.get_packages().get_module_info(&pos.filename),
+                                        module_info,
                                     );
                                     for str_attr in str_attrs {
                                         let str_attr_def = gs.get_symbols().get_symbol(str_attr);
