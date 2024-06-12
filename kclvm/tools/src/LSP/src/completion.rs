@@ -779,7 +779,7 @@ mod tests {
         let mut expected_labels: Vec<String> = vec![
             "", // generate from error recovery of "pkg."
             "subpkg", "math", "Person", "Person{}", "P", "P{}", "p", "p1", "p2", "p3", "p4",
-            "aaaa",
+            "aaaa", "Config", "Config{}", "n",
         ]
         .iter()
         .map(|s| s.to_string())
@@ -939,7 +939,7 @@ mod tests {
         assert_eq!(got_labels, expected_labels);
 
         let pos = KCLPos {
-            filename: file,
+            filename: file.clone(),
             line: 30,
             column: Some(11),
         };
@@ -951,6 +951,25 @@ mod tests {
         };
 
         let expected_labels: Vec<&str> = vec!["a"];
+        assert_eq!(got_labels, expected_labels);
+
+        // test completion for string union type
+        let pos = KCLPos {
+            filename: file.clone(),
+            line: 36,
+            column: Some(30),
+        };
+
+        let got = completion(Some('.'), &program, &pos, &gs, &tool).unwrap();
+        let got_labels: Vec<String> = match got {
+            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
+            CompletionResponse::List(_) => panic!("test failed"),
+        };
+
+        let expected_labels: Vec<String> = STRING_MEMBER_FUNCTIONS
+            .iter()
+            .map(|(name, ty)| func_ty_complete_label(name, &ty.into_func_type()))
+            .collect();
         assert_eq!(got_labels, expected_labels);
     }
 
@@ -1089,7 +1108,7 @@ mod tests {
         assert_eq!(got_insert_text, expected_insert_text);
 
         let pos = KCLPos {
-            filename: file,
+            filename: file.clone(),
             line: 30,
             column: Some(11),
         };
@@ -1102,6 +1121,38 @@ mod tests {
 
         let expected_labels: Vec<&str> = vec!["a"];
         assert_eq!(got_labels, expected_labels);
+
+        // test completion for str union types
+        let pos = KCLPos {
+            filename: file.clone(),
+            line: 36,
+            column: Some(30),
+        };
+
+        let got = completion(Some('.'), &program, &pos, &gs, &tool).unwrap();
+        let got_labels: Vec<String> = match &got {
+            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
+            CompletionResponse::List(_) => panic!("test failed"),
+        };
+
+        let expected_labels: Vec<String> = STRING_MEMBER_FUNCTIONS
+            .iter()
+            .map(|(name, ty)| func_ty_complete_label(name, &ty.into_func_type()))
+            .collect();
+        assert_eq!(got_labels, expected_labels);
+
+        let got_insert_text: Vec<String> = match &got {
+            CompletionResponse::Array(arr) => arr
+                .iter()
+                .map(|item| item.insert_text.clone().unwrap())
+                .collect(),
+            CompletionResponse::List(_) => panic!("test failed"),
+        };
+        let expected_insert_text: Vec<String> = STRING_MEMBER_FUNCTIONS
+            .iter()
+            .map(|(name, ty)| func_ty_complete_insert_text(name, &ty.into_func_type()))
+            .collect();
+        assert_eq!(got_insert_text, expected_insert_text);
     }
 
     #[test]
