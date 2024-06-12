@@ -1548,11 +1548,7 @@ impl<'a> Parser<'a> {
             return None;
         }
 
-        let start_pos = if s.is_long_string {
-            pos + new_byte_pos(3)
-        } else {
-            pos + new_byte_pos(1)
-        };
+        let quote_space = if s.is_long_string { 3 } else { 1 };
 
         let mut joined_value = JoinedString {
             is_long_string: s.is_long_string,
@@ -1632,16 +1628,33 @@ impl<'a> Parser<'a> {
             )
         }
 
-        let data = s.value.as_str();
-        let mut off: usize = 0;
-        loop {
-            if let Some(i) = data[off..].find("${") {
-                if let Some(j) = data[off + i..].find('}') {
-                    let lo: usize = off + i;
-                    let hi: usize = off + i + j + 1;
+        // Here we use double pointers of data and raw_data,
+        // where data is used to obtain string literal data
+        // and raw_data is used to obtain string interpolation
+        // data to ensure that their respective positional
+        // information is correct.
 
-                    let s0 = &data[off..lo];
-                    let s1 = &data[lo..hi];
+        let data = s.value.as_str();
+        let raw_data = s.raw_value.as_str();
+        let raw_data = &s.raw_value.as_str()[..raw_data.len() - quote_space];
+        let mut data_off = 0;
+        let mut raw_off: usize = quote_space;
+        loop {
+            if let (Some(i), Some(data_i)) =
+                (raw_data[raw_off..].find("${"), data[data_off..].find("${"))
+            {
+                if let (Some(j), Some(data_j)) = (
+                    raw_data[raw_off + i..].find('}'),
+                    data[data_off + i..].find('}'),
+                ) {
+                    let lo: usize = raw_off + i;
+                    let hi: usize = raw_off + i + j + 1;
+
+                    let data_lo: usize = data_off + data_i;
+                    let data_hi: usize = data_off + data_i + data_j + 1;
+
+                    let s0 = &data[data_off..data_lo];
+                    let s1 = &raw_data[lo..hi];
 
                     let s0_expr = node_ref!(Expr::StringLit(StringLit {
                         is_long_string: false,
@@ -1649,14 +1662,15 @@ impl<'a> Parser<'a> {
                         value: s0.to_string().replace("$$", "$"),
                     }));
 
-                    let s1_expr = parse_expr(self, s1, start_pos + new_byte_pos(lo as u32));
+                    let s1_expr = parse_expr(self, s1, pos + new_byte_pos(lo as u32));
 
                     if !s0.is_empty() {
                         joined_value.values.push(s0_expr);
                     }
                     joined_value.values.push(s1_expr);
 
-                    off = hi;
+                    data_off = data_hi;
+                    raw_off = hi;
                     continue;
                 } else {
                     self.sess.struct_message_error(
@@ -1667,23 +1681,22 @@ impl<'a> Parser<'a> {
                         .values
                         .push(node_ref!(Expr::StringLit(StringLit {
                             is_long_string: false,
-                            raw_value: data[off..].to_string(),
-                            value: data[off..].to_string(),
+                            raw_value: data[data_off..].to_string(),
+                            value: data[data_off..].to_string(),
                         })));
                     break;
                 }
             } else {
-                if off >= s.value.as_str().len() {
+                if raw_off >= raw_data.len() || data_off >= data.len() {
                     break;
                 }
 
-                // todo: fix pos
                 joined_value
                     .values
                     .push(node_ref!(Expr::StringLit(StringLit {
                         is_long_string: false,
-                        raw_value: data[off..].to_string(),
-                        value: data[off..].to_string().replace("$$", "$"),
+                        raw_value: data[data_off..].to_string(),
+                        value: data[data_off..].to_string().replace("$$", "$"),
                     })));
                 break;
             }
