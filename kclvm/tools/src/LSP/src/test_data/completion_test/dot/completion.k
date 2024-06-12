@@ -28,3 +28,10 @@ schema P:
     a: int = 1
 
 aaaa = P{}.
+
+schema Config:
+    containerRuntime?:  "runc" | "rund"
+
+n = Config {
+    containerRuntime = "runc".
+}
