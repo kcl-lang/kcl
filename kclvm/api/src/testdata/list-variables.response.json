@@ -1,58 +1,70 @@
 {
     "variables": {
-        "a": {
-            "value": "1",
-            "type_name": "",
-            "op_sym": "=",
-            "list_items": [],
-            "dict_entries": []
-        },
         "c": {
-            "value": "{\"a\": \"b\"}",
-            "type_name": "",
-            "op_sym": "=",
-            "list_items": [],
-            "dict_entries": [
+            "variables": [
                 {
-                    "key": "a",
-                    "value": {
-                        "value": "\"b\"",
-                        "type_name": "",
-                        "op_sym": ":",
-                        "list_items": [],
-                        "dict_entries": []
-                    }
+                    "value": "{\"a\": \"b\"}",
+                    "type_name": "",
+                    "op_sym": "=",
+                    "list_items": [],
+                    "dict_entries": [
+                        {
+                            "key": "a",
+                            "value": {
+                                "value": "\"b\"",
+                                "type_name": "",
+                                "op_sym": ":",
+                                "list_items": [],
+                                "dict_entries": []
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        "a": {
+            "variables": [
+                {
+                    "value": "1",
+                    "type_name": "",
+                    "op_sym": "=",
+                    "list_items": [],
+                    "dict_entries": []
                 }
             ]
         },
         "b": {
-            "value": "[1, 2, 3]",
-            "type_name": "",
-            "op_sym": "=",
-            "list_items": [
+            "variables": [
                 {
-                    "value": "1",
+                    "value": "[1, 2, 3]",
                     "type_name": "",
-                    "op_sym": "",
-                    "list_items": [],
-                    "dict_entries": []
-                },
-                {
-                    "value": "2",
-                    "type_name": "",
-                    "op_sym": "",
-                    "list_items": [],
-                    "dict_entries": []
-                },
-                {
-                    "value": "3",
-                    "type_name": "",
-                    "op_sym": "",
-                    "list_items": [],
+                    "op_sym": "=",
+                    "list_items": [
+                        {
+                            "value": "1",
+                            "type_name": "",
+                            "op_sym": "",
+                            "list_items": [],
+                            "dict_entries": []
+                        },
+                        {
+                            "value": "2",
+                            "type_name": "",
+                            "op_sym": "",
+                            "list_items": [],
+                            "dict_entries": []
+                        },
+                        {
+                            "value": "3",
+                            "type_name": "",
+                            "op_sym": "",
+                            "list_items": [],
+                            "dict_entries": []
+                        }
+                    ],
                     "dict_entries": []
                 }
-            ],
-            "dict_entries": []
+            ]
         }
     },
     "unsupported_codes": [],

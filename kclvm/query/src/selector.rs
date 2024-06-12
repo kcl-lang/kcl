@@ -6,8 +6,10 @@ use kclvm_parser::ParseSession;
 use serde::{Deserialize, Serialize};
 
 use std::{
-    collections::{HashMap, VecDeque},
+    collections::{BTreeMap, HashMap, VecDeque},
+    fmt,
     sync::Arc,
+    vec,
 };
 
 use kclvm_ast::path::get_key_path;
@@ -28,7 +30,7 @@ pub struct UnsupportedSelectee {
 /// Selector is used to select the target variable from the kcl program.
 pub struct Selector {
     select_specs: Vec<String>,
-    select_result: HashMap<String, Variable>,
+    select_result: BTreeMap<String, Vec<Variable>>,
     unsupported: Vec<UnsupportedSelectee>,
     inner: SelectorInner,
 }
@@ -38,6 +40,7 @@ struct SelectorInner {
     current_spec: String,
     current_spec_items: VecDeque<String>,
     spec_store: Vec<Vec<String>>,
+    var_store: VecDeque<Variable>,
     has_err: bool,
 }
 
@@ -47,6 +50,7 @@ impl SelectorInner {
             current_spec: String::new(),
             current_spec_items: VecDeque::new(),
             spec_store: vec![vec![]],
+            var_store: VecDeque::new(),
             has_err: false,
         }
     }
@@ -82,7 +86,7 @@ impl Selector {
     fn new(select_specs: Vec<String>) -> Result<Self> {
         Ok(Self {
             select_specs,
-            select_result: HashMap::new(),
+            select_result: BTreeMap::new(),
             unsupported: vec![],
             inner: SelectorInner::default(),
         })
@@ -107,6 +111,90 @@ impl Selector {
         }
 
         return self.inner.has_err;
+    }
+
+    fn switch_top_variable(&mut self, variable: Variable) {
+        let mut binding = Variable::default();
+
+        let var = self.inner.var_store.back_mut().unwrap_or(&mut binding);
+
+        var.dict_entries.push(DictEntry {
+            key: variable.name.clone(),
+            value: variable.clone(),
+        });
+    }
+
+    fn push_variable(&mut self, variable: Variable) {
+        self.inner.var_store.push_back(variable);
+    }
+
+    fn pop_n_variables(&mut self, n: usize) -> Vec<Variable> {
+        let mut variables = Vec::new();
+        for _ in 0..n {
+            if let Some(top) = self.inner.var_store.pop_back() {
+                variables.push(top);
+            }
+        }
+        variables
+    }
+
+    fn store_variable(&mut self, key: String) {
+        if let Some(popped) = self.inner.var_store.front() {
+            self.select_result
+                .entry(key.clone())
+                .or_insert_with(Vec::new)
+                .push(popped.clone());
+        }
+    }
+
+    pub fn select_varibales(
+        &mut self,
+        spec: String,
+        variable: Variable,
+    ) -> HashMap<String, Vec<Variable>> {
+        let mut res = HashMap::new();
+
+        // split the spec with '.'
+        // put the spec into a queue to select the target
+        self.inner.current_spec = spec.clone();
+        self.inner.current_spec_items = spec
+            .split('.')
+            .map(|s| s.to_string())
+            .collect::<VecDeque<String>>();
+
+        res.insert(spec.to_string(), self.find_variables(variable.clone()));
+        return res;
+    }
+
+    fn find_variables(&mut self, variable: Variable) -> Vec<Variable> {
+        self.inner.init();
+        let mut variables = Vec::new();
+        if self.inner.current_spec_items.is_empty() {
+            variables.push(variable.clone());
+        } else {
+            if let Some(selector) = self.inner.pop_front() {
+                if variable.name == selector {
+                    if self.inner.current_spec_items.is_empty() {
+                        variables.push(variable.clone());
+                    } else {
+                        if variable.is_dict() {
+                            for entry in &variable.dict_entries {
+                                variables.append(&mut self.find_variables(entry.value.clone()));
+                            }
+                        }
+
+                        if variable.is_list() {
+                            for item in &variable.list_items {
+                                variables.append(&mut self.find_variables(item.clone()));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        self.inner.restore();
+        return variables;
     }
 
     // The value of Variable includes the three types: String, List, Dict.
@@ -134,6 +222,7 @@ impl Selector {
                     let key = get_key_path(&item.node.key);
 
                     let mut variable = Variable::default();
+                    variable.name = key.to_string();
                     variable.op_sym = item.node.operation.symbol().to_string();
                     self.fill_variable_value(&mut variable, &item.node.value.node);
                     variables.push(DictEntry {
@@ -150,6 +239,7 @@ impl Selector {
                         let key = get_key_path(&item.node.key);
 
                         let mut variable = Variable::default();
+                        variable.name = key.to_string();
                         variable.op_sym = item.node.operation.symbol().to_string();
                         self.fill_variable_value(&mut variable, &item.node.value.node);
                         variables.push(DictEntry {
@@ -184,6 +274,7 @@ impl<'ctx> MutSelfWalker for Selector {
                 .split('.')
                 .map(|s| s.to_string())
                 .collect::<VecDeque<String>>();
+            self.inner.var_store.clear();
 
             // walk the module to find the target
             for stmt in &module.body {
@@ -194,6 +285,7 @@ impl<'ctx> MutSelfWalker for Selector {
 
     fn walk_unification_stmt(&mut self, unification_stmt: &ast::UnificationStmt) {
         self.inner.init();
+        let mut stack_size = 0;
         let target = &unification_stmt.target;
         let target = &Some(Box::new(ast::Node::dummy_node(ast::Expr::Identifier(
             target.node.clone(),
@@ -206,38 +298,49 @@ impl<'ctx> MutSelfWalker for Selector {
                 &mut variable,
                 &ast::Expr::Schema(unification_stmt.value.node.clone()),
             );
+            variable.name = target.to_string();
             variable.type_name = unification_stmt.value.node.name.node.get_name();
             variable.op_sym = ast::ConfigEntryOperation::Union.symbol().to_string();
-            self.select_result.insert(target.to_string(), variable);
+            self.switch_top_variable(variable.clone());
+            self.push_variable(variable);
+            stack_size += 1;
+            self.store_variable(target.to_string());
         } else {
             // if length of spec is largr or equal to target
             let selector = self.inner.pop_front();
             if let Some(selector) = selector {
                 if selector == target.to_string() {
+                    variable.name = target.to_string();
+                    variable.type_name = unification_stmt.value.node.name.node.get_name();
+                    variable.op_sym = ast::ConfigEntryOperation::Union.symbol().to_string();
                     if self.inner.current_spec_items.is_empty() {
                         self.fill_variable_value(
                             &mut variable,
                             &ast::Expr::Schema(unification_stmt.value.node.clone()),
                         );
-                        variable.type_name = unification_stmt.value.node.name.node.get_name();
-                        variable.op_sym = ast::ConfigEntryOperation::Union.symbol().to_string();
-
-                        // matched
-                        self.select_result.insert(target.to_string(), variable);
+                        self.switch_top_variable(variable.clone());
+                        self.push_variable(variable);
+                        stack_size += 1;
+                        self.store_variable(target.to_string());
                     } else {
+                        self.switch_top_variable(variable.clone());
+                        self.push_variable(variable);
+                        stack_size += 1;
                         // walk ahead
                         self.walk_schema_expr(&unification_stmt.value.node);
                     }
                 }
             }
-            // the spec is still used up
-            // Unmatched, return
-            self.inner.restore();
         }
+        // the spec is still used up
+        // Unmatched, return
+        self.inner.restore();
+        self.pop_n_variables(stack_size);
     }
 
     fn walk_assign_stmt(&mut self, assign_stmt: &ast::AssignStmt) {
         self.inner.init();
+        let mut stack_size = 0;
         let mut variable = Variable::default();
         // If the spec is empty, all the top level variables are returned.
         if self.inner.current_spec.is_empty() {
@@ -260,9 +363,13 @@ impl<'ctx> MutSelfWalker for Selector {
                     target.node.clone(),
                 ))));
                 let key = get_key_path(&target);
+                variable.name = key.to_string();
                 variable.type_name = type_name;
                 variable.op_sym = ast::ConfigEntryOperation::Override.symbol().to_string();
-                self.select_result.insert(key.to_string(), variable);
+                self.switch_top_variable(variable.clone());
+                self.push_variable(variable);
+                stack_size += 1;
+                self.store_variable(key.to_string());
             }
         } else {
             // Compare the target with the spec
@@ -275,40 +382,45 @@ impl<'ctx> MutSelfWalker for Selector {
                 let selector = self.inner.pop_front();
                 if let Some(selector) = selector {
                     if selector == target.to_string() {
+                        let type_name = if let ast::Expr::Schema(schema) = &assign_stmt.value.node {
+                            schema.name.node.get_name()
+                        } else {
+                            "".to_string()
+                        };
+                        variable.name = selector.to_string();
+                        variable.type_name = type_name;
+                        variable.op_sym = ast::ConfigEntryOperation::Override.symbol().to_string();
                         if self.inner.current_spec_items.is_empty() {
+                            // matched
+                            self.fill_variable_value(&mut variable, &assign_stmt.value.node);
+
+                            self.switch_top_variable(variable.clone());
+                            self.push_variable(variable);
+                            stack_size += 1;
                             // check the value of the assign statement is supported
                             if self.check_node_supported(&assign_stmt.value.node) {
                                 self.inner.restore();
                                 return;
                             }
-
-                            // matched
-                            self.fill_variable_value(&mut variable, &assign_stmt.value.node);
-                            let type_name =
-                                if let ast::Expr::Schema(schema) = &assign_stmt.value.node {
-                                    schema.name.node.get_name()
-                                } else {
-                                    "".to_string()
-                                };
-                            variable.type_name = type_name;
-                            variable.op_sym =
-                                ast::ConfigEntryOperation::Override.symbol().to_string();
-                            self.select_result.insert(target.to_string(), variable);
+                            self.store_variable(target.to_string());
                         } else {
+                            self.switch_top_variable(variable.clone());
+                            self.push_variable(variable);
+                            stack_size += 1;
                             // walk ahead
                             self.walk_expr(&assign_stmt.value.node)
                         }
                     }
                 }
-                // if lentgh of spec is less than target
-                // Unmatched, return
-                self.inner.restore();
             }
         }
+        self.inner.restore();
+        self.pop_n_variables(stack_size);
     }
 
     fn walk_config_expr(&mut self, config_expr: &ast::ConfigExpr) {
         self.inner.init();
+        let mut stack_size = 0;
         let selector = self.inner.pop_front();
 
         if let Some(selector) = selector {
@@ -322,32 +434,38 @@ impl<'ctx> MutSelfWalker for Selector {
                         continue;
                     }
                 }
+                let type_name = if let ast::Expr::Schema(schema) = &item.node.value.node {
+                    schema.name.node.get_name()
+                } else {
+                    "".to_string()
+                };
+                variable.name = key.to_string();
+                variable.type_name = type_name;
+                variable.op_sym = item.node.operation.symbol().to_string();
                 // match the key with the selector
                 if key == selector {
+                    self.fill_variable_value(&mut variable, &item.node.value.node);
+
                     if self.inner.current_spec_items.is_empty() {
                         // If all the spec items are matched
                         // check and return
                         if self.check_node_supported(&item.node.value.node) {
                             continue;
                         }
-                        self.fill_variable_value(&mut variable, &item.node.value.node);
-                        let type_name = if let ast::Expr::Schema(schema) = &item.node.value.node {
-                            schema.name.node.get_name()
-                        } else {
-                            "".to_string()
-                        };
-                        variable.type_name = type_name;
-                        variable.op_sym = item.node.operation.symbol().to_string();
-                        self.select_result
-                            .insert(self.inner.current_spec.to_string(), variable);
+                        self.switch_top_variable(variable);
+                        self.store_variable(self.inner.current_spec.to_string());
                     } else {
                         // the spec is still not used up
                         // walk ahead
+                        self.switch_top_variable(variable.clone());
+                        self.push_variable(variable);
+                        stack_size += 1;
                         self.walk_expr(&item.node.value.node);
                     }
                 }
             }
             self.inner.restore();
+            self.pop_n_variables(stack_size);
         }
     }
 
@@ -422,13 +540,14 @@ impl<'ctx> MutSelfWalker for Selector {
 }
 
 pub struct ListVariablesResult {
-    pub variables: HashMap<String, Variable>,
+    pub variables: BTreeMap<String, Vec<Variable>>,
     pub unsupported: Vec<UnsupportedSelectee>,
     pub parse_errors: Errors,
 }
 
-#[derive(Debug, PartialEq, Default, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Default, Serialize, Deserialize, Clone)]
 pub struct Variable {
+    pub name: String,
     pub type_name: String,
     pub op_sym: String,
     pub value: String,
@@ -436,7 +555,36 @@ pub struct Variable {
     pub dict_entries: Vec<DictEntry>,
 }
 
-#[derive(Debug, PartialEq, Default, Serialize, Deserialize)]
+impl fmt::Display for Variable {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if self.is_base_type() {
+            return write!(f, "{}", self.value);
+        } else if self.is_list() {
+            write!(f, "[")?;
+            for (i, item) in self.list_items.iter().enumerate() {
+                if i != 0 {
+                    write!(f, ", ")?;
+                }
+                write!(f, "{}", item)?;
+            }
+            write!(f, "]")?;
+        } else if self.is_dict() {
+            // let entries = self.dict_entries.clone();
+            // self.dict_entries.sort_by(|a, b| a.key.cmp(&b.key));
+            write!(f, "{} {{ ", self.type_name)?;
+            for (i, entry) in self.dict_entries.iter().enumerate() {
+                if i != 0 {
+                    write!(f, ", ")?;
+                }
+                write!(f, "{} {} {}", entry.key, entry.value.op_sym, entry.value)?;
+            }
+            write!(f, " }}")?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug, PartialEq, Default, Serialize, Deserialize, Clone)]
 pub struct DictEntry {
     pub key: String,
     pub value: Variable,
@@ -444,6 +592,7 @@ pub struct DictEntry {
 
 impl Variable {
     pub fn new(
+        name: String,
         type_name: String,
         op_sym: String,
         value: String,
@@ -451,6 +600,7 @@ impl Variable {
         dict_entries: Vec<DictEntry>,
     ) -> Self {
         Self {
+            name,
             type_name,
             op_sym,
             value,
@@ -458,11 +608,80 @@ impl Variable {
             dict_entries,
         }
     }
+
+    pub fn is_base_type(&self) -> bool {
+        self.list_items.is_empty() && self.dict_entries.is_empty() && self.type_name.is_empty()
+    }
+
+    pub fn is_union(&self) -> bool {
+        self.op_sym == ast::ConfigEntryOperation::Union.symbol().to_string()
+    }
+
+    pub fn is_override(&self) -> bool {
+        self.op_sym == ast::ConfigEntryOperation::Override.symbol().to_string()
+    }
+
+    pub fn is_dict(&self) -> bool {
+        !self.dict_entries.is_empty()
+    }
+
+    pub fn is_list(&self) -> bool {
+        !self.list_items.is_empty()
+    }
+
+    pub fn merge(&mut self, var: &Variable) -> &mut Self {
+        if var.is_override() {
+            self.value = var.value.clone();
+            self.list_items = var.list_items.clone();
+            self.dict_entries = var.dict_entries.clone();
+        }
+
+        if var.is_union() {
+            // For int, float, str and bool types, when their values are different, they are considered as conflicts.
+            if self.is_base_type() && self.is_base_type() && self.value == self.value {
+                return self;
+            } else {
+                if self.is_dict() && var.is_dict() {
+                    let mut dict = BTreeMap::new();
+                    for entry in self.dict_entries.iter() {
+                        dict.insert(entry.key.clone(), entry.value.clone());
+                    }
+
+                    for entry in var.dict_entries.iter() {
+                        if let Some(v) = dict.get_mut(&entry.key) {
+                            v.merge(&entry.value);
+                        } else {
+                            dict.insert(entry.key.clone(), entry.value.clone());
+                        }
+                    }
+
+                    self.dict_entries = dict
+                        .iter()
+                        .map(|(k, v)| DictEntry {
+                            key: k.clone(),
+                            value: v.clone(),
+                        })
+                        .collect();
+                    self.value = self.to_string();
+                }
+            }
+        }
+
+        return self;
+    }
+}
+
+pub struct ListOptions {
+    pub merge_program: bool,
 }
 
 /// list_options provides users with the ability to parse kcl program and get all option
 /// calling information.
-pub fn list_variables(files: Vec<String>, specs: Vec<String>) -> Result<ListVariablesResult> {
+pub fn list_variables(
+    files: Vec<String>,
+    specs: Vec<String>,
+    list_opts: Option<&ListOptions>,
+) -> Result<ListVariablesResult> {
     let mut selector = Selector::new(specs)?;
     let mut load_result = load_program(
         Arc::new(ParseSession::default()),
@@ -478,6 +697,36 @@ pub fn list_variables(files: Vec<String>, specs: Vec<String>) -> Result<ListVari
     for (_, modules) in load_result.program.pkgs.iter() {
         for module in modules.iter() {
             selector.walk_module(&module);
+        }
+    }
+
+    if let Some(list_opts) = list_opts {
+        if list_opts.merge_program {
+            let keys_and_vars: Vec<_> = selector
+                .select_result
+                .iter()
+                .map(|(k, v)| (k.clone(), v.clone()))
+                .collect();
+            for (key, mut vars) in keys_and_vars {
+                let mut tmp_var = vars.get(0).unwrap().clone();
+                for var in vars.iter_mut().skip(1) {
+                    tmp_var.merge(var);
+                }
+                let res = selector.select_varibales(key, tmp_var);
+                selector.select_result.extend(res);
+            }
+        }
+    } else {
+        let keys_and_vars: Vec<_> = selector
+            .select_result
+            .iter()
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect();
+        for (key, vars) in keys_and_vars {
+            for var in vars.iter() {
+                let res = selector.select_varibales(key.clone(), var.clone());
+                selector.select_result.extend(res);
+            }
         }
     }
 

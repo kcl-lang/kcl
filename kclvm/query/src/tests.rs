@@ -1,6 +1,6 @@
 use std::{
     fs::{self, File},
-    io::Read,
+    io::{Read, Write},
     path::PathBuf,
 };
 
@@ -11,6 +11,7 @@ use crate::{
 use kclvm_error::{DiagnosticId, ErrorKind, Level};
 use kclvm_parser::parse_file_force_errors;
 use pretty_assertions::assert_eq;
+use selector::ListOptions;
 use serde_json::Value;
 
 const CARGO_FILE_PATH: &str = env!("CARGO_MANIFEST_DIR");
@@ -368,7 +369,7 @@ fn test_list_variables() {
         ),
         ("shb.a.data.d.e", "{\"f\": 3}", "", ":"),
         ("uconfa.name", "\"b\"", "", "="),
-        ("c.a", "{ids: [7, 8, 9]}", "", ":"),
+        ("c.a", r#"{name: "Hello"}"#, "", ":"),
         (
             "job.name",
             r#""{}-{}".format("app", "test").lower()"#,
@@ -381,10 +382,26 @@ fn test_list_variables() {
 
     for (spec, expected, expected_name, op_sym) in test_cases {
         let specs = vec![spec.to_string()];
-        let result = list_variables(vec![file.clone()], specs).unwrap();
-        assert_eq!(result.variables.get(spec).unwrap().value, expected);
-        assert_eq!(result.variables.get(spec).unwrap().type_name, expected_name);
-        assert_eq!(result.variables.get(spec).unwrap().op_sym, op_sym);
+        let result = list_variables(vec![file.clone()], specs, None).unwrap();
+        println!("{:?}", spec);
+        assert_eq!(
+            result.variables.get(spec).unwrap().get(0).unwrap().value,
+            expected
+        );
+        assert_eq!(
+            result
+                .variables
+                .get(spec)
+                .unwrap()
+                .get(0)
+                .unwrap()
+                .type_name,
+            expected_name
+        );
+        assert_eq!(
+            result.variables.get(spec).unwrap().get(0).unwrap().op_sym,
+            op_sym
+        );
 
         let path = PathBuf::from("./src/test_data/test_list_variables/test_list_variables");
         let mut file = File::open(path.join(format!("{}.json", spec))).unwrap();
@@ -392,6 +409,7 @@ fn test_list_variables() {
         file.read_to_string(&mut contents).unwrap();
 
         let expect_json: Value = serde_json::from_str(&contents).unwrap();
+
         let got_json: Value =
             serde_json::from_str(&serde_json::to_string_pretty(&result.variables).unwrap())
                 .unwrap();
@@ -470,10 +488,26 @@ fn test_list_all_variables() {
     ];
 
     for (spec, expected, expected_name, op_sym) in test_cases {
-        let result = list_variables(vec![file.clone()], vec![]).unwrap();
-        assert_eq!(result.variables.get(spec).unwrap().value, expected);
-        assert_eq!(result.variables.get(spec).unwrap().type_name, expected_name);
-        assert_eq!(result.variables.get(spec).unwrap().op_sym, op_sym);
+        println!("{:?}", spec);
+        let result = list_variables(vec![file.clone()], vec![], None).unwrap();
+        assert_eq!(
+            result.variables.get(spec).unwrap().get(0).unwrap().value,
+            expected
+        );
+        assert_eq!(
+            result
+                .variables
+                .get(spec)
+                .unwrap()
+                .get(0)
+                .unwrap()
+                .type_name,
+            expected_name
+        );
+        assert_eq!(
+            result.variables.get(spec).unwrap().get(0).unwrap().op_sym,
+            op_sym
+        );
         assert_eq!(result.parse_errors.len(), 0);
 
         let path = PathBuf::from("./src/test_data/test_list_variables/test_list_all_variables");
@@ -521,7 +555,7 @@ fn test_list_unsupported_variables() {
 
     for (spec, expected_code) in test_cases {
         let specs = vec![spec.to_string()];
-        let result = list_variables(vec![file.clone()], specs).unwrap();
+        let result = list_variables(vec![file.clone()], specs, None).unwrap();
         assert_eq!(result.variables.get(spec), None);
         assert_eq!(result.unsupported[0].code, expected_code);
         assert_eq!(result.parse_errors.len(), 0);
@@ -545,8 +579,11 @@ fn test_list_unsupported_variables() {
 
     for (spec, expected_code) in test_cases {
         let specs = vec![spec.to_string()];
-        let result = list_variables(vec![file.clone()], specs).unwrap();
-        assert_eq!(result.variables.get(spec).unwrap().value, expected_code);
+        let result = list_variables(vec![file.clone()], specs, None).unwrap();
+        assert_eq!(
+            result.variables.get(spec).unwrap().get(0).unwrap().value,
+            expected_code
+        );
     }
 }
 
@@ -626,7 +663,7 @@ fn test_list_variable_with_invalid_kcl() {
         .display()
         .to_string();
     let specs = vec!["a".to_string()];
-    let result = list_variables(vec![file.clone()], specs).unwrap();
+    let result = list_variables(vec![file.clone()], specs, None).unwrap();
     assert_eq!(result.variables.get("a"), None);
     assert_eq!(result.parse_errors.len(), 2);
     assert_eq!(result.parse_errors[0].level, Level::Error);
@@ -682,7 +719,7 @@ fn test_list_variables_with_file_noexist() {
         .display()
         .to_string();
     let specs = vec!["a".to_string()];
-    let result = list_variables(vec![file.clone()], specs);
+    let result = list_variables(vec![file.clone()], specs, None);
     assert!(result.is_err());
     let err = result.err().unwrap();
     assert_eq!(err.to_string(), "Cannot find the kcl file, please check the file path ./src/test_data/test_list_variables/noexist.k");
@@ -709,51 +746,76 @@ fn test_list_merged_variables() {
         .canonicalize()
         .unwrap();
 
+    file.join("path").display().to_string();
+
     let test_cases = vec![
         (
-            "override/base.k",
-            "override/main.k",
-            vec!["_tests.aType".to_string(), "_tests.pots".to_string()],
-            r#""Internet""#.to_string(),
-            r#"[test.Pot {
-    name: "http"
-    number: 90
-}]"#
-            .to_string(),
+            vec![
+                file.join("merge_1/base.k").display().to_string(),
+                file.join("merge_1/main.k").display().to_string(),
+            ],
+            vec!["appConfiguration.resource".to_string()],
+            vec![r#"res.Resource { cpu = "2", disk = "35Gi", memory = "4Gi" }"#.to_string()],
         ),
-        (
-            "union/base.k",
-            "union/main.k",
-            vec!["tests.aType".to_string(), "tests.pots".to_string()],
-            r#""Internet""#.to_string(),
-            r#"[test.Pot {
-    name: "http"
-    number: 90
-}]"#
-            .to_string(),
-        ),
+                (
+                    vec![
+                        file.join("merge_2/base.k").display().to_string(),
+                        file.join("merge_2/main.k").display().to_string(),
+                    ],
+                    vec!["appConfiguration.resource".to_string()],
+                    vec![r#"res.Resource {
+    cpu = "2"
+    memory = "4Gi"
+}"#.to_string()],
+                ),
+                (
+                    vec![
+                        file.join("merge_3/base.k").display().to_string(),
+                        file.join("merge_3/main.k").display().to_string(),
+                    ],
+                    vec!["appConfiguration.resource".to_string()],
+                    vec![r#"res.Resource { cpu = "2", disk = "35Gi", memory = "4Gi" }"#.to_string()],
+                ),
+                (
+                    vec![
+                        file.join("merge_4/base.k").display().to_string(),
+                        file.join("merge_4/main.k").display().to_string(),
+                    ],
+                    vec!["appConfiguration.resource".to_string()],
+                    vec![r#"res.Resource {
+    cpu = "2"
+    memory = "4Gi"
+}"#.to_string()],
+                ),
+                (
+                    vec![
+                        file.join("merge_5/base.k").display().to_string(),
+                        file.join("merge_5/main.k").display().to_string(),
+                    ],
+                    vec!["appConfiguration.resource".to_string()],
+                    vec![r#"res.Resource { cpu =  { limit : "200m", limit_plus : "20000m", request : "100m" }, disk = "35Gi", memory = "4Gi" }"#.to_string()],
+                ),
     ];
 
-    for (base_file_name, main_file_name, specs, expected_value1, expected_value2) in test_cases {
-        let base_file = file.join(base_file_name).display().to_string();
-        let main_file = file.join(main_file_name).display().to_string();
-
-        let result = list_variables(vec![main_file, base_file], specs.clone()).unwrap();
-        assert_eq!(
-            result
+    for (files, specs, expected_values) in test_cases {
+        println!("{:?}", files);
+        let result = list_variables(
+            files,
+            specs.clone(),
+            Some(&ListOptions {
+                merge_program: true,
+            }),
+        )
+        .unwrap();
+        for (i, expected_value) in expected_values.iter().enumerate() {
+            let variables = result
                 .variables
-                .get(&specs.get(0).unwrap().to_string())
-                .unwrap()
-                .value,
-            expected_value1
-        );
-        assert_eq!(
-            result
-                .variables
-                .get(&specs.get(1).unwrap().to_string())
-                .unwrap()
-                .value,
-            expected_value2
-        );
+                .get(&specs.get(i).unwrap().to_string())
+                .unwrap();
+            assert_eq!(variables.len(), 1);
+            for variable in variables {
+                assert_eq!(variable.value.to_string(), expected_value.to_string());
+            }
+        }
     }
 }

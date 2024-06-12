@@ -1,51 +1,58 @@
 {
-  "dict2": {
-    "type_name": "",
-    "op_sym": "=",
-    "value": "{\n    \"a\": 1\n    \"b\": {\n        \"c\": 2\n        \"d\": 3\n    }\n}",
-    "list_items": [],
-    "dict_entries": [
-      {
-        "key": "a",
-        "value": {
-          "type_name": "",
-          "op_sym": ":",
-          "value": "1",
-          "list_items": [],
-          "dict_entries": []
-        }
-      },
-      {
-        "key": "b",
-        "value": {
-          "type_name": "",
-          "op_sym": ":",
-          "value": "{\n    \"c\": 2\n    \"d\": 3\n}",
-          "list_items": [],
-          "dict_entries": [
-            {
-              "key": "c",
-              "value": {
-                "type_name": "",
-                "op_sym": ":",
-                "value": "2",
-                "list_items": [],
-                "dict_entries": []
+  "dict2": [
+    {
+      "name": "dict2",
+      "type_name": "",
+      "op_sym": "=",
+      "value": "{\n    \"a\": 1\n    \"b\": {\n        \"c\": 2\n        \"d\": 3\n    }\n}",
+      "list_items": [],
+      "dict_entries": [
+        {
+          "key": "a",
+          "value": {
+            "name": "a",
+            "type_name": "",
+            "op_sym": ":",
+            "value": "1",
+            "list_items": [],
+            "dict_entries": []
+          }
+        },
+        {
+          "key": "b",
+          "value": {
+            "name": "b",
+            "type_name": "",
+            "op_sym": ":",
+            "value": "{\n    \"c\": 2\n    \"d\": 3\n}",
+            "list_items": [],
+            "dict_entries": [
+              {
+                "key": "c",
+                "value": {
+                  "name": "c",
+                  "type_name": "",
+                  "op_sym": ":",
+                  "value": "2",
+                  "list_items": [],
+                  "dict_entries": []
+                }
+              },
+              {
+                "key": "d",
+                "value": {
+                  "name": "d",
+                  "type_name": "",
+                  "op_sym": ":",
+                  "value": "3",
+                  "list_items": [],
+                  "dict_entries": []
+                }
               }
-            },
-            {
-              "key": "d",
-              "value": {
-                "type_name": "",
-                "op_sym": ":",
-                "value": "3",
-                "list_items": [],
-                "dict_entries": []
-              }
-            }
-          ]
+            ]
+          }
         }
-      }
-    ]
-  }
+      ]
+    }
+  ]
 }

@@ -1,9 +1,12 @@
 {
-  "dict1.a": {
-    "type_name": "",
-    "op_sym": ":",
-    "value": "1",
-    "list_items": [],
-    "dict_entries": []
-  }
+  "dict1.a": [
+    {
+      "name": "a",
+      "type_name": "",
+      "op_sym": ":",
+      "value": "1",
+      "list_items": [],
+      "dict_entries": []
+    }
+  ]
 }

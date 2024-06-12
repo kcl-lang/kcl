@@ -1,31 +1,37 @@
 {
-  "sha.ids": {
-    "type_name": "",
-    "op_sym": ":",
-    "value": "[1, 2, 3]",
-    "list_items": [
-      {
-        "type_name": "",
-        "op_sym": "",
-        "value": "1",
-        "list_items": [],
-        "dict_entries": []
-      },
-      {
-        "type_name": "",
-        "op_sym": "",
-        "value": "2",
-        "list_items": [],
-        "dict_entries": []
-      },
-      {
-        "type_name": "",
-        "op_sym": "",
-        "value": "3",
-        "list_items": [],
-        "dict_entries": []
-      }
-    ],
-    "dict_entries": []
-  }
+  "sha.ids": [
+    {
+      "name": "ids",
+      "type_name": "",
+      "op_sym": ":",
+      "value": "[1, 2, 3]",
+      "list_items": [
+        {
+          "name": "",
+          "type_name": "",
+          "op_sym": "",
+          "value": "1",
+          "list_items": [],
+          "dict_entries": []
+        },
+        {
+          "name": "",
+          "type_name": "",
+          "op_sym": "",
+          "value": "2",
+          "list_items": [],
+          "dict_entries": []
+        },
+        {
+          "name": "",
+          "type_name": "",
+          "op_sym": "",
+          "value": "3",
+          "list_items": [],
+          "dict_entries": []
+        }
+      ],
+      "dict_entries": []
+    }
+  ]
 }
