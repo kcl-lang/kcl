@@ -1,6 +1,5 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 158
 expression: "crate::tests::parsing_expr_string(r#\"'\\n${a: #json}'\"#)"
 ---
 Node {
@@ -34,9 +33,9 @@ Node {
                                                 node: "a",
                                                 filename: "",
                                                 line: 1,
-                                                column: 4,
+                                                column: 5,
                                                 end_line: 1,
-                                                end_column: 5,
+                                                end_column: 6,
                                             },
                                         ],
                                         pkgpath: "",
@@ -45,9 +44,9 @@ Node {
                                 ),
                                 filename: "",
                                 line: 1,
-                                column: 4,
+                                column: 5,
                                 end_line: 1,
-                                end_column: 5,
+                                end_column: 6,
                             },
                             format_spec: Some(
                                 "#json",
@@ -56,9 +55,9 @@ Node {
                     ),
                     filename: "",
                     line: 1,
-                    column: 4,
+                    column: 5,
                     end_line: 1,
-                    end_column: 12,
+                    end_column: 13,
                 },
             ],
             raw_value: "'\\n${a: #json}'",
@@ -70,4 +69,3 @@ Node {
     end_line: 1,
     end_column: 15,
 }
-

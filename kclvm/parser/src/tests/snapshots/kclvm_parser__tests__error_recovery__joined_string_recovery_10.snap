@@ -1,18 +1,18 @@
 ---
 source: parser/src/tests/error_recovery.rs
-expression: "crate::tests::parsing_expr_string(r#\"'a\\nb${a: #json}\\n'\"#)"
+expression: "crate::tests::parsing_expr_string(r#\"\"\"\"\n  ${CC}\n\"\"\"\"#)"
 ---
 Node {
     node: JoinedString(
         JoinedString {
-            is_long_string: false,
+            is_long_string: true,
             values: [
                 Node {
                     node: StringLit(
                         StringLit {
                             is_long_string: false,
-                            raw_value: "a\nb",
-                            value: "a\nb",
+                            raw_value: "\n  ",
+                            value: "\n  ",
                         },
                     ),
                     filename: "",
@@ -30,12 +30,12 @@ Node {
                                     Identifier {
                                         names: [
                                             Node {
-                                                node: "a",
+                                                node: "CC",
                                                 filename: "",
-                                                line: 1,
-                                                column: 7,
-                                                end_line: 1,
-                                                end_column: 8,
+                                                line: 2,
+                                                column: 4,
+                                                end_line: 2,
+                                                end_column: 6,
                                             },
                                         ],
                                         pkgpath: "",
@@ -43,28 +43,26 @@ Node {
                                     },
                                 ),
                                 filename: "",
-                                line: 1,
-                                column: 7,
-                                end_line: 1,
-                                end_column: 8,
+                                line: 2,
+                                column: 4,
+                                end_line: 2,
+                                end_column: 6,
                             },
-                            format_spec: Some(
-                                "#json",
-                            ),
+                            format_spec: None,
                         },
                     ),
                     filename: "",
-                    line: 1,
-                    column: 7,
-                    end_line: 1,
-                    end_column: 15,
+                    line: 2,
+                    column: 4,
+                    end_line: 2,
+                    end_column: 6,
                 },
                 Node {
                     node: StringLit(
                         StringLit {
                             is_long_string: false,
-                            raw_value: "}\n",
-                            value: "}\n",
+                            raw_value: "\n",
+                            value: "\n",
                         },
                     ),
                     filename: "",
@@ -74,12 +72,12 @@ Node {
                     end_column: 1,
                 },
             ],
-            raw_value: "'a\\nb${a: #json}\\n'",
+            raw_value: "\"\"\"\n  ${CC}\n\"\"\"",
         },
     ),
     filename: "",
     line: 1,
     column: 0,
-    end_line: 1,
-    end_column: 19,
+    end_line: 3,
+    end_column: 3,
 }
