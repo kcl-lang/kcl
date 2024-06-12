@@ -329,8 +329,16 @@ impl SymbolData {
             TypeKind::Dict(_) => None,
             TypeKind::NumberMultiplier(_) => None,
             TypeKind::Function(_) => None,
-            TypeKind::Union(_) => None,
-
+            TypeKind::Union(types) => {
+                if types
+                    .iter()
+                    .all(|ut| matches!(&ut.kind, TypeKind::StrLit(_) | TypeKind::Str))
+                {
+                    self.get_symbol_by_fully_qualified_name(BUILTIN_STR_PACKAGE)
+                } else {
+                    None
+                }
+            }
             TypeKind::Schema(schema_ty) => {
                 let fully_qualified_ty_name = schema_ty.pkgpath.clone() + "." + &schema_ty.name;
 
@@ -373,16 +381,7 @@ impl SymbolData {
             TypeKind::IntLit(_) => vec![],
             TypeKind::Float => vec![],
             TypeKind::FloatLit(_) => vec![],
-            TypeKind::Str => {
-                let mut result = vec![];
-                if let Some(symbol_ref) = self.get_type_symbol(ty, module_info) {
-                    if let Some(symbol) = self.get_symbol(symbol_ref) {
-                        result = symbol.get_all_attributes(self, module_info);
-                    }
-                }
-                result
-            }
-            TypeKind::StrLit(_) => {
+            TypeKind::Str | TypeKind::StrLit(_) => {
                 let mut result = vec![];
                 if let Some(symbol_ref) = self.get_type_symbol(ty, module_info) {
                     if let Some(symbol) = self.get_symbol(symbol_ref) {
