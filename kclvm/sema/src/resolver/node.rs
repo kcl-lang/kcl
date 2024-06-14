@@ -77,7 +77,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             None,
         );
         if !ty.is_any() && expected_ty.is_any() {
-            self.set_type_to_scope(&names[0].node, ty, &names[0]);
+            self.set_infer_type_to_scope(&names[0].node, ty, &names[0]);
         }
         expected_ty
     }
@@ -197,7 +197,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 );
 
                 if !value_ty.is_any() && expected_ty.is_any() && assign_stmt.ty.is_none() {
-                    self.set_type_to_scope(name, value_ty.clone(), &target.node.names[0]);
+                    self.set_infer_type_to_scope(name, value_ty.clone(), &target.node.names[0]);
                     if let Some(schema_ty) = &self.ctx.schema {
                         let mut schema_ty = schema_ty.borrow_mut();
                         schema_ty.set_type_of_attr(
