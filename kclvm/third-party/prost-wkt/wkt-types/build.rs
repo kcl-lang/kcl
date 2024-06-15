@@ -13,10 +13,12 @@ use regex::Regex;
 
 fn main() {
     //hack: set protoc_bin_vendored::protoc_bin_path() to PROTOC
-    std::env::set_var(
-        "PROTOC",
-        protoc_bin_vendored::protoc_bin_path().unwrap().as_os_str(),
-    );
+    if env::var("PROTOC").is_err() {
+        env::set_var(
+            "PROTOC",
+            protoc_bin_vendored::protoc_bin_path().unwrap().as_os_str(),
+        );
+    }
     let dir = PathBuf::from(env::var("OUT_DIR").unwrap());
     process_prost_pbtime(&dir);
 

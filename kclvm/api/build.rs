@@ -5,10 +5,12 @@ use prost_wkt_build::{FileDescriptorSet, Message};
 /// According to the file kclvm/spec/gpyrpc/gpyrpc.proto, automatically generate
 /// the corresponding rust source file to the directory src/model
 fn main() {
-    std::env::set_var(
-        "PROTOC",
-        protoc_bin_vendored::protoc_bin_path().unwrap().as_os_str(),
-    );
+    if env::var("PROTOC").is_err() {
+        env::set_var(
+            "PROTOC",
+            protoc_bin_vendored::protoc_bin_path().unwrap().as_os_str(),
+        );
+    }
 
     let out = PathBuf::from(env::var("OUT_DIR").unwrap());
     let descriptor_file = out.join("kclvm_service_descriptor.bin");
