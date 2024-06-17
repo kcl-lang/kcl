@@ -1,6 +1,6 @@
 use std::{
     fs::{self, File},
-    io::{Read, Write},
+    io::{Read},
     path::PathBuf,
 };
 
@@ -755,7 +755,7 @@ fn test_list_merged_variables() {
                 file.join("merge_1/main.k").display().to_string(),
             ],
             vec!["appConfiguration.resource".to_string()],
-            vec![r#"res.Resource { cpu = "2", disk = "35Gi", memory = "4Gi" }"#.to_string()],
+            vec![r#"res.Resource {cpu = "2", disk = "35Gi", memory = "4Gi"}"#.to_string()],
         ),
                 (
                     vec![
@@ -774,7 +774,7 @@ fn test_list_merged_variables() {
                         file.join("merge_3/main.k").display().to_string(),
                     ],
                     vec!["appConfiguration.resource".to_string()],
-                    vec![r#"res.Resource { cpu = "2", disk = "35Gi", memory = "4Gi" }"#.to_string()],
+                    vec![r#"res.Resource {cpu = "2", disk = "35Gi", memory = "4Gi"}"#.to_string()],
                 ),
                 (
                     vec![
@@ -793,7 +793,7 @@ fn test_list_merged_variables() {
                         file.join("merge_5/main.k").display().to_string(),
                     ],
                     vec!["appConfiguration.resource".to_string()],
-                    vec![r#"res.Resource { cpu =  { limit : "200m", limit_plus : "20000m", request : "100m" }, disk = "35Gi", memory = "4Gi" }"#.to_string()],
+                    vec![r#"res.Resource {cpu = {limit: "200m", limit_plus: "20000m", request: "100m"}, disk = "35Gi", memory = "4Gi"}"#.to_string()],
                 ),
     ];
 
