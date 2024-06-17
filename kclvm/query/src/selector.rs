@@ -571,8 +571,6 @@ impl fmt::Display for Variable {
             }
             write!(f, "]")?;
         } else if self.is_dict() {
-            // let entries = self.dict_entries.clone();
-            // self.dict_entries.sort_by(|a, b| a.key.cmp(&b.key));
             write!(f, "{} {{ ", self.type_name)?;
             for (i, entry) in self.dict_entries.iter().enumerate() {
                 if i != 0 {
