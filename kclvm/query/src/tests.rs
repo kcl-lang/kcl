@@ -795,6 +795,73 @@ fn test_list_merged_variables() {
                     vec!["appConfiguration.resource".to_string()],
                     vec![r#"res.Resource {cpu = {limit: "200m", limit_plus: "20000m", request: "100m"}, disk = "35Gi", memory = "4Gi"}"#.to_string()],
                 ),
+                (
+                    vec![
+                        file.join("merge_6/main.k").display().to_string(),
+                        file.join("merge_6/base.k").display().to_string(),
+                    ],
+                    vec!["config".to_string()],
+                    vec![r#"Config {
+    name = "config2"
+    args: ["kcl", "main.k"]
+    labels: {key1: "value1"}
+}"#.to_string()],
+                ),
+                (
+                    vec![
+                        file.join("merge_7/main.k").display().to_string(),
+                        file.join("merge_7/base.k").display().to_string(),
+                    ],
+                    vec!["config".to_string()],
+                    vec![r#"Config {
+    name = _NAME
+    args: ["kcl", "main.k"]
+    labels: {key1: "value1"}
+}"#.to_string()],
+                ),
+                (
+                    vec![
+                        file.join("merge_8/main.k").display().to_string(),
+                    ],
+                    vec!["config".to_string()],
+                    vec![r#"Config {
+    args: ["kcl", "main.k"]
+    labels: {key1: "value1"}
+    labels: {key2: "value2"}
+    "labels": {"key3": "value3"}
+}"#.to_string()],
+                ),
+                (
+                    vec![
+                        file.join("merge_9/main.k").display().to_string(),
+                    ],
+                    vec!["config".to_string()],
+                    vec![r#"Config {
+    args: ["kcl", "main.k"]
+    labels: {key1: "value1"}
+    labels: {key2: "value2"}
+    name: {
+        name: {name: "name"}
+    }
+    name: {
+        name: Name0 {data: 1}
+    }
+}"#.to_string()],
+                ),
+                (
+                    vec![
+                        file.join("merge_10/main.k").display().to_string(),
+                    ],
+                    vec!["alice.hc".to_string()],
+                    vec![r#"[2]"#.to_string()],
+                ),
+                (
+                    vec![
+                        file.join("merge_11/main.k").display().to_string(),
+                    ],
+                    vec!["config.main".to_string()],
+                    vec![r#"Main {args: ["1"], env: ["789", "456"]}"#.to_string()],
+                ),
     ];
 
     for (files, specs, expected_values) in test_cases {
