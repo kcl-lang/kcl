@@ -665,12 +665,13 @@ impl Variable {
                         })
                         .collect();
 
-                        let expr :Option<Box<ast::Node<ast::Expr>>> = build_expr_from_string(&self.to_string());
-                        if let Some(expr) = expr {
-                            self.value = print_ast_node(ASTNode::Expr(&expr));
-                        } else {
-                            self.value = self.to_string();
-                        }
+                    let expr: Option<Box<ast::Node<ast::Expr>>> =
+                        build_expr_from_string(&self.to_string());
+                    if let Some(expr) = expr {
+                        self.value = print_ast_node(ASTNode::Expr(&expr));
+                    } else {
+                        self.value = self.to_string();
+                    }
                 }
             }
         }
