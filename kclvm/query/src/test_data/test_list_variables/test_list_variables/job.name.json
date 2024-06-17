@@ -1,9 +1,12 @@
 {
-  "job.name": {
-    "type_name": "",
-    "op_sym": "=",
-    "value": "\"{}-{}\".format(\"app\", \"test\").lower()",
-    "list_items": [],
-    "dict_entries": []
-  }
+  "job.name": [
+    {
+      "name": "name",
+      "type_name": "",
+      "op_sym": "=",
+      "value": "\"{}-{}\".format(\"app\", \"test\").lower()",
+      "list_items": [],
+      "dict_entries": []
+    }
+  ]
 }

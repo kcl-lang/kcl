@@ -19,7 +19,7 @@ use kclvm_parser::ParseSessionRef;
 use kclvm_query::override_file;
 use kclvm_query::query::get_full_schema_type;
 use kclvm_query::query::CompilationOptions;
-use kclvm_query::selector::list_variables;
+use kclvm_query::selector::{list_variables, ListOptions};
 use kclvm_query::GetSchemaOption;
 use kclvm_runner::{build_program, exec_artifact, exec_program};
 use kclvm_sema::core::global_state::GlobalState;
@@ -352,22 +352,34 @@ impl KclvmServiceImpl {
     /// let serv = KclvmServiceImpl::default();
     /// let args = &ListVariablesArgs {
     ///     files: vec![Path::new(".").join("src").join("testdata").join("variables").join("main.k").canonicalize().unwrap().display().to_string()],
-    ///     specs: vec!["a".to_string()]
+    ///     specs: vec!["a".to_string()],
+    ///     options: None,
     /// };
     /// let result = serv.list_variables(args).unwrap();
     /// assert_eq!(result.variables.len(), 1);
-    /// assert_eq!(result.variables.get("a").unwrap().value, "1");
+    /// assert_eq!(result.variables.get("a").unwrap().variables.get(0).unwrap().value, "1");
     /// ```
     pub fn list_variables(&self, args: &ListVariablesArgs) -> anyhow::Result<ListVariablesResult> {
         let k_files = args.files.clone();
         let specs = args.specs.clone();
 
-        let select_res = list_variables(k_files, specs)?;
+        let select_res;
+        if let Some(opts) = args.options.as_ref() {
+            let list_opts = ListOptions {
+                merge_program: opts.merge_program,
+            };
+            select_res = list_variables(k_files, specs, Some(&list_opts))?;
+        } else {
+            select_res = list_variables(k_files, specs, None)?;
+        }
 
-        let variables: HashMap<String, Variable> = select_res
+        let variables: HashMap<String, Vec<Variable>> = select_res
             .variables
             .iter()
-            .map(|(key, var)| (key.clone(), var.into()))
+            .map(|(key, vars)| {
+                let new_vars = vars.iter().map(|v| v.into()).collect();
+                (key.clone(), new_vars)
+            })
             .collect();
 
         let unsupported_codes: Vec<String> = select_res
@@ -376,8 +388,13 @@ impl KclvmServiceImpl {
             .map(|code| code.code.to_string())
             .collect();
 
+        let variable_list: HashMap<String, VariableList> = variables
+            .into_iter()
+            .map(|(key, vars)| (key, VariableList { variables: vars }))
+            .collect();
+
         return Ok(ListVariablesResult {
-            variables,
+            variables: variable_list,
             unsupported_codes,
             parse_errors: select_res
                 .parse_errors

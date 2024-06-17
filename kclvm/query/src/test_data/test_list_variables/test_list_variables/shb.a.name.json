@@ -1,9 +1,12 @@
 {
-  "shb.a.name": {
-    "type_name": "",
-    "op_sym": ":",
-    "value": "\"HelloB\"",
-    "list_items": [],
-    "dict_entries": []
-  }
+  "shb.a.name": [
+    {
+      "name": "name",
+      "type_name": "",
+      "op_sym": ":",
+      "value": "\"HelloB\"",
+      "list_items": [],
+      "dict_entries": []
+    }
+  ]
 }

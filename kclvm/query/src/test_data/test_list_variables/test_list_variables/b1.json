@@ -1,9 +1,12 @@
 {
-  "b1": {
-    "type_name": "",
-    "op_sym": "=",
-    "value": "True",
-    "list_items": [],
-    "dict_entries": []
-  }
+  "b1": [
+    {
+      "name": "b1",
+      "type_name": "",
+      "op_sym": "=",
+      "value": "True",
+      "list_items": [],
+      "dict_entries": []
+    }
+  ]
 }

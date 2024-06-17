@@ -1,31 +1,37 @@
 {
-  "shb.a.ids": {
-    "type_name": "",
-    "op_sym": ":",
-    "value": "[4, 5, 6]",
-    "list_items": [
-      {
-        "type_name": "",
-        "op_sym": "",
-        "value": "4",
-        "list_items": [],
-        "dict_entries": []
-      },
-      {
-        "type_name": "",
-        "op_sym": "",
-        "value": "5",
-        "list_items": [],
-        "dict_entries": []
-      },
-      {
-        "type_name": "",
-        "op_sym": "",
-        "value": "6",
-        "list_items": [],
-        "dict_entries": []
-      }
-    ],
-    "dict_entries": []
-  }
+  "shb.a.ids": [
+    {
+      "name": "ids",
+      "type_name": "",
+      "op_sym": ":",
+      "value": "[4, 5, 6]",
+      "list_items": [
+        {
+          "name": "",
+          "type_name": "",
+          "op_sym": "",
+          "value": "4",
+          "list_items": [],
+          "dict_entries": []
+        },
+        {
+          "name": "",
+          "type_name": "",
+          "op_sym": "",
+          "value": "5",
+          "list_items": [],
+          "dict_entries": []
+        },
+        {
+          "name": "",
+          "type_name": "",
+          "op_sym": "",
+          "value": "6",
+          "list_items": [],
+          "dict_entries": []
+        }
+      ],
+      "dict_entries": []
+    }
+  ]
 }

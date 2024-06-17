@@ -1,42 +1,48 @@
 {
-  "sha.data": {
-    "type_name": "",
-    "op_sym": ":",
-    "value": "{\n    \"a\": {\n        \"b\": {\"c\": 2}\n    }\n}",
-    "list_items": [],
-    "dict_entries": [
-      {
-        "key": "a",
-        "value": {
-          "type_name": "",
-          "op_sym": ":",
-          "value": "{\n    \"b\": {\"c\": 2}\n}",
-          "list_items": [],
-          "dict_entries": [
-            {
-              "key": "b",
-              "value": {
-                "type_name": "",
-                "op_sym": ":",
-                "value": "{\"c\": 2}",
-                "list_items": [],
-                "dict_entries": [
-                  {
-                    "key": "c",
-                    "value": {
-                      "type_name": "",
-                      "op_sym": ":",
-                      "value": "2",
-                      "list_items": [],
-                      "dict_entries": []
+  "sha.data": [
+    {
+      "name": "data",
+      "type_name": "",
+      "op_sym": ":",
+      "value": "{\n    \"a\": {\n        \"b\": {\"c\": 2}\n    }\n}",
+      "list_items": [],
+      "dict_entries": [
+        {
+          "key": "a",
+          "value": {
+            "name": "a",
+            "type_name": "",
+            "op_sym": ":",
+            "value": "{\n    \"b\": {\"c\": 2}\n}",
+            "list_items": [],
+            "dict_entries": [
+              {
+                "key": "b",
+                "value": {
+                  "name": "b",
+                  "type_name": "",
+                  "op_sym": ":",
+                  "value": "{\"c\": 2}",
+                  "list_items": [],
+                  "dict_entries": [
+                    {
+                      "key": "c",
+                      "value": {
+                        "name": "c",
+                        "type_name": "",
+                        "op_sym": ":",
+                        "value": "2",
+                        "list_items": [],
+                        "dict_entries": []
+                      }
                     }
-                  }
-                ]
+                  ]
+                }
               }
-            }
-          ]
+            ]
+          }
         }
-      }
-    ]
-  }
+      ]
+    }
+  ]
 }

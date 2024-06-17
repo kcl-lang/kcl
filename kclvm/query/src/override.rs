@@ -58,7 +58,7 @@ pub fn apply_overrides(
 }
 
 /// Build a expression from string.
-fn build_expr_from_string(value: &str) -> Option<ast::NodeRef<ast::Expr>> {
+pub fn build_expr_from_string(value: &str) -> Option<ast::NodeRef<ast::Expr>> {
     let expr: Option<ast::NodeRef<ast::Expr>> = parse_expr(value);
     match &expr {
         Some(e) => match &e.node {
