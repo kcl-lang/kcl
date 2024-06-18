@@ -112,7 +112,22 @@ impl<'ctx> Resolver<'ctx> {
                     return;
                 }
             };
-            self.must_assignable_to(ty.clone(), expected_ty, args[i].get_span_pos(), None)
+            self.must_assignable_to(
+                ty.clone(),
+                expected_ty.clone(),
+                args[i].get_span_pos(),
+                None,
+            );
+
+            let upgrade_schema_type = self.upgrade_dict_to_schema(
+                ty.clone(),
+                expected_ty.clone(),
+                &args[i].get_span_pos(),
+            );
+            self.node_ty_map.borrow_mut().insert(
+                self.get_node_key(args.get(i).unwrap().id.clone()),
+                upgrade_schema_type.clone(),
+            );
         }
         // Do keyword argument type check
         for (i, (arg_name, kwarg_ty)) in kwarg_types.iter().enumerate() {

@@ -30,7 +30,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
     fn walk_expr_stmt(&mut self, expr_stmt: &'ctx ast::ExprStmt) -> Self::Result {
         let expr_types = self.exprs(&expr_stmt.exprs);
         if !expr_types.is_empty() {
-            let ty = expr_types[expr_types.len() - 1].clone();
+            let ty = expr_types.last().unwrap().clone();
             if expr_types.len() > 1 {
                 self.handler.add_compile_error(
                     "expression statement can only have one expression",
@@ -1114,6 +1114,24 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
         self.leave_scope();
         self.ctx.in_lambda_expr.pop();
         self.must_assignable_to(real_ret_ty.clone(), ret_ty.clone(), (start, end), None);
+
+        // upgrade return value type to schema if return type is schema
+        if let Some(stmt) = lambda_expr.body.last() {
+            if let ast::Stmt::Expr(expr_stmt) = &stmt.node {
+                if let Some(expr) = expr_stmt.exprs.last() {
+                    let upgrade_schema_type = self.upgrade_dict_to_schema(
+                        real_ret_ty.clone(),
+                        ret_ty.clone(),
+                        &stmt.get_span_pos(),
+                    );
+                    self.node_ty_map.borrow_mut().insert(
+                        self.get_node_key(expr.id.clone()),
+                        upgrade_schema_type.clone(),
+                    );
+                }
+            }
+        }
+
         if !real_ret_ty.is_any() && ret_ty.is_any() && lambda_expr.return_ty.is_none() {
             ret_ty = real_ret_ty;
         }
