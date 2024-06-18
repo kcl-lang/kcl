@@ -217,8 +217,9 @@ impl<'ctx> Evaluator<'ctx> {
                         for (name, id) in &names {
                             add_stmt(name, i, Some(id.clone()), body_map);
                         }
-                        names.clear();
                     }
+
+                    names.clear();
                     self.emit_setters_with(&if_stmt.orelse, body_map, true, &mut names, index);
                     if is_in_if {
                         for (name, id) in &names {
@@ -228,8 +229,8 @@ impl<'ctx> Evaluator<'ctx> {
                         for (name, id) in &names {
                             add_stmt(name, i, Some(id.clone()), body_map);
                         }
-                        names.clear();
                     }
+                    names.clear();
                 }
                 ast::Stmt::SchemaAttr(schema_attr) => {
                     let name = schema_attr.name.node.as_str();
