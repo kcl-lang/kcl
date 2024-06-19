@@ -422,4 +422,18 @@ mod tests {
         18,
         12
     );
+
+    goto_def_test_snapshot!(
+        goto_lambda_param_schema_test,
+        "src/test_data/goto_def_test/goto_lambda_param_schema_test/goto_lambda_param_schema_test.k",
+        8,
+        10
+    );
+
+    goto_def_test_snapshot!(
+        goto_lambda_return_schema_test,
+        "src/test_data/goto_def_test/goto_lambda_return_schema_test/goto_lambda_return_schema_test.k",
+        6,
+        10
+    );
 }
