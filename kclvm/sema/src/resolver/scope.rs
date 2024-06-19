@@ -453,7 +453,7 @@ impl<'ctx> Resolver<'ctx> {
     }
 
     /// Set type to the scope exited object, if not found, emit a compile error.
-    pub fn set_type_to_scope<T>(&mut self, name: &str, ty: TypeRef, node: &ast::Node<T>) {
+    pub fn set_infer_type_to_scope<T>(&mut self, name: &str, ty: TypeRef, node: &ast::Node<T>) {
         let mut scope = self.scope.borrow_mut();
         match scope.elems.get_mut(name) {
             Some(obj) => {
@@ -463,6 +463,26 @@ impl<'ctx> Resolver<'ctx> {
                     .borrow_mut()
                     .insert(self.get_node_key(node.id.clone()), infer_ty.clone());
                 obj.ty = infer_ty;
+            }
+            None => {
+                self.handler.add_compile_error(
+                    &format!("name '{}' is not defined", name.replace('@', "")),
+                    node.get_span_pos(),
+                );
+            }
+        }
+    }
+
+    /// Set type to the scope exited object, if not found, emit a compile error.
+    pub fn set_type_to_scope<T>(&mut self, name: &str, ty: TypeRef, node: &ast::Node<T>) {
+        let mut scope = self.scope.borrow_mut();
+        match scope.elems.get_mut(name) {
+            Some(obj) => {
+                let mut obj = obj.borrow_mut();
+                self.node_ty_map
+                    .borrow_mut()
+                    .insert(self.get_node_key(node.id.clone()), ty.clone());
+                obj.ty = ty;
             }
             None => {
                 self.handler.add_compile_error(
