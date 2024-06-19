@@ -1,4 +1,5 @@
 use crate::Evaluator;
+use kclvm_ast::MAIN_PKG;
 use kclvm_loader::{load_packages, LoadPackageOptions};
 use kclvm_parser::LoadProgramOptions;
 
@@ -340,3 +341,30 @@ data2 = Data {
 
 version = "v0.1.0"
 "#}
+
+#[test]
+fn test_if_stmt_setters() {
+    let p = load_packages(&LoadPackageOptions {
+        paths: vec!["test.k".to_string()],
+        load_opts: Some(LoadProgramOptions {
+            k_code_list: vec![r#"
+            _a = 1
+            if True:
+                _a += 1
+            elif False:
+                _a += 1
+            a=_a
+            "#
+            .to_string()],
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .unwrap();
+    let evaluator = Evaluator::new(&p.program);
+    evaluator.run().unwrap();
+    let scopes = evaluator.lazy_scopes.borrow();
+    let var_setters = scopes.get(MAIN_PKG).unwrap().setters.get("_a").unwrap();
+    assert_eq!(var_setters.len(), 3);
+}
