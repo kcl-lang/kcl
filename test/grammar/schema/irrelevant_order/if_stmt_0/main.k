@@ -11,3 +11,12 @@ schema Person:
 person = Person {
     name = "Overwrite"
 }
+
+name: str = _name
+age: int = _age
+if True:
+    _name = "Alice"
+if False:
+    _age = 10
+else:
+    _age = 18

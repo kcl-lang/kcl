@@ -1,6 +1,7 @@
 // Copyright The KCL Authors. All rights reserved.
 
 use super::context::LLVMCodeGenContext;
+use crate::codegen::llvm::context::BacktrackKind;
 use crate::codegen::traits::BuilderMethods;
 use inkwell::values::BasicValueEnum;
 
@@ -21,5 +22,23 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             }
         }
         false
+    }
+
+    #[inline]
+    pub(crate) fn is_backtrack_only_if(&self) -> bool {
+        if let Some(backtrack_meta) = self.backtrack_meta.borrow_mut().as_ref() {
+            matches!(backtrack_meta.kind, BacktrackKind::If)
+        } else {
+            false
+        }
+    }
+
+    #[inline]
+    pub(crate) fn is_backtrack_only_or_else(&self) -> bool {
+        if let Some(backtrack_meta) = self.backtrack_meta.borrow_mut().as_ref() {
+            matches!(backtrack_meta.kind, BacktrackKind::OrElse)
+        } else {
+            false
+        }
     }
 }

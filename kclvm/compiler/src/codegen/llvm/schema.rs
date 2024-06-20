@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use std::str;
 
 use super::context::LLVMCodeGenContext;
+use crate::codegen::llvm::context::BacktrackKind;
 use crate::codegen::traits::{
     BuilderMethods, DerivedTypeMethods, DerivedValueCalculationMethods, ProgramCodeGen,
     ValueMethods,
@@ -26,53 +27,56 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         runtime_type: &str,
         is_in_if: bool,
         place_holder_map: &mut HashMap<String, Vec<FunctionValue<'ctx>>>,
-        body_map: &mut HashMap<String, Vec<&'ctx ast::Node<ast::Stmt>>>,
+        body_map: &mut HashMap<String, Vec<(&'ctx ast::Node<ast::Stmt>, BacktrackKind)>>,
         in_if_names: &mut Vec<String>,
     ) {
         let schema_value = self
             .get_variable(value::SCHEMA_SELF_NAME)
             .expect(kcl_error::INTERNAL_ERROR_MSG);
         let value = self.undefined_value();
-        let add_stmt =
-            |name: &str,
-             stmt: &'ctx ast::Node<ast::Stmt>,
-             place_holder_map: &mut HashMap<String, Vec<FunctionValue<'ctx>>>,
-             body_map: &mut HashMap<String, Vec<&'ctx ast::Node<ast::Stmt>>>| {
-                let function = self.add_function(&format!(
-                    "{}.{}.{}",
-                    value::SCHEMA_ATTR_NAME,
-                    pkgpath_without_prefix!(runtime_type),
-                    name
-                ));
-                let lambda_fn_ptr = self.builder.build_bitcast(
-                    function.as_global_value().as_pointer_value(),
-                    self.context.i64_type().ptr_type(AddressSpace::default()),
-                    "",
-                );
-                if !place_holder_map.contains_key(name) {
-                    place_holder_map.insert(name.to_string(), vec![]);
-                }
-                let name_vec = place_holder_map
-                    .get_mut(name)
-                    .expect(kcl_error::INTERNAL_ERROR_MSG);
-                name_vec.push(function);
-                self.default_collection_insert_int_pointer(cal_map, name, lambda_fn_ptr);
-                self.default_collection_insert_value(
-                    cal_map,
-                    &format!("{}_{}", name, kclvm_runtime::CAL_MAP_RUNTIME_TYPE),
-                    self.string_value(runtime_type),
-                );
-                self.default_collection_insert_value(
-                    cal_map,
-                    &format!("{}_{}", name, kclvm_runtime::CAL_MAP_META_LINE),
-                    self.int_value(stmt.line as i64),
-                );
-                if !body_map.contains_key(name) {
-                    body_map.insert(name.to_string(), vec![]);
-                }
-                let body_vec = body_map.get_mut(name).expect(kcl_error::INTERNAL_ERROR_MSG);
-                body_vec.push(stmt);
-            };
+        let add_stmt = |name: &str,
+                        stmt: &'ctx ast::Node<ast::Stmt>,
+                        kind: BacktrackKind,
+                        place_holder_map: &mut HashMap<String, Vec<FunctionValue<'ctx>>>,
+                        body_map: &mut HashMap<
+            String,
+            Vec<(&'ctx ast::Node<ast::Stmt>, BacktrackKind)>,
+        >| {
+            let function = self.add_function(&format!(
+                "{}.{}.{}",
+                value::SCHEMA_ATTR_NAME,
+                pkgpath_without_prefix!(runtime_type),
+                name
+            ));
+            let lambda_fn_ptr = self.builder.build_bitcast(
+                function.as_global_value().as_pointer_value(),
+                self.context.i64_type().ptr_type(AddressSpace::default()),
+                "",
+            );
+            if !place_holder_map.contains_key(name) {
+                place_holder_map.insert(name.to_string(), vec![]);
+            }
+            let name_vec = place_holder_map
+                .get_mut(name)
+                .expect(kcl_error::INTERNAL_ERROR_MSG);
+            name_vec.push(function);
+            self.default_collection_insert_int_pointer(cal_map, name, lambda_fn_ptr);
+            self.default_collection_insert_value(
+                cal_map,
+                &format!("{}_{}", name, kclvm_runtime::CAL_MAP_RUNTIME_TYPE),
+                self.string_value(runtime_type),
+            );
+            self.default_collection_insert_value(
+                cal_map,
+                &format!("{}_{}", name, kclvm_runtime::CAL_MAP_META_LINE),
+                self.int_value(stmt.line as i64),
+            );
+            if !body_map.contains_key(name) {
+                body_map.insert(name.to_string(), vec![]);
+            }
+            let body_vec = body_map.get_mut(name).expect(kcl_error::INTERNAL_ERROR_MSG);
+            body_vec.push((stmt, kind));
+        };
         if let Some(index_signature) = index_signature {
             self.default_collection_insert_value(
                 cal_map,
@@ -89,7 +93,13 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                     if is_in_if {
                         in_if_names.push(name.to_string());
                     } else {
-                        add_stmt(name, stmt, place_holder_map, body_map);
+                        add_stmt(
+                            name,
+                            stmt,
+                            BacktrackKind::Normal,
+                            place_holder_map,
+                            body_map,
+                        );
                     }
                 }
                 ast::Stmt::Assign(assign_stmt) => {
@@ -99,7 +109,13 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                         if is_in_if {
                             in_if_names.push(name.to_string());
                         } else {
-                            add_stmt(name, stmt, place_holder_map, body_map);
+                            add_stmt(
+                                name,
+                                stmt,
+                                BacktrackKind::Normal,
+                                place_holder_map,
+                                body_map,
+                            );
                         }
                     }
                 }
@@ -110,7 +126,13 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                     if is_in_if {
                         in_if_names.push(name.to_string());
                     } else {
-                        add_stmt(name, stmt, place_holder_map, body_map);
+                        add_stmt(
+                            name,
+                            stmt,
+                            BacktrackKind::Normal,
+                            place_holder_map,
+                            body_map,
+                        );
                     }
                 }
                 ast::Stmt::If(if_stmt) => {
@@ -131,10 +153,10 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                         }
                     } else {
                         for name in &names {
-                            add_stmt(name, stmt, place_holder_map, body_map);
+                            add_stmt(name, stmt, BacktrackKind::If, place_holder_map, body_map);
                         }
-                        names.clear();
                     }
+                    names.clear();
                     self.emit_left_identifiers(
                         &if_stmt.orelse,
                         &None,
@@ -151,10 +173,16 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                         }
                     } else {
                         for name in &names {
-                            add_stmt(name, stmt, place_holder_map, body_map);
+                            add_stmt(
+                                name,
+                                stmt,
+                                BacktrackKind::OrElse,
+                                place_holder_map,
+                                body_map,
+                            );
                         }
-                        names.clear();
                     }
+                    names.clear();
                 }
                 ast::Stmt::SchemaAttr(schema_attr) => {
                     let name = schema_attr.name.node.as_str();
@@ -162,7 +190,13 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                     if is_in_if {
                         in_if_names.push(name.to_string());
                     } else {
-                        add_stmt(name, stmt, place_holder_map, body_map);
+                        add_stmt(
+                            name,
+                            stmt,
+                            BacktrackKind::Normal,
+                            place_holder_map,
+                            body_map,
+                        );
                     }
                 }
                 _ => {}

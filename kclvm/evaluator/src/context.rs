@@ -7,7 +7,7 @@ use kclvm_runtime::{BacktraceFrame, MAIN_PKG_PATH};
 use crate::{
     error as kcl_error,
     func::{FunctionCaller, FunctionEvalContextRef},
-    lazy::{BacktrackMeta, Setter},
+    lazy::{BacktrackMeta, Setter, SetterKind},
     proxy::{Frame, Proxy},
     rule::RuleCaller,
     schema::SchemaCaller,
@@ -247,17 +247,38 @@ impl<'ctx> Evaluator<'ctx> {
         }
     }
 
+    #[inline]
     pub(crate) fn push_backtrack_meta(&self, setter: &Setter) {
         let meta = &mut self.backtrack_meta.borrow_mut();
         meta.push(BacktrackMeta {
             stopped: setter.stopped.clone(),
             is_break: false,
+            kind: setter.kind.clone(),
         });
     }
 
+    #[inline]
     pub(crate) fn pop_backtrack_meta(&self) {
         let meta = &mut self.backtrack_meta.borrow_mut();
         meta.pop();
+    }
+
+    #[inline]
+    pub(crate) fn is_backtrack_only_if(&self) -> bool {
+        let meta = &mut self.backtrack_meta.borrow_mut();
+        match meta.last().map(|m| matches!(m.kind, SetterKind::If)) {
+            Some(r) => r,
+            None => false,
+        }
+    }
+
+    #[inline]
+    pub(crate) fn is_backtrack_only_or_else(&self) -> bool {
+        let meta = &mut self.backtrack_meta.borrow_mut();
+        match meta.last().map(|m| matches!(m.kind, SetterKind::OrElse)) {
+            Some(r) => r,
+            None => false,
+        }
     }
 
     pub(crate) fn push_scope_cover(&self, start: usize, stop: usize) {
