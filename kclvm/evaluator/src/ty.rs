@@ -157,7 +157,7 @@ pub fn convert_collection_value(s: &Evaluator, value: &ValueRef, tpe: &str) -> V
                     .clone()
             };
             let schema = if let Proxy::Schema(caller) = &frame.proxy {
-                // Try convert the  config to schema, if failed, return the config
+                // Try convert the config to schema, if failed, return the config directly.
                 if !SchemaEvalContext::is_fit_config(s, &caller.ctx, value) {
                     return value.clone();
                 }
