@@ -229,6 +229,21 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
     fn walk_if_stmt(&self, if_stmt: &'ctx ast::IfStmt) -> Self::Result {
         let cond = self.walk_expr(&if_stmt.cond)?;
         let is_truth = self.value_is_truthy(&cond);
+        // Is backtrack only orelse stmt?
+        if self.is_backtrack_only_or_else() {
+            if !is_truth {
+                self.walk_stmts(&if_stmt.orelse)?;
+            }
+            return self.ok_result();
+        }
+        // Is backtrack only if stmt?
+        if self.is_backtrack_only_if() {
+            if is_truth {
+                self.walk_stmts(&if_stmt.body)?;
+            }
+            return self.ok_result();
+        }
+        // Normal full if stmt.
         if is_truth {
             self.walk_stmts(&if_stmt.body)?;
         } else {

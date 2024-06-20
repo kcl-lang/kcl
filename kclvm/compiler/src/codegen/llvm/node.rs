@@ -16,6 +16,7 @@ use kclvm_sema::ty::{ANY_TYPE_STR, STR_TYPE_STR};
 
 use crate::check_backtrack_stop;
 use crate::codegen::error as kcl_error;
+use crate::codegen::llvm::context::BacktrackKind;
 use crate::codegen::llvm::context::BacktrackMeta;
 use crate::codegen::llvm::utils;
 use crate::codegen::traits::*;
@@ -262,21 +263,38 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
 
     fn walk_if_stmt(&self, if_stmt: &'ctx ast::IfStmt) -> Self::Result {
         check_backtrack_stop!(self);
-        let cond = self
-            .walk_expr(&if_stmt.cond)
-            .expect(kcl_error::COMPILE_ERROR_MSG);
+        let cond = self.walk_expr(&if_stmt.cond)?;
         let then_block = self.append_block("");
         let else_block = self.append_block("");
         let end_block = self.append_block("");
         let is_truth = self.value_is_truthy(cond);
         self.cond_br(is_truth, then_block, else_block);
         self.builder.position_at_end(then_block);
-        self.walk_stmts(&if_stmt.body)
-            .expect(kcl_error::COMPILE_ERROR_MSG);
+        // Is backtrack only orelse stmt?
+        if self.is_backtrack_only_or_else() {
+            self.ok_result()?;
+            self.br(end_block);
+            self.builder.position_at_end(else_block);
+            self.walk_stmts(&if_stmt.orelse)?;
+            self.br(end_block);
+            self.builder.position_at_end(end_block);
+            return Ok(self.none_value());
+        }
+        // Is backtrack only if stmt?
+        if self.is_backtrack_only_if() {
+            self.walk_stmts(&if_stmt.body)?;
+            self.br(end_block);
+            self.builder.position_at_end(else_block);
+            self.ok_result()?;
+            self.br(end_block);
+            self.builder.position_at_end(end_block);
+            return Ok(self.none_value());
+        }
+        // Normal full if stmt.
+        self.walk_stmts(&if_stmt.body)?;
         self.br(end_block);
         self.builder.position_at_end(else_block);
-        self.walk_stmts(&if_stmt.orelse)
-            .expect(kcl_error::COMPILE_ERROR_MSG);
+        self.walk_stmts(&if_stmt.orelse)?;
         self.br(end_block);
         self.builder.position_at_end(end_block);
         Ok(self.none_value())
@@ -432,7 +450,8 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
             pkgpath_without_prefix!(runtime_type),
         ));
         let mut place_holder_map: HashMap<String, Vec<FunctionValue<'ctx>>> = HashMap::new();
-        let mut body_map: HashMap<String, Vec<&ast::Node<ast::Stmt>>> = HashMap::new();
+        let mut body_map: HashMap<String, Vec<(&ast::Node<ast::Stmt>, BacktrackKind)>> =
+            HashMap::new();
         // Enter the function
         self.push_function(function);
         // Lambda function body
@@ -887,7 +906,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
                 }
                 let stmt_list = body_map.get(k).expect(kcl_error::INTERNAL_ERROR_MSG);
                 let mut if_level = 0;
-                for (attr_func, stmt) in functions.iter().zip(stmt_list) {
+                for (attr_func, (stmt, kind)) in functions.iter().zip(stmt_list) {
                     let function = *attr_func;
                     let name = function
                         .get_name()
@@ -944,6 +963,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
                             level: if_level,
                             count: 0,
                             stop: false,
+                            kind: kind.clone(),
                         });
                     } else {
                         if_level = 0;

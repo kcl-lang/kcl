@@ -9,6 +9,7 @@ use kclvm_runtime::ApiFunc;
 use kclvm_sema::pkgpath_without_prefix;
 
 use super::context::{BacktrackMeta, LLVMCodeGenContext};
+use crate::codegen::llvm::context::BacktrackKind;
 use crate::codegen::traits::{BuilderMethods, ProgramCodeGen, ValueMethods};
 use crate::codegen::{error as kcl_error, ENTRY_NAME};
 use crate::value;
@@ -64,7 +65,8 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         self.br(global_setter_block);
         self.builder.position_at_end(global_setter_block);
         let mut place_holder_map: IndexMap<String, Vec<FunctionValue<'ctx>>> = IndexMap::new();
-        let mut body_map: IndexMap<String, Vec<&ast::Node<ast::Stmt>>> = IndexMap::new();
+        let mut body_map: IndexMap<String, Vec<(&ast::Node<ast::Stmt>, BacktrackKind)>> =
+            IndexMap::new();
         let pkgpath = &self.current_pkgpath();
         // Setter function name format: "$set.<pkg_path>.$<var_name>"
         self.emit_global_setters(
@@ -83,7 +85,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 }
                 let stmt_list = body_map.get(k).expect(kcl_error::INTERNAL_ERROR_MSG);
                 let mut if_level = 0;
-                for (attr_func, stmt) in functions.iter().zip(stmt_list) {
+                for (attr_func, (stmt, kind)) in functions.iter().zip(stmt_list) {
                     let function = *attr_func;
                     let name = function
                         .get_name()
@@ -102,6 +104,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                             level: if_level,
                             count: 0,
                             stop: false,
+                            kind: kind.clone(),
                         });
                     } else {
                         if_level = 0;
@@ -207,48 +210,51 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         pkgpath: &str,
         is_in_if: bool,
         place_holder_map: &mut IndexMap<String, Vec<FunctionValue<'ctx>>>,
-        body_map: &mut IndexMap<String, Vec<&'ctx ast::Node<ast::Stmt>>>,
+        body_map: &mut IndexMap<String, Vec<(&'ctx ast::Node<ast::Stmt>, BacktrackKind)>>,
         in_if_names: &mut Vec<String>,
     ) {
-        let add_stmt =
-            |name: &str,
-             stmt: &'ctx ast::Node<ast::Stmt>,
-             place_holder_map: &mut IndexMap<String, Vec<FunctionValue<'ctx>>>,
-             body_map: &mut IndexMap<String, Vec<&'ctx ast::Node<ast::Stmt>>>| {
-                // The function form e.g., $set.__main__.a(&Context, &LazyScope, &ValueRef, &ValueRef)
-                let var_key = format!("{}.{name}", pkgpath_without_prefix!(pkgpath));
-                let function =
-                    self.add_setter_function(&format!("{}.{}", value::GLOBAL_SETTER, var_key));
-                let lambda_fn_ptr = self.builder.build_bitcast(
-                    function.as_global_value().as_pointer_value(),
-                    self.context.i64_type().ptr_type(AddressSpace::default()),
-                    "",
-                );
-                if !place_holder_map.contains_key(name) {
-                    place_holder_map.insert(name.to_string(), vec![]);
-                }
-                let name_vec = place_holder_map
-                    .get_mut(name)
-                    .expect(kcl_error::INTERNAL_ERROR_MSG);
-                name_vec.push(function);
-                self.build_void_call(
-                    &ApiFunc::kclvm_scope_add_setter.name(),
-                    &[
-                        self.current_runtime_ctx_ptr(),
-                        self.current_scope_ptr(),
-                        self.native_global_string(pkgpath, "").into(),
-                        self.native_global_string(name, "").into(),
-                        lambda_fn_ptr,
-                    ],
-                );
-                let key = format!("{}.{name}", pkgpath_without_prefix!(pkgpath));
-                self.setter_keys.borrow_mut().insert(key);
-                if !body_map.contains_key(name) {
-                    body_map.insert(name.to_string(), vec![]);
-                }
-                let body_vec = body_map.get_mut(name).expect(kcl_error::INTERNAL_ERROR_MSG);
-                body_vec.push(stmt);
-            };
+        let add_stmt = |name: &str,
+                        stmt: &'ctx ast::Node<ast::Stmt>,
+                        kind: BacktrackKind,
+                        place_holder_map: &mut IndexMap<String, Vec<FunctionValue<'ctx>>>,
+                        body_map: &mut IndexMap<
+            String,
+            Vec<(&'ctx ast::Node<ast::Stmt>, BacktrackKind)>,
+        >| {
+            // The function form e.g., $set.__main__.a(&Context, &LazyScope, &ValueRef, &ValueRef)
+            let var_key = format!("{}.{name}", pkgpath_without_prefix!(pkgpath));
+            let function =
+                self.add_setter_function(&format!("{}.{}", value::GLOBAL_SETTER, var_key));
+            let lambda_fn_ptr = self.builder.build_bitcast(
+                function.as_global_value().as_pointer_value(),
+                self.context.i64_type().ptr_type(AddressSpace::default()),
+                "",
+            );
+            if !place_holder_map.contains_key(name) {
+                place_holder_map.insert(name.to_string(), vec![]);
+            }
+            let name_vec = place_holder_map
+                .get_mut(name)
+                .expect(kcl_error::INTERNAL_ERROR_MSG);
+            name_vec.push(function);
+            self.build_void_call(
+                &ApiFunc::kclvm_scope_add_setter.name(),
+                &[
+                    self.current_runtime_ctx_ptr(),
+                    self.current_scope_ptr(),
+                    self.native_global_string(pkgpath, "").into(),
+                    self.native_global_string(name, "").into(),
+                    lambda_fn_ptr,
+                ],
+            );
+            let key = format!("{}.{name}", pkgpath_without_prefix!(pkgpath));
+            self.setter_keys.borrow_mut().insert(key);
+            if !body_map.contains_key(name) {
+                body_map.insert(name.to_string(), vec![]);
+            }
+            let body_vec = body_map.get_mut(name).expect(kcl_error::INTERNAL_ERROR_MSG);
+            body_vec.push((stmt, kind));
+        };
         for stmt in body {
             match &stmt.node {
                 ast::Stmt::Unification(unification_stmt) => {
@@ -256,7 +262,13 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                     if is_in_if {
                         in_if_names.push(name.to_string());
                     } else {
-                        add_stmt(name, stmt, place_holder_map, body_map);
+                        add_stmt(
+                            name,
+                            stmt,
+                            BacktrackKind::Normal,
+                            place_holder_map,
+                            body_map,
+                        );
                     }
                 }
                 ast::Stmt::Assign(assign_stmt) => {
@@ -265,7 +277,13 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                         if is_in_if {
                             in_if_names.push(name.to_string());
                         } else {
-                            add_stmt(name, stmt, place_holder_map, body_map);
+                            add_stmt(
+                                name,
+                                stmt,
+                                BacktrackKind::Normal,
+                                place_holder_map,
+                                body_map,
+                            );
                         }
                     }
                 }
@@ -275,7 +293,13 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                     if is_in_if {
                         in_if_names.push(name.to_string());
                     } else {
-                        add_stmt(name, stmt, place_holder_map, body_map);
+                        add_stmt(
+                            name,
+                            stmt,
+                            BacktrackKind::Normal,
+                            place_holder_map,
+                            body_map,
+                        );
                     }
                 }
                 ast::Stmt::If(if_stmt) => {
@@ -294,10 +318,10 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                         }
                     } else {
                         for name in &names {
-                            add_stmt(name, stmt, place_holder_map, body_map);
+                            add_stmt(name, stmt, BacktrackKind::If, place_holder_map, body_map);
                         }
-                        names.clear();
                     }
+                    names.clear();
                     self.emit_global_setters(
                         &if_stmt.orelse,
                         pkgpath,
@@ -312,17 +336,29 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                         }
                     } else {
                         for name in &names {
-                            add_stmt(name, stmt, place_holder_map, body_map);
+                            add_stmt(
+                                name,
+                                stmt,
+                                BacktrackKind::OrElse,
+                                place_holder_map,
+                                body_map,
+                            );
                         }
-                        names.clear();
                     }
+                    names.clear();
                 }
                 ast::Stmt::SchemaAttr(schema_attr) => {
                     let name = schema_attr.name.node.as_str();
                     if is_in_if {
                         in_if_names.push(name.to_string());
                     } else {
-                        add_stmt(name, stmt, place_holder_map, body_map);
+                        add_stmt(
+                            name,
+                            stmt,
+                            BacktrackKind::Normal,
+                            place_holder_map,
+                            body_map,
+                        );
                     }
                 }
                 _ => {}

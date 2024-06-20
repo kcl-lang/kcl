@@ -69,12 +69,25 @@ pub struct Scope<'ctx> {
     pub arguments: RefCell<IndexSet<String>>,
 }
 
+/// Setter kind.
+/// - If it is a normal kind, traverse all statements in the setter.
+/// - If it is an if type, only traverse the if statement in the if stmt, skipping the else stmt.
+/// - If it is an orelse type, only traverse the else statement, and make conditional judgments based on the inverse of the if stmt's cond.
+#[derive(Default, Debug, Clone, PartialEq)]
+pub enum BacktrackKind {
+    #[default]
+    Normal,
+    If,
+    OrElse,
+}
+
 /// Schema or Global internal order independent computation backtracking meta information.
 pub struct BacktrackMeta {
     pub target: String,
     pub level: usize,
     pub count: usize,
     pub stop: bool,
+    pub kind: BacktrackKind,
 }
 
 /// The LLVM code generator

@@ -78,6 +78,18 @@ impl LazyEvalScope {
     }
 }
 
+/// Setter kind.
+/// - If it is a normal kind, traverse all statements in the setter.
+/// - If it is an if type, only traverse the if statement in the if stmt, skipping the else stmt.
+/// - If it is an orelse type, only traverse the else statement, and make conditional judgments based on the inverse of the if stmt's cond.
+#[derive(PartialEq, Clone, Default, Debug)]
+pub enum SetterKind {
+    #[default]
+    Normal,
+    If,
+    OrElse,
+}
+
 /// Setter function definition.
 #[derive(PartialEq, Clone, Default, Debug)]
 pub struct Setter {
@@ -87,6 +99,11 @@ pub struct Setter {
     pub stmt: usize,
     /// If the statement is a if statement, stop the backtrack process at the stopped statement index.
     pub stopped: Option<AstIndex>,
+    /// Setter kind.
+    /// - If it is a normal kind, traverse all statements in the setter.
+    /// - If it is an if type, only traverse the if statement in the if stmt, skipping the else stmt.
+    /// - If it is an orelse type, only traverse the else statement, and make conditional judgments based on the inverse of the if stmt's cond.
+    pub kind: SetterKind,
 }
 
 /// Merge setters and set the value with default undefined value.
@@ -133,6 +150,7 @@ pub(crate) fn merge_setters(
 pub struct BacktrackMeta {
     pub stopped: Option<AstIndex>,
     pub is_break: bool,
+    pub kind: SetterKind,
 }
 
 impl<'ctx> Evaluator<'ctx> {
@@ -166,7 +184,8 @@ impl<'ctx> Evaluator<'ctx> {
         let add_stmt = |name: &str,
                         i: usize,
                         stopped: Option<AstIndex>,
-                        body_map: &mut IndexMap<String, Vec<Setter>>| {
+                        body_map: &mut IndexMap<String, Vec<Setter>>,
+                        kind: SetterKind| {
             if !body_map.contains_key(name) {
                 body_map.insert(name.to_string(), vec![]);
             }
@@ -175,6 +194,7 @@ impl<'ctx> Evaluator<'ctx> {
                 index,
                 stmt: i,
                 stopped,
+                kind,
             });
         };
         for (i, stmt) in body.iter().enumerate() {
@@ -184,7 +204,7 @@ impl<'ctx> Evaluator<'ctx> {
                     if is_in_if {
                         in_if_names.push((name.to_string(), stmt.id.clone()));
                     } else {
-                        add_stmt(name, i, None, body_map);
+                        add_stmt(name, i, None, body_map, SetterKind::Normal);
                     }
                 }
                 ast::Stmt::Assign(assign_stmt) => {
@@ -193,7 +213,7 @@ impl<'ctx> Evaluator<'ctx> {
                         if is_in_if {
                             in_if_names.push((name.to_string(), stmt.id.clone()));
                         } else {
-                            add_stmt(name, i, None, body_map);
+                            add_stmt(name, i, None, body_map, SetterKind::Normal);
                         }
                     }
                 }
@@ -203,41 +223,45 @@ impl<'ctx> Evaluator<'ctx> {
                     if is_in_if {
                         in_if_names.push((name.to_string(), stmt.id.clone()));
                     } else {
-                        add_stmt(name, i, None, body_map);
+                        add_stmt(name, i, None, body_map, SetterKind::Normal);
                     }
                 }
                 ast::Stmt::If(if_stmt) => {
-                    let mut names: Vec<(String, AstIndex)> = vec![];
-                    self.emit_setters_with(&if_stmt.body, body_map, true, &mut names, index);
+                    let mut if_names: Vec<(String, AstIndex)> = vec![];
+                    self.emit_setters_with(&if_stmt.body, body_map, true, &mut if_names, index);
                     if is_in_if {
-                        for (name, id) in &names {
+                        for (name, id) in &if_names {
                             in_if_names.push((name.to_string(), id.clone()));
                         }
                     } else {
-                        for (name, id) in &names {
-                            add_stmt(name, i, Some(id.clone()), body_map);
+                        for (name, id) in &if_names {
+                            add_stmt(name, i, Some(id.clone()), body_map, SetterKind::If);
                         }
                     }
-
-                    names.clear();
-                    self.emit_setters_with(&if_stmt.orelse, body_map, true, &mut names, index);
+                    let mut or_else_names: Vec<(String, AstIndex)> = vec![];
+                    self.emit_setters_with(
+                        &if_stmt.orelse,
+                        body_map,
+                        true,
+                        &mut or_else_names,
+                        index,
+                    );
                     if is_in_if {
-                        for (name, id) in &names {
+                        for (name, id) in &or_else_names {
                             in_if_names.push((name.to_string(), id.clone()));
                         }
                     } else {
-                        for (name, id) in &names {
-                            add_stmt(name, i, Some(id.clone()), body_map);
+                        for (name, id) in &or_else_names {
+                            add_stmt(name, i, Some(id.clone()), body_map, SetterKind::OrElse);
                         }
                     }
-                    names.clear();
                 }
                 ast::Stmt::SchemaAttr(schema_attr) => {
                     let name = schema_attr.name.node.as_str();
                     if is_in_if {
                         in_if_names.push((name.to_string(), stmt.id.clone()));
                     } else {
-                        add_stmt(name, i, None, body_map);
+                        add_stmt(name, i, None, body_map, SetterKind::Normal);
                     }
                 }
                 _ => {}
