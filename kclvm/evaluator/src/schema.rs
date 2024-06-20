@@ -30,6 +30,8 @@ pub struct SchemaEvalContext {
     pub node: Rc<ast::SchemaStmt>,
     pub scope: Option<LazyEvalScopeRef>,
     pub index: Index,
+    pub parent: Option<Index>,
+    pub mixins: Vec<Index>,
     pub value: ValueRef,
     pub config: ValueRef,
     pub config_meta: ValueRef,
@@ -39,11 +41,18 @@ pub struct SchemaEvalContext {
 
 impl SchemaEvalContext {
     #[inline]
-    pub fn new_with_node(node: ast::SchemaStmt, index: Index) -> Self {
+    pub fn new_with_node(
+        node: ast::SchemaStmt,
+        index: Index,
+        parent: Option<Index>,
+        mixins: Vec<Index>,
+    ) -> Self {
         Self {
             node: Rc::new(node),
             scope: None,
             index,
+            parent,
+            mixins,
             value: ValueRef::dict(None),
             config: ValueRef::dict(None),
             config_meta: ValueRef::dict(None),
@@ -58,6 +67,8 @@ impl SchemaEvalContext {
         Rc::new(RefCell::new(Self {
             node: self.node.clone(),
             index: self.index,
+            parent: self.parent,
+            mixins: self.mixins.clone(),
             scope: None,
             value: ValueRef::dict(None),
             config,
@@ -99,28 +110,17 @@ impl SchemaEvalContext {
         self.is_sub_schema = true;
     }
 
-    /// Update parent schema and mixin schema information
+    /// Update parent schema and mixin schema information in the current scope.
     pub fn get_parent_schema(
         s: &Evaluator,
-        ctx: &SchemaEvalContext,
-    ) -> Option<(Index, SchemaEvalContextRef)> {
-        if let Some(parent_name) = &ctx.node.parent_name {
+        parent: &Option<Box<ast::Node<ast::Identifier>>>,
+    ) -> Option<Index> {
+        if let Some(parent) = parent {
             let func = s
-                .walk_identifier_with_ctx(&parent_name.node, &ast::ExprContext::Load, None)
+                .walk_identifier_with_ctx(&parent.node, &ast::ExprContext::Load, None)
                 .expect(kcl_error::RUNTIME_ERROR_MSG);
             if let Some(index) = func.try_get_proxy() {
-                let frame = {
-                    let frames = s.frames.borrow();
-                    frames
-                        .get(index)
-                        .expect(kcl_error::INTERNAL_ERROR_MSG)
-                        .clone()
-                };
-                if let Proxy::Schema(schema) = &frame.proxy {
-                    Some((index, schema.ctx.clone()))
-                } else {
-                    None
-                }
+                Some(index)
             } else {
                 None
             }
@@ -132,10 +132,10 @@ impl SchemaEvalContext {
     /// Update parent schema and mixin schema information
     pub fn get_mixin_schemas(
         s: &Evaluator,
-        ctx: &SchemaEvalContext,
-    ) -> Vec<(Index, SchemaEvalContextRef)> {
+        mixins: &[Box<ast::Node<ast::Identifier>>],
+    ) -> Vec<Index> {
         let mut results = vec![];
-        for mixin in &ctx.node.mixins {
+        for mixin in mixins {
             let func = s
                 .walk_identifier_with_ctx(&mixin.node, &ast::ExprContext::Load, None)
                 .expect(kcl_error::RUNTIME_ERROR_MSG);
@@ -147,8 +147,8 @@ impl SchemaEvalContext {
                         .expect(kcl_error::INTERNAL_ERROR_MSG)
                         .clone()
                 };
-                if let Proxy::Schema(schema) = &frame.proxy {
-                    results.push((index, schema.ctx.clone()))
+                if let Proxy::Schema(_) = &frame.proxy {
+                    results.push(index);
                 }
             }
         }
@@ -164,8 +164,17 @@ impl SchemaEvalContext {
                 }
             }
         }
-        if let Some((_, parent)) = SchemaEvalContext::get_parent_schema(s, &ctx.borrow()) {
-            return SchemaEvalContext::has_attr(s, &parent, name);
+        if let Some(index) = ctx.borrow().parent {
+            let frame = {
+                let frames = s.frames.borrow();
+                frames
+                    .get(index)
+                    .expect(kcl_error::INTERNAL_ERROR_MSG)
+                    .clone()
+            };
+            if let Proxy::Schema(schema) = &frame.proxy {
+                return SchemaEvalContext::has_attr(s, &schema.ctx, name);
+            }
         }
         false
     }
@@ -175,8 +184,18 @@ impl SchemaEvalContext {
         if ctx.borrow().node.index_signature.is_some() {
             return true;
         }
-        if let Some((_, parent)) = SchemaEvalContext::get_parent_schema(s, &ctx.borrow()) {
-            return SchemaEvalContext::has_index_signature(s, &parent);
+
+        if let Some(index) = ctx.borrow().parent {
+            let frame = {
+                let frames = s.frames.borrow();
+                frames
+                    .get(index)
+                    .expect(kcl_error::INTERNAL_ERROR_MSG)
+                    .clone()
+            };
+            if let Proxy::Schema(schema) = &frame.proxy {
+                return SchemaEvalContext::has_index_signature(s, &schema.ctx);
+            }
         }
         false
     }
@@ -199,18 +218,29 @@ impl SchemaEvalContext {
         }
     }
 
-    /// Init the lazy scope used to
+    /// Init the lazy scope used to cache the lazy evaluation result.
     pub fn init_lazy_scope(&mut self, s: &Evaluator, index: Option<Index>) {
         // TODO: cache the lazy scope cross different schema instances.
         let mut setters = IndexMap::new();
         // Parent schema setters
-        if let Some((idx, parent)) = SchemaEvalContext::get_parent_schema(s, self) {
-            {
-                let mut parent = parent.borrow_mut();
+        if let Some(idx) = self.parent {
+            let frame = {
+                let frames = s.frames.borrow();
+                frames
+                    .get(idx)
+                    .expect(kcl_error::INTERNAL_ERROR_MSG)
+                    .clone()
+            };
+            if let Proxy::Schema(schema) = &frame.proxy {
+                let mut parent = schema.ctx.borrow_mut();
                 parent.init_lazy_scope(s, Some(idx));
-            }
-            if let Some(scope) = &parent.borrow().scope {
-                merge_variables_and_setters(&mut self.value, &mut setters, &scope.borrow().setters);
+                if let Some(scope) = &parent.scope {
+                    merge_variables_and_setters(
+                        &mut self.value,
+                        &mut setters,
+                        &scope.borrow().setters,
+                    );
+                }
             }
         }
         // Self setters
@@ -220,13 +250,24 @@ impl SchemaEvalContext {
             &s.emit_setters(&self.node.body, index),
         );
         // Mixin schema setters
-        for (idx, mixin) in SchemaEvalContext::get_mixin_schemas(s, self) {
-            {
-                let mut mixin = mixin.borrow_mut();
-                mixin.init_lazy_scope(s, Some(idx));
-            }
-            if let Some(scope) = &mixin.borrow().scope {
-                merge_variables_and_setters(&mut self.value, &mut setters, &scope.borrow().setters);
+        for idx in &self.mixins {
+            let frame = {
+                let frames = s.frames.borrow();
+                frames
+                    .get(*idx)
+                    .expect(kcl_error::INTERNAL_ERROR_MSG)
+                    .clone()
+            };
+            if let Proxy::Schema(schema) = &frame.proxy {
+                let mut mixin = schema.ctx.borrow_mut();
+                mixin.init_lazy_scope(s, Some(*idx));
+                if let Some(scope) = &mixin.scope {
+                    merge_variables_and_setters(
+                        &mut self.value,
+                        &mut setters,
+                        &scope.borrow().setters,
+                    );
+                }
             }
         }
         self.scope = Some(Rc::new(RefCell::new(LazyEvalScope {

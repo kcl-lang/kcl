@@ -270,6 +270,8 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
             ctx: Rc::new(RefCell::new(SchemaEvalContext::new_with_node(
                 schema_stmt.clone(),
                 Index::from_raw_parts(self.frames.borrow().len(), 0),
+                SchemaEvalContext::get_parent_schema(self, &schema_stmt.parent_name),
+                SchemaEvalContext::get_mixin_schemas(self, &schema_stmt.mixins),
             ))),
             body,
             check,
