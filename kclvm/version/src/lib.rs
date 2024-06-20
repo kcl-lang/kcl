@@ -1,7 +1,7 @@
 //! Copyright The KCL Authors. All rights reserved.
 
 pub const VERSION: &str = include_str!("./../../../VERSION");
-pub const CHECK_SUM: &str = "0c20ab3eb4b9179219d6837a57f5d352";
+pub const CHECK_SUM: &str = "c020ab3eb4b9179219d6837a57f5d323";
 
 /// Get kCL full version string with the format `{version}-{check_sum}`.
 #[inline]

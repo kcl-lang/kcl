@@ -1377,22 +1377,6 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 self.pkgpath_stack.borrow_mut().push(pkgpath.clone());
             }
         }
-        // Set the kcl module path to the runtime context
-        self.build_void_call(
-            &ApiFunc::kclvm_context_set_kcl_modpath.name(),
-            &[
-                self.current_runtime_ctx_ptr(),
-                self.native_global_string_value(&self.program.root),
-            ],
-        );
-        // Set the kcl workdir to the runtime context
-        self.build_void_call(
-            &ApiFunc::kclvm_context_set_kcl_workdir.name(),
-            &[
-                self.current_runtime_ctx_ptr(),
-                self.native_global_string_value(&self.workdir),
-            ],
-        );
         if !self.import_names.is_empty() {
             let import_names = self.dict_value();
             for (k, v) in &self.import_names {
@@ -1425,6 +1409,22 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             }
             self.ret_void();
         } else {
+            // Set the kcl module path to the runtime context only in the main package.
+            self.build_void_call(
+                &ApiFunc::kclvm_context_set_kcl_modpath.name(),
+                &[
+                    self.current_runtime_ctx_ptr(),
+                    self.native_global_string_value(&self.program.root),
+                ],
+            );
+            // Set the kcl workdir to the runtime context
+            self.build_void_call(
+                &ApiFunc::kclvm_context_set_kcl_workdir.name(),
+                &[
+                    self.current_runtime_ctx_ptr(),
+                    self.native_global_string_value(&self.workdir),
+                ],
+            );
             // Init scope and all builtin functions
             self.init_scope(MAIN_PKG_PATH);
             let main_pkg_modules = self
