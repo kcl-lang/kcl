@@ -18,7 +18,9 @@ use crate::{
     formatting::format,
     from_lsp::{self, file_path_from_url, kcl_pos},
     goto_def::goto_def,
-    hover, quick_fix,
+    hover,
+    inlay_hints::inlay_hints,
+    quick_fix,
     semantic_token::semantic_tokens_full,
     state::{log_message, LanguageServerSnapshot, LanguageServerState, Task},
 };
@@ -58,6 +60,7 @@ impl LanguageServerState {
             .on::<lsp_types::request::RangeFormatting>(handle_range_formatting)?
             .on::<lsp_types::request::Rename>(handle_rename)?
             .on::<lsp_types::request::SemanticTokensFullRequest>(handle_semantic_tokens_full)?
+            .on::<lsp_types::request::InlayHintRequest>(handle_inlay_hint)?
             .finish();
 
         Ok(())
@@ -438,4 +441,26 @@ pub(crate) fn handle_rename(
             Err(anyhow!(err_msg))
         }
     }
+}
+
+pub(crate) fn handle_inlay_hint(
+    snapshot: LanguageServerSnapshot,
+    params: lsp_types::InlayHintParams,
+    _sender: Sender<Task>,
+) -> anyhow::Result<Option<Vec<lsp_types::InlayHint>>> {
+    let file = file_path_from_url(&params.text_document.uri)?;
+    let path = from_lsp::abs_path(&params.text_document.uri)?;
+    let db = match snapshot.try_get_db(&path.clone().into()) {
+        Ok(option_db) => match option_db {
+            Some(db) => db,
+            None => return Err(anyhow!(LSPError::Retry)),
+        },
+        Err(_) => return Ok(None),
+    };
+    let res = inlay_hints(&file, &db.gs);
+
+    if !snapshot.verify_request_version(db.version, &path)? {
+        return Err(anyhow!(LSPError::Retry));
+    }
+    Ok(res)
 }

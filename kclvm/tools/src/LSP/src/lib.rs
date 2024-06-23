@@ -9,6 +9,7 @@ mod formatting;
 mod from_lsp;
 mod goto_def;
 mod hover;
+mod inlay_hints;
 mod main_loop;
 mod notification;
 mod quick_fix;
