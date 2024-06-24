@@ -357,9 +357,11 @@ impl<'ctx> MutSelfMutWalker<'ctx> for OverrideTransformer {
 
                             // Unification is only support to override the schema expression.
                             if let ast::Expr::Schema(schema_expr) = value.node {
-                                self.has_override = true;
-                                unification_stmt.value =
-                                    Box::new(ast::Node::dummy_node(schema_expr));
+                                if self.field_paths.len() == 0 {
+                                    self.has_override = true;
+                                    unification_stmt.value =
+                                        Box::new(ast::Node::dummy_node(schema_expr));
+                                }
                             }
                         }
                     }

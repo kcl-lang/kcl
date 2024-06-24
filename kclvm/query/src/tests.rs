@@ -107,11 +107,13 @@ fn test_override_file_config() {
         "appConfiguration.overQuota=False".to_string(),
         "appConfiguration.probe={periodSeconds=20}".to_string(),
         "appConfiguration.resource-".to_string(),
+        "appConfiguration.svc=s.Service {}".to_string(),
         "appConfigurationUnification.image=\"kcl/kcl:v0.1\"".to_string(),
         r#"appConfigurationUnification.mainContainer.name="override_name""#.to_string(),
         "appConfigurationUnification.labels.key.key=\"override_value\"".to_string(),
         "appConfigurationUnification.overQuota=False".to_string(),
         "appConfigurationUnification.resource.cpu-".to_string(),
+        "appConfigurationUnification.svc=s.Service {}".to_string(),
         "config.x:1".to_string(),
         "config.y=1".to_string(),
         "config.z+=[1,2,3]".to_string(),
@@ -120,7 +122,7 @@ fn test_override_file_config() {
         "var3+=[1,2,3]".to_string(),
         "var4:AppConfiguration {image:'image'}".to_string(),
     ];
-    let import_paths = vec![];
+    let import_paths = vec!["service as s".to_string()];
 
     let mut cargo_file_path = PathBuf::from(CARGO_FILE_PATH);
     cargo_file_path.push("src/test_data/config.k");
@@ -133,7 +135,9 @@ fn test_override_file_config() {
     let expected_code = print_ast_module(&module);
     assert_eq!(
         expected_code,
-        r#"schema Main:
+        r#"import service as s
+
+schema Main:
     name?: str
     env?: [{str:}]
 
@@ -167,6 +171,7 @@ appConfiguration = AppConfiguration {
     overQuota = False
     overQuota = False
     probe: {periodSeconds = 20}
+    svc = s.Service {}
 }
 
 appConfigurationUnification: AppConfiguration {
@@ -181,6 +186,7 @@ appConfigurationUnification: AppConfiguration {
     }
     mainContainer: Main {name: "override_name"}
     overQuota: False
+    svc = s.Service {}
 }
 config = {x: 1, y = 1, z += [1, 2, 3]}
 var1 = 1
