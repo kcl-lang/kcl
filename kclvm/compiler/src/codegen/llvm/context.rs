@@ -4,7 +4,6 @@ use indexmap::{IndexMap, IndexSet};
 use inkwell::basic_block::BasicBlock;
 use inkwell::builder::Builder;
 use inkwell::context::Context;
-use inkwell::debug_info::{DICompileUnit, DebugInfoBuilder};
 use inkwell::memory_buffer::MemoryBuffer;
 use inkwell::module::{Linkage, Module};
 use inkwell::support::LLVMString;
@@ -137,8 +136,6 @@ pub struct LLVMCodeGenContext<'ctx> {
 /// LLVM module with debug info builder and compile unit.
 pub struct DebugModule<'ctx> {
     pub inner: Module<'ctx>,
-    pub dibuilder: DebugInfoBuilder<'ctx>,
-    pub compile_unit: DICompileUnit<'ctx>,
 }
 
 impl<'ctx> CodeGenObject for BasicValueEnum<'ctx> {}

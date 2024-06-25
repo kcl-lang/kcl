@@ -1,12 +1,6 @@
 name: Build and Test on Linux ARCH64
 
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+on: ["push", "pull_request"]
 
 jobs:
   build-and-test-arm64:
@@ -17,33 +11,15 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: "true"
-      
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: 1.21
 
-      - name: Install prerequisites
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y git wget curl make python3 python3-pip clang-12 lld-12
-          sudo ln -sf /usr/bin/clang-12 /usr/bin/clang
-
-      - name: Install rust nightly toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: 1.76
-          override: true
-          components: clippy, rustfmt
-      
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
         with:
           platforms: linux/amd64,linux/arm64
-          
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
-      
+
       - name: Pull custom ARM64 Docker image
         run: |
           docker pull --platform linux/arm64 kcllang/kcl-builder-arm64
