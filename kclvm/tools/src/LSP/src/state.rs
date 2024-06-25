@@ -216,7 +216,7 @@ impl LanguageServerState {
         true
     }
 
-    /// Process vfs changed file. Update db cache when creat(did_open_file), modity(did_change) or delete(did_close_file) vfs files.
+    /// Process vfs changed file. Update db cache when create(did_open_file), modify(did_change) or delete(did_close_file) vfs files.
     fn process_changed_file(&mut self, file: ChangedFile) {
         match file.change_kind {
             ChangeKind::Create | ChangeKind::Modify => {
