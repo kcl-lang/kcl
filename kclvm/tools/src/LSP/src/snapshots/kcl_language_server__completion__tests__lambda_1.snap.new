@@ -1,6 +1,0 @@
----
-source: tools/src/LSP/src/completion.rs
-assertion_line: 1863
-expression: "format!(\"{:?}\", labels)"
----
-["option(…)", "print(…)", "multiplyof(…)", "isunique(…)", "len(…)", "abs(…)", "all_true(…)", "any_true(…)", "hex(…)", "bin(…)", "oct(…)", "ord(…)", "sorted(…)", "range(…)", "max(…)", "min(…)", "sum(…)", "pow(…)", "round(…)", "zip(…)", "int(…)", "float(…)", "bool(…)", "str(…)", "list(…)", "dict(…)", "typeof(…)", "case", "func1", "cases"]

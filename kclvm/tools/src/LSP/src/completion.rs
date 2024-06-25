@@ -1844,9 +1844,10 @@ mod tests {
 
                     match &mut got {
                         CompletionResponse::Array(arr) => {
-                            let labels: Vec<String> =
+                            let mut labels: Vec<String> =
                                 arr.iter().map(|item| item.label.clone()).collect();
-                            insta::assert_snapshot!(format!("{:?}", labels));
+                            labels.sort();
+                            labels
                         }
                         CompletionResponse::List(_) => panic!("test failed"),
                     }
