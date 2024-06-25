@@ -21,7 +21,7 @@ use ra_ap_vfs::{ChangeKind, ChangedFile, FileId, Vfs};
 use std::collections::HashMap;
 use std::sync::Mutex;
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 use std::{sync::Arc, time::Instant};
 
 pub(crate) type RequestHandler = fn(&mut LanguageServerState, lsp_server::Response);
@@ -49,7 +49,8 @@ pub(crate) struct Handle<H, C> {
 
 pub(crate) type KCLVfs = Arc<RwLock<Vfs>>;
 pub(crate) type KCLWordIndexMap = Arc<RwLock<HashMap<Url, HashMap<String, Vec<Location>>>>>;
-pub(crate) type KCLEntryCache = Arc<RwLock<HashMap<String, CompileUnitOptions>>>;
+pub(crate) type KCLEntryCache =
+    Arc<RwLock<HashMap<String, (CompileUnitOptions, Option<SystemTime>)>>>;
 pub(crate) type KCLToolChain = Arc<RwLock<dyn Toolchain>>;
 pub(crate) type KCLGlobalStateCache = Arc<Mutex<GlobalState>>;
 
