@@ -167,7 +167,7 @@ impl GlobalState {
         }
     }
 
-    /// get all definition symbols within specific scope
+    /// get all definition symbols within specific scope and parent scope
     ///
     /// # Parameters
     ///
@@ -184,6 +184,35 @@ impl GlobalState {
         let scope = scopes.get_scope(&scope)?;
         let all_defs: Vec<SymbolRef> = scope
             .get_all_defs(
+                scopes,
+                &self.symbols,
+                self.packages.get_module_info(scope.get_filename()),
+                false,
+            )
+            .values()
+            .into_iter()
+            .cloned()
+            .collect();
+        Some(all_defs)
+    }
+
+    /// get all definition symbols within specific scope
+    ///
+    /// # Parameters
+    ///
+    /// `scope`: [ScopeRef]
+    ///     the reference of scope which was allocated by [ScopeData]
+    ///
+    ///
+    /// # Returns
+    ///
+    /// result: [Option<Vec<SymbolRef>>]
+    ///      all definition symbols in the scope
+    pub fn get_defs_within_scope(&self, scope: ScopeRef) -> Option<Vec<SymbolRef>> {
+        let scopes = &self.scopes;
+        let scope = scopes.get_scope(&scope)?;
+        let all_defs: Vec<SymbolRef> = scope
+            .get_defs_within_scope(
                 scopes,
                 &self.symbols,
                 self.packages.get_module_info(scope.get_filename()),
