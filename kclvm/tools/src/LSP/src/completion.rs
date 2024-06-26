@@ -1341,8 +1341,6 @@ mod tests {
         }
     }
 
-
-
     #[test]
     fn schema_docstring_newline_completion() {
         let (file, program, _, gs) =
@@ -1840,7 +1838,6 @@ mod tests {
         4,
         Some('\n')
     );
-
 
     completion_label_without_builtin_func_test_snapshot!(
         schema_attr_newline_completion_0_1,

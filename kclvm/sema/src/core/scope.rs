@@ -574,7 +574,7 @@ impl Scope for LocalSymbolScope {
     fn get_range(&self) -> Option<(Position, Position)> {
         Some((self.start.clone(), self.end.clone()))
     }
-    
+
     fn get_defs_within_scope(
         &self,
         _scope_data: &ScopeData,
