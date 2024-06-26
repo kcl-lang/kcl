@@ -453,13 +453,55 @@ fn completion_import_builtin_pkg(program: &Program, pos: &KCLPos) -> IndexSet<KC
 
     if let Some(node) = program.pos_to_stmt(line_start_pos) {
         if let Stmt::Import(_) = node.node {
+            // system modules
             completions.extend(STANDARD_SYSTEM_MODULES.iter().map(|s| KCLCompletionItem {
                 label: s.to_string(),
                 detail: None,
                 documentation: None,
                 kind: Some(KCLCompletionItemKind::Module),
                 insert_text: None,
-            }))
+            }));
+
+            // internal pkg and modules in program.root
+            if let Ok(entries) = fs::read_dir(program.root.clone()) {
+                for entry in entries {
+                    if let Ok(entry) = entry {
+                        if let Ok(file_type) = entry.file_type() {
+                            // internal pkgs
+                            if file_type.is_dir() {
+                                if let Some(name) = entry.file_name().to_str() {
+                                    completions.insert(KCLCompletionItem {
+                                        label: name.to_string(),
+                                        detail: None,
+                                        documentation: None,
+                                        kind: Some(KCLCompletionItemKind::Module),
+                                        insert_text: None,
+                                    });
+                                }
+                            } else {
+                                // internal module
+                                let path = entry.path();
+                                if path.to_str().unwrap_or("") == pos.filename {
+                                    continue;
+                                }
+                                if let Some(extension) = path.extension() {
+                                    if extension == KCL_FILE_EXTENSION {
+                                        if let Some(name) = entry.file_name().to_str() {
+                                            completions.insert(KCLCompletionItem {
+                                                label: name.to_string(),
+                                                detail: None,
+                                                documentation: None,
+                                                kind: Some(KCLCompletionItemKind::Module),
+                                                insert_text: None,
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
     completions
@@ -744,7 +786,9 @@ mod tests {
     use indexmap::IndexSet;
     use kclvm_driver::toolchain;
     use kclvm_error::Position as KCLPos;
-    use kclvm_sema::builtin::{BUILTIN_FUNCTIONS, MATH_FUNCTION_TYPES, STRING_MEMBER_FUNCTIONS};
+    use kclvm_sema::builtin::{
+        BUILTIN_FUNCTIONS, MATH_FUNCTION_TYPES, STANDARD_SYSTEM_MODULES, STRING_MEMBER_FUNCTIONS,
+    };
     use lsp_types::{CompletionItem, CompletionItemKind, CompletionResponse, InsertTextFormat};
     use proc_macro_crate::bench_test;
 
@@ -1159,7 +1203,7 @@ mod tests {
     #[bench_test]
     fn import_builtin_package() {
         let (file, program, _, gs) =
-            compile_test_file("src/test_data/completion_test/import/builtin_pkg.k");
+            compile_test_file("src/test_data/completion_test/import/builtin/builtin_pkg.k");
         let mut items: IndexSet<KCLCompletionItem> = IndexSet::new();
 
         // test completion for builtin packages
@@ -1781,6 +1825,37 @@ mod tests {
     }
 
     #[macro_export]
+    macro_rules! completion_label_test_snapshot {
+        ($name:ident, $file:expr, $line:expr, $column: expr, $trigger: expr) => {
+            #[test]
+            fn $name() {
+                insta::assert_snapshot!(format!("{:?}", {
+                    let (file, program, _, gs) = compile_test_file($file);
+
+                    let pos = KCLPos {
+                        filename: file.clone(),
+                        line: $line,
+                        column: Some($column),
+                    };
+                    let tool = toolchain::default();
+
+                    let mut got = completion($trigger, &program, &pos, &gs, &tool).unwrap();
+
+                    match &mut got {
+                        CompletionResponse::Array(arr) => {
+                            let mut labels: Vec<String> =
+                                arr.iter().map(|item| item.label.clone()).collect();
+                            labels.sort();
+                            labels
+                        }
+                        CompletionResponse::List(_) => panic!("test failed"),
+                    }
+                }));
+            }
+        };
+    }
+
+    #[macro_export]
     macro_rules! completion_label_without_builtin_func_test_snapshot {
         ($name:ident, $file:expr, $line:expr, $column: expr, $trigger: expr) => {
             #[test]
@@ -1823,6 +1898,43 @@ mod tests {
         };
     }
 
+    #[macro_export]
+    macro_rules! completion_label_without_system_pkg_test_snapshot {
+        ($name:ident, $file:expr, $line:expr, $column: expr, $trigger: expr) => {
+            #[test]
+            fn $name() {
+                insta::assert_snapshot!(format!("{:?}", {
+                    let (file, program, _, gs) = compile_test_file($file);
+
+                    let pos = KCLPos {
+                        filename: file.clone(),
+                        line: $line,
+                        column: Some($column),
+                    };
+                    let tool = toolchain::default();
+
+                    let mut got = completion($trigger, &program, &pos, &gs, &tool).unwrap();
+
+                    match &mut got {
+                        CompletionResponse::Array(arr) => {
+                            let mut labels: Vec<String> =
+                                arr.iter().map(|item| item.label.clone()).collect();
+                            labels.sort();
+                            let labels: Vec<String> = labels
+                                .iter()
+                                .filter(|label| !STANDARD_SYSTEM_MODULES.contains(&label.as_str()))
+                                .cloned()
+                                .collect();
+
+                            labels
+                        }
+                        CompletionResponse::List(_) => panic!("test failed"),
+                    }
+                }));
+            }
+        };
+    }
+
     completion_label_without_builtin_func_test_snapshot!(
         lambda_1,
         "src/test_data/completion_test/lambda/lambda_1/lambda_1.k",
@@ -1853,5 +1965,13 @@ mod tests {
         10,
         4,
         Some('\n')
+    );
+
+    completion_label_without_system_pkg_test_snapshot!(
+        import_internal_pkg_test,
+        "src/test_data/completion_test/import/internal/main.k",
+        1,
+        8,
+        None
     );
 }
