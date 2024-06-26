@@ -1824,4 +1824,43 @@ mod tests {
             CompletionResponse::List(_) => panic!("test failed"),
         }
     }
+
+    #[macro_export]
+    macro_rules! completion_label_test_snapshot {
+        ($name:ident, $file:expr, $line:expr, $column: expr, $trigger: expr) => {
+            #[test]
+            fn $name() {
+                insta::assert_snapshot!(format!("{:?}", {
+                    let (file, program, _, gs) = compile_test_file($file);
+
+                    let pos = KCLPos {
+                        filename: file.clone(),
+                        line: $line,
+                        column: Some($column),
+                    };
+                    let tool = toolchain::default();
+
+                    let mut got = completion($trigger, &program, &pos, &gs, &tool).unwrap();
+
+                    match &mut got {
+                        CompletionResponse::Array(arr) => {
+                            let mut labels: Vec<String> =
+                                arr.iter().map(|item| item.label.clone()).collect();
+                            labels.sort();
+                            labels
+                        }
+                        CompletionResponse::List(_) => panic!("test failed"),
+                    }
+                }));
+            }
+        };
+    }
+
+    completion_label_test_snapshot!(
+        lambda_1,
+        "src/test_data/completion_test/lambda/lambda_1/lambda_1.k",
+        8,
+        5,
+        None
+    );
 }

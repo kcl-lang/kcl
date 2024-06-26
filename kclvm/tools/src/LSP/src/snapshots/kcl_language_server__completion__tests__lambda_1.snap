@@ -1,0 +1,5 @@
+---
+source: tools/src/LSP/src/completion.rs
+expression: "format!(\"{:?}\", labels)"
+---
+["abs(…)", "all_true(…)", "any_true(…)", "bin(…)", "bool(…)", "case", "cases", "dict(…)", "float(…)", "func1", "hex(…)", "int(…)", "isunique(…)", "len(…)", "list(…)", "max(…)", "min(…)", "multiplyof(…)", "oct(…)", "option(…)", "ord(…)", "pow(…)", "print(…)", "range(…)", "round(…)", "sorted(…)", "str(…)", "sum(…)", "typeof(…)", "zip(…)"]

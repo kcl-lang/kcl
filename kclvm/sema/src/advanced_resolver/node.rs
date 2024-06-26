@@ -846,6 +846,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
                 | ast::Expr::Schema(_)
                 | ast::Expr::ConfigIfEntry(_)
                 | ast::Expr::Quant(_)
+                | ast::Expr::Lambda(_)
         ) {
             let (start, end) = expr.get_span_pos();
             self.ctx.start_pos = start;
