@@ -27,7 +27,17 @@ pub trait Scope {
         local: bool,
     ) -> Option<SymbolRef>;
 
+    /// Get all defs within current scope and parent scope
     fn get_all_defs(
+        &self,
+        scope_data: &ScopeData,
+        symbol_data: &Self::SymbolData,
+        module_info: Option<&ModuleInfo>,
+        recursive: bool,
+    ) -> HashMap<String, SymbolRef>;
+
+    /// Get all defs within current scope
+    fn get_defs_within_scope(
         &self,
         scope_data: &ScopeData,
         symbol_data: &Self::SymbolData,
@@ -328,6 +338,17 @@ impl Scope for RootSymbolScope {
     fn get_range(&self) -> Option<(Position, Position)> {
         None
     }
+
+    fn get_defs_within_scope(
+        &self,
+        scope_data: &ScopeData,
+        symbol_data: &Self::SymbolData,
+        module_info: Option<&ModuleInfo>,
+        recursive: bool,
+    ) -> HashMap<String, SymbolRef> {
+        // get defs within root scope equal to get all defs
+        self.get_all_defs(scope_data, symbol_data, module_info, recursive)
+    }
 }
 
 impl RootSymbolScope {
@@ -552,6 +573,35 @@ impl Scope for LocalSymbolScope {
 
     fn get_range(&self) -> Option<(Position, Position)> {
         Some((self.start.clone(), self.end.clone()))
+    }
+
+    fn get_defs_within_scope(
+        &self,
+        _scope_data: &ScopeData,
+        symbol_data: &Self::SymbolData,
+        module_info: Option<&ModuleInfo>,
+        _recursive: bool,
+    ) -> HashMap<String, SymbolRef> {
+        let mut all_defs_map = HashMap::new();
+        if let Some(owner) = self.owner {
+            if let Some(owner) = symbol_data.get_symbol(owner) {
+                for def_ref in owner.get_all_attributes(symbol_data, module_info) {
+                    if let Some(def) = symbol_data.get_symbol(def_ref) {
+                        let name = def.get_name();
+                        if !all_defs_map.contains_key(&name) {
+                            all_defs_map.insert(name, def_ref);
+                        }
+                    }
+                }
+            }
+        }
+
+        for def_ref in self.defs.values() {
+            if let Some(def) = symbol_data.get_symbol(*def_ref) {
+                all_defs_map.insert(def.get_name(), *def_ref);
+            }
+        }
+        all_defs_map
     }
 }
 

@@ -396,7 +396,7 @@ fn completion_newline(
         if let ScopeKind::Local = scope.get_kind() {
             if let Some(locol_scope) = gs.get_scopes().try_get_local_scope(&scope) {
                 if let LocalSymbolScopeKind::SchemaConfig = locol_scope.get_kind() {
-                    if let Some(defs) = gs.get_all_defs_in_scope(scope) {
+                    if let Some(defs) = gs.get_defs_within_scope(scope) {
                         for symbol_ref in defs {
                             match gs.get_symbols().get_symbol(symbol_ref) {
                                 Some(def) => {
@@ -1342,51 +1342,6 @@ mod tests {
     }
 
     #[test]
-    fn schema_attr_newline_completion() {
-        let (file, program, _, gs) =
-            compile_test_file("src/test_data/completion_test/newline/newline.k");
-
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 8,
-            column: Some(4),
-        };
-
-        let tool = toolchain::default();
-        let mut got = completion(Some('\n'), &program, &pos, &gs, &tool).unwrap();
-        match &mut got {
-            CompletionResponse::Array(arr) => {
-                arr.sort_by(|a, b| a.label.cmp(&b.label));
-                assert_eq!(
-                    arr[1],
-                    CompletionItem {
-                        label: "c".to_string(),
-                        kind: Some(CompletionItemKind::FIELD),
-                        detail: Some("c: int".to_string()),
-                        documentation: None,
-                        ..Default::default()
-                    }
-                )
-            }
-            CompletionResponse::List(_) => panic!("test failed"),
-        }
-
-        // not complete in schema stmt
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 5,
-            column: Some(4),
-        };
-        let got = completion(Some('\n'), &program, &pos, &gs, &tool).unwrap();
-        match got {
-            CompletionResponse::Array(arr) => {
-                assert!(arr.is_empty())
-            }
-            CompletionResponse::List(_) => panic!("test failed"),
-        }
-    }
-
-    #[test]
     fn schema_docstring_newline_completion() {
         let (file, program, _, gs) =
             compile_test_file("src/test_data/completion_test/newline/docstring_newline.k");
@@ -1826,7 +1781,7 @@ mod tests {
     }
 
     #[macro_export]
-    macro_rules! completion_label_test_snapshot {
+    macro_rules! completion_label_without_builtin_func_test_snapshot {
         ($name:ident, $file:expr, $line:expr, $column: expr, $trigger: expr) => {
             #[test]
             fn $name() {
@@ -1847,6 +1802,18 @@ mod tests {
                             let mut labels: Vec<String> =
                                 arr.iter().map(|item| item.label.clone()).collect();
                             labels.sort();
+                            let builtin_func_lables: Vec<String> = BUILTIN_FUNCTIONS
+                                .iter()
+                                .map(|(name, func)| {
+                                    func_ty_complete_label(name, &func.into_func_type())
+                                })
+                                .collect();
+                            let labels: Vec<String> = labels
+                                .iter()
+                                .filter(|label| !builtin_func_lables.contains(label))
+                                .map(|label| label.clone())
+                                .collect();
+
                             labels
                         }
                         CompletionResponse::List(_) => panic!("test failed"),
@@ -1856,11 +1823,35 @@ mod tests {
         };
     }
 
-    completion_label_test_snapshot!(
+    completion_label_without_builtin_func_test_snapshot!(
         lambda_1,
         "src/test_data/completion_test/lambda/lambda_1/lambda_1.k",
         8,
         5,
         None
+    );
+
+    completion_label_without_builtin_func_test_snapshot!(
+        schema_attr_newline_completion_0,
+        "src/test_data/completion_test/newline/schema/schema_0/schema_0.k",
+        8,
+        4,
+        Some('\n')
+    );
+
+    completion_label_without_builtin_func_test_snapshot!(
+        schema_attr_newline_completion_0_1,
+        "src/test_data/completion_test/newline/schema/schema_0/schema_0.k",
+        5,
+        4,
+        Some('\n')
+    );
+
+    completion_label_without_builtin_func_test_snapshot!(
+        schema_attr_newline_completion_1,
+        "src/test_data/completion_test/newline/schema/schema_1/schema_1.k",
+        10,
+        4,
+        Some('\n')
     );
 }
