@@ -1,5 +1,5 @@
 ---
 source: tools/src/LSP/src/completion.rs
-expression: "format!(\"{:?}\",\n    {\n        let(file, program, _, gs) =\n        compile_test_file(\"src/test_data/completion_test/import/internal/main.k\")\n        ; let pos = KCLPos\n        { filename : file.clone(), line : 1, column : Some(8), } ; let tool =\n        toolchain :: default() ; let mut got =\n        completion(None, & program, & pos, & gs, & tool).unwrap() ; match &\n        mut got\n        {\n            CompletionResponse :: Array(arr) =>\n            {\n                let mut labels : Vec < String > =\n                arr.iter().map(| item | item.label.clone()).collect() ;\n                labels.sort() ; let labels : Vec < String > =\n                labels.iter().filter(| label |!\n                STANDARD_SYSTEM_MODULES.contains(&\n                label.as_str())).cloned().collect() ; labels\n            } CompletionResponse :: List(_) => panic! (\"test failed\"),\n        }\n    })"
+expression: "format!(\"{:?}\", got_labels)"
 ---
 ["tt"]
