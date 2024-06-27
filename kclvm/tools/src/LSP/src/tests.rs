@@ -3,6 +3,7 @@ use crossbeam_channel::select;
 use indexmap::IndexSet;
 use kclvm_ast::MAIN_PKG;
 use kclvm_driver::toolchain;
+use kclvm_driver::toolchain::Metadata;
 use kclvm_sema::core::global_state::GlobalState;
 
 use kclvm_sema::resolver::scope::KCLScopeCache;
@@ -139,6 +140,41 @@ pub(crate) fn compile_test_file(
     });
     let (program, gs) = compile_res.unwrap();
     (file, program, diags, gs)
+}
+
+pub(crate) fn compile_test_file_and_metadata(
+    testfile: &str,
+) -> (
+    String,
+    Program,
+    IndexSet<KCLDiagnostic>,
+    GlobalState,
+    Option<Metadata>,
+) {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let mut test_file = path;
+    test_file.push(testfile);
+
+    let file = test_file.to_str().unwrap().to_string();
+
+    let entry_cache = KCLEntryCache::default();
+    let (diags, compile_res) = compile_with_params(Params {
+        file: file.clone(),
+        module_cache: Some(KCLModuleCache::default()),
+        scope_cache: Some(KCLScopeCache::default()),
+        vfs: Some(KCLVfs::default()),
+        entry_cache: Some(entry_cache.clone()),
+        tool: Arc::new(RwLock::new(toolchain::default())),
+        gs_cache: Some(KCLGlobalStateCache::default()),
+    });
+    let (program, gs) = compile_res.unwrap();
+
+    let metadata = entry_cache
+        .read()
+        .get(&file)
+        .and_then(|metadata| metadata.0 .2.clone());
+
+    (file, program, diags, gs, metadata)
 }
 
 type Info = (String, (u32, u32, u32, u32), String);
@@ -456,6 +492,7 @@ fn complete_import_external_file_test() {
         .join("completion_test")
         .join("import")
         .join("external")
+        .join("external_0")
         .join("main.k")
         .canonicalize()
         .unwrap()
@@ -473,6 +510,7 @@ fn complete_import_external_file_test() {
                 .join("completion_test")
                 .join("import")
                 .join("external")
+                .join("external_0")
                 .canonicalize()
                 .unwrap()
                 .display()
@@ -499,7 +537,7 @@ fn complete_import_external_file_test() {
         column: Some(11),
     };
     let tool = toolchain::default();
-    let res = completion(Some('.'), &program, &pos, &gs, &tool).unwrap();
+    let res = completion(Some('.'), &program, &pos, &gs, &tool, None).unwrap();
 
     let got_labels: Vec<String> = match &res {
         CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
@@ -1580,7 +1618,7 @@ fn konfig_completion_test_main() {
         column: Some(27),
     };
     let tool = toolchain::default();
-    let got = completion(Some('.'), &program, &pos, &gs, &tool).unwrap();
+    let got = completion(Some('.'), &program, &pos, &gs, &tool, None).unwrap();
     let got_labels: Vec<String> = match got {
         CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
         CompletionResponse::List(_) => panic!("test failed"),
@@ -1599,7 +1637,7 @@ fn konfig_completion_test_main() {
         column: Some(4),
     };
     let tool = toolchain::default();
-    let got = completion(None, &program, &pos, &gs, &tool).unwrap();
+    let got = completion(None, &program, &pos, &gs, &tool, None).unwrap();
     let mut got_labels: Vec<String> = match got {
         CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
         CompletionResponse::List(_) => panic!("test failed"),
@@ -1644,7 +1682,7 @@ fn konfig_completion_test_main() {
         column: Some(35),
     };
     let tool = toolchain::default();
-    let got = completion(Some('.'), &program, &pos, &gs, &tool).unwrap();
+    let got = completion(Some('.'), &program, &pos, &gs, &tool, None).unwrap();
     let mut got_labels: Vec<String> = match got {
         CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
         CompletionResponse::List(_) => panic!("test failed"),

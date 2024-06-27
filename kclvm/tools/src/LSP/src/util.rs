@@ -159,7 +159,7 @@ pub(crate) fn compile_with_params(
     params: Params,
 ) -> (IndexSet<Diagnostic>, anyhow::Result<(Program, GlobalState)>) {
     // Lookup compile unit (kcl.mod or kcl.yaml) from the entry file.
-    let (mut files, opt) =
+    let (mut files, opt, _) =
         lookup_compile_unit_with_cache(&*params.tool.read(), &params.entry_cache, &params.file);
 
     if !files.contains(&params.file) {

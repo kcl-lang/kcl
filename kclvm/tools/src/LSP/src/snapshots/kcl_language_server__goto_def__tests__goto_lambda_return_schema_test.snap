@@ -1,5 +1,5 @@
 ---
 source: tools/src/LSP/src/goto_def.rs
-expression: "format!(\"{:?}\",\n    {\n        let(file, _program, _, gs) =\n        compile_test_file(\"src/test_data/goto_def_test/goto_lambda_return_schema_test/goto_lambda_return_schema_test.k\")\n        ; let pos = KCLPos\n        { filename : file.clone(), line : 6, column : Some(10), } ; let res =\n        goto_def(& pos, & gs) ; fmt_resp(& res)\n    })"
+expression: "format!(\"{:?}\", { fmt_resp(& res) })"
 ---
 "path: \"src/test_data/goto_def_test/goto_lambda_return_schema_test/goto_lambda_return_schema_test.k\", range: Range { start: Position { line: 1, character: 4 }, end: Position { line: 1, character: 8 } }"

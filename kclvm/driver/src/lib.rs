@@ -26,7 +26,7 @@ use std::{
     io::{self, ErrorKind},
     path::{Path, PathBuf},
 };
-use toolchain::{fill_pkg_maps_for_k_file, Toolchain};
+use toolchain::{fill_pkg_maps_for_k_file, Metadata, Toolchain};
 use walkdir::WalkDir;
 
 /// Expand the single file pattern to a list of files.
@@ -162,25 +162,28 @@ pub fn lookup_compile_unit(tool: &dyn Toolchain, file: &str, load_pkg: bool) -> 
                     match canonicalize_input_files(&files, work_dir, true) {
                         Ok(kcl_paths) => {
                             // 1. find the kcl.mod path
-                            let _ = fill_pkg_maps_for_k_file(tool, file.into(), &mut load_opt);
-                            (kcl_paths, Some(load_opt))
+                            let metadata =
+                                fill_pkg_maps_for_k_file(tool, file.into(), &mut load_opt)
+                                    .unwrap_or(None);
+                            (kcl_paths, Some(load_opt), metadata)
                         }
-                        Err(_) => (vec![file.to_string()], None),
+                        Err(_) => (vec![file.to_string()], None, None),
                     }
                 }
-                Err(_) => (vec![file.to_string()], None),
+                Err(_) => (vec![file.to_string()], None, None),
             }
         }
         Ok(CompileUnitPath::ModFile(dir)) => match load_mod_file(&dir) {
             Ok(mod_file) => {
                 let mut load_opt = kclvm_parser::LoadProgramOptions::default();
-                let _ = fill_pkg_maps_for_k_file(tool, file.into(), &mut load_opt);
+                let metadata =
+                    fill_pkg_maps_for_k_file(tool, file.into(), &mut load_opt).unwrap_or(None);
                 if let Some(files) = mod_file.get_entries() {
                     let work_dir = dir.to_string_lossy().to_string();
                     load_opt.work_dir = work_dir.clone();
                     match canonicalize_input_files(&files, work_dir, true) {
-                        Ok(kcl_paths) => (kcl_paths, Some(load_opt)),
-                        Err(_) => (vec![file.to_string()], None),
+                        Ok(kcl_paths) => (kcl_paths, Some(load_opt), metadata),
+                        Err(_) => (vec![file.to_string()], None, None),
                     }
                 } else {
                     if load_pkg {
@@ -189,20 +192,21 @@ pub fn lookup_compile_unit(tool: &dyn Toolchain, file: &str, load_pkg: bool) -> 
                             if ext == KCL_FILE_EXTENSION && path.is_file() {
                                 if let Some(parent) = path.parent() {
                                     if let Ok(files) = get_kcl_files(parent, false) {
-                                        return (files, Some(load_opt));
+                                        return (files, Some(load_opt), metadata);
                                     }
                                 }
                             }
                         }
                     }
-                    (vec![file.to_string()], Some(load_opt))
+                    (vec![file.to_string()], Some(load_opt), metadata)
                 }
             }
-            Err(_) => (vec![file.to_string()], None),
+            Err(_) => (vec![file.to_string()], None, None),
         },
         Ok(CompileUnitPath::NotFound) | Err(_) => {
             let mut load_opt = kclvm_parser::LoadProgramOptions::default();
-            let _ = fill_pkg_maps_for_k_file(tool, file.into(), &mut load_opt);
+            let metadata =
+                fill_pkg_maps_for_k_file(tool, file.into(), &mut load_opt).unwrap_or(None);
 
             if load_pkg {
                 let path = Path::new(file);
@@ -210,13 +214,13 @@ pub fn lookup_compile_unit(tool: &dyn Toolchain, file: &str, load_pkg: bool) -> 
                     if ext == KCL_FILE_EXTENSION && path.is_file() {
                         if let Some(parent) = path.parent() {
                             if let Ok(files) = get_kcl_files(parent, false) {
-                                return (files, Some(load_opt));
+                                return (files, Some(load_opt), metadata);
                             }
                         }
                     }
                 }
             }
-            (vec![file.to_string()], Some(load_opt))
+            (vec![file.to_string()], Some(load_opt), metadata)
         }
     }
 }
@@ -243,7 +247,7 @@ fn lookup_kcl_yaml(dir: &Path) -> io::Result<PathBuf> {
     }
 }
 
-pub type CompileUnitOptions = (Vec<String>, Option<LoadProgramOptions>);
+pub type CompileUnitOptions = (Vec<String>, Option<LoadProgramOptions>, Option<Metadata>);
 
 /// CompileUnitPath is the kcl program default entries that are defined
 /// in the config files.

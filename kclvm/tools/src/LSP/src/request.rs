@@ -314,12 +314,19 @@ pub(crate) fn handle_completion(
         Err(_) => return Ok(None),
     };
 
+    let metadata = snapshot
+        .entry_cache
+        .read()
+        .get(&file)
+        .and_then(|metadata| metadata.0 .2.clone());
+
     let res = completion(
         completion_trigger_character,
         &db.prog,
         &kcl_pos,
         &db.gs,
         &*snapshot.tool.read(),
+        metadata,
     );
 
     if res.is_none() {

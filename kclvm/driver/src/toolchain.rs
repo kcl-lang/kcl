@@ -176,21 +176,20 @@ pub(crate) fn fill_pkg_maps_for_k_file(
     tool: &dyn Toolchain,
     k_file_path: PathBuf,
     opts: &mut LoadProgramOptions,
-) -> Result<()> {
+) -> Result<Option<Metadata>> {
     match lookup_the_nearest_file_dir(k_file_path, KCL_MOD_FILE) {
         Some(mod_dir) => {
             let metadata = tool.fetch_metadata(mod_dir.canonicalize()?)?;
             let maps: HashMap<String, String> = metadata
                 .packages
-                .into_iter()
-                .map(|(name, pkg)| (name, pkg.manifest_path.display().to_string()))
+                .iter()
+                .map(|(name, pkg)| (name.clone(), pkg.manifest_path.display().to_string()))
                 .collect();
             opts.package_maps.extend(maps);
+            Ok(Some(metadata))
         }
-        None => return Ok(()),
-    };
-
-    Ok(())
+        None => Ok(None),
+    }
 }
 
 /// [`get_real_path_from_external`] will ask for the local path for [`pkg_name`] with subdir [`pkgpath`].

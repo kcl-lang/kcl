@@ -2,4 +2,4 @@
 source: tools/src/LSP/src/completion.rs
 expression: "format!(\"{:?}\", got_labels)"
 ---
-["tt"]
+["k8s"]

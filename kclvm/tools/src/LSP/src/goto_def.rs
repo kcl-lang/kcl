@@ -107,17 +107,15 @@ mod tests {
         ($name:ident, $file:expr, $line:expr, $column: expr) => {
             #[test]
             fn $name() {
-                insta::assert_snapshot!(format!("{:?}", {
-                    let (file, _program, _, gs) = compile_test_file($file);
+                let (file, _program, _, gs) = compile_test_file($file);
 
-                    let pos = KCLPos {
-                        filename: file.clone(),
-                        line: $line,
-                        column: Some($column),
-                    };
-                    let res = goto_def(&pos, &gs);
-                    fmt_resp(&res)
-                }));
+                let pos = KCLPos {
+                    filename: file.clone(),
+                    line: $line,
+                    column: Some($column),
+                };
+                let res = goto_def(&pos, &gs);
+                insta::assert_snapshot!(format!("{:?}", { fmt_resp(&res) }));
             }
         };
     }
