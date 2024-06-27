@@ -836,7 +836,12 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
         Ok(if is_truth {
             self.walk_config_entries(&config_if_entry_expr.items)?
         } else if let Some(orelse) = &config_if_entry_expr.orelse {
-            self.walk_expr(orelse)?
+            // Config expr or config if entry expr.
+            if let ast::Expr::Config(config_expr) = &orelse.node {
+                self.walk_config_entries(&config_expr.items)?
+            } else {
+                self.walk_expr(orelse)?
+            }
         } else {
             self.none_value()
         })
@@ -927,7 +932,10 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
 
     #[inline]
     fn walk_config_expr(&self, config_expr: &'ctx ast::ConfigExpr) -> Self::Result {
-        self.walk_config_entries(&config_expr.items)
+        self.enter_scope();
+        let result = self.walk_config_entries(&config_expr.items);
+        self.leave_scope();
+        result
     }
 
     fn walk_check_expr(&self, check_expr: &'ctx ast::CheckExpr) -> Self::Result {
@@ -1509,7 +1517,6 @@ impl<'ctx> Evaluator<'ctx> {
 
     pub(crate) fn walk_config_entries(&self, items: &'ctx [NodeRef<ConfigEntry>]) -> EvalResult {
         let mut config_value = self.dict_value();
-        self.enter_scope();
         for item in items {
             let value = self.walk_expr(&item.node.value)?;
             if let Some(key) = &item.node.key {
@@ -1547,14 +1554,13 @@ impl<'ctx> Evaluator<'ctx> {
                 );
                 if let Some(name) = &optional_name {
                     let value = self.dict_get_value(&config_value, name);
-                    self.add_or_update_local_variable(name, value);
+                    self.add_or_update_local_variable_within_scope(name, value);
                 }
             } else {
                 // If the key does not exist, execute the logic of unpacking expression `**expr` here.
                 config_value.dict_insert_unpack(&mut self.runtime_ctx.borrow_mut(), &value)
             }
         }
-        self.leave_scope();
         Ok(config_value)
     }
 }

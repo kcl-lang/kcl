@@ -1992,7 +1992,13 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         self.br(end_block);
         self.builder.position_at_end(else_block);
         let else_value = if let Some(orelse) = &config_if_entry_expr.orelse {
-            self.walk_expr(orelse).expect(kcl_error::COMPILE_ERROR_MSG)
+            // Config expr or config if entry expr.
+            if let ast::Expr::Config(config_expr) = &orelse.node {
+                self.walk_config_entries(&config_expr.items)
+                    .expect(kcl_error::COMPILE_ERROR_MSG)
+            } else {
+                self.walk_expr(orelse).expect(kcl_error::COMPILE_ERROR_MSG)
+            }
         } else {
             self.none_value()
         };
@@ -2076,7 +2082,11 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
 
     fn walk_config_expr(&self, config_expr: &'ctx ast::ConfigExpr) -> Self::Result {
         check_backtrack_stop!(self);
-        self.walk_config_entries(&config_expr.items)
+        self.enter_scope();
+        self.emit_config_entries_vars(&config_expr.items);
+        let result = self.walk_config_entries(&config_expr.items);
+        self.leave_scope();
+        result
     }
 
     fn walk_check_expr(&self, check_expr: &'ctx ast::CheckExpr) -> Self::Result {
@@ -2830,7 +2840,6 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         items: &'ctx [NodeRef<ConfigEntry>],
     ) -> CompileResult<'ctx> {
         let config_value = self.dict_value();
-        self.enter_scope();
         for item in items {
             let value = self.walk_expr(&item.node.value)?;
             if let Some(key) = &item.node.key {
@@ -2869,7 +2878,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 if let Some(name) = &optional_name {
                     let value =
                         self.dict_get(config_value, self.native_global_string(name, "").into());
-                    self.add_or_update_local_variable(name, value);
+                    self.add_or_update_local_variable_within_scope(name, Some(value));
                 }
             } else {
                 // If the key does not exist, execute the logic of unpacking expression `**expr` here.
@@ -2879,7 +2888,6 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 );
             }
         }
-        self.leave_scope();
         Ok(config_value)
     }
 }

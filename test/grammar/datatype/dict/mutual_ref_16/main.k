@@ -1,0 +1,9 @@
+level0 = {
+    name = "apple"
+    level1_a = {
+        name = "orange"
+    }
+    level1_b = {
+        name = "pine" + name
+    }
+}

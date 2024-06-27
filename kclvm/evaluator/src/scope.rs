@@ -301,34 +301,17 @@ impl<'ctx> Evaluator<'ctx> {
         level
     }
 
-    /// Append a variable or update the existed local variable.
-    pub fn add_or_update_local_variable(&self, name: &str, value: ValueRef) {
+    /// Append a variable or update the existed local variable within the current scope.
+    pub(crate) fn add_or_update_local_variable_within_scope(&self, name: &str, value: ValueRef) {
         let current_pkgpath = self.current_pkgpath();
-        let is_local_var = self.is_local_var(name);
         let pkg_scopes = &mut self.pkg_scopes.borrow_mut();
         let msg = format!("pkgpath {} is not found", current_pkgpath);
         let scopes = pkg_scopes.get_mut(&current_pkgpath).expect(&msg);
-        let mut existed = false;
-        // Query the variable in all scopes.
-        for i in 0..scopes.len() {
-            let index = scopes.len() - i - 1;
-            let is_argument = scopes[index].arguments.contains(name);
-            let variables_mut = &mut scopes[index].variables;
-            match variables_mut.get(&name.to_string()) {
-                // If the local variable is found, store the new value for the variable.
-                // We cannot update rule/lambda/schema arguments because they are read-only.
-                Some(_) if index > GLOBAL_LEVEL && !is_local_var && !is_argument => {
-                    variables_mut.insert(name.to_string(), value.clone());
-                    existed = true;
-                }
-                _ => {}
-            }
-        }
-        // If not found, alloc a new variable.
-        if !existed {
-            // Store the value for the variable and add the variable into the current scope.
-            if let Some(last) = scopes.last_mut() {
-                last.variables.insert(name.to_string(), value);
+        let index = scopes.len() - 1;
+        if let Some(scope) = scopes.last_mut() {
+            let variables_mut = &mut scope.variables;
+            if index > GLOBAL_LEVEL {
+                variables_mut.insert(name.to_string(), value.clone());
             }
         }
     }

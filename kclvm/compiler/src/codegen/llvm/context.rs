@@ -63,6 +63,8 @@ pub struct Scope<'ctx> {
     pub schema_scalar_idx: RefCell<usize>,
     /// Scope normal variables
     pub variables: RefCell<IndexMap<String, PointerValue<'ctx>>>,
+    /// Scope normal initialized variables
+    pub uninitialized: RefCell<IndexSet<String>>,
     /// Scope closures referenced by internal scope.
     pub closures: RefCell<IndexMap<String, PointerValue<'ctx>>>,
     /// Potential arguments in the current scope, such as schema/lambda arguments.
@@ -1717,40 +1719,42 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         level
     }
 
-    /// Append a variable or update the existed local variable.
-    pub fn add_or_update_local_variable(&self, name: &str, value: BasicValueEnum<'ctx>) {
+    /// Append a variable or update the existed closure variable within the current scope.
+    pub fn add_or_update_local_variable_within_scope(
+        &self,
+        name: &str,
+        value: Option<BasicValueEnum<'ctx>>,
+    ) {
         let current_pkgpath = self.current_pkgpath();
         let mut pkg_scopes = self.pkg_scopes.borrow_mut();
         let msg = format!("pkgpath {} is not found", current_pkgpath);
         let scopes = pkg_scopes.get_mut(&current_pkgpath).expect(&msg);
-        let mut existed = false;
-        // Query the variable in all scopes.
-        for i in 0..scopes.len() {
-            let index = scopes.len() - i - 1;
-            let variables_mut = scopes[index].variables.borrow_mut();
+        let index = scopes.len() - 1;
+        if let Some(scope) = scopes.last_mut() {
+            let mut variables_mut = scope.variables.borrow_mut();
+            let mut uninitialized = scope.uninitialized.borrow_mut();
+            if value.is_none() {
+                uninitialized.insert(name.to_string());
+            } else {
+                uninitialized.remove(name);
+            }
             match variables_mut.get(&name.to_string()) {
                 // If the local variable is found, store the new value for the variable.
                 // We cannot update rule/lambda/schema arguments because they are read-only.
-                Some(ptr)
-                    if index > GLOBAL_LEVEL
-                        && !self.local_vars.borrow().contains(name)
-                        && !scopes[index].arguments.borrow().contains(name) =>
-                {
-                    self.builder.build_store(*ptr, value);
-                    existed = true;
+                Some(ptr) if index > GLOBAL_LEVEL => {
+                    if let Some(value) = value {
+                        self.builder.build_store(*ptr, value);
+                    }
                 }
-                _ => {}
-            }
-        }
-        // If not found, alloc a new variable.
-        if !existed {
-            let ptr = self.builder.build_alloca(self.value_ptr_type(), name);
-            self.builder.build_store(ptr, value);
-            // Store the value for the variable and add the variable into the current scope.
-            if let Some(last) = scopes.last_mut() {
-                let mut variables = last.variables.borrow_mut();
-                variables.insert(name.to_string(), ptr);
-            }
+                _ => {
+                    let ptr = self.builder.build_alloca(self.value_ptr_type(), name);
+                    if let Some(value) = value {
+                        self.builder.build_store(ptr, value);
+                    }
+                    // Store the value for the variable and add the variable into the current scope.
+                    variables_mut.insert(name.to_string(), ptr);
+                }
+            };
         }
     }
 
@@ -2001,12 +2005,17 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             for i in 0..scopes_len {
                 let index = scopes_len - i - 1;
                 let variables = scopes[index].variables.borrow();
+                // Skip uninitialized pointer value, which may cause NPE.
+                let uninitialized = scopes[index].uninitialized.borrow();
                 if let Some(var) = variables.get(&name.to_string()) {
                     // Closure vars, 2 denotes the builtin scope and the global scope, here is a closure scope.
                     let value = if i >= 1 && i < scopes_len - 2 {
                         let last_lambda_scope = self.last_lambda_scope();
                         // Local scope variable
                         if index >= last_lambda_scope {
+                            if uninitialized.contains(name) {
+                                continue;
+                            }
                             self.builder.build_load(*var, name)
                         } else {
                             // Outer lambda closure
@@ -2028,7 +2037,12 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                                         ],
                                     )
                                 }
-                                None => self.builder.build_load(*var, name),
+                                None => {
+                                    if uninitialized.contains(name) {
+                                        continue;
+                                    }
+                                    self.builder.build_load(*var, name)
+                                }
                             }
                         }
                     } else {
@@ -2065,6 +2079,9 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                                 ],
                             )
                         } else {
+                            if uninitialized.contains(name) {
+                                continue;
+                            }
                             self.builder.build_load(*var, name)
                         }
                     };
